@@ -1,0 +1,51 @@
+# 工作流名称
+name: 自动部署 MkDocs
+
+# 触发条件：推送到 main 分支
+on:
+  push:
+    branches:
+      - main
+  
+  # 允许手动触发
+  workflow_dispatch:
+
+# 设置权限
+permissions:
+  contents: write  # 允许推送到 gh-pages 分支
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. 检出代码
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史，显示文章修改时间
+      
+      # 2. 设置 Python
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # cache: 'pip'  # 缓存依赖，加速构建
+      
+      # 3. 安装依赖
+      - name: 安装依赖
+        run: |
+          pip install mkdocs-material
+          pip install mkdocs-awesome-pages-plugin
+          pip install mkdocs-git-revision-date-localized-plugin
+      
+      # 4. 构建网站
+      - name: 构建网站
+        run: mkdocs build --clean
+      
+      # 5. 自动部署到 gh-pages 分支（这一步会自动触发 GitHub Pages）
+      - name: 部署到 GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动提供的 token
+          publish_dir: ./site  # MkDocs 构建输出目录
