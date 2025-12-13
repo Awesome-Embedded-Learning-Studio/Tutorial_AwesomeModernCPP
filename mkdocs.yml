@@ -52,8 +52,6 @@ theme:
     - navigation.instant.prefetch  # 预加载链接,提升访问速度
     - navigation.instant.progress  # 显示加载进度条
     - navigation.tracking  # 地址栏自动更新为当前标题的锚点
-    - navigation.tabs  # 顶部显示主要章节标签(适合多章节博客)
-    - navigation.tabs.sticky  # 滚动时标签栏保持固定
     - navigation.sections  # 侧边栏显示章节分组
     - navigation.expand  # 默认展开所有章节(方便查看全部内容)
     - navigation.path  # 显示当前页面的完整路径
