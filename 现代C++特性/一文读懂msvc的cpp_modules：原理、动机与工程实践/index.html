@@ -1,0 +1,1073 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+      
+      
+        <meta name="author" content="Charliechen">
+      
+      
+      
+        <link rel="prev" href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">
+      
+      
+        <link rel="next" href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../Awesome-Embedded.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>一文读懂 MSVC C++ Modules：原理、动机与工程实践 - Tutorial_AwesomeModernCPP的文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#一文读懂-msvc-c-modules原理动机与工程实践" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Tutorial_AwesomeModernCPP的文档" class="md-header__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tutorial_AwesomeModernCPP的文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              一文读懂 MSVC C++ Modules：原理、动机与工程实践
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换至暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="切换至亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换至亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tutorial_AwesomeModernCPP的文档" class="md-nav__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    Tutorial_AwesomeModernCPP的文档
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境配置
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    环境配置
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++特性
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    现代C++特性
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    一文读懂 MSVC C++ Modules：原理、动机与工程实践
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    一文读懂 MSVC C++ Modules：原理、动机与工程实践
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#我们为什么需要-modules从-include-的本质缺陷说起" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        我们为什么需要 Modules？——从 #include 的本质缺陷说起
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="我们为什么需要 Modules？——从 #include 的本质缺陷说起">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#问题一编译速度灾难指数级放大" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题一：编译速度灾难（指数级放大）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题二宏污染是不可控的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题二：宏污染是不可控的
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题三接口与实现强耦合传染式依赖" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题三：接口与实现强耦合（传染式依赖）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题四odrabi隐式规则过多" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题四：ODR、ABI、隐式规则过多
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c-modules-的核心思想让编译器真正理解模块" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++ Modules 的核心思想：让编译器真正“理解模块”
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="C++ Modules 的核心思想：让编译器真正“理解模块”">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import关键字--include" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import关键字 ≠ #include
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#模块的最小单位bmisbinary-module-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块的最小单位：BMIs（Binary Module Interface）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#流程差异" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        流程差异
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-std-到底发生了什么" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import std; 到底发生了什么？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#今日要在什么时候使用-msvc-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        今日要在什么时候使用 MSVC Modules？
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="今日要在什么时候使用 MSVC Modules？">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#强烈推荐的使用场景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        强烈推荐的使用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-使用-import-std-替代标准库头文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 使用 import std; 替代标准库头文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-新项目内部的模块化业务模块隔离" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 新项目内部的模块化（业务模块隔离）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#谨慎的使用场景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        谨慎的使用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-大型跨平台库的公共接口" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 大型跨平台库的公共接口
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-需要-gcc--clang-完全一致行为的项目" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 需要 GCC / Clang 完全一致行为的项目
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    std::string_view 全攻略
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    现代C++特性
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="一文读懂-msvc-c-modules原理动机与工程实践">一文读懂 MSVC C++ Modules：原理、动机与工程实践<a class="headerlink" href="#一文读懂-msvc-c-modules原理动机与工程实践" title="链接到此章节">&para;</a></h1>
+<p>仙人指路，如果你之前就不知道如何在MSVC上使用模块，笔者的确会很严肃的向您推介，先试试，再说。</p>
+<ul>
+<li><a href="https://blog.csdn.net/charlie114514191/article/details/155929743">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南-CSDN博客</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/1983806788118783552">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - 老老老陈醋的文章 - 知乎</a></li>
+<li><a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/环境配置/如何快速在 VS2026 上使用 C%2B%2B 模块 — 完整上手指南/">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档</a></li>
+</ul>
+<hr />
+<h2 id="我们为什么需要-modules从-include-的本质缺陷说起">我们为什么需要 Modules？——从 <code>#include</code> 的本质缺陷说起<a class="headerlink" href="#我们为什么需要-modules从-include-的本质缺陷说起" title="链接到此章节">&para;</a></h2>
+<p>在很长一段时间里，C++ 的“模块系统”其实只有一个：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;foo.h&quot;</span>
+</span></code></pre></div>
+<p>我相信大家都是知道<code>#include</code>的原理的，不必我说，就是纯纯的文本替换而已。这种基于<code>#include</code>的依赖引入有的时候更加像是被发现而不是因此而设计的（大家都是知道C语言历史的）</p>
+<p>编译器看到 <code>#include &lt;vector&gt;</code> 时，<strong>不会认为你在“依赖一个库”</strong>，而是：把 <code>&lt;vector&gt;</code> 头文件的内容，<strong>原封不动地拷贝进当前 <code>.cpp</code></strong>，再继续编译。</p>
+<p>这听起来好像没啥，但是这些问题，我相信大家多少干工程的会有所体会的：</p>
+<h4 id="问题一编译速度灾难指数级放大">问题一：编译速度灾难（指数级放大）<a class="headerlink" href="#问题一编译速度灾难指数级放大" title="链接到此章节">&para;</a></h4>
+<p>头文件机制的核心问题在于<strong>重复解析</strong>。每个 <code>.cpp</code> 文件都需要重新解析它 <code>#include</code> 进来的所有头文件，如 <code>&lt;vector&gt;</code>、<code>&lt;string&gt;</code>、<code>&lt;iostream&gt;</code>。当遇到<strong>模板、宏和条件编译</strong>时，这种重复工作就变成了性能地狱，导致编译时间呈指数级增长。</p>
+<p><strong>预编译头文件（PCH）</strong> 只是将解析结果<strong>缓存</strong>起来，而非从根本上解决重复解析的<strong>结构性缺陷</strong>。本质上，这是因为<strong>编译器不知道哪些声明是“已经处理过的模块接口”</strong>，只能盲目地一遍又一遍地处理。</p>
+<h4 id="问题二宏污染是不可控的">问题二：宏污染是不可控的<a class="headerlink" href="#问题二宏污染是不可控的" title="链接到此章节">&para;</a></h4>
+<p><strong>宏（Macro）是无作用域的</strong>，这是导致宏污染不可控的根本原因。一旦定义了 <code>#define min(a,b) ...</code> 这样的宏，并且通过 <code>#include</code> 引入，它就会<strong>永久污染后续代码</strong>，直到文件结束或被 <code>#undef</code>。（这就是为什么你会看到一些工程会习惯性的#undef下定义的宏，你也不想定义的宏被哪个不知道什么人写的包含顺序出问题了搞炸了吧！例如，引入 <code>&lt;windows.h&gt;</code> 这样的库可能会引入大量宏，这些宏可能意外地替换掉你代码中的同名函数或变量。编译器<strong>无法阻止，也无法隔离</strong>这种全局性的宏污染。</p>
+<h4 id="问题三接口与实现强耦合传染式依赖">问题三：接口与实现强耦合（传染式依赖）<a class="headerlink" href="#问题三接口与实现强耦合传染式依赖" title="链接到此章节">&para;</a></h4>
+<p>头文件机制强制要求在接口（<code>.h</code> 文件）中暴露不必要的实现细节。例如，即使一个类 <code>Foo</code> 仅仅在其内部使用了 <code>std::vector&lt;int&gt;</code>：</p>
+<div class="language-c++ highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// foo.h</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span><span class="c1"> // &lt;-- 不必要的暴露</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>你只是想使用 <code>Foo</code> 类，却被迫通过 <code>#include "foo.h"</code> 引入了 <strong><code>&lt;vector&gt;</code> 的全部依赖</strong>。这被称为<strong>传染式依赖（Transitive Includes）</strong>：用户被迫依赖了接口底层的所有实现细节所依赖的头文件，导致编译依赖网状膨胀。</p>
+<h4 id="问题四odrabi隐式规则过多">问题四：ODR、ABI、隐式规则过多<a class="headerlink" href="#问题四odrabi隐式规则过多" title="链接到此章节">&para;</a></h4>
+<p>头文件机制带来了一系列复杂且隐式的规则，如 <code>inline</code>、模板定义、<code>static</code> 变量以及在头文件中实现函数等。最危险的是 <strong>ODR（One Definition Rule，单一定义规则）</strong>。ODR 错误常常能通过编译阶段（因为每个编译单元只看到了一个定义），但会在<strong>链接阶段才暴露</strong>出来，导致难以调试的“链接器错误”（Linker Error），极大地增加了代码的脆弱性。</p>
+<hr />
+<h2 id="c-modules-的核心思想让编译器真正理解模块">C++ Modules 的核心思想：<strong>让编译器真正“理解模块”</strong><a class="headerlink" href="#c-modules-的核心思想让编译器真正理解模块" title="链接到此章节">&para;</a></h2>
+<p>所以聪明的你就知道，既然有这些问题，modules就是来解决的嘛！（虽然笔者吐槽下，我现在在的工程里用模块感觉就那会事情，所以还在尝试），简单的说：<strong>Modules = 编译器可理解、可缓存、可隔离的接口单元</strong></p>
+<h4 id="import关键字--include"><code>import</code>关键字 ≠ <code>#include</code><a class="headerlink" href="#import关键字--include" title="链接到此章节">&para;</a></h4>
+<p><code>import std;</code>就是将现在的标准库模块导入到我们的代码中，他告诉我们的MSVC编译器：“请把 <strong><code>std</code> 模块的已编译接口信息</strong> 导入到当前翻译单元。”</p>
+<h4 id="模块的最小单位bmisbinary-module-interface">模块的最小单位：BMIs（Binary Module Interface）<a class="headerlink" href="#模块的最小单位bmisbinary-module-interface" title="链接到此章节">&para;</a></h4>
+<p>在 MSVC 中，每个模块接口单元会被编译成一个 <strong><code>.ifc</code> 文件</strong>，他是模块的中间产物，方便接入原来的编译系统，这里面存放的就是前端AST 的序列化结果——类型、函数、模板的结构化描述（额，笔者真的第一反应就是“C++ 版的 <code>.class</code> 文件（Java）”）</p>
+<h4 id="流程差异">流程差异<a class="headerlink" href="#流程差异" title="链接到此章节">&para;</a></h4>
+<p>之前头文件的处理是依赖预处理的，直接将头文件粘贴到了源文件里去了作为一个编译单元搞，现在的话，模块就会好很多，他只会编译一次模块，然后你用的时候直接加载 .ifc文件，时间上可以打折扣了。MSVC Modules 的设计特点（非常实用）</p>
+<h2 id="import-std-到底发生了什么"><code>import std;</code> 到底发生了什么？<a class="headerlink" href="#import-std-到底发生了什么" title="链接到此章节">&para;</a></h2>
+<p>当你写下<code>import std;</code>的时候，MSVC 会：</p>
+<ol>
+<li>
+<p>查找标准库模块 <code>std</code></p>
+</li>
+<li>
+<p>加载其 <code>.ifc</code> 文件（由 STL 官方预编译）</p>
+</li>
+<li>
+<p>把所有导出的符号注入当前 TU</p>
+</li>
+<li>
+<p><strong>不引入任何宏</strong>（这点极其重要），这也是为什么 <code>min/max</code> 宏问题在 Modules 世界里自然消失。</p>
+</li>
+</ol>
+<p>注意，模块 <strong>默认不导出宏</strong>，宏不会跨 <code>import</code> 传播，所以你写的宏是没办法泄露到依赖文件上去的。</p>
+<hr />
+<h2 id="今日要在什么时候使用-msvc-modules">今日要在什么时候使用 MSVC Modules？<a class="headerlink" href="#今日要在什么时候使用-msvc-modules" title="链接到此章节">&para;</a></h2>
+<p>上面就说了，C++ Modules 是对传统头文件机制的结构性解决方案，但在实际应用于生产环境时，特别是在 MSVC (Visual Studio) 环境下，需要采取策略性使用。</p>
+<h4 id="强烈推荐的使用场景">强烈推荐的使用场景<a class="headerlink" href="#强烈推荐的使用场景" title="链接到此章节">&para;</a></h4>
+<h4 id="1-使用-import-std-替代标准库头文件">1. 使用 <code>import std;</code> 替代标准库头文件<a class="headerlink" href="#1-使用-import-std-替代标准库头文件" title="链接到此章节">&para;</a></h4>
+<p>这是目前最安全、最有价值的 Modules 用法。现在咱们彻底解决了标准库头文件（如 <code>&lt;vector&gt;</code>, <code>&lt;string&gt;</code>, <code>&lt;iostream&gt;</code>）带来的<strong>编译速度灾难</strong>和<strong>宏污染</strong>问题。</p>
+<p>而且只用一个<code>import std;</code>，咱们就不用费劲心思写一大堆include了，编译器只需要处理一次预编译的 Standard Library Module 接口，极大提升编译速度。标准库内部的宏也不会污染您的代码。</p>
+<h4 id="2-新项目内部的模块化业务模块隔离">2. 新项目内部的模块化（业务模块隔离）<a class="headerlink" href="#2-新项目内部的模块化业务模块隔离" title="链接到此章节">&para;</a></h4>
+<p>对于新创建的、主要针对 Windows 平台或内部使用的项目，可以考虑将项目内部的业务逻辑划分为独立的 Modules。用户代码只需要 <code>import MyModule;</code>，而不会被迫 <code>#include</code> 模块内部依赖的所有头文件。在写法上，业务逻辑组织成 <code>.ixx</code> 或 <code>.cppm</code> 模块接口文件，<code>export</code> 仅需暴露的接口。<strong>接口与实现彻底解耦</strong>。更改模块内部的实现细节和私有依赖时，依赖该模块的用户代码<strong>不需要重新编译</strong>（除非接口本身发生变化）。</p>
+<h4 id="谨慎的使用场景">谨慎的使用场景<a class="headerlink" href="#谨慎的使用场景" title="链接到此章节">&para;</a></h4>
+<h4 id="1-大型跨平台库的公共接口">1. 大型跨平台库的公共接口<a class="headerlink" href="#1-大型跨平台库的公共接口" title="链接到此章节">&para;</a></h4>
+<p>如果我们正在做的事情是：正在开发一个需要被多种编译器（如 MSVC、GCC、Clang）稳定使用的<strong>公共/开源库</strong>，请谨慎将 Modules 用于其公开 API。毕竟这玩意没几年还，目前主流编译器的 Modules <strong>实现仍存在差异</strong>和潜在 Bug。他作为准备派发的库，似乎还是会为库的用户带来额外的配置复杂度。</p>
+<h4 id="2-需要-gcc--clang-完全一致行为的项目">2. 需要 GCC / Clang 完全一致行为的项目<a class="headerlink" href="#2-需要-gcc--clang-完全一致行为的项目" title="链接到此章节">&para;</a></h4>
+<p>如果您的项目需要在不同平台和编译器上实现<strong>完全一致且高度稳定</strong>的行为（例如嵌入式系统、高完整性金融应用），Modules 的潜在实现差异可能带来风险。毕竟Modules 的语义（尤其是涉及<strong>导入顺序、链接和 ODR</strong> 的复杂场景）可能在不同编译器之间存在微妙的差异。</p>
+<p>这一件事情上，保守点的依赖传统头文件是目前最能保证多平台行为一致性的方式，因为它依赖的是成熟数十年的 <code>#include</code> 预处理语义。</p>
+<table>
+<thead>
+<tr>
+<th><strong>场景</strong></th>
+<th><strong>推荐等级</strong></th>
+<th><strong>原因/价值</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>使用 <code>import std;</code></strong></td>
+<td><strong>✅ 强烈推荐</strong></td>
+<td>解决标准库的编译速度和宏污染问题，价值高，风险极低。</td>
+</tr>
+<tr>
+<td><strong>新项目/内部业务模块化</strong></td>
+<td><strong>✅ 推荐</strong></td>
+<td>消除传染式依赖，实现接口与实现解耦，提升内部编译效率。</td>
+</tr>
+<tr>
+<td><strong>公共/跨平台库的 API</strong></td>
+<td><strong>⚠️ 谨慎</strong></td>
+<td>跨编译器实现差异和工具链成熟度问题，可能影响兼容性。</td>
+</tr>
+<tr>
+<td><strong>对行为一致性要求极高</strong></td>
+<td><strong>⚠️ 谨慎</strong></td>
+<td>避免潜在的编译器实现差异导致的不可预知行为。</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月15日 08:43:57 CST">2025年12月15日 08:43:57</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月15日 08:43:57 CST">2025年12月15日 08:43:57</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-footer__link md-footer__link--next" aria-label="下一页: std::string_view 全攻略">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                std::string_view 全攻略
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Charliechen - 保留所有权利
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Awesome-Embedded-Learning-Studio" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:725610365@qq.com" target="_blank" rel="noopener" title="发送邮件" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M536.4-26.3c9.8-3.5 20.6-1 28 6.3s9.8 18.2 6.3 28l-178 496.9c-5 13.9-18.1 23.1-32.8 23.1-14.2 0-27-8.6-32.3-21.7l-64.2-158c-4.5-11-2.5-23.6 5.2-32.6l94.5-112.4c5.1-6.1 4.7-15-.9-20.6s-14.6-6-20.6-.9l-112.4 94.3c-9.1 7.6-21.6 9.6-32.6 5.2L38.1 216.8c-13.1-5.3-21.7-18.1-21.7-32.3 0-14.7 9.2-27.8 23.1-32.8z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
