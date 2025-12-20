@@ -1,4 +1,4 @@
-# 🚀 Tutorial_AwesomeModernCPP
+# 🚀 `Tutorial_AwesomeModernCPP`
 
 ![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)![Embedded](https://img.shields.io/badge/Embedded-STM32%20%7C%20Embedded%20Linux-green)![Zero Cost Abstraction](https://img.shields.io/badge/Design-Zero--Cost%20Abstraction-brightgreen)![RAII](https://img.shields.io/badge/Memory-RAII-orange)![Template Metaprogramming](https://img.shields.io/badge/C%2B%2B-TMP%20%7C%20Modern%20C%2B%2B-yellow)![Platform](https://img.shields.io/badge/Platform-Bare%20Metal%20%7C%20Linux-lightgrey)![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 
@@ -51,8 +51,6 @@
 #### 📜 版权声明
 
 本项目采用 [MIT License](https://claude.ai/chat/LICENSE) 开源协议。
-
-[Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP: 现代 C++ 嵌入式（MCU/Linux）开发完整教程，深入讲解 C++11–C++23、零开销抽象、RAII 与性能优化！]()
 
 ### 📮 联系方式
 
