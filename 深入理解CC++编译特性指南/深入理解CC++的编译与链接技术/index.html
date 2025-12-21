@@ -1,0 +1,2451 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+      
+      
+        <meta name="author" content="Charliechen">
+      
+      
+      
+        <link rel="prev" href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/3%E5%BF%AB%E9%80%9F%E8%BF%87%E4%B8%80%E4%B8%8BC%2B%2B98%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%89%B9%E6%80%A7/">
+      
+      
+        <link rel="next" href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../Awesome-Embedded.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>深入理解C/C++的编译与链接技术：导论 - Tutorial_AwesomeModernCPP的文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#深入理解cc的编译与链接技术导论" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="Tutorial_AwesomeModernCPP的文档" class="md-header__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tutorial_AwesomeModernCPP的文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              深入理解C/C++的编译与链接技术：导论
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换至暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="切换至亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换至亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Tutorial_AwesomeModernCPP的文档" class="md-nav__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    Tutorial_AwesomeModernCPP的文档
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    并行计算C++
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    并行计算C++
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心：现代嵌入式C++教程
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    核心：现代嵌入式C++教程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chapter0
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Chapter0
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/0%E5%89%8D%E8%A8%80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    前言
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/1%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%9A%84%E8%B5%84%E6%BA%90%E4%B8%8E%E5%AE%9E%E6%97%B6%E7%BA%A6%E6%9D%9F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    嵌入式的资源与实时约束
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/2%E6%80%A5%E9%80%9FC%E8%AF%AD%E8%A8%80%E9%80%9F%E9%80%9A%E5%A4%8D%E4%B9%A0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速的C语言复习
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/3%E5%BF%AB%E9%80%9F%E8%BF%87%E4%B8%80%E4%B8%8BC%2B%2B98%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%89%B9%E6%80%A7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++98基础特性：从C到C++的演进
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++编译特性指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    深入理解CC++编译特性指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译与链接技术：导论
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译与链接技术：导论
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#前言" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#所以我们写的变量和函数到底意味着什么" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        所以，我们写的变量和函数到底意味着什么？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c编译器怎么看我们的文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C编译器怎么看我们的文件
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nm好用的指令" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        nm，好用的指令
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#解决我们不知道的符号链接" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        解决我们不知道的符号：链接
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#额外的话题咱们要是重复定义了呢" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        额外的话题：咱们要是重复定义了呢？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#那链接器的作用就这样" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        那链接器的作用就这样？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#静态库我们的符号图书馆" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        静态库：我们的符号图书馆
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="静态库：我们的符号图书馆">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#链接顺序的重要性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        链接顺序的重要性
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#动态库共享库" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        动态库/共享库
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#其他的议题c呢" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        其他的议题：C++呢？
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="其他的议题：C++呢？">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c-的名称修饰-name-mangling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++ 的名称修饰 (Name Mangling)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-语言库的符号名称-symbol-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C 语言库的符号名称 (Symbol Name)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#解决方案使用-extern-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        解决方案：使用 extern "C"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF2%EF%BC%9A%E9%87%8D%E7%94%A8%E6%A6%82%E5%BF%B5%E7%9A%84%E5%86%8D%E9%98%90%E8%BF%B0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术2：动态库静态库导论
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF3%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E5%92%8C%E4%BD%BF%E7%94%A8%E9%9D%99%E6%80%81%E5%BA%93/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术3：如何制作和使用静态库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF4%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%931/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译与链接技术4：动态库A1：基本讨论之-fPIC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF6%EF%BC%9A%E8%81%8A%E4%B8%80%E8%81%8A%E7%AC%A6%E5%8F%B7%E5%8F%AF%E8%A7%81%E6%80%A7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF8%EF%BC%9A%E5%BA%93%E6%96%87%E4%BB%B6%E6%A3%80%E7%B4%A2%E9%80%BB%E8%BE%91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译与链接技术8：库文件检索逻辑
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF9%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E7%BB%86%E8%8A%82/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术9：动态库细节（完结）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境配置
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    环境配置
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%BF%AB%E9%80%9F%E5%9C%A8WSL%E4%B8%8A%E5%BC%80%E5%8F%91%E4%B8%80%E8%88%AC%E7%9A%84C%2B%2B%E4%B8%8A%E4%BD%8D%E6%9C%BA%E7%A8%8B%E5%BA%8F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速在WSL上开发一般的C++上位机程序
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++特性
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    现代C++特性
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    一文读懂 MSVC C++ Modules：原理、动机与工程实践
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    std::string_view 全攻略
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++的协程
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    现代C++的协程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E5%BC%95%E7%94%A8%E4%B9%8B%E2%80%94%E2%80%94%E5%88%A9%E7%94%A8%E5%8D%8F%E7%A8%8B%E5%81%9A%E4%B8%80%E4%B8%AA%E8%BF%B7%E4%BD%A0%E7%9A%84Echo%20Server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%811/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程支持1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%812%EF%BC%9A%E7%BC%96%E5%86%99%E7%AE%80%E5%8D%95%E7%9A%84%E8%B0%83%E5%BA%A6%E5%99%A8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程支持2：编写简单的协程调度器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    调试专题
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    调试专题
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入解构：MSVC 调试机制与 Visual Studio 调试器原理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    深入理解CC++编译特性指南
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="深入理解cc的编译与链接技术导论">深入理解C/C++的编译与链接技术：导论<a class="headerlink" href="#深入理解cc的编译与链接技术导论" title="链接到此章节">&para;</a></h1>
+<h2 id="前言">前言<a class="headerlink" href="#前言" title="链接到此章节">&para;</a></h2>
+<p>​   这个是一个新的系列！是笔者本周打算系统深入开展研究的话题。具体来讲，我们会讨论和总结一系列的C/C++编程中，我们很有可能一带而过但是肯定被备受折磨的话题——编译与链接技术。我相信任何一个朋友都遇到过令人头疼的<code>undefined referenced</code>等问题，我相信看到这样的报错不少朋友会吓得一激灵（笔者前段时间就被模板实例化时的<code>undefined referenced</code>折磨过）。</p>
+<p>​   解决这类问题，我相信不少朋友最开始的时候都是手忙脚乱的问AI，上网搜，但是鲜有人真正思考——为什么我们会有<code>undefined referenced</code>这类的错误呢？抛去那些咱们真的在构建系统中真忘记提供源代码文件的情况（我相信很多人也遇到过，笔者也是），很多情况时咱们真的有——起码真的是自己认为自己有的——提供了源文件且你甚至看到他链接了，但是就是链接失败了。</p>
+<p>举个例子，比如说您在一个lib.c文件中编写了，并且将它制作成了一个静态库libutils。</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">int_max</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>随后，我们立马在一个C++文件使用了<code>int_max</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// in usage usage.cpp</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">int_max</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w"> </span><span class="c1">// declarations requires for usage</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos="8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;max in (&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">int_max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos="9 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>随后，我们敲下这段指令期待自己的程序成功编译的时候，我们得到了一个非常奇怪的错误——</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen linkers]$ g++ usage.cpp -L. -lutils -o usage
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a>/usr/sbin/ld: /tmp/ccdSskJz.o: in function `main&#39;:
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>usage.cpp:(.text+0x88): undefined reference to `int_max(int, int)&#39;
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a>collect2: error: ld returned 1 exit status
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a>[charliechen@Charliechen linkers]$ 
+</span></code></pre></div>
+<p>​   这看起来太奇怪了，我们明明链接了libutils，他甚至都找到了我们的libutils（没有抱怨<code>/usr/sbin/ld: cannot find -lutils: No such file or directory</code>，这就是找到了），但是为什么会出错呢？而且就算没找到这个符号，为什么不在编译的时候就向我们抱怨呢？我认为，如果你像<a href="https://www.lurklurk.org/linkers/linkers.html"><code>Beginner's Guide to Linkers</code></a>的作者所说的那样，立马看到其中的问题的时候，我想这篇导论性质的《深入理解C/C++的编译与链接技术：导论》对您是没有新鲜东西的，我们随后才会真正细致的聊每一个细节，这里不会。</p>
+<p>​   <strong>本篇博客可能需要您至少写过C语言程序（上面的问题尽管涉及到C++，但是本文的核心不在C++），如果您遇到过类似<code>undefined referenced</code>的错误而不知道如何解决，那更好了</strong></p>
+<h2 id="所以我们写的变量和函数到底意味着什么">所以，我们写的变量和函数到底意味着什么？<a class="headerlink" href="#所以我们写的变量和函数到底意味着什么" title="链接到此章节">&para;</a></h2>
+<p>​   这个问题没有问<strong>你</strong>，这个问题我们在问<strong>计算机</strong>，为了回答上面一连串你可能从来都没有想过的问题，在那之前，我们现在必须要回答一个问题——“我们找到的和找不到的这些东西，计算机是怎么知道的？”，更加规范的问——编译器工具链是如何搜集到和查找到符号的？如何进一步的转化成更加好处理的形式（比如说，咱们把函数映射成了计算机可以找到的地址，这样，熟悉汇编的朋友立马就能想到函数是如何工作的——函数名转化为地址后call（调用）对应的地址即可，计算机的处理流自动跳转到对应地址取指令开始执行代码）。终归而言，我们的第一步是——我们能理解的，表达业务含义的变量和函数，如何转化成机器可以知道的哪里是哪里的地址的？中间的处理是如何的？<strong>我们写的变量和函数到底对计算机而言意味着什么？</strong></p>
+<p>​   任何一个计算机方向的学生毫无疑问的能立马说出程序从源代码文件到上操作系统跑起来的四个经典步骤——预处理，编译，链接，和<strong>执行</strong>（会有人问这不是废话嘛？为什么执行单独说？好问题！动态库的动态加载和启动加载我们会好好说的）。</p>
+<p>​   我们想要回答好上面的问题，就要重点关心后三个内容（预处理是<strong>源代码向源代码的转换</strong>，比如说#define的展开和基于#if条件选择编译技术的，我们在这里不会谈论）。</p>
+<p>​   在我们编写C语言文件的时候——不管是B站的授课UP主们， 还是大佬博客的笔记，还是你的大学老师昏昏欲睡的念他那陈年的PPT，都会告诉你。编写C语言文件我们无非在做两个事情——声明和实现。我们讨论的对象是<strong>全局变量和函数</strong>，这一点我必须放在这里强调。</p>
+<ul>
+<li>局部变量呢？啊，讨论这个没有意义，他们是程序上CPU后，整个操作系统后端动态为您的程序代码服务的——可能是<strong>分配给具体的寄存器，也有可能是分配内存，但是绝对不躺在磁盘的可执行文件上！</strong></li>
+<li>特别值得一提的是——实现包含了声明。不太理解？举个例子，您想您都告诉A是啥了，我是不是同时也告诉您这里有一个A了？</li>
+</ul>
+<p>​   声明很简单，我们只是大声的嚷嚷这里存在一个东西（），你问我那是什么？值是多少？不好意思我不知道，我只能告诉你的确存在这个东西，在哪里编译器你自己去找。</p>
+<p>​   实现也不难，我们把一个声明（可能是上面我们说的别处我们吵吵的声明，也有可能是就地声明，比如说<code>int a = 2</code>）和这个声明的实现关联起来。这个动作就是<strong>实现</strong>。对于全局变量，这个实现是一个数据。对于函数，这个则是我们的执行代码。一个全局变量的实现会让编译器在之后生成的可执行文件中，给您的变量分配具体的空间。当然，还少不了您赋予的值，不然您实现干啥是不是？</p>
+<p>​   我们知道，在编译后生成的可重定位文件（Locatable Objects）会暴露出来函数名称和变量。我们在编写程序的时候，就下意识的认为他们可以被找到（敏锐的朋友立马打断我——什么可以找到？编译期间还是链接运行期间的？不着急，马上聊）——这个在严肃的学术讨论中叫做<strong>符号的可见性</strong>。<strong>可见的符号是可访问的！</strong>这里的<strong>可见符号的可访问性</strong>需要二分的讨论：</p>
+<ul>
+<li>编译期间的可访问——比如说那些在C语言程序中<strong>没有被static修饰的符号，包括全局变量和函数</strong>，您写过C语言程序，显然知道在<code>a.c</code>中写下全局的<code>static int a = 1;</code>和<code>static int max(int a, int b){return a &gt; b ? a : b;}</code>后，<code>b.c</code>完全访问不到！您可以自己试一试。</li>
+<li>运行期间的可访问——这里说的就是整个全局变量和函数，不管有没有被static修饰。因为他们都存储在可执行文件中，上CPU之后，操作系统必然要为不管是否为static修饰的全局变量和函数分配程序生命周期长度的内存存储。所以实际上，对于CPU而言，他们是伴随程序一生的。因此仍然是全局的，只是一些全局变量必须<strong>只能由特定的代码访问到</strong>（这里才是static的发力点）</li>
+</ul>
+<p>​   也就是说，凡是是<strong>可访问的全局变量和函数</strong>，那必然是伴随程序一生，需要被安排到程序的可执行文件中，占据一定的空间的（这也是为什么我说只有讨论全局变量和函数才是有意义的）。其余的内容跟我们的问题完全不相干。笔者这里写了一个程序：</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// demo.c</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">un_g_initialized_var</span><span class="p">;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">g_initialized_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">extern_var</span><span class="p">;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">un_init_local_var</span><span class="p">;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">init_local_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">local_func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><a href="#__codelineno-3-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><a href="#__codelineno-3-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><a href="#__codelineno-3-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14"></a><a href="#__codelineno-3-14"><span class="linenos" data-linenos="14 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15"></a><a href="#__codelineno-3-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16"></a><a href="#__codelineno-3-16"><span class="linenos" data-linenos="16 "></span></a><span class="p">}</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17"></a><a href="#__codelineno-3-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18"></a><a href="#__codelineno-3-18"><span class="linenos" data-linenos="18 "></span></a><span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">extern_func</span><span class="p">();</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19"></a><a href="#__codelineno-3-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20"></a><a href="#__codelineno-3-20"><span class="linenos" data-linenos="20 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21"></a><a href="#__codelineno-3-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">extern_var</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extern_func</span><span class="p">();</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22"></a><a href="#__codelineno-3-22"><span class="linenos" data-linenos="22 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>符号 (Symbol)</th>
+<th>类别 (Category)</th>
+<th>存储类别 (Storage Class)</th>
+<th>链接性 (Linkage)</th>
+<th>上CPU后运行时所在的内存区域 (Typical Segment)</th>
+<th>作用 (Function)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>un_g_initialized_var</code></td>
+<td>变量定义</td>
+<td><strong>全局</strong> (<code>static</code> duration)</td>
+<td><strong>外部</strong> (<code>External</code>)</td>
+<td><strong>BSS</strong> (Block Started by Symbol)</td>
+<td>未初始化的全局变量，运行时初始化为 0。</td>
+</tr>
+<tr>
+<td><code>g_initialized_var</code></td>
+<td>变量定义</td>
+<td><strong>全局</strong> (<code>static</code> duration)</td>
+<td><strong>外部</strong> (<code>External</code>)</td>
+<td><strong>Data</strong> (Initialized Data)</td>
+<td>已初始化的全局变量。</td>
+</tr>
+<tr>
+<td><code>extern_var</code></td>
+<td>变量声明</td>
+<td>N/A (引用)</td>
+<td><strong>外部</strong> (<code>External</code>)</td>
+<td>N/A (期望在其他文件定义)</td>
+<td>引用其他编译单元中定义的全局变量。</td>
+</tr>
+<tr>
+<td><code>un_init_local_var</code></td>
+<td>变量定义</td>
+<td><strong>全局</strong> (<code>static</code> duration)</td>
+<td><strong>内部</strong> (<code>Internal</code>)</td>
+<td><strong>BSS</strong></td>
+<td>具有文件作用域的静态变量，未初始化，运行时初始化为 0。</td>
+</tr>
+<tr>
+<td><code>init_local_var</code></td>
+<td>变量定义</td>
+<td><strong>全局</strong> (<code>static</code> duration)</td>
+<td><strong>内部</strong> (<code>Internal</code>)</td>
+<td><strong>Data</strong></td>
+<td>具有文件作用域的静态变量，已初始化。</td>
+</tr>
+<tr>
+<td><code>local_func</code></td>
+<td>函数定义</td>
+<td><strong>函数</strong></td>
+<td><strong>内部</strong> (<code>Internal</code>)</td>
+<td><strong>Code</strong> (.text)</td>
+<td>静态函数，只能在当前文件内被调用。</td>
+</tr>
+<tr>
+<td><code>func</code></td>
+<td>函数定义</td>
+<td><strong>函数</strong></td>
+<td><strong>外部</strong> (<code>External</code>)</td>
+<td><strong>Code</strong> (.text)</td>
+<td>普通函数，可供其他文件调用。</td>
+</tr>
+<tr>
+<td><code>extern_func</code></td>
+<td>函数声明</td>
+<td><strong>函数</strong></td>
+<td><strong>外部</strong> (<code>External</code>)</td>
+<td>N/A (期望在其他文件定义)</td>
+<td>引用其他编译单元中定义的函数。</td>
+</tr>
+</tbody>
+</table>
+<p>您思考一下上面的表格，如果您发现由任何感到费解的地方，可以自行的搜索表格理解。</p>
+<h2 id="c编译器怎么看我们的文件">C编译器怎么看我们的文件<a class="headerlink" href="#c编译器怎么看我们的文件" title="链接到此章节">&para;</a></h2>
+<p>​   让C语言编译器行动起来，注意您编译的指令必须是</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a>gcc -c demo.c -o demo.o # 欸，注意可不要掉-c，标识只编译
+</span></code></pre></div>
+<p>​   编译器安静的编译了一会，就把我们想要的demo.o给我们了。那编译器在编译整个单元的C文件的时候在做什么呢？</p>
+<p>​   不管您在使用Apple clang，还是GNU gcc还是Microsoft的MSVC，他们都是<strong>编译器</strong>，主要的工作如您所见，就是将 C 文件从人类能够理解的文本（史山代码除外）转换为计算机能够理解的内容。编译器会将输出结果作为目标文件。在 UNIX 平台上，这些目标文件通常带有 .o 后缀；在 Windows 平台上，它们带有 .obj 后缀。</p>
+<p>​   有趣的时，咱们的目标文件，回扣到上面的主题，无非最后内容上生成至少以下两个部分：</p>
+<ul>
+<li>机器代码：机器代码是计算机能看得懂的0和1组成的特定指令。</li>
+<li>全局变量演化出的数据：他们对应于 C 文件中全局变量的定义（对于已初始化的全局变量，变量的初始值也必须存储在目标文件中）。</li>
+</ul>
+<p>​   嗯，那问题来了，您仔细看看<code>extern int extern_var;</code>和<code>extern int extern_func();</code>，熟悉<code>extern</code>关键字的朋友立马评出来不对——嗯？你这<code>extern_var</code>和<code>extern_func</code>压根就没实现啊，编译器没有发现？</p>
+<p>​   我告诉你的是——他知道这个事情，但是<strong>C/C++编译型语言允许你在编译的时候只出现声明而不用出现实现！</strong>，我必须在强调一次这个<strong>好用但是又麻烦</strong>的特性：<strong>C/C++编译型语言允许你在编译的时候只出现声明而不用出现实现！</strong>。那这个事情什么时候裁决到底下不下结论——是您有意的把这些实现放置到了别处，还是就是您自己粗心大意的漏掉了实现呢？答案是下一个环节：链接。我们之后讨论，目光现在还是聚焦到编译这个环节。</p>
+<h2 id="nm好用的指令">nm，好用的指令<a class="headerlink" href="#nm好用的指令" title="链接到此章节">&para;</a></h2>
+<p>​   Windows MSVC用户别折腾，您应该用的不是nm是dumpbin（如果，您装的是MSVC的话，我的另一个意思是您拿的Visual Studio写代码）。但是在这里，笔者就准备拿SystemV输出格式的nm来讨论了。</p>
+<p>​   得到的可执行文件如何验证我们上面讨论的内容呢，很简单，咱们拿出来咱们的nm工具分析一下就得了。来，试一下：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a>[charliechen@Charliechen linkers]$ nm -f sysv demo.o
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>Symbols from demo.o:
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a>Name                  Value           Class        Type         Size             Line  Section
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>extern_func         |                |   U  |            NOTYPE|                |     |*UND*
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a>extern_var          |                |   U  |            NOTYPE|                |     |*UND*
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a>func                |000000000000000b|   T  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a>g_initialized_var   |0000000000000000|   D  |            OBJECT|0000000000000004|     |.data
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a>init_local_var      |0000000000000004|   d  |            OBJECT|0000000000000004|     |.data
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a>local_func          |0000000000000000|   t  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a>main                |0000000000000016|   T  |              FUNC|0000000000000013|     |.text
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a>un_g_initialized_var|0000000000000000|   B  |            OBJECT|0000000000000004|     |.bss
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a>un_init_local_var   |0000000000000004|   b  |            OBJECT|0000000000000004|     |.bss
+</span></code></pre></div>
+<p>​   好，让我们仔细的看看这个表格吧。你需要做的是关注一下Class这一列，他说明了咱们的这个表格是什么。</p>
+<ul>
+<li>U 类表示未定义引用，即前面提到的“空白”之一。此对象有两个类：“fn_a”和“z_global”。</li>
+<li>t 或 T 类表示代码定义的位置；不同的类表示该函数是本地函数 (t) 还是非本地函数 (T)——即该函数最初是否以 static 声明。同样，某些系统也可能显示一个段，例如 .text。</li>
+<li>d 或 D 类表示已初始化的全局变量，同样，特定类表示该变量是本地变量 (d) 还是非本地变量 (D)。如果有段，则类似于 .data。</li>
+<li>对于未初始化的全局变量，如果它是静态/本地变量，则返回 b，如果不是，则返回 B 或 C。在本例中，段可能类似于 .bss 或 <em>COM</em>。</li>
+</ul>
+<p>Windows的朋友，您需要打开<code>x86 Native Tools Command Prompt for VS Insiders</code>，导览到您目标的C文件后，输入<code>cl /c &lt;SourceFile&gt;.c</code>，这样MSVC就会只编译咱们源文件，得到的<code>&lt;SourceFile&gt;.obj</code>就是咱们的可重定位目标文件。这个时候，咱们可以使用dumpbin小工具：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a>dumpbin /symbols &lt;SourceFile&gt;.obj
+</span></code></pre></div>
+<p>查看符号了，笔者这里枚举一下我得到的结果（VS2026下的默认工具链）</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a>D:\Windows_Programming\WindowsProgramming\demos\demos&gt;dumpbin /symbols main.obj
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a>Microsoft (R) COFF/PE Dumper Version 14.50.35615.0
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a>Copyright (C) Microsoft Corporation.  All rights reserved.
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a>Dump of file main.obj
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a>File Type: COFF OBJECT
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a>COFF SYMBOL TABLE
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a>000 01048B1F ABS    notype       Static       | @comp.id
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12"></a><a href="#__codelineno-7-12"><span class="linenos" data-linenos="12 "></span></a>001 80010191 ABS    notype       Static       | @feat.00
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13"></a><a href="#__codelineno-7-13"><span class="linenos" data-linenos="13 "></span></a>002 00000003 ABS    notype       Static       | @vol.md
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14"></a><a href="#__codelineno-7-14"><span class="linenos" data-linenos="14 "></span></a>003 00000000 SECT1  notype       Static       | .drectve
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15"></a><a href="#__codelineno-7-15"><span class="linenos" data-linenos="15 "></span></a> Section length   2F, #relocs    0, #linenums    0, checksum        0
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16"></a><a href="#__codelineno-7-16"><span class="linenos" data-linenos="16 "></span></a>005 00000000 SECT2  notype       Static       | .debug$S
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17"></a><a href="#__codelineno-7-17"><span class="linenos" data-linenos="17 "></span></a> Section length   90, #relocs    0, #linenums    0, checksum        0
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18"></a><a href="#__codelineno-7-18"><span class="linenos" data-linenos="18 "></span></a>007 00000004 UNDEF  notype       External     | _un_g_initialized_var
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19"></a><a href="#__codelineno-7-19"><span class="linenos" data-linenos="19 "></span></a>008 00000000 SECT3  notype       Static       | .data
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20"></a><a href="#__codelineno-7-20"><span class="linenos" data-linenos="20 "></span></a> Section length    4, #relocs    0, #linenums    0, checksum B8BC6765
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21"></a><a href="#__codelineno-7-21"><span class="linenos" data-linenos="21 "></span></a>00A 00000000 SECT3  notype       External     | _g_initialized_var
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22"></a><a href="#__codelineno-7-22"><span class="linenos" data-linenos="22 "></span></a>00B 00000000 SECT4  notype       Static       | .text$mn
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23"></a><a href="#__codelineno-7-23"><span class="linenos" data-linenos="23 "></span></a> Section length   20, #relocs    2, #linenums    0, checksum EBBC6B4A
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24"></a><a href="#__codelineno-7-24"><span class="linenos" data-linenos="24 "></span></a>00D 00000000 SECT4  notype ()    External     | _func
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25"></a><a href="#__codelineno-7-25"><span class="linenos" data-linenos="25 "></span></a>00E 00000000 UNDEF  notype ()    External     | _extern_func
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26"></a><a href="#__codelineno-7-26"><span class="linenos" data-linenos="26 "></span></a>00F 00000010 SECT4  notype ()    External     | _main
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27"></a><a href="#__codelineno-7-27"><span class="linenos" data-linenos="27 "></span></a>010 00000000 UNDEF  notype       External     | _extern_var
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28"></a><a href="#__codelineno-7-28"><span class="linenos" data-linenos="28 "></span></a>011 00000000 SECT5  notype       Static       | .chks64
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29"></a><a href="#__codelineno-7-29"><span class="linenos" data-linenos="29 "></span></a> Section length   28, #relocs    0, #linenums    0, checksum        0
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30"></a><a href="#__codelineno-7-30"><span class="linenos" data-linenos="30 "></span></a>
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31"></a><a href="#__codelineno-7-31"><span class="linenos" data-linenos="31 "></span></a>String Table Size = 0x46 bytes
+</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32"></a><a href="#__codelineno-7-32"><span class="linenos" data-linenos="32 "></span></a>
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33"></a><a href="#__codelineno-7-33"><span class="linenos" data-linenos="33 "></span></a>Summary
+</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34"></a><a href="#__codelineno-7-34"><span class="linenos" data-linenos="34 "></span></a>
+</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35"></a><a href="#__codelineno-7-35"><span class="linenos" data-linenos="35 "></span></a>       28 .chks64
+</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36"></a><a href="#__codelineno-7-36"><span class="linenos" data-linenos="36 "></span></a>        4 .data
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37"></a><a href="#__codelineno-7-37"><span class="linenos" data-linenos="37 "></span></a>       90 .debug$S
+</span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38"></a><a href="#__codelineno-7-38"><span class="linenos" data-linenos="38 "></span></a>       2F .drectve
+</span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39"></a><a href="#__codelineno-7-39"><span class="linenos" data-linenos="39 "></span></a>       20 .text$mn
+</span></code></pre></div>
+<p>我们踢开其他乱七八糟的输出，实际上就是下表：</p>
+<table>
+<thead>
+<tr>
+<th><code>dumpbin</code> 输出</th>
+<th>意义</th>
+<th>类比 Linux <code>nm</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SECT4  notype () External | _func</code></td>
+<td>定义在 .text 中的外部函数</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SECT3  notype External    | _g_initialized_var</code></td>
+<td>定义在 .data 中的外部变量</td>
+<td></td>
+</tr>
+<tr>
+<td><code>UNDEF  notype External    | _extern_func</code></td>
+<td>未定义外部函数引用</td>
+<td></td>
+</tr>
+<tr>
+<td><code>UNDEF  notype External    | _extern_var</code></td>
+<td>未定义外部变量引用</td>
+<td></td>
+</tr>
+<tr>
+<td><code>UNDEF  notype External    | _un_g_initialized_var</code></td>
+<td>未定义外部变量引用</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="解决我们不知道的符号链接">解决我们不知道的符号：链接<a class="headerlink" href="#解决我们不知道的符号链接" title="链接到此章节">&para;</a></h2>
+<p>​   现在我们进一步推进话题。这一步，就是解决我们在《C编译器怎么看我们的文件》这个小节抛下的问题。我们假设，在其他的文件中真的定义了这个外部的这些符号：</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// demo_extern.c</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">extern_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos="3 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">extern_func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos="5 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>​   这些符号我们同样的也会编译成可重定位的目标文件。那么剩下的，就是将这些参杂了各种定义符号和未定义的符号之间，组合起来，<strong>解决每一个文件中符号不确切的（只有名称的），定义不知晓的部分</strong>（咱们的编译器编译通过了这些源代码文件，说明我们是声明了这些符号，但是尚未找到定义）。<strong>这就是链接的时候我们要做的事情。</strong></p>
+<p>​   现在，我们把demo_extern.c编译成demo_extern.o后，利用这个来完成我们可执行文件的最后一步：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a>gcc demo_extern.o demo.o -o demo_exe
+</span></code></pre></div>
+<p>​   编译当然顺利通过。这毫无疑问。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos=" 1 "></span></a>charliechen@Charliechen linkers]$ nm -f sysv demo_exe
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos=" 4 "></span></a>Symbols from demo_exe:
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><a href="#__codelineno-10-6"><span class="linenos" data-linenos=" 6 "></span></a>Name                  Value           Class        Type         Size             Line  Section
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><a href="#__codelineno-10-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><a href="#__codelineno-10-8"><span class="linenos" data-linenos=" 8 "></span></a>__bss_start         |000000000000401c|   B  |            NOTYPE|                |     |.bss
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><a href="#__codelineno-10-9"><span class="linenos" data-linenos=" 9 "></span></a>__cxa_finalize@GLIBC_2.2.5|                |   w  |              FUNC|                |     |*UND*
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a><a href="#__codelineno-10-10"><span class="linenos" data-linenos="10 "></span></a>__data_start        |0000000000004000|   D  |            NOTYPE|                |     |.data
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11"></a><a href="#__codelineno-10-11"><span class="linenos" data-linenos="11 "></span></a>data_start          |0000000000004000|   W  |            NOTYPE|                |     |.data
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12"></a><a href="#__codelineno-10-12"><span class="linenos" data-linenos="12 "></span></a>__dso_handle        |0000000000004008|   D  |            OBJECT|                |     |.data
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13"></a><a href="#__codelineno-10-13"><span class="linenos" data-linenos="13 "></span></a>_DYNAMIC            |0000000000003e20|   d  |            OBJECT|                |     |.dynamic
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14"></a><a href="#__codelineno-10-14"><span class="linenos" data-linenos="14 "></span></a>_edata              |000000000000401c|   D  |            NOTYPE|                |     |.data
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15"></a><a href="#__codelineno-10-15"><span class="linenos" data-linenos="15 "></span></a>_end                |0000000000004028|   B  |            NOTYPE|                |     |.bss
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16"></a><a href="#__codelineno-10-16"><span class="linenos" data-linenos="16 "></span></a>extern_func         |0000000000001119|   T  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17"></a><a href="#__codelineno-10-17"><span class="linenos" data-linenos="17 "></span></a>extern_var          |0000000000004010|   D  |            OBJECT|0000000000000004|     |.data
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18"></a><a href="#__codelineno-10-18"><span class="linenos" data-linenos="18 "></span></a>_fini               |0000000000001150|   T  |              FUNC|                |     |.fini
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19"></a><a href="#__codelineno-10-19"><span class="linenos" data-linenos="19 "></span></a>func                |000000000000112f|   T  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20"></a><a href="#__codelineno-10-20"><span class="linenos" data-linenos="20 "></span></a>g_initialized_var   |0000000000004014|   D  |            OBJECT|0000000000000004|     |.data
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21"></a><a href="#__codelineno-10-21"><span class="linenos" data-linenos="21 "></span></a>_GLOBAL_OFFSET_TABLE_|0000000000003fe8|   d  |            OBJECT|                |     |.got.plt
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22"></a><a href="#__codelineno-10-22"><span class="linenos" data-linenos="22 "></span></a>__gmon_start__      |                |   w  |            NOTYPE|                |     |*UND*
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23"></a><a href="#__codelineno-10-23"><span class="linenos" data-linenos="23 "></span></a>__GNU_EH_FRAME_HDR  |0000000000002004|   r  |            NOTYPE|                |     |.eh_frame_hdr
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24"></a><a href="#__codelineno-10-24"><span class="linenos" data-linenos="24 "></span></a>_init               |0000000000001000|   T  |              FUNC|                |     |.init
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25"></a><a href="#__codelineno-10-25"><span class="linenos" data-linenos="25 "></span></a>init_local_var      |0000000000004018|   d  |            OBJECT|0000000000000004|     |.data
+</span><span id="__span-10-26"><a id="__codelineno-10-26" name="__codelineno-10-26"></a><a href="#__codelineno-10-26"><span class="linenos" data-linenos="26 "></span></a>_IO_stdin_used      |0000000000002000|   R  |            OBJECT|0000000000000004|     |.rodata
+</span><span id="__span-10-27"><a id="__codelineno-10-27" name="__codelineno-10-27"></a><a href="#__codelineno-10-27"><span class="linenos" data-linenos="27 "></span></a>_ITM_deregisterTMCloneTable|                |   w  |            NOTYPE|                |     |*UND*
+</span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28"></a><a href="#__codelineno-10-28"><span class="linenos" data-linenos="28 "></span></a>_ITM_registerTMCloneTable|                |   w  |            NOTYPE|                |     |*UND*
+</span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29"></a><a href="#__codelineno-10-29"><span class="linenos" data-linenos="29 "></span></a>__libc_start_main@GLIBC_2.34|                |   U  |              FUNC|                |     |*UND*
+</span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30"></a><a href="#__codelineno-10-30"><span class="linenos" data-linenos="30 "></span></a>local_func          |0000000000001124|   t  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-10-31"><a id="__codelineno-10-31" name="__codelineno-10-31"></a><a href="#__codelineno-10-31"><span class="linenos" data-linenos="31 "></span></a>main                |000000000000113a|   T  |              FUNC|0000000000000013|     |.text
+</span><span id="__span-10-32"><a id="__codelineno-10-32" name="__codelineno-10-32"></a><a href="#__codelineno-10-32"><span class="linenos" data-linenos="32 "></span></a>_start              |0000000000001020|   T  |              FUNC|0000000000000026|     |.text
+</span><span id="__span-10-33"><a id="__codelineno-10-33" name="__codelineno-10-33"></a><a href="#__codelineno-10-33"><span class="linenos" data-linenos="33 "></span></a>__TMC_END__         |0000000000004020|   D  |            OBJECT|                |     |.data
+</span><span id="__span-10-34"><a id="__codelineno-10-34" name="__codelineno-10-34"></a><a href="#__codelineno-10-34"><span class="linenos" data-linenos="34 "></span></a>un_g_initialized_var|0000000000004020|   B  |            OBJECT|0000000000000004|     |.bss
+</span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35"></a><a href="#__codelineno-10-35"><span class="linenos" data-linenos="35 "></span></a>un_init_local_var   |0000000000004024|   b  |            OBJECT|0000000000000004|     |.bss
+</span><span id="__span-10-36"><a id="__codelineno-10-36" name="__codelineno-10-36"></a><a href="#__codelineno-10-36"><span class="linenos" data-linenos="36 "></span></a>[charliechen@Charliechen linkers]$ 
+</span></code></pre></div>
+<p>​   现在我们看看，表变得非常的复杂，但是没关系，里面我们重点关心的是：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a>extern_func         |0000000000001119|   T  |              FUNC|000000000000000b|     |.text
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a><a href="#__codelineno-11-2"><span class="linenos" data-linenos="2 "></span></a>extern_var          |0000000000004010|   D  |            OBJECT|0000000000000004|     |.data
+</span></code></pre></div>
+<p>​   我们现在终于找到了我们关心的内容了，他们现在不再是不确定的UNDEF了，而是确定定义的函数和全局变量。咱们完全可以试一试去掉extern_func的实现。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen linkers]$ gcc demo_extern.o demo.o -o demo_exe
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos="2 "></span></a>/usr/sbin/ld: demo.o: in function `main&#39;:
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos="3 "></span></a>demo.c:(.text+0x1b): undefined reference to `extern_func&#39;
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><a href="#__codelineno-12-4"><span class="linenos" data-linenos="4 "></span></a>collect2: error: ld returned 1 exit status
+</span></code></pre></div>
+<p>​   我们熟悉的错误出现了！<code>undefined reference</code>，说明连接器向我们抱怨了他找不到<code>extern_func</code>的定义。我们仔细看看：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen linkers]$ nm -f sysv demo_extern.o
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos="2 "></span></a>Symbols from demo_extern.o:
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3"></a><a href="#__codelineno-13-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4"></a><a href="#__codelineno-13-4"><span class="linenos" data-linenos="4 "></span></a>Name                  Value           Class        Type         Size             Line  Section
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5"></a><a href="#__codelineno-13-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6"></a><a href="#__codelineno-13-6"><span class="linenos" data-linenos="6 "></span></a>extern_var          |0000000000000000|   D  |            OBJECT|0000000000000004|     |.data
+</span></code></pre></div>
+<p>​   您可以看到，demo_extern解决的是extern_var的定义，但是<code>extern_func</code>的定义没找到，咱们又只给了这两个文件，自然连接器不知道上哪找到你的<code>extern_func</code>，自然也就会爆这个错误。</p>
+<p>​   我们现在知晓了链接器的重要功能——解决最小可执行文件（为什么是最小的呢？我们之后继续讨论）的符号未定义问题。任何那些<strong>你没提供对应信息告知定义的具体内容（那些用了的函数的源代码漏写）</strong>的链接都会失败！最后当链接器搜寻一圈后，只要存在未定义符号（也就是nm或者dumpbin中Class是U的符号），链接器就会拉起报错：告诉你所有那些没有定义的符号。<strong>这个时候你的解决方案非常简单——找到这些符号的可重定位文件（一般构建系统的源代码文件名和可重定位文件名相同，只有后缀不同），然后链接的时候提供！</strong>这是所有无动态库的编译场景下解决<code>undefined reference</code>的<strong>唯一办法</strong>。</p>
+<p>​   现在我们看了nm的输出，就可以回答整个问题了：</p>
+<ul>
+<li>问1：编译器工具链是如何搜集到和查找到符号的？如何进一步的转化成更加好处理的形式</li>
+<li>答：答案是编译器编译符号到计算机可以看懂的指令，将<strong>函数符号映射成一个地址</strong>。对于全局变量，则是将一个全局变量映射到data段中具体的访问位置。</li>
+<li>问2：<strong>我们写的变量和函数到底对计算机而言意味着什么？</strong></li>
+<li>答：只是将我们的地址跟我们具体含义的变量关联起来，您起什么名字都无所谓。经过编译器和链接器的处理，到计算机那里只剩下一串地址了——你问我那是什么，我不到啊！问nm去！</li>
+</ul>
+<h2 id="额外的话题咱们要是重复定义了呢">额外的话题：咱们要是重复定义了呢？<a class="headerlink" href="#额外的话题咱们要是重复定义了呢" title="链接到此章节">&para;</a></h2>
+<p>​   上一节提到，如果链接器找不到符号的定义来将其与对该符号的引用连接起来，就会给出错误消息。那么，如果在链接时某个符号有两个定义，会发生什么情况呢？</p>
+<p>​   我不急着说答案，您先动手试试看。比如说，恢复demo_extern中对<code>extern_func</code>的定义，同时，立马这样修改咱们的<code>demo.c</code></p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1"></a><a href="#__codelineno-14-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">un_g_initialized_var</span><span class="p">;</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2"></a><a href="#__codelineno-14-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">g_initialized_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3"></a><a href="#__codelineno-14-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4"></a><a href="#__codelineno-14-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">extern</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">extern_var</span><span class="p">;</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5"></a><a href="#__codelineno-14-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6"></a><a href="#__codelineno-14-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">un_init_local_var</span><span class="p">;</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7"></a><a href="#__codelineno-14-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">init_local_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8"></a><a href="#__codelineno-14-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9"></a><a href="#__codelineno-14-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">local_func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10"></a><a href="#__codelineno-14-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11"></a><a href="#__codelineno-14-11"><span class="linenos" data-linenos="11 "></span></a><span class="p">}</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12"></a><a href="#__codelineno-14-12"><span class="linenos" data-linenos="12 "></span></a>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13"></a><a href="#__codelineno-14-13"><span class="linenos" data-linenos="13 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">extern_func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// 拷贝一份定义到这里，return您随意，因为就不影响我们的结论</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14"></a><a href="#__codelineno-14-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15"></a><a href="#__codelineno-14-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16"></a><a href="#__codelineno-14-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17"></a><a href="#__codelineno-14-17"><span class="linenos" data-linenos="17 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">func</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18"></a><a href="#__codelineno-14-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19"></a><a href="#__codelineno-14-19"><span class="linenos" data-linenos="19 "></span></a><span class="p">}</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20"></a><a href="#__codelineno-14-20"><span class="linenos" data-linenos="20 "></span></a>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21"></a><a href="#__codelineno-14-21"><span class="linenos" data-linenos="21 "></span></a><span class="c1">// extern int extern_func(); &lt;- 注释掉外部查找的强调关键字extern</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22"></a><a href="#__codelineno-14-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23"></a><a href="#__codelineno-14-23"><span class="linenos" data-linenos="23 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24"></a><a href="#__codelineno-14-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">extern_var</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">extern_func</span><span class="p">();</span>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25"></a><a href="#__codelineno-14-25"><span class="linenos" data-linenos="25 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>​   我们重复上面的单独编译和链接动作。很快，我们得到了另一种您可能常见的错误：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1"></a><a href="#__codelineno-15-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen linkers]$ gcc -c demo_extern.c -o demo_extern.o
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2"></a><a href="#__codelineno-15-2"><span class="linenos" data-linenos="2 "></span></a>[charliechen@Charliechen linkers]$ gcc -c demo.c -o demo.o
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3"></a><a href="#__codelineno-15-3"><span class="linenos" data-linenos="3 "></span></a>[charliechen@Charliechen linkers]$ gcc demo_extern.o demo.o -o demo_exe
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4"></a><a href="#__codelineno-15-4"><span class="linenos" data-linenos="4 "></span></a>/usr/sbin/ld: demo.o: in function `extern_func&#39;:
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5"></a><a href="#__codelineno-15-5"><span class="linenos" data-linenos="5 "></span></a>demo.c:(.text+0xb): multiple definition of `extern_func&#39;; demo_extern.o:demo_extern.c:(.text+0x0): first defined here
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6"></a><a href="#__codelineno-15-6"><span class="linenos" data-linenos="6 "></span></a>collect2: error: ld returned 1 exit status
+</span></code></pre></div>
+<p>​   您注意到了，还是一样，因为编译器相信<strong>链接器可以正确的处理任何符号的关系</strong>（他只能一分一分的编译文件！他管不了全局其他的源文件！<strong>整个结果单元（包含可执行文件，动态库和静态库）的符号裁决由链接器决定！</strong>这是笔者要再强调一次的！）</p>
+<p>​   所以，链接的时候，链接器发现两个文件中居然存在一模一样的符号定义。自然，定义是不一样，就像您即说A是1，又说A是2，唯一性被打破，贸然决定只会让程序变得不可控。所以，链接器自然一巴掌闪回来，不予通过！至少在今天的GNU工具链的默认行为下，您这样做智慧得到一个<code>multiple definition</code>。</p>
+<h2 id="那链接器的作用就这样">那链接器的作用就这样？<a class="headerlink" href="#那链接器的作用就这样" title="链接到此章节">&para;</a></h2>
+<p>​   我都这样问了，怎么可能就这样是不是？不知道您看到我反复强调这句话的时候，您有没有感受：</p>
+<ul>
+<li>为什么是：<strong>C/C++编译型语言允许你在编译的时候只出现声明而不用出现实现！</strong>为什么不要求立马知道呢？好麻烦啊。</li>
+</ul>
+<p>​   您冷静想一下，举个例子。我让您去邮局送一个邮件，您显然不会打断我：“闭嘴伙计，您先把邮局扛过来我看到邮件了我在帮你送”，比起来，您更加会在脑子里绘制出假象的邮局，“嗯很，我需要去一个叫邮局的地方帮忙送一个邮件”。您自然回去其他地方寻找邮件。这就是一样的道理。我们空余出来悬而未决的符号，我们自己管理和承诺他们都会出现在对应的地方——<strong>这是您的责任而不是编译器的责任</strong>。那好，我们现在就可以继续我们的疑问：</p>
+<ul>
+<li>那么，除了提供源代码以外，我们是不是还能提供其他样式的信息呢？</li>
+</ul>
+<p>​   欸！您的观察非常出色。如果您仔细看了看我的这段操作。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a><a href="#__codelineno-16-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen linkers]$ gcc -c demo_extern.c -o demo_extern.o
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a><a href="#__codelineno-16-2"><span class="linenos" data-linenos="2 "></span></a>[charliechen@Charliechen linkers]$ gcc -c demo.c -o demo.o
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3"></a><a href="#__codelineno-16-3"><span class="linenos" data-linenos="3 "></span></a>[charliechen@Charliechen linkers]$ gcc demo_extern.o demo.o -o demo_exe
+</span></code></pre></div>
+<p>​   您有没有发现，我们链接的那个步骤，好像跟源文件就没关系？毕竟咱们检索未定义符号是从可重定位文件（<em>.o）找的，那么，我们可不可以早就准备好一系列的可重定位文件和一组符号的声明文件，然后我们编程的时候就不用重复造轮子了，直接在</em><em>编程的时候利用这些声明文件告知编译器我担保这些符号存在</em><em>，编译的时候</em><em>通过编译生成咱们自己的可重定位文件</em><em>，然后</em><em>链接的时候把这些早就准备好的可重定位文件和我们自己的重定位文件组合起来构成一个可执行文件</em>*呢？</p>
+<p>​   恭喜你！你重新发明了库和接口编程的概念！您现在知晓了头文件是做什么的了吧！他就是一组符号的声明文件！那这些成千上万的可重定位文件，也别零散着，咱们<strong>集合起来做一个库</strong>，怎么样？当然可以！您这就是发明了历史上<strong>大名鼎鼎的静态库</strong>了。有些激动，但是我需要重新整理一下我们提出的概念：</p>
+<ul>
+<li>头文件：也就是符号声明文件，<strong>放置了我们担保符号存在的符号声明</strong></li>
+<li>静态库：这些符号（全部或者是部分，剩下没有裁决的符号可能依赖其他的库，有趣吧！）具体的定义</li>
+</ul>
+<p>​   所以我的意思是——链接器还能链接库。我可没说静态库哈，还有动态库呢。咱们先说静态库。</p>
+<h2 id="静态库我们的符号图书馆">静态库：我们的符号图书馆<a class="headerlink" href="#静态库我们的符号图书馆" title="链接到此章节">&para;</a></h2>
+<p>​   我们可以使用AR（Linux或者是Unix系统上）或者是Lib工具集合所有的可重定位文件生成静态库。</p>
+<blockquote>
+<p>快速的说说细节：</p>
+<ul>
+<li>在 <strong>UNIX</strong> 系统上，用于生成静态库的命令通常是 <strong><code>ar</code></strong>，生成出的库文件通常带有 <strong><code>.a</code></strong> 扩展名。这些库文件通常还以 <strong>"lib"</strong> 作为前缀，并在传递给链接器时使用 <strong><code>"-l"</code></strong> 选项，后接库的名称（不带前缀和扩展名）。例如，<strong><code>"-lfred"</code></strong> 就会选择 <strong><code>libfred.a</code></strong> 文件。（历史上，静态库还需要一个名为 <strong><code>ranlib</code></strong> 的程序来在库的开头构建一个符号索引。如今，<strong><code>ar</code></strong> 工具通常会自行完成这项工作。）</li>
+<li>在 <strong>Windows</strong> 系统上，静态库具有 <strong><code>.LIB</code></strong> 扩展名，并由 <strong><code>LIB</code></strong> 工具生成。但这可能会引起混淆，因为<strong>“导入库”（import library）</strong>也使用相同的扩展名，导入库仅包含一个 DLL 中可用内容的列表</li>
+</ul>
+</blockquote>
+<p>​   对于链接阶段，当我们提供给链接器一个静态库，整个时候，我们的链接器会持有一个尚未裁决的符号表格，沉浸到静态库中，把这些符号一个一个找出来（举个例子，A符号丢失，他在Obj1.o中，这个时候我们就会把Obj1.o全部链接进来），直到我们解决了所有的符号未定义的问题。</p>
+<p>​   请注意从库中提取内容的<strong>粒度</strong>：如果需要某个特定符号的定义，则包含该符号定义的<strong>整个目标文件</strong>都会被包含进来。这意味着这个过程可能是“前进一步，后退一步”——新加入的目标文件可能会解析一个未定义引用，但它很可能也会带来一整套自己的新未定义引用，留待链接器去解析。</p>
+<p>​   <a href="https://www.lurklurk.org/linkers/linkers.html"><code>Beginner's Guide to Linkers</code></a>存在一个非常出色的例子，笔者放在下面，您阅读一下：</p>
+<p>假设我们有以下目标文件，并且链接行包含了 <strong><code>a.o</code></strong>、<strong><code>b.o</code></strong>、<strong><code>-lx</code></strong> 和 <strong><code>-ly</code></strong>。</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th><strong>a.o</strong></th>
+<th><strong>b.o</strong></th>
+<th><strong>libx.a</strong></th>
+<th><strong>liby.a</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>对象</strong></td>
+<td>a.o</td>
+<td>b.o</td>
+<td>x1.o, x2.o, x3.o</td>
+<td>y1.o, y2.o, y3.o</td>
+</tr>
+<tr>
+<td><strong>定义</strong></td>
+<td>a1, a2, a3</td>
+<td>b1, b2</td>
+<td>x11, x12, x13; x21, x22, x23; x31, x32</td>
+<td>y11, y12; y21, y22; y31, y32</td>
+</tr>
+<tr>
+<td><strong>未定义引用</strong></td>
+<td>b2, x12</td>
+<td>a3, y22</td>
+<td>x23, y12; y11; y21</td>
+<td>x31</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li><strong>处理 <code>a.o</code> 和 <code>b.o</code>：</strong></li>
+<li>链接器将解析对 <code>b2</code> 和 <code>a3</code> 的引用。</li>
+<li>此时，未定义的引用剩下 <strong><code>x12</code></strong> 和 <strong><code>y22</code></strong>。</li>
+<li><strong>处理 <code>libx.a</code>：</strong></li>
+<li>链接器检查第一个库 <code>libx.a</code>，发现可以拉入 <strong><code>x1.o</code></strong> 来满足 <code>x12</code> 引用。</li>
+<li>然而，拉入 <code>x1.o</code> 也带来了新的未定义引用 <code>x23</code> 和 <code>y12</code>。（未定义列表现在是：<code>y22</code>、<code>x23</code> 和 <code>y12</code>）。</li>
+<li>链接器仍在处理 <code>libx.a</code>，因此 <code>x23</code> 引用很容易通过拉入 <strong><code>x2.o</code></strong> 来满足。</li>
+<li>但这也给未定义列表增加了 <code>y11</code>。（未定义列表现在是：<code>y22</code>、<code>y12</code> 和 <code>y11</code>）。</li>
+<li><code>libx.a</code> 中没有其他目标文件可以解析这些剩余的符号，链接器继续处理 <code>liby.a</code>。</li>
+<li><strong>处理 <code>liby.a</code>：</strong></li>
+<li>类似的流程，链接器将拉入 <strong><code>y1.o</code></strong> 和 <strong><code>y2.o</code></strong>。</li>
+<li>拉入 <code>y1.o</code> 增加了一个对 <code>y21</code> 的引用，但由于 <code>y2.o</code> 无论如何都要被拉入，这个引用很容易得到解析。</li>
+<li>最终结果是：所有未定义的引用都已解析，库中的部分目标文件（而非全部）被包含到最终的可执行文件中。</li>
+</ol>
+<h4 id="链接顺序的重要性">链接顺序的重要性<a class="headerlink" href="#链接顺序的重要性" title="链接到此章节">&para;</a></h4>
+<p>请注意，如果（例如）<code>b.o</code> 还有一个对 <code>y32</code> 的引用，情况就会有所不同。</p>
+<ul>
+<li><code>libx.a</code> 的链接工作方式将保持不变。</li>
+<li>在处理 <code>liby.a</code> 时，链接器也会拉入 <strong><code>y3.o</code></strong> 来解析 <code>y32</code>。</li>
+<li>拉入 <code>y3.o</code> 会为未解析符号列表添加 <strong><code>x31</code></strong>。</li>
+<li>此时链接器已经<strong>完成</strong>了对 <code>libx.a</code> 的处理，因此无法找到该符号（在 <code>x3.o</code> 中）的定义，从而导致<strong>链接失败</strong>。这个例子清晰地说明了链接顺序（<code>libx.a</code> 在 <code>liby.a</code> 之前）的重要性。也就是说，链接器不会走回头路，您链接的时候，就必须清晰的划分编程符号所在的依赖必须是层层递进的依赖而不是循环依赖，不要给自己找麻烦！</li>
+</ul>
+<h2 id="动态库共享库">动态库/共享库<a class="headerlink" href="#动态库共享库" title="链接到此章节">&para;</a></h2>
+<p>​   当然，您还是现在简单的理解成动态库，最严肃的说，两者稍微存在一点区别，但是导论中，一下子讲这么严格只会把人吓跑。</p>
+<p>​   动态库的存在更多是为了解决静态库的一个明显的缺点——每个可执行程序都拥有相同代码的副本。如果每个可执行文件都包含 printf 和 fopen 等函数的副本，这会占用大量不必要的磁盘空间。</p>
+<blockquote>
+<p>您可以做一个有趣的实验，静态链接C库，看看有多大，具体的指令请您自行查找，笔者的结果是几百个MB。</p>
+</blockquote>
+<p>​   当然，您说——我有钱，SSD随便加，这个不是最严重的问题，最严重的是——如果提供方的代码出现了bug，您完蛋了——所有的代码全部被写死进了可执行文件，您完全无法使用这个可执行文件——直到别人等了几个月编译好了才能给你！</p>
+<p>​   为了解决这些麻烦的问题，共享库/动态库出现了（通常以 .so 扩展名表示，在 Windows 计算机上为 .dll，在 Mac OS X 上为 .dylib）。这个时候，链接器会采取一种“欠条”的方式，并将欠条的支付推迟到程序实际运行的时刻。归根结底，就是：如果链接器发现某个符号的定义存在于共享库中，它就不会在最终的可执行文件中包含该符号的定义。相反，链接器会在可执行文件中记录符号的名称以及它应该来自哪个库。</p>
+<p>​   程序运行时，操作系统会安排这些剩余的链接工作“及时”完成，以便程序运行。在主函数运行之前，一个较小版本的链接器（通常称为 ld.so）会检查这些“借据”，并立即完成链接的最后阶段——拉入库代码并将所有代码连接起来。这意味着所有可执行文件都没有 printf 代码的副本。如果有新的、已修复的 printf 版本可用，只需更改 libc.so 即可将其插入——下次任何程序运行时，它都会被选中。</p>
+<p>​   共享库的工作方式与静态库相比还有另一个重大区别，这体现在链接的粒度上。如果从特定共享库中提取特定符号（例如 libc.so 中的 printf），则整个共享库都会映射到程序的地址空间中。这与静态库的行为截然不同，静态库中只有包含未定义符号的特定对象才会被提取。</p>
+<p>​   共享库咱们先只聊这么多，笔者手头有一个小300页的《高级C/C++编译技术》是专门讨论动态库/共享库技术的。足以说明这个议题是多么的复杂。我们放到后面的博客中仔细的聊。导论的话，就这样打住。</p>
+<h2 id="其他的议题c呢">其他的议题：C++呢？<a class="headerlink" href="#其他的议题c呢" title="链接到此章节">&para;</a></h2>
+<h4 id="c-的名称修饰-name-mangling">C++ 的名称修饰 (Name Mangling)<a class="headerlink" href="#c-的名称修饰-name-mangling" title="链接到此章节">&para;</a></h4>
+<p>回到这个usage.cpp中：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1"></a><a href="#__codelineno-17-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// in usage usage.cpp</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2"></a><a href="#__codelineno-17-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3"></a><a href="#__codelineno-17-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4"></a><a href="#__codelineno-17-4"><span class="linenos" data-linenos="4 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">int_max</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w"> </span><span class="c1">// declarations requires for usage</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5"></a><a href="#__codelineno-17-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6"></a><a href="#__codelineno-17-6"><span class="linenos" data-linenos="6 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7"></a><a href="#__codelineno-17-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8"></a><a href="#__codelineno-17-8"><span class="linenos" data-linenos="8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;max in (&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">int_max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9"></a><a href="#__codelineno-17-9"><span class="linenos" data-linenos="9 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>当您在 <strong><code>usage.cpp</code></strong> 这个 C++ 文件中使用 <code>int_max(int a, int b)</code> 函数时，C++ 编译器（<code>g++</code>）不会像 C 编译器那样简单地将函数名映射为 <code>int_max</code>。为了支持<strong>函数重载</strong>、<strong>命名空间</strong>、<strong>类成员函数</strong>等 C 语言没有的特性，C++ 编译器会对源代码中的函数名进行复杂的编码，这一过程称为<strong>名称修饰（Name Mangling）</strong>。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1"></a><a href="#__codelineno-18-1"><span class="linenos" data-linenos="1 "></span></a>int int_max(int a, int b);
+</span></code></pre></div>
+<p><code>g++</code> 编译器在生成 <strong><code>usage.o</code></strong> 目标文件时，会期望链接器能找到一个被修饰过的符号，例如在 GCC/Linux 环境下，它可能会查找类似 <strong><code>_Z7int_maxii</code></strong> 这样的符号（具体修饰结果因编译器和平台而异，但<strong>肯定不是</strong>简单的 <code>int_max</code>）。</p>
+<h4 id="c-语言库的符号名称-symbol-name">C 语言库的符号名称 (Symbol Name)<a class="headerlink" href="#c-语言库的符号名称-symbol-name" title="链接到此章节">&para;</a></h4>
+<p>可问题在于，静态库 <strong><code>libutils.a</code></strong> 是由 <strong>C 编译器</strong>（通常是 <code>gcc</code> 或 <code>cc</code>）编译 <strong><code>lib.c</code></strong> 文件生成的。C 编译器<strong>不进行名称修饰</strong>。因此，在 <strong><code>libutils.a</code></strong> 中，<code>int_max</code> 函数的符号名称就是简单的 <strong><code>int_max</code></strong>（或者加上一个下划线前缀，如 <code>_int_max</code>）。</p>
+<p>​   您马上就知道了下面的问题了</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1"></a><a href="#__codelineno-19-1"><span class="linenos" data-linenos="1 "></span></a>g++ usage.cpp -L. -lutils -o usage
+</span></code></pre></div>
+<ol>
+<li><strong><code>g++</code></strong> 编译 <code>usage.cpp</code>，生成 <code>usage.o</code>，其中包含一个对<strong>修饰后名称</strong>（例如 <code>_Z7int_maxii</code>）的<strong>未定义引用</strong>。</li>
+<li>链接器 (<code>ld</code>) 开始工作，它在 <code>usage.o</code> 中查找 <code>int_max</code>，但只找到了对 <code>_Z7int_maxii</code> 的需求。</li>
+<li>链接器在 <strong><code>libutils.a</code></strong> 中查找 <code>_Z7int_maxii</code>，但库中存在的符号是 <strong><code>int_max</code></strong>。</li>
+<li>链接器找不到匹配的符号，因此报出错误：<code>undefined reference to 'int_max(int, int)'</code>（注意：错误信息显示的是 C++ 风格的函数签名，但链接器实际查找的是其修饰后的版本）。</li>
+</ol>
+<h4 id="解决方案使用-extern-c">解决方案：使用 <code>extern "C"</code><a class="headerlink" href="#解决方案使用-extern-c" title="链接到此章节">&para;</a></h4>
+<p>要解决这个问题，您需要告诉 C++ 编译器：<strong>“嘿，这个函数是用 C 编译器编译的，不要对它的名称进行修饰！”</strong>您只需要在 C++ 文件的<strong>函数声明</strong>周围使用 <strong><code>extern "C"</code></strong> 链接指示符即可：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><a href="#__codelineno-20-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// in usage usage.cpp</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2"></a><a href="#__codelineno-20-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3"></a><a href="#__codelineno-20-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4"></a><a href="#__codelineno-20-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5"></a><a href="#__codelineno-20-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1">// 使用 extern &quot;C&quot; 告诉 C++ 编译器，这个函数的符号名要按照 C 语言的方式处理</span>
+</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6"></a><a href="#__codelineno-20-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="c1">// 即不进行名称修饰，直接查找 &#39;int_max&#39;</span>
+</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7"></a><a href="#__codelineno-20-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">int_max</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8"></a><a href="#__codelineno-20-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9"></a><a href="#__codelineno-20-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10"></a><a href="#__codelineno-20-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11"></a><a href="#__codelineno-20-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;max in (&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">int_max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12"></a><a href="#__codelineno-20-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 补充返回语句</span>
+</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13"></a><a href="#__codelineno-20-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+<p>重新编译并链接，程序就会成功运行，因为此时 <code>usage.o</code> 中引用的符号将是简单的 <code>int_max</code>，与 <code>libutils.a</code> 中提供的符号相匹配。</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月21日 16:16:27 CST">2025年12月21日 16:16:27</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月21日 16:16:27 CST">2025年12月21日 16:16:27</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/Chapter0/3%E5%BF%AB%E9%80%9F%E8%BF%87%E4%B8%80%E4%B8%8BC%2B%2B98%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%89%B9%E6%80%A7/" class="md-footer__link md-footer__link--prev" aria-label="上一页: C++98基础特性：从C到C++的演进">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                C++98基础特性：从C到C++的演进
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-footer__link md-footer__link--next" aria-label="下一页: 深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Charliechen - 保留所有权利
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Awesome-Embedded-Learning-Studio" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:725610365@qq.com" target="_blank" rel="noopener" title="发送邮件" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M536.4-26.3c9.8-3.5 20.6-1 28 6.3s9.8 18.2 6.3 28l-178 496.9c-5 13.9-18.1 23.1-32.8 23.1-14.2 0-27-8.6-32.3-21.7l-64.2-158c-4.5-11-2.5-23.6 5.2-32.6l94.5-112.4c5.1-6.1 4.7-15-.9-20.6s-14.6-6-20.6-.9l-112.4 94.3c-9.1 7.6-21.6 9.6-32.6 5.2L38.1 216.8c-13.1-5.3-21.7-18.1-21.7-32.3 0-14.7 9.2-27.8 23.1-32.8z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

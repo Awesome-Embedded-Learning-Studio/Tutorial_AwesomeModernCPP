@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%BF%AB%E9%80%9F%E5%9C%A8WSL%E4%B8%8A%E5%BC%80%E5%8F%91%E4%B8%80%E8%88%AC%E7%9A%84C%2B%2B%E4%B8%8A%E4%BD%8D%E6%9C%BA%E7%A8%8B%E5%BA%8F/">
+        <link rel="prev" href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/">
       
       
-        <link rel="next" href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/">
+        <link rel="next" href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>一文读懂 MSVC C++ Modules：原理、动机与工程实践 - Tutorial_AwesomeModernCPP的文档</title>
+        <title>深入理解C/C++编译技术——动态库A3：聊一聊符号可见性 - Tutorial_AwesomeModernCPP的文档</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#一文读懂-msvc-c-modules原理动机与工程实践" class="md-skip">
+        <a href="#深入理解cc编译技术动态库a3聊一聊符号可见性" class="md-skip">
           跳转至
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              一文读懂 MSVC C++ Modules：原理、动机与工程实践
+              深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
             
           </span>
         </div>
@@ -619,8 +619,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -653,13 +655,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
@@ -680,7 +680,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -698,7 +698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
         
   
   
@@ -726,7 +726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-nav__link">
         
   
   
@@ -754,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF2%EF%BC%9A%E9%87%8D%E7%94%A8%E6%A6%82%E5%BF%B5%E7%9A%84%E5%86%8D%E9%98%90%E8%BF%B0/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF2%EF%BC%9A%E9%87%8D%E7%94%A8%E6%A6%82%E5%BF%B5%E7%9A%84%E5%86%8D%E9%98%90%E8%BF%B0/" class="md-nav__link">
         
   
   
@@ -782,7 +782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF3%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E5%92%8C%E4%BD%BF%E7%94%A8%E9%9D%99%E6%80%81%E5%BA%93/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF3%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E5%92%8C%E4%BD%BF%E7%94%A8%E9%9D%99%E6%80%81%E5%BA%93/" class="md-nav__link">
         
   
   
@@ -810,7 +810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF4%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%931/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF4%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%931/" class="md-nav__link">
         
   
   
@@ -838,7 +838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-nav__link">
         
   
   
@@ -863,10 +863,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF6%EF%BC%9A%E8%81%8A%E4%B8%80%E8%81%8A%E7%AC%A6%E5%8F%B7%E5%8F%AF%E8%A7%81%E6%80%A7/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -882,6 +909,143 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tips如何查看abi符号" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tips:如何查看ABI符号
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tips:如何查看ABI符号">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gnulinux平台" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GNU/Linux平台
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows平台" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows平台
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#主流工具链是如何控制符号的可见性的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        主流工具链是如何控制符号的可见性的？
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="主流工具链是如何控制符号的可见性的？">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gnu-linux下如何控制符号的可见性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GNU Linux下如何控制符号的可见性
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GNU Linux下如何控制符号的可见性">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#方式1直接对编译器传递-fvisibility控制所有符号的导出" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式1：直接对编译器传递-fvisibility控制所有符号的导出
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式2最常用的方式利用__attribute__visibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式2：最常用的方式：利用__attribute__((visibility(&lt; "default" | "hidden" &gt;)))
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#方式3对于一组聚合符号的修饰pragma-visibility-pushpop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式3：对于一组聚合符号的修饰#pragma visibility push/pop
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-msvc是如何操作的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows MSVC是如何操作的
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -894,7 +1058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-nav__link">
         
   
   
@@ -922,7 +1086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF8%EF%BC%9A%E5%BA%93%E6%96%87%E4%BB%B6%E6%A3%80%E7%B4%A2%E9%80%BB%E8%BE%91/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF8%EF%BC%9A%E5%BA%93%E6%96%87%E4%BB%B6%E6%A3%80%E7%B4%A2%E9%80%BB%E8%BE%91/" class="md-nav__link">
         
   
   
@@ -950,7 +1114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF9%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E7%BB%86%E8%8A%82/" class="md-nav__link">
+      <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF9%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E7%BB%86%E8%8A%82/" class="md-nav__link">
         
   
   
@@ -1105,10 +1269,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1127,11 +1289,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
           <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
@@ -1152,7 +1316,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1167,37 +1331,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    一文读懂 MSVC C++ Modules：原理、动机与工程实践
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
         
   
   
@@ -1213,231 +1350,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#我们为什么需要-modules从-include-的本质缺陷说起" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        我们为什么需要 Modules？——从 #include 的本质缺陷说起
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="我们为什么需要 Modules？——从 #include 的本质缺陷说起">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#问题一编译速度灾难指数级放大" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        问题一：编译速度灾难（指数级放大）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#问题二宏污染是不可控的" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        问题二：宏污染是不可控的
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#问题三接口与实现强耦合传染式依赖" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        问题三：接口与实现强耦合（传染式依赖）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#问题四odrabi隐式规则过多" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        问题四：ODR、ABI、隐式规则过多
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#c-modules-的核心思想让编译器真正理解模块" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        C++ Modules 的核心思想：让编译器真正“理解模块”
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="C++ Modules 的核心思想：让编译器真正“理解模块”">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#import关键字--include" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        import关键字 ≠ #include
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#模块的最小单位bmisbinary-module-interface" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        模块的最小单位：BMIs（Binary Module Interface）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#流程差异" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        流程差异
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#import-std-到底发生了什么" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        import std; 到底发生了什么？
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#今日要在什么时候使用-msvc-modules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        今日要在什么时候使用 MSVC Modules？
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="今日要在什么时候使用 MSVC Modules？">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#强烈推荐的使用场景" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        强烈推荐的使用场景
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1-使用-import-std-替代标准库头文件" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 使用 import std; 替代标准库头文件
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-新项目内部的模块化业务模块隔离" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 新项目内部的模块化（业务模块隔离）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#谨慎的使用场景" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        谨慎的使用场景
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#1-大型跨平台库的公共接口" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 大型跨平台库的公共接口
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-需要-gcc--clang-完全一致行为的项目" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 需要 GCC / Clang 完全一致行为的项目
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1450,7 +1362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
         
   
   
@@ -1537,7 +1449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E5%BC%95%E7%94%A8%E4%B9%8B%E2%80%94%E2%80%94%E5%88%A9%E7%94%A8%E5%8D%8F%E7%A8%8B%E5%81%9A%E4%B8%80%E4%B8%AA%E8%BF%B7%E4%BD%A0%E7%9A%84Echo%20Server/" class="md-nav__link">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E5%BC%95%E7%94%A8%E4%B9%8B%E2%80%94%E2%80%94%E5%88%A9%E7%94%A8%E5%8D%8F%E7%A8%8B%E5%81%9A%E4%B8%80%E4%B8%AA%E8%BF%B7%E4%BD%A0%E7%9A%84Echo%20Server/" class="md-nav__link">
         
   
   
@@ -1565,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%811/" class="md-nav__link">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%811/" class="md-nav__link">
         
   
   
@@ -1593,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%812%EF%BC%9A%E7%BC%96%E5%86%99%E7%AE%80%E5%8D%95%E7%9A%84%E8%B0%83%E5%BA%A6%E5%99%A8/" class="md-nav__link">
+      <a href="../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%812%EF%BC%9A%E7%BC%96%E5%86%99%E7%AE%80%E5%8D%95%E7%9A%84%E8%B0%83%E5%BA%A6%E5%99%A8/" class="md-nav__link">
         
   
   
@@ -1765,10 +1677,10 @@
     
     
       <li class="md-path__item">
-        <a href="./" class="md-path__link">
+        <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-path__link">
           
   <span class="md-ellipsis">
-    现代C++特性
+    深入理解CC++编译特性指南
   </span>
 
         </a>
@@ -1787,111 +1699,93 @@
 
 
 
-<h1 id="一文读懂-msvc-c-modules原理动机与工程实践">一文读懂 MSVC C++ Modules：原理、动机与工程实践<a class="headerlink" href="#一文读懂-msvc-c-modules原理动机与工程实践" title="链接到此章节">&para;</a></h1>
-<p>仙人指路，如果你之前就不知道如何在MSVC上使用模块，笔者的确会很严肃的向您推介，先试试，再说。</p>
-<ul>
-<li><a href="https://blog.csdn.net/charlie114514191/article/details/155929743">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南-CSDN博客</a></li>
-<li><a href="https://zhuanlan.zhihu.com/p/1983806788118783552">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - 老老老陈醋的文章 - 知乎</a></li>
-<li><a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/环境配置/如何快速在 VS2026 上使用 C%2B%2B 模块 — 完整上手指南/">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档</a></li>
-</ul>
-<hr />
-<h2 id="我们为什么需要-modules从-include-的本质缺陷说起">我们为什么需要 Modules？——从 <code>#include</code> 的本质缺陷说起<a class="headerlink" href="#我们为什么需要-modules从-include-的本质缺陷说起" title="链接到此章节">&para;</a></h2>
-<p>在很长一段时间里，C++ 的“模块系统”其实只有一个：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;foo.h&quot;</span>
+<h1 id="深入理解cc编译技术动态库a3聊一聊符号可见性">深入理解C/C++编译技术——动态库A3：聊一聊符号可见性<a class="headerlink" href="#深入理解cc编译技术动态库a3聊一聊符号可见性" title="链接到此章节">&para;</a></h1>
+<p>有笔者朋友可能感到奇怪——符号的可见性是什么呢？是不是咱们的C++中的关键字：<code>public</code>或者是<code>private</code>呢？值得指出的是，并不是，前者是语言语法和编译器检查一并提供的基础功能，这里，我们讨论的符号可见性更加的激进，是指代在符号ABI层次的可见性。</p>
+<h4 id="tips如何查看abi符号">Tips:如何查看ABI符号<a class="headerlink" href="#tips如何查看abi符号" title="链接到此章节">&para;</a></h4>
+<blockquote>
+<p>老手可以直接略过</p>
+</blockquote>
+<p>介于一些朋友可能是第一次看到这篇文章，可能会尚不清楚如何完成“查看给定可重定位文件或者是由重定位文件组成的可执行文件或者是库文件所包含的可见符号”这个要求，笔者这里计划专门补充一下在主要的Windows平台或者是Linux平台上如何完成这个基本操作。</p>
+<h5 id="gnulinux平台">GNU/Linux平台<a class="headerlink" href="#gnulinux平台" title="链接到此章节">&para;</a></h5>
+<p>很简单，我们只需要使用nm工具即可。假设我们有一个库文件<code>libsome_helpers.so</code>准备检查，那么输入如下指令就OK了。</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen runaable_dynamic_library]$ nm -D libsome_helpers.so 
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>00000000000010e9 T add
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a>                 w __cxa_finalize@GLIBC_2.2.5
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>                 w __gmon_start__
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a>                 w _ITM_deregisterTMCloneTable
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a>                 w _ITM_registerTMCloneTable
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a>00000000000010fd T minus
 </span></code></pre></div>
-<p>我相信大家都是知道<code>#include</code>的原理的，不必我说，就是纯纯的文本替换而已。这种基于<code>#include</code>的依赖引入有的时候更加像是被发现而不是因此而设计的（大家都是知道C语言历史的）</p>
-<p>编译器看到 <code>#include &lt;vector&gt;</code> 时，<strong>不会认为你在“依赖一个库”</strong>，而是：把 <code>&lt;vector&gt;</code> 头文件的内容，<strong>原封不动地拷贝进当前 <code>.cpp</code></strong>，再继续编译。</p>
-<p>这听起来好像没啥，但是这些问题，我相信大家多少干工程的会有所体会的：</p>
-<h4 id="问题一编译速度灾难指数级放大">问题一：编译速度灾难（指数级放大）<a class="headerlink" href="#问题一编译速度灾难指数级放大" title="链接到此章节">&para;</a></h4>
-<p>头文件机制的核心问题在于<strong>重复解析</strong>。每个 <code>.cpp</code> 文件都需要重新解析它 <code>#include</code> 进来的所有头文件，如 <code>&lt;vector&gt;</code>、<code>&lt;string&gt;</code>、<code>&lt;iostream&gt;</code>。当遇到<strong>模板、宏和条件编译</strong>时，这种重复工作就变成了性能地狱，导致编译时间呈指数级增长。</p>
-<p><strong>预编译头文件（PCH）</strong> 只是将解析结果<strong>缓存</strong>起来，而非从根本上解决重复解析的<strong>结构性缺陷</strong>。本质上，这是因为<strong>编译器不知道哪些声明是“已经处理过的模块接口”</strong>，只能盲目地一遍又一遍地处理。</p>
-<h4 id="问题二宏污染是不可控的">问题二：宏污染是不可控的<a class="headerlink" href="#问题二宏污染是不可控的" title="链接到此章节">&para;</a></h4>
-<p><strong>宏（Macro）是无作用域的</strong>，这是导致宏污染不可控的根本原因。一旦定义了 <code>#define min(a,b) ...</code> 这样的宏，并且通过 <code>#include</code> 引入，它就会<strong>永久污染后续代码</strong>，直到文件结束或被 <code>#undef</code>。（这就是为什么你会看到一些工程会习惯性的#undef下定义的宏，你也不想定义的宏被哪个不知道什么人写的包含顺序出问题了搞炸了吧！例如，引入 <code>&lt;windows.h&gt;</code> 这样的库可能会引入大量宏，这些宏可能意外地替换掉你代码中的同名函数或变量。编译器<strong>无法阻止，也无法隔离</strong>这种全局性的宏污染。</p>
-<h4 id="问题三接口与实现强耦合传染式依赖">问题三：接口与实现强耦合（传染式依赖）<a class="headerlink" href="#问题三接口与实现强耦合传染式依赖" title="链接到此章节">&para;</a></h4>
-<p>头文件机制强制要求在接口（<code>.h</code> 文件）中暴露不必要的实现细节。例如，即使一个类 <code>Foo</code> 仅仅在其内部使用了 <code>std::vector&lt;int&gt;</code>：</p>
-<div class="language-c++ highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// foo.h</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span><span class="c1"> // &lt;-- 不必要的暴露</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">};</span>
+<h5 id="windows平台">Windows平台<a class="headerlink" href="#windows平台" title="链接到此章节">&para;</a></h5>
+<p>这个好说，假设笔者打算检查的是CCWidget.dll，查看导出的符号就是<code>dumpbin /EXPORTS CCWidgets.dll</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a>D:\NewQtProjects\CCWidgetLibrary\build\Desktop_Qt_6_10_0_MSVC2022_64bit-Release\widgets&gt;dumpbin /EXPORTS CCWidgets.dll
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a>Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a>Copyright (C) Microsoft Corporation.  All rights reserved.
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a>Dump of file CCWidgets.dll
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a>File Type: DLL
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a>  Section contains the following exports for CCWidgets.dll
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a>    00000000 characteristics
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a>    FFFFFFFF time date stamp
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a>        0.00 version
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a>           1 ordinal base
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a>         481 number of functions
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a>         481 number of names
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a>    ordinal hint RVA      name
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a>          1    0 00002F50 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><a href="#__codelineno-1-22"><span class="linenos" data-linenos="22 "></span></a>          2    1 00002F80 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a><a href="#__codelineno-1-23"><span class="linenos" data-linenos="23 "></span></a>          3    2 00002FB0 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@XZ
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a><a href="#__codelineno-1-24"><span class="linenos" data-linenos="24 "></span></a>          4    3 00002FD0 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a><a href="#__codelineno-1-25"><span class="linenos" data-linenos="25 "></span></a>          5    4 00003010 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a><a href="#__codelineno-1-26"><span class="linenos" data-linenos="26 "></span></a>          6    5 00003050 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@XZ
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27"></a><a href="#__codelineno-1-27"><span class="linenos" data-linenos="27 "></span></a>          7    6 00012E00 ??0AppearAnimation@animation@CCWidgetLibrary@@QEAA@PEAVQWidget@@@Z
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28"></a><a href="#__codelineno-1-28"><span class="linenos" data-linenos="28 "></span></a>          8    7 000184E0 ??0CCBadgeLabel@@QEAA@PEAVQWidget@@@Z
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29"></a><a href="#__codelineno-1-29"><span class="linenos" data-linenos="29 "></span></a>          9    8 00014130 ??0CCButton@@QEAA@AEBVQIcon@@AEBVQString@@PEAVQWidget@@@Z
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30"></a><a href="#__codelineno-1-30"><span class="linenos" data-linenos="30 "></span></a>         10    9 000141F0 ??0CCButton@@QEAA@AEBVQString@@PEAVQWidget@@@Z、
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31"></a><a href="#__codelineno-1-31"><span class="linenos" data-linenos="31 "></span></a>         ...
 </span></code></pre></div>
-<p>你只是想使用 <code>Foo</code> 类，却被迫通过 <code>#include "foo.h"</code> 引入了 <strong><code>&lt;vector&gt;</code> 的全部依赖</strong>。这被称为<strong>传染式依赖（Transitive Includes）</strong>：用户被迫依赖了接口底层的所有实现细节所依赖的头文件，导致编译依赖网状膨胀。</p>
-<h4 id="问题四odrabi隐式规则过多">问题四：ODR、ABI、隐式规则过多<a class="headerlink" href="#问题四odrabi隐式规则过多" title="链接到此章节">&para;</a></h4>
-<p>头文件机制带来了一系列复杂且隐式的规则，如 <code>inline</code>、模板定义、<code>static</code> 变量以及在头文件中实现函数等。最危险的是 <strong>ODR（One Definition Rule，单一定义规则）</strong>。ODR 错误常常能通过编译阶段（因为每个编译单元只看到了一个定义），但会在<strong>链接阶段才暴露</strong>出来，导致难以调试的“链接器错误”（Linker Error），极大地增加了代码的脆弱性。</p>
-<hr />
-<h2 id="c-modules-的核心思想让编译器真正理解模块">C++ Modules 的核心思想：<strong>让编译器真正“理解模块”</strong><a class="headerlink" href="#c-modules-的核心思想让编译器真正理解模块" title="链接到此章节">&para;</a></h2>
-<p>所以聪明的你就知道，既然有这些问题，modules就是来解决的嘛！（虽然笔者吐槽下，我现在在的工程里用模块感觉就那会事情，所以还在尝试），简单的说：<strong>Modules = 编译器可理解、可缓存、可隔离的接口单元</strong></p>
-<h4 id="import关键字--include"><code>import</code>关键字 ≠ <code>#include</code><a class="headerlink" href="#import关键字--include" title="链接到此章节">&para;</a></h4>
-<p><code>import std;</code>就是将现在的标准库模块导入到我们的代码中，他告诉我们的MSVC编译器：“请把 <strong><code>std</code> 模块的已编译接口信息</strong> 导入到当前翻译单元。”</p>
-<h4 id="模块的最小单位bmisbinary-module-interface">模块的最小单位：BMIs（Binary Module Interface）<a class="headerlink" href="#模块的最小单位bmisbinary-module-interface" title="链接到此章节">&para;</a></h4>
-<p>在 MSVC 中，每个模块接口单元会被编译成一个 <strong><code>.ifc</code> 文件</strong>，他是模块的中间产物，方便接入原来的编译系统，这里面存放的就是前端AST 的序列化结果——类型、函数、模板的结构化描述（额，笔者真的第一反应就是“C++ 版的 <code>.class</code> 文件（Java）”）</p>
-<h4 id="流程差异">流程差异<a class="headerlink" href="#流程差异" title="链接到此章节">&para;</a></h4>
-<p>之前头文件的处理是依赖预处理的，直接将头文件粘贴到了源文件里去了作为一个编译单元搞，现在的话，模块就会好很多，他只会编译一次模块，然后你用的时候直接加载 .ifc文件，时间上可以打折扣了。MSVC Modules 的设计特点（非常实用）</p>
-<h2 id="import-std-到底发生了什么"><code>import std;</code> 到底发生了什么？<a class="headerlink" href="#import-std-到底发生了什么" title="链接到此章节">&para;</a></h2>
-<p>当你写下<code>import std;</code>的时候，MSVC 会：</p>
-<ol>
-<li>
-<p>查找标准库模块 <code>std</code></p>
-</li>
-<li>
-<p>加载其 <code>.ifc</code> 文件（由 STL 官方预编译）</p>
-</li>
-<li>
-<p>把所有导出的符号注入当前 TU</p>
-</li>
-<li>
-<p><strong>不引入任何宏</strong>（这点极其重要），这也是为什么 <code>min/max</code> 宏问题在 Modules 世界里自然消失。</p>
-</li>
-</ol>
-<p>注意，模块 <strong>默认不导出宏</strong>，宏不会跨 <code>import</code> 传播，所以你写的宏是没办法泄露到依赖文件上去的。</p>
-<hr />
-<h2 id="今日要在什么时候使用-msvc-modules">今日要在什么时候使用 MSVC Modules？<a class="headerlink" href="#今日要在什么时候使用-msvc-modules" title="链接到此章节">&para;</a></h2>
-<p>上面就说了，C++ Modules 是对传统头文件机制的结构性解决方案，但在实际应用于生产环境时，特别是在 MSVC (Visual Studio) 环境下，需要采取策略性使用。</p>
-<h4 id="强烈推荐的使用场景">强烈推荐的使用场景<a class="headerlink" href="#强烈推荐的使用场景" title="链接到此章节">&para;</a></h4>
-<h4 id="1-使用-import-std-替代标准库头文件">1. 使用 <code>import std;</code> 替代标准库头文件<a class="headerlink" href="#1-使用-import-std-替代标准库头文件" title="链接到此章节">&para;</a></h4>
-<p>这是目前最安全、最有价值的 Modules 用法。现在咱们彻底解决了标准库头文件（如 <code>&lt;vector&gt;</code>, <code>&lt;string&gt;</code>, <code>&lt;iostream&gt;</code>）带来的<strong>编译速度灾难</strong>和<strong>宏污染</strong>问题。</p>
-<p>而且只用一个<code>import std;</code>，咱们就不用费劲心思写一大堆include了，编译器只需要处理一次预编译的 Standard Library Module 接口，极大提升编译速度。标准库内部的宏也不会污染您的代码。</p>
-<h4 id="2-新项目内部的模块化业务模块隔离">2. 新项目内部的模块化（业务模块隔离）<a class="headerlink" href="#2-新项目内部的模块化业务模块隔离" title="链接到此章节">&para;</a></h4>
-<p>对于新创建的、主要针对 Windows 平台或内部使用的项目，可以考虑将项目内部的业务逻辑划分为独立的 Modules。用户代码只需要 <code>import MyModule;</code>，而不会被迫 <code>#include</code> 模块内部依赖的所有头文件。在写法上，业务逻辑组织成 <code>.ixx</code> 或 <code>.cppm</code> 模块接口文件，<code>export</code> 仅需暴露的接口。<strong>接口与实现彻底解耦</strong>。更改模块内部的实现细节和私有依赖时，依赖该模块的用户代码<strong>不需要重新编译</strong>（除非接口本身发生变化）。</p>
-<h4 id="谨慎的使用场景">谨慎的使用场景<a class="headerlink" href="#谨慎的使用场景" title="链接到此章节">&para;</a></h4>
-<h4 id="1-大型跨平台库的公共接口">1. 大型跨平台库的公共接口<a class="headerlink" href="#1-大型跨平台库的公共接口" title="链接到此章节">&para;</a></h4>
-<p>如果我们正在做的事情是：正在开发一个需要被多种编译器（如 MSVC、GCC、Clang）稳定使用的<strong>公共/开源库</strong>，请谨慎将 Modules 用于其公开 API。毕竟这玩意没几年还，目前主流编译器的 Modules <strong>实现仍存在差异</strong>和潜在 Bug。他作为准备派发的库，似乎还是会为库的用户带来额外的配置复杂度。</p>
-<h4 id="2-需要-gcc--clang-完全一致行为的项目">2. 需要 GCC / Clang 完全一致行为的项目<a class="headerlink" href="#2-需要-gcc--clang-完全一致行为的项目" title="链接到此章节">&para;</a></h4>
-<p>如果您的项目需要在不同平台和编译器上实现<strong>完全一致且高度稳定</strong>的行为（例如嵌入式系统、高完整性金融应用），Modules 的潜在实现差异可能带来风险。毕竟Modules 的语义（尤其是涉及<strong>导入顺序、链接和 ODR</strong> 的复杂场景）可能在不同编译器之间存在微妙的差异。</p>
-<p>这一件事情上，保守点的依赖传统头文件是目前最能保证多平台行为一致性的方式，因为它依赖的是成熟数十年的 <code>#include</code> 预处理语义。</p>
-<table>
-<thead>
-<tr>
-<th><strong>场景</strong></th>
-<th><strong>推荐等级</strong></th>
-<th><strong>原因/价值</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>使用 <code>import std;</code></strong></td>
-<td><strong>✅ 强烈推荐</strong></td>
-<td>解决标准库的编译速度和宏污染问题，价值高，风险极低。</td>
-</tr>
-<tr>
-<td><strong>新项目/内部业务模块化</strong></td>
-<td><strong>✅ 推荐</strong></td>
-<td>消除传染式依赖，实现接口与实现解耦，提升内部编译效率。</td>
-</tr>
-<tr>
-<td><strong>公共/跨平台库的 API</strong></td>
-<td><strong>⚠️ 谨慎</strong></td>
-<td>跨编译器实现差异和工具链成熟度问题，可能影响兼容性。</td>
-</tr>
-<tr>
-<td><strong>对行为一致性要求极高</strong></td>
-<td><strong>⚠️ 谨慎</strong></td>
-<td>避免潜在的编译器实现差异导致的不可预知行为。</td>
-</tr>
-</tbody>
-</table>
+<h2 id="主流工具链是如何控制符号的可见性的">主流工具链是如何控制符号的可见性的？<a class="headerlink" href="#主流工具链是如何控制符号的可见性的" title="链接到此章节">&para;</a></h2>
+<p>所以回归正题，主流工具链是如何控制符号的可见性的呢？我们分开讨论</p>
+<h4 id="gnu-linux下如何控制符号的可见性">GNU Linux下如何控制符号的可见性<a class="headerlink" href="#gnu-linux下如何控制符号的可见性" title="链接到此章节">&para;</a></h4>
+<h5 id="方式1直接对编译器传递-fvisibility控制所有符号的导出">方式1：直接对编译器传递-fvisibility控制所有符号的导出<a class="headerlink" href="#方式1直接对编译器传递-fvisibility控制所有符号的导出" title="链接到此章节">&para;</a></h5>
+<p>第一种方式是最粗暴的方式，假设我们存在一个私有的依赖工程完全不想暴露任何符号，这个时候，我们就可以在编译的时候向gcc/g++传递-fvisibility。默认的讲，对于GNU C/C++工具链<strong>对于任何未加以任何可见性修饰或者是指定可见性的符号</strong>都是公开的。也就是<code>-fvisibility=default</code>，假设我们想要隐藏，在生成动态库的步骤中，需要我们指定为<code>-fvisibility=hidden</code>，所有的符号都会不被导出。不过笔者是没有使用过的，仅仅是查询到存在用法。</p>
+<h5 id="方式2最常用的方式利用__attribute__visibility">方式2：最常用的方式：利用<code>__attribute__((visibility(&lt; "default" | "hidden" &gt;)))</code><a class="headerlink" href="#方式2最常用的方式利用__attribute__visibility" title="链接到此章节">&para;</a></h5>
+<p>笔者很喜欢这样指定，以笔者自己充当玩具编写的一个简单的日志库为例子，对于所有计划在ABI层次公开的API，笔者强制指定<code>__attribute__((visibility("default")))</code>，反之，任何不应该被使用的符号，施加以<code>__attribute__((visibility("hidden")))</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a>#ifdef CCLOG_BUILD_SHARED
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a>#define CCLOG_API __attribute__((visibility(&quot;default&quot;)))
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>#define CCLOG_PRIVATE_API __attribute__((visibility(&quot;hidden&quot;))) 
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a>#else
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a>#define CCLOG_API
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a>#define CCLOG_PRIVATE_API 
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a>#endif
+</span></code></pre></div>
+<h5 id="方式3对于一组聚合符号的修饰pragma-visibility-pushpop">方式3：对于一组聚合符号的修饰<code>#pragma visibility push/pop</code><a class="headerlink" href="#方式3对于一组聚合符号的修饰pragma-visibility-pushpop" title="链接到此章节">&para;</a></h5>
+<p>假如说，您实在是要处理手头巨量的符号的可见性修改，但是不想一个一个符号的添加以笔者上面提到的为例子的宏，您可以采用编译器的预处理指令。</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#pragma visibility push(&quot;hidden&quot;)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">private_api_add</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">api_minus</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos="6 "></span></a><span class="cm">/* Remember to pop for preventing the leak of unwanted visibility decorations */</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#pragma visibility pop</span>
+</span></code></pre></div>
+<h4 id="windows-msvc是如何操作的">Windows MSVC是如何操作的<a class="headerlink" href="#windows-msvc是如何操作的" title="链接到此章节">&para;</a></h4>
+<p>很不幸，Windows DLL动态库导出符号，是存在一套相对复杂的修饰机制的。也就是说，对于计划导出的符号，需要被修饰以<code>__declspec(dllexport)</code>导出；然后使用这些符号的时候，我们还需要标记<code>__declspec(dllimport)</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#ifdef CCLOG_BUILD_SHARED</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="cm">/* If we plan to exports sysbols to DLL, we need to decorate symbols by this */</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="cm">/* Others in case can use the symbols */</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a><span class="cp">#define CCLOG_API __declspec(dllexport)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a><span class="cp">#else</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos="6 "></span></a><span class="cm">/* If we plan to import sysbols from DLL, we need to decorate symbols by this */</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#define CCLOG_API __declspec(dllimport)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos="8 "></span></a><span class="cp">#end</span>
+</span></code></pre></div>
 
 
 
@@ -1914,7 +1808,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月15日 08:43:57 CST">2025年12月15日 08:43:57</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月21日 16:16:27 CST">2025年12月21日 16:16:27</span>
   </span>
 
     
@@ -1924,7 +1818,7 @@
     <span class="md-icon" title="创建日期">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月15日 08:43:57 CST">2025年12月15日 08:43:57</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月21日 16:16:27 CST">2025年12月21日 16:16:27</span>
   </span>
 
     
@@ -1961,7 +1855,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%BF%AB%E9%80%9F%E5%9C%A8WSL%E4%B8%8A%E5%BC%80%E5%8F%91%E4%B8%80%E8%88%AC%E7%9A%84C%2B%2B%E4%B8%8A%E4%BD%8D%E6%9C%BA%E7%A8%8B%E5%BA%8F/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 快速在WSL上开发一般的C++上位机程序">
+          <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1971,20 +1865,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                快速在WSL上开发一般的C++上位机程序
+                深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
               </div>
             </div>
           </a>
         
         
           
-          <a href="../%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-footer__link md-footer__link--next" aria-label="下一页: std::string_view 全攻略">
+          <a href="../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-footer__link md-footer__link--next" aria-label="下一页: 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                std::string_view 全攻略
+                深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
               </div>
             </div>
             <div class="md-footer__button md-icon">
