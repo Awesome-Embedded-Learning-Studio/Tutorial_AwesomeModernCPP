@@ -17,12 +17,11 @@
 
 ### 第1章 工具链与构建（为性能调优打基础）
 
-- 交叉编译基础与 CMake 多目标构建
-- 常用编译器选项（-O0/-Og/-O2/-Os/-Ofast、-fno-exceptions、-fno-rtti、-ffunction-sections/ -fdata-sections、-Wl,--gc-sections）
-- 链接器与 LTO/ThinLTO，影响代码大小与性能的链接策略
-- 链接脚本（Memory、FLASH/RAM 布局、.bss/.data/.rodata）
-- 启动代码与初始化顺序（全局构造、构造开销）
-- 练习：建立最小 cross-build pipeline + 分析二进制节大小
+- [x] 交叉编译基础与 CMake 多目标构建
+- [x] 常用编译器选项（-O0/-Og/-O2/-Os/-Ofast、-fno-exceptions、-fno-rtti、-ffunction-sections/ -fdata-sections、-Wl,--gc-sections）
+- [x] 链接器
+- [x] 链接脚本（Memory、FLASH/RAM 布局、.bss/.data/.rodata）
+- [x] 启动代码与初始化顺序（全局构造、构造开销）
 
 ------
 
