@@ -1,0 +1,2617 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+      
+      
+        <meta name="author" content="Charliechen">
+      
+      
+      
+        <link rel="prev" href="../../Chapter0/6%E5%AD%A6%E4%B9%A0%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%80%A7%E8%83%BD%E5%92%8C%E4%BD%93%E7%A7%AF%E5%BC%80%E9%94%80/">
+      
+      
+        <link rel="next" href="../2%E5%B8%B8%E8%A7%81%E7%BC%96%E8%AF%91%E5%99%A8%E9%80%89%E9%A1%B9%E6%8C%87%E5%8D%97/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../Awesome-Embedded.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>现代嵌入式C++教程：交叉编译基础与CMake多目标构建 - Tutorial_AwesomeModernCPP的文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#现代嵌入式c教程交叉编译基础与cmake多目标构建" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-header__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tutorial_AwesomeModernCPP的文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换至暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="切换至亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换至亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-nav__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    Tutorial_AwesomeModernCPP的文档
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    并行计算C++
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    并行计算C++
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心：现代嵌入式C++教程
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    核心：现代嵌入式C++教程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chapter0
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Chapter0
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/0%E5%89%8D%E8%A8%80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    前言
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/1%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%9A%84%E8%B5%84%E6%BA%90%E4%B8%8E%E5%AE%9E%E6%97%B6%E7%BA%A6%E6%9D%9F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    嵌入式的资源与实时约束
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/2%E6%80%A5%E9%80%9FC%E8%AF%AD%E8%A8%80%E9%80%9F%E9%80%9A%E5%A4%8D%E4%B9%A0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速的C语言复习
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/3%E5%BF%AB%E9%80%9F%E8%BF%87%E4%B8%80%E4%B8%8BC%2B%2B98%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%89%B9%E6%80%A7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++98基础特性：从C到C++的演进
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/4%E4%BD%95%E6%97%B6%E7%94%A8%20C%2B%2B%E3%80%81%E7%94%A8%E5%93%AA%E4%BA%9B%20C%2B%2B%20%E7%89%B9%E6%80%A7%EF%BC%88%E6%8A%98%E4%B8%AD%E4%B8%8E%E7%A6%81%E7%94%A8%E9%A1%B9%EF%BC%89/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    何时用 C++、用哪些 C++ 特性（折中与禁用项）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/5%E8%AF%AD%E8%A8%80%E9%80%89%E6%8B%A9%E5%8E%9F%E5%88%99%EF%BC%9A%E6%80%A7%E8%83%BD%20vs%20%E5%8F%AF%E7%BB%B4%E6%8A%A4%E6%80%A7%E7%9A%84%E7%9C%9F%E5%AE%9E%E5%8F%96%E8%88%8D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    语言选择原则：性能 vs 可维护性的真实取舍（一点碎碎念）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Chapter0/6%E5%AD%A6%E4%B9%A0%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%80%A7%E8%83%BD%E5%92%8C%E4%BD%93%E7%A7%AF%E5%BC%80%E9%94%80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代嵌入式C++教程——C++一定会使得代码膨胀嘛？
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chapter1
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Chapter1
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#引言" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        引言
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#第一部分交叉编译基础" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一部分:交叉编译基础
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第一部分:交叉编译基础">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#什么是交叉编译" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        什么是交叉编译
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#为什么需要交叉编译" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么需要交叉编译
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#交叉编译工具链" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        交叉编译工具链
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#交叉编译的挑战" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        交叉编译的挑战
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cmake构建系统基础" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CMake构建系统基础
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CMake构建系统基础">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#为什么选择cmake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么选择CMake
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cmake基本概念" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CMake基本概念
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cmake交叉编译配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CMake交叉编译配置
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CMake交叉编译配置">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-toolchain文件的作用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Toolchain文件的作用
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#编写toolchain文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编写Toolchain文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#更复杂的toolchain示例arm-linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        更复杂的Toolchain示例:ARM Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#使用toolchain文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使用Toolchain文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#第四部分cmake多目标构建" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第四部分:CMake多目标构建
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第四部分:CMake多目标构建">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#什么是多目标构建" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        什么是多目标构建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#基于构建目录的多目标方案" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基于构建目录的多目标方案
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#条件编译与平台检测" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        条件编译与平台检测
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#使用生成器表达式" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        使用生成器表达式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#平台抽象层hal设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        平台抽象层(HAL)设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#配置变体管理" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        配置变体管理
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../2%E5%B8%B8%E8%A7%81%E7%BC%96%E8%AF%91%E5%99%A8%E9%80%89%E9%A1%B9%E6%8C%87%E5%8D%97/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代嵌入式 C++ 教程：常见编译器参数指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3%E9%93%BE%E6%8E%A5%E5%99%A8%E4%B8%8E%E9%93%BE%E6%8E%A5%E5%99%A8%E8%84%9A%E6%9C%AC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    链接器与链接器脚本：从原理到实践
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++编译特性指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    深入理解CC++编译特性指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译与链接技术：导论
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF2%EF%BC%9A%E9%87%8D%E7%94%A8%E6%A6%82%E5%BF%B5%E7%9A%84%E5%86%8D%E9%98%90%E8%BF%B0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术2：动态库静态库导论
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF3%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E5%92%8C%E4%BD%BF%E7%94%A8%E9%9D%99%E6%80%81%E5%BA%93/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术3：如何制作和使用静态库
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF4%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%931/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译与链接技术4：动态库A1：基本讨论之-fPIC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF6%EF%BC%9A%E8%81%8A%E4%B8%80%E8%81%8A%E7%AC%A6%E5%8F%B7%E5%8F%AF%E8%A7%81%E6%80%A7/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF8%EF%BC%9A%E5%BA%93%E6%96%87%E4%BB%B6%E6%A3%80%E7%B4%A2%E9%80%BB%E8%BE%91/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解C/C++的编译与链接技术8：库文件检索逻辑
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF9%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E7%BB%86%E8%8A%82/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++的编译与链接技术9：动态库细节（完结）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境配置
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    环境配置
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%BF%AB%E9%80%9F%E5%9C%A8WSL%E4%B8%8A%E5%BC%80%E5%8F%91%E4%B8%80%E8%88%AC%E7%9A%84C%2B%2B%E4%B8%8A%E4%BD%8D%E6%9C%BA%E7%A8%8B%E5%BA%8F/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速在WSL上开发一般的C++上位机程序
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++特性
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    现代C++特性
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    一文读懂 MSVC C++ Modules：原理、动机与工程实践
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    std::string_view 全攻略
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_3" id="__nav_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++的协程
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    现代C++的协程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E5%BC%95%E7%94%A8%E4%B9%8B%E2%80%94%E2%80%94%E5%88%A9%E7%94%A8%E5%8D%8F%E7%A8%8B%E5%81%9A%E4%B8%80%E4%B8%AA%E8%BF%B7%E4%BD%A0%E7%9A%84Echo%20Server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%811/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程支持1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%812%EF%BC%9A%E7%BC%96%E5%86%99%E7%AE%80%E5%8D%95%E7%9A%84%E8%B0%83%E5%BA%A6%E5%99%A8/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    理解C++20的革命特性——协程支持2：编写简单的协程调度器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    调试专题
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    调试专题
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入解构：MSVC 调试机制与 Visual Studio 调试器原理
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    欢迎来到Awesome-Embedded-Learning-Studio的现代C++教程
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    核心：现代嵌入式C++教程
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Chapter1
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="现代嵌入式c教程交叉编译基础与cmake多目标构建">现代嵌入式C++教程：交叉编译基础与CMake多目标构建<a class="headerlink" href="#现代嵌入式c教程交叉编译基础与cmake多目标构建" title="链接到此章节">&para;</a></h1>
+<h2 id="引言">引言<a class="headerlink" href="#引言" title="链接到此章节">&para;</a></h2>
+<p>在嵌入式开发领域，我们经常面临一个有趣的挑战：开发环境与目标运行环境往往是完全不同的硬件平台。你可能在一台强大的x86_64工作站上编写代码,但最终程序需要运行在ARM架构的微控制器或者RISC-V处理器上。这就是交叉编译(Cross Compilation)存在的意义所在。</p>
+<p>本文将深入探讨交叉编译的基础概念,并详细介绍如何使用CMake这一现代构建系统来管理多目标平台的构建流程。无论你是刚接触嵌入式开发的新手,还是希望优化现有构建流程的资深开发者,本文都将为你提供实用的知识和技巧。</p>
+<h2 id="第一部分交叉编译基础">第一部分:交叉编译基础<a class="headerlink" href="#第一部分交叉编译基础" title="链接到此章节">&para;</a></h2>
+<h4 id="什么是交叉编译">什么是交叉编译<a class="headerlink" href="#什么是交叉编译" title="链接到此章节">&para;</a></h4>
+<p>交叉编译是指在<strong>一个平台(主机平台,Host Platform)上编译生成能在另一个平台(目标平台,Target Platform)上运行的可执行程序的过程</strong>。这与我们常见的本地编译(Native Compilation)形成对比——本地编译生成的程序在编译它的同一平台上运行。</p>
+<p>举个简单的例子:当你在你的Ubuntu x86_64笔记本上编译一个C++程序,并且这个程序将在树莓派的ARM处理器上运行时,你就在进行交叉编译。</p>
+<h4 id="为什么需要交叉编译">为什么需要交叉编译<a class="headerlink" href="#为什么需要交叉编译" title="链接到此章节">&para;</a></h4>
+<p>这个问题其实不算是问题，我问一个问题——您敢在您的单片机上，部署完整的编译工具链嘛？一个只有几MB Flash和几十KB RAM的微控制器显然无法运行GCC编译器。</p>
+<p>而且，即使目标设备理论上能够编译代码,在资源受限的硬件上进行编译也会非常缓慢。相比之下,在性能强大的开发机上编译可以大大缩短开发周期,提高工作效率。桌面开发环境通常拥有更完善的开发工具生态系统,包括IDE、调试器、性能分析工具等,这些工具可以显著提升开发体验。</p>
+<h4 id="交叉编译工具链">交叉编译工具链<a class="headerlink" href="#交叉编译工具链" title="链接到此章节">&para;</a></h4>
+<p>交叉编译工具链(Cross Compilation Toolchain)是一套专门用于交叉编译的工具集合,通常包括:</p>
+<ul>
+<li>
+<p><strong>交叉编译器(Cross Compiler)</strong>:这是工具链的核心,例如arm-none-eabi-gcc用于裸机ARM开发,aarch64-linux-gnu-gcc用于ARM64 Linux系统。编译器负责将源代码翻译成目标平台的机器码。</p>
+</li>
+<li>
+<p><strong>交叉汇编器(Cross Assembler)</strong>:将汇编语言代码转换为目标平台的机器码,通常与编译器配套使用。</p>
+</li>
+<li>
+<p><strong>交叉链接器(Cross Linker)</strong>:将编译生成的多个目标文件(.o文件)链接成最终的可执行文件或库文件,处理符号解析和地址重定位。</p>
+</li>
+<li>
+<p><strong>标准库</strong>:针对目标平台编译的C/C++标准库,包括libc、libstdc++等。这些库必须针对目标架构进行编译。</p>
+</li>
+<li>
+<p><strong>辅助工具</strong>:如objdump(查看目标文件)、objcopy(转换目标文件格式)、size(查看程序大小)、nm(查看符号表)等工具。</p>
+</li>
+</ul>
+<p>##### 目标三元组(Target Triplet)</p>
+<p>在交叉编译中,我们使用"目标三元组"来精确描述目标平台。这个三元组通常由三部分或四部分组成:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a>&lt;架构&gt;-&lt;厂商&gt;-&lt;操作系统&gt;-&lt;ABI&gt;
+</span></code></pre></div>
+<p>让我们看几个实际例子:</p>
+<ul>
+<li><code>arm-none-eabi</code>:ARM架构,无厂商,无操作系统(裸机),EABI(嵌入式应用二进制接口)</li>
+<li><code>aarch64-linux-gnu</code>:ARM64架构,Linux操作系统,GNU工具链</li>
+<li><code>x86_64-w64-mingw32</code>:x86_64架构,Windows操作系统,MinGW工具链</li>
+<li><code>riscv64-unknown-elf</code>:RISC-V 64位架构,未知厂商,ELF格式</li>
+</ul>
+<p>理解目标三元组对于选择正确的工具链和配置构建系统至关重要。不同的三元组意味着不同的指令集、调用约定、二进制格式和运行时环境。</p>
+<h4 id="交叉编译的挑战">交叉编译的挑战<a class="headerlink" href="#交叉编译的挑战" title="链接到此章节">&para;</a></h4>
+<p>交叉编译虽然强大,但也带来了一些挑战:</p>
+<p><strong>依赖关系管理</strong>:当程序依赖第三方库时,你需要确保这些库也是为目标平台编译的。不能将为x86编译的库链接到ARM程序中。</p>
+<p><strong>系统调用差异</strong>:不同操作系统的系统调用接口不同,需要在代码中妥善处理这些差异。</p>
+<p><strong>字节序问题</strong>:不同架构可能使用不同的字节序(大端或小端),在处理网络协议或文件格式时需要特别注意。</p>
+<p><strong>指针大小</strong>:32位和64位架构的指针大小不同,可能导致难以察觉的bug。</p>
+<p><strong>浮点运算</strong>:不同平台的浮点运算实现可能有细微差异,某些嵌入式平台甚至没有硬件浮点单元。</p>
+<h2 id="cmake构建系统基础">CMake构建系统基础<a class="headerlink" href="#cmake构建系统基础" title="链接到此章节">&para;</a></h2>
+<p>额，这个地方没有实战，就大伙看看就行，后面的话，专门有个小章节唠唠这个事情。</p>
+<h3 id="为什么选择cmake">为什么选择CMake<a class="headerlink" href="#为什么选择cmake" title="链接到此章节">&para;</a></h3>
+<p>CMake(Cross-platform Make)是一个跨平台的构建系统生成器。它不直接构建程序,而是生成本地构建系统所需的文件(如Makefile、Ninja构建文件或Visual Studio项目文件)。</p>
+<p>对于嵌入式开发,CMake具有以下优势:</p>
+<p><strong>跨平台支持</strong>:同一套CMake配置可以在Linux、Windows、macOS上使用,生成对应平台的构建文件。</p>
+<p><strong>交叉编译支持</strong>:CMake原生支持交叉编译,通过Toolchain文件可以轻松配置目标平台。</p>
+<p><strong>模块化设计</strong>:CMake的模块系统便于管理复杂项目的多个组件和依赖关系。</p>
+<p><strong>现代化特性</strong>:支持目标(Target)导向的构建配置,使依赖关系更清晰,配置更直观。</p>
+<p><strong>广泛的IDE支持</strong>:主流IDE如CLion、Visual Studio Code、Qt Creator等都对CMake有良好支持。</p>
+<h3 id="cmake基本概念">CMake基本概念<a class="headerlink" href="#cmake基本概念" title="链接到此章节">&para;</a></h3>
+<p>在深入交叉编译配置之前,让我们快速回顾CMake的几个核心概念:</p>
+<p><strong>CMakeLists.txt</strong>:这是CMake的配置文件,描述了项目的结构、源文件、依赖关系和构建规则。</p>
+<p><strong>Target(目标)</strong>:可以是可执行文件、库文件或自定义目标。现代CMake推荐以目标为中心的配置方式。</p>
+<p><strong>Generator(生成器)</strong>:决定CMake生成什么类型的构建系统文件,如Unix Makefiles、Ninja、Visual Studio等。</p>
+<p><strong>Build Tree和Source Tree</strong>:源码树包含源代码和CMakeLists.txt,构建树是生成的构建文件和编译产物的存放位置。推荐使用out-of-source构建,保持源码目录整洁。</p>
+<p><strong>变量和缓存</strong>:CMake使用变量来存储配置信息,某些变量会被缓存以便在后续配置中重用。</p>
+<h2 id="cmake交叉编译配置">CMake交叉编译配置<a class="headerlink" href="#cmake交叉编译配置" title="链接到此章节">&para;</a></h2>
+<h3 id="31-toolchain文件的作用">3.1 Toolchain文件的作用<a class="headerlink" href="#31-toolchain文件的作用" title="链接到此章节">&para;</a></h3>
+<p>Toolchain文件是CMake交叉编译的核心。它是一个CMake脚本文件,描述了交叉编译所需的所有信息,包括编译器路径、目标系统信息、编译选项等。</p>
+<p>使用Toolchain文件的好处:</p>
+<ul>
+<li><strong>可重用性</strong>:一次配置,多个项目共用</li>
+<li><strong>版本控制</strong>:可以将Toolchain文件纳入版本控制,确保团队使用相同配置</li>
+<li><strong>清晰分离</strong>:将平台相关配置与项目逻辑分离</li>
+</ul>
+<h3 id="编写toolchain文件">编写Toolchain文件<a class="headerlink" href="#编写toolchain文件" title="链接到此章节">&para;</a></h3>
+<p>让我们从一个ARM Cortex-M的Toolchain文件示例开始:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># arm-none-eabi-toolchain.cmake</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">Generic</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_PROCESSOR</span><span class="w"> </span><span class="s">arm</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c"># 指定交叉编译器</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_C_COMPILER</span><span class="w"> </span><span class="s">arm-none-eabi-gcc</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_COMPILER</span><span class="w"> </span><span class="s">arm-none-eabi-g++</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_ASM_COMPILER</span><span class="w"> </span><span class="s">arm-none-eabi-gcc</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="c"># 指定工具链程序</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_OBJCOPY</span><span class="w"> </span><span class="s">arm-none-eabi-objcopy</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_OBJDUMP</span><span class="w"> </span><span class="s">arm-none-eabi-objdump</span><span class="p">)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SIZE</span><span class="w"> </span><span class="s">arm-none-eabi-size</span><span class="p">)</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="c"># 设置编译器标志</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_C_FLAGS_INIT</span><span class="w"> </span><span class="s2">&quot;-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16&quot;</span><span class="p">)</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS_INIT</span><span class="w"> </span><span class="s2">&quot;${CMAKE_C_FLAGS_INIT} -fno-exceptions -fno-rtti&quot;</span><span class="p">)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a><span class="c"># 设置链接器标志</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_EXE_LINKER_FLAGS_INIT</span><span class="w"> </span><span class="s2">&quot;-specs=nosys.specs -Wl,--gc-sections&quot;</span><span class="p">)</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><a href="#__codelineno-1-22"><span class="linenos" data-linenos="22 "></span></a><span class="c"># 搜索路径配置</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a><a href="#__codelineno-1-23"><span class="linenos" data-linenos="23 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_PROGRAM</span><span class="w"> </span><span class="s">NEVER</span><span class="p">)</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a><a href="#__codelineno-1-24"><span class="linenos" data-linenos="24 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_LIBRARY</span><span class="w"> </span><span class="s">ONLY</span><span class="p">)</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a><a href="#__codelineno-1-25"><span class="linenos" data-linenos="25 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_INCLUDE</span><span class="w"> </span><span class="s">ONLY</span><span class="p">)</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a><a href="#__codelineno-1-26"><span class="linenos" data-linenos="26 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_PACKAGE</span><span class="w"> </span><span class="s">ONLY</span><span class="p">)</span>
+</span></code></pre></div>
+<p>让我们详细解读这个文件的各个部分:</p>
+<p><strong>CMAKE_SYSTEM_NAME</strong>:指定目标系统类型。<code>Generic</code>表示无操作系统的裸机环境,也可以是<code>Linux</code>、<code>Windows</code>等。</p>
+<p><strong>CMAKE_SYSTEM_PROCESSOR</strong>:指定目标处理器架构,如<code>arm</code>、<code>aarch64</code>、<code>riscv64</code>等。</p>
+<p><strong>编译器设置</strong>:明确指定要使用的交叉编译器。CMake会使用这些编译器而不是系统默认编译器。</p>
+<p><strong>编译器标志</strong>:</p>
+<ul>
+<li><code>-mcpu=cortex-m4</code>:指定目标CPU型号</li>
+<li><code>-mthumb</code>:使用Thumb指令集(代码密度更高)</li>
+<li><code>-mfloat-abi=hard</code>:使用硬件浮点ABI</li>
+<li><code>-mfpu=fpv4-sp-d16</code>:指定浮点单元类型</li>
+<li><code>-fno-exceptions</code>:禁用C++异常(嵌入式常见)</li>
+<li><code>-fno-rtti</code>:禁用运行时类型信息</li>
+</ul>
+<p><strong>CMAKE_FIND_ROOT_PATH_MODE系列</strong>:控制CMake在查找库、头文件等资源时的搜索行为,避免意外使用主机平台的库。</p>
+<h3 id="更复杂的toolchain示例arm-linux">更复杂的Toolchain示例:ARM Linux<a class="headerlink" href="#更复杂的toolchain示例arm-linux" title="链接到此章节">&para;</a></h3>
+<p>对于运行Linux的ARM设备(如树莓派),Toolchain文件会有所不同:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># aarch64-linux-gnu-toolchain.cmake</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">Linux</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_PROCESSOR</span><span class="w"> </span><span class="s">aarch64</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c"># 工具链安装路径</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">TOOLCHAIN_PREFIX</span><span class="w"> </span><span class="s">/usr/aarch64-linux-gnu</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c"># 编译器</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_C_COMPILER</span><span class="w"> </span><span class="s">aarch64-linux-gnu-gcc</span><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_COMPILER</span><span class="w"> </span><span class="s">aarch64-linux-gnu-g++</span><span class="p">)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a><span class="c"># Sysroot设置(包含目标系统的库和头文件)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos="13 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_SYSROOT</span><span class="w"> </span><span class="o">${</span><span class="nv">TOOLCHAIN_PREFIX</span><span class="o">}</span><span class="p">)</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos="14 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH</span><span class="w"> </span><span class="o">${</span><span class="nv">TOOLCHAIN_PREFIX</span><span class="o">}</span><span class="p">)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos="16 "></span></a><span class="c"># 编译器标志</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos="17 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_C_FLAGS_INIT</span><span class="w"> </span><span class="s2">&quot;-march=armv8-a&quot;</span><span class="p">)</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos="18 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS_INIT</span><span class="w"> </span><span class="s2">&quot;${CMAKE_C_FLAGS_INIT}&quot;</span><span class="p">)</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos="20 "></span></a><span class="c"># 搜索配置</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21"></a><a href="#__codelineno-2-21"><span class="linenos" data-linenos="21 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_PROGRAM</span><span class="w"> </span><span class="s">NEVER</span><span class="p">)</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22"></a><a href="#__codelineno-2-22"><span class="linenos" data-linenos="22 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_LIBRARY</span><span class="w"> </span><span class="s">ONLY</span><span class="p">)</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23"></a><a href="#__codelineno-2-23"><span class="linenos" data-linenos="23 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_FIND_ROOT_PATH_MODE_INCLUDE</span><span class="w"> </span><span class="s">ONLY</span><span class="p">)</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24"></a><a href="#__codelineno-2-24"><span class="linenos" data-linenos="24 "></span></a>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25"></a><a href="#__codelineno-2-25"><span class="linenos" data-linenos="25 "></span></a><span class="c"># pkg-config配置</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26"></a><a href="#__codelineno-2-26"><span class="linenos" data-linenos="26 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">ENV{PKG_CONFIG_PATH}</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27"></a><a href="#__codelineno-2-27"><span class="linenos" data-linenos="27 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">ENV{PKG_CONFIG_LIBDIR}</span><span class="w"> </span><span class="s2">&quot;${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig&quot;</span><span class="p">)</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28"></a><a href="#__codelineno-2-28"><span class="linenos" data-linenos="28 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">ENV{PKG_CONFIG_SYSROOT_DIR}</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_SYSROOT</span><span class="o">}</span><span class="p">)</span>
+</span></code></pre></div>
+<p>这个例子引入了<code>CMAKE_SYSROOT</code>概念。Sysroot是一个目录,包含了目标系统的根文件系统副本,包括库文件、头文件等。这对于有完整操作系统的目标平台非常重要。</p>
+<h3 id="使用toolchain文件">使用Toolchain文件<a class="headerlink" href="#使用toolchain文件" title="链接到此章节">&para;</a></h3>
+<p>使用Toolchain文件进行配置:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># 创建构建目录</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a>mkdir<span class="w"> </span>build-arm<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build-arm
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># 使用toolchain文件配置CMake</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a>cmake<span class="w"> </span>-DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>../toolchains/arm-none-eabi-toolchain.cmake<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">      </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">      </span>..
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># 构建</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>.
+</span></code></pre></div>
+<p>重要提示:<strong>Toolchain文件必须在第一次运行CMake时通过<code>-DCMAKE_TOOLCHAIN_FILE</code>指定</strong>,之后会被缓存。如果需要更换Toolchain,必须删除构建目录重新配置。</p>
+<h2 id="第四部分cmake多目标构建">第四部分:CMake多目标构建<a class="headerlink" href="#第四部分cmake多目标构建" title="链接到此章节">&para;</a></h2>
+<h3 id="什么是多目标构建">什么是多目标构建<a class="headerlink" href="#什么是多目标构建" title="链接到此章节">&para;</a></h3>
+<p>多目标构建是指同一套源代码能够为不同的目标平台生成可执行程序。在嵌入式开发中,这非常常见:</p>
+<ul>
+<li>为多个硬件变体构建(STM32F4、STM32F7)</li>
+<li>同时支持开发板和产品板</li>
+<li>在主机平台构建测试版本和在目标平台构建发布版本</li>
+<li>支持多个操作系统(Linux、RTOS、裸机)</li>
+</ul>
+<h3 id="基于构建目录的多目标方案">基于构建目录的多目标方案<a class="headerlink" href="#基于构建目录的多目标方案" title="链接到此章节">&para;</a></h3>
+<p>最简单的多目标构建方案是为每个平台创建独立的构建目录:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># 项目结构</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a>project/
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>├──<span class="w"> </span>src/
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a>├──<span class="w"> </span>include/
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a>├──<span class="w"> </span>toolchains/
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a>│<span class="w">   </span>├──<span class="w"> </span>arm-cortex-m4.cmake
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>│<span class="w">   </span>├──<span class="w"> </span>arm-cortex-m7.cmake
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>│<span class="w">   </span>└──<span class="w"> </span>x86_64-linux.cmake
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a>├──<span class="w"> </span>CMakeLists.txt
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>└──<span class="w"> </span>builds/
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span>├──<span class="w"> </span>cortex-m4/
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span>├──<span class="w"> </span>cortex-m7/
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span>└──<span class="w"> </span>host/
+</span></code></pre></div>
+<p>构建脚本示例:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="ch">#!/bin/bash</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="c1"># 构建Cortex-M4版本</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a>cmake<span class="w"> </span>-S<span class="w"> </span>.<span class="w"> </span>-B<span class="w"> </span>builds/cortex-m4<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">      </span>-DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>toolchains/arm-cortex-m4.cmake<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">      </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>builds/cortex-m4
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1"># 构建Cortex-M7版本</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a>cmake<span class="w"> </span>-S<span class="w"> </span>.<span class="w"> </span>-B<span class="w"> </span>builds/cortex-m7<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">      </span>-DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>toolchains/arm-cortex-m7.cmake<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">      </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>builds/cortex-m7
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a><span class="c1"># 构建主机测试版本</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16"></a><a href="#__codelineno-5-16"><span class="linenos" data-linenos="16 "></span></a>cmake<span class="w"> </span>-S<span class="w"> </span>.<span class="w"> </span>-B<span class="w"> </span>builds/host<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17"></a><a href="#__codelineno-5-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">      </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Debug
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18"></a><a href="#__codelineno-5-18"><span class="linenos" data-linenos="18 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>builds/host
+</span></code></pre></div>
+<h3 id="条件编译与平台检测">条件编译与平台检测<a class="headerlink" href="#条件编译与平台检测" title="链接到此章节">&para;</a></h3>
+<p>在CMakeLists.txt中,我们需要根据不同平台进行条件配置:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">project</span><span class="p">(</span><span class="s">EmbeddedApp</span><span class="w"> </span><span class="s">CXX</span><span class="w"> </span><span class="s">C</span><span class="w"> </span><span class="s">ASM</span><span class="p">)</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c"># 检测目标平台</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="nb">if</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_PROCESSOR</span><span class="w"> </span><span class="s">MATCHES</span><span class="w"> </span><span class="s2">&quot;arm&quot;</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="nb">message</span><span class="p">(</span><span class="s">STATUS</span><span class="w"> </span><span class="s2">&quot;Building for ARM architecture&quot;</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="c"># ARM特定配置</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">TARGET_ARM</span><span class="p">)</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="nb">if</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;Generic&quot;</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="nb">message</span><span class="p">(</span><span class="s">STATUS</span><span class="w"> </span><span class="s2">&quot;Bare-metal ARM target&quot;</span><span class="p">)</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">BARE_METAL</span><span class="p">)</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="nb">endif</span><span class="p">()</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="nb">elseif</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_PROCESSOR</span><span class="w"> </span><span class="s">MATCHES</span><span class="w"> </span><span class="s2">&quot;x86_64&quot;</span><span class="p">)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="nb">message</span><span class="p">(</span><span class="s">STATUS</span><span class="w"> </span><span class="s2">&quot;Building for x86_64 architecture&quot;</span><span class="p">)</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18"></a><a href="#__codelineno-6-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">TARGET_X86_64</span><span class="p">)</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19"></a><a href="#__codelineno-6-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20"></a><a href="#__codelineno-6-20"><span class="linenos" data-linenos="20 "></span></a><span class="nb">elseif</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_PROCESSOR</span><span class="w"> </span><span class="s">MATCHES</span><span class="w"> </span><span class="s2">&quot;riscv64&quot;</span><span class="p">)</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21"></a><a href="#__codelineno-6-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="nb">message</span><span class="p">(</span><span class="s">STATUS</span><span class="w"> </span><span class="s2">&quot;Building for RISC-V 64-bit&quot;</span><span class="p">)</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22"></a><a href="#__codelineno-6-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">TARGET_RISCV64</span><span class="p">)</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23"></a><a href="#__codelineno-6-23"><span class="linenos" data-linenos="23 "></span></a><span class="nb">endif</span><span class="p">()</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24"></a><a href="#__codelineno-6-24"><span class="linenos" data-linenos="24 "></span></a>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25"></a><a href="#__codelineno-6-25"><span class="linenos" data-linenos="25 "></span></a><span class="c"># 添加源文件</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26"></a><a href="#__codelineno-6-26"><span class="linenos" data-linenos="26 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">COMMON_SOURCES</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27"></a><a href="#__codelineno-6-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="s">src/main.cpp</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28"></a><a href="#__codelineno-6-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="s">src/application.cpp</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29"></a><a href="#__codelineno-6-29"><span class="linenos" data-linenos="29 "></span></a><span class="p">)</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30"></a><a href="#__codelineno-6-30"><span class="linenos" data-linenos="30 "></span></a>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31"></a><a href="#__codelineno-6-31"><span class="linenos" data-linenos="31 "></span></a><span class="c"># 平台特定源文件</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32"></a><a href="#__codelineno-6-32"><span class="linenos" data-linenos="32 "></span></a><span class="nb">if</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;Generic&quot;</span><span class="p">)</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33"></a><a href="#__codelineno-6-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="nb">list</span><span class="p">(</span><span class="s">APPEND</span><span class="w"> </span><span class="s">COMMON_SOURCES</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34"></a><a href="#__codelineno-6-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">        </span><span class="s">src/startup_arm.s</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35"></a><a href="#__codelineno-6-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">        </span><span class="s">src/hal_bare_metal.cpp</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36"></a><a href="#__codelineno-6-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="p">)</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37"></a><a href="#__codelineno-6-37"><span class="linenos" data-linenos="37 "></span></a><span class="nb">else</span><span class="p">()</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38"></a><a href="#__codelineno-6-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="nb">list</span><span class="p">(</span><span class="s">APPEND</span><span class="w"> </span><span class="s">COMMON_SOURCES</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39"></a><a href="#__codelineno-6-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">        </span><span class="s">src/hal_linux.cpp</span>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40"></a><a href="#__codelineno-6-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="p">)</span>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41"></a><a href="#__codelineno-6-41"><span class="linenos" data-linenos="41 "></span></a><span class="nb">endif</span><span class="p">()</span>
+</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42"></a><a href="#__codelineno-6-42"><span class="linenos" data-linenos="42 "></span></a>
+</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43"></a><a href="#__codelineno-6-43"><span class="linenos" data-linenos="43 "></span></a><span class="c"># 创建可执行目标</span>
+</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44"></a><a href="#__codelineno-6-44"><span class="linenos" data-linenos="44 "></span></a><span class="nb">add_executable</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="o">${</span><span class="nv">COMMON_SOURCES</span><span class="o">}</span><span class="p">)</span>
+</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45"></a><a href="#__codelineno-6-45"><span class="linenos" data-linenos="45 "></span></a>
+</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46"></a><a href="#__codelineno-6-46"><span class="linenos" data-linenos="46 "></span></a><span class="c"># 平台特定链接配置</span>
+</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47"></a><a href="#__codelineno-6-47"><span class="linenos" data-linenos="47 "></span></a><span class="nb">if</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;Generic&quot;</span><span class="p">)</span>
+</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48"></a><a href="#__codelineno-6-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="nb">target_link_options</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49"></a><a href="#__codelineno-6-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">        </span><span class="s">-T</span><span class="o">${</span><span class="nv">CMAKE_SOURCE_DIR</span><span class="o">}</span><span class="s">/linker/STM32F407VG.ld</span>
+</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50"></a><a href="#__codelineno-6-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">        </span><span class="s">-Wl,-Map=</span><span class="o">${</span><span class="nv">CMAKE_BINARY_DIR</span><span class="o">}</span><span class="s">/app.map</span>
+</span><span id="__span-6-51"><a id="__codelineno-6-51" name="__codelineno-6-51"></a><a href="#__codelineno-6-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="p">)</span>
+</span><span id="__span-6-52"><a id="__codelineno-6-52" name="__codelineno-6-52"></a><a href="#__codelineno-6-52"><span class="linenos" data-linenos="52 "></span></a><span class="nb">endif</span><span class="p">()</span>
+</span></code></pre></div>
+<h3 id="使用生成器表达式">使用生成器表达式<a class="headerlink" href="#使用生成器表达式" title="链接到此章节">&para;</a></h3>
+<p>CMake的生成器表达式(Generator Expressions)提供了更灵活的条件配置方式:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 根据配置类型设置不同的编译选项</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Debug</span><span class="o">&gt;</span><span class="s">:-O0</span><span class="w"> </span><span class="s">-g3&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Release</span><span class="o">&gt;</span><span class="s">:-O3</span><span class="w"> </span><span class="s">-DNDEBUG&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c"># 根据编译器类型设置选项</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CXX_COMPILER_ID:GNU</span><span class="o">&gt;</span><span class="s">:-Wall</span><span class="w"> </span><span class="s">-Wextra&gt;</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CXX_COMPILER_ID:Clang</span><span class="o">&gt;</span><span class="s">:-Weverything&gt;</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a><span class="p">)</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12"></a><a href="#__codelineno-7-12"><span class="linenos" data-linenos="12 "></span></a>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13"></a><a href="#__codelineno-7-13"><span class="linenos" data-linenos="13 "></span></a><span class="c"># 根据平台设置链接库</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14"></a><a href="#__codelineno-7-14"><span class="linenos" data-linenos="14 "></span></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15"></a><a href="#__codelineno-7-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;PLATFORM_ID:Linux</span><span class="o">&gt;</span><span class="s">:pthread&gt;</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16"></a><a href="#__codelineno-7-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;PLATFORM_ID:Windows</span><span class="o">&gt;</span><span class="s">:ws2_32&gt;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17"></a><a href="#__codelineno-7-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="平台抽象层hal设计">平台抽象层(HAL)设计<a class="headerlink" href="#平台抽象层hal设计" title="链接到此章节">&para;</a></h3>
+<p>在多目标项目中,良好的硬件抽象层设计至关重要:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 创建HAL接口库</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">add_library</span><span class="p">(</span><span class="s">hal_interface</span><span class="w"> </span><span class="s">INTERFACE</span><span class="p">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="nb">target_include_directories</span><span class="p">(</span><span class="s">hal_interface</span><span class="w"> </span><span class="s">INTERFACE</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="s">include/hal</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a><a href="#__codelineno-8-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c"># 为不同平台创建HAL实现</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a><a href="#__codelineno-8-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="nb">if</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;Generic&quot;</span><span class="p">)</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a><a href="#__codelineno-8-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="nb">add_library</span><span class="p">(</span><span class="s">hal_impl</span><span class="w"> </span><span class="s">STATIC</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a><a href="#__codelineno-8-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="s">src/hal/gpio_stm32.cpp</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11"></a><a href="#__codelineno-8-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="s">src/hal/uart_stm32.cpp</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12"></a><a href="#__codelineno-8-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="s">src/hal/timer_stm32.cpp</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13"></a><a href="#__codelineno-8-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="p">)</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14"></a><a href="#__codelineno-8-14"><span class="linenos" data-linenos="14 "></span></a><span class="nb">elseif</span><span class="p">(</span><span class="s">CMAKE_SYSTEM_NAME</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;Linux&quot;</span><span class="p">)</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15"></a><a href="#__codelineno-8-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="nb">add_library</span><span class="p">(</span><span class="s">hal_impl</span><span class="w"> </span><span class="s">STATIC</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16"></a><a href="#__codelineno-8-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="s">src/hal/gpio_linux.cpp</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17"></a><a href="#__codelineno-8-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">        </span><span class="s">src/hal/uart_linux.cpp</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18"></a><a href="#__codelineno-8-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">        </span><span class="s">src/hal/timer_linux.cpp</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19"></a><a href="#__codelineno-8-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="p">)</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20"></a><a href="#__codelineno-8-20"><span class="linenos" data-linenos="20 "></span></a><span class="nb">endif</span><span class="p">()</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21"></a><a href="#__codelineno-8-21"><span class="linenos" data-linenos="21 "></span></a>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22"></a><a href="#__codelineno-8-22"><span class="linenos" data-linenos="22 "></span></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">hal_impl</span><span class="w"> </span><span class="s">PUBLIC</span><span class="w"> </span><span class="s">hal_interface</span><span class="p">)</span>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23"></a><a href="#__codelineno-8-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24"></a><a href="#__codelineno-8-24"><span class="linenos" data-linenos="24 "></span></a><span class="c"># 应用程序链接HAL</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25"></a><a href="#__codelineno-8-25"><span class="linenos" data-linenos="25 "></span></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">hal_impl</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="配置变体管理">配置变体管理<a class="headerlink" href="#配置变体管理" title="链接到此章节">&para;</a></h3>
+<p>对于同一架构的不同硬件变体,可以使用CMake的选项和缓存变量:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 定义硬件变体选项</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">TARGET_BOARD</span><span class="w"> </span><span class="s2">&quot;STM32F407_DISCOVERY&quot;</span><span class="w"> </span><span class="s">CACHE</span><span class="w"> </span><span class="s">STRING</span><span class="w"> </span><span class="s2">&quot;Target board&quot;</span><span class="p">)</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="nb">set_property</span><span class="p">(</span><span class="s">CACHE</span><span class="w"> </span><span class="s">TARGET_BOARD</span><span class="w"> </span><span class="s">PROPERTY</span><span class="w"> </span><span class="s">STRINGS</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><a href="#__codelineno-9-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="s2">&quot;STM32F407_DISCOVERY&quot;</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><a href="#__codelineno-9-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="s2">&quot;STM32F429_DISCO&quot;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6"></a><a href="#__codelineno-9-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="s2">&quot;CUSTOM_BOARD_V1&quot;</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7"></a><a href="#__codelineno-9-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="s2">&quot;CUSTOM_BOARD_V2&quot;</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8"></a><a href="#__codelineno-9-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="p">)</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9"></a><a href="#__codelineno-9-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10"></a><a href="#__codelineno-9-10"><span class="linenos" data-linenos="10 "></span></a><span class="c"># 根据板子配置</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11"></a><a href="#__codelineno-9-11"><span class="linenos" data-linenos="11 "></span></a><span class="nb">if</span><span class="p">(</span><span class="s">TARGET_BOARD</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;STM32F407_DISCOVERY&quot;</span><span class="p">)</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12"></a><a href="#__codelineno-9-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">MCU_FLAGS</span><span class="w"> </span><span class="s2">&quot;-mcpu=cortex-m4 -mfpu=fpv4-sp-d16&quot;</span><span class="p">)</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13"></a><a href="#__codelineno-9-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">LINKER_SCRIPT</span><span class="w"> </span><span class="s2">&quot;${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld&quot;</span><span class="p">)</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14"></a><a href="#__codelineno-9-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">STM32F407xx</span><span class="p">)</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15"></a><a href="#__codelineno-9-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16"></a><a href="#__codelineno-9-16"><span class="linenos" data-linenos="16 "></span></a><span class="nb">elseif</span><span class="p">(</span><span class="s">TARGET_BOARD</span><span class="w"> </span><span class="s">STREQUAL</span><span class="w"> </span><span class="s2">&quot;STM32F429_DISCO&quot;</span><span class="p">)</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17"></a><a href="#__codelineno-9-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">MCU_FLAGS</span><span class="w"> </span><span class="s2">&quot;-mcpu=cortex-m4 -mfpu=fpv4-sp-d16&quot;</span><span class="p">)</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18"></a><a href="#__codelineno-9-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">LINKER_SCRIPT</span><span class="w"> </span><span class="s2">&quot;${CMAKE_SOURCE_DIR}/linker/STM32F429ZI.ld&quot;</span><span class="p">)</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19"></a><a href="#__codelineno-9-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="nb">add_compile_definitions</span><span class="p">(</span><span class="s">STM32F429xx</span><span class="p">)</span>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20"></a><a href="#__codelineno-9-20"><span class="linenos" data-linenos="20 "></span></a>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21"></a><a href="#__codelineno-9-21"><span class="linenos" data-linenos="21 "></span></a><span class="nb">endif</span><span class="p">()</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22"></a><a href="#__codelineno-9-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23"></a><a href="#__codelineno-9-23"><span class="linenos" data-linenos="23 "></span></a><span class="c"># 应用配置</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24"></a><a href="#__codelineno-9-24"><span class="linenos" data-linenos="24 "></span></a><span class="nb">add_compile_options</span><span class="p">(</span><span class="o">${</span><span class="nv">MCU_FLAGS</span><span class="o">}</span><span class="p">)</span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25"></a><a href="#__codelineno-9-25"><span class="linenos" data-linenos="25 "></span></a><span class="nb">target_link_options</span><span class="p">(</span><span class="s">app</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">-T</span><span class="o">${</span><span class="nv">LINKER_SCRIPT</span><span class="o">}</span><span class="p">)</span>
+</span></code></pre></div>
+<p>使用时:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a>cmake<span class="w"> </span>-B<span class="w"> </span>build-f407<span class="w"> </span>-DTARGET_BOARD<span class="o">=</span>STM32F407_DISCOVERY<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">      </span>-DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>toolchains/arm-cortex-m4.cmake
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos="4 "></span></a>cmake<span class="w"> </span>-B<span class="w"> </span>build-f429<span class="w"> </span>-DTARGET_BOARD<span class="o">=</span>STM32F429_DISCO<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">      </span>-DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>toolchains/arm-cortex-m4.cmake
+</span></code></pre></div>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月28日 21:20:21 CST">2025年12月28日 21:20:21</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月28日 21:20:21 CST">2025年12月28日 21:20:21</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../../Chapter0/6%E5%AD%A6%E4%B9%A0%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%80%A7%E8%83%BD%E5%92%8C%E4%BD%93%E7%A7%AF%E5%BC%80%E9%94%80/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 现代嵌入式C++教程——C++一定会使得代码膨胀嘛？">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                现代嵌入式C++教程——C++一定会使得代码膨胀嘛？
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../2%E5%B8%B8%E8%A7%81%E7%BC%96%E8%AF%91%E5%99%A8%E9%80%89%E9%A1%B9%E6%8C%87%E5%8D%97/" class="md-footer__link md-footer__link--next" aria-label="下一页: 现代嵌入式 C++ 教程：常见编译器参数指南">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                现代嵌入式 C++ 教程：常见编译器参数指南
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Charliechen - 保留所有权利
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Awesome-Embedded-Learning-Studio" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:725610365@qq.com" target="_blank" rel="noopener" title="发送邮件" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M536.4-26.3c9.8-3.5 20.6-1 28 6.3s9.8 18.2 6.3 28l-178 496.9c-5 13.9-18.1 23.1-32.8 23.1-14.2 0-27-8.6-32.3-21.7l-64.2-158c-4.5-11-2.5-23.6 5.2-32.6l94.5-112.4c5.1-6.1 4.7-15-.9-20.6s-14.6-6-20.6-.9l-112.4 94.3c-9.1 7.6-21.6 9.6-32.6 5.2L38.1 216.8c-13.1-5.3-21.7-18.1-21.7-32.3 0-14.7 9.2-27.8 23.1-32.8z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
