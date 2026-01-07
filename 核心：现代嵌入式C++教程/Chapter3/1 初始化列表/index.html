@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../1%E9%9A%8F%E6%84%8F%E8%81%8A%E4%B8%8B%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%92%8CCMake%E7%AE%80%E5%8D%95%E6%8C%87%E5%8D%97/">
+        <link rel="prev" href="../../Chapter2/4%20CRTP%20VS%20%E8%BF%90%E8%A1%8C%E6%97%B6%E5%A4%9A%E6%80%81%EF%BC%8C%E4%BD%A0%E4%BB%AC%E7%9F%A5%E9%81%93%E5%90%97%EF%BC%9F/">
       
       
-        <link rel="next" href="../3%E9%93%BE%E6%8E%A5%E5%99%A8%E4%B8%8E%E9%93%BE%E6%8E%A5%E5%99%A8%E8%84%9A%E6%9C%AC/">
+        <link rel="next" href="../2%20%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>现代嵌入式 C++ 教程：常见编译器参数指南 - Tutorial_AwesomeModernCPP的文档</title>
+        <title>构造函数优化：初始化列表 vs 成员赋值 - Tutorial_AwesomeModernCPP的文档</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#现代嵌入式-c-教程常见编译器参数指南" class="md-skip">
+        <a href="#构造函数优化初始化列表-vs-成员赋值" class="md-skip">
           跳转至
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              现代嵌入式 C++ 教程：常见编译器参数指南
+              构造函数优化：初始化列表 vs 成员赋值
             
           </span>
         </div>
@@ -708,10 +708,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -727,11 +725,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
         
           
           <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
@@ -752,7 +752,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -770,7 +770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../1%E9%9A%8F%E6%84%8F%E8%81%8A%E4%B8%8B%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%92%8CCMake%E7%AE%80%E5%8D%95%E6%8C%87%E5%8D%97/" class="md-nav__link">
+      <a href="../../Chapter1/1%E9%9A%8F%E6%84%8F%E8%81%8A%E4%B8%8B%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%92%8CCMake%E7%AE%80%E5%8D%95%E6%8C%87%E5%8D%97/" class="md-nav__link">
         
   
   
@@ -795,37 +795,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    现代嵌入式 C++ 教程：常见编译器参数指南
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../Chapter1/2%E5%B8%B8%E8%A7%81%E7%BC%96%E8%AF%91%E5%99%A8%E9%80%89%E9%A1%B9%E6%8C%87%E5%8D%97/" class="md-nav__link">
         
   
   
@@ -841,248 +814,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#0-一些基础" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        0 一些基础
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="0 一些基础">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#语言标准控制-std" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        语言标准控制：-std=
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#为什么在嵌入式中选--stdc17-或以上" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        为什么在嵌入式中选 -std=c++17 或以上？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#预处理器与宏定义-d-与--u" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        预处理器与宏定义：-D 与 -U
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#路径搜索与库链接-i--isystem--l--l" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        路径搜索与库链接：-I, -isystem, -L, -l
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#输出管理与调试信息-o-与--g" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        输出管理与调试信息：-o 与 -g
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#警告治理-w-系列-code-quality" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        警告治理：-W 系列 (Code Quality)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#依赖生成-m--mmd" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        依赖生成：-M, -MMD
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-优化等级在速度体积与调试之间平衡" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 优化等级：在速度、体积与调试之间平衡
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. 优化等级：在速度、体积与调试之间平衡">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#-深度建议为什么不要在嵌入式用--o3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        💡 深度建议：为什么不要在嵌入式用 -O3？
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-裁剪-c-运行时卸下沉重的盔甲" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 裁剪 C++ 运行时：卸下沉重的“盔甲”
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. 裁剪 C++ 运行时：卸下沉重的“盔甲”">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21--fno-exceptions-禁用异常" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 -fno-exceptions (禁用异常)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22--fno-rtti-禁用运行时类型识别" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 -fno-rtti (禁用运行时类型识别)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-垃圾回收不用的代码" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 垃圾回收不用的代码
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. 垃圾回收不用的代码">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#31-编译器端分区化" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.1 编译器端：分区化
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#32-链接器端垃圾回收" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3.2 链接器端：垃圾回收
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-cmake-中的最佳实践配置" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. CMake 中的最佳实践配置
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-危险的--ofast-与浮点陷阱" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 危险的 -Ofast 与浮点陷阱
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1095,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../3%E9%93%BE%E6%8E%A5%E5%99%A8%E4%B8%8E%E9%93%BE%E6%8E%A5%E5%99%A8%E8%84%9A%E6%9C%AC/" class="md-nav__link">
+      <a href="../../Chapter1/3%E9%93%BE%E6%8E%A5%E5%99%A8%E4%B8%8E%E9%93%BE%E6%8E%A5%E5%99%A8%E8%84%9A%E6%9C%AC/" class="md-nav__link">
         
   
   
@@ -1309,8 +1040,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1324,13 +1057,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
         
           
           <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
@@ -1351,7 +1082,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1366,10 +1097,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../Chapter3/1%20%E5%88%9D%E5%A7%8B%E5%8C%96%E5%88%97%E8%A1%A8/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    构造函数优化：初始化列表 vs 成员赋值
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1385,6 +1143,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#一一个常见但并不无害的写法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、一个常见、但并不“无害”的写法
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#二初始化列表并不是语法糖" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、初始化列表并不是“语法糖”
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#三某些成员根本不能被赋值" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、某些成员，根本“不能被赋值”
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、某些成员，根本“不能被赋值”">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-const-成员" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. const 成员
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-引用成员" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 引用成员
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-没有默认构造函数的成员" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 没有默认构造函数的成员
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#四初始化列表带来的语义完整性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、初始化列表带来的“语义完整性”
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#五编译器优化视角初始化列表--更大的优化空间" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、编译器优化视角：初始化列表 = 更大的优化空间
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#最后" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最后
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1397,7 +1280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Chapter3/2%20%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89/" class="md-nav__link">
+      <a href="../2%20%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89/" class="md-nav__link">
         
   
   
@@ -2349,10 +2232,10 @@
     
     
       <li class="md-path__item">
-        <a href="../1%E9%9A%8F%E6%84%8F%E8%81%8A%E4%B8%8B%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%92%8CCMake%E7%AE%80%E5%8D%95%E6%8C%87%E5%8D%97/" class="md-path__link">
+        <a href="./" class="md-path__link">
           
   <span class="md-ellipsis">
-    Chapter1
+    Chapter3
   </span>
 
         </a>
@@ -2371,198 +2254,158 @@
 
 
 
-<h1 id="现代嵌入式-c-教程常见编译器参数指南">现代嵌入式 C++ 教程：常见编译器参数指南<a class="headerlink" href="#现代嵌入式-c-教程常见编译器参数指南" title="链接到此章节">&para;</a></h1>
-<p>在实际的嵌入式开发中，每一字节的 Flash 和 RAM 真的都是开发者省出来的。C++ 虽然背负着“重型语言”的偏见，但通过合理配置编译器选项，我们可以精准地裁剪运行时开销，使其性能和体积甚至优于手工 C 代码。（这一点，我相信大家在Chapter0上已经看到了）</p>
+<h1 id="构造函数优化初始化列表-vs-成员赋值">构造函数优化：初始化列表 vs 成员赋值<a class="headerlink" href="#构造函数优化初始化列表-vs-成员赋值" title="链接到此章节">&para;</a></h1>
+<p>在嵌入式 C++ 项目中，我们很容易把精力放在“看得见”的地方：中断、DMA、时序、缓存命中率、Flash/RAM 占用……而对于构造函数这种“看起来只执行一次”的代码，往往下意识地放松了警惕。</p>
+<p>但实际上，在 <strong>对象创建频繁、内存紧张、构造路径复杂</strong> 的系统中，构造函数的写法，直接影响：</p>
+<ul>
+<li>是否产生多余的构造 / 析构</li>
+<li>是否引入隐藏的默认初始化成本</li>
+<li>是否破坏对象的不变量</li>
+<li>是否在编译期就已经“输掉了优化空间”</li>
+</ul>
+<p>而这些问题，<strong>几乎都集中体现在一个地方：你是否使用了初始化列表。</strong></p>
 <hr />
-<h2 id="0-一些基础">0 一些基础<a class="headerlink" href="#0-一些基础" title="链接到此章节">&para;</a></h2>
-<h4 id="语言标准控制-std">语言标准控制：<code>-std=</code><a class="headerlink" href="#语言标准控制-std" title="链接到此章节">&para;</a></h4>
-<p>这是定义项目“现代性”的最直接方式。</p>
-<ul>
-<li><strong>参数格式</strong>：<code>-std=c++11</code>, <code>-std=c++14</code>, <code>-std=c++17</code>, <code>-std=c++20</code>。</li>
-<li><strong>GNU 扩展版</strong>：<code>gnu++17</code>。相比标准 <code>c++17</code>，它允许使用一些 GCC 特有的非标准扩展（如特殊的内联汇编语法）。在嵌入式底层开发中，有时不得不使用 <code>gnu++</code> 版本。</li>
-</ul>
-<h4 id="为什么在嵌入式中选--stdc17-或以上">为什么在嵌入式中选 <code>-std=c++17</code> 或以上？<a class="headerlink" href="#为什么在嵌入式中选--stdc17-或以上" title="链接到此章节">&para;</a></h4>
-<ul>
-<li><strong><code>constexpr</code> 的威力</strong>：在 C++17 中，大量的逻辑可以被移至编译期计算，直接减少了运行时的 CPU 负载和 Flash 占用。</li>
-<li><strong><code>std::span</code> (C++20)</strong>：它是嵌入式开发中传递缓冲区（Buffer）的完美替代品，比传统的 <code>uint8_t* ptr, size_t len</code> 更安全且无额外开销。</li>
-<li><strong>结构化绑定</strong>：让解析复杂的传感器数据结构变得极其优雅。</li>
-</ul>
-<hr />
-<h4 id="预处理器与宏定义-d-与--u">预处理器与宏定义：<code>-D</code> 与 <code>-U</code><a class="headerlink" href="#预处理器与宏定义-d-与--u" title="链接到此章节">&para;</a></h4>
-<p>在嵌入式中，由于硬件差异，我们经常需要“条件编译”。</p>
-<ul>
-<li><strong><code>-D&lt;macro&gt;=&lt;value&gt;</code></strong>：定义宏。</li>
-<li>例如：<code>-DSTM32F407xx</code> 或 <code>-DDEBUG_LEVEL=2</code>。</li>
-<li><strong>现代做法</strong>：尽量在 CMake 中通过 <code>target_compile_definitions(target PRIVATE STM32F407xx)</code> 来控制，而不是在代码里写满 <code>#define</code>。</li>
-<li><strong><code>-U&lt;macro&gt;</code></strong>：取消已定义的宏。</li>
-</ul>
-<blockquote>
-<p><strong>警告</strong>：过度依赖宏会导致代码路径难以测试（Code Coverage 无法覆盖未开启宏的分支）。在现代 C++ 中，建议优先考虑 <code>if constexpr</code> 配合常量对象。</p>
-</blockquote>
-<hr />
-<h4 id="路径搜索与库链接-i--isystem--l--l">路径搜索与库链接：<code>-I</code>, <code>-isystem</code>, <code>-L</code>, <code>-l</code><a class="headerlink" href="#路径搜索与库链接-i--isystem--l--l" title="链接到此章节">&para;</a></h4>
-<p>这是初学者最容易在 CMake 里配置出错的地方。</p>
-<ul>
-<li><strong><code>-I &lt;dir&gt;</code> (Include)</strong>：指定头文件搜索路径。</li>
-<li><strong><code>-isystem &lt;dir&gt;</code></strong>：指定“系统”头文件路径。</li>
-<li><strong>精妙之处</strong>：如果第三方库（如 ST 的 HAL 库）产生了大量无意义的警告，用 <code>-isystem</code> 引入它们，编译器会<strong>自动屏蔽该目录下的所有警告</strong>，让你的控制台保持清爽。</li>
-<li><strong><code>-L &lt;dir&gt;</code></strong>：指定静态库（<code>.a</code>）的搜索目录。</li>
-<li><strong><code>-l&lt;name&gt;</code></strong>：链接指定的库。</li>
-<li>注意：如果库名是 <code>libmath.a</code>，参数则是 <code>-lmath</code>（去掉 lib 前缀和扩展名）。</li>
-</ul>
-<hr />
-<h4 id="输出管理与调试信息-o-与--g">输出管理与调试信息：<code>-o</code> 与 <code>-g</code><a class="headerlink" href="#输出管理与调试信息-o-与--g" title="链接到此章节">&para;</a></h4>
-<ul>
-<li><strong><code>-o &lt;file&gt;</code></strong>：指定输出文件名。在交叉编译中，我们通常生成 <code>.elf</code> 文件，然后再通过 <code>objcopy</code> 转换为 <code>.bin</code> 或 <code>.hex</code>。</li>
-<li><strong><code>-g</code> 与 <code>-g3</code></strong>：</li>
-<li><code>-g</code> 产生标准的调试符号，用于 GDB 调试。</li>
-<li><strong><code>-g3</code></strong>：甚至会包含宏定义的调试信息。如果你在调试时需要查看某个 <code>#define</code> 的值，请开启它。</li>
-<li><strong>误区拨正</strong>：开启 <code>-g</code> <strong>不会</strong>增加代码在板子上运行时的体积。调试信息只存在于电脑上的 <code>.elf</code> 文件中，并不会被烧录到单片机的 Flash 里。</li>
-</ul>
-<hr />
-<h4 id="警告治理-w-系列-code-quality">警告治理：<code>-W</code> 系列 (Code Quality)<a class="headerlink" href="#警告治理-w-系列-code-quality" title="链接到此章节">&para;</a></h4>
-<p>在嵌入式这种安全敏感的领域，警告就是隐匿的 Bug。</p>
-<ul>
-<li><strong><code>-Wall -Wextra</code></strong>：绝大多数开发者的标配，开启绝大部分有价值的警告。</li>
-<li><strong><code>-Werror</code></strong>：<strong>将所有警告视为错误</strong>。</li>
-<li><em>推荐实践</em>：在 CI/CD（持续集成）环境中强制开启 <code>-Werror</code>，确保提交的代码没有任何隐患。</li>
-<li><strong><code>-Wshadow</code></strong>：当局部变量名覆盖了全局变量名时发出警告，这在嵌入式逻辑切换中极其有用。</li>
-<li><strong><code>-Wdouble-promotion</code></strong>：<strong>嵌入式必选！</strong> 当你无意中将一个 <code>float</code> 提升为 <code>double</code> 时警告。在没有双精度硬件浮点单元的单片机上，这会导致性能暴跌。</li>
-</ul>
-<hr />
-<h4 id="依赖生成-m--mmd">依赖生成：<code>-M</code>, <code>-MMD</code><a class="headerlink" href="#依赖生成-m--mmd" title="链接到此章节">&para;</a></h4>
-<p>你是否好奇 CMake 是如何知道“由于你改了某个头文件，所以这 10 个源文件需要重新编译”的？</p>
-<ul>
-<li><strong><code>-MMD</code></strong>：在编译的同时，生成一个 <code>.d</code> 后缀的依赖关系文件。</li>
-<li><strong>自动化</strong>：现代构建系统（CMake/Ninja）会自动处理这些选项。理解它能帮你排查“为什么我改了代码但编译没反应”的增量编译问题。</li>
-</ul>
-<div class="language-cmake highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 编译参数</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="w"> </span><span class="s">PRIVATE</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="s">-std=c++17</span><span class="w">             </span><span class="c"># 核心：定义语言标准</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="s">-g3</span><span class="w">                    </span><span class="c"># 调试：丰富的调试信息</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="s">-Wall</span><span class="w"> </span><span class="s">-Wextra</span><span class="w">          </span><span class="c"># 质量：严格警告</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="s">-Werror</span><span class="w">                </span><span class="c"># 质量：零容忍警告</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="s">-Wdouble-promotion</span><span class="w">     </span><span class="c"># 性能：防止隐式双精度运算</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="s">-ffunction-sections</span><span class="w">    </span><span class="c"># 体积：函数分区</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="s">-fdata-sections</span><span class="w">        </span><span class="c"># 体积：数据分区</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="s">-fno-exceptions</span><span class="w">        </span><span class="c"># 裁剪：禁用异常</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="s">-fno-rtti</span><span class="w">              </span><span class="c"># 裁剪：禁用 RTTI</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="c"># 链接参数</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="nb">target_link_options</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="w"> </span><span class="s">PRIVATE</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="s">-Wl,--gc-sections</span><span class="w">      </span><span class="c"># 体积：垃圾回收死代码</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="s">-Wl,-Map=</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="s">.map</span><span class="w">  </span><span class="c"># 诊断：生成内存映射文件</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">)</span>
+<h2 id="一一个常见但并不无害的写法">一、一个常见、但并不“无害”的写法<a class="headerlink" href="#一一个常见但并不无害的写法" title="链接到此章节">&para;</a></h2>
+<p>很多人最早接触 C++ 时，构造函数往往是这样写的：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Timer</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Timer</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">period</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="n">period_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">period</span><span class="p">;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="n">enabled_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">period_</span><span class="p">;</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w">     </span><span class="n">enabled_</span><span class="p">;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">};</span>
 </span></code></pre></div>
-<hr />
-<h2 id="1-优化等级在速度体积与调试之间平衡">1. 优化等级：在速度、体积与调试之间平衡<a class="headerlink" href="#1-优化等级在速度体积与调试之间平衡" title="链接到此章节">&para;</a></h2>
-<p>GCC 和 Clang 提供了多级的优化开关。理解它们的差异是嵌入式开发者的基本功。</p>
-<table>
-<thead>
-<tr>
-<th><strong>选项</strong></th>
-<th><strong>名称</strong></th>
-<th><strong>核心行为</strong></th>
-<th><strong>适用场景</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong><code>-O0</code></strong></td>
-<td>无优化</td>
-<td>保持代码与汇编的一一对应。</td>
-<td>仅限排查极难捕捉的逻辑 Bug。</td>
-</tr>
-<tr>
-<td><strong><code>-Og</code></strong></td>
-<td>调试优化</td>
-<td>开启不影响调试观察的优化。</td>
-<td><strong>开发阶段的首选</strong>，兼顾性能与单步调试。</td>
-</tr>
-<tr>
-<td><strong><code>-O2</code></strong></td>
-<td>性能优化</td>
-<td>几乎开启所有不涉及空间换时间的优化。</td>
-<td>高性能计算、RTOS 任务逻辑。</td>
-</tr>
-<tr>
-<td><strong><code>-Os</code></strong></td>
-<td>尺寸优化</td>
-<td>开启 <code>-O2</code> 中不增加代码体积的选项。</td>
-<td><strong>嵌入式发布的默认选择</strong>。</td>
-</tr>
-<tr>
-<td><strong><code>-Ofast</code></strong></td>
-<td>极速优化</td>
-<td>破坏 IEEE 754 标准（不保证浮点精度）。</td>
-<td>纯数学计算且不介意精度微差。</td>
-</tr>
-</tbody>
-</table>
-<h3 id="-深度建议为什么不要在嵌入式用--o3">💡 深度建议：为什么不要在嵌入式用 <code>-O3</code>？<a class="headerlink" href="#-深度建议为什么不要在嵌入式用--o3" title="链接到此章节">&para;</a></h3>
-<p><code>-O3</code> 会进行大量的循环展开（Loop Unrolling）和函数内联。虽然速度可能提升，但在 Flash 空间捉襟见肘的单片机上，它会导致代码膨胀，甚至可能因为指令缓存（I-Cache）未命中反而降低性能。</p>
-<hr />
-<h2 id="2-裁剪-c-运行时卸下沉重的盔甲">2. 裁剪 C++ 运行时：卸下沉重的“盔甲”<a class="headerlink" href="#2-裁剪-c-运行时卸下沉重的盔甲" title="链接到此章节">&para;</a></h2>
-<p>现代 C++ 默认携带了一些在嵌入式中代价极高的特性。通过以下两个选项，我们可以把 C++ “瘦身”回类似 C 的开销。</p>
-<h3 id="21--fno-exceptions-禁用异常">2.1 <code>-fno-exceptions</code> (禁用异常)<a class="headerlink" href="#21--fno-exceptions-禁用异常" title="链接到此章节">&para;</a></h3>
-<ul>
-<li><strong>代价</strong>：C++ 异常需要庞大的“解开栈（Unwind Table）”支持，这会增加约 10%~20% 的 Flash 占用。</li>
-<li><strong>后果</strong>：无法使用 <code>try-catch</code> 和 <code>throw</code>。如果程序出错，会直接调用 <code>std::terminate</code>。</li>
-<li><strong>嵌入式准则</strong>：在资源受限系统（如 Cortex-M）中，<strong>强烈建议禁用</strong>。</li>
-</ul>
-<h3 id="22--fno-rtti-禁用运行时类型识别">2.2 <code>-fno-rtti</code> (禁用运行时类型识别)<a class="headerlink" href="#22--fno-rtti-禁用运行时类型识别" title="链接到此章节">&para;</a></h3>
-<ul>
-<li><strong>代价</strong>：为了支持 <code>dynamic_cast</code> 和 <code>typeid</code>，编译器会为每个带虚函数的类生成额外的元数据（vtable 之外的信息）。</li>
-<li><strong>后果</strong>：无法在运行时判断对象的真实类型。</li>
-<li><strong>嵌入式准则</strong>：现代嵌入式设计更倾向于编译时多态（模板/CRTP），因此 RTTI 通常是多余的。</li>
-</ul>
-<hr />
-<h2 id="3-垃圾回收不用的代码">3. 垃圾回收不用的代码<a class="headerlink" href="#3-垃圾回收不用的代码" title="链接到此章节">&para;</a></h2>
-<p>默认情况下，编译器将整个源文件编译成一个巨大的二进制块。即便你只用了库里的一个函数，链接器也会把整个库的代码塞进 Flash。</p>
-<h3 id="31-编译器端分区化">3.1 编译器端：分区化<a class="headerlink" href="#31-编译器端分区化" title="链接到此章节">&para;</a></h3>
-<ul>
-<li><strong><code>-ffunction-sections</code></strong>：将每个函数独立打包进一个段（Section）。</li>
-<li><strong><code>-fdata-sections</code></strong>：将每个全局变量/静态变量独立打包。</li>
-</ul>
-<h3 id="32-链接器端垃圾回收">3.2 链接器端：垃圾回收<a class="headerlink" href="#32-链接器端垃圾回收" title="链接到此章节">&para;</a></h3>
-<ul>
-<li><strong><code>-Wl,--gc-sections</code></strong>：告知链接器（ld），扫描所有段，把那些没有被引用的“死代码”彻底从最终的 <code>.elf</code> 文件中剔除。</li>
-</ul>
-<hr />
-<h2 id="4-cmake-中的最佳实践配置">4. CMake 中的最佳实践配置<a class="headerlink" href="#4-cmake-中的最佳实践配置" title="链接到此章节">&para;</a></h2>
-<p>将上述理论转化为代码。在你的顶层 <code>CMakeLists.txt</code> 中，建议这样管理这些选项：</p>
-<div class="language-cmake highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 创建一个专门的编译选项接口库，方便所有 Target 复用</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">add_library</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span><span class="p">)</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Release</span><span class="o">&gt;</span><span class="s">:-Os&gt;</span><span class="w">                 </span><span class="c"># Release 模式优化尺寸</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Debug</span><span class="o">&gt;</span><span class="s">:-Og</span><span class="w"> </span><span class="s">-g3&gt;</span><span class="w">               </span><span class="c"># Debug 模式方便调试</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="s">-fno-exceptions</span><span class="w">                          </span><span class="c"># 禁用异常</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="s">-fno-rtti</span><span class="w">                                </span><span class="c"># 禁用 RTTI</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="s">-ffunction-sections</span><span class="w">                      </span><span class="c"># 函数分区</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="s">-fdata-sections</span><span class="w">                          </span><span class="c"># 数据分区</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="s">-Wall</span><span class="w"> </span><span class="s">-Wextra</span><span class="w"> </span><span class="s">-Wpedantic</span><span class="w">                 </span><span class="c"># 开启严格警告（防患未然）</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">)</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="c"># 链接器选项</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="nb">target_link_options</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="s2">&quot;-Wl,--gc-sections&quot;</span><span class="w">                      </span><span class="c"># 链接时删除死代码</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="s2">&quot;--specs=nano.specs&quot;</span><span class="w">                     </span><span class="c"># 使用精简版 C 库 (Newlib-nano)</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">)</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="c"># 使用时只需要链接这个接口</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_firmware</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">project_warnings</span><span class="p">)</span>
-</span></code></pre></div>
-<hr />
-<h2 id="5-危险的--ofast-与浮点陷阱">5. 危险的 <code>-Ofast</code> 与浮点陷阱<a class="headerlink" href="#5-危险的--ofast-与浮点陷阱" title="链接到此章节">&para;</a></h2>
-<p>在嵌入式中，<code>-Ofast</code> 会开启 <code>-ffast-math</code>。这可能导致：</p>
+<p>乍一看没有任何问题，逻辑清晰、可读性也不错。</p>
+<p>但在编译器眼中，这段代码的真实含义是：</p>
 <ol>
-<li><strong>精度丢失</strong>：编译器为了加速，可能会忽略极小的浮点数误差。</li>
-<li><strong>NaN/Inf 失效</strong>：它假设你的程序永远不会产生非法浮点数。</li>
-<li><strong>重新排序运算</strong>：这可能导致在某些算法中出现不稳定的结果。</li>
+<li><code>period_</code> 被 <strong>默认初始化</strong></li>
+<li><code>enabled_</code> 被 <strong>默认初始化</strong></li>
+<li>进入构造函数体</li>
+<li>对两个成员执行 <strong>赋值操作</strong></li>
 </ol>
-<p><strong>建议</strong>：除非你在做纯数字信号处理（DSP）且对精度有完全的掌控，否则始终坚持使用 <code>-Os</code> 或 <code>-O2</code>。</p>
+<p>也就是说，<strong>成员至少被“处理”了两次</strong>。</p>
+<p>在桌面平台上，这种开销通常可以忽略；但在嵌入式系统里，尤其是：</p>
+<ul>
+<li>构造对象数量多</li>
+<li>成员是结构体 / 数组 / STL 容器</li>
+<li>构造发生在启动阶段（Boot / Driver Init）</li>
+</ul>
+<p>这个“看不见的默认初始化”就开始变得真实存在了。</p>
+<hr />
+<h2 id="二初始化列表并不是语法糖">二、初始化列表并不是“语法糖”<a class="headerlink" href="#二初始化列表并不是语法糖" title="链接到此章节">&para;</a></h2>
+<p>对比一下使用初始化列表的写法：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Timer</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Timer</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">period</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">period_</span><span class="p">(</span><span class="n">period</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">enabled_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="p">{}</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">period_</span><span class="p">;</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w">     </span><span class="n">enabled_</span><span class="p">;</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>这里的关键变化并不是“少写了几行代码”，而是 <strong>对象生命周期发生了变化</strong>。这里我们的成员初始化变得更加直接——<strong>直接在构造阶段完成初始化</strong>，换句话说，<strong>初始化列表不是赋值，它是构造的一部分</strong>。</p>
+<h2 id="三某些成员根本不能被赋值">三、某些成员，根本“不能被赋值”<a class="headerlink" href="#三某些成员根本不能被赋值" title="链接到此章节">&para;</a></h2>
+<p>在嵌入式系统中，这种情况并不少见。</p>
+<h4 id="1-const-成员">1. <code>const</code> 成员<a class="headerlink" href="#1-const-成员" title="链接到此章节">&para;</a></h4>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Device</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Device</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">id_</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="p">{}</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">id_</span><span class="p">;</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p><code>const</code> 成员 <strong>只能在初始化阶段赋值一次</strong>，构造函数体内的赋值在语义上是非法的。这不是语法限制，而是语言层面对“对象不变量”的保护。</p>
+<hr />
+<h4 id="2-引用成员">2. 引用成员<a class="headerlink" href="#2-引用成员" title="链接到此章节">&para;</a></h4>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Driver</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Driver</span><span class="p">(</span><span class="n">GPIO</span><span class="o">&amp;</span><span class="w"> </span><span class="n">gpio</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">gpio_</span><span class="p">(</span><span class="n">gpio</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="p">{}</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">GPIO</span><span class="o">&amp;</span><span class="w"> </span><span class="n">gpio_</span><span class="p">;</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>引用一旦绑定，就不能再指向其他对象。因此，<strong>初始化列表是唯一正确的写法</strong>。</p>
+<hr />
+<h4 id="3-没有默认构造函数的成员">3. 没有默认构造函数的成员<a class="headerlink" href="#3-没有默认构造函数的成员" title="链接到此章节">&para;</a></h4>
+<p>在你自己的框架代码中，这种类型其实非常常见：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">SpiBus</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">SpiBus</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">base_addr</span><span class="p">);</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>如果一个类作为成员存在：</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Sensor</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Sensor</span><span class="p">()</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">spi_</span><span class="p">(</span><span class="n">SPI1_BASE</span><span class="p">)</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="p">{}</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">SpiBus</span><span class="w"> </span><span class="n">spi_</span><span class="p">;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>此时如果不用初始化列表，代码甚至无法通过编译。</p>
+<hr />
+<h2 id="四初始化列表带来的语义完整性">四、初始化列表带来的“语义完整性”<a class="headerlink" href="#四初始化列表带来的语义完整性" title="链接到此章节">&para;</a></h2>
+<p>在嵌入式工程里，我们经常强调 <strong>“对象在构造完成后，必须处于可用状态”</strong>。初始化列表天然符合这一原则。</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">RingBuffer</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">RingBuffer</span><span class="p">(</span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">buffer_</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">size_</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">head_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="p">,</span><span class="w"> </span><span class="n">tail_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="p">{}</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">buffer_</span><span class="p">;</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w">   </span><span class="n">size_</span><span class="p">;</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w">   </span><span class="n">head_</span><span class="p">;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w">   </span><span class="n">tail_</span><span class="p">;</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="p">};</span>
+</span></code></pre></div>
+<p>这种写法传达的信息非常明确：</p>
+<blockquote>
+<p><strong>对象一旦构造完成，内部状态就是完整、自洽的。</strong></p>
+</blockquote>
+<p>而如果把初始化拆散在构造函数体中，实际上就允许了“半初始化状态”的存在，这在底层系统中是非常危险的设计信号。</p>
+<hr />
+<h2 id="五编译器优化视角初始化列表--更大的优化空间">五、编译器优化视角：初始化列表 = 更大的优化空间<a class="headerlink" href="#五编译器优化视角初始化列表--更大的优化空间" title="链接到此章节">&para;</a></h2>
+<p>从编译器的角度看：</p>
+<ul>
+<li>初始化列表提供了 <strong>确定的构造语义</strong></li>
+<li>成员的初始值在构造阶段已知</li>
+<li>更容易进行：</li>
+<li>常量传播</li>
+<li>构造消除</li>
+<li>栈上对象合并</li>
+<li>甚至在某些场景下完全消除对象</li>
+</ul>
+<p>尤其是在你大量使用 <code>constexpr</code>、<code>inline</code>、模板时，<strong>初始化列表是编译期优化的前提条件之一</strong>。</p>
+<hr />
+<h2 id="最后">最后<a class="headerlink" href="#最后" title="链接到此章节">&para;</a></h2>
+<p>初始化列表并不是什么“高级技巧”，其实并不复杂，对于嵌入式系统中，<strong>每一次多余的初始化，都会真实地变成指令、变成 Flash、变成时间</strong>。而初始化列表，正是那种<strong>不写就亏、写了稳赚</strong>的现代 C++ 基本功。</p>
 
 
 
@@ -2585,7 +2428,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月28日 21:20:21 CST">2025年12月28日 21:20:21</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年1月7日 09:56:03 CST">2026年1月7日 09:56:03</span>
   </span>
 
     
@@ -2595,7 +2438,7 @@
     <span class="md-icon" title="创建日期">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2025年12月28日 21:20:21 CST">2025年12月28日 21:20:21</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年1月7日 09:56:03 CST">2026年1月7日 09:56:03</span>
   </span>
 
     
@@ -2632,7 +2475,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../1%E9%9A%8F%E6%84%8F%E8%81%8A%E4%B8%8B%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%92%8CCMake%E7%AE%80%E5%8D%95%E6%8C%87%E5%8D%97/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 现代嵌入式C++教程：交叉编译基础与CMake多目标构建">
+          <a href="../../Chapter2/4%20CRTP%20VS%20%E8%BF%90%E8%A1%8C%E6%97%B6%E5%A4%9A%E6%80%81%EF%BC%8C%E4%BD%A0%E4%BB%AC%E7%9F%A5%E9%81%93%E5%90%97%EF%BC%9F/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 编译期多态 vs 运行时多态">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2642,20 +2485,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+                编译期多态 vs 运行时多态
               </div>
             </div>
           </a>
         
         
           
-          <a href="../3%E9%93%BE%E6%8E%A5%E5%99%A8%E4%B8%8E%E9%93%BE%E6%8E%A5%E5%99%A8%E8%84%9A%E6%9C%AC/" class="md-footer__link md-footer__link--next" aria-label="下一页: 链接器与链接器脚本：从原理到实践">
+          <a href="../2%20%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89/" class="md-footer__link md-footer__link--next" aria-label="下一页: 嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                链接器与链接器脚本：从原理到实践
+                嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践
               </div>
             </div>
             <div class="md-footer__button md-icon">
