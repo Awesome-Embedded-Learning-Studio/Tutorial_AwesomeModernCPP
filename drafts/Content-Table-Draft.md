@@ -38,33 +38,16 @@
 
 - [x] 4.1 构造函数优化：初始化列表与成员初始化
 - [x] 4.2 移动语义（Move Semantics）在嵌入式中的应用
-- [ ] 4.3 RVO与NRVO（返回值优化）
-- [ ] 4.4 空基类优化（EBO）
-- [ ] 4.5 对象大小与内存对齐
-- [ ] 4.6 trivial类型与标准布局类型
-- [ ] 4.7 聚合初始化与designated initializers（C++20）
-
-#### 第4章 模板与泛型编程
-
-- 5.1 函数模板与类模板基础
-- 5.2 模板特化与偏特化
-- 5.3 SFINAE与编译期类型选择
-- 5.4 if constexpr（C++17）：编译期分支
-- 5.5 概念（Concepts，C++20）：约束模板参数
-- 5.6 模板实例化控制：显式实例化与extern template
-- 5.7 零成本策略模式实现
+- [x] 4.3 RVO与NRVO（返回值优化）
+- [x] 4.4 空基类优化（EBO）
+- [x] 4.5 对象大小与内存对齐，trivial类型与标准布局类型，聚合初始化与designated initializers（C++20）
 
 #### 第5章 编译期编程技术
 
-- `constexpr`（C++11/14/17/20）与设计技巧：常量表达式计算、lookup tables、编译期字符串处理
-- `consteval`、`constinit`（C++20）
-- 类型萃取（Type Traits）
-- 编译期查找表生成
-- 编译期状态机设计
-- 编译期单位转换与物理量计算
-- 模板元编程（TMP）基础与实用模式（编译期映射、选择实现）
-- `static_assert`、SFINAE、`if constexpr`
-- 练习：实现一个编译期 CRC 表或小型 FSM，并比较运行时 vs 编译期实现差异
+- [x] `constexpr`（C++11/14/17/20）与设计技巧：常量表达式计算、lookup tables、编译期字符串处理
+- [x] `consteval`、`constinit`（C++20）
+- [x] 编译期应用——查找表生成，状态机设计与单位转换与物理量计算
+- [x] `if constexpr`
 
 ------
 
@@ -72,25 +55,23 @@
 
 #### 第6章 避免动态内存分配
 
-- 7.1 动态内存的代价：碎片化与不确定性（内存布局（静态、堆、栈）、碎片化与内存对齐）
-- 7.2 静态存储与栈上分配策略
-- 7.3 对象池（Object Pool）模式
-- 7.4 固定池 / slab / arena 分配器实现与比较
-- 7.5 禁用 heap 或限制 heap 时的替代策略：放置new（Placement New）的使用
-- 7.6 std::array vs C数组，你们知道嘛？
-- 7.7 无堆容器设计
+- [x] 7.1 动态内存的代价：碎片化与不确定性（内存布局（静态、堆、栈）、碎片化与内存对齐）
+- [x] 7.2 静态存储与栈上分配策略
+- [x] 7.3 对象池（Object Pool）模式
+- [x] 7.4 固定池 / slab / arena 分配器实现与比较
+- [x] 7.5 禁用 heap 或限制 heap 时的替代策略：放置new（Placement New）的使用
+- [x] 7.6 std::array vs C数组，你们知道嘛？
 
 #### 第7章 智能指针与RAII
 
-- RAII 在驱动/外设管理中的应用（GPIO、SPI、DMA、文件句柄）
-- `unique_ptr`、`shared_ptr` 的嵌入式取舍（内存成本、控制周期）
-- intrusive 智能指针与引用计数（非堆实现）
-- 8.2 std::unique_ptr：零开销的独占所有权
-- 8.3 std::shared_ptr在嵌入式中的考虑
-- 8.4 自定义删除器（Custom Deleter）
-- 8.5 引用计数的实现与性能
-- 8.6 资源句柄封装：GPIO、外设、文件描述符
-- 8.7 作用域守卫（Scope Guard）模式
+- [x] RAII 在驱动/外设管理中的应用（GPIO、SPI、DMA、文件句柄）
+- [x] `unique_ptr`、`shared_ptr` 的嵌入式取舍（内存成本、控制周期）
+- [x] intrusive 智能指针与引用计数（非堆实现）
+- [x] 8.2 std::unique_ptr：零开销的独占所有权
+- [x] 8.3 std::shared_ptr在嵌入式中的考虑
+- [x] 8.4 自定义删除器（Custom Deleter）
+- [x] 8.5 引用计数的实现与性能
+- [ ] 8.6 作用域守卫（Scope Guard）模式
 
 #### 第8章 容器与数据结构
 
@@ -159,6 +140,16 @@
 - 替代方案：`expected`/`outcome`/错误码、`std::optional`、结果类型封装
 - RTTI 的成本与替代（静态多态、CRTP）
 - 练习：把一个使用异常的库改造为返回 `Result<T, E>` 的风格
+
+#### 第4章 模板与泛型编程
+
+- 5.1 函数模板与类模板基础
+- 5.2 模板特化与偏特化
+- 5.3 SFINAE与编译期类型选择
+- 5.4 if constexpr（C++17）：编译期分支
+- 5.5 概念（Concepts，C++20）：约束模板参数
+- 5.6 模板实例化控制：显式实例化与extern template
+- 5.7 零成本策略模式实现
 
 ------
 
