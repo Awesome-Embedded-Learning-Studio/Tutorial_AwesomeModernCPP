@@ -15,6 +15,7 @@
 - [前置知识](#-前置知识)
 - [快速开始](#-快速开始)
 - [目录结构](#-目录结构)
+- [教程特色](#-教程特色)
 - [学习路径](#-学习路径)
 - [贡献指南](#-贡献指南)
 - [致谢](#-致谢)
@@ -72,6 +73,55 @@
 
 ---
 
+## ✨ 教程特色
+
+### 🏷️ 标签分类系统
+
+每篇文章都带有标签，方便按主题查找：
+
+- 📚 **概念类**：RAII、移动语义、零开销抽象、编译期计算
+- ⚙️ **语言特性**：constexpr、lambda、CRTP、concepts、coroutine
+- 🧠 **智能指针**：unique_ptr、shared_ptr、intrusive_ptr
+- 📦 **容器**：array、span、循环缓冲区、侵入式容器
+- 🔒 **类型安全**：variant、optional、expected、enum class
+- ⚡ **函数式**：function、lambda、ranges、invoke
+- 🔗 **并发**：atomic、mutex、memory_order、无锁
+
+### 📊 难度分级
+
+- 🟢 **beginner** - 入门级，适合初学者
+- 🟡 **intermediate** - 中级，需要一定基础
+- 🔴 **advanced** - 高级，深入探讨
+
+### 💻 完整代码示例
+
+- **160+ 代码文件** - 所有示例代码独立可编译
+- **44 个 CMake 项目** - 开箱即用的构建配置
+- **133 个 Snippets 引用** - 文档与代码同步更新
+
+代码位于 [`codes_and_assets/examples/`](./codes_and_assets/examples/)，按章节组织：
+
+```
+codes_and_assets/examples/
+├── chapter02/  # 零开销抽象
+├── chapter03/  # 内存与对象管理
+├── chapter05/  # 内存管理策略
+├── chapter06/  # RAII与智能指针
+├── chapter07/  # 容器与数据结构
+├── chapter08/  # 类型安全
+├── chapter09/  # 函数式特性
+└── chapter10/  # 并发与原子
+```
+
+### 🔍 智能导航
+
+- 自动上一篇/下一篇导航
+- 相关文章推荐
+- 前置知识提示
+- 预计阅读时间
+
+---
+
 ### 🔨 计划中
 
 以下内容仍在持续完善中：
@@ -79,6 +129,43 @@
 - 📌 基于C++的STM32开发与实战指南（开发中）
 - 📌 上位机现代C++特性体验与代码实战（开发中）
 - 📌 ARM32与PC平台仿真验证（开发中）
+
+---
+
+## 🛠️ 开发工具
+
+本项目提供了一套完整的开发工具链，便于贡献者参与：
+
+```bash
+# 初始化开发环境
+bash scripts/mkdoc_setup_local_dependency.sh
+
+# 本地预览
+bash scripts/local_preview.sh
+
+# 安装 pre-commit hooks（可选）
+bash scripts/setup_precommit.sh
+
+# 验证文章元数据
+python3 scripts/validate_frontmatter.py
+
+# 检查链接有效性
+python3 scripts/check_links.py
+
+# 查看统计信息
+python3 scripts/analyze_frontmatter.py
+```
+
+### 脚本说明
+
+| 脚本 | 功能 |
+|------|------|
+| `mkdoc_setup_local_dependency.sh` | 安装 MkDocs 依赖 |
+| `local_preview.sh` | 启动本地预览服务器 |
+| `setup_precommit.sh` | 安装 pre-commit hooks |
+| `validate_frontmatter.py` | 验证文章 frontmatter |
+| `check_links.py` | 检查内部链接 |
+| `analyze_frontmatter.py` | 分析教程统计信息 |
 
 ---
 
