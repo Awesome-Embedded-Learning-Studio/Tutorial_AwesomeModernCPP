@@ -47,14 +47,16 @@ b = 2;
 if (b == 2) {
     assert(a == 1);
 }
-```text
+
+```
 
 你期待线程2一定能看到`a==1`，但编译器可能会觉得：`a`和`b`又不相关，谁先谁后无所谓。于是它排成了：
 
 ```cpp
 b = 2;  // 先写b
 a = 1;  // 后写a
-```text
+
+```
 
 这下线程2可能看到`b==2`但`a==0`了。
 
@@ -68,7 +70,8 @@ a = 1;  // 后写a
 STR r0, [a]    ; 写a
 STR r1, [b]    ; 写b
 ; CPU可能实际执行顺序相反
-```text
+
+```
 
 **为什么要这么做？** 简单说就是为了快：
 
@@ -106,7 +109,8 @@ std::atomic<int> counter{0};
 
 // 多个线程自增
 counter.fetch_add(1, std::memory_order_relaxed);
-```text
+
+```
 
 **特点**：
 
@@ -129,7 +133,8 @@ private:
     std::atomic<int> requests{0};
     std::atomic<int> errors{0};
 };
-```text
+
+```
 
 **危险示例**：用relaxed做同步是错误的
 
@@ -146,7 +151,8 @@ if (data_ready.load(std::memory_order_relaxed) == 1) {  // ❌
     // data可能还是0！
     use(data);
 }
-```text
+
+```
 
 这里的问题在于：`data_ready`的写和`data`的写可能被CPU重排，导致`data_ready`变成1了，但`data`还是0。
 
@@ -170,7 +176,8 @@ int data = 0;
 // 线程1：生产者
 data = 42;  // 准备数据
 flag.store(1, std::memory_order_release);  // 发布：确保data先写入
-```text
+
+```
 
 ### acquire：读操作时的"订阅"语义
 
@@ -185,7 +192,8 @@ if (flag.load(std::memory_order_acquire) == 1) {  // 订阅
     // 一定能看到 data == 42
     use(data);
 }
-```text
+
+```
 
 ### 经典模式：发布-订阅
 
@@ -206,7 +214,8 @@ public:
 private:
     std::atomic<T*> data_ptr{nullptr};
 };
-```text
+
+```
 
 **嵌入式场景**：中断与主线程的数据传递
 
@@ -233,7 +242,8 @@ private:
     std::atomic<bool> ready_to_send{false};
     uint8_t tx_data;
 };
-```text
+
+```
 
 ### acq_rel：读-改-写操作
 
@@ -244,7 +254,8 @@ std::atomic<int> counter{0};
 
 // 既是acquire（读取）又是release（写入）
 int old = counter.fetch_add(1, std::memory_order_acq_rel);
-```text
+
+```
 
 **典型应用**：自旋锁
 
@@ -270,7 +281,8 @@ public:
 private:
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
 };
-```text
+
+```
 
 ------
 
@@ -299,7 +311,8 @@ int r2 = y.load(std::memory_order_seq_cst);
 // 线程4
 int r3 = y.load(std::memory_order_seq_cst);
 int r4 = x.load(std::memory_order_seq_cst);
-```text
+
+```
 
 如果是`seq_cst`，那么：
 
@@ -346,7 +359,8 @@ if (p) {
 }
 // 但不依赖p的操作没保证
 int global = some_global;   // ❌ 没依赖，可能看到旧值
-```text
+
+```
 
 **问题**：没有主流编译器真正实现了依赖链跟踪，它们都把`consume`当`acquire`处理。
 
@@ -405,7 +419,8 @@ private:
     std::atomic<bool> ready{false};
     std::vector<int> data;
 };
-```text
+
+```
 
 ### 模式2：循环缓冲区的索引
 
@@ -449,7 +464,8 @@ private:
     std::atomic<size_t> read_idx{0};
     std::atomic<size_t> write_idx{0};
 };
-```text
+
+```
 
 ### 陷阱1：漏掉一边的acquire/release
 
@@ -470,7 +486,8 @@ if (flag.load()) {  // ❌ 默认是seq_cst，但问题在于...
 if (flag.load(std::memory_order_relaxed)) {  // ❌ relaxed！
     use(data);  // data可能不是42！
 }
-```text
+
+```
 
 **原则**：配对使用！一边release，另一边必须acquire（或更强的）。
 
@@ -489,7 +506,8 @@ int y = b.load(std::memory_order_acquire);
 int x = a.load(std::memory_order_acquire);
 // 你以为 x一定是1？不一定！
 // acquire只保证看到b.store之前的修改，但不保证看到a.store
-```text
+
+```
 
 **解决方法**：
 
@@ -511,7 +529,8 @@ if (flag.load(std::memory_order_acquire)) {
     // ✅ 能看到正确的data，虽然data不是原子的
     // 因为acquire-release建立了同步关系
 }
-```text
+
+```
 
 **关键理解**：内存序同步的是内存访问，不只是原子变量。非原子变量只要访问时序正确，也能被正确同步。
 
@@ -541,7 +560,8 @@ flag = 1;
 
 // 线程2
 if (flag) { }
-```text
+
+```
 
 `volatile`只保证：
 
@@ -574,7 +594,8 @@ void poll_gpio() {
         irq_flag.store(false, std::memory_order_release);
     }
 }
-```text
+
+```
 
 **注意**：中断服务程序里用atomic要小心，有些嵌入式平台的atomic库可能用锁实现，而ISR里不能阻塞。务必检查`is_lock_free()`。
 

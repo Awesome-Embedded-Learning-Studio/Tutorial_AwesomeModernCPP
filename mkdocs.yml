@@ -165,8 +165,7 @@ plugins:
         - trimmer
 
   # 标签插件 - 为文章添加标签分类
-  - tags:
-      tags_file: tags.md  # 标签索引页
+  - tags
 
   # Awesome Pages 插件 - 灵活的页面组织方式
   - awesome-pages

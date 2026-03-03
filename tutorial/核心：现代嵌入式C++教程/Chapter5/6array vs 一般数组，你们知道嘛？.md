@@ -74,10 +74,12 @@ cpp_standard: [11, 14, 17, 20]
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter05/06_array_vs_stdarray/basic_comparison.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter05/06_array_vs_stdarray/practical_examples.cpp"
-```text
+
+```
 
 </details>

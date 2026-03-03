@@ -64,7 +64,8 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 ```bash
 export LD_LIBRARY_PATH=/opt/foo/lib:/home/you/sw/lib:$LD_LIBRARY_PATH
 ./myapp
-```text
+
+```
 
 ------
 
@@ -75,13 +76,17 @@ export LD_LIBRARY_PATH=/opt/foo/lib:/home/you/sw/lib:$LD_LIBRARY_PATH
 常见操作：
 
 ```bash
+
 # 把新目录加入配置（以 root）
 echo "/opt/foo/lib" > /etc/ld.so.conf.d/foo.conf
+
 # 重建缓存
 sudo ldconfig
+
 # 查看缓存内容
 ldconfig -p | grep foo
-```text
+
+```
 
 ------
 

@@ -81,13 +81,16 @@ void add_float_arrays_avx(const float* a, const float* b, float* out, size_t n) 
     // tail
     for (; i < n; ++i) out[i] = a[i] + b[i];
 }
-```text
+
+```
 
 编译：
 
-```text
+```cpp
+
 g++ -O3 -mavx -std=c++17 avx_samples.cpp -o avx_samples
-```text
+
+```
 
 #### 浮点点积（AVX + reduction）
 
@@ -112,7 +115,8 @@ float dot_product_avx(const float* a, const float* b, size_t n) {
     for (; i < n; ++i) sum += a[i] * b[i];
     return sum;
 }
-```text
+
+```
 
 #### 试一下：AVX2：整型并行加法与 gather 示例
 
@@ -139,10 +143,13 @@ void gather_example(const int32_t* base, const int32_t* idx, int32_t* out) {
     __m256i gathered = _mm256_i32gather_epi32(base, vindex, 4);
     _mm256_storeu_si256((__m256i*)out, gathered);
 }
-```text
+
+```
 
 编译：
 
-```text
+```cpp
+
 g++ -O3 -mavx2 -std=c++17 avx_samples.cpp -o avx2_samples
-```text
+
+```

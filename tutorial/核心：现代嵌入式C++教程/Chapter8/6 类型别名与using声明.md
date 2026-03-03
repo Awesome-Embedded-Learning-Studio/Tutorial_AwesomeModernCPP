@@ -49,7 +49,8 @@ typedef void (*handler_t)(int);
 using reg32_t = uint32_t;
 using reg_ptr_t = volatile uint32_t*;
 using handler_t = void(*)(int);
-```text
+
+```
 
 看看函数指针的区别：
 
@@ -59,7 +60,8 @@ typedef void (*signal_handler_t)(int signo, siginfo_t* info, void* ctx);
 
 // using 写法——别名在左，类型在右，清晰分离
 using signal_handler_t = void(*)(int signo, siginfo_t* info, void* ctx);
-```text
+
+```
 
 对于复杂的模板类型，`using` 更是碾压：
 
@@ -75,7 +77,8 @@ using Vector = typename vector_impl<T>::type; // 丑陋的 ::type
 // using：直接一行搞定
 template<typename T>
 using Vector = std::vector<T, std::allocator<T>>;
-```text
+
+```
 
 ------
 
@@ -107,7 +110,8 @@ struct UARTRegisters {
 // 用 using 为不同 UART 实例创建别名（假设有多个 UART）
 using UART1 = UARTRegisters;
 using UART2 = UARTRegisters;
-```text
+
+```
 
 对于 HAL（硬件抽象层），模板别名能让你统一配置类型：
 
@@ -130,7 +134,8 @@ using GPIOB_ODR = IOReg<std::uint32_t, 0x40010C0C>;
 void set_pin_a5() {
     GPIOA_ODR::write(GPIOA_ODR::read() | (1 << 5));
 }
-```text
+
+```
 
 ------
 
@@ -156,7 +161,8 @@ private:
     size_type head_ = 0;
     size_type tail_ = 0;
 };
-```text
+
+```
 
 这在嵌入式模板库中尤其重要——用户依赖的 `value_type`、`size_type` 等别名，让模板代码更具可移植性。
 
@@ -183,7 +189,8 @@ public:
     using Base::foo;  // 把 Base 的 foo 都拉进来
     void foo(char);   // 新增重载
 };
-```text
+
+```
 
 这在编写驱动继承体系时特别有用：
 
@@ -201,7 +208,8 @@ public:
 
     bool init(int baudrate); // 新增重载
 };
-```text
+
+```
 
 ------
 
@@ -219,7 +227,8 @@ using Second = uint32_t;
 
 Meter m = 100;
 Second s = m;  // 编译通过，但语义错误！
-```text
+
+```
 
 `using` 只是别名，不会创建新类型。需要类型安全，请用 `enum class` 或强类型包装（稍后教程会讲）。
 
@@ -239,7 +248,8 @@ public:
     // 用户代码：
     // FixedVector<int, 10>::iterator it;
 };
-```text
+
+```
 
 ### 4) 在头文件中使用 using 要注意
 
@@ -252,7 +262,8 @@ using ByteVector = std::vector<std::uint8_t>;
 
 // 避免
 using namespace std; // 别这么做！
-```text
+
+```
 
 ### 5) 诊断友好的别名命名
 
@@ -264,7 +275,8 @@ using namespace std; // 别这么做！
 
 using DeviceConfig = std::array<std::pair<const char*, int>, 16>;
 DeviceConfig cfg; // 错误时会提到 "DeviceConfig"，而不是那一长串
-```text
+
+```
 
 ------
 
@@ -320,7 +332,8 @@ void setup_gpio() {
     // 设置 PA5 输出高
     GPIOA::ODR::write(GPIOA::ODR::read() | (1 << 5));
 }
-```text
+
+```
 
 这里的 `using` 声明让寄存器类型、宽度、地址全部变成了可读的类型别名，维护和扩展都变得轻松。
 
@@ -329,7 +342,8 @@ void setup_gpio() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/06_type_aliases/using_basics.cpp"
-```text
+
+```
 
 </details>
 
@@ -338,7 +352,8 @@ void setup_gpio() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/06_type_aliases/using_templates.cpp"
-```text
+
+```
 
 </details>
 
@@ -347,7 +362,8 @@ void setup_gpio() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/06_type_aliases/using_register.cpp"
-```text
+
+```
 
 </details>
 

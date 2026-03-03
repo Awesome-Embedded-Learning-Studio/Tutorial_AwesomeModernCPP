@@ -33,7 +33,8 @@ cpp_standard: [11, 14, 17, 20]
 
 ```cpp
 void process_buffer(uint8_t* buf, size_t n);
-```text
+
+```
 
 这招确实灵活，但缺点：读者得同时记住 `buf` 的类型、长度单位是"元素数"还是"字节数"、函数是否要修改数据……出错的地方太多。 `std::span` 把这些语义显式化：类型和值（length）都在同一个对象里，阅读性和安全性都提升了。
 
@@ -62,7 +63,8 @@ int main() {
     print_bytes(a);                  // 从 std::array 构造
     print_bytes({v.data(), 2});      // 从 pointer + size 构造
 }
-```text
+
+```
 
 `print_bytes` 用 `std::span<const uint8_t>` 接收输入：既说明了不修改内容，又接受多种容器来源，调用方无需拷贝数据。
 
@@ -81,7 +83,8 @@ int main() {
 int arr[4];
 std::span<int, 4> s_fixed(arr);      // 只有长度为 4 的数组能绑定
 std::span<int> s_dyn(arr, 4);        // 任意长度，运行时记录
-```text
+
+```
 
 静态 `Extent` 可以在某些场景下启用额外的编译期检查或优化，但在嵌入式中，动态 extent 更常用（因为 buffer 长度常由运行时决定）。
 
@@ -100,7 +103,8 @@ s.subspan(offset, count);   // 切片，返回新的 span（仍为 non-owning）
 s.first(n), s.last(n);     // 前 n 个或后 n 个元素视图
 std::as_bytes(s);          // 将 span<T> 视为 span<const std::byte>
 std::as_writable_bytes(s); // 视为 span<std::byte>（当 T 可写时）
-```text
+
+```
 
 注意：`operator[]` 不检查越界；如果需要边界检查，自行用 `at`-like wrapper 或在调试时加断言。
 
@@ -124,7 +128,8 @@ void recv_packet(std::span<uint8_t> buffer) {
     auto bytes = std::as_bytes(payload);
     // crc_check(bytes.data(), bytes.size()); // 示例：调用检验函数
 }
-```text
+
+```
 
 这种把整体 buffer 切片成 header/payload 的写法尤其适合嵌入式协议解析，简洁而安全（只要你保证传进来的 `buffer` 有效）。
 
@@ -143,7 +148,8 @@ void recv_packet(std::span<uint8_t> buffer) {
 ```cpp
 void process(std::span<const int> data); // 明确：不修改数据
 void mutate(std::span<int> data);         // 明确：会修改数据
-```text
+
+```
 
 这比写 `template<class Container> void process(const Container& c)` 更直观，也避免了不必要的编译膨胀。
 
@@ -158,15 +164,16 @@ void mutate(std::span<int> data);         // 明确：会修改数据
        std::vector<int> v = {1,2,3};
        return v; // ❌ v 被销毁，返回的 span 悬垂
    }
+
    ```
 
 1. **以为有所有权**：span 不持有内存，不会析构或释放。若需要所有权，用 `std::vector`、`unique_ptr` 等。
 
-2. **不恰当的字节视图**：`std::as_bytes` 返回 `span<const std::byte>`，用于只读字节访问；`as_writable_bytes` 仅在底层可写时使用。
+1. **不恰当的字节视图**：`std::as_bytes` 返回 `span<const std::byte>`，用于只读字节访问；`as_writable_bytes` 仅在底层可写时使用。
 
-3. **越界访问**：`operator[]` 不检查边界。必要时做显式检查或使用调试断言。
+1. **越界访问**：`operator[]` 不检查边界。必要时做显式检查或使用调试断言。
 
-4. **不是以 null 结尾的字符串**：`std::span<char>` 不是 `C` 字符串，不保证以 `'\0'` 结尾。处理字符串请用 `std::string_view` 或明确长度处理。
+1. **不是以 null 结尾的字符串**：`std::span<char>` 不是 `C` 字符串，不保证以 `'\0'` 结尾。处理字符串请用 `std::string_view` 或明确长度处理。
 
 ------
 
@@ -210,7 +217,8 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/basic_usage.cpp"
-```text
+
+```
 
 </details>
 
@@ -219,22 +227,27 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/static_extent.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/subspan_example.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/packet_parsing.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/bytes_view.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter07/02_span/function_parameter.cpp"
-```text
+
+```
 
 </details>

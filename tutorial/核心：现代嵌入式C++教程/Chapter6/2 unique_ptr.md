@@ -46,14 +46,16 @@ void f() {
     auto p = std::make_unique<Sensor>(); // 推荐：安全、异常友好
     // 使用 p->...
 } // 离开作用域时自动 delete
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/02_unique_ptr_zero_overhead/basic_usage.cpp"
-```text
+
+```
 
 </details>
 
@@ -69,7 +71,8 @@ void f() {
 
 ```cpp
 static_assert(sizeof(std::unique_ptr<int>) == sizeof(int*), "通常应相等");
-```text
+
+```
 
 - 为什么能这样？因为默认删除器 `std::default_delete<T>` 是空类型，且编译器会利用空基类优化（EBO）把它"挤掉"。也就是说，`unique_ptr` 实际上只需要存储那根指针。
 
@@ -94,14 +97,16 @@ std::unique_ptr<char, void(*)(void*)> buf2(
     static_cast<char*>(std::malloc(128)),
     free_fn
 );
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/02_unique_ptr_zero_overhead/custom_deleter.cpp"
-```text
+
+```
 
 </details>
 
@@ -119,7 +124,8 @@ std::unique_ptr<char, void(*)(void*)> buf2(
 ```cpp
 auto arr = std::make_unique<int[]>(64); // 分配 64 个 int，析构时调用 delete[]
 arr[0] = 42;
-```text
+
+```
 
 嵌入式常见场景：使用专用堆或分配器（例如来自 RTOS 或定制内存池）。`unique_ptr` 无法直接接受分配器对象，但你可以把删除器写成调用分配器释放的函数或函数对象：
 
@@ -131,7 +137,8 @@ auto p = std::unique_ptr<MyType, void(*)(MyType*)>(
     static_cast<MyType*>(g_pool.alloc(sizeof(MyType))),
     [](MyType* t){ t->~MyType(); g_pool.free(t); }
 );
-```text
+
+```
 
 如果池的释放函数不需要对象完整类型（例如仅内存回收），你可以将析构和回收分开，注意析构调用时类型需完整。
 
@@ -146,7 +153,8 @@ struct Base { virtual ~Base() = default; };
 struct Derived : Base { /* ... */ };
 
 std::unique_ptr<Base> p = std::make_unique<Derived>();
-```text
+
+```
 
 这是面向对象设计的基本规则，不是 `unique_ptr` 的特例。
 
@@ -155,7 +163,8 @@ std::unique_ptr<Base> p = std::make_unique<Derived>();
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/02_unique_ptr_zero_overhead/polymorphism.cpp"
-```text
+
+```
 
 </details>
 
@@ -168,7 +177,8 @@ std::unique_ptr<Base> p = std::make_unique<Derived>();
 ```cpp
 auto p1 = std::make_unique<int>(7);
 auto p2 = std::move(p1); // p1 变成空，p2 拥有对象
-```text
+
+```
 
 有几个实用小函数：
 
@@ -183,7 +193,8 @@ auto p2 = std::move(p1); // p1 变成空，p2 拥有对象
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/02_unique_ptr_zero_overhead/basic_usage.cpp"
-```text
+
+```
 
 </details>
 
@@ -218,7 +229,8 @@ public:
     Foo();
     ~Foo(); // 在实现文件中定义，Impl 完整
 };
-```text
+
+```
 
 源文件 `foo.cpp` 中 `~Foo()` 可以看到 `Impl` 的完整定义并正确 delete。这个技巧能大幅减少编译依赖，是嵌入式大工程里常用的手段。
 

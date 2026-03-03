@@ -70,14 +70,16 @@ template <typename F>
 ScopeGuard<F> make_scope_guard(F&& f) {
     return ScopeGuard<F>(std::forward<F>(f));
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/08_scope_guard_patterns/scope_guard.cpp"
-```text
+
+```
 
 </details>
 
@@ -90,7 +92,8 @@ void foo() {
     if (error) return; // close_device 会被保证调用
     g.dismiss(); // 如果想提前取消清理
 }
-```text
+
+```
 
 幽默注：`dismiss()` 就是给守卫放假，不让它在离职那天烦你。
 
@@ -143,14 +146,16 @@ private:
     bool active_;
     int uncaught_at_construction_;
 };
-```text
+
+```
 
 这样你就可以写：
 
 ```cpp
 auto on_success = make_scope_guard_success([](){ commit_tx(); });
 auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
-```text
+
+```
 
 在嵌入式里如果禁用异常，这俩就没用武之地 —— 但是 `scope_exit`（总是执行）仍然非常有用。
 
@@ -159,7 +164,8 @@ auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/08_scope_guard_patterns/scope_success_fail.cpp"
-```text
+
+```
 
 </details>
 
@@ -174,14 +180,16 @@ auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
 #define CONCAT(x, y) CONCAT_IMPL(x, y)
 #define SCOPE_GUARD(code) \
     auto CONCAT(_scope_guard_, __COUNTER__) = make_scope_guard([&](){ code; })
-```text
+
+```
 
 用法：
 
 ```cpp
 SCOPE_GUARD({ disable_irq(); restore_irq_state(saved); });
 // 作用域结束时自动调用
-```text
+
+```
 
 在没有 `__COUNTER__` 的编译器上用 `__LINE__` 也行，不过 `__COUNTER__` 更保险。
 
@@ -198,7 +206,8 @@ void critical_section() {
 
     // 关键操作
 }
-```text
+
+```
 
 1. 上锁/解锁
 
@@ -206,7 +215,8 @@ void critical_section() {
 mutex.lock();
 auto unlock = make_scope_guard([&]{ mutex.unlock(); });
 // 如果函数中途 return，mutex 会被正确解锁
-```text
+
+```
 
 1. 临时改变寄存器、并在退出恢复
 
@@ -214,7 +224,8 @@ auto unlock = make_scope_guard([&]{ mutex.unlock(); });
 uint32_t old = REG_CTRL;
 REG_CTRL = old | ENABLE_BIT;
 auto restore_reg = make_scope_guard([=]{ REG_CTRL = old; });
-```text
+
+```
 
 ------
 
@@ -238,6 +249,7 @@ auto restore_reg = make_scope_guard([=]{ REG_CTRL = old; });
 #include <memory>
 
 auto closer = std::unique_ptr<void, decltype([](void*){ close_fd(fd); })>(nullptr, [](void*){ close_fd(fd); });
-```text
+
+```
 
 但这种写法语义上不如专门的 `ScopeGuard` 清晰（模板更适合做任意清理），我提是为了给你多一个"武器库"里的小工具。

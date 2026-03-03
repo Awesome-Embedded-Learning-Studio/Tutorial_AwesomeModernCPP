@@ -97,7 +97,8 @@ public:
         return decltype(f(std::declval<T>()))(unexpected<E>{storage_.err_});
     }
 };
-```text
+
+```
 
 这个实现省略了大量边角（拷贝/移动语义的细粒度控制、`noexcept`、`constexpr`、更友好的 `unexpected` API、复杂的 SFINAE），但足够清楚地表达 `expected` 的核心：**要么有值，要么有错误**。
 
@@ -132,7 +133,8 @@ int main(){
         return expected<double, std::string>(x / 2.0);
     }).map([](double d){ return d * 3.0; });
 }
-```text
+
+```
 
 链式写法的魅力在于：每一步只关心成功分支，错误会自动穿透并最终被处理或返回给上层逻辑。
 
@@ -148,10 +150,12 @@ int main(){
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/05_expected/expected.hpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/05_expected/parse_example.cpp"
-```text
+
+```
 
 </details>

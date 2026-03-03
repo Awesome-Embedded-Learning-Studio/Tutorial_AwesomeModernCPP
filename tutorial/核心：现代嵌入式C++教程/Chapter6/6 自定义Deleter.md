@@ -48,7 +48,8 @@ void example() {
     auto fp = open_file("/tmp/log.txt", "w");
     if (fp) std::fprintf(fp.get(), "hello, embedded world\n");
 } // 离开作用域时自动 fclose
-```text
+
+```
 
 注意这里 `unique_ptr` 的第二个模板参数是 `decltype(&fclose)`，也可以直接写成 `void(*)(FILE*)`。函数指针作为删除器时，`unique_ptr` 的类型大小会包含一个指针（即比裸指针大一倍）。
 
@@ -57,7 +58,8 @@ void example() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/06_custom_deleters/file_handle.cpp"
-```text
+
+```
 
 </details>
 
@@ -87,7 +89,8 @@ void example() {
     std::puts(p.get());
     // p 离开作用域时调用 FreeDeleter::operator()(p.get())
 }
-```text
+
+```
 
 `FreeDeleter` 标记为无状态（没有成员），因此通常不会增加 `unique_ptr` 的大小。对于嵌入式，这是非常有用的：零运行时开销、类型在编译期就确定。
 
@@ -119,7 +122,8 @@ void example(DmaController* ctrl) {
     uint8_t* buf = dma_alloc(1024);
     DmaPtr p(buf, DmaDeleter{ctrl}); // 删除器内部持有指针到 controller
 } // 离开作用域自动调用 ctrl->release_buffer
-```text
+
+```
 
 有状态删除器的好处是灵活，但代价是：智能指针不再是"只含一个指针"的小结构——它包含删除器的状态。嵌入式工程师要衡量：每个实例是否真的需要自己的状态？还是可以把状态提升为全局/单例/线程本地，从而使用无状态删除器？
 
@@ -128,7 +132,8 @@ void example(DmaController* ctrl) {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/06_custom_deleters/file_handle.cpp"
-```text
+
+```
 
 </details>
 
@@ -158,7 +163,8 @@ void use_fd() {
     auto fd = make_fd_shared(open("/dev/ttyS0", O_RDWR));
     // 多处共享并自动 close
 }
-```text
+
+```
 
 `shared_ptr` 的删除器在运行时存储在控制块里，灵活但相对开销更大（控制块、原子计数等），在嵌入式上要慎用。
 
@@ -189,7 +195,8 @@ struct FileDescriptor {
         return *this;
     }
 };
-```text
+
+```
 
 这类 wrapper 在嵌入式中非常常用：比把整套删除器玩花样更直观、代码也更可控。
 
@@ -227,7 +234,8 @@ FilePtr2 make_fp(const char* path) {
     FILE* f = fopen(path, "r");
     return FilePtr2(f, deleter);
 }
-```text
+
+```
 
 - 如果你不得不在接口层隐藏删除器类型（比如库 API 不想暴露复杂模板），可以在内部用 `unique_ptr`，对外提供轻量的 handle 或者专门的 RAII 类型。
 

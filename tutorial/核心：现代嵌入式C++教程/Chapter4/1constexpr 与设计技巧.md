@@ -59,7 +59,8 @@ static_assert(factorial(6) == 720, "compile-time check");
 constexpr unsigned factorial_rec(unsigned n) {
     return n <= 1 ? 1 : n * factorial_rec(n - 1);
 }
-```text
+
+```
 
 上面 `factorial(6)` 在编译期被展开为常量并用于 `static_assert`。在嵌入式里，避免运行时乘法循环有时也会节省能耗和代码路径复杂度（例如引导代码、实时中断处理路径）。
 
@@ -76,7 +77,8 @@ constexpr long ipow(long base, unsigned exp) {
     return r;
 }
 static_assert(ipow(2, 10) == 1024);
-```text
+
+```
 
 需要注意的是：C++11 的 `constexpr` 函数受限，只允许单一 return 表达式；C++14 放宽了这一点，允许循环和局部变量，这使得许多算法可以以更自然的方式实现为 `constexpr`。
 
@@ -109,7 +111,8 @@ constexpr std::array<float, N> make_sin_table() {
 }
 
 constexpr auto sin16 = make_sin_table<256>();
-```text
+
+```
 
 上面示例的重点在于：你可以在编译期生成一个 `std::array`，并在运行时直接以只读数据使用。对于资源极限的 MCU，这样的表通常被放到 `.rodata`（flash），不占 RAM。
 
@@ -135,7 +138,8 @@ constexpr std::array<uint32_t, 256> make_crc32_table(uint32_t poly = 0xEDB88320u
 }
 
 constexpr auto crc32_table = make_crc32_table();
-```text
+
+```
 
 然后在运行时代码中直接使用 `crc32_table`，无需在启动时生成表或包含外部二进制文件。
 
@@ -183,13 +187,15 @@ void handle_command(const char* cmd) {
         break;
     }
 }
-```text
+
+```
 
 这个方案简单可靠，但要注意哈希冲突可能带来的问题：在关键代码里，用 `static_assert` 验证已知字面值之间没有冲突（这只适用于字面量集合能在编译期枚举的场景）。
 
 ```cpp
 static_assert(hash_ct("CMD_START") != hash_ct("CMD_STOP"), "Hash collision!");
-```text
+
+```
 
 #### 5.2 编译期字符串作为类型（C++20 模板化字符串）
 
@@ -214,7 +220,8 @@ struct ConfigItem {
 
 constexpr ct_string cfg_name("uart.baudrate");
 using BaudCfg = ConfigItem<cfg_name>;
-```text
+
+```
 
 然后可以基于类型做元编程，或把多个 `ConfigItem` 放进映射结构，编译器会把全部信息在编译期解析。
 

@@ -54,7 +54,8 @@ struct Widget {
 
     int data = 42;
 };
-```text
+
+```
 
 现在的问题是，你要写一个泛型函数来"调用"这些东西。如果没有`std::invoke`，你需要这样写：
 
@@ -77,7 +78,8 @@ Widget w;
 call_traditional(free_function, 42);          // OK
 call_traditional(Functor{}, 42);              // OK
 call_member(&Widget::member_function, &w, 42); // 要用专门版本
-```text
+
+```
 
 这还只是冰山一角。考虑`const`成员函数、引用限定符、`std::function`、Lambda……你会发现这个特化矩阵会无限膨胀。
 
@@ -114,14 +116,16 @@ call_universal(&Widget::member_function, &w, 42);
 // 成员变量
 call_universal(&Widget::data, w) = 100;
 std::cout << "widget.data = " << w.data << std::endl;
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter09/05_std_invoke/invoke_basics.cpp"
-```text
+
+```
 
 </details>
 
@@ -170,7 +174,8 @@ template<typename Func, typename... Args>
 auto invoke(Func&& f, Args&&... args) {
     return detail::invoke_impl(std::forward<Func>(f), std::forward<Args>(args)...);
 }
-```text
+
+```
 
 当然这是极度简化的版本，标准库的实现要考虑更多边界情况。但核心思想就是：**编译期判断类型，分派到对应的调用方式**。
 
@@ -256,7 +261,8 @@ void setup_system() {
     manager.trigger(1, 2000);
     manager.trigger(2, 3000);
 }
-```text
+
+```
 
 你可能注意到那个`std::invoke(&LEDController::on_timer, led, ts)`。这里就是`invoke`的威力——你不需要记住成员函数的调用语法，只需要按顺序传递"要调用什么"和"参数列表"。
 
@@ -319,7 +325,8 @@ void test_timed_invoke() {
     // 包装成员函数
     timed_invoke(&Calculator::add, calc, 5, 3);
 }
-```text
+
+```
 
 这种包装器在嵌入式系统中特别有用——你可以用它来统一测量关键路径的执行时间，而不用为每种函数类型写专门版本。
 
@@ -328,7 +335,8 @@ void test_timed_invoke() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter09/05_std_invoke/wrapper.cpp"
-```text
+
+```
 
 </details>
 
@@ -370,7 +378,8 @@ void test_forwarding() {
     // 右值被转发为右值引用
     forward_and_call(take_by_rvalue_ref, 42);
 }
-```text
+
+```
 
 这里的关键是`std::invoke`不会改变参数的值类别——它只是把参数原样传给可调用对象。
 
@@ -415,7 +424,8 @@ void test_invoke_result() {
     call_and_print(Multiplier{}, 3, 4);  // 输出: result: 12
     call_and_print([](){ std::cout << "hello" << std::endl; });  // 输出: hello (void return)
 }
-```text
+
+```
 
 在写泛型库的时候，这个特性特别有用——你可以在编译期就确定返回类型，而不是等到运行时才发现类型不匹配。
 
@@ -431,7 +441,8 @@ int direct = add(3, 4);
 
 // 通过invoke调用
 int indirect = std::invoke(add, 3, 4);
-```text
+
+```
 
 在`-O2`优化级别下，这两种写法生成的汇编代码**几乎完全一样**。`std::invoke`本身只是一层薄薄的包装，编译器很容易把它内联掉。
 
@@ -449,7 +460,8 @@ auto wrapper(F&& f, Args&&... args) {
 void test() {
     int x = wrapper(add, 3, 4);
 }
-```text
+
+```
 
 生成的汇编（简化）：
 
@@ -457,7 +469,8 @@ void test() {
 ; x 直接被计算为常量 7
 ; 整个 wrapper 和 invoke 都被优化掉了
 mov eax, 7
-```text
+
+```
 
 当然，如果你的可调用对象是通过类型擦除存储的（比如`std::function`），那确实会有间接调用的开销。但这个开销不是`std::invoke`带来的，而是类型擦除本身的代价。
 
@@ -486,7 +499,8 @@ void safe_call(Func&& func, Args&&... args) {
 
     std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
 }
-```text
+
+```
 
 ### 3. 与C API的交互
 
@@ -515,7 +529,8 @@ public:
         );
     }
 };
-```text
+
+```
 
 ------
 
@@ -618,7 +633,8 @@ int main() {
 
     return 0;
 }
-```text
+
+```
 
 这个例子里，`std::invoke`让我们能够统一处理全局函数、Lambda和成员函数。命令注册的代码非常干净，调用者不需要关心底层是什么类型。
 
@@ -627,7 +643,8 @@ int main() {
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter09/05_std_invoke/command_parser.cpp"
-```text
+
+```
 
 </details>
 

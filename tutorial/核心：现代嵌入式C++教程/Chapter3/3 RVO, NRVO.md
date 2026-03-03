@@ -46,14 +46,16 @@ MyBigType make1() {
 MyBigType make2() {
     return MyBigType(...); // 直接返回临时，RVO 有机会发生
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter03/03_rvo_nrvo/rvo_nrvo_example.cpp"
-```text
+
+```
 
 </details>
 
@@ -86,7 +88,8 @@ MyBigType bad(bool flag) {
     if (flag) return a; // 可能无法 NRVO，因为另一分支返回不同命名对象
     else     return b;
 }
-```text
+
+```
 
 相比之下，下面更有利于 NRVO（或至少更简单）：
 
@@ -95,7 +98,8 @@ MyBigType good(bool flag) {
     if (flag) return MyBigType(...); // RVO 或者 C++17 保证消除
     else     return MyBigType(...);
 }
-```text
+
+```
 
 ------
 

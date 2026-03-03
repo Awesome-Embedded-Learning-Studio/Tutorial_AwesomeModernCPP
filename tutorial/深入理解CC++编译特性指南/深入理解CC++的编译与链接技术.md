@@ -13,8 +13,7 @@ int int_max(int a, int b) {
  return a > b ? a : b;
 }
 
-```text
-
+```
 
 随后，我们立马在一个C++文件使用了`int_max`
 
@@ -29,13 +28,12 @@ int main() {
  std::cout << "max in (" << a << ", " << b << "): " << int_max(a, b) << "\n";
 }
 
-```text
-
+```
 
 随后，我们敲下这段指令期待自己的程序成功编译的时候，我们得到了一个非常奇怪的错误——
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ g++ usage.cpp -L. -lutils -o usage
 /usr/sbin/ld: /tmp/ccdSskJz.o: in function `main':
@@ -43,8 +41,7 @@ usage.cpp:(.text+0x88): undefined reference to `int_max(int, int)'
 collect2: error: ld returned 1 exit status
 [charliechen@Charliechen linkers]$
 
-```text
-
+```
 
 ​ 这看起来太奇怪了，我们明明链接了libutils，他甚至都找到了我们的libutils（没有抱怨`/usr/sbin/ld: cannot find -lutils: No such file or directory`，这就是找到了），但是为什么会出错呢？而且就算没找到这个符号，为什么不在编译的时候就向我们抱怨呢？我认为，如果你像[`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html)的作者所说的那样，立马看到其中的问题的时候，我想这篇导论性质的《深入理解C/C++的编译与链接技术：导论》对您是没有新鲜东西的，我们随后才会真正细致的聊每一个细节，这里不会。
 
@@ -98,8 +95,7 @@ int main() {
  return extern_var + extern_func();
 }
 
-```text
-
+```
 
 | 符号 (Symbol)          | 类别 (Category) | 存储类别 (Storage Class)     | 链接性 (Linkage)      | 上CPU后运行时所在的内存区域 (Typical Segment) | 作用 (Function)                                        |
 | ---------------------- | --------------- | ---------------------------- | --------------------- | --------------------------------------------- | ------------------------------------------------------ |
@@ -119,12 +115,11 @@ int main() {
 ​ 让C语言编译器行动起来，注意您编译的指令必须是
 
 
-```text
+```cpp
 
 gcc -c demo.c -o demo.o # 欸，注意可不要掉-c，标识只编译
 
-```text
-
+```
 
 ​ 编译器安静的编译了一会，就把我们想要的demo.o给我们了。那编译器在编译整个单元的C文件的时候在做什么呢？
 
@@ -146,7 +141,7 @@ gcc -c demo.c -o demo.o # 欸，注意可不要掉-c，标识只编译
 ​ 得到的可执行文件如何验证我们上面讨论的内容呢，很简单，咱们拿出来咱们的nm工具分析一下就得了。来，试一下：
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ nm -f sysv demo.o
 
@@ -164,8 +159,7 @@ main                |0000000000000016|   T  |              FUNC|0000000000000013
 un_g_initialized_var|0000000000000000|   B  |            OBJECT|0000000000000004|     |.bss
 un_init_local_var   |0000000000000004|   b  |            OBJECT|0000000000000004|     |.bss
 
-```text
-
+```
 
 ​ 好，让我们仔细的看看这个表格吧。你需要做的是关注一下Class这一列，他说明了咱们的这个表格是什么。
 
@@ -177,17 +171,16 @@ un_init_local_var   |0000000000000004|   b  |            OBJECT|0000000000000004
 Windows的朋友，您需要打开`x86 Native Tools Command Prompt for VS Insiders`，导览到您目标的C文件后，输入`cl /c <SourceFile>.c`，这样MSVC就会只编译咱们源文件，得到的`<SourceFile>.obj`就是咱们的可重定位目标文件。这个时候，咱们可以使用dumpbin小工具：
 
 
-```text
+```cpp
 
 dumpbin /symbols <SourceFile>.obj
 
-```text
-
+```
 
 查看符号了，笔者这里枚举一下我得到的结果（VS2026下的默认工具链）
 
 
-```text
+```cpp
 
 D:\Windows_Programming\WindowsProgramming\demos\demos>dumpbin /symbols main.obj
 Microsoft (R) COFF/PE Dumper Version 14.50.35615.0
@@ -212,8 +205,8 @@ COFF SYMBOL TABLE
 00B 00000000 SECT4  notype       Static       | .text$mn
  Section length   20, #relocs    2, #linenums    0, checksum EBBC6B4A
 00D 00000000 SECT4  notype ()    External     | _func
-00E 00000000 UNDEF  notype ()    External     | _extern_func
-00F 00000010 SECT4  notype ()    External     | _main
+00E 00000000 UNDEF  notype ()    External     |_extern_func
+00F 00000010 SECT4  notype ()    External     |_main
 010 00000000 UNDEF  notype       External     | _extern_var
 011 00000000 SECT5  notype       Static       | .chks64
  Section length   28, #relocs    0, #linenums    0, checksum        0
@@ -228,18 +221,17 @@ Summary
        2F .drectve
        20 .text$mn
 
-```text
-
+```
 
 我们踢开其他乱七八糟的输出，实际上就是下表：
 
 | `dumpbin` 输出                                      | 意义                      | 类比 Linux `nm` |
 | --------------------------------------------------- | ------------------------- | --------------- |
-| `SECT4  notype () External | _func`                 | 定义在 .text 中的外部函数 |                 |
-| `SECT3  notype External    | _g_initialized_var`    | 定义在 .data 中的外部变量 |                 |
-| `UNDEF  notype External    | _extern_func`          | 未定义外部函数引用        |                 |
-| `UNDEF  notype External    | _extern_var`           | 未定义外部变量引用        |                 |
-| `UNDEF  notype External    | _un_g_initialized_var` | 未定义外部变量引用        |                 |
+| `SECT4  notype () External \| _func`                | 定义在 .text 中的外部函数 | `T _func`       |
+| `SECT3  notype External    \| _g_initialized_var`   | 定义在 .data 中的外部变量 | `D _g_initialized_var` |
+| `UNDEF  notype External    \| _extern_func`         | 未定义外部函数引用        | `U _extern_func` |
+| `UNDEF  notype External    \| _extern_var`          | 未定义外部变量引用        | `U _extern_var`  |
+| `UNDEF  notype External    \| _un_g_initialized_var` | 未定义外部变量引用        | `U _un_g_initialized_var` |
 
 ## 解决我们不知道的符号：链接
 
@@ -252,25 +244,23 @@ int extern_func() {
  return 3;
 }
 
-```text
-
+```
 
 ​ 这些符号我们同样的也会编译成可重定位的目标文件。那么剩下的，就是将这些参杂了各种定义符号和未定义的符号之间，组合起来，**解决每一个文件中符号不确切的（只有名称的），定义不知晓的部分**（咱们的编译器编译通过了这些源代码文件，说明我们是声明了这些符号，但是尚未找到定义）。**这就是链接的时候我们要做的事情。**
 
 ​ 现在，我们把demo_extern.c编译成demo_extern.o后，利用这个来完成我们可执行文件的最后一步：
 
 
-```text
+```cpp
 
 gcc demo_extern.o demo.o -o demo_exe
 
-```text
-
+```
 
 ​ 编译当然顺利通过。这毫无疑问。
 
 
-```text
+```cpp
 
 charliechen@Charliechen linkers]$ nm -f sysv demo_exe
 
@@ -308,37 +298,34 @@ un_g_initialized_var|0000000000004020|   B  |            OBJECT|0000000000000004
 un_init_local_var   |0000000000004024|   b  |            OBJECT|0000000000000004|     |.bss
 [charliechen@Charliechen linkers]$
 
-```text
-
+```
 
 ​ 现在我们看看，表变得非常的复杂，但是没关系，里面我们重点关心的是：
 
 
-```text
+```cpp
 
 extern_func         |0000000000001119|   T  |              FUNC|000000000000000b|     |.text
 extern_var          |0000000000004010|   D  |            OBJECT|0000000000000004|     |.data
 
-```text
-
+```
 
 ​ 我们现在终于找到了我们关心的内容了，他们现在不再是不确定的UNDEF了，而是确定定义的函数和全局变量。咱们完全可以试一试去掉extern_func的实现。
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ gcc demo_extern.o demo.o -o demo_exe
 /usr/sbin/ld: demo.o: in function `main':
 demo.c:(.text+0x1b): undefined reference to `extern_func'
 collect2: error: ld returned 1 exit status
 
-```text
-
+```
 
 ​ 我们熟悉的错误出现了！`undefined reference`，说明连接器向我们抱怨了他找不到`extern_func`的定义。我们仔细看看：
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ nm -f sysv demo_extern.o
 Symbols from demo_extern.o:
@@ -347,8 +334,7 @@ Name                  Value           Class        Type         Size            
 
 extern_var          |0000000000000000|   D  |            OBJECT|0000000000000004|     |.data
 
-```text
-
+```
 
 ​ 您可以看到，demo_extern解决的是extern_var的定义，但是`extern_func`的定义没找到，咱们又只给了这两个文件，自然连接器不知道上哪找到你的`extern_func`，自然也就会爆这个错误。
 
@@ -394,13 +380,12 @@ int main() {
  return extern_var + extern_func();
 }
 
-```text
-
+```
 
 ​ 我们重复上面的单独编译和链接动作。很快，我们得到了另一种您可能常见的错误：
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ gcc -c demo_extern.c -o demo_extern.o
 [charliechen@Charliechen linkers]$ gcc -c demo.c -o demo.o
@@ -409,8 +394,7 @@ int main() {
 demo.c:(.text+0xb): multiple definition of `extern_func'; demo_extern.o:demo_extern.c:(.text+0x0): first defined here
 collect2: error: ld returned 1 exit status
 
-```text
-
+```
 
 ​ 您注意到了，还是一样，因为编译器相信**链接器可以正确的处理任何符号的关系**（他只能一分一分的编译文件！他管不了全局其他的源文件！**整个结果单元（包含可执行文件，动态库和静态库）的符号裁决由链接器决定！**这是笔者要再强调一次的！）
 
@@ -429,14 +413,13 @@ collect2: error: ld returned 1 exit status
 ​ 欸！您的观察非常出色。如果您仔细看了看我的这段操作。
 
 
-```text
+```cpp
 
 [charliechen@Charliechen linkers]$ gcc -c demo_extern.c -o demo_extern.o
 [charliechen@Charliechen linkers]$ gcc -c demo.c -o demo.o
 [charliechen@Charliechen linkers]$ gcc demo_extern.o demo.o -o demo_exe
 
-```text
-
+```
 
 ​ 您有没有发现，我们链接的那个步骤，好像跟源文件就没关系？毕竟咱们检索未定义符号是从可重定位文件（*.o）找的，那么，我们可不可以早就准备好一系列的可重定位文件和一组符号的声明文件，然后我们编程的时候就不用重复造轮子了，直接在**编程的时候利用这些声明文件告知编译器我担保这些符号存在**，编译的时候**通过编译生成咱们自己的可重定位文件**，然后**链接的时候把这些早就准备好的可重定位文件和我们自己的重定位文件组合起来构成一个可执行文件**呢？
 
@@ -528,18 +511,16 @@ int main() {
  std::cout << "max in (" << a << ", " << b << "): " << int_max(a, b) << "\n";
 }
 
-```text
-
+```
 
 当您在 **`usage.cpp`** 这个 C++ 文件中使用 `int_max(int a, int b)` 函数时，C++ 编译器（`g++`）不会像 C 编译器那样简单地将函数名映射为 `int_max`。为了支持**函数重载**、**命名空间**、**类成员函数**等 C 语言没有的特性，C++ 编译器会对源代码中的函数名进行复杂的编码，这一过程称为**名称修饰（Name Mangling）**。
 
 
-```text
+```cpp
 
 int int_max(int a, int b);
 
-```text
-
+```
 
 `g++` 编译器在生成 **`usage.o`** 目标文件时，会期望链接器能找到一个被修饰过的符号，例如在 GCC/Linux 环境下，它可能会查找类似 **`_Z7int_maxii`** 这样的符号（具体修饰结果因编译器和平台而异，但**肯定不是**简单的 `int_max`）。
 
@@ -550,12 +531,11 @@ int int_max(int a, int b);
 ​ 您马上就知道了下面的问题了
 
 
-```text
+```cpp
 
 g++ usage.cpp -L. -lutils -o usage
 
-```text
-
+```
 
 1. **`g++`** 编译 `usage.cpp`，生成 `usage.o`，其中包含一个对**修饰后名称**（例如 `_Z7int_maxii`）的**未定义引用**。
 2. 链接器 (`ld`) 开始工作，它在 `usage.o` 中查找 `int_max`，但只找到了对 `_Z7int_maxii` 的需求。
@@ -581,7 +561,6 @@ int main() {
     return 0; // 补充返回语句
 }
 
-```text
-
+```
 
 重新编译并链接，程序就会成功运行，因为此时 `usage.o` 中引用的符号将是简单的 `int_max`，与 `libutils.a` 中提供的符号相匹配。

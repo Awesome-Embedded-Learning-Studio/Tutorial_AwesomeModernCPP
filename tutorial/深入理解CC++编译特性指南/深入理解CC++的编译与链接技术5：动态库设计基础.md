@@ -30,8 +30,7 @@ namespace charlies_tools {
    std::vector<std::string_view> split(const std::string& waited_splits, const std::string_view sp_view);
 };
 
-```text
-
+```
 
 我们作为C++程序员，会很自然的使用到这些特性，回避掉一些符号层次的冲突问题，提升软件工程中更好的可读性。
 
@@ -44,8 +43,7 @@ namespace charlies_tools {
 0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
 0000000000000000 T _ZN3Foo8someFuncEiPKc
 
-```text
-
+```
 
 然后我们再看看MSVC产生的：
 
@@ -56,8 +54,7 @@ namespace charlies_tools {
 00D 00000010 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@D@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,char))
 00E 00000020 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$basic_string_view@DU?$char_traits@D@std@@@3@@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,class std::basic_string_view<char,struct std::char_traits<char> >))
 
-```text
-
+```
 
 实际上，我们可以看到，写入到可重定位文件中的符号,长的完全不一样，说明我们根本没法通用我们的符号。除此之外，我们还有重载等一系列功能，允许我们提供相同的函数名，不同的参数列表可以共存到一个目标文件的技术，导致我们的工具链不得不费心思处理这些问题。
 
@@ -80,8 +77,7 @@ auto dummy = [](){
     return 0;
 }();
 
-```text
-
+```
 
 ## 所以，如何设计少麻烦的二进制接口
 
@@ -101,8 +97,7 @@ extern "C"{
 }
 #endif
 
-```text
-
+```
 
 这样我们就能让链接器所看到的接口看起来干净很多。
 
@@ -126,8 +121,7 @@ int do_something(int a, int b);
 // 更完整的声明 - 增加了extern "C"和异常规范
 extern "C" int do_something(int a, int b) noexcept;
 
-```text
-
+```
 
 ##### 类型定义
 
@@ -144,8 +138,7 @@ struct MyData {
 // 函数使用这个结构体
 extern "C" void process_data(const MyData* data);
 
-```text
-
+```
 
 如果头文件里没有`MyData`的完整定义，编译器就不知道`sizeof(MyData)`是多少，无法正确地为`process_data`函数调用分配栈空间或传递参数。
 
@@ -159,8 +152,7 @@ extern "C" void process_data(const MyData* data);
 
 extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
 
-```text
-
+```
 
 ##### 包含其他头文件
 
@@ -171,8 +163,7 @@ extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
 
 extern "C" void* allocate_buffer(size_t size);
 
-```text
-
+```
 
 # Reference
 
@@ -202,8 +193,7 @@ void Foo::someFunc(int a, const char* b) { }
 void charlies_tools::split(const std::string& waited_splits, const char ch) { }
 void charlies_tools::split(const std::string& waited_splits, const std::string_view sp_view) { }
 
-```text
-
+```
 
 然后，在Linux机器上，利用-c指令只翻译test.cpp为机器码：
 
@@ -212,8 +202,7 @@ void charlies_tools::split(const std::string& waited_splits, const std::string_v
 
 g++ -c test.cpp -o test_name
 
-```text
-
+```
 
 然后，利用nm指令查看ABI
 
@@ -225,8 +214,7 @@ g++ -c test.cpp -o test_name
 0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
 0000000000000000 T _ZN3Foo8someFuncEiPKc
 
-```text
-
+```
 
 这就得到了笔者在正文中列出的结果
 
@@ -247,13 +235,12 @@ https://go.microsoft.com/fwlink/?linkid=2045807。
 
 test.cpp
 
-```text
-
+```
 
 随后，利用dumpbin小工具，得到：
 
 
-```text
+```cpp
 
 D:\DownloadFromInternet>dumpbin /SYMBOLS test.obj
 Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
@@ -290,4 +277,4 @@ String Table Size = 0x123 bytes
          178 .drectve
           25 .text$mn
 
-```text
+```

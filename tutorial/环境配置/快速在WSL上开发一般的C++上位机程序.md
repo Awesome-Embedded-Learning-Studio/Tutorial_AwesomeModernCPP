@@ -21,6 +21,7 @@
 打开 Windows Terminal -> 选择 Ubuntu（或你安装的 distro），进入 shell，然后运行：
 
 ```bash
+
 # 更新系统包索引与系统
 sudo apt update && sudo apt upgrade -y
 
@@ -32,7 +33,8 @@ sudo apt install -y clang clang-format
 
 # （可选）安装额外工具：python 用于一些构建脚本、ccache 等
 sudo apt install -y python3 python3-pip ccache
-```text
+
+```
 
 `build-essential` 包含 gcc/g++、make 等，是在 Debian/Ubuntu 上非常常用的构建必备包。安装命令和说明见常用社区文档。
 
@@ -66,7 +68,8 @@ sudo apt install -y python3 python3-pip ccache
 
 ```bash
 mkdir -p ~/projects/hello_cmake && cd ~/projects/hello_cmake
-```text
+
+```
 
 新建文件 `CMakeLists.txt`：
 
@@ -76,7 +79,8 @@ project(hello_cmake LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 add_executable(hello main.cpp)
-```text
+
+```
 
 新建 `main.cpp`：
 
@@ -89,7 +93,8 @@ int main() {
     std::cout << "x = " << x << std::endl;
     return 0;
 }
-```text
+
+```
 
 构建（在 WSL 终端或 VS Code 的终端中）：
 
@@ -98,7 +103,8 @@ mkdir -p build && cd build
 cmake .. -G "Ninja"        # 如果你安装了 ninja；否则用默认 make： cmake ..
 cmake --build .
 ./hello
-```text
+
+```
 
 如果你安装并使用 **CMake Tools** 扩展：打开项目根目录，扩展会在底部状态栏提供 `Configure`、`Build` 按钮，点击即可；并可以选择不同的 kit（gcc/clang）与构建目录。
 
@@ -131,7 +137,8 @@ cmake --build .
     }
   ]
 }
-```text
+
+```
 
 "program"需要填写你的应用程序的文件路径，`${workspaceFolder}`就是当前你开VSCode的目录，这里的构建放到了build下，你进这里就能看到你生成的应用程序了。
 

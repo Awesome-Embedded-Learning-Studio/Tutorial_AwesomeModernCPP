@@ -95,7 +95,8 @@ auto gpio = std::unique_ptr<GpioHandle, void(*)(GpioHandle*)>(new GpioHandle{1},
 // or using alias
 using UniqueGpio = std::unique_ptr<GpioHandle, void(*)(GpioHandle*)>;
 UniqueGpio g(new GpioHandle{1}, gpio_release);
-```text
+
+```
 
 优点：确定、开销小、适合在构造/析构中执行实际释放逻辑。不在 ISR 中 delete，不在中断路径上做复杂操作。
 
@@ -109,7 +110,8 @@ UniqueGpio g(new GpioHandle{1}, gpio_release);
 auto cfg = std::make_shared<const Config>(/*...*/); // 优先使用 make_shared
 
 // 多个任务持有 shared_ptr<const Config>
-```text
+
+```
 
 如果要在运行时频繁更换配置（拷贝次数多），`shared_ptr` 的引用计数更新会频繁发生，代价明显。
 
@@ -140,7 +142,8 @@ public:
     ~intrusive_ptr() { if (p) p->dec_ref(); }
     // ... move/copy/assign ...
 };
-```text
+
+```
 
 优点：没有额外 heap 分配，内存更可控。缺点：对象类型需要内嵌计数器（改变类设计），并且你要自己处理线程安全（原子 vs 非原子）。
 
@@ -149,7 +152,8 @@ public:
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/04_smart_ptr_tradeoffs/comparison.cpp"
-```text
+
+```
 
 </details>
 

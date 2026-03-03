@@ -64,7 +64,8 @@ int main() {
         std::cout << "oops, no value\n";
     }
 }
-```text
+
+```
 
 要点：
 
@@ -92,7 +93,8 @@ s.reset();
 // 可选地持有引用 —— 注意语义差异
 int x = 7;
 std::optional<int&> ref = x; // optional 可以保存引用（表示"可能引用某物"）
-```text
+
+```
 
 小提醒：`std::optional<T&>` 是允许的，但它的语义是"可能引用某个已存在的对象"，并不会管理生命周期——别让引用悬空。
 
@@ -113,7 +115,8 @@ std::optional<int> parse_int(const std::string& s) {
         return std::nullopt;
     }
 }
-```text
+
+```
 
 调用者可以优雅地分支处理，不被异常打断控制流。
 
@@ -157,7 +160,8 @@ auto optional_map(std::optional<T> const& opt, F f)
 auto s = std::optional<std::string>{"42"};
 auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 // maybe_int 是 std::optional<int>
-```text
+
+```
 
 这是"手工链式"，写成小工具函数后代码会更优雅。
 
@@ -168,7 +172,8 @@ auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/04_optional/optional_basics.cpp"
-```text
+
+```
 
 </details>
 
@@ -177,7 +182,8 @@ auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/04_optional/optional_parse.cpp"
-```text
+
+```
 
 </details>
 
@@ -186,6 +192,7 @@ auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/04_optional/optional_chain.cpp"
-```text
+
+```
 
 </details>

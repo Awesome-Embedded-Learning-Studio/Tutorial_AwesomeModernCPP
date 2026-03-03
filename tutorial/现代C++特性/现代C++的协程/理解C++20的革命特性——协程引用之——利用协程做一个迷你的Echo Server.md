@@ -71,7 +71,8 @@ int main() {
         std::cerr << "Exception: " << e.what() << "\n";
     }
 }
-```text
+
+```
 
 ​ 有趣的是，Boost ASIO因为是库而不是标准的语法，因此采用的是函数的方式进行生成和调用。
 
@@ -85,7 +86,8 @@ int main() {
 
 ```cpp
 co_await socket.async_read_some(buffer, use_awaitable);
-```text
+
+```
 
 这行代码会让协程挂起直到异步读取完成，然后返回读取到的字节数（或抛出异常）。
 
@@ -95,7 +97,8 @@ co_await socket.async_read_some(buffer, use_awaitable);
 
 ```cpp
 co_spawn(executor_or_context, coroutine(), completion_token);
-```text
+
+```
 
 - 第一个参数指定在哪个 executor / io_context 上执行协程（线程亲和性、strand 等相关）。
 - 最后一个参数是完成策略，`detached` 意味着不关心协程完成结果，适合长生命周期的后台任务；也可以传入回调收集错误或结果。
@@ -114,7 +117,8 @@ co_spawn(executor_or_context, coroutine(), completion_token);
 
 ```cpp
 co_spawn(acceptor.get_executor(), echo(std::move(socket)), detached);
-```text
+
+```
 
 将 socket 移入 echo 协程，且使用 acceptor 的 executor 来保证协程在相同执行上下文运行（避免跨 executor 的资源竞争）。
 
@@ -123,7 +127,8 @@ co_spawn(acceptor.get_executor(), echo(std::move(socket)), detached);
 ```bash
 g++ -std=c++20 -O2 -pthread main.cpp -lboost_system -o echo_server
 ./echo_server
-```text
+
+```
 
 测试（在另一终端用 `nc`）：
 
@@ -131,7 +136,8 @@ g++ -std=c++20 -O2 -pthread main.cpp -lboost_system -o echo_server
 $ nc localhost 12345
 hello
 hello          # 服务器会回显你发送的内容
-```text
+
+```
 
 ## 用一用咱们自己的？
 
@@ -197,7 +203,8 @@ private:
  };
  std::unordered_map<int, Waiter> table;
 };
-```text
+
+```
 
 ​ Waiter就是我们的Epoll事件句柄，我们操作IOManager来得知到底我们要添加和移除哪一些我们关心和不关心的IO对应映射的句柄。这样我们就通过事件来跟对应的句柄搭上练习。
 
@@ -224,7 +231,7 @@ void IOManager::remove_waiter(int fd) {
  table.erase(it);
 }
 
-```text
+```
 
 ​ add_waiter比较复杂，我们需要注意的是——我们的fd也许已经添加进过咱们的epoll了，但是可能没有被设置为我们感兴趣的属性。
 
@@ -265,14 +272,16 @@ void IOManager::add_waiter(int fd, uint32_t events, std::coroutine_handle<> h) {
   it->second.handle = h;
  }
 }
-```text
+
+```
 
 ​ 我们做了这么多，不要忘记，我们的工作是给协程调度器IO预备的协程接口。
 
 ```cpp
  // poll events, timeout in ms (-1 block)
  void poll(int timeout_ms, std::vector<std::coroutine_handle<>>& out_handles);
-```text
+
+```
 
 ​ 上面的接口中，第一个参数是等待timeout_ms毫秒收集指定的IO任务的，第二个参数是填装out_handles。这个参数中承装了咱们的`std::coroutine_handle<>`就绪句柄集合。那么理清楚这个事情，事情变得轻而易举了
 
@@ -303,7 +312,8 @@ void IOManager::poll(int timeout_ms, std::vector<std::coroutine_handle<>>& out_h
   }
  }
 }
-```text
+
+```
 
 ​ 这样，我们就只用修改一点代码：
 
@@ -351,7 +361,8 @@ void Schedular::run() {
    }
   }
  }
-```text
+
+```
 
 ​ 完事。
 
@@ -371,7 +382,8 @@ Task<ssize_t> async_read(
 
 Task<ssize_t> async_write(
     std::shared_ptr<PassiveClientSocket> socket, const void* buffer, size_t buffer_size);
-```text
+
+```
 
 ​ 为了有效的减少困惑，请您先阅读附录1的Socket代码。
 
@@ -404,7 +416,8 @@ WaitForEvent await_io_event(std::shared_ptr<Socket> socket, uint32_t events) {
 WaitForEvent await_io_event(socket_raw_t socket_fd, uint32_t events) {
  return { socket_fd, events };
 }
-```text
+
+```
 
 ​ await_io_event是两个方便的函数，你一看就懂，相信你的水平。
 
@@ -433,7 +446,7 @@ Task<ssize_t> async_io::async_read(
  }
 }
 
-```text
+```
 
 ------
 
@@ -465,7 +478,7 @@ Task<ssize_t> async_io::async_write(
  co_return buffer_size;
 }
 
-```text
+```
 
 ------
 
@@ -511,7 +524,8 @@ void async_io::run_server(
         std::move(__accept_loop(server_socket, callback)));
     Schedular::run(); // 启动事件循环（阻塞当前线程）
 }
-```text
+
+```
 
 `co_await callback` 会"等待 handler 完成"——这会让 accept 循环停在第一个连接，导致后续连接无法被 accept。`spawn` 则把 handler 变成一个独立任务，立即返回，accept 循环继续跑，支持并发客户端。
 
@@ -567,7 +581,7 @@ int main(int argc, char** argv) {
  return 0;
 }
 
-```text
+```
 
 #### 留一个小任务——封装成类？
 
@@ -645,7 +659,7 @@ private:
  ServerSocket& operator=(const ServerSocket&) = delete;
 };
 
-```text
+```
 
 > socket.cpp
 
@@ -716,7 +730,8 @@ std::shared_ptr<PassiveClientSocket> ServerSocket::accept() {
  }
  return std::make_shared<PassiveClientSocket>(fd);
 }
-```text
+
+```
 
 # 附录2：核心的代码
 
@@ -785,7 +800,7 @@ Task<ssize_t> async_write(
 
 }
 
-```text
+```
 
 ```cpp
 #include "async_socket.hpp"
@@ -1027,7 +1042,7 @@ Task<ssize_t> async_io::async_write(
  co_return buffer_size;
 }
 
-```text
+```
 
 > IOManager.hpp
 
@@ -1070,7 +1085,7 @@ private:
  std::unordered_map<int, Waiter> table;
 };
 
-```text
+```
 
 > IOManager.cpp
 
@@ -1164,4 +1179,4 @@ bool IOManager::has_watchers() const {
  return !table.empty();
 }
 
-```text
+```

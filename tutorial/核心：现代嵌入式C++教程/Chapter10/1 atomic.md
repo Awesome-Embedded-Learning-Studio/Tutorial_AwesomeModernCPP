@@ -51,7 +51,8 @@ int main() {
     t2.join();
     std::cout << "counter = " << counter << '\n';
 }
-```text
+
+```
 
 你期望输出20000，但实际跑起来可能是12583、16847之类的随机数。问题出在哪里？`counter++`这个操作在CPU层面其实是三步：
 
@@ -90,7 +91,8 @@ int main() {
     std::cout << "counter = " << counter << '\n';
     // 保证输出：counter = 20000
 }
-```text
+
+```
 
 ------
 
@@ -117,7 +119,8 @@ std::atomic<Node*> node_ptr;
 
 // C++20起支持浮点
 std::atomic<double> atomic_double{0.0};
-```text
+
+```
 
 ### store和load：最基础的读写
 
@@ -137,7 +140,8 @@ int y = value.load(std::memory_order_relaxed);
 // 更简洁的方式：隐式转换
 int z = value;  // 等同于 value.load()
 value = 100;    // 等同于 value.store(100)
-```text
+
+```
 
 ### exchange：交换并返回旧值
 
@@ -159,7 +163,8 @@ if (old_state != DeviceState::Idle) {
     // 之前不是Idle，说明有人已经在用了
     // 处理冲突...
 }
-```text
+
+```
 
 ### compare_exchange_weak/strong：CAS操作
 
@@ -175,7 +180,8 @@ int desired = 20;
 // 成功：返回true，value变成20
 // 失败：返回false，expected被更新为当前值
 bool succeeded = value.compare_exchange_strong(expected, desired);
-```text
+
+```
 
 看起来有点绕，但这是实现无锁数据结构的关键：
 
@@ -198,7 +204,8 @@ void push(int value) {
         // 如果head已经被别人改了，old_head会被更新为最新值，循环重试
     } while (!head.compare_exchange_weak(old_head, new_node));
 }
-```text
+
+```
 
 **weak和strong的区别**：
 
@@ -233,7 +240,8 @@ counter--;      // 等同于 counter.fetch_sub(1) - 1
 
 counter += 10;  // 等同于 counter.fetch_add(10) + 10
 counter -= 5;   // 等同于 counter.fetch_sub(5) - 5
-```text
+
+```
 
 C++26还新增了`fetch_max`和`fetch_min`：
 
@@ -241,7 +249,8 @@ C++26还新增了`fetch_max`和`fetch_min`：
 std::atomic<int> max_value{100};
 max_value.fetch_max(150);  // max_value变成150
 max_value.fetch_min(80);   // max_value变成80
-```text
+
+```
 
 ------
 
@@ -261,7 +270,8 @@ std::cout << "atomic<long long> is lock free: "
 // 编译期检查
 static_assert(std::atomic<int>::is_always_lock_free,
               "int must be lock-free on this platform!");
-```text
+
+```
 
 **为什么有些类型不是lock-free？**
 
@@ -304,7 +314,8 @@ private:
     std::atomic<bool> data_ready;
     std::atomic<uint8_t> byte_value;
 };
-```text
+
+```
 
 ### 场景2：无锁队列的生产者-消费者
 
@@ -363,7 +374,8 @@ void main_loop() {
         process_byte(data);
     }
 }
-```text
+
+```
 
 ### 场景3：引用计数（类似shared_ptr）
 
@@ -391,7 +403,8 @@ protected:
 private:
     std::atomic<int> ref_count{0};
 };
-```text
+
+```
 
 ------
 
@@ -413,7 +426,8 @@ int b = x.load();
 
 // 你以为 a=2 一定意味着 b=1？
 // 错！没有合适的内存序保证，可能是 a=2, b=0
-```text
+
+```
 
 这个问题我们下一章讲内存序的时候会详细展开。
 
@@ -424,7 +438,8 @@ std::atomic<int> array[10];  // 10个原子int
 
 // 这不是原子的！
 array[0].store(array[1].load());  // 两次独立的原子操作
-```text
+
+```
 
 如果你需要"同时"操作多个原子变量，还是得用锁或者其他同步机制。
 
@@ -437,7 +452,8 @@ std::atomic<std::string> str;
 // ✅ 用指针或者shared_ptr
 std::atomic<std::shared_ptr<std::string>> str_ptr;
 // 或者C++20的atomic_ref配合外部锁
-```text
+
+```
 
 ### 坑4：在嵌入式平台上忽视对齐要求
 
@@ -450,7 +466,8 @@ auto p = new (&buffer[1]) std::atomic<int>;  // 危险！
 
 // ✅ 使用alignas
 alignas(std::atomic<int>) char buffer[sizeof(std::atomic<int>) * 2];
-```text
+
+```
 
 ------
 
@@ -469,7 +486,8 @@ atomic_ref_int.store(42);
 int x = atomic_ref_int.load();
 
 // 注意：atomic_ref的生命周期不能超过原变量！
-```text
+
+```
 
 **嵌入式场景**：硬件寄存器映射
 
@@ -481,7 +499,8 @@ volatile uint32_t* hw_reg = reinterpret_cast<uint32_t*>(0x40000000);
 std::atomic_ref<uint32_t> atomic_reg(*const_cast<uint32_t*>(hw_reg));
 
 atomic_reg.fetch_or(0x01);
-```text
+
+```
 
 ### atomic_wait/notify：高效的等待机制
 
@@ -504,7 +523,8 @@ void notifier() {
     signal.notify_one();  // 唤醒一个等待者
     // signal.notify_all();  // 或者唤醒全部
 }
-```text
+
+```
 
 **嵌入式场景**：高效的任务同步
 
@@ -529,7 +549,8 @@ public:
 private:
     std::atomic<int> flag{0};
 };
-```text
+
+```
 
 ------
 
@@ -560,7 +581,8 @@ void increment() {
         local_counter = 0;
     }
 }
-```text
+
+```
 
 ------
 

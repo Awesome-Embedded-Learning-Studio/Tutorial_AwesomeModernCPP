@@ -42,7 +42,8 @@ constexpr std::size_t N = factorial_consteval(6); // 编译期求值 -> N == 720
 static_assert(N == 720);
 
 std::array<int, N> lut{}; // 使用编译期计算的大小，避免运行时计算
-```text
+
+```
 
 这个例子很直接：`factorial_consteval` 在编译期展开，返回常量，用于定义数组大小或非类型模板参数（NTTP）。
 
@@ -76,7 +77,8 @@ consteval std::uint32_t id_from_literal(const char (&s)[N]) {
 constexpr auto id_led_on  = id_from_literal("LED_ON");   // 在编译期计算
 constexpr auto id_led_off = id_from_literal("LED_OFF");
 static_assert(id_led_on != id_led_off); // 编译期保证不同
-```text
+
+```
 
 这个模式在嵌入式协议解析、命令表、日志 ID 等场景非常好用：既保证不在运行时做字符串哈希，也能在构建时检测重复 ID。
 
@@ -104,7 +106,8 @@ consteval MetaTag make_tag(const char* s, std::uint32_t id) {
 
 constexpr auto TAG1 = make_tag("TAG1", 0x01);
 // MetaTag runtime_tag{"RUNTIME", 0x02}; // error: constructor is consteval -> must be compile-time
-```text
+
+```
 
 上面 `MetaTag` 的构造被强制为编译期构造，任何试图在运行时构造对象的尝试都会导致编译失败。这对于"编译期声明的元数据"非常直接且安全。
 
@@ -132,7 +135,8 @@ int main() {
     constexpr auto s = greet_impl(); // 这里走 consteval 路径（编译期）
     std::cout << s << "\n"; // prints: hello, compile-time
 }
-```text
+
+```
 
 `if consteval` 的语义与 `if constexpr` 不同：`if consteval` 按"是否处于常量求值上下文"决定路径，而不是模板参数或类型特性。若你需要在一个 `constexpr` 函数在编译期/运行时选择不同实现，`if consteval` 是正确工具。
 
@@ -161,7 +165,8 @@ constinit std::array<int, 4> g_table = {1, 2, 3, 4}; // OK：常量初始化（a
 // 若把初始化写成需要运行时计算的形式，编译器将拒绝
 // int init_via_runtime();
 // constinit std::array<int,4> g_table2 = [](){ return std::array<int,4>{ compute() }; }(); // error: dynamic init forbidden
-```text
+
+```
 
 `constinit` 在这里成为一种"保证" —— 它保证 `g_table` 被常量初始化（或至少不是动态初始化）。如果你试图通过 lambda 或运行时代码构造它，编译器会报错，让你改成 `constexpr` / `consteval` 生成或采用延迟 (function-local static) 访问模式。
 

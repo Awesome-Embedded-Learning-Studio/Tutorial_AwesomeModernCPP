@@ -4,7 +4,7 @@
 
 - [如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/155929743)
 - [如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - 老老老陈醋的文章 - 知乎](https://zhuanlan.zhihu.com/p/1983806788118783552)
-- [如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档](<https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/环境配置/如何快速在> VS2026 上使用 C%2B%2B 模块 — 完整上手指南/)
+- [如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8VS2026%E4%B8%8A%E4%BD%BF%E7%94%A8C%2B%2B%E6%A8%A1%E5%9D%97%E2%80%94%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/)
 
 ---
 
@@ -16,8 +16,7 @@
 #include <vector>
 #include "foo.h"
 
-```text
-
+```
 
 我相信大家都是知道`#include`的原理的，不必我说，就是纯纯的文本替换而已。这种基于`#include`的依赖引入有的时候更加像是被发现而不是因此而设计的（大家都是知道C语言历史的）
 
@@ -47,8 +46,7 @@ class Foo {
     std::vector<int> data;
 };
 
-```text
-
+```
 
 你只是想使用 `Foo` 类，却被迫通过 `#include "foo.h"` 引入了 **`<vector>` 的全部依赖**。这被称为**传染式依赖（Transitive Includes）**：用户被迫依赖了接口底层的所有实现细节所依赖的头文件，导致编译依赖网状膨胀。
 

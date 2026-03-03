@@ -31,8 +31,7 @@ class basic_string_view {
     size_t       _len;   // 长度（不含 '\0'）
 };
 
-```text
-
+```
 
 #### 特点
 
@@ -54,8 +53,7 @@ string_view substr(size_t pos, size_t count) const {
     return string_view(_ptr + pos, min(count, _len - pos));
 }
 
-```text
-
+```
 
 完全没有开辟新内存，仅调整指针和长度。
 
@@ -67,8 +65,7 @@ void remove_prefix(size_t n) {
     _len -= n;
 }
 
-```text
-
+```
 
 #### compare / find 等操作
 
@@ -116,16 +113,14 @@ void remove_prefix(size_t n) {
 ```cpp
 sv[i]  // 有边界检查（debug），release 通常不检查但基于 _len 计算
 
-```text
-
+```
 
 而：
 
 ```cpp
 p[i]   // 完全没有任何边界概念
 
-```text
-
+```
 
 #### string_view 在生命周期方面更危险（容易悬空）
 
@@ -134,16 +129,14 @@ p[i]   // 完全没有任何边界概念
 ```cpp
 std::string_view sv = std::string("abc"); // 指向临时 -> 悬空
 
-```text
-
+```
 
 但 `const char*` 同样会悬空，例如：
 
 ```cpp
 const char* p = std::string("abc").c_str(); // 同样悬空
 
-```text
-
+```
 
 **两者都会悬空，区别只是 `string_view` 更喜欢被隐式构造，所以更容易犯错**。
 
@@ -166,16 +159,14 @@ const char* p = std::string("abc").c_str(); // 同样悬空
 strlen(const char*)  // O(n)
 sv.size()            // O(1)
 
-```text
-
+```
 
 所以如果你的函数这样写：
 
 ```cpp
 void foo(const char* p);
 
-```text
-
+```
 
 然后内部多次 `strlen(p)`，会变成 O(n²) 模式。
 
@@ -184,8 +175,7 @@ void foo(const char* p);
 ```cpp
 void foo(std::string_view sv);
 
-```text
-
+```
 
 就没有这种性能坑。
 
@@ -206,8 +196,7 @@ void foo(std::string_view sv);
 ```cpp
 const char* p;
 
-```text
-
+```
 
 你根本不知道：
 
@@ -255,16 +244,14 @@ std::string_view f() {
     return std::string_view{s}; // 返回后 string s 被销毁，视图悬空 —— 未定义行为
 }
 
-```text
-
+```
 
 或：
 
 ```cpp
 auto sv = std::string_view{ some_function_returning_temp_string() }; // temp 被析构，sv 悬空
 
-```text
-
+```
 
 这类"use-after-free / dangling view"是 `string_view` 最常见与最严重的 bug 根源。静态分析器和代码审查要重点关注这类模式。学术/工程社区也有研究工具检测这类问题。
 
@@ -294,8 +281,7 @@ std::string_view make_view_bad() {
     return std::string("temp"); // UB：返回的 view 指向临时 string 的缓冲区
 }
 
-```text
-
+```
 
 #### 正确：如果需要长期保存，拷贝到 std::string
 
@@ -306,8 +292,7 @@ std::string make_copy() {
 auto v = make_copy();            // v 是 std::string，拥有数据
 std::string_view sv = v;        // sv 可安全使用，前提是 v 不销毁
 
-```text
-
+```
 
 #### 好的 API 习惯（接受任意只读字符串）
 
@@ -325,8 +310,7 @@ int main() {
     process("literal");    // ok, string literal 的 storage 是静态的，会被放置到data段所以无所谓
 }
 
-```text
-
+```
 
 通常推荐把 `std::string_view` 作为"只读输入参数"的首选类型（按值）。
 

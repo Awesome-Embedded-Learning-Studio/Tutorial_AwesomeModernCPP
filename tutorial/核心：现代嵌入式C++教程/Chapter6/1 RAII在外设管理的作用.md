@@ -80,7 +80,8 @@ private:
     GPIODir dir_;
     bool moved_ = false;
 };
-```text
+
+```
 
 用法：
 
@@ -90,14 +91,16 @@ void blink_once() {
     led.write(true);
     // 离开作用域时，led 自动恢复为输入（safe state）
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/gpio_raii.cpp"
-```text
+
+```
 
 </details>
 
@@ -153,7 +156,8 @@ private:
     uint8_t cs_pin_;
     bool active_;
 };
-```text
+
+```
 
 用法（注意：放在函数作用域里）：
 
@@ -163,14 +167,16 @@ void read_sensor(SPIBus& spi, uint8_t cs) {
     spi.transfer(tx_buf, rx_buf, len);
     // 自动释放 CS、结束事务
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/spi_transaction.cpp"
-```text
+
+```
 
 </details>
 
@@ -219,7 +225,8 @@ private:
     uint8_t ch_;
     bool running_;
 };
-```text
+
+```
 
 不要在析构里 `wait_until_done()`，而在需要保证完成处显式调用 `wait_until_done()`。析构只做"尽可能安全的撤销"。
 
@@ -245,14 +252,16 @@ private:
 };
 
 template <typename F> ScopeExit<F> make_scope_exit(F f) noexcept { return ScopeExit<F>(std::move(f)); }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/scope_guard.cpp"
-```text
+
+```
 
 </details>
 
@@ -263,7 +272,8 @@ auto guard = make_scope_exit([&]{ hal_unlock_resource(); });
 // ... 中间有多个 return
 // 若成功并想取消 cleanup:
 guard.dismiss();
-```text
+
+```
 
 这在没有异常支持时仍然非常有用：任何 `return` 都会触发 lambda，确保资源被清理。
 

@@ -46,7 +46,8 @@ int main() {
     // 显式析构（非常重要）
     p->~Foo();
 }
-```text
+
+```
 
 看到了这个new嘛？实际上这里的new(buffer) Foo(args...)只是调用构造函数，在 `buffer` 指定的位置构造对象，而且注意到，这个区域是实际放在栈上的，**不能**对 placement-new 的对象使用 `delete p;`；必须显式调用 `p->~Foo()`。当然，为了满足对齐，缓冲区应使用 `alignas(T)` 或 `std::aligned_storage_t`。
 
@@ -67,7 +68,8 @@ Foo* p = new (&storage) Foo(1);
 // C++17 以后更直观的方式
 alignas(Foo) unsigned char storage2[sizeof(Foo)];
 Foo* q = new (storage2) Foo(2);
-```text
+
+```
 
 如果你自己写 allocator，要实现 `align_up()`，把返回地址向上对齐到 `align` 的倍数（使用 uintptr_t 算术）。
 
@@ -95,7 +97,8 @@ try {
     for (int i = 0; i < constructed; ++i) objs[i]->~Foo();
     throw; // 继续抛出或记录错误
 }
-```text
+
+```
 
 总之：**构造失败会中断流程，但不会自动清理已构造对象**，这事儿你要负责。
 
@@ -149,7 +152,8 @@ int main() {
     // 更常见：app 结束或 mode 切换时统一 reset：
     // arena.reset(); // 这不会调用析构函数——只适用于 POD 或者你自己管理析构
 }
-```text
+
+```
 
 注意：`arena.reset()` **不会**自动调用析构函数——如果对象有重要资源（文件、mutex、heap），你必须先显式析构。
 
@@ -200,7 +204,8 @@ public:
         free_head = s;
     }
 };
-```text
+
+```
 
 要点：
 
@@ -225,7 +230,8 @@ Foo* b = new (buf) Foo(2);
 // 如果你以前保存了旧指针 a，重新使用它可能是 UB。
 // 使用 std::launder 可以得到新的、可靠的指针：
 Foo* safe_b = std::launder(reinterpret_cast<Foo*>(buf));
-```text
+
+```
 
 通常在嵌入式代码中，直接把指针存放在 local 变量并谨慎管理生命周期就行；但当你面对别名 / 编译器优化带来的潜在的小bug，`std::launder` 可以派上用场。
 
@@ -264,7 +270,8 @@ public:
     T* get() { return constructed ? reinterpret_cast<T*>(storage) : nullptr; }
     ~InPlace() { destroy(); }
 };
-```text
+
+```
 
 有了 `InPlace<T>`，你可以把生命周期绑定到函数/对象上，防止忘记析构（RAII FTW）。
 
@@ -293,14 +300,17 @@ public:
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter05/04_placement_new/basic_placement_new.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter05/04_placement_new/bump_allocator.cpp"
-```text
+
+```
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter05/04_placement_new/inplace_wrapper.cpp"
-```text
+
+```
 
 </details>

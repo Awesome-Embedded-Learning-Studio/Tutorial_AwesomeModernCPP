@@ -55,19 +55,19 @@ const char *hello(void) {
     return "Hello from mylib";
 }
 
-```text
-
+```
 
 在Linux下，我们这样构建动态库
 
 ```bash
+
 # 生成共享库
 gcc -fPIC -shared -o libmylib.so mylib.c
+
 # 编译主程序（下面会用 dlopen）
 gcc -o main main.c -ldl
 
-```text
-
+```
 
 随后编写一个使用的main.c来处理之：
 
@@ -102,18 +102,17 @@ int main(void) {
     return 0;
 }
 
-```text
-
+```
 
 **运行**
 
 ```bash
+
 # 确保当前目录可被加载（或设置 LD_LIBRARY_PATH）
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 ./main
 
-```text
-
+```
 
 ------
 
@@ -137,24 +136,21 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
-```text
-
+```
 
 **构建（MSVC Developer Command Prompt）**
 
 ```cmd
 cl /LD mylib.c /Fe:mylib.dll
 
-```text
-
+```
 
 **构建（MinGW）**
 
 ```bash
 gcc -shared -o mylib.dll -Wl,--out-implib,libmylib.a -Wl,--export-all-symbols -fPIC mylib.c
 
-```text
-
+```
 
 ### main.c（使用 LoadLibrary）
 
@@ -188,8 +184,7 @@ int main(void) {
     return 0;
 }
 
-```text
-
+```
 
 **运行（在 DLL 同目录下或把 DLL 加到 PATH）**
 
@@ -197,8 +192,7 @@ int main(void) {
 set PATH=%CD%;%PATH%
 main_win.exe
 
-```text
-
+```
 
 ------
 
@@ -225,8 +219,7 @@ PluginAPI* create_plugin_api(void);
 }
 #endif
 
-```text
-
+```
 
 ### plugin_impl.c（插件实现）
 
@@ -249,8 +242,7 @@ PluginAPI* create_plugin_api(void) {
     return &api;
 }
 
-```text
-
+```
 
 主程序只需通过 `dlsym(h, "create_plugin_api")` 拿到 `PluginAPI*`，就能无缝调用插件函数，无需关心 C++ 名字修饰。
 

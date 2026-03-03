@@ -68,7 +68,8 @@ void printValue(const T& v) {
 // 使用
 // printValue(42);      // 输出 整型: 42
 // printValue(3.14);    // 输出 浮点: 3.14
-```text
+
+```
 
 优点：只需一个模板即可处理多种类型，逻辑集中，扩展分支也方便。
 
@@ -97,7 +98,8 @@ auto getSizeIfPossible(const T& t) {
         return std::size_t{0}; // 备用实现
     }
 }
-```text
+
+```
 
 说明：如果用传统 SFINAE 或 `enable_if`，需要写多个重载或特化，代码量和维护成本都会上升。
 
@@ -117,6 +119,7 @@ constexpr uint64_t factorial(uint64_t n) {
 }
 
 // constexpr auto f6 = factorial(6); // 720，编译期已计算
-```text
+
+```
 
 注意：这里的 `if constexpr` 与 `constexpr` 函数搭配，结果在编译期求值（如果使用场景允许）。

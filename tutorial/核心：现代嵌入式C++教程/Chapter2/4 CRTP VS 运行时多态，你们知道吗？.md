@@ -53,12 +53,16 @@ void poll(ISensor* s) {
     int v = s->read(); // 虚函数调用
     // ...处理 v
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
---8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/runtime_polymorphism.cpp"
+```cpp
+--8<-- "codes_and_assets/examples/chapter02/04_crtp_polymorphism/runtime_polymorphism.cpp"
+
+```
 
 </details>
 
@@ -74,12 +78,16 @@ void poll(Sensor& s) {
 struct ADCSensor {
     int read() { return read_adc_hw(); }
 };
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
---8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/compile_time_polymorphism.cpp"
+```cpp
+--8<-- "codes_and_assets/examples/chapter02/04_crtp_polymorphism/compile_time_polymorphism.cpp"
+
+```
 
 </details>
 
@@ -119,12 +127,16 @@ struct SensorBase {
 struct ADCSensor : SensorBase<ADCSensor> {
     int read() { return read_adc_hw(); }
 };
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
---8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/crtp_example.cpp"
+```cpp
+--8<-- "codes_and_assets/examples/chapter02/04_crtp_polymorphism/crtp_example.cpp"
+
+```
 
 </details>
 
@@ -145,12 +157,16 @@ using Event = std::variant<StartEvent, StopEvent>;
 std::visit([](auto&& e) {
     // 处理不同类型
 }, event);
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
---8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/variant_example.cpp"
+```cpp
+--8<-- "codes_and_assets/examples/chapter02/04_crtp_polymorphism/variant_example.cpp"
+
+```
 
 </details>
 

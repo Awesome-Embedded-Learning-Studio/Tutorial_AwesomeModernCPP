@@ -55,9 +55,11 @@ cpp_standard: [11, 14, 17, 20]
 
 在交叉编译中,我们使用"目标三元组"来精确描述目标平台。这个三元组通常由三部分或四部分组成:
 
-```text
+```cpp
+
 <架构>-<厂商>-<操作系统>-<ABI>
-```text
+
+```
 
 让我们看几个实际例子:
 
@@ -133,6 +135,7 @@ Toolchain文件是CMake交叉编译的核心。它是一个CMake脚本文件,描
 让我们从一个ARM Cortex-M的Toolchain文件示例开始:
 
 ```cmake
+
 # arm-none-eabi-toolchain.cmake
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
@@ -159,7 +162,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-```text
+
+```
 
 让我们详细解读这个文件的各个部分:
 
@@ -185,6 +189,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 对于运行Linux的ARM设备(如树莓派),Toolchain文件会有所不同:
 
 ```cmake
+
 # aarch64-linux-gnu-toolchain.cmake
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
@@ -213,7 +218,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(ENV{PKG_CONFIG_PATH} "")
 set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
 set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
-```text
+
+```
 
 这个例子引入了`CMAKE_SYSROOT`概念。Sysroot是一个目录,包含了目标系统的根文件系统副本,包括库文件、头文件等。这对于有完整操作系统的目标平台非常重要。
 
@@ -222,6 +228,7 @@ set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
 使用Toolchain文件进行配置:
 
 ```bash
+
 # 创建构建目录
 mkdir build-arm && cd build-arm
 
@@ -232,7 +239,8 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/arm-none-eabi-toolchain.cmake \
 
 # 构建
 cmake --build .
-```text
+
+```
 
 重要提示:**Toolchain文件必须在第一次运行CMake时通过`-DCMAKE_TOOLCHAIN_FILE`指定**,之后会被缓存。如果需要更换Toolchain,必须删除构建目录重新配置。
 
@@ -252,6 +260,7 @@ cmake --build .
 最简单的多目标构建方案是为每个平台创建独立的构建目录:
 
 ```bash
+
 # 项目结构
 project/
 ├── src/
@@ -265,7 +274,8 @@ project/
     ├── cortex-m4/
     ├── cortex-m7/
     └── host/
-```text
+
+```
 
 构建脚本示例:
 
@@ -288,7 +298,8 @@ cmake --build builds/cortex-m7
 cmake -S . -B builds/host \
       -DCMAKE_BUILD_TYPE=Debug
 cmake --build builds/host
-```text
+
+```
 
 ### 条件编译与平台检测
 
@@ -347,13 +358,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
         -Wl,-Map=${CMAKE_BINARY_DIR}/app.map
     )
 endif()
-```text
+
+```
 
 ### 使用生成器表达式
 
 CMake的生成器表达式(Generator Expressions)提供了更灵活的条件配置方式:
 
 ```cmake
+
 # 根据配置类型设置不同的编译选项
 target_compile_options(app PRIVATE
     $<$<CONFIG:Debug>:-O0 -g3>
@@ -371,13 +384,15 @@ target_link_libraries(app PRIVATE
     $<$<PLATFORM_ID:Linux>:pthread>
     $<$<PLATFORM_ID:Windows>:ws2_32>
 )
-```text
+
+```
 
 ### 平台抽象层(HAL)设计
 
 在多目标项目中,良好的硬件抽象层设计至关重要:
 
 ```cmake
+
 # 创建HAL接口库
 add_library(hal_interface INTERFACE)
 target_include_directories(hal_interface INTERFACE
@@ -403,13 +418,15 @@ target_link_libraries(hal_impl PUBLIC hal_interface)
 
 # 应用程序链接HAL
 target_link_libraries(app PRIVATE hal_impl)
-```text
+
+```
 
 ### 配置变体管理
 
 对于同一架构的不同硬件变体,可以使用CMake的选项和缓存变量:
 
 ```cmake
+
 # 定义硬件变体选项
 set(TARGET_BOARD "STM32F407_DISCOVERY" CACHE STRING "Target board")
 set_property(CACHE TARGET_BOARD PROPERTY STRINGS
@@ -435,7 +452,8 @@ endif()
 # 应用配置
 add_compile_options(${MCU_FLAGS})
 target_link_options(app PRIVATE -T${LINKER_SCRIPT})
-```text
+
+```
 
 使用时:
 
@@ -445,4 +463,5 @@ cmake -B build-f407 -DTARGET_BOARD=STM32F407_DISCOVERY \
 
 cmake -B build-f429 -DTARGET_BOARD=STM32F429_DISCO \
       -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake
-```text
+
+```

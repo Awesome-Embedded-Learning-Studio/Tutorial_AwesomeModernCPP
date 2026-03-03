@@ -51,13 +51,15 @@ setColor(Red); // 隐式转换成 int，有可能传错值
 enum class EColor : uint8_t { Red, Green, Blue };
 void setColor(EColor c);
 setColor(EColor::Red); // 必须显式使用 EColor，安全
-```text
+
+```
 
 注意：`enum class` 的默认底层类型是 `int`，但你可以写成 `: uint8_t` 来强制它占 1 字节（对小 MCU 很重要）。
 
 ```cpp
 static_assert(sizeof(EColor) == 1, "EColor 应该是 1 字节");
-```text
+
+```
 
 ------
 
@@ -69,7 +71,8 @@ static_assert(sizeof(EColor) == 1, "EColor 应该是 1 字节");
 
 ```cpp
 printf("value = %d\n", static_cast<int>(EColor::Green));
-```text
+
+```
 
 或者写个小 helper：
 
@@ -78,7 +81,8 @@ template<typename E>
 constexpr auto to_underlying(E e) noexcept {
     return static_cast<std::underlying_type_t<E>>(e);
 }
-```text
+
+```
 
 ### 2) 指定底层类型节省内存
 
@@ -91,7 +95,8 @@ enum class SensorState : uint8_t {
     Ready = 2,
     Error = 3
 };
-```text
+
+```
 
 用 `uint8_t` 后，变量只占一个字节，struct 排列也更紧凑。
 
@@ -104,7 +109,8 @@ extern "C" void hw_set_mode(uint8_t mode);
 
 enum class Mode : uint8_t { Low = 0, High = 1 };
 hw_set_mode(static_cast<uint8_t>(Mode::High));
-```text
+
+```
 
 ### 4) 枚举作为位标志（bitmask）
 
@@ -140,7 +146,8 @@ inline bool any(Flags f) { return to_ut(f) != 0; }
 // 使用
 Flags perms = Flags::Read | Flags::Write;
 if (any(perms & Flags::Write)) { /* 有写权限 */ }
-```text
+
+```
 
 许多项目会把这些运算符放在头文件并配一套宏或模板自动生成，方便且类型安全。
 
@@ -155,7 +162,8 @@ case SensorState::Init: break;
 case SensorState::Ready: break;
 case SensorState::Error: break;
 }
-```text
+
+```
 
 加上 `default` 会抹去某些警告；有时候想利用编译器帮你检查穷尽性，就不要写 `default`，这样缺少分支会被提示。
 
@@ -164,7 +172,8 @@ case SensorState::Error: break;
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/01_enum_class/enum_class_basics.cpp"
-```text
+
+```
 
 </details>
 
@@ -173,7 +182,8 @@ case SensorState::Error: break;
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/01_enum_class/enum_class_bitflags.cpp"
-```text
+
+```
 
 </details>
 
@@ -182,6 +192,7 @@ case SensorState::Error: break;
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter08/01_enum_class/enum_class_memory.cpp"
-```text
+
+```
 
 </details>

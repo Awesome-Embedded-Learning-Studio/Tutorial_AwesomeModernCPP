@@ -53,14 +53,16 @@ struct B : Empty { // 继承 Empty —— EBO 有机会发生
 
 static_assert(sizeof(A) >= sizeof(int) + 1);
 static_assert(sizeof(B) == sizeof(int)); // 在支持 EBO 的编译器上通常成立
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
 ```cpp
 --8<-- "codes_and_assets/examples/chapter03/04_ebo/ebo_example.cpp"
-```text
+
+```
 
 </details>
 
@@ -84,7 +86,8 @@ struct Holder {
     [[no_unique_address]] Empty e; // 现在可以和其它成员共享地址
     int x;
 };
-```text
+
+```
 
 这在实现上比私有继承更好看，也避免了继承带来的潜在接口暴露。cppreference 和一些实现文章对 `[[no_unique_address]]` 的语义与限制有总结，强烈建议在能用 C++20 的地方优先采用。
 

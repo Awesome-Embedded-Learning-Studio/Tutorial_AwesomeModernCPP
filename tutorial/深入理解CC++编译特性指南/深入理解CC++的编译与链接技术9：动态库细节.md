@@ -12,22 +12,26 @@
 
 X86为例子，我们要知道内存操作数的地址，这样我们才能在内存和CPU之间来回传递数据。
 
-```text
+```cpp
+
 mov eax, ds:0xBAD10000 ; 将地址0xBAD10000装载到eax中
 add eax, 0x1 ; 装载值自增
 mov ds:0xBAD10000, eax; 写回操作
-```text
+
+```
 
 非常好，知道这个事情之后，我们要指出，函数调用的本质也是找到代码段的函数地址——比如说，咱们要调用一个平凡的add函数，就要告诉我们的call指令add哈桑农户在哪（也就说，我们要提供add函数入口点的代码段地址）
 
-```text
+```cpp
+
 add <0x11451400>:
  ... ; Add Procedure
 
 main:
  ... ; Main Procedure
  call 11451400 ; add absolute
-```text
+
+```
 
 当然，有的时候我们也会call相对地址，这种情况下会方便一点。
 
@@ -187,6 +191,7 @@ Linux 下的动态链接器（ld-linux）采用了一套特定的规则来处理
 
   // 即使是全局函数，在外部看来也是不可见的，避免冲突
   void internal_helper();
+
   ```
 
 #### 3. `dlopen` 的作用域控制

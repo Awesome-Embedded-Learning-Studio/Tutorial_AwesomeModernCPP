@@ -30,12 +30,16 @@ constexpr这个是一个真正的好东西——**它不优化运行时，而是
 constexpr int square(int x) {
     return x * x;
 }
-```text
+
+```
 
 <details>
 <summary>查看完整可编译示例</summary>
 
---8<-- "../codes_and_assets/examples/chapter02/03_constexpr/basic_constexpr.cpp"
+```cpp
+--8<-- "codes_and_assets/examples/chapter02/03_constexpr/basic_constexpr.cpp"
+
+```
 
 </details>
 
