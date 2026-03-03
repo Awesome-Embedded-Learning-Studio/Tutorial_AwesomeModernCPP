@@ -1,0 +1,3 @@
+/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/05_object_size/build/CMakeFiles/object_size_example.dir
+/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/05_object_size/build/CMakeFiles/edit_cache.dir
+/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/05_object_size/build/CMakeFiles/rebuild_cache.dir

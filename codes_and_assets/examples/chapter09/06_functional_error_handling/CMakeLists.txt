@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.15)
+project(chapter09_functional_error_handling CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+add_executable(basic_result basic_result.cpp)
+add_executable(combinators combinators.cpp)
+add_executable(config_loader config_loader.cpp)
+add_executable(retry retry.cpp)
+add_executable(peripheral_init peripheral_init.cpp)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(basic_result PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(combinators PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(config_loader PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(retry PRIVATE -Wall -Wextra -Werror)
+    target_compile_options(peripheral_init PRIVATE -Wall -Wextra -Werror)
+endif()

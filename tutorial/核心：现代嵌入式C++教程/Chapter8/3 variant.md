@@ -8,7 +8,7 @@
 
 ## 基本概念
 
-`std::variant<Ts...>` 表示“在一时刻仅持有 `Ts...` 中某一个类型”的类型安全联合体。它记录当前持有哪一个类型，构造/析构正确处理，并且提供访问、检查和访问者（visitor）机制。
+`std::variant<Ts...>` 表示"在一时刻仅持有 `Ts...` 中某一个类型"的类型安全联合体。它记录当前持有哪一个类型，构造/析构正确处理，并且提供访问、检查和访问者（visitor）机制。
 
 ------
 
@@ -33,7 +33,7 @@ int main() {
     // 推荐方式：使用 std::visit（统一处理所有可能类型）
     std::visit([](auto &&x) { std::cout << x << "\n"; }, v);
 }
-```
+```text
 
 - 默认构造会构造第一个备选类型（上例中是 `int`）。
 - `std::get<T>(v)`：尝试以 `T` 访问，若 `v` 当前不是 `T`，会抛 `std::bad_variant_access`。
@@ -44,13 +44,13 @@ int main() {
 
 ## 为什么优于裸 `union`
 
-`std::variant` 自动管理对象生命周期（会调用析构函数），在访问时进行类型检查（抛异常而不是 UB），并与 `std::visit` 配合能写出清晰的模式匹配风格代码。它也比 `std::any` 更“精确”——`std::any` 可以装任意类型，但类型信息查找不如 `variant` 明确，且没有 `visit` 的静态分支优势。
+`std::variant` 自动管理对象生命周期（会调用析构函数），在访问时进行类型检查（抛异常而不是 UB），并与 `std::visit` 配合能写出清晰的模式匹配风格代码。它也比 `std::any` 更"精确"——`std::any` 可以装任意类型，但类型信息查找不如 `variant` 明确，且没有 `visit` 的静态分支优势。
 
 ------
 
 ## 推荐访问方式：`std::visit` 与重载集合
 
-`std::visit` 是 `variant` 的中心舞台。要同时处理多种类型，一个常见用法是利用“重载集”技巧来把多个 lambda 拼成一个可调用对象：
+`std::visit` 是 `variant` 的中心舞台。要同时处理多种类型，一个常见用法是利用"重载集"技巧来把多个 lambda 拼成一个可调用对象：
 
 ```cpp
 #include <variant>
@@ -68,7 +68,7 @@ int main() {
         [](const std::string &s) { std::cout << "string: " << s << "\n"; }
     }, v);
 }
-```
+```text
 
 好处是清晰、类型安全，编译器会在你漏写某个类型时给出提示（视情况而定），读代码的人也能一眼看出每个分支要干什么。
 
@@ -78,7 +78,7 @@ int main() {
 
 1. **不要用 `std::get<T>` 在不确定类型时访问** —— 它会抛 `std::bad_variant_access`。用 `std::get_if<T>` 或 `std::visit` 更安全。
 
-2. **默认构造选第一个类型** —— `std::variant<int, std::string> v;` 会构造 `int`（值为 0），不是空的。需要“空值”语义可用 `std::monostate` 作为第一种类型。
+2. **默认构造选第一个类型** —— `std::variant<int, std::string> v;` 会构造 `int`（值为 0），不是空的。需要"空值"语义可用 `std::monostate` 作为第一种类型。
 
 3. **不能直接做递归 `variant`** —— `std::variant<int, std::variant<...>>` 会引起不完整类型问题。用 `std::unique_ptr` 或 `std::shared_ptr` 包装递归类型：
 
@@ -88,11 +88,11 @@ int main() {
    };
    ```
 
-4. **引用类型问题** —— `std::variant<int&, double&>` 是可写的但容易错。通常用 `std::reference_wrapper<T>` 或保存指针更明确。
+1. **引用类型问题** —— `std::variant<int&, double&>` 是可写的但容易错。通常用 `std::reference_wrapper<T>` 或保存指针更明确。
 
-5. **异常与析构** —— 如果替换当前持有类型时新类型的构造抛异常，`variant` 保证要么保持原值，要么变成 `valueless_by_exception`（可以用 `v.valueless_by_exception()` 检查）。此状态下 `std::visit` 将抛出 `bad_variant_access`。
+2. **异常与析构** —— 如果替换当前持有类型时新类型的构造抛异常，`variant` 保证要么保持原值，要么变成 `valueless_by_exception`（可以用 `v.valueless_by_exception()` 检查）。此状态下 `std::visit` 将抛出 `bad_variant_access`。
 
-6. **大小（内存）** —— `variant` 的大小由最“宽”类型决定（加上一点元数据），有时比单个类型要大。权衡内存与便利性。
+3. **大小（内存）** —— `variant` 的大小由最"宽"类型决定（加上一点元数据），有时比单个类型要大。权衡内存与便利性。
 
 ------
 
@@ -130,7 +130,7 @@ void process(Message const& m) {
         [](Blob const& b)      { std::cout << "Blob size: " << b.data.size() << "\n"; }
     }, m);
 }
-```
+```text
 
 优势是清晰、类型安全；如果增加一种消息类型，你需要在 `visit` 处显式处理（这通常是好事）。
 
@@ -139,11 +139,32 @@ void process(Message const& m) {
 ## `std::variant` 与 `std::any`、`boost::variant` 的比较
 
 - `std::variant`：**类型列表固定**、编译时已知、支持 `visit`，最适合有限且已枚举的类型集合。
-- `std::any`：可装任意类型，运行时类型检查繁琐，不适合做“有穷多种可能”的替代。
+- `std::any`：可装任意类型，运行时类型检查繁琐，不适合做"有穷多种可能"的替代。
 - `boost::variant`：`std::variant` 的前身，功能类似，历史项目可能还在用，但新代码优先选标准库的 `std::variant`。
 
----
+<details>
+<summary>查看完整可编译示例</summary>
 
-## 导航
+```cpp
+--8<-- "codes_and_assets/examples/chapter08/03_variant/variant_basics.cpp"
+```text
 
-[← 上一篇 | 嵌入式C++教程——类型安全的寄存器访问](<2 类型安全的寄存器访问.md>) | [下一篇 | 嵌入式C++教程——`std::optional` →](<4 optional.md>)
+</details>
+
+<details>
+<summary>查看 std::visit 完整示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter08/03_variant/variant_visit.cpp"
+```text
+
+</details>
+
+<details>
+<summary>查看消息队列完整示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter08/03_variant/variant_message.cpp"
+```text
+
+</details>

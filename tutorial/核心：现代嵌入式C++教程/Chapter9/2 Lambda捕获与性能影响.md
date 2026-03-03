@@ -44,12 +44,22 @@ void example_value_capture() {
     threshold = 200;  // 修改外部变量，不影响Lambda
     bool result = is_high(150);  // false，因为Lambda里的threshold还是100
 }
-```
+```text
 
 **关键点**：
+
 - Lambda创建时复制，之后外部修改不影响
 - Lambda内部修改也不会影响外部
 - 默认是`const`的，如果要修改需要加`mutable`
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/02_lambda_capture_performance/value_capture.cpp"
+```text
+
+</details>
 
 ### mutable关键字
 
@@ -65,7 +75,7 @@ auto lambda2 = [counter]() mutable {
     counter++;  // 修改的是Lambda内的副本
     return counter;
 };
-```
+```text
 
 **嵌入式场景**：值捕获适合配置参数，确保线程安全：
 
@@ -82,7 +92,7 @@ public:
         send();
     }
 };
-```
+```text
 
 ------
 
@@ -103,12 +113,22 @@ void example_ref_capture() {
     accumulator(20);
     // sum = 30
 }
-```
+```text
 
 **关键点**：
+
 - Lambda持有外部变量的引用，不是副本
 - 外部修改会影响Lambda，反之亦然
 - 需要确保外部变量生命周期比Lambda长
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/02_lambda_capture_performance/reference_capture.cpp"
+```text
+
+</details>
 
 ### 生命周期陷阱
 
@@ -126,7 +146,7 @@ std::function<void()> store_lambda() {
     int local = 42;
     return [&local]() { /* ... */ };  // local即将销毁
 }
-```
+```text
 
 **安全实践**：确保引用捕获的变量生命周期足够长：
 
@@ -143,7 +163,7 @@ public:
 private:
     Status status;
 };
-```
+```text
 
 ------
 
@@ -165,7 +185,7 @@ void example_full_capture() {
         a++; b++;  // 直接修改外部变量
     };
 }
-```
+```text
 
 **混合捕获**：可以指定某些变量用特殊方式：
 
@@ -184,7 +204,7 @@ void example_mixed_capture() {
         return value;
     };
 }
-```
+```text
 
 **嵌入式建议**：避免使用`[&]`全引用捕获，容易无意捕获不该捕获的变量。
 
@@ -209,7 +229,7 @@ void example_init_capture() {
         return *p;  // p是移动进来的
     };
 }
-```
+```text
 
 **嵌入式场景**：捕获计算后的配置：
 
@@ -222,7 +242,7 @@ void configure_timer(int frequency_hz) {
     };
     setup();
 }
-```
+```text
 
 **比mutable更清晰**：
 
@@ -239,7 +259,16 @@ auto lambda2 = [counter = 0]() {
     counter += 1;
     return counter;
 };
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/02_lambda_capture_performance/init_capture.cpp"
+```text
+
+</details>
 
 ------
 
@@ -254,7 +283,7 @@ auto lambda2 = [counter = 0]() {
 ```cpp
 int threshold = 100;
 auto lambda = [threshold](int x) { return x > threshold; };
-```
+```text
 
 编译器大致生成类似这样的代码：
 
@@ -266,9 +295,10 @@ struct LambdaType {
 };
 
 LambdaType lambda{threshold};  // 构造时复制
-```
+```text
 
 **性能分析**：
+
 - Lambda对象大小 = 所有值捕获变量的大小之和
 - 构造时有复制开销
 - 调用时有额外参数（捕获的成员），但内联后无开销
@@ -280,7 +310,7 @@ LambdaType lambda{threshold};  // 构造时复制
 int threshold = 100;
 auto is_high = [threshold](int x) { return x > threshold; };
 int result = is_high(150);
-```
+```text
 
 在`-O2`优化下，这会被完全内联为：
 
@@ -289,9 +319,18 @@ int result = is_high(150);
 mov eax, 150
 cmp eax, 100
 setg al
-```
+```text
 
 **结论**：只要Lambda可内联，值捕获在调用时**零开销**。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/02_lambda_capture_performance/performance_demo.cpp"
+```text
+
+</details>
 
 ### 引用捕获的开销
 
@@ -303,9 +342,10 @@ struct LambdaType {
 
     bool operator()(int x) const { return x > *threshold_ptr; }
 };
-```
+```text
 
 **性能分析**：
+
 - Lambda对象大小 = 所有引用捕获变量的指针大小之和
 - 调用时需要解引用，可能影响优化
 - 但内联后通常也能优化掉
@@ -319,18 +359,21 @@ struct LambdaType {
 ### 选择值捕获的情况
 
 1. **配置参数**：Lambda执行期间参数不应改变
+
    ```cpp
    auto send_bytes = [timeout = 1000](const uint8_t* data, size_t len) {
        // timeout在发送过程中不变
    };
    ```
 
-2. **小型可复制对象**：`int`、`float`、简单结构体
+1. **小型可复制对象**：`int`、`float`、简单结构体
+
    ```cpp
    auto scale = [factor = 1.5f](int x) { return x * factor; };
    ```
 
-3. **线程安全需求**：多线程环境下确保数据不被修改
+2. **线程安全需求**：多线程环境下确保数据不被修改
+
    ```cpp
    std::vector<std::thread> threads;
    for (int i = 0; i < 4; ++i) {
@@ -343,6 +386,7 @@ struct LambdaType {
 ### 选择引用捕获的情况
 
 1. **大型对象**：避免复制开销
+
    ```cpp
    std::array<int, 1024> big_array;
    auto process = [&big_array](int index) {
@@ -351,6 +395,7 @@ struct LambdaType {
    ```
 
 2. **需要修改外部变量**：累加器、状态更新
+
    ```cpp
    int sum = 0;
    std::for_each(vec.begin(), vec.end(), [&sum](int x) {
@@ -359,6 +404,7 @@ struct LambdaType {
    ```
 
 3. **this指针**：成员函数Lambda
+
    ```cpp
    class MyClass {
        void method() {
@@ -370,6 +416,7 @@ struct LambdaType {
 ### 选择初始化捕获的情况（C++14）
 
 1. **需要移动的类型**：`unique_ptr`、`string`
+
    ```cpp
    auto task = [buf = std::move(buffer)]() {
        process_buffer(buf);
@@ -377,6 +424,7 @@ struct LambdaType {
    ```
 
 2. **计算后的值**：避免重复计算
+
    ```cpp
    auto calc = [prescale = calc_prescale(freq)]() {
        *REG = prescale;
@@ -409,7 +457,7 @@ private:
     volatile int debounce_count = 0;
     volatile bool pending_press = false;
 };
-```
+```text
 
 ### 场景2：DMA传输配置
 
@@ -425,7 +473,7 @@ void start_dma_transfer(const uint8_t* src, uint8_t* dst, size_t size) {
 
     config();  // 应用配置
 }
-```
+```text
 
 ### 场景3：状态机Lambda
 
@@ -458,7 +506,7 @@ private:
     enum State { IDLE, RUNNING, DONE };
     State current_state = IDLE;
 };
-```
+```text
 
 ------
 
@@ -480,7 +528,7 @@ class Device {
 auto get_name_lambda_safe() {
     return [name = this->name]() { return name; };
 }
-```
+```text
 
 ### 陷阱2：循环中的引用捕获
 
@@ -496,7 +544,7 @@ for (int i = 0; i < 5; ++i) {
 for (int i = 0; i < 5; ++i) {
     handlers.push_back([i]() { use(i); });
 }
-```
+```text
 
 ### 陷阱3：隐式捕获的隐患
 
@@ -509,7 +557,7 @@ auto lambda1 = [&]() { return config > 50; };
 
 // ✅ 明确指定需要捕获的变量
 auto lambda2 = [&config]() { return config > 50; };
-```
+```text
 
 ------
 
@@ -523,15 +571,10 @@ Lambda捕获机制的关键要点：
 4. **性能影响**：内联后接近零开销，对象大小取决于捕获内容
 
 在嵌入式开发中：
+
 - 优先使用值捕获或初始化捕获
 - 避免全引用捕获`[&]`
 - 注意捕获变量的生命周期
 - 善用C++14初始化捕获处理移动语义
 
 Lambda与捕获机制的合理使用，能让你的代码既优雅又高效。
-
----
-
-## 导航
-
-[← 上一篇 | Lambda表达式基础](<1 Lambda表达式基础.md>) | [下一篇 | std::function vs 函数指针 →](<3 std function vs 函数指针.md>)

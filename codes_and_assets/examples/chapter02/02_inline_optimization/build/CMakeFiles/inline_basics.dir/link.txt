@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/inline_basics.dir/link.d CMakeFiles/inline_basics.dir/inline_basics.cpp.o -o inline_basics

@@ -1,6 +1,6 @@
 # 嵌入式C++教程：placement new
 
-在嵌入式世界里，`new` / `delete` 往往不是“万能钥匙”。有的目标平台根本没有自由堆（裸机、某些 RTOS），有的场景为了可预测性和实时性要**禁用 heap**，更有些情形下你需要把内存布局控制到厘米级——这就要靠 *placement new*（放置 new）来做事情了。
+在嵌入式世界里，`new` / `delete` 往往不是"万能钥匙"。有的目标平台根本没有自由堆（裸机、某些 RTOS），有的场景为了可预测性和实时性要**禁用 heap**，更有些情形下你需要把内存布局控制到厘米级——这就要靠 *placement new*（放置 new）来做事情了。
 
 所以，这一次我们来讨论下placement new这个小东西。
 
@@ -31,7 +31,7 @@ int main() {
     // 显式析构（非常重要）
     p->~Foo();
 }
-```
+```text
 
 看到了这个new嘛？实际上这里的new(buffer) Foo(args...)只是调用构造函数，在 `buffer` 指定的位置构造对象，而且注意到，这个区域是实际放在栈上的，**不能**对 placement-new 的对象使用 `delete p;`；必须显式调用 `p->~Foo()`。当然，为了满足对齐，缓冲区应使用 `alignas(T)` 或 `std::aligned_storage_t`。
 
@@ -52,7 +52,7 @@ Foo* p = new (&storage) Foo(1);
 // C++17 以后更直观的方式
 alignas(Foo) unsigned char storage2[sizeof(Foo)];
 Foo* q = new (storage2) Foo(2);
-```
+```text
 
 如果你自己写 allocator，要实现 `align_up()`，把返回地址向上对齐到 `align` 的倍数（使用 uintptr_t 算术）。
 
@@ -80,7 +80,7 @@ try {
     for (int i = 0; i < constructed; ++i) objs[i]->~Foo();
     throw; // 继续抛出或记录错误
 }
-```
+```text
 
 总之：**构造失败会中断流程，但不会自动清理已构造对象**，这事儿你要负责。
 
@@ -88,7 +88,7 @@ try {
 
 ## Bump（线性）分配器 + placement new
 
-在嵌入式里最常见的替代方案是 arena / bump allocator：预先申请一块大内存，然后按需线性分配；析构通常在整个 arena reset 的时候统一做。它非常适合“启动时分配后长期存在”的对象，例如 drivers、初始化数据等。arena / bump allocator会之后专门聊，这里就是看看。
+在嵌入式里最常见的替代方案是 arena / bump allocator：预先申请一块大内存，然后按需线性分配；析构通常在整个 arena reset 的时候统一做。它非常适合"启动时分配后长期存在"的对象，例如 drivers、初始化数据等。arena / bump allocator会之后专门聊，这里就是看看。
 
 ```cpp
 #include <cstdint>
@@ -134,7 +134,7 @@ int main() {
     // 更常见：app 结束或 mode 切换时统一 reset：
     // arena.reset(); // 这不会调用析构函数——只适用于 POD 或者你自己管理析构
 }
-```
+```text
 
 注意：`arena.reset()` **不会**自动调用析构函数——如果对象有重要资源（文件、mutex、heap），你必须先显式析构。
 
@@ -185,7 +185,7 @@ public:
         free_head = s;
     }
 };
-```
+```text
 
 要点：
 
@@ -196,7 +196,7 @@ public:
 
 ## 为了不把指针玩残——`std::launder` 有什么用？
 
-当你在同一内存位置反复 placement new 相同类型对象时，某些情况下需要 `std::launder` 来取得“有效”的指针，避免编译器优化引起的问题。简单示意（C++17 增）：
+当你在同一内存位置反复 placement new 相同类型对象时，某些情况下需要 `std::launder` 来取得"有效"的指针，避免编译器优化引起的问题。简单示意（C++17 增）：
 
 ```cpp
 #include <new>
@@ -210,7 +210,7 @@ Foo* b = new (buf) Foo(2);
 // 如果你以前保存了旧指针 a，重新使用它可能是 UB。
 // 使用 std::launder 可以得到新的、可靠的指针：
 Foo* safe_b = std::launder(reinterpret_cast<Foo*>(buf));
-```
+```text
 
 通常在嵌入式代码中，直接把指针存放在 local 变量并谨慎管理生命周期就行；但当你面对别名 / 编译器优化带来的潜在的小bug，`std::launder` 可以派上用场。
 
@@ -249,7 +249,7 @@ public:
     T* get() { return constructed ? reinterpret_cast<T*>(storage) : nullptr; }
     ~InPlace() { destroy(); }
 };
-```
+```text
 
 有了 `InPlace<T>`，你可以把生命周期绑定到函数/对象上，防止忘记析构（RAII FTW）。
 
@@ -265,12 +265,27 @@ public:
 
 ## 所以
 
-在没有堆的世界里，placement new 就像一个“小而美”的工具箱：你把对象放在哪里，什么时候构造、什么时候拆掉，都由你说了算。这既带来巨大的可控性，也把一些原本由 runtime 负责的细节交还给你——你要负责任地管理生命周期、对齐与异常。
+在没有堆的世界里，placement new 就像一个"小而美"的工具箱：你把对象放在哪里，什么时候构造、什么时候拆掉，都由你说了算。这既带来巨大的可控性，也把一些原本由 runtime 负责的细节交还给你——你要负责任地管理生命周期、对齐与异常。
 
-如果你是那种喜欢把内存“画成格子”的人，placement new 会让你很开心；如果你不想手动管理生命周期，那么你要么带上 RAII 护甲（自己写或用框架），要么就接受有点儿更大的运行时（受控的 heap）。总之，嵌入式没有完美解，只有合适的解——placement new 是一把锋利而可靠的小刀，用好了事半功倍，用不好就是割手指。
+如果你是那种喜欢把内存"画成格子"的人，placement new 会让你很开心；如果你不想手动管理生命周期，那么你要么带上 RAII 护甲（自己写或用框架），要么就接受有点儿更大的运行时（受控的 heap）。总之，嵌入式没有完美解，只有合适的解——placement new 是一把锋利而可靠的小刀，用好了事半功倍，用不好就是割手指。
 
----
+------
 
-## 导航
+## 代码示例
 
-[← 上一篇 | 嵌入式C++教程：对象池（Object Poo..](3对象池模式.md) | [下一篇 | 嵌入式 C++ 教程：Slab / Arena.. →](5固定池分配.md)
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter05/04_placement_new/basic_placement_new.cpp"
+```text
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter05/04_placement_new/bump_allocator.cpp"
+```text
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter05/04_placement_new/inplace_wrapper.cpp"
+```text
+
+</details>

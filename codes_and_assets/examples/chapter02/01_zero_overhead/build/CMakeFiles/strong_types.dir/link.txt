@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/strong_types.dir/link.d CMakeFiles/strong_types.dir/strong_types.cpp.o -o strong_types

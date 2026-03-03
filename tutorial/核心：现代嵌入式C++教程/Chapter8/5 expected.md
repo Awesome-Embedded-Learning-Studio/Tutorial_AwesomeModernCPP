@@ -6,7 +6,7 @@
 
 ## 开篇：为什么需要 expected
 
-把错误当成“值”的一等公民，能让代码逻辑变得线性而明确。`std::optional<T>` 告诉你“有或者没有值”，但没有告诉你为什么没有；`std::variant<T, E>` 能表达“要么这个，要么那个”，但读者每次看到 variant 解包时都要心里默念三遍类型顺序。`expected<T, E>` 则直接表达出一种约定：**成功就给你 T，失败给你 E**。调用端可以显式检查、链式组合、或者优雅地传播错误——可读、可组合，还不会像异常那样把控制流抛到天外去。
+把错误当成"值"的一等公民，能让代码逻辑变得线性而明确。`std::optional<T>` 告诉你"有或者没有值"，但没有告诉你为什么没有；`std::variant<T, E>` 能表达"要么这个，要么那个"，但读者每次看到 variant 解包时都要心里默念三遍类型顺序。`expected<T, E>` 则直接表达出一种约定：**成功就给你 T，失败给你 E**。调用端可以显式检查、链式组合、或者优雅地传播错误——可读、可组合，还不会像异常那样把控制流抛到天外去。
 
 ------
 
@@ -81,7 +81,7 @@ public:
         return decltype(f(std::declval<T>()))(unexpected<E>{storage_.err_});
     }
 };
-```
+```text
 
 这个实现省略了大量边角（拷贝/移动语义的细粒度控制、`noexcept`、`constexpr`、更友好的 `unexpected` API、复杂的 SFINAE），但足够清楚地表达 `expected` 的核心：**要么有值，要么有错误**。
 
@@ -116,19 +116,26 @@ int main(){
         return expected<double, std::string>(x / 2.0);
     }).map([](double d){ return d * 3.0; });
 }
-```
+```text
 
 链式写法的魅力在于：每一步只关心成功分支，错误会自动穿透并最终被处理或返回给上层逻辑。
 
 - 错误类型 `E`：推荐使用小而可拷贝的类型（错误码、短字符串、结构体）。把整个 `std::exception_ptr` 或重对象当作错误会让 `expected` 变得笨重。
 - 异常 vs 返回值：`expected` 非常适合库边界或性能敏感场景。在你不想用异常控制流、又希望调用 site 显式处理失败的地方，它是理想选择。
 - 链式风格：`and_then`、`map` 让你像写函数式代码那样组织逻辑。只要注意被链的函数签名匹配。
-- 与 `std::optional` 的区别：`optional<T>` 只是“可能没有值”，并不提供错误信息。`expected<T, E>` 则更具语义性，能承载失败原因。
+- 与 `std::optional` 的区别：`optional<T>` 只是"可能没有值"，并不提供错误信息。`expected<T, E>` 则更具语义性，能承载失败原因。
 
 把错误当成值来处理，会让你的代码少些异常的惊吓，多些明确的控制流。C++23 的 `std::expected` 是标准对这一路线的肯定；而在不得不用 C++17 的时代，动手实现一个小巧的 `expected`，既能提升代码可读性，也能为团队带来更一致的错误处理风格。
 
----
+<details>
+<summary>查看完整可编译示例</summary>
 
-## 导航
+```cpp
+--8<-- "codes_and_assets/examples/chapter08/05_expected/expected.hpp"
+```text
 
-[← 上一篇 | 嵌入式C++教程——`std::optional`](<4 optional.md>) | [下一篇 | 嵌入式C++教程——类型别名与using声明 →](<6 类型别名与using声明.md>)
+```cpp
+--8<-- "codes_and_assets/examples/chapter08/05_expected/parse_example.cpp"
+```text
+
+</details>

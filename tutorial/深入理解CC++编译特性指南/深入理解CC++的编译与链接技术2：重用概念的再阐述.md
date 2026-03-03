@@ -10,23 +10,23 @@ auto add(const AddType& a, const AddType& b){
     return a + b; // 没有任何技巧的相加
 }
 
-std::string 
+std::string
 trim_self(const std::string& waited_trim){ // returns the copy of the trimmed string
     size_t i = 0; // left index
-	while (i < str.size() && isspace((unsigned char)str[i]))
-		i++;
+ while (i < str.size() && isspace((unsigned char)str[i]))
+  i++;
     size_t j = str.size(); // right index
     while (j > 0 && isspace((unsigned char)str[j - 1]))
-		j--;
-	return str.substr(i, j);
+  j--;
+ return str.substr(i, j);
 }
 
 int main()
 {
     int res = add(1, 2); // deduced as int
-    float res2 = add(1.0f, 2.0f); // deduced as floats 
+    float res2 = add(1.0f, 2.0f); // deduced as floats
 }
-```
+```text
 
 比如说，上面的模板代码和函数代码，让我们不必在每一次调用加法和字符串空白字符压缩的时候，重复的拷贝代码。所以这样看，早在很久之前的C语言盛行的时代，代码的重用就出现了。不过我想，这个层次的代码复用还不算很高级——因为这样的复用是源码分发的。换而言之，想要使用自己曾经，或者是其他人的代码杰作，我们不得不焦头烂额的翻找出来他们的源文件，确保所有的依赖齐全后，加入自己的工程进行编译。我相信你注意到了问题——很多情况下我们压根不可以得到源代码。（商业机密，懂得都懂）这种情况下，我们自然就要思考更加低层次的代码复用了。那就是二进制层级的分发。这就是静态库和动态库的作用，也是我们后面几个专门讲述机器码分发层次的几个复用手段的前置。
 
@@ -60,9 +60,9 @@ int main()
 - **控制导出符号（visibility / version script）**：默认会导出全局符号，可用 GCC `-fvisibility=hidden` + `__attribute__((visibility("default")))` 标出需要导出的接口，或使用链接器版本脚本控制符号表，减少 API 污染并降低符号冲突风险。
 - **可选：符号版本（symbol versioning）**：用于在同一 SONAME 内支持不同版本的符号，便于兼容性管理（需要链接器版本脚本）。
 
-### 构建客户端可执行文件（基于“信任库 ABI/SONAME”）
+### 构建客户端可执行文件（基于"信任库 ABI/SONAME"）
 
-这里“信任”意味着客户端在构建时相信动态库的 ABI/接口（头文件、SONAME、符号语义）不会破坏其期望。构建阶段与运行时的关系和生成的 ELF 字段非常关键。
+这里"信任"意味着客户端在构建时相信动态库的 ABI/接口（头文件、SONAME、符号语义）不会破坏其期望。构建阶段与运行时的关系和生成的 ELF 字段非常关键。
 
 #### 链接时发生的事（构建客户端）
 
@@ -103,7 +103,7 @@ int main()
 3. 如果 symbol versioning 存在，则需要匹配版本标签。
 4. 如果使用 `dlopen` 加载且采用 `RTLD_GLOBAL`，这些库的符号可能参与后续库的解析；`RTLD_LOCAL` 则不参与其他后续解析。
 
-> 重要：**可执行文件中的符号优先**于共享库（这就是所谓的 symbol interposition），因此可执行文件可以“覆盖”库中的函数（这也是 `LD_PRELOAD` 可替换函数实现的基础）。
+> 重要：**可执行文件中的符号优先**于共享库（这就是所谓的 symbol interposition），因此可执行文件可以"覆盖"库中的函数（这也是 `LD_PRELOAD` 可替换函数实现的基础）。
 
 ![dynamic_library](./深入理解CC++的编译与链接技术2：重用概念的再阐述/dynamic_library.png)
 

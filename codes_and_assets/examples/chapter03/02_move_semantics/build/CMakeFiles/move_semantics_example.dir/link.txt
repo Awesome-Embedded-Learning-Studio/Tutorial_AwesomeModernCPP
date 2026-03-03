@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/move_semantics_example.dir/link.d CMakeFiles/move_semantics_example.dir/move_semantics_example.cpp.o -o move_semantics_example

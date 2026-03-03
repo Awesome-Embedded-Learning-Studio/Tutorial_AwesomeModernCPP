@@ -31,14 +31,14 @@ b = 2;
 if (b == 2) {
     assert(a == 1);
 }
-```
+```text
 
 你期待线程2一定能看到`a==1`，但编译器可能会觉得：`a`和`b`又不相关，谁先谁后无所谓。于是它排成了：
 
 ```cpp
 b = 2;  // 先写b
 a = 1;  // 后写a
-```
+```text
 
 这下线程2可能看到`b==2`但`a==0`了。
 
@@ -52,9 +52,10 @@ a = 1;  // 后写a
 STR r0, [a]    ; 写a
 STR r1, [b]    ; 写b
 ; CPU可能实际执行顺序相反
-```
+```text
 
 **为什么要这么做？** 简单说就是为了快：
+
 - 避免流水线停顿
 - 利用缓存预取
 - 减少数据依赖等待
@@ -89,9 +90,10 @@ std::atomic<int> counter{0};
 
 // 多个线程自增
 counter.fetch_add(1, std::memory_order_relaxed);
-```
+```text
 
 **特点**：
+
 - 不保证不同原子变量之间的顺序
 - 不保证跨线程的可见性顺序
 - 性能最好
@@ -111,7 +113,7 @@ private:
     std::atomic<int> requests{0};
     std::atomic<int> errors{0};
 };
-```
+```text
 
 **危险示例**：用relaxed做同步是错误的
 
@@ -128,7 +130,7 @@ if (data_ready.load(std::memory_order_relaxed) == 1) {  // ❌
     // data可能还是0！
     use(data);
 }
-```
+```text
 
 这里的问题在于：`data_ready`的写和`data`的写可能被CPU重排，导致`data_ready`变成1了，但`data`还是0。
 
@@ -141,6 +143,7 @@ if (data_ready.load(std::memory_order_relaxed) == 1) {  // ❌
 ### release：写操作时的"发布"语义
 
 `memory_order_release`用于写操作（store），它保证：
+
 - 这个写入之前的所有内存操作不会被重排到这个写入之后
 - 其他线程用`acquire`读取这个原子变量时，能看到这个写入之前的所有修改
 
@@ -151,11 +154,12 @@ int data = 0;
 // 线程1：生产者
 data = 42;  // 准备数据
 flag.store(1, std::memory_order_release);  // 发布：确保data先写入
-```
+```text
 
 ### acquire：读操作时的"订阅"语义
 
 `memory_order_acquire`用于读操作（load），它保证：
+
 - 这个读取之后的所有内存操作不会被重排到这个读取之前
 - 如果读到了某个线程`release`写入的值，就能看到那个线程在release之前的所有修改
 
@@ -165,7 +169,7 @@ if (flag.load(std::memory_order_acquire) == 1) {  // 订阅
     // 一定能看到 data == 42
     use(data);
 }
-```
+```text
 
 ### 经典模式：发布-订阅
 
@@ -186,7 +190,7 @@ public:
 private:
     std::atomic<T*> data_ptr{nullptr};
 };
-```
+```text
 
 **嵌入式场景**：中断与主线程的数据传递
 
@@ -213,7 +217,7 @@ private:
     std::atomic<bool> ready_to_send{false};
     uint8_t tx_data;
 };
-```
+```text
 
 ### acq_rel：读-改-写操作
 
@@ -224,7 +228,7 @@ std::atomic<int> counter{0};
 
 // 既是acquire（读取）又是release（写入）
 int old = counter.fetch_add(1, std::memory_order_acq_rel);
-```
+```text
 
 **典型应用**：自旋锁
 
@@ -250,7 +254,7 @@ public:
 private:
     std::atomic_flag flag = ATOMIC_FLAG_INIT;
 };
-```
+```text
 
 ------
 
@@ -279,20 +283,23 @@ int r2 = y.load(std::memory_order_seq_cst);
 // 线程4
 int r3 = y.load(std::memory_order_seq_cst);
 int r4 = x.load(std::memory_order_seq_cst);
-```
+```text
 
 如果是`seq_cst`，那么：
+
 - 线程3和线程4看到的x和y的修改顺序是一致的
 - 不会出现"线程3看到x先变，线程4看到y先变"这种不一致
 
 **x86架构的福利**：x86的TSO（Total Store Ordering）模型本身就很强，`seq_cst`几乎不需要额外开销。但ARM、PowerPC这些弱序架构就不一样了。
 
 **什么时候用seq_cst**：
+
 - 不确定的时候，先默认用seq_cst
 - 需要全局顺序保证的场景
 - 性能不是第一优先级时
 
 **什么时候可以不用**：
+
 - 明确只需要acquire-release语义
 - 在性能关键路径上
 
@@ -323,7 +330,7 @@ if (p) {
 }
 // 但不依赖p的操作没保证
 int global = some_global;   // ❌ 没依赖，可能看到旧值
-```
+```text
 
 **问题**：没有主流编译器真正实现了依赖链跟踪，它们都把`consume`当`acquire`处理。
 
@@ -343,6 +350,7 @@ int global = some_global;   // ❌ 没依赖，可能看到旧值
 | PowerPC | 1x | ~4x | ~6x |
 
 **关键点**：
+
 - x86架构的acquire/release几乎零额外开销（硬件保证了）
 - 弱序架构（ARM/PowerPC）上差异明显
 - `seq_cst`在任何架构上都有额外成本
@@ -381,7 +389,7 @@ private:
     std::atomic<bool> ready{false};
     std::vector<int> data;
 };
-```
+```text
 
 ### 模式2：循环缓冲区的索引
 
@@ -425,7 +433,7 @@ private:
     std::atomic<size_t> read_idx{0};
     std::atomic<size_t> write_idx{0};
 };
-```
+```text
 
 ### 陷阱1：漏掉一边的acquire/release
 
@@ -446,7 +454,7 @@ if (flag.load()) {  // ❌ 默认是seq_cst，但问题在于...
 if (flag.load(std::memory_order_relaxed)) {  // ❌ relaxed！
     use(data);  // data可能不是42！
 }
-```
+```text
 
 **原则**：配对使用！一边release，另一边必须acquire（或更强的）。
 
@@ -465,9 +473,10 @@ int y = b.load(std::memory_order_acquire);
 int x = a.load(std::memory_order_acquire);
 // 你以为 x一定是1？不一定！
 // acquire只保证看到b.store之前的修改，但不保证看到a.store
-```
+```text
 
 **解决方法**：
+
 - 用单个原子变量做同步
 - 或者用`seq_cst`（但性能差）
 
@@ -486,7 +495,7 @@ if (flag.load(std::memory_order_acquire)) {
     // ✅ 能看到正确的data，虽然data不是原子的
     // 因为acquire-release建立了同步关系
 }
-```
+```text
 
 **关键理解**：内存序同步的是内存访问，不只是原子变量。非原子变量只要访问时序正确，也能被正确同步。
 
@@ -501,6 +510,7 @@ Cortex-M0/M0+：严格按序执行，几乎没有重排
 Cortex-M3/M4/M7：有部分重排能力，特别是M7
 
 **建议**：
+
 - M0/M0+上：relaxed之外的内存序开销很小
 - M3/M4：适度使用acquire-release
 - M7：需要认真考虑内存序，有store buffer等
@@ -515,13 +525,15 @@ flag = 1;
 
 // 线程2
 if (flag) { }
-```
+```text
 
 `volatile`只保证：
+
 - 不被编译器优化掉
 - 每次访问都从内存读取
 
 但它**不保证**：
+
 - 原子性
 - 内存序
 
@@ -546,7 +558,7 @@ void poll_gpio() {
         irq_flag.store(false, std::memory_order_release);
     }
 }
-```
+```text
 
 **注意**：中断服务程序里用atomic要小心，有些嵌入式平台的atomic库可能用锁实现，而ISR里不能阻塞。务必检查`is_lock_free()`。
 
@@ -562,6 +574,7 @@ void poll_gpio() {
 4. **consume**：已被弃用，用acquire代替
 
 **实践建议**：
+
 - 先用默认的`seq_cst`，能跑再说
 - 性能关键路径上，分析后降级到`acquire-release`
 - 纯计数器用`relaxed`
@@ -571,9 +584,3 @@ void poll_gpio() {
 **最后提醒**：正确的并发程序很难写，内存序只是其中一部分。如果你在写生命攸关的嵌入式代码，最好的建议可能是：能用锁就用锁，能用消息队列就用消息队列，无锁算法留给那些真有需求且真懂的人。
 
 下一章，我们将探讨更多并发编程的高级话题。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式现代C++开发——原子操作（std::a..](<1 atomic.md>) | [下一篇 | 嵌入式现代C++开发——无锁数据结构设计 →](<3 无锁数据结构设计.md>)

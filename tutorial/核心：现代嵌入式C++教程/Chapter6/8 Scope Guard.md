@@ -1,8 +1,8 @@
-# 嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行
+# 嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在"出门顺手关灯"那一刻执行
 
-写嵌入式代码时，总会遇到这样的人生真相：你在函数某处申请了资源（打开外设、上锁、禁中断、分配缓冲……），后来代码分叉、提前 `return`、甚至抛出异常——结果忘了释放/恢复。结果就是内存泄漏、死锁、外设状态奇怪，或者你被老大盯着问“为什么这段代码跑了两分钟还没返回”。
+写嵌入式代码时，总会遇到这样的人生真相：你在函数某处申请了资源（打开外设、上锁、禁中断、分配缓冲……），后来代码分叉、提前 `return`、甚至抛出异常——结果忘了释放/恢复。结果就是内存泄漏、死锁、外设状态奇怪，或者你被老大盯着问"为什么这段代码跑了两分钟还没返回"。
 
-作用域守卫（Scope Guard）就是为了解决这个问题的——把“离开当前作用域时必须做的事”绑定在一个对象的析构函数上：只要对象离开作用域，析构函数就会执行，清理也就稳了。它是 RAII 的小而美的实用变体，尤其适合嵌入式场景（没有堆分配、追求确定性）。
+作用域守卫（Scope Guard）就是为了解决这个问题的——把"离开当前作用域时必须做的事"绑定在一个对象的析构函数上：只要对象离开作用域，析构函数就会执行，清理也就稳了。它是 RAII 的小而美的实用变体，尤其适合嵌入式场景（没有堆分配、追求确定性）。
 
 ------
 
@@ -54,7 +54,16 @@ template <typename F>
 ScopeGuard<F> make_scope_guard(F&& f) {
     return ScopeGuard<F>(std::forward<F>(f));
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/08_scope_guard_patterns/scope_guard.cpp"
+```text
+
+</details>
 
 用法示例：
 
@@ -65,7 +74,7 @@ void foo() {
     if (error) return; // close_device 会被保证调用
     g.dismiss(); // 如果想提前取消清理
 }
-```
+```text
 
 幽默注：`dismiss()` 就是给守卫放假，不让它在离职那天烦你。
 
@@ -73,7 +82,7 @@ void foo() {
 
 # 成功/失败分支：`scope_success` 和 `scope_fail`
 
-有时候你只想在函数“正常返回”（no exception）时做事，或者只在**抛异常**时处理。C++17 提供了 `std::uncaught_exceptions()` 来判断析构时是否处于异常传播中。基于它，我们可以实现 `scope_exit`（总是执行）、`scope_success`（仅在没有异常时执行）、`scope_fail`（仅在有异常时执行）。
+有时候你只想在函数"正常返回"（no exception）时做事，或者只在**抛异常**时处理。C++17 提供了 `std::uncaught_exceptions()` 来判断析构时是否处于异常传播中。基于它，我们可以实现 `scope_exit`（总是执行）、`scope_success`（仅在没有异常时执行）、`scope_fail`（仅在有异常时执行）。
 
 ```cpp
 #include <exception>
@@ -118,16 +127,25 @@ private:
     bool active_;
     int uncaught_at_construction_;
 };
-```
+```text
 
 这样你就可以写：
 
 ```cpp
 auto on_success = make_scope_guard_success([](){ commit_tx(); });
 auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
-```
+```text
 
 在嵌入式里如果禁用异常，这俩就没用武之地 —— 但是 `scope_exit`（总是执行）仍然非常有用。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/08_scope_guard_patterns/scope_success_fail.cpp"
+```text
+
+</details>
 
 ------
 
@@ -140,14 +158,14 @@ auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
 #define CONCAT(x, y) CONCAT_IMPL(x, y)
 #define SCOPE_GUARD(code) \
     auto CONCAT(_scope_guard_, __COUNTER__) = make_scope_guard([&](){ code; })
-```
+```text
 
 用法：
 
 ```cpp
 SCOPE_GUARD({ disable_irq(); restore_irq_state(saved); });
 // 作用域结束时自动调用
-```
+```text
 
 在没有 `__COUNTER__` 的编译器上用 `__LINE__` 也行，不过 `__COUNTER__` 更保险。
 
@@ -164,7 +182,7 @@ void critical_section() {
 
     // 关键操作
 }
-```
+```text
 
 1. 上锁/解锁
 
@@ -172,7 +190,7 @@ void critical_section() {
 mutex.lock();
 auto unlock = make_scope_guard([&]{ mutex.unlock(); });
 // 如果函数中途 return，mutex 会被正确解锁
-```
+```text
 
 1. 临时改变寄存器、并在退出恢复
 
@@ -180,7 +198,7 @@ auto unlock = make_scope_guard([&]{ mutex.unlock(); });
 uint32_t old = REG_CTRL;
 REG_CTRL = old | ENABLE_BIT;
 auto restore_reg = make_scope_guard([=]{ REG_CTRL = old; });
-```
+```text
 
 ------
 
@@ -204,12 +222,6 @@ auto restore_reg = make_scope_guard([=]{ REG_CTRL = old; });
 #include <memory>
 
 auto closer = std::unique_ptr<void, decltype([](void*){ close_fd(fd); })>(nullptr, [](void*){ close_fd(fd); });
-```
+```text
 
-但这种写法语义上不如专门的 `ScopeGuard` 清晰（模板更适合做任意清理），我提是为了给你多一个“武器库”里的小工具。
-
----
-
-## 导航
-
-[← 上一篇 | 引用计数的实现与性能](<7 引用计数.md>) | [下一篇 | 嵌入式现代C++教程——std::array：.. →](<../Chapter7/1 array.md>)
+但这种写法语义上不如专门的 `ScopeGuard` 清晰（模板更适合做任意清理），我提是为了给你多一个"武器库"里的小工具。

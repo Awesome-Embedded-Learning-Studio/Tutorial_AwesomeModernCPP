@@ -1,8 +1,8 @@
 # 编译期多态 vs 运行时多态
 
-在工程实践里说“多态”，大家第一反应往往是 `virtual` 与接口——也就是运行时多态。
+在工程实践里说"多态"，大家第一反应往往是 `virtual` 与接口——也就是运行时多态。
 
-但现代 C++ 给了我们另一套同样强大的工具：模板、CRTP、`std::variant`、类型擦除（type erasure）等，这些构成了**编译期多态**的世界。两者看似只是在“什么时候决定行为”的差异，实际上牵涉到性能、闪存与 RAM 占用、可测试性、ABI 稳定性、编译时间、调试体验等多维权衡。对嵌入式系统来说，这些权衡往往不是学术性的，而是现实的工程约束。
+但现代 C++ 给了我们另一套同样强大的工具：模板、CRTP、`std::variant`、类型擦除（type erasure）等，这些构成了**编译期多态**的世界。两者看似只是在"什么时候决定行为"的差异，实际上牵涉到性能、闪存与 RAM 占用、可测试性、ABI 稳定性、编译时间、调试体验等多维权衡。对嵌入式系统来说，这些权衡往往不是学术性的，而是现实的工程约束。
 
 ## 先统一一下概念
 
@@ -37,7 +37,14 @@ void poll(ISensor* s) {
     int v = s->read(); // 虚函数调用
     // ...处理 v
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+--8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/runtime_polymorphism.cpp"
+
+</details>
 
 再看编译期多态（模板）版本：
 
@@ -51,7 +58,14 @@ void poll(Sensor& s) {
 struct ADCSensor {
     int read() { return read_adc_hw(); }
 };
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+--8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/compile_time_polymorphism.cpp"
+
+</details>
 
 差异立竿见影：模板版本在 `poll<ADCSensor>` 处可以把 `read()` 内联，消除间接调用；运行时多态版本在二进制里则保留了虚表/间接跳转与对象的 vptr。
 
@@ -61,7 +75,7 @@ struct ADCSensor {
 
 ### 执行速度
 
-编译期多态胜在“零运行时开销抽象”——电子系统中的热点（例如 ISR 中的驱动调用、实时路径）极其适合模板化，以便内联与优化。运行时多态每次调用都会多一次内存读（读取 vptr 指向 vtable）并做一次间接跳转，且这样跳转的目标对分支预测不友好，带来的延迟在实时场景下不容忽视。
+编译期多态胜在"零运行时开销抽象"——电子系统中的热点（例如 ISR 中的驱动调用、实时路径）极其适合模板化，以便内联与优化。运行时多态每次调用都会多一次内存读（读取 vptr 指向 vtable）并做一次间接跳转，且这样跳转的目标对分支预测不友好，带来的延迟在实时场景下不容忽视。
 
 ### RAM 与 Flash
 
@@ -89,7 +103,14 @@ struct SensorBase {
 struct ADCSensor : SensorBase<ADCSensor> {
     int read() { return read_adc_hw(); }
 };
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+--8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/crtp_example.cpp"
+
+</details>
 
 CRTP 的优点是既有静态分派又能复用代码，常用于驱动框架、状态机实现等。
 
@@ -97,15 +118,35 @@ CRTP 的优点是既有静态分派又能复用代码，常用于驱动框架、
 
 当你需要封闭型多态（不是任意扩展，而是有限、多种已知变体）时，`std::variant` + `std::visit` 是很好的选择：它在编译期把所有变体列举清楚，`visit` 会在编译期产生分支表或内联化逻辑，既可以避免 vtable 的开销，又比模板参数传递更灵活（可在容器中保存不同类型的对象）。
 
+```cpp
+// 定义不同的消息类型
+struct StartEvent { int priority; };
+struct StopEvent { int reason_code; };
+
+using Event = std::variant<StartEvent, StopEvent>;
+
+// 使用 std::visit 处理事件
+std::visit([](auto&& e) {
+    // 处理不同类型
+}, event);
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+--8<-- "../codes_and_assets/examples/chapter02/04_crtp_polymorphism/variant_example.cpp"
+
+</details>
+
 `std::variant` 在嵌入式里需要注意其内存占用（会分配为最宽变体的大小）——但它把类型信息放在对象内部，不需要外部 vptr。
 
 ## 类型擦除（type erasure）
 
-通过 `std::function`、自写的 type-erased wrapper（通常带有 small-buffer-optimization），我们可以在不暴露模板参数的情况下获得“近编译期效率”的接口，同时保持运行时可替换性。代价是实现复杂度和可能的内存开销（small buffer + virtual-like calls）。这种方式常被用于库层或 API 层，隐藏实现细节。
+通过 `std::function`、自写的 type-erased wrapper（通常带有 small-buffer-optimization），我们可以在不暴露模板参数的情况下获得"近编译期效率"的接口，同时保持运行时可替换性。代价是实现复杂度和可能的内存开销（small buffer + virtual-like calls）。这种方式常被用于库层或 API 层，隐藏实现细节。
 
 ------
 
-## 小结：没有绝对的“更好”，只有“更合适”
+## 小结：没有绝对的"更好"，只有"更合适"
 
 编译期多态与运行时多态并非对立的神学命题，而是工具箱里的两把刀。嵌入式工程师的任务是根据目标平台的约束与工程流程，选择并混合使用它们。我的建议是：
 
@@ -113,10 +154,4 @@ CRTP 的优点是既有静态分派又能复用代码，常用于驱动框架、
 - 在性能或资源成为瓶颈时，识别热点并用编译期多态（模板/CRTP/`constexpr`）进行局部优化；
 - 启用 LTO 与链接级去重来缓解模板带来的二进制膨胀；
 - 对跨模块、插件式架构保留运行时多态接口以保证 ABI 与替换能力；
-- 在设计层面，把“可变点”与“稳定点”明确区分：把不变逻辑放到编译期，把需要灵活替换的逻辑留给运行时。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式现代 C++教程——constexpr：..](3constexpr.md) | [下一篇 | 构造函数优化：初始化列表 vs 成员赋值 →](<../Chapter3/1 初始化列表.md>)
+- 在设计层面，把"可变点"与"稳定点"明确区分：把不变逻辑放到编译期，把需要灵活替换的逻辑留给运行时。

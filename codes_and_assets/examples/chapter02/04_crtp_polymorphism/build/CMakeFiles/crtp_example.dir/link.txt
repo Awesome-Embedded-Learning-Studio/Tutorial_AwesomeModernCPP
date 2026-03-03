@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/crtp_example.dir/link.d CMakeFiles/crtp_example.dir/crtp_example.cpp.o -o crtp_example

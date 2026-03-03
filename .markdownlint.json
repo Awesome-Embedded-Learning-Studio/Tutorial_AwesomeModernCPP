@@ -1,0 +1,24 @@
+{
+  "default": true,
+  "MD013": false,
+  "MD024": {
+    "siblings_only": true
+  },
+  "MD033": false,
+  "MD041": false,
+  "MD012": {
+    "maximum": 3
+  },
+  "MD004": {
+    "style": "dash"
+  },
+  "MD007": {
+    "indent": 2,
+    "start_indented": false
+  },
+  "MD001": false,
+  "MD025": false,
+  "MD035": false,
+  "MD036": false,
+  "MD060": false
+}

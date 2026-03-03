@@ -2,10 +2,6 @@
 
 所以，我们打算在什么地方上C++这是一个比较严重的问题。搞清楚这个事情对我们后续的开发非常重要。毕竟我们必须确定在这个地方上使用C++是合适的，我们才能继续我们的话题。
 
-
-
-
-
 ### 引言
 
 在嵌入式系统开发领域，编程语言的选择往往是一个充满争议却又至关重要的架构决策。传统观念认为C语言是嵌入式开发的不二之选，但随着嵌入式系统复杂度的不断提升，C++凭借其强大的抽象能力和零开销抽象原则，正在越来越多的嵌入式项目中发挥重要作用。然而，C++并非在所有场景下都是最优选择，即便选择了C++，也需要对其特性进行精心筛选。本章将系统性地探讨何时应该选择C++，以及在资源受限的嵌入式环境中应该如何明智地使用C++特性。
@@ -33,21 +29,21 @@ class SensorDriver {
 private:
     uint32_t baseAddress;
     volatile uint32_t* const reg;
-    
+
 public:
-    explicit SensorDriver(uint32_t addr) 
-        : baseAddress(addr), 
+    explicit SensorDriver(uint32_t addr)
+        : baseAddress(addr),
           reg(reinterpret_cast<volatile uint32_t*>(addr)) {}
-    
-    void enable() { 
-        *reg |= 0x01; 
+
+    void enable() {
+        *reg |= 0x01;
     }
-    
-    uint16_t read() const { 
-        return static_cast<uint16_t>(*reg >> 16); 
+
+    uint16_t read() const {
+        return static_cast<uint16_t>(*reg >> 16);
     }
 };
-```
+```text
 
 相比C语言中通过全局变量和函数指针实现的方案，这种方式不仅代码更加清晰，而且由于成员函数默认内联，性能上也毫不逊色。关键是，这种封装使得硬件细节完全隐藏在类的内部，外部代码无法直接访问寄存器，从而大大降低了出错的可能性。
 
@@ -60,7 +56,7 @@ namespace drivers {
         void setPinMode(uint8_t pin, PinMode mode);
         bool readPin(uint8_t pin);
     }
-    
+
     namespace uart {
         void init(uint32_t baudRate);
         void send(const uint8_t* data, size_t len);
@@ -70,7 +66,7 @@ namespace drivers {
 // 使用时
 drivers::gpio::init();
 drivers::uart::init(115200);
-```
+```text
 
 将GPIO相关的所有接口放在drivers::gpio命名空间下，既能避免命名冲突，又使代码的组织结构一目了然。最重要的是，命名空间是一个纯粹的编译期特性，不会产生任何运行时开销。
 
@@ -98,7 +94,7 @@ void processData_c(const SensorData* data) {
     if (data == NULL) return;  // 需要空指针检查
     uint16_t value = data->temperature;
 }
-```
+```text
 
 当我们想要传递一个大型结构体但又不希望拷贝时，使用const引用既高效又安全。当函数需要修改传入的参数时，使用非const引用能够清楚地表明这一意图。在底层实现上，引用通常就是指针，因此不会带来额外的性能开销。
 
@@ -118,7 +114,7 @@ uint8_t buffer[bufferSize];
 
 // 对比传统运行时计算
 uint32_t divisor_runtime = 72000000 / (16 * 115200);  // 运行时除法
-```
+```text
 
 比如计算串口波特率分频系数这样的场景，传统做法是在运行时进行除法运算，而使用constexpr函数可以让这个计算在编译期完成，生成的代码直接就是计算结果。这不仅提升了性能，也使得代码的意图更加明确。
 
@@ -162,7 +158,7 @@ void oldSetMode(uint8_t pin, OldPinMode mode) {
 setMode(5, PinMode::Output);        // 正确
 // setMode(5, PullMode::PullUp);    // 编译错误，类型不匹配
 // setMode(5, 1);                   // 编译错误，不能隐式转换
-```
+```text
 
 使用enum class定义的枚举不会隐式转换为整数，这避免了许多潜在的类型错误。同时，强类型枚举的作用域独立，不会污染外层命名空间。在定义硬件引脚模式或者协议状态时，使用enum class可以获得类型安全的好处，而编译器通常会将其优化为普通整数，因此不会有性能损失。
 
@@ -184,7 +180,7 @@ swap(x, y);  // 编译器生成 swap<uint32_t>
 
 float f1 = 1.5f, f2 = 2.5f;
 swap(f1, f2);  // 编译器生成 swap<float>
-```
+```text
 
 比如实现一个类型安全的swap函数。这种函数模板通常会被编译器内联，最终生成的代码和手写的类型特定版本完全相同。关键是要保持模板的简单性，避免复杂的模板元编程技巧。
 
@@ -198,7 +194,7 @@ private:
     size_t head = 0;
     size_t tail = 0;
     size_t count = 0;
-    
+
 public:
     bool push(const T& item) {
         if (count >= N) return false;
@@ -207,7 +203,7 @@ public:
         count++;
         return true;
     }
-    
+
     bool pop(T& item) {
         if (count == 0) return false;
         item = buffer[head];
@@ -215,7 +211,7 @@ public:
         count--;
         return true;
     }
-    
+
     size_t size() const { return count; }
     bool empty() const { return count == 0; }
     bool full() const { return count >= N; }
@@ -232,7 +228,7 @@ if (rxBuffer.push(0x42)) {
 if (rxBuffer.pop(byte)) {
     // 读取成功
 }
-```
+```text
 
 通过将元素类型和大小作为模板参数，我们可以实现一个通用的环形缓冲区类，它可以用于不同的数据类型而不需要重复编写代码。由于缓冲区大小在编译期确定，编译器可以进行充分的优化，性能不会比手写的特定版本差。但需要注意的是，每一个模板参数的不同组合都会生成一份独立的代码，因此要避免过度实例化导致的代码膨胀。
 
@@ -260,7 +256,7 @@ void serialize(const T& value, uint8_t* buffer) {
         *reinterpret_cast<T*>(buffer) = value;
     }
 }
-```
+```text
 
 虽然它们能够实现编译期的类型约束和函数重载，但也会增加代码的复杂度和编译时间。只有在确实需要根据类型特征选择不同实现时，才应该考虑使用这些技术。即便使用，也应该尽量保持简单，避免过度设计。
 
@@ -285,16 +281,16 @@ public:
 class ScopedLock {
 private:
     Mutex& mutex;
-    
+
 public:
-    explicit ScopedLock(Mutex& m) : mutex(m) { 
-        mutex.lock(); 
+    explicit ScopedLock(Mutex& m) : mutex(m) {
+        mutex.lock();
     }
-    
-    ~ScopedLock() noexcept { 
-        mutex.unlock(); 
+
+    ~ScopedLock() noexcept {
+        mutex.unlock();
     }
-    
+
     // 禁止拷贝和赋值
     ScopedLock(const ScopedLock&) = delete;
     ScopedLock& operator=(const ScopedLock&) = delete;
@@ -308,7 +304,7 @@ void criticalSection() {
     // 执行临界区代码
     // ...
 }  // 离开作用域时自动释放锁，即使发生错误返回
-```
+```text
 
 这个类在构造时获取锁，在析构时释放锁，既简洁又安全。然而，复杂的初始化链、在构造函数中分配动态内存、以及在中断上下文中创建需要析构的对象，这些都是应该避免的做法：
 
@@ -331,10 +327,10 @@ class GoodDriver {
     static constexpr size_t BUFFER_SIZE = 1024;
     uint8_t buffer[BUFFER_SIZE];  // 静态分配
     bool initialized = false;
-    
+
 public:
     GoodDriver() = default;  // 简单的默认构造
-    
+
     bool init() {  // 显式初始化函数
         if (!initHardware()) {
             return false;
@@ -342,10 +338,10 @@ public:
         initialized = true;
         return true;
     }
-    
+
     ~GoodDriver() noexcept = default;
 };
-```
+```text
 
 特别需要注意的是，析构函数应该始终是noexcept的，因为析构过程中抛出异常会导致程序终止。
 
@@ -369,11 +365,11 @@ ErrorCode initSensor(uint8_t address) {
     if (address == 0 || address > 127) {
         return ErrorCode::InvalidParameter;
     }
-    
+
     if (!checkHardware()) {
         return ErrorCode::HardwareError;
     }
-    
+
     return ErrorCode::Ok;
 }
 
@@ -398,7 +394,7 @@ if (result != ErrorCode::Ok) {
 struct Result {
     ErrorCode error;
     uint16_t value;
-    
+
     bool isOk() const { return error == ErrorCode::Ok; }
 };
 
@@ -409,7 +405,7 @@ Result readSensor() {
         res.value = 0;
         return res;
     }
-    
+
     // 读取硬件
     res.error = ErrorCode::Ok;
     res.value = readHardwareRegister();
@@ -423,7 +419,7 @@ if (res.isOk()) {
 } else {
     handleError(res.error);
 }
-```
+```text
 
 这种方式虽然不如异常优雅，但它是可预测的、高效的，而且容易进行最坏情况分析。只有在系统有充足的Flash和RAM资源，实时性要求不严格，工具链完全支持异常，且团队具备异常处理的最佳实践经验时，才应该考虑启用异常。
 
@@ -454,9 +450,3 @@ if (res.isOk()) {
 代码审查应该成为开发流程的必要环节。在审查时,要特别关注是否使用了被禁止的特性,模板是否被过度使用导致代码膨胀,以及虚函数调用是否出现在性能关键路径上。通过静态分析工具可以自动检测许多问题,比如是否使用了动态内存、是否启用了异常、以及代码体积是否超标。
 
 性能测量和资源监控同样不可或缺。应该定期检查编译后的二进制文件大小,确保没有意外的膨胀。对于性能关键的代码路径,应该进行实际测量,而不是仅凭经验判断。现代编译器提供了许多优化选项,但这些优化的效果需要通过实际测试来验证。所以不要立马在生产环境中就进行尝试，先看看会不会出问题。
-
----
-
-## 导航
-
-[← 上一篇 | C++98基础特性：从C到C++的演进](3快速过一下C++98的基本特性.md) | [下一篇 | 语言选择原则：性能 vs 可维护性的真实取舍（.. →](<5语言选择原则：性能 vs 可维护性的真实取舍.md>)

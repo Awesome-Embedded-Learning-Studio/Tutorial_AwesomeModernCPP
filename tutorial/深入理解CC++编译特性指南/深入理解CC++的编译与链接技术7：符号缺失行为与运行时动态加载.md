@@ -54,7 +54,9 @@ int add(int a, int b) {
 const char *hello(void) {
     return "Hello from mylib";
 }
-```
+
+```text
+
 
 在Linux下，我们这样构建动态库
 
@@ -63,7 +65,9 @@ const char *hello(void) {
 gcc -fPIC -shared -o libmylib.so mylib.c
 # 编译主程序（下面会用 dlopen）
 gcc -o main main.c -ldl
-```
+
+```text
+
 
 随后编写一个使用的main.c来处理之：
 
@@ -75,7 +79,7 @@ gcc -o main main.c -ldl
 int main(void) {
     /* Pass here a valid path */
     /* So place the dynamic library same place */
-    void *h = dlopen("./libmylib.so", RTLD_NOW); 
+    void *h = dlopen("./libmylib.so", RTLD_NOW);
     if (!h) {
         fprintf(stderr, "dlopen failed: %s\n", dlerror());
         return 1;
@@ -97,7 +101,9 @@ int main(void) {
     dlclose(h);
     return 0;
 }
-```
+
+```text
+
 
 **运行**
 
@@ -105,7 +111,9 @@ int main(void) {
 # 确保当前目录可被加载（或设置 LD_LIBRARY_PATH）
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 ./main
-```
+
+```text
+
 
 ------
 
@@ -128,19 +136,25 @@ __declspec(dllexport) const char* hello(void) {
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
-```
+
+```text
+
 
 **构建（MSVC Developer Command Prompt）**
 
 ```cmd
 cl /LD mylib.c /Fe:mylib.dll
-```
+
+```text
+
 
 **构建（MinGW）**
 
 ```bash
 gcc -shared -o mylib.dll -Wl,--out-implib,libmylib.a -Wl,--export-all-symbols -fPIC mylib.c
-```
+
+```text
+
 
 ### main.c（使用 LoadLibrary）
 
@@ -173,14 +187,18 @@ int main(void) {
     FreeLibrary(h);
     return 0;
 }
-```
+
+```text
+
 
 **运行（在 DLL 同目录下或把 DLL 加到 PATH）**
 
 ```cmd
 set PATH=%CD%;%PATH%
 main_win.exe
-```
+
+```text
+
 
 ------
 
@@ -206,7 +224,9 @@ PluginAPI* create_plugin_api(void);
 #ifdef __cplusplus
 }
 #endif
-```
+
+```text
+
 
 ### plugin_impl.c（插件实现）
 
@@ -228,7 +248,9 @@ static PluginAPI api = {
 PluginAPI* create_plugin_api(void) {
     return &api;
 }
-```
+
+```text
+
 
 主程序只需通过 `dlsym(h, "create_plugin_api")` 拿到 `PluginAPI*`，就能无缝调用插件函数，无需关心 C++ 名字修饰。
 
@@ -241,14 +263,3 @@ PluginAPI* create_plugin_api(void) {
 #### **Windows 的 `GetProcAddress` 失败怎么排查？**
 
 检查导出名称（使用 `dumpbin /EXPORTS` 或 `nm`），检查调用约定是否匹配（`__stdcall` 会改变导出名），或是否使用了 C++ 名称修饰。建议 `__declspec(dllexport)` + `extern "C"`。
-
-
-
-
-
-
-
-
-
-
-

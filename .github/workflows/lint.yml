@@ -1,0 +1,47 @@
+# Documentation Lint Workflow
+# Runs markdown linting and frontmatter validation on PRs
+
+name: Lint Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run markdownlint
+        uses: articulate/markdownlint-action@v1
+        with:
+          config: .markdownlint.json
+          files: 'tutorial/**/*.md'
+          ignore: 'tutorial/**/index.md'
+
+  validate-frontmatter:
+    name: Validate Frontmatter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Validate frontmatter
+        run: |
+          python scripts/validate_frontmatter.py

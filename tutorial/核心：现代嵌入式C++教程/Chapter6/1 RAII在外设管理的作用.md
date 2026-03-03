@@ -2,7 +2,7 @@
 
 ## 先问是什么
 
-RAII（Resource Acquisition Is Initialization）来自 C++ 的兵器库：资源（文件、互斥、硬件句柄）在构造函数里被“拿到”，在析构函数里被“放回”。在嵌入式场景下，资源不是内存垃圾桶里的`new`/`delete`，而是：GPIO 引脚状态、SPI 的片选（CS）线、DMA 通道、文件描述符、外设时钟、互斥锁……这些东西忘了释放会导致外设卡死、功耗增加或系统不稳定。RAII 能把“释放”放到**作用域结束时自动执行**，大幅降低漏释放和状态不一致的概率。不过——嵌入式有限资源、可能无异常支持、ISR 环境特殊，所以用 RAII 时要注意约束：析构不能抛异常、不应做耗时阻塞操作、尽量避免在 ISR 中做复杂析构（或根本不要在 ISR 中创建短生命周期对象）。
+RAII（Resource Acquisition Is Initialization）来自 C++ 的兵器库：资源（文件、互斥、硬件句柄）在构造函数里被"拿到"，在析构函数里被"放回"。在嵌入式场景下，资源不是内存垃圾桶里的`new`/`delete`，而是：GPIO 引脚状态、SPI 的片选（CS）线、DMA 通道、文件描述符、外设时钟、互斥锁……这些东西忘了释放会导致外设卡死、功耗增加或系统不稳定。RAII 能把"释放"放到**作用域结束时自动执行**，大幅降低漏释放和状态不一致的概率。不过——嵌入式有限资源、可能无异常支持、ISR 环境特殊，所以用 RAII 时要注意约束：析构不能抛异常、不应做耗时阻塞操作、尽量避免在 ISR 中做复杂析构（或根本不要在 ISR 中创建短生命周期对象）。
 
 ------
 
@@ -60,7 +60,7 @@ private:
     GPIODir dir_;
     bool moved_ = false;
 };
-```
+```text
 
 用法：
 
@@ -70,7 +70,16 @@ void blink_once() {
     led.write(true);
     // 离开作用域时，led 自动恢复为输入（safe state）
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/gpio_raii.cpp"
+```text
+
+</details>
 
 注意：`hal_gpio_*` 是你实际平台的 HAL，实际实现要确保这些函数本身在中断上下文安全或不在 ISR 中被长时间调用。
 
@@ -124,7 +133,7 @@ private:
     uint8_t cs_pin_;
     bool active_;
 };
-```
+```text
 
 用法（注意：放在函数作用域里）：
 
@@ -134,7 +143,16 @@ void read_sensor(SPIBus& spi, uint8_t cs) {
     spi.transfer(tx_buf, rx_buf, len);
     // 自动释放 CS、结束事务
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/spi_transaction.cpp"
+```text
+
+</details>
 
 好处显而易见：任何 `return`、异常（若启用）或 early exit 都会正确释放 CS。
 
@@ -142,7 +160,7 @@ void read_sensor(SPIBus& spi, uint8_t cs) {
 
 ## DMA 通道 RAII
 
-DMA 有“开始/等待/中止”流程。但是还需要注意的是——不要阻塞太久。
+DMA 有"开始/等待/中止"流程。但是还需要注意的是——不要阻塞太久。
 
 - 构造：分配/绑定 DMA 通道，配置描述符（但不启动），或者启动但返回前不会阻塞。
 - 提供 `wait()` 或 `join()` 显式等待（阻塞可由调用者决定）。
@@ -181,15 +199,15 @@ private:
     uint8_t ch_;
     bool running_;
 };
-```
+```text
 
-不要在析构里 `wait_until_done()`，而在需要保证完成处显式调用 `wait_until_done()`。析构只做“尽可能安全的撤销”。
+不要在析构里 `wait_until_done()`，而在需要保证完成处显式调用 `wait_until_done()`。析构只做"尽可能安全的撤销"。
 
 ------
 
 ## 通用 `ScopeGuard`（处理 C 风格 API 与早返回）
 
-RAII 不仅是硬件，也能包装“局部清理动作”。实现一个简单的 `scope_exit`：
+RAII 不仅是硬件，也能包装"局部清理动作"。实现一个简单的 `scope_exit`：
 
 ```cpp
 #include <utility>
@@ -207,7 +225,16 @@ private:
 };
 
 template <typename F> ScopeExit<F> make_scope_exit(F f) noexcept { return ScopeExit<F>(std::move(f)); }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/01_raii_peripheral_management/scope_guard.cpp"
+```text
+
+</details>
 
 用法：
 
@@ -216,16 +243,10 @@ auto guard = make_scope_exit([&]{ hal_unlock_resource(); });
 // ... 中间有多个 return
 // 若成功并想取消 cleanup:
 guard.dismiss();
-```
+```text
 
 这在没有异常支持时仍然非常有用：任何 `return` 都会触发 lambda，确保资源被清理。
 
 ## 最后
 
-把 RAII 用好，就是把“麻烦的清理工作”交给 C++ 的析构魔法师去做——你只需要专注于写业务逻辑，不用每天像程序员版的保洁员那样记着“这根管线我什么时候关”。不过要记住：请善待析构函数，不要让它成为阻塞地狱的起点。把析构写成一个温柔而高效的护士：安静、快速、不会在别人睡觉时把心脏按坏。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式C++教程——`std::array` ..](<../Chapter5/6array vs 一般数组，你们知道嘛？.md>) | [下一篇 | 现代嵌入式C++教程——std::unique.. →](<2 unique_ptr.md>)
+把 RAII 用好，就是把"麻烦的清理工作"交给 C++ 的析构魔法师去做——你只需要专注于写业务逻辑，不用每天像程序员版的保洁员那样记着"这根管线我什么时候关"。不过要记住：请善待析构函数，不要让它成为阻塞地狱的起点。把析构写成一个温柔而高效的护士：安静、快速、不会在别人睡觉时把心脏按坏。

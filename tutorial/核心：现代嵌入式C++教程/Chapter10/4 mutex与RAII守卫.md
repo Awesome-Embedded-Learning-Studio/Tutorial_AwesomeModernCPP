@@ -32,7 +32,7 @@ void bad_increment() {
     // 如果这里抛异常...unlock永远不会执行！
     mtx.unlock();        // 手动解锁
 }
-```
+```text
 
 这段代码有几个致命问题：
 
@@ -55,7 +55,7 @@ void function_b() {
     // ...
     mtx.unlock();
 }
-```
+```text
 
 这种情况下，程序直接卡死。虽然这个例子很傻，但在大型代码库里，函数调用链复杂，很容易不知不觉就犯了这种错。
 
@@ -82,7 +82,7 @@ void good_increment() {
     shared_counter++;
     // 无论这里怎么退出（return、异常），lock析构时都会自动unlock
 }
-```
+```text
 
 就这么简单。`lock_guard`的构造函数会调用`mtx.lock()`，析构函数会调用`mtx.unlock()`。C++保证局部对象离开作用域时一定会调用析构函数，即使发生异常也是如此。
 
@@ -124,9 +124,10 @@ private:
 
     void hardware_transfer(const uint8_t* tx, uint8_t* rx, size_t length);
 };
-```
+```text
 
 这里用`lock_guard`有几个好处：
+
 - 异常安全：如果`hardware_transfer()`抛异常，锁仍然会释放
 - 代码清晰：一看就知道临界区的范围
 - 性能可控：临界区就是整个函数体，简单明了
@@ -146,7 +147,7 @@ void good_function() {
     std::lock_guard<std::mutex> lock(mtx);  // lock有名字，生命周期是整个作用域
     shared_counter++;
 }
-```
+```text
 
 这是个新手常犯的错误，编译器通常不会警告，所以一定要小心。
 
@@ -165,7 +166,7 @@ void complex_function() {
 
     // 离开作用域时，lock仍然会unlock
 }
-```
+```text
 
 这个选项主要用于把手动加锁的代码迁移到RAII风格，或者某些需要手动控制加锁时机的特殊场景。但大部分情况下，你应该让`lock_guard`自己管理加锁。
 
@@ -185,7 +186,7 @@ void function_with_unique_lock() {
     // 临界区...
     // 离开作用域自动解锁
 }
-```
+```text
 
 用法和`lock_guard`一样简单，但它提供了更多选项。
 
@@ -203,7 +204,7 @@ void selective_locking(bool need_lock) {
 
     // 如果加锁了，离开作用域会自动解锁；没加锁也不会报错
 }
-```
+```text
 
 `defer_lock`让你在构造时不加锁，后续根据需要手动加锁。这在某些条件性加锁的场景很有用。
 
@@ -226,7 +227,7 @@ void process_and_save() {
 
     // lock离开作用域，但已经unlock过了，不会重复unlock
 }
-```
+```text
 
 这是一个重要的性能优化技巧：尽快释放锁，让其他线程能尽早进入临界区。`lock_guard`做不到这一点，但`unique_lock`可以。
 
@@ -266,7 +267,7 @@ private:
     std::mutex mtx;
     std::condition_variable cv;
 };
-```
+```text
 
 这是`unique_lock`不可替代的场景。如果你要用条件变量，就必须用`unique_lock`。
 
@@ -286,7 +287,7 @@ void use_lock() {
     // 临界区...
     // lock离开作用域，自动解锁
 }
-```
+```text
 
 这个特性在某些复杂场景很有用，比如把锁传递给另一个函数或对象。但要注意：`lock_guard`不支持这种用法。
 
@@ -295,6 +296,7 @@ void use_lock() {
 `unique_lock`比`lock_guard`稍微重一些，因为它需要维护额外的状态（是否持有锁、是否用了`defer_lock`等）。但差异通常很小，除非是极端性能敏感的场景。
 
 **选择建议**：
+
 - 90%的场景：优先用`lock_guard`，简单轻量
 - 需要条件变量：必须用`unique_lock`
 - 需要手动解锁/延迟加锁：用`unique_lock`
@@ -324,9 +326,10 @@ void thread2() {
     std::lock_guard<std::mutex> lock_a(mtx_a);
     // ...
 }
-```
+```text
 
 如果这两个线程同时运行，可能出现：
+
 - 线程1锁住了A，等待B
 - 线程2锁住了B，等待A
 - 两个线程互相等待，死锁
@@ -344,7 +347,7 @@ void safe_function() {
 
     // 临界区...
 }
-```
+```text
 
 `std::lock()`会保证要么全部锁成功，要么全部不锁，避免了死锁。
 
@@ -357,7 +360,7 @@ void modern_safe_function() {
     std::scoped_lock lock(mtx_a, mtx_b);  // 一次性锁定多个互斥量
     // 临界区...
 }
-```
+```text
 
 `scoped_lock`的构造函数会调用`std::lock()`来锁定所有互斥量，析构时按相反顺序解锁。既简洁又安全。
 
@@ -392,7 +395,7 @@ private:
 
     void update_system_state();
 };
-```
+```text
 
 这里`update_sensor_data()`需要同时访问两个互斥量，用`scoped_lock`可以安全地锁定它们，避免死锁。
 
@@ -405,7 +408,7 @@ void simple_function() {
     std::scoped_lock lock(mtx);  // 等价于 std::lock_guard<std::mutex> lock(mtx);
     // 临界区...
 }
-```
+```text
 
 但为了代码清晰，单个锁还是推荐用`lock_guard`，一眼就能看出意图。
 
@@ -435,7 +438,7 @@ std::atomic<int> atomic_flag{0};
 extern "C" void EXTI0_IRQHandler() {
     atomic_flag.store(1, std::memory_order_release);
 }
-```
+```text
 
 **原则**：中断和主线程之间用原子操作或无锁队列，不要用互斥锁。
 
@@ -454,7 +457,7 @@ class CompactProtection {
     int value2;
     int value3;
 };
-```
+```text
 
 ### 检查是否支持lock-free
 
@@ -463,7 +466,7 @@ class CompactProtection {
 ```cpp
 std::atomic<int> flag;
 static_assert(flag.is_always_lock_free, "Atomic must be lock-free!");
-```
+```text
 
 ### RTOS的互斥量
 
@@ -482,7 +485,7 @@ void task() {
         xSemaphoreGive(xMutex);
     }
 }
-```
+```text
 
 具体要参考你使用的RTOS文档。
 
@@ -522,7 +525,7 @@ private:
     void lock() { mtx.lock(); }
     void unlock() { mtx.unlock(); }
 };
-```
+```text
 
 但更好的做法是用`std::scoped_lock`，它会自动处理顺序问题。
 
@@ -546,7 +549,7 @@ void good_function() {
     data = temp_data;  // 只锁共享数据的操作
     // process_data()可以在锁外进行
 }
-```
+```text
 
 ### 规则3：避免在持锁时调用外部代码
 
@@ -563,7 +566,7 @@ void safe_function() {
     std::lock_guard<std::mutex> lock(mtx);
     // 临界区操作
 }
-```
+```text
 
 ### 规则4：使用try_lock避免无限等待
 
@@ -582,7 +585,7 @@ void function_with_timeout() {
         handle_deadlock_risk();
     }
 }
-```
+```text
 
 `std::try_lock()`会尝试锁定所有互斥量，失败时返回失败的索引（从0开始），-1表示全部成功。
 
@@ -603,7 +606,7 @@ void function_with_timeout() {
         handle_timeout();
     }
 }
-```
+```text
 
 `std::timed_mutex`和`std::recursive_timed_mutex`支持带超时的加锁操作，可以避免无限等待。
 
@@ -633,9 +636,10 @@ private:
     mutable std::shared_mutex mtx;
     std::map<std::string, int> map;
 };
-```
+```text
 
 **特性**：
+
 - `unique_lock`：写锁，独占访问
 - `shared_lock`：读锁，多个线程可以同时持有
 - 写操作会阻塞所有读写，读操作只阻塞写操作
@@ -658,16 +662,7 @@ private:
 6. **嵌入式注意**：ISR里不能用锁，用原子操作或无锁队列
 
 **实践建议**：
+
 - 优先用`lock_guard`，简单可靠
 - 需要条件变量时必须用`unique_lock`
 - 多锁场景用`scoped_lock`避免死锁
-- 读写分离考虑`shared_mutex`，但要测试性能
-- 中断和主线程之间用无锁结构
-
-锁不是敌人，也不可怕。关键是正确使用RAII封装，遵循最佳实践，就能写出既安全又高效的并发代码。下一章，我们将探讨条件变量和更复杂的同步模式。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式现代C++开发——无锁数据结构设计](<3 无锁数据结构设计.md>)

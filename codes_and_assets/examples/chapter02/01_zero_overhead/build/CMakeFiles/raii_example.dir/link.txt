@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/raii_example.dir/link.d CMakeFiles/raii_example.dir/raii_example.cpp.o -o raii_example

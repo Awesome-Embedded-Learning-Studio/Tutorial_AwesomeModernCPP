@@ -1,6 +1,6 @@
 # 嵌入式现代 C++教程——自定义删除器（Custom Deleter）
 
-写嵌入式代码，常常遇到“资源不是 new 就是 delete”的假象世界。现实里，你可能得释放的不只是 `new` 出来的内存：外设句柄、MMIO 映射、DMA 缓冲、FILE*、socket、或者某个 C API 的 `free()`。这时候，C++ 的自定义删除器就像一个可靠的清道夫——把资源清理的细节藏到智能指针后面，让你把注意力放回功能实现。今天我们带着一点幽默（和大量实例）把这个话题讲清楚，顺带告诉你在内存受限的嵌入式环境下应该注意什么。
+写嵌入式代码，常常遇到"资源不是 new 就是 delete"的假象世界。现实里，你可能得释放的不只是 `new` 出来的内存：外设句柄、MMIO 映射、DMA 缓冲、FILE*、socket、或者某个 C API 的 `free()`。这时候，C++ 的自定义删除器就像一个可靠的清道夫——把资源清理的细节藏到智能指针后面，让你把注意力放回功能实现。今天我们带着一点幽默（和大量实例）把这个话题讲清楚，顺带告诉你在内存受限的嵌入式环境下应该注意什么。
 
 ------
 
@@ -32,9 +32,18 @@ void example() {
     auto fp = open_file("/tmp/log.txt", "w");
     if (fp) std::fprintf(fp.get(), "hello, embedded world\n");
 } // 离开作用域时自动 fclose
-```
+```text
 
 注意这里 `unique_ptr` 的第二个模板参数是 `decltype(&fclose)`，也可以直接写成 `void(*)(FILE*)`。函数指针作为删除器时，`unique_ptr` 的类型大小会包含一个指针（即比裸指针大一倍）。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/06_custom_deleters/file_handle.cpp"
+```text
+
+</details>
 
 ------
 
@@ -62,7 +71,7 @@ void example() {
     std::puts(p.get());
     // p 离开作用域时调用 FreeDeleter::operator()(p.get())
 }
-```
+```text
 
 `FreeDeleter` 标记为无状态（没有成员），因此通常不会增加 `unique_ptr` 的大小。对于嵌入式，这是非常有用的：零运行时开销、类型在编译期就确定。
 
@@ -94,9 +103,18 @@ void example(DmaController* ctrl) {
     uint8_t* buf = dma_alloc(1024);
     DmaPtr p(buf, DmaDeleter{ctrl}); // 删除器内部持有指针到 controller
 } // 离开作用域自动调用 ctrl->release_buffer
-```
+```text
 
-有状态删除器的好处是灵活，但代价是：智能指针不再是“只含一个指针”的小结构——它包含删除器的状态。嵌入式工程师要衡量：每个实例是否真的需要自己的状态？还是可以把状态提升为全局/单例/线程本地，从而使用无状态删除器？
+有状态删除器的好处是灵活，但代价是：智能指针不再是"只含一个指针"的小结构——它包含删除器的状态。嵌入式工程师要衡量：每个实例是否真的需要自己的状态？还是可以把状态提升为全局/单例/线程本地，从而使用无状态删除器？
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter06/06_custom_deleters/file_handle.cpp"
+```text
+
+</details>
 
 ------
 
@@ -124,7 +142,7 @@ void use_fd() {
     auto fd = make_fd_shared(open("/dev/ttyS0", O_RDWR));
     // 多处共享并自动 close
 }
-```
+```text
 
 `shared_ptr` 的删除器在运行时存储在控制块里，灵活但相对开销更大（控制块、原子计数等），在嵌入式上要慎用。
 
@@ -155,7 +173,7 @@ struct FileDescriptor {
         return *this;
     }
 };
-```
+```text
 
 这类 wrapper 在嵌入式中非常常用：比把整套删除器玩花样更直观、代码也更可控。
 
@@ -163,7 +181,7 @@ struct FileDescriptor {
 
 ### 删除器的常见陷阱（别踩坑）
 
-1. **捕获的 lambda 作为删除器会让智能指针变“胖”**。捕获 lambda 有状态，会把捕获的数据存在删除器对象里，从而增大 `unique_ptr` 的大小。如果你关心内存，优先使用无状态函数对象或函数指针。
+1. **捕获的 lambda 作为删除器会让智能指针变"胖"**。捕获 lambda 有状态，会把捕获的数据存在删除器对象里，从而增大 `unique_ptr` 的大小。如果你关心内存，优先使用无状态函数对象或函数指针。
 2. **删除器抛异常 = `std::terminate`**。删除器在析构时必须保证不抛异常，给 `operator()` 加上 `noexcept`。
 3. **多态删除（基类指针删除派生）**：如果是 `delete ptr;`，保证基类析构函数为 `virtual`。如果你用自定义删除器做特殊删除（例如通过特定 allocator 释放），确保删除器做了正确的转换/释放。
 4. **类型大小注意**：`unique_ptr<T, D>` 的类型依赖于 `D`。若 `D` 很大，你就得接受更多的内存占用；若 `D` 是空类型，编译器通常能优化掉大小差异。
@@ -176,7 +194,7 @@ struct FileDescriptor {
 - **资源少且运行时可知：优先用 `unique_ptr` + 无状态删除器。** 编译期确定一切，体积小，零运行时开销。
 - **需要运行时策略或共享所有权：`shared_ptr` + 自定义删除器。** 但要留意控制块开销，嵌入式谨慎使用。
 - **资源不是指针的优先自写 RAII wrapper。** 小巧、明确、可控。若要方便与 C API 交互再考虑 `shared_ptr<int>` 等变通做法。
-- **如果删除逻辑与外设/驱动强耦合：让删除器持有驱动指针或索引，并标注 `noexcept`。** 但注意这样的 `unique_ptr` 会更“重”。
+- **如果删除逻辑与外设/驱动强耦合：让删除器持有驱动指针或索引，并标注 `noexcept`。** 但注意这样的 `unique_ptr` 会更"重"。
 - **在接口层（API）暴露智能指针类型时，尽量用具体类型而非 `std::function` 或 `void\*` 隐式处理——类型信息能帮静态分析和优化。**
 
 ------
@@ -193,7 +211,7 @@ FilePtr2 make_fp(const char* path) {
     FILE* f = fopen(path, "r");
     return FilePtr2(f, deleter);
 }
-```
+```text
 
 - 如果你不得不在接口层隐藏删除器类型（比如库 API 不想暴露复杂模板），可以在内部用 `unique_ptr`，对外提供轻量的 handle 或者专门的 RAII 类型。
 
@@ -201,10 +219,4 @@ FilePtr2 make_fp(const char* path) {
 
 ## 小结
 
-自定义删除器不是魔法，但它是一个把“谁来释放”这个烦人的问题放到正确位置的优雅工具。嵌入式场景下，我们在意的是二件事：**内存/二进制体积** 与 **运行时开销/确定性**。把删除策略分为三类：编译期删除器（无状态、`unique_ptr` 最优）、运行时删除器（`shared_ptr` 灵活但有代价）、以及传统的 RAII wrapper（明确、轻量、可控）。每次设计 API 时问自己一句话：**这份资源谁能最安全、最高效地在正确的时间释放？**
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式现代C++教程——intrusive 智..](<5 intrusive 智能指针与引用计数（非堆实现）.md>) | [下一篇 | 引用计数的实现与性能 →](<7 引用计数.md>)
+自定义删除器不是魔法，但它是一个把"谁来释放"这个烦人的问题放到正确位置的优雅工具。嵌入式场景下，我们在意的是二件事：**内存/二进制体积** 与 **运行时开销/确定性**。把删除策略分为三类：编译期删除器（无状态、`unique_ptr` 最优）、运行时删除器（`shared_ptr` 灵活但有代价）、以及传统的 RAII wrapper（明确、轻量、可控）。每次设计 API 时问自己一句话：**这份资源谁能最安全、最高效地在正确的时间释放？**

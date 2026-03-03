@@ -32,7 +32,7 @@ sudo apt install -y clang clang-format
 
 # （可选）安装额外工具：python 用于一些构建脚本、ccache 等
 sudo apt install -y python3 python3-pip ccache
-```
+```text
 
 `build-essential` 包含 gcc/g++、make 等，是在 Debian/Ubuntu 上非常常用的构建必备包。安装命令和说明见常用社区文档。
 
@@ -51,12 +51,12 @@ sudo apt install -y python3 python3-pip ccache
 
 ------
 
-## 在 WSL 中用 VS Code 打开项目（真正 “在 Linux 下开发”）
+## 在 WSL 中用 VS Code 打开项目（真正 "在 Linux 下开发"）
 
 1. 在 Windows 中打开 VS Code，按 `F1` -> 输入 `Remote-WSL: New Window`（或在 Ubuntu 终端进入项目目录后执行 `code .`，这会在 WSL 上打开 VS Code 窗口）。
-2. VS Code 会在 WSL 中自动安装必要的服务器组件，并在 “左下角绿色区域” 显示 `WSL: <distro>`，表示当前窗口已连接到 WSL。
+2. VS Code 会在 WSL 中自动安装必要的服务器组件，并在 "左下角绿色区域" 显示 `WSL: <distro>`，表示当前窗口已连接到 WSL。
 
-> 当 VS Code 在 WSL context 下打开时，左侧的 Extensions 面板会提示你“安装到 WSL:Ubuntu”的扩展（即扩展会安装在 WSL 环境而不是 Windows）。推荐把 C/C++、CMake Tools 等在 WSL 上安装（点击“Install in WSL: Ubuntu”）。
+> 当 VS Code 在 WSL context 下打开时，左侧的 Extensions 面板会提示你"安装到 WSL:Ubuntu"的扩展（即扩展会安装在 WSL 环境而不是 Windows）。推荐把 C/C++、CMake Tools 等在 WSL 上安装（点击"Install in WSL: Ubuntu"）。
 
 ------
 
@@ -66,7 +66,7 @@ sudo apt install -y python3 python3-pip ccache
 
 ```bash
 mkdir -p ~/projects/hello_cmake && cd ~/projects/hello_cmake
-```
+```text
 
 新建文件 `CMakeLists.txt`：
 
@@ -76,7 +76,7 @@ project(hello_cmake LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 add_executable(hello main.cpp)
-```
+```text
 
 新建 `main.cpp`：
 
@@ -89,7 +89,7 @@ int main() {
     std::cout << "x = " << x << std::endl;
     return 0;
 }
-```
+```text
 
 构建（在 WSL 终端或 VS Code 的终端中）：
 
@@ -98,7 +98,7 @@ mkdir -p build && cd build
 cmake .. -G "Ninja"        # 如果你安装了 ninja；否则用默认 make： cmake ..
 cmake --build .
 ./hello
-```
+```text
 
 如果你安装并使用 **CMake Tools** 扩展：打开项目根目录，扩展会在底部状态栏提供 `Configure`、`Build` 按钮，点击即可；并可以选择不同的 kit（gcc/clang）与构建目录。
 
@@ -131,7 +131,7 @@ cmake --build .
     }
   ]
 }
-```
+```text
 
 "program"需要填写你的应用程序的文件路径，`${workspaceFolder}`就是当前你开VSCode的目录，这里的构建放到了build下，你进这里就能看到你生成的应用程序了。
 

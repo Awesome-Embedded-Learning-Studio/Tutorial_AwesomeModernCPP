@@ -12,11 +12,9 @@
 
 #### `std::string_view` 是什么？为什么要它？
 
-`std::string_view`（C++17）是一个轻量、不可变的“字符串视图”类型：**它不拥有字符缓冲区，只保存指向字符序列起始处的指针和长度（size）**（PS：所以你看，是不是很“视图”），用于以 O(1) 的代价表示子串、字面量或其他字符序列的只读窗口。它的设计是为了解决频繁读操作时不必要的内存拷贝问题，从而提高性能与通用性。
+`std::string_view`（C++17）是一个轻量、不可变的"字符串视图"类型：**它不拥有字符缓冲区，只保存指向字符序列起始处的指针和长度（size）**（PS：所以你看，是不是很"视图"），用于以 O(1) 的代价表示子串、字面量或其他字符序列的只读窗口。它的设计是为了解决频繁读操作时不必要的内存拷贝问题，从而提高性能与通用性。
 
 > Sir This way: [C++参考文献](https://en.cppreference.com/w/cpp/string/basic_string_view.html)
-
-
 
 ------
 
@@ -32,14 +30,16 @@ class basic_string_view {
     const CharT* _ptr;   // 指向底层字符序列（不拥有）
     size_t       _len;   // 长度（不含 '\0'）
 };
-```
 
-#### 特点：
+```text
+
+
+#### 特点
 
 1. **不拥有内存（non-owning view）**
 2. 只保存两份轻量信息：指针 + 长度
 3. 复制便宜：仅复制两个字（8 字节指针 + 8 字节 size）
-4. 任何“子串操作”（substr、remove_prefix）都只改 `_ptr`/`_len`，**O(1) 无分配**
+4. 任何"子串操作"（substr、remove_prefix）都只改 `_ptr`/`_len`，**O(1) 无分配**
 
 相比之下，`std::string` 除了指针外，还管理容量、分配器、部分还包含小字符串优化（SSO），同时有析构逻辑，成本完全不同。所以这样看`std::string`显然很重，对吧。
 
@@ -53,7 +53,9 @@ class basic_string_view {
 string_view substr(size_t pos, size_t count) const {
     return string_view(_ptr + pos, min(count, _len - pos));
 }
-```
+
+```text
+
 
 完全没有开辟新内存，仅调整指针和长度。
 
@@ -64,7 +66,9 @@ void remove_prefix(size_t n) {
     _ptr += n;
     _len -= n;
 }
-```
+
+```text
+
 
 #### compare / find 等操作
 
@@ -72,9 +76,9 @@ void remove_prefix(size_t n) {
 
 ------
 
-#### 一句话总结其实现哲学：
+#### 一句话总结其实现哲学
 
-**`string_view` 是一个 lightweight façade（轻量外壳），把任意字符序列变成 “可操作的只读字符串对象”，但永远不负责内存。**这种我相信大伙就会拉高警惕了。肯定处理不好就要跟生命周期炸了。所以：这既是优势，也是最大的风险来源（生命周期问题）。
+**`string_view` 是一个 lightweight façade（轻量外壳），把任意字符序列变成 "可操作的只读字符串对象"，但永远不负责内存。**这种我相信大伙就会拉高警惕了。肯定处理不好就要跟生命周期炸了。所以：这既是优势，也是最大的风险来源（生命周期问题）。
 
 ------
 
@@ -84,7 +88,7 @@ void remove_prefix(size_t n) {
 
 ------
 
-#### 表达能力：string_view 是“带长度的字符串”，char* 是“指针”
+#### 表达能力：string_view 是"带长度的字符串"，char* 是"指针"
 
 感谢GPT，我写了一会，让他拉了一个表格，可以看看：
 
@@ -111,13 +115,17 @@ void remove_prefix(size_t n) {
 
 ```cpp
 sv[i]  // 有边界检查（debug），release 通常不检查但基于 _len 计算
-```
+
+```text
+
 
 而：
 
 ```cpp
 p[i]   // 完全没有任何边界概念
-```
+
+```text
+
 
 #### string_view 在生命周期方面更危险（容易悬空）
 
@@ -125,13 +133,17 @@ p[i]   // 完全没有任何边界概念
 
 ```cpp
 std::string_view sv = std::string("abc"); // 指向临时 -> 悬空
-```
+
+```text
+
 
 但 `const char*` 同样会悬空，例如：
 
 ```cpp
 const char* p = std::string("abc").c_str(); // 同样悬空
-```
+
+```text
+
 
 **两者都会悬空，区别只是 `string_view` 更喜欢被隐式构造，所以更容易犯错**。
 
@@ -153,13 +165,17 @@ const char* p = std::string("abc").c_str(); // 同样悬空
 ```cpp
 strlen(const char*)  // O(n)
 sv.size()            // O(1)
-```
+
+```text
+
 
 所以如果你的函数这样写：
 
 ```cpp
 void foo(const char* p);
-```
+
+```text
+
 
 然后内部多次 `strlen(p)`，会变成 O(n²) 模式。
 
@@ -167,7 +183,9 @@ void foo(const char* p);
 
 ```cpp
 void foo(std::string_view sv);
-```
+
+```text
+
 
 就没有这种性能坑。
 
@@ -175,7 +193,7 @@ void foo(std::string_view sv);
 
 ## 用法层面的巨大差异
 
-#### string_view 是 “只读字符串”的语义类型
+#### string_view 是 "只读字符串"的语义类型
 
 它明确告诉读者：
 
@@ -187,7 +205,9 @@ void foo(std::string_view sv);
 
 ```cpp
 const char* p;
-```
+
+```text
+
 
 你根本不知道：
 
@@ -219,12 +239,12 @@ C++17 提供了 UDL（user-defined-literal）`""sv`，可以直接写 `"hello"sv
 
 ## 性能语义与接口设计建议
 
-- **传参：按值还是按 `const&`？** 通常建议把 `std::string_view` 当成小的值类型来传递（即按值）。理由包括：传值消除一次间接，代码更可读（也见 ISO C++ 社区与 Abseil 的建议），不过在某些 ABI/平台（历史上 MSVC x86-64 等）下，按值并不总是更快，但整体实践建议“习惯性按值传递”。
+- **传参：按值还是按 `const&`？** 通常建议把 `std::string_view` 当成小的值类型来传递（即按值）。理由包括：传值消除一次间接，代码更可读（也见 ISO C++ 社区与 Abseil 的建议），不过在某些 ABI/平台（历史上 MSVC x86-64 等）下，按值并不总是更快，但整体实践建议"习惯性按值传递"。
 - **用作容器键（`unordered_map`/`unordered_set`）？** 标准库为 `string_view` 提供了 `std::hash` 的特化，可以直接作为键，不过关键在于：**使用 `string_view` 作为键时必须保证被视图指向的数据的生命周期至少与哈希表中该键的生命周期一样长**，否则会发生悬空引用。`std::hash<string_view>` 与 `std::hash<string>` 的行为在 cppreference 有说明（hash 相等性的描述）。
 
 ------
 
-## 还要再强调一下生命周期与悬空（真正的“坑”）
+## 还要再强调一下生命周期与悬空（真正的"坑"）
 
 **核心警示：`std::string_view` 不拥有底层数据。它不会延长底层对象的生命周期。**
  典型错误场景：
@@ -234,15 +254,19 @@ std::string_view f() {
     std::string s = "hello";
     return std::string_view{s}; // 返回后 string s 被销毁，视图悬空 —— 未定义行为
 }
-```
+
+```text
+
 
 或：
 
 ```cpp
 auto sv = std::string_view{ some_function_returning_temp_string() }; // temp 被析构，sv 悬空
-```
 
-这类“use-after-free / dangling view”是 `string_view` 最常见与最严重的 bug 根源。静态分析器和代码审查要重点关注这类模式。学术/工程社区也有研究工具检测这类问题。
+```text
+
+
+这类"use-after-free / dangling view"是 `string_view` 最常见与最严重的 bug 根源。静态分析器和代码审查要重点关注这类模式。学术/工程社区也有研究工具检测这类问题。
 
 **如何防御：**
 
@@ -269,7 +293,9 @@ auto sv = std::string_view{ some_function_returning_temp_string() }; // temp 被
 std::string_view make_view_bad() {
     return std::string("temp"); // UB：返回的 view 指向临时 string 的缓冲区
 }
-```
+
+```text
+
 
 #### 正确：如果需要长期保存，拷贝到 std::string
 
@@ -279,7 +305,9 @@ std::string make_copy() {
 }
 auto v = make_copy();            // v 是 std::string，拥有数据
 std::string_view sv = v;        // sv 可安全使用，前提是 v 不销毁
-```
+
+```text
+
 
 #### 好的 API 习惯（接受任意只读字符串）
 
@@ -296,9 +324,11 @@ int main() {
     process(s);            // implicit conversion
     process("literal");    // ok, string literal 的 storage 是静态的，会被放置到data段所以无所谓
 }
-```
 
-通常推荐把 `std::string_view` 作为“只读输入参数”的首选类型（按值）。
+```text
+
+
+通常推荐把 `std::string_view` 作为"只读输入参数"的首选类型（按值）。
 
 ------
 
@@ -326,5 +356,4 @@ int main() {
 
 ### 结束语
 
-`std::string_view` 是 C++17 带来的非常实用且高效的工具：在适合的地方它能显著减少复制，提高解析/处理字符串的性能。但同时，它也把“谁负责数据所有权”这个问题显式地交还给了程序员。把 `string_view` 当作“轻量的只读窗口”来用，并在接口设计与生命周期边界处格外小心，你就能既享受性能又保证安全。
-
+`std::string_view` 是 C++17 带来的非常实用且高效的工具：在适合的地方它能显著减少复制，提高解析/处理字符串的性能。但同时，它也把"谁负责数据所有权"这个问题显式地交还给了程序员。把 `string_view` 当作"轻量的只读窗口"来用，并在接口设计与生命周期边界处格外小心，你就能既享受性能又保证安全。

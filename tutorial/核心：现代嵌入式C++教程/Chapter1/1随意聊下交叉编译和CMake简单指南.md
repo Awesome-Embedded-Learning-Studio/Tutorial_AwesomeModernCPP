@@ -34,13 +34,13 @@
 
 - **辅助工具**:如objdump(查看目标文件)、objcopy(转换目标文件格式)、size(查看程序大小)、nm(查看符号表)等工具。
 
-  ##### 目标三元组(Target Triplet)
+##### 目标三元组(Target Triplet)
 
 在交叉编译中,我们使用"目标三元组"来精确描述目标平台。这个三元组通常由三部分或四部分组成:
 
-```
+```text
 <架构>-<厂商>-<操作系统>-<ABI>
-```
+```text
 
 让我们看几个实际例子:
 
@@ -142,7 +142,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-```
+```text
 
 让我们详细解读这个文件的各个部分:
 
@@ -196,7 +196,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(ENV{PKG_CONFIG_PATH} "")
 set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
 set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
-```
+```text
 
 这个例子引入了`CMAKE_SYSROOT`概念。Sysroot是一个目录,包含了目标系统的根文件系统副本,包括库文件、头文件等。这对于有完整操作系统的目标平台非常重要。
 
@@ -215,7 +215,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/arm-none-eabi-toolchain.cmake \
 
 # 构建
 cmake --build .
-```
+```text
 
 重要提示:**Toolchain文件必须在第一次运行CMake时通过`-DCMAKE_TOOLCHAIN_FILE`指定**,之后会被缓存。如果需要更换Toolchain,必须删除构建目录重新配置。
 
@@ -248,7 +248,7 @@ project/
     ├── cortex-m4/
     ├── cortex-m7/
     └── host/
-```
+```text
 
 构建脚本示例:
 
@@ -271,7 +271,7 @@ cmake --build builds/cortex-m7
 cmake -S . -B builds/host \
       -DCMAKE_BUILD_TYPE=Debug
 cmake --build builds/host
-```
+```text
 
 ### 条件编译与平台检测
 
@@ -284,19 +284,19 @@ project(EmbeddedApp CXX C ASM)
 # 检测目标平台
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
     message(STATUS "Building for ARM architecture")
-    
+
     # ARM特定配置
     add_compile_definitions(TARGET_ARM)
-    
+
     if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
         message(STATUS "Bare-metal ARM target")
         add_compile_definitions(BARE_METAL)
     endif()
-    
+
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
     message(STATUS "Building for x86_64 architecture")
     add_compile_definitions(TARGET_X86_64)
-    
+
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
     message(STATUS "Building for RISC-V 64-bit")
     add_compile_definitions(TARGET_RISCV64)
@@ -330,7 +330,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
         -Wl,-Map=${CMAKE_BINARY_DIR}/app.map
     )
 endif()
-```
+```text
 
 ### 使用生成器表达式
 
@@ -354,7 +354,7 @@ target_link_libraries(app PRIVATE
     $<$<PLATFORM_ID:Linux>:pthread>
     $<$<PLATFORM_ID:Windows>:ws2_32>
 )
-```
+```text
 
 ### 平台抽象层(HAL)设计
 
@@ -386,7 +386,7 @@ target_link_libraries(hal_impl PUBLIC hal_interface)
 
 # 应用程序链接HAL
 target_link_libraries(app PRIVATE hal_impl)
-```
+```text
 
 ### 配置变体管理
 
@@ -407,18 +407,18 @@ if(TARGET_BOARD STREQUAL "STM32F407_DISCOVERY")
     set(MCU_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16")
     set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld")
     add_compile_definitions(STM32F407xx)
-    
+
 elseif(TARGET_BOARD STREQUAL "STM32F429_DISCO")
     set(MCU_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16")
     set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/STM32F429ZI.ld")
     add_compile_definitions(STM32F429xx)
-    
+
 endif()
 
 # 应用配置
 add_compile_options(${MCU_FLAGS})
 target_link_options(app PRIVATE -T${LINKER_SCRIPT})
-```
+```text
 
 使用时:
 
@@ -428,10 +428,4 @@ cmake -B build-f407 -DTARGET_BOARD=STM32F407_DISCOVERY \
 
 cmake -B build-f429 -DTARGET_BOARD=STM32F429_DISCO \
       -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake
-```
-
----
-
-## 导航
-
-[← 上一篇 | 现代嵌入式C++教程——C++一定会使得代码膨..](../Chapter0/6学习如何评估程序的性能和体积开销.md) | [下一篇 | 现代嵌入式 C++ 教程：常见编译器参数指南 →](2常见编译器选项指南.md)
+```text

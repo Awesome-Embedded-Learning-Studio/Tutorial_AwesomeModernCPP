@@ -22,7 +22,7 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 
 ## 说一说运行启动时的动态库定位规则
 
-现在我们需要聊聊动态库文件的运行定位规则。特别的，大家可能关心Linux运行时的动态库定位规则。这里说一下。在 Linux 上运行动态链接程序时，一个叫**动态链接器 / loader**（通常是 `ld-linux.so` / `ld.so`）的组件负责找到并加载可执行文件所需的共享库（`.so`）。动态库的查找规则看起来复杂，但其实是有明确优先级和几条常见“控制点”：`LD_PRELOAD`、可执行文件内嵌的 `RPATH`/`RUNPATH`、环境变量 `LD_LIBRARY_PATH`、系统配置（`/etc/ld.so.conf.d` + `ldconfig`）以及系统默认路径（如 `/lib`、`/usr/lib`）。
+现在我们需要聊聊动态库文件的运行定位规则。特别的，大家可能关心Linux运行时的动态库定位规则。这里说一下。在 Linux 上运行动态链接程序时，一个叫**动态链接器 / loader**（通常是 `ld-linux.so` / `ld.so`）的组件负责找到并加载可执行文件所需的共享库（`.so`）。动态库的查找规则看起来复杂，但其实是有明确优先级和几条常见"控制点"：`LD_PRELOAD`、可执行文件内嵌的 `RPATH`/`RUNPATH`、环境变量 `LD_LIBRARY_PATH`、系统配置（`/etc/ld.so.conf.d` + `ldconfig`）以及系统默认路径（如 `/lib`、`/usr/lib`）。
 
 下面的部分，是各位需要了解的：**当动态链接器需要解析某个依赖**（即依赖名没有包含 `/`）时，通常按以下顺序查找（已简化）：
 
@@ -30,7 +30,7 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 2. 如果可执行文件包含 `DT_RPATH` 并且没有 `DT_RUNPATH`，则使用 `DT_RPATH` 路径（注意：`DT_RPATH` 已被弃用，但仍被支持）。
 3. 环境变量 `LD_LIBRARY_PATH`（**非 setuid/setgid 可执行文件会被忽略**）。
 4. 如果可执行文件包含 `DT_RUNPATH`，使用 `DT_RUNPATH`（并且当存在 `DT_RUNPATH` 时，`DT_RPATH` 一般被忽略）。
-5. ldconfig 维护的缓存 `/etc/ld.so.cache`，以及 `/lib`、`/usr/lib`（以及架构相关的 `/lib64`、`/usr/lib64`）这些“trusted directories”。
+5. ldconfig 维护的缓存 `/etc/ld.so.cache`，以及 `/lib`、`/usr/lib`（以及架构相关的 `/lib64`、`/usr/lib64`）这些"trusted directories"。
 6. （如果前面都没找到）最终会失败并报错（如 `ld.so: cannot find ...`）。
 
 > 注意：上面顺序的细节（特别是 `RPATH` 与 `RUNPATH` 的交互）由 linker 的实现与链接器选项（如 `--enable-new-dtags`，这个标识符是启用-R或者是-rpath链接器指导选项）影响。
@@ -39,17 +39,17 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 
 ## 详细说明（每项展开）
 
-#### LD_PRELOAD（按需“注入”或覆盖符号）
+#### LD_PRELOAD（按需"注入"或覆盖符号）
 
 `LD_PRELOAD` 是一个环境变量，可指定一个或多个共享库，**在正常搜索之前**被强制加载到进程中，从而可以用于拦截/替换符号（函数）。不过这个很少见，一般是不建议使用的，除非你知道你在做什么 :)
 
 ------
 
-#### DT_RPATH 与 DT_RUNPATH（即 “rpath / runpath”）
+#### DT_RPATH 与 DT_RUNPATH（即 "rpath / runpath"）
 
-在链接时，可以把一个或多个运行时库搜索路径写进可执行文件或共享库的动态段（`.dynamic`），对应 ELF tag 分别是 `DT_RPATH` 和 `DT_RUNPATH`。历史上的 `DT_RPATH` 早期引入，用法是“优先于环境变量”，但后来引入了 `DT_RUNPATH`（new-dtags），`DT_RUNPATH` 的含义是：**它在 `LD_LIBRARY_PATH` 之后被搜索**，即 `LD_LIBRARY_PATH` 可以覆盖 RUNPATH 中的路径；而 `DT_RPATH` 在某些实现/历史上会优先于 `LD_LIBRARY_PATH`（即更难被重写）。
+在链接时，可以把一个或多个运行时库搜索路径写进可执行文件或共享库的动态段（`.dynamic`），对应 ELF tag 分别是 `DT_RPATH` 和 `DT_RUNPATH`。历史上的 `DT_RPATH` 早期引入，用法是"优先于环境变量"，但后来引入了 `DT_RUNPATH`（new-dtags），`DT_RUNPATH` 的含义是：**它在 `LD_LIBRARY_PATH` 之后被搜索**，即 `LD_LIBRARY_PATH` 可以覆盖 RUNPATH 中的路径；而 `DT_RPATH` 在某些实现/历史上会优先于 `LD_LIBRARY_PATH`（即更难被重写）。
 
-另一个重要行为差别：**DT_RPATH 对传递依赖（transitive dependencies）有效**，而 **DT_RUNPATH 可能不会用于查找传递依赖**（即当可执行 -> libA -> libB 时，RUNPATH 的行为在某些情况下不会为 libB 的查找提供路径，而 RPATH 会）。这导致某些在旧链接器下以 RPATH 可运行的组合，在使用 RUNPATH（new-dtags）后会出现“找不到间接依赖”的情况。
+另一个重要行为差别：**DT_RPATH 对传递依赖（transitive dependencies）有效**，而 **DT_RUNPATH 可能不会用于查找传递依赖**（即当可执行 -> libA -> libB 时，RUNPATH 的行为在某些情况下不会为 libB 的查找提供路径，而 RPATH 会）。这导致某些在旧链接器下以 RPATH 可运行的组合，在使用 RUNPATH（new-dtags）后会出现"找不到间接依赖"的情况。
 
 笔者目前的Linux经验中的确很少接触到，所以建议更多的测试环境下，采用下面这个方案是合适的
 
@@ -64,7 +64,7 @@ Linux下的动态库是存在命名规范的，如果您注意的话，是可以
 ```bash
 export LD_LIBRARY_PATH=/opt/foo/lib:/home/you/sw/lib:$LD_LIBRARY_PATH
 ./myapp
-```
+```text
 
 ------
 
@@ -81,13 +81,13 @@ echo "/opt/foo/lib" > /etc/ld.so.conf.d/foo.conf
 sudo ldconfig
 # 查看缓存内容
 ldconfig -p | grep foo
-```
+```text
 
 ------
 
 #### 系统默认目录（trusted directories）
 
-动态链接器通常会默认搜索 `/lib`、`/usr/lib`（以及在 64-bit 系统上的 `/lib64`、`/usr/lib64`），这些目录被称为“trusted directories”。`ldconfig` 也会处理这些目录。即使没有把一个路径写入 `ld.so.conf`，把库放在这些目录通常也能被找到（但要注意架构位、ABI、版本匹配）。
+动态链接器通常会默认搜索 `/lib`、`/usr/lib`（以及在 64-bit 系统上的 `/lib64`、`/usr/lib64`），这些目录被称为"trusted directories"。`ldconfig` 也会处理这些目录。即使没有把一个路径写入 `ld.so.conf`，把库放在这些目录通常也能被找到（但要注意架构位、ABI、版本匹配）。
 
 ## 那咱们Windows呢？
 
@@ -106,13 +106,12 @@ Windows 的可执行/装载器与 API（`LoadLibrary` / `LoadLibraryEx` / 自动
 当进程请求加载名为 `foo.dll`（未指定绝对路径）时，系统通常按以下顺序查找（概念顺序）：
 
 1. **调用方显式指定的完整路径**（如果调用 `LoadLibrary("C:\\path\\foo.dll")`，则直接加载该路径，不走搜索）。
-2. **加载器首先查看是否为“KnownDLLs”中的条目**（KnownDLLs 是注册在系统中的一组受信任的系统库，优先使用系统已存在版本）。
+2. **加载器首先查看是否为"KnownDLLs"中的条目**（KnownDLLs 是注册在系统中的一组受信任的系统库，优先使用系统已存在版本）。
 3. **应用程序目录（Executable directory）**：可执行程序（.exe）所在目录（通常优先于系统目录，具体受 SafeDllSearchMode 等设置影响）。
 4. **系统目录**（通常为 `%SystemRoot%\System32`）。
 5. **Windows 目录**（通常为 `%SystemRoot%`）。
-6. **当前工作目录（Current Directory）**（取决于 SafeDllSearchMode；若启用“安全搜索模式”，current directory 的位置会被推后）。
+6. **当前工作目录（Current Directory）**（取决于 SafeDllSearchMode；若启用"安全搜索模式"，current directory 的位置会被推后）。
 7. **PATH 环境变量中列出的目录**（按顺序）。
 8. **如果启用了应用配置或 Side-by-side（SxS）/manifest 特性**，会优先解析 manifest 中声明的绑定版本或来自 WinSxS 的并行程序集。
 
 重点是：**如果你使用了绝对路径或相对可执行文件路径，系统不会去 PATH 搜索**；反之如果只给了裸名 `foo.dll`，就会按上面顺序尝试。
-

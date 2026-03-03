@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/runtime_polymorphism.dir/link.d CMakeFiles/runtime_polymorphism.dir/runtime_polymorphism.cpp.o -o runtime_polymorphism

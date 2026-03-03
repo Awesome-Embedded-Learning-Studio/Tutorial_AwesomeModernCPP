@@ -16,9 +16,10 @@ Lambda表达式的语法看起来有点吓人，但拆解后其实很清晰：
 
 ```cpp
 [capture](parameters) -> return_type { body }
-```
+```text
 
 各部分说明：
+
 - `capture`：捕获列表（后面章节详细讲）
 - `parameters`：参数列表（和普通函数一样）
 - `return_type`：返回类型（可以省略，编译器自动推导）
@@ -30,14 +31,23 @@ Lambda表达式的语法看起来有点吓人，但拆解后其实很清晰：
 []() { }              // 最简单：什么都不做
 []() { return 42; }   // 简单返回
 [](int x) { return x * 2; }  // 带参数
-```
+```text
 
 实际使用：
 
 ```cpp
 auto add = [](int a, int b) { return a + b; };
 int result = add(3, 4);  // result = 7
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/basic_syntax.cpp"
+```text
+
+</details>
 
 ------
 
@@ -51,7 +61,7 @@ auto square = [](int x) { return x * 2; };
 
 // 返回double，自动推导
 auto divide = [](int a, int b) { return static_cast<double>(a) / b; };
-```
+```text
 
 如果有多条语句，或者逻辑复杂，可以用`->`显式指定：
 
@@ -63,7 +73,16 @@ auto complex = [](int x) -> int {
         return x;
     }
 };
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/type_deduction.cpp"
+```text
+
+</details>
 
 ------
 
@@ -90,9 +109,18 @@ void process_sensor_data() {
     std::transform(readings.begin(), readings.end(), readings.begin(),
                   [](int value) { return value * 2; });
 }
-```
+```text
 
 这比传统写函数干净太多了——逻辑就在使用的地方，不用跳来跳去。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/algorithm_args.cpp"
+```text
+
+</details>
 
 ------
 
@@ -106,7 +134,7 @@ void process_sensor_data() {
 int threshold = 50;
 // ❌ 编译错误：threshold不可访问
 auto lambda = [](int value) { return value > threshold; };
-```
+```text
 
 需要通过捕获列表"引入"外部变量：
 
@@ -124,7 +152,7 @@ auto capture_all = [=](int value) { return value > threshold; };
 
 // 捕获所有变量（引用捕获）
 auto capture_all_ref = [&](int value) { return value > threshold; };
-```
+```text
 
 嵌入式场景示例：
 
@@ -141,7 +169,16 @@ void configure_pwm(uint32_t base_addr, int frequency) {
     set_duty(50);   // 50%占空比
     set_duty(75);   // 75%占空比
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/capture_basics.cpp"
+```text
+
+</details>
 
 ------
 
@@ -162,7 +199,7 @@ void call_func(Func f) {
     f();
 }
 call_func([]() { /* ... */ });
-```
+```text
 
 **嵌入式提示**：`std::function`有动态分配开销，优先使用`auto`或模板。
 
@@ -222,7 +259,16 @@ void setup_gpio_system() {
         // GPIO_Write(LED_PIN, led_state);
     }, 5);  // 引脚5
 }
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/event_handler.cpp"
+```text
+
+</details>
 
 ------
 
@@ -256,9 +302,18 @@ auto pwm_cfg = make_timer_config([](TimerConfig& c) {
     c.period = 1000 - 1;        // PWM周期
     c.auto_reload = true;
 });
-```
+```text
 
 这种写法让配置代码非常清晰，所有参数都在一个地方集中管理。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/config_builder.cpp"
+```text
+
+</details>
 
 ------
 
@@ -272,7 +327,7 @@ auto add = [](auto a, auto b) { return a + b; };
 
 int x = add(3, 4);           // int
 double y = add(3.5, 2.5);    // double
-```
+```text
 
 这在嵌入式开发中处理寄存器操作时特别有用：
 
@@ -283,7 +338,16 @@ auto write_reg = [](auto addr, auto value) {
 
 write_reg(0x40000000, uint32_t(0x12345678));
 write_reg(0x50000000, uint16_t(0xABCD));
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/01_lambda_basics/generic_lambda.cpp"
+```text
+
+</details>
 
 ------
 
@@ -302,7 +366,7 @@ std::vector<int> result = std::accumulate(/* ... */, [](int acc, int x) {
 // ✅ 提取成命名函数
 int transform_element(int acc, int x);
 std::vector<int> result = std::accumulate(/* ... */, transform_element);
-```
+```text
 
 ### 2. 注意捕获的生命周期
 
@@ -320,7 +384,7 @@ auto get_lambda_safe() {
     int local = 42;
     return [local]() { return local; };  // 复制了一份
 }
-```
+```text
 
 ### 3. 嵌入式环境中避免动态分配
 
@@ -332,22 +396,17 @@ std::function<void(int)> f = [](int x) { /* ... */ };
 
 // ✅ 零开销
 auto f = [](int x) { /* ... */ };
-```
+```text
 
 ------
 
 ## 小结
 
 Lambda表达式是现代C++的重要特性：
+
 - **就地定义**：代码在使用的地方，逻辑清晰
 - **匿名函数**：不需要额外命名，减少命名污染
 - **捕获机制**：灵活控制外部变量访问
 - **算法友好**：与STL算法配合使用，威力强大
 
 在下一章，我们将深入了解Lambda的捕获机制及其对性能的影响。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式C++教程——字面量运算符与自定义单位](<../Chapter8/7 字面量运算符与自定义单位.md>) | [下一篇 | 嵌入式C++教程——Lambda捕获与性能影响 →](<2 Lambda捕获与性能影响.md>)

@@ -144,7 +144,7 @@ markdown_extensions:
   - pymdownx.tilde  # 支持删除线 ~~text~~ 和下标 ~text~
   - pymdownx.keys  # 支持键盘按键显示 ++ctrl+alt+del++
   - pymdownx.smartsymbols  # 智能符号替换
-  - pymdownx.snippets  # 支持包含其他文件的代码片段
+  - pymdownx.snippets  # 路径相对于 mkdocs.yml 所在目录（项目根目录）
   - pymdownx.critic  # 支持批注和修订标记
   - pymdownx.betterem  # 改进的强调语法
 
@@ -163,10 +163,14 @@ plugins:
         - stemmer
         - stopWordFilter
         - trimmer
-  
+
+  # 标签插件 - 为文章添加标签分类
+  - tags:
+      tags_file: tags.md  # 标签索引页
+
   # Awesome Pages 插件 - 灵活的页面组织方式
   - awesome-pages
-  
+
   # Git 修订日期插件 - 自动显示文章的创建和更新时间
   - git-revision-date-localized:
       enable_creation_date: true  # 显示创建日期

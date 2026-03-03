@@ -1,0 +1,1 @@
+/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/gpio_example.dir/link.d CMakeFiles/gpio_example.dir/gpio_example.cpp.o -o gpio_example

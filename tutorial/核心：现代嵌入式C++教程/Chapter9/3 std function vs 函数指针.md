@@ -27,7 +27,7 @@ int (*func_ptr)(int, int) = add;
 
 // 使用
 int result = func_ptr(3, 4);  // result = 7
-```
+```text
 
 用`typedef`或`using`简化：
 
@@ -39,7 +39,16 @@ BinaryOp op = add;
 // C++11 using
 using BinaryOp = int(*)(int, int);
 BinaryOp op = add;
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/03_std_function_vs_pointers/function_pointer.cpp"
+```text
+
+</details>
 
 ### 嵌入式场景示例
 
@@ -62,7 +71,7 @@ void setup_adc() {
     register_adc_callback(my_adc_handler);
     *ADC_DR |= (1 << 0);  // 启动ADC
 }
-```
+```text
 
 ### 函数指针的优势
 
@@ -95,7 +104,7 @@ void run_state_machine(int current_state) {
         }
     }
 }
-```
+```text
 
 ### 函数指针的局限
 
@@ -112,7 +121,7 @@ class SensorManager {
         });
     }
 };
-```
+```text
 
 函数指针只能指向**静态函数**或**全局函数**，无法携带额外的上下文信息。这是它在面向对象设计中的致命缺陷。
 
@@ -144,7 +153,7 @@ struct Multiplier {
 };
 func = Multiplier{5};
 int r3 = func(10);  // 返回50
-```
+```text
 
 ### 存储捕获上下文的Lambda
 
@@ -167,7 +176,16 @@ public:
         };
     }
 };
-```
+```text
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/03_std_function_vs_pointers/std_function_demo.cpp"
+```text
+
+</details>
 
 ### 嵌入式场景示例
 
@@ -223,7 +241,7 @@ void setup_application() {
         }
     };
 }
-```
+```text
 
 ### std::function的代价
 
@@ -241,7 +259,7 @@ sizeof(std::function<void()>)      // 32位：16~32字节
 
 sizeof(void(*)())                  // 32位：4字节
                                    // 64位：8字节
-```
+```text
 
 **小对象优化（SOO）**：大多数实现对小可调用对象（如捕获少量变量的Lambda）避免堆分配，但这仍然比函数指针大得多。
 
@@ -253,7 +271,7 @@ std::function<int()> f = small;  // f的大小约32字节
 // 大Lambda：几乎肯定需要堆分配
 auto large = [big_array = std::array<int, 1000>()](){ /* ... */ };
 std::function<void()> g = large;  // g+堆分配
-```
+```text
 
 ------
 
@@ -268,7 +286,7 @@ int add(int a, int b) { return a + b; }
 
 int (*func)(int, int) = add;
 int result = func(3, 4);
-```
+```text
 
 在`-O2`优化下，这会生成类似以下的汇编：
 
@@ -279,7 +297,7 @@ ldr r1, =4         ; 第二个参数
 ldr r2, =func      ; 加载函数指针
 blx r2             ; 间接调用
 ; 结果在 r0 中
-```
+```text
 
 如果编译器能确定`func`指向`add`，甚至可能直接内联：
 
@@ -287,14 +305,14 @@ blx r2             ; 间接调用
 ldr r0, =3
 ldr r1, =4
 add r0, r0, r1     ; 直接内联 add
-```
+```text
 
 ### std::function的汇编输出
 
 ```cpp
 std::function<int(int, int)> func = add;
 int result = func(3, 4);
-```
+```text
 
 生成的汇编更复杂：
 
@@ -306,9 +324,10 @@ ldr r2, =func      ; 加载std::function对象地址
 ldr r3, [r2, #0]   ; 加载调用器指针（invoke函数）
 blx r3             ; 间接调用invoke
 ; invoke内部再调用实际函数
-```
+```text
 
 `std::function`的调用链：
+
 1. 调用`std::function`的内部调用器
 2. 调用器调用存储的实际函数
 3. 实际函数执行
@@ -341,9 +360,18 @@ void benchmark_std_function(benchmark::State& state) {
 // 典型结果（-O2优化）：
 // function_pointer:  ~1 ns/call（内联后）
 // std_function:     ~5-10 ns/call
-```
+```text
 
 内联后差异可能消失，但`std::function`的内联机会更少。
+
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+--8<-- "codes_and_assets/examples/chapter09/03_std_function_vs_pointers/performance_comparison.cpp"
+```text
+
+</details>
 
 ------
 
@@ -352,6 +380,7 @@ void benchmark_std_function(benchmark::State& state) {
 ### 使用函数指针的场景
 
 1. **表驱动法**：状态机、解析器、指令处理
+
    ```cpp
    struct OpcodeHandler {
        uint8_t opcode;
@@ -365,7 +394,8 @@ void benchmark_std_function(benchmark::State& state) {
    };
    ```
 
-2. **中断处理表**：硬件向量表
+1. **中断处理表**：硬件向量表
+
    ```cpp
    using IRQHandler = void(*)();
 
@@ -378,13 +408,15 @@ void benchmark_std_function(benchmark::State& state) {
    };
    ```
 
-3. **简单的无状态回调**：不需要上下文的操作
+2. **简单的无状态回调**：不需要上下文的操作
+
    ```cpp
    void sort_array(int* arr, size_t len,
                    int (*compare)(int, int) = default_compare);
    ```
 
-4. **ROM驻留数据**：需要放进Flash的表
+3. **ROM驻留数据**：需要放进Flash的表
+
    ```cpp
    const __attribute__((section(".rodata"))) DecoderEntry decoder[] = {
        {0x01, decode_instruction_a},
@@ -395,6 +427,7 @@ void benchmark_std_function(benchmark::State& state) {
 ### 使用std::function的场景
 
 1. **需要捕获上下文的回调**：Lambda捕获
+
    ```cpp
    class Device {
        int id;
@@ -407,6 +440,7 @@ void benchmark_std_function(benchmark::State& state) {
    ```
 
 2. **统一接口存储多种可调用对象**
+
    ```cpp
    class TaskScheduler {
        std::vector<std::function<void()>> tasks;
@@ -417,6 +451,7 @@ void benchmark_std_function(benchmark::State& state) {
    ```
 
 3. **延迟调用/事件队列**：需要存储和传递
+
    ```cpp
    std::queue<std::function<void()>> event_queue;
 
@@ -426,6 +461,7 @@ void benchmark_std_function(benchmark::State& state) {
    ```
 
 4. **C++标准库算法**：但优先用Lambda
+
    ```cpp
    // 可以用std::function，但Lambda更高效
    std::sort(v.begin(), v.end(),
@@ -457,7 +493,7 @@ struct Timer {
 };
 
 // 问题：每个Callback类型实例化Timer，不能放在同一容器中
-```
+```text
 
 ### 类型擦除的零开销实现
 
@@ -472,7 +508,7 @@ class Callback<R(Args...)> {
     // 手写小型类型擦除，避免std::function的开销
     // 具体实现见下一章
 };
-```
+```text
 
 ------
 
@@ -487,7 +523,7 @@ void __attribute__((interrupt)) ADC_IRQHandler() {
     int value = *ADC_DR;
     handler(value);  // 零开销调用
 }
-```
+```text
 
 ### 2. 冷路径用std::function
 
@@ -498,7 +534,7 @@ class ConfigManager {
         update_callbacks.push_back(std::move(cb));
     }
 };
-```
+```text
 
 ### 3. 避免std::function的动态分配
 
@@ -511,7 +547,7 @@ std::function<void()> f = [x = 42]() { return x * 2; };
 
 // ✅ 或者直接用auto
 auto f = [x = 42]() { return x * 2; };  // 完全零开销
-```
+```text
 
 ### 4. 禁用堆时的选择
 
@@ -534,7 +570,7 @@ void my_handler(void* data) {
 
 int counter = 0;
 register_callback({my_handler, &counter});
-```
+```text
 
 ------
 
@@ -559,9 +595,3 @@ register_callback({my_handler, &counter});
 - **手动类型擦除**：对于需要两者优势的场景，考虑下一章的零开销实现
 
 下一章我们将探讨如何实现零开销的回调机制，既保持`std::function`的通用性，又接近函数指针的性能。
-
----
-
-## 导航
-
-[← 上一篇 | 嵌入式C++教程——Lambda捕获与性能影响](<2 Lambda捕获与性能影响.md>) | [下一篇 | 回调机制的零开销实现 →](<4 回调机制的零开销实现.md>)

@@ -35,7 +35,7 @@ int main() {
     t2.join();
     std::cout << "counter = " << counter << '\n';
 }
-```
+```text
 
 你期望输出20000，但实际跑起来可能是12583、16847之类的随机数。问题出在哪里？`counter++`这个操作在CPU层面其实是三步：
 
@@ -44,6 +44,7 @@ int main() {
 3. 把新值写回内存
 
 两个线程同时执行时，可能会出现这种时序：
+
 - 线程1读取counter=100
 - 线程2也读取counter=100
 - 线程1加1后写回101
@@ -73,7 +74,7 @@ int main() {
     std::cout << "counter = " << counter << '\n';
     // 保证输出：counter = 20000
 }
-```
+```text
 
 ------
 
@@ -100,7 +101,7 @@ std::atomic<Node*> node_ptr;
 
 // C++20起支持浮点
 std::atomic<double> atomic_double{0.0};
-```
+```text
 
 ### store和load：最基础的读写
 
@@ -120,7 +121,7 @@ int y = value.load(std::memory_order_relaxed);
 // 更简洁的方式：隐式转换
 int z = value;  // 等同于 value.load()
 value = 100;    // 等同于 value.store(100)
-```
+```text
 
 ### exchange：交换并返回旧值
 
@@ -142,7 +143,7 @@ if (old_state != DeviceState::Idle) {
     // 之前不是Idle，说明有人已经在用了
     // 处理冲突...
 }
-```
+```text
 
 ### compare_exchange_weak/strong：CAS操作
 
@@ -158,7 +159,7 @@ int desired = 20;
 // 成功：返回true，value变成20
 // 失败：返回false，expected被更新为当前值
 bool succeeded = value.compare_exchange_strong(expected, desired);
-```
+```text
 
 看起来有点绕，但这是实现无锁数据结构的关键：
 
@@ -181,9 +182,10 @@ void push(int value) {
         // 如果head已经被别人改了，old_head会被更新为最新值，循环重试
     } while (!head.compare_exchange_weak(old_head, new_node));
 }
-```
+```text
 
 **weak和strong的区别**：
+
 - `compare_exchange_strong`：保证成功就是成功，失败就是失败，但可能因"虚假失败"而多循环几次
 - `compare_exchange_weak`：可能"虚假失败"（即使值相等也返回false），但在循环中通常更高效
 
@@ -215,7 +217,7 @@ counter--;      // 等同于 counter.fetch_sub(1) - 1
 
 counter += 10;  // 等同于 counter.fetch_add(10) + 10
 counter -= 5;   // 等同于 counter.fetch_sub(5) - 5
-```
+```text
 
 C++26还新增了`fetch_max`和`fetch_min`：
 
@@ -223,7 +225,7 @@ C++26还新增了`fetch_max`和`fetch_min`：
 std::atomic<int> max_value{100};
 max_value.fetch_max(150);  // max_value变成150
 max_value.fetch_min(80);   // max_value变成80
-```
+```text
 
 ------
 
@@ -243,13 +245,15 @@ std::cout << "atomic<long long> is lock free: "
 // 编译期检查
 static_assert(std::atomic<int>::is_always_lock_free,
               "int must be lock-free on this platform!");
-```
+```text
 
 **为什么有些类型不是lock-free？**
+
 - 某些架构没有对应宽度的原子指令（比如32位ARM上的64位原子操作）
 - 编译器决定用锁来实现（但这对程序员透明）
 
 **嵌入式建议**：
+
 - 在性能关键路径上，务必检查`is_lock_free()`
 - 如果需要保证无锁，考虑用`std::atomic_ref`（C++20）或者自己实现CAS循环
 
@@ -284,7 +288,7 @@ private:
     std::atomic<bool> data_ready;
     std::atomic<uint8_t> byte_value;
 };
-```
+```text
 
 ### 场景2：无锁队列的生产者-消费者
 
@@ -343,7 +347,7 @@ void main_loop() {
         process_byte(data);
     }
 }
-```
+```text
 
 ### 场景3：引用计数（类似shared_ptr）
 
@@ -371,7 +375,7 @@ protected:
 private:
     std::atomic<int> ref_count{0};
 };
-```
+```text
 
 ------
 
@@ -393,7 +397,7 @@ int b = x.load();
 
 // 你以为 a=2 一定意味着 b=1？
 // 错！没有合适的内存序保证，可能是 a=2, b=0
-```
+```text
 
 这个问题我们下一章讲内存序的时候会详细展开。
 
@@ -404,7 +408,7 @@ std::atomic<int> array[10];  // 10个原子int
 
 // 这不是原子的！
 array[0].store(array[1].load());  // 两次独立的原子操作
-```
+```text
 
 如果你需要"同时"操作多个原子变量，还是得用锁或者其他同步机制。
 
@@ -417,7 +421,7 @@ std::atomic<std::string> str;
 // ✅ 用指针或者shared_ptr
 std::atomic<std::shared_ptr<std::string>> str_ptr;
 // 或者C++20的atomic_ref配合外部锁
-```
+```text
 
 ### 坑4：在嵌入式平台上忽视对齐要求
 
@@ -430,7 +434,7 @@ auto p = new (&buffer[1]) std::atomic<int>;  // 危险！
 
 // ✅ 使用alignas
 alignas(std::atomic<int>) char buffer[sizeof(std::atomic<int>) * 2];
-```
+```text
 
 ------
 
@@ -449,7 +453,7 @@ atomic_ref_int.store(42);
 int x = atomic_ref_int.load();
 
 // 注意：atomic_ref的生命周期不能超过原变量！
-```
+```text
 
 **嵌入式场景**：硬件寄存器映射
 
@@ -461,7 +465,7 @@ volatile uint32_t* hw_reg = reinterpret_cast<uint32_t*>(0x40000000);
 std::atomic_ref<uint32_t> atomic_reg(*const_cast<uint32_t*>(hw_reg));
 
 atomic_reg.fetch_or(0x01);
-```
+```text
 
 ### atomic_wait/notify：高效的等待机制
 
@@ -484,7 +488,7 @@ void notifier() {
     signal.notify_one();  // 唤醒一个等待者
     // signal.notify_all();  // 或者唤醒全部
 }
-```
+```text
 
 **嵌入式场景**：高效的任务同步
 
@@ -509,7 +513,7 @@ public:
 private:
     std::atomic<int> flag{0};
 };
-```
+```text
 
 ------
 
@@ -522,6 +526,7 @@ private:
 3. **缓存一致性流量**：多核之间同步缓存行
 
 因为这个，我们可能就会有如下的策略
+
 - 能用`relaxed`就别用更强的内存序（下一章细讲）
 - 能用局部变量就别用共享的原子变量
 - 考虑用线程局部存储（`thread_local`）减少原子操作频率
@@ -539,7 +544,7 @@ void increment() {
         local_counter = 0;
     }
 }
-```
+```text
 
 ------
 
@@ -553,9 +558,3 @@ void increment() {
 4. **C++20新特性**：`atomic_ref`、`atomic_wait`让原子操作更灵活
 
 但这里有个关键问题我们还没深入——**内存序（Memory Order）**。为什么有时候`relaxed`就够了，什么时候必须用`acquire-release`？这正是下一章要讲的内容，也是很多并发bug的藏身之处。
-
----
-
-## 导航
-
-[← 上一篇 | 现代嵌入式C++教程——管道操作与Ranges实战](<../Chapter9/8 管道操作与Ranges实战.md>) | [下一篇 | 嵌入式现代C++开发——内存序（Memory .. →](<2 memory_order.md>)
