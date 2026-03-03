@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/init_list_example.dir/link.d CMakeFiles/init_list_example.dir/init_list_example.cpp.o -o init_list_example

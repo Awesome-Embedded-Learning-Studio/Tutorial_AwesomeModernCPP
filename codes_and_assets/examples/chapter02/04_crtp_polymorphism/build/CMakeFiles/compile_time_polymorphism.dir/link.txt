@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/compile_time_polymorphism.dir/link.d CMakeFiles/compile_time_polymorphism.dir/compile_time_polymorphism.cpp.o -o compile_time_polymorphism

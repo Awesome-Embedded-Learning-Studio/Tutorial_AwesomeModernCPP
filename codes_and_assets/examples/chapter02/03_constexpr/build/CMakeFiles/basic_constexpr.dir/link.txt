@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/basic_constexpr.dir/link.d CMakeFiles/basic_constexpr.dir/basic_constexpr.cpp.o -o basic_constexpr

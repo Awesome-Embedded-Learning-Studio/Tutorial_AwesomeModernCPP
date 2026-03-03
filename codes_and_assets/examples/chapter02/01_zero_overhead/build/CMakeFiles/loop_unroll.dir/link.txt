@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/loop_unroll.dir/link.d CMakeFiles/loop_unroll.dir/loop_unroll.cpp.o -o loop_unroll

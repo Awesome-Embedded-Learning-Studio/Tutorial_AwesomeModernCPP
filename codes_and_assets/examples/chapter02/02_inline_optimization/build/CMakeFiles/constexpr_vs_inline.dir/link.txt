@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/constexpr_vs_inline.dir/link.d CMakeFiles/constexpr_vs_inline.dir/constexpr_vs_inline.cpp.o -o constexpr_vs_inline

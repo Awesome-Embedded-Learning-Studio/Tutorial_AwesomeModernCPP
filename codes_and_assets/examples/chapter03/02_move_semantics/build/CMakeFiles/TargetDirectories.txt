@@ -1,3 +1,0 @@
-/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/02_move_semantics/build/CMakeFiles/move_semantics_example.dir
-/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/02_move_semantics/build/CMakeFiles/edit_cache.dir
-/home/charliechen/Tutorial_AwesomeModernCPP/codes_and_assets/examples/chapter03/02_move_semantics/build/CMakeFiles/rebuild_cache.dir

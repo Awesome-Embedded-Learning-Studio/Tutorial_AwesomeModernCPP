@@ -1,1 +1,0 @@
-/usr/sbin/c++  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/variant_example.dir/link.d CMakeFiles/variant_example.dir/variant_example.cpp.o -o variant_example
