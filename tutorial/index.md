@@ -8,5 +8,8 @@
 
   点击这里开始：[目录 - Tutorial_AwesomeModernCPP的文档](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/核心：现代嵌入式C%2B%2B教程/)
 
+  如果您更喜欢看Github原汁原味的文档，请来这里~：
+  [目录 - Tutorial_AwesomeModernCPP的文档](核心：现代嵌入式C++教程/index.md)
+
 > 请注意，教程具备时效性，所以请您自己先自行对比时间参考，然后类比迁移，以及，官方文档总是你的第一参考人。
 

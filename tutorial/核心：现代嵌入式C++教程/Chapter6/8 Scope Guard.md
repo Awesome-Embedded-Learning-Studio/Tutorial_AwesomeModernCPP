@@ -208,3 +208,8 @@ auto closer = std::unique_ptr<void, decltype([](void*){ close_fd(fd); })>(nullpt
 
 但这种写法语义上不如专门的 `ScopeGuard` 清晰（模板更适合做任意清理），我提是为了给你多一个“武器库”里的小工具。
 
+---
+
+## 导航
+
+[← 上一篇 | 引用计数的实现与性能](<7 引用计数.md>) | [下一篇 | 嵌入式现代C++教程——std::array：.. →](<../Chapter7/1 array.md>)

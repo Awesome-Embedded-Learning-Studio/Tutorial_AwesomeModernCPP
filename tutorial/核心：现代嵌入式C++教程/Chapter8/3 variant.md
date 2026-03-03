@@ -141,3 +141,9 @@ void process(Message const& m) {
 - `std::variant`：**类型列表固定**、编译时已知、支持 `visit`，最适合有限且已枚举的类型集合。
 - `std::any`：可装任意类型，运行时类型检查繁琐，不适合做“有穷多种可能”的替代。
 - `boost::variant`：`std::variant` 的前身，功能类似，历史项目可能还在用，但新代码优先选标准库的 `std::variant`。
+
+---
+
+## 导航
+
+[← 上一篇 | 嵌入式C++教程——类型安全的寄存器访问](<2 类型安全的寄存器访问.md>) | [下一篇 | 嵌入式C++教程——`std::optional` →](<4 optional.md>)

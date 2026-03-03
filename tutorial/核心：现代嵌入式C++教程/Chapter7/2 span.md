@@ -189,3 +189,8 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 - `s.subspan(offset, count)`, `s.first(n)`, `s.last(n)`
 - `std::as_bytes(s)`、`std::as_writable_bytes(s)`
 
+---
+
+## 导航
+
+[← 上一篇 | 嵌入式现代C++教程——std::array：..](<1 array.md>) | [下一篇 | 嵌入式C++教程——循环缓冲区 →](<3 循环缓冲区.md>)

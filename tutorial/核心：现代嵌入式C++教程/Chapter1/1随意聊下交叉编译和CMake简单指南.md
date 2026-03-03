@@ -430,3 +430,8 @@ cmake -B build-f429 -DTARGET_BOARD=STM32F429_DISCO \
       -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake
 ```
 
+---
+
+## 导航
+
+[← 上一篇 | 现代嵌入式C++教程——C++一定会使得代码膨..](../Chapter0/6学习如何评估程序的性能和体积开销.md) | [下一篇 | 现代嵌入式 C++ 教程：常见编译器参数指南 →](2常见编译器选项指南.md)

@@ -553,3 +553,9 @@ void increment() {
 4. **C++20新特性**：`atomic_ref`、`atomic_wait`让原子操作更灵活
 
 但这里有个关键问题我们还没深入——**内存序（Memory Order）**。为什么有时候`relaxed`就够了，什么时候必须用`acquire-release`？这正是下一章要讲的内容，也是很多并发bug的藏身之处。
+
+---
+
+## 导航
+
+[← 上一篇 | 现代嵌入式C++教程——管道操作与Ranges实战](<../Chapter9/8 管道操作与Ranges实战.md>) | [下一篇 | 嵌入式现代C++开发——内存序（Memory .. →](<2 memory_order.md>)

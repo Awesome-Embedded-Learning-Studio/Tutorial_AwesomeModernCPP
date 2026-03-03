@@ -146,3 +146,9 @@ auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 这是“手工链式”，写成小工具函数后代码会更优雅。
 
 `std::optional` 是 C++ 标准库里很实用的小玩意儿：语义明确、表达力强、能让 API 更自描述。别把它当成万能胶：当你确实需要传递错误信息、或涉及复杂所有权时，选择适合的工具。但要是你只是要表达“这里可能有值，也可能没有值”——别再用 `-1`、别再用 `nullptr`，用 `std::optional`，让你的代码看起来更像成年人写的。
+
+---
+
+## 导航
+
+[← 上一篇 | 现代嵌入式C++教程：`std::variant`](<3 variant.md>) | [下一篇 | 嵌入式C++教程——std::expected →](<5 expected.md>)
