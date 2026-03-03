@@ -3367,6 +3367,67 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#提供完整abi声明的头文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        提供完整ABI声明的头文件
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="提供完整ABI声明的头文件">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#函数声明" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        函数声明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#类型定义" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        类型定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#宏和常量定义" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        宏和常量定义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#包含其他头文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        包含其他头文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4282,60 +4343,58 @@
 <h4 id="更加复杂的naming规则">更加复杂的Naming规则<a class="headerlink" href="#更加复杂的naming规则" title="链接到此章节">&para;</a></h4>
 <p>C++函数到链接器符号之间的映射，是编译器厂商决定的，尽管的确存在一些标准，约束我们的编译器厂商产生尽可能通用的符号，但是很遗憾，以g++和msvc为例子，还是存在一些差距，导致同一个符号的查找映射规则，采用了MSVC编译器的工程无法无痛的直接给采用了g++编译器的工程使用（我的另一个意思是，如果不采用一些手段，咱们就需要拿到源码重新编译，我们后面讨论的方法终于可以回避掉这种做法）。</p>
 <p>读者同志们会发问：这是怎么回事呢？其实，我们很容易想到这样一系列的代码：</p>
-<p>```c++
-// 在C++中，我们很喜欢将一些方法放置到类中,
-// OOP就是推介我们这样做的！
-class Foo {
-public:
-    void someFunc(int a, const char* b);
-};</p>
-<p>// 或者，我们喜欢放置一些工具类的函数到单独的命名空间中
-namespace charlies_tools {
-   std::vector<std::string_view> split(const std::string&amp; waited_splits, const char ch);
-   std::vector<std::string_view> split(const std::string&amp; waited_splits, const std::string_view sp_view);
-};</p>
-<p>```text</p>
+<div class="language-c++ highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 在C++中，我们很喜欢将一些方法放置到类中,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// OOP就是推介我们这样做的！</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">someFunc</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">};</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// 或者，我们喜欢放置一些工具类的函数到单独的命名空间中</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">namespace</span><span class="w"> </span><span class="nn">charlies_tools</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="o">&gt;</span><span class="w"> </span><span class="n">split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ch</span><span class="p">);</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="o">&gt;</span><span class="w"> </span><span class="n">split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="w"> </span><span class="n">sp_view</span><span class="p">);</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>我们作为C++程序员，会很自然的使用到这些特性，回避掉一些符号层次的冲突问题，提升软件工程中更好的可读性。</p>
 <p>我们来看看g++编译产生的符号名称是如何的：</p>
-<p>```text</p>
-<p>0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
-0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
-0000000000000000 T _ZN3Foo8someFuncEiPKc</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a>0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a>0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>0000000000000000 T _ZN3Foo8someFuncEiPKc
+</span></code></pre></div>
 <p>然后我们再看看MSVC产生的：</p>
-<p>```text</p>
-<p>00C 00000000 SECT4  notype ()    External     | ?someFunc@Foo@@QAEXHPBD@Z (public: void __thiscall Foo::someFunc(int,char const *))
-00D 00000010 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@D@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits\<char>,class std::allocator\<char> > const &amp;,char))
-00E 00000020 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$basic_string_view@DU?$char_traits@D@std@@@3@@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits\<char>,class std::allocator\<char> > const &amp;,class std::basic_string_view<char,struct std::char_traits\<char> >))</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a>00C 00000000 SECT4  notype ()    External     | ?someFunc@Foo@@QAEXHPBD@Z (public: void __thiscall Foo::someFunc(int,char const *))
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a>00D 00000010 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@D@Z (void __cdecl charlies_tools::split(class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt; const &amp;,char))
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>00E 00000020 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$basic_string_view@DU?$char_traits@D@std@@@3@@Z (void __cdecl charlies_tools::split(class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt; const &amp;,class std::basic_string_view&lt;char,struct std::char_traits&lt;char&gt; &gt;))
+</span></code></pre></div>
 <p>实际上，我们可以看到，写入到可重定位文件中的符号,长的完全不一样，说明我们根本没法通用我们的符号。除此之外，我们还有重载等一系列功能，允许我们提供相同的函数名，不同的参数列表可以共存到一个目标文件的技术，导致我们的工具链不得不费心思处理这些问题。</p>
 <p>这种修饰被称为名称修饰（Name Mangling），很好，这下我们不得不处理这些糟心的问题了。</p>
 <h4 id="静态区数据初始化问题">静态区数据初始化问题<a class="headerlink" href="#静态区数据初始化问题" title="链接到此章节">&para;</a></h4>
 <p>C语言中，我们的数据往往可以被认为是平凡的（啊哈，换我我也喜欢C，至少可控），出于遗留代码缘故，我们习惯在链接阶段，就初始化这些变量。但是在C++中，我们知道，这些数据可以是对象，意味着存在构造函数的调用。如果说，这些对象的都是在<strong>初始化时序无关的条件下</strong>（即，这些对象不构成依赖，不会说我们一定要先初始化静态对象A，才能初始化静态对象B），其实也没关系。但是就怕存在时序相关的静态对象，因为程序上CPU运行，这些对象的初始化顺序，往往没有固定的约束，导致很容易造成程序的随机崩溃。</p>
 <p>当然，这个办法很好处理，我们知道，自由散布在data段的数据的初始化时不确定的，但是如果我们放到一个函数中，此时，只有在执行到的时候，我们才会初始化对象。由此，假如说，静态对象A的确要在静态对象B前初始化，我们可以这样做：</p>
-<p>```cpp
-static void init_a_and_b() {
-    static A network_instance;
-    static B authentic_networks;
-}</p>
-<p>auto dummy = <a href=""></a>{
-    init_a_and_b();
-    return 0;
-}();</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">init_a_and_b</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">network_instance</span><span class="p">;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">authentic_networks</span><span class="p">;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="p">}</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos="6 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">dummy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[](){</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="n">init_a_and_b</span><span class="p">();</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos="8 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos="9 "></span></a><span class="p">}();</span>
+</span></code></pre></div>
 <h2 id="所以如何设计少麻烦的二进制接口">所以，如何设计少麻烦的二进制接口<a class="headerlink" href="#所以如何设计少麻烦的二进制接口" title="链接到此章节">&para;</a></h2>
 <h4 id="设计c风格的导出接口">设计C风格的导出接口<a class="headerlink" href="#设计c风格的导出接口" title="链接到此章节">&para;</a></h4>
 <p>当然，您大可不必真的像C程序员那样防止冲突，采用C命名的习惯，这里说的是不要导出C++特色各异的ABI符号规则。办法就是将您决定导出的符号，修饰上extern "C"标识。</p>
-<p>```cpp</p>
-<h1 id="ifdef-__cplusplus">ifdef __cplusplus<a class="headerlink" href="#ifdef-__cplusplus" title="链接到此章节">&para;</a></h1>
-<p>extern "C"{</p>
-<h1 id="endif">endif<a class="headerlink" href="#endif" title="链接到此章节">&para;</a></h1>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>int functional_a(int a, int b);
-</code></pre></div>
-<h1 id="ifdef-__cplusplus_1">ifdef __cplusplus<a class="headerlink" href="#ifdef-__cplusplus_1" title="链接到此章节">&para;</a></h1>
-<p>}</p>
-<h1 id="endif_1">endif<a class="headerlink" href="#endif_1" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#ifdef __cplusplus</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="cp">#endif</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="nf">functional_a</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos="6 "></span></a>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#ifdef __cplusplus</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">}</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos="9 "></span></a><span class="cp">#endif</span>
+</span></code></pre></div>
 <p>这样我们就能让链接器所看到的接口看起来干净很多。</p>
 <h4 id="提供完整abi声明的头文件">提供完整ABI声明的头文件<a class="headerlink" href="#提供完整abi声明的头文件" title="链接到此章节">&para;</a></h4>
 <p>这里<strong>"提供完整ABI声明的头文件"</strong> 指的是一个头文件（<code>.h</code>），它包含了所有必要的声明，使得编译器能够<strong>完全理解</strong>一个库或模块的接口，从而能够：</p>
@@ -4346,115 +4405,119 @@ static void init_a_and_b() {
 <p>这个"完整的ABI声明"的核心在于，它不仅仅包括函数名，还包括所有影响二进制层面交互的细节。所以，我们才会有说法——提供完整ABI声明的头文件。下面我们讨论一下，一个提供完整ABI声明的头文件包含啥：</p>
 <h5 id="函数声明">函数声明<a class="headerlink" href="#函数声明" title="链接到此章节">&para;</a></h5>
 <p>这是最基本的部分。它告诉编译器函数的名字、返回类型和参数类型。</p>
-<p>```cpp
-// 不完整的声明 - 只知道名字和类型，但可能隐藏问题
-int do_something(int a, int b);</p>
-<p>// 更完整的声明 - 增加了extern "C"和异常规范
-extern "C" int do_something(int a, int b) noexcept;</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// 不完整的声明 - 只知道名字和类型，但可能隐藏问题</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">do_something</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1">// 更完整的声明 - 增加了extern &quot;C&quot;和异常规范</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos="5 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">do_something</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">;</span>
+</span></code></pre></div>
 <h5 id="类型定义">类型定义<a class="headerlink" href="#类型定义" title="链接到此章节">&para;</a></h5>
 <p>如果接口中使用了自定义结构体或类，其内存布局必须明确。</p>
-<p>```cpp
-// 完整的结构体声明，编译器能确定其大小和内存布局
-struct MyData {
-    int id;
-    double value;
-    char name[32];
-};</p>
-<p>// 函数使用这个结构体
-extern "C" void process_data(const MyData* data);</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// 完整的结构体声明，编译器能确定其大小和内存布局</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">MyData</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">name</span><span class="p">[</span><span class="mi">32</span><span class="p">];</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">};</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos="7 "></span></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos="8 "></span></a><span class="c1">// 函数使用这个结构体</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos="9 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">process_data</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">MyData</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">);</span>
+</span></code></pre></div>
 <p>如果头文件里没有<code>MyData</code>的完整定义，编译器就不知道<code>sizeof(MyData)</code>是多少，无法正确地为<code>process_data</code>函数调用分配栈空间或传递参数。</p>
 <h5 id="宏和常量定义">宏和常量定义<a class="headerlink" href="#宏和常量定义" title="链接到此章节">&para;</a></h5>
 <p>用于定义接口中使用的魔法数字或配置。</p>
-<p>```cpp</p>
-<h1 id="define-max_buffer_size-1024">define MAX_BUFFER_SIZE 1024<a class="headerlink" href="#define-max_buffer_size-1024" title="链接到此章节">&para;</a></h1>
-<h1 id="define-lib_version-0x00010002">define LIB_VERSION 0x00010002<a class="headerlink" href="#define-lib_version-0x00010002" title="链接到此章节">&para;</a></h1>
-<p>extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#define MAX_BUFFER_SIZE 1024</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#define LIB_VERSION 0x00010002</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">initialize_lib</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">buffer_capacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAX_BUFFER_SIZE</span><span class="p">);</span>
+</span></code></pre></div>
 <h5 id="包含其他头文件">包含其他头文件<a class="headerlink" href="#包含其他头文件" title="链接到此章节">&para;</a></h5>
 <p>如果声明依赖于其他类型（如标准库的<code>size_t</code>或自定义类型），需要包含相应的头文件。</p>
-<p>```cpp</p>
-<h1 id="include--为了使用-size_t">include <stddef.h> // 为了使用 size_t<a class="headerlink" href="#include--为了使用-size_t" title="链接到此章节">&para;</a></h1>
-<p>extern "C" void* allocate_buffer(size_t size);</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stddef.h&gt;</span><span class="c1"> // 为了使用 size_t</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">allocate_buffer</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">);</span>
+</span></code></pre></div>
 <h1 id="reference">Reference<a class="headerlink" href="#reference" title="链接到此章节">&para;</a></h1>
 <h2 id="确认名称">确认名称<a class="headerlink" href="#确认名称" title="链接到此章节">&para;</a></h2>
 <p>如果您想亲自看看MSVC编译器和g++编译器产生的符号差异，笔者这里说明一下上面的结果是如何产生的</p>
 <p>笔者使用的MSVC编译器版本是19.44.35217，g++版本是15.2.1</p>
 <p>我们将上面的样例代码写入test.cpp中</p>
-<p>```cpp</p>
-<h1 id="include">include <string><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include_1">include <string_view><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<p>class Foo {
-public:
- void someFunc(int a, const char* b);
-};</p>
-<p>namespace charlies_tools {
-void split(const std::string&amp; waited_splits, const char ch);
-void split(const std::string&amp; waited_splits, const std::string_view sp_view);
-};</p>
-<p>void Foo::someFunc(int a, const char* b) { }
-void charlies_tools::split(const std::string&amp; waited_splits, const char ch) { }
-void charlies_tools::split(const std::string&amp; waited_splits, const std::string_view sp_view) { }</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string_view&gt;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><a href="#__codelineno-9-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><a href="#__codelineno-9-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6"></a><a href="#__codelineno-9-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">someFunc</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7"></a><a href="#__codelineno-9-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="p">};</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8"></a><a href="#__codelineno-9-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9"></a><a href="#__codelineno-9-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">namespace</span><span class="w"> </span><span class="nn">charlies_tools</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10"></a><a href="#__codelineno-9-10"><span class="linenos" data-linenos="10 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ch</span><span class="p">);</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11"></a><a href="#__codelineno-9-11"><span class="linenos" data-linenos="11 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="w"> </span><span class="n">sp_view</span><span class="p">);</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12"></a><a href="#__codelineno-9-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13"></a><a href="#__codelineno-9-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14"></a><a href="#__codelineno-9-14"><span class="linenos" data-linenos="14 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">Foo::someFunc</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15"></a><a href="#__codelineno-9-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">charlies_tools::split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16"></a><a href="#__codelineno-9-16"><span class="linenos" data-linenos="16 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">charlies_tools::split</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_splits</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="w"> </span><span class="n">sp_view</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+</span></code></pre></div>
 <p>然后，在Linux机器上，利用-c指令只翻译test.cpp为机器码：</p>
-<p>```text</p>
-<p>g++ -c test.cpp -o test_name</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a>g++ -c test.cpp -o test_name
+</span></code></pre></div>
 <p>然后，利用nm指令查看ABI</p>
-<p>```text</p>
-<p>[charliechen@Charliechen runaable_dynamic_library]$ nm test_name
-0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
-0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
-0000000000000000 T _ZN3Foo8someFuncEiPKc</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a>[charliechen@Charliechen runaable_dynamic_library]$ nm test_name
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a><a href="#__codelineno-11-2"><span class="linenos" data-linenos="2 "></span></a>0000000000000012 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEc
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3"></a><a href="#__codelineno-11-3"><span class="linenos" data-linenos="3 "></span></a>0000000000000022 T _ZN14charlies_tools5splitERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESt17basic_string_viewIcS3_E
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4"></a><a href="#__codelineno-11-4"><span class="linenos" data-linenos="4 "></span></a>0000000000000000 T _ZN3Foo8someFuncEiPKc
+</span></code></pre></div>
 <p>这就得到了笔者在正文中列出的结果</p>
 <p>对于MSVC，您需要打开VS Develop Prompt初始化MSVC工具链环境，然后，我们依旧假设您保存代码到test.cpp中，然后，利用cl编译器，指定仅编译的标志和最新C++标准标志，可以得到下面的输出</p>
-<p>```text</p>
-<p>D:\DownloadFromInternet&gt;cl /c /std:c++latest test.cpp
-用于 x86 的 Microsoft (R) C/C++ 优化编译器 19.44.35217 版
-版权所有(C) Microsoft Corporation。保留所有权利。</p>
-<p>/std:c++latest 作为最新的 C++
-working 草稿中的语言功能预览提供。我们希望你提供有关 bug 和改进建议的反馈。
-但是，请注意，这些功能按原样提供，没有支持，并且会随着工作草稿的变化
-而更改或移除。有关详细信息，请参阅
-https://go.microsoft.com/fwlink/?linkid=2045807。</p>
-<p>test.cpp</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos=" 1 "></span></a>D:\DownloadFromInternet&gt;cl /c /std:c++latest test.cpp
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos=" 2 "></span></a>用于 x86 的 Microsoft (R) C/C++ 优化编译器 19.44.35217 版
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos=" 3 "></span></a>版权所有(C) Microsoft Corporation。保留所有权利。
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><a href="#__codelineno-12-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5"></a><a href="#__codelineno-12-5"><span class="linenos" data-linenos=" 5 "></span></a>/std:c++latest 作为最新的 C++
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6"></a><a href="#__codelineno-12-6"><span class="linenos" data-linenos=" 6 "></span></a>working 草稿中的语言功能预览提供。我们希望你提供有关 bug 和改进建议的反馈。
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7"></a><a href="#__codelineno-12-7"><span class="linenos" data-linenos=" 7 "></span></a>但是，请注意，这些功能按原样提供，没有支持，并且会随着工作草稿的变化
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8"></a><a href="#__codelineno-12-8"><span class="linenos" data-linenos=" 8 "></span></a>而更改或移除。有关详细信息，请参阅
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9"></a><a href="#__codelineno-12-9"><span class="linenos" data-linenos=" 9 "></span></a>https://go.microsoft.com/fwlink/?linkid=2045807。
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10"></a><a href="#__codelineno-12-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11"></a><a href="#__codelineno-12-11"><span class="linenos" data-linenos="11 "></span></a>test.cpp
+</span></code></pre></div>
 <p>随后，利用dumpbin小工具，得到：</p>
-<p>```text</p>
-<p>D:\DownloadFromInternet&gt;dumpbin /SYMBOLS test.obj
-Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
-Copyright (C) Microsoft Corporation.  All rights reserved.</p>
-<p>Dump of file test.obj</p>
-<p>File Type: COFF OBJECT</p>
-<p>COFF SYMBOL TABLE
-000 01058991 ABS    notype       Static       | @comp.id
-001 80010191 ABS    notype       Static       | @feat.00
-002 00000003 ABS    notype       Static       | @vol.md
-003 00000000 SECT1  notype       Static       | .drectve
-    Section length  178, #relocs    0, #linenums    0, checksum        0
-005 00000000 SECT2  notype       Static       | .debug$S
-    Section length   74, #relocs    0, #linenums    0, checksum        0
-007 00000000 SECT3  notype       Static       | .bss
-    Section length    4, #relocs    0, #linenums    0, checksum        0, selection    2 (pick any)
-009 00000000 SECT3  notype       External     | __Avx2WmemEnabledWeakValue
-00A 00000000 SECT4  notype       Static       | .text$mn
-    Section length   25, #relocs    0, #linenums    0, checksum E54AE742
-00C 00000000 SECT4  notype ()    External     | ?someFunc@Foo@@QAEXHPBD@Z (public: void __thiscall Foo::someFunc(int,char const *))
-00D 00000010 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@D@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits\<char>,class std::allocator\<char> > const &amp;,char))
-00E 00000020 SECT4  notype ()    External     | ?split@charlies_tools@@YAXABV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$basic_string_view@DU?$char_traits@D@std@@@3@@Z (void __cdecl charlies_tools::split(class std::basic_string<char,struct std::char_traits\<char>,class std::allocator\<char> > const &amp;,class std::basic_string_view<char,struct std::char_traits\<char> >))
-00F 00000000 SECT5  notype       Static       | .chks64
-    Section length   28, #relocs    0, #linenums    0, checksum        0</p>
-<p>String Table Size = 0x123 bytes
-  Summary
-           4 .bss
-          28 .chks64
-          74 .debug$S
-         178 .drectve
-          25 .text$mn</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="nl">D</span><span class="p">:</span><span class="err">\</span><span class="n">DownloadFromInternet</span><span class="o">&gt;</span><span class="n">dumpbin</span><span class="w"> </span><span class="o">/</span><span class="n">SYMBOLS</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">obj</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">Microsoft</span><span class="w"> </span><span class="p">(</span><span class="n">R</span><span class="p">)</span><span class="w"> </span><span class="n">COFF</span><span class="o">/</span><span class="n">PE</span><span class="w"> </span><span class="n">Dumper</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="mf">14.44.35217.0</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3"></a><a href="#__codelineno-13-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">Copyright</span><span class="w"> </span><span class="p">(</span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="n">Microsoft</span><span class="w"> </span><span class="n">Corporation</span><span class="p">.</span><span class="w">  </span><span class="n">All</span><span class="w"> </span><span class="n">rights</span><span class="w"> </span><span class="n">reserved</span><span class="p">.</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4"></a><a href="#__codelineno-13-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5"></a><a href="#__codelineno-13-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">Dump</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">test</span><span class="p">.</span><span class="n">obj</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6"></a><a href="#__codelineno-13-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7"></a><a href="#__codelineno-13-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">File</span><span class="w"> </span><span class="n">Type</span><span class="o">:</span><span class="w"> </span><span class="n">COFF</span><span class="w"> </span><span class="n">OBJECT</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8"></a><a href="#__codelineno-13-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9"></a><a href="#__codelineno-13-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">COFF</span><span class="w"> </span><span class="n">SYMBOL</span><span class="w"> </span><span class="n">TABLE</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10"></a><a href="#__codelineno-13-10"><span class="linenos" data-linenos="10 "></span></a><span class="mo">000</span><span class="w"> </span><span class="mo">0105</span><span class="mi">8991</span><span class="w"> </span><span class="n">ABS</span><span class="w">    </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="err">@</span><span class="n">comp</span><span class="p">.</span><span class="n">id</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11"></a><a href="#__codelineno-13-11"><span class="linenos" data-linenos="11 "></span></a><span class="mo">001</span><span class="w"> </span><span class="mi">80010191</span><span class="w"> </span><span class="n">ABS</span><span class="w">    </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="err">@</span><span class="n">feat</span><span class="mf">.00</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12"></a><a href="#__codelineno-13-12"><span class="linenos" data-linenos="12 "></span></a><span class="mo">002</span><span class="w"> </span><span class="mo">00000003</span><span class="w"> </span><span class="n">ABS</span><span class="w">    </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="err">@</span><span class="n">vol</span><span class="p">.</span><span class="n">md</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13"></a><a href="#__codelineno-13-13"><span class="linenos" data-linenos="13 "></span></a><span class="mo">003</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT1</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="p">.</span><span class="n">drectve</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14"></a><a href="#__codelineno-13-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="n">Section</span><span class="w"> </span><span class="n">length</span><span class="w">  </span><span class="mi">178</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">relocs</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">linenums</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">checksum</span><span class="w">        </span><span class="mi">0</span>
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15"></a><a href="#__codelineno-13-15"><span class="linenos" data-linenos="15 "></span></a><span class="mo">005</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT2</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="p">.</span><span class="n">debug$S</span>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16"></a><a href="#__codelineno-13-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">Section</span><span class="w"> </span><span class="n">length</span><span class="w">   </span><span class="mi">74</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">relocs</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">linenums</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">checksum</span><span class="w">        </span><span class="mi">0</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17"></a><a href="#__codelineno-13-17"><span class="linenos" data-linenos="17 "></span></a><span class="mo">007</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT3</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="p">.</span><span class="n">bss</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18"></a><a href="#__codelineno-13-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">Section</span><span class="w"> </span><span class="n">length</span><span class="w">    </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">relocs</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">linenums</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">checksum</span><span class="w">        </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">selection</span><span class="w">    </span><span class="mi">2</span><span class="w"> </span><span class="p">(</span><span class="n">pick</span><span class="w"> </span><span class="n">any</span><span class="p">)</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19"></a><a href="#__codelineno-13-19"><span class="linenos" data-linenos="19 "></span></a><span class="mo">00</span><span class="mi">9</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT3</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">External</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">__Avx2WmemEnabledWeakValue</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20"></a><a href="#__codelineno-13-20"><span class="linenos" data-linenos="20 "></span></a><span class="mo">00</span><span class="n">A</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT4</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="p">.</span><span class="n">text$mn</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21"></a><a href="#__codelineno-13-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="n">Section</span><span class="w"> </span><span class="n">length</span><span class="w">   </span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">relocs</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">linenums</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">checksum</span><span class="w"> </span><span class="n">E54AE742</span>
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22"></a><a href="#__codelineno-13-22"><span class="linenos" data-linenos="22 "></span></a><span class="mo">00</span><span class="n">C</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT4</span><span class="w">  </span><span class="n">notype</span><span class="w"> </span><span class="p">()</span><span class="w">    </span><span class="n">External</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="o">?</span><span class="n">someFunc</span><span class="err">@</span><span class="n">Foo</span><span class="err">@@</span><span class="n">QAEXHPBD</span><span class="err">@</span><span class="n">Z</span><span class="w"> </span><span class="p">(</span><span class="k">public</span><span class="o">:</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">__thiscall</span><span class="w"> </span><span class="n">Foo</span><span class="o">::</span><span class="n">someFunc</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span><span class="kt">char</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">*</span><span class="p">))</span>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23"></a><a href="#__codelineno-13-23"><span class="linenos" data-linenos="23 "></span></a><span class="mo">00</span><span class="n">D</span><span class="w"> </span><span class="mo">00000010</span><span class="w"> </span><span class="n">SECT4</span><span class="w">  </span><span class="n">notype</span><span class="w"> </span><span class="p">()</span><span class="w">    </span><span class="n">External</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="o">?</span><span class="n">split</span><span class="err">@</span><span class="n">charlies_tools</span><span class="err">@@</span><span class="n">YAXABV</span><span class="o">?</span><span class="n">$basic_string</span><span class="err">@</span><span class="n">DU</span><span class="o">?</span><span class="n">$char_traits</span><span class="err">@</span><span class="n">D</span><span class="err">@</span><span class="n">std</span><span class="err">@@</span><span class="n">V</span><span class="o">?</span><span class="n">$allocator</span><span class="err">@</span><span class="n">D</span><span class="err">@</span><span class="mi">2</span><span class="err">@@</span><span class="n">std</span><span class="err">@@</span><span class="n">D</span><span class="err">@</span><span class="n">Z</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="kr">__cdecl</span><span class="w"> </span><span class="n">charlies_tools</span><span class="o">::</span><span class="n">split</span><span class="p">(</span><span class="k">class</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">basic_string</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="k">struct</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">,</span><span class="k">class</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">allocator</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">&amp;</span><span class="p">,</span><span class="kt">char</span><span class="p">))</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24"></a><a href="#__codelineno-13-24"><span class="linenos" data-linenos="24 "></span></a><span class="mo">00</span><span class="n">E</span><span class="w"> </span><span class="mo">00000020</span><span class="w"> </span><span class="n">SECT4</span><span class="w">  </span><span class="n">notype</span><span class="w"> </span><span class="p">()</span><span class="w">    </span><span class="n">External</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="o">?</span><span class="n">split</span><span class="err">@</span><span class="n">charlies_tools</span><span class="err">@@</span><span class="n">YAXABV</span><span class="o">?</span><span class="n">$basic_string</span><span class="err">@</span><span class="n">DU</span><span class="o">?</span><span class="n">$char_traits</span><span class="err">@</span><span class="n">D</span><span class="err">@</span><span class="n">std</span><span class="err">@@</span><span class="n">V</span><span class="o">?</span><span class="n">$allocator</span><span class="err">@</span><span class="n">D</span><span class="err">@</span><span class="mi">2</span><span class="err">@@</span><span class="n">std</span><span class="err">@@</span><span class="n">V</span><span class="o">?</span><span class="n">$basic_string_view</span><span class="err">@</span><span class="n">DU</span><span class="o">?</span><span class="n">$char_traits</span><span class="err">@</span><span class="n">D</span><span class="err">@</span><span class="n">std</span><span class="err">@@@</span><span class="mi">3</span><span class="err">@@</span><span class="n">Z</span><span class="w"> </span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="kr">__cdecl</span><span class="w"> </span><span class="n">charlies_tools</span><span class="o">::</span><span class="n">split</span><span class="p">(</span><span class="k">class</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">basic_string</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="k">struct</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">,</span><span class="k">class</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">allocator</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">&amp;</span><span class="p">,</span><span class="k">class</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">basic_string_view</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="k">struct</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">char_traits</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="p">))</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25"></a><a href="#__codelineno-13-25"><span class="linenos" data-linenos="25 "></span></a><span class="mf">00F</span><span class="w"> </span><span class="mo">00000000</span><span class="w"> </span><span class="n">SECT5</span><span class="w">  </span><span class="n">notype</span><span class="w">       </span><span class="n">Static</span><span class="w">       </span><span class="o">|</span><span class="w"> </span><span class="p">.</span><span class="n">chks64</span>
+</span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26"></a><a href="#__codelineno-13-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="n">Section</span><span class="w"> </span><span class="n">length</span><span class="w">   </span><span class="mi">28</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">relocs</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">#</span><span class="n">linenums</span><span class="w">    </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">checksum</span><span class="w">        </span><span class="mi">0</span>
+</span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27"></a><a href="#__codelineno-13-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28"></a><a href="#__codelineno-13-28"><span class="linenos" data-linenos="28 "></span></a><span class="n">String</span><span class="w"> </span><span class="n">Table</span><span class="w"> </span><span class="n">Size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x123</span><span class="w"> </span><span class="n">bytes</span>
+</span><span id="__span-13-29"><a id="__codelineno-13-29" name="__codelineno-13-29"></a><a href="#__codelineno-13-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">  </span><span class="n">Summary</span>
+</span><span id="__span-13-30"><a id="__codelineno-13-30" name="__codelineno-13-30"></a><a href="#__codelineno-13-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">           </span><span class="mi">4</span><span class="w"> </span><span class="p">.</span><span class="n">bss</span>
+</span><span id="__span-13-31"><a id="__codelineno-13-31" name="__codelineno-13-31"></a><a href="#__codelineno-13-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">          </span><span class="mi">28</span><span class="w"> </span><span class="p">.</span><span class="n">chks64</span>
+</span><span id="__span-13-32"><a id="__codelineno-13-32" name="__codelineno-13-32"></a><a href="#__codelineno-13-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">          </span><span class="mi">74</span><span class="w"> </span><span class="p">.</span><span class="n">debug$S</span>
+</span><span id="__span-13-33"><a id="__codelineno-13-33" name="__codelineno-13-33"></a><a href="#__codelineno-13-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">         </span><span class="mi">178</span><span class="w"> </span><span class="p">.</span><span class="n">drectve</span>
+</span><span id="__span-13-34"><a id="__codelineno-13-34" name="__codelineno-13-34"></a><a href="#__codelineno-13-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">          </span><span class="mi">25</span><span class="w"> </span><span class="p">.</span><span class="n">text$mn</span>
+</span></code></pre></div>
 
 
 
@@ -4477,7 +4540,7 @@ Copyright (C) Microsoft Corporation.  All rights reserved.</p>
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

@@ -2373,6 +2373,105 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#动态与静态-extent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        动态与静态 extent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#有用的成员函数" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        有用的成员函数
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#进阶示例subspan-与字节操作" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        进阶示例：subspan 与字节操作
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#当做函数参数的最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        当做函数参数的最佳实践
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见坑" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见坑
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#与-stdstring_view-的对比" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 std::string_view 的对比
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#嵌入式场景快速举例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        嵌入式场景快速举例
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#代码小贴士" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        代码小贴士
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#速查-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        速查 API
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4239,21 +4338,21 @@
       
       
       
-        <a href="../../../tags/#tag:c20" class="md-tag">C++20</a>
+        <span class="md-tag">C++20</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:span" class="md-tag">span</a>
+        <span class="md-tag">span</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:视图" class="md-tag">视图</a>
+        <span class="md-tag">视图</span>
       
     
   </nav>
@@ -4272,31 +4371,32 @@
 <hr />
 <h2 id="引子为什么不直接用指针或-vector">引子：为什么不直接用指针或 vector？<a class="headerlink" href="#引子为什么不直接用指针或-vector" title="链接到此章节">&para;</a></h2>
 <p>在嵌入式代码里，我们常看到这样的函数签名：</p>
-<p><code>cpp
-void process_buffer(uint8_t* buf, size_t n);</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process_buffer</span><span class="p">(</span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
+</span></code></pre></div>
 <p>这招确实灵活，但缺点：读者得同时记住 <code>buf</code> 的类型、长度单位是"元素数"还是"字节数"、函数是否要修改数据……出错的地方太多。 <code>std::span</code> 把这些语义显式化：类型和值（length）都在同一个对象里，阅读性和安全性都提升了。</p>
 <hr />
 <h2 id="基本用法">基本用法<a class="headerlink" href="#基本用法" title="链接到此章节">&para;</a></h2>
-<p>```cpp</p>
-<h1 id="include">include <span><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include_1">include <vector><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<h1 id="include_2">include <array><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
-<h1 id="include_3">include <iostream><a class="headerlink" href="#include_3" title="链接到此章节">&para;</a></h1>
-<p>void print_bytes(std::span<const uint8_t> s) {
-    for (auto b : s) std::cout &lt;&lt; std::hex &lt;&lt; int(b) &lt;&lt; ' ';
-    std::cout &lt;&lt; std::dec &lt;&lt; '\n';
-}</p>
-<p>int main() {
-    uint8_t buffer[] = {0x10, 0x20, 0x30};
-    std::vector<uint8_t> v = {1,2,3,4};
-    std::array<uint8_t, 3> a = {9,8,7};</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>print_bytes(buffer);             // 从内置数组构造
-<span class="linenos" data-linenos="2 "></span>print_bytes(v);                  // 从 vector 构造
-<span class="linenos" data-linenos="3 "></span>print_bytes(a);                  // 从 std::array 构造
-<span class="linenos" data-linenos="4 "></span>print_bytes({v.data(), 2});      // 从 pointer + size 构造
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">print_bytes</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">dec</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">}</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x10</span><span class="p">,</span><span class="w"> </span><span class="mh">0x20</span><span class="p">,</span><span class="w"> </span><span class="mh">0x30</span><span class="p">};</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">};</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">9</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">7</span><span class="p">};</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span><span class="w">             </span><span class="c1">// 从内置数组构造</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="w">                  </span><span class="c1">// 从 vector 构造</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">a</span><span class="p">);</span><span class="w">                  </span><span class="c1">// 从 std::array 构造</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">({</span><span class="n">v</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="mi">2</span><span class="p">});</span><span class="w">      </span><span class="c1">// 从 pointer + size 构造</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p><code>print_bytes</code> 用 <code>std::span&lt;const uint8_t&gt;</code> 接收输入：既说明了不修改内容，又接受多种容器来源，调用方无需拷贝数据。</p>
 <hr />
 <h2 id="动态与静态-extent">动态与静态 extent<a class="headerlink" href="#动态与静态-extent" title="链接到此章节">&para;</a></h2>
@@ -4306,43 +4406,43 @@ void process_buffer(uint8_t* buf, size_t n);</code>text</p>
 <li><code>std::span&lt;T, N&gt;</code>：编译期固定元素数 <code>N</code>（称为静态 extent）。</li>
 </ul>
 <p>示例：</p>
-<p><code>cpp
-int arr[4];
-std::span&lt;int, 4&gt; s_fixed(arr);      // 只有长度为 4 的数组能绑定
-std::span&lt;int&gt; s_dyn(arr, 4);        // 任意长度，运行时记录</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">arr</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s_fixed</span><span class="p">(</span><span class="n">arr</span><span class="p">);</span><span class="w">      </span><span class="c1">// 只有长度为 4 的数组能绑定</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s_dyn</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span><span class="w">        </span><span class="c1">// 任意长度，运行时记录</span>
+</span></code></pre></div>
 <p>静态 <code>Extent</code> 可以在某些场景下启用额外的编译期检查或优化，但在嵌入式中，动态 extent 更常用（因为 buffer 长度常由运行时决定）。</p>
 <hr />
 <h2 id="有用的成员函数">有用的成员函数<a class="headerlink" href="#有用的成员函数" title="链接到此章节">&para;</a></h2>
-<p><code>cpp
-s.size();          // 元素个数
-s.size_bytes();    // 字节数（注意！元素个数 * sizeof(T)）
-s.data();          // 指向首元素的指针（可能为 nullptr 当 size()==0）
-s.empty();
-s.front(), s.back();
-s[i];              // 下标，不做运行时检查（与 operator[] 语义一致）
-s.subspan(offset, count);   // 切片，返回新的 span（仍为 non-owning）
-s.first(n), s.last(n);     // 前 n 个或后 n 个元素视图
-std::as_bytes(s);          // 将 span&lt;T&gt; 视为 span&lt;const std::byte&gt;
-std::as_writable_bytes(s); // 视为 span&lt;std::byte&gt;（当 T 可写时）</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w">          </span><span class="c1">// 元素个数</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">size_bytes</span><span class="p">();</span><span class="w">    </span><span class="c1">// 字节数（注意！元素个数 * sizeof(T)）</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">();</span><span class="w">          </span><span class="c1">// 指向首元素的指针（可能为 nullptr 当 size()==0）</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">empty</span><span class="p">();</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">front</span><span class="p">(),</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">back</span><span class="p">();</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">];</span><span class="w">              </span><span class="c1">// 下标，不做运行时检查（与 operator[] 语义一致）</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">subspan</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span><span class="w"> </span><span class="n">count</span><span class="p">);</span><span class="w">   </span><span class="c1">// 切片，返回新的 span（仍为 non-owning）</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">first</span><span class="p">(</span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">last</span><span class="p">(</span><span class="n">n</span><span class="p">);</span><span class="w">     </span><span class="c1">// 前 n 个或后 n 个元素视图</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">s</span><span class="p">);</span><span class="w">          </span><span class="c1">// 将 span&lt;T&gt; 视为 span&lt;const std::byte&gt;</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">as_writable_bytes</span><span class="p">(</span><span class="n">s</span><span class="p">);</span><span class="w"> </span><span class="c1">// 视为 span&lt;std::byte&gt;（当 T 可写时）</span>
+</span></code></pre></div>
 <p>注意：<code>operator[]</code> 不检查越界；如果需要边界检查，自行用 <code>at</code>-like wrapper 或在调试时加断言。</p>
 <hr />
 <h2 id="进阶示例subspan-与字节操作">进阶示例：subspan 与字节操作<a class="headerlink" href="#进阶示例subspan-与字节操作" title="链接到此章节">&para;</a></h2>
-<p>```cpp</p>
-<h1 id="include_4">include <span><a class="headerlink" href="#include_4" title="链接到此章节">&para;</a></h1>
-<h1 id="include--for-stdbyte">include <cstddef> // for std::byte<a class="headerlink" href="#include--for-stdbyte" title="链接到此章节">&para;</a></h1>
-<p>void recv_packet(std::span<uint8_t> buffer) {
-    if (buffer.size() &lt; 4) return;
-    auto header = buffer.first(4);
-    uint16_t len = header[2] | (header[3] &lt;&lt; 8);</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>if (buffer.size() &lt; 4 + len) return;
-<span class="linenos" data-linenos="2 "></span>auto payload = buffer.subspan(4, len);
-<span class="linenos" data-linenos="3 "></span>
-<span class="linenos" data-linenos="4 "></span>// 把 payload 当作字节流传给 CRC 函数
-<span class="linenos" data-linenos="5 "></span>auto bytes = std::as_bytes(payload);
-<span class="linenos" data-linenos="6 "></span>// crc_check(bytes.data(), bytes.size()); // 示例：调用检验函数
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span><span class="c1"> // for std::byte</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">recv_packet</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="n">first</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">len</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="n">subspan</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="c1">// 把 payload 当作字节流传给 CRC 函数</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">payload</span><span class="p">);</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="c1">// crc_check(bytes.data(), bytes.size()); // 示例：调用检验函数</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>这种把整体 buffer 切片成 header/payload 的写法尤其适合嵌入式协议解析，简洁而安全（只要你保证传进来的 <code>buffer</code> 有效）。</p>
 <hr />
 <h2 id="当做函数参数的最佳实践">当做函数参数的最佳实践<a class="headerlink" href="#当做函数参数的最佳实践" title="链接到此章节">&para;</a></h2>
@@ -4353,20 +4453,20 @@ std::as_writable_bytes(s); // 视为 span&lt;std::byte&gt;（当 T 可写时）<
 <li>函数内不需要 template 泛型来支持各种容器。</li>
 </ul>
 <p>示例：</p>
-<p><code>cpp
-void process(std::span&lt;const int&gt; data); // 明确：不修改数据
-void mutate(std::span&lt;int&gt; data);         // 明确：会修改数据</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">);</span><span class="w"> </span><span class="c1">// 明确：不修改数据</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">mutate</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">);</span><span class="w">         </span><span class="c1">// 明确：会修改数据</span>
+</span></code></pre></div>
 <p>这比写 <code>template&lt;class Container&gt; void process(const Container&amp; c)</code> 更直观，也避免了不必要的编译膨胀。</p>
 <hr />
 <h2 id="常见坑">常见坑<a class="headerlink" href="#常见坑" title="链接到此章节">&para;</a></h2>
 <ol>
 <li><strong>悬垂视图</strong>：最常见错误。不要把 <code>std::span</code> 绑定到局部 <code>std::vector</code> 的 <code>data()</code> 并把它返回给调用者：</li>
 </ol>
-<p><code>cpp
-   std::span&lt;int&gt; bad() {
-       std::vector&lt;int&gt; v = {1,2,3};
-       return v; // ❌ v 被销毁，返回的 span 悬垂
-   }</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">bad</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">};</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">v</span><span class="p">;</span><span class="w"> </span><span class="c1">// ❌ v 被销毁，返回的 span 悬垂</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <ol>
 <li>
 <p><strong>以为有所有权</strong>：span 不持有内存，不会析构或释放。若需要所有权，用 <code>std::vector</code>、<code>unique_ptr</code> 等。</p>
@@ -4416,415 +4516,403 @@ void mutate(std::span&lt;int&gt; data);         // 明确：会修改数据</cod
 <details>
 <summary>查看完整可编译示例</summary>
 
-```cpp
-// basic_usage.cpp - std::span 基本用法演示
-#include <span>
-#include <vector>
-#include <array>
-#include <iostream>
-
-// 接受多种容器来源的统一函数接口
-void print_bytes(std::span<const uint8_t> s) {
-    for (auto b : s) std::cout << std::hex << int(b) << ' ';
-    std::cout << std::dec << '\n';
-}
-
-// 演示可写 span
-void fill_with_value(std::span<uint8_t> s, uint8_t value) {
-    for (auto& b : s) {
-        b = value;
-    }
-}
-
-int main() {
-    // 从内置数组构造
-    uint8_t buffer[] = {0x10, 0x20, 0x30};
-    std::cout << "From C array: ";
-    print_bytes(buffer);
-
-    // 从 vector 构造
-    std::vector<uint8_t> v = {1, 2, 3, 4};
-    std::cout << "From vector: ";
-    print_bytes(v);
-
-    // 从 std::array 构造
-    std::array<uint8_t, 3> a = {9, 8, 7};
-    std::cout << "From std::array: ";
-    print_bytes(a);
-
-    // 从 pointer + size 构造
-    std::cout << "From ptr+size (first 2 of vector): ";
-    print_bytes({v.data(), 2});
-
-    // 演示可写 span
-    std::array<uint8_t, 5> mutable_array{};
-    fill_with_value(mutable_array, 0x42);
-    std::cout << "After fill with 0x42: ";
-    print_bytes(mutable_array);
-
-    // 演示 span 的成员函数
-    std::span<const uint8_t> s = buffer;
-    std::cout << "\nspan member functions:\n";
-    std::cout << "size(): " << s.size() << '\n';
-    std::cout << "size_bytes(): " << s.size_bytes() << '\n';
-    std::cout << "data(): " << static_cast<const void*>(s.data()) << '\n';
-    std::cout << "empty(): " << s.empty() << '\n';
-    std::cout << "front(): " << int(s.front()) << '\n';
-    std::cout << "back(): " << int(s.back()) << '\n';
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// basic_usage.cpp - std::span 基本用法演示</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1">// 接受多种容器来源的统一函数接口</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">print_bytes</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">dec</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a><span class="p">}</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12"></a><a href="#__codelineno-7-12"><span class="linenos" data-linenos="12 "></span></a>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13"></a><a href="#__codelineno-7-13"><span class="linenos" data-linenos="13 "></span></a><span class="c1">// 演示可写 span</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14"></a><a href="#__codelineno-7-14"><span class="linenos" data-linenos="14 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">fill_with_value</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15"></a><a href="#__codelineno-7-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16"></a><a href="#__codelineno-7-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17"></a><a href="#__codelineno-7-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18"></a><a href="#__codelineno-7-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">}</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19"></a><a href="#__codelineno-7-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20"></a><a href="#__codelineno-7-20"><span class="linenos" data-linenos="20 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21"></a><a href="#__codelineno-7-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="c1">// 从内置数组构造</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22"></a><a href="#__codelineno-7-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x10</span><span class="p">,</span><span class="w"> </span><span class="mh">0x20</span><span class="p">,</span><span class="w"> </span><span class="mh">0x30</span><span class="p">};</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23"></a><a href="#__codelineno-7-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;From C array: &quot;</span><span class="p">;</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24"></a><a href="#__codelineno-7-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25"></a><a href="#__codelineno-7-25"><span class="linenos" data-linenos="25 "></span></a>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26"></a><a href="#__codelineno-7-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="c1">// 从 vector 构造</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27"></a><a href="#__codelineno-7-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">};</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28"></a><a href="#__codelineno-7-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;From vector: &quot;</span><span class="p">;</span>
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29"></a><a href="#__codelineno-7-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30"></a><a href="#__codelineno-7-30"><span class="linenos" data-linenos="30 "></span></a>
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31"></a><a href="#__codelineno-7-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">    </span><span class="c1">// 从 std::array 构造</span>
+</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32"></a><a href="#__codelineno-7-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">};</span>
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33"></a><a href="#__codelineno-7-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;From std::array: &quot;</span><span class="p">;</span>
+</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34"></a><a href="#__codelineno-7-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35"></a><a href="#__codelineno-7-35"><span class="linenos" data-linenos="35 "></span></a>
+</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36"></a><a href="#__codelineno-7-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="c1">// 从 pointer + size 构造</span>
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37"></a><a href="#__codelineno-7-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;From ptr+size (first 2 of vector): &quot;</span><span class="p">;</span>
+</span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38"></a><a href="#__codelineno-7-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">({</span><span class="n">v</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="mi">2</span><span class="p">});</span>
+</span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39"></a><a href="#__codelineno-7-39"><span class="linenos" data-linenos="39 "></span></a>
+</span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40"></a><a href="#__codelineno-7-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 演示可写 span</span>
+</span><span id="__span-7-41"><a id="__codelineno-7-41" name="__codelineno-7-41"></a><a href="#__codelineno-7-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="o">&gt;</span><span class="w"> </span><span class="n">mutable_array</span><span class="p">{};</span>
+</span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42"></a><a href="#__codelineno-7-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="n">fill_with_value</span><span class="p">(</span><span class="n">mutable_array</span><span class="p">,</span><span class="w"> </span><span class="mh">0x42</span><span class="p">);</span>
+</span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43"></a><a href="#__codelineno-7-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;After fill with 0x42: &quot;</span><span class="p">;</span>
+</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44"></a><a href="#__codelineno-7-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="n">mutable_array</span><span class="p">);</span>
+</span><span id="__span-7-45"><a id="__codelineno-7-45" name="__codelineno-7-45"></a><a href="#__codelineno-7-45"><span class="linenos" data-linenos="45 "></span></a>
+</span><span id="__span-7-46"><a id="__codelineno-7-46" name="__codelineno-7-46"></a><a href="#__codelineno-7-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="c1">// 演示 span 的成员函数</span>
+</span><span id="__span-7-47"><a id="__codelineno-7-47" name="__codelineno-7-47"></a><a href="#__codelineno-7-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+</span><span id="__span-7-48"><a id="__codelineno-7-48" name="__codelineno-7-48"></a><a href="#__codelineno-7-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">span member functions:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-7-49"><a id="__codelineno-7-49" name="__codelineno-7-49"></a><a href="#__codelineno-7-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;size(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-50"><a id="__codelineno-7-50" name="__codelineno-7-50"></a><a href="#__codelineno-7-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;size_bytes(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size_bytes</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-51"><a id="__codelineno-7-51" name="__codelineno-7-51"></a><a href="#__codelineno-7-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;data(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">())</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-52"><a id="__codelineno-7-52" name="__codelineno-7-52"></a><a href="#__codelineno-7-52"><span class="linenos" data-linenos="52 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;empty(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-53"><a id="__codelineno-7-53" name="__codelineno-7-53"></a><a href="#__codelineno-7-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;front(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">front</span><span class="p">())</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-54"><a id="__codelineno-7-54" name="__codelineno-7-54"></a><a href="#__codelineno-7-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;back(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">back</span><span class="p">())</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-7-55"><a id="__codelineno-7-55" name="__codelineno-7-55"></a><a href="#__codelineno-7-55"><span class="linenos" data-linenos="55 "></span></a>
+</span><span id="__span-7-56"><a id="__codelineno-7-56" name="__codelineno-7-56"></a><a href="#__codelineno-7-56"><span class="linenos" data-linenos="56 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-7-57"><a id="__codelineno-7-57" name="__codelineno-7-57"></a><a href="#__codelineno-7-57"><span class="linenos" data-linenos="57 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
 <details>
 <summary>查看更多示例：静态 extent、切片、协议解析等</summary>
 
-```cpp
-// static_extent.cpp - 静态 vs 动态 extent 演示
-#include <span>
-#include <array>
-#include <iostream>
-
-void process_dynamic(std::span<int> s) {
-    std::cout << "Dynamic extent span, size: " << s.size() << '\n';
-    for (auto& v : s) {
-        std::cout << v << ' ';
-    }
-    std::cout << '\n';
-}
-
-// 编译期固定大小 - 更强的类型安全
-void process_static_4(std::span<int, 4> s) {
-    std::cout << "Static extent(4) span, size: " << s.size() << '\n';
-    for (auto& v : s) {
-        std::cout << v << ' ';
-    }
-    std::cout << '\n';
-}
-
-int main() {
-    int arr[4] = {1, 2, 3, 4};
-
-    // 动态 extent - 可以接受任意大小
-    std::span<int> s_dyn(arr);
-    process_dynamic(s_dyn);
-
-    // 静态 extent - 编译期检查大小
-    std::span<int, 4> s_fixed(arr);
-    process_static_4(s_fixed);
-
-    // 编译期大小检查演示
-    std::cout << "\nExtent values:\n";
-    std::cout << "s_dyn.extent: " << s_dyn.extent << '\n';     // std::dynamic_extent
-    std::cout << "s_fixed.extent: " << s_fixed.extent << '\n';  // 4
-
-    // 类型安全演示
-    int arr2[6] = {1, 2, 3, 4, 5, 6};
-    std::span<int, 6> s_fixed6(arr2);
-
-    // 以下代码会在编译期报错（取消注释以查看错误）:
-    // process_static_4(s_fixed6);  // 错误：大小不匹配
-
-    // 但可以用 first<N>() 获取静态大小的子视图
-    auto first_4 = s_fixed6.first<4>();
-    process_static_4(first_4);
-
-    return 0;
-}
-
-```text
-
-```cpp
-// subspan_example.cpp - span 切片操作演示
-#include <span>
-#include <array>
-#include <iostream>
-
-int main() {
-    std::array<int, 10> data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    std::span<int> s = data;
-
-    std::cout << "Original data: ";
-    for (auto v : s) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // first(n) - 获取前 n 个元素的视图
-    auto first_three = s.first(3);
-    std::cout << "First 3: ";
-    for (auto v : first_three) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // first<N>() - 编译期获取前 N 个元素
-    auto first_five = s.first<5>();
-    std::cout << "First 5 (compile-time): ";
-    for (auto v : first_five) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // last(n) - 获取后 n 个元素的视图
-    auto last_three = s.last(3);
-    std::cout << "Last 3: ";
-    for (auto v : last_three) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // subspan(offset, count) - 获取从 offset 开始的 count 个元素
-    auto middle = s.subspan(3, 4);
-    std::cout << "Subspan [3:7]: ";
-    for (auto v : middle) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // subspan<Offset, Count>() - 编译期切片
-    auto middle_static = s.subspan<2, 5>();
-    std::cout << "Subspan <2,5> (compile-time): ";
-    for (auto v : middle_static) std::cout << v << ' ';
-    std::cout << '\n';
-
-    // 修改视图会修改原始数据
-    first_three[0] = 99;
-    std::cout << "\nAfter modifying first_three[0] to 99:\n";
-    std::cout << "Original data: ";
-    for (auto v : data) std::cout << v << ' ';
-    std::cout << '\n';
-
-    return 0;
-}
-
-```text
-
-```cpp
-// packet_parsing.cpp - 实际嵌入式场景：协议包解析
-#include <span>
-#include <cstdint>
-#include <iostream>
-
-// 模拟 CRC 校验函数
-bool crc_check(const uint8_t* data, size_t length) {
-    // 简化：假设 CRC 总是正确
-    (void)data;
-    (void)length;
-    return true;
-}
-
-// 解析数据包
-void recv_packet(std::span<uint8_t> buffer) {
-    std::cout << "Received " << buffer.size() << " bytes\n";
-
-    // 检查最小包长度
-    if (buffer.size() < 4) {
-        std::cout << "Packet too short\n";
-        return;
-    }
-
-    // 解析头部（前4字节）
-    auto header = buffer.first(4);
-    uint8_t msg_id = header[0];
-    uint8_t flags = header[1];
-    uint16_t length = header[2] | (header[3] << 8);
-
-    std::cout << "Header: ID=" << int(msg_id)
-              << ", Flags=" << int(flags)
-              << ", Length=" << length << '\n';
-
-    // 检查长度字段是否合法
-    if (buffer.size() < 4 + length) {
-        std::cout << "Length field exceeds buffer size\n";
-        return;
-    }
-
-    // 提取 payload
-    auto payload = buffer.subspan(4, length);
-    std::cout << "Payload: ";
-    for (auto b : payload) {
-        std::cout << std::hex << int(b) << ' ';
-    }
-    std::cout << std::dec << '\n';
-
-    // CRC 校验（把 payload 当作字节流）
-    auto bytes = std::as_bytes(payload);
-    if (crc_check(static_cast<const uint8_t*>(bytes.data()), bytes.size())) {
-        std::cout << "CRC: OK\n";
-    } else {
-        std::cout << "CRC: FAILED\n";
-    }
-}
-
-int main() {
-    // 模拟接收到的数据包
-    // 格式: [MSG_ID][FLAGS][LEN_L][LEN_H][PAYLOAD...]
-    std::array<uint8_t, 16> packet = {
-        0x01,        // Message ID
-        0x00,        // Flags
-        0x08, 0x00,  // Length = 8
-        // Payload (8 bytes)
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-        // Extra data (should be ignored)
-        0xFF, 0xFF, 0xFF, 0xFF
-    };
-
-    std::cout << "=== Parsing valid packet ===\n";
-    recv_packet(packet);
-
-    // 测试短包
-    std::array<uint8_t, 2> short_packet = {0x01, 0x00};
-    std::cout << "\n=== Parsing short packet ===\n";
-    recv_packet(short_packet);
-
-    // 测试长度字段不匹配
-    std::array<uint8_t, 10> bad_length_packet = {
-        0x01, 0x00, 0x20, 0x00,  // Claims length=32
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06
-    };
-    std::cout << "\n=== Parsing packet with bad length ===\n";
-    recv_packet(bad_length_packet);
-
-    return 0;
-}
-
-```text
-
-```cpp
-// bytes_view.cpp - 字节视图演示 (as_bytes, as_writable_bytes)
-#include <span>
-#include <array>
-#include <cstdint>
-#include <iostream>
-
-void print_bytes(std::string_view label, std::span<const std::byte> bytes) {
-    std::cout << label << ": ";
-    for (auto b : bytes) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0')
-                  << static_cast<int>(b) << ' ';
-    }
-    std::cout << std::dec << '\n';
-}
-
-int main() {
-    // 演示 as_bytes - 将任意类型 span 转换为字节视图（只读）
-    std::array<uint32_t, 4> data = {0x12345678, 0x9ABCDEF0, 0x11223344, 0x55667788};
-
-    std::span<uint32_t> data_span = data;
-    auto byte_view = std::as_bytes(data_span);
-
-    std::cout << "Original uint32_t values:\n";
-    for (auto v : data) {
-        std::cout << "0x" << std::hex << v << ' ';
-    }
-    std::cout << std::dec << "\n\n";
-
-    std::cout << "As bytes (little-endian):\n";
-    print_bytes("Byte view", byte_view);
-
-    // 演示 as_writable_bytes - 可写字节视图
-    std::array<uint8_t, 8> buffer = {};
-    std::span<uint8_t> buffer_span = buffer;
-
-    auto writable_bytes = std::as_writable_bytes(buffer_span);
-    std::cout << "\nBefore writing:\n";
-    print_bytes("Buffer", std::as_bytes(buffer_span));
-
-    // 写入一些字节
-    for (size_t i = 0; i < writable_bytes.size(); ++i) {
-        writable_bytes[i] = static_cast<std::byte>(i * 2 + 1);
-    }
-
-    std::cout << "\nAfter writing:\n";
-    print_bytes("Buffer", std::as_bytes(buffer_span));
-
-    // 演示从 uint8_t span 转换
-    std::array<uint8_t, 5> raw_data = {0x10, 0x20, 0x30, 0x40, 0x50};
-    std::span<const uint8_t> raw_span = raw_data;
-    auto raw_bytes = std::as_bytes(raw_span);
-
-    std::cout << "\nRaw uint8_t data as bytes:\n";
-    print_bytes("Raw", raw_bytes);
-
-    // 注意：对于已经是 uint8_t 的 span，as_bytes 不会改变表示
-    std::cout << "\nNote: For uint8_t span, as_bytes() doesn't change representation\n";
-    std::cout << "raw_span.size(): " << raw_span.size() << '\n';
-    std::cout << "raw_bytes.size(): " << raw_bytes.size() << '\n';
-
-    return 0;
-}
-
-```text
-
-```cpp
-// function_parameter.cpp - 函数参数最佳实践演示
-#include <span>
-#include <vector>
-#include <array>
-#include <iostream>
-
-// 推荐方式：明确表达不修改数据的意图
-void process(std::span<const int> data) {
-    std::cout << "Processing " << data.size() << " elements: ";
-    for (auto v : data) {
-        std::cout << v << ' ';
-    }
-    std::cout << '\n';
-}
-
-// 明确表达会修改数据的意图
-void mutate(std::span<int> data) {
-    std::cout << "Mutating " << data.size() << " elements\n";
-    for (auto& v : data) {
-        v *= 2;
-    }
-}
-
-// 对比：传统 C 风格 API（不推荐）
-void old_c_style_api(const int* data, size_t length) {
-    std::cout << "Old style: " << length << " elements: ";
-    for (size_t i = 0; i < length; ++i) {
-        std::cout << data[i] << ' ';
-    }
-    std::cout << '\n';
-}
-
-// 对比：模板泛型（会导致代码膨胀）
-template<class Container>
-void template_api(const Container& c) {
-    std::cout << "Template API: " << c.size() << " elements: ";
-    for (auto v : c) {
-        std::cout << v << ' ';
-    }
-    std::cout << '\n';
-}
-
-int main() {
-    std::vector<int> vec = {1, 2, 3, 4, 5};
-    std::array<int, 4> arr = {10, 20, 30, 40};
-    int c_array[] = {100, 200, 300};
-
-    std::cout << "=== Using std::span API (recommended) ===\n";
-    process(vec);
-    process(arr);
-    process(c_array);
-
-    std::cout << "\n=== After mutation ===\n";
-    mutate(vec);
-    process(vec);
-
-    std::cout << "\n=== Using old C style API ===\n";
-    old_c_style_api(vec.data(), vec.size());
-    old_c_style_api(arr.data(), arr.size());
-
-    std::cout << "\n=== Using template API (code bloat) ===\n";
-    template_api(vec);
-    template_api(arr);
-
-    std::cout << "\n=== Advantages of std::span ===\n";
-    std::cout << "- Single function implementation (no code bloat)\n";
-    std::cout << "- Type and size information bundled together\n";
-    std::cout << "- No copying of data\n";
-    std::cout << "- Clear const-correctness\n";
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// static_extent.cpp - 静态 vs 动态 extent 演示</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process_dynamic</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a><a href="#__codelineno-8-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Dynamic extent span, size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a><a href="#__codelineno-8-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a><a href="#__codelineno-8-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a><a href="#__codelineno-8-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11"></a><a href="#__codelineno-8-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12"></a><a href="#__codelineno-8-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13"></a><a href="#__codelineno-8-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14"></a><a href="#__codelineno-8-14"><span class="linenos" data-linenos="14 "></span></a><span class="c1">// 编译期固定大小 - 更强的类型安全</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15"></a><a href="#__codelineno-8-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process_static_4</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16"></a><a href="#__codelineno-8-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Static extent(4) span, size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17"></a><a href="#__codelineno-8-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18"></a><a href="#__codelineno-8-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19"></a><a href="#__codelineno-8-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20"></a><a href="#__codelineno-8-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21"></a><a href="#__codelineno-8-21"><span class="linenos" data-linenos="21 "></span></a><span class="p">}</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22"></a><a href="#__codelineno-8-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23"></a><a href="#__codelineno-8-23"><span class="linenos" data-linenos="23 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24"></a><a href="#__codelineno-8-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">arr</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">};</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25"></a><a href="#__codelineno-8-25"><span class="linenos" data-linenos="25 "></span></a>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26"></a><a href="#__codelineno-8-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="c1">// 动态 extent - 可以接受任意大小</span>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27"></a><a href="#__codelineno-8-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s_dyn</span><span class="p">(</span><span class="n">arr</span><span class="p">);</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28"></a><a href="#__codelineno-8-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">process_dynamic</span><span class="p">(</span><span class="n">s_dyn</span><span class="p">);</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29"></a><a href="#__codelineno-8-29"><span class="linenos" data-linenos="29 "></span></a>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30"></a><a href="#__codelineno-8-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="c1">// 静态 extent - 编译期检查大小</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31"></a><a href="#__codelineno-8-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s_fixed</span><span class="p">(</span><span class="n">arr</span><span class="p">);</span>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32"></a><a href="#__codelineno-8-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="n">process_static_4</span><span class="p">(</span><span class="n">s_fixed</span><span class="p">);</span>
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33"></a><a href="#__codelineno-8-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34"></a><a href="#__codelineno-8-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="c1">// 编译期大小检查演示</span>
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35"></a><a href="#__codelineno-8-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Extent values:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36"></a><a href="#__codelineno-8-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;s_dyn.extent: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s_dyn</span><span class="p">.</span><span class="n">extent</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span><span class="w">     </span><span class="c1">// std::dynamic_extent</span>
+</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37"></a><a href="#__codelineno-8-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;s_fixed.extent: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s_fixed</span><span class="p">.</span><span class="n">extent</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">// 4</span>
+</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38"></a><a href="#__codelineno-8-38"><span class="linenos" data-linenos="38 "></span></a>
+</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39"></a><a href="#__codelineno-8-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">    </span><span class="c1">// 类型安全演示</span>
+</span><span id="__span-8-40"><a id="__codelineno-8-40" name="__codelineno-8-40"></a><a href="#__codelineno-8-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">arr2</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">};</span>
+</span><span id="__span-8-41"><a id="__codelineno-8-41" name="__codelineno-8-41"></a><a href="#__codelineno-8-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s_fixed6</span><span class="p">(</span><span class="n">arr2</span><span class="p">);</span>
+</span><span id="__span-8-42"><a id="__codelineno-8-42" name="__codelineno-8-42"></a><a href="#__codelineno-8-42"><span class="linenos" data-linenos="42 "></span></a>
+</span><span id="__span-8-43"><a id="__codelineno-8-43" name="__codelineno-8-43"></a><a href="#__codelineno-8-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="c1">// 以下代码会在编译期报错（取消注释以查看错误）:</span>
+</span><span id="__span-8-44"><a id="__codelineno-8-44" name="__codelineno-8-44"></a><a href="#__codelineno-8-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="c1">// process_static_4(s_fixed6);  // 错误：大小不匹配</span>
+</span><span id="__span-8-45"><a id="__codelineno-8-45" name="__codelineno-8-45"></a><a href="#__codelineno-8-45"><span class="linenos" data-linenos="45 "></span></a>
+</span><span id="__span-8-46"><a id="__codelineno-8-46" name="__codelineno-8-46"></a><a href="#__codelineno-8-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="c1">// 但可以用 first&lt;N&gt;() 获取静态大小的子视图</span>
+</span><span id="__span-8-47"><a id="__codelineno-8-47" name="__codelineno-8-47"></a><a href="#__codelineno-8-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">first_4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s_fixed6</span><span class="p">.</span><span class="n">first</span><span class="o">&lt;</span><span class="mi">4</span><span class="o">&gt;</span><span class="p">();</span>
+</span><span id="__span-8-48"><a id="__codelineno-8-48" name="__codelineno-8-48"></a><a href="#__codelineno-8-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="n">process_static_4</span><span class="p">(</span><span class="n">first_4</span><span class="p">);</span>
+</span><span id="__span-8-49"><a id="__codelineno-8-49" name="__codelineno-8-49"></a><a href="#__codelineno-8-49"><span class="linenos" data-linenos="49 "></span></a>
+</span><span id="__span-8-50"><a id="__codelineno-8-50" name="__codelineno-8-50"></a><a href="#__codelineno-8-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-8-51"><a id="__codelineno-8-51" name="__codelineno-8-51"></a><a href="#__codelineno-8-51"><span class="linenos" data-linenos="51 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// subspan_example.cpp - span 切片操作演示</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><a href="#__codelineno-9-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><a href="#__codelineno-9-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6"></a><a href="#__codelineno-9-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7"></a><a href="#__codelineno-9-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">};</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8"></a><a href="#__codelineno-9-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9"></a><a href="#__codelineno-9-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10"></a><a href="#__codelineno-9-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Original data: &quot;</span><span class="p">;</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11"></a><a href="#__codelineno-9-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12"></a><a href="#__codelineno-9-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13"></a><a href="#__codelineno-9-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14"></a><a href="#__codelineno-9-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="c1">// first(n) - 获取前 n 个元素的视图</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15"></a><a href="#__codelineno-9-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">first_three</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">first</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16"></a><a href="#__codelineno-9-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;First 3: &quot;</span><span class="p">;</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17"></a><a href="#__codelineno-9-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">first_three</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18"></a><a href="#__codelineno-9-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19"></a><a href="#__codelineno-9-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20"></a><a href="#__codelineno-9-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="c1">// first&lt;N&gt;() - 编译期获取前 N 个元素</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21"></a><a href="#__codelineno-9-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">first_five</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">first</span><span class="o">&lt;</span><span class="mi">5</span><span class="o">&gt;</span><span class="p">();</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22"></a><a href="#__codelineno-9-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;First 5 (compile-time): &quot;</span><span class="p">;</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23"></a><a href="#__codelineno-9-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">first_five</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24"></a><a href="#__codelineno-9-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25"></a><a href="#__codelineno-9-25"><span class="linenos" data-linenos="25 "></span></a>
+</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26"></a><a href="#__codelineno-9-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="c1">// last(n) - 获取后 n 个元素的视图</span>
+</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27"></a><a href="#__codelineno-9-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">last_three</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">last</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28"></a><a href="#__codelineno-9-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Last 3: &quot;</span><span class="p">;</span>
+</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29"></a><a href="#__codelineno-9-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">last_three</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30"></a><a href="#__codelineno-9-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31"></a><a href="#__codelineno-9-31"><span class="linenos" data-linenos="31 "></span></a>
+</span><span id="__span-9-32"><a id="__codelineno-9-32" name="__codelineno-9-32"></a><a href="#__codelineno-9-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="c1">// subspan(offset, count) - 获取从 offset 开始的 count 个元素</span>
+</span><span id="__span-9-33"><a id="__codelineno-9-33" name="__codelineno-9-33"></a><a href="#__codelineno-9-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">middle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">subspan</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+</span><span id="__span-9-34"><a id="__codelineno-9-34" name="__codelineno-9-34"></a><a href="#__codelineno-9-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Subspan [3:7]: &quot;</span><span class="p">;</span>
+</span><span id="__span-9-35"><a id="__codelineno-9-35" name="__codelineno-9-35"></a><a href="#__codelineno-9-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">middle</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-36"><a id="__codelineno-9-36" name="__codelineno-9-36"></a><a href="#__codelineno-9-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-37"><a id="__codelineno-9-37" name="__codelineno-9-37"></a><a href="#__codelineno-9-37"><span class="linenos" data-linenos="37 "></span></a>
+</span><span id="__span-9-38"><a id="__codelineno-9-38" name="__codelineno-9-38"></a><a href="#__codelineno-9-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="c1">// subspan&lt;Offset, Count&gt;() - 编译期切片</span>
+</span><span id="__span-9-39"><a id="__codelineno-9-39" name="__codelineno-9-39"></a><a href="#__codelineno-9-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">middle_static</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">subspan</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="o">&gt;</span><span class="p">();</span>
+</span><span id="__span-9-40"><a id="__codelineno-9-40" name="__codelineno-9-40"></a><a href="#__codelineno-9-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Subspan &lt;2,5&gt; (compile-time): &quot;</span><span class="p">;</span>
+</span><span id="__span-9-41"><a id="__codelineno-9-41" name="__codelineno-9-41"></a><a href="#__codelineno-9-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">middle_static</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-42"><a id="__codelineno-9-42" name="__codelineno-9-42"></a><a href="#__codelineno-9-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-43"><a id="__codelineno-9-43" name="__codelineno-9-43"></a><a href="#__codelineno-9-43"><span class="linenos" data-linenos="43 "></span></a>
+</span><span id="__span-9-44"><a id="__codelineno-9-44" name="__codelineno-9-44"></a><a href="#__codelineno-9-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="c1">// 修改视图会修改原始数据</span>
+</span><span id="__span-9-45"><a id="__codelineno-9-45" name="__codelineno-9-45"></a><a href="#__codelineno-9-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="n">first_three</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">99</span><span class="p">;</span>
+</span><span id="__span-9-46"><a id="__codelineno-9-46" name="__codelineno-9-46"></a><a href="#__codelineno-9-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">After modifying first_three[0] to 99:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-9-47"><a id="__codelineno-9-47" name="__codelineno-9-47"></a><a href="#__codelineno-9-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Original data: &quot;</span><span class="p">;</span>
+</span><span id="__span-9-48"><a id="__codelineno-9-48" name="__codelineno-9-48"></a><a href="#__codelineno-9-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-9-49"><a id="__codelineno-9-49" name="__codelineno-9-49"></a><a href="#__codelineno-9-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-9-50"><a id="__codelineno-9-50" name="__codelineno-9-50"></a><a href="#__codelineno-9-50"><span class="linenos" data-linenos="50 "></span></a>
+</span><span id="__span-9-51"><a id="__codelineno-9-51" name="__codelineno-9-51"></a><a href="#__codelineno-9-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-9-52"><a id="__codelineno-9-52" name="__codelineno-9-52"></a><a href="#__codelineno-9-52"><span class="linenos" data-linenos="52 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// packet_parsing.cpp - 实际嵌入式场景：协议包解析</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><a href="#__codelineno-10-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="c1">// 模拟 CRC 校验函数</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><a href="#__codelineno-10-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="kt">bool</span><span class="w"> </span><span class="nf">crc_check</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><a href="#__codelineno-10-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="c1">// 简化：假设 CRC 总是正确</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><a href="#__codelineno-10-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">data</span><span class="p">;</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a><a href="#__codelineno-10-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">length</span><span class="p">;</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11"></a><a href="#__codelineno-10-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12"></a><a href="#__codelineno-10-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13"></a><a href="#__codelineno-10-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14"></a><a href="#__codelineno-10-14"><span class="linenos" data-linenos="14 "></span></a><span class="c1">// 解析数据包</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15"></a><a href="#__codelineno-10-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">recv_packet</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16"></a><a href="#__codelineno-10-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Received &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; bytes</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17"></a><a href="#__codelineno-10-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18"></a><a href="#__codelineno-10-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="c1">// 检查最小包长度</span>
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19"></a><a href="#__codelineno-10-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20"></a><a href="#__codelineno-10-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Packet too short</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21"></a><a href="#__codelineno-10-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="k">return</span><span class="p">;</span>
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22"></a><a href="#__codelineno-10-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23"></a><a href="#__codelineno-10-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24"></a><a href="#__codelineno-10-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="c1">// 解析头部（前4字节）</span>
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25"></a><a href="#__codelineno-10-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">header</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="n">first</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span><span id="__span-10-26"><a id="__codelineno-10-26" name="__codelineno-10-26"></a><a href="#__codelineno-10-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">msg_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span><span id="__span-10-27"><a id="__codelineno-10-27" name="__codelineno-10-27"></a><a href="#__codelineno-10-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28"></a><a href="#__codelineno-10-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+</span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29"></a><a href="#__codelineno-10-29"><span class="linenos" data-linenos="29 "></span></a>
+</span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30"></a><a href="#__codelineno-10-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Header: ID=&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">msg_id</span><span class="p">)</span>
+</span><span id="__span-10-31"><a id="__codelineno-10-31" name="__codelineno-10-31"></a><a href="#__codelineno-10-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, Flags=&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">flags</span><span class="p">)</span>
+</span><span id="__span-10-32"><a id="__codelineno-10-32" name="__codelineno-10-32"></a><a href="#__codelineno-10-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;, Length=&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-10-33"><a id="__codelineno-10-33" name="__codelineno-10-33"></a><a href="#__codelineno-10-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-10-34"><a id="__codelineno-10-34" name="__codelineno-10-34"></a><a href="#__codelineno-10-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="c1">// 检查长度字段是否合法</span>
+</span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35"></a><a href="#__codelineno-10-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-36"><a id="__codelineno-10-36" name="__codelineno-10-36"></a><a href="#__codelineno-10-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Length field exceeds buffer size</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-37"><a id="__codelineno-10-37" name="__codelineno-10-37"></a><a href="#__codelineno-10-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">        </span><span class="k">return</span><span class="p">;</span>
+</span><span id="__span-10-38"><a id="__codelineno-10-38" name="__codelineno-10-38"></a><a href="#__codelineno-10-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-39"><a id="__codelineno-10-39" name="__codelineno-10-39"></a><a href="#__codelineno-10-39"><span class="linenos" data-linenos="39 "></span></a>
+</span><span id="__span-10-40"><a id="__codelineno-10-40" name="__codelineno-10-40"></a><a href="#__codelineno-10-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 提取 payload</span>
+</span><span id="__span-10-41"><a id="__codelineno-10-41" name="__codelineno-10-41"></a><a href="#__codelineno-10-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">.</span><span class="n">subspan</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="p">);</span>
+</span><span id="__span-10-42"><a id="__codelineno-10-42" name="__codelineno-10-42"></a><a href="#__codelineno-10-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Payload: &quot;</span><span class="p">;</span>
+</span><span id="__span-10-43"><a id="__codelineno-10-43" name="__codelineno-10-43"></a><a href="#__codelineno-10-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-44"><a id="__codelineno-10-44" name="__codelineno-10-44"></a><a href="#__codelineno-10-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-10-45"><a id="__codelineno-10-45" name="__codelineno-10-45"></a><a href="#__codelineno-10-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-46"><a id="__codelineno-10-46" name="__codelineno-10-46"></a><a href="#__codelineno-10-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">dec</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-10-47"><a id="__codelineno-10-47" name="__codelineno-10-47"></a><a href="#__codelineno-10-47"><span class="linenos" data-linenos="47 "></span></a>
+</span><span id="__span-10-48"><a id="__codelineno-10-48" name="__codelineno-10-48"></a><a href="#__codelineno-10-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="c1">// CRC 校验（把 payload 当作字节流）</span>
+</span><span id="__span-10-49"><a id="__codelineno-10-49" name="__codelineno-10-49"></a><a href="#__codelineno-10-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">payload</span><span class="p">);</span>
+</span><span id="__span-10-50"><a id="__codelineno-10-50" name="__codelineno-10-50"></a><a href="#__codelineno-10-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">crc_check</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">bytes</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span><span class="w"> </span><span class="n">bytes</span><span class="p">.</span><span class="n">size</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-51"><a id="__codelineno-10-51" name="__codelineno-10-51"></a><a href="#__codelineno-10-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;CRC: OK</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-52"><a id="__codelineno-10-52" name="__codelineno-10-52"></a><a href="#__codelineno-10-52"><span class="linenos" data-linenos="52 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-53"><a id="__codelineno-10-53" name="__codelineno-10-53"></a><a href="#__codelineno-10-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;CRC: FAILED</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-54"><a id="__codelineno-10-54" name="__codelineno-10-54"></a><a href="#__codelineno-10-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-55"><a id="__codelineno-10-55" name="__codelineno-10-55"></a><a href="#__codelineno-10-55"><span class="linenos" data-linenos="55 "></span></a><span class="p">}</span>
+</span><span id="__span-10-56"><a id="__codelineno-10-56" name="__codelineno-10-56"></a><a href="#__codelineno-10-56"><span class="linenos" data-linenos="56 "></span></a>
+</span><span id="__span-10-57"><a id="__codelineno-10-57" name="__codelineno-10-57"></a><a href="#__codelineno-10-57"><span class="linenos" data-linenos="57 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-58"><a id="__codelineno-10-58" name="__codelineno-10-58"></a><a href="#__codelineno-10-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="c1">// 模拟接收到的数据包</span>
+</span><span id="__span-10-59"><a id="__codelineno-10-59" name="__codelineno-10-59"></a><a href="#__codelineno-10-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">    </span><span class="c1">// 格式: [MSG_ID][FLAGS][LEN_L][LEN_H][PAYLOAD...]</span>
+</span><span id="__span-10-60"><a id="__codelineno-10-60" name="__codelineno-10-60"></a><a href="#__codelineno-10-60"><span class="linenos" data-linenos="60 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="o">&gt;</span><span class="w"> </span><span class="n">packet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-61"><a id="__codelineno-10-61" name="__codelineno-10-61"></a><a href="#__codelineno-10-61"><span class="linenos" data-linenos="61 "></span></a><span class="w">        </span><span class="mh">0x01</span><span class="p">,</span><span class="w">        </span><span class="c1">// Message ID</span>
+</span><span id="__span-10-62"><a id="__codelineno-10-62" name="__codelineno-10-62"></a><a href="#__codelineno-10-62"><span class="linenos" data-linenos="62 "></span></a><span class="w">        </span><span class="mh">0x00</span><span class="p">,</span><span class="w">        </span><span class="c1">// Flags</span>
+</span><span id="__span-10-63"><a id="__codelineno-10-63" name="__codelineno-10-63"></a><a href="#__codelineno-10-63"><span class="linenos" data-linenos="63 "></span></a><span class="w">        </span><span class="mh">0x08</span><span class="p">,</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w">  </span><span class="c1">// Length = 8</span>
+</span><span id="__span-10-64"><a id="__codelineno-10-64" name="__codelineno-10-64"></a><a href="#__codelineno-10-64"><span class="linenos" data-linenos="64 "></span></a><span class="w">        </span><span class="c1">// Payload (8 bytes)</span>
+</span><span id="__span-10-65"><a id="__codelineno-10-65" name="__codelineno-10-65"></a><a href="#__codelineno-10-65"><span class="linenos" data-linenos="65 "></span></a><span class="w">        </span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x02</span><span class="p">,</span><span class="w"> </span><span class="mh">0x03</span><span class="p">,</span><span class="w"> </span><span class="mh">0x04</span><span class="p">,</span><span class="w"> </span><span class="mh">0x05</span><span class="p">,</span><span class="w"> </span><span class="mh">0x06</span><span class="p">,</span><span class="w"> </span><span class="mh">0x07</span><span class="p">,</span><span class="w"> </span><span class="mh">0x08</span><span class="p">,</span>
+</span><span id="__span-10-66"><a id="__codelineno-10-66" name="__codelineno-10-66"></a><a href="#__codelineno-10-66"><span class="linenos" data-linenos="66 "></span></a><span class="w">        </span><span class="c1">// Extra data (should be ignored)</span>
+</span><span id="__span-10-67"><a id="__codelineno-10-67" name="__codelineno-10-67"></a><a href="#__codelineno-10-67"><span class="linenos" data-linenos="67 "></span></a><span class="w">        </span><span class="mh">0xFF</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFF</span>
+</span><span id="__span-10-68"><a id="__codelineno-10-68" name="__codelineno-10-68"></a><a href="#__codelineno-10-68"><span class="linenos" data-linenos="68 "></span></a><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-10-69"><a id="__codelineno-10-69" name="__codelineno-10-69"></a><a href="#__codelineno-10-69"><span class="linenos" data-linenos="69 "></span></a>
+</span><span id="__span-10-70"><a id="__codelineno-10-70" name="__codelineno-10-70"></a><a href="#__codelineno-10-70"><span class="linenos" data-linenos="70 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== Parsing valid packet ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-71"><a id="__codelineno-10-71" name="__codelineno-10-71"></a><a href="#__codelineno-10-71"><span class="linenos" data-linenos="71 "></span></a><span class="w">    </span><span class="n">recv_packet</span><span class="p">(</span><span class="n">packet</span><span class="p">);</span>
+</span><span id="__span-10-72"><a id="__codelineno-10-72" name="__codelineno-10-72"></a><a href="#__codelineno-10-72"><span class="linenos" data-linenos="72 "></span></a>
+</span><span id="__span-10-73"><a id="__codelineno-10-73" name="__codelineno-10-73"></a><a href="#__codelineno-10-73"><span class="linenos" data-linenos="73 "></span></a><span class="w">    </span><span class="c1">// 测试短包</span>
+</span><span id="__span-10-74"><a id="__codelineno-10-74" name="__codelineno-10-74"></a><a href="#__codelineno-10-74"><span class="linenos" data-linenos="74 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="n">short_packet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x00</span><span class="p">};</span>
+</span><span id="__span-10-75"><a id="__codelineno-10-75" name="__codelineno-10-75"></a><a href="#__codelineno-10-75"><span class="linenos" data-linenos="75 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Parsing short packet ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-76"><a id="__codelineno-10-76" name="__codelineno-10-76"></a><a href="#__codelineno-10-76"><span class="linenos" data-linenos="76 "></span></a><span class="w">    </span><span class="n">recv_packet</span><span class="p">(</span><span class="n">short_packet</span><span class="p">);</span>
+</span><span id="__span-10-77"><a id="__codelineno-10-77" name="__codelineno-10-77"></a><a href="#__codelineno-10-77"><span class="linenos" data-linenos="77 "></span></a>
+</span><span id="__span-10-78"><a id="__codelineno-10-78" name="__codelineno-10-78"></a><a href="#__codelineno-10-78"><span class="linenos" data-linenos="78 "></span></a><span class="w">    </span><span class="c1">// 测试长度字段不匹配</span>
+</span><span id="__span-10-79"><a id="__codelineno-10-79" name="__codelineno-10-79"></a><a href="#__codelineno-10-79"><span class="linenos" data-linenos="79 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="o">&gt;</span><span class="w"> </span><span class="n">bad_length_packet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-80"><a id="__codelineno-10-80" name="__codelineno-10-80"></a><a href="#__codelineno-10-80"><span class="linenos" data-linenos="80 "></span></a><span class="w">        </span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="mh">0x20</span><span class="p">,</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w">  </span><span class="c1">// Claims length=32</span>
+</span><span id="__span-10-81"><a id="__codelineno-10-81" name="__codelineno-10-81"></a><a href="#__codelineno-10-81"><span class="linenos" data-linenos="81 "></span></a><span class="w">        </span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x02</span><span class="p">,</span><span class="w"> </span><span class="mh">0x03</span><span class="p">,</span><span class="w"> </span><span class="mh">0x04</span><span class="p">,</span><span class="w"> </span><span class="mh">0x05</span><span class="p">,</span><span class="w"> </span><span class="mh">0x06</span>
+</span><span id="__span-10-82"><a id="__codelineno-10-82" name="__codelineno-10-82"></a><a href="#__codelineno-10-82"><span class="linenos" data-linenos="82 "></span></a><span class="w">    </span><span class="p">};</span>
+</span><span id="__span-10-83"><a id="__codelineno-10-83" name="__codelineno-10-83"></a><a href="#__codelineno-10-83"><span class="linenos" data-linenos="83 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Parsing packet with bad length ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-10-84"><a id="__codelineno-10-84" name="__codelineno-10-84"></a><a href="#__codelineno-10-84"><span class="linenos" data-linenos="84 "></span></a><span class="w">    </span><span class="n">recv_packet</span><span class="p">(</span><span class="n">bad_length_packet</span><span class="p">);</span>
+</span><span id="__span-10-85"><a id="__codelineno-10-85" name="__codelineno-10-85"></a><a href="#__codelineno-10-85"><span class="linenos" data-linenos="85 "></span></a>
+</span><span id="__span-10-86"><a id="__codelineno-10-86" name="__codelineno-10-86"></a><a href="#__codelineno-10-86"><span class="linenos" data-linenos="86 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-10-87"><a id="__codelineno-10-87" name="__codelineno-10-87"></a><a href="#__codelineno-10-87"><span class="linenos" data-linenos="87 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// bytes_view.cpp - 字节视图演示 (as_bytes, as_writable_bytes)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2"></a><a href="#__codelineno-11-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3"></a><a href="#__codelineno-11-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4"></a><a href="#__codelineno-11-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5"></a><a href="#__codelineno-11-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6"></a><a href="#__codelineno-11-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7"></a><a href="#__codelineno-11-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">print_bytes</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="w"> </span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">byte</span><span class="o">&gt;</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8"></a><a href="#__codelineno-11-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;: &quot;</span><span class="p">;</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9"></a><a href="#__codelineno-11-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">bytes</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10"></a><a href="#__codelineno-11-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setw</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setfill</span><span class="p">(</span><span class="sc">&#39;0&#39;</span><span class="p">)</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11"></a><a href="#__codelineno-11-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">                  </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12"></a><a href="#__codelineno-11-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13"></a><a href="#__codelineno-11-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">dec</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14"></a><a href="#__codelineno-11-14"><span class="linenos" data-linenos="14 "></span></a><span class="p">}</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15"></a><a href="#__codelineno-11-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16"></a><a href="#__codelineno-11-16"><span class="linenos" data-linenos="16 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17"></a><a href="#__codelineno-11-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="c1">// 演示 as_bytes - 将任意类型 span 转换为字节视图（只读）</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18"></a><a href="#__codelineno-11-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x12345678</span><span class="p">,</span><span class="w"> </span><span class="mh">0x9ABCDEF0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x11223344</span><span class="p">,</span><span class="w"> </span><span class="mh">0x55667788</span><span class="p">};</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19"></a><a href="#__codelineno-11-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20"></a><a href="#__codelineno-11-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data_span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21"></a><a href="#__codelineno-11-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">byte_view</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">data_span</span><span class="p">);</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22"></a><a href="#__codelineno-11-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23"></a><a href="#__codelineno-11-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Original uint32_t values:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24"></a><a href="#__codelineno-11-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25"></a><a href="#__codelineno-11-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;0x&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">hex</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26"></a><a href="#__codelineno-11-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27"></a><a href="#__codelineno-11-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">dec</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28"></a><a href="#__codelineno-11-28"><span class="linenos" data-linenos="28 "></span></a>
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29"></a><a href="#__codelineno-11-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;As bytes (little-endian):</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30"></a><a href="#__codelineno-11-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="s">&quot;Byte view&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">byte_view</span><span class="p">);</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31"></a><a href="#__codelineno-11-31"><span class="linenos" data-linenos="31 "></span></a>
+</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32"></a><a href="#__codelineno-11-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="c1">// 演示 as_writable_bytes - 可写字节视图</span>
+</span><span id="__span-11-33"><a id="__codelineno-11-33" name="__codelineno-11-33"></a><a href="#__codelineno-11-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{};</span>
+</span><span id="__span-11-34"><a id="__codelineno-11-34" name="__codelineno-11-34"></a><a href="#__codelineno-11-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer_span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+</span><span id="__span-11-35"><a id="__codelineno-11-35" name="__codelineno-11-35"></a><a href="#__codelineno-11-35"><span class="linenos" data-linenos="35 "></span></a>
+</span><span id="__span-11-36"><a id="__codelineno-11-36" name="__codelineno-11-36"></a><a href="#__codelineno-11-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">writable_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_writable_bytes</span><span class="p">(</span><span class="n">buffer_span</span><span class="p">);</span>
+</span><span id="__span-11-37"><a id="__codelineno-11-37" name="__codelineno-11-37"></a><a href="#__codelineno-11-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Before writing:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-38"><a id="__codelineno-11-38" name="__codelineno-11-38"></a><a href="#__codelineno-11-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="s">&quot;Buffer&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">buffer_span</span><span class="p">));</span>
+</span><span id="__span-11-39"><a id="__codelineno-11-39" name="__codelineno-11-39"></a><a href="#__codelineno-11-39"><span class="linenos" data-linenos="39 "></span></a>
+</span><span id="__span-11-40"><a id="__codelineno-11-40" name="__codelineno-11-40"></a><a href="#__codelineno-11-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 写入一些字节</span>
+</span><span id="__span-11-41"><a id="__codelineno-11-41" name="__codelineno-11-41"></a><a href="#__codelineno-11-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">writable_bytes</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-11-42"><a id="__codelineno-11-42" name="__codelineno-11-42"></a><a href="#__codelineno-11-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">        </span><span class="n">writable_bytes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">byte</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</span><span id="__span-11-43"><a id="__codelineno-11-43" name="__codelineno-11-43"></a><a href="#__codelineno-11-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-11-44"><a id="__codelineno-11-44" name="__codelineno-11-44"></a><a href="#__codelineno-11-44"><span class="linenos" data-linenos="44 "></span></a>
+</span><span id="__span-11-45"><a id="__codelineno-11-45" name="__codelineno-11-45"></a><a href="#__codelineno-11-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">After writing:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-46"><a id="__codelineno-11-46" name="__codelineno-11-46"></a><a href="#__codelineno-11-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="s">&quot;Buffer&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">buffer_span</span><span class="p">));</span>
+</span><span id="__span-11-47"><a id="__codelineno-11-47" name="__codelineno-11-47"></a><a href="#__codelineno-11-47"><span class="linenos" data-linenos="47 "></span></a>
+</span><span id="__span-11-48"><a id="__codelineno-11-48" name="__codelineno-11-48"></a><a href="#__codelineno-11-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="c1">// 演示从 uint8_t span 转换</span>
+</span><span id="__span-11-49"><a id="__codelineno-11-49" name="__codelineno-11-49"></a><a href="#__codelineno-11-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="o">&gt;</span><span class="w"> </span><span class="n">raw_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mh">0x10</span><span class="p">,</span><span class="w"> </span><span class="mh">0x20</span><span class="p">,</span><span class="w"> </span><span class="mh">0x30</span><span class="p">,</span><span class="w"> </span><span class="mh">0x40</span><span class="p">,</span><span class="w"> </span><span class="mh">0x50</span><span class="p">};</span>
+</span><span id="__span-11-50"><a id="__codelineno-11-50" name="__codelineno-11-50"></a><a href="#__codelineno-11-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">raw_span</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">raw_data</span><span class="p">;</span>
+</span><span id="__span-11-51"><a id="__codelineno-11-51" name="__codelineno-11-51"></a><a href="#__codelineno-11-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">raw_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">as_bytes</span><span class="p">(</span><span class="n">raw_span</span><span class="p">);</span>
+</span><span id="__span-11-52"><a id="__codelineno-11-52" name="__codelineno-11-52"></a><a href="#__codelineno-11-52"><span class="linenos" data-linenos="52 "></span></a>
+</span><span id="__span-11-53"><a id="__codelineno-11-53" name="__codelineno-11-53"></a><a href="#__codelineno-11-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Raw uint8_t data as bytes:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-54"><a id="__codelineno-11-54" name="__codelineno-11-54"></a><a href="#__codelineno-11-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="n">print_bytes</span><span class="p">(</span><span class="s">&quot;Raw&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">raw_bytes</span><span class="p">);</span>
+</span><span id="__span-11-55"><a id="__codelineno-11-55" name="__codelineno-11-55"></a><a href="#__codelineno-11-55"><span class="linenos" data-linenos="55 "></span></a>
+</span><span id="__span-11-56"><a id="__codelineno-11-56" name="__codelineno-11-56"></a><a href="#__codelineno-11-56"><span class="linenos" data-linenos="56 "></span></a><span class="w">    </span><span class="c1">// 注意：对于已经是 uint8_t 的 span，as_bytes 不会改变表示</span>
+</span><span id="__span-11-57"><a id="__codelineno-11-57" name="__codelineno-11-57"></a><a href="#__codelineno-11-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Note: For uint8_t span, as_bytes() doesn&#39;t change representation</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-11-58"><a id="__codelineno-11-58" name="__codelineno-11-58"></a><a href="#__codelineno-11-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;raw_span.size(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">raw_span</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-11-59"><a id="__codelineno-11-59" name="__codelineno-11-59"></a><a href="#__codelineno-11-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;raw_bytes.size(): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">raw_bytes</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-11-60"><a id="__codelineno-11-60" name="__codelineno-11-60"></a><a href="#__codelineno-11-60"><span class="linenos" data-linenos="60 "></span></a>
+</span><span id="__span-11-61"><a id="__codelineno-11-61" name="__codelineno-11-61"></a><a href="#__codelineno-11-61"><span class="linenos" data-linenos="61 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-11-62"><a id="__codelineno-11-62" name="__codelineno-11-62"></a><a href="#__codelineno-11-62"><span class="linenos" data-linenos="62 "></span></a><span class="p">}</span>
+</span></code></pre></div>
+
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// function_parameter.cpp - 函数参数最佳实践演示</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;span&gt;</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><a href="#__codelineno-12-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5"></a><a href="#__codelineno-12-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6"></a><a href="#__codelineno-12-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7"></a><a href="#__codelineno-12-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1">// 推荐方式：明确表达不修改数据的意图</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8"></a><a href="#__codelineno-12-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9"></a><a href="#__codelineno-12-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Processing &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; elements: &quot;</span><span class="p">;</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10"></a><a href="#__codelineno-12-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11"></a><a href="#__codelineno-12-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12"></a><a href="#__codelineno-12-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13"></a><a href="#__codelineno-12-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14"></a><a href="#__codelineno-12-14"><span class="linenos" data-linenos="14 "></span></a><span class="p">}</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15"></a><a href="#__codelineno-12-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16"></a><a href="#__codelineno-12-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1">// 明确表达会修改数据的意图</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17"></a><a href="#__codelineno-12-17"><span class="linenos" data-linenos="17 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">mutate</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18"></a><a href="#__codelineno-12-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Mutating &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; elements</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19"></a><a href="#__codelineno-12-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20"></a><a href="#__codelineno-12-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">v</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21"></a><a href="#__codelineno-12-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-12-22"><a id="__codelineno-12-22" name="__codelineno-12-22"></a><a href="#__codelineno-12-22"><span class="linenos" data-linenos="22 "></span></a><span class="p">}</span>
+</span><span id="__span-12-23"><a id="__codelineno-12-23" name="__codelineno-12-23"></a><a href="#__codelineno-12-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-12-24"><a id="__codelineno-12-24" name="__codelineno-12-24"></a><a href="#__codelineno-12-24"><span class="linenos" data-linenos="24 "></span></a><span class="c1">// 对比：传统 C 风格 API（不推荐）</span>
+</span><span id="__span-12-25"><a id="__codelineno-12-25" name="__codelineno-12-25"></a><a href="#__codelineno-12-25"><span class="linenos" data-linenos="25 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">old_c_style_api</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">length</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-26"><a id="__codelineno-12-26" name="__codelineno-12-26"></a><a href="#__codelineno-12-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Old style: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; elements: &quot;</span><span class="p">;</span>
+</span><span id="__span-12-27"><a id="__codelineno-12-27" name="__codelineno-12-27"></a><a href="#__codelineno-12-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-28"><a id="__codelineno-12-28" name="__codelineno-12-28"></a><a href="#__codelineno-12-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-12-29"><a id="__codelineno-12-29" name="__codelineno-12-29"></a><a href="#__codelineno-12-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-12-30"><a id="__codelineno-12-30" name="__codelineno-12-30"></a><a href="#__codelineno-12-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-12-31"><a id="__codelineno-12-31" name="__codelineno-12-31"></a><a href="#__codelineno-12-31"><span class="linenos" data-linenos="31 "></span></a><span class="p">}</span>
+</span><span id="__span-12-32"><a id="__codelineno-12-32" name="__codelineno-12-32"></a><a href="#__codelineno-12-32"><span class="linenos" data-linenos="32 "></span></a>
+</span><span id="__span-12-33"><a id="__codelineno-12-33" name="__codelineno-12-33"></a><a href="#__codelineno-12-33"><span class="linenos" data-linenos="33 "></span></a><span class="c1">// 对比：模板泛型（会导致代码膨胀）</span>
+</span><span id="__span-12-34"><a id="__codelineno-12-34" name="__codelineno-12-34"></a><a href="#__codelineno-12-34"><span class="linenos" data-linenos="34 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">Container</span><span class="o">&gt;</span>
+</span><span id="__span-12-35"><a id="__codelineno-12-35" name="__codelineno-12-35"></a><a href="#__codelineno-12-35"><span class="linenos" data-linenos="35 "></span></a><span class="kt">void</span><span class="w"> </span><span class="n">template_api</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Container</span><span class="o">&amp;</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-36"><a id="__codelineno-12-36" name="__codelineno-12-36"></a><a href="#__codelineno-12-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Template API: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; elements: &quot;</span><span class="p">;</span>
+</span><span id="__span-12-37"><a id="__codelineno-12-37" name="__codelineno-12-37"></a><a href="#__codelineno-12-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-38"><a id="__codelineno-12-38" name="__codelineno-12-38"></a><a href="#__codelineno-12-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
+</span><span id="__span-12-39"><a id="__codelineno-12-39" name="__codelineno-12-39"></a><a href="#__codelineno-12-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-12-40"><a id="__codelineno-12-40" name="__codelineno-12-40"></a><a href="#__codelineno-12-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-12-41"><a id="__codelineno-12-41" name="__codelineno-12-41"></a><a href="#__codelineno-12-41"><span class="linenos" data-linenos="41 "></span></a><span class="p">}</span>
+</span><span id="__span-12-42"><a id="__codelineno-12-42" name="__codelineno-12-42"></a><a href="#__codelineno-12-42"><span class="linenos" data-linenos="42 "></span></a>
+</span><span id="__span-12-43"><a id="__codelineno-12-43" name="__codelineno-12-43"></a><a href="#__codelineno-12-43"><span class="linenos" data-linenos="43 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-12-44"><a id="__codelineno-12-44" name="__codelineno-12-44"></a><a href="#__codelineno-12-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">vec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">};</span>
+</span><span id="__span-12-45"><a id="__codelineno-12-45" name="__codelineno-12-45"></a><a href="#__codelineno-12-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="o">&gt;</span><span class="w"> </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">40</span><span class="p">};</span>
+</span><span id="__span-12-46"><a id="__codelineno-12-46" name="__codelineno-12-46"></a><a href="#__codelineno-12-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">c_array</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">};</span>
+</span><span id="__span-12-47"><a id="__codelineno-12-47" name="__codelineno-12-47"></a><a href="#__codelineno-12-47"><span class="linenos" data-linenos="47 "></span></a>
+</span><span id="__span-12-48"><a id="__codelineno-12-48" name="__codelineno-12-48"></a><a href="#__codelineno-12-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== Using std::span API (recommended) ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-49"><a id="__codelineno-12-49" name="__codelineno-12-49"></a><a href="#__codelineno-12-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">vec</span><span class="p">);</span>
+</span><span id="__span-12-50"><a id="__codelineno-12-50" name="__codelineno-12-50"></a><a href="#__codelineno-12-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">arr</span><span class="p">);</span>
+</span><span id="__span-12-51"><a id="__codelineno-12-51" name="__codelineno-12-51"></a><a href="#__codelineno-12-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">c_array</span><span class="p">);</span>
+</span><span id="__span-12-52"><a id="__codelineno-12-52" name="__codelineno-12-52"></a><a href="#__codelineno-12-52"><span class="linenos" data-linenos="52 "></span></a>
+</span><span id="__span-12-53"><a id="__codelineno-12-53" name="__codelineno-12-53"></a><a href="#__codelineno-12-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== After mutation ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-54"><a id="__codelineno-12-54" name="__codelineno-12-54"></a><a href="#__codelineno-12-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="n">mutate</span><span class="p">(</span><span class="n">vec</span><span class="p">);</span>
+</span><span id="__span-12-55"><a id="__codelineno-12-55" name="__codelineno-12-55"></a><a href="#__codelineno-12-55"><span class="linenos" data-linenos="55 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">vec</span><span class="p">);</span>
+</span><span id="__span-12-56"><a id="__codelineno-12-56" name="__codelineno-12-56"></a><a href="#__codelineno-12-56"><span class="linenos" data-linenos="56 "></span></a>
+</span><span id="__span-12-57"><a id="__codelineno-12-57" name="__codelineno-12-57"></a><a href="#__codelineno-12-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Using old C style API ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-58"><a id="__codelineno-12-58" name="__codelineno-12-58"></a><a href="#__codelineno-12-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="n">old_c_style_api</span><span class="p">(</span><span class="n">vec</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">vec</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+</span><span id="__span-12-59"><a id="__codelineno-12-59" name="__codelineno-12-59"></a><a href="#__codelineno-12-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">    </span><span class="n">old_c_style_api</span><span class="p">(</span><span class="n">arr</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">arr</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+</span><span id="__span-12-60"><a id="__codelineno-12-60" name="__codelineno-12-60"></a><a href="#__codelineno-12-60"><span class="linenos" data-linenos="60 "></span></a>
+</span><span id="__span-12-61"><a id="__codelineno-12-61" name="__codelineno-12-61"></a><a href="#__codelineno-12-61"><span class="linenos" data-linenos="61 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Using template API (code bloat) ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-62"><a id="__codelineno-12-62" name="__codelineno-12-62"></a><a href="#__codelineno-12-62"><span class="linenos" data-linenos="62 "></span></a><span class="w">    </span><span class="n">template_api</span><span class="p">(</span><span class="n">vec</span><span class="p">);</span>
+</span><span id="__span-12-63"><a id="__codelineno-12-63" name="__codelineno-12-63"></a><a href="#__codelineno-12-63"><span class="linenos" data-linenos="63 "></span></a><span class="w">    </span><span class="n">template_api</span><span class="p">(</span><span class="n">arr</span><span class="p">);</span>
+</span><span id="__span-12-64"><a id="__codelineno-12-64" name="__codelineno-12-64"></a><a href="#__codelineno-12-64"><span class="linenos" data-linenos="64 "></span></a>
+</span><span id="__span-12-65"><a id="__codelineno-12-65" name="__codelineno-12-65"></a><a href="#__codelineno-12-65"><span class="linenos" data-linenos="65 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Advantages of std::span ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-66"><a id="__codelineno-12-66" name="__codelineno-12-66"></a><a href="#__codelineno-12-66"><span class="linenos" data-linenos="66 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;- Single function implementation (no code bloat)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-67"><a id="__codelineno-12-67" name="__codelineno-12-67"></a><a href="#__codelineno-12-67"><span class="linenos" data-linenos="67 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;- Type and size information bundled together</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-68"><a id="__codelineno-12-68" name="__codelineno-12-68"></a><a href="#__codelineno-12-68"><span class="linenos" data-linenos="68 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;- No copying of data</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-69"><a id="__codelineno-12-69" name="__codelineno-12-69"></a><a href="#__codelineno-12-69"><span class="linenos" data-linenos="69 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;- Clear const-correctness</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-12-70"><a id="__codelineno-12-70" name="__codelineno-12-70"></a><a href="#__codelineno-12-70"><span class="linenos" data-linenos="70 "></span></a>
+</span><span id="__span-12-71"><a id="__codelineno-12-71" name="__codelineno-12-71"></a><a href="#__codelineno-12-71"><span class="linenos" data-linenos="71 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-12-72"><a id="__codelineno-12-72" name="__codelineno-12-72"></a><a href="#__codelineno-12-72"><span class="linenos" data-linenos="72 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
@@ -4849,7 +4937,7 @@ int main() {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

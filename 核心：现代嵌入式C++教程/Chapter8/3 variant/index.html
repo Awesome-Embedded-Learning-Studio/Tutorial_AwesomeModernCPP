@@ -2644,6 +2644,72 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#为什么优于裸-union" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么优于裸 union
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#推荐访问方式stdvisit-与重载集合" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        推荐访问方式：std::visit 与重载集合
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见误区与坑务必读" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见误区与坑（务必读）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#进阶技巧" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        进阶技巧
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#把-stdvariant-用到项目里去" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        把 std::variant 用到项目里去
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stdvariant-与-stdanyboostvariant-的比较" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        std::variant 与 std::any、boost::variant 的比较
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4239,21 +4305,21 @@
       
       
       
-        <a href="../../../tags/#tag:c17" class="md-tag">C++17</a>
+        <span class="md-tag">C++17</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:variant" class="md-tag">variant</a>
+        <span class="md-tag">variant</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:类型安全" class="md-tag">类型安全</a>
+        <span class="md-tag">类型安全</span>
       
     
   </nav>
@@ -4268,25 +4334,25 @@
 <p><code>std::variant&lt;Ts...&gt;</code> 表示"在一时刻仅持有 <code>Ts...</code> 中某一个类型"的类型安全联合体。它记录当前持有哪一个类型，构造/析构正确处理，并且提供访问、检查和访问者（visitor）机制。</p>
 <hr />
 <h2 id="最简单的例子">最简单的例子<a class="headerlink" href="#最简单的例子" title="链接到此章节">&para;</a></h2>
-<p>```cpp</p>
-<h1 id="include">include <variant><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include_1">include <string><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<h1 id="include_2">include <iostream><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
-<p>int main() {
-    std::variant<int, std::string> v;      // 默认构造，持有 int（索引0）
-    v = 42;                                // 现在持有 int
-    std::cout &lt;&lt; std::get<int>(v) &lt;&lt; "\n"; // 42</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>v = std::string(&quot;hello variant&quot;);     // 现在持有 std::string
-<span class="linenos" data-linenos="2 "></span>// 安全访问：
-<span class="linenos" data-linenos="3 "></span>if (std::holds_alternative&lt;std::string&gt;(v)) {
-<span class="linenos" data-linenos="4 "></span>    std::cout &lt;&lt; std::get&lt;std::string&gt;(v) &lt;&lt; &quot;\n&quot;;
-<span class="linenos" data-linenos="5 "></span>}
-<span class="linenos" data-linenos="6 "></span>
-<span class="linenos" data-linenos="7 "></span>// 推荐方式：使用 std::visit（统一处理所有可能类型）
-<span class="linenos" data-linenos="8 "></span>std::visit([](auto &amp;&amp;x) { std::cout &lt;&lt; x &lt;&lt; &quot;\n&quot;; }, v);
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">;</span><span class="w">      </span><span class="c1">// 默认构造，持有 int（索引0）</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span><span class="w">                                </span><span class="c1">// 现在持有 int</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="c1">// 42</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;hello variant&quot;</span><span class="p">);</span><span class="w">     </span><span class="c1">// 现在持有 std::string</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="c1">// 安全访问：</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">holds_alternative</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="c1">// 推荐方式：使用 std::visit（统一处理所有可能类型）</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">([](</span><span class="k">auto</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <ul>
 <li>默认构造会构造第一个备选类型（上例中是 <code>int</code>）。</li>
 <li><code>std::get&lt;T&gt;(v)</code>：尝试以 <code>T</code> 访问，若 <code>v</code> 当前不是 <code>T</code>，会抛 <code>std::bad_variant_access</code>。</li>
@@ -4299,21 +4365,22 @@
 <hr />
 <h2 id="推荐访问方式stdvisit-与重载集合">推荐访问方式：<code>std::visit</code> 与重载集合<a class="headerlink" href="#推荐访问方式stdvisit-与重载集合" title="链接到此章节">&para;</a></h2>
 <p><code>std::visit</code> 是 <code>variant</code> 的中心舞台。要同时处理多种类型，一个常见用法是利用"重载集"技巧来把多个 lambda 拼成一个可调用对象：</p>
-<p>```cpp</p>
-<h1 id="include_3">include <variant><a class="headerlink" href="#include_3" title="链接到此章节">&para;</a></h1>
-<h1 id="include_4">include <iostream><a class="headerlink" href="#include_4" title="链接到此章节">&para;</a></h1>
-<h1 id="include_5">include <string><a class="headerlink" href="#include_5" title="链接到此章节">&para;</a></h1>
-<p>template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -&gt; overloaded<Ts...>; // C++17 方便的模板推导</p>
-<p>int main() {
-    std::variant<int, double, std::string> v = 3.14;
-    std::visit(overloaded{
-        <a href="int i"></a> { std::cout &lt;&lt; "int: " &lt;&lt; i &lt;&lt; "\n"; },
-        <a href="double d"></a> { std::cout &lt;&lt; "double: " &lt;&lt; d &lt;&lt; "\n"; },
-        <a href="const std::string &amp;s"></a> { std::cout &lt;&lt; "string: " &lt;&lt; s &lt;&lt; "\n"; }
-    }, v);
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">overloaded</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Ts</span><span class="p">...</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Ts</span><span class="o">::</span><span class="k">operator</span><span class="p">()...;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span><span class="w"> </span><span class="n">overloaded</span><span class="p">(</span><span class="n">Ts</span><span class="p">...)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">overloaded</span><span class="o">&lt;</span><span class="n">Ts</span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">// C++17 方便的模板推导</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.14</span><span class="p">;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">double</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;double: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>好处是清晰、类型安全，编译器会在你漏写某个类型时给出提示（视情况而定），读代码的人也能一眼看出每个分支要干什么。</p>
 <hr />
 <h2 id="常见误区与坑务必读">常见误区与坑（务必读）<a class="headerlink" href="#常见误区与坑务必读" title="链接到此章节">&para;</a></h2>
@@ -4328,10 +4395,10 @@ template<class... Ts> overloaded(Ts...) -&gt; overloaded<Ts...>; // C++17 方便
 <p><strong>不能直接做递归 <code>variant</code></strong> —— <code>std::variant&lt;int, std::variant&lt;...&gt;&gt;</code> 会引起不完整类型问题。用 <code>std::unique_ptr</code> 或 <code>std::shared_ptr</code> 包装递归类型：</p>
 </li>
 </ol>
-<p><code>cpp
-   struct Node {
-       std::variant&lt;int, std::unique_ptr&lt;Node&gt;&gt; next;
-   };</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Node</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">next</span><span class="p">;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <ol>
 <li>
 <p><strong>引用类型问题</strong> —— <code>std::variant&lt;int&amp;, double&amp;&gt;</code> 是可写的但容易错。通常用 <code>std::reference_wrapper&lt;T&gt;</code> 或保存指针更明确。</p>
@@ -4356,23 +4423,25 @@ template<class... Ts> overloaded(Ts...) -&gt; overloaded<Ts...>; // C++17 方便
 <hr />
 <h2 id="把-stdvariant-用到项目里去">把 <code>std::variant</code> 用到项目里去<a class="headerlink" href="#把-stdvariant-用到项目里去" title="链接到此章节">&para;</a></h2>
 <p>假设你在处理一个消息队列，消息有三种：心跳（<code>Heartbeat</code>）、文本（<code>Text</code>），和二进制（<code>Blob</code>）。<code>std::variant</code> 非常适合：</p>
-<p>```cpp</p>
-<h1 id="include_6">include <variant><a class="headerlink" href="#include_6" title="链接到此章节">&para;</a></h1>
-<h1 id="include_7">include <string><a class="headerlink" href="#include_7" title="链接到此章节">&para;</a></h1>
-<h1 id="include_8">include <vector><a class="headerlink" href="#include_8" title="链接到此章节">&para;</a></h1>
-<h1 id="include_9">include <iostream><a class="headerlink" href="#include_9" title="链接到此章节">&para;</a></h1>
-<p>struct Heartbeat { int id; };
-struct Text { std::string s; };
-struct Blob { std::vector<uint8_t> data; };</p>
-<p>using Message = std::variant<Heartbeat, Text, Blob>;</p>
-<p>void process(Message const&amp; m) {
-    std::visit(overloaded{
-        <a href="Heartbeat const&amp; h"></a> { std::cout &lt;&lt; "HB " &lt;&lt; h.id &lt;&lt; "\n"; },
-        <a href="Text const&amp; t"></a>      { std::cout &lt;&lt; "Text: " &lt;&lt; t.s &lt;&lt; "\n"; },
-        <a href="Blob const&amp; b"></a>      { std::cout &lt;&lt; "Blob size: " &lt;&lt; b.data.size() &lt;&lt; "\n"; }
-    }, m);
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Heartbeat</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Text</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">s</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Blob</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">using</span><span class="w"> </span><span class="n">Message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">Heartbeat</span><span class="p">,</span><span class="w"> </span><span class="n">Text</span><span class="p">,</span><span class="w"> </span><span class="n">Blob</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><a href="#__codelineno-3-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><a href="#__codelineno-3-12"><span class="linenos" data-linenos="12 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">Message</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><a href="#__codelineno-3-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14"></a><a href="#__codelineno-3-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">        </span><span class="p">[](</span><span class="n">Heartbeat</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;HB &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">h</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15"></a><a href="#__codelineno-3-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="p">[](</span><span class="n">Text</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Text: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16"></a><a href="#__codelineno-3-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="p">[](</span><span class="n">Blob</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Blob size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17"></a><a href="#__codelineno-3-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">m</span><span class="p">);</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18"></a><a href="#__codelineno-3-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>优势是清晰、类型安全；如果增加一种消息类型，你需要在 <code>visit</code> 处显式处理（这通常是好事）。</p>
 <hr />
 <h2 id="stdvariant-与-stdanyboostvariant-的比较"><code>std::variant</code> 与 <code>std::any</code>、<code>boost::variant</code> 的比较<a class="headerlink" href="#stdvariant-与-stdanyboostvariant-的比较" title="链接到此章节">&para;</a></h2>
@@ -4384,159 +4453,153 @@ struct Blob { std::vector<uint8_t> data; };</p>
 <details>
 <summary>查看完整可编译示例</summary>
 
-```cpp
-// variant_basics.cpp
-// std::variant 基本用法示例
-
-#include <variant>
-#include <string>
-#include <iostream>
-
-int main() {
-    std::cout << "=== std::variant Basics ===\n\n";
-
-    // 创建 variant，默认持有第一个类型（int，值为 0）
-    std::variant<int, std::string> v;
-    std::cout << "Default variant holds int: " << std::get<int>(v) << "\n";
-
-    // 赋值为 int
-    v = 42;
-    std::cout << "Assigned int: " << std::get<int>(v) << "\n";
-
-    // 赋值为 string
-    v = std::string("hello variant");
-    std::cout << "Assigned string: " << std::get<std::string>(v) << "\n";
-
-    // 安全访问：检查类型
-    if (std::holds_alternative<std::string>(v)) {
-        std::cout << "Currently holds string: " << std::get<std::string>(v) << "\n";
-    }
-
-    // 使用 std::visit 访问
-    std::cout << "\n=== std::visit ===\n";
-    std::visit([](auto &&x) {
-        std::cout << "visit: " << x << "\n";
-    }, v);
-
-    // index() 返回当前类型的索引
-    std::cout << "Current index: " << v.index() << "\n";
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// variant_basics.cpp</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// std::variant 基本用法示例</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== std::variant Basics ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="c1">// 创建 variant，默认持有第一个类型（int，值为 0）</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">;</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Default variant holds int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="c1">// 赋值为 int</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Assigned int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="c1">// 赋值为 string</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;hello variant&quot;</span><span class="p">);</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Assigned string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22"></a><a href="#__codelineno-4-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23"></a><a href="#__codelineno-4-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="c1">// 安全访问：检查类型</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24"></a><a href="#__codelineno-4-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">holds_alternative</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25"></a><a href="#__codelineno-4-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Currently holds string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26"></a><a href="#__codelineno-4-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27"></a><a href="#__codelineno-4-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28"></a><a href="#__codelineno-4-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="c1">// 使用 std::visit 访问</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29"></a><a href="#__codelineno-4-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== std::visit ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30"></a><a href="#__codelineno-4-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">([](</span><span class="k">auto</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31"></a><a href="#__codelineno-4-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;visit: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32"></a><a href="#__codelineno-4-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33"></a><a href="#__codelineno-4-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34"></a><a href="#__codelineno-4-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="c1">// index() 返回当前类型的索引</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35"></a><a href="#__codelineno-4-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Current index: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">index</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36"></a><a href="#__codelineno-4-36"><span class="linenos" data-linenos="36 "></span></a>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37"></a><a href="#__codelineno-4-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38"></a><a href="#__codelineno-4-38"><span class="linenos" data-linenos="38 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
 <details>
 <summary>查看 std::visit 完整示例</summary>
 
-```cpp
-// variant_visit.cpp
-// std::visit 与重载集合示例
-
-#include <variant>
-#include <iostream>
-#include <string>
-
-// 重载集合技巧
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-
-template<class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
-int main() {
-    std::cout << "=== std::visit with Overloaded ===\n\n";
-
-    std::variant<int, double, std::string> v = 3.14;
-
-    std::cout << "Holding double:\n";
-    std::visit(overloaded{
-        [](int i) { std::cout << "  int: " << i << "\n"; },
-        [](double d) { std::cout << "  double: " << d << "\n"; },
-        [](const std::string &s) { std::cout << "  string: " << s << "\n"; }
-    }, v);
-
-    v = 42;
-    std::cout << "\nHolding int:\n";
-    std::visit(overloaded{
-        [](int i) { std::cout << "  int: " << i << "\n"; },
-        [](double d) { std::cout << "  double: " << d << "\n"; },
-        [](const std::string &s) { std::cout << "  string: " << s << "\n"; }
-    }, v);
-
-    v = std::string("hello");
-    std::cout << "\nHolding string:\n";
-    std::visit(overloaded{
-        [](int i) { std::cout << "  int: " << i << "\n"; },
-        [](double d) { std::cout << "  double: " << d << "\n"; },
-        [](const std::string &s) { std::cout << "  string: " << s << "\n"; }
-    }, v);
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// variant_visit.cpp</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// std::visit 与重载集合示例</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// 重载集合技巧</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">overloaded</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Ts</span><span class="p">...</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Ts</span><span class="o">::</span><span class="k">operator</span><span class="p">()...;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">overloaded</span><span class="p">(</span><span class="n">Ts</span><span class="p">...)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">overloaded</span><span class="o">&lt;</span><span class="n">Ts</span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16"></a><a href="#__codelineno-5-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== std::visit with Overloaded ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17"></a><a href="#__codelineno-5-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18"></a><a href="#__codelineno-5-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.14</span><span class="p">;</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19"></a><a href="#__codelineno-5-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20"></a><a href="#__codelineno-5-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Holding double:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21"></a><a href="#__codelineno-5-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22"></a><a href="#__codelineno-5-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23"></a><a href="#__codelineno-5-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">double</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  double: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24"></a><a href="#__codelineno-5-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25"></a><a href="#__codelineno-5-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26"></a><a href="#__codelineno-5-26"><span class="linenos" data-linenos="26 "></span></a>
+</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27"></a><a href="#__codelineno-5-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span>
+</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28"></a><a href="#__codelineno-5-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Holding int:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29"></a><a href="#__codelineno-5-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30"></a><a href="#__codelineno-5-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31"></a><a href="#__codelineno-5-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">double</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  double: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32"></a><a href="#__codelineno-5-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33"></a><a href="#__codelineno-5-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34"></a><a href="#__codelineno-5-34"><span class="linenos" data-linenos="34 "></span></a>
+</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35"></a><a href="#__codelineno-5-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36"></a><a href="#__codelineno-5-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Holding string:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37"></a><a href="#__codelineno-5-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38"></a><a href="#__codelineno-5-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-39"><a id="__codelineno-5-39" name="__codelineno-5-39"></a><a href="#__codelineno-5-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">        </span><span class="p">[](</span><span class="kt">double</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  double: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-5-40"><a id="__codelineno-5-40" name="__codelineno-5-40"></a><a href="#__codelineno-5-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-41"><a id="__codelineno-5-41" name="__codelineno-5-41"></a><a href="#__codelineno-5-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">v</span><span class="p">);</span>
+</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42"></a><a href="#__codelineno-5-42"><span class="linenos" data-linenos="42 "></span></a>
+</span><span id="__span-5-43"><a id="__codelineno-5-43" name="__codelineno-5-43"></a><a href="#__codelineno-5-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-5-44"><a id="__codelineno-5-44" name="__codelineno-5-44"></a><a href="#__codelineno-5-44"><span class="linenos" data-linenos="44 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
 <details>
 <summary>查看消息队列完整示例</summary>
 
-```cpp
-// variant_message.cpp
-// 使用 variant 实现消息队列示例
-
-#include <variant>
-#include <string>
-#include <vector>
-#include <iostream>
-
-// 消息类型定义
-struct Heartbeat { int id; };
-struct Text { std::string s; };
-struct Blob { std::vector<uint8_t> data; };
-
-using Message = std::variant<Heartbeat, Text, Blob>;
-
-// 重载集合
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
-// 处理消息
-void process(const Message& m) {
-    std::cout << "Processing: ";
-    std::visit(overloaded{
-        [](const Heartbeat& h) { std::cout << "HB " << h.id << "\n"; },
-        [](const Text& t)      { std::cout << "Text: " << t.s << "\n"; },
-        [](const Blob& b)      { std::cout << "Blob size: " << b.data.size() << " bytes\n"; }
-    }, m);
-}
-
-int main() {
-    std::cout << "=== Message Queue Example ===\n\n";
-
-    // 创建不同类型的消息
-    Message msg1 = Heartbeat{42};
-    Message msg2 = Text{"Hello, world!"};
-    Message msg3 = Blob{std::vector<uint8_t>{0x01, 0x02, 0x03}};
-
-    // 处理消息
-    process(msg1);
-    process(msg2);
-    process(msg3);
-
-    // 演示 in-place 构造
-    Message msg4 = std::in_place_type<Text, 10, 'x'; // "xxxxxxxxxx"
-    process(msg4);
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// variant_message.cpp</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// 使用 variant 实现消息队列示例</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1">// 消息类型定义</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Heartbeat</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Text</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">s</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Blob</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="k">using</span><span class="w"> </span><span class="n">Message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">Heartbeat</span><span class="p">,</span><span class="w"> </span><span class="n">Text</span><span class="p">,</span><span class="w"> </span><span class="n">Blob</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1">// 重载集合</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18"></a><a href="#__codelineno-6-18"><span class="linenos" data-linenos="18 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">overloaded</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Ts</span><span class="p">...</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">Ts</span><span class="o">::</span><span class="k">operator</span><span class="p">()...;</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19"></a><a href="#__codelineno-6-19"><span class="linenos" data-linenos="19 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="p">...</span><span class="w"> </span><span class="n">Ts</span><span class="o">&gt;</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20"></a><a href="#__codelineno-6-20"><span class="linenos" data-linenos="20 "></span></a><span class="n">overloaded</span><span class="p">(</span><span class="n">Ts</span><span class="p">...)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">overloaded</span><span class="o">&lt;</span><span class="n">Ts</span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21"></a><a href="#__codelineno-6-21"><span class="linenos" data-linenos="21 "></span></a>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22"></a><a href="#__codelineno-6-22"><span class="linenos" data-linenos="22 "></span></a><span class="c1">// 处理消息</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23"></a><a href="#__codelineno-6-23"><span class="linenos" data-linenos="23 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Message</span><span class="o">&amp;</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24"></a><a href="#__codelineno-6-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Processing: &quot;</span><span class="p">;</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25"></a><a href="#__codelineno-6-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">visit</span><span class="p">(</span><span class="n">overloaded</span><span class="p">{</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26"></a><a href="#__codelineno-6-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">Heartbeat</span><span class="o">&amp;</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;HB &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">h</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27"></a><a href="#__codelineno-6-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">Text</span><span class="o">&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Text: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">s</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">},</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28"></a><a href="#__codelineno-6-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">        </span><span class="p">[](</span><span class="k">const</span><span class="w"> </span><span class="n">Blob</span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Blob size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; bytes</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29"></a><a href="#__codelineno-6-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="n">m</span><span class="p">);</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30"></a><a href="#__codelineno-6-30"><span class="linenos" data-linenos="30 "></span></a><span class="p">}</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31"></a><a href="#__codelineno-6-31"><span class="linenos" data-linenos="31 "></span></a>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32"></a><a href="#__codelineno-6-32"><span class="linenos" data-linenos="32 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33"></a><a href="#__codelineno-6-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== Message Queue Example ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34"></a><a href="#__codelineno-6-34"><span class="linenos" data-linenos="34 "></span></a>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35"></a><a href="#__codelineno-6-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="c1">// 创建不同类型的消息</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36"></a><a href="#__codelineno-6-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="n">msg1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Heartbeat</span><span class="p">{</span><span class="mi">42</span><span class="p">};</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37"></a><a href="#__codelineno-6-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="n">msg2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Text</span><span class="p">{</span><span class="s">&quot;Hello, world!&quot;</span><span class="p">};</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38"></a><a href="#__codelineno-6-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="n">msg3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Blob</span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">{</span><span class="mh">0x01</span><span class="p">,</span><span class="w"> </span><span class="mh">0x02</span><span class="p">,</span><span class="w"> </span><span class="mh">0x03</span><span class="p">}};</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39"></a><a href="#__codelineno-6-39"><span class="linenos" data-linenos="39 "></span></a>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40"></a><a href="#__codelineno-6-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 处理消息</span>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41"></a><a href="#__codelineno-6-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">msg1</span><span class="p">);</span>
+</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42"></a><a href="#__codelineno-6-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">msg2</span><span class="p">);</span>
+</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43"></a><a href="#__codelineno-6-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">msg3</span><span class="p">);</span>
+</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44"></a><a href="#__codelineno-6-44"><span class="linenos" data-linenos="44 "></span></a>
+</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45"></a><a href="#__codelineno-6-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="c1">// 演示 in-place 构造</span>
+</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46"></a><a href="#__codelineno-6-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="n">Message</span><span class="w"> </span><span class="n">msg4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">in_place_type</span><span class="o">&lt;</span><span class="n">Text</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">;</span><span class="w"> </span><span class="c1">// &quot;xxxxxxxxxx&quot;</span>
+</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47"></a><a href="#__codelineno-6-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="n">process</span><span class="p">(</span><span class="n">msg4</span><span class="p">);</span>
+</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48"></a><a href="#__codelineno-6-48"><span class="linenos" data-linenos="48 "></span></a>
+</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49"></a><a href="#__codelineno-6-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50"></a><a href="#__codelineno-6-50"><span class="linenos" data-linenos="50 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
@@ -4561,7 +4624,7 @@ int main() {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

@@ -4580,18 +4580,18 @@
 <p>先不着急前进，补充几个汇编。</p>
 <p>很显然，我们知道现代计算机的基本模型都是图灵机，我们知道操作数在哪，取出来做运算再放回去。</p>
 <p>X86为例子，我们要知道内存操作数的地址，这样我们才能在内存和CPU之间来回传递数据。</p>
-<p><code>text
-mov eax, ds:0xBAD10000 ; 将地址0xBAD10000装载到eax中
-add eax, 0x1 ; 装载值自增
-mov ds:0xBAD10000, eax; 写回操作</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">mov</span><span class="w"> </span><span class="n">eax</span><span class="p">,</span><span class="w"> </span><span class="n">ds</span><span class="o">:</span><span class="mh">0xBAD10000</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">将地址0xBAD10000装载到eax中</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">add</span><span class="w"> </span><span class="n">eax</span><span class="p">,</span><span class="w"> </span><span class="mh">0x1</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">装载值自增</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">mov</span><span class="w"> </span><span class="n">ds</span><span class="o">:</span><span class="mh">0xBAD10000</span><span class="p">,</span><span class="w"> </span><span class="n">eax</span><span class="p">;</span><span class="w"> </span><span class="n">写回操作</span>
+</span></code></pre></div>
 <p>非常好，知道这个事情之后，我们要指出，函数调用的本质也是找到代码段的函数地址——比如说，咱们要调用一个平凡的add函数，就要告诉我们的call指令add哈桑农户在哪（也就说，我们要提供add函数入口点的代码段地址）</p>
-<p>```text
-add &lt;0x11451400&gt;:
- ... ; Add Procedure</p>
-<p>main:
- ... ; Main Procedure
- call 11451400 ; add absolute
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">add</span><span class="w"> </span><span class="o">&lt;</span><span class="mh">0x11451400</span><span class="o">&gt;:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="n">Procedure</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="nl">main</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">Procedure</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="w"> </span><span class="n">call</span><span class="w"> </span><span class="mi">11451400</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">absolute</span>
+</span></code></pre></div>
 <p>当然，有的时候我们也会call相对地址，这种情况下会方便一点。</p>
 <h2 id="引用解析中的常见问题">引用解析中的常见问题<a class="headerlink" href="#引用解析中的常见问题" title="链接到此章节">&para;</a></h2>
 <p>我们来看看最简单的情况吧！假如说，可执行文件是加载单个动态链接库后才能进一步工作的。这些事情是显而易见的：</p>
@@ -4696,12 +4696,12 @@ add &lt;0x11451400&gt;:
 <ul>
 <li><strong>代码示例：</strong></li>
 </ul>
-<p>```C
-  // 只有标记了 DEFAULT 的符号才会被导出到动态符号表
-  <strong>attribute</strong>((visibility("default"))) void public_api();</p>
-<p>// 即使是全局函数，在外部看来也是不可见的，避免冲突
-  void internal_helper();
-  ```</p>
+<div class="language-C highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// 只有标记了 DEFAULT 的符号才会被导出到动态符号表</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">__attribute__</span><span class="p">((</span><span class="n">visibility</span><span class="p">(</span><span class="s">&quot;default&quot;</span><span class="p">)))</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">public_api</span><span class="p">();</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1">// 即使是全局函数，在外部看来也是不可见的，避免冲突</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">internal_helper</span><span class="p">();</span>
+</span></code></pre></div>
 <h4 id="3-dlopen-的作用域控制">3. <code>dlopen</code> 的作用域控制<a class="headerlink" href="#3-dlopen-的作用域控制" title="链接到此章节">&para;</a></h4>
 <p>如果使用 <code>dlopen</code> 手动加载库，可以指定 <code>RTLD_LOCAL</code> 标志（这是默认值）。这使得被加载库的符号<strong>不会</strong>进入全局符号表，从而避免影响其他库。</p>
 <hr />
@@ -4746,7 +4746,7 @@ add &lt;0x11451400&gt;:
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

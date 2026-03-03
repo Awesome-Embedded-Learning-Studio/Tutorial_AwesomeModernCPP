@@ -3405,6 +3405,112 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#windows-下的-dll-和-loadlibrarymingw--msvc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows 下的 DLL 和 LoadLibrary（MinGW / MSVC）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Windows 下的 DLL 和 LoadLibrary（MinGW / MSVC）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mylibcwindows-dll" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mylib.c（Windows DLL）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mainc使用-loadlibrary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        main.c（使用 LoadLibrary）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c-插件接口与-extern-c-工厂推荐做法" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++ 插件接口与 extern "C" 工厂（推荐做法）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="C++ 插件接口与 extern &#34;C&#34; 工厂（推荐做法）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#plugin_implc插件实现" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        plugin_impl.c（插件实现）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#笔者遇到的一些问题和笔者使用的排查手段积累" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        笔者遇到的一些问题，和笔者使用的排查手段积累
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="笔者遇到的一些问题，和笔者使用的排查手段积累">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#为什么-dlsym-拿不到我在-c-中的函数" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么 dlsym 拿不到我在 C++ 中的函数？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-的-getprocaddress-失败怎么排查" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows 的 GetProcAddress 失败怎么排查？
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4283,154 +4389,158 @@
 </ul>
 <h2 id="最小-c-动态库--程序linux--c-风格函数导出">最小 C 动态库 + 程序（Linux） — C 风格函数导出<a class="headerlink" href="#最小-c-动态库--程序linux--c-风格函数导出" title="链接到此章节">&para;</a></h2>
 <p>举个例子，笔者编写了一个简单的动态库</p>
-<p>```c
-// mylib.c</p>
-<h1 id="include">include <stdio.h><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<p>int add(int a, int b) {
-    return a + b;
-}</p>
-<p>const char *hello(void) {
-    return "Hello from mylib";
-}</p>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// mylib.c</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="nf">hello</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;Hello from mylib&quot;</span><span class="p">;</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>在Linux下，我们这样构建动态库</p>
-<p>```bash</p>
-<h1 id="生成共享库">生成共享库<a class="headerlink" href="#生成共享库" title="链接到此章节">&para;</a></h1>
-<p>gcc -fPIC -shared -o libmylib.so mylib.c</p>
-<h1 id="编译主程序下面会用-dlopen">编译主程序（下面会用 dlopen）<a class="headerlink" href="#编译主程序下面会用-dlopen" title="链接到此章节">&para;</a></h1>
-<p>gcc -o main main.c -ldl</p>
-<p>```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># 生成共享库</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a>gcc<span class="w"> </span>-fPIC<span class="w"> </span>-shared<span class="w"> </span>-o<span class="w"> </span>libmylib.so<span class="w"> </span>mylib.c
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># 编译主程序（下面会用 dlopen）</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a>gcc<span class="w"> </span>-o<span class="w"> </span>main<span class="w"> </span>main.c<span class="w"> </span>-ldl
+</span></code></pre></div>
 <p>随后编写一个使用的main.c来处理之：</p>
-<p>```c
-// main.c</p>
-<h1 id="include_1">include <stdio.h><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<h1 id="include_2">include <dlfcn.h><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
-<p>int main(void) {
-    /* Pass here a valid path <em>/
-    /</em> So place the dynamic library same place */
-    void *h = dlopen("./libmylib.so", RTLD_NOW);
-    if (!h) {
-        fprintf(stderr, "dlopen failed: %s\n", dlerror());
-        return 1;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>// 查找 symbol
-<span class="linenos" data-linenos=" 2 "></span>int (*add)(int,int) = (int(*)(int,int))dlsym(h, &quot;add&quot;);
-<span class="linenos" data-linenos=" 3 "></span>const char *(*hello)(void) = (const char*(*)(void))dlsym(h, &quot;hello&quot;);
-<span class="linenos" data-linenos=" 4 "></span>char *err = dlerror();
-<span class="linenos" data-linenos=" 5 "></span>if (err) {
-<span class="linenos" data-linenos=" 6 "></span>    fprintf(stderr, &quot;dlsym error: %s\n&quot;, err);
-<span class="linenos" data-linenos=" 7 "></span>    dlclose(h);
-<span class="linenos" data-linenos=" 8 "></span>    return 1;
-<span class="linenos" data-linenos=" 9 "></span>}
-<span class="linenos" data-linenos="10 "></span>
-<span class="linenos" data-linenos="11 "></span>printf(&quot;add(2,3) = %d\n&quot;, add(2,3));
-<span class="linenos" data-linenos="12 "></span>printf(&quot;%s\n&quot;, hello());
-<span class="linenos" data-linenos="13 "></span>
-<span class="linenos" data-linenos="14 "></span>dlclose(h);
-<span class="linenos" data-linenos="15 "></span>return 0;
-</code></pre></div>
-<p>}</p>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// main.c</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;dlfcn.h&gt;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="cm">/* Pass here a valid path */</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="cm">/* So place the dynamic library same place */</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlopen</span><span class="p">(</span><span class="s">&quot;./libmylib.so&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">RTLD_NOW</span><span class="p">);</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;dlopen failed: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dlerror</span><span class="p">());</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="c1">// 查找 symbol</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">add</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="p">))</span><span class="n">dlsym</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;add&quot;</span><span class="p">);</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">hello</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">void</span><span class="p">))</span><span class="n">dlsym</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">err</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlerror</span><span class="p">();</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;dlsym error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">err</span><span class="p">);</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">dlclose</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21"></a><a href="#__codelineno-2-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22"></a><a href="#__codelineno-2-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23"></a><a href="#__codelineno-2-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24"></a><a href="#__codelineno-2-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;add(2,3) = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">));</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25"></a><a href="#__codelineno-2-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">hello</span><span class="p">());</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26"></a><a href="#__codelineno-2-26"><span class="linenos" data-linenos="26 "></span></a>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27"></a><a href="#__codelineno-2-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="n">dlclose</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28"></a><a href="#__codelineno-2-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29"></a><a href="#__codelineno-2-29"><span class="linenos" data-linenos="29 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p><strong>运行</strong></p>
-<p>```bash</p>
-<h1 id="确保当前目录可被加载或设置-ld_library_path">确保当前目录可被加载（或设置 LD_LIBRARY_PATH）<a class="headerlink" href="#确保当前目录可被加载或设置-ld_library_path" title="链接到此章节">&para;</a></h1>
-<p>export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
-./main</p>
-<p>```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># 确保当前目录可被加载（或设置 LD_LIBRARY_PATH）</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>.:<span class="nv">$LD_LIBRARY_PATH</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a>./main
+</span></code></pre></div>
 <hr />
 <h2 id="windows-下的-dll-和-loadlibrarymingw--msvc">Windows 下的 DLL 和 LoadLibrary（MinGW / MSVC）<a class="headerlink" href="#windows-下的-dll-和-loadlibrarymingw--msvc" title="链接到此章节">&para;</a></h2>
 <h3 id="mylibcwindows-dll">mylib.c（Windows DLL）<a class="headerlink" href="#mylibcwindows-dll" title="链接到此章节">&para;</a></h3>
-<p>```c
-// mylib.c</p>
-<h1 id="include_3">include <windows.h><a class="headerlink" href="#include_3" title="链接到此章节">&para;</a></h1>
-<p>__declspec(dllexport) int add(int a, int b) {
-    return a + b;
-}</p>
-<p>__declspec(dllexport) const char* hello(void) {
-    return "Hello from mylib.dll";
-}</p>
-<p>BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
-    return TRUE;
-}</p>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// mylib.c</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;windows.h&gt;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">hello</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;Hello from mylib.dll&quot;</span><span class="p">;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="n">BOOL</span><span class="w"> </span><span class="n">WINAPI</span><span class="w"> </span><span class="n">DllMain</span><span class="p">(</span><span class="n">HINSTANCE</span><span class="w"> </span><span class="n">hinstDLL</span><span class="p">,</span><span class="w"> </span><span class="n">DWORD</span><span class="w"> </span><span class="n">fdwReason</span><span class="p">,</span><span class="w"> </span><span class="n">LPVOID</span><span class="w"> </span><span class="n">lpvReserved</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TRUE</span><span class="p">;</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p><strong>构建（MSVC Developer Command Prompt）</strong></p>
-<p>```cmd
-cl /LD mylib.c /Fe:mylib.dll</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a>cl /LD mylib.c /Fe:mylib.dll
+</span></code></pre></div>
 <p><strong>构建（MinGW）</strong></p>
-<p>```bash
-gcc -shared -o mylib.dll -Wl,--out-implib,libmylib.a -Wl,--export-all-symbols -fPIC mylib.c</p>
-<p>```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a>gcc<span class="w"> </span>-shared<span class="w"> </span>-o<span class="w"> </span>mylib.dll<span class="w"> </span>-Wl,--out-implib,libmylib.a<span class="w"> </span>-Wl,--export-all-symbols<span class="w"> </span>-fPIC<span class="w"> </span>mylib.c
+</span></code></pre></div>
 <h3 id="mainc使用-loadlibrary">main.c（使用 LoadLibrary）<a class="headerlink" href="#mainc使用-loadlibrary" title="链接到此章节">&para;</a></h3>
-<p>```c
-// main_win.c</p>
-<h1 id="include_4">include <windows.h><a class="headerlink" href="#include_4" title="链接到此章节">&para;</a></h1>
-<h1 id="include_5">include <stdio.h><a class="headerlink" href="#include_5" title="链接到此章节">&para;</a></h1>
-<p>typedef int (<em>add_t)(int,int);
-typedef const char</em> (*hello_t)(void);</p>
-<p>int main(void) {
-    HMODULE h = LoadLibraryA("mylib.dll");
-    if (!h) {
-        DWORD e = GetLastError();
-        printf("LoadLibrary failed: %lu\n", e);
-        return 1;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>add_t add = (add_t)GetProcAddress(h, &quot;add&quot;);
-<span class="linenos" data-linenos=" 2 "></span>hello_t hello = (hello_t)GetProcAddress(h, &quot;hello&quot;);
-<span class="linenos" data-linenos=" 3 "></span>if (!add || !hello) {
-<span class="linenos" data-linenos=" 4 "></span>    printf(&quot;GetProcAddress failed\n&quot;);
-<span class="linenos" data-linenos=" 5 "></span>    FreeLibrary(h);
-<span class="linenos" data-linenos=" 6 "></span>    return 1;
-<span class="linenos" data-linenos=" 7 "></span>}
-<span class="linenos" data-linenos=" 8 "></span>printf(&quot;add(10,20) = %d\n&quot;, add(10,20));
-<span class="linenos" data-linenos=" 9 "></span>printf(&quot;%s\n&quot;, hello());
-<span class="linenos" data-linenos="10 "></span>
-<span class="linenos" data-linenos="11 "></span>FreeLibrary(h);
-<span class="linenos" data-linenos="12 "></span>return 0;
-</code></pre></div>
-<p>}</p>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// main_win.c</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;windows.h&gt;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">typedef</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">add_t</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span><span class="kt">int</span><span class="p">);</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">typedef</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">hello_t</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">HMODULE</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LoadLibraryA</span><span class="p">(</span><span class="s">&quot;mylib.dll&quot;</span><span class="p">);</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="n">DWORD</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GetLastError</span><span class="p">();</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12"></a><a href="#__codelineno-7-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;LoadLibrary failed: %lu</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13"></a><a href="#__codelineno-7-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14"></a><a href="#__codelineno-7-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15"></a><a href="#__codelineno-7-15"><span class="linenos" data-linenos="15 "></span></a>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16"></a><a href="#__codelineno-7-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">add_t</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">add_t</span><span class="p">)</span><span class="n">GetProcAddress</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;add&quot;</span><span class="p">);</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17"></a><a href="#__codelineno-7-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="n">hello_t</span><span class="w"> </span><span class="n">hello</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">hello_t</span><span class="p">)</span><span class="n">GetProcAddress</span><span class="p">(</span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18"></a><a href="#__codelineno-7-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">add</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">hello</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19"></a><a href="#__codelineno-7-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;GetProcAddress failed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20"></a><a href="#__codelineno-7-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">FreeLibrary</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21"></a><a href="#__codelineno-7-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22"></a><a href="#__codelineno-7-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23"></a><a href="#__codelineno-7-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;add(10,20) = %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">));</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24"></a><a href="#__codelineno-7-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">hello</span><span class="p">());</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25"></a><a href="#__codelineno-7-25"><span class="linenos" data-linenos="25 "></span></a>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26"></a><a href="#__codelineno-7-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="n">FreeLibrary</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27"></a><a href="#__codelineno-7-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28"></a><a href="#__codelineno-7-28"><span class="linenos" data-linenos="28 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p><strong>运行（在 DLL 同目录下或把 DLL 加到 PATH）</strong></p>
-<p>```cmd
-set PATH=%CD%;%PATH%
-main_win.exe</p>
-<p>```text</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a>set PATH=%CD%;%PATH%
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos="2 "></span></a>main_win.exe
+</span></code></pre></div>
 <hr />
 <h2 id="c-插件接口与-extern-c-工厂推荐做法">C++ 插件接口与 extern "C" 工厂（推荐做法）<a class="headerlink" href="#c-插件接口与-extern-c-工厂推荐做法" title="链接到此章节">&para;</a></h2>
 <p>当需要导出 C++ 对象或类时，常见策略是导出一个工厂函数（<code>extern "C"</code>）返回不透明指针，或导出一张 <code>struct</code> 的函数表（接口表），避免 C++ 名字修饰影响。</p>
-<p>```c
-// plugin.h</p>
-<h1 id="ifdef-__cplusplus">ifdef __cplusplus<a class="headerlink" href="#ifdef-__cplusplus" title="链接到此章节">&para;</a></h1>
-<p>extern "C" {</p>
-<h1 id="endif">endif<a class="headerlink" href="#endif" title="链接到此章节">&para;</a></h1>
-<p>typedef struct PluginAPI {
-    int (<em>init)(void);
-    void (</em>shutdown)(void);
-    int (*do_work)(int arg);
-} PluginAPI;</p>
-<p>// 导出工厂：返回函数表指针
-PluginAPI* create_plugin_api(void);</p>
-<h1 id="ifdef-__cplusplus_1">ifdef __cplusplus<a class="headerlink" href="#ifdef-__cplusplus_1" title="链接到此章节">&para;</a></h1>
-<p>}</p>
-<h1 id="endif_1">endif<a class="headerlink" href="#endif_1" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// plugin.h</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#ifdef __cplusplus</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><a href="#__codelineno-9-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#endif</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><a href="#__codelineno-9-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6"></a><a href="#__codelineno-9-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">PluginAPI</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7"></a><a href="#__codelineno-9-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">init</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8"></a><a href="#__codelineno-9-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">shutdown</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9"></a><a href="#__codelineno-9-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">do_work</span><span class="p">)(</span><span class="kt">int</span><span class="w"> </span><span class="n">arg</span><span class="p">);</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10"></a><a href="#__codelineno-9-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span><span class="w"> </span><span class="n">PluginAPI</span><span class="p">;</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11"></a><a href="#__codelineno-9-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12"></a><a href="#__codelineno-9-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1">// 导出工厂：返回函数表指针</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13"></a><a href="#__codelineno-9-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">PluginAPI</span><span class="o">*</span><span class="w"> </span><span class="nf">create_plugin_api</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14"></a><a href="#__codelineno-9-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15"></a><a href="#__codelineno-9-15"><span class="linenos" data-linenos="15 "></span></a><span class="cp">#ifdef __cplusplus</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16"></a><a href="#__codelineno-9-16"><span class="linenos" data-linenos="16 "></span></a><span class="p">}</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17"></a><a href="#__codelineno-9-17"><span class="linenos" data-linenos="17 "></span></a><span class="cp">#endif</span>
+</span></code></pre></div>
 <h3 id="plugin_implc插件实现">plugin_impl.c（插件实现）<a class="headerlink" href="#plugin_implc插件实现" title="链接到此章节">&para;</a></h3>
-<p>```c
-// plugin_impl.c</p>
-<h1 id="include-pluginh">include "plugin.h"<a class="headerlink" href="#include-pluginh" title="链接到此章节">&para;</a></h1>
-<h1 id="include_6">include <stdio.h><a class="headerlink" href="#include_6" title="链接到此章节">&para;</a></h1>
-<p>static int my_init(void) { printf("plugin init\n"); return 0; }
-static void my_shutdown(void) { printf("plugin shutdown\n"); }
-static int my_do_work(int arg) { printf("plugin do work %d\n", arg); return arg*2; }</p>
-<p>static PluginAPI api = {
-    .init = my_init,
-    .shutdown = my_shutdown,
-    .do_work = my_do_work
-};</p>
-<p>PluginAPI* create_plugin_api(void) {
-    return &api;
-}</p>
-<p>```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// plugin_impl.c</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;plugin.h&quot;</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">my_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;plugin init</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><a href="#__codelineno-10-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">my_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;plugin shutdown</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><a href="#__codelineno-10-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">my_do_work</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">arg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;plugin do work %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="p">);</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">arg</span><span class="o">*</span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><a href="#__codelineno-10-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><a href="#__codelineno-10-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">static</span><span class="w"> </span><span class="n">PluginAPI</span><span class="w"> </span><span class="n">api</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a><a href="#__codelineno-10-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="p">.</span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_init</span><span class="p">,</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11"></a><a href="#__codelineno-10-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">.</span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_shutdown</span><span class="p">,</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12"></a><a href="#__codelineno-10-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="p">.</span><span class="n">do_work</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">my_do_work</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13"></a><a href="#__codelineno-10-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">};</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14"></a><a href="#__codelineno-10-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15"></a><a href="#__codelineno-10-15"><span class="linenos" data-linenos="15 "></span></a><span class="n">PluginAPI</span><span class="o">*</span><span class="w"> </span><span class="nf">create_plugin_api</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16"></a><a href="#__codelineno-10-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="n">api</span><span class="p">;</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17"></a><a href="#__codelineno-10-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>主程序只需通过 <code>dlsym(h, "create_plugin_api")</code> 拿到 <code>PluginAPI*</code>，就能无缝调用插件函数，无需关心 C++ 名字修饰。</p>
 <h2 id="笔者遇到的一些问题和笔者使用的排查手段积累">笔者遇到的一些问题，和笔者使用的排查手段积累<a class="headerlink" href="#笔者遇到的一些问题和笔者使用的排查手段积累" title="链接到此章节">&para;</a></h2>
 <h4 id="为什么-dlsym-拿不到我在-c-中的函数"><strong>为什么 <code>dlsym</code> 拿不到我在 C++ 中的函数？</strong><a class="headerlink" href="#为什么-dlsym-拿不到我在-c-中的函数" title="链接到此章节">&para;</a></h4>
@@ -4459,7 +4569,7 @@ static int my_do_work(int arg) { printf("plugin do work %d\n", arg); return arg*
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

@@ -3407,8 +3407,30 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#方式3对于一组聚合符号的修饰pragma-visibility-pushpop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        方式3：对于一组聚合符号的修饰#pragma visibility push/pop
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-msvc是如何操作的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows MSVC是如何操作的
+      
+    </span>
+  </a>
   
 </li>
         
@@ -4299,46 +4321,47 @@
 <p>介于一些朋友可能是第一次看到这篇文章，可能会尚不清楚如何完成"查看给定可重定位文件或者是由重定位文件组成的可执行文件或者是库文件所包含的可见符号"这个要求，笔者这里计划专门补充一下在主要的Windows平台或者是Linux平台上如何完成这个基本操作。</p>
 <h5 id="gnulinux平台">GNU/Linux平台<a class="headerlink" href="#gnulinux平台" title="链接到此章节">&para;</a></h5>
 <p>很简单，我们只需要使用nm工具即可。假设我们有一个库文件<code>libsome_helpers.so</code>准备检查，那么输入如下指令就OK了。</p>
-<p>```text</p>
-<p>[charliechen@Charliechen runaable_dynamic_library]$ nm -D libsome_helpers.so
-00000000000010e9 T add
-                 w <strong>cxa_finalize@GLIBC_2.2.5
-                 w __gmon_start</strong>
-                 w _ITM_deregisterTMCloneTable
-                 w _ITM_registerTMCloneTable
-00000000000010fd T minus</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="p">[</span><span class="n">charliechen</span><span class="err">@</span><span class="n">Charliechen</span><span class="w"> </span><span class="n">runaable_dynamic_library</span><span class="p">]</span><span class="n">$</span><span class="w"> </span><span class="n">nm</span><span class="w"> </span><span class="o">-</span><span class="n">D</span><span class="w"> </span><span class="n">libsome_helpers</span><span class="p">.</span><span class="n">so</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="mf">00000000000010e9</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">add</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">                 </span><span class="n">w</span><span class="w"> </span><span class="n">__cxa_finalize</span><span class="err">@</span><span class="n">GLIBC_2</span><span class="mf">.2.5</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">                 </span><span class="n">w</span><span class="w"> </span><span class="n">__gmon_start__</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">                 </span><span class="n">w</span><span class="w"> </span><span class="n">_ITM_deregisterTMCloneTable</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">                 </span><span class="n">w</span><span class="w"> </span><span class="n">_ITM_registerTMCloneTable</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a><span class="mf">00000000000010f</span><span class="n">d</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">minus</span>
+</span></code></pre></div>
 <h5 id="windows平台">Windows平台<a class="headerlink" href="#windows平台" title="链接到此章节">&para;</a></h5>
 <p>这个好说，假设笔者打算检查的是CCWidget.dll，查看导出的符号就是<code>dumpbin /EXPORTS CCWidgets.dll</code></p>
-<p>```text</p>
-<p>D:\NewQtProjects\CCWidgetLibrary\build\Desktop_Qt_6_10_0_MSVC2022_64bit-Release\widgets&gt;dumpbin /EXPORTS CCWidgets.dll
-Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
-Copyright (C) Microsoft Corporation.  All rights reserved.</p>
-<p>Dump of file CCWidgets.dll</p>
-<p>File Type: DLL</p>
-<p>Section contains the following exports for CCWidgets.dll</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>00000000 characteristics
-<span class="linenos" data-linenos=" 2 "></span>FFFFFFFF time date stamp
-<span class="linenos" data-linenos=" 3 "></span>    0.00 version
-<span class="linenos" data-linenos=" 4 "></span>       1 ordinal base
-<span class="linenos" data-linenos=" 5 "></span>     481 number of functions
-<span class="linenos" data-linenos=" 6 "></span>     481 number of names
-<span class="linenos" data-linenos=" 7 "></span>
-<span class="linenos" data-linenos=" 8 "></span>ordinal hint RVA      name
-<span class="linenos" data-linenos=" 9 "></span>
-<span class="linenos" data-linenos="10 "></span>      1    0 00002F50 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
-<span class="linenos" data-linenos="11 "></span>      2    1 00002F80 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
-<span class="linenos" data-linenos="12 "></span>      3    2 00002FB0 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@XZ
-<span class="linenos" data-linenos="13 "></span>      4    3 00002FD0 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
-<span class="linenos" data-linenos="14 "></span>      5    4 00003010 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
-<span class="linenos" data-linenos="15 "></span>      6    5 00003050 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@XZ
-<span class="linenos" data-linenos="16 "></span>      7    6 00012E00 ??0AppearAnimation@animation@CCWidgetLibrary@@QEAA@PEAVQWidget@@@Z
-<span class="linenos" data-linenos="17 "></span>      8    7 000184E0 ??0CCBadgeLabel@@QEAA@PEAVQWidget@@@Z
-<span class="linenos" data-linenos="18 "></span>      9    8 00014130 ??0CCButton@@QEAA@AEBVQIcon@@AEBVQString@@PEAVQWidget@@@Z
-<span class="linenos" data-linenos="19 "></span>     10    9 000141F0 ??0CCButton@@QEAA@AEBVQString@@PEAVQWidget@@@Z、
-<span class="linenos" data-linenos="20 "></span>     ...
-</code></pre></div>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="nl">D</span><span class="p">:</span><span class="err">\</span><span class="n">NewQtProjects</span><span class="err">\</span><span class="n">CCWidgetLibrary</span><span class="err">\</span><span class="n">build</span><span class="err">\</span><span class="n">Desktop_Qt_6_10_0_MSVC2022_64bit</span><span class="o">-</span><span class="n">Release</span><span class="err">\</span><span class="n">widgets</span><span class="o">&gt;</span><span class="n">dumpbin</span><span class="w"> </span><span class="o">/</span><span class="n">EXPORTS</span><span class="w"> </span><span class="n">CCWidgets</span><span class="p">.</span><span class="n">dll</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">Microsoft</span><span class="w"> </span><span class="p">(</span><span class="n">R</span><span class="p">)</span><span class="w"> </span><span class="n">COFF</span><span class="o">/</span><span class="n">PE</span><span class="w"> </span><span class="n">Dumper</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="mf">14.44.35217.0</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">Copyright</span><span class="w"> </span><span class="p">(</span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="n">Microsoft</span><span class="w"> </span><span class="n">Corporation</span><span class="p">.</span><span class="w">  </span><span class="n">All</span><span class="w"> </span><span class="n">rights</span><span class="w"> </span><span class="n">reserved</span><span class="p">.</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">Dump</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">CCWidgets</span><span class="p">.</span><span class="n">dll</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">File</span><span class="w"> </span><span class="n">Type</span><span class="o">:</span><span class="w"> </span><span class="n">DLL</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">  </span><span class="n">Section</span><span class="w"> </span><span class="n">contains</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">following</span><span class="w"> </span><span class="n">exports</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">CCWidgets</span><span class="p">.</span><span class="n">dll</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="mo">00000000</span><span class="w"> </span><span class="n">characteristics</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="n">FFFFFFFF</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="n">date</span><span class="w"> </span><span class="n">stamp</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="mf">0.00</span><span class="w"> </span><span class="n">version</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">           </span><span class="mi">1</span><span class="w"> </span><span class="n">ordinal</span><span class="w"> </span><span class="n">base</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">         </span><span class="mi">481</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">functions</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">         </span><span class="mi">481</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">names</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">ordinal</span><span class="w"> </span><span class="n">hint</span><span class="w"> </span><span class="n">RVA</span><span class="w">      </span><span class="n">name</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">          </span><span class="mi">1</span><span class="w">    </span><span class="mi">0</span><span class="w"> </span><span class="mf">00002F</span><span class="mi">50</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationConfig</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">$$QEAU012</span><span class="err">@@</span><span class="n">Z</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">          </span><span class="mi">2</span><span class="w">    </span><span class="mi">1</span><span class="w"> </span><span class="mf">00002F</span><span class="mi">80</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationConfig</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">AEBU012</span><span class="err">@@</span><span class="n">Z</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><a href="#__codelineno-1-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">          </span><span class="mi">3</span><span class="w">    </span><span class="mi">2</span><span class="w"> </span><span class="mf">00002F</span><span class="n">B0</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationConfig</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">XZ</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a><a href="#__codelineno-1-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">          </span><span class="mi">4</span><span class="w">    </span><span class="mi">3</span><span class="w"> </span><span class="mf">00002F</span><span class="n">D0</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationSession</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">$$QEAU012</span><span class="err">@@</span><span class="n">Z</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a><a href="#__codelineno-1-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">          </span><span class="mi">5</span><span class="w">    </span><span class="mi">4</span><span class="w"> </span><span class="mo">00003010</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationSession</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">AEBU012</span><span class="err">@@</span><span class="n">Z</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a><a href="#__codelineno-1-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">          </span><span class="mi">6</span><span class="w">    </span><span class="mi">5</span><span class="w"> </span><span class="mo">00003050</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AnimationSession</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">XZ</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a><a href="#__codelineno-1-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">          </span><span class="mi">7</span><span class="w">    </span><span class="mi">6</span><span class="w"> </span><span class="mf">00012E00</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">AppearAnimation</span><span class="err">@</span><span class="n">animation</span><span class="err">@</span><span class="n">CCWidgetLibrary</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">PEAVQWidget</span><span class="err">@@@</span><span class="n">Z</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27"></a><a href="#__codelineno-1-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">          </span><span class="mi">8</span><span class="w">    </span><span class="mi">7</span><span class="w"> </span><span class="mf">000184E0</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">CCBadgeLabel</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">PEAVQWidget</span><span class="err">@@@</span><span class="n">Z</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28"></a><a href="#__codelineno-1-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">          </span><span class="mi">9</span><span class="w">    </span><span class="mi">8</span><span class="w"> </span><span class="mo">00014130</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">CCButton</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">AEBVQIcon</span><span class="err">@@</span><span class="n">AEBVQString</span><span class="err">@@</span><span class="n">PEAVQWidget</span><span class="err">@@@</span><span class="n">Z</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29"></a><a href="#__codelineno-1-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">         </span><span class="mi">10</span><span class="w">    </span><span class="mi">9</span><span class="w"> </span><span class="mf">000141F</span><span class="mi">0</span><span class="w"> </span><span class="o">??</span><span class="mi">0</span><span class="n">CCButton</span><span class="err">@@</span><span class="n">QEAA</span><span class="err">@</span><span class="n">AEBVQString</span><span class="err">@@</span><span class="n">PEAVQWidget</span><span class="err">@@@</span><span class="n">Z</span><span class="err">、</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30"></a><a href="#__codelineno-1-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">         </span><span class="p">...</span>
+</span></code></pre></div>
 <h2 id="主流工具链是如何控制符号的可见性的">主流工具链是如何控制符号的可见性的？<a class="headerlink" href="#主流工具链是如何控制符号的可见性的" title="链接到此章节">&para;</a></h2>
 <p>所以回归正题，主流工具链是如何控制符号的可见性的呢？我们分开讨论</p>
 <h4 id="gnu-linux下如何控制符号的可见性">GNU Linux下如何控制符号的可见性<a class="headerlink" href="#gnu-linux下如何控制符号的可见性" title="链接到此章节">&para;</a></h4>
@@ -4346,36 +4369,35 @@ Copyright (C) Microsoft Corporation.  All rights reserved.</p>
 <p>第一种方式是最粗暴的方式，假设我们存在一个私有的依赖工程完全不想暴露任何符号，这个时候，我们就可以在编译的时候向gcc/g++传递-fvisibility。默认的讲，对于GNU C/C++工具链<strong>对于任何未加以任何可见性修饰或者是指定可见性的符号</strong>都是公开的。也就是<code>-fvisibility=default</code>，假设我们想要隐藏，在生成动态库的步骤中，需要我们指定为<code>-fvisibility=hidden</code>，所有的符号都会不被导出。不过笔者是没有使用过的，仅仅是查询到存在用法。</p>
 <h5 id="方式2最常用的方式利用__attribute__visibility">方式2：最常用的方式：利用<code>__attribute__((visibility(&lt; "default" | "hidden" &gt;)))</code><a class="headerlink" href="#方式2最常用的方式利用__attribute__visibility" title="链接到此章节">&para;</a></h5>
 <p>笔者很喜欢这样指定，以笔者自己充当玩具编写的一个简单的日志库为例子，对于所有计划在ABI层次公开的API，笔者强制指定<code>__attribute__((visibility("default")))</code>，反之，任何不应该被使用的符号，施加以<code>__attribute__((visibility("hidden")))</code></p>
-<p>```text</p>
-<h1 id="ifdef-cclog_build_shared">ifdef CCLOG_BUILD_SHARED<a class="headerlink" href="#ifdef-cclog_build_shared" title="链接到此章节">&para;</a></h1>
-<h1 id="define-cclog_api-attributevisibilitydefault">define CCLOG_API <strong>attribute</strong>((visibility("default")))<a class="headerlink" href="#define-cclog_api-attributevisibilitydefault" title="链接到此章节">&para;</a></h1>
-<h1 id="define-cclog_private_api-attributevisibilityhidden">define CCLOG_PRIVATE_API <strong>attribute</strong>((visibility("hidden")))<a class="headerlink" href="#define-cclog_private_api-attributevisibilityhidden" title="链接到此章节">&para;</a></h1>
-<h1 id="else">else<a class="headerlink" href="#else" title="链接到此章节">&para;</a></h1>
-<h1 id="define-cclog_api">define CCLOG_API<a class="headerlink" href="#define-cclog_api" title="链接到此章节">&para;</a></h1>
-<h1 id="define-cclog_private_api">define CCLOG_PRIVATE_API<a class="headerlink" href="#define-cclog_private_api" title="链接到此章节">&para;</a></h1>
-<h1 id="endif">endif<a class="headerlink" href="#endif" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#ifdef CCLOG_BUILD_SHARED</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#define CCLOG_API __attribute__((visibility(&quot;default&quot;)))</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="cp">#define CCLOG_PRIVATE_API __attribute__((visibility(&quot;hidden&quot;)))</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="cp">#else</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="cp">#define CCLOG_API</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a><span class="cp">#define CCLOG_PRIVATE_API</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#endif</span>
+</span></code></pre></div>
 <h5 id="方式3对于一组聚合符号的修饰pragma-visibility-pushpop">方式3：对于一组聚合符号的修饰<code>#pragma visibility push/pop</code><a class="headerlink" href="#方式3对于一组聚合符号的修饰pragma-visibility-pushpop" title="链接到此章节">&para;</a></h5>
 <p>假如说，您实在是要处理手头巨量的符号的可见性修改，但是不想一个一个符号的添加以笔者上面提到的为例子的宏，您可以采用编译器的预处理指令。</p>
-<p>```cpp</p>
-<h1 id="pragma-visibility-pushhidden">pragma visibility push("hidden")<a class="headerlink" href="#pragma-visibility-pushhidden" title="链接到此章节">&para;</a></h1>
-<p>int private_api_add(int a, int b);
-int api_minus(int a, int b);</p>
-<p>/* Remember to pop for preventing the leak of unwanted visibility decorations */</p>
-<h1 id="pragma-visibility-pop">pragma visibility pop<a class="headerlink" href="#pragma-visibility-pop" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#pragma visibility push(&quot;hidden&quot;)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">private_api_add</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">api_minus</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="p">);</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos="6 "></span></a><span class="cm">/* Remember to pop for preventing the leak of unwanted visibility decorations */</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#pragma visibility pop</span>
+</span></code></pre></div>
 <h4 id="windows-msvc是如何操作的">Windows MSVC是如何操作的<a class="headerlink" href="#windows-msvc是如何操作的" title="链接到此章节">&para;</a></h4>
 <p>很不幸，Windows DLL动态库导出符号，是存在一套相对复杂的修饰机制的。也就是说，对于计划导出的符号，需要被修饰以<code>__declspec(dllexport)</code>导出；然后使用这些符号的时候，我们还需要标记<code>__declspec(dllimport)</code></p>
-<p>```cpp</p>
-<h1 id="ifdef-cclog_build_shared_1">ifdef CCLOG_BUILD_SHARED<a class="headerlink" href="#ifdef-cclog_build_shared_1" title="链接到此章节">&para;</a></h1>
-<p>/* If we plan to exports sysbols to DLL, we need to decorate symbols by this <em>/
-/</em> Others in case can use the symbols */</p>
-<h1 id="define-cclog_api-__declspecdllexport">define CCLOG_API __declspec(dllexport)<a class="headerlink" href="#define-cclog_api-__declspecdllexport" title="链接到此章节">&para;</a></h1>
-<h1 id="else_1">else<a class="headerlink" href="#else_1" title="链接到此章节">&para;</a></h1>
-<p>/* If we plan to import sysbols from DLL, we need to decorate symbols by this */</p>
-<h1 id="define-cclog_api-__declspecdllimport">define CCLOG_API __declspec(dllimport)<a class="headerlink" href="#define-cclog_api-__declspecdllimport" title="链接到此章节">&para;</a></h1>
-<h1 id="end">end<a class="headerlink" href="#end" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#ifdef CCLOG_BUILD_SHARED</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="cm">/* If we plan to exports sysbols to DLL, we need to decorate symbols by this */</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="cm">/* Others in case can use the symbols */</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a><span class="cp">#define CCLOG_API __declspec(dllexport)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a><span class="cp">#else</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos="6 "></span></a><span class="cm">/* If we plan to import sysbols from DLL, we need to decorate symbols by this */</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos="7 "></span></a><span class="cp">#define CCLOG_API __declspec(dllimport)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos="8 "></span></a><span class="cp">#end</span>
+</span></code></pre></div>
 
 
 
@@ -4398,7 +4420,7 @@ int api_minus(int a, int b);</p>
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

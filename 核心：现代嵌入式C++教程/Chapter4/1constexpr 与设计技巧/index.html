@@ -1652,8 +1652,91 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#42-crc-表位反转表实战" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 CRC 表/位反转表（实战）
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-编译期字符串处理实现配置与静态解析" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 编译期字符串处理：实现配置与静态解析
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 编译期字符串处理：实现配置与静态解析">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-编译期字符串哈希快速实现字符串-switch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 编译期字符串哈希（快速实现字符串 switch）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-编译期字符串作为类型c20-模板化字符串" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 编译期字符串作为类型（C++20 模板化字符串）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-编译期生成表格-vs-运行时生成内存与闪存的权衡" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 编译期生成表格 vs 运行时生成：内存与闪存的权衡
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#编译期表的存放建议与链接选项" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编译期表的存放建议与链接选项
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#结语实用主义的-constexpr-策略" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        结语：实用主义的 constexpr 策略
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4278,21 +4361,21 @@
       
       
       
-        <a href="../../../tags/#tag:constexpr" class="md-tag">constexpr</a>
+        <span class="md-tag">constexpr</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:编译期" class="md-tag">编译期</a>
+        <span class="md-tag">编译期</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:设计" class="md-tag">设计</a>
+        <span class="md-tag">设计</span>
       
     
   </nav>
@@ -4318,138 +4401,144 @@
 <hr />
 <h2 id="经典示例constexpr-计算阶乘斐波那契pow">经典示例：<code>constexpr</code> 计算（阶乘、斐波那契、pow）<a class="headerlink" href="#经典示例constexpr-计算阶乘斐波那契pow" title="链接到此章节">&para;</a></h2>
 <p>先从最基础的数学例子开始，便于理解编译期求值。</p>
-<p>```cpp
-// C++14 起，constexpr 函数可以包含循环
-constexpr unsigned factorial(unsigned n) {
-    unsigned r = 1;
-    for (unsigned i = 2; i &lt;= n; ++i) r *= i;
-    return r;
-}</p>
-<p>static_assert(factorial(6) == 720, "compile-time check");</p>
-<p>// C++11 版本通常用递归（注意递归深度）
-constexpr unsigned factorial_rec(unsigned n) {
-    return n &lt;= 1 ? 1 : n * factorial_rec(n - 1);
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// C++14 起，constexpr 函数可以包含循环</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="n">factorial</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">720</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;compile-time check&quot;</span><span class="p">);</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="c1">// C++11 版本通常用递归（注意递归深度）</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="nf">factorial_rec</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">factorial_rec</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>上面 <code>factorial(6)</code> 在编译期被展开为常量并用于 <code>static_assert</code>。在嵌入式里，避免运行时乘法循环有时也会节省能耗和代码路径复杂度（例如引导代码、实时中断处理路径）。</p>
 <p>另一个常用的是 <code>pow</code>，但在嵌入式我们常更愿意做整数幂的 <code>constexpr</code>：</p>
-<p><code>cpp
-constexpr long ipow(long base, unsigned exp) {
-    long r = 1;
-    while (exp) {
-        if (exp &amp; 1) r *= base;
-        base *= base;
-        exp &gt;&gt;= 1;
-    }
-    return r;
-}
-static_assert(ipow(2, 10) == 1024);</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">ipow</span><span class="p">(</span><span class="kt">long</span><span class="w"> </span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">exp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">exp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">exp</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">base</span><span class="p">;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="n">base</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">base</span><span class="p">;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="n">exp</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">}</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="n">ipow</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span>
+</span></code></pre></div>
 <p>需要注意的是：C++11 的 <code>constexpr</code> 函数受限，只允许单一 return 表达式；C++14 放宽了这一点，允许循环和局部变量，这使得许多算法可以以更自然的方式实现为 <code>constexpr</code>。</p>
 <hr />
 <h2 id="lookup-table查表生成把昂贵的计算移到编译期">Lookup table（查表）生成：把昂贵的计算移到编译期<a class="headerlink" href="#lookup-table查表生成把昂贵的计算移到编译期" title="链接到此章节">&para;</a></h2>
 <p>查表是嵌入式常见优化。以下展示几种生成查表的模式。</p>
 <h4 id="41-用-constexpr-生成数组c1417-风格">4.1 用 <code>constexpr</code> 生成数组（C++14/17 风格）<a class="headerlink" href="#41-用-constexpr-生成数组c1417-风格" title="链接到此章节">&para;</a></h4>
-<p>```cpp</p>
-<h1 id="include">include <array><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include_1">include <cstddef><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<p>// 生成 N 个元素的查表
-template <std::size_t N>
-constexpr std::array<float, N> make_sin_table() {
-    std::array<float, N> t{};
-    for (std::size_t i = 0; i &lt; N; ++i) {
-        // 注意：编译期不能调用 std::sin 在部分编译器下不被识别
-        // 这里用泰勒或近似函数，或在支持的环境下使用 constexpr math
-        long double ang = (2.0L * 3.14159265358979323846L) * i / N;
-        // 用简单的二阶近似：sin(x) ≈ x - x^3/6 (在 [-pi/4, pi/4] 以外误差增大)
-        long double x = ang;
-        long double x3 = x<em>x</em>x;
-        t[i] = static_cast<float>(x - x3/6.0L);
-    }
-    return t;
-}</p>
-<p>constexpr auto sin16 = make_sin_table&lt;256&gt;();
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1">// 生成 N 个元素的查表</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="n">make_sin_table</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">{};</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">        </span><span class="c1">// 注意：编译期不能调用 std::sin 在部分编译器下不被识别</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="c1">// 这里用泰勒或近似函数，或在支持的环境下使用 constexpr math</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="kt">long</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">ang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mf">2.0L</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">3.14159265358979323846L</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">N</span><span class="p">;</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="c1">// 用简单的二阶近似：sin(x) ≈ x - x^3/6 (在 [-pi/4, pi/4] 以外误差增大)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="kt">long</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ang</span><span class="p">;</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">        </span><span class="kt">long</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">x3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="p">;</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">x3</span><span class="o">/</span><span class="mf">6.0L</span><span class="p">);</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">}</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos="20 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">sin16</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_sin_table</span><span class="o">&lt;</span><span class="mi">256</span><span class="o">&gt;</span><span class="p">();</span>
+</span></code></pre></div>
 <p>上面示例的重点在于：你可以在编译期生成一个 <code>std::array</code>，并在运行时直接以只读数据使用。对于资源极限的 MCU，这样的表通常被放到 <code>.rodata</code>（flash），不占 RAM。</p>
 <blockquote>
 <p>小提醒：C++ 标准库数学函数（<code>std::sin</code>）并不保证是 <code>constexpr</code>（直到最新标准/实现才开始支持），所以在编译期要么用近似公式，要么自己实现一个 <code>constexpr</code> 数学近似。</p>
 </blockquote>
 <h4 id="42-crc-表位反转表实战">4.2 CRC 表/位反转表（实战）<a class="headerlink" href="#42-crc-表位反转表实战" title="链接到此章节">&para;</a></h4>
 <p>CRC 查表非常适合用 <code>constexpr</code> 生成，既保证一致性又便于测试。</p>
-<p>```cpp</p>
-<h1 id="include_2">include <array><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
-<h1 id="include_3">include <cstdint><a class="headerlink" href="#include_3" title="链接到此章节">&para;</a></h1>
-<p>constexpr std::array<uint32_t, 256> make_crc32_table(uint32_t poly = 0xEDB88320u) {
-    std::array<uint32_t, 256> table{};
-    for (std::size_t i = 0; i &lt; 256; ++i) {
-        uint32_t c = static_cast<uint32_t>(i);
-        for (int j = 0; j &lt; 8; ++j)
-            c = c &amp; 1 ? (poly ^ (c &gt;&gt; 1)) : (c &gt;&gt; 1);
-        table[i] = c;
-    }
-    return table;
-}</p>
-<p>constexpr auto crc32_table = make_crc32_table();
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="w"> </span><span class="n">make_crc32_table</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xEDB88320u</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="w"> </span><span class="n">table</span><span class="p">{};</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">j</span><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">            </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">(</span><span class="n">poly</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">table</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">;</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><a href="#__codelineno-3-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><a href="#__codelineno-3-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">table</span><span class="p">;</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><a href="#__codelineno-3-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">}</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14"></a><a href="#__codelineno-3-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15"></a><a href="#__codelineno-3-15"><span class="linenos" data-linenos="15 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">crc32_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_crc32_table</span><span class="p">();</span>
+</span></code></pre></div>
 <p>然后在运行时代码中直接使用 <code>crc32_table</code>，无需在启动时生成表或包含外部二进制文件。</p>
 <hr />
 <h2 id="5-编译期字符串处理实现配置与静态解析">5. 编译期字符串处理：实现配置与静态解析<a class="headerlink" href="#5-编译期字符串处理实现配置与静态解析" title="链接到此章节">&para;</a></h2>
 <p>字符串常常是协议/命令/日志的核心。在运行时进行大量字符串解析会浪费 RAM 与 CPU。我们可以把静态字符串的解析提前到编译期，比如计算字符串哈希以实现 switch-like 的选择、或把配置字符串解析为整数常量。</p>
 <h4 id="51-编译期字符串哈希快速实现字符串-switch">5.1 编译期字符串哈希（快速实现字符串 switch）<a class="headerlink" href="#51-编译期字符串哈希快速实现字符串-switch" title="链接到此章节">&para;</a></h4>
 <p>C++ 不允许 <code>switch</code> 直接使用字符串，但我们可以使用 <code>constexpr</code> 哈希在编译期把字符串映射成整型，然后 <code>switch</code> 分支。</p>
-<p>```cpp
-// constexpr FNV-1a 哈希（简单、广泛使用）
-constexpr uint32_t fnv1a(const char* s, std::size_t n) {
-    uint32_t h = 2166136261u;
-    for (std::size_t i = 0; i &lt; n; ++i) {
-        h ^= static_cast<uint32_t>(s[i]);
-        h *= 16777619u;
-    }
-    return h;
-}</p>
-<p>// helper 模板把字面量字符串长度作为参数传入
-template <std::size_t N>
-constexpr uint32_t hash_ct(const char (&amp;s)[N]) {
-    return fnv1a(s, N - 1); // omit trailing '\0'
-}</p>
-<p>// 用法
-constexpr auto h1 = hash_ct("CMD_START");
-constexpr auto h2 = hash_ct("CMD_STOP");</p>
-<p>void handle_command(const char* cmd) {
-    switch (fnv1a(cmd, std::strlen(cmd))) {
-    case hash_ct("CMD_START"):
-        // handle start
-        break;
-    case hash_ct("CMD_STOP"):
-        // handle stop
-        break;
-    default:
-        // unknown
-        break;
-    }
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// constexpr FNV-1a 哈希（简单、广泛使用）</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">fnv1a</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">h</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2166136261u</span><span class="p">;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="n">h</span><span class="w"> </span><span class="o">^=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="n">h</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="mi">16777619u</span><span class="p">;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">h</span><span class="p">;</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">}</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1">// helper 模板把字面量字符串长度作为参数传入</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">hash_ct</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">)[</span><span class="n">N</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">fnv1a</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// omit trailing &#39;\0&#39;</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="c1">// 用法</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">h1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_START&quot;</span><span class="p">);</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">h2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_STOP&quot;</span><span class="p">);</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">handle_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">cmd</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22"></a><a href="#__codelineno-4-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">fnv1a</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">strlen</span><span class="p">(</span><span class="n">cmd</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23"></a><a href="#__codelineno-4-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_START&quot;</span><span class="p">):</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24"></a><a href="#__codelineno-4-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">        </span><span class="c1">// handle start</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25"></a><a href="#__codelineno-4-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26"></a><a href="#__codelineno-4-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="no">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_STOP&quot;</span><span class="p">):</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27"></a><a href="#__codelineno-4-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">        </span><span class="c1">// handle stop</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28"></a><a href="#__codelineno-4-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">        </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29"></a><a href="#__codelineno-4-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="k">default</span><span class="o">:</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30"></a><a href="#__codelineno-4-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">        </span><span class="c1">// unknown</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31"></a><a href="#__codelineno-4-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">        </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32"></a><a href="#__codelineno-4-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33"></a><a href="#__codelineno-4-33"><span class="linenos" data-linenos="33 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>这个方案简单可靠，但要注意哈希冲突可能带来的问题：在关键代码里，用 <code>static_assert</code> 验证已知字面值之间没有冲突（这只适用于字面量集合能在编译期枚举的场景）。</p>
-<p><code>cpp
-static_assert(hash_ct("CMD_START") != hash_ct("CMD_STOP"), "Hash collision!");</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="n">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_START&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">hash_ct</span><span class="p">(</span><span class="s">&quot;CMD_STOP&quot;</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;Hash collision!&quot;</span><span class="p">);</span>
+</span></code></pre></div>
 <h4 id="52-编译期字符串作为类型c20-模板化字符串">5.2 编译期字符串作为类型（C++20 模板化字符串）<a class="headerlink" href="#52-编译期字符串作为类型c20-模板化字符串" title="链接到此章节">&para;</a></h4>
 <p>C++20 引入了更强的模板参数特化，可以把字符串字面量作为模板参数（借助 <code>const char(&amp;)[N]</code> 或自定义 <code>ct_string</code> 类型）。这使得把字符串直接映射到类型系统成为可能，从而能把很多配置放到类型层面，获得零运行时开销。</p>
 <p>示例：用字符串做类型标签（摘自常见技巧）：</p>
-<p>```cpp
-// C++20 风格：将字符串字面量包装为类型参数
-template <std::size_t N>
-struct ct_string {
-    char chars[N];
-    constexpr ct_string(const char (&amp;s)[N]) {
-        for (std::size_t i = 0; i &lt; N; ++i) chars[i] = s[i];
-    }
-};</p>
-<p>template <ct_string Name>
-struct ConfigItem {
-    static constexpr auto name = Name;
-};</p>
-<p>constexpr ct_string cfg_name("uart.baudrate");
-using BaudCfg = ConfigItem<cfg_name>;
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// C++20 风格：将字符串字面量包装为类型参数</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">ct_string</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">chars</span><span class="p">[</span><span class="n">N</span><span class="p">];</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="n">ct_string</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;</span><span class="n">s</span><span class="p">)[</span><span class="n">N</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="n">chars</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="p">};</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">ct_string</span><span class="w"> </span><span class="n">Name</span><span class="o">&gt;</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">ConfigItem</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Name</span><span class="p">;</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">};</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="n">ct_string</span><span class="w"> </span><span class="n">cfg_name</span><span class="p">(</span><span class="s">&quot;uart.baudrate&quot;</span><span class="p">);</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="k">using</span><span class="w"> </span><span class="n">BaudCfg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ConfigItem</span><span class="o">&lt;</span><span class="n">cfg_name</span><span class="o">&gt;</span><span class="p">;</span>
+</span></code></pre></div>
 <p>然后可以基于类型做元编程，或把多个 <code>ConfigItem</code> 放进映射结构，编译器会把全部信息在编译期解析。</p>
 <hr />
 <h2 id="6-编译期生成表格-vs-运行时生成内存与闪存的权衡">6. 编译期生成表格 vs 运行时生成：内存与闪存的权衡<a class="headerlink" href="#6-编译期生成表格-vs-运行时生成内存与闪存的权衡" title="链接到此章节">&para;</a></h2>
@@ -4498,7 +4587,7 @@ using BaudCfg = ConfigItem<cfg_name>;
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

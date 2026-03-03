@@ -4294,21 +4294,21 @@
       
       
       
-        <a href="../../../tags/#tag:nrvo" class="md-tag">NRVO</a>
+        <span class="md-tag">NRVO</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:rvo" class="md-tag">RVO</a>
+        <span class="md-tag">RVO</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:返回值优化" class="md-tag">返回值优化</a>
+        <span class="md-tag">返回值优化</span>
       
     
   </nav>
@@ -4329,135 +4329,133 @@
 <h2 id="rvonrvo-究竟是什么">RVO、NRVO 究竟是什么<a class="headerlink" href="#rvonrvo-究竟是什么" title="链接到此章节">&para;</a></h2>
 <p>想象函数要返回一个大对象：如果按字面实现，函数会在内部构造一个临时对象，然后拷贝（或移动）到调用点；拷贝很贵。RVO/NRVO 的核心思路是，把"要返回的对象"<strong>直接在调用者提供的内存里构造</strong>，函数体内构造的就是最终对象——没有中间拷贝，也没有额外分配。RVO（匿名返回值优化）指的是直接返回一个临时表达式；NRVO（命名返回值优化）指的是返回函数内部的<strong>命名局部变量</strong>时进行的优化。</p>
 <p>举个直观的对比：</p>
-<p>```cpp
-// 假设 MyBigType 的拷贝/移动很贵
-MyBigType make1() {
-    MyBigType tmp(...); // 命名局部变量 tmp
-    // 若触发 NRVO，tmp 会在调用者的空间中直接构造
-    return tmp;         // NRVO 有机会发生
-}</p>
-<p>MyBigType make2() {
-    return MyBigType(...); // 直接返回临时，RVO 有机会发生
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 假设 MyBigType 的拷贝/移动很贵</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">MyBigType</span><span class="w"> </span><span class="nf">make1</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">MyBigType</span><span class="w"> </span><span class="n">tmp</span><span class="p">(...);</span><span class="w"> </span><span class="c1">// 命名局部变量 tmp</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="c1">// 若触发 NRVO，tmp 会在调用者的空间中直接构造</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">tmp</span><span class="p">;</span><span class="w">         </span><span class="c1">// NRVO 有机会发生</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">MyBigType</span><span class="w"> </span><span class="nf">make2</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">MyBigType</span><span class="p">(...);</span><span class="w"> </span><span class="c1">// 直接返回临时，RVO 有机会发生</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <details>
 <summary>查看完整可编译示例</summary>
 
-```cpp
-// RVO (Return Value Optimization) 和 NRVO (Named Return Value Optimization) 示例
-
-#include <iostream>
-#include <cstdint>
-#include <string>
-
-// ==================== 测试 RVO/NRVO 的类 ====================
-class Buffer
-{
-public:
-    Buffer() {
-        std::cout << "Buffer: 默认构造" << std::endl;
-    }
-
-    Buffer(size_t size) : size_(size) {
-        std::cout << "Buffer: 带参构造, size=" << size_ << std::endl;
-    }
-
-    // 拷贝构造
-    Buffer(const Buffer& other) : size_(other.size_) {
-        std::cout << "Buffer: 拷贝构造" << std::endl;
-    }
-
-    // 移动构造
-    Buffer(Buffer&& other) noexcept : size_(other.size_) {
-        std::cout << "Buffer: 移动构造" << std::endl;
-        other.size_ = 0;
-    }
-
-    // 拷贝赋值
-    Buffer& operator=(const Buffer& other) {
-        size_ = other.size_;
-        std::cout << "Buffer: 拷贝赋值" << std::endl;
-        return *this;
-    }
-
-    // 移动赋值
-    Buffer& operator=(Buffer&& other) noexcept {
-        size_ = other.size_;
-        other.size_ = 0;
-        std::cout << "Buffer: 移动赋值" << std::endl;
-        return *this;
-    }
-
-    ~Buffer() {
-        if (size_ > 0) {
-            std::cout << "Buffer: 析构, size=" << size_ << std::endl;
-        } else {
-            std::cout << "Buffer: 析构 (已移动)" << std::endl;
-        }
-    }
-
-    size_t size() const { return size_; }
-
-private:
-    size_t size_;
-};
-
-// ==================== 返回临时对象（RVO）====================
-Buffer create_buffer_temporary(size_t size) {
-    return Buffer(size);  // RVO: 直接在调用点构造
-}
-
-// ==================== 返回命名对象（NRVO）====================
-Buffer create_buffer_named(size_t size) {
-    Buffer buf(size);
-    return buf;  // NRVO: 直接在调用点构造
-}
-
-// ==================== 条件返回（可能阻止优化）====================
-Buffer create_buffer_conditional(bool use_large) {
-    Buffer small(64);
-    Buffer large(1024);
-
-    if (use_large) {
-        return large;  // 可能阻止 NRVO
-    } else {
-        return small;
-    }
-}
-
-// ==================== 演示主函数 ====================
-int main() {
-    std::cout << "=== RVO/NRVO 示例 ===" << std::endl;
-
-    // 1. RVO - 返回临时对象
-    std::cout << "\n--- RVO - 返回临时对象 ---" << std::endl;
-    std::cout << "创建 buf1..." << std::endl;
-    Buffer buf1 = create_buffer_temporary(256);
-    std::cout << "buf1 size: " << buf1.size() << std::endl;
-
-    // 2. NRVO - 返回命名对象
-    std::cout << "\n--- NRVO - 返回命名对象 ---" << std::endl;
-    std::cout << "创建 buf2..." << std::endl;
-    Buffer buf2 = create_buffer_named(512);
-    std::cout << "buf2 size: " << buf2.size() << std::endl;
-
-    // 3. 条件返回（可能阻止优化）
-    std::cout << "\n--- 条件返回 ---" << std::endl;
-    std::cout << "创建 buf3..." << std::endl;
-    Buffer buf3 = create_buffer_conditional(true);
-    std::cout << "buf3 size: " << buf3.size() << std::endl;
-
-    std::cout << "\n关键点：" << std::endl;
-    std::cout << "1. RVO: 返回临时对象时，直接在调用点构造" << std::endl;
-    std::cout << "2. NRVO: 返回命名对象时，直接在调用点构造" << std::endl;
-    std::cout << "3. C++17 起，保证了复制省略（guaranteed elision）" << std::endl;
-    std::cout << "4. 多个返回点可能阻止优化，但编译器仍然很聪明" << std::endl;
-    std::cout << "5. 不要写 return std::move(local_var)，会阻止 RVO！" << std::endl;
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="  1 "></span></a><span class="c1">// RVO (Return Value Optimization) 和 NRVO (Named Return Value Optimization) 示例</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="  2 "></span></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="  3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="  4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="  5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="  6 "></span></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos="  7 "></span></a><span class="c1">// ==================== 测试 RVO/NRVO 的类 ====================</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos="  8 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Buffer</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos="  9 "></span></a><span class="p">{</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos=" 10 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos=" 11 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos=" 12 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 默认构造&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos=" 13 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos=" 14 "></span></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos=" 15 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">size_</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos=" 16 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 带参构造, size=&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">size_</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos=" 17 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos=" 18 "></span></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos=" 19 "></span></a><span class="w">    </span><span class="c1">// 拷贝构造</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos=" 20 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Buffer</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">size_</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos=" 21 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 拷贝构造&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><a href="#__codelineno-1-22"><span class="linenos" data-linenos=" 22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a><a href="#__codelineno-1-23"><span class="linenos" data-linenos=" 23 "></span></a>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a><a href="#__codelineno-1-24"><span class="linenos" data-linenos=" 24 "></span></a><span class="w">    </span><span class="c1">// 移动构造</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a><a href="#__codelineno-1-25"><span class="linenos" data-linenos=" 25 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="p">(</span><span class="n">Buffer</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">size_</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a><a href="#__codelineno-1-26"><span class="linenos" data-linenos=" 26 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 移动构造&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27"></a><a href="#__codelineno-1-27"><span class="linenos" data-linenos=" 27 "></span></a><span class="w">        </span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28"></a><a href="#__codelineno-1-28"><span class="linenos" data-linenos=" 28 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29"></a><a href="#__codelineno-1-29"><span class="linenos" data-linenos=" 29 "></span></a>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30"></a><a href="#__codelineno-1-30"><span class="linenos" data-linenos=" 30 "></span></a><span class="w">    </span><span class="c1">// 拷贝赋值</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31"></a><a href="#__codelineno-1-31"><span class="linenos" data-linenos=" 31 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Buffer</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32"></a><a href="#__codelineno-1-32"><span class="linenos" data-linenos=" 32 "></span></a><span class="w">        </span><span class="n">size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="p">;</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33"></a><a href="#__codelineno-1-33"><span class="linenos" data-linenos=" 33 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 拷贝赋值&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34"></a><a href="#__codelineno-1-34"><span class="linenos" data-linenos=" 34 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35"></a><a href="#__codelineno-1-35"><span class="linenos" data-linenos=" 35 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36"></a><a href="#__codelineno-1-36"><span class="linenos" data-linenos=" 36 "></span></a>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37"></a><a href="#__codelineno-1-37"><span class="linenos" data-linenos=" 37 "></span></a><span class="w">    </span><span class="c1">// 移动赋值</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38"></a><a href="#__codelineno-1-38"><span class="linenos" data-linenos=" 38 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Buffer</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39"></a><a href="#__codelineno-1-39"><span class="linenos" data-linenos=" 39 "></span></a><span class="w">        </span><span class="n">size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="p">;</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40"></a><a href="#__codelineno-1-40"><span class="linenos" data-linenos=" 40 "></span></a><span class="w">        </span><span class="n">other</span><span class="p">.</span><span class="n">size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41"></a><a href="#__codelineno-1-41"><span class="linenos" data-linenos=" 41 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 移动赋值&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42"></a><a href="#__codelineno-1-42"><span class="linenos" data-linenos=" 42 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43"></a><a href="#__codelineno-1-43"><span class="linenos" data-linenos=" 43 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-44"><a id="__codelineno-1-44" name="__codelineno-1-44"></a><a href="#__codelineno-1-44"><span class="linenos" data-linenos=" 44 "></span></a>
+</span><span id="__span-1-45"><a id="__codelineno-1-45" name="__codelineno-1-45"></a><a href="#__codelineno-1-45"><span class="linenos" data-linenos=" 45 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">Buffer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-46"><a id="__codelineno-1-46" name="__codelineno-1-46"></a><a href="#__codelineno-1-46"><span class="linenos" data-linenos=" 46 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">size_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-47"><a id="__codelineno-1-47" name="__codelineno-1-47"></a><a href="#__codelineno-1-47"><span class="linenos" data-linenos=" 47 "></span></a><span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 析构, size=&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">size_</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-48"><a id="__codelineno-1-48" name="__codelineno-1-48"></a><a href="#__codelineno-1-48"><span class="linenos" data-linenos=" 48 "></span></a><span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-49"><a id="__codelineno-1-49" name="__codelineno-1-49"></a><a href="#__codelineno-1-49"><span class="linenos" data-linenos=" 49 "></span></a><span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Buffer: 析构 (已移动)&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50"></a><a href="#__codelineno-1-50"><span class="linenos" data-linenos=" 50 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51"></a><a href="#__codelineno-1-51"><span class="linenos" data-linenos=" 51 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52"></a><a href="#__codelineno-1-52"><span class="linenos" data-linenos=" 52 "></span></a>
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53"></a><a href="#__codelineno-1-53"><span class="linenos" data-linenos=" 53 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">size_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54"></a><a href="#__codelineno-1-54"><span class="linenos" data-linenos=" 54 "></span></a>
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55"></a><a href="#__codelineno-1-55"><span class="linenos" data-linenos=" 55 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56"></a><a href="#__codelineno-1-56"><span class="linenos" data-linenos=" 56 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size_</span><span class="p">;</span>
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57"></a><a href="#__codelineno-1-57"><span class="linenos" data-linenos=" 57 "></span></a><span class="p">};</span>
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58"></a><a href="#__codelineno-1-58"><span class="linenos" data-linenos=" 58 "></span></a>
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59"></a><a href="#__codelineno-1-59"><span class="linenos" data-linenos=" 59 "></span></a><span class="c1">// ==================== 返回临时对象（RVO）====================</span>
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60"></a><a href="#__codelineno-1-60"><span class="linenos" data-linenos=" 60 "></span></a><span class="n">Buffer</span><span class="w"> </span><span class="nf">create_buffer_temporary</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61"></a><a href="#__codelineno-1-61"><span class="linenos" data-linenos=" 61 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Buffer</span><span class="p">(</span><span class="n">size</span><span class="p">);</span><span class="w">  </span><span class="c1">// RVO: 直接在调用点构造</span>
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62"></a><a href="#__codelineno-1-62"><span class="linenos" data-linenos=" 62 "></span></a><span class="p">}</span>
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63"></a><a href="#__codelineno-1-63"><span class="linenos" data-linenos=" 63 "></span></a>
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64"></a><a href="#__codelineno-1-64"><span class="linenos" data-linenos=" 64 "></span></a><span class="c1">// ==================== 返回命名对象（NRVO）====================</span>
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65"></a><a href="#__codelineno-1-65"><span class="linenos" data-linenos=" 65 "></span></a><span class="n">Buffer</span><span class="w"> </span><span class="nf">create_buffer_named</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66"></a><a href="#__codelineno-1-66"><span class="linenos" data-linenos=" 66 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">buf</span><span class="p">(</span><span class="n">size</span><span class="p">);</span>
+</span><span id="__span-1-67"><a id="__codelineno-1-67" name="__codelineno-1-67"></a><a href="#__codelineno-1-67"><span class="linenos" data-linenos=" 67 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span><span class="w">  </span><span class="c1">// NRVO: 直接在调用点构造</span>
+</span><span id="__span-1-68"><a id="__codelineno-1-68" name="__codelineno-1-68"></a><a href="#__codelineno-1-68"><span class="linenos" data-linenos=" 68 "></span></a><span class="p">}</span>
+</span><span id="__span-1-69"><a id="__codelineno-1-69" name="__codelineno-1-69"></a><a href="#__codelineno-1-69"><span class="linenos" data-linenos=" 69 "></span></a>
+</span><span id="__span-1-70"><a id="__codelineno-1-70" name="__codelineno-1-70"></a><a href="#__codelineno-1-70"><span class="linenos" data-linenos=" 70 "></span></a><span class="c1">// ==================== 条件返回（可能阻止优化）====================</span>
+</span><span id="__span-1-71"><a id="__codelineno-1-71" name="__codelineno-1-71"></a><a href="#__codelineno-1-71"><span class="linenos" data-linenos=" 71 "></span></a><span class="n">Buffer</span><span class="w"> </span><span class="nf">create_buffer_conditional</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">use_large</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-72"><a id="__codelineno-1-72" name="__codelineno-1-72"></a><a href="#__codelineno-1-72"><span class="linenos" data-linenos=" 72 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">small</span><span class="p">(</span><span class="mi">64</span><span class="p">);</span>
+</span><span id="__span-1-73"><a id="__codelineno-1-73" name="__codelineno-1-73"></a><a href="#__codelineno-1-73"><span class="linenos" data-linenos=" 73 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">large</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+</span><span id="__span-1-74"><a id="__codelineno-1-74" name="__codelineno-1-74"></a><a href="#__codelineno-1-74"><span class="linenos" data-linenos=" 74 "></span></a>
+</span><span id="__span-1-75"><a id="__codelineno-1-75" name="__codelineno-1-75"></a><a href="#__codelineno-1-75"><span class="linenos" data-linenos=" 75 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">use_large</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-76"><a id="__codelineno-1-76" name="__codelineno-1-76"></a><a href="#__codelineno-1-76"><span class="linenos" data-linenos=" 76 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">large</span><span class="p">;</span><span class="w">  </span><span class="c1">// 可能阻止 NRVO</span>
+</span><span id="__span-1-77"><a id="__codelineno-1-77" name="__codelineno-1-77"></a><a href="#__codelineno-1-77"><span class="linenos" data-linenos=" 77 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-78"><a id="__codelineno-1-78" name="__codelineno-1-78"></a><a href="#__codelineno-1-78"><span class="linenos" data-linenos=" 78 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">small</span><span class="p">;</span>
+</span><span id="__span-1-79"><a id="__codelineno-1-79" name="__codelineno-1-79"></a><a href="#__codelineno-1-79"><span class="linenos" data-linenos=" 79 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-80"><a id="__codelineno-1-80" name="__codelineno-1-80"></a><a href="#__codelineno-1-80"><span class="linenos" data-linenos=" 80 "></span></a><span class="p">}</span>
+</span><span id="__span-1-81"><a id="__codelineno-1-81" name="__codelineno-1-81"></a><a href="#__codelineno-1-81"><span class="linenos" data-linenos=" 81 "></span></a>
+</span><span id="__span-1-82"><a id="__codelineno-1-82" name="__codelineno-1-82"></a><a href="#__codelineno-1-82"><span class="linenos" data-linenos=" 82 "></span></a><span class="c1">// ==================== 演示主函数 ====================</span>
+</span><span id="__span-1-83"><a id="__codelineno-1-83" name="__codelineno-1-83"></a><a href="#__codelineno-1-83"><span class="linenos" data-linenos=" 83 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-84"><a id="__codelineno-1-84" name="__codelineno-1-84"></a><a href="#__codelineno-1-84"><span class="linenos" data-linenos=" 84 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== RVO/NRVO 示例 ===&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-85"><a id="__codelineno-1-85" name="__codelineno-1-85"></a><a href="#__codelineno-1-85"><span class="linenos" data-linenos=" 85 "></span></a>
+</span><span id="__span-1-86"><a id="__codelineno-1-86" name="__codelineno-1-86"></a><a href="#__codelineno-1-86"><span class="linenos" data-linenos=" 86 "></span></a><span class="w">    </span><span class="c1">// 1. RVO - 返回临时对象</span>
+</span><span id="__span-1-87"><a id="__codelineno-1-87" name="__codelineno-1-87"></a><a href="#__codelineno-1-87"><span class="linenos" data-linenos=" 87 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">--- RVO - 返回临时对象 ---&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-88"><a id="__codelineno-1-88" name="__codelineno-1-88"></a><a href="#__codelineno-1-88"><span class="linenos" data-linenos=" 88 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;创建 buf1...&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-89"><a id="__codelineno-1-89" name="__codelineno-1-89"></a><a href="#__codelineno-1-89"><span class="linenos" data-linenos=" 89 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">buf1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_buffer_temporary</span><span class="p">(</span><span class="mi">256</span><span class="p">);</span>
+</span><span id="__span-1-90"><a id="__codelineno-1-90" name="__codelineno-1-90"></a><a href="#__codelineno-1-90"><span class="linenos" data-linenos=" 90 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;buf1 size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">buf1</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-91"><a id="__codelineno-1-91" name="__codelineno-1-91"></a><a href="#__codelineno-1-91"><span class="linenos" data-linenos=" 91 "></span></a>
+</span><span id="__span-1-92"><a id="__codelineno-1-92" name="__codelineno-1-92"></a><a href="#__codelineno-1-92"><span class="linenos" data-linenos=" 92 "></span></a><span class="w">    </span><span class="c1">// 2. NRVO - 返回命名对象</span>
+</span><span id="__span-1-93"><a id="__codelineno-1-93" name="__codelineno-1-93"></a><a href="#__codelineno-1-93"><span class="linenos" data-linenos=" 93 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">--- NRVO - 返回命名对象 ---&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-94"><a id="__codelineno-1-94" name="__codelineno-1-94"></a><a href="#__codelineno-1-94"><span class="linenos" data-linenos=" 94 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;创建 buf2...&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-95"><a id="__codelineno-1-95" name="__codelineno-1-95"></a><a href="#__codelineno-1-95"><span class="linenos" data-linenos=" 95 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">buf2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_buffer_named</span><span class="p">(</span><span class="mi">512</span><span class="p">);</span>
+</span><span id="__span-1-96"><a id="__codelineno-1-96" name="__codelineno-1-96"></a><a href="#__codelineno-1-96"><span class="linenos" data-linenos=" 96 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;buf2 size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">buf2</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-97"><a id="__codelineno-1-97" name="__codelineno-1-97"></a><a href="#__codelineno-1-97"><span class="linenos" data-linenos=" 97 "></span></a>
+</span><span id="__span-1-98"><a id="__codelineno-1-98" name="__codelineno-1-98"></a><a href="#__codelineno-1-98"><span class="linenos" data-linenos=" 98 "></span></a><span class="w">    </span><span class="c1">// 3. 条件返回（可能阻止优化）</span>
+</span><span id="__span-1-99"><a id="__codelineno-1-99" name="__codelineno-1-99"></a><a href="#__codelineno-1-99"><span class="linenos" data-linenos=" 99 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">--- 条件返回 ---&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-100"><a id="__codelineno-1-100" name="__codelineno-1-100"></a><a href="#__codelineno-1-100"><span class="linenos" data-linenos="100 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;创建 buf3...&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-101"><a id="__codelineno-1-101" name="__codelineno-1-101"></a><a href="#__codelineno-1-101"><span class="linenos" data-linenos="101 "></span></a><span class="w">    </span><span class="n">Buffer</span><span class="w"> </span><span class="n">buf3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">create_buffer_conditional</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+</span><span id="__span-1-102"><a id="__codelineno-1-102" name="__codelineno-1-102"></a><a href="#__codelineno-1-102"><span class="linenos" data-linenos="102 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;buf3 size: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">buf3</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-103"><a id="__codelineno-1-103" name="__codelineno-1-103"></a><a href="#__codelineno-1-103"><span class="linenos" data-linenos="103 "></span></a>
+</span><span id="__span-1-104"><a id="__codelineno-1-104" name="__codelineno-1-104"></a><a href="#__codelineno-1-104"><span class="linenos" data-linenos="104 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">关键点：&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-105"><a id="__codelineno-1-105" name="__codelineno-1-105"></a><a href="#__codelineno-1-105"><span class="linenos" data-linenos="105 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;1. RVO: 返回临时对象时，直接在调用点构造&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-106"><a id="__codelineno-1-106" name="__codelineno-1-106"></a><a href="#__codelineno-1-106"><span class="linenos" data-linenos="106 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;2. NRVO: 返回命名对象时，直接在调用点构造&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-107"><a id="__codelineno-1-107" name="__codelineno-1-107"></a><a href="#__codelineno-1-107"><span class="linenos" data-linenos="107 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;3. C++17 起，保证了复制省略（guaranteed elision）&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-108"><a id="__codelineno-1-108" name="__codelineno-1-108"></a><a href="#__codelineno-1-108"><span class="linenos" data-linenos="108 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;4. 多个返回点可能阻止优化，但编译器仍然很聪明&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-109"><a id="__codelineno-1-109" name="__codelineno-1-109"></a><a href="#__codelineno-1-109"><span class="linenos" data-linenos="109 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;5. 不要写 return std::move(local_var)，会阻止 RVO！&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-1-110"><a id="__codelineno-1-110" name="__codelineno-1-110"></a><a href="#__codelineno-1-110"><span class="linenos" data-linenos="110 "></span></a>
+</span><span id="__span-1-111"><a id="__codelineno-1-111" name="__codelineno-1-111"></a><a href="#__codelineno-1-111"><span class="linenos" data-linenos="111 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-1-112"><a id="__codelineno-1-112" name="__codelineno-1-112"></a><a href="#__codelineno-1-112"><span class="linenos" data-linenos="112 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
@@ -4476,19 +4474,19 @@ int main() {
 <li><strong>编译器被禁用消除的标志</strong>：很多编译器有关闭拷贝消除的开关（如 GCC 的 <code>-fno-elide-constructors</code>），用于测试行为；不要在发布构建中打开这个。</li>
 </ol>
 <p>举个阻止 NRVO 的小例子：</p>
-<p><code>cpp
-MyBigType bad(bool flag) {
-    MyBigType a(...);
-    MyBigType b(...);
-    if (flag) return a; // 可能无法 NRVO，因为另一分支返回不同命名对象
-    else     return b;
-}</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">MyBigType</span><span class="w"> </span><span class="nf">bad</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="n">MyBigType</span><span class="w"> </span><span class="n">a</span><span class="p">(...);</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="n">MyBigType</span><span class="w"> </span><span class="n">b</span><span class="p">(...);</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w"> </span><span class="c1">// 可能无法 NRVO，因为另一分支返回不同命名对象</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="k">else</span><span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>相比之下，下面更有利于 NRVO（或至少更简单）：</p>
-<p><code>cpp
-MyBigType good(bool flag) {
-    if (flag) return MyBigType(...); // RVO 或者 C++17 保证消除
-    else     return MyBigType(...);
-}</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">MyBigType</span><span class="w"> </span><span class="nf">good</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">MyBigType</span><span class="p">(...);</span><span class="w"> </span><span class="c1">// RVO 或者 C++17 保证消除</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="k">else</span><span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="n">MyBigType</span><span class="p">(...);</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <hr />
 <h2 id="stdmove-的误用"><code>std::move</code> 的误用<a class="headerlink" href="#stdmove-的误用" title="链接到此章节">&para;</a></h2>
 <p>很多人习惯在返回局部变量时写 <code>return std::move(x);</code>，自以为可以强制移动从而更快。实际上：</p>
@@ -4531,7 +4529,7 @@ MyBigType good(bool flag) {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

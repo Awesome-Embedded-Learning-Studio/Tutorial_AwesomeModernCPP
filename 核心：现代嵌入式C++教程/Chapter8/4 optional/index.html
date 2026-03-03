@@ -2683,6 +2683,83 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#更高级的构造和操作" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        更"高级"的构造和操作
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#返回值风格函数应该返回-optional-还是抛异常" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        返回值风格：函数应该返回 optional 还是抛异常？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#与指针的对比别互相嫉妒" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与指针的对比（别互相嫉妒）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#与stdvariant的边界" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与std::variant的边界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见误解与陷阱请认真" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见误解与陷阱（请认真）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#实战小技巧只三条别贪多" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实战小技巧（只三条，别贪多）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#小示例用-optional-实现链式转换" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小示例：用 optional 实现链式转换
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4250,21 +4327,21 @@
       
       
       
-        <a href="../../../tags/#tag:c17" class="md-tag">C++17</a>
+        <span class="md-tag">C++17</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:optional" class="md-tag">optional</a>
+        <span class="md-tag">optional</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:类型安全" class="md-tag">类型安全</a>
+        <span class="md-tag">类型安全</span>
       
     
   </nav>
@@ -4284,35 +4361,36 @@
 <li>比异常适合用于"失败是常态"的场景（例如解析配置、查找缓存），调用者可以优雅地检查并处理。</li>
 </ul>
 <h2 id="基本用法">基本用法<a class="headerlink" href="#基本用法" title="链接到此章节">&para;</a></h2>
-<p>```cpp</p>
-<h1 id="include">include <optional><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include_1">include <string><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
-<h1 id="include_2">include <iostream><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
-<p>std::optional<std::string> read_env(const std::string&amp; key) {
-    // 假装从环境里找，没找到就返回空
-    if (key == "HOME") return std::string("/home/alice");
-    return std::nullopt;
-}</p>
-<p>int main() {
-    auto maybe_home = read_env("HOME");
-    if (maybe_home) {                     // 等价于 maybe_home.has_value()
-        std::cout &lt;&lt; "home: " &lt;&lt; *maybe_home &lt;&lt; '\n'; // 解引用
-    } else {
-        std::cout &lt;&lt; "no home\n";
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>// 安全获取：有值则返回，否则返回默认
-<span class="linenos" data-linenos=" 2 "></span>std::string home = maybe_home.value_or(&quot;/tmp&quot;);
-<span class="linenos" data-linenos=" 3 "></span>std::cout &lt;&lt; &quot;home-or-fallback: &quot; &lt;&lt; home &lt;&lt; &#39;\n&#39;;
-<span class="linenos" data-linenos=" 4 "></span>
-<span class="linenos" data-linenos=" 5 "></span>// value()：没有值会抛 std::bad_optional_access
-<span class="linenos" data-linenos=" 6 "></span>try {
-<span class="linenos" data-linenos=" 7 "></span>    std::cout &lt;&lt; maybe_home.value() &lt;&lt; &#39;\n&#39;;
-<span class="linenos" data-linenos=" 8 "></span>} catch (const std::bad_optional_access&amp;) {
-<span class="linenos" data-linenos=" 9 "></span>    std::cout &lt;&lt; &quot;oops, no value\n&quot;;
-<span class="linenos" data-linenos="10 "></span>}
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;optional&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">read_env</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="c1">// 假装从环境里找，没找到就返回空</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;HOME&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;/home/alice&quot;</span><span class="p">);</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">}</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">maybe_home</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_env</span><span class="p">(</span><span class="s">&quot;HOME&quot;</span><span class="p">);</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">maybe_home</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">                     </span><span class="c1">// 等价于 maybe_home.has_value()</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;home: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="o">*</span><span class="n">maybe_home</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span><span class="w"> </span><span class="c1">// 解引用</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;no home</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><a href="#__codelineno-0-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="c1">// 安全获取：有值则返回，否则返回默认</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><a href="#__codelineno-0-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">maybe_home</span><span class="p">.</span><span class="n">value_or</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">);</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><a href="#__codelineno-0-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;home-or-fallback: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><a href="#__codelineno-0-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><a href="#__codelineno-0-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="c1">// value()：没有值会抛 std::bad_optional_access</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a><a href="#__codelineno-0-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><a href="#__codelineno-0-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">maybe_home</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><a href="#__codelineno-0-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">bad_optional_access</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><a href="#__codelineno-0-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;oops, no value</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><a href="#__codelineno-0-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><a href="#__codelineno-0-29"><span class="linenos" data-linenos="29 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>要点：</p>
 <ul>
 <li><code>std::nullopt</code>：表示"空的 optional"；</li>
@@ -4321,35 +4399,38 @@
 <li><code>value()</code> 在空时会抛 <code>std::bad_optional_access</code>（所以慎用）。</li>
 </ul>
 <h2 id="更高级的构造和操作">更"高级"的构造和操作<a class="headerlink" href="#更高级的构造和操作" title="链接到此章节">&para;</a></h2>
-<p>```cpp
-std::optional<int> a;                 // empty
-std::optional<int> b = 42;            // contains 42
-std::optional<int> c = std::nullopt;  // empty, 显式</p>
-<p>// 就地构造（避免额外拷贝）
-std::optional<std::string> s(std::in_place, 10, 'x'); // "xxxxxxxxxx"</p>
-<p>// emplace：重用 optional 的存储重新构造值
-s.emplace("hello");</p>
-<p>// reset：清空
-s.reset();</p>
-<p>// 可选地持有引用 —— 注意语义差异
-int x = 7;
-std::optional<int&> ref = x; // optional 可以保存引用（表示"可能引用某物"）
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w">                 </span><span class="c1">// empty</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span><span class="w">            </span><span class="c1">// contains 42</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w">  </span><span class="c1">// empty, 显式</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1">// 就地构造（避免额外拷贝）</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">in_place</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">);</span><span class="w"> </span><span class="c1">// &quot;xxxxxxxxxx&quot;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// emplace：重用 optional 的存储重新构造值</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1">// reset：清空</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="n">s</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="c1">// 可选地持有引用 —— 注意语义差异</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="p">;</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&amp;&gt;</span><span class="w"> </span><span class="n">ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="c1">// optional 可以保存引用（表示&quot;可能引用某物&quot;）</span>
+</span></code></pre></div>
 <p>小提醒：<code>std::optional&lt;T&amp;&gt;</code> 是允许的，但它的语义是"可能引用某个已存在的对象"，并不会管理生命周期——别让引用悬空。</p>
 <h2 id="返回值风格函数应该返回-optional-还是抛异常">返回值风格：函数应该返回 <code>optional</code> 还是抛异常？<a class="headerlink" href="#返回值风格函数应该返回-optional-还是抛异常" title="链接到此章节">&para;</a></h2>
 <p><code>optional</code> 非常适合那些<strong>查找类</strong>、<strong>解析类</strong>函数：失败并非真正的"错误"，只是"未找到"或"不可用"。例如 <code>find_user(id)</code>、<code>parse_int(str)</code> 都适合返回 <code>optional</code>。而真正的程序错误、逻辑错误仍然建议用异常或其他错误处理机制。</p>
 <p>示例：</p>
-<p><code>cpp
-std::optional&lt;int&gt; parse_int(const std::string&amp; s) {
-    try {
-        size_t idx;
-        int v = std::stoi(s, &amp;idx);
-        if (idx != s.size()) return std::nullopt; // 有多余字符
-        return v;
-    } catch (...) {
-        return std::nullopt;
-    }
-}</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">idx</span><span class="p">);</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"> </span><span class="c1">// 有多余字符</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">v</span><span class="p">;</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>调用者可以优雅地分支处理，不被异常打断控制流。</p>
 <h2 id="与指针的对比别互相嫉妒">与指针的对比（别互相嫉妒）<a class="headerlink" href="#与指针的对比别互相嫉妒" title="链接到此章节">&para;</a></h2>
 <ul>
@@ -4376,227 +4457,221 @@ std::optional&lt;int&gt; parse_int(const std::string&amp; s) {
 <blockquote>
 <p>许多函数式语言能优雅链式处理 <code>Maybe</code> / <code>Option</code>，C++17 没有内建 <code>map</code>，但可以写出类似风格：</p>
 </blockquote>
-<p>```cpp
-template<typename T, typename F>
-auto optional_map(std::optional<T> const&amp; opt, F f)
-    -&gt; std::optional<decltype(f(*opt))>
-{
-    if (opt) return f(*opt);
-    return std::nullopt;
-}</p>
-<p>// 使用：
-auto s = std::optional<std::string>{"42"};
-auto maybe_int = optional_map(s, <a href="auto&amp; str" return="return" std::stoi_str_="std::stoi(str);"></a>);
-// maybe_int 是 std::optional<int>
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">F</span><span class="o">&gt;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">opt</span><span class="p">))</span><span class="o">&gt;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="p">{</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">opt</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">opt</span><span class="p">);</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="p">}</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="c1">// 使用：</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">{</span><span class="s">&quot;42&quot;</span><span class="p">};</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><a href="#__codelineno-3-11"><span class="linenos" data-linenos="11 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">maybe_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="p">[](</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">str</span><span class="p">){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">str</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><a href="#__codelineno-3-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1">// maybe_int 是 std::optional&lt;int&gt;</span>
+</span></code></pre></div>
 <p>这是"手工链式"，写成小工具函数后代码会更优雅。</p>
 <p><code>std::optional</code> 是 C++ 标准库里很实用的小玩意儿：语义明确、表达力强、能让 API 更自描述。别把它当成万能胶：当你确实需要传递错误信息、或涉及复杂所有权时，选择适合的工具。但要是你只是要表达"这里可能有值，也可能没有值"——别再用 <code>-1</code>、别再用 <code>nullptr</code>，用 <code>std::optional</code>，让你的代码看起来更像成年人写的。</p>
 <details>
 <summary>查看完整可编译示例</summary>
 
-```cpp
-// optional_basics.cpp
-// std::optional 基本用法示例
-
-#include <optional>
-#include <string>
-#include <iostream>
-
-std::optional<std::string> read_env(const std::string& key) {
-    // 模拟从环境变量读取
-    if (key == "HOME") return std::string("/home/alice");
-    return std::nullopt;
-}
-
-int main() {
-    std::cout << "=== std::optional Basics ===\n\n";
-
-    auto maybe_home = read_env("HOME");
-    if (maybe_home) {
-        std::cout << "home: " << *maybe_home << "\n";
-    } else {
-        std::cout << "no home\n";
-    }
-
-    // value_or 提供默认值
-    std::string home = maybe_home.value_or("/tmp");
-    std::cout << "home-or-fallback: " << home << "\n";
-
-    // 测试不存在的键
-    auto maybe_path = read_env("NONEXISTENT");
-    if (!maybe_path.has_value()) {
-        std::cout << "\nNONEXISTENT key not found\n";
-    }
-
-    // value() 会抛出异常
-    std::cout << "\nTrying value() on empty optional:\n";
-    try {
-        std::cout << maybe_path.value() << "\n";
-    } catch (const std::bad_optional_access&) {
-        std::cout << "Caught bad_optional_access\n";
-    }
-
-    // 演示构造方式
-    std::cout << "\n=== Construction ===\n";
-    std::optional<int> a;                    // empty
-    std::cout << "a: " << a.has_value() << "\n";
-
-    std::optional<int> b = 42;               // contains 42
-    std::cout << "b: " << b.value() << "\n";
-
-    std::optional<int> c = std::nullopt;     // empty
-    std::cout << "c: " << c.has_value() << "\n";
-
-    // 就地构造
-    std::optional<std::string> s(std::in_place, 10, 'x');
-    std::cout << "s: " << s.value() << "\n";
-
-    // emplace
-    s.emplace("hello");
-    std::cout << "s after emplace: " << s.value() << "\n";
-
-    // reset
-    s.reset();
-    std::cout << "s after reset: " << s.has_value() << "\n";
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// optional_basics.cpp</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// std::optional 基本用法示例</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;optional&gt;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">read_env</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">key</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="c1">// 模拟从环境变量读取</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;HOME&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;/home/alice&quot;</span><span class="p">);</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== std::optional Basics ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">maybe_home</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_env</span><span class="p">(</span><span class="s">&quot;HOME&quot;</span><span class="p">);</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">maybe_home</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;home: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="o">*</span><span class="n">maybe_home</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;no home</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22"></a><a href="#__codelineno-4-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23"></a><a href="#__codelineno-4-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24"></a><a href="#__codelineno-4-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="c1">// value_or 提供默认值</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25"></a><a href="#__codelineno-4-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">maybe_home</span><span class="p">.</span><span class="n">value_or</span><span class="p">(</span><span class="s">&quot;/tmp&quot;</span><span class="p">);</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26"></a><a href="#__codelineno-4-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;home-or-fallback: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">home</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27"></a><a href="#__codelineno-4-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28"></a><a href="#__codelineno-4-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="c1">// 测试不存在的键</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29"></a><a href="#__codelineno-4-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">maybe_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read_env</span><span class="p">(</span><span class="s">&quot;NONEXISTENT&quot;</span><span class="p">);</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30"></a><a href="#__codelineno-4-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">maybe_path</span><span class="p">.</span><span class="n">has_value</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31"></a><a href="#__codelineno-4-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">NONEXISTENT key not found</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32"></a><a href="#__codelineno-4-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33"></a><a href="#__codelineno-4-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34"></a><a href="#__codelineno-4-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="c1">// value() 会抛出异常</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35"></a><a href="#__codelineno-4-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Trying value() on empty optional:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36"></a><a href="#__codelineno-4-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37"></a><a href="#__codelineno-4-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">maybe_path</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38"></a><a href="#__codelineno-4-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">bad_optional_access</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39"></a><a href="#__codelineno-4-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Caught bad_optional_access</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-40"><a id="__codelineno-4-40" name="__codelineno-4-40"></a><a href="#__codelineno-4-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-41"><a id="__codelineno-4-41" name="__codelineno-4-41"></a><a href="#__codelineno-4-41"><span class="linenos" data-linenos="41 "></span></a>
+</span><span id="__span-4-42"><a id="__codelineno-4-42" name="__codelineno-4-42"></a><a href="#__codelineno-4-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="c1">// 演示构造方式</span>
+</span><span id="__span-4-43"><a id="__codelineno-4-43" name="__codelineno-4-43"></a><a href="#__codelineno-4-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Construction ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-44"><a id="__codelineno-4-44" name="__codelineno-4-44"></a><a href="#__codelineno-4-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w">                    </span><span class="c1">// empty</span>
+</span><span id="__span-4-45"><a id="__codelineno-4-45" name="__codelineno-4-45"></a><a href="#__codelineno-4-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;a: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-46"><a id="__codelineno-4-46" name="__codelineno-4-46"></a><a href="#__codelineno-4-46"><span class="linenos" data-linenos="46 "></span></a>
+</span><span id="__span-4-47"><a id="__codelineno-4-47" name="__codelineno-4-47"></a><a href="#__codelineno-4-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span><span class="w">               </span><span class="c1">// contains 42</span>
+</span><span id="__span-4-48"><a id="__codelineno-4-48" name="__codelineno-4-48"></a><a href="#__codelineno-4-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;b: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-49"><a id="__codelineno-4-49" name="__codelineno-4-49"></a><a href="#__codelineno-4-49"><span class="linenos" data-linenos="49 "></span></a>
+</span><span id="__span-4-50"><a id="__codelineno-4-50" name="__codelineno-4-50"></a><a href="#__codelineno-4-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w">     </span><span class="c1">// empty</span>
+</span><span id="__span-4-51"><a id="__codelineno-4-51" name="__codelineno-4-51"></a><a href="#__codelineno-4-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;c: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-52"><a id="__codelineno-4-52" name="__codelineno-4-52"></a><a href="#__codelineno-4-52"><span class="linenos" data-linenos="52 "></span></a>
+</span><span id="__span-4-53"><a id="__codelineno-4-53" name="__codelineno-4-53"></a><a href="#__codelineno-4-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">    </span><span class="c1">// 就地构造</span>
+</span><span id="__span-4-54"><a id="__codelineno-4-54" name="__codelineno-4-54"></a><a href="#__codelineno-4-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">in_place</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">);</span>
+</span><span id="__span-4-55"><a id="__codelineno-4-55" name="__codelineno-4-55"></a><a href="#__codelineno-4-55"><span class="linenos" data-linenos="55 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;s: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-56"><a id="__codelineno-4-56" name="__codelineno-4-56"></a><a href="#__codelineno-4-56"><span class="linenos" data-linenos="56 "></span></a>
+</span><span id="__span-4-57"><a id="__codelineno-4-57" name="__codelineno-4-57"></a><a href="#__codelineno-4-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="c1">// emplace</span>
+</span><span id="__span-4-58"><a id="__codelineno-4-58" name="__codelineno-4-58"></a><a href="#__codelineno-4-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">);</span>
+</span><span id="__span-4-59"><a id="__codelineno-4-59" name="__codelineno-4-59"></a><a href="#__codelineno-4-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;s after emplace: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-60"><a id="__codelineno-4-60" name="__codelineno-4-60"></a><a href="#__codelineno-4-60"><span class="linenos" data-linenos="60 "></span></a>
+</span><span id="__span-4-61"><a id="__codelineno-4-61" name="__codelineno-4-61"></a><a href="#__codelineno-4-61"><span class="linenos" data-linenos="61 "></span></a><span class="w">    </span><span class="c1">// reset</span>
+</span><span id="__span-4-62"><a id="__codelineno-4-62" name="__codelineno-4-62"></a><a href="#__codelineno-4-62"><span class="linenos" data-linenos="62 "></span></a><span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-4-63"><a id="__codelineno-4-63" name="__codelineno-4-63"></a><a href="#__codelineno-4-63"><span class="linenos" data-linenos="63 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;s after reset: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-4-64"><a id="__codelineno-4-64" name="__codelineno-4-64"></a><a href="#__codelineno-4-64"><span class="linenos" data-linenos="64 "></span></a>
+</span><span id="__span-4-65"><a id="__codelineno-4-65" name="__codelineno-4-65"></a><a href="#__codelineno-4-65"><span class="linenos" data-linenos="65 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-4-66"><a id="__codelineno-4-66" name="__codelineno-4-66"></a><a href="#__codelineno-4-66"><span class="linenos" data-linenos="66 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
 <details>
 <summary>查看解析函数完整示例</summary>
 
-```cpp
-// optional_parse.cpp
-// 使用 optional 的解析函数示例
-
-#include <optional>
-#include <string>
-#include <iostream>
-
-std::optional<int> parse_int(const std::string& s) {
-    try {
-        size_t idx;
-        int v = std::stoi(s, &idx);
-        if (idx != s.size()) return std::nullopt; // 有多余字符
-        return v;
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
-int main() {
-    std::cout << "=== parse_int with std::optional ===\n\n";
-
-    // 成功解析
-    auto r1 = parse_int("123");
-    if (r1) {
-        std::cout << "Parsed '123': " << r1.value() << "\n";
-    }
-
-    // 有多余字符
-    auto r2 = parse_int("123abc");
-    if (!r2) {
-        std::cout << "Failed to parse '123abc' (extra chars)\n";
-    }
-
-    // 完全无效
-    auto r3 = parse_int("abc");
-    if (!r3) {
-        std::cout << "Failed to parse 'abc' (invalid)\n";
-    }
-
-    // 使用 value_or
-    int result = parse_int("42").value_or(-1);
-    std::cout << "\nparse_int(\"42\").value_or(-1): " << result << "\n";
-
-    result = parse_int("invalid").value_or(-1);
-    std::cout << "parse_int(\"invalid\").value_or(-1): " << result << "\n";
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// optional_parse.cpp</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// 使用 optional 的解析函数示例</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;optional&gt;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">idx</span><span class="p">);</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"> </span><span class="c1">// 有多余字符</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">v</span><span class="p">;</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16"></a><a href="#__codelineno-5-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17"></a><a href="#__codelineno-5-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">}</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18"></a><a href="#__codelineno-5-18"><span class="linenos" data-linenos="18 "></span></a>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19"></a><a href="#__codelineno-5-19"><span class="linenos" data-linenos="19 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20"></a><a href="#__codelineno-5-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== parse_int with std::optional ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21"></a><a href="#__codelineno-5-21"><span class="linenos" data-linenos="21 "></span></a>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22"></a><a href="#__codelineno-5-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="c1">// 成功解析</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23"></a><a href="#__codelineno-5-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">r1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;123&quot;</span><span class="p">);</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24"></a><a href="#__codelineno-5-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25"></a><a href="#__codelineno-5-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Parsed &#39;123&#39;: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">r1</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26"></a><a href="#__codelineno-5-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27"></a><a href="#__codelineno-5-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28"></a><a href="#__codelineno-5-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="c1">// 有多余字符</span>
+</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29"></a><a href="#__codelineno-5-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">r2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;123abc&quot;</span><span class="p">);</span>
+</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30"></a><a href="#__codelineno-5-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">r2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31"></a><a href="#__codelineno-5-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Failed to parse &#39;123abc&#39; (extra chars)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32"></a><a href="#__codelineno-5-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33"></a><a href="#__codelineno-5-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34"></a><a href="#__codelineno-5-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">    </span><span class="c1">// 完全无效</span>
+</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35"></a><a href="#__codelineno-5-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">r3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;abc&quot;</span><span class="p">);</span>
+</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36"></a><a href="#__codelineno-5-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">r3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37"></a><a href="#__codelineno-5-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Failed to parse &#39;abc&#39; (invalid)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38"></a><a href="#__codelineno-5-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-5-39"><a id="__codelineno-5-39" name="__codelineno-5-39"></a><a href="#__codelineno-5-39"><span class="linenos" data-linenos="39 "></span></a>
+</span><span id="__span-5-40"><a id="__codelineno-5-40" name="__codelineno-5-40"></a><a href="#__codelineno-5-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 使用 value_or</span>
+</span><span id="__span-5-41"><a id="__codelineno-5-41" name="__codelineno-5-41"></a><a href="#__codelineno-5-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">).</span><span class="n">value_or</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span>
+</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42"></a><a href="#__codelineno-5-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">parse_int(</span><span class="se">\&quot;</span><span class="s">42</span><span class="se">\&quot;</span><span class="s">).value_or(-1): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-43"><a id="__codelineno-5-43" name="__codelineno-5-43"></a><a href="#__codelineno-5-43"><span class="linenos" data-linenos="43 "></span></a>
+</span><span id="__span-5-44"><a id="__codelineno-5-44" name="__codelineno-5-44"></a><a href="#__codelineno-5-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;invalid&quot;</span><span class="p">).</span><span class="n">value_or</span><span class="p">(</span><span class="mi">-1</span><span class="p">);</span>
+</span><span id="__span-5-45"><a id="__codelineno-5-45" name="__codelineno-5-45"></a><a href="#__codelineno-5-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;parse_int(</span><span class="se">\&quot;</span><span class="s">invalid</span><span class="se">\&quot;</span><span class="s">).value_or(-1): &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-46"><a id="__codelineno-5-46" name="__codelineno-5-46"></a><a href="#__codelineno-5-46"><span class="linenos" data-linenos="46 "></span></a>
+</span><span id="__span-5-47"><a id="__codelineno-5-47" name="__codelineno-5-47"></a><a href="#__codelineno-5-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-5-48"><a id="__codelineno-5-48" name="__codelineno-5-48"></a><a href="#__codelineno-5-48"><span class="linenos" data-linenos="48 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
 <details>
 <summary>查看链式转换完整示例</summary>
 
-```cpp
-// optional_chain.cpp
-// 使用 optional 实现链式转换
-
-#include <optional>
-#include <string>
-#include <iostream>
-
-// optional_map 工具函数
-template<typename T, typename F>
-auto optional_map(const std::optional<T>& opt, F f)
-    -> std::optional<decltype(f(*opt))>
-{
-    if (opt) return f(*opt);
-    return std::nullopt;
-}
-
-// 示例转换函数
-std::optional<int> parse_int(const std::string& s) {
-    try {
-        size_t idx;
-        int v = std::stoi(s, &idx);
-        if (idx != s.size()) return std::nullopt;
-        return v;
-    } catch (...) {
-        return std::nullopt;
-    }
-}
-
-std::optional<double> divide_by_2(int x) {
-    if (x == 0) return std::nullopt; // 避免 0 的某些情况
-    return static_cast<double>(x) / 2.0;
-}
-
-std::optional<std::string> to_string(double d) {
-    return std::to_string(d);
-}
-
-int main() {
-    std::cout << "=== Optional Chaining ===\n\n";
-
-    // 链式调用
-    auto result = optional_map(parse_int("42"), divide_by_2);
-    if (result) {
-        std::cout << "42 -> divide_by_2: " << result.value() << "\n";
-    }
-
-    // 更长的链
-    auto result2 = optional_map(
-        optional_map(parse_int("100"), divide_by_2),
-        to_string
-    );
-    if (result2) {
-        std::cout << "100 -> divide_by_2 -> to_string: " << result2.value() << "\n";
-    }
-
-    // 失败情况
-    auto result3 = optional_map(parse_int("invalid"), divide_by_2);
-    if (!result3) {
-        std::cout << "Parsing 'invalid' failed, chain short-circuited\n";
-    }
-
-    // 使用 lambda
-    auto s = std::optional<std::string>{"42"};
-    auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
-    std::cout << "\nString \"42\" -> int: " << maybe_int.value() << "\n";
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// optional_chain.cpp</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// 使用 optional 实现链式转换</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;optional&gt;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// optional_map 工具函数</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">F</span><span class="o">&gt;</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">F</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">opt</span><span class="p">))</span><span class="o">&gt;</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">{</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">opt</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">opt</span><span class="p">);</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a><span class="c1">// 示例转换函数</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18"></a><a href="#__codelineno-6-18"><span class="linenos" data-linenos="18 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">parse_int</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19"></a><a href="#__codelineno-6-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20"></a><a href="#__codelineno-6-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">idx</span><span class="p">;</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21"></a><a href="#__codelineno-6-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">idx</span><span class="p">);</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22"></a><a href="#__codelineno-6-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">idx</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23"></a><a href="#__codelineno-6-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">v</span><span class="p">;</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24"></a><a href="#__codelineno-6-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25"></a><a href="#__codelineno-6-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26"></a><a href="#__codelineno-6-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27"></a><a href="#__codelineno-6-27"><span class="linenos" data-linenos="27 "></span></a><span class="p">}</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28"></a><a href="#__codelineno-6-28"><span class="linenos" data-linenos="28 "></span></a>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29"></a><a href="#__codelineno-6-29"><span class="linenos" data-linenos="29 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">divide_by_2</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30"></a><a href="#__codelineno-6-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"> </span><span class="c1">// 避免 0 的某些情况</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31"></a><a href="#__codelineno-6-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">2.0</span><span class="p">;</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32"></a><a href="#__codelineno-6-32"><span class="linenos" data-linenos="32 "></span></a><span class="p">}</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33"></a><a href="#__codelineno-6-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34"></a><a href="#__codelineno-6-34"><span class="linenos" data-linenos="34 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">to_string</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35"></a><a href="#__codelineno-6-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="n">d</span><span class="p">);</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36"></a><a href="#__codelineno-6-36"><span class="linenos" data-linenos="36 "></span></a><span class="p">}</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37"></a><a href="#__codelineno-6-37"><span class="linenos" data-linenos="37 "></span></a>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38"></a><a href="#__codelineno-6-38"><span class="linenos" data-linenos="38 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39"></a><a href="#__codelineno-6-39"><span class="linenos" data-linenos="39 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;=== Optional Chaining ===</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40"></a><a href="#__codelineno-6-40"><span class="linenos" data-linenos="40 "></span></a>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41"></a><a href="#__codelineno-6-41"><span class="linenos" data-linenos="41 "></span></a><span class="w">    </span><span class="c1">// 链式调用</span>
+</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42"></a><a href="#__codelineno-6-42"><span class="linenos" data-linenos="42 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">divide_by_2</span><span class="p">);</span>
+</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43"></a><a href="#__codelineno-6-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44"></a><a href="#__codelineno-6-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;42 -&gt; divide_by_2: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45"></a><a href="#__codelineno-6-45"><span class="linenos" data-linenos="45 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46"></a><a href="#__codelineno-6-46"><span class="linenos" data-linenos="46 "></span></a>
+</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47"></a><a href="#__codelineno-6-47"><span class="linenos" data-linenos="47 "></span></a><span class="w">    </span><span class="c1">// 更长的链</span>
+</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48"></a><a href="#__codelineno-6-48"><span class="linenos" data-linenos="48 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">result2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span>
+</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49"></a><a href="#__codelineno-6-49"><span class="linenos" data-linenos="49 "></span></a><span class="w">        </span><span class="n">optional_map</span><span class="p">(</span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;100&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">divide_by_2</span><span class="p">),</span>
+</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50"></a><a href="#__codelineno-6-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">        </span><span class="n">to_string</span>
+</span><span id="__span-6-51"><a id="__codelineno-6-51" name="__codelineno-6-51"></a><a href="#__codelineno-6-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="p">);</span>
+</span><span id="__span-6-52"><a id="__codelineno-6-52" name="__codelineno-6-52"></a><a href="#__codelineno-6-52"><span class="linenos" data-linenos="52 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result2</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-53"><a id="__codelineno-6-53" name="__codelineno-6-53"></a><a href="#__codelineno-6-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;100 -&gt; divide_by_2 -&gt; to_string: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">result2</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-54"><a id="__codelineno-6-54" name="__codelineno-6-54"></a><a href="#__codelineno-6-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-55"><a id="__codelineno-6-55" name="__codelineno-6-55"></a><a href="#__codelineno-6-55"><span class="linenos" data-linenos="55 "></span></a>
+</span><span id="__span-6-56"><a id="__codelineno-6-56" name="__codelineno-6-56"></a><a href="#__codelineno-6-56"><span class="linenos" data-linenos="56 "></span></a><span class="w">    </span><span class="c1">// 失败情况</span>
+</span><span id="__span-6-57"><a id="__codelineno-6-57" name="__codelineno-6-57"></a><a href="#__codelineno-6-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">result3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="n">parse_int</span><span class="p">(</span><span class="s">&quot;invalid&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">divide_by_2</span><span class="p">);</span>
+</span><span id="__span-6-58"><a id="__codelineno-6-58" name="__codelineno-6-58"></a><a href="#__codelineno-6-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">result3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-59"><a id="__codelineno-6-59" name="__codelineno-6-59"></a><a href="#__codelineno-6-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Parsing &#39;invalid&#39; failed, chain short-circuited</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-60"><a id="__codelineno-6-60" name="__codelineno-6-60"></a><a href="#__codelineno-6-60"><span class="linenos" data-linenos="60 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-61"><a id="__codelineno-6-61" name="__codelineno-6-61"></a><a href="#__codelineno-6-61"><span class="linenos" data-linenos="61 "></span></a>
+</span><span id="__span-6-62"><a id="__codelineno-6-62" name="__codelineno-6-62"></a><a href="#__codelineno-6-62"><span class="linenos" data-linenos="62 "></span></a><span class="w">    </span><span class="c1">// 使用 lambda</span>
+</span><span id="__span-6-63"><a id="__codelineno-6-63" name="__codelineno-6-63"></a><a href="#__codelineno-6-63"><span class="linenos" data-linenos="63 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">{</span><span class="s">&quot;42&quot;</span><span class="p">};</span>
+</span><span id="__span-6-64"><a id="__codelineno-6-64" name="__codelineno-6-64"></a><a href="#__codelineno-6-64"><span class="linenos" data-linenos="64 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">maybe_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">optional_map</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="p">[](</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">str</span><span class="p">){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">str</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+</span><span id="__span-6-65"><a id="__codelineno-6-65" name="__codelineno-6-65"></a><a href="#__codelineno-6-65"><span class="linenos" data-linenos="65 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">String </span><span class="se">\&quot;</span><span class="s">42</span><span class="se">\&quot;</span><span class="s"> -&gt; int: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">maybe_int</span><span class="p">.</span><span class="n">value</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-66"><a id="__codelineno-6-66" name="__codelineno-6-66"></a><a href="#__codelineno-6-66"><span class="linenos" data-linenos="66 "></span></a>
+</span><span id="__span-6-67"><a id="__codelineno-6-67" name="__codelineno-6-67"></a><a href="#__codelineno-6-67"><span class="linenos" data-linenos="67 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-6-68"><a id="__codelineno-6-68" name="__codelineno-6-68"></a><a href="#__codelineno-6-68"><span class="linenos" data-linenos="68 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
@@ -4621,7 +4696,7 @@ int main() {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

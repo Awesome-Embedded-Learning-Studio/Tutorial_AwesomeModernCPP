@@ -763,6 +763,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#需要折中的特性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要折中的特性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#明确禁用的特性" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        明确禁用的特性
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#编码规范与最佳实践" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        编码规范与最佳实践
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4261,21 +4294,21 @@
       
       
       
-        <a href="../../../tags/#tag:嵌入式" class="md-tag">嵌入式</a>
+        <span class="md-tag">嵌入式</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:权衡" class="md-tag">权衡</a>
+        <span class="md-tag">权衡</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:语言选择" class="md-tag">语言选择</a>
+        <span class="md-tag">语言选择</span>
       
     
   </nav>
@@ -4295,340 +4328,359 @@
 <h3 id="推荐使用的核心特性">推荐使用的核心特性<a class="headerlink" href="#推荐使用的核心特性" title="链接到此章节">&para;</a></h3>
 <p>在选择使用C++之后，首要任务是确定哪些特性应该成为日常开发的基础。类和封装是C++最基本也是最有价值的特性之一。通过将数据和操作数据的函数封装在类中，可以有效减少全局变量的使用，建立明确的接口边界。更重要的是，这种封装完全符合零开销抽象原则，编译器生成的代码与手工编写的C代码在性能上没有任何差异。</p>
 <p>以传感器驱动为例，我们可以创建一个封装了硬件寄存器访问的类。这个类将寄存器的基地址作为私有成员，通过构造函数初始化，并提供enable和read等公共接口：</p>
-<p>```cpp
-class SensorDriver {
-private:
-    uint32_t baseAddress;
-    volatile uint32_t* const reg;</p>
-<p>public:
-    explicit SensorDriver(uint32_t addr)
-        : baseAddress(addr),
-          reg(reinterpret_cast<volatile uint32_t*>(addr)) {}</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>void enable() {
-<span class="linenos" data-linenos="2 "></span>    *reg |= 0x01;
-<span class="linenos" data-linenos="3 "></span>}
-<span class="linenos" data-linenos="4 "></span>
-<span class="linenos" data-linenos="5 "></span>uint16_t read() const {
-<span class="linenos" data-linenos="6 "></span>    return static_cast&lt;uint16_t&gt;(*reg &gt;&gt; 16);
-<span class="linenos" data-linenos="7 "></span>}
-</code></pre></div>
-<p>};
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">SensorDriver</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">baseAddress</span><span class="p">;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">reg</span><span class="p">;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">SensorDriver</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">addr</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">baseAddress</span><span class="p">(</span><span class="n">addr</span><span class="p">),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">          </span><span class="n">reg</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint32_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">addr</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">enable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="o">*</span><span class="n">reg</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mh">0x01</span><span class="p">;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">read</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">reg</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">);</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>相比C语言中通过全局变量和函数指针实现的方案，这种方式不仅代码更加清晰，而且由于成员函数默认内联，性能上也毫不逊色。关键是，这种封装使得硬件细节完全隐藏在类的内部，外部代码无法直接访问寄存器，从而大大降低了出错的可能性。</p>
 <p>命名空间是另一个应该在嵌入式C++项目中广泛使用的特性。在大型项目中，命名冲突是一个常见问题，特别是当集成多个第三方库时。C语言通常通过函数名前缀来解决这个问题，但这种方式既不优雅也容易出错。C++的命名空间提供了更加系统化的解决方案，可以将相关的函数、类和变量组织在逻辑分组中：</p>
-<p>```cpp
-namespace drivers {
-    namespace gpio {
-        void init();
-        void setPinMode(uint8_t pin, PinMode mode);
-        bool readPin(uint8_t pin);
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>namespace uart {
-<span class="linenos" data-linenos="2 "></span>    void init(uint32_t baudRate);
-<span class="linenos" data-linenos="3 "></span>    void send(const uint8_t* data, size_t len);
-<span class="linenos" data-linenos="4 "></span>}
-</code></pre></div>
-<p>}</p>
-<p>// 使用时
-drivers::gpio::init();
-drivers::uart::init(115200);
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">namespace</span><span class="w"> </span><span class="nn">drivers</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="k">namespace</span><span class="w"> </span><span class="nn">gpio</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">init</span><span class="p">();</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">setPinMode</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">pin</span><span class="p">,</span><span class="w"> </span><span class="n">PinMode</span><span class="w"> </span><span class="n">mode</span><span class="p">);</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="kt">bool</span><span class="w"> </span><span class="nf">readPin</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">pin</span><span class="p">);</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="k">namespace</span><span class="w"> </span><span class="nn">uart</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">init</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">baudRate</span><span class="p">);</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="c1">// 使用时</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="n">drivers</span><span class="o">::</span><span class="n">gpio</span><span class="o">::</span><span class="n">init</span><span class="p">();</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="n">drivers</span><span class="o">::</span><span class="n">uart</span><span class="o">::</span><span class="n">init</span><span class="p">(</span><span class="mi">115200</span><span class="p">);</span>
+</span></code></pre></div>
 <p>将GPIO相关的所有接口放在drivers::gpio命名空间下，既能避免命名冲突，又使代码的组织结构一目了然。最重要的是，命名空间是一个纯粹的编译期特性，不会产生任何运行时开销。</p>
 <p>引用语义是C++相对于C的一个重要改进。相比指针，引用有两个关键优势。首先，引用不能为空，这意味着在使用引用时不需要进行空指针检查，使得代码更加简洁。其次，引用的语法更加清晰，能够更明确地表达函数的意图：</p>
-<p>```cpp
-// 使用const引用传递大型结构体，避免拷贝
-void processData(const SensorData&amp; data) {
-    // data不会被拷贝，也不能被修改
-    uint16_t value = data.temperature;
-}</p>
-<p>// 使用非const引用表明函数会修改参数
-bool tryRead(SensorData&amp; output) {
-    if (dataAvailable()) {
-        output.temperature = readTemperature();
-        output.humidity = readHumidity();
-        return true;
-    }
-    return false;
-}</p>
-<p>// 对比C语言的指针方式
-void processData_c(const SensorData* data) {
-    if (data == NULL) return;  // 需要空指针检查
-    uint16_t value = data-&gt;temperature;
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 使用const引用传递大型结构体，避免拷贝</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">processData</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">SensorData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="c1">// data不会被拷贝，也不能被修改</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">temperature</span><span class="p">;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">}</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1">// 使用非const引用表明函数会修改参数</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">bool</span><span class="w"> </span><span class="nf">tryRead</span><span class="p">(</span><span class="n">SensorData</span><span class="o">&amp;</span><span class="w"> </span><span class="n">output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dataAvailable</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">output</span><span class="p">.</span><span class="n">temperature</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readTemperature</span><span class="p">();</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="n">output</span><span class="p">.</span><span class="n">humidity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readHumidity</span><span class="p">();</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos="17 "></span></a><span class="c1">// 对比C语言的指针方式</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos="18 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">processData_c</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">SensorData</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span><span class="w">  </span><span class="c1">// 需要空指针检查</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="o">-&gt;</span><span class="n">temperature</span><span class="p">;</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21"></a><a href="#__codelineno-2-21"><span class="linenos" data-linenos="21 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>当我们想要传递一个大型结构体但又不希望拷贝时，使用const引用既高效又安全。当函数需要修改传入的参数时，使用非const引用能够清楚地表明这一意图。在底层实现上，引用通常就是指针，因此不会带来额外的性能开销。</p>
 <p>编译期计算是现代C++的一个强大特性，在嵌入式开发中尤其有用。通过constexpr关键字，我们可以让编译器在编译时完成复杂的计算，从而实现真正的零运行时开销：</p>
-<p>```cpp
-constexpr uint32_t calculateBaudRateDivisor(uint32_t sysclk, uint32_t baud) {
-    return sysclk / (16 * baud);
-}</p>
-<p>// 编译期计算，生成的代码中直接是结果值39
-constexpr uint32_t divisor = calculateBaudRateDivisor(72000000, 115200);</p>
-<p>// 也可以用于数组大小
-constexpr size_t bufferSize = calculateBaudRateDivisor(1000, 10);
-uint8_t buffer[bufferSize];</p>
-<p>// 对比传统运行时计算
-uint32_t divisor_runtime = 72000000 / (16 * 115200);  // 运行时除法
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">calculateBaudRateDivisor</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">sysclk</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">baud</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">sysclk</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">16</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">baud</span><span class="p">);</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="p">}</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="c1">// 编译期计算，生成的代码中直接是结果值39</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">divisor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calculateBaudRateDivisor</span><span class="p">(</span><span class="mi">72000000</span><span class="p">,</span><span class="w"> </span><span class="mi">115200</span><span class="p">);</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// 也可以用于数组大小</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">bufferSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">calculateBaudRateDivisor</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="n">bufferSize</span><span class="p">];</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><a href="#__codelineno-3-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><a href="#__codelineno-3-12"><span class="linenos" data-linenos="12 "></span></a><span class="c1">// 对比传统运行时计算</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><a href="#__codelineno-3-13"><span class="linenos" data-linenos="13 "></span></a><span class="kt">uint32_t</span><span class="w"> </span><span class="n">divisor_runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">72000000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">16</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">115200</span><span class="p">);</span><span class="w">  </span><span class="c1">// 运行时除法</span>
+</span></code></pre></div>
 <p>比如计算串口波特率分频系数这样的场景，传统做法是在运行时进行除法运算，而使用constexpr函数可以让这个计算在编译期完成，生成的代码直接就是计算结果。这不仅提升了性能，也使得代码的意图更加明确。</p>
 <p>强类型枚举是C++11引入的一个重要特性，它解决了传统C枚举的诸多问题：</p>
-<p>```cpp
-// 强类型枚举
-enum class PinMode : uint8_t {
-    Input = 0,
-    Output = 1,
-    Alternate = 2,
-    Analog = 3
-};</p>
-<p>enum class PullMode : uint8_t {
-    NoPull = 0,
-    PullUp = 1,
-    PullDown = 2
-};</p>
-<p>void setMode(uint8_t pin, PinMode mode) {
-    // 类型安全，不会接受错误的枚举类型
-    switch (mode) {
-        case PinMode::Input: /* ... <em>/ break;
-        case PinMode::Output: /</em> ... */ break;
-        default: break;
-    }
-}</p>
-<p>// 传统C枚举的问题
-enum OldPinMode { INPUT = 0, OUTPUT = 1 };
-enum OldPullMode { NO_PULL = 0, PULL_UP = 1 };</p>
-<p>void oldSetMode(uint8_t pin, OldPinMode mode) {
-    // 危险：可以传入错误的枚举或整数
-    oldSetMode(5, NO_PULL);  // 编译通过，但语义错误
-    oldSetMode(5, 99);       // 编译通过，运行时错误
-}</p>
-<p>// 使用enum class
-setMode(5, PinMode::Output);        // 正确
-// setMode(5, PullMode::PullUp);    // 编译错误，类型不匹配
-// setMode(5, 1);                   // 编译错误，不能隐式转换
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 强类型枚举</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PinMode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">Input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">Alternate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="n">Analog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="p">};</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PullMode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">NoPull</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">PullUp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="n">PullDown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><a href="#__codelineno-4-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">};</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><a href="#__codelineno-4-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a><a href="#__codelineno-4-15"><span class="linenos" data-linenos="15 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">setMode</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">pin</span><span class="p">,</span><span class="w"> </span><span class="n">PinMode</span><span class="w"> </span><span class="n">mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a><a href="#__codelineno-4-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="c1">// 类型安全，不会接受错误的枚举类型</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><a href="#__codelineno-4-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><a href="#__codelineno-4-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">PinMode</span><span class="o">::</span><span class="no">Input</span><span class="p">:</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><a href="#__codelineno-4-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">PinMode</span><span class="o">::</span><span class="no">Output</span><span class="p">:</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20"></a><a href="#__codelineno-4-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21"></a><a href="#__codelineno-4-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22"></a><a href="#__codelineno-4-22"><span class="linenos" data-linenos="22 "></span></a><span class="p">}</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23"></a><a href="#__codelineno-4-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24"></a><a href="#__codelineno-4-24"><span class="linenos" data-linenos="24 "></span></a><span class="c1">// 传统C枚举的问题</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25"></a><a href="#__codelineno-4-25"><span class="linenos" data-linenos="25 "></span></a><span class="k">enum</span><span class="w"> </span><span class="nc">OldPinMode</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">INPUT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">OUTPUT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26"></a><a href="#__codelineno-4-26"><span class="linenos" data-linenos="26 "></span></a><span class="k">enum</span><span class="w"> </span><span class="nc">OldPullMode</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">NO_PULL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">PULL_UP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">};</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27"></a><a href="#__codelineno-4-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28"></a><a href="#__codelineno-4-28"><span class="linenos" data-linenos="28 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">oldSetMode</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">pin</span><span class="p">,</span><span class="w"> </span><span class="n">OldPinMode</span><span class="w"> </span><span class="n">mode</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29"></a><a href="#__codelineno-4-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="c1">// 危险：可以传入错误的枚举或整数</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30"></a><a href="#__codelineno-4-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">oldSetMode</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">NO_PULL</span><span class="p">);</span><span class="w">  </span><span class="c1">// 编译通过，但语义错误</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31"></a><a href="#__codelineno-4-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">    </span><span class="n">oldSetMode</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">);</span><span class="w">       </span><span class="c1">// 编译通过，运行时错误</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32"></a><a href="#__codelineno-4-32"><span class="linenos" data-linenos="32 "></span></a><span class="p">}</span>
+</span><span id="__span-4-33"><a id="__codelineno-4-33" name="__codelineno-4-33"></a><a href="#__codelineno-4-33"><span class="linenos" data-linenos="33 "></span></a>
+</span><span id="__span-4-34"><a id="__codelineno-4-34" name="__codelineno-4-34"></a><a href="#__codelineno-4-34"><span class="linenos" data-linenos="34 "></span></a><span class="c1">// 使用enum class</span>
+</span><span id="__span-4-35"><a id="__codelineno-4-35" name="__codelineno-4-35"></a><a href="#__codelineno-4-35"><span class="linenos" data-linenos="35 "></span></a><span class="n">setMode</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">PinMode</span><span class="o">::</span><span class="n">Output</span><span class="p">);</span><span class="w">        </span><span class="c1">// 正确</span>
+</span><span id="__span-4-36"><a id="__codelineno-4-36" name="__codelineno-4-36"></a><a href="#__codelineno-4-36"><span class="linenos" data-linenos="36 "></span></a><span class="c1">// setMode(5, PullMode::PullUp);    // 编译错误，类型不匹配</span>
+</span><span id="__span-4-37"><a id="__codelineno-4-37" name="__codelineno-4-37"></a><a href="#__codelineno-4-37"><span class="linenos" data-linenos="37 "></span></a><span class="c1">// setMode(5, 1);                   // 编译错误，不能隐式转换</span>
+</span></code></pre></div>
 <p>使用enum class定义的枚举不会隐式转换为整数，这避免了许多潜在的类型错误。同时，强类型枚举的作用域独立，不会污染外层命名空间。在定义硬件引脚模式或者协议状态时，使用enum class可以获得类型安全的好处，而编译器通常会将其优化为普通整数，因此不会有性能损失。</p>
 <h3 id="模板特性的适度使用">模板特性的适度使用<a class="headerlink" href="#模板特性的适度使用" title="链接到此章节">&para;</a></h3>
 <p>模板是C++最强大但也最容易被滥用的特性。在嵌入式环境中，我们需要在代码复用和代码膨胀之间找到平衡点。简单的函数模板通常是安全的选择：</p>
-<p>```cpp
-template<typename T>
-inline void swap(T&amp; a, T&amp; b) {
-    T temp = a;
-    a = b;
-    b = temp;
-}</p>
-<p>// 使用时自动推导类型
-uint32_t x = 10, y = 20;
-swap(x, y);  // 编译器生成 swap<uint32_t></p>
-<p>float f1 = 1.5f, f2 = 2.5f;
-swap(f1, f2);  // 编译器生成 swap<float>
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">swap</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">T</span><span class="w"> </span><span class="n">temp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">temp</span><span class="p">;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="c1">// 使用时自动推导类型</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="kt">uint32_t</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="n">swap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">);</span><span class="w">  </span><span class="c1">// 编译器生成 swap&lt;uint32_t&gt;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="kt">float</span><span class="w"> </span><span class="n">f1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.5f</span><span class="p">,</span><span class="w"> </span><span class="n">f2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.5f</span><span class="p">;</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a><span class="n">swap</span><span class="p">(</span><span class="n">f1</span><span class="p">,</span><span class="w"> </span><span class="n">f2</span><span class="p">);</span><span class="w">  </span><span class="c1">// 编译器生成 swap&lt;float&gt;</span>
+</span></code></pre></div>
 <p>比如实现一个类型安全的swap函数。这种函数模板通常会被编译器内联，最终生成的代码和手写的类型特定版本完全相同。关键是要保持模板的简单性，避免复杂的模板元编程技巧。</p>
 <p>类模板在合适的场景下也能发挥重要作用，典型的例子是固定大小的环形缓冲区：</p>
-<p>```cpp
-template<typename T, size_t N>
-class CircularBuffer {
-private:
-    T buffer[N];
-    size_t head = 0;
-    size_t tail = 0;
-    size_t count = 0;</p>
-<p>public:
-    bool push(const T&amp; item) {
-        if (count &gt;= N) return false;
-        buffer[tail] = item;
-        tail = (tail + 1) % N;
-        count++;
-        return true;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>bool pop(T&amp; item) {
-<span class="linenos" data-linenos=" 2 "></span>    if (count == 0) return false;
-<span class="linenos" data-linenos=" 3 "></span>    item = buffer[head];
-<span class="linenos" data-linenos=" 4 "></span>    head = (head + 1) % N;
-<span class="linenos" data-linenos=" 5 "></span>    count--;
-<span class="linenos" data-linenos=" 6 "></span>    return true;
-<span class="linenos" data-linenos=" 7 "></span>}
-<span class="linenos" data-linenos=" 8 "></span>
-<span class="linenos" data-linenos=" 9 "></span>size_t size() const { return count; }
-<span class="linenos" data-linenos="10 "></span>bool empty() const { return count == 0; }
-<span class="linenos" data-linenos="11 "></span>bool full() const { return count &gt;= N; }
-</code></pre></div>
-<p>};</p>
-<p>// 使用示例
-CircularBuffer<uint8_t, 64> rxBuffer;   // 64字节的接收缓冲区
-CircularBuffer<Message, 16> msgQueue;   // 16个消息的队列</p>
-<p>uint8_t byte;
-if (rxBuffer.push(0x42)) {
-    // 成功
-}
-if (rxBuffer.pop(byte)) {
-    // 读取成功
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">CircularBuffer</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">T</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="n">N</span><span class="p">];</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">tail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">push</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">N</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="n">buffer</span><span class="p">[</span><span class="n">tail</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">item</span><span class="p">;</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="n">tail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">tail</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">N</span><span class="p">;</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">        </span><span class="n">count</span><span class="o">++</span><span class="p">;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18"></a><a href="#__codelineno-6-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">pop</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">item</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19"></a><a href="#__codelineno-6-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20"></a><a href="#__codelineno-6-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="n">head</span><span class="p">];</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21"></a><a href="#__codelineno-6-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="n">head</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">head</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">N</span><span class="p">;</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22"></a><a href="#__codelineno-6-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">        </span><span class="n">count</span><span class="o">--</span><span class="p">;</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23"></a><a href="#__codelineno-6-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24"></a><a href="#__codelineno-6-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25"></a><a href="#__codelineno-6-25"><span class="linenos" data-linenos="25 "></span></a>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26"></a><a href="#__codelineno-6-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27"></a><a href="#__codelineno-6-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">empty</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28"></a><a href="#__codelineno-6-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">full</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29"></a><a href="#__codelineno-6-29"><span class="linenos" data-linenos="29 "></span></a><span class="p">};</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30"></a><a href="#__codelineno-6-30"><span class="linenos" data-linenos="30 "></span></a>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31"></a><a href="#__codelineno-6-31"><span class="linenos" data-linenos="31 "></span></a><span class="c1">// 使用示例</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32"></a><a href="#__codelineno-6-32"><span class="linenos" data-linenos="32 "></span></a><span class="n">CircularBuffer</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">64</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rxBuffer</span><span class="p">;</span><span class="w">   </span><span class="c1">// 64字节的接收缓冲区</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33"></a><a href="#__codelineno-6-33"><span class="linenos" data-linenos="33 "></span></a><span class="n">CircularBuffer</span><span class="o">&lt;</span><span class="n">Message</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="o">&gt;</span><span class="w"> </span><span class="n">msgQueue</span><span class="p">;</span><span class="w">   </span><span class="c1">// 16个消息的队列</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34"></a><a href="#__codelineno-6-34"><span class="linenos" data-linenos="34 "></span></a>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35"></a><a href="#__codelineno-6-35"><span class="linenos" data-linenos="35 "></span></a><span class="kt">uint8_t</span><span class="w"> </span><span class="n">byte</span><span class="p">;</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36"></a><a href="#__codelineno-6-36"><span class="linenos" data-linenos="36 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rxBuffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="mh">0x42</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37"></a><a href="#__codelineno-6-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="c1">// 成功</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38"></a><a href="#__codelineno-6-38"><span class="linenos" data-linenos="38 "></span></a><span class="p">}</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39"></a><a href="#__codelineno-6-39"><span class="linenos" data-linenos="39 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rxBuffer</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="n">byte</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40"></a><a href="#__codelineno-6-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="c1">// 读取成功</span>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41"></a><a href="#__codelineno-6-41"><span class="linenos" data-linenos="41 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>通过将元素类型和大小作为模板参数，我们可以实现一个通用的环形缓冲区类，它可以用于不同的数据类型而不需要重复编写代码。由于缓冲区大小在编译期确定，编译器可以进行充分的优化，性能不会比手写的特定版本差。但需要注意的是，每一个模板参数的不同组合都会生成一份独立的代码，因此要避免过度实例化导致的代码膨胀。</p>
 <p>SFINAE和类型特征属于更高级的模板技术，在嵌入式环境中应该谨慎使用：</p>
-<p>```cpp</p>
-<h1 id="include">include <type_traits><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<p>// 使用SFINAE限制函数只接受整数类型
-template<typename T>
-typename std::enable_if<std::is_integral\<T>::value, void>::type
-processValue(T value) {
-    // 只有整数类型会实例化这个函数
-    uint32_t result = static_cast<uint32_t>(value) * 2;
-}</p>
-<p>// 或使用C++17的if constexpr（更清晰）
-template<typename T>
-void serialize(const T&amp; value, uint8_t* buffer) {
-    if constexpr (std::is_integral<T>::value) {
-        // 整数类型的序列化
-        *reinterpret_cast<T*>(buffer) = value;
-    } else if constexpr (std::is_floating_point<T>::value) {
-        // 浮点类型的序列化
-        *reinterpret_cast<T*>(buffer) = value;
-    }
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="c1">// 使用SFINAE限制函数只接受整数类型</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">typename</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_integral</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;::</span><span class="n">type</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">processValue</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="c1">// 只有整数类型会实例化这个函数</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">}</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1">// 或使用C++17的if constexpr（更清晰）</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12"></a><a href="#__codelineno-7-12"><span class="linenos" data-linenos="12 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13"></a><a href="#__codelineno-7-13"><span class="linenos" data-linenos="13 "></span></a><span class="kt">void</span><span class="w"> </span><span class="n">serialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14"></a><a href="#__codelineno-7-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_integral</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15"></a><a href="#__codelineno-7-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="c1">// 整数类型的序列化</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16"></a><a href="#__codelineno-7-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17"></a><a href="#__codelineno-7-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_floating_point</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18"></a><a href="#__codelineno-7-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">        </span><span class="c1">// 浮点类型的序列化</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19"></a><a href="#__codelineno-7-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20"></a><a href="#__codelineno-7-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21"></a><a href="#__codelineno-7-21"><span class="linenos" data-linenos="21 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>虽然它们能够实现编译期的类型约束和函数重载，但也会增加代码的复杂度和编译时间。只有在确实需要根据类型特征选择不同实现时，才应该考虑使用这些技术。即便使用，也应该尽量保持简单，避免过度设计。</p>
 <h3 id="需要折中的特性">需要折中的特性<a class="headerlink" href="#需要折中的特性" title="链接到此章节">&para;</a></h3>
 <p>构造函数和析构函数是C++面向对象编程的基础，但在嵌入式环境中需要格外小心。简单、快速的构造和析构通常是可以接受的，比如实现一个RAII风格的互斥锁包装类：</p>
-<p>```cpp
-class Mutex {
-    volatile uint32_t lockFlag;
-public:
-    void lock() {
-        while (__sync_lock_test_and_set(&amp;lockFlag, 1)) {
-            // 自旋等待
-        }
-    }
-    void unlock() {
-        __sync_lock_release(&amp;lockFlag);
-    }
-};</p>
-<p>class ScopedLock {
-private:
-    Mutex&amp; mutex;</p>
-<p>public:
-    explicit ScopedLock(Mutex&amp; m) : mutex(m) {
-        mutex.lock();
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>~ScopedLock() noexcept {
-<span class="linenos" data-linenos="2 "></span>    mutex.unlock();
-<span class="linenos" data-linenos="3 "></span>}
-<span class="linenos" data-linenos="4 "></span>
-<span class="linenos" data-linenos="5 "></span>// 禁止拷贝和赋值
-<span class="linenos" data-linenos="6 "></span>ScopedLock(const ScopedLock&amp;) = delete;
-<span class="linenos" data-linenos="7 "></span>ScopedLock&amp; operator=(const ScopedLock&amp;) = delete;
-</code></pre></div>
-<p>};</p>
-<p>// 使用示例
-Mutex globalMutex;</p>
-<p>void criticalSection() {
-    ScopedLock lock(globalMutex);  // 自动获取锁
-    // 执行临界区代码
-    // ...
-}  // 离开作用域时自动释放锁，即使发生错误返回
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Mutex</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">lockFlag</span><span class="p">;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">lock</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">__sync_lock_test_and_set</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lockFlag</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">            </span><span class="c1">// 自旋等待</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a><a href="#__codelineno-8-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a><a href="#__codelineno-8-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a><a href="#__codelineno-8-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">unlock</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a><a href="#__codelineno-8-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">__sync_lock_release</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lockFlag</span><span class="p">);</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11"></a><a href="#__codelineno-8-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12"></a><a href="#__codelineno-8-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13"></a><a href="#__codelineno-8-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14"></a><a href="#__codelineno-8-14"><span class="linenos" data-linenos="14 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">ScopedLock</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15"></a><a href="#__codelineno-8-15"><span class="linenos" data-linenos="15 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16"></a><a href="#__codelineno-8-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="n">Mutex</span><span class="o">&amp;</span><span class="w"> </span><span class="n">mutex</span><span class="p">;</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17"></a><a href="#__codelineno-8-17"><span class="linenos" data-linenos="17 "></span></a>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18"></a><a href="#__codelineno-8-18"><span class="linenos" data-linenos="18 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19"></a><a href="#__codelineno-8-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">ScopedLock</span><span class="p">(</span><span class="n">Mutex</span><span class="o">&amp;</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">mutex</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20"></a><a href="#__codelineno-8-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="n">mutex</span><span class="p">.</span><span class="n">lock</span><span class="p">();</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21"></a><a href="#__codelineno-8-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-22"><a id="__codelineno-8-22" name="__codelineno-8-22"></a><a href="#__codelineno-8-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-8-23"><a id="__codelineno-8-23" name="__codelineno-8-23"></a><a href="#__codelineno-8-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">ScopedLock</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-24"><a id="__codelineno-8-24" name="__codelineno-8-24"></a><a href="#__codelineno-8-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">        </span><span class="n">mutex</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+</span><span id="__span-8-25"><a id="__codelineno-8-25" name="__codelineno-8-25"></a><a href="#__codelineno-8-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-8-26"><a id="__codelineno-8-26" name="__codelineno-8-26"></a><a href="#__codelineno-8-26"><span class="linenos" data-linenos="26 "></span></a>
+</span><span id="__span-8-27"><a id="__codelineno-8-27" name="__codelineno-8-27"></a><a href="#__codelineno-8-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="c1">// 禁止拷贝和赋值</span>
+</span><span id="__span-8-28"><a id="__codelineno-8-28" name="__codelineno-8-28"></a><a href="#__codelineno-8-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">ScopedLock</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ScopedLock</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span id="__span-8-29"><a id="__codelineno-8-29" name="__codelineno-8-29"></a><a href="#__codelineno-8-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">ScopedLock</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ScopedLock</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+</span><span id="__span-8-30"><a id="__codelineno-8-30" name="__codelineno-8-30"></a><a href="#__codelineno-8-30"><span class="linenos" data-linenos="30 "></span></a><span class="p">};</span>
+</span><span id="__span-8-31"><a id="__codelineno-8-31" name="__codelineno-8-31"></a><a href="#__codelineno-8-31"><span class="linenos" data-linenos="31 "></span></a>
+</span><span id="__span-8-32"><a id="__codelineno-8-32" name="__codelineno-8-32"></a><a href="#__codelineno-8-32"><span class="linenos" data-linenos="32 "></span></a><span class="c1">// 使用示例</span>
+</span><span id="__span-8-33"><a id="__codelineno-8-33" name="__codelineno-8-33"></a><a href="#__codelineno-8-33"><span class="linenos" data-linenos="33 "></span></a><span class="n">Mutex</span><span class="w"> </span><span class="n">globalMutex</span><span class="p">;</span>
+</span><span id="__span-8-34"><a id="__codelineno-8-34" name="__codelineno-8-34"></a><a href="#__codelineno-8-34"><span class="linenos" data-linenos="34 "></span></a>
+</span><span id="__span-8-35"><a id="__codelineno-8-35" name="__codelineno-8-35"></a><a href="#__codelineno-8-35"><span class="linenos" data-linenos="35 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">criticalSection</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-36"><a id="__codelineno-8-36" name="__codelineno-8-36"></a><a href="#__codelineno-8-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">    </span><span class="n">ScopedLock</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">globalMutex</span><span class="p">);</span><span class="w">  </span><span class="c1">// 自动获取锁</span>
+</span><span id="__span-8-37"><a id="__codelineno-8-37" name="__codelineno-8-37"></a><a href="#__codelineno-8-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="c1">// 执行临界区代码</span>
+</span><span id="__span-8-38"><a id="__codelineno-8-38" name="__codelineno-8-38"></a><a href="#__codelineno-8-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="c1">// ...</span>
+</span><span id="__span-8-39"><a id="__codelineno-8-39" name="__codelineno-8-39"></a><a href="#__codelineno-8-39"><span class="linenos" data-linenos="39 "></span></a><span class="p">}</span><span class="w">  </span><span class="c1">// 离开作用域时自动释放锁，即使发生错误返回</span>
+</span></code></pre></div>
 <p>这个类在构造时获取锁，在析构时释放锁，既简洁又安全。然而，复杂的初始化链、在构造函数中分配动态内存、以及在中断上下文中创建需要析构的对象，这些都是应该避免的做法：</p>
-<p>```cpp
-// 禁止的做法
-class BadDriver {
-    uint8_t* buffer;
-public:
-    BadDriver() {
-        buffer = new uint8_t[1024];  // 禁止：动态内存分配
-        initHardware();               // 危险：如果失败怎么办？
-    }
-    ~BadDriver() {
-        delete[] buffer;
-    }
-};</p>
-<p>// 推荐的做法
-class GoodDriver {
-    static constexpr size_t BUFFER_SIZE = 1024;
-    uint8_t buffer[BUFFER_SIZE];  // 静态分配
-    bool initialized = false;</p>
-<p>public:
-    GoodDriver() = default;  // 简单的默认构造</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>bool init() {  // 显式初始化函数
-<span class="linenos" data-linenos="2 "></span>    if (!initHardware()) {
-<span class="linenos" data-linenos="3 "></span>        return false;
-<span class="linenos" data-linenos="4 "></span>    }
-<span class="linenos" data-linenos="5 "></span>    initialized = true;
-<span class="linenos" data-linenos="6 "></span>    return true;
-<span class="linenos" data-linenos="7 "></span>}
-<span class="linenos" data-linenos="8 "></span>
-<span class="linenos" data-linenos="9 "></span>~GoodDriver() noexcept = default;
-</code></pre></div>
-<p>};
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 禁止的做法</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">BadDriver</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4"></a><a href="#__codelineno-9-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5"></a><a href="#__codelineno-9-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">BadDriver</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6"></a><a href="#__codelineno-9-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">uint8_t</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span><span class="w">  </span><span class="c1">// 禁止：动态内存分配</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7"></a><a href="#__codelineno-9-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="n">initHardware</span><span class="p">();</span><span class="w">               </span><span class="c1">// 危险：如果失败怎么办？</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8"></a><a href="#__codelineno-9-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9"></a><a href="#__codelineno-9-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">BadDriver</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10"></a><a href="#__codelineno-9-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="k">delete</span><span class="p">[]</span><span class="w"> </span><span class="n">buffer</span><span class="p">;</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11"></a><a href="#__codelineno-9-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12"></a><a href="#__codelineno-9-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13"></a><a href="#__codelineno-9-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14"></a><a href="#__codelineno-9-14"><span class="linenos" data-linenos="14 "></span></a><span class="c1">// 推荐的做法</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15"></a><a href="#__codelineno-9-15"><span class="linenos" data-linenos="15 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">GoodDriver</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16"></a><a href="#__codelineno-9-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">BUFFER_SIZE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17"></a><a href="#__codelineno-9-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="n">BUFFER_SIZE</span><span class="p">];</span><span class="w">  </span><span class="c1">// 静态分配</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18"></a><a href="#__codelineno-9-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">initialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19"></a><a href="#__codelineno-9-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20"></a><a href="#__codelineno-9-20"><span class="linenos" data-linenos="20 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21"></a><a href="#__codelineno-9-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="n">GoodDriver</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w">  </span><span class="c1">// 简单的默认构造</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22"></a><a href="#__codelineno-9-22"><span class="linenos" data-linenos="22 "></span></a>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23"></a><a href="#__codelineno-9-23"><span class="linenos" data-linenos="23 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="nf">init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c1">// 显式初始化函数</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24"></a><a href="#__codelineno-9-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">initHardware</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25"></a><a href="#__codelineno-9-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26"></a><a href="#__codelineno-9-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27"></a><a href="#__codelineno-9-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">        </span><span class="n">initialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28"></a><a href="#__codelineno-9-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29"></a><a href="#__codelineno-9-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30"></a><a href="#__codelineno-9-30"><span class="linenos" data-linenos="30 "></span></a>
+</span><span id="__span-9-31"><a id="__codelineno-9-31" name="__codelineno-9-31"></a><a href="#__codelineno-9-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">GoodDriver</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-9-32"><a id="__codelineno-9-32" name="__codelineno-9-32"></a><a href="#__codelineno-9-32"><span class="linenos" data-linenos="32 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>特别需要注意的是，析构函数应该始终是noexcept的，因为析构过程中抛出异常会导致程序终止。</p>
 <p>异常处理是C++中争议最大的特性之一。在大多数嵌入式项目中，默认立场应该是禁用异常。通过编译选项-fno-exceptions可以完全关闭异常支持，这不仅能够减少10%到30%的代码体积，还能避免不可预测的执行时间和栈展开带来的额外开销。更重要的是，许多嵌入式工具链对异常的支持并不完善，可能会导致难以调试的问题。</p>
 <p>作为替代方案，我们应该使用错误码返回值的方式处理错误：</p>
-<p>```cpp
-// 定义错误码枚举
-enum class ErrorCode : uint8_t {
-    Ok = 0,
-    InvalidParameter,
-    Timeout,
-    HardwareError,
-    BufferFull,
-    NotInitialized
-};</p>
-<p>// 函数返回错误码
-ErrorCode initSensor(uint8_t address) {
-    if (address == 0 || address &gt; 127) {
-        return ErrorCode::InvalidParameter;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>if (!checkHardware()) {
-<span class="linenos" data-linenos="2 "></span>    return ErrorCode::HardwareError;
-<span class="linenos" data-linenos="3 "></span>}
-<span class="linenos" data-linenos="4 "></span>
-<span class="linenos" data-linenos="5 "></span>return ErrorCode::Ok;
-</code></pre></div>
-<p>}</p>
-<p>// 使用示例
-ErrorCode result = initSensor(0x42);
-if (result != ErrorCode::Ok) {
-    // 处理错误
-    switch (result) {
-        case ErrorCode::InvalidParameter:
-            // 记录日志或报告错误
-            break;
-        case ErrorCode::HardwareError:
-            // 尝试恢复或进入安全模式
-            break;
-        default:
-            break;
-    }
-    return;
-}</p>
-<p>// 更复杂的情况：返回值和错误码分离
-struct Result {
-    ErrorCode error;
-    uint16_t value;</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>bool isOk() const { return error == ErrorCode::Ok; }
-</code></pre></div>
-<p>};</p>
-<p>Result readSensor() {
-    Result res;
-    if (!isInitialized) {
-        res.error = ErrorCode::NotInitialized;
-        res.value = 0;
-        return res;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>// 读取硬件
-<span class="linenos" data-linenos="2 "></span>res.error = ErrorCode::Ok;
-<span class="linenos" data-linenos="3 "></span>res.value = readHardwareRegister();
-<span class="linenos" data-linenos="4 "></span>return res;
-</code></pre></div>
-<p>}</p>
-<p>// 使用
-Result res = readSensor();
-if (res.isOk()) {
-    processValue(res.value);
-} else {
-    handleError(res.error);
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 定义错误码枚举</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">ErrorCode</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">Ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4"></a><a href="#__codelineno-10-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">InvalidParameter</span><span class="p">,</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5"></a><a href="#__codelineno-10-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">Timeout</span><span class="p">,</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6"></a><a href="#__codelineno-10-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="n">HardwareError</span><span class="p">,</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7"></a><a href="#__codelineno-10-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">BufferFull</span><span class="p">,</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8"></a><a href="#__codelineno-10-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">NotInitialized</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9"></a><a href="#__codelineno-10-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="p">};</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10"></a><a href="#__codelineno-10-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11"></a><a href="#__codelineno-10-11"><span class="linenos" data-linenos="11 "></span></a><span class="c1">// 函数返回错误码</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12"></a><a href="#__codelineno-10-12"><span class="linenos" data-linenos="12 "></span></a><span class="n">ErrorCode</span><span class="w"> </span><span class="nf">initSensor</span><span class="p">(</span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">address</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13"></a><a href="#__codelineno-10-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">address</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">127</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14"></a><a href="#__codelineno-10-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">InvalidParameter</span><span class="p">;</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15"></a><a href="#__codelineno-10-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16"></a><a href="#__codelineno-10-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17"></a><a href="#__codelineno-10-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">checkHardware</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18"></a><a href="#__codelineno-10-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">HardwareError</span><span class="p">;</span>
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19"></a><a href="#__codelineno-10-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20"></a><a href="#__codelineno-10-20"><span class="linenos" data-linenos="20 "></span></a>
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21"></a><a href="#__codelineno-10-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">Ok</span><span class="p">;</span>
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22"></a><a href="#__codelineno-10-22"><span class="linenos" data-linenos="22 "></span></a><span class="p">}</span>
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23"></a><a href="#__codelineno-10-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24"></a><a href="#__codelineno-10-24"><span class="linenos" data-linenos="24 "></span></a><span class="c1">// 使用示例</span>
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25"></a><a href="#__codelineno-10-25"><span class="linenos" data-linenos="25 "></span></a><span class="n">ErrorCode</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initSensor</span><span class="p">(</span><span class="mh">0x42</span><span class="p">);</span>
+</span><span id="__span-10-26"><a id="__codelineno-10-26" name="__codelineno-10-26"></a><a href="#__codelineno-10-26"><span class="linenos" data-linenos="26 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">Ok</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-27"><a id="__codelineno-10-27" name="__codelineno-10-27"></a><a href="#__codelineno-10-27"><span class="linenos" data-linenos="27 "></span></a><span class="w">    </span><span class="c1">// 处理错误</span>
+</span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28"></a><a href="#__codelineno-10-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29"></a><a href="#__codelineno-10-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">ErrorCode</span><span class="o">::</span><span class="no">InvalidParameter</span><span class="p">:</span>
+</span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30"></a><a href="#__codelineno-10-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">            </span><span class="c1">// 记录日志或报告错误</span>
+</span><span id="__span-10-31"><a id="__codelineno-10-31" name="__codelineno-10-31"></a><a href="#__codelineno-10-31"><span class="linenos" data-linenos="31 "></span></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-10-32"><a id="__codelineno-10-32" name="__codelineno-10-32"></a><a href="#__codelineno-10-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="no">ErrorCode</span><span class="o">::</span><span class="no">HardwareError</span><span class="p">:</span>
+</span><span id="__span-10-33"><a id="__codelineno-10-33" name="__codelineno-10-33"></a><a href="#__codelineno-10-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">            </span><span class="c1">// 尝试恢复或进入安全模式</span>
+</span><span id="__span-10-34"><a id="__codelineno-10-34" name="__codelineno-10-34"></a><a href="#__codelineno-10-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-10-35"><a id="__codelineno-10-35" name="__codelineno-10-35"></a><a href="#__codelineno-10-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">        </span><span class="k">default</span><span class="o">:</span>
+</span><span id="__span-10-36"><a id="__codelineno-10-36" name="__codelineno-10-36"></a><a href="#__codelineno-10-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">            </span><span class="k">break</span><span class="p">;</span>
+</span><span id="__span-10-37"><a id="__codelineno-10-37" name="__codelineno-10-37"></a><a href="#__codelineno-10-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-38"><a id="__codelineno-10-38" name="__codelineno-10-38"></a><a href="#__codelineno-10-38"><span class="linenos" data-linenos="38 "></span></a><span class="w">    </span><span class="k">return</span><span class="p">;</span>
+</span><span id="__span-10-39"><a id="__codelineno-10-39" name="__codelineno-10-39"></a><a href="#__codelineno-10-39"><span class="linenos" data-linenos="39 "></span></a><span class="p">}</span>
+</span><span id="__span-10-40"><a id="__codelineno-10-40" name="__codelineno-10-40"></a><a href="#__codelineno-10-40"><span class="linenos" data-linenos="40 "></span></a>
+</span><span id="__span-10-41"><a id="__codelineno-10-41" name="__codelineno-10-41"></a><a href="#__codelineno-10-41"><span class="linenos" data-linenos="41 "></span></a><span class="c1">// 更复杂的情况：返回值和错误码分离</span>
+</span><span id="__span-10-42"><a id="__codelineno-10-42" name="__codelineno-10-42"></a><a href="#__codelineno-10-42"><span class="linenos" data-linenos="42 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Result</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-43"><a id="__codelineno-10-43" name="__codelineno-10-43"></a><a href="#__codelineno-10-43"><span class="linenos" data-linenos="43 "></span></a><span class="w">    </span><span class="n">ErrorCode</span><span class="w"> </span><span class="n">error</span><span class="p">;</span>
+</span><span id="__span-10-44"><a id="__codelineno-10-44" name="__codelineno-10-44"></a><a href="#__codelineno-10-44"><span class="linenos" data-linenos="44 "></span></a><span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+</span><span id="__span-10-45"><a id="__codelineno-10-45" name="__codelineno-10-45"></a><a href="#__codelineno-10-45"><span class="linenos" data-linenos="45 "></span></a>
+</span><span id="__span-10-46"><a id="__codelineno-10-46" name="__codelineno-10-46"></a><a href="#__codelineno-10-46"><span class="linenos" data-linenos="46 "></span></a><span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="nf">isOk</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">Ok</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-10-47"><a id="__codelineno-10-47" name="__codelineno-10-47"></a><a href="#__codelineno-10-47"><span class="linenos" data-linenos="47 "></span></a><span class="p">};</span>
+</span><span id="__span-10-48"><a id="__codelineno-10-48" name="__codelineno-10-48"></a><a href="#__codelineno-10-48"><span class="linenos" data-linenos="48 "></span></a>
+</span><span id="__span-10-49"><a id="__codelineno-10-49" name="__codelineno-10-49"></a><a href="#__codelineno-10-49"><span class="linenos" data-linenos="49 "></span></a><span class="n">Result</span><span class="w"> </span><span class="nf">readSensor</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-50"><a id="__codelineno-10-50" name="__codelineno-10-50"></a><a href="#__codelineno-10-50"><span class="linenos" data-linenos="50 "></span></a><span class="w">    </span><span class="n">Result</span><span class="w"> </span><span class="n">res</span><span class="p">;</span>
+</span><span id="__span-10-51"><a id="__codelineno-10-51" name="__codelineno-10-51"></a><a href="#__codelineno-10-51"><span class="linenos" data-linenos="51 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">isInitialized</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-52"><a id="__codelineno-10-52" name="__codelineno-10-52"></a><a href="#__codelineno-10-52"><span class="linenos" data-linenos="52 "></span></a><span class="w">        </span><span class="n">res</span><span class="p">.</span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">NotInitialized</span><span class="p">;</span>
+</span><span id="__span-10-53"><a id="__codelineno-10-53" name="__codelineno-10-53"></a><a href="#__codelineno-10-53"><span class="linenos" data-linenos="53 "></span></a><span class="w">        </span><span class="n">res</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-10-54"><a id="__codelineno-10-54" name="__codelineno-10-54"></a><a href="#__codelineno-10-54"><span class="linenos" data-linenos="54 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">res</span><span class="p">;</span>
+</span><span id="__span-10-55"><a id="__codelineno-10-55" name="__codelineno-10-55"></a><a href="#__codelineno-10-55"><span class="linenos" data-linenos="55 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-10-56"><a id="__codelineno-10-56" name="__codelineno-10-56"></a><a href="#__codelineno-10-56"><span class="linenos" data-linenos="56 "></span></a>
+</span><span id="__span-10-57"><a id="__codelineno-10-57" name="__codelineno-10-57"></a><a href="#__codelineno-10-57"><span class="linenos" data-linenos="57 "></span></a><span class="w">    </span><span class="c1">// 读取硬件</span>
+</span><span id="__span-10-58"><a id="__codelineno-10-58" name="__codelineno-10-58"></a><a href="#__codelineno-10-58"><span class="linenos" data-linenos="58 "></span></a><span class="w">    </span><span class="n">res</span><span class="p">.</span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ErrorCode</span><span class="o">::</span><span class="n">Ok</span><span class="p">;</span>
+</span><span id="__span-10-59"><a id="__codelineno-10-59" name="__codelineno-10-59"></a><a href="#__codelineno-10-59"><span class="linenos" data-linenos="59 "></span></a><span class="w">    </span><span class="n">res</span><span class="p">.</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readHardwareRegister</span><span class="p">();</span>
+</span><span id="__span-10-60"><a id="__codelineno-10-60" name="__codelineno-10-60"></a><a href="#__codelineno-10-60"><span class="linenos" data-linenos="60 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">res</span><span class="p">;</span>
+</span><span id="__span-10-61"><a id="__codelineno-10-61" name="__codelineno-10-61"></a><a href="#__codelineno-10-61"><span class="linenos" data-linenos="61 "></span></a><span class="p">}</span>
+</span><span id="__span-10-62"><a id="__codelineno-10-62" name="__codelineno-10-62"></a><a href="#__codelineno-10-62"><span class="linenos" data-linenos="62 "></span></a>
+</span><span id="__span-10-63"><a id="__codelineno-10-63" name="__codelineno-10-63"></a><a href="#__codelineno-10-63"><span class="linenos" data-linenos="63 "></span></a><span class="c1">// 使用</span>
+</span><span id="__span-10-64"><a id="__codelineno-10-64" name="__codelineno-10-64"></a><a href="#__codelineno-10-64"><span class="linenos" data-linenos="64 "></span></a><span class="n">Result</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">readSensor</span><span class="p">();</span>
+</span><span id="__span-10-65"><a id="__codelineno-10-65" name="__codelineno-10-65"></a><a href="#__codelineno-10-65"><span class="linenos" data-linenos="65 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">isOk</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-66"><a id="__codelineno-10-66" name="__codelineno-10-66"></a><a href="#__codelineno-10-66"><span class="linenos" data-linenos="66 "></span></a><span class="w">    </span><span class="n">processValue</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">value</span><span class="p">);</span>
+</span><span id="__span-10-67"><a id="__codelineno-10-67" name="__codelineno-10-67"></a><a href="#__codelineno-10-67"><span class="linenos" data-linenos="67 "></span></a><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-68"><a id="__codelineno-10-68" name="__codelineno-10-68"></a><a href="#__codelineno-10-68"><span class="linenos" data-linenos="68 "></span></a><span class="w">    </span><span class="n">handleError</span><span class="p">(</span><span class="n">res</span><span class="p">.</span><span class="n">error</span><span class="p">);</span>
+</span><span id="__span-10-69"><a id="__codelineno-10-69" name="__codelineno-10-69"></a><a href="#__codelineno-10-69"><span class="linenos" data-linenos="69 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>这种方式虽然不如异常优雅，但它是可预测的、高效的，而且容易进行最坏情况分析。只有在系统有充足的Flash和RAM资源，实时性要求不严格，工具链完全支持异常，且团队具备异常处理的最佳实践经验时，才应该考虑启用异常。</p>
 <p>运行时类型信息RTTI也应该默认禁用。RTTI会增加代码体积，需要额外的元数据存储，还会带来性能开销。在绝大多数嵌入式场景下，我们可以通过在基类中添加类型标识字段来实现类似的功能。比如在消息类中添加一个类型枚举，通过检查这个枚举值就可以判断消息的具体类型，而不需要使用dynamic_cast。</p>
 <p>虚函数和多态是一个需要权衡的特性。一方面，虚函数提供了运行时多态性，使得我们可以定义抽象接口，这在设计驱动层时特别有用。另一方面，虚函数带来的开销也是实实在在的。每个包含虚函数的对象都需要一个虚表指针，通常占用4到8个字节。虚函数调用比直接函数调用慢5%到10%，而且可能影响编译器的内联优化。因此，虚函数应该只在必须支持运行时多态时使用，并且要限制虚函数的数量，避免在性能关键路径上频繁调用虚函数。</p>
@@ -4666,7 +4718,7 @@ if (res.isOk()) {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

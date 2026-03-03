@@ -4318,9 +4318,8 @@
 <p>所以一个很自然的问题出现了，在之前我们学习了静态库的最基本的原理（若干可重定位文件的有机组合），那又如何制作它呢？答案是利用一个小巧而强大的工具——<code>ar</code>（Archiver）</p>
 <p>简单的介绍一下<code>ar</code>吧！它是一个用于创建、修改和提取<strong>归档文件</strong>（Archive Files）的工具。这些归档文件通常以 <code>.a</code> （a是archive，归档的缩写）扩展名结尾，最常见的用途就是打包目标文件（<code>.o</code> 文件）来创建 <strong>静态链接库</strong>（Static Libraries）。对于Linux而言，我们喜欢给一个静态库（至少是静态库），假设库的名字我们决定叫<code>Charlie</code>，那么一般我们生成的库会是<code>libCharlie.a</code></p>
 <p>可能会有朋友困惑，为什么一定是lib起头，生成<code>Charlie.a</code>显然不是更加的直观吗？是这样的，最核心的原因是：<strong>这是后续我们拿来做链接的时候，链接器存在的工作约定要求导致的</strong>。最经常的，我们<code>gcc/g++</code>编译准备链接对象的时候，会发派发ld来链接目标的库和重定位文件，一般而言，上层构建工具会习惯采用-L文件夹检索路径配合-l（这是小写的L）找库。比如说，当我们试图给main.c提供知名路径下的math静态库，比如说咱们这样写：</p>
-<p>```text</p>
-<p>gcc main.c -lmath</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">gcc</span><span class="w"> </span><span class="n">main</span><span class="p">.</span><span class="n">c</span><span class="w"> </span><span class="o">-</span><span class="n">lmath</span>
+</span></code></pre></div>
 <p>链接器并不会直接去寻找名为 <code>math</code> 的文件。相反，它会根据约定，尝试寻找名为 <strong><code>libmath.a</code></strong>（静态库）或 <strong><code>libmath.so</code></strong>（动态库）的文件。简单的说就是：</p>
 <ul>
 <li><code>-l</code> 参数后面的名字（本例中的 <code>math</code>）被称为"库名"。</li>
@@ -4330,9 +4329,8 @@
 <p>因此，<strong>将库文件命名为 <code>lib&lt;name&gt;.a</code> 的格式，是为了主动迎合链接器的自动查找机制</strong>。如果库文件不以此格式命名，链接器就无法通过简便的 <code>-l</code> 选项找到它，你只能通过直接指定库文件完整路径的笨拙方式来链接，这非常不方便，而且出现一个很严重的问题，这个问题将会在动态库的时候我们重新拿出来说（静态库无所谓，它会被打包进去目标的文件）</p>
 <h3 id="ar的一些常用命令格式"><code>ar</code>的一些常用命令格式<a class="headerlink" href="#ar的一些常用命令格式" title="链接到此章节">&para;</a></h3>
 <p><code>ar</code> 的基本语法相对简单，它需要一个<strong>操作码</strong>（类似于一个主命令）和一些<strong>修饰符</strong>（Modifier）来指定具体行为。</p>
-<p>```bash
-ar [操作码][修饰符] &lt;归档文件名&gt; &lt;文件...&gt;</p>
-<p>```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a>ar<span class="w"> </span><span class="o">[</span>操作码<span class="o">][</span>修饰符<span class="o">]</span><span class="w"> </span>&lt;归档文件名&gt;<span class="w"> </span>&lt;文件...&gt;
+</span></code></pre></div>
 <table>
 <thead>
 <tr>
@@ -4405,7 +4403,7 @@ ar [操作码][修饰符] &lt;归档文件名&gt; &lt;文件...&gt;</p>
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

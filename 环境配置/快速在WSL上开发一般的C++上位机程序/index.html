@@ -3562,6 +3562,50 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#在-windows-上安装-vs-code并启用-remote---wsl-扩展" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        在 Windows 上安装 VS Code，并启用 Remote - WSL 扩展
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#在-wsl-中用-vs-code-打开项目真正-在-linux-下开发" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        在 WSL 中用 VS Code 打开项目（真正 "在 Linux 下开发"）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#创建一个最小-cmake--c-项目并在-vs-code-中构建调试" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        创建一个最小 CMake + C++ 项目并在 VS Code 中构建/调试
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#在-vs-code-中配置调试使用-ms-vscodecpptools-的-gdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        在 VS Code 中配置调试（使用 ms-vscode.cpptools 的 gdb）
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4244,16 +4288,18 @@
 </ul>
 <h2 id="首次进入-wsl更新系统并安装基础编译工具">首次进入 WSL：更新系统并安装基础编译工具<a class="headerlink" href="#首次进入-wsl更新系统并安装基础编译工具" title="链接到此章节">&para;</a></h2>
 <p>打开 Windows Terminal -&gt; 选择 Ubuntu（或你安装的 distro），进入 shell，然后运行：</p>
-<p>```bash</p>
-<h1 id="更新系统包索引与系统">更新系统包索引与系统<a class="headerlink" href="#更新系统包索引与系统" title="链接到此章节">&para;</a></h1>
-<p>sudo apt update &amp;&amp; sudo apt upgrade -y</p>
-<h1 id="安装-cc-常用工具gccgmake-等">安装 C/C++ 常用工具（gcc/g++、make 等）<a class="headerlink" href="#安装-cc-常用工具gccgmake-等" title="链接到此章节">&para;</a></h1>
-<p>sudo apt install -y build-essential gdb cmake ninja-build pkg-config</p>
-<h1 id="建议安装-clangclang-format可选">建议安装 clang/clang-format（可选）<a class="headerlink" href="#建议安装-clangclang-format可选" title="链接到此章节">&para;</a></h1>
-<p>sudo apt install -y clang clang-format</p>
-<h1 id="可选安装额外工具python-用于一些构建脚本ccache-等">（可选）安装额外工具：python 用于一些构建脚本、ccache 等<a class="headerlink" href="#可选安装额外工具python-用于一些构建脚本ccache-等" title="链接到此章节">&para;</a></h1>
-<p>sudo apt install -y python3 python3-pip ccache
-```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1"># 更新系统包索引与系统</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a>sudo<span class="w"> </span>apt<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>apt<span class="w"> </span>upgrade<span class="w"> </span>-y
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># 安装 C/C++ 常用工具（gcc/g++、make 等）</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>build-essential<span class="w"> </span>gdb<span class="w"> </span>cmake<span class="w"> </span>ninja-build<span class="w"> </span>pkg-config
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1"># 建议安装 clang/clang-format（可选）</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>clang<span class="w"> </span>clang-format
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="c1"># （可选）安装额外工具：python 用于一些构建脚本、ccache 等</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>python3<span class="w"> </span>python3-pip<span class="w"> </span>ccache
+</span></code></pre></div>
 <p><code>build-essential</code> 包含 gcc/g++、make 等，是在 Debian/Ubuntu 上非常常用的构建必备包。安装命令和说明见常用社区文档。</p>
 <hr />
 <h2 id="在-windows-上安装-vs-code并启用-remote---wsl-扩展">在 Windows 上安装 VS Code，并启用 Remote - WSL 扩展<a class="headerlink" href="#在-windows-上安装-vs-code并启用-remote---wsl-扩展" title="链接到此章节">&para;</a></h2>
@@ -4279,58 +4325,58 @@
 <hr />
 <h2 id="创建一个最小-cmake--c-项目并在-vs-code-中构建调试">创建一个最小 CMake + C++ 项目并在 VS Code 中构建/调试<a class="headerlink" href="#创建一个最小-cmake--c-项目并在-vs-code-中构建调试" title="链接到此章节">&para;</a></h2>
 <p>在 WSL 的Home目录里创建项目文件：</p>
-<p><code>bash
-mkdir -p ~/projects/hello_cmake &amp;&amp; cd ~/projects/hello_cmake</code>text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a>mkdir<span class="w"> </span>-p<span class="w"> </span>~/projects/hello_cmake<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>~/projects/hello_cmake
+</span></code></pre></div>
 <p>新建文件 <code>CMakeLists.txt</code>：</p>
-<p>```cmake
-cmake_minimum_required(VERSION 3.10)
-project(hello_cmake LANGUAGES CXX)</p>
-<p>set(CMAKE_CXX_STANDARD 17)
-add_executable(hello main.cpp)
-```text</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.10</span><span class="p">)</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="nb">project</span><span class="p">(</span><span class="s">hello_cmake</span><span class="w"> </span><span class="s">LANGUAGES</span><span class="w"> </span><span class="s">CXX</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_STANDARD</span><span class="w"> </span><span class="s">17</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="nb">add_executable</span><span class="p">(</span><span class="s">hello</span><span class="w"> </span><span class="s">main.cpp</span><span class="p">)</span>
+</span></code></pre></div>
 <p>新建 <code>main.cpp</code>：</p>
-<p>```cpp</p>
-<h1 id="include">include <iostream><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<p>int main() {
-    std::cout &lt;&lt; "Hello from WSL C++ world!\n";
-    int x = 42;
-    std::cout &lt;&lt; "x = " &lt;&lt; x &lt;&lt; std::endl;
-    return 0;
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos="3 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Hello from WSL C++ world!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;x = &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>构建（在 WSL 终端或 VS Code 的终端中）：</p>
-<p><code>bash
-mkdir -p build &amp;&amp; cd build
-cmake .. -G "Ninja"        # 如果你安装了 ninja；否则用默认 make： cmake ..
-cmake --build .
-./hello</code>text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a>mkdir<span class="w"> </span>-p<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a>cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span><span class="s2">&quot;Ninja&quot;</span><span class="w">        </span><span class="c1"># 如果你安装了 ninja；否则用默认 make： cmake ..</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>.
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a>./hello
+</span></code></pre></div>
 <p>如果你安装并使用 <strong>CMake Tools</strong> 扩展：打开项目根目录，扩展会在底部状态栏提供 <code>Configure</code>、<code>Build</code> 按钮，点击即可；并可以选择不同的 kit（gcc/clang）与构建目录。</p>
 <hr />
 <h2 id="在-vs-code-中配置调试使用-ms-vscodecpptools-的-gdb">在 VS Code 中配置调试（使用 ms-vscode.cpptools 的 gdb）<a class="headerlink" href="#在-vs-code-中配置调试使用-ms-vscodecpptools-的-gdb" title="链接到此章节">&para;</a></h2>
 <p>在项目的 <code>.vscode</code> 目录下创建 <code>launch.json</code>（使用 cpptools 的 <code>cppdbg</code>）：</p>
-<p><code>json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Hello (gdb)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/hello",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "setupCommands": [
-        { "description": "Enable pretty-printing", "text": "-enable-pretty-printing", "ignoreFailures": true }
-      ],
-      "preLaunchTask": "CMake: build"
-    }
-  ]
-}</code>text</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.0&quot;</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">  </span><span class="nt">&quot;configurations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Debug Hello (gdb)&quot;</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cppdbg&quot;</span><span class="p">,</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">      </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;launch&quot;</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">      </span><span class="nt">&quot;program&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}/build/hello&quot;</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">      </span><span class="nt">&quot;stopAtEntry&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">      </span><span class="nt">&quot;cwd&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;${workspaceFolder}&quot;</span><span class="p">,</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">      </span><span class="nt">&quot;environment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">      </span><span class="nt">&quot;externalConsole&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">      </span><span class="nt">&quot;MIMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gdb&quot;</span><span class="p">,</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">      </span><span class="nt">&quot;miDebuggerPath&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/bin/gdb&quot;</span><span class="p">,</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16"></a><a href="#__codelineno-5-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">      </span><span class="nt">&quot;setupCommands&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17"></a><a href="#__codelineno-5-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Enable pretty-printing&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-enable-pretty-printing&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;ignoreFailures&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18"></a><a href="#__codelineno-5-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">      </span><span class="p">],</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19"></a><a href="#__codelineno-5-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">      </span><span class="nt">&quot;preLaunchTask&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CMake: build&quot;</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20"></a><a href="#__codelineno-5-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21"></a><a href="#__codelineno-5-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22"></a><a href="#__codelineno-5-22"><span class="linenos" data-linenos="22 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>"program"需要填写你的应用程序的文件路径，<code>${workspaceFolder}</code>就是当前你开VSCode的目录，这里的构建放到了build下，你进这里就能看到你生成的应用程序了。</p>
 <p>如果你用 <code>tasks.json</code> 自定义 build 任务，确保 <code>preLaunchTask</code> 名称一致；但若使用 CMake Tools，它会自动创建并管理构建任务/调试配置，通常更方便。这样的话，你切换到VSCode的调试栏上点击</p>
 
@@ -4355,7 +4401,7 @@ cmake --build .
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

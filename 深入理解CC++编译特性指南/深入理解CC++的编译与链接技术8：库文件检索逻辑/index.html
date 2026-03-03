@@ -3467,6 +3467,45 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#系统默认目录trusted-directories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        系统默认目录（trusted directories）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#那咱们windows呢" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        那咱们Windows呢？
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="那咱们Windows呢？">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#默认搜索顺序概念化顺序" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        默认搜索顺序（概念化顺序）
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4327,21 +4366,22 @@
 <h4 id="ld_library_path这个是环境变量">LD_LIBRARY_PATH（这个是环境变量）<a class="headerlink" href="#ld_library_path这个是环境变量" title="链接到此章节">&para;</a></h4>
 <p><code>LD_LIBRARY_PATH</code> 是运行时的库搜索路径列表，会被动态链接器在特定阶段使用（见顺序）。非常常用作临时覆盖系统路径或测试新版本库。<strong>同样的</strong>，setuid / setgid 可执行文件会忽略此变量（安全原因）。</p>
 <p>环境变量的麻烦在于很容易干扰到所有的由设置了这个环境变量的shell不建议把生产环境长期依赖 <code>LD_LIBRARY_PATH</code>，因为它会影响所有通过该 shell 启动的子进程，并且不如系统配置（ldconfig）可维护。</p>
-<p><code>bash
-export LD_LIBRARY_PATH=/opt/foo/lib:/home/you/sw/lib:$LD_LIBRARY_PATH
-./myapp</code>text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/opt/foo/lib:/home/you/sw/lib:<span class="nv">$LD_LIBRARY_PATH</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>./myapp
+</span></code></pre></div>
 <hr />
 <h4 id="ldconfigetcldsoconfd以及-ldsocache">ldconfig、/etc/ld.so.conf.d、以及 ld.so.cache<a class="headerlink" href="#ldconfigetcldsoconfd以及-ldsocache" title="链接到此章节">&para;</a></h4>
 <p>系统管理员通常通过把库目录放到 <code>/etc/ld.so.conf</code> 或 <code>/etc/ld.so.conf.d/*.conf</code> 来告诉 <code>ldconfig</code> 哪些目录要被系统动态链接器信任。<code>ldconfig</code> 会扫描这些目录并生成一个二进制缓存 <code>/etc/ld.so.cache</code>（提高查找速度），同时创建符号链接（libXXX.so -&gt; libXXX.so.VERSION）。动态链接器会读取该缓存来加速查找。</p>
 <p>常见操作：</p>
-<p>```bash</p>
-<h1 id="把新目录加入配置以-root">把新目录加入配置（以 root）<a class="headerlink" href="#把新目录加入配置以-root" title="链接到此章节">&para;</a></h1>
-<p>echo "/opt/foo/lib" &gt; /etc/ld.so.conf.d/foo.conf</p>
-<h1 id="重建缓存">重建缓存<a class="headerlink" href="#重建缓存" title="链接到此章节">&para;</a></h1>
-<p>sudo ldconfig</p>
-<h1 id="查看缓存内容">查看缓存内容<a class="headerlink" href="#查看缓存内容" title="链接到此章节">&para;</a></h1>
-<p>ldconfig -p | grep foo
-```text</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1"># 把新目录加入配置（以 root）</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;/opt/foo/lib&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/etc/ld.so.conf.d/foo.conf
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="c1"># 重建缓存</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a>sudo<span class="w"> </span>ldconfig
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos="7 "></span></a><span class="c1"># 查看缓存内容</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos="8 "></span></a>ldconfig<span class="w"> </span>-p<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>foo
+</span></code></pre></div>
 <hr />
 <h4 id="系统默认目录trusted-directories">系统默认目录（trusted directories）<a class="headerlink" href="#系统默认目录trusted-directories" title="链接到此章节">&para;</a></h4>
 <p>动态链接器通常会默认搜索 <code>/lib</code>、<code>/usr/lib</code>（以及在 64-bit 系统上的 <code>/lib64</code>、<code>/usr/lib64</code>），这些目录被称为"trusted directories"。<code>ldconfig</code> 也会处理这些目录。即使没有把一个路径写入 <code>ld.so.conf</code>，把库放在这些目录通常也能被找到（但要注意架构位、ABI、版本匹配）。</p>
@@ -4388,7 +4428,7 @@ export LD_LIBRARY_PATH=/opt/foo/lib:/home/you/sw/lib:$LD_LIBRARY_PATH
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

@@ -3851,6 +3851,200 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="我们为什么需要 Modules？——从 #include 的本质缺陷说起">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#问题一编译速度灾难指数级放大" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题一：编译速度灾难（指数级放大）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题二宏污染是不可控的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题二：宏污染是不可控的
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题三接口与实现强耦合传染式依赖" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题三：接口与实现强耦合（传染式依赖）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#问题四odrabi隐式规则过多" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        问题四：ODR、ABI、隐式规则过多
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#c-modules-的核心思想让编译器真正理解模块" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++ Modules 的核心思想：让编译器真正"理解模块"
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="C++ Modules 的核心思想：让编译器真正&#34;理解模块&#34;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import关键字--include" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import关键字 ≠ #include
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#模块的最小单位bmisbinary-module-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块的最小单位：BMIs（Binary Module Interface）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#流程差异" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        流程差异
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-std-到底发生了什么" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import std; 到底发生了什么？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#今日要在什么时候使用-msvc-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        今日要在什么时候使用 MSVC Modules？
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="今日要在什么时候使用 MSVC Modules？">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#强烈推荐的使用场景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        强烈推荐的使用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-使用-import-std-替代标准库头文件" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 使用 import std; 替代标准库头文件
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-新项目内部的模块化业务模块隔离" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 新项目内部的模块化（业务模块隔离）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#谨慎的使用场景" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        谨慎的使用场景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1-大型跨平台库的公共接口" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 大型跨平台库的公共接口
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-需要-gcc--clang-完全一致行为的项目" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 需要 GCC / Clang 完全一致行为的项目
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -4211,15 +4405,14 @@
 <ul>
 <li><a href="https://blog.csdn.net/charlie114514191/article/details/155929743">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南-CSDN博客</a></li>
 <li><a href="https://zhuanlan.zhihu.com/p/1983806788118783552">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - 老老老陈醋的文章 - 知乎</a></li>
-<li><a href="&lt;https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/环境配置/如何快速在&gt; VS2026 上使用 C%2B%2B 模块 — 完整上手指南/">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档</a></li>
+<li><a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8VS2026%E4%B8%8A%E4%BD%BF%E7%94%A8C%2B%2B%E6%A8%A1%E5%9D%97%E2%80%94%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/">如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南 - Tutorial_AwesomeModernCPP的文档</a></li>
 </ul>
 <hr />
 <h2 id="我们为什么需要-modules从-include-的本质缺陷说起">我们为什么需要 Modules？——从 <code>#include</code> 的本质缺陷说起<a class="headerlink" href="#我们为什么需要-modules从-include-的本质缺陷说起" title="链接到此章节">&para;</a></h2>
 <p>在很长一段时间里，C++ 的"模块系统"其实只有一个：</p>
-<p>```cpp</p>
-<h1 id="include">include <vector><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
-<h1 id="include-fooh">include "foo.h"<a class="headerlink" href="#include-fooh" title="链接到此章节">&para;</a></h1>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;foo.h&quot;</span>
+</span></code></pre></div>
 <p>我相信大家都是知道<code>#include</code>的原理的，不必我说，就是纯纯的文本替换而已。这种基于<code>#include</code>的依赖引入有的时候更加像是被发现而不是因此而设计的（大家都是知道C语言历史的）</p>
 <p>编译器看到 <code>#include &lt;vector&gt;</code> 时，<strong>不会认为你在"依赖一个库"</strong>，而是：把 <code>&lt;vector&gt;</code> 头文件的内容，<strong>原封不动地拷贝进当前 <code>.cpp</code></strong>，再继续编译。</p>
 <p>这听起来好像没啥，但是这些问题，我相信大家多少干工程的会有所体会的：</p>
@@ -4230,13 +4423,13 @@
 <p><strong>宏（Macro）是无作用域的</strong>，这是导致宏污染不可控的根本原因。一旦定义了 <code>#define min(a,b) ...</code> 这样的宏，并且通过 <code>#include</code> 引入，它就会<strong>永久污染后续代码</strong>，直到文件结束或被 <code>#undef</code>。（这就是为什么你会看到一些工程会习惯性的#undef下定义的宏，你也不想定义的宏被哪个不知道什么人写的包含顺序出问题了搞炸了吧！例如，引入 <code>&lt;windows.h&gt;</code> 这样的库可能会引入大量宏，这些宏可能意外地替换掉你代码中的同名函数或变量。编译器<strong>无法阻止，也无法隔离</strong>这种全局性的宏污染。</p>
 <h4 id="问题三接口与实现强耦合传染式依赖">问题三：接口与实现强耦合（传染式依赖）<a class="headerlink" href="#问题三接口与实现强耦合传染式依赖" title="链接到此章节">&para;</a></h4>
 <p>头文件机制强制要求在接口（<code>.h</code> 文件）中暴露不必要的实现细节。例如，即使一个类 <code>Foo</code> 仅仅在其内部使用了 <code>std::vector&lt;int&gt;</code>：</p>
-<p>```c++
-// foo.h</p>
-<h1 id="include---不必要的暴露">include <vector> // &larr; 不必要的暴露<a class="headerlink" href="#include---不必要的暴露" title="链接到此章节">&para;</a></h1>
-<p>class Foo {
-    std::vector<int> data;
-};</p>
-<p>```text</p>
+<div class="language-c++ highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// foo.h</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos="2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span><span class="c1"> // &lt;-- 不必要的暴露</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos="3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data</span><span class="p">;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>你只是想使用 <code>Foo</code> 类，却被迫通过 <code>#include "foo.h"</code> 引入了 <strong><code>&lt;vector&gt;</code> 的全部依赖</strong>。这被称为<strong>传染式依赖（Transitive Includes）</strong>：用户被迫依赖了接口底层的所有实现细节所依赖的头文件，导致编译依赖网状膨胀。</p>
 <h4 id="问题四odrabi隐式规则过多">问题四：ODR、ABI、隐式规则过多<a class="headerlink" href="#问题四odrabi隐式规则过多" title="链接到此章节">&para;</a></h4>
 <p>头文件机制带来了一系列复杂且隐式的规则，如 <code>inline</code>、模板定义、<code>static</code> 变量以及在头文件中实现函数等。最危险的是 <strong>ODR（One Definition Rule，单一定义规则）</strong>。ODR 错误常常能通过编译阶段（因为每个编译单元只看到了一个定义），但会在<strong>链接阶段才暴露</strong>出来，导致难以调试的"链接器错误"（Linker Error），极大地增加了代码的脆弱性。</p>
@@ -4334,7 +4527,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

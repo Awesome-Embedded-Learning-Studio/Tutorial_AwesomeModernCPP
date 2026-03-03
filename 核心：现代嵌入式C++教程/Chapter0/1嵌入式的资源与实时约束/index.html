@@ -735,6 +735,162 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#四cpu-约束算力是被精确计数的" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、CPU 约束：算力是被精确计数的
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、CPU 约束：算力是被精确计数的">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-mcu-的算力特征" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 MCU 的算力特征
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-时间复杂度的工程化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 时间复杂度的"工程化"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#五功耗约束程序在消耗能量" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、功耗约束：程序在"消耗能量"
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、功耗约束：程序在&#34;消耗能量&#34;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-软件行为决定功耗" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 软件行为决定功耗
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-面向低功耗的软件设计" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 面向低功耗的软件设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#六启动时间约束从上电到可用" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、启动时间约束：从上电到可用
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、启动时间约束：从上电到可用">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-启动时间为何重要" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 启动时间为何重要
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-启动链路的成本" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 启动链路的成本
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#七实时性与确定性嵌入式系统的灵魂" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、实时性与确定性：嵌入式系统的灵魂
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="七、实时性与确定性：嵌入式系统的灵魂">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-实时性并不等于快" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 实时性并不等于"快"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-确定性determinism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 确定性（Determinism）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4317,21 +4473,21 @@
       
       
       
-        <a href="../../../tags/#tag:实时性" class="md-tag">实时性</a>
+        <span class="md-tag">实时性</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:嵌入式" class="md-tag">嵌入式</a>
+        <span class="md-tag">嵌入式</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:资源限制" class="md-tag">资源限制</a>
+        <span class="md-tag">资源限制</span>
       
     
   </nav>
@@ -4377,13 +4533,13 @@
 </ul>
 <p>一次不可预期的栈增长就可能直接破坏系统。</p>
 <p>如果你真的需要大数组，这样玩：</p>
-<p><code>c
-// 避免大型局部数组
-void process_data(void) {
-    // 不建议：uint8_t buffer[4096]; // 可能溢出
-    // 建议：使用静态或全局内存，或分段处理
-    static uint8_t buffer[256]; // 或从内存池分配
-}</code>text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// 避免大型局部数组</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="c1">// 不建议：uint8_t buffer[4096]; // 可能溢出</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="c1">// 建议：使用静态或全局内存，或分段处理</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span><span class="w"> </span><span class="c1">// 或从内存池分配</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <h3 id="33-堆的风险">3.3 堆的风险<a class="headerlink" href="#33-堆的风险" title="链接到此章节">&para;</a></h3>
 <p>运行期动态内存分配在嵌入式系统中一直是高风险操作：</p>
 <ul>
@@ -4397,22 +4553,23 @@ void process_data(void) {
 <li>内存池 / 对象池</li>
 <li>完全静态内存模型</li>
 </ul>
-<p>```c</p>
-<h1 id="define-pool_size-1024">define POOL_SIZE 1024<a class="headerlink" href="#define-pool_size-1024" title="链接到此章节">&para;</a></h1>
-<h1 id="define-block_size-32">define BLOCK_SIZE 32<a class="headerlink" href="#define-block_size-32" title="链接到此章节">&para;</a></h1>
-<h1 id="define-num_blocks-pool_size--block_size">define NUM_BLOCKS (POOL_SIZE / BLOCK_SIZE)<a class="headerlink" href="#define-num_blocks-pool_size--block_size" title="链接到此章节">&para;</a></h1>
-<p>static uint8_t memory_pool[POOL_SIZE];
-static bool block_used[NUM_BLOCKS] = {0};</p>
-<p>void* mempool_alloc(void) {
-    for (int i = 0; i &lt; NUM_BLOCKS; i++) {
-        if (!block_used[i]) {
-            block_used[i] = true;
-            return &amp;memory_pool[i * BLOCK_SIZE];
-        }
-    }
-    return NULL; // 无可用内存
-}
-```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#define POOL_SIZE 1024</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#define BLOCK_SIZE 32</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#define NUM_BLOCKS (POOL_SIZE / BLOCK_SIZE)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">memory_pool</span><span class="p">[</span><span class="n">POOL_SIZE</span><span class="p">];</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">block_used</span><span class="p">[</span><span class="n">NUM_BLOCKS</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">mempool_alloc</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NUM_BLOCKS</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">block_used</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">            </span><span class="n">block_used</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="o">&amp;</span><span class="n">memory_pool</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">BLOCK_SIZE</span><span class="p">];</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span><span class="w"> </span><span class="c1">// 无可用内存</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>在嵌入式系统中，内存管理首先服务于确定性，而不是便利性。</p>
 <h2 id="四cpu-约束算力是被精确计数的">四、CPU 约束：算力是被精确计数的<a class="headerlink" href="#四cpu-约束算力是被精确计数的" title="链接到此章节">&para;</a></h2>
 <p>在 PC/服务器的世界里，我们习惯把 CPU 当成一个"几乎用不完"的资源：
@@ -4447,27 +4604,27 @@ static bool block_used[NUM_BLOCKS] = {0};</p>
 <li>必要时看反汇编、手动估算 cycle 数</li>
 </ul>
 <p>下面的例子看起来只是微小重构，但在 MCU 上意义重大：</p>
-<p><code>c
-// 优化前：条件判断在循环内
-for (int i = 0; i &lt; n; i++) {
-    if (condition) {
-        process_a(data[i]);
-    } else {
-        process_b(data[i]);
-    }
-}</code>text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="c1">// 优化前：条件判断在循环内</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">        </span><span class="n">process_a</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">        </span><span class="n">process_b</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>问题不在逻辑错误，而在于：<strong>每一次循环都要经历一次分支判断</strong>。在没有分支预测的 CPU 上，这就是稳定且可观的性能损耗。改法也很朴素：</p>
-<p><code>c
-// 优化后：减少分支预测失败
-if (condition) {
-    for (int i = 0; i &lt; n; i++) {
-        process_a(data[i]);
-    }
-} else {
-    for (int i = 0; i &lt; n; i++) {
-        process_b(data[i]);
-    }
-}</code>text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 优化后：减少分支预测失败</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><a href="#__codelineno-3-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><a href="#__codelineno-3-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="n">process_a</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><a href="#__codelineno-3-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><a href="#__codelineno-3-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><a href="#__codelineno-3-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><a href="#__codelineno-3-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="n">process_b</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><a href="#__codelineno-3-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><a href="#__codelineno-3-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>优化点不是"更聪明"，而是：<strong>把一次不确定的分支，换成一次确定的执行路径</strong>。在嵌入式里，这种"看起来啰嗦"的写法，常常才是工程上真正安全且可分析的代码。</p>
 <hr />
 <h2 id="五功耗约束程序在消耗能量">五、功耗约束：程序在"消耗能量"<a class="headerlink" href="#五功耗约束程序在消耗能量" title="链接到此章节">&para;</a></h2>
@@ -4500,19 +4657,19 @@ if (condition) {
 <li>把零散工作合并成批量处理</li>
 </ul>
 <p>典型的低功耗主循环长这样：</p>
-<p><code>c
-void main_loop(void) {
-    while (1) {
-        // 检查是否有事件待处理
-        if (!event_pending()) {
-            // 无事件时进入低功耗模式
-            enter_sleep_mode();
-            wait_for_interrupt(); // 硬件特定指令
-        }
-        // 处理所有待处理事件
-        process_all_events();
-    }
-}</code>text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">main_loop</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">        </span><span class="c1">// 检查是否有事件待处理</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">event_pending</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">            </span><span class="c1">// 无事件时进入低功耗模式</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">            </span><span class="n">enter_sleep_mode</span><span class="p">();</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">            </span><span class="n">wait_for_interrupt</span><span class="p">();</span><span class="w"> </span><span class="c1">// 硬件特定指令</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><a href="#__codelineno-4-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a><a href="#__codelineno-4-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">        </span><span class="c1">// 处理所有待处理事件</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><a href="#__codelineno-4-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">process_all_events</span><span class="p">();</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><a href="#__codelineno-4-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a><a href="#__codelineno-4-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>高级之处不在复杂逻辑，而在明确告诉系统：<strong>没事别硬撑，让硬件帮你省电</strong>。在嵌入式里，写得"更聪明"的代码——往往比写得"更快"的代码更省电。</p>
 <hr />
 <h2 id="六启动时间约束从上电到可用">六、启动时间约束：从上电到可用<a class="headerlink" href="#六启动时间约束从上电到可用" title="链接到此章节">&para;</a></h2>
@@ -4537,18 +4694,17 @@ void main_loop(void) {
 <li>进入主控制逻辑</li>
 </ol>
 <p>链路上的每一步，都会消耗启动时间。原则就是：<strong>只做必须做的事，复杂或非关键的初始化尽量延后</strong>。</p>
-<p>```c
-// 只初始化必要的外设，延迟初始化其他
-void system_init(void) {
-    init_clock();       // 必须首先初始化
-    init_watchdog();    // 尽早启用看门狗
-    init_critical_io(); // 关键 IO 初始化</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>// 非关键外设延迟初始化
-<span class="linenos" data-linenos="2 "></span>// init_uart();    // 移到需要时初始化
-<span class="linenos" data-linenos="3 "></span>// init_spi();     // 同上
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 只初始化必要的外设，延迟初始化其他</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">system_init</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">init_clock</span><span class="p">();</span><span class="w">       </span><span class="c1">// 必须首先初始化</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">init_watchdog</span><span class="p">();</span><span class="w">    </span><span class="c1">// 尽早启用看门狗</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">init_critical_io</span><span class="p">();</span><span class="w"> </span><span class="c1">// 关键 IO 初始化</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="c1">// 非关键外设延迟初始化</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="c1">// init_uart();    // 移到需要时初始化</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="c1">// init_spi();     // 同上</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>这种"克制"的初始化方式，常常是达成启动时间指标的关键。</p>
 <hr />
 <h2 id="七实时性与确定性嵌入式系统的灵魂">七、实时性与确定性：嵌入式系统的灵魂<a class="headerlink" href="#七实时性与确定性嵌入式系统的灵魂" title="链接到此章节">&para;</a></h2>
@@ -4576,24 +4732,24 @@ void system_init(void) {
 <p><strong>在最坏情况下，依然可控。</strong></p>
 </blockquote>
 <p>下面是一个极简但确定性的调度器示例：</p>
-<p>```c
-// 简单的周期任务调度器
-typedef struct {
-    void (*task)(void);
-    uint32_t period_ticks;
-    uint32_t last_run;
-} scheduled_task_t;</p>
-<p>void scheduler_run(void) {
-    uint32_t now = get_system_tick();</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>for (int i = 0; i &lt; NUM_TASKS; i++) {
-<span class="linenos" data-linenos="2 "></span>    if ((now - tasks[i].last_run) &gt;= tasks[i].period_ticks) {
-<span class="linenos" data-linenos="3 "></span>        tasks[i].task();            // 执行任务
-<span class="linenos" data-linenos="4 "></span>        tasks[i].last_run = now;    // 更新执行时间
-<span class="linenos" data-linenos="5 "></span>    }
-<span class="linenos" data-linenos="6 "></span>}
-</code></pre></div>
-<p>}
-```text</p>
+<div class="language-c highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 简单的周期任务调度器</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">task</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">period_ticks</span><span class="p">;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">last_run</span><span class="p">;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="p">}</span><span class="w"> </span><span class="n">scheduled_task_t</span><span class="p">;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7"></a><a href="#__codelineno-6-7"><span class="linenos" data-linenos=" 7 "></span></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8"></a><a href="#__codelineno-6-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">scheduler_run</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9"></a><a href="#__codelineno-6-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_system_tick</span><span class="p">();</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10"></a><a href="#__codelineno-6-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11"></a><a href="#__codelineno-6-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NUM_TASKS</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12"></a><a href="#__codelineno-6-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="n">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">tasks</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">last_run</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">tasks</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">period_ticks</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13"></a><a href="#__codelineno-6-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">            </span><span class="n">tasks</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">task</span><span class="p">();</span><span class="w">            </span><span class="c1">// 执行任务</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14"></a><a href="#__codelineno-6-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">            </span><span class="n">tasks</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">last_run</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">now</span><span class="p">;</span><span class="w">    </span><span class="c1">// 更新执行时间</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15"></a><a href="#__codelineno-6-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16"></a><a href="#__codelineno-6-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17"></a><a href="#__codelineno-6-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>它不复杂、不华丽，但行为是<strong>可分析、可推导、可验证的</strong>——这正是嵌入式最看重的特质。</p>
 
 
@@ -4617,7 +4773,7 @@ typedef struct {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

@@ -4359,27 +4359,28 @@
 <h1 id="深入理解cc的编译与链接技术2动态库静态库导论">深入理解CC++的编译与链接技术2：动态库静态库导论<a class="headerlink" href="#深入理解cc的编译与链接技术2动态库静态库导论" title="链接到此章节">&para;</a></h1>
 <h2 id="什么是重用概念跟我们的编译与链接技术有什么关系">什么是重用概念，跟我们的编译与链接技术有什么关系<a class="headerlink" href="#什么是重用概念跟我们的编译与链接技术有什么关系" title="链接到此章节">&para;</a></h2>
 <p>重用无处不在，我相信不会有人不赞同的。我们讨论的重用就是代码的再次利用。这一点，在C++编程中已经可以窥得一丝猫腻了：</p>
-<p>```cpp
-template<typename AddType>
-auto add(const AddType&amp; a, const AddType&amp; b){
-    return a + b; // 没有任何技巧的相加
-}</p>
-<p>std::string
-trim_self(const std::string&amp; waited_trim){ // returns the copy of the trimmed string
-    size_t i = 0; // left index
- while (i &lt; str.size() &amp;&amp; isspace((unsigned char)str[i]))
-  i++;
-    size_t j = str.size(); // right index
-    while (j &gt; 0 &amp;&amp; isspace((unsigned char)str[j - 1]))
-  j--;
- return str.substr(i, j);
-}</p>
-<p>int main()
-{
-    int res = add(1, 2); // deduced as int
-    float res2 = add(1.0f, 2.0f); // deduced as floats
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">AddType</span><span class="o">&gt;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">AddType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">AddType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">){</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="p">;</span><span class="w"> </span><span class="c1">// 没有任何技巧的相加</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="p">}</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">string</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">trim_self</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">waited_trim</span><span class="p">){</span><span class="w"> </span><span class="c1">// returns the copy of the trimmed string</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// left index</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">str</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">isspace</span><span class="p">((</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)</span><span class="n">str</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">  </span><span class="n">i</span><span class="o">++</span><span class="p">;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"> </span><span class="c1">// right index</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">isspace</span><span class="p">((</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="p">)</span><span class="n">str</span><span class="p">[</span><span class="n">j</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]))</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">  </span><span class="n">j</span><span class="o">--</span><span class="p">;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">str</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">);</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="p">}</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">{</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><a href="#__codelineno-0-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="c1">// deduced as int</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><a href="#__codelineno-0-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">res2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add</span><span class="p">(</span><span class="mf">1.0f</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0f</span><span class="p">);</span><span class="w"> </span><span class="c1">// deduced as floats</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><a href="#__codelineno-0-21"><span class="linenos" data-linenos="21 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>比如说，上面的模板代码和函数代码，让我们不必在每一次调用加法和字符串空白字符压缩的时候，重复的拷贝代码。所以这样看，早在很久之前的C语言盛行的时代，代码的重用就出现了。不过我想，这个层次的代码复用还不算很高级——因为这样的复用是源码分发的。换而言之，想要使用自己曾经，或者是其他人的代码杰作，我们不得不焦头烂额的翻找出来他们的源文件，确保所有的依赖齐全后，加入自己的工程进行编译。我相信你注意到了问题——很多情况下我们压根不可以得到源代码。（商业机密，懂得都懂）这种情况下，我们自然就要思考更加低层次的代码复用了。那就是二进制层级的分发。这就是静态库和动态库的作用，也是我们后面几个专门讲述机器码分发层次的几个复用手段的前置。</p>
 <h2 id="啥是静态库">啥是静态库？<a class="headerlink" href="#啥是静态库" title="链接到此章节">&para;</a></h2>
 <p>静态库也许比你想的简单太多了。我们知道，在编译器预处理和编译源文件结束之后，就会得到可重定位文件。这些可重定位文件在之前，会被直接拿来组合成可执行文件，现在我们可以换一个思路，这些通用的可重定位文件完全可以自己集合成一个库，下一次找符号的时候，直接链接这个库就好了，这样我们就把源代码藏起来了，也就可以按照二进制层级进行分发。但是这有一个问题——我们怎么使用呢？我们总是需要可用的符号告诉我们确切的入口，就像我们知道库里有一个可以压缩字符串空白字符的函数，但如果我们不知道他叫什么，我们没办法使用它。所以很显然了。光具备这些二进制文件，是完全不够的，我们还需要满足其他的条件，那就是——导出的头文件供我们编程使用了。</p>
@@ -4519,7 +4520,7 @@ trim_self(const std::string&amp; waited_trim){ // returns the copy of the trimme
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

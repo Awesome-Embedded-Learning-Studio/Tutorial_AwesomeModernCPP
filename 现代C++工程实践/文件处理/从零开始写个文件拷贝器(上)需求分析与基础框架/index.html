@@ -4435,94 +4435,94 @@
 </ul>
 <h3 id="接口设计">接口设计<a class="headerlink" href="#接口设计" title="链接到此章节">&para;</a></h3>
 <p>基于上面的分析,我们的<code>FileCopier</code>类接口设计得很简洁:</p>
-<p><code>cpp
-class FileCopier {
-public:
-  explicit FileCopier(std::size_t chunk_size = 8 * 1024);
-  bool copy(const std::string &amp;src_path, const std::string &amp;dst_path);
-  void setChunkSize(std::size_t size) { chunk_size_ = size; }
-private:
-  std::size_t chunk_size_;
-};</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">FileCopier</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">FileCopier</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="p">);</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">src_path</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dst_path</span><span class="p">);</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">setChunkSize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">chunk_size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">chunk_size_</span><span class="p">;</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>这里有几个值得说道的地方。构造函数用了<code>explicit</code>,这是个好习惯——防止编译器偷偷做隐式类型转换,避免一些莫名其妙的bug。默认块大小8KB,这是个经验值,既不会太占内存,性能也还行。</p>
 <p><code>copy</code>方法返回<code>bool</code>,简单明了:成功返回<code>true</code>,失败返回<code>false</code>。参数用<code>const std::string&amp;</code>,避免不必要的拷贝。路径用<code>std::string</code>而不是<code>std::filesystem::path</code>,是考虑到接口的简单性,反正内部转换也很方便。</p>
 <p><code>setChunkSize</code>提供了运行时调整块大小的能力。虽然大多数时候用默认值就行,但如果你知道自己在拷贝超大文件,可以调大一点;如果内存紧张,可以调小一点。这种灵活性不费什么事,但关键时刻能派上用场。</p>
 <h2 id="技术选型用哪些c特性">技术选型:用哪些C++特性?<a class="headerlink" href="#技术选型用哪些c特性" title="链接到此章节">&para;</a></h2>
 <h3 id="文件系统库告别手写路径解析">文件系统库:告别手写路径解析<a class="headerlink" href="#文件系统库告别手写路径解析" title="链接到此章节">&para;</a></h3>
 <p>C++17引入的<code>std::filesystem</code>是个宝贝。以前操作文件路径得自己处理斜杠、反斜杠、相对路径、绝对路径这些破事,现在一个<code>fs::path</code>全搞定。检查文件存在性、获取文件大小、创建目录,都是现成的API。</p>
-<p><code>cpp
-namespace fs = std::filesystem;</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">namespace</span><span class="w"> </span><span class="nn">fs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">std</span><span class="o">::</span><span class="nn">filesystem</span><span class="p">;</span>
+</span></code></pre></div>
 <p>这个命名空间别名我相信大家看了都是秒懂，至少，我自己写总是简写成这样，要不然太累了（尽管IDE自动补全挺好的，但是看着也很累）</p>
 <h3 id="文件流经典但好用">文件流:经典但好用<a class="headerlink" href="#文件流经典但好用" title="链接到此章节">&para;</a></h3>
 <p><code>std::ifstream</code>和<code>std::ofstream</code>虽然是老面孔了,但在二进制模式下用来读写文件还是很靠谱的。关键是它们遵循RAII原则,析构时自动关闭文件,不用担心忘记<code>close()</code>导致资源泄漏。</p>
 <p>打开文件时指定<code>std::ios::binary</code>,这个很关键。不加这个标志的话,在Windows上可能会对换行符做转换,导致二进制文件损坏。虽然在Linux上影响不大,但写跨平台代码就得注意这些细节。</p>
 <h3 id="动态数组vector当缓冲区">动态数组:vector当缓冲区<a class="headerlink" href="#动态数组vector当缓冲区" title="链接到此章节">&para;</a></h3>
-<p><code>cpp
-std::vector&lt;char&gt; buffer(chunk_size_);</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer</span><span class="p">(</span><span class="n">chunk_size_</span><span class="p">);</span>
+</span></code></pre></div>
 <p>用<code>vector</code>做读写缓冲区是个常见技巧。相比手动<code>new</code>和<code>delete</code>,<code>vector</code>自动管理内存,不会泄漏。而且<code>data()</code>方法可以拿到底层的连续内存指针,直接传给<code>read()</code>和<code>write()</code>,效率和原始数组一样。</p>
 <p>注意这里直接用<code>chunk_size_</code>初始化,会把<code>vector</code>预分配到这个大小,避免后续的重新分配。</p>
 <h3 id="时间测量chrono库">时间测量:chrono库<a class="headerlink" href="#时间测量chrono库" title="链接到此章节">&para;</a></h3>
 <p>进度条需要计算速度和预估时间,这就要精确的时间测量。<code>std::chrono</code>是C++11引入的时间库,虽然语法有点啰嗦,但功能强大且类型安全。</p>
-<p><code>cpp
-auto t_start = std::chrono::steady_clock::now();</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">t_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">steady_clock</span><span class="o">::</span><span class="n">now</span><span class="p">();</span>
+</span></code></pre></div>
 <p><code>steady_clock</code>保证时间只会向前走,不受系统时间调整影响,适合测量时间间隔。<code>auto</code>类型推导在这里派上用场,不然你得写<code>std::chrono::time_point&lt;std::chrono::steady_clock&gt;</code>,想想就头大。</p>
 <h2 id="基础框架搭建">基础框架搭建<a class="headerlink" href="#基础框架搭建" title="链接到此章节">&para;</a></h2>
 <h3 id="构造函数简单但必要">构造函数:简单但必要<a class="headerlink" href="#构造函数简单但必要" title="链接到此章节">&para;</a></h3>
-<p><code>cpp
-FileCopier::FileCopier(std::size_t chunk_size) : chunk_size_(chunk_size) {}</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">FileCopier</span><span class="o">::</span><span class="n">FileCopier</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">chunk_size</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">chunk_size_</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+</span></code></pre></div>
 <p>构造函数就一行,用成员初始化列表给<code>chunk_size_</code>赋值。这比在函数体里赋值更高效,因为是直接初始化而不是先默认构造再赋值。虽然对于<code>std::size_t</code>这种基本类型差别不大,但养成习惯总是好的。</p>
 <h3 id="copy方法的整体结构">copy方法的整体结构<a class="headerlink" href="#copy方法的整体结构" title="链接到此章节">&para;</a></h3>
 <p>整个拷贝逻辑包在一个大的<code>try-catch</code>块里:</p>
-<p><code>cpp
-bool FileCopier::copy(const std::string &amp;src_path,
-                      const std::string &amp;dst_path) {
-  try {
-    // 实际拷贝逻辑
-  } catch (const fs::filesystem_error &amp;e) {
-    std::cerr &lt;&lt; "Filesystem error: " &lt;&lt; e.what() &lt;&lt; "\n";
-    return false;
-  } catch (const std::exception &amp;e) {
-    std::cerr &lt;&lt; "Error: " &lt;&lt; e.what() &lt;&lt; "\n";
-    return false;
-  }
-}</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="kt">bool</span><span class="w"> </span><span class="nf">FileCopier::copy</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">src_path</span><span class="p">,</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dst_path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="c1">// 实际拷贝逻辑</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">fs</span><span class="o">::</span><span class="n">filesystem_error</span><span class="w"> </span><span class="o">&amp;</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Filesystem error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="o">&amp;</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>先捕获<code>filesystem_error</code>,这是<code>filesystem</code>库抛出的特定异常,包含更详细的错误信息。然后捕获通用的<code>std::exception</code>兜底。所有异常都转换成返回<code>false</code>,外加把错误信息打印到<code>stderr</code>。</p>
 <p>这种错误处理策略比较保守,不会让程序崩溃,但也意味着调用者需要检查返回值。如果你觉得某些错误应该是致命的,也可以让异常继续往上抛。</p>
 <h3 id="前置检查先确认源文件存在">前置检查:先确认源文件存在<a class="headerlink" href="#前置检查先确认源文件存在" title="链接到此章节">&para;</a></h3>
-<p>```cpp
-if (!fs::exists(src_path)) {
-  std::cerr &lt;&lt; "Source file does not exist: " &lt;&lt; src_path &lt;&lt; "\n";
-  return false;
-}</p>
-<p>std::uintmax_t total_size = fs::file_size(src_path);
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">fs</span><span class="o">::</span><span class="n">exists</span><span class="p">(</span><span class="n">src_path</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Source file does not exist: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">src_path</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a><span class="p">}</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a><a href="#__codelineno-6-5"><span class="linenos" data-linenos="5 "></span></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a><a href="#__codelineno-6-6"><span class="linenos" data-linenos="6 "></span></a><span class="n">std</span><span class="o">::</span><span class="kt">uintmax_t</span><span class="w"> </span><span class="n">total_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fs</span><span class="o">::</span><span class="n">file_size</span><span class="p">(</span><span class="n">src_path</span><span class="p">);</span>
+</span></code></pre></div>
 <p>在真正开始拷贝之前,先用<code>fs::exists</code>检查源文件存不存在。这能避免后面打开文件时才发现问题,错误信息也更明确。</p>
 <p><code>fs::file_size</code>返回的是<code>std::uintmax_t</code>,这是个无符号整数类型,能表示非常大的文件。现在动不动就几十GB的文件,用32位的<code>unsigned int</code>早就不够了。</p>
 <h3 id="打开文件二进制模式很重要">打开文件:二进制模式很重要<a class="headerlink" href="#打开文件二进制模式很重要" title="链接到此章节">&para;</a></h3>
-<p>```cpp
-std::ifstream in(src_path, std::ios::binary);
-if (!in) {
-  std::cerr &lt;&lt; "Failed to open source file for reading: " &lt;&lt; src_path &lt;&lt; "\n";
-  return false;
-}</p>
-<p>std::ofstream out(dst_path, std::ios::binary | std::ios::trunc);
-if (!out) {
-  std::cerr &lt;&lt; "Failed to open destination file for writing: " &lt;&lt; dst_path &lt;&lt; "\n";
-  return false;
-}
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">ifstream</span><span class="w"> </span><span class="nf">in</span><span class="p">(</span><span class="n">src_path</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">ios</span><span class="o">::</span><span class="n">binary</span><span class="p">);</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Failed to open source file for reading: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">src_path</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">}</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">ofstream</span><span class="w"> </span><span class="n">out</span><span class="p">(</span><span class="n">dst_path</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">ios</span><span class="o">::</span><span class="n">binary</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">ios</span><span class="o">::</span><span class="n">trunc</span><span class="p">);</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8"></a><a href="#__codelineno-7-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9"></a><a href="#__codelineno-7-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Failed to open destination file for writing: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">dst_path</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10"></a><a href="#__codelineno-7-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11"></a><a href="#__codelineno-7-11"><span class="linenos" data-linenos="11 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 <p>输入流用<code>std::ios::binary</code>,输出流用<code>std::ios::binary | std::ios::trunc</code>。<code>trunc</code>表示如果目标文件已存在就清空它,这是拷贝操作的常见行为——你肯定不希望新内容追加到旧内容后面。</p>
 <p>打开失败的检查用<code>if (!in)</code>,这是流对象重载的<code>operator bool()</code>,比调用<code>is_open()</code>更简洁。</p>
 <h3 id="缓冲区准备vector的好处">缓冲区准备:vector的好处<a class="headerlink" href="#缓冲区准备vector的好处" title="链接到此章节">&para;</a></h3>
-<p><code>cpp
-std::vector&lt;char&gt; buffer(chunk_size_);</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buffer</span><span class="p">(</span><span class="n">chunk_size_</span><span class="p">);</span>
+</span></code></pre></div>
 <p>分配一个<code>char</code>类型的<code>vector</code>,大小就是<code>chunk_size_</code>。这块内存会在函数返回时自动释放,不用操心。</p>
 <p>为什么用<code>char</code>而不是<code>uint8_t</code>或<code>std::byte</code>?主要是因为<code>ifstream::read</code>和<code>ofstream::write</code>接受的是<code>char*</code>指针。虽然C++17有<code>std::byte</code>,但为了兼容性和简洁性,<code>char</code>仍然是常见选择。</p>
 <h3 id="进度追踪的变量">进度追踪的变量<a class="headerlink" href="#进度追踪的变量" title="链接到此章节">&para;</a></h3>
-<p><code>cpp
-std::uintmax_t copied = 0;
-auto t_start = std::chrono::steady_clock::now();
-auto last_report = t_start;</code>text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">std</span><span class="o">::</span><span class="kt">uintmax_t</span><span class="w"> </span><span class="n">copied</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">t_start</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">steady_clock</span><span class="o">::</span><span class="n">now</span><span class="p">();</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3"></a><a href="#__codelineno-9-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">last_report</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t_start</span><span class="p">;</span>
+</span></code></pre></div>
 <p><code>copied</code>记录已经拷贝了多少字节,<code>t_start</code>记录开始时间用来计算总耗时和平均速度,<code>last_report</code>记录上次更新进度条的时间。</p>
 <p>这里连续用了三个<code>auto</code>,类型推导让代码简洁很多。如果你对<code>auto</code>还不太放心,可以用IDE查看推导出的具体类型,或者用<code>decltype</code>做编译时检查。</p>
 <h2 id="小结">小结<a class="headerlink" href="#小结" title="链接到此章节">&para;</a></h2>
@@ -4550,7 +4550,7 @@ auto last_report = t_start;</code>text</p>
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 00:51:30 CST">2026年3月4日 00:51:30</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

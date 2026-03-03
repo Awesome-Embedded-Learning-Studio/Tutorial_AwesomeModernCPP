@@ -992,6 +992,134 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#1-优化等级在速度体积与调试之间平衡" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 优化等级：在速度、体积与调试之间平衡
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 优化等级：在速度、体积与调试之间平衡">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-深度建议为什么不要在嵌入式用--o3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 深度建议：为什么不要在嵌入式用 -O3？
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-裁剪-c-运行时卸下沉重的盔甲" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 裁剪 C++ 运行时：卸下沉重的"盔甲"
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 裁剪 C++ 运行时：卸下沉重的&#34;盔甲&#34;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21--fno-exceptions-禁用异常" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 -fno-exceptions (禁用异常)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22--fno-rtti-禁用运行时类型识别" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 -fno-rtti (禁用运行时类型识别)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-垃圾回收不用的代码" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 垃圾回收不用的代码
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 垃圾回收不用的代码">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-编译器端分区化" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 编译器端：分区化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-链接器端垃圾回收" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 链接器端：垃圾回收
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-cmake-中的最佳实践配置" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. CMake 中的最佳实践配置
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-危险的--ofast-与浮点陷阱" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 危险的 -Ofast 与浮点陷阱
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4311,21 +4439,21 @@
       
       
       
-        <a href="../../../tags/#tag:gcc" class="md-tag">GCC</a>
+        <span class="md-tag">GCC</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:优化" class="md-tag">优化</a>
+        <span class="md-tag">优化</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:编译器选项" class="md-tag">编译器选项</a>
+        <span class="md-tag">编译器选项</span>
       
     
   </nav>
@@ -4397,25 +4525,25 @@
 <li><strong><code>-MMD</code></strong>：在编译的同时，生成一个 <code>.d</code> 后缀的依赖关系文件。</li>
 <li><strong>自动化</strong>：现代构建系统（CMake/Ninja）会自动处理这些选项。理解它能帮你排查"为什么我改了代码但编译没反应"的增量编译问题。</li>
 </ul>
-<p>```cmake</p>
-<h1 id="编译参数">编译参数<a class="headerlink" href="#编译参数" title="链接到此章节">&para;</a></h1>
-<p>target_compile_options(${PROJECT_NAME} PRIVATE
-    -std=c++17             # 核心：定义语言标准
-    -g3                    # 调试：丰富的调试信息
-    -Wall -Wextra          # 质量：严格警告
-    -Werror                # 质量：零容忍警告
-    -Wdouble-promotion     # 性能：防止隐式双精度运算
-    -ffunction-sections    # 体积：函数分区
-    -fdata-sections        # 体积：数据分区
-    -fno-exceptions        # 裁剪：禁用异常
-    -fno-rtti              # 裁剪：禁用 RTTI
-)</p>
-<h1 id="链接参数">链接参数<a class="headerlink" href="#链接参数" title="链接到此章节">&para;</a></h1>
-<p>target_link_options(${PROJECT_NAME} PRIVATE
-    -Wl,--gc-sections      # 体积：垃圾回收死代码
-    -Wl,-Map=${PROJECT_NAME}.map  # 诊断：生成内存映射文件
-)
-```text</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 编译参数</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="s">-std=c++17</span><span class="w">             </span><span class="c"># 核心：定义语言标准</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="s">-g3</span><span class="w">                    </span><span class="c"># 调试：丰富的调试信息</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="s">-Wall</span><span class="w"> </span><span class="s">-Wextra</span><span class="w">          </span><span class="c"># 质量：严格警告</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="s">-Werror</span><span class="w">                </span><span class="c"># 质量：零容忍警告</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="s">-Wdouble-promotion</span><span class="w">     </span><span class="c"># 性能：防止隐式双精度运算</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="s">-ffunction-sections</span><span class="w">    </span><span class="c"># 体积：函数分区</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="s">-fdata-sections</span><span class="w">        </span><span class="c"># 体积：数据分区</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="s">-fno-exceptions</span><span class="w">        </span><span class="c"># 裁剪：禁用异常</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="s">-fno-rtti</span><span class="w">              </span><span class="c"># 裁剪：禁用 RTTI</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="c"># 链接参数</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="nb">target_link_options</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="w"> </span><span class="s">PRIVATE</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="s">-Wl,--gc-sections</span><span class="w">      </span><span class="c"># 体积：垃圾回收死代码</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="s">-Wl,-Map=</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="s">.map</span><span class="w">  </span><span class="c"># 诊断：生成内存映射文件</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">)</span>
+</span></code></pre></div>
 <hr />
 <h2 id="1-优化等级在速度体积与调试之间平衡">1. 优化等级：在速度、体积与调试之间平衡<a class="headerlink" href="#1-优化等级在速度体积与调试之间平衡" title="链接到此章节">&para;</a></h2>
 <p>GCC 和 Clang 提供了多级的优化开关。理解它们的差异是嵌入式开发者的基本功。</p>
@@ -4493,26 +4621,28 @@
 <hr />
 <h2 id="4-cmake-中的最佳实践配置">4. CMake 中的最佳实践配置<a class="headerlink" href="#4-cmake-中的最佳实践配置" title="链接到此章节">&para;</a></h2>
 <p>将上述理论转化为代码。在你的顶层 <code>CMakeLists.txt</code> 中，建议这样管理这些选项：</p>
-<p>```cmake</p>
-<h1 id="创建一个专门的编译选项接口库方便所有-target-复用">创建一个专门的编译选项接口库，方便所有 Target 复用<a class="headerlink" href="#创建一个专门的编译选项接口库方便所有-target-复用" title="链接到此章节">&para;</a></h1>
-<p>add_library(project_warnings INTERFACE)</p>
-<p>target_compile_options(project_warnings INTERFACE
-    $&lt;$<CONFIG:Release>:-Os&gt;                 # Release 模式优化尺寸
-    $&lt;$<CONFIG:Debug>:-Og -g3&gt;               # Debug 模式方便调试
-    -fno-exceptions                          # 禁用异常
-    -fno-rtti                                # 禁用 RTTI
-    -ffunction-sections                      # 函数分区
-    -fdata-sections                          # 数据分区
-    -Wall -Wextra -Wpedantic                 # 开启严格警告（防患未然）
-)</p>
-<h1 id="链接器选项">链接器选项<a class="headerlink" href="#链接器选项" title="链接到此章节">&para;</a></h1>
-<p>target_link_options(project_warnings INTERFACE
-    "-Wl,--gc-sections"                      # 链接时删除死代码
-    "--specs=nano.specs"                     # 使用精简版 C 库 (Newlib-nano)
-)</p>
-<h1 id="使用时只需要链接这个接口">使用时只需要链接这个接口<a class="headerlink" href="#使用时只需要链接这个接口" title="链接到此章节">&para;</a></h1>
-<p>target_link_libraries(my_firmware PRIVATE project_warnings)
-```text</p>
+<div class="language-cmake highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c"># 创建一个专门的编译选项接口库，方便所有 Target 复用</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="nb">add_library</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="nb">target_compile_options</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Release</span><span class="o">&gt;</span><span class="s">:-Os&gt;</span><span class="w">                 </span><span class="c"># Release 模式优化尺寸</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="o">$&lt;</span><span class="nv">$&lt;CONFIG:Debug</span><span class="o">&gt;</span><span class="s">:-Og</span><span class="w"> </span><span class="s">-g3&gt;</span><span class="w">               </span><span class="c"># Debug 模式方便调试</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="s">-fno-exceptions</span><span class="w">                          </span><span class="c"># 禁用异常</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="s">-fno-rtti</span><span class="w">                                </span><span class="c"># 禁用 RTTI</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="s">-ffunction-sections</span><span class="w">                      </span><span class="c"># 函数分区</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="s">-fdata-sections</span><span class="w">                          </span><span class="c"># 数据分区</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="s">-Wall</span><span class="w"> </span><span class="s">-Wextra</span><span class="w"> </span><span class="s">-Wpedantic</span><span class="w">                 </span><span class="c"># 开启严格警告（防患未然）</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="c"># 链接器选项</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="nb">target_link_options</span><span class="p">(</span><span class="s">project_warnings</span><span class="w"> </span><span class="s">INTERFACE</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="s2">&quot;-Wl,--gc-sections&quot;</span><span class="w">                      </span><span class="c"># 链接时删除死代码</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="s2">&quot;--specs=nano.specs&quot;</span><span class="w">                     </span><span class="c"># 使用精简版 C 库 (Newlib-nano)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="c"># 使用时只需要链接这个接口</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_firmware</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">project_warnings</span><span class="p">)</span>
+</span></code></pre></div>
 <hr />
 <h2 id="5-危险的--ofast-与浮点陷阱">5. 危险的 <code>-Ofast</code> 与浮点陷阱<a class="headerlink" href="#5-危险的--ofast-与浮点陷阱" title="链接到此章节">&para;</a></h2>
 <p>在嵌入式中，<code>-Ofast</code> 会开启 <code>-ffast-math</code>。这可能导致：</p>
@@ -4544,7 +4674,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     

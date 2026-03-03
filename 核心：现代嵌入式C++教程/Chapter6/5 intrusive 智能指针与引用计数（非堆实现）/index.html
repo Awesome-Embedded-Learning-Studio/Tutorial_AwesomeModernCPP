@@ -4250,21 +4250,21 @@
       
       
       
-        <a href="../../../tags/#tag:intrusive_ptr" class="md-tag">intrusive_ptr</a>
+        <span class="md-tag">intrusive_ptr</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:引用计数" class="md-tag">引用计数</a>
+        <span class="md-tag">引用计数</span>
       
     
       
       
       
       
-        <a href="../../../tags/#tag:智能指针" class="md-tag">智能指针</a>
+        <span class="md-tag">智能指针</span>
       
     
   </nav>
@@ -4278,73 +4278,74 @@
 <h2 id="intrusive-智能指针">intrusive 智能指针<a class="headerlink" href="#intrusive-智能指针" title="链接到此章节">&para;</a></h2>
 <p>intrusive 智能指针正是在这个背景下显得格外有吸引力。它并不是一种新发明，而是一种非常朴素、甚至有些"反现代"的设计思路：<strong>既然对象需要知道自己何时该被销毁，那么引用计数干脆就放在对象内部</strong>。对象不再是被动地由外部控制块管理生死，而是明确地承担起"我还被多少人使用"的责任。</p>
 <p>这种设计的第一个变化，是引用计数不再是一个独立分配的结构，而成为对象的一部分。对象的大小稍微增大了一点，但作为交换，系统中少了一次隐式的内存分配，也少了一层间接访问。这对于嵌入式系统来说，几乎永远是一个值得的交易。更重要的是，引用计数的存储位置变得明确、可预测，它不再隐藏在某个你看不见的控制块里。</p>
-<p>```cpp
-class intrusive_refcount {
-public:
-    void add_ref() noexcept {
-        ++refcount_;
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>void release() noexcept {
-<span class="linenos" data-linenos="2 "></span>    if (--refcount_ == 0) {
-<span class="linenos" data-linenos="3 "></span>        destroy();
-<span class="linenos" data-linenos="4 "></span>    }
-<span class="linenos" data-linenos="5 "></span>}
-</code></pre></div>
-<p>protected:
-    intrusive_refcount() = default;
-    virtual ~intrusive_refcount() = default;</p>
-<p>private:
-    void destroy() noexcept {
-        this-&gt;~intrusive_refcount();
-    }</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>uint32_t refcount_{0};
-</code></pre></div>
-<p>};
-```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">intrusive_refcount</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">add_ref</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">        </span><span class="o">++</span><span class="n">refcount_</span><span class="p">;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">release</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">--</span><span class="n">refcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">            </span><span class="n">destroy</span><span class="p">();</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a><span class="k">protected</span><span class="o">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="n">intrusive_refcount</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">intrusive_refcount</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">destroy</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><a href="#__codelineno-0-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">        </span><span class="k">this</span><span class="o">-&gt;~</span><span class="n">intrusive_refcount</span><span class="p">();</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><a href="#__codelineno-0-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a><a href="#__codelineno-0-21"><span class="linenos" data-linenos="21 "></span></a>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><a href="#__codelineno-0-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">refcount_</span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a><a href="#__codelineno-0-23"><span class="linenos" data-linenos="23 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>在 intrusive 方案中，一个可被共享的对象通常会继承自一个简单的引用计数基类。这个基类提供增加与减少引用计数的接口，并在计数归零时触发对象的销毁行为。这里的"销毁"需要非常小心地理解：<strong>在嵌入式语境下，销毁往往意味着析构，而不意味着释放内存</strong>。这是 intrusive 设计与桌面 C++ 最大的分野之一。</p>
 <p>在很多嵌入式系统中，对象的内存来源并不具备"自由释放"的语义。它可能位于静态存储区，可能来自一个固定大小的内存池，也可能是通过 placement new 构造在一块预先分配好的缓冲区中。在这些情况下，调用 <code>delete</code> 不仅是不合适的，甚至是错误的。intrusive 智能指针如果仍然坚持"引用计数归零就 delete"，反而会破坏系统的整体设计。因此，一个更符合嵌入式直觉的 intrusive 引用计数实现，通常只在计数归零时显式调用析构函数。析构函数负责释放对象所持有的资源，例如关闭外设、注销中断、停止 DMA 或归还系统句柄，而对象本身所占据的内存则交还给它最初的"所有者"——静态区、内存池或上层管理逻辑。这种分离让对象的生命周期语义变得清晰而诚实：<strong>引用计数决定"对象是否还活着"，而不是"内存是否还能用"</strong>。</p>
-<p>```cpp
-template<typename T> // 可惜了，如果更加现代的C++20+，可以试一试concept约束
-// 这里可以static assert一下，要求是intrusive_refcount的派生
-class intrusive_ptr {
-public:
-    intrusive_ptr() noexcept = default;</p>
-<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos=" 1 "></span>explicit intrusive_ptr(T* p) noexcept : ptr_(p) {
-<span class="linenos" data-linenos=" 2 "></span>    if (ptr_) ptr_-&gt;add_ref();
-<span class="linenos" data-linenos=" 3 "></span>}
-<span class="linenos" data-linenos=" 4 "></span>
-<span class="linenos" data-linenos=" 5 "></span>intrusive_ptr(const intrusive_ptr&amp; other) noexcept : ptr_(other.ptr_) {
-<span class="linenos" data-linenos=" 6 "></span>    if (ptr_) ptr_-&gt;add_ref();
-<span class="linenos" data-linenos=" 7 "></span>}
-<span class="linenos" data-linenos=" 8 "></span>
-<span class="linenos" data-linenos=" 9 "></span>intrusive_ptr&amp; operator=(const intrusive_ptr&amp; other) noexcept {
-<span class="linenos" data-linenos="10 "></span>    if (this != &amp;other) {
-<span class="linenos" data-linenos="11 "></span>        reset();
-<span class="linenos" data-linenos="12 "></span>        ptr_ = other.ptr_;
-<span class="linenos" data-linenos="13 "></span>        if (ptr_) ptr_-&gt;add_ref();
-<span class="linenos" data-linenos="14 "></span>    }
-<span class="linenos" data-linenos="15 "></span>    return *this;
-<span class="linenos" data-linenos="16 "></span>}
-<span class="linenos" data-linenos="17 "></span>
-<span class="linenos" data-linenos="18 "></span>~intrusive_ptr() {
-<span class="linenos" data-linenos="19 "></span>    reset();
-<span class="linenos" data-linenos="20 "></span>}
-<span class="linenos" data-linenos="21 "></span>
-<span class="linenos" data-linenos="22 "></span>T* get() const noexcept { return ptr_; }
-<span class="linenos" data-linenos="23 "></span>T&amp; operator*() const noexcept { return *ptr_; }
-<span class="linenos" data-linenos="24 "></span>T* operator-&gt;() const noexcept { return ptr_; }
-<span class="linenos" data-linenos="25 "></span>
-<span class="linenos" data-linenos="26 "></span>void reset() noexcept {
-<span class="linenos" data-linenos="27 "></span>    if (ptr_) {
-<span class="linenos" data-linenos="28 "></span>        ptr_-&gt;release();
-<span class="linenos" data-linenos="29 "></span>        ptr_ = nullptr;
-<span class="linenos" data-linenos="30 "></span>    }
-<span class="linenos" data-linenos="31 "></span>}
-</code></pre></div>
-<p>private:
-    T* ptr_{nullptr};
-};</p>
-<p>```text</p>
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span><span class="w"> </span><span class="c1">// 可惜了，如果更加现代的C++20+，可以试一试concept约束</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1">// 这里可以static assert一下，要求是intrusive_refcount的派生</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">intrusive_ptr</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="p">(</span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ptr_</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ptr_</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">            </span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18"></a><a href="#__codelineno-1-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">;</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19"></a><a href="#__codelineno-1-19"><span class="linenos" data-linenos="19 "></span></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a><a href="#__codelineno-1-20"><span class="linenos" data-linenos="20 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a><a href="#__codelineno-1-21"><span class="linenos" data-linenos="21 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><a href="#__codelineno-1-22"><span class="linenos" data-linenos="22 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a><a href="#__codelineno-1-23"><span class="linenos" data-linenos="23 "></span></a>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a><a href="#__codelineno-1-24"><span class="linenos" data-linenos="24 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">intrusive_ptr</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a><a href="#__codelineno-1-25"><span class="linenos" data-linenos="25 "></span></a><span class="w">        </span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a><a href="#__codelineno-1-26"><span class="linenos" data-linenos="26 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27"></a><a href="#__codelineno-1-27"><span class="linenos" data-linenos="27 "></span></a>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28"></a><a href="#__codelineno-1-28"><span class="linenos" data-linenos="28 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">get</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29"></a><a href="#__codelineno-1-29"><span class="linenos" data-linenos="29 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">*</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30"></a><a href="#__codelineno-1-30"><span class="linenos" data-linenos="30 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31"></a><a href="#__codelineno-1-31"><span class="linenos" data-linenos="31 "></span></a>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32"></a><a href="#__codelineno-1-32"><span class="linenos" data-linenos="32 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33"></a><a href="#__codelineno-1-33"><span class="linenos" data-linenos="33 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34"></a><a href="#__codelineno-1-34"><span class="linenos" data-linenos="34 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">release</span><span class="p">();</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35"></a><a href="#__codelineno-1-35"><span class="linenos" data-linenos="35 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36"></a><a href="#__codelineno-1-36"><span class="linenos" data-linenos="36 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37"></a><a href="#__codelineno-1-37"><span class="linenos" data-linenos="37 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38"></a><a href="#__codelineno-1-38"><span class="linenos" data-linenos="38 "></span></a>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39"></a><a href="#__codelineno-1-39"><span class="linenos" data-linenos="39 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40"></a><a href="#__codelineno-1-40"><span class="linenos" data-linenos="40 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">ptr_</span><span class="p">{</span><span class="k">nullptr</span><span class="p">};</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41"></a><a href="#__codelineno-1-41"><span class="linenos" data-linenos="41 "></span></a><span class="p">};</span>
+</span></code></pre></div>
 <p>围绕这种对象设计，一个 intrusive 智能指针本身可以非常简单。它只需要在构造、拷贝和销毁时，分别调用对象的引用计数接口。指针本身不需要知道对象是如何构造的，也不需要知道对象最终住在哪里。它只是一个纪律严明的访问者：使用前登记，离开时注销。当最后一个访问者离开，对象自行完成善后工作。</p>
 <h2 id="so-为什么要有呢">so, 为什么要有呢？<a class="headerlink" href="#so-为什么要有呢" title="链接到此章节">&para;</a></h2>
 <p>这种设计在工程上的好处是显而易见的。对象的生命周期规则是显式的、可审计的，任何阅读代码的人都能立刻意识到："这个类型是可共享的，它内部有引用计数"。这在嵌入式项目中尤为重要，因为对象往往代表着真实的硬件资源，而不是一段可以随意丢弃的内存。相比之下，<code>shared_ptr</code> 将生命周期逻辑隐藏在模板和控制块之后，反而容易让人忽略其真实成本。</p>
@@ -4354,252 +4355,250 @@ public:
 <details>
 <summary>查看完整可编译示例</summary>
 
-```cpp
-// 侵入式智能指针示例
-// 演示如何实现和使用侵入式引用计数智能指针
-
-#include <cstdint>
-#include <cstdio>
-
-// ========== 侵入式引用计数基类 ==========
-
-class intrusive_refcount {
-public:
-    void add_ref() noexcept {
-        ++refcount_;
-    }
-
-    void release() noexcept {
-        if (--refcount_ == 0) {
-            destroy();
-        }
-    }
-
-    uint32_t ref_count() const noexcept {
-        return refcount_;
-    }
-
-protected:
-    intrusive_refcount() = default;
-    virtual ~intrusive_refcount() = default;
-
-private:
-    void destroy() noexcept {
-        // 注意：在嵌入式语境下，这里只调用析构函数
-        // 而不 delete this，因为内存可能来自静态区或内存池
-        this->~intrusive_refcount();
-    }
-
-    uint32_t refcount_{0};
-};
-
-// ========== 侵入式智能指针实现 ==========
-
-template<typename T>
-class intrusive_ptr {
-public:
-    intrusive_ptr() noexcept = default;
-
-    explicit intrusive_ptr(T* p) noexcept : ptr_(p) {
-        if (ptr_) ptr_->add_ref();
-    }
-
-    intrusive_ptr(const intrusive_ptr& other) noexcept : ptr_(other.ptr_) {
-        if (ptr_) ptr_->add_ref();
-    }
-
-    intrusive_ptr(intrusive_ptr&& other) noexcept : ptr_(other.ptr_) {
-        other.ptr_ = nullptr;
-    }
-
-    ~intrusive_ptr() noexcept {
-        reset();
-    }
-
-    intrusive_ptr& operator=(const intrusive_ptr& other) noexcept {
-        if (this != &other) {
-            reset();
-            ptr_ = other.ptr_;
-            if (ptr_) ptr_->add_ref();
-        }
-        return *this;
-    }
-
-    intrusive_ptr& operator=(intrusive_ptr&& other) noexcept {
-        if (this != &other) {
-            reset();
-            ptr_ = other.ptr_;
-            other.ptr_ = nullptr;
-        }
-        return *this;
-    }
-
-    T* get() const noexcept { return ptr_; }
-    T& operator*() const noexcept { return *ptr_; }
-    T* operator->() const noexcept { return ptr_; }
-
-    explicit operator bool() const noexcept { return ptr_ != nullptr; }
-
-    void reset() noexcept {
-        if (ptr_) {
-            ptr_->release();
-            ptr_ = nullptr;
-        }
-    }
-
-private:
-    T* ptr_{nullptr};
-};
-
-// ========== 使用示例 ==========
-
-// 示例 1: 简单的可共享对象
-class SharedBuffer : public intrusive_refcount {
-public:
-    static constexpr size_t SIZE = 256;
-
-    explicit SharedBuffer(int id) : id_(id) {
-        printf("SharedBuffer %d constructed\n", id_);
-    }
-
-    ~SharedBuffer() override {
-        printf("SharedBuffer %d destroyed (refcount was %u)\n",
-               id_, ref_count());
-    }
-
-    void write(const char* data) {
-        snprintf(buffer_, SIZE, "%s", data);
-    }
-
-    const char* read() const {
-        return buffer_;
-    }
-
-    int id() const { return id_; }
-
-private:
-    int id_;
-    char buffer_[SIZE]{0};
-};
-
-// 示例 2: 非堆分配对象（静态存储）
-class StaticDevice : public intrusive_refcount {
-public:
-    StaticDevice() {
-        printf("StaticDevice constructed (static storage)\n");
-    }
-
-    ~StaticDevice() override {
-        printf("StaticDevice destroyed (but memory not freed)\n");
-    }
-
-    void send(const char* msg) {
-        printf("Device sending: %s\n", msg);
-    }
-};
-
-// 静态存储的对象
-alignas(StaticDevice) unsigned char device_storage[sizeof(StaticDevice)];
-
-// ========== 测试函数 ==========
-
-void basic_usage() {
-    printf("=== Basic intrusive_ptr Usage ===\n");
-
-    intrusive_ptr<SharedBuffer> buf1(new SharedBuffer(1));
-    printf("buf1 created, refcount: %u\n", buf1->ref_count());
-
-    {
-        intrusive_ptr<SharedBuffer> buf2 = buf1;
-        printf("After copy, buf1 refcount: %u\n", buf1->ref_count());
-        printf("buf2 id: %d\n", buf2->id());
-    }
-
-    printf("After buf2 destroyed, buf1 refcount: %u\n", buf1->ref_count());
-}
-
-void move_semantics() {
-    printf("\n=== Move Semantics ===\n");
-
-    intrusive_ptr<SharedBuffer> buf1(new SharedBuffer(2));
-    intrusive_ptr<SharedBuffer> buf2 = std::move(buf1);
-
-    printf("After move:\n");
-    printf("  buf1 is null: %s\n", !buf1 ? "yes" : "no");
-    printf("  buf2 id: %d, refcount: %u\n", buf2->id(), buf2->ref_count());
-}
-
-void container_usage() {
-    printf("\n=== Container Usage ===\n");
-
-    // 注意：intrusive_ptr 的拷贝成本低（只有计数器操作）
-    // 没有 shared_ptr 那样的原子操作开销
-}
-
-void static_storage_example() {
-    printf("\n=== Static Storage Example ===\n");
-
-    // 在静态存储区构造对象
-    StaticDevice* dev = new(device_storage) StaticDevice();
-
-    intrusive_ptr<StaticDevice> dev_ptr(dev);
-    dev_ptr->send("Hello from static device");
-
-    {
-        intrusive_ptr<StaticDevice> dev_ptr2 = dev_ptr;
-        dev_ptr2->send("Shared reference");
-    }
-
-    // 手动调用析构，但内存不释放
-    dev_ptr.reset();
-    printf("Static device destroyed but memory still allocated\n");
-}
-
-// 多态支持
-class Animal : public intrusive_refcount {
-public:
-    virtual ~Animal() = default;
-    virtual void speak() const = 0;
-};
-
-class Dog : public Animal {
-public:
-    void speak() const override {
-        printf("Woof!\n");
-    }
-    ~Dog() override {
-        printf("Dog destroyed\n");
-    }
-};
-
-void polymorphism_example() {
-    printf("\n=== Polymorphism Support ===\n");
-
-    intrusive_ptr<Animal> pet(new Dog());
-    pet->speak();
-
-    intrusive_ptr<Animal> pet2 = pet;
-    pet2->speak();
-}
-
-int main() {
-    basic_usage();
-    move_semantics();
-    container_usage();
-    static_storage_example();
-    polymorphism_example();
-
-    printf("\n=== All Examples Complete ===\n");
-    printf("\nKey Advantages of Intrusive Pointers:\n");
-    printf("- No separate control block allocation\n");
-    printf("- Reference count is part of the object\n");
-    printf("- Works with non-heap allocated objects\n");
-    printf("- No atomic operations overhead (unless you add them)\n");
-
-    return 0;
-}
-
-```text
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="  1 "></span></a><span class="c1">// 侵入式智能指针示例</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="  2 "></span></a><span class="c1">// 演示如何实现和使用侵入式引用计数智能指针</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="  3 "></span></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="  4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="  5 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdio&gt;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="  6 "></span></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="  7 "></span></a><span class="c1">// ========== 侵入式引用计数基类 ==========</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos="  8 "></span></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos="  9 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">intrusive_refcount</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos=" 10 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos=" 11 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">add_ref</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos=" 12 "></span></a><span class="w">        </span><span class="o">++</span><span class="n">refcount_</span><span class="p">;</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><a href="#__codelineno-2-13"><span class="linenos" data-linenos=" 13 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><a href="#__codelineno-2-14"><span class="linenos" data-linenos=" 14 "></span></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><a href="#__codelineno-2-15"><span class="linenos" data-linenos=" 15 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">release</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><a href="#__codelineno-2-16"><span class="linenos" data-linenos=" 16 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">--</span><span class="n">refcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><a href="#__codelineno-2-17"><span class="linenos" data-linenos=" 17 "></span></a><span class="w">            </span><span class="n">destroy</span><span class="p">();</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><a href="#__codelineno-2-18"><span class="linenos" data-linenos=" 18 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><a href="#__codelineno-2-19"><span class="linenos" data-linenos=" 19 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20"></a><a href="#__codelineno-2-20"><span class="linenos" data-linenos=" 20 "></span></a>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21"></a><a href="#__codelineno-2-21"><span class="linenos" data-linenos=" 21 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">ref_count</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22"></a><a href="#__codelineno-2-22"><span class="linenos" data-linenos=" 22 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">refcount_</span><span class="p">;</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23"></a><a href="#__codelineno-2-23"><span class="linenos" data-linenos=" 23 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24"></a><a href="#__codelineno-2-24"><span class="linenos" data-linenos=" 24 "></span></a>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25"></a><a href="#__codelineno-2-25"><span class="linenos" data-linenos=" 25 "></span></a><span class="k">protected</span><span class="o">:</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26"></a><a href="#__codelineno-2-26"><span class="linenos" data-linenos=" 26 "></span></a><span class="w">    </span><span class="n">intrusive_refcount</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27"></a><a href="#__codelineno-2-27"><span class="linenos" data-linenos=" 27 "></span></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">intrusive_refcount</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28"></a><a href="#__codelineno-2-28"><span class="linenos" data-linenos=" 28 "></span></a>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29"></a><a href="#__codelineno-2-29"><span class="linenos" data-linenos=" 29 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30"></a><a href="#__codelineno-2-30"><span class="linenos" data-linenos=" 30 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">destroy</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31"></a><a href="#__codelineno-2-31"><span class="linenos" data-linenos=" 31 "></span></a><span class="w">        </span><span class="c1">// 注意：在嵌入式语境下，这里只调用析构函数</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32"></a><a href="#__codelineno-2-32"><span class="linenos" data-linenos=" 32 "></span></a><span class="w">        </span><span class="c1">// 而不 delete this，因为内存可能来自静态区或内存池</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33"></a><a href="#__codelineno-2-33"><span class="linenos" data-linenos=" 33 "></span></a><span class="w">        </span><span class="k">this</span><span class="o">-&gt;~</span><span class="n">intrusive_refcount</span><span class="p">();</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34"></a><a href="#__codelineno-2-34"><span class="linenos" data-linenos=" 34 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35"></a><a href="#__codelineno-2-35"><span class="linenos" data-linenos=" 35 "></span></a>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36"></a><a href="#__codelineno-2-36"><span class="linenos" data-linenos=" 36 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">refcount_</span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37"></a><a href="#__codelineno-2-37"><span class="linenos" data-linenos=" 37 "></span></a><span class="p">};</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38"></a><a href="#__codelineno-2-38"><span class="linenos" data-linenos=" 38 "></span></a>
+</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39"></a><a href="#__codelineno-2-39"><span class="linenos" data-linenos=" 39 "></span></a><span class="c1">// ========== 侵入式智能指针实现 ==========</span>
+</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40"></a><a href="#__codelineno-2-40"><span class="linenos" data-linenos=" 40 "></span></a>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41"></a><a href="#__codelineno-2-41"><span class="linenos" data-linenos=" 41 "></span></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42"></a><a href="#__codelineno-2-42"><span class="linenos" data-linenos=" 42 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">intrusive_ptr</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43"></a><a href="#__codelineno-2-43"><span class="linenos" data-linenos=" 43 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44"></a><a href="#__codelineno-2-44"><span class="linenos" data-linenos=" 44 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45"></a><a href="#__codelineno-2-45"><span class="linenos" data-linenos=" 45 "></span></a>
+</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46"></a><a href="#__codelineno-2-46"><span class="linenos" data-linenos=" 46 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="p">(</span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ptr_</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47"></a><a href="#__codelineno-2-47"><span class="linenos" data-linenos=" 47 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48"></a><a href="#__codelineno-2-48"><span class="linenos" data-linenos=" 48 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49"></a><a href="#__codelineno-2-49"><span class="linenos" data-linenos=" 49 "></span></a>
+</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50"></a><a href="#__codelineno-2-50"><span class="linenos" data-linenos=" 50 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ptr_</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-51"><a id="__codelineno-2-51" name="__codelineno-2-51"></a><a href="#__codelineno-2-51"><span class="linenos" data-linenos=" 51 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-2-52"><a id="__codelineno-2-52" name="__codelineno-2-52"></a><a href="#__codelineno-2-52"><span class="linenos" data-linenos=" 52 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-53"><a id="__codelineno-2-53" name="__codelineno-2-53"></a><a href="#__codelineno-2-53"><span class="linenos" data-linenos=" 53 "></span></a>
+</span><span id="__span-2-54"><a id="__codelineno-2-54" name="__codelineno-2-54"></a><a href="#__codelineno-2-54"><span class="linenos" data-linenos=" 54 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ptr_</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-55"><a id="__codelineno-2-55" name="__codelineno-2-55"></a><a href="#__codelineno-2-55"><span class="linenos" data-linenos=" 55 "></span></a><span class="w">        </span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+</span><span id="__span-2-56"><a id="__codelineno-2-56" name="__codelineno-2-56"></a><a href="#__codelineno-2-56"><span class="linenos" data-linenos=" 56 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-57"><a id="__codelineno-2-57" name="__codelineno-2-57"></a><a href="#__codelineno-2-57"><span class="linenos" data-linenos=" 57 "></span></a>
+</span><span id="__span-2-58"><a id="__codelineno-2-58" name="__codelineno-2-58"></a><a href="#__codelineno-2-58"><span class="linenos" data-linenos=" 58 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">intrusive_ptr</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-59"><a id="__codelineno-2-59" name="__codelineno-2-59"></a><a href="#__codelineno-2-59"><span class="linenos" data-linenos=" 59 "></span></a><span class="w">        </span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-2-60"><a id="__codelineno-2-60" name="__codelineno-2-60"></a><a href="#__codelineno-2-60"><span class="linenos" data-linenos=" 60 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-61"><a id="__codelineno-2-61" name="__codelineno-2-61"></a><a href="#__codelineno-2-61"><span class="linenos" data-linenos=" 61 "></span></a>
+</span><span id="__span-2-62"><a id="__codelineno-2-62" name="__codelineno-2-62"></a><a href="#__codelineno-2-62"><span class="linenos" data-linenos=" 62 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-63"><a id="__codelineno-2-63" name="__codelineno-2-63"></a><a href="#__codelineno-2-63"><span class="linenos" data-linenos=" 63 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-64"><a id="__codelineno-2-64" name="__codelineno-2-64"></a><a href="#__codelineno-2-64"><span class="linenos" data-linenos=" 64 "></span></a><span class="w">            </span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-2-65"><a id="__codelineno-2-65" name="__codelineno-2-65"></a><a href="#__codelineno-2-65"><span class="linenos" data-linenos=" 65 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">;</span>
+</span><span id="__span-2-66"><a id="__codelineno-2-66" name="__codelineno-2-66"></a><a href="#__codelineno-2-66"><span class="linenos" data-linenos=" 66 "></span></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">add_ref</span><span class="p">();</span>
+</span><span id="__span-2-67"><a id="__codelineno-2-67" name="__codelineno-2-67"></a><a href="#__codelineno-2-67"><span class="linenos" data-linenos=" 67 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-68"><a id="__codelineno-2-68" name="__codelineno-2-68"></a><a href="#__codelineno-2-68"><span class="linenos" data-linenos=" 68 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+</span><span id="__span-2-69"><a id="__codelineno-2-69" name="__codelineno-2-69"></a><a href="#__codelineno-2-69"><span class="linenos" data-linenos=" 69 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-70"><a id="__codelineno-2-70" name="__codelineno-2-70"></a><a href="#__codelineno-2-70"><span class="linenos" data-linenos=" 70 "></span></a>
+</span><span id="__span-2-71"><a id="__codelineno-2-71" name="__codelineno-2-71"></a><a href="#__codelineno-2-71"><span class="linenos" data-linenos=" 71 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-72"><a id="__codelineno-2-72" name="__codelineno-2-72"></a><a href="#__codelineno-2-72"><span class="linenos" data-linenos=" 72 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-73"><a id="__codelineno-2-73" name="__codelineno-2-73"></a><a href="#__codelineno-2-73"><span class="linenos" data-linenos=" 73 "></span></a><span class="w">            </span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-2-74"><a id="__codelineno-2-74" name="__codelineno-2-74"></a><a href="#__codelineno-2-74"><span class="linenos" data-linenos=" 74 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="p">;</span>
+</span><span id="__span-2-75"><a id="__codelineno-2-75" name="__codelineno-2-75"></a><a href="#__codelineno-2-75"><span class="linenos" data-linenos=" 75 "></span></a><span class="w">            </span><span class="n">other</span><span class="p">.</span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+</span><span id="__span-2-76"><a id="__codelineno-2-76" name="__codelineno-2-76"></a><a href="#__codelineno-2-76"><span class="linenos" data-linenos=" 76 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-77"><a id="__codelineno-2-77" name="__codelineno-2-77"></a><a href="#__codelineno-2-77"><span class="linenos" data-linenos=" 77 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
+</span><span id="__span-2-78"><a id="__codelineno-2-78" name="__codelineno-2-78"></a><a href="#__codelineno-2-78"><span class="linenos" data-linenos=" 78 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-79"><a id="__codelineno-2-79" name="__codelineno-2-79"></a><a href="#__codelineno-2-79"><span class="linenos" data-linenos=" 79 "></span></a>
+</span><span id="__span-2-80"><a id="__codelineno-2-80" name="__codelineno-2-80"></a><a href="#__codelineno-2-80"><span class="linenos" data-linenos=" 80 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">get</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-81"><a id="__codelineno-2-81" name="__codelineno-2-81"></a><a href="#__codelineno-2-81"><span class="linenos" data-linenos=" 81 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">*</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-82"><a id="__codelineno-2-82" name="__codelineno-2-82"></a><a href="#__codelineno-2-82"><span class="linenos" data-linenos=" 82 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">ptr_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-83"><a id="__codelineno-2-83" name="__codelineno-2-83"></a><a href="#__codelineno-2-83"><span class="linenos" data-linenos=" 83 "></span></a>
+</span><span id="__span-2-84"><a id="__codelineno-2-84" name="__codelineno-2-84"></a><a href="#__codelineno-2-84"><span class="linenos" data-linenos=" 84 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="kt">bool</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">ptr_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-85"><a id="__codelineno-2-85" name="__codelineno-2-85"></a><a href="#__codelineno-2-85"><span class="linenos" data-linenos=" 85 "></span></a>
+</span><span id="__span-2-86"><a id="__codelineno-2-86" name="__codelineno-2-86"></a><a href="#__codelineno-2-86"><span class="linenos" data-linenos=" 86 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-87"><a id="__codelineno-2-87" name="__codelineno-2-87"></a><a href="#__codelineno-2-87"><span class="linenos" data-linenos=" 87 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ptr_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-88"><a id="__codelineno-2-88" name="__codelineno-2-88"></a><a href="#__codelineno-2-88"><span class="linenos" data-linenos=" 88 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="o">-&gt;</span><span class="n">release</span><span class="p">();</span>
+</span><span id="__span-2-89"><a id="__codelineno-2-89" name="__codelineno-2-89"></a><a href="#__codelineno-2-89"><span class="linenos" data-linenos=" 89 "></span></a><span class="w">            </span><span class="n">ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+</span><span id="__span-2-90"><a id="__codelineno-2-90" name="__codelineno-2-90"></a><a href="#__codelineno-2-90"><span class="linenos" data-linenos=" 90 "></span></a><span class="w">        </span><span class="p">}</span>
+</span><span id="__span-2-91"><a id="__codelineno-2-91" name="__codelineno-2-91"></a><a href="#__codelineno-2-91"><span class="linenos" data-linenos=" 91 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-92"><a id="__codelineno-2-92" name="__codelineno-2-92"></a><a href="#__codelineno-2-92"><span class="linenos" data-linenos=" 92 "></span></a>
+</span><span id="__span-2-93"><a id="__codelineno-2-93" name="__codelineno-2-93"></a><a href="#__codelineno-2-93"><span class="linenos" data-linenos=" 93 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-94"><a id="__codelineno-2-94" name="__codelineno-2-94"></a><a href="#__codelineno-2-94"><span class="linenos" data-linenos=" 94 "></span></a><span class="w">    </span><span class="n">T</span><span class="o">*</span><span class="w"> </span><span class="n">ptr_</span><span class="p">{</span><span class="k">nullptr</span><span class="p">};</span>
+</span><span id="__span-2-95"><a id="__codelineno-2-95" name="__codelineno-2-95"></a><a href="#__codelineno-2-95"><span class="linenos" data-linenos=" 95 "></span></a><span class="p">};</span>
+</span><span id="__span-2-96"><a id="__codelineno-2-96" name="__codelineno-2-96"></a><a href="#__codelineno-2-96"><span class="linenos" data-linenos=" 96 "></span></a>
+</span><span id="__span-2-97"><a id="__codelineno-2-97" name="__codelineno-2-97"></a><a href="#__codelineno-2-97"><span class="linenos" data-linenos=" 97 "></span></a><span class="c1">// ========== 使用示例 ==========</span>
+</span><span id="__span-2-98"><a id="__codelineno-2-98" name="__codelineno-2-98"></a><a href="#__codelineno-2-98"><span class="linenos" data-linenos=" 98 "></span></a>
+</span><span id="__span-2-99"><a id="__codelineno-2-99" name="__codelineno-2-99"></a><a href="#__codelineno-2-99"><span class="linenos" data-linenos=" 99 "></span></a><span class="c1">// 示例 1: 简单的可共享对象</span>
+</span><span id="__span-2-100"><a id="__codelineno-2-100" name="__codelineno-2-100"></a><a href="#__codelineno-2-100"><span class="linenos" data-linenos="100 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">SharedBuffer</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">intrusive_refcount</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-101"><a id="__codelineno-2-101" name="__codelineno-2-101"></a><a href="#__codelineno-2-101"><span class="linenos" data-linenos="101 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-102"><a id="__codelineno-2-102" name="__codelineno-2-102"></a><a href="#__codelineno-2-102"><span class="linenos" data-linenos="102 "></span></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">SIZE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
+</span><span id="__span-2-103"><a id="__codelineno-2-103" name="__codelineno-2-103"></a><a href="#__codelineno-2-103"><span class="linenos" data-linenos="103 "></span></a>
+</span><span id="__span-2-104"><a id="__codelineno-2-104" name="__codelineno-2-104"></a><a href="#__codelineno-2-104"><span class="linenos" data-linenos="104 "></span></a><span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">SharedBuffer</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">id_</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-105"><a id="__codelineno-2-105" name="__codelineno-2-105"></a><a href="#__codelineno-2-105"><span class="linenos" data-linenos="105 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;SharedBuffer %d constructed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">id_</span><span class="p">);</span>
+</span><span id="__span-2-106"><a id="__codelineno-2-106" name="__codelineno-2-106"></a><a href="#__codelineno-2-106"><span class="linenos" data-linenos="106 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-107"><a id="__codelineno-2-107" name="__codelineno-2-107"></a><a href="#__codelineno-2-107"><span class="linenos" data-linenos="107 "></span></a>
+</span><span id="__span-2-108"><a id="__codelineno-2-108" name="__codelineno-2-108"></a><a href="#__codelineno-2-108"><span class="linenos" data-linenos="108 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">SharedBuffer</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-109"><a id="__codelineno-2-109" name="__codelineno-2-109"></a><a href="#__codelineno-2-109"><span class="linenos" data-linenos="109 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;SharedBuffer %d destroyed (refcount was %u)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+</span><span id="__span-2-110"><a id="__codelineno-2-110" name="__codelineno-2-110"></a><a href="#__codelineno-2-110"><span class="linenos" data-linenos="110 "></span></a><span class="w">               </span><span class="n">id_</span><span class="p">,</span><span class="w"> </span><span class="n">ref_count</span><span class="p">());</span>
+</span><span id="__span-2-111"><a id="__codelineno-2-111" name="__codelineno-2-111"></a><a href="#__codelineno-2-111"><span class="linenos" data-linenos="111 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-112"><a id="__codelineno-2-112" name="__codelineno-2-112"></a><a href="#__codelineno-2-112"><span class="linenos" data-linenos="112 "></span></a>
+</span><span id="__span-2-113"><a id="__codelineno-2-113" name="__codelineno-2-113"></a><a href="#__codelineno-2-113"><span class="linenos" data-linenos="113 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-114"><a id="__codelineno-2-114" name="__codelineno-2-114"></a><a href="#__codelineno-2-114"><span class="linenos" data-linenos="114 "></span></a><span class="w">        </span><span class="n">snprintf</span><span class="p">(</span><span class="n">buffer_</span><span class="p">,</span><span class="w"> </span><span class="n">SIZE</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">);</span>
+</span><span id="__span-2-115"><a id="__codelineno-2-115" name="__codelineno-2-115"></a><a href="#__codelineno-2-115"><span class="linenos" data-linenos="115 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-116"><a id="__codelineno-2-116" name="__codelineno-2-116"></a><a href="#__codelineno-2-116"><span class="linenos" data-linenos="116 "></span></a>
+</span><span id="__span-2-117"><a id="__codelineno-2-117" name="__codelineno-2-117"></a><a href="#__codelineno-2-117"><span class="linenos" data-linenos="117 "></span></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">read</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-118"><a id="__codelineno-2-118" name="__codelineno-2-118"></a><a href="#__codelineno-2-118"><span class="linenos" data-linenos="118 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">buffer_</span><span class="p">;</span>
+</span><span id="__span-2-119"><a id="__codelineno-2-119" name="__codelineno-2-119"></a><a href="#__codelineno-2-119"><span class="linenos" data-linenos="119 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-120"><a id="__codelineno-2-120" name="__codelineno-2-120"></a><a href="#__codelineno-2-120"><span class="linenos" data-linenos="120 "></span></a>
+</span><span id="__span-2-121"><a id="__codelineno-2-121" name="__codelineno-2-121"></a><a href="#__codelineno-2-121"><span class="linenos" data-linenos="121 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">id_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-122"><a id="__codelineno-2-122" name="__codelineno-2-122"></a><a href="#__codelineno-2-122"><span class="linenos" data-linenos="122 "></span></a>
+</span><span id="__span-2-123"><a id="__codelineno-2-123" name="__codelineno-2-123"></a><a href="#__codelineno-2-123"><span class="linenos" data-linenos="123 "></span></a><span class="k">private</span><span class="o">:</span>
+</span><span id="__span-2-124"><a id="__codelineno-2-124" name="__codelineno-2-124"></a><a href="#__codelineno-2-124"><span class="linenos" data-linenos="124 "></span></a><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">id_</span><span class="p">;</span>
+</span><span id="__span-2-125"><a id="__codelineno-2-125" name="__codelineno-2-125"></a><a href="#__codelineno-2-125"><span class="linenos" data-linenos="125 "></span></a><span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer_</span><span class="p">[</span><span class="n">SIZE</span><span class="p">]{</span><span class="mi">0</span><span class="p">};</span>
+</span><span id="__span-2-126"><a id="__codelineno-2-126" name="__codelineno-2-126"></a><a href="#__codelineno-2-126"><span class="linenos" data-linenos="126 "></span></a><span class="p">};</span>
+</span><span id="__span-2-127"><a id="__codelineno-2-127" name="__codelineno-2-127"></a><a href="#__codelineno-2-127"><span class="linenos" data-linenos="127 "></span></a>
+</span><span id="__span-2-128"><a id="__codelineno-2-128" name="__codelineno-2-128"></a><a href="#__codelineno-2-128"><span class="linenos" data-linenos="128 "></span></a><span class="c1">// 示例 2: 非堆分配对象（静态存储）</span>
+</span><span id="__span-2-129"><a id="__codelineno-2-129" name="__codelineno-2-129"></a><a href="#__codelineno-2-129"><span class="linenos" data-linenos="129 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">StaticDevice</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">intrusive_refcount</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-130"><a id="__codelineno-2-130" name="__codelineno-2-130"></a><a href="#__codelineno-2-130"><span class="linenos" data-linenos="130 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-131"><a id="__codelineno-2-131" name="__codelineno-2-131"></a><a href="#__codelineno-2-131"><span class="linenos" data-linenos="131 "></span></a><span class="w">    </span><span class="n">StaticDevice</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-132"><a id="__codelineno-2-132" name="__codelineno-2-132"></a><a href="#__codelineno-2-132"><span class="linenos" data-linenos="132 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;StaticDevice constructed (static storage)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-133"><a id="__codelineno-2-133" name="__codelineno-2-133"></a><a href="#__codelineno-2-133"><span class="linenos" data-linenos="133 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-134"><a id="__codelineno-2-134" name="__codelineno-2-134"></a><a href="#__codelineno-2-134"><span class="linenos" data-linenos="134 "></span></a>
+</span><span id="__span-2-135"><a id="__codelineno-2-135" name="__codelineno-2-135"></a><a href="#__codelineno-2-135"><span class="linenos" data-linenos="135 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">StaticDevice</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-136"><a id="__codelineno-2-136" name="__codelineno-2-136"></a><a href="#__codelineno-2-136"><span class="linenos" data-linenos="136 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;StaticDevice destroyed (but memory not freed)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-137"><a id="__codelineno-2-137" name="__codelineno-2-137"></a><a href="#__codelineno-2-137"><span class="linenos" data-linenos="137 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-138"><a id="__codelineno-2-138" name="__codelineno-2-138"></a><a href="#__codelineno-2-138"><span class="linenos" data-linenos="138 "></span></a>
+</span><span id="__span-2-139"><a id="__codelineno-2-139" name="__codelineno-2-139"></a><a href="#__codelineno-2-139"><span class="linenos" data-linenos="139 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">send</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-140"><a id="__codelineno-2-140" name="__codelineno-2-140"></a><a href="#__codelineno-2-140"><span class="linenos" data-linenos="140 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Device sending: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
+</span><span id="__span-2-141"><a id="__codelineno-2-141" name="__codelineno-2-141"></a><a href="#__codelineno-2-141"><span class="linenos" data-linenos="141 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-142"><a id="__codelineno-2-142" name="__codelineno-2-142"></a><a href="#__codelineno-2-142"><span class="linenos" data-linenos="142 "></span></a><span class="p">};</span>
+</span><span id="__span-2-143"><a id="__codelineno-2-143" name="__codelineno-2-143"></a><a href="#__codelineno-2-143"><span class="linenos" data-linenos="143 "></span></a>
+</span><span id="__span-2-144"><a id="__codelineno-2-144" name="__codelineno-2-144"></a><a href="#__codelineno-2-144"><span class="linenos" data-linenos="144 "></span></a><span class="c1">// 静态存储的对象</span>
+</span><span id="__span-2-145"><a id="__codelineno-2-145" name="__codelineno-2-145"></a><a href="#__codelineno-2-145"><span class="linenos" data-linenos="145 "></span></a><span class="k">alignas</span><span class="p">(</span><span class="n">StaticDevice</span><span class="p">)</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">device_storage</span><span class="p">[</span><span class="k">sizeof</span><span class="p">(</span><span class="n">StaticDevice</span><span class="p">)];</span>
+</span><span id="__span-2-146"><a id="__codelineno-2-146" name="__codelineno-2-146"></a><a href="#__codelineno-2-146"><span class="linenos" data-linenos="146 "></span></a>
+</span><span id="__span-2-147"><a id="__codelineno-2-147" name="__codelineno-2-147"></a><a href="#__codelineno-2-147"><span class="linenos" data-linenos="147 "></span></a><span class="c1">// ========== 测试函数 ==========</span>
+</span><span id="__span-2-148"><a id="__codelineno-2-148" name="__codelineno-2-148"></a><a href="#__codelineno-2-148"><span class="linenos" data-linenos="148 "></span></a>
+</span><span id="__span-2-149"><a id="__codelineno-2-149" name="__codelineno-2-149"></a><a href="#__codelineno-2-149"><span class="linenos" data-linenos="149 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">basic_usage</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-150"><a id="__codelineno-2-150" name="__codelineno-2-150"></a><a href="#__codelineno-2-150"><span class="linenos" data-linenos="150 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;=== Basic intrusive_ptr Usage ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-151"><a id="__codelineno-2-151" name="__codelineno-2-151"></a><a href="#__codelineno-2-151"><span class="linenos" data-linenos="151 "></span></a>
+</span><span id="__span-2-152"><a id="__codelineno-2-152" name="__codelineno-2-152"></a><a href="#__codelineno-2-152"><span class="linenos" data-linenos="152 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">SharedBuffer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf1</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SharedBuffer</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+</span><span id="__span-2-153"><a id="__codelineno-2-153" name="__codelineno-2-153"></a><a href="#__codelineno-2-153"><span class="linenos" data-linenos="153 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;buf1 created, refcount: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf1</span><span class="o">-&gt;</span><span class="n">ref_count</span><span class="p">());</span>
+</span><span id="__span-2-154"><a id="__codelineno-2-154" name="__codelineno-2-154"></a><a href="#__codelineno-2-154"><span class="linenos" data-linenos="154 "></span></a>
+</span><span id="__span-2-155"><a id="__codelineno-2-155" name="__codelineno-2-155"></a><a href="#__codelineno-2-155"><span class="linenos" data-linenos="155 "></span></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-156"><a id="__codelineno-2-156" name="__codelineno-2-156"></a><a href="#__codelineno-2-156"><span class="linenos" data-linenos="156 "></span></a><span class="w">        </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">SharedBuffer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf1</span><span class="p">;</span>
+</span><span id="__span-2-157"><a id="__codelineno-2-157" name="__codelineno-2-157"></a><a href="#__codelineno-2-157"><span class="linenos" data-linenos="157 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;After copy, buf1 refcount: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf1</span><span class="o">-&gt;</span><span class="n">ref_count</span><span class="p">());</span>
+</span><span id="__span-2-158"><a id="__codelineno-2-158" name="__codelineno-2-158"></a><a href="#__codelineno-2-158"><span class="linenos" data-linenos="158 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;buf2 id: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf2</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">());</span>
+</span><span id="__span-2-159"><a id="__codelineno-2-159" name="__codelineno-2-159"></a><a href="#__codelineno-2-159"><span class="linenos" data-linenos="159 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-160"><a id="__codelineno-2-160" name="__codelineno-2-160"></a><a href="#__codelineno-2-160"><span class="linenos" data-linenos="160 "></span></a>
+</span><span id="__span-2-161"><a id="__codelineno-2-161" name="__codelineno-2-161"></a><a href="#__codelineno-2-161"><span class="linenos" data-linenos="161 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;After buf2 destroyed, buf1 refcount: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf1</span><span class="o">-&gt;</span><span class="n">ref_count</span><span class="p">());</span>
+</span><span id="__span-2-162"><a id="__codelineno-2-162" name="__codelineno-2-162"></a><a href="#__codelineno-2-162"><span class="linenos" data-linenos="162 "></span></a><span class="p">}</span>
+</span><span id="__span-2-163"><a id="__codelineno-2-163" name="__codelineno-2-163"></a><a href="#__codelineno-2-163"><span class="linenos" data-linenos="163 "></span></a>
+</span><span id="__span-2-164"><a id="__codelineno-2-164" name="__codelineno-2-164"></a><a href="#__codelineno-2-164"><span class="linenos" data-linenos="164 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">move_semantics</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-165"><a id="__codelineno-2-165" name="__codelineno-2-165"></a><a href="#__codelineno-2-165"><span class="linenos" data-linenos="165 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Move Semantics ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-166"><a id="__codelineno-2-166" name="__codelineno-2-166"></a><a href="#__codelineno-2-166"><span class="linenos" data-linenos="166 "></span></a>
+</span><span id="__span-2-167"><a id="__codelineno-2-167" name="__codelineno-2-167"></a><a href="#__codelineno-2-167"><span class="linenos" data-linenos="167 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">SharedBuffer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf1</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">SharedBuffer</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+</span><span id="__span-2-168"><a id="__codelineno-2-168" name="__codelineno-2-168"></a><a href="#__codelineno-2-168"><span class="linenos" data-linenos="168 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">SharedBuffer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">buf1</span><span class="p">);</span>
+</span><span id="__span-2-169"><a id="__codelineno-2-169" name="__codelineno-2-169"></a><a href="#__codelineno-2-169"><span class="linenos" data-linenos="169 "></span></a>
+</span><span id="__span-2-170"><a id="__codelineno-2-170" name="__codelineno-2-170"></a><a href="#__codelineno-2-170"><span class="linenos" data-linenos="170 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;After move:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-171"><a id="__codelineno-2-171" name="__codelineno-2-171"></a><a href="#__codelineno-2-171"><span class="linenos" data-linenos="171 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;  buf1 is null: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">!</span><span class="n">buf1</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s">&quot;yes&quot;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s">&quot;no&quot;</span><span class="p">);</span>
+</span><span id="__span-2-172"><a id="__codelineno-2-172" name="__codelineno-2-172"></a><a href="#__codelineno-2-172"><span class="linenos" data-linenos="172 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;  buf2 id: %d, refcount: %u</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buf2</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">(),</span><span class="w"> </span><span class="n">buf2</span><span class="o">-&gt;</span><span class="n">ref_count</span><span class="p">());</span>
+</span><span id="__span-2-173"><a id="__codelineno-2-173" name="__codelineno-2-173"></a><a href="#__codelineno-2-173"><span class="linenos" data-linenos="173 "></span></a><span class="p">}</span>
+</span><span id="__span-2-174"><a id="__codelineno-2-174" name="__codelineno-2-174"></a><a href="#__codelineno-2-174"><span class="linenos" data-linenos="174 "></span></a>
+</span><span id="__span-2-175"><a id="__codelineno-2-175" name="__codelineno-2-175"></a><a href="#__codelineno-2-175"><span class="linenos" data-linenos="175 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">container_usage</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-176"><a id="__codelineno-2-176" name="__codelineno-2-176"></a><a href="#__codelineno-2-176"><span class="linenos" data-linenos="176 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Container Usage ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-177"><a id="__codelineno-2-177" name="__codelineno-2-177"></a><a href="#__codelineno-2-177"><span class="linenos" data-linenos="177 "></span></a>
+</span><span id="__span-2-178"><a id="__codelineno-2-178" name="__codelineno-2-178"></a><a href="#__codelineno-2-178"><span class="linenos" data-linenos="178 "></span></a><span class="w">    </span><span class="c1">// 注意：intrusive_ptr 的拷贝成本低（只有计数器操作）</span>
+</span><span id="__span-2-179"><a id="__codelineno-2-179" name="__codelineno-2-179"></a><a href="#__codelineno-2-179"><span class="linenos" data-linenos="179 "></span></a><span class="w">    </span><span class="c1">// 没有 shared_ptr 那样的原子操作开销</span>
+</span><span id="__span-2-180"><a id="__codelineno-2-180" name="__codelineno-2-180"></a><a href="#__codelineno-2-180"><span class="linenos" data-linenos="180 "></span></a><span class="p">}</span>
+</span><span id="__span-2-181"><a id="__codelineno-2-181" name="__codelineno-2-181"></a><a href="#__codelineno-2-181"><span class="linenos" data-linenos="181 "></span></a>
+</span><span id="__span-2-182"><a id="__codelineno-2-182" name="__codelineno-2-182"></a><a href="#__codelineno-2-182"><span class="linenos" data-linenos="182 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">static_storage_example</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-183"><a id="__codelineno-2-183" name="__codelineno-2-183"></a><a href="#__codelineno-2-183"><span class="linenos" data-linenos="183 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Static Storage Example ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-184"><a id="__codelineno-2-184" name="__codelineno-2-184"></a><a href="#__codelineno-2-184"><span class="linenos" data-linenos="184 "></span></a>
+</span><span id="__span-2-185"><a id="__codelineno-2-185" name="__codelineno-2-185"></a><a href="#__codelineno-2-185"><span class="linenos" data-linenos="185 "></span></a><span class="w">    </span><span class="c1">// 在静态存储区构造对象</span>
+</span><span id="__span-2-186"><a id="__codelineno-2-186" name="__codelineno-2-186"></a><a href="#__codelineno-2-186"><span class="linenos" data-linenos="186 "></span></a><span class="w">    </span><span class="n">StaticDevice</span><span class="o">*</span><span class="w"> </span><span class="n">dev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="n">device_storage</span><span class="p">)</span><span class="w"> </span><span class="n">StaticDevice</span><span class="p">();</span>
+</span><span id="__span-2-187"><a id="__codelineno-2-187" name="__codelineno-2-187"></a><a href="#__codelineno-2-187"><span class="linenos" data-linenos="187 "></span></a>
+</span><span id="__span-2-188"><a id="__codelineno-2-188" name="__codelineno-2-188"></a><a href="#__codelineno-2-188"><span class="linenos" data-linenos="188 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">StaticDevice</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dev_ptr</span><span class="p">(</span><span class="n">dev</span><span class="p">);</span>
+</span><span id="__span-2-189"><a id="__codelineno-2-189" name="__codelineno-2-189"></a><a href="#__codelineno-2-189"><span class="linenos" data-linenos="189 "></span></a><span class="w">    </span><span class="n">dev_ptr</span><span class="o">-&gt;</span><span class="n">send</span><span class="p">(</span><span class="s">&quot;Hello from static device&quot;</span><span class="p">);</span>
+</span><span id="__span-2-190"><a id="__codelineno-2-190" name="__codelineno-2-190"></a><a href="#__codelineno-2-190"><span class="linenos" data-linenos="190 "></span></a>
+</span><span id="__span-2-191"><a id="__codelineno-2-191" name="__codelineno-2-191"></a><a href="#__codelineno-2-191"><span class="linenos" data-linenos="191 "></span></a><span class="w">    </span><span class="p">{</span>
+</span><span id="__span-2-192"><a id="__codelineno-2-192" name="__codelineno-2-192"></a><a href="#__codelineno-2-192"><span class="linenos" data-linenos="192 "></span></a><span class="w">        </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">StaticDevice</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dev_ptr2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dev_ptr</span><span class="p">;</span>
+</span><span id="__span-2-193"><a id="__codelineno-2-193" name="__codelineno-2-193"></a><a href="#__codelineno-2-193"><span class="linenos" data-linenos="193 "></span></a><span class="w">        </span><span class="n">dev_ptr2</span><span class="o">-&gt;</span><span class="n">send</span><span class="p">(</span><span class="s">&quot;Shared reference&quot;</span><span class="p">);</span>
+</span><span id="__span-2-194"><a id="__codelineno-2-194" name="__codelineno-2-194"></a><a href="#__codelineno-2-194"><span class="linenos" data-linenos="194 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-195"><a id="__codelineno-2-195" name="__codelineno-2-195"></a><a href="#__codelineno-2-195"><span class="linenos" data-linenos="195 "></span></a>
+</span><span id="__span-2-196"><a id="__codelineno-2-196" name="__codelineno-2-196"></a><a href="#__codelineno-2-196"><span class="linenos" data-linenos="196 "></span></a><span class="w">    </span><span class="c1">// 手动调用析构，但内存不释放</span>
+</span><span id="__span-2-197"><a id="__codelineno-2-197" name="__codelineno-2-197"></a><a href="#__codelineno-2-197"><span class="linenos" data-linenos="197 "></span></a><span class="w">    </span><span class="n">dev_ptr</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+</span><span id="__span-2-198"><a id="__codelineno-2-198" name="__codelineno-2-198"></a><a href="#__codelineno-2-198"><span class="linenos" data-linenos="198 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Static device destroyed but memory still allocated</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-199"><a id="__codelineno-2-199" name="__codelineno-2-199"></a><a href="#__codelineno-2-199"><span class="linenos" data-linenos="199 "></span></a><span class="p">}</span>
+</span><span id="__span-2-200"><a id="__codelineno-2-200" name="__codelineno-2-200"></a><a href="#__codelineno-2-200"><span class="linenos" data-linenos="200 "></span></a>
+</span><span id="__span-2-201"><a id="__codelineno-2-201" name="__codelineno-2-201"></a><a href="#__codelineno-2-201"><span class="linenos" data-linenos="201 "></span></a><span class="c1">// 多态支持</span>
+</span><span id="__span-2-202"><a id="__codelineno-2-202" name="__codelineno-2-202"></a><a href="#__codelineno-2-202"><span class="linenos" data-linenos="202 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Animal</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">intrusive_refcount</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-203"><a id="__codelineno-2-203" name="__codelineno-2-203"></a><a href="#__codelineno-2-203"><span class="linenos" data-linenos="203 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-204"><a id="__codelineno-2-204" name="__codelineno-2-204"></a><a href="#__codelineno-2-204"><span class="linenos" data-linenos="204 "></span></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">Animal</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+</span><span id="__span-2-205"><a id="__codelineno-2-205" name="__codelineno-2-205"></a><a href="#__codelineno-2-205"><span class="linenos" data-linenos="205 "></span></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">speak</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-2-206"><a id="__codelineno-2-206" name="__codelineno-2-206"></a><a href="#__codelineno-2-206"><span class="linenos" data-linenos="206 "></span></a><span class="p">};</span>
+</span><span id="__span-2-207"><a id="__codelineno-2-207" name="__codelineno-2-207"></a><a href="#__codelineno-2-207"><span class="linenos" data-linenos="207 "></span></a>
+</span><span id="__span-2-208"><a id="__codelineno-2-208" name="__codelineno-2-208"></a><a href="#__codelineno-2-208"><span class="linenos" data-linenos="208 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Dog</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Animal</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-209"><a id="__codelineno-2-209" name="__codelineno-2-209"></a><a href="#__codelineno-2-209"><span class="linenos" data-linenos="209 "></span></a><span class="k">public</span><span class="o">:</span>
+</span><span id="__span-2-210"><a id="__codelineno-2-210" name="__codelineno-2-210"></a><a href="#__codelineno-2-210"><span class="linenos" data-linenos="210 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">speak</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-211"><a id="__codelineno-2-211" name="__codelineno-2-211"></a><a href="#__codelineno-2-211"><span class="linenos" data-linenos="211 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Woof!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-212"><a id="__codelineno-2-212" name="__codelineno-2-212"></a><a href="#__codelineno-2-212"><span class="linenos" data-linenos="212 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-213"><a id="__codelineno-2-213" name="__codelineno-2-213"></a><a href="#__codelineno-2-213"><span class="linenos" data-linenos="213 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">Dog</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-214"><a id="__codelineno-2-214" name="__codelineno-2-214"></a><a href="#__codelineno-2-214"><span class="linenos" data-linenos="214 "></span></a><span class="w">        </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Dog destroyed</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-215"><a id="__codelineno-2-215" name="__codelineno-2-215"></a><a href="#__codelineno-2-215"><span class="linenos" data-linenos="215 "></span></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-2-216"><a id="__codelineno-2-216" name="__codelineno-2-216"></a><a href="#__codelineno-2-216"><span class="linenos" data-linenos="216 "></span></a><span class="p">};</span>
+</span><span id="__span-2-217"><a id="__codelineno-2-217" name="__codelineno-2-217"></a><a href="#__codelineno-2-217"><span class="linenos" data-linenos="217 "></span></a>
+</span><span id="__span-2-218"><a id="__codelineno-2-218" name="__codelineno-2-218"></a><a href="#__codelineno-2-218"><span class="linenos" data-linenos="218 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">polymorphism_example</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-219"><a id="__codelineno-2-219" name="__codelineno-2-219"></a><a href="#__codelineno-2-219"><span class="linenos" data-linenos="219 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== Polymorphism Support ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-220"><a id="__codelineno-2-220" name="__codelineno-2-220"></a><a href="#__codelineno-2-220"><span class="linenos" data-linenos="220 "></span></a>
+</span><span id="__span-2-221"><a id="__codelineno-2-221" name="__codelineno-2-221"></a><a href="#__codelineno-2-221"><span class="linenos" data-linenos="221 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Animal</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pet</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Dog</span><span class="p">());</span>
+</span><span id="__span-2-222"><a id="__codelineno-2-222" name="__codelineno-2-222"></a><a href="#__codelineno-2-222"><span class="linenos" data-linenos="222 "></span></a><span class="w">    </span><span class="n">pet</span><span class="o">-&gt;</span><span class="n">speak</span><span class="p">();</span>
+</span><span id="__span-2-223"><a id="__codelineno-2-223" name="__codelineno-2-223"></a><a href="#__codelineno-2-223"><span class="linenos" data-linenos="223 "></span></a>
+</span><span id="__span-2-224"><a id="__codelineno-2-224" name="__codelineno-2-224"></a><a href="#__codelineno-2-224"><span class="linenos" data-linenos="224 "></span></a><span class="w">    </span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Animal</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pet2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pet</span><span class="p">;</span>
+</span><span id="__span-2-225"><a id="__codelineno-2-225" name="__codelineno-2-225"></a><a href="#__codelineno-2-225"><span class="linenos" data-linenos="225 "></span></a><span class="w">    </span><span class="n">pet2</span><span class="o">-&gt;</span><span class="n">speak</span><span class="p">();</span>
+</span><span id="__span-2-226"><a id="__codelineno-2-226" name="__codelineno-2-226"></a><a href="#__codelineno-2-226"><span class="linenos" data-linenos="226 "></span></a><span class="p">}</span>
+</span><span id="__span-2-227"><a id="__codelineno-2-227" name="__codelineno-2-227"></a><a href="#__codelineno-2-227"><span class="linenos" data-linenos="227 "></span></a>
+</span><span id="__span-2-228"><a id="__codelineno-2-228" name="__codelineno-2-228"></a><a href="#__codelineno-2-228"><span class="linenos" data-linenos="228 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-229"><a id="__codelineno-2-229" name="__codelineno-2-229"></a><a href="#__codelineno-2-229"><span class="linenos" data-linenos="229 "></span></a><span class="w">    </span><span class="n">basic_usage</span><span class="p">();</span>
+</span><span id="__span-2-230"><a id="__codelineno-2-230" name="__codelineno-2-230"></a><a href="#__codelineno-2-230"><span class="linenos" data-linenos="230 "></span></a><span class="w">    </span><span class="n">move_semantics</span><span class="p">();</span>
+</span><span id="__span-2-231"><a id="__codelineno-2-231" name="__codelineno-2-231"></a><a href="#__codelineno-2-231"><span class="linenos" data-linenos="231 "></span></a><span class="w">    </span><span class="n">container_usage</span><span class="p">();</span>
+</span><span id="__span-2-232"><a id="__codelineno-2-232" name="__codelineno-2-232"></a><a href="#__codelineno-2-232"><span class="linenos" data-linenos="232 "></span></a><span class="w">    </span><span class="n">static_storage_example</span><span class="p">();</span>
+</span><span id="__span-2-233"><a id="__codelineno-2-233" name="__codelineno-2-233"></a><a href="#__codelineno-2-233"><span class="linenos" data-linenos="233 "></span></a><span class="w">    </span><span class="n">polymorphism_example</span><span class="p">();</span>
+</span><span id="__span-2-234"><a id="__codelineno-2-234" name="__codelineno-2-234"></a><a href="#__codelineno-2-234"><span class="linenos" data-linenos="234 "></span></a>
+</span><span id="__span-2-235"><a id="__codelineno-2-235" name="__codelineno-2-235"></a><a href="#__codelineno-2-235"><span class="linenos" data-linenos="235 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">=== All Examples Complete ===</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-236"><a id="__codelineno-2-236" name="__codelineno-2-236"></a><a href="#__codelineno-2-236"><span class="linenos" data-linenos="236 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Key Advantages of Intrusive Pointers:</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-237"><a id="__codelineno-2-237" name="__codelineno-2-237"></a><a href="#__codelineno-2-237"><span class="linenos" data-linenos="237 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;- No separate control block allocation</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-238"><a id="__codelineno-2-238" name="__codelineno-2-238"></a><a href="#__codelineno-2-238"><span class="linenos" data-linenos="238 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;- Reference count is part of the object</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-239"><a id="__codelineno-2-239" name="__codelineno-2-239"></a><a href="#__codelineno-2-239"><span class="linenos" data-linenos="239 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;- Works with non-heap allocated objects</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-240"><a id="__codelineno-2-240" name="__codelineno-2-240"></a><a href="#__codelineno-2-240"><span class="linenos" data-linenos="240 "></span></a><span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;- No atomic operations overhead (unless you add them)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span id="__span-2-241"><a id="__codelineno-2-241" name="__codelineno-2-241"></a><a href="#__codelineno-2-241"><span class="linenos" data-linenos="241 "></span></a>
+</span><span id="__span-2-242"><a id="__codelineno-2-242" name="__codelineno-2-242"></a><a href="#__codelineno-2-242"><span class="linenos" data-linenos="242 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+</span><span id="__span-2-243"><a id="__codelineno-2-243" name="__codelineno-2-243"></a><a href="#__codelineno-2-243"><span class="linenos" data-linenos="243 "></span></a><span class="p">}</span>
+</span></code></pre></div>
 
 </details>
 
@@ -4624,7 +4623,7 @@ int main() {
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:32:24 CST">2026年3月4日 01:32:24</span>
   </span>
 
     
