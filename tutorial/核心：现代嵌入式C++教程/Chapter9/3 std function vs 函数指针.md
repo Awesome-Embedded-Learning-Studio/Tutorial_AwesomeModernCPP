@@ -1,3 +1,19 @@
+---
+title: "std::function vs 函数指针"
+description: "对比函数调用方式"
+chapter: 9
+order: 3
+tags:
+  - std_function
+  - 函数指针
+  - 性能
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 8: 类型安全"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # std::function vs 函数指针
 
 ## 引言

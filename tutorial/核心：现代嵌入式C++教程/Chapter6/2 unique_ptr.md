@@ -1,3 +1,19 @@
+---
+title: "unique_ptr 独占所有权智能指针"
+description: "详解unique_ptr使用"
+chapter: 6
+order: 2
+tags:
+  - unique_ptr
+  - 智能指针
+  - RAII
+difficulty: intermediate
+reading_time_minutes: 18
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
 
 > 笔者突然想起来，好像我都没给这个系列写`std::unique_ptr`的意思。

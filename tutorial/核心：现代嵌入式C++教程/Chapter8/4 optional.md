@@ -1,3 +1,19 @@
+---
+title: "std::optional 可选值"
+description: "表示可能不存在的值"
+chapter: 8
+order: 4
+tags:
+  - optional
+  - 类型安全
+  - C++17
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 7: 容器与数据结构"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——`std::optional`
 
 想象一下：你问函数"有没有值？"它摇头说"也许"。`std::optional` 就是那句优雅的"也许"，比抛出异常、返回裸指针或约定用 `-1` 做"无值"标记，更有礼貌，也更不容易把别人坑死。

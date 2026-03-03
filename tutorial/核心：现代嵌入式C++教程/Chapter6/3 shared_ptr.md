@@ -1,3 +1,19 @@
+---
+title: "shared_ptr 共享所有权智能指针"
+description: "介绍shared_ptr工作原理"
+chapter: 6
+order: 3
+tags:
+  - shared_ptr
+  - 智能指针
+  - 引用计数
+difficulty: intermediate
+reading_time_minutes: 18
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代C++教程——std::shared_ptr如何呢
 
 unique_ptr在我们上一篇博客的时候，已经讲过了它可以表达资源独占的含义。那么，智能指针还有一个朋友，就是std::shared_ptr。理解std::shared_ptr，我们需要把 `std::shared_ptr` 想象成一个会记账的托管管家——谁拿着这把钥匙就多记一笔，钥匙都收回时，管家把东西收拾干净。听起来美好；在桌面/服务器上也常常很管用。但把它搬到内存受限、实时性敏感、没有操作系统的嵌入式世界，要先把账本翻一翻：这把"管家"到底要多大的办公桌、会不会老是在你耳边叨叨（原子操作）、会不会把内存分散得像散落的螺丝钉。

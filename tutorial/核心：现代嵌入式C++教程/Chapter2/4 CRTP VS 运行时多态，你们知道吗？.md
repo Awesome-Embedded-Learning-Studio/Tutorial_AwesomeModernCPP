@@ -1,3 +1,19 @@
+---
+title: "CRTP vs 运行时多态"
+description: "对比CRTP与虚函数多态"
+chapter: 2
+order: 4
+tags:
+  - CRTP
+  - 多态
+  - 模板
+difficulty: intermediate
+reading_time_minutes: 20
+prerequisites:
+  - "Chapter 1: 构建工具链"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 编译期多态 vs 运行时多态
 
 在工程实践里说"多态"，大家第一反应往往是 `virtual` 与接口——也就是运行时多态。

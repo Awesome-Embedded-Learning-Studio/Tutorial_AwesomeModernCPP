@@ -1,3 +1,19 @@
+---
+title: "unique_ptr与shared_ptr的嵌入式取舍"
+description: "分析智能指针选择"
+chapter: 6
+order: 4
+tags:
+  - 智能指针
+  - 权衡
+  - 嵌入式
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代C++教程——智能指针
 
 写嵌入式代码久了，你会发现一件哲学级问题：谁来负责释放内存？是我？是你？还是大家一起？C++ 标准库给了两位主角：`unique_ptr`（独占式，单身贵族）和 `shared_ptr`（合租式，分摊生活费）

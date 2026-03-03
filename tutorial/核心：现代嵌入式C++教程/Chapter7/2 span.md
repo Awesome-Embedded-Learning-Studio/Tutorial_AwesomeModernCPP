@@ -1,3 +1,19 @@
+---
+title: "std::span 数组视图"
+description: "C++20数组视图"
+chapter: 7
+order: 2
+tags:
+  - span
+  - 视图
+  - C++20
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 6: RAII与智能指针"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程：std::span——轻量、非拥有的数组视图
 
 把 `std::span` 想象成 C++ 里的「透明的传送带」：它不拥有上面的货物（内存），只是平静又高效地告诉你"这里有多少个元素、从哪里开始"。在嵌入式里，我们经常需要把一段内存传给函数——既不想拷贝，也不想丢失类型信息或边界信息，`std::span` 就是为这种场景生的。

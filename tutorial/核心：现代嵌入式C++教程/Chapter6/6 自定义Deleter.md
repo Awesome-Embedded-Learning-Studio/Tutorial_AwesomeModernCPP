@@ -1,3 +1,19 @@
+---
+title: "自定义 Deleter"
+description: "为智能指针自定义删除器"
+chapter: 6
+order: 6
+tags:
+  - deleter
+  - 智能指针
+  - RAII
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代 C++教程——自定义删除器（Custom Deleter）
 
 写嵌入式代码，常常遇到"资源不是 new 就是 delete"的假象世界。现实里，你可能得释放的不只是 `new` 出来的内存：外设句柄、MMIO 映射、DMA 缓冲、FILE*、socket、或者某个 C API 的 `free()`。这时候，C++ 的自定义删除器就像一个可靠的清道夫——把资源清理的细节藏到智能指针后面，让你把注意力放回功能实现。今天我们带着一点幽默（和大量实例）把这个话题讲清楚，顺带告诉你在内存受限的嵌入式环境下应该注意什么。

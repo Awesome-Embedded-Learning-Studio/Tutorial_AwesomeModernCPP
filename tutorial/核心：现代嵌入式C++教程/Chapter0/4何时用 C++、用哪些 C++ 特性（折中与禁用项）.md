@@ -1,3 +1,19 @@
+---
+title: "何时用C++、用哪些C++特性"
+description: "探讨何时选择C++而非C，以及如何在嵌入式环境中明智地使用C++特性，包括推荐使用、折中和禁用的特性"
+chapter: 0
+order: 4
+tags:
+  - 语言选择
+  - 权衡
+  - 嵌入式
+difficulty: beginner
+reading_time_minutes: 18
+prerequisites: []
+related: []
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 何时用 C++、用哪些 C++ 特性（折中与禁用项）
 
 所以，我们打算在什么地方上C++这是一个比较严重的问题。搞清楚这个事情对我们后续的开发非常重要。毕竟我们必须确定在这个地方上使用C++是合适的，我们才能继续我们的话题。

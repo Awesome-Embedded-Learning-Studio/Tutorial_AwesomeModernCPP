@@ -1,3 +1,20 @@
+---
+title: "管道操作与 Ranges 实战"
+description: "Ranges管道实战"
+chapter: 9
+order: 8
+tags:
+  - ranges
+  - 管道
+  - C++20
+  - 实战
+difficulty: intermediate
+reading_time_minutes: 25
+prerequisites:
+  - "Chapter 8: 类型安全"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 现代嵌入式C++教程——管道操作与Ranges实战
 
 ## 引言

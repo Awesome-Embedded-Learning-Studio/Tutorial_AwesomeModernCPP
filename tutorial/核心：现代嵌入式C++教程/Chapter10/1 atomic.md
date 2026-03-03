@@ -1,3 +1,19 @@
+---
+title: "std::atomic 原子操作"
+description: "C++原子操作详解"
+chapter: 10
+order: 1
+tags:
+  - atomic
+  - 原子操作
+  - 并发
+difficulty: advanced
+reading_time_minutes: 20
+prerequisites:
+  - "Chapter 9: 函数式特性"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代C++开发——原子操作（std::atomic）
 
 ## 引言

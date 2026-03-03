@@ -1,3 +1,19 @@
+---
+title: "Lambda 表达式基础"
+description: "Lambda基本语法"
+chapter: 9
+order: 1
+tags:
+  - lambda
+  - 函数式
+  - C++11
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 8: 类型安全"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # Lambda表达式基础
 
 ## 引言

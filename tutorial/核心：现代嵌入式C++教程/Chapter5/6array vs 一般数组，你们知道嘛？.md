@@ -1,3 +1,19 @@
+---
+title: "std::array vs 一般数组"
+description: "对比std::array与传统数组"
+chapter: 5
+order: 6
+tags:
+  - array
+  - 数组
+  - 容器
+difficulty: intermediate
+reading_time_minutes: 12
+prerequisites:
+  - "Chapter 3: 内存与对象管理"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——`std::array` vs C 数组，你们知道嘛？
 
 写嵌入式代码时，你大概率会在两种写法间犹豫：`int buf[16];` 和 `std::array<int, 16> buf;`。如果你像我（或者像你之前的文章风格那样）既爱性能又爱优雅，你会想知道：哪种更"嵌入式友好"？

@@ -1,3 +1,19 @@
+---
+title: "ETL 嵌入式模板库"
+description: "嵌入式ETL库"
+chapter: 7
+order: 5
+tags:
+  - ETL
+  - 容器库
+  - 嵌入式
+difficulty: intermediate
+reading_time_minutes: 18
+prerequisites:
+  - "Chapter 6: RAII与智能指针"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——ETL（Embedded Template Library）
 
 好奇心：为什么在嵌入式世界里，总有人把 `new` 当成"危险品"而随身带手套？答案很简单：堆是不可预测的。ETL（Embedded Template Library）就是为了解决这个问题而生：把熟悉的容器/算法思想搬到嵌入式场景，但把动态分配剔除掉，让一切变得可预测、可度量、可审计。

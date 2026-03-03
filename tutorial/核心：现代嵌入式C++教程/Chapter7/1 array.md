@@ -1,3 +1,19 @@
+---
+title: "std::array 固定大小容器"
+description: "std::array容器详解"
+chapter: 7
+order: 1
+tags:
+  - array
+  - 容器
+  - STL
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 6: RAII与智能指针"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代C++教程——std::array：编译期固定大小数组
 
 你写嵌入式代码时，堆（heap）常常像个不可靠的室友：随时可能把屋子掀翻。`std::array` 就像那位稳重但不多话的朋友——编译期确定大小、占栈或静态存储、没有动态分配，性能可预测，语义清楚。我们的一个重点就是——他跟传统的C风格数组比起来，怎么样的事情。

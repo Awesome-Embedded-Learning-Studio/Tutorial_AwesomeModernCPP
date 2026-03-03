@@ -1,3 +1,19 @@
+---
+title: "类型别名与using声明"
+description: "using关键字详解"
+chapter: 8
+order: 6
+tags:
+  - using
+  - 类型别名
+  - 模板
+difficulty: intermediate
+reading_time_minutes: 12
+prerequisites:
+  - "Chapter 7: 容器与数据结构"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——类型别名与using声明
 
 我印象中看到写C出身的朋友，在这个方面一向保守——基本上虽然说是在写C++，但是写的很C（双关）

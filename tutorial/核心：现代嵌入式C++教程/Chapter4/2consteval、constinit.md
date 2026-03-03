@@ -1,3 +1,20 @@
+---
+title: "consteval与constinit"
+description: "介绍C++20新增关键字"
+chapter: 4
+order: 2
+tags:
+  - consteval
+  - constinit
+  - C++20
+  - 编译期
+difficulty: intermediate
+reading_time_minutes: 15
+prerequisites:
+  - "Chapter 2: 零开支抽象"
+cpp_standard: [20]
+---
+
 # 现代C++嵌入式教程——`consteval` 与 `constinit`
 
 在嵌入式开发里，**把能做的事尽量移到编译期**，通常可以换来更小的二进制、确定性的启动行为以及更少的运行时开销。C++20 在这一方向上增加了两个非常有用但容易被误用的关键字：`consteval`（立即求值函数 / immediate functions）与 `constinit`（保证静态存储的初始化形态）。它们看起来像"多余的语法糖"，但在嵌入式场景中能解决真实的问题：生成编译期查表、保证静态生命周期变量的初始化属性、把不可变生成逻辑从固件运行时代码里剥离出去、以及以编译期断言的方式捕捉潜在的初始化顺序错误。

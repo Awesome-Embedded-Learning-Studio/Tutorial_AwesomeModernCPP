@@ -1,3 +1,19 @@
+---
+title: "Intrusive 智能指针与引用计数"
+description: "侵入式智能指针实现"
+chapter: 6
+order: 5
+tags:
+  - intrusive_ptr
+  - 智能指针
+  - 引用计数
+difficulty: intermediate
+reading_time_minutes: 20
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式现代C++教程——intrusive 智能指针与引用计数
 
 ## 前言

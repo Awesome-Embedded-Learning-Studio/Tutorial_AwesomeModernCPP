@@ -1,3 +1,19 @@
+---
+title: "enum class 强类型枚举"
+description: "C++11强类型枚举"
+chapter: 8
+order: 1
+tags:
+  - enum
+  - enum_class
+  - 类型安全
+difficulty: intermediate
+reading_time_minutes: 12
+prerequisites:
+  - "Chapter 7: 容器与数据结构"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——enum class
 
 想象一下：你把一堆状态、模式、标志写成 `enum`，使用时却被隐式转换成 `int`，结果函数接收错了值、比较错了东西，bug 就笑着出来喝茶。`enum class` 就是 C++ 给你的安全带：强类型、作用域化、能指定底层类型——特别适合对内存、类型安全都有高要求的嵌入式世界。

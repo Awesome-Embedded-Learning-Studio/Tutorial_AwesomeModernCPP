@@ -1,3 +1,20 @@
+---
+title: "交叉编译和CMake简单指南"
+description: "介绍交叉编译的基础概念、工具链，以及使用CMake进行多目标构建的配置方法"
+chapter: 1
+order: 1
+tags:
+  - 交叉编译
+  - CMake
+  - 工具链
+difficulty: beginner
+reading_time_minutes: 25
+prerequisites:
+  - "Chapter 0: 前言与基础"
+related: []
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 现代嵌入式C++教程：交叉编译基础与CMake多目标构建
 
 ## 引言

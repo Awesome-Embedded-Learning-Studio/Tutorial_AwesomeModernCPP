@@ -1,3 +1,23 @@
+---
+title: "RAII 在外设管理中的作用"
+description: "介绍 RAII 模式在嵌入式外设管理中的应用，实现自动资源管理"
+chapter: 6
+order: 1
+tags:
+  - RAII
+  - 外设管理
+  - 资源管理
+  - GPIO
+difficulty: intermediate
+reading_time_minutes: 12
+prerequisites:
+  - "Chapter 5: 内存管理策略"
+related:
+  - "Scope Guard"
+  - "unique_ptr"
+cpp_standard: [11, 14, 17]
+---
+
 # 嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
 
 ## 先问是什么

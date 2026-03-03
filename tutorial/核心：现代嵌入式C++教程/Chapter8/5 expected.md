@@ -1,3 +1,19 @@
+---
+title: "std::expected 错误处理"
+description: "类型安全错误处理"
+chapter: 8
+order: 5
+tags:
+  - expected
+  - 错误处理
+  - C++23
+difficulty: intermediate
+reading_time_minutes: 18
+prerequisites:
+  - "Chapter 7: 容器与数据结构"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 嵌入式C++教程——std::expected
 
 写一段可靠又不振聋发聩的错误处理代码，是每个 C++ 开发者的隐秘欲望。`std::expected`（C++23 标准中引入）像个温柔的中介：当你要么有一个值，要么有个错误，别再用 `throw`、别再滥用 `std::optional<T>` 或 `std::variant` 来凑合了——它专为这类场景设计。

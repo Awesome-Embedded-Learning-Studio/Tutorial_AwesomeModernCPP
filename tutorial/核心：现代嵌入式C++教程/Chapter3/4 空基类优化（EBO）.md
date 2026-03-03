@@ -1,3 +1,19 @@
+---
+title: "空基类优化(EBO)"
+description: "介绍空基类优化技术"
+chapter: 3
+order: 4
+tags:
+  - EBO
+  - 空基类
+  - 优化
+difficulty: intermediate
+reading_time_minutes: 12
+prerequisites:
+  - "Chapter 2: 零开支抽象"
+cpp_standard: [11, 14, 17, 20]
+---
+
 # 空基类优化（EBO）：C++ 的瘦身技巧
 
 有一种低调而高效的内存优化，总在你看不到的地方帮你省下一点字节——**空基类优化（Empty Base Optimization, EBO）**。写库时常会用到空类作为"策略/标签/无状态的行为对象"，EBO 能把这些没有状态的基类挤出对象布局，节省空间、提升局部性。
