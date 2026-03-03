@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+        <meta name="description" content="固定大小内存池分配器">
       
       
         <meta name="author" content="Charliechen">
@@ -27,7 +27,7 @@
     
     
       
-        <title>嵌入式 C++ 教程：Slab / Arena 实现与比较 - Tutorial_AwesomeModernCPP的文档</title>
+        <title>固定池分配 - Tutorial_AwesomeModernCPP的文档</title>
       
     
     
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              嵌入式 C++ 教程：Slab / Arena 实现与比较
+              固定池分配
             
           </span>
         </div>
@@ -269,6 +269,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    标签索引
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
@@ -289,10 +316,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -310,8 +337,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -406,7 +433,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -428,14 +455,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -482,10 +509,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
             
   
   
@@ -503,8 +530,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -584,7 +611,7 @@
   <span class="md-ellipsis">
     
   
-    快速的C语言复习
+    C语言速通复习
   
 
     
@@ -612,7 +639,7 @@
   <span class="md-ellipsis">
     
   
-    C++98基础特性：从C到C++的演进
+    C++98基本特性
   
 
     
@@ -640,7 +667,7 @@
   <span class="md-ellipsis">
     
   
-    何时用 C++、用哪些 C++ 特性（折中与禁用项）
+    何时用C++、用哪些C++特性
   
 
     
@@ -668,7 +695,7 @@
   <span class="md-ellipsis">
     
   
-    语言选择原则：性能 vs 可维护性的真实取舍（一点碎碎念）
+    语言选择原则
   
 
     
@@ -696,7 +723,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++一定会使得代码膨胀嘛？
+    性能与体积评估
   
 
     
@@ -745,10 +772,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -766,8 +793,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -791,7 +818,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+    交叉编译和CMake简单指南
   
 
     
@@ -819,7 +846,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式 C++ 教程：常见编译器参数指南
+    常见编译器选项指南
   
 
     
@@ -847,7 +874,7 @@
   <span class="md-ellipsis">
     
   
-    链接器与链接器脚本：从原理到实践
+    链接器与链接器脚本
   
 
     
@@ -898,10 +925,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -919,8 +946,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -944,7 +971,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——原子操作（std::atomic）
+    std::atomic 原子操作
   
 
     
@@ -972,7 +999,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——内存序（Memory Order）
+    memory_order 内存序
   
 
     
@@ -1000,7 +1027,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——无锁数据结构设计
+    无锁数据结构设计
   
 
     
@@ -1028,7 +1055,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——mutex与RAII守卫
+    mutex 与 RAII 守卫
   
 
     
@@ -1079,10 +1106,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1100,8 +1127,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1125,7 +1152,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——零开销抽象
+    零开销抽象
   
 
     
@@ -1153,7 +1180,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——内联函数与编译器优化
+    内联与编译器优化
   
 
     
@@ -1181,7 +1208,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——constexpr：把计算推到编译期
+    constexpr 编译期计算
   
 
     
@@ -1209,7 +1236,7 @@
   <span class="md-ellipsis">
     
   
-    编译期多态 vs 运行时多态
+    CRTP vs 运行时多态
   
 
     
@@ -1262,10 +1289,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1283,8 +1310,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1308,7 +1335,7 @@
   <span class="md-ellipsis">
     
   
-    构造函数优化：初始化列表 vs 成员赋值
+    初始化列表
   
 
     
@@ -1336,7 +1363,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践
+    移动语义
   
 
     
@@ -1364,7 +1391,7 @@
   <span class="md-ellipsis">
     
   
-    RVO 与 NRVO：C++ 返回值优化
+    RVO与NRVO返回值优化
   
 
     
@@ -1392,7 +1419,7 @@
   <span class="md-ellipsis">
     
   
-    空基类优化（EBO）：C++ 的瘦身技巧
+    空基类优化(EBO)
   
 
     
@@ -1420,7 +1447,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——对象大小、内存对齐、类型“平凡/标准布局”与聚合初始化
+    对象大小与平凡类型
   
 
     
@@ -1471,10 +1498,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1492,8 +1519,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1517,7 +1544,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式的现代C++教程——constexpr 与设计技巧
+    constexpr 与设计技巧
   
 
     
@@ -1545,7 +1572,7 @@
   <span class="md-ellipsis">
     
   
-    现代C++嵌入式教程——consteval 与 constinit
+    consteval与constinit
   
 
     
@@ -1573,7 +1600,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——编译期计算的妙用：查找表生成、状态机设计、单位与物理量计算
+    编译期计算实战
   
 
     
@@ -1601,7 +1628,7 @@
   <span class="md-ellipsis">
     
   
-    if constexpr：把编译期分支写得像写注释 —— 工程味实战指南
+    if constexpr 编译期条件
   
 
     
@@ -1656,10 +1683,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
             
   
   
@@ -1677,8 +1704,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1702,7 +1729,7 @@
   <span class="md-ellipsis">
     
   
-    动态内存的代价：碎片化与不确定性（内存布局、碎片化与内存对齐）
+    动态分配问题
   
 
     
@@ -1730,7 +1757,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程——静态存储与栈上分配策略
+    静态存储与栈上分配策略
   
 
     
@@ -1758,7 +1785,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：对象池（Object Pool）模式
+    对象池模式
   
 
     
@@ -1786,7 +1813,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：placement new
+    Placement New 的使用
   
 
     
@@ -1823,7 +1850,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程：Slab / Arena 实现与比较
+    固定池分配
   
 
     
@@ -1841,7 +1868,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程：Slab / Arena 实现与比较
+    固定池分配
   
 
     
@@ -1927,6 +1954,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#代码示例" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        代码示例
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1950,7 +1988,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::array vs C 数组，你们知道嘛？
+    std::array vs 一般数组
   
 
     
@@ -2009,10 +2047,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_9" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_9" id="__nav_4_9_label" tabindex="0">
             
   
   
@@ -2030,8 +2068,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_9">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2055,7 +2093,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
+    RAII 在外设管理中的作用
   
 
     
@@ -2083,7 +2121,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
+    unique_ptr 独占所有权智能指针
   
 
     
@@ -2111,7 +2149,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::shared_ptr如何呢
+    shared_ptr 共享所有权智能指针
   
 
     
@@ -2139,7 +2177,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——智能指针
+    unique_ptr与shared_ptr的嵌入式取舍
   
 
     
@@ -2167,7 +2205,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——intrusive 智能指针与引用计数
+    Intrusive 智能指针与引用计数
   
 
     
@@ -2195,7 +2233,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——自定义删除器（Custom Deleter）
+    自定义 Deleter
   
 
     
@@ -2223,7 +2261,7 @@
   <span class="md-ellipsis">
     
   
-    引用计数的实现与性能
+    引用计数原理与实现
   
 
     
@@ -2251,7 +2289,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行
+    Scope Guard 作用域守卫
   
 
     
@@ -2306,10 +2344,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_10" >
         
           
-          <label class="md-nav__link" for="__nav_3_10" id="__nav_3_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_10" id="__nav_4_10_label" tabindex="0">
             
   
   
@@ -2327,8 +2365,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2352,7 +2390,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::array：编译期固定大小数组
+    std::array 固定大小容器
   
 
     
@@ -2380,7 +2418,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：std::span——轻量、非拥有的数组视图
+    std::span 数组视图
   
 
     
@@ -2408,7 +2446,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——循环缓冲区
+    循环缓冲区实现
   
 
     
@@ -2436,7 +2474,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——侵入式容器设计
+    侵入式容器设计
   
 
     
@@ -2464,7 +2502,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——ETL（Embedded Template Library）
+    ETL 嵌入式模板库
   
 
     
@@ -2492,7 +2530,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——自定义分配器（Allocator）
+    自定义分配器
   
 
     
@@ -2549,10 +2587,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_11" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_11" >
         
           
-          <label class="md-nav__link" for="__nav_3_11" id="__nav_3_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_11" id="__nav_4_11_label" tabindex="0">
             
   
   
@@ -2570,8 +2608,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_11">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2595,7 +2633,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——enum class
+    enum class 强类型枚举
   
 
     
@@ -2623,7 +2661,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型安全的寄存器访问
+    类型安全的寄存器访问
   
 
     
@@ -2651,7 +2689,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：std::variant
+    std::variant 类型安全联合体
   
 
     
@@ -2679,7 +2717,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::optional
+    std::optional 可选值
   
 
     
@@ -2707,7 +2745,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::expected
+    std::expected 错误处理
   
 
     
@@ -2735,7 +2773,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型别名与using声明
+    类型别名与using声明
   
 
     
@@ -2763,7 +2801,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——字面量运算符与自定义单位
+    字面量运算符与自定义单位
   
 
     
@@ -2822,10 +2860,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_12" >
         
           
-          <label class="md-nav__link" for="__nav_3_12" id="__nav_3_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_12" id="__nav_4_12_label" tabindex="0">
             
   
   
@@ -2843,8 +2881,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_12">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2868,7 +2906,7 @@
   <span class="md-ellipsis">
     
   
-    Lambda表达式基础
+    Lambda 表达式基础
   
 
     
@@ -2896,7 +2934,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——Lambda捕获与性能影响
+    Lambda 捕获与性能影响
   
 
     
@@ -2952,7 +2990,7 @@
   <span class="md-ellipsis">
     
   
-    回调机制的零开销实现
+    回调机制的零开支实现
   
 
     
@@ -2980,7 +3018,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::invoke与可调用对象
+    std::invoke 与可调用对象
   
 
     
@@ -3008,7 +3046,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——函数式错误处理模式
+    函数式错误处理模式
   
 
     
@@ -3036,7 +3074,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++20范围库基础与视图
+    C++20 范围库基础与视图
   
 
     
@@ -3064,7 +3102,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——管道操作与Ranges实战
+    管道操作与 Ranges 实战
   
 
     
@@ -3137,10 +3175,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -3158,8 +3196,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3484,10 +3522,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -3505,8 +3543,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3607,10 +3645,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -3628,8 +3666,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3692,10 +3730,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
         
           
-          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
             
   
   
@@ -3713,8 +3751,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3825,10 +3863,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -3846,8 +3884,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3940,10 +3978,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_3" >
         
           
-          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_3" id="__nav_8_3_label" tabindex="0">
             
   
   
@@ -3961,8 +3999,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4097,10 +4135,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -4118,8 +4156,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4245,6 +4283,31 @@
                 
                   
 
+  <nav class="md-tags" >
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:内存管理" class="md-tag">内存管理</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:分配器" class="md-tag">分配器</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:固定池" class="md-tag">固定池</a>
+      
+    
+  </nav>
+
 
 
 <h1 id="嵌入式-c-教程slab--arena-实现与比较">嵌入式 C++ 教程：Slab / Arena 实现与比较<a class="headerlink" href="#嵌入式-c-教程slab--arena-实现与比较" title="链接到此章节">&para;</a></h1>
@@ -4266,19 +4329,19 @@
 <li>每个 slab 用一段连续内存和一个位图/链表管理空闲槽</li>
 </ul>
 <h4 id="简化的关键结构">简化的关键结构<a class="headerlink" href="#简化的关键结构" title="链接到此章节">&para;</a></h4>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Slab</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="c1">// 指向对象存储区</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">freeBitmap</span><span class="p">;</span><span class="w"> </span><span class="c1">// 仅示例，最多32个 slot</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="n">Slab</span><span class="o">*</span><span class="w"> </span><span class="n">next</span><span class="p">;</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">};</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">SlabBucket</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">objSize</span><span class="p">;</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">Slab</span><span class="o">*</span><span class="w"> </span><span class="n">partial</span><span class="p">;</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="n">Slab</span><span class="o">*</span><span class="w"> </span><span class="n">full</span><span class="p">;</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">Slab</span><span class="o">*</span><span class="w"> </span><span class="n">empty</span><span class="p">;</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">};</span>
-</span></code></pre></div>
+<p>```cpp
+struct Slab {
+    uint8_t* data; // 指向对象存储区
+    uint32_t freeBitmap; // 仅示例，最多32个 slot
+    Slab* next;
+};</p>
+<p>struct SlabBucket {
+    size_t objSize;
+    Slab* partial;
+    Slab* full;
+    Slab* empty;
+};
+```text</p>
 <blockquote>
 <p>真实系统会需要更复杂的位图、锁策略和扩展机制，但这个示例足以用于嵌入式场景。</p>
 </blockquote>
@@ -4296,25 +4359,754 @@
 <li>不能单独释放单个对象（除非做更复杂的回收策略）</li>
 <li>外部生命周期控制由用户负责</li>
 </ul>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Arena</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><a href="#__codelineno-1-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="k">public</span><span class="o">:</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><a href="#__codelineno-1-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="n">Arena</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">base_</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">buffer</span><span class="p">)),</span><span class="w"> </span><span class="n">cap_</span><span class="p">(</span><span class="n">size</span><span class="p">),</span><span class="w"> </span><span class="n">head_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><a href="#__codelineno-1-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">alloc</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">align</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">alignof</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">max_align_t</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><a href="#__codelineno-1-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cur</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">base_</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">head_</span><span class="p">;</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><a href="#__codelineno-1-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">aligned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">cur</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">align</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="o">~</span><span class="p">(</span><span class="n">align</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><a href="#__codelineno-1-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="kt">size_t</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aligned</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">base_</span><span class="p">);</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><a href="#__codelineno-1-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">cap_</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><a href="#__codelineno-1-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">        </span><span class="n">head_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><a href="#__codelineno-1-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">base_</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offset</span><span class="p">;</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><a href="#__codelineno-1-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><a href="#__codelineno-1-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">head_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13"></a><a href="#__codelineno-1-13"><span class="linenos" data-linenos="13 "></span></a><span class="k">private</span><span class="o">:</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14"></a><a href="#__codelineno-1-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">base_</span><span class="p">;</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15"></a><a href="#__codelineno-1-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cap_</span><span class="p">;</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16"></a><a href="#__codelineno-1-16"><span class="linenos" data-linenos="16 "></span></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">head_</span><span class="p">;</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17"></a><a href="#__codelineno-1-17"><span class="linenos" data-linenos="17 "></span></a><span class="p">};</span>
-</span></code></pre></div>
+<p><code>cpp
+class Arena {
+public:
+    Arena(void* buffer, size_t size) : base_(reinterpret_cast&lt;uint8_t*&gt;(buffer)), cap_(size), head_(0) {}
+    void* alloc(size_t n, size_t align = alignof(std::max_align_t)) {
+        size_t cur = reinterpret_cast&lt;size_t&gt;(base_) + head_;
+        size_t aligned = (cur + (align - 1)) &amp; ~(align - 1);
+        size_t offset = aligned - reinterpret_cast&lt;size_t&gt;(base_);
+        if (offset + n &gt; cap_) return nullptr;
+        head_ = offset + n;
+        return base_ + offset;
+    }
+    void reset() { head_ = 0; }
+private:
+    uint8_t* base_;
+    size_t cap_;
+    size_t head_;
+};</code>text</p>
 <p>当然上面的代码不是线程安全的，这个需要注意了。</p>
+<hr />
+<h2 id="代码示例">代码示例<a class="headerlink" href="#代码示例" title="链接到此章节">&para;</a></h2>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+#include <iostream>
+#include <cstdint>
+#include <cstddef>
+#include <new>
+#include <cassert>
+
+// 固定池分配器 - 最简单的内存池实现
+
+template<size_t BLOCK_SIZE, size_t BLOCK_COUNT>
+class FixedPool {
+    struct Block {
+        alignas(std::max_align_t) uint8_t data[BLOCK_SIZE];
+    };
+
+    Block pool_[BLOCK_COUNT];
+    size_t free_list_[BLOCK_COUNT];
+    size_t free_head_;
+    size_t used_count_;
+
+public:
+    FixedPool() : used_count_(0) {
+        // 初始化空闲链表
+        for (size_t i = 0; i < BLOCK_COUNT; ++i) {
+            free_list_[i] = i + 1;
+        }
+        free_list_[BLOCK_COUNT - 1] = static_cast<size_t>(-1);  // 标记结尾
+        free_head_ = 0;
+    }
+
+    // 分配一个块
+    void* allocate() {
+        if (free_head_ == static_cast<size_t>(-1)) {
+            return nullptr;  // 池已满
+        }
+
+        size_t idx = free_head_;
+        free_head_ = free_list_[idx];
+        used_count_++;
+
+        return &pool_[idx].data[0];
+    }
+
+    // 释放一个块
+    void deallocate(void* ptr) {
+        if (!ptr) return;
+
+        size_t idx = static_cast<Block*>(ptr) - pool_;
+        assert(idx < BLOCK_COUNT && "Pointer not from this pool");
+
+        free_list_[idx] = free_head_;
+        free_head_ = idx;
+        used_count_--;
+    }
+
+    size_t block_size() const { return BLOCK_SIZE; }
+    size_t capacity() const { return BLOCK_COUNT; }
+    size_t used_count() const { return used_count_; }
+    size_t free_count() const { return BLOCK_COUNT - used_count_; }
+    bool is_full() const { return free_head_ == static_cast<size_t>(-1); }
+    bool is_empty() const { return used_count_ == 0; }
+
+    // 调试：打印池状态
+    void print_status() const {
+        std::cout << "Pool[" << BLOCK_SIZE << " x " << BLOCK_COUNT << "]: "
+                  << used_count_ << " used, " << free_count() << " free\n";
+    }
+};
+
+// 类型安全的固定池
+template<typename T, size_t N>
+class TypedFixedPool {
+    alignas(T) uint8_t storage_[N * sizeof(T)];
+    size_t free_list_[N];
+    size_t free_head_;
+    size_t used_count_;
+
+public:
+    TypedFixedPool() : used_count_(0) {
+        for (size_t i = 0; i < N; ++i) {
+            free_list_[i] = i + 1;
+        }
+        free_list_[N - 1] = static_cast<size_t>(-1);
+        free_head_ = 0;
+    }
+
+    T* allocate() {
+        if (free_head_ == static_cast<size_t>(-1)) {
+            return nullptr;
+        }
+
+        size_t idx = free_head_;
+        free_head_ = free_list_[idx];
+        used_count_++;
+
+        T* obj = reinterpret_cast<T*>(&storage_[idx * sizeof(T)]);
+        new (obj) T();  // placement new，默认构造
+        return obj;
+    }
+
+    template<typename... Args>
+    T* construct(Args&&... args) {
+        if (free_head_ == static_cast<size_t>(-1)) {
+            return nullptr;
+        }
+
+        size_t idx = free_head_;
+        free_head_ = free_list_[idx];
+        used_count_++;
+
+        T* obj = reinterpret_cast<T*>(&storage_[idx * sizeof(T)]);
+        new (obj) T(std::forward<Args>(args)...);
+        return obj;
+    }
+
+    void deallocate(T* ptr) {
+        if (!ptr) return;
+
+        ptr->~T();  // 调用析构函数
+
+        size_t idx = (reinterpret_cast<uint8_t*>(ptr) - storage_) / sizeof(T);
+        free_list_[idx] = free_head_;
+        free_head_ = idx;
+        used_count_--;
+    }
+
+    size_t capacity() const { return N; }
+    size_t used_count() const { return used_count_; }
+    size_t free_count() const { return N - used_count_; }
+};
+
+// 使用示例
+
+struct Packet {
+    uint8_t data[64];
+    size_t length;
+
+    Packet() : length(0) {
+        std::cout << "Packet constructed\n";
+    }
+
+    ~Packet() {
+        std::cout << "Packet destructed\n";
+    }
+
+    void set_data(const char* msg) {
+        size_t i = 0;
+        while (msg[i] && i < sizeof(data) - 1) {
+            data[i] = static_cast<uint8_t>(msg[i]);
+            ++i;
+        }
+        data[i] = '\0';
+        length = i;
+    }
+
+    void print() const {
+        std::cout << "Packet[len=" << length << ", data=\"";
+        for (size_t i = 0; i < length && i < 20; ++i) {
+            std::cout << static_cast<char>(data[i]);
+        }
+        std::cout << "\"]\n";
+    }
+};
+
+void basic_pool_demo() {
+    std::cout << "=== Basic Fixed Pool Demo ===\n\n";
+
+    FixedPool<64, 8> pool;
+
+    std::cout << "Initial: ";
+    pool.print_status();
+
+    // 分配一些块
+    void* blocks[5];
+    for (int i = 0; i < 5; ++i) {
+        blocks[i] = pool.allocate();
+        std::cout << "Allocated block " << i << " at " << blocks[i] << "\n";
+    }
+
+    std::cout << "\nAfter 5 allocations: ";
+    pool.print_status();
+
+    // 释放一些块
+    pool.deallocate(blocks[1]);
+    pool.deallocate(blocks[3]);
+
+    std::cout << "\nAfter freeing 2 blocks: ";
+    pool.print_status();
+
+    // 再次分配
+    void* new_block = pool.allocate();
+    std::cout << "Reallocated at " << new_block << "\n";
+    std::cout << "Should be same as freed block 1: " << (new_block == blocks[1] ? "yes" : "no") << "\n";
+
+    // 清理
+    for (int i = 0; i < 5; ++i) {
+        if (i != 1 && i != 3) {
+            pool.deallocate(blocks[i]);
+        }
+    }
+    pool.deallocate(new_block);
+}
+
+void typed_pool_demo() {
+    std::cout << "\n=== Typed Fixed Pool Demo ===\n\n";
+
+    TypedFixedPool<Packet, 4> pool;
+
+    std::cout << "Packet pool: " << pool.used_count() << " / " << pool.capacity() << " used\n";
+
+    // 分配包
+    Packet* p1 = pool.construct();
+    Packet* p2 = pool.construct();
+    Packet* p3 = pool.construct();
+
+    std::cout << "\nAfter 3 allocations: " << pool.used_count() << " / " << pool.capacity() << " used\n";
+
+    // 使用包
+    p1->set_data("Hello");
+    p2->set_data("World");
+    p3->set_data("Test");
+
+    p1->print();
+    p2->print();
+    p3->print();
+
+    // 尝试分配超过容量
+    Packet* p4 = pool.construct();
+    Packet* p5 = pool.construct();  // 应该失败
+
+    std::cout << "\np4 allocated: " << (p4 != nullptr ? "yes" : "no") << "\n";
+    std::cout << "p5 allocated: " << (p5 != nullptr ? "yes (unexpected!)" : "no (expected)") << "\n";
+
+    // 清理
+    pool.deallocate(p1);
+    pool.deallocate(p2);
+    pool.deallocate(p3);
+    if (p4) pool.deallocate(p4);
+}
+
+// 多尺寸池系统
+class MultiSizePoolSystem {
+    FixedPool<32, 16> pool32_;
+    FixedPool<64, 16> pool64_;
+    FixedPool<128, 16> pool128_;
+    FixedPool<256, 16> pool256_;
+
+public:
+    void* allocate(size_t size) {
+        if (size <= 32) return pool32_.allocate();
+        if (size <= 64) return pool64_.allocate();
+        if (size <= 128) return pool128_.allocate();
+        if (size <= 256) return pool256_.allocate();
+        return nullptr;
+    }
+
+    void deallocate(void* ptr, size_t size) {
+        if (size <= 32) pool32_.deallocate(ptr);
+        else if (size <= 64) pool64_.deallocate(ptr);
+        else if (size <= 128) pool128_.deallocate(ptr);
+        else if (size <= 256) pool256_.deallocate(ptr);
+    }
+
+    void print_stats() const {
+        std::cout << "Pool Statistics:\n";
+        std::cout << "  32-byte: "; pool32_.print_status();
+        std::cout << "  64-byte: "; pool64_.print_status();
+        std::cout << "  128-byte: "; pool128_.print_status();
+        std::cout << "  256-byte: "; pool256_.print_status();
+    }
+};
+
+void multi_size_pool_demo() {
+    std::cout << "\n=== Multi-Size Pool System Demo ===\n\n";
+
+    MultiSizePoolSystem pools;
+
+    // 分配不同大小的对象
+    void* a = pools.allocate(20);   // 使用32字节池
+    void* b = pools.allocate(50);   // 使用64字节池
+    void* c = pools.allocate(100);  // 使用128字节池
+    void* d = pools.allocate(200);  // 使用256字节池
+
+    std::cout << "After allocations:\n";
+    pools.print_stats();
+
+    // 释放
+    pools.deallocate(a, 20);
+    pools.deallocate(c, 100);
+
+    std::cout << "\nAfter freeing some:\n";
+    pools.print_stats();
+
+    // 再次分配
+    void* e = pools.allocate(30);   // 应该重用32字节池
+    std::cout << "\nReallocation matches freed: " << (e == a ? "yes" : "no") << "\n";
+
+    // 清理
+    pools.deallocate(b, 50);
+    pools.deallocate(d, 200);
+    pools.deallocate(e, 30);
+}
+
+int main() {
+    basic_pool_demo();
+    typed_pool_demo();
+    multi_size_pool_demo();
+
+    std::cout << "\n=== Key Takeaways ===\n";
+    std::cout << "1. Fixed pool provides O(1) allocation/deallocation\n";
+    std::cout << "2. No fragmentation with fixed-size blocks\n";
+    std::cout << "3. Typed pool adds type safety and construction/destruction\n";
+    std::cout << "4. Multi-size system serves various allocation needs\n";
+    std::cout << "5. Predictable memory usage and timing\n";
+
+    return 0;
+}
+
+```text
+
+```cpp
+#include <iostream>
+#include <cstdint>
+#include <cstddef>
+#include <cstring>
+#include <new>
+
+// Slab分配器 - 简化版Linux内核slab
+
+template<size_t OBJECT_SIZE, size_t SLAB_CAPACITY>
+class Slab {
+public:
+    struct SlabBlock {
+        alignas(std::max_align_t) uint8_t memory[SLAB_CAPACITY * OBJECT_SIZE];
+        uint32_t in_use;  // 位图跟踪使用情况（最多32个对象）
+        SlabBlock* next;
+        size_t free_count;
+
+        SlabBlock() : in_use(0), next(nullptr), free_count(SLAB_CAPACITY) {}
+    };
+
+private:
+    SlabBlock* partial_list_;  // 部分使用的slab
+    SlabBlock* full_list_;     // 已满的slab
+    SlabBlock* empty_list_;    // 全空的slab
+    size_t total_slabs_;
+
+    // 从slab中分配一个对象
+    void* allocate_from_slab(SlabBlock* slab) {
+        for (size_t i = 0; i < SLAB_CAPACITY; ++i) {
+            if ((slab->in_use & (1U << i)) == 0) {
+                slab->in_use |= (1U << i);
+                slab->free_count--;
+                return &slab->memory[i * OBJECT_SIZE];
+            }
+        }
+        return nullptr;
+    }
+
+    SlabBlock* new_slab() {
+        SlabBlock* slab = new (std::nothrow) SlabBlock();
+        if (slab) {
+            total_slabs_++;
+        }
+        return slab;
+    }
+
+public:
+    Slab() : partial_list_(nullptr), full_list_(nullptr), empty_list_(nullptr), total_slabs_(0) {
+        // 预分配一个空slab
+        empty_list_ = new_slab();
+    }
+
+    ~Slab() {
+        // 释放所有slab
+        SlabBlock* slab = partial_list_;
+        while (slab) {
+            SlabBlock* next = slab->next;
+            delete slab;
+            slab = next;
+        }
+
+        slab = full_list_;
+        while (slab) {
+            SlabBlock* next = slab->next;
+            delete slab;
+            slab = next;
+        }
+
+        slab = empty_list_;
+        while (slab) {
+            SlabBlock* next = slab->next;
+            delete slab;
+            slab = next;
+        }
+    }
+
+    void* allocate() {
+        // 优先从partial slab分配
+        if (partial_list_) {
+            void* ptr = allocate_from_slab(partial_list_);
+            if (ptr) {
+                // 检查slab是否变满
+                if (partial_list_->free_count == 0) {
+                    // 移到full list
+                    SlabBlock* full = partial_list_;
+                    partial_list_ = partial_list_->next;
+                    full->next = full_list_;
+                    full_list_ = full;
+                }
+                return ptr;
+            }
+        }
+
+        // 从empty list获取
+        if (empty_list_) {
+            void* ptr = allocate_from_slab(empty_list_);
+            if (ptr) {
+                // 移到partial list
+                SlabBlock* partial = empty_list_;
+                empty_list_ = empty_list_->next;
+                partial->next = partial_list_;
+                partial_list_ = partial;
+                return ptr;
+            }
+        }
+
+        // 需要分配新slab
+        SlabBlock* new_slab_block = new_slab();
+        if (!new_slab_block) {
+            return nullptr;  // 分配失败
+        }
+
+        void* ptr = allocate_from_slab(new_slab_block);
+        new_slab_block->next = partial_list_;
+        partial_list_ = new_slab_block;
+        return ptr;
+    }
+
+    void deallocate(void* ptr) {
+        if (!ptr) return;
+
+        // 查找ptr所属的slab
+        SlabBlock** slab_ptr = &full_list_;
+        while (*slab_ptr) {
+            if (ptr >= (*slab_ptr)->memory &&
+                ptr < (*slab_ptr)->memory + sizeof((*slab_ptr)->memory)) {
+                break;
+            }
+            slab_ptr = &((*slab_ptr)->next);
+        }
+
+        if (!*slab_ptr) {
+            slab_ptr = &partial_list_;
+            while (*slab_ptr) {
+                if (ptr >= (*slab_ptr)->memory &&
+                    ptr < (*slab_ptr)->memory + sizeof((*slab_ptr)->memory)) {
+                    break;
+                }
+                slab_ptr = &((*slab_ptr)->next);
+            }
+        }
+
+        if (!*slab_ptr) {
+            return;  // 不属于这个分配器
+        }
+
+        SlabBlock* slab = *slab_ptr;
+        size_t index = (static_cast<uint8_t*>(ptr) - slab->memory) / OBJECT_SIZE;
+        slab->in_use &= ~(1U << index);
+        slab->free_count++;
+
+        // 根据使用情况移动slab
+        if (slab->free_count == SLAB_CAPACITY) {
+            // 全空，移到empty list
+            *slab_ptr = slab->next;
+            slab->next = empty_list_;
+            empty_list_ = slab;
+        } else if (slab == full_list_) {
+            // 从full移到partial
+            *slab_ptr = slab->next;
+            slab->next = partial_list_;
+            partial_list_ = slab;
+        }
+    }
+
+    void print_stats() const {
+        size_t partial_count = 0;
+        size_t full_count = 0;
+        size_t empty_count = 0;
+
+        SlabBlock* slab = partial_list_;
+        while (slab) { partial_count++; slab = slab->next; }
+
+        slab = full_list_;
+        while (slab) { full_count++; slab = slab->next; }
+
+        slab = empty_list_;
+        while (slab) { empty_count++; slab = slab->next; }
+
+        std::cout << "Slab stats: " << total_slabs_ << " total ("
+                  << partial_count << " partial, "
+                  << full_count << " full, "
+                  << empty_count << " empty)\n";
+    }
+};
+
+// Arena/Bump分配器
+template<size_t ARENA_SIZE>
+class ArenaAllocator {
+    alignas(std::max_align_t) uint8_t memory_[ARENA_SIZE];
+    size_t offset_;
+
+public:
+    ArenaAllocator() : offset_(0) {}
+
+    void* allocate(size_t size, size_t alignment = alignof(std::max_align_t)) {
+        uintptr_t addr = reinterpret_cast<uintptr_t>(memory_ + offset_);
+        uintptr_t aligned = (addr + alignment - 1) & ~(alignment - 1);
+        size_t aligned_offset = aligned - reinterpret_cast<uintptr_t>(memory_);
+
+        if (aligned_offset + size > ARENA_SIZE) {
+            return nullptr;
+        }
+
+        offset_ = aligned_offset + size;
+        return reinterpret_cast<void*>(aligned);
+    }
+
+    void reset() {
+        offset_ = 0;
+    }
+
+    size_t used() const { return offset_; }
+    size_t available() const { return ARENA_SIZE - offset_; }
+};
+
+// 使用示例
+
+struct Task {
+    int id;
+    char name[32];
+    void (*func)(void);
+
+    Task(int i, const char* n, void (*f)(void)) : id(i), func(f) {
+        std::strncpy(name, n, sizeof(name) - 1);
+        name[sizeof(name) - 1] = '\0';
+    }
+
+    void execute() {
+        std::cout << "Task " << id << " (" << name << ") executing\n";
+        if (func) func();
+    }
+};
+
+void slab_demo() {
+    std::cout << "=== Slab Allocator Demo ===\n\n";
+
+    // 创建一个Task类型的slab分配器
+    // 每个slab最多16个Task对象
+    Slab<sizeof(Task), 16> task_slab;
+
+    std::cout << "Initial state: ";
+    task_slab.print_stats();
+
+    // 分配任务
+    Task* tasks[20];
+    for (int i = 0; i < 20; ++i) {
+        void* mem = task_slab.allocate();
+        if (mem) {
+            tasks[i] = new (mem) Task(i, "Task", nullptr);
+        } else {
+            tasks[i] = nullptr;
+            std::cout << "Failed to allocate task " << i << "\n";
+        }
+    }
+
+    std::cout << "\nAfter allocating 20 tasks: ";
+    task_slab.print_stats();
+
+    // 执行一些任务
+    for (int i = 0; i < 5; ++i) {
+        if (tasks[i]) tasks[i]->execute();
+    }
+
+    // 释放一些任务
+    for (int i = 0; i < 10; ++i) {
+        if (tasks[i]) {
+            task_slab.deallocate(tasks[i]);
+        }
+    }
+
+    std::cout << "\nAfter freeing 10 tasks: ";
+    task_slab.print_stats();
+
+    // 再次分配
+    Task* new_task = nullptr;
+    void* mem = task_slab.allocate();
+    if (mem) {
+        new_task = new (mem) Task(99, "NewTask", nullptr);
+        std::cout << "Allocated new task after freeing\n";
+    }
+
+    // 清理剩余
+    for (int i = 10; i < 20; ++i) {
+        if (tasks[i]) {
+            task_slab.deallocate(tasks[i]);
+        }
+    }
+    if (new_task) {
+        task_slab.deallocate(new_task);
+    }
+}
+
+void arena_demo() {
+    std::cout << "\n=== Arena Allocator Demo ===\n\n";
+
+    ArenaAllocator<4096> arena;
+
+    std::cout << "Arena: " << arena.available() << " bytes available\n";
+
+    // 分配一些对象
+    void* a = arena.allocate(sizeof(int), alignof(int));
+    void* b = arena.allocate(100, 8);
+    void* c = arena.allocate(sizeof(double), alignof(double));
+
+    std::cout << "After allocations: " << arena.used() << " bytes used\n";
+
+    // 重置
+    arena.reset();
+    std::cout << "After reset: " << arena.used() << " bytes used\n";
+
+    // 新的分配从头开始
+    void* d = arena.allocate(200, 8);
+    std::cout << "New allocation at " << d << " (should be at start)\n";
+}
+
+// 混合使用：Slab + Arena
+class HybridAllocator {
+    Slab<64, 32> small_objects_;   // 小对象（<=64字节）
+    ArenaAllocator<4096> arena_;   // 大对象/临时对象
+
+public:
+    enum class AllocationType {
+        Small,
+        Large
+    };
+
+    void* allocate(size_t size, AllocationType type = AllocationType::Small) {
+        if (type == AllocationType::Small && size <= 64) {
+            return small_objects_.allocate();
+        } else {
+            return arena_.allocate(size);
+        }
+    }
+
+    void deallocate(void* ptr, AllocationType type) {
+        if (type == AllocationType::Small) {
+            small_objects_.deallocate(ptr);
+        }
+        // Arena对象不需要单独释放
+    }
+
+    void reset_arena() {
+        arena_.reset();
+    }
+
+    void print_stats() const {
+        std::cout << "Small object slab: ";
+        small_objects_.print_stats();
+        std::cout << "Arena: " << arena_.used() << " / " << 4096 << " bytes used\n";
+    }
+};
+
+void hybrid_demo() {
+    std::cout << "\n=== Hybrid Allocator Demo ===\n\n";
+
+    HybridAllocator alloc;
+
+    // 分配小对象
+    void* small1 = alloc.allocate(32, HybridAllocator::AllocationType::Small);
+    void* small2 = alloc.allocate(64, HybridAllocator::AllocationType::Small);
+    void* small3 = alloc.allocate(16, HybridAllocator::AllocationType::Small);
+
+    // 分配大对象（使用arena）
+    void* large1 = alloc.allocate(512, HybridAllocator::AllocationType::Large);
+    void* large2 = alloc.allocate(1024, HybridAllocator::AllocationType::Large);
+
+    alloc.print_stats();
+
+    // 释放小对象
+    alloc.deallocate(small1, HybridAllocator::AllocationType::Small);
+    alloc.deallocate(small2, HybridAllocator::AllocationType::Small);
+
+    std::cout << "\nAfter freeing small objects:\n";
+    alloc.print_stats();
+
+    // 重置arena
+    alloc.reset_arena();
+    std::cout << "\nAfter arena reset:\n";
+    alloc.print_stats();
+
+    // 清理
+    alloc.deallocate(small3, HybridAllocator::AllocationType::Small);
+}
+
+int main() {
+    slab_demo();
+    arena_demo();
+    hybrid_demo();
+
+    std::cout << "\n=== Key Takeaways ===\n";
+    std::cout << "1. Slab: Fixed-size objects, maintains free/partial/full lists\n";
+    std::cout << "2. Arena: Linear allocation, fast, no individual free\n";
+    std::cout << "3. Hybrid: Combine both for different allocation patterns\n";
+    std::cout << "4. Slab good for: object caching, reuse, reducing construction cost\n";
+    std::cout << "5. Arena good for: initialization, temporary objects, batch processing\n";
+
+    return 0;
+}
+
+```text
+
+</details>
 
 
 
@@ -4337,7 +5129,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年1月29日 08:48:25 CST">2026年1月29日 08:48:25</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
   </span>
 
     
@@ -4384,7 +5176,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../4%E7%A6%81%E7%94%A8%20heap%20%E6%88%96%E9%99%90%E5%88%B6%20heap%20%E6%97%B6%E7%9A%84%E6%9B%BF%E4%BB%A3%E7%AD%96%E7%95%A5%EF%BC%9A%E6%94%BE%E7%BD%AEnew%EF%BC%88Placement%20New%EF%BC%89%E7%9A%84%E4%BD%BF%E7%94%A8/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 嵌入式C++教程：placement new">
+          <a href="../4%E7%A6%81%E7%94%A8%20heap%20%E6%88%96%E9%99%90%E5%88%B6%20heap%20%E6%97%B6%E7%9A%84%E6%9B%BF%E4%BB%A3%E7%AD%96%E7%95%A5%EF%BC%9A%E6%94%BE%E7%BD%AEnew%EF%BC%88Placement%20New%EF%BC%89%E7%9A%84%E4%BD%BF%E7%94%A8/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Placement New 的使用">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4394,20 +5186,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                嵌入式C++教程：placement new
+                Placement New 的使用
               </div>
             </div>
           </a>
         
         
           
-          <a href="../6array%20vs%20%E4%B8%80%E8%88%AC%E6%95%B0%E7%BB%84%EF%BC%8C%E4%BD%A0%E4%BB%AC%E7%9F%A5%E9%81%93%E5%98%9B%EF%BC%9F/" class="md-footer__link md-footer__link--next" aria-label="下一页: 嵌入式C++教程——std::array vs C 数组，你们知道嘛？">
+          <a href="../6array%20vs%20%E4%B8%80%E8%88%AC%E6%95%B0%E7%BB%84%EF%BC%8C%E4%BD%A0%E4%BB%AC%E7%9F%A5%E9%81%93%E5%98%9B%EF%BC%9F/" class="md-footer__link md-footer__link--next" aria-label="下一页: std::array vs 一般数组">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                嵌入式C++教程——std::array vs C 数组，你们知道嘛？
+                std::array vs 一般数组
               </div>
             </div>
             <div class="md-footer__button md-icon">

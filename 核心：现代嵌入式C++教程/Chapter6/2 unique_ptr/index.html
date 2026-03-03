@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+        <meta name="description" content="详解unique_ptr使用">
       
       
         <meta name="author" content="Charliechen">
@@ -27,7 +27,7 @@
     
     
       
-        <title>现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权 - Tutorial_AwesomeModernCPP的文档</title>
+        <title>unique_ptr 独占所有权智能指针 - Tutorial_AwesomeModernCPP的文档</title>
       
     
     
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
+              unique_ptr 独占所有权智能指针
             
           </span>
         </div>
@@ -269,6 +269,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    标签索引
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
@@ -289,10 +316,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -310,8 +337,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -406,7 +433,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -428,14 +455,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -482,10 +509,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
             
   
   
@@ -503,8 +530,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -584,7 +611,7 @@
   <span class="md-ellipsis">
     
   
-    快速的C语言复习
+    C语言速通复习
   
 
     
@@ -612,7 +639,7 @@
   <span class="md-ellipsis">
     
   
-    C++98基础特性：从C到C++的演进
+    C++98基本特性
   
 
     
@@ -640,7 +667,7 @@
   <span class="md-ellipsis">
     
   
-    何时用 C++、用哪些 C++ 特性（折中与禁用项）
+    何时用C++、用哪些C++特性
   
 
     
@@ -668,7 +695,7 @@
   <span class="md-ellipsis">
     
   
-    语言选择原则：性能 vs 可维护性的真实取舍（一点碎碎念）
+    语言选择原则
   
 
     
@@ -696,7 +723,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++一定会使得代码膨胀嘛？
+    性能与体积评估
   
 
     
@@ -745,10 +772,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -766,8 +793,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -791,7 +818,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+    交叉编译和CMake简单指南
   
 
     
@@ -819,7 +846,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式 C++ 教程：常见编译器参数指南
+    常见编译器选项指南
   
 
     
@@ -847,7 +874,7 @@
   <span class="md-ellipsis">
     
   
-    链接器与链接器脚本：从原理到实践
+    链接器与链接器脚本
   
 
     
@@ -898,10 +925,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -919,8 +946,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -944,7 +971,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——原子操作（std::atomic）
+    std::atomic 原子操作
   
 
     
@@ -972,7 +999,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——内存序（Memory Order）
+    memory_order 内存序
   
 
     
@@ -1000,7 +1027,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——无锁数据结构设计
+    无锁数据结构设计
   
 
     
@@ -1028,7 +1055,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——mutex与RAII守卫
+    mutex 与 RAII 守卫
   
 
     
@@ -1079,10 +1106,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1100,8 +1127,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1125,7 +1152,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——零开销抽象
+    零开销抽象
   
 
     
@@ -1153,7 +1180,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——内联函数与编译器优化
+    内联与编译器优化
   
 
     
@@ -1181,7 +1208,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——constexpr：把计算推到编译期
+    constexpr 编译期计算
   
 
     
@@ -1209,7 +1236,7 @@
   <span class="md-ellipsis">
     
   
-    编译期多态 vs 运行时多态
+    CRTP vs 运行时多态
   
 
     
@@ -1262,10 +1289,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1283,8 +1310,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1308,7 +1335,7 @@
   <span class="md-ellipsis">
     
   
-    构造函数优化：初始化列表 vs 成员赋值
+    初始化列表
   
 
     
@@ -1336,7 +1363,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践
+    移动语义
   
 
     
@@ -1364,7 +1391,7 @@
   <span class="md-ellipsis">
     
   
-    RVO 与 NRVO：C++ 返回值优化
+    RVO与NRVO返回值优化
   
 
     
@@ -1392,7 +1419,7 @@
   <span class="md-ellipsis">
     
   
-    空基类优化（EBO）：C++ 的瘦身技巧
+    空基类优化(EBO)
   
 
     
@@ -1420,7 +1447,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——对象大小、内存对齐、类型“平凡/标准布局”与聚合初始化
+    对象大小与平凡类型
   
 
     
@@ -1471,10 +1498,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1492,8 +1519,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1517,7 +1544,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式的现代C++教程——constexpr 与设计技巧
+    constexpr 与设计技巧
   
 
     
@@ -1545,7 +1572,7 @@
   <span class="md-ellipsis">
     
   
-    现代C++嵌入式教程——consteval 与 constinit
+    consteval与constinit
   
 
     
@@ -1573,7 +1600,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——编译期计算的妙用：查找表生成、状态机设计、单位与物理量计算
+    编译期计算实战
   
 
     
@@ -1601,7 +1628,7 @@
   <span class="md-ellipsis">
     
   
-    if constexpr：把编译期分支写得像写注释 —— 工程味实战指南
+    if constexpr 编译期条件
   
 
     
@@ -1656,10 +1683,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_8" >
         
           
-          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
             
   
   
@@ -1677,8 +1704,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1702,7 +1729,7 @@
   <span class="md-ellipsis">
     
   
-    动态内存的代价：碎片化与不确定性（内存布局、碎片化与内存对齐）
+    动态分配问题
   
 
     
@@ -1730,7 +1757,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程——静态存储与栈上分配策略
+    静态存储与栈上分配策略
   
 
     
@@ -1758,7 +1785,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：对象池（Object Pool）模式
+    对象池模式
   
 
     
@@ -1786,7 +1813,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：placement new
+    Placement New 的使用
   
 
     
@@ -1814,7 +1841,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程：Slab / Arena 实现与比较
+    固定池分配
   
 
     
@@ -1842,7 +1869,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::array vs C 数组，你们知道嘛？
+    std::array vs 一般数组
   
 
     
@@ -1901,10 +1928,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_9" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_9" id="__nav_4_9_label" tabindex="0">
             
   
   
@@ -1922,8 +1949,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_9">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1947,7 +1974,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
+    RAII 在外设管理中的作用
   
 
     
@@ -1984,7 +2011,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
+    unique_ptr 独占所有权智能指针
   
 
     
@@ -2002,7 +2029,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
+    unique_ptr 独占所有权智能指针
   
 
     
@@ -2049,105 +2076,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#真正的零开销是什么意思" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        真正的“零开销”是什么意思？
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#自定义删除器强大但要小心" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        自定义删除器：强大但要小心
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#管理数组c-接口与自定义分配器" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        管理数组、C 接口与自定义分配器
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#与多态一起用必须注意析构器" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与多态一起用：必须注意析构器
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#转移所有权释放与重置" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        转移所有权、释放与重置
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#不要在中断isr里做堆操作" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        不要在中断/ISR里做堆操作
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#与标准容器配合移动异常安全" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与标准容器配合（移动异常安全）
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#前向声明与-pimpl妙用" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        前向声明与 PIMPL（妙用）
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#小结" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        小结
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2171,7 +2099,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::shared_ptr如何呢
+    shared_ptr 共享所有权智能指针
   
 
     
@@ -2199,7 +2127,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——智能指针
+    unique_ptr与shared_ptr的嵌入式取舍
   
 
     
@@ -2227,7 +2155,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——intrusive 智能指针与引用计数
+    Intrusive 智能指针与引用计数
   
 
     
@@ -2255,7 +2183,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——自定义删除器（Custom Deleter）
+    自定义 Deleter
   
 
     
@@ -2283,7 +2211,7 @@
   <span class="md-ellipsis">
     
   
-    引用计数的实现与性能
+    引用计数原理与实现
   
 
     
@@ -2311,7 +2239,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行
+    Scope Guard 作用域守卫
   
 
     
@@ -2366,10 +2294,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_10" >
         
           
-          <label class="md-nav__link" for="__nav_3_10" id="__nav_3_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_10" id="__nav_4_10_label" tabindex="0">
             
   
   
@@ -2387,8 +2315,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2412,7 +2340,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::array：编译期固定大小数组
+    std::array 固定大小容器
   
 
     
@@ -2440,7 +2368,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：std::span——轻量、非拥有的数组视图
+    std::span 数组视图
   
 
     
@@ -2468,7 +2396,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——循环缓冲区
+    循环缓冲区实现
   
 
     
@@ -2496,7 +2424,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——侵入式容器设计
+    侵入式容器设计
   
 
     
@@ -2524,7 +2452,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——ETL（Embedded Template Library）
+    ETL 嵌入式模板库
   
 
     
@@ -2552,7 +2480,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——自定义分配器（Allocator）
+    自定义分配器
   
 
     
@@ -2609,10 +2537,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_11" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_11" >
         
           
-          <label class="md-nav__link" for="__nav_3_11" id="__nav_3_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_11" id="__nav_4_11_label" tabindex="0">
             
   
   
@@ -2630,8 +2558,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_11">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2655,7 +2583,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——enum class
+    enum class 强类型枚举
   
 
     
@@ -2683,7 +2611,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型安全的寄存器访问
+    类型安全的寄存器访问
   
 
     
@@ -2711,7 +2639,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：std::variant
+    std::variant 类型安全联合体
   
 
     
@@ -2739,7 +2667,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::optional
+    std::optional 可选值
   
 
     
@@ -2767,7 +2695,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::expected
+    std::expected 错误处理
   
 
     
@@ -2795,7 +2723,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型别名与using声明
+    类型别名与using声明
   
 
     
@@ -2823,7 +2751,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——字面量运算符与自定义单位
+    字面量运算符与自定义单位
   
 
     
@@ -2882,10 +2810,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_12" >
         
           
-          <label class="md-nav__link" for="__nav_3_12" id="__nav_3_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_12" id="__nav_4_12_label" tabindex="0">
             
   
   
@@ -2903,8 +2831,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_12">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2928,7 +2856,7 @@
   <span class="md-ellipsis">
     
   
-    Lambda表达式基础
+    Lambda 表达式基础
   
 
     
@@ -2956,7 +2884,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——Lambda捕获与性能影响
+    Lambda 捕获与性能影响
   
 
     
@@ -3012,7 +2940,7 @@
   <span class="md-ellipsis">
     
   
-    回调机制的零开销实现
+    回调机制的零开支实现
   
 
     
@@ -3040,7 +2968,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::invoke与可调用对象
+    std::invoke 与可调用对象
   
 
     
@@ -3068,7 +2996,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——函数式错误处理模式
+    函数式错误处理模式
   
 
     
@@ -3096,7 +3024,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++20范围库基础与视图
+    C++20 范围库基础与视图
   
 
     
@@ -3124,7 +3052,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——管道操作与Ranges实战
+    管道操作与 Ranges 实战
   
 
     
@@ -3197,10 +3125,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -3218,8 +3146,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3544,10 +3472,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -3565,8 +3493,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3667,10 +3595,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -3688,8 +3616,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3752,10 +3680,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
         
           
-          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
             
   
   
@@ -3773,8 +3701,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3885,10 +3813,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -3906,8 +3834,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4000,10 +3928,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_3" >
         
           
-          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_3" id="__nav_8_3_label" tabindex="0">
             
   
   
@@ -4021,8 +3949,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4157,10 +4085,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -4178,8 +4106,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4305,16 +4233,41 @@
                 
                   
 
+  <nav class="md-tags" >
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:raii" class="md-tag">RAII</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:unique_ptr" class="md-tag">unique_ptr</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:智能指针" class="md-tag">智能指针</a>
+      
+    
+  </nav>
+
 
 
 <h1 id="现代嵌入式c教程stdunique_ptr零开销的独占所有权">现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权<a class="headerlink" href="#现代嵌入式c教程stdunique_ptr零开销的独占所有权" title="链接到此章节">&para;</a></h1>
 <blockquote>
 <p>笔者突然想起来，好像我都没给这个系列写<code>std::unique_ptr</code>的意思。</p>
 </blockquote>
-<p>想象一下：有一个对象你只想给它一个主人——没有共享、没有争抢、没有复杂的引用计数。你要的是简洁、确定、尽可能“无成本”的管理方式。欢迎进入 <code>std::unique_ptr</code> 的世界：C++ 标准库给嵌入式开发者准备的一把轻量级、明确且高效的所有权钥匙。</p>
+<p>想象一下：有一个对象你只想给它一个主人——没有共享、没有争抢、没有复杂的引用计数。你要的是简洁、确定、尽可能"无成本"的管理方式。欢迎进入 <code>std::unique_ptr</code> 的世界：C++ 标准库给嵌入式开发者准备的一把轻量级、明确且高效的所有权钥匙。</p>
 <hr />
 <h2 id="为什么在嵌入式也要爱-unique_ptr">为什么在嵌入式也要爱 <code>unique_ptr</code><a class="headerlink" href="#为什么在嵌入式也要爱-unique_ptr" title="链接到此章节">&para;</a></h2>
-<p>嵌入式常常流行“手工 new/free”，或者根本不鼓励堆分配。事实是，合理使用堆（或定制分配策略）能让代码更清晰、模块更松耦合。相比裸指针，<code>unique_ptr</code> 的好处一言以蔽之：</p>
+<p>嵌入式常常流行"手工 new/free"，或者根本不鼓励堆分配。事实是，合理使用堆（或定制分配策略）能让代码更清晰、模块更松耦合。相比裸指针，<code>unique_ptr</code> 的好处一言以蔽之：</p>
 <ul>
 <li>明确的所有权语义：谁持有，谁负责销毁。</li>
 <li>零或极低的运行时开销：在典型实现下，<code>sizeof(unique_ptr&lt;T&gt;) == sizeof(T*)</code>。</li>
@@ -4324,44 +4277,321 @@
 <p>好了，废话不多说，看点代码。</p>
 <hr />
 <h2 id="最基本的用法又简单又安全">最基本的用法（又简单又安全）<a class="headerlink" href="#最基本的用法又简单又安全" title="链接到此章节">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos="2 "></span></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Sensor</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">();</span><span class="w"> </span><span class="o">~</span><span class="n">Sensor</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">shutdown</span><span class="p">();</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">};</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos="4 "></span></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos="5 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">f</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Sensor</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// 推荐：安全、异常友好</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos="7 "></span></a><span class="w">    </span><span class="c1">// 使用 p-&gt;...</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos="8 "></span></a><span class="p">}</span><span class="w"> </span><span class="c1">// 离开作用域时自动 delete</span>
-</span></code></pre></div>
+<p>```cpp</p>
+<h1 id="include">include <memory><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
+<p>struct Sensor { void shutdown(); ~Sensor() { shutdown(); } };</p>
+<p>void f() {
+    auto p = std::make_unique<Sensor>(); // 推荐：安全、异常友好
+    // 使用 p-&gt;...
+} // 离开作用域时自动 delete
+```text</p>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+// std::unique_ptr 基本用法示例
+// 演示 unique_ptr 的基本使用和零开销特性
+
+#include <memory>
+#include <cstdio>
+#include <cstring>
+
+// 简单的 Sensor 类
+struct Sensor {
+    int id;
+    bool active;
+
+    Sensor(int i) : id(i), active(true) {
+        printf("Sensor %d constructed\n", id);
+    }
+
+    void shutdown() {
+        if (active) {
+            printf("Sensor %d shutting down\n", id);
+            active = false;
+        }
+    }
+
+    ~Sensor() {
+        shutdown();
+    }
+
+    void read() const {
+        printf("Sensor %d reading\n", id);
+    }
+};
+
+// 基本用法
+void basic_example() {
+    printf("=== Basic Usage Example ===\n");
+
+    auto p = std::make_unique<Sensor>(42);
+    p->read();
+    (*p).read();
+
+    // 离开作用域时自动 delete
+}
+
+// sizeof 验证零开销
+void size_example() {
+    printf("\n=== Size Verification Example ===\n");
+
+    printf("sizeof(int*):            %zu bytes\n", sizeof(int*));
+    printf("sizeof(std::unique_ptr<int>): %zu bytes\n", sizeof(std::unique_ptr<int>));
+    printf("sizeof(std::unique_ptr<Sensor>): %zu bytes\n", sizeof(std::unique_ptr<Sensor>));
+
+    // 通常 unique_ptr 的大小等于裸指针
+    static_assert(sizeof(std::unique_ptr<int>) == sizeof(int*),
+                  "unique_ptr should be same size as raw pointer");
+}
+
+// 移动语义示例
+void move_example() {
+    printf("\n=== Move Semantics Example ===\n");
+
+    auto p1 = std::make_unique<Sensor>(1);
+    printf("p1 created\n");
+
+    // unique_ptr 不可拷贝，但可以移动
+    auto p2 = std::move(p1);
+    printf("p1 moved to p2\n");
+
+    if (p1) {
+        printf("p1 is valid\n");  // 不会执行
+    } else {
+        printf("p1 is null (after move)\n");  // 会执行
+    }
+
+    if (p2) {
+        printf("p2 is valid\n");  // 会执行
+        p2->read();
+    }
+}
+
+// reset 和 release 示例
+void reset_release_example() {
+    printf("\n=== Reset and Release Example ===\n");
+
+    auto p = std::make_unique<Sensor>(99);
+    printf("Sensor 99 created\n");
+
+    // reset() 销毁旧资源并接管新资源
+    p.reset(new Sensor(100));
+    printf("After reset: Sensor 100\n");
+
+    // release() 返回原始指针并将 unique_ptr 置空
+    Sensor* raw = p.release();
+    printf("Released raw pointer to Sensor %d\n", raw->id);
+
+    // 现在需要手动释放
+    delete raw;
+    printf("Manually deleted Sensor 100\n");
+}
+
+int main() {
+    basic_example();
+    size_example();
+    move_example();
+    reset_release_example();
+
+    printf("\n=== All Examples Complete ===\n");
+
+    return 0;
+}
+
+```text
+
+</details>
+
 <p><code>std::make_unique</code> 是首选：一行代码既申请内存又构造对象，避免了 <code>new</code> 与构造之间的临界窗口（异常安全）。对于嵌入式项目，把 <code>make_unique</code> 和自定义分配器结合使用可以做到既安全又可控（后面示范）。</p>
 <hr />
-<h2 id="真正的零开销是什么意思">真正的“零开销”是什么意思？<a class="headerlink" href="#真正的零开销是什么意思" title="链接到此章节">&para;</a></h2>
-<p><code>unique_ptr</code> 的“零开销”不是玄学，而是几条可检验的事实：</p>
+<h2 id="真正的零开销是什么意思">真正的"零开销"是什么意思？<a class="headerlink" href="#真正的零开销是什么意思" title="链接到此章节">&para;</a></h2>
+<p><code>unique_ptr</code> 的"零开销"不是玄学，而是几条可检验的事实：</p>
 <ul>
 <li>标准 <code>unique_ptr&lt;T, std::default_delete&lt;T&gt;&gt;</code> 在多数实现中只包含一个指针字段，因此大小等于裸指针。可以用下面的静态断言验证（在可编译的环境里）：</li>
 </ul>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;通常应相等&quot;</span><span class="p">);</span>
-</span></code></pre></div>
+<p><code>cpp
+static_assert(sizeof(std::unique_ptr&lt;int&gt;) == sizeof(int*), "通常应相等");</code>text</p>
 <ul>
-<li>为什么能这样？因为默认删除器 <code>std::default_delete&lt;T&gt;</code> 是空类型，且编译器会利用空基类优化（EBO）把它“挤掉”。也就是说，<code>unique_ptr</code> 实际上只需要存储那根指针。</li>
+<li>为什么能这样？因为默认删除器 <code>std::default_delete&lt;T&gt;</code> 是空类型，且编译器会利用空基类优化（EBO）把它"挤掉"。也就是说，<code>unique_ptr</code> 实际上只需要存储那根指针。</li>
 </ul>
-<p>但注意：当你使用<strong>有状态</strong>的删除器（例如捕获了闭包的 lambda）时，删除器本身包含状态，<code>unique_ptr</code> 的大小可能会增加——这就是“零开销”条件：<strong>无状态删除器</strong>。</p>
+<p>但注意：当你使用<strong>有状态</strong>的删除器（例如捕获了闭包的 lambda）时，删除器本身包含状态，<code>unique_ptr</code> 的大小可能会增加——这就是"零开销"条件：<strong>无状态删除器</strong>。</p>
 <hr />
 <h2 id="自定义删除器强大但要小心">自定义删除器：强大但要小心<a class="headerlink" href="#自定义删除器强大但要小心" title="链接到此章节">&para;</a></h2>
 <p>嵌入式里管理的资源不只有 <code>new</code>/<code>delete</code>，还可能是 <code>malloc</code>、文件描述符、裸 C 接口返回的句柄，或是自定义分配器分配的内存。<code>unique_ptr</code> 支持自定义删除器：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="c1">// 使用 malloc / free</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf</span><span class="p">(</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="w">    </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">malloc</span><span class="p">(</span><span class="mi">128</span><span class="p">)),</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="w">    </span><span class="p">[](</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">){</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">p</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="p">);</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos=" 6 "></span></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="c1">// 或者：用函数指针（注意：函数指针会占空间）</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">free_fn</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">p</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><a href="#__codelineno-2-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf2</span><span class="p">(</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><a href="#__codelineno-2-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">    </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">malloc</span><span class="p">(</span><span class="mi">128</span><span class="p">)),</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><a href="#__codelineno-2-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="n">free_fn</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><a href="#__codelineno-2-12"><span class="linenos" data-linenos="12 "></span></a><span class="p">);</span>
-</span></code></pre></div>
+<p>```cpp
+// 使用 malloc / free
+std::unique_ptr<char, void(*)(void*)> buf(
+    static_cast<char*>(std::malloc(128)),
+    <a href="void* p" std::free_p_="std::free(p);"></a>
+);</p>
+<p>// 或者：用函数指针（注意：函数指针会占空间）
+void free_fn(void* p) { std::free(p); }
+std::unique_ptr<char, void(*)(void*)> buf2(
+    static_cast<char*>(std::malloc(128)),
+    free_fn
+);
+```text</p>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+// std::unique_ptr 自定义删除器示例
+// 演示如何使用自定义删除器管理非堆资源
+
+#include <memory>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+// ========== malloc/free 删除器 ==========
+struct FreeDeleter {
+    void operator()(void* p) noexcept {
+        printf("[FreeDeleter] Freeing memory at %p\n", p);
+        std::free(p);
+    }
+};
+
+using MallocPtr = std::unique_ptr<char, FreeDeleter>;
+
+void malloc_example() {
+    printf("=== malloc/free Example ===\n");
+
+    MallocPtr buf(static_cast<char*>(std::malloc(128)));
+    if (buf) {
+        std::strcpy(buf.get(), "Hello from malloc!");
+        printf("Buffer content: %s\n", buf.get());
+    }
+    // 离开作用域时自动调用 free()
+}
+
+// ========== 函数指针删除器 ==========
+void my_free_fn(void* p) {
+    printf("[my_free_fn] Freeing memory\n");
+    std::free(p);
+}
+
+void func_ptr_deleter_example() {
+    printf("\n=== Function Pointer Deleter Example ===\n");
+
+    // 注意：函数指针作为删除器会增加 unique_ptr 的大小
+    using FuncPtrDeleter = std::unique_ptr<char, void(*)(void*)>;
+
+    FuncPtrDeleter buf(static_cast<char*>(std::malloc(64)), my_free_fn);
+    printf("Buffer allocated with function pointer deleter\n");
+
+    printf("sizeof(unique_ptr<char, FreeDeleter>): %zu\n",
+           sizeof(std::unique_ptr<char, FreeDeleter>));
+    printf("sizeof(unique_ptr<char, void(*)(void*)>): %zu\n",
+           sizeof(FuncPtrDeleter));
+}
+
+// ========== 文件句柄删除器 ==========
+struct FileDeleter {
+    void operator()(FILE* f) const noexcept {
+        if (f) {
+            printf("[FileDeleter] Closing file\n");
+            std::fclose(f);
+        }
+    }
+};
+
+using FilePtr = std::unique_ptr<FILE, FileDeleter>;
+
+void file_example() {
+    printf("\n=== File Handle Example ===\n");
+
+    // 打开临时文件
+    FilePtr fp(std::fopen("/tmp/test.txt", "w"));
+    if (fp) {
+        std::fprintf(fp.get(), "Hello, embedded world!\n");
+        printf("Written to file\n");
+    }
+    // 离开作用域时自动 fclose
+}
+
+// ========== 自定义内存池删除器 ==========
+struct MemoryPool {
+    static constexpr size_t POOL_SIZE = 1024;
+    char buffer[POOL_SIZE];
+    size_t offset = 0;
+
+    void* allocate(size_t size) {
+        if (offset + size > POOL_SIZE) {
+            printf("[Pool] Out of memory!\n");
+            return nullptr;
+        }
+        void* ptr = buffer + offset;
+        offset += size;
+        printf("[Pool] Allocated %zu bytes at %p\n", size, ptr);
+        return ptr;
+    }
+
+    void deallocate(void* p) {
+        printf("[Pool] Deallocated %p (simple pool, no actual free)\n", p);
+        // 简单池实现，实际上不释放
+    }
+};
+
+struct PoolDeleter {
+    MemoryPool* pool;
+    void operator()(void* p) noexcept {
+        if (pool && p) {
+            pool->deallocate(p);
+        }
+    }
+};
+
+template<typename T>
+using PoolPtr = std::unique_ptr<T, PoolDeleter>;
+
+void pool_example() {
+    printf("\n=== Memory Pool Example ===\n");
+
+    MemoryPool pool;
+
+    // 使用 placement new 在池中分配
+    void* mem = pool.allocate(sizeof(int));
+    int* ptr = new(mem) int(42);
+
+    PoolPtr<int> pooled(ptr, PoolDeleter{&pool});
+    printf("Value from pool: %d\n", *pooled);
+}
+
+// ========== 数组 unique_ptr ==========
+void array_example() {
+    printf("\n=== Array unique_ptr Example ===\n");
+
+    auto arr = std::make_unique<int[]>(10);
+    for (int i = 0; i < 10; ++i) {
+        arr[i] = i * i;
+    }
+
+    printf("Array contents: ");
+    for (int i = 0; i < 10; ++i) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    // 离开作用域时自动调用 delete[]
+}
+
+int main() {
+    malloc_example();
+    func_ptr_deleter_example();
+    file_example();
+    pool_example();
+    array_example();
+
+    printf("\n=== All Examples Complete ===\n");
+
+    return 0;
+}
+
+```text
+
+</details>
+
 <p>关键提醒：</p>
 <ul>
 <li>捕获外部变量的 lambda 会变成有状态的删除器，从而可能 <strong>增加 <code>unique_ptr</code> 的大小</strong>。如果尺寸敏感（比如放入许多小对象的数组或表中），请避免捕获，改用函数指针或无状态函数对象。</li>
@@ -4370,34 +4600,176 @@
 <hr />
 <h2 id="管理数组c-接口与自定义分配器">管理数组、C 接口与自定义分配器<a class="headerlink" href="#管理数组c-接口与自定义分配器" title="链接到此章节">&para;</a></h2>
 <p>使用 <code>unique_ptr&lt;T[]&gt;</code> 来管理数组：它会在析构时调用 <code>delete[]</code> 而不是 <code>delete</code>。</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">64</span><span class="p">);</span><span class="w"> </span><span class="c1">// 分配 64 个 int，析构时调用 delete[]</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">arr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">;</span>
-</span></code></pre></div>
+<p><code>cpp
+auto arr = std::make_unique&lt;int[]&gt;(64); // 分配 64 个 int，析构时调用 delete[]
+arr[0] = 42;</code>text</p>
 <p>嵌入式常见场景：使用专用堆或分配器（例如来自 RTOS 或定制内存池）。<code>unique_ptr</code> 无法直接接受分配器对象，但你可以把删除器写成调用分配器释放的函数或函数对象：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Pool</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">alloc</span><span class="p">(</span><span class="kt">size_t</span><span class="p">);</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">free</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">);</span><span class="w"> </span><span class="p">};</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">extern</span><span class="w"> </span><span class="n">Pool</span><span class="w"> </span><span class="n">g_pool</span><span class="p">;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><a href="#__codelineno-4-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">MyType</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="n">MyType</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span><span class="p">(</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><a href="#__codelineno-4-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">MyType</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">g_pool</span><span class="p">.</span><span class="n">alloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">MyType</span><span class="p">))),</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><a href="#__codelineno-4-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">    </span><span class="p">[](</span><span class="n">MyType</span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="p">){</span><span class="w"> </span><span class="n">t</span><span class="o">-&gt;~</span><span class="n">MyType</span><span class="p">();</span><span class="w"> </span><span class="n">g_pool</span><span class="p">.</span><span class="n">free</span><span class="p">(</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><a href="#__codelineno-4-7"><span class="linenos" data-linenos="7 "></span></a><span class="p">);</span>
-</span></code></pre></div>
+<p>```cpp
+struct Pool { void* alloc(size_t); void free(void*); };
+extern Pool g_pool;</p>
+<p>auto p = std::unique_ptr<MyType, void(*)(MyType*)>(
+    static_cast<MyType*>(g_pool.alloc(sizeof(MyType))),
+    <a g_pool.free_t_="g_pool.free(t);" href="MyType* t" t-_MyType_="t-&gt;~MyType();"></a>
+);
+```text</p>
 <p>如果池的释放函数不需要对象完整类型（例如仅内存回收），你可以将析构和回收分开，注意析构调用时类型需完整。</p>
 <hr />
 <h2 id="与多态一起用必须注意析构器">与多态一起用：必须注意析构器<a class="headerlink" href="#与多态一起用必须注意析构器" title="链接到此章节">&para;</a></h2>
 <p>如果你用 <code>unique_ptr&lt;Base&gt;</code> 指向 <code>Derived</code>，确保 <code>Base</code> 有虚析构函数，否则 <code>delete</code> 会是未定义行为：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Base</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">Base</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Derived</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Base</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">};</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos="3 "></span></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos="4 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Base</span><span class="o">&gt;</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span><span class="p">();</span>
-</span></code></pre></div>
+<p>```cpp
+struct Base { virtual ~Base() = default; };
+struct Derived : Base { /* ... */ };</p>
+<p>std::unique_ptr<Base> p = std::make_unique<Derived>();
+```text</p>
 <p>这是面向对象设计的基本规则，不是 <code>unique_ptr</code> 的特例。</p>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+// std::unique_ptr 与多态示例
+// 演示如何使用 unique_ptr 管理派生类对象
+
+#include <memory>
+#include <cstdio>
+
+// 基类必须有虚析构函数
+struct Base {
+    virtual ~Base() = default;
+    virtual void speak() const = 0;
+};
+
+struct Dog : Base {
+    void speak() const override {
+        printf("Woof!\n");
+    }
+    ~Dog() {
+        printf("Dog destroyed\n");
+    }
+};
+
+struct Cat : Base {
+    void speak() const override {
+        printf("Meow!\n");
+    }
+    ~Cat() {
+        printf("Cat destroyed\n");
+    }
+};
+
+struct Robot : Base {
+    void speak() const override {
+        printf("Beep boop!\n");
+    }
+    ~Robot() {
+        printf("Robot destroyed\n");
+    }
+};
+
+// 工厂函数返回 unique_ptr<Base>
+std::unique_ptr<Base> create_animal(const char* type) {
+    if (strcmp(type, "dog") == 0) {
+        return std::make_unique<Dog>();
+    } else if (strcmp(type, "cat") == 0) {
+        return std::make_unique<Cat>();
+    } else {
+        return std::make_unique<Robot>();
+    }
+}
+
+// 使用 unique_ptr<Base> 存储派生类
+void polymorphism_example() {
+    printf("=== Polymorphism Example ===\n");
+
+    std::unique_ptr<Base> pet1 = std::make_unique<Dog>();
+    std::unique_ptr<Base> pet2 = std::make_unique<Cat>();
+
+    printf("Pet 1 says: ");
+    pet1->speak();
+
+    printf("Pet 2 says: ");
+    pet2->speak();
+
+    // 移动语义
+    std::unique_ptr<Base> moved = std::move(pet1);
+    if (!pet1) {
+        printf("pet1 is now null (moved)\n");
+    }
+
+    printf("Moved pet says: ");
+    moved->speak();
+}
+
+// 容器存储 unique_ptr
+#include <vector>
+
+void container_example() {
+    printf("\n=== Container Example ===\n");
+
+    std::vector<std::unique_ptr<Base>> zoo;
+
+    zoo.push_back(std::make_unique<Dog>());
+    zoo.push_back(std::make_unique<Cat>());
+    zoo.push_back(std::make_unique<Robot>());
+    zoo.push_back(create_animal("dog"));
+
+    printf("Zoo sounds:\n");
+    for (const auto& animal : zoo) {
+        printf("  ");
+        animal->speak();
+    }
+
+    // 容器销毁时，所有 unique_ptr 自动释放
+    printf("Zoo being destroyed...\n");
+}
+
+// PIMPL 模式示例 (简化版)
+class Widget {
+public:
+    Widget();
+    ~Widget();
+    void do_work();
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> pImpl;
+};
+
+struct Widget::Impl {
+    void do_work() {
+        printf("Widget::Impl doing work\n");
+    }
+};
+
+Widget::Widget() : pImpl(std::make_unique<Impl>()) {}
+Widget::~Widget() = default;  // 即使 Impl 是不完整类型也没关系
+void Widget::do_work() { pImpl->do_work(); }
+
+void pimpl_example() {
+    printf("\n=== PIMPL Example ===\n");
+    Widget w;
+    w.do_work();
+}
+
+int main() {
+    polymorphism_example();
+    container_example();
+    pimpl_example();
+
+    printf("\n=== All Examples Complete ===\n");
+
+    return 0;
+}
+
+```text
+
+</details>
+
 <hr />
 <h2 id="转移所有权释放与重置">转移所有权、释放与重置<a class="headerlink" href="#转移所有权释放与重置" title="链接到此章节">&para;</a></h2>
 <p><code>unique_ptr</code> 不可拷贝，但可以移动，这是它防止双重释放的核心：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">p1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">7</span><span class="p">);</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">auto</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">p1</span><span class="p">);</span><span class="w"> </span><span class="c1">// p1 变成空，p2 拥有对象</span>
-</span></code></pre></div>
+<p><code>cpp
+auto p1 = std::make_unique&lt;int&gt;(7);
+auto p2 = std::move(p1); // p1 变成空，p2 拥有对象</code>text</p>
 <p>有几个实用小函数：</p>
 <ul>
 <li><code>p.release()</code>：返回原始指针并将 <code>unique_ptr</code> 置空（不会调用删除器）。谨慎使用：你拿回裸指针就要自己负责释放。</li>
@@ -4405,6 +4777,124 @@
 <li><code>p.get()</code>：返回内部裸指针（不转移所有权）。</li>
 </ul>
 <p>在嵌入式里，如果你必须与 C API 交互，<code>release()</code> 很常见，但记得把释放责任写清楚，避免内存泄漏。</p>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+// std::unique_ptr 基本用法示例
+// 演示 unique_ptr 的基本使用和零开销特性
+
+#include <memory>
+#include <cstdio>
+#include <cstring>
+
+// 简单的 Sensor 类
+struct Sensor {
+    int id;
+    bool active;
+
+    Sensor(int i) : id(i), active(true) {
+        printf("Sensor %d constructed\n", id);
+    }
+
+    void shutdown() {
+        if (active) {
+            printf("Sensor %d shutting down\n", id);
+            active = false;
+        }
+    }
+
+    ~Sensor() {
+        shutdown();
+    }
+
+    void read() const {
+        printf("Sensor %d reading\n", id);
+    }
+};
+
+// 基本用法
+void basic_example() {
+    printf("=== Basic Usage Example ===\n");
+
+    auto p = std::make_unique<Sensor>(42);
+    p->read();
+    (*p).read();
+
+    // 离开作用域时自动 delete
+}
+
+// sizeof 验证零开销
+void size_example() {
+    printf("\n=== Size Verification Example ===\n");
+
+    printf("sizeof(int*):            %zu bytes\n", sizeof(int*));
+    printf("sizeof(std::unique_ptr<int>): %zu bytes\n", sizeof(std::unique_ptr<int>));
+    printf("sizeof(std::unique_ptr<Sensor>): %zu bytes\n", sizeof(std::unique_ptr<Sensor>));
+
+    // 通常 unique_ptr 的大小等于裸指针
+    static_assert(sizeof(std::unique_ptr<int>) == sizeof(int*),
+                  "unique_ptr should be same size as raw pointer");
+}
+
+// 移动语义示例
+void move_example() {
+    printf("\n=== Move Semantics Example ===\n");
+
+    auto p1 = std::make_unique<Sensor>(1);
+    printf("p1 created\n");
+
+    // unique_ptr 不可拷贝，但可以移动
+    auto p2 = std::move(p1);
+    printf("p1 moved to p2\n");
+
+    if (p1) {
+        printf("p1 is valid\n");  // 不会执行
+    } else {
+        printf("p1 is null (after move)\n");  // 会执行
+    }
+
+    if (p2) {
+        printf("p2 is valid\n");  // 会执行
+        p2->read();
+    }
+}
+
+// reset 和 release 示例
+void reset_release_example() {
+    printf("\n=== Reset and Release Example ===\n");
+
+    auto p = std::make_unique<Sensor>(99);
+    printf("Sensor 99 created\n");
+
+    // reset() 销毁旧资源并接管新资源
+    p.reset(new Sensor(100));
+    printf("After reset: Sensor 100\n");
+
+    // release() 返回原始指针并将 unique_ptr 置空
+    Sensor* raw = p.release();
+    printf("Released raw pointer to Sensor %d\n", raw->id);
+
+    // 现在需要手动释放
+    delete raw;
+    printf("Manually deleted Sensor 100\n");
+}
+
+int main() {
+    basic_example();
+    size_example();
+    move_example();
+    reset_release_example();
+
+    printf("\n=== All Examples Complete ===\n");
+
+    return 0;
+}
+
+```text
+
+</details>
+
 <hr />
 <h2 id="不要在中断isr里做堆操作">不要在中断/ISR里做堆操作<a class="headerlink" href="#不要在中断isr里做堆操作" title="链接到此章节">&para;</a></h2>
 <p>这是工程常识：不要在 ISR 中进行 <code>new</code>/<code>delete</code> 或会阻塞的操作。即便 <code>unique_ptr</code> 很轻量，但如果它持有堆分配的对象，分配/释放仍是堆操作。所以在 ISR 场景下，建议：</p>
@@ -4419,18 +4909,18 @@
 <h2 id="前向声明与-pimpl妙用">前向声明与 PIMPL（妙用）<a class="headerlink" href="#前向声明与-pimpl妙用" title="链接到此章节">&para;</a></h2>
 <p><code>unique_ptr</code> 支持不完整类型的持有者，这非常适合 PIMPL（编译单元隐藏实现）：</p>
 <p>头文件 <code>foo.h</code>：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">struct</span><span class="w"> </span><span class="nc">Impl</span><span class="p">;</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2"></a><a href="#__codelineno-7-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">class</span><span class="w"> </span><span class="nc">Foo</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3"></a><a href="#__codelineno-7-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Impl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pImpl</span><span class="p">;</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4"></a><a href="#__codelineno-7-4"><span class="linenos" data-linenos="4 "></span></a><span class="k">public</span><span class="o">:</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5"></a><a href="#__codelineno-7-5"><span class="linenos" data-linenos="5 "></span></a><span class="w">    </span><span class="n">Foo</span><span class="p">();</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6"></a><a href="#__codelineno-7-6"><span class="linenos" data-linenos="6 "></span></a><span class="w">    </span><span class="o">~</span><span class="n">Foo</span><span class="p">();</span><span class="w"> </span><span class="c1">// 在实现文件中定义，Impl 完整</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7"></a><a href="#__codelineno-7-7"><span class="linenos" data-linenos="7 "></span></a><span class="p">};</span>
-</span></code></pre></div>
+<p><code>cpp
+struct Impl;
+class Foo {
+    std::unique_ptr&lt;Impl&gt; pImpl;
+public:
+    Foo();
+    ~Foo(); // 在实现文件中定义，Impl 完整
+};</code>text</p>
 <p>源文件 <code>foo.cpp</code> 中 <code>~Foo()</code> 可以看到 <code>Impl</code> 的完整定义并正确 delete。这个技巧能大幅减少编译依赖，是嵌入式大工程里常用的手段。</p>
 <hr />
 <h2 id="小结">小结<a class="headerlink" href="#小结" title="链接到此章节">&para;</a></h2>
-<p><code>std::unique_ptr</code> 是 C++ 给我们的一位朴素而可靠的朋友：它把“谁负责释放”这件事写清楚了，并在绝大多数情况下做到<strong>零或极低的额外开销</strong>。对嵌入式开发者来说，<code>unique_ptr</code> 能把杂乱的资源释放逻辑封装得干净、可维护，同时保持性能。如果你还在用裸 <code>new</code>/<code>delete</code>，不妨试着用 <code>unique_ptr</code> 把那些责任交给 RAII——你会发现代码更稳、更容易审计，也更像成年人的工程。</p>
+<p><code>std::unique_ptr</code> 是 C++ 给我们的一位朴素而可靠的朋友：它把"谁负责释放"这件事写清楚了，并在绝大多数情况下做到<strong>零或极低的额外开销</strong>。对嵌入式开发者来说，<code>unique_ptr</code> 能把杂乱的资源释放逻辑封装得干净、可维护，同时保持性能。如果你还在用裸 <code>new</code>/<code>delete</code>，不妨试着用 <code>unique_ptr</code> 把那些责任交给 RAII——你会发现代码更稳、更容易审计，也更像成年人的工程。</p>
 
 
 
@@ -4453,7 +4943,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年1月29日 08:48:25 CST">2026年1月29日 08:48:25</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
   </span>
 
     
@@ -4500,7 +4990,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../1%20RAII%E5%9C%A8%E5%A4%96%E8%AE%BE%E7%AE%A1%E7%90%86%E7%9A%84%E4%BD%9C%E7%94%A8/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 嵌入式C++开发——RAII 在驱动 / 外设管理中的应用">
+          <a href="../1%20RAII%E5%9C%A8%E5%A4%96%E8%AE%BE%E7%AE%A1%E7%90%86%E7%9A%84%E4%BD%9C%E7%94%A8/" class="md-footer__link md-footer__link--prev" aria-label="上一页: RAII 在外设管理中的作用">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4510,20 +5000,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
+                RAII 在外设管理中的作用
               </div>
             </div>
           </a>
         
         
           
-          <a href="../3%20shared_ptr/" class="md-footer__link md-footer__link--next" aria-label="下一页: 嵌入式现代C++教程——std::shared_ptr如何呢">
+          <a href="../3%20shared_ptr/" class="md-footer__link md-footer__link--next" aria-label="下一页: shared_ptr 共享所有权智能指针">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                嵌入式现代C++教程——std::shared_ptr如何呢
+                shared_ptr 共享所有权智能指针
               </div>
             </div>
             <div class="md-footer__button md-icon">

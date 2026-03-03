@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+        <meta name="description" content="std::array容器详解">
       
       
         <meta name="author" content="Charliechen">
@@ -27,7 +27,7 @@
     
     
       
-        <title>嵌入式现代C++教程——std::array：编译期固定大小数组 - Tutorial_AwesomeModernCPP的文档</title>
+        <title>std::array 固定大小容器 - Tutorial_AwesomeModernCPP的文档</title>
       
     
     
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              嵌入式现代C++教程——std::array：编译期固定大小数组
+              std::array 固定大小容器
             
           </span>
         </div>
@@ -269,6 +269,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    标签索引
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
       
@@ -289,10 +316,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -310,8 +337,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -406,7 +433,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
@@ -428,14 +455,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -482,10 +509,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
             
   
   
@@ -503,8 +530,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -584,7 +611,7 @@
   <span class="md-ellipsis">
     
   
-    快速的C语言复习
+    C语言速通复习
   
 
     
@@ -612,7 +639,7 @@
   <span class="md-ellipsis">
     
   
-    C++98基础特性：从C到C++的演进
+    C++98基本特性
   
 
     
@@ -640,7 +667,7 @@
   <span class="md-ellipsis">
     
   
-    何时用 C++、用哪些 C++ 特性（折中与禁用项）
+    何时用C++、用哪些C++特性
   
 
     
@@ -668,7 +695,7 @@
   <span class="md-ellipsis">
     
   
-    语言选择原则：性能 vs 可维护性的真实取舍（一点碎碎念）
+    语言选择原则
   
 
     
@@ -696,7 +723,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++一定会使得代码膨胀嘛？
+    性能与体积评估
   
 
     
@@ -745,10 +772,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -766,8 +793,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -791,7 +818,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：交叉编译基础与CMake多目标构建
+    交叉编译和CMake简单指南
   
 
     
@@ -819,7 +846,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式 C++ 教程：常见编译器参数指南
+    常见编译器选项指南
   
 
     
@@ -847,7 +874,7 @@
   <span class="md-ellipsis">
     
   
-    链接器与链接器脚本：从原理到实践
+    链接器与链接器脚本
   
 
     
@@ -898,10 +925,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -919,8 +946,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -944,7 +971,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——原子操作（std::atomic）
+    std::atomic 原子操作
   
 
     
@@ -972,7 +999,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——内存序（Memory Order）
+    memory_order 内存序
   
 
     
@@ -1000,7 +1027,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——无锁数据结构设计
+    无锁数据结构设计
   
 
     
@@ -1028,7 +1055,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++开发——mutex与RAII守卫
+    mutex 与 RAII 守卫
   
 
     
@@ -1079,10 +1106,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1100,8 +1127,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1125,7 +1152,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——零开销抽象
+    零开销抽象
   
 
     
@@ -1153,7 +1180,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——内联函数与编译器优化
+    内联与编译器优化
   
 
     
@@ -1181,7 +1208,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——constexpr：把计算推到编译期
+    constexpr 编译期计算
   
 
     
@@ -1209,7 +1236,7 @@
   <span class="md-ellipsis">
     
   
-    编译期多态 vs 运行时多态
+    CRTP vs 运行时多态
   
 
     
@@ -1262,10 +1289,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1283,8 +1310,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1308,7 +1335,7 @@
   <span class="md-ellipsis">
     
   
-    构造函数优化：初始化列表 vs 成员赋值
+    初始化列表
   
 
     
@@ -1336,7 +1363,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践
+    移动语义
   
 
     
@@ -1364,7 +1391,7 @@
   <span class="md-ellipsis">
     
   
-    RVO 与 NRVO：C++ 返回值优化
+    RVO与NRVO返回值优化
   
 
     
@@ -1392,7 +1419,7 @@
   <span class="md-ellipsis">
     
   
-    空基类优化（EBO）：C++ 的瘦身技巧
+    空基类优化(EBO)
   
 
     
@@ -1420,7 +1447,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——对象大小、内存对齐、类型“平凡/标准布局”与聚合初始化
+    对象大小与平凡类型
   
 
     
@@ -1471,10 +1498,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1492,8 +1519,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1517,7 +1544,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式的现代C++教程——constexpr 与设计技巧
+    constexpr 与设计技巧
   
 
     
@@ -1545,7 +1572,7 @@
   <span class="md-ellipsis">
     
   
-    现代C++嵌入式教程——consteval 与 constinit
+    consteval与constinit
   
 
     
@@ -1573,7 +1600,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——编译期计算的妙用：查找表生成、状态机设计、单位与物理量计算
+    编译期计算实战
   
 
     
@@ -1601,7 +1628,7 @@
   <span class="md-ellipsis">
     
   
-    if constexpr：把编译期分支写得像写注释 —— 工程味实战指南
+    if constexpr 编译期条件
   
 
     
@@ -1656,10 +1683,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_8" >
         
           
-          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
             
   
   
@@ -1677,8 +1704,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1702,7 +1729,7 @@
   <span class="md-ellipsis">
     
   
-    动态内存的代价：碎片化与不确定性（内存布局、碎片化与内存对齐）
+    动态分配问题
   
 
     
@@ -1730,7 +1757,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程——静态存储与栈上分配策略
+    静态存储与栈上分配策略
   
 
     
@@ -1758,7 +1785,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：对象池（Object Pool）模式
+    对象池模式
   
 
     
@@ -1786,7 +1813,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：placement new
+    Placement New 的使用
   
 
     
@@ -1814,7 +1841,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式 C++ 教程：Slab / Arena 实现与比较
+    固定池分配
   
 
     
@@ -1842,7 +1869,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::array vs C 数组，你们知道嘛？
+    std::array vs 一般数组
   
 
     
@@ -1901,10 +1928,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_9" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_9" id="__nav_4_9_label" tabindex="0">
             
   
   
@@ -1922,8 +1949,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_9">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1947,7 +1974,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
+    RAII 在外设管理中的作用
   
 
     
@@ -1975,7 +2002,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
+    unique_ptr 独占所有权智能指针
   
 
     
@@ -2003,7 +2030,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::shared_ptr如何呢
+    shared_ptr 共享所有权智能指针
   
 
     
@@ -2031,7 +2058,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——智能指针
+    unique_ptr与shared_ptr的嵌入式取舍
   
 
     
@@ -2059,7 +2086,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——intrusive 智能指针与引用计数
+    Intrusive 智能指针与引用计数
   
 
     
@@ -2087,7 +2114,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代 C++教程——自定义删除器（Custom Deleter）
+    自定义 Deleter
   
 
     
@@ -2115,7 +2142,7 @@
   <span class="md-ellipsis">
     
   
-    引用计数的实现与性能
+    引用计数原理与实现
   
 
     
@@ -2143,7 +2170,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行
+    Scope Guard 作用域守卫
   
 
     
@@ -2198,10 +2225,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_10" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_10" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_10" id="__nav_3_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_10" id="__nav_4_10_label" tabindex="0">
             
   
   
@@ -2219,8 +2246,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_10_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_10">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_10_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_10">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2253,7 +2280,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::array：编译期固定大小数组
+    std::array 固定大小容器
   
 
     
@@ -2271,7 +2298,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——std::array：编译期固定大小数组
+    std::array 固定大小容器
   
 
     
@@ -2329,122 +2356,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#与-c-数组stdvector-的比较" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        与 C 数组、std::vector 的比较
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#常见技巧和细节嵌入式角度" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        常见技巧和细节（嵌入式角度）
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="常见技巧和细节（嵌入式角度）">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-放静态区还是栈上" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. 放静态区还是栈上？
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-用于-dma--外设" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. 用于 DMA / 外设
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-编译期表与-constexpr" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. 编译期表与 constexpr
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-结构化绑定与-stdget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. 结构化绑定与 std::get
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-避免退化为指针的陷阱" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. 避免退化为指针的陷阱
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-与裸机异常策略的兼容性" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. 与裸机异常策略的兼容性
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#高级话题当元素不是-pod-时" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        高级话题：当元素不是 POD 时
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#可以一试把-stdarray-用作编译期-crc-表" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        可以一试——把 std::array 用作编译期 CRC 表
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2468,7 +2379,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程：std::span——轻量、非拥有的数组视图
+    std::span 数组视图
   
 
     
@@ -2496,7 +2407,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——循环缓冲区
+    循环缓冲区实现
   
 
     
@@ -2524,7 +2435,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——侵入式容器设计
+    侵入式容器设计
   
 
     
@@ -2552,7 +2463,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——ETL（Embedded Template Library）
+    ETL 嵌入式模板库
   
 
     
@@ -2580,7 +2491,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式现代C++教程——自定义分配器（Allocator）
+    自定义分配器
   
 
     
@@ -2637,10 +2548,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_11" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_11" >
         
           
-          <label class="md-nav__link" for="__nav_3_11" id="__nav_3_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_11" id="__nav_4_11_label" tabindex="0">
             
   
   
@@ -2658,8 +2569,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_11">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_11">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2683,7 +2594,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——enum class
+    enum class 强类型枚举
   
 
     
@@ -2711,7 +2622,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型安全的寄存器访问
+    类型安全的寄存器访问
   
 
     
@@ -2739,7 +2650,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程：std::variant
+    std::variant 类型安全联合体
   
 
     
@@ -2767,7 +2678,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::optional
+    std::optional 可选值
   
 
     
@@ -2795,7 +2706,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::expected
+    std::expected 错误处理
   
 
     
@@ -2823,7 +2734,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——类型别名与using声明
+    类型别名与using声明
   
 
     
@@ -2851,7 +2762,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——字面量运算符与自定义单位
+    字面量运算符与自定义单位
   
 
     
@@ -2910,10 +2821,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_12" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_12" >
         
           
-          <label class="md-nav__link" for="__nav_3_12" id="__nav_3_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_12" id="__nav_4_12_label" tabindex="0">
             
   
   
@@ -2931,8 +2842,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_12">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_12">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2956,7 +2867,7 @@
   <span class="md-ellipsis">
     
   
-    Lambda表达式基础
+    Lambda 表达式基础
   
 
     
@@ -2984,7 +2895,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——Lambda捕获与性能影响
+    Lambda 捕获与性能影响
   
 
     
@@ -3040,7 +2951,7 @@
   <span class="md-ellipsis">
     
   
-    回调机制的零开销实现
+    回调机制的零开支实现
   
 
     
@@ -3068,7 +2979,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——std::invoke与可调用对象
+    std::invoke 与可调用对象
   
 
     
@@ -3096,7 +3007,7 @@
   <span class="md-ellipsis">
     
   
-    嵌入式C++教程——函数式错误处理模式
+    函数式错误处理模式
   
 
     
@@ -3124,7 +3035,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——C++20范围库基础与视图
+    C++20 范围库基础与视图
   
 
     
@@ -3152,7 +3063,7 @@
   <span class="md-ellipsis">
     
   
-    现代嵌入式C++教程——管道操作与Ranges实战
+    管道操作与 Ranges 实战
   
 
     
@@ -3225,10 +3136,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -3246,8 +3157,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3572,10 +3483,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -3593,8 +3504,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3695,10 +3606,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -3716,8 +3627,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3780,10 +3691,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_2" >
         
           
-          <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
             
   
   
@@ -3801,8 +3712,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3913,10 +3824,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -3934,8 +3845,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4028,10 +3939,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7_3" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_3" >
         
           
-          <label class="md-nav__link" for="__nav_7_3" id="__nav_7_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8_3" id="__nav_8_3_label" tabindex="0">
             
   
   
@@ -4049,8 +3960,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4185,10 +4096,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
             
   
   
@@ -4206,8 +4117,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4333,6 +4244,31 @@
                 
                   
 
+  <nav class="md-tags" >
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:stl" class="md-tag">STL</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:array" class="md-tag">array</a>
+      
+    
+      
+      
+      
+      
+        <a href="../../../tags/#tag:容器" class="md-tag">容器</a>
+      
+    
+  </nav>
+
 
 
 <h1 id="嵌入式现代c教程stdarray编译期固定大小数组">嵌入式现代C++教程——std::array：编译期固定大小数组<a class="headerlink" href="#嵌入式现代c教程stdarray编译期固定大小数组" title="链接到此章节">&para;</a></h1>
@@ -4351,26 +4287,26 @@
 </ul>
 <hr />
 <h2 id="基本用法代码示例">基本用法（代码示例）<a class="headerlink" href="#基本用法代码示例" title="链接到此章节">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><a href="#__codelineno-0-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;algorithm&gt;</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><a href="#__codelineno-0-3"><span class="linenos" data-linenos=" 3 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><a href="#__codelineno-0-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><a href="#__codelineno-0-5"><span class="linenos" data-linenos=" 5 "></span></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><a href="#__codelineno-0-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><a href="#__codelineno-0-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="o">&gt;</span><span class="w"> </span><span class="n">buf</span><span class="p">{};</span><span class="w"> </span><span class="c1">// value-initialized -&gt; all zeros</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><a href="#__codelineno-0-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="n">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xAA</span><span class="p">;</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><a href="#__codelineno-0-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="n">buf</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x55</span><span class="p">;</span><span class="w"> </span><span class="c1">// .at 会做边界检查（抛异常）</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><a href="#__codelineno-0-10"><span class="linenos" data-linenos="10 "></span></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><a href="#__codelineno-0-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="c1">// 兼容 STL 算法</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><a href="#__codelineno-0-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">fill</span><span class="p">(</span><span class="n">buf</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">buf</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="mh">0xFF</span><span class="p">);</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><a href="#__codelineno-0-13"><span class="linenos" data-linenos="13 "></span></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><a href="#__codelineno-0-14"><span class="linenos" data-linenos="14 "></span></a><span class="w">    </span><span class="c1">// 传给 C API（不会隐式退化）：使用 data()</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><a href="#__codelineno-0-15"><span class="linenos" data-linenos="15 "></span></a><span class="w">    </span><span class="c1">// c_function(buf.data(), buf.size());</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><a href="#__codelineno-0-16"><span class="linenos" data-linenos="16 "></span></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><a href="#__codelineno-0-17"><span class="linenos" data-linenos="17 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">buf</span><span class="p">)</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="kt">int</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39; &#39;</span><span class="p">;</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><a href="#__codelineno-0-18"><span class="linenos" data-linenos="18 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span><span class="p">;</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><a href="#__codelineno-0-19"><span class="linenos" data-linenos="19 "></span></a><span class="p">}</span>
-</span></code></pre></div>
+<p>```cpp</p>
+<h1 id="include">include <array><a class="headerlink" href="#include" title="链接到此章节">&para;</a></h1>
+<h1 id="include_1">include <algorithm><a class="headerlink" href="#include_1" title="链接到此章节">&para;</a></h1>
+<h1 id="include_2">include <cstdint><a class="headerlink" href="#include_2" title="链接到此章节">&para;</a></h1>
+<h1 id="include_3">include <iostream><a class="headerlink" href="#include_3" title="链接到此章节">&para;</a></h1>
+<p>int main() {
+    std::array<uint8_t, 8> buf{}; // value-initialized -&gt; all zeros
+    buf[0] = 0xAA;
+    buf.at(1) = 0x55; // .at 会做边界检查（抛异常）</p>
+<div class="language-text highlight"><pre><span></span><code><span class="linenos" data-linenos="1 "></span>// 兼容 STL 算法
+<span class="linenos" data-linenos="2 "></span>std::fill(buf.begin(), buf.end(), 0xFF);
+<span class="linenos" data-linenos="3 "></span>
+<span class="linenos" data-linenos="4 "></span>// 传给 C API（不会隐式退化）：使用 data()
+<span class="linenos" data-linenos="5 "></span>// c_function(buf.data(), buf.size());
+<span class="linenos" data-linenos="6 "></span>
+<span class="linenos" data-linenos="7 "></span>for (auto b : buf) std::cout &lt;&lt; int(b) &lt;&lt; &#39; &#39;;
+<span class="linenos" data-linenos="8 "></span>std::cout &lt;&lt; &#39;\n&#39;;
+</code></pre></div>
+<p>}
+```text</p>
 <p>小提醒：<code>.at()</code> 在异常被禁用或不可用的裸机环境下不适合；用 <code>operator[]</code> 并保持索引正确。</p>
 <hr />
 <h2 id="与-c-数组stdvector-的比较">与 C 数组、<code>std::vector</code> 的比较<a class="headerlink" href="#与-c-数组stdvector-的比较" title="链接到此章节">&para;</a></h2>
@@ -4386,33 +4322,32 @@
 <li>较大数组应放为 <code>static</code> 或放在 <code>.bss</code>，或放入只读闪存（<code>constexpr</code> 数据）以节省 RAM。</li>
 </ul>
 <p>示例：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="k">static</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">1024</span><span class="o">&gt;</span><span class="w"> </span><span class="n">big_buf</span><span class="p">;</span><span class="w"> </span><span class="c1">// 在 .bss，程序启动后分配</span>
-</span></code></pre></div>
+<p><code>cpp
+static std::array&lt;uint8_t, 1024&gt; big_buf; // 在 .bss，程序启动后分配</code>text</p>
 <h3 id="2-用于-dma--外设">2. 用于 DMA / 外设<a class="headerlink" href="#2-用于-dma--外设" title="链接到此章节">&para;</a></h3>
 <p>因为 <code>std::array</code> 保证连续内存，你可以安全地传 <code>arr.data()</code> 给 DMA 或 HAL。但确保元素类型是 <strong>可复制且没有需要特殊构造的复杂类型</strong>（一般使用 POD 或 trivial 类型）。</p>
 <h3 id="3-编译期表与-constexpr">3. 编译期表与 <code>constexpr</code><a class="headerlink" href="#3-编译期表与-constexpr" title="链接到此章节">&para;</a></h3>
 <p><code>std::array</code> 可用于编译期常量查表（免运行时初始化）：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><a href="#__codelineno-2-2"><span class="linenos" data-linenos="2 "></span></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><a href="#__codelineno-2-3"><span class="linenos" data-linenos="3 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="o">&gt;</span><span class="w"> </span><span class="n">make_table</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><a href="#__codelineno-2-4"><span class="linenos" data-linenos="4 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="p">};</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><a href="#__codelineno-2-5"><span class="linenos" data-linenos="5 "></span></a><span class="p">}</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><a href="#__codelineno-2-6"><span class="linenos" data-linenos="6 "></span></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><a href="#__codelineno-2-7"><span class="linenos" data-linenos="7 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_table</span><span class="p">();</span><span class="w"> </span><span class="c1">// 存在于只读段，可放进 flash</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><a href="#__codelineno-2-8"><span class="linenos" data-linenos="8 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">9</span><span class="p">);</span>
-</span></code></pre></div>
+<p>```cpp</p>
+<h1 id="include_4">include <array><a class="headerlink" href="#include_4" title="链接到此章节">&para;</a></h1>
+<p>constexpr std::array<int, 5> make_table() {
+    return {0, 1, 4, 9, 16};
+}</p>
+<p>constexpr auto table = make_table(); // 存在于只读段，可放进 flash
+static_assert(table[3] == 9);
+```text</p>
 <p>如果你需要在编译期生成一个更复杂的表，可以配合 <code>std::index_sequence</code> 做元编程（不赘述复杂实现，这里先给出思路：用 <code>index_sequence</code> 展开索引并在 constexpr 函数中产生元素`）。</p>
 <h3 id="4-结构化绑定与-stdget">4. 结构化绑定与 <code>std::get</code><a class="headerlink" href="#4-结构化绑定与-stdget" title="链接到此章节">&para;</a></h3>
 <p><code>std::array</code> 支持 <code>std::get&lt;0&gt;(arr)</code> 和结构化绑定（C++17）：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">};</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><a href="#__codelineno-3-2"><span class="linenos" data-linenos="2 "></span></a><span class="k">auto</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w"> </span><span class="c1">// nice for small fixed tuples</span>
-</span></code></pre></div>
+<p><code>cpp
+std::array&lt;int, 3&gt; a = {1,2,3};
+auto [x,y,z] = a; // nice for small fixed tuples</code>text</p>
 <h3 id="5-避免退化为指针的陷阱">5. 避免退化为指针的陷阱<a class="headerlink" href="#5-避免退化为指针的陷阱" title="链接到此章节">&para;</a></h3>
 <p>C 风格数组在传参时会退化为指针，而 <code>std::array</code> 不会，你必须明确传 <code>.data()</code> 或 <code>.size()</code>：</p>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a><span class="kt">void</span><span class="w"> </span><span class="nf">c_api</span><span class="p">(</span><span class="kt">uint8_t</span><span class="o">*</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><a href="#__codelineno-4-2"><span class="linenos" data-linenos="2 "></span></a><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="o">&gt;</span><span class="w"> </span><span class="n">arr</span><span class="p">;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><a href="#__codelineno-4-3"><span class="linenos" data-linenos="3 "></span></a><span class="n">c_api</span><span class="p">(</span><span class="n">arr</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">arr</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
-</span></code></pre></div>
+<p><code>cpp
+void c_api(uint8_t* p, size_t n);
+std::array&lt;uint8_t, 16&gt; arr;
+c_api(arr.data(), arr.size());</code>text</p>
 <h3 id="6-与裸机异常策略的兼容性">6. 与裸机异常策略的兼容性<a class="headerlink" href="#6-与裸机异常策略的兼容性" title="链接到此章节">&para;</a></h3>
 <p>某些嵌入式编译链把异常支持关掉，这会影响 <code>.at()</code>（抛异常）的使用。建议在无异常环境下只用 <code>operator[]</code> 并在编译期/开发期做边界检查工具。</p>
 <hr />
@@ -4423,23 +4358,373 @@
 <li>对于需要通过 DMA 读写的缓冲区，<code>T</code> 应该是 trivially copyable。</li>
 </ul>
 <h2 id="可以一试把-stdarray-用作编译期-crc-表">可以一试——把 <code>std::array</code> 用作编译期 CRC 表<a class="headerlink" href="#可以一试把-stdarray-用作编译期-crc-表" title="链接到此章节">&para;</a></h2>
-<div class="language-cpp highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;array&gt;</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><a href="#__codelineno-5-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a><a href="#__codelineno-5-3"><span class="linenos" data-linenos=" 3 "></span></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><a href="#__codelineno-5-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="w"> </span><span class="n">make_crc_table</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a><a href="#__codelineno-5-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">array</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">{};</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><a href="#__codelineno-5-6"><span class="linenos" data-linenos=" 6 "></span></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a><a href="#__codelineno-5-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="w">        </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">crc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a><a href="#__codelineno-5-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">j</span><span class="p">)</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><a href="#__codelineno-5-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">            </span><span class="n">crc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">crc</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="p">(</span><span class="mh">0xEDB88320u</span><span class="w"> </span><span class="o">^</span><span class="w"> </span><span class="p">(</span><span class="n">crc</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="n">crc</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><a href="#__codelineno-5-10"><span class="linenos" data-linenos="10 "></span></a><span class="w">        </span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crc</span><span class="p">;</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><a href="#__codelineno-5-11"><span class="linenos" data-linenos="11 "></span></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><a href="#__codelineno-5-12"><span class="linenos" data-linenos="12 "></span></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><a href="#__codelineno-5-13"><span class="linenos" data-linenos="13 "></span></a><span class="p">}</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14"></a><a href="#__codelineno-5-14"><span class="linenos" data-linenos="14 "></span></a>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15"></a><a href="#__codelineno-5-15"><span class="linenos" data-linenos="15 "></span></a><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">crc_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_crc_table</span><span class="p">();</span><span class="w"> </span><span class="c1">// 编译期计算，放到只读段（若编译器支持）</span>
-</span></code></pre></div>
+<p>```cpp</p>
+<h1 id="include_5">include <array><a class="headerlink" href="#include_5" title="链接到此章节">&para;</a></h1>
+<h1 id="include_6">include <cstdint><a class="headerlink" href="#include_6" title="链接到此章节">&para;</a></h1>
+<p>constexpr std::array<uint32_t, 256> make_crc_table() {
+    std::array<uint32_t, 256> t{};
+    for (size_t i = 0; i &lt; 256; ++i) {
+        uint32_t crc = static_cast<uint32_t>(i);
+        for (int j = 0; j &lt; 8; ++j)
+            crc = (crc &amp; 1) ? (0xEDB88320u ^ (crc &gt;&gt; 1)) : (crc &gt;&gt; 1);
+        t[i] = crc;
+    }
+    return t;
+}</p>
+<p>constexpr auto crc_table = make_crc_table(); // 编译期计算，放到只读段（若编译器支持）
+```text</p>
 <p>在支持的工具链上，这样可以把查表数据放进 flash，节省 RAM。</p>
+<details>
+<summary>查看完整可编译示例</summary>
+
+```cpp
+// basic_usage.cpp - std::array 基本用法演示
+#include <array>
+#include <algorithm>
+#include <cstdint>
+#include <iostream>
+
+int main() {
+    // value-initialized -> all zeros
+    std::array<uint8_t, 8> buf{};
+    buf[0] = 0xAA;
+    // .at 会做边界检查（抛异常）- 裸机环境慎用
+    buf.at(1) = 0x55;
+
+    // 兼容 STL 算法
+    std::fill(buf.begin(), buf.end(), 0xFF);
+
+    // 范围 for 遍历
+    for (auto b : buf) std::cout << int(b) << ' ';
+    std::cout << '\n';
+
+    // 其他有用的成员函数
+    std::cout << "size: " << buf.size() << '\n';
+    std::cout << "front: " << int(buf.front()) << '\n';
+    std::cout << "back: " << int(buf.back()) << '\n';
+
+    // 填充为不同值
+    std::fill_n(buf.begin(), 4, 0x11);
+    std::fill_n(buf.begin() + 4, 4, 0x22);
+
+    for (auto b : buf) std::cout << std::hex << int(b) << ' ';
+    std::cout << std::dec << '\n';
+
+    return 0;
+}
+
+```text
+
+</details>
+
+<details>
+<summary>查看更多示例：静态存储、DMA、编译期查表等</summary>
+
+```cpp
+// static_storage.cpp - 演示静态存储与栈存储的选择
+#include <array>
+#include <cstdint>
+#include <iostream>
+
+// 小数组 - 可以放在栈上
+void stack_example() {
+    const int stack_size = 64;
+    std::array<uint8_t, stack_size> small_buf{};
+    small_buf[0] = 0x42;
+    std::cout << "Stack array at: " << static_cast<void*>(small_buf.data()) << '\n';
+}
+
+// 大数组 - 应放在静态区
+static std::array<uint8_t, 1024> big_buf;  // 在 .bss，程序启动后分配
+
+// 只读数据 - 可以放 flash（使用 constexpr）
+constexpr std::array<uint8_t, 16> readonly_data = {
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+};
+
+int main() {
+    stack_example();
+
+    std::cout << "Static array at: " << static_cast<void*>(big_buf.data()) << '\n';
+    std::cout << "Readonly array at: " << static_cast<const void*>(readonly_data.data()) << '\n';
+
+    // 静态数组在程序启动时自动零初始化
+    bool all_zero = true;
+    for (auto b : big_buf) {
+        if (b != 0) {
+            all_zero = false;
+            break;
+        }
+    }
+    std::cout << "Big array all zero: " << (all_zero ? "yes" : "no") << '\n';
+
+    return 0;
+}
+
+```text
+
+```cpp
+// dma_usage.cpp - 演示 std::array 在 DMA 场景的使用
+#include <array>
+#include <cstdint>
+#include <iostream>
+
+// 模拟 HAL 层的 DMA 传输函数
+void hal_dma_transmit(const uint8_t* data, size_t length) {
+    std::cout << "DMA transmitting " << length << " bytes from " << static_cast<const void*>(data) << ":\n";
+    for (size_t i = 0; i < length; ++i) {
+        std::cout << std::hex << int(data[i]) << ' ';
+        if ((i + 1) % 16 == 0) std::cout << '\n';
+    }
+    std::cout << std::dec << "\n";
+}
+
+// 模拟 HAL 层的 DMA 接收函数
+void hal_dma_receive(uint8_t* buffer, size_t length) {
+    std::cout << "DMA receiving " << length << " bytes to " << static_cast<void*>(buffer) << '\n';
+    // 模拟接收数据
+    for (size_t i = 0; i < length; ++i) {
+        buffer[i] = static_cast<uint8_t>(i * 2);
+    }
+}
+
+int main() {
+    // DMA 发送场景
+    std::array<uint8_t, 32> tx_buffer{};
+    for (size_t i = 0; i < tx_buffer.size(); ++i) {
+        tx_buffer[i] = static_cast<uint8_t>(i);
+    }
+
+    // std::array 保证连续内存，可以安全地传给 DMA
+    hal_dma_transmit(tx_buffer.data(), tx_buffer.size());
+
+    // DMA 接收场景
+    std::array<uint8_t, 64> rx_buffer{};
+    hal_dma_receive(rx_buffer.data(), rx_buffer.size());
+
+    // 验证接收的数据
+    std::cout << "First 8 bytes received: ";
+    for (size_t i = 0; i < 8; ++i) {
+        std::cout << std::hex << int(rx_buffer[i]) << ' ';
+    }
+    std::cout << std::dec << '\n';
+
+    // 注意：用于 DMA 的数组元素类型应该是 trivially copyable
+    static_assert(std::is_trivially_copyable_v<uint8_t>,
+                  "DMA buffer type must be trivially copyable");
+
+    return 0;
+}
+
+```text
+
+```cpp
+// constexpr_table.cpp - 编译期查表示例
+#include <array>
+#include <iostream>
+
+// 编译期生成平方表
+constexpr std::array<int, 10> make_square_table() {
+    std::array<int, 10> table{};
+    for (size_t i = 0; i < table.size(); ++i) {
+        table[i] = static_cast<int>(i * i);
+    }
+    return table;
+}
+
+// 表在编译期计算，存储在只读段（若编译器支持）
+constexpr auto square_table = make_square_table();
+
+// 编译期断言 - 在编译期验证表内容
+static_assert(square_table[0] == 0, "Square of 0 should be 0");
+static_assert(square_table[5] == 25, "Square of 5 should be 25");
+static_assert(square_table[9] == 81, "Square of 9 should be 81");
+
+// 使用查表的函数（编译期优化后可能直接内联常量）
+int get_square(int n) {
+    if (n >= 0 && n < 10) {
+        return square_table[n];
+    }
+    return -1;  // 错误值
+}
+
+int main() {
+    std::cout << "Square table (computed at compile time):\n";
+    for (size_t i = 0; i < square_table.size(); ++i) {
+        std::cout << i << "^2 = " << square_table[i] << '\n';
+    }
+
+    std::cout << "\nLookup results:\n";
+    for (int i = 0; i < 10; ++i) {
+        std::cout << "get_square(" << i << ") = " << get_square(i) << '\n';
+    }
+
+    return 0;
+}
+
+```text
+
+```cpp
+// constexpr_crc_table.cpp - 编译期 CRC 表生成
+#include <array>
+#include <cstdint>
+#include <iostream>
+
+// 编译期生成 CRC32 查找表
+constexpr std::array<uint32_t, 256> make_crc_table() {
+    std::array<uint32_t, 256> table{};
+    for (size_t i = 0; i < 256; ++i) {
+        uint32_t crc = static_cast<uint32_t>(i);
+        for (int j = 0; j < 8; ++j) {
+            crc = (crc & 1) ? (0xEDB88320u ^ (crc >> 1)) : (crc >> 1);
+        }
+        table[i] = crc;
+    }
+    return table;
+}
+
+// 表在编译期计算，存储在只读段
+constexpr auto crc_table = make_crc_table();
+
+// 编译期验证表中的几个关键值
+static_assert(crc_table[0] == 0x00000000, "CRC table[0] mismatch");
+static_assert(crc_table[1] == 0x77073096, "CRC table[1] mismatch");
+static_assert(crc_table[255] == 0x2D02EF8D, "CRC table[255] mismatch");
+
+// 计算 CRC32 校验和
+uint32_t compute_crc(const uint8_t* data, size_t length) {
+    uint32_t crc = 0xFFFFFFFFu;
+    for (size_t i = 0; i < length; ++i) {
+        crc = crc_table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
+    }
+    return crc ^ 0xFFFFFFFFu;
+}
+
+int main() {
+    std::cout << "CRC32 Table (first 16 entries, computed at compile time):\n";
+    for (size_t i = 0; i < 16; ++i) {
+        std::cout << "table[" << i << "] = 0x" << std::hex << crc_table[i] << std::dec << '\n';
+    }
+
+    // 计算 CRC32 示例
+    const char* test_data = "Hello, World!";
+    uint32_t crc = compute_crc(reinterpret_cast<const uint8_t*>(test_data), 13);
+
+    std::cout << "\nCRC32 of \"" << test_data << "\" = 0x" << std::hex << crc << std::dec << '\n';
+
+    return 0;
+}
+
+```text
+
+```cpp
+// structured_binding.cpp - 演示 std::get 和结构化绑定
+#include <array>
+#include <iostream>
+#include <utility>  // for std::tuple_size, std::tuple_element
+
+int main() {
+    // 基本结构化绑定 (C++17)
+    std::array<int, 3> a = {1, 2, 3};
+    auto [x, y, z] = a;
+    std::cout << "x=" << x << ", y=" << y << ", z=" << z << '\n';
+
+    // std::get<I>(array) 访问
+    std::cout << "std::get<0>(a) = " << std::get<0>(a) << '\n';
+    std::cout << "std::get<1>(a) = " << std::get<1>(a) << '\n';
+    std::cout << "std::get<2>(a) = " << std::get<2>(a) << '\n';
+
+    // 编译期索引访问（模板元编程友好）
+    template<size_t I>
+    int get_element(const std::array<int, 3>& arr) {
+        return std::get<I>(arr);
+    }
+
+    std::cout << "get_element<0>(a) = " << get_element<0>(a) << '\n';
+
+    // tuple_size 和 tuple_element 支持
+    using ArrayType = std::array<int, 3>;
+    constexpr size_t size = std::tuple_size_v<ArrayType>;
+    using ElementType = std::tuple_element_t<0, ArrayType>;
+
+    std::cout << "Array size (via tuple_size): " << size << '\n';
+    std::cout << "Element type is int: " << std::is_same_v<ElementType, int> << '\n';
+
+    // 结构化绑定用于解构返回值
+    auto get_coordinates() -> std::array<double, 3> {
+        return {1.5, 2.5, 3.5};
+    }
+
+    auto [px, py, pz] = get_coordinates();
+    std::cout << "Point: (" << px << ", " << py << ", " << pz << ")\n";
+
+    return 0;
+}
+
+```text
+
+```cpp
+// c_api_compatible.cpp - 演示 std::array 与 C API 的兼容性
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+
+// 模拟典型的 C API
+extern "C" {
+    // 传统 C 风格 API
+    void c_api_process(uint8_t* buffer, size_t length);
+
+    // const 正确的 C API
+    void c_api_read_only(const uint8_t* data, size_t length);
+}
+
+void c_api_process(uint8_t* buffer, size_t length) {
+    std::cout << "C API processing " << length << " bytes:\n";
+    for (size_t i = 0; i < length; ++i) {
+        buffer[i] = static_cast<uint8_t>(buffer[i] * 2);
+    }
+}
+
+void c_api_read_only(const uint8_t* data, size_t length) {
+    std::cout << "C API reading " << length << " bytes:\n";
+    for (size_t i = 0; i < length; ++i) {
+        std::cout << std::hex << int(data[i]) << ' ';
+        if ((i + 1) % 16 == 0) std::cout << '\n';
+    }
+    std::cout << std::dec << '\n';
+}
+
+int main() {
+    // C 风格数组隐式退化为指针
+    uint8_t c_array[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    c_api_process(c_array, 16);
+
+    // std::array 不会隐式退化，必须使用 .data()
+    std::array<uint8_t, 16> cpp_array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+
+    // 正确方式：使用 .data() 和 .size()
+    c_api_process(cpp_array.data(), cpp_array.size());
+
+    // 只读访问：.data() 返回指向元素的指针
+    c_api_read_only(cpp_array.data(), cpp_array.size());
+
+    // 对比：std::vector 也使用相同模式
+    // std::vector<uint8_t> vec(16, 42);
+    // c_api_process(vec.data(), vec.size());
+
+    std::cout << "After processing:\n";
+    for (size_t i = 0; i < cpp_array.size(); ++i) {
+        std::cout << "cpp_array[" << i << "] = " << int(cpp_array[i]) << '\n';
+    }
+
+    return 0;
+}
+
+```text
+
+</details>
 
 
 
@@ -4462,7 +4747,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年2月9日 09:54:34 CST">2026年2月9日 09:54:34</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月4日 01:00:16 CST">2026年3月4日 01:00:16</span>
   </span>
 
     
@@ -4509,7 +4794,7 @@
       <nav class="md-footer__inner md-grid" aria-label="页脚" >
         
           
-          <a href="../../Chapter6/8%20Scope%20Guard/" class="md-footer__link md-footer__link--prev" aria-label="上一页: 嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行">
+          <a href="../../Chapter6/8%20Scope%20Guard/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Scope Guard 作用域守卫">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4519,20 +4804,20 @@
                 上一页
               </span>
               <div class="md-ellipsis">
-                嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在“出门顺手关灯”那一刻执行
+                Scope Guard 作用域守卫
               </div>
             </div>
           </a>
         
         
           
-          <a href="../2%20span/" class="md-footer__link md-footer__link--next" aria-label="下一页: 嵌入式C++教程：std::span——轻量、非拥有的数组视图">
+          <a href="../2%20span/" class="md-footer__link md-footer__link--next" aria-label="下一页: std::span 数组视图">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 下一页
               </span>
               <div class="md-ellipsis">
-                嵌入式C++教程：std::span——轻量、非拥有的数组视图
+                std::span 数组视图
               </div>
             </div>
             <div class="md-footer__button md-icon">
