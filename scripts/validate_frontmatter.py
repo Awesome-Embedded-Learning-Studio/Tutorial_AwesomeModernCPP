@@ -92,7 +92,7 @@ class FrontmatterValidator:
         # Validate chapter
         if 'chapter' in frontmatter:
             chapter = frontmatter['chapter']
-            if not isinstance(chapter, int) or chapter < 0 or chapter > 10:
+            if not isinstance(chapter, int) or chapter < 0 or chapter > 100:
                 self.errors.append(f"{filepath}: Invalid chapter value: {chapter}")
 
         # Validate order
