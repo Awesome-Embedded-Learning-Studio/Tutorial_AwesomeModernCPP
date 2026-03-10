@@ -11,8 +11,8 @@
 
 - [x] 13.1 自动类型推导：auto与decltype
 - [x] 13.2 结构化绑定（Structured Binding，C++17）
-- 13.3 范围for循环优化
-- 13.4 属性（Attributes）：[[nodiscard]]、[[maybe_unused]]等
+- [x] 13.3 范围for循环优化
+- [x] 13.4 属性（Attributes）：[[nodiscard]]、[[maybe_unused]]等
 - 13.5 三路比较运算符（C++20）
 - 13.6 指定初始化器（Designated Initializers）
 - 13.7 用户定义字面量
