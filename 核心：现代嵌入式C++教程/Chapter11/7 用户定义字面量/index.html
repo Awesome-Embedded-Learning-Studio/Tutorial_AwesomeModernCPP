@@ -1900,17 +1900,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#小结" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        小结
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -5905,85 +5894,6 @@
 </span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16"></a><a href="#__codelineno-30-16"><span class="linenos" data-linenos="16 "></span></a><span class="c1">// 只接受数值类型</span>
 </span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17"></a><a href="#__codelineno-30-17"><span class="linenos" data-linenos="17 "></span></a><span class="k">static_assert</span><span class="p">(</span><span class="n">Numeric</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="mf">1.0</span><span class="n">_units</span><span class="p">.</span><span class="n">value</span><span class="p">)</span><span class="o">&gt;</span><span class="p">);</span>
 </span></code></pre></div>
-<hr />
-<h2 id="小结">小结<a class="headerlink" href="#小结" title="链接到此章节">&para;</a></h2>
-<p>用户定义字面量是现代C++中强大而优雅的特性：</p>
-<p><strong>UDL形式总结</strong>：</p>
-<table>
-<thead>
-<tr>
-<th>形式</th>
-<th>参数类型</th>
-<th>用途</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>整型cooked</td>
-<td><code>unsigned long long</code></td>
-<td>数值转换</td>
-<td><code>123_hex</code></td>
-</tr>
-<tr>
-<td>浮点cooked</td>
-<td><code>long double</code></td>
-<td>物理单位</td>
-<td><code>3.3_V</code></td>
-</tr>
-<tr>
-<td>字符串原始</td>
-<td><code>const char*, size_t</code></td>
-<td>自定义格式</td>
-<td><code>1010_bin</code></td>
-</tr>
-<tr>
-<td>字符cooked</td>
-<td><code>char</code></td>
-<td>字符处理</td>
-<td><code>'a'_escape</code></td>
-</tr>
-</tbody>
-</table>
-<p><strong>实践建议</strong>：</p>
-<ol>
-<li><strong>优先使用场景</strong>：</li>
-<li>时间单位（<code>100ms</code>、<code>1s</code>）</li>
-<li>频率单位（<code>1kHz</code>、<code>1MHz</code>）</li>
-<li>内存单位（<code>1KB</code>、<code>1MB</code>）</li>
-<li>物理单位（<code>3.3V</code>、<code>100mA</code>）</li>
-<li>
-<p>编译期常量（配置值）</p>
-</li>
-<li>
-<p><strong>设计原则</strong>：</p>
-</li>
-<li>使用<code>constexpr</code>实现编译期计算</li>
-<li>后缀必须以下划线开头</li>
-<li>将UDL放在独立的命名空间中</li>
-<li>使用清晰的、描述性的后缀名</li>
-<li>
-<p>考虑使用整数表示避免浮点精度问题</p>
-</li>
-<li>
-<p><strong>嵌入式特别关注</strong>：</p>
-</li>
-<li>所有转换应该在编译期完成（零运行时开销）</li>
-<li>使用<code>static_assert</code>验证编译期约束</li>
-<li>可以直接生成寄存器配置值</li>
-<li>
-<p>类型安全防止单位混淆</p>
-</li>
-<li>
-<p><strong>性能优势</strong>：</p>
-</li>
-<li>完全编译期计算，无运行时成本</li>
-<li>类型安全避免运行时错误</li>
-<li>代码可读性大幅提升</li>
-<li>易于维护和重构</li>
-</ol>
-<p>UDL让C++代码可以像物理公式一样直观表达，同时保持类型安全和零开销。在嵌入式开发中，合理使用UDL可以显著提高代码质量和开发效率。配合前面学过的<code>constexpr</code>、模板元编程等技术，现代C++已经成为一门既强大又适合嵌入式开发的系统编程语言。</p>
-<p>下一章我们将深入探讨<strong>模块（Modules，C++20）</strong>，看看这个革命性的特性如何彻底改变我们的代码组织和编译方式。</p>
 
 
 
@@ -6006,7 +5916,7 @@
     <span class="md-icon" title="最后更新">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月15日 12:41:24 CST">2026年3月15日 12:41:24</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月17日 07:21:53 CST">2026年3月17日 07:21:53</span>
   </span>
 
     
