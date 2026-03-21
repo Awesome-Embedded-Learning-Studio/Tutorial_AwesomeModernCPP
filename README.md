@@ -182,6 +182,13 @@ python3 scripts/analyze_frontmatter.py
 
 ---
 
+## 📌 Issue清单
+
+| ID | Title | Status | Description |
+|----|------|--------|------------|
+| #1 | expected 实现问题 | 🟡 推送处理等待反馈 | union + std::string 析构问题 |
+
+
 ## 🤝 贡献指南
 
 我们欢迎任何形式的贡献！
