@@ -16,8 +16,8 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 # ── 项目定义 ────────────────────────────────────────────────────────────────
 project(stm32_demo C CXX ASM)
-set(CMAKE_C_STANDARD   11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD   23)
+set(CMAKE_CXX_STANDARD 23)
 
 # ── HAL / CMSIS 路径 ────────────────────────────────────────────────────────
 set(STM32F1_ROOT ${CMAKE_SOURCE_DIR}/../../../third_party/STM32F1/Drivers)
@@ -48,10 +48,15 @@ add_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
 )
 
+set(SYSTEM_MOCK_SRC 
+    system/hal_mock.c
+    system/syscall.c
+)
+
 # ── 可执行目标 ───────────────────────────────────────────────────────────────
 add_executable(${PROJECT_NAME}.elf
-    main.c
-    syscall.c
+    main.cpp
+    ${SYSTEM_MOCK_SRC}
     ${CMSIS_TMPL}/system_stm32f1xx.c
     ${CMSIS_TMPL}/gcc/startup_stm32f103xb.s
     ${HAL_SRC}
