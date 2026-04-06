@@ -22,6 +22,9 @@ class LinkChecker:
         r'^http://',    # External URLs
     ]
 
+    # Image extensions to check against filesystem
+    IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
+
     # Files to skip from checking
     SKIP_FILES = {'index.md', 'tags.md'}
 
@@ -56,7 +59,16 @@ class LinkChecker:
         # Match [text](url) and [text](<url>)
         pattern = r'\[([^\]]+)\]\(([^)]+)\)|\[([^\]]+)\]\(<([^>]+)>\)'
 
+        in_code_block = False
         for line_num, line in enumerate(content.split('\n'), 1):
+            # Track fenced code blocks (``` or ~~~)
+            stripped = line.strip()
+            if stripped.startswith('```') or stripped.startswith('~~~'):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+
             for match in re.finditer(pattern, line):
                 groups = match.groups()
                 if groups[1]:  # Regular link
@@ -103,6 +115,18 @@ class LinkChecker:
 
         for line_num, link_text, link_url in links:
             if self.is_external_link(link_url):
+                continue
+
+            # Check image links against filesystem
+            link_ext = Path(link_url.split('#')[0]).suffix.lower()
+            if link_ext in self.IMAGE_EXTENSIONS:
+                normalized = self.normalize_path(link_url, filepath)
+                if normalized:
+                    resolved = self.tutorial_dir / normalized
+                    if not resolved.exists():
+                        self.errors.append(
+                            f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
+                        )
                 continue
 
             # Normalize the link path

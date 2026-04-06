@@ -6,17 +6,24 @@
 
 ```
 codes_and_assets/
-├── examples/              # 代码示例
+├── examples/              # 核心教程代码示例
 │   ├── chapter02/          # 零开销抽象、内联、constexpr、CRTP
 │   ├── chapter03/          # 初始化列表、移动语义、RVO/NRVO
 │   ├── chapter05/          # 内存管理策略
 │   ├── chapter06/          # 智能指针与 RAII
 │   ├── chapter07/          # 容器与视图
 │   ├── chapter08/          # 类型安全工具
-│   └── chapter09/          # Lambda 与函数式编程
-└── templates/             # 可复用的模板
-    ├── cm_embedded.cmake  # 嵌入式 CMake 模板
-    └── linker_script.ld   # 链接器脚本模板
+│   ├── chapter09/          # Lambda 与函数式编程
+│   ├── chapter10/          # 并发与原子操作
+│   └── chapter11/          # 现代C++特性（auto、结构化绑定等）
+├── stm32f1_tutorials/      # STM32F103C8T6 实战工程
+│   ├── 0_start_our_tutorial/  # 初始工程模板
+│   └── 1_led_control/         # LED 控制示例工程
+├── templates/              # 可复用的模板
+│   ├── cm_embedded.cmake  # 嵌入式 CMake 模板
+│   └── linker_script.ld   # 链接器脚本模板
+└── project_setup/          # 项目创建脚本
+    └── create_tutorial.sh # 自动化项目创建
 ```
 
 ## 如何添加新示例

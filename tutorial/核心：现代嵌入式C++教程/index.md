@@ -96,3 +96,27 @@
 - [memory_order](./Chapter10/2 memory_order.md)
 - [无锁数据结构设计](./Chapter10/3 无锁数据结构设计.md)
 - [mutex与RAII守卫](./Chapter10/4 mutex与RAII守卫.md)
+- [中断安全的代码编写](./Chapter10/5 中断安全的代码编写.md)
+- [临界区保护技术](./Chapter10/6 临界区保护技术.md)
+
+## Chapter 11 - 现代C++特性速览
+
+- [auto与decltype](./Chapter11/1 auto与decltype.md)
+- [结构化绑定](./Chapter11/2 结构化绑定.md)
+- [范围for循环优化](./Chapter11/3 范围for循环优化.md)
+- [属性](./Chapter11/4 属性.md)
+- [三路比较运算符](./Chapter11/5 三路比较运算符.md)
+- [指定初始化器](./Chapter11/6 指定初始化器.md)
+- [用户定义字面量](./Chapter11/7 用户定义字面量.md)
+
+## Chapter 12 - 模板基础
+
+- [模板入门概述](./Chapter12/0 模板入门概述.md)
+- [函数模板详解](./Chapter12/1 函数模板详解.md)
+- [类模板详解](./Chapter12/2 类模板详解.md)
+- [模板特化与偏特化](./Chapter12/3 模板特化与偏特化.md)
+- [非类型模板参数](./Chapter12/4 非类型模板参数.md)
+- [模板参数依赖与名字查找](./Chapter12/5 模板参数依赖与名字查找.md)
+- [模板友元与Barton-Nackman技巧](./Chapter12/6 模板友元与Barton-Nackman技巧.md)
+- [模板别名与Using声明](./Chapter12/7 模板别名与Using声明.md)
+- [模板与继承CRTP](./Chapter12/8 模板与继承CRTP.md)
