@@ -42,8 +42,8 @@ theme:
   
   # 字体配置
   font:
-    text: Roboto  # 正文字体
-    code: Roboto Mono  # 代码字体
+    text: Noto Sans SC  # 中文优先正文字体
+    code: JetBrains Mono  # 等宽字体,C++符号更清晰
   
   # 功能特性开关
   features:
@@ -52,16 +52,17 @@ theme:
     - navigation.instant.prefetch  # 预加载链接,提升访问速度
     - navigation.instant.progress  # 显示加载进度条
     - navigation.tracking  # 地址栏自动更新为当前标题的锚点
+    - navigation.tabs  # 顶部显示主要章节标签
+    - navigation.tabs.sticky  # 滚动时标签栏保持固定
     - navigation.sections  # 侧边栏显示章节分组
-    - navigation.expand  # 默认展开所有章节(方便查看全部内容)
+    - navigation.prune  # 裁剪不可见的导航项,提升大站点性能
     - navigation.path  # 显示当前页面的完整路径
     - navigation.indexes  # 支持章节索引页
     - navigation.top  # 显示"返回顶部"按钮
     - navigation.footer  # 页面底部显示上一页/下一页导航
-    
+
     # ---------- 目录功能 ----------
     - toc.follow  # 目录自动跟随滚动
-    - toc.integrate  # 将右侧目录集成到左侧导航栏(节省空间)
     
     # ---------- 搜索功能 ----------
     - search.suggest  # 搜索时显示建议
@@ -196,11 +197,8 @@ extra:
 # ==================== 额外的CSS和JavaScript ====================
 # 可以添加自定义样式和脚本
 
-extra_javascript:
-  # 数学公式支持(MathJax)
-  - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+extra_css:
+  - stylesheets/extra.css
 
 
 # ==================== 注意事项 ====================

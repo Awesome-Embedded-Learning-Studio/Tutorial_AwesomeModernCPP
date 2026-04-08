@@ -30,14 +30,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          # cache: 'pip'  # 缓存依赖，加速构建
-      
+          cache: 'pip'  # 缓存依赖，加速构建
+
       # 3. 安装依赖
       - name: 安装依赖
-        run: |
-          pip install mkdocs-material
-          pip install mkdocs-awesome-pages-plugin
-          pip install mkdocs-git-revision-date-localized-plugin
+        run: pip install -e ./scripts
       
       # 4. 构建网站
       - name: 构建网站

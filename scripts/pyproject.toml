@@ -1,0 +1,14 @@
+[project]
+name = "tutorial-modern-cpp-docs"
+version = "0.1.0"
+description = "Tutorial_AwesomeModernCPP documentation development environment"
+requires-python = ">=3.10"
+dependencies = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocs-awesome-pages-plugin>=2.9.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.0",
+]
+
+[tool.setuptools]
+packages = []
