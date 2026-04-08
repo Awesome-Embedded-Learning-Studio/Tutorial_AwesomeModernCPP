@@ -48,10 +48,12 @@
         
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Noto Sans SC";--md-code-font:"JetBrains Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
     <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -92,7 +94,7 @@
 
   
 
-<header class="md-header md-header--shadow" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="页眉">
     <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-header__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
       
@@ -201,13 +203,248 @@
     
   </nav>
   
+    
+      
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  欢迎来到 Awesome-Embedded-Learning-Studio 的现代C++教程
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../tags/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  标签索引
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  并行计算C++
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/00_env_setup/01-toolchain-setup/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  挑战：使用现代C C++编写STM32F103C8T6
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  核心：现代嵌入式C++教程
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  深入理解CC++编译特性指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  环境配置
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/prompt/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  现代C++工程实践
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  现代C++特性
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  调试专题
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
 </header>
     
     <div class="md-container" data-md-component="container">
       
       
-        
-          
         
       
       <main class="md-main" data-md-component="main">
@@ -221,10 +458,10 @@
                     
 
 
-
   
 
-<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="导航栏" data-md-level="0">
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-nav__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
       
@@ -305,22 +542,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -334,50 +573,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    并行计算C++
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
   
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -400,22 +601,28 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
-            
+  
+  
+  
+    
+  
+  
+  
+    <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/00_env_setup/01-toolchain-setup/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -429,684 +636,14 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    挑战：使用现代C C++编写STM32F103C8T6
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    
-    
       
-        
+        <span class="md-nav__icon md-icon"></span>
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_1" >
-        
-          
-          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    01 led
+    </a>
   
 
-    
-  </span>
-  
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    01 led
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/01-motivation-and-overview/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第6篇：从点亮第一盏LED开始 —— 我们为什么要用现代C++写STM32
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/02-what-is-gpio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第7篇：GPIO到底是什么 —— 通用输入输出的前世今生
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/03-output-modes-and-pc13/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第8篇：推挽、开漏与PC13 —— LED点亮的硬件秘密
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/04-hal-gpio-clock/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/05-hal-gpio-init/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第10篇：HAL_GPIO_Init —— 把引脚配置告诉芯片的仪式
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/06-hal-gpio-output/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/07-c-macro-led-implementation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第12篇：C宏时代的LED驱动 —— 能跑但不优雅
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/08-cpp-enum-class-revolution/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第13篇：第一次重构 —— enum class取代宏，类型安全的开始
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/09-cpp-template-gpio/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/10-cpp-if-constexpr-clock/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/11-cpp-led-template/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第16篇：第四次重构 —— LED模板，从通用GPIO到专用抽象
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/12-cpp23-attributes-and-features/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第17篇：C++23特性收尾 —— 属性、链接与零开销抽象的最终证明
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/01_led/13-pitfalls-and-exercises/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第18篇：常见坑位与实战练习 —— 把LED玩出花样来
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Env setup
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Env setup
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/env_setup/01-toolchain-setup/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/env_setup/02-project-structure/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/env_setup/03-cmake-configuration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CMake 配置篇 —— 从零构建 STM32 构建系统
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/env_setup/04-wsl2-usb/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%8C%91%E6%88%98%EF%BC%9A%E4%BD%BF%E7%94%A8%E7%8E%B0%E4%BB%A3C_C%2B%2B%E7%BC%96%E5%86%99STM32F103C8T6/env_setup/05-debugging-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -1160,7 +697,12 @@
         
         
       
+      
+        
+      
     
+    
+      
     
     <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
@@ -1234,18 +776,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
         
           
-          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="">
             
   
   
@@ -1497,18 +1045,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
         
           
-          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="">
             
   
   
@@ -1654,18 +1208,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
         
           
-          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="">
             
   
   
@@ -1897,18 +1457,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
         
           
-          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="">
             
   
   
@@ -2172,18 +1738,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
         
           
-          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="">
             
   
   
@@ -2493,18 +2065,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
         
           
-          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
             
   
   
@@ -2676,18 +2254,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
             
   
   
@@ -2885,18 +2469,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
         
           
-          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_9" id="__nav_5_9_label" tabindex="">
             
   
   
@@ -3070,18 +2660,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_10" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_10" >
         
           
-          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_10" id="__nav_5_10_label" tabindex="">
             
   
   
@@ -3315,18 +2911,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_11" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_11" >
         
           
-          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_11" id="__nav_5_11_label" tabindex="">
             
   
   
@@ -3612,18 +3214,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_12" >
         
           
-          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_12" id="__nav_5_12_label" tabindex="">
             
   
   
@@ -3857,16 +3465,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_13" checked>
         
           
-          <label class="md-nav__link" for="__nav_5_13" id="__nav_5_13_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_13" id="__nav_5_13_label" tabindex="">
             
   
   
@@ -4280,18 +3896,24 @@
     
     
       
+      
+        
+          
+          
+        
+      
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_14" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_14" >
         
           
-          <label class="md-nav__link" for="__nav_5_14" id="__nav_5_14_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_14" id="__nav_5_14_label" tabindex="">
             
   
   
@@ -4592,22 +4214,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -4621,302 +4245,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    深入理解CC++编译特性指南
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
   
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++的编译与链接技术：导论
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF10%EF%BC%88%E7%95%AA%E5%A4%96%EF%BC%89%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E5%8F%AF%E4%BB%A5%E5%83%8F%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E9%82%A3%E6%A0%B7%E6%89%A7%E8%A1%8C%E5%98%9B%EF%BC%9F/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF2%EF%BC%9A%E9%87%8D%E7%94%A8%E6%A6%82%E5%BF%B5%E7%9A%84%E5%86%8D%E9%98%90%E8%BF%B0/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解CC++的编译与链接技术2：动态库静态库导论
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF3%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E5%92%8C%E4%BD%BF%E7%94%A8%E9%9D%99%E6%80%81%E5%BA%93/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解CC++的编译与链接技术3：如何制作和使用静态库
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF4%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%931/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++编译与链接技术4：动态库A1：基本讨论之-fPIC
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF5%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E8%AE%BE%E8%AE%A1%E5%9F%BA%E7%A1%80/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF6%EF%BC%9A%E8%81%8A%E4%B8%80%E8%81%8A%E7%AC%A6%E5%8F%B7%E5%8F%AF%E8%A7%81%E6%80%A7/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF7%EF%BC%9A%E7%AC%A6%E5%8F%B7%E7%BC%BA%E5%A4%B1%E8%A1%8C%E4%B8%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF8%EF%BC%9A%E5%BA%93%E6%96%87%E4%BB%B6%E6%A3%80%E7%B4%A2%E9%80%BB%E8%BE%91/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解C/C++的编译与链接技术8：库文件检索逻辑
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF9%EF%BC%9A%E5%8A%A8%E6%80%81%E5%BA%93%E7%BB%86%E8%8A%82/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入理解CC++的编译与链接技术9：动态库细节（完结）
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -4939,22 +4273,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -4968,78 +4304,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    环境配置
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
   
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%BF%AB%E9%80%9F%E5%9C%A8WSL%E4%B8%8A%E5%BC%80%E5%8F%91%E4%B8%80%E8%88%AC%E7%9A%84C%2B%2B%E4%B8%8A%E4%BD%8D%E6%9C%BA%E7%A8%8B%E5%BA%8F/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    快速在WSL上开发一般的C++上位机程序
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -5062,22 +4332,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
-        
-          
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/prompt/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -5091,171 +4363,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    现代C++工程实践
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/prompt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Prompt
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
       
-        
+        <span class="md-nav__icon md-icon"></span>
       
-        
-      
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_8_2" id="__nav_8_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    文件处理
+    </a>
   
 
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    文件处理
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E5%86%99%E4%B8%AA%E6%96%87%E4%BB%B6%E6%8B%B7%E8%B4%9D%E5%99%A8%28%E4%B8%8A%29%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E4%B8%8E%E5%9F%BA%E7%A1%80%E6%A1%86%E6%9E%B6/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    现代C++实战——从零开始写个文件拷贝器(上):需求分析与基础框架
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86/%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B%E5%86%99%E4%B8%AA%E6%96%87%E4%BB%B6%E6%8B%B7%E8%B4%9D%E5%99%A8%28%E4%B8%8B%29%E6%A0%B8%E5%BF%83%E5%AE%9E%E7%8E%B0%E4%B8%8E%E5%AE%9E%E6%88%98%E6%B5%8B%E8%AF%95/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    现代C++工程实践——从零开始写个文件拷贝器(下):核心实现与实战测试
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -5280,22 +4393,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9" >
-        
-          
-          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -5309,229 +4424,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    现代C++特性
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    一文读懂 MSVC C++ Modules：原理、动机与工程实践
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%AE%80%E8%AF%B4C%2B%2B17%E6%96%B0%E4%B8%9C%E8%A5%BF%EF%BC%9Astring_view/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    std::string_view 全攻略
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
       
-        
+        <span class="md-nav__icon md-icon"></span>
       
-        
-      
-        
-      
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_9_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    现代C++的协程
+    </a>
   
 
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_9_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    现代C++的协程
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E5%BC%95%E7%94%A8%E4%B9%8B%E2%80%94%E2%80%94%E5%88%A9%E7%94%A8%E5%8D%8F%E7%A8%8B%E5%81%9A%E4%B8%80%E4%B8%AA%E8%BF%B7%E4%BD%A0%E7%9A%84Echo%20Server/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%811/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    理解C++20的革命特性——协程支持1
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E7%8E%B0%E4%BB%A3C%2B%2B%E7%9A%84%E5%8D%8F%E7%A8%8B/%E7%90%86%E8%A7%A3C%2B%2B20%E7%9A%84%E9%9D%A9%E5%91%BD%E7%89%B9%E6%80%A7%E2%80%94%E2%80%94%E5%8D%8F%E7%A8%8B%E6%94%AF%E6%8C%812%EF%BC%9A%E7%BC%96%E5%86%99%E7%AE%80%E5%8D%95%E7%9A%84%E8%B0%83%E5%BA%A6%E5%99%A8/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    理解C++20的革命特性——协程支持2：编写简单的协程调度器
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -5552,22 +4450,24 @@
     
     
       
-        
+      
         
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
-        
-          
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="">
-            
+  
+  
+  
+    <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-nav__link">
+      
   
   
   <span class="md-ellipsis">
@@ -5581,50 +4481,12 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_10">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    调试专题
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
   
 
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    深入解构：MSVC 调试机制与 Visual Studio 调试器原理
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -5636,6 +4498,137 @@
                 </div>
               </div>
             
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#一句概念总结" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一句概念总结
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#为什么嵌入式程序员会爱它" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么嵌入式程序员会爱它
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#基本例子老-enum-vs-enum-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        基本例子：老 enum vs enum class
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见问题与实战技巧" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见问题与实战技巧
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="常见问题与实战技巧">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-如何输出打印枚举值" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) 如何输出（打印）枚举值？
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-指定底层类型节省内存" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) 指定底层类型节省内存
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-与-c-接口互操作" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) 与 C 接口互操作
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-枚举作为位标志bitmask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4) 枚举作为位标志（bitmask）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-switch-语句的提醒" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5) switch 语句的提醒
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
             
           
           
@@ -6162,16 +5155,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.prune", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
     
     
       <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-        <script src="../../../javascripts/mathjax.js"></script>
-      
-        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-      
-        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
     
   </body>

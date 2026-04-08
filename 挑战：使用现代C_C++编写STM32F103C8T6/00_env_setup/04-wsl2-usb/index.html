@@ -1,0 +1,2376 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Awesome-Embedded-Learning-Studio的现代C++教程">
+      
+      
+        <meta name="author" content="Charliechen">
+      
+      
+      
+        <link rel="prev" href="../03-cmake-configuration/">
+      
+      
+        <link rel="next" href="../05-debugging-guide/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../Awesome-Embedded.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界 - Tutorial_AwesomeModernCPP的文档</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Noto Sans SC";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#环境搭建四wsl2-usb-透传让-st-link-穿越虚拟化边界" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-header__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tutorial_AwesomeModernCPP的文档
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换至暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换至暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="切换至亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换至亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  欢迎来到 Awesome-Embedded-Learning-Studio 的现代C++教程
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../tags/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  标签索引
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  并行计算C++
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../01-toolchain-setup/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  挑战：使用现代C C++编写STM32F103C8T6
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  核心：现代嵌入式C++教程
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  深入理解CC++编译特性指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  环境配置
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/prompt/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  现代C++工程实践
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  现代C++特性
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  调试专题
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Tutorial_AwesomeModernCPP的文档" class="md-nav__button md-logo" aria-label="Tutorial_AwesomeModernCPP的文档" data-md-component="logo">
+      
+  <img src="../../../Awesome-Embedded.png" alt="logo">
+
+    </a>
+    Tutorial_AwesomeModernCPP的文档
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    欢迎来到 Awesome-Embedded-Learning-Studio 的现代C++教程
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    标签索引
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97C%2B%2B/AVX%20%E6%8C%87%E4%BB%A4%E9%9B%86%E7%B3%BB%E5%88%97%E6%B7%B1%E5%BA%A6%E4%BB%8B%E7%BB%8D%EF%BC%9A%E9%A2%86%E5%9F%9F%E3%80%81%E6%84%8F%E4%B9%89%E3%80%81%E4%BB%A5%E5%8F%8A%20AVX%20%20AVX2%20%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95%E4%B8%8E%E6%A0%B7%E4%BE%8B/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    并行计算C++
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    挑战：使用现代C C++编写STM32F103C8T6
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    挑战：使用现代C C++编写STM32F103C8T6
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_1" id="__nav_4_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    00 env setup
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    00 env setup
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-toolchain-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-cmake-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CMake 配置篇 —— 从零构建 STM32 构建系统
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#前言这是整个折腾路上最大的坑" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言：这是整个折腾路上最大的坑
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wsl2-的-usb-问题到底是怎么回事" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WSL2 的 USB 问题，到底是怎么回事
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-侧安装和配置-usbipd-win" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows 侧：安装和配置 usbipd-win
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-侧验证设备透传" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux 侧：验证设备透传
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wsl-下的权限处理那个令人崩溃的-libusb_error_access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WSL 下的权限处理：那个令人崩溃的 LIBUSB_ERROR_ACCESS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openocd-烧录实战见证奇迹的时刻" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenOCD 烧录实战：见证奇迹的时刻
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见错误排查当烧录失败时" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见错误排查：当烧录失败时
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#原生-ubuntu-用户的简明指南" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原生 Ubuntu 用户的简明指南
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#结语跨平台的代价" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        结语：跨平台的代价
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-debugging-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    01 led
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    01 led
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/01-motivation-and-overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第6篇：从点亮第一盏LED开始 —— 我们为什么要用现代C++写STM32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/02-what-is-gpio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第7篇：GPIO到底是什么 —— 通用输入输出的前世今生
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/03-output-modes-and-pc13/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第8篇：推挽、开漏与PC13 —— LED点亮的硬件秘密
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/04-hal-gpio-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/05-hal-gpio-init/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第10篇：HAL_GPIO_Init —— 把引脚配置告诉芯片的仪式
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/06-hal-gpio-output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/07-c-macro-led-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第12篇：C宏时代的LED驱动 —— 能跑但不优雅
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/08-cpp-enum-class-revolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第13篇：第一次重构 —— enum class取代宏，类型安全的开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/09-cpp-template-gpio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/10-cpp-if-constexpr-clock/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/11-cpp-led-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第16篇：第四次重构 —— LED模板，从通用GPIO到专用抽象
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/12-cpp23-attributes-and-features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第17篇：C++23特性收尾 —— 属性、链接与零开销抽象的最终证明
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../01_led/13-pitfalls-and-exercises/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    第18篇：常见坑位与实战练习 —— 把LED玩出花样来
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E6%A0%B8%E5%BF%83%EF%BC%9A%E7%8E%B0%E4%BB%A3%E5%B5%8C%E5%85%A5%E5%BC%8FC%2B%2B%E6%95%99%E7%A8%8B/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心：现代嵌入式C++教程
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%BC%96%E8%AF%91%E7%89%B9%E6%80%A7%E6%8C%87%E5%8D%97/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3CC%2B%2B%E7%9A%84%E7%BC%96%E8%AF%91%E4%B8%8E%E9%93%BE%E6%8E%A5%E6%8A%80%E6%9C%AF/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    深入理解CC++编译特性指南
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/%E5%A6%82%E4%BD%95%E5%BF%AB%E9%80%9F%E5%9C%A8%20VS2026%20%E4%B8%8A%E4%BD%BF%E7%94%A8%20C%2B%2B%20%E6%A8%A1%E5%9D%97%20%E2%80%94%20%E5%AE%8C%E6%95%B4%E4%B8%8A%E6%89%8B%E6%8C%87%E5%8D%97/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    环境配置
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/prompt/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++工程实践
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E7%8E%B0%E4%BB%A3C%2B%2B%E7%89%B9%E6%80%A7/%E4%B8%80%E6%96%87%E8%AF%BB%E6%87%82msvc%E7%9A%84cpp_modules%EF%BC%9A%E5%8E%9F%E7%90%86%E3%80%81%E5%8A%A8%E6%9C%BA%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    现代C++特性
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../../%E8%B0%83%E8%AF%95%E4%B8%93%E9%A2%98/MSVC%20Windows%E8%B0%83%E8%AF%95%E5%8E%9F%E7%90%86/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    调试专题
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#前言这是整个折腾路上最大的坑" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        前言：这是整个折腾路上最大的坑
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wsl2-的-usb-问题到底是怎么回事" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WSL2 的 USB 问题，到底是怎么回事
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-侧安装和配置-usbipd-win" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows 侧：安装和配置 usbipd-win
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linux-侧验证设备透传" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux 侧：验证设备透传
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wsl-下的权限处理那个令人崩溃的-libusb_error_access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WSL 下的权限处理：那个令人崩溃的 LIBUSB_ERROR_ACCESS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#openocd-烧录实战见证奇迹的时刻" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenOCD 烧录实战：见证奇迹的时刻
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#常见错误排查当烧录失败时" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        常见错误排查：当烧录失败时
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#原生-ubuntu-用户的简明指南" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原生 Ubuntu 用户的简明指南
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#结语跨平台的代价" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        结语：跨平台的代价
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    欢迎来到 Awesome-Embedded-Learning-Studio 的现代C++教程
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../01-toolchain-setup/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    挑战：使用现代C C++编写STM32F103C8T6
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../01-toolchain-setup/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    00 env setup
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="环境搭建四wsl2-usb-透传让-st-link-穿越虚拟化边界">环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界<a class="headerlink" href="#环境搭建四wsl2-usb-透传让-st-link-穿越虚拟化边界" title="链接到此章节">&para;</a></h1>
+<h2 id="前言这是整个折腾路上最大的坑">前言：这是整个折腾路上最大的坑<a class="headerlink" href="#前言这是整个折腾路上最大的坑" title="链接到此章节">&para;</a></h2>
+<p>如果你一路跟着前面的教程走过来，现在你的 WSL2 环境里已经有了 ARM 工具链，有了 OpenOCD，甚至可能已经编译出了你的第一个固件文件。当你兴冲冲地插上 ST-Link 调试器，准备把程序烧录到 STM32 里面时，现实会给你当头一棒——WSL2 根本看不到 USB 设备。</p>
+<p>我现在正在经历这个阶段，lsusb 的输出里空空如也，不要说什么 ST-Link，连个鼠标都看不到。这不是你操作的问题，这是 WSL2 架构的先天缺陷。WSL2 用的是 Hyper-V 虚拟化技术，Linux 作为一个真正的虚拟机跑在 Windows 下面，但微软并没有把 USB 设备透传的功能做进去。你的 ST-Link 插在 Windows 的 USB 口上，被 Windows 驱动接管了，Linux 那边完全不知道它的存在。</p>
+<p>这个问题困扰了我好几天。我在网上找各种资料，有人推荐用虚拟机方案，有人说直接放弃 WSL2 装原生 Ubuntu。但我不想放弃，因为 WSL2 的其他部分实在太方便了——和 Windows 文件系统集成、终端体验、包管理，这些都是原生 Linux 难以企及的。最终我找到了 usbipd-win 这个项目，它是微软官方维护的工具，专门用来解决 WSL2 的 USB 透传问题。</p>
+<p>今天我们就把这个坑彻底填平，让 ST-Link 能够顺利地从 Windows 穿越到 WSL2，然后完成你的第一次 OpenOCD 烧录。</p>
+<h2 id="wsl2-的-usb-问题到底是怎么回事">WSL2 的 USB 问题，到底是怎么回事<a class="headerlink" href="#wsl2-的-usb-问题到底是怎么回事" title="链接到此章节">&para;</a></h2>
+<p>让我们先理解清楚问题的根源。WSL2 虽然感觉上像是 Windows 里的一个 Linux 程序，但它实际上是一个完整的虚拟机。当你打开 WSL2 终端时，你是在和一个名为 "WSL" 的 Hyper-V 虚拟机交互。这个虚拟机有自己的内核、自己的内存管理、自己的设备树。</p>
+<p>USB 设备在 PC 架构里是由主机控制器管理的，你的主板有好几个 USB 控制器，每个控制器下面挂着多个 USB 口。当一个 USB 设备插入时，控制器会给它分配一个地址，然后操作系统加载相应的驱动程序来和这个设备通信。问题在于 WSL2 的虚拟机里，USB 控制器是虚拟的，它连接不到物理的 USB 控制器，所以物理插入的设备对 WSL2 来说是不可见的。</p>
+<p>Windows 主机能够看到你的 ST-Link，设备管理器里也正常识别了，但 WSL2 的 Linux 内核看不到。这就是为什么我们需要一个透传机制，把 Windows 看到的 USB 设备"借"给 WSL2 用。usbipd-win 就是做这个事情的，它实现了 USB/IP 协议，可以让 USB 设备通过网络协议栈从一台机器传输到另一台机器。在 WSL2 的场景下，就是从 Windows 传输到 WSL2 这个"虚拟机器"。</p>
+<p>现在让我们开始配置。</p>
+<h2 id="windows-侧安装和配置-usbipd-win">Windows 侧：安装和配置 usbipd-win<a class="headerlink" href="#windows-侧安装和配置-usbipd-win" title="链接到此章节">&para;</a></h2>
+<p>首先你要确保你用的是 WSL2 而不是 WSL1。WSL1 是个翻译层，它直接用 Windows 的内核，所以 USB 问题在 WSL1 里根本不存在——但 WSL1 也有很多其他限制，比如不支持 Docker，所以大部分人现在都用 WSL2。你可以在 PowerShell 里用 <code>wsl --list --verbose</code> 确认一下，如果你的版本是 1.x，那需要升级到 2。</p>
+<p>接下来我们安装 usbipd-win。这个工具在微软的官方包管理器 winget 上有，安装非常简单。打开一个<strong>管理员权限</strong>的 PowerShell 终端，注意一定要管理员权限，因为 USB 设备的操作需要特权。执行：</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><a href="#__codelineno-0-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">winget</span> <span class="n">install</span> <span class="n">usbipd</span>
+</span></code></pre></div>
+<p>安装完成后，你应该可以用 <code>usbipd</code> 命令了。现在先查看一下系统中有哪些 USB 设备：</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><a href="#__codelineno-1-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">usbipd</span> <span class="n">list</span>
+</span></code></pre></div>
+<p>这个命令会列出所有 USB 设备，你会看到长长的列表，包括你的鼠标、键盘、摄像头等等。每个设备都有一个 BUSID，格式是类似 "1-5" 或 "2-3" 这样的。你的 ST-Link 应该也在列表里，可能显示为 "STMicroelectronics ST-LINK..." 或者类似的名称。记住它的 BUSID，比如我的显示为 "1-8"。</p>
+<p>接下来你需要把这个设备绑定到 usbipd-win。绑定是一个只需要做一次的操作，它告诉 Windows 这个设备以后可以被透传。绑定之后，设备在 Windows 设备管理器里会消失，它的驱动会被卸载，转而由 usbipd-win 接管。执行绑定命令：</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><a href="#__codelineno-2-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">usbipd</span> <span class="n">bind</span> <span class="p">-</span><span class="n">-busid</span> <span class="n">1</span><span class="p">-</span><span class="n">8</span>
+</span></code></pre></div>
+<p>把 <code>1-8</code> 替换成你实际看到的 BUSID。如果成功，你会看到确认信息。现在设备已经从 Windows 的视野里消失了，你可以在设备管理器里确认一下，ST-Link 那一项应该已经不见了。</p>
+<p>但这时候 WSL2 还看不到设备，因为绑定只是准备工作，你还需要把设备"附接"到 WSL2。这个 attach 操作是每次重启 WSL2 或者重新插拔设备后都需要做的。让我们执行：</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><a href="#__codelineno-3-1"><span class="linenos" data-linenos="1 "></span></a><span class="n">usbipd</span> <span class="n">attach</span> <span class="p">-</span><span class="n">-wsl</span> <span class="p">-</span><span class="n">-busid</span> <span class="n">1</span><span class="p">-</span><span class="n">8</span>
+</span></code></pre></div>
+<p>这个命令会把设备通过 USB/IP 协议传输到 WSL2。<code>--wsl</code> 参数指定目标是我们默认的 WSL 发行版。现在设备应该已经出现在 WSL2 里了。</p>
+<p>bind 和 attach 的区别很重要，bind 是一次性操作，告诉 Windows "这个设备以后可以被透传"，而 attach 是每次都要做的，相当于"我现在把这个设备连接到 WSL2"。你重启电脑后 bind 状态会保留，但 attach 会丢失，需要重新执行。</p>
+<h2 id="linux-侧验证设备透传">Linux 侧：验证设备透传<a class="headerlink" href="#linux-侧验证设备透传" title="链接到此章节">&para;</a></h2>
+<p>现在回到你的 WSL2 终端。你可以用 <code>lsusb</code> 命令查看 USB 设备列表：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><a href="#__codelineno-4-1"><span class="linenos" data-linenos="1 "></span></a>lsusb<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>stlink
+</span></code></pre></div>
+<p>如果一切顺利，你应该看到类似这样的输出：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><a href="#__codelineno-5-1"><span class="linenos" data-linenos="1 "></span></a>Bus 001 Device 005: ID 0483:3748 STMicroelectronics ST-LINK/V2
+</span></code></pre></div>
+<p>或者可能是 <code>0483:374b</code>，这取决于你的 ST-Link 版本。V2 版本是 3748，V2-1 是 374b，但这对 OpenOCD 来说区别不大，它两个都支持。</p>
+<p>设备号信息在这行输出里很重要：<code>Bus 001 Device 005</code> 意味着这个设备在 <code>/dev/bus/usb/001/005</code>。这个设备节点文件是我们后续要用来访问 ST-Link 的接口。</p>
+<p>现在我们让 WSL2 能够访问这个设备。在原生 Linux 系统里，你通常会配置 udev 规则，让系统自动给 USB 设备设置正确的权限。但在 WSL2 里，udev 默认是不工作的——WSL2 启动时会跳过 udev 的服务启动，这导致 udev 规则根本不会生效。这是 WSL2 的另一个坑。</p>
+<p>你可以尝试创建 udev 规则文件 <code>/etc/udev/rules.d/49-stlinkv2.rules</code>，内容是：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><a href="#__codelineno-6-1"><span class="linenos" data-linenos="1 "></span></a># STM32 ST-LINK/V2
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><a href="#__codelineno-6-2"><span class="linenos" data-linenos="2 "></span></a>SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0483&quot;, ATTR{idProduct}==&quot;3748&quot;, MODE=&quot;0666&quot;
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a><a href="#__codelineno-6-3"><span class="linenos" data-linenos="3 "></span></a># STM32 ST-LINK/V2-1
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><a href="#__codelineno-6-4"><span class="linenos" data-linenos="4 "></span></a>SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0483&quot;, ATTR{idProduct}==&quot;374b&quot;, MODE=&quot;0666&quot;
+</span></code></pre></div>
+<p>然后在原生 Ubuntu 上你需要 <code>sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code> 来重新加载规则。但在 WSL2 里，这些命令可能不会有任何效果，因为 udev 服务根本没在跑。</p>
+<p>所以我们需要另一个办法：手动修改设备权限。</p>
+<h2 id="wsl-下的权限处理那个令人崩溃的-libusb_error_access">WSL 下的权限处理：那个令人崩溃的 LIBUSB_ERROR_ACCESS<a class="headerlink" href="#wsl-下的权限处理那个令人崩溃的-libusb_error_access" title="链接到此章节">&para;</a></h2>
+<p>当你第一次尝试用 OpenOCD 连接 ST-Link 时，你很可能会遇到 <code>LIBUSB_ERROR_ACCESS</code> 错误。这个错误的意思很明确：OpenOCD 没有权限访问 <code>/dev/bus/usb/001/005</code> 这个设备文件。</p>
+<p>解决方法很简单粗暴，用 sudo 修改权限：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1"></a><a href="#__codelineno-7-1"><span class="linenos" data-linenos="1 "></span></a>sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">666</span><span class="w"> </span>/dev/bus/usb/001/005
+</span></code></pre></div>
+<p>但问题在于每次你重新 attach USB 设备后，设备号可能会变。有时候 ST-Link 是 Device 005，下次重启 WSL2 后可能变成 Device 006。所以手动输命令很麻烦，我们需要一个自动化脚本。</p>
+<p>我写了一个简单的 <code>fix_stlink.sh</code> 脚本，它会自动找到 ST-Link 的设备节点并修改权限：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1"></a><a href="#__codelineno-8-1"><span class="linenos" data-linenos=" 1 "></span></a><span class="ch">#!/bin/bash</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2"></a><a href="#__codelineno-8-2"><span class="linenos" data-linenos=" 2 "></span></a><span class="c1"># 自动修复 ST-Link 权限的脚本</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3"></a><a href="#__codelineno-8-3"><span class="linenos" data-linenos=" 3 "></span></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4"></a><a href="#__codelineno-8-4"><span class="linenos" data-linenos=" 4 "></span></a><span class="c1"># 用 lsusb 找到 ST-Link 设备，提取总线号和设备号，我这边是类似ST-Link，建议你自己lsusb先看看再修一下这个脚本</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5"></a><a href="#__codelineno-8-5"><span class="linenos" data-linenos=" 5 "></span></a><span class="nv">BUSDEV</span><span class="o">=</span><span class="k">$(</span>lsusb<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>stlink<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print &quot;/dev/bus/usb/&quot;$2&quot;/&quot;substr($4,1,3)}&#39;</span><span class="k">)</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6"></a><a href="#__codelineno-8-6"><span class="linenos" data-linenos=" 6 "></span></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7"></a><a href="#__codelineno-8-7"><span class="linenos" data-linenos=" 7 "></span></a><span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BUSDEV</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8"></a><a href="#__codelineno-8-8"><span class="linenos" data-linenos=" 8 "></span></a><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;没有找到 ST-Link 设备，请先在 Windows 侧执行 usbipd attach&quot;</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9"></a><a href="#__codelineno-8-9"><span class="linenos" data-linenos=" 9 "></span></a><span class="w">    </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10"></a><a href="#__codelineno-8-10"><span class="linenos" data-linenos="10 "></span></a><span class="k">fi</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11"></a><a href="#__codelineno-8-11"><span class="linenos" data-linenos="11 "></span></a>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12"></a><a href="#__codelineno-8-12"><span class="linenos" data-linenos="12 "></span></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;找到 ST-Link 设备: </span><span class="nv">$BUSDEV</span><span class="s2">&quot;</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13"></a><a href="#__codelineno-8-13"><span class="linenos" data-linenos="13 "></span></a>sudo<span class="w"> </span>chmod<span class="w"> </span><span class="m">666</span><span class="w"> </span><span class="nv">$BUSDEV</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14"></a><a href="#__codelineno-8-14"><span class="linenos" data-linenos="14 "></span></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;权限已设置为 666&quot;</span>
+</span></code></pre></div>
+<p>这个脚本的工作原理是：用 <code>lsusb | grep -i stlink</code> 找到 ST-Link 那一行，然后用 awk 提取总线号（第二列）和设备号（第四列的前三个字符）。<code>substr($4,1,3)</code> 这个技巧是因为 lsusb 输出的设备号后面带个冒号，比如 "005:"，我们只取前三个字符。</p>
+<p>你可以把这个脚本放在 <code>~/bin/</code> 目录下，添加执行权限 <code>chmod +x ~/bin/fix_stlink.sh</code>，然后每次重新 attach USB 设备后运行一下。或者你可以把它加到你的 <code>.bashrc</code> 或 <code>.zshrc</code> 里的某个 alias，比如 <code>alias fix-stlink='~/bin/fix_stlink.sh'</code>，这样以后只需要输 <code>fix-stlink</code> 就行了。</p>
+<h2 id="openocd-烧录实战见证奇迹的时刻">OpenOCD 烧录实战：见证奇迹的时刻<a class="headerlink" href="#openocd-烧录实战见证奇迹的时刻" title="链接到此章节">&para;</a></h2>
+<p>现在设备透传了，权限也设置了，我们可以开始真正烧录固件了。OpenOCD 的配置文件系统非常灵活，你需要指定两个配置文件：一个是接口配置（interface），描述你用的什么调试器；另一个是目标配置（target），描述你要烧录什么芯片。</p>
+<p>对于 ST-Link V2 和 STM32F103C8T6，配置文件分别是：</p>
+<ul>
+<li><code>interface/stlink.cfg</code> — ST-Link 调试器接口</li>
+<li><code>target/stm32f1x.cfg</code> — STM32F1 系列芯片</li>
+</ul>
+<p>OpenOCD 会自动搜索它的配置文件目录，通常在 <code>/usr/share/openocd/scripts/</code> 下，所以你不需要写完整路径。</p>
+<p>最基本的手动烧录命令是这样：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><a href="#__codelineno-9-1"><span class="linenos" data-linenos="1 "></span></a>openocd<span class="w"> </span>-f<span class="w"> </span>interface/stlink.cfg<span class="w"> </span>-f<span class="w"> </span>target/stm32f1x.cfg<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2"></a><a href="#__codelineno-9-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">        </span>-c<span class="w"> </span><span class="s2">&quot;program firmware.bin verify reset exit 0x08000000&quot;</span>
+</span></code></pre></div>
+<p>让我解释一下这个命令的各个部分。<code>-f</code> 参数指定配置文件，这里我们指定了两个。<code>-c</code> 参数是直接在命令行执行 OpenOCD 的命令，而不是用配置文件里的。</p>
+<p><code>program firmware.bin</code> 告诉 OpenOCD 烧录名为 <code>firmware.bin</code> 的二进制文件。<code>verify</code> 表示烧录后自动校验，确保数据写入正确。<code>reset</code> 会在烧录完成后复位芯片，让它从头开始执行新程序。<code>exit</code> 告诉 OpenOCD 做完这些就退出，而不是继续监听 GDB 连接。最后的 <code>0x08000000</code> 是 STM32F103 的 Flash 起始地址，这是 ARM Cortex-M 系列的标准地址。</p>
+<p>如果你需要完全擦除芯片后再烧录（比如你之前烧过大程序，现在要烧个小程序，不擦除的话可能有残留数据），可以加个 <code>erase</code> 命令：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1"></a><a href="#__codelineno-10-1"><span class="linenos" data-linenos="1 "></span></a>openocd<span class="w"> </span>-f<span class="w"> </span>interface/stlink.cfg<span class="w"> </span>-f<span class="w"> </span>target/stm32f1x.cfg<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2"></a><a href="#__codelineno-10-2"><span class="linenos" data-linenos="2 "></span></a><span class="w">        </span>-c<span class="w"> </span><span class="s2">&quot;flash erase_address 0x08000000 0x20000&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3"></a><a href="#__codelineno-10-3"><span class="linenos" data-linenos="3 "></span></a><span class="w">        </span>-c<span class="w"> </span><span class="s2">&quot;program firmware.bin verify reset exit 0x08000000&quot;</span>
+</span></code></pre></div>
+<p><code>flash erase_address 0x08000000 0x20000</code> 会擦除从 0x08000000 开始的 128KB Flash（STM32F103C8T6 的总容量）。<code>0x20000</code> 是十六进制，换算成十进制正好是 131072 字节 = 128KB。</p>
+<p>在实际项目里，你不会每次都手动打这么长的命令。用 CMake 的 flash 目标会更方便：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1"></a><a href="#__codelineno-11-1"><span class="linenos" data-linenos="1 "></span></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>--target<span class="w"> </span>flash
+</span></code></pre></div>
+<p>这会在 <code>build/</code> 目录下找到生成的固件文件，自动调用 OpenOCD 烧录。前提是你之前在 CMakeLists.txt 里配置好了 flash 目标，具体可以参考前面的教程。</p>
+<h2 id="常见错误排查当烧录失败时">常见错误排查：当烧录失败时<a class="headerlink" href="#常见错误排查当烧录失败时" title="链接到此章节">&para;</a></h2>
+<p>在这个过程中你可能会遇到各种错误，让我总结一下最常见的几种和对应的解决方案。</p>
+<p><code>LIBUSB_ERROR_ACCESS</code> 是最常见的一个，表示 OpenOCD 没有权限访问 USB 设备。解决方法就是重新跑一下 <code>fix_stlink.sh</code> 脚本，或者手动 <code>sudo chmod 666</code> 那个设备节点。如果你重新 attach 了 USB 设备，设备号可能变了，所以需要重新设置权限。</p>
+<p><code>Error: open failed</code> 这个错误比较笼统，通常意味着 OpenOCD 根本找不到 USB 设备。这时候第一步是确认设备是否成功透传到 WSL2，用 <code>lsusb | grep -i stlink</code> 检查一下。如果看不到设备，回到 Windows 侧重新执行 <code>usbipd attach --wsl --busid X-X</code>。如果设备在那里但 OpenOCD 还是报错，可能是权限问题，继续按 LIBUSB_ERROR_ACCESS 的流程排查。</p>
+<p><code>Error: unable to find a matching device</code> 通常意味着 OpenOCD 的配置文件和实际硬件不匹配。比如你用的实际上是 STM32F4 系列芯片，但配置文件写的是 <code>stm32f1x.cfg</code>，或者你用的是 J-Link 调试器但配置文件写的是 <code>stlink.cfg</code>。检查一下你的硬件型号和配置文件是否对应。</p>
+<p>还有一种情况是 WSL2 完全看不到任何 USB 设备，<code>lsusb</code> 的输出为空。这时候可能是 usbipd-win 没有正确工作，或者 WSL2 的内核模块没有加载。你可以用 <code>lsmod | grep usbip</code> 在 WSL2 里检查 USB/IP 相关模块是否加载。如果没有加载，可以尝试 <code>sudo modprobe vhci-hcd</code>，但通常 WSL2 的内核配置应该已经包含了这些模块。</p>
+<h2 id="原生-ubuntu-用户的简明指南">原生 Ubuntu 用户的简明指南<a class="headerlink" href="#原生-ubuntu-用户的简明指南" title="链接到此章节">&para;</a></h2>
+<p>如果你用的是原生 Ubuntu Linux（不是 WSL2），恭喜你，事情要简单得多。你不需要 usbipd-win，因为你的 Linux 内核可以直接访问 USB 设备。你只需要配置 udev 规则，让系统自动给 ST-Link 设置正确的权限。</p>
+<p>创建 <code>/etc/udev/rules.d/49-stlinkv2.rules</code> 文件，内容是：</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><a href="#__codelineno-12-1"><span class="linenos" data-linenos="1 "></span></a># STM32 ST-LINK/V2
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a><a href="#__codelineno-12-2"><span class="linenos" data-linenos="2 "></span></a>SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0483&quot;, ATTR{idProduct}==&quot;3748&quot;, MODE=&quot;0666&quot;, TAG+=&quot;uaccess&quot;
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a><a href="#__codelineno-12-3"><span class="linenos" data-linenos="3 "></span></a># STM32 ST-LINK/V2-1
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><a href="#__codelineno-12-4"><span class="linenos" data-linenos="4 "></span></a>SUBSYSTEM==&quot;usb&quot;, ATTR{idVendor}==&quot;0483&quot;, ATTR{idProduct}==&quot;374b&quot;, MODE=&quot;0666&quot;, TAG+=&quot;uaccess&quot;
+</span></code></pre></div>
+<p>然后重新加载 udev 规则：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1"></a><a href="#__codelineno-13-1"><span class="linenos" data-linenos="1 "></span></a>sudo<span class="w"> </span>udevadm<span class="w"> </span>control<span class="w"> </span>--reload-rules
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2"></a><a href="#__codelineno-13-2"><span class="linenos" data-linenos="2 "></span></a>sudo<span class="w"> </span>udevadm<span class="w"> </span>trigger
+</span></code></pre></div>
+<p>拔插一下 ST-Link，udev 会自动应用新规则。之后你的普通用户账号就能直接访问设备了，不需要 sudo 也不需要每次手动修改权限。原生 Linux 的 udev 系统工作得很完善，这是它相比 WSL2 的一个优势。</p>
+<h2 id="结语跨平台的代价">结语：跨平台的代价<a class="headerlink" href="#结语跨平台的代价" title="链接到此章节">&para;</a></h2>
+<p>折腾完 WSL2 的 USB 透传，你现在应该能够在 WSL2 环境里完成完整的 STM32 开发流程了：编辑代码、编译固件、烧录芯片，一切都在一个统一的环境里进行。虽然 usbipd-win 的 attach 操作有点繁琐，但把它写进一个小脚本或者 PowerShell 函数后，日常使用也还算方便。</p>
+<p>WSL2 这个方案本质上是个折中——它让你在 Windows 上获得接近原生 Linux 的开发体验，但代价是需要在某些地方绕些弯路。USB 透传只是其中之一，后面你可能还会遇到串口设备透传、网络配置等问题。但好消息是，这些坑都有解决方案，而且一旦配置好了，后续的使用就顺畅了。</p>
+<p>下一篇文章我们会进入真正的嵌入式开发：从点灯开始，一步步探索 STM32 的外设编程。你会看到现代 C++ 如何让嵌入式代码变得更简洁、更安全。现在先把你的开发环境彻底打通，烧录工具链练熟，我们很快就可以开始写真正的代码了。</p>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="最后更新">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月23日 14:07:28 CST">2026年3月23日 14:07:28</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="创建日期">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="2026年3月23日 14:07:28 CST">2026年3月23日 14:07:28</span>
+  </span>
+
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../03-cmake-configuration/" class="md-footer__link md-footer__link--prev" aria-label="上一页: CMake 配置篇 —— 从零构建 STM32 构建系统">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                CMake 配置篇 —— 从零构建 STM32 构建系统
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../05-debugging-guide/" class="md-footer__link md-footer__link--next" aria-label="下一页: 第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Charliechen - 保留所有权利
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Awesome-Embedded-Learning-Studio" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:725610365@qq.com" target="_blank" rel="noopener" title="发送邮件" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M536.4-26.3c9.8-3.5 20.6-1 28 6.3s9.8 18.2 6.3 28l-178 496.9c-5 13.9-18.1 23.1-32.8 23.1-14.2 0-27-8.6-32.3-21.7l-64.2-158c-4.5-11-2.5-23.6 5.2-32.6l94.5-112.4c5.1-6.1 4.7-15-.9-20.6s-14.6-6-20.6-.9l-112.4 94.3c-9.1 7.6-21.6 9.6-32.6 5.2L38.1 216.8c-13.1-5.3-21.7-18.1-21.7-32.3 0-14.7 9.2-27.8 23.1-32.8z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.prune", "navigation.path", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.select", "content.code.annotate", "content.tabs.link", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
