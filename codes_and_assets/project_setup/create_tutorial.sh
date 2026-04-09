@@ -5,8 +5,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TUTORIALS_BASE="${REPO_ROOT}/codes_and_assets/stm32f1_tutorials"
-TEMPLATE_DIR="${TUTORIALS_BASE}/0_start_our_tutorial"
-TEMPLATE_PROJECT_NAME="stm32_demo"
 
 # ── 颜色定义 ─────────────────────────────────────────────────────────────────
 readonly RED='\033[0;31m'
@@ -53,6 +51,44 @@ get_next_number() {
     echo $(( max + 1 ))
 }
 
+# ── 根据编号查找教程目录名 ──────────────────────────────────────────────────
+find_tutorial_by_number() {
+    local target_num="$1"
+    for dir in "$TUTORIALS_BASE"/*; do
+        [[ -d "$dir" ]] || continue
+        local base
+        base="$(basename "$dir")"
+        if [[ "$base" =~ ^([0-9]+)_(.+)$ ]]; then
+            local num="${BASH_REMATCH[1]}"
+            if [[ "$num" -eq "$target_num" ]]; then
+                echo "$base"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+# ── 查找前一个教程目录（编号为 N-1 的） ─────────────────────────────────────
+find_previous_tutorial() {
+    local target_num="$1"
+    local prev_num=$(( target_num - 1 ))
+    if [[ "$prev_num" -lt 0 ]]; then
+        return 1
+    fi
+    find_tutorial_by_number "$prev_num"
+}
+
+# ── 从目录名提取 CMake 项目名 ────────────────────────────────────────────────
+extract_cmake_name_from_dir() {
+    local dir_name="$1"
+    # 从 CMakeLists.txt 中提取 project(...) 名
+    local cmake_file="${TUTORIALS_BASE}/${dir_name}/CMakeLists.txt"
+    if [[ -f "$cmake_file" ]]; then
+        grep -oP 'project\(\K[^ )]+' "$cmake_file" 2>/dev/null | head -1
+    fi
+}
+
 # ── 列出现有教程 ─────────────────────────────────────────────────────────────
 list_tutorials() {
     printf "\n${BOLD}Existing tutorials:${NC}\n"
@@ -74,7 +110,7 @@ show_help() {
     cat <<'EOF'
 Usage: create_tutorial.sh [OPTIONS]
 
-Create a new STM32F1 tutorial project from the template (0_start_our_tutorial).
+Create a new STM32F1 tutorial project by copying from the previous tutorial (N-1).
 
 Options:
   -n, --name NAME     Create tutorial with specified name (non-interactive)
@@ -139,13 +175,11 @@ fi
 
 # ── 预检查 ───────────────────────────────────────────────────────────────────
 [[ -d "$TUTORIALS_BASE" ]] || die "Tutorials base not found: ${TUTORIALS_BASE}"
-[[ -d "$TEMPLATE_DIR" ]]   || die "Template not found: ${TEMPLATE_DIR}"
 
 # ── 交互模式：自动推断名称 ──────────────────────────────────────────────────
 if [[ -z "$DIR_NAME" ]]; then
     list_tutorials
 
-    local next_num
     next_num="$(get_next_number)"
     printf "${BOLD}Next available number:${NC} ${CYAN}${next_num}${NC}\n\n"
 
@@ -157,7 +191,6 @@ if [[ -z "$DIR_NAME" ]]; then
 
     DIR_NAME="${next_num}_${desc}"
 
-    local cmake_name
     cmake_name="$(dir_name_to_cmake_name "$DIR_NAME")"
     printf "\n  Directory:  ${BOLD}${DIR_NAME}${NC}"
     printf "\n  CMake name: ${BOLD}${cmake_name}${NC}\n\n"
@@ -172,6 +205,16 @@ validate_name "$DIR_NAME"
 TARGET_DIR="${TUTORIALS_BASE}/${DIR_NAME}"
 CMAKE_NAME="$(dir_name_to_cmake_name "$DIR_NAME")"
 
+# ── 查找源教程（前一个编号） ─────────────────────────────────────────────────
+NEW_NUM="${DIR_NAME%%_*}"
+SOURCE_DIR_NAME="$(find_previous_tutorial "$NEW_NUM")" \
+    || die "No previous tutorial found for number ${NEW_NUM}. Cannot determine source."
+SOURCE_DIR="${TUTORIALS_BASE}/${SOURCE_DIR_NAME}"
+SOURCE_CMAKE_NAME="$(extract_cmake_name_from_dir "$SOURCE_DIR_NAME")"
+[[ -n "$SOURCE_CMAKE_NAME" ]] || SOURCE_CMAKE_NAME="$(dir_name_to_cmake_name "$SOURCE_DIR_NAME")"
+
+msg_info "Source tutorial: ${SOURCE_DIR_NAME} (CMake project: ${SOURCE_CMAKE_NAME})"
+
 # ── 检查目标是否已存在 ───────────────────────────────────────────────────────
 if [[ -d "$TARGET_DIR" ]]; then
     die "Directory already exists: ${TARGET_DIR}\nRemove it first or choose a different name."
@@ -181,8 +224,8 @@ fi
 if [[ "$DRY_RUN" == true ]]; then
     printf "\n${BOLD}[DRY RUN] Would perform:${NC}\n"
     printf "  Create:  %s\n" "$TARGET_DIR"
-    printf "  Copy:    %s/ (excluding build/ .cache/)\n" "$TEMPLATE_DIR"
-    printf "  Replace: 'stm32_demo' -> '%s' in CMakeLists.txt and .vscode/launch.json\n" "$CMAKE_NAME"
+    printf "  Copy:    %s/ (excluding build/ .cache/)\n" "$SOURCE_DIR"
+    printf "  Replace: '%s' -> '%s' in CMakeLists.txt and .vscode/launch.json\n" "$SOURCE_CMAKE_NAME" "$CMAKE_NAME"
     printf "\n"
     exit 0
 fi
@@ -202,15 +245,15 @@ COPY_STARTED=true
 msg_info "Creating: ${TARGET_DIR}"
 
 if command -v rsync &>/dev/null; then
-    rsync -a --exclude='build/' --exclude='.cache/' "$TEMPLATE_DIR/" "$TARGET_DIR/"
+    rsync -a --exclude='build/' --exclude='.cache/' "$SOURCE_DIR/" "$TARGET_DIR/"
 else
     # 回退方案：逐项复制，排除 build/ 和 .cache/
     mkdir -p "$TARGET_DIR"
-    for item in "$TEMPLATE_DIR"/*; do
+    for item in "$SOURCE_DIR"/*; do
         cp -r "$item" "$TARGET_DIR/"
     done
     # 复制隐藏文件/目录
-    for item in "$TEMPLATE_DIR"/.*; do
+    for item in "$SOURCE_DIR"/.*; do
         base="$(basename "$item")"
         [[ "$base" == "." || "$base" == ".." || "$base" == ".cache" ]] && continue
         cp -r "$item" "$TARGET_DIR/"
@@ -220,19 +263,19 @@ fi
 msg_success "Files copied (build/ and .cache/ excluded)."
 
 # ── 替换项目名: CMakeLists.txt ───────────────────────────────────────────────
-sed -i "s/project(${TEMPLATE_PROJECT_NAME} /project(${CMAKE_NAME} /" \
+sed -i "s/project(${SOURCE_CMAKE_NAME} /project(${CMAKE_NAME} /" \
     "${TARGET_DIR}/CMakeLists.txt"
 msg_success "CMakeLists.txt: project name -> ${CMAKE_NAME}"
 
 # ── 替换项目名: .vscode/launch.json ─────────────────────────────────────────
-sed -i "s/${TEMPLATE_PROJECT_NAME}/${CMAKE_NAME}/g" \
+sed -i "s/${SOURCE_CMAKE_NAME}/${CMAKE_NAME}/g" \
     "${TARGET_DIR}/.vscode/launch.json"
 msg_success "launch.json: executable -> ${CMAKE_NAME}.elf"
 
 # ── 验证替换结果 ─────────────────────────────────────────────────────────────
-if grep -rq "$TEMPLATE_PROJECT_NAME" "${TARGET_DIR}/CMakeLists.txt" \
+if grep -rq "$SOURCE_CMAKE_NAME" "${TARGET_DIR}/CMakeLists.txt" \
     "${TARGET_DIR}/.vscode/launch.json" 2>/dev/null; then
-    msg_warn "Some occurrences of '${TEMPLATE_PROJECT_NAME}' remain. Manual review needed."
+    msg_warn "Some occurrences of '${SOURCE_CMAKE_NAME}' remain. Manual review needed."
 fi
 
 # ── 完成 ─────────────────────────────────────────────────────────────────────
