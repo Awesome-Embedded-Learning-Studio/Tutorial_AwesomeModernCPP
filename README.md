@@ -82,12 +82,12 @@
 
 ### 本项目包含
 
-- **tutorial/** - 教程 Markdown 文件，包含系统化的学习内容
-- **codes_and_assets/** - 示例代码、硬件电路图、PCB 文件等资源
+- **documents/** - 教程 Markdown 文件，包含系统化的学习内容
+- **code/** - 示例代码、硬件电路图、PCB 文件等资源
 
 ### 如何开始学习
 
-1. 阅读 [tutorial/index.md](./tutorial/index.md) 了解教程结构
+1. 阅读 [documents/index.md](./documents/index.md) 了解教程结构
 2. 按照章节顺序学习，从 Chapter 0 开始
 3. 参考示例代码加深理解
 4. 完成章节练习巩固知识
@@ -120,10 +120,10 @@
 - **48 个 CMake 项目** - 开箱即用的构建配置
 - **2 个 STM32 工程** - 基于 STM32F103C8T6 的完整项目
 
-代码位于 [`codes_and_assets/examples/`](./codes_and_assets/examples/)，按章节组织：
+代码位于 [`code/examples/`](./code/examples/)，按章节组织：
 
 ```
-codes_and_assets/
+code/
 ├── examples/              # 核心教程代码示例
 │   ├── chapter02/          # 零开销抽象
 │   ├── chapter03/          # 内存与对象管理
@@ -134,11 +134,11 @@ codes_and_assets/
 │   ├── chapter09/          # 函数式特性
 │   ├── chapter10/          # 并发与原子
 │   └── chapter11/          # 现代C++特性
-├── stm32f1_tutorials/      # STM32F103C8T6 实战工程
+├── stm32f1-tutorials/      # STM32F103C8T6 实战工程
 │   ├── 0_start_our_tutorial/
 │   └── 1_led_control/
 ├── templates/              # 可复用的模板
-└── project_setup/          # 项目创建脚本
+└── project-setup/          # 项目创建脚本
 ```
 
 ### 🔍 智能导航

@@ -121,7 +121,7 @@ void process_data(const std::array<uint32_t, 10>& data) {
 文章文件名应清晰描述内容：
 
 ```
-tutorial/核心：现代嵌入式C++教程/Chapter6/
+documents/core-embedded-cpp/chapter-06-ownership-raii/
 ├── 1 RAII在外设管理的作用.md
 ├── 2 unique_ptr.md
 └── 3 shared_ptr.md

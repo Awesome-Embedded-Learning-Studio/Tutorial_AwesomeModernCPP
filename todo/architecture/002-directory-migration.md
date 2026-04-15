@@ -3,8 +3,9 @@ id: 002
 title: "目录结构迁移：tutorial/ + codes_and_assets/ -> documents/ + code/"
 category: architecture
 priority: P0
-status: pending
+status: done
 created: 2026-04-15
+completed: 2026-04-16
 assignee: charliechen
 depends_on: [001]
 blocks: [003, 004, 005, 006, 007]

@@ -48,7 +48,7 @@ def process_file(filepath: Path) -> bool:
 def main():
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    tutorial_dir = project_root / 'tutorial'
+    tutorial_dir = project_root / 'documents'
 
     # Find all markdown files
     md_files = list(tutorial_dir.rglob('*.md'))

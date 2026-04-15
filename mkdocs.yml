@@ -6,7 +6,7 @@ site_author: Charliechen  # 作者名称,可以改成你的真实姓名或网名
 copyright: Copyright &copy; 2025 Charliechen - 保留所有权利
 
 # 文档源文件夹
-docs_dir: "tutorial"
+docs_dir: "documents"
 
 
 # ==================== 主题配置 ====================

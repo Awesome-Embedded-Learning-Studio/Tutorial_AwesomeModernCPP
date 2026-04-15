@@ -23,8 +23,8 @@ jobs:
         with:
           config: '.markdownlint.json'
           globs: |
-            tutorial/**/*.md
-            !tutorial/**/index.md
+            documents/**/*.md
+            !documents/**/index.md
 
   validate-frontmatter:
     name: Validate Frontmatter

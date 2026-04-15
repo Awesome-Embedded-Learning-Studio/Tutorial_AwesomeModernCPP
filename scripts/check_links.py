@@ -250,7 +250,7 @@ class LinkChecker:
 def main():
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    tutorial_dir = project_root / 'tutorial'
+    tutorial_dir = project_root / 'documents'
 
     if not tutorial_dir.exists():
         print(f"Error: Tutorial directory not found: {tutorial_dir}")

@@ -9,8 +9,8 @@ repos:
     hooks:
       - id: markdownlint
         args: ['--config', '.markdownlint.json']
-        files: '^tutorial/.*\.md$'
-        exclude: '^tutorial/.*\bindex\.md$'
+        files: '^documents/.*\.md$'
+        exclude: '^documents/.*\bindex\.md$'
 
   # Frontmatter validation (local hook)
   - repo: local
@@ -19,7 +19,8 @@ repos:
         name: Validate article frontmatter
         entry: scripts/validate_frontmatter.py
         language: python
-        files: '^tutorial/核心：现代嵌入式C++教程/.*\.md$'
+        additional_dependencies: ['pyyaml']
+        files: '^documents/core-embedded-cpp/.*\.md$'
         exclude: '(index\.md|tags\.md)$'
         pass_filenames: false
 
@@ -31,6 +32,6 @@ repos:
         args: ['--maxkb=1000']
       - id: end-of-file-fixer
       - id: trailing-whitespace
-        files: '^tutorial/.*\.md$'
+        files: '^documents/.*\.md$'
       - id: check-yaml
         files: '^\.github/.*\.ya?ml$'
