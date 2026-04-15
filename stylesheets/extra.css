@@ -95,6 +95,18 @@ html {
   max-width: 80rem;
 }
 
+/* ---------- Top Navigation Tabs ---------- */
+
+/* Allow tabs to wrap when there are many sections */
+.md-tabs__list {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.md-tabs__item {
+  flex-shrink: 0;
+}
+
 /* ---------- Code Blocks ---------- */
 
 /* Rounded corners for code blocks */
