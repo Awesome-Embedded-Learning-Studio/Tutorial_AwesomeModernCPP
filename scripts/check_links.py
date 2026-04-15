@@ -69,7 +69,10 @@ class LinkChecker:
             if in_code_block:
                 continue
 
-            for match in re.finditer(pattern, line):
+            # Strip inline code spans to avoid matching C++ syntax like `[&](args)`
+            cleaned = re.sub(r'`[^`]+`', '', line)
+
+            for match in re.finditer(pattern, cleaned):
                 groups = match.groups()
                 if groups[1]:  # Regular link
                     link_text, link_url = groups[0], groups[1]

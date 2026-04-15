@@ -1,0 +1,12 @@
+nav:
+  - index.md
+  - core-embedded-cpp
+  - stm32f1-challenge
+  - cpp-features
+  - cpp-engineering
+  - compilation-deep-dive
+  - environment-setup
+  - parallel-computing
+  - debugging
+  - cpp-templates
+  - tags.md

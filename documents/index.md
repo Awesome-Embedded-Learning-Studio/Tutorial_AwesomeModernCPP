@@ -16,7 +16,7 @@
 
 涵盖：零开销抽象、内存管理、智能指针、容器与数据结构、类型安全、函数式编程、并发与原子操作、模板编程等核心主题。
 
-- [开始阅读](核心：现代嵌入式C++教程/index.md)
+- [开始阅读](core-embedded-cpp/index.md)
 
 ---
 
@@ -24,8 +24,8 @@
 
 使用纯 C/C++ 在 STM32F103C8T6 上进行嵌入式开发实战。共 18 篇文章。
 
-- [环境搭建](挑战：使用现代C_C++编写STM32F103C8T6/env_setup/01-toolchain-setup.md)
-- [LED 控制系列](挑战：使用现代C_C++编写STM32F103C8T6/01_led/01-motivation-and-overview.md)
+- [环境搭建](stm32f1-challenge/00-env-setup/01-toolchain-setup.md)
+- [LED 控制系列](stm32f1-challenge/01-led/01-motivation-and-overview.md)
 
 ---
 
@@ -33,7 +33,7 @@
 
 深入探讨 C/C++ 的编译、链接、静态库、动态库、符号可见性等核心概念。共 10 篇文章。
 
-- [编译与链接技术（一）](深入理解CC++编译特性指南/深入理解CC++的编译与链接技术.md)
+- [编译与链接技术（一）](compilation-deep-dive/01-compilation-and-linking-overview.md)
 
 ---
 
@@ -41,9 +41,8 @@
 
 现代 C++ 在实际工程中的应用技巧。共 3 篇文章。
 
-- [文件拷贝器（上）](现代C++工程实践/文件处理/从零开始写个文件拷贝器(上)需求分析与基础框架.md)
-- [文件拷贝器（下）](现代C++工程实践/文件处理/从零开始写个文件拷贝器(下)核心实现与实战测试.md)
-- [C++ Modules 实践](现代C++工程实践/一文读懂msvc的cpp_modules：原理、动机与工程实践.md)
+- [文件拷贝器（上）](cpp-engineering/file-io/01-file-copier-requirements-and-framework.md)
+- [文件拷贝器（下）](cpp-engineering/file-io/02-file-copier-core-implementation.md)
 
 ---
 
@@ -51,11 +50,11 @@
 
 深入讲解 C++20/23 的新特性，包括协程、Modules、string_view 等。共 5 篇文章。
 
-- [协程支持（一）](现代C++特性/现代C++的协程/理解C++20的革命特性——协程支持1.md)
-- [协程支持（二）：编写调度器](现代C++特性/现代C++的协程/理解C++20的革命特性——协程支持2：编写简单的调度器.md)
-- [协程实战：Echo Server](现代C++特性/现代C++的协程/理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server.md)
-- [C++ Modules](现代C++特性/一文读懂msvc的cpp_modules：原理、动机与工程实践.md)
-- [string_view](现代C++特性/简说C++17新东西：string_view.md)
+- [协程支持（一）](cpp-features/coroutines/01-coroutine-basics.md)
+- [协程支持（二）：编写调度器](cpp-features/coroutines/02-coroutine-scheduler.md)
+- [协程实战：Echo Server](cpp-features/coroutines/03-coroutine-echo-server.md)
+- [C++ Modules](cpp-features/msvc-cpp-modules.md)
+- [string_view](cpp-features/cpp17-string-view.md)
 
 ---
 
@@ -63,8 +62,8 @@
 
 开发环境搭建指南。共 2 篇文章。
 
-- [VS2026 上使用 C++ 模块](环境配置/如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南.md)
-- [WSL 上开发 C++ 上位机程序](环境配置/快速在WSL上开发一般的C++上位机程序.md)
+- [VS2026 上使用 C++ 模块](environment-setup/cpp-modules-on-vs2026.md)
+- [WSL 上开发 C++ 上位机程序](environment-setup/cpp-development-on-wsl.md)
 
 ---
 
@@ -72,7 +71,7 @@
 
 AVX 指令集与并行计算。
 
-- [AVX 指令集深度介绍](并行计算C++/AVX 指令集系列深度介绍：领域、意义、以及 AVX  AVX2 的基本用法与样例.md)
+- [AVX 指令集深度介绍](parallel-computing/avx-avx2-deep-dive.md)
 
 ---
 
@@ -80,7 +79,7 @@ AVX 指令集与并行计算。
 
 调试技巧与工具。
 
-- [MSVC Windows 调试原理](调试专题/MSVC Windows调试原理.md)
+- [MSVC Windows 调试原理](debugging/msvc-debugging-internals.md)
 
 ---
 

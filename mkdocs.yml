@@ -149,6 +149,15 @@ markdown_extensions:
   - pymdownx.critic  # 支持批注和修订标记
   - pymdownx.betterem  # 改进的强调语法
 
+  # 任务列表语法（- [ ] / - [x]）
+  - pymdownx.tasklist:
+      custom_checkbox: true
+      clickable_checkbox: true
+
+  # 数学公式渲染（LaTeX via MathJax）
+  - pymdownx.arithmatex:
+      generic: true
+
 
 # ==================== 插件配置 ====================
 # 插件为网站添加额外功能
@@ -179,6 +188,36 @@ plugins:
       timezone: Asia/Shanghai  # 时区设置
       locale: zh  # 本地化语言
 
+  # Git 作者信息
+  - git-authors:
+      show_line_count: false
+      show_contribution: false
+      sort_authors_by: "name"
+      authorship_threshold_percent: 5
+
+  # HTML/CSS/JS 压缩
+  - minify:
+      minify_html: true
+      minify_css: true
+      minify_js: true
+      htmlmin_opts:
+        remove_comments: true
+        remove_empty_space: true
+
+  # 以下插件暂未启用，待条件满足后取消注释：
+  #
+  # mkdocs-redirects: 旧中文路径在 tutorial/ 下（旧 docs_dir），当前 docs_dir 已改为
+  # documents/，redirect_maps 无法匹配不存在的路径。重定向需在 hosting 层处理。
+  # - redirects:
+  #     redirect_maps: { ... }
+  #
+  # mkdocs-static-i18n: 需要翻译文件（如 index.en.md）才能启用，否则会产生混淆的语言切换 UI。
+  # - i18n:
+  #     default_language: zh
+  #     languages:
+  #       zh: "中文"
+  #       en: "English"
+
 
 # ==================== 额外配置 ====================
 
@@ -199,6 +238,10 @@ extra:
 
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
 
 # ==================== 注意事项 ====================
