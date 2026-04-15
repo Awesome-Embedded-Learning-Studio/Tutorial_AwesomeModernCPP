@@ -69,3 +69,9 @@ estimated_effort: small|medium|large|epic
 ## 模板
 
 新建 TODO 文件时，使用 `.templates/todo-template.md` 模板。
+
+## 归档
+
+完成的 TODO 文件从对应分类目录移入 `todo/archive/`，保留原始内容便于回溯。归档文件的 status 字段标记为 `done`，验收标准中已完成的项标记 `[x]`。
+
+已完成：001（创建归档分支 archive/legacy_20260415）

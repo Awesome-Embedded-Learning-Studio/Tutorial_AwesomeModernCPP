@@ -3,7 +3,7 @@ id: 001
 title: "创建 archive/v0-legacy 分支保留旧结构快照"
 category: architecture
 priority: P0
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: []
@@ -21,11 +21,11 @@ estimated_effort: small
 
 ## 验收标准
 
-- [ ] `archive/v0-legacy` 分支已从当前 `main` 的 HEAD 创建
-- [ ] 分支已推送到远程仓库 (`origin/archive/v0-legacy`)
-- [ ] 主仓库 `README.md` 中新增一段说明，指引访问者前往 `archive/v0-legacy` 查看旧版内容结构
-- [ ] 在分支创建后，验证该分支上的目录结构完整（`tutorial/`、`codes_and_assets/`、`scripts/` 等目录均存在）
-- [ ] GitHub 上可以通过分支选择器看到 `archive/v0-legacy`
+- [x] `archive/legacy_20260415` 分支已从 `main` 的 HEAD 创建（实际命名为 `archive/legacy_20260415`）
+- [x] 分支已推送到远程仓库 (`origin/archive/legacy_20260415`)
+- [x] 主仓库 `README.md` 中新增一段说明，指引访问者前往归档分支查看旧版内容结构
+- [x] 在分支创建后，验证该分支上的目录结构完整（`tutorial/`、`codes_and_assets/`、`scripts/` 等目录均存在）
+- [x] GitHub 上可以通过分支选择器看到归档分支
 
 ## 实施说明
 

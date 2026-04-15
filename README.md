@@ -77,6 +77,9 @@
 
 ## 🚀 快速开始
 
+> **历史版本**: 如果你需要查看 2026 年 4 月重构之前的目录结构（`tutorial/` + `codes_and_assets/`），
+> 请切换到 [`archive/legacy_20260415`](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/archive/legacy_20260415) 分支。
+
 ### 本项目包含
 
 - **tutorial/** - 教程 Markdown 文件，包含系统化的学习内容
