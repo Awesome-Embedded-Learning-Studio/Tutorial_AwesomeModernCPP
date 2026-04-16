@@ -1,5 +1,5 @@
-site_name: Tutorial_AwesomeModernCPP的文档  # 网站标题,显示在浏览器标签和页面顶部
-site_description: Awesome-Embedded-Learning-Studio的现代C++教程  # 网站描述,用于SEO优化
+site_name: 现代 C++ 教程  # 网站标题,显示在浏览器标签和页面顶部
+site_description: 系统化的现代 C++ 教程 — 从基础入门到领域实战  # 网站描述,用于SEO优化
 site_author: Charliechen  # 作者名称,可以改成你的真实姓名或网名
 
 # 版权信息,显示在页面底部
