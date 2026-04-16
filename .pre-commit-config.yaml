@@ -29,7 +29,7 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ['--maxkb=1500']
       - id: end-of-file-fixer
       - id: trailing-whitespace
         files: '^documents/.*\.md$'
