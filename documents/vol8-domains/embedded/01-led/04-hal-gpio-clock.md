@@ -1,12 +1,14 @@
 ---
-title: "第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅"
-description: ""
+title: 第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅
+description: ''
 tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
+- beginner
+- cpp-modern
+- stm32f1
 difficulty: beginner
 platform: stm32f1
+chapter: 15
+order: 4
 ---
 # 第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅
 

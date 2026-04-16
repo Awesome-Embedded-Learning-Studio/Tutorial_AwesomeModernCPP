@@ -48,7 +48,13 @@ VALID_TAGS = {
     '交叉编译', '工具链', 'CMake',
 
     # General
-    '基础', '入门', '进阶', '实战', '优化'
+    '基础', '入门', '进阶', '实战', '优化',
+
+    # Platforms
+    'host', 'stm32f1',
+
+    # Audience / difficulty (as tags)
+    'beginner', 'intermediate', 'advanced', 'cpp-modern'
 }
 
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
@@ -177,9 +183,13 @@ class FrontmatterValidator:
         md_files = list(self.tutorial_dir.rglob('*.md'))
 
         # Skip index.md files and tags.md (they don't need frontmatter)
+        # Also skip non-article files (e.g. images/ directory)
+        skip_names = {'index.md', 'tags.md'}
+        skip_dir_parts = {'images'}
         md_files = [
             f for f in md_files
-            if f.name not in {'index.md', 'tags.md'}
+            if f.name not in skip_names
+            and not any(part in skip_dir_parts for part in f.parts)
         ]
 
         print(f"Validating {len(md_files)} markdown files...")

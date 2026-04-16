@@ -1,12 +1,14 @@
 ---
-title: "深入解构：MSVC 调试机制与 Visual Studio 调试器原理"
-description: ""
+title: 深入解构：MSVC 调试机制与 Visual Studio 调试器原理
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 1
+order: 8
 ---
 # 深入解构：MSVC 调试机制与 Visual Studio 调试器原理
 

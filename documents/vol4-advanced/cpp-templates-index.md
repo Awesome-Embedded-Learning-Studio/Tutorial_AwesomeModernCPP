@@ -1,12 +1,14 @@
 ---
-title: "现代C++模板教程（计划中）"
-description: ""
+title: 现代C++模板教程（计划中）
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 12
+order: 9
 ---
 # 现代C++模板教程（计划中）
 

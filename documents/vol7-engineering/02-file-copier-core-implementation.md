@@ -1,12 +1,14 @@
 ---
-title: "现代C++工程实践——从零开始写个文件拷贝器(下):核心实现与实战测试"
-description: ""
+title: 现代C++工程实践——从零开始写个文件拷贝器(下):核心实现与实战测试
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 1
+order: 5
 ---
 # 现代C++工程实践——从零开始写个文件拷贝器(下):核心实现与实战测试
 

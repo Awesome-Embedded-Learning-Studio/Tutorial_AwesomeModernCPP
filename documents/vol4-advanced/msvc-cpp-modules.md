@@ -1,12 +1,14 @@
 ---
-title: "一文读懂 MSVC C++ Modules：原理、动机与工程实践"
-description: ""
+title: 一文读懂 MSVC C++ Modules：原理、动机与工程实践
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 11
+order: 8
 ---
 # 一文读懂 MSVC C++ Modules：原理、动机与工程实践
 

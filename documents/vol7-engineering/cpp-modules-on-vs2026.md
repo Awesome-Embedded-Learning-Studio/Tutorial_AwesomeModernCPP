@@ -1,12 +1,14 @@
 ---
-title: "如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南"
-description: ""
+title: 如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 1
+order: 7
 ---
 # 如何快速在 VS2026 上使用 C++ 模块 — 完整上手指南
 

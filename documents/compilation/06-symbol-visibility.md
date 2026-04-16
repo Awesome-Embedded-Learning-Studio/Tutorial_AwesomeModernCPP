@@ -1,12 +1,14 @@
 ---
-title: "深入理解C/C++编译技术——动态库A3：聊一聊符号可见性"
-description: ""
+title: 深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 13
+order: 6
 ---
 # 深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
 

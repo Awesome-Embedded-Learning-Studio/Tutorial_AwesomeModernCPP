@@ -1,12 +1,14 @@
 ---
-title: "第30篇：EXTI 中断 + 坑位与练习"
-description: ""
+title: 第30篇：EXTI 中断 + 坑位与练习
+description: ''
 tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+- cpp-modern
+- intermediate
+- stm32f1
 difficulty: intermediate
 platform: stm32f1
+chapter: 16
+order: 12
 ---
 # 第30篇：EXTI 中断 + 坑位与练习
 

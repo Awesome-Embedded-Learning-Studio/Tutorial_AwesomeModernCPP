@@ -1,12 +1,14 @@
 ---
-title: "第24篇：非阻塞消抖 —— 不让 CPU 停下来等"
-description: ""
+title: 第24篇：非阻塞消抖 —— 不让 CPU 停下来等
+description: ''
 tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+- cpp-modern
+- intermediate
+- stm32f1
 difficulty: intermediate
 platform: stm32f1
+chapter: 16
+order: 6
 ---
 # 第24篇：非阻塞消抖 —— 不让 CPU 停下来等
 

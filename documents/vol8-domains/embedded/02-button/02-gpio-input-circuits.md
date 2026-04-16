@@ -1,5 +1,5 @@
 ---
-title: "第20篇：GPIO 输入模式内部电路 —— 芯片是如何"听"到外部信号的"
+title: '第20篇：GPIO 输入模式内部电路 —— 芯片是如何"听"到外部信号的'
 description: ""
 tags:
   - cpp-modern
@@ -7,6 +7,8 @@ tags:
   - stm32f1
 difficulty: intermediate
 platform: stm32f1
+chapter: 16
+order: 2
 ---
 # 第20篇：GPIO 输入模式内部电路 —— 芯片是如何"听"到外部信号的
 

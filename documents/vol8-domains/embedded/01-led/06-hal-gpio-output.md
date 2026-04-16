@@ -1,12 +1,14 @@
 ---
-title: "第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来"
-description: ""
+title: 第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来
+description: ''
 tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
+- beginner
+- cpp-modern
+- stm32f1
 difficulty: beginner
 platform: stm32f1
+chapter: 15
+order: 6
 ---
 # 第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来
 

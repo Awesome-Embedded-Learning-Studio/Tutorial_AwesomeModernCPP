@@ -1,12 +1,14 @@
 ---
-title: "深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口"
-description: ""
+title: 深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 13
+order: 5
 ---
 # 深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
 

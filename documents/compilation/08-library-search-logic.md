@@ -1,12 +1,14 @@
 ---
-title: "深入理解C/C++的编译与链接技术8：库文件检索逻辑"
-description: ""
+title: 深入理解C/C++的编译与链接技术8：库文件检索逻辑
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 13
+order: 8
 ---
 # 深入理解C/C++的编译与链接技术8：库文件检索逻辑
 

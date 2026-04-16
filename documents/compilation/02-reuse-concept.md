@@ -1,12 +1,14 @@
 ---
-title: "深入理解CC++的编译与链接技术2：动态库静态库导论"
-description: ""
+title: 深入理解CC++的编译与链接技术2：动态库静态库导论
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 13
+order: 2
 ---
 # 深入理解CC++的编译与链接技术2：动态库静态库导论
 

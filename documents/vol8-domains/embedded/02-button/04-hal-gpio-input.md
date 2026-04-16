@@ -1,12 +1,14 @@
 ---
-title: "第22篇：HAL GPIO 输入 API —— 怎么用代码读到按钮状态"
-description: ""
+title: 第22篇：HAL GPIO 输入 API —— 怎么用代码读到按钮状态
+description: ''
 tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+- cpp-modern
+- intermediate
+- stm32f1
 difficulty: intermediate
 platform: stm32f1
+chapter: 16
+order: 4
 ---
 # 第22篇：HAL GPIO 输入 API —— 怎么用代码读到按钮状态
 

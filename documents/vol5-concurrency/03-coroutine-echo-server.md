@@ -1,12 +1,14 @@
 ---
-title: "理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server"
-description: ""
+title: 理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 10
+order: 5
 ---
 # 理解C++20的革命特性——协程引用之——利用协程做一个迷你的Echo Server
 

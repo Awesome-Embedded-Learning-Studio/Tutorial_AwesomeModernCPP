@@ -1,12 +1,14 @@
 ---
-title: "std::string_view 全攻略"
-description: ""
+title: std::string_view 全攻略
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 8
+order: 8
 ---
 # std::string_view 全攻略
 

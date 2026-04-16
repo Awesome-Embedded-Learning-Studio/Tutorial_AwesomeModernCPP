@@ -1,5 +1,5 @@
 ---
-title: "第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么""
+title: '第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"'
 description: ""
 tags:
   - cpp-modern
@@ -7,6 +7,8 @@ tags:
   - stm32f1
 difficulty: intermediate
 platform: stm32f1
+chapter: 16
+order: 9
 ---
 # 第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"
 

@@ -1,12 +1,14 @@
 ---
-title: "深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？"
-description: ""
+title: 深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+description: ''
 tags:
-  - cpp-modern
-  - host
-  - intermediate
+- cpp-modern
+- host
+- intermediate
 difficulty: intermediate
 platform: host
+chapter: 13
+order: 10
 ---
 # 深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
 

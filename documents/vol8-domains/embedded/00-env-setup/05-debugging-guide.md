@@ -1,12 +1,14 @@
 ---
-title: "第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境"
-description: ""
+title: 第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境
+description: ''
 tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
+- beginner
+- cpp-modern
+- stm32f1
 difficulty: beginner
 platform: stm32f1
+chapter: 14
+order: 5
 ---
 # 第5篇：调试进阶篇 —— 从 printf 到完整 GDB 调试环境
 

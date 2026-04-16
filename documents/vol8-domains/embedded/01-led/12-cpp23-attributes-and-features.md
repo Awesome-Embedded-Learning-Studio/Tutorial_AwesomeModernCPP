@@ -1,12 +1,14 @@
 ---
-title: "第17篇：C++23特性收尾 —— 属性、链接与零开销抽象的最终证明"
-description: ""
+title: 第17篇：C++23特性收尾 —— 属性、链接与零开销抽象的最终证明
+description: ''
 tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
+- beginner
+- cpp-modern
+- stm32f1
 difficulty: beginner
 platform: stm32f1
+chapter: 15
+order: 12
 ---
 # 第17篇：C++23特性收尾 —— 属性、链接与零开销抽象的最终证明
 
