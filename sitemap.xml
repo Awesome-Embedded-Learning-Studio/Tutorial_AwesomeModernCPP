@@ -1,3 +1,2145 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/tags/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/tags/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/tags/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/appendix/terminology/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/appendix/terminology/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/appendix/terminology/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/01-compilation-and-linking-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/01-compilation-and-linking-overview/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/01-compilation-and-linking-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/02-reuse-concept/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/02-reuse-concept/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/02-reuse-concept/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/03-creating-and-using-static-libs/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/03-creating-and-using-static-libs/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/03-creating-and-using-static-libs/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/04-dynamic-libraries-1/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/04-dynamic-libraries-1/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/04-dynamic-libraries-1/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/05-dynamic-library-design/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/05-dynamic-library-design/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/05-dynamic-library-design/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/06-symbol-visibility/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/06-symbol-visibility/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/06-symbol-visibility/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/07-symbol-missing-and-runtime-loading/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/07-symbol-missing-and-runtime-loading/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/07-symbol-missing-and-runtime-loading/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/08-library-search-logic/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/08-library-search-logic/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/08-library-search-logic/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/09-dynamic-library-details/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/09-dynamic-library-details/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/09-dynamic-library-details/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/10-dynamic-lib-as-executable/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/10-dynamic-lib-as-executable/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/10-dynamic-lib-as-executable/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/images/DESIGN_SPEC/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/images/DESIGN_SPEC/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/images/DESIGN_SPEC/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/projects/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/projects/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/projects/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/00-preface/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/00-preface/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/00-preface/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/02-c-language-crash-course/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/02-c-language-crash-course/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/02-c-language-crash-course/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/03-cpp98-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/03-cpp98-basics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/03-cpp98-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/04-when-to-use-cpp/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/04-when-to-use-cpp/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/04-when-to-use-cpp/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/05-language-choice-performance-vs-maintainability/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/05-language-choice-performance-vs-maintainability/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/05-language-choice-performance-vs-maintainability/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-auto-and-decltype/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-auto-and-decltype/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-auto-and-decltype/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-constexpr-and-design-techniques/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-constexpr-and-design-techniques/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-constexpr-and-design-techniques/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-enum-class/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-enum-class/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-enum-class/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-lambda-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-lambda-basics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-lambda-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-raii-in-peripheral-management/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-raii-in-peripheral-management/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-raii-in-peripheral-management/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-consteval-constinit/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-consteval-constinit/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-consteval-constinit/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-lambda-capture-and-performance/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-lambda-capture-and-performance/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-lambda-capture-and-performance/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-move-semantics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-move-semantics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-move-semantics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-structured-bindings/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-structured-bindings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-structured-bindings/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-unique-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-unique-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-unique-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-compile-time-in-practice/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-compile-time-in-practice/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-compile-time-in-practice/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-constexpr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-constexpr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-constexpr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-range-based-for-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-range-based-for-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-range-based-for-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-rvo-nrvo/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-rvo-nrvo/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-rvo-nrvo/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-shared-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-shared-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-shared-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-std-function-vs-function-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-std-function-vs-function-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-std-function-vs-function-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-variant/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-variant/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-variant/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-attributes/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-attributes/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-attributes/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-optional/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-optional/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-optional/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-zero-overhead-callbacks/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-zero-overhead-callbacks/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-zero-overhead-callbacks/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-expected/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-expected/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-expected/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-intrusive-ptr-and-ref-counting/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-intrusive-ptr-and-ref-counting/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-intrusive-ptr-and-ref-counting/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-std-invoke-and-callables/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-std-invoke-and-callables/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-std-invoke-and-callables/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-custom-deleter/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-custom-deleter/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-custom-deleter/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-designated-initializers/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-designated-initializers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-designated-initializers/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-functional-error-handling/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-functional-error-handling/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-functional-error-handling/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-type-aliases-and-using/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-type-aliases-and-using/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-type-aliases-and-using/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-literal-operators-and-custom-units/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-literal-operators-and-custom-units/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-literal-operators-and-custom-units/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-ranges-basics-and-views/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-ranges-basics-and-views/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-ranges-basics-and-views/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-reference-counting/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-reference-counting/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-reference-counting/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-user-defined-literals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-user-defined-literals/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-user-defined-literals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-ranges-pipeline-in-practice/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-ranges-pipeline-in-practice/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-ranges-pipeline-in-practice/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-scope-guard/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-scope-guard/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-scope-guard/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/cpp17-string-view/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/cpp17-string-view/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/cpp17-string-view/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-array/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-array/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-array/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-initializer-lists/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-initializer-lists/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-initializer-lists/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-span/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-span/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-span/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-type-safe-register-access/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-type-safe-register-access/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-type-safe-register-access/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/03-circular-buffer/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/03-circular-buffer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/03-circular-buffer/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/04-intrusive-containers/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/04-intrusive-containers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/04-intrusive-containers/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/05-object-size-and-trivial-types/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/05-object-size-and-trivial-types/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/05-object-size-and-trivial-types/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/06-custom-allocators/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/06-custom-allocators/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/06-custom-allocators/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/00-template-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/00-template-overview/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/00-template-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-coroutine-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-coroutine-basics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-coroutine-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-function-templates/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-function-templates/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-function-templates/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-class-templates/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-class-templates/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-class-templates/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-coroutine-scheduler/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-coroutine-scheduler/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-coroutine-scheduler/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/03-template-specialization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/03-template-specialization/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/03-template-specialization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-if-constexpr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-if-constexpr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-if-constexpr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-non-type-template-params/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-non-type-template-params/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-non-type-template-params/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-spaceship-operator/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-spaceship-operator/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-spaceship-operator/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-template-args-and-name-lookup/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-template-args-and-name-lookup/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-template-args-and-name-lookup/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/06-template-friends-and-barton-nackman/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/06-template-friends-and-barton-nackman/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/06-template-friends-and-barton-nackman/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/07-template-aliases-and-using/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/07-template-aliases-and-using/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/07-template-aliases-and-using/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/08-templates-and-inheritance-crtp/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/08-templates-and-inheritance-crtp/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/08-templates-and-inheritance-crtp/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/cpp-templates-index/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/cpp-templates-index/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/cpp-templates-index/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/msvc-cpp-modules/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/msvc-cpp-modules/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/msvc-cpp-modules/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/01-atomic/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/01-atomic/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/01-atomic/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/02-memory-order/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/02-memory-order/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/02-memory-order/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-coroutine-echo-server/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-coroutine-echo-server/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-coroutine-echo-server/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-lock-free-data-structures/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-lock-free-data-structures/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-lock-free-data-structures/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/04-mutex-and-raii-guards/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/04-mutex-and-raii-guards/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/04-mutex-and-raii-guards/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/06-critical-section-protection/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/06-critical-section-protection/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/06-critical-section-protection/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/02-inline-and-compiler-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/02-inline-and-compiler-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/02-inline-and-compiler-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/06-evaluating-performance-and-size/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/06-evaluating-performance-and-size/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/06-evaluating-performance-and-size/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/avx-avx2-deep-dive/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/avx-avx2-deep-dive/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/avx-avx2-deep-dive/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-cross-compilation-and-cmake/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-cross-compilation-and-cmake/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-cross-compilation-and-cmake/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-file-copier-requirements-and-framework/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-file-copier-requirements-and-framework/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-file-copier-requirements-and-framework/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-compiler-options/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-compiler-options/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-compiler-options/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-file-copier-core-implementation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-file-copier-core-implementation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-file-copier-core-implementation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/03-linker-and-linker-scripts/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/03-linker-and-linker-scripts/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/03-linker-and-linker-scripts/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-development-on-wsl/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-development-on-wsl/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-development-on-wsl/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-modules-on-vs2026/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-modules-on-vs2026/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-modules-on-vs2026/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/msvc-debugging-internals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/msvc-debugging-internals/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/msvc-debugging-internals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/prompt/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/prompt/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/prompt/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/algorithms/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/algorithms/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/algorithms/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/data-storage/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/data-storage/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/data-storage/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-dynamic-allocation-issues/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-dynamic-allocation-issues/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-dynamic-allocation-issues/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-resource-and-realtime-constraints/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-resource-and-realtime-constraints/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-resource-and-realtime-constraints/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-zero-overhead-abstraction/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-zero-overhead-abstraction/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-zero-overhead-abstraction/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-static-and-stack-allocation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-static-and-stack-allocation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-static-and-stack-allocation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/03-object-pool-pattern/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/03-object-pool-pattern/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/03-object-pool-pattern/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-empty-base-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-empty-base-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-empty-base-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-placement-new/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-placement-new/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-placement-new/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-etl/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-etl/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-etl/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-fixed-pool-allocation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-fixed-pool-allocation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-fixed-pool-allocation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-interrupt-safe-coding/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-interrupt-safe-coding/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-interrupt-safe-coding/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/06-array-vs-raw-arrays/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/06-array-vs-raw-arrays/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/06-array-vs-raw-arrays/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/core-embedded-cpp-index/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/core-embedded-cpp-index/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/core-embedded-cpp-index/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/01-toolchain-setup/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/01-toolchain-setup/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/01-toolchain-setup/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/02-project-structure/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/02-project-structure/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/02-project-structure/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/03-cmake-configuration/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/03-cmake-configuration/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/03-cmake-configuration/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/04-wsl2-usb/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/04-wsl2-usb/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/04-wsl2-usb/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/05-debugging-guide/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/05-debugging-guide/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/05-debugging-guide/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/01-motivation-and-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/01-motivation-and-overview/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/01-motivation-and-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/02-what-is-gpio/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/02-what-is-gpio/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/02-what-is-gpio/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/03-output-modes-and-pc13/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/03-output-modes-and-pc13/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/03-output-modes-and-pc13/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/04-hal-gpio-clock/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/04-hal-gpio-clock/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/04-hal-gpio-clock/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/05-hal-gpio-init/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/05-hal-gpio-init/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/05-hal-gpio-init/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/06-hal-gpio-output/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/06-hal-gpio-output/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/06-hal-gpio-output/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/07-c-macro-led-implementation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/07-c-macro-led-implementation/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/07-c-macro-led-implementation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/09-cpp-template-gpio/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/09-cpp-template-gpio/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/09-cpp-template-gpio/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/11-cpp-led-template/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/11-cpp-led-template/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/11-cpp-led-template/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/01-from-output-to-input/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/01-from-output-to-input/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/01-from-output-to-input/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/02-gpio-input-circuits/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/02-gpio-input-circuits/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/02-gpio-input-circuits/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/04-hal-gpio-input/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/04-hal-gpio-input/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/04-hal-gpio-input/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/05-c-polling-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/05-c-polling-button/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/05-c-polling-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/06-non-blocking-debounce/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/06-non-blocking-debounce/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/06-non-blocking-debounce/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/07-debounce-state-machine/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/07-debounce-state-machine/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/07-debounce-state-machine/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/08-cpp-enum-class-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/08-cpp-enum-class-button/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/08-cpp-enum-class-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/10-cpp-template-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/10-cpp-template-button/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/10-cpp-template-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/11-cpp-concepts-callback/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/11-cpp-concepts-callback/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/11-cpp-concepts-callback/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/gui-graphics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/gui-graphics/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/gui-graphics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/networking/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/networking/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/networking/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/tags/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/tags/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/tags/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/appendix/terminology/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/appendix/terminology/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/appendix/terminology/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/01-compilation-and-linking-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/01-compilation-and-linking-overview/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/01-compilation-and-linking-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/02-reuse-concept/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/02-reuse-concept/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/02-reuse-concept/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/03-creating-and-using-static-libs/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/03-creating-and-using-static-libs/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/03-creating-and-using-static-libs/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/04-dynamic-libraries-1/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/04-dynamic-libraries-1/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/04-dynamic-libraries-1/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/05-dynamic-library-design/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/05-dynamic-library-design/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/05-dynamic-library-design/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/06-symbol-visibility/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/06-symbol-visibility/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/06-symbol-visibility/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/07-symbol-missing-and-runtime-loading/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/07-symbol-missing-and-runtime-loading/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/07-symbol-missing-and-runtime-loading/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/08-library-search-logic/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/08-library-search-logic/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/08-library-search-logic/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/09-dynamic-library-details/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/09-dynamic-library-details/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/09-dynamic-library-details/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/10-dynamic-lib-as-executable/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/10-dynamic-lib-as-executable/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/10-dynamic-lib-as-executable/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/images/DESIGN_SPEC/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/images/DESIGN_SPEC/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/images/DESIGN_SPEC/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/projects/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/projects/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/projects/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/00-preface/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/00-preface/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/00-preface/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/02-c-language-crash-course/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/02-c-language-crash-course/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/02-c-language-crash-course/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/03-cpp98-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/03-cpp98-basics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/03-cpp98-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/04-when-to-use-cpp/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/04-when-to-use-cpp/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/04-when-to-use-cpp/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/05-language-choice-performance-vs-maintainability/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/05-language-choice-performance-vs-maintainability/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol1-fundamentals/05-language-choice-performance-vs-maintainability/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-auto-and-decltype/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-auto-and-decltype/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-auto-and-decltype/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-constexpr-and-design-techniques/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-constexpr-and-design-techniques/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-constexpr-and-design-techniques/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-enum-class/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-enum-class/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-enum-class/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-lambda-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-lambda-basics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-lambda-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-raii-in-peripheral-management/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/01-raii-in-peripheral-management/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/01-raii-in-peripheral-management/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-consteval-constinit/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-consteval-constinit/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-consteval-constinit/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-lambda-capture-and-performance/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-lambda-capture-and-performance/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-lambda-capture-and-performance/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-move-semantics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-move-semantics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-move-semantics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-structured-bindings/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-structured-bindings/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-structured-bindings/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-unique-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/02-unique-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/02-unique-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-compile-time-in-practice/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-compile-time-in-practice/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-compile-time-in-practice/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-constexpr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-constexpr/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-constexpr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-range-based-for-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-range-based-for-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-range-based-for-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-rvo-nrvo/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-rvo-nrvo/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-rvo-nrvo/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-shared-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-shared-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-shared-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-std-function-vs-function-ptr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-std-function-vs-function-ptr/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-std-function-vs-function-ptr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-variant/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/03-variant/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/03-variant/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-attributes/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-attributes/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-attributes/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-optional/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-optional/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-optional/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-smart-ptr-embedded-tradeoffs/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-zero-overhead-callbacks/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/04-zero-overhead-callbacks/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/04-zero-overhead-callbacks/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-expected/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-expected/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-expected/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-intrusive-ptr-and-ref-counting/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-intrusive-ptr-and-ref-counting/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-intrusive-ptr-and-ref-counting/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-std-invoke-and-callables/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/05-std-invoke-and-callables/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/05-std-invoke-and-callables/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-custom-deleter/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-custom-deleter/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-custom-deleter/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-designated-initializers/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-designated-initializers/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-designated-initializers/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-functional-error-handling/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-functional-error-handling/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-functional-error-handling/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-type-aliases-and-using/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/06-type-aliases-and-using/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/06-type-aliases-and-using/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-literal-operators-and-custom-units/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-literal-operators-and-custom-units/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-literal-operators-and-custom-units/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-ranges-basics-and-views/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-ranges-basics-and-views/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-ranges-basics-and-views/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-reference-counting/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-reference-counting/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-reference-counting/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-user-defined-literals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/07-user-defined-literals/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/07-user-defined-literals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-ranges-pipeline-in-practice/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-ranges-pipeline-in-practice/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-ranges-pipeline-in-practice/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-scope-guard/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/08-scope-guard/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/08-scope-guard/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/cpp17-string-view/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/cpp17-string-view/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol2-modern-features/cpp17-string-view/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-array/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-array/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-array/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-initializer-lists/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/01-initializer-lists/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/01-initializer-lists/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-span/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-span/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-span/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-type-safe-register-access/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/02-type-safe-register-access/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/02-type-safe-register-access/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/03-circular-buffer/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/03-circular-buffer/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/03-circular-buffer/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/04-intrusive-containers/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/04-intrusive-containers/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/04-intrusive-containers/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/05-object-size-and-trivial-types/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/05-object-size-and-trivial-types/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/05-object-size-and-trivial-types/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/06-custom-allocators/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/06-custom-allocators/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol3-standard-library/06-custom-allocators/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/00-template-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/00-template-overview/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/00-template-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-coroutine-basics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-coroutine-basics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-coroutine-basics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-function-templates/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/01-function-templates/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/01-function-templates/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-class-templates/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-class-templates/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-class-templates/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-coroutine-scheduler/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/02-coroutine-scheduler/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/02-coroutine-scheduler/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/03-template-specialization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/03-template-specialization/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/03-template-specialization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-if-constexpr/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-if-constexpr/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-if-constexpr/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-non-type-template-params/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/04-non-type-template-params/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/04-non-type-template-params/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-spaceship-operator/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-spaceship-operator/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-spaceship-operator/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-template-args-and-name-lookup/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/05-template-args-and-name-lookup/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/05-template-args-and-name-lookup/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/06-template-friends-and-barton-nackman/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/06-template-friends-and-barton-nackman/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/06-template-friends-and-barton-nackman/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/07-template-aliases-and-using/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/07-template-aliases-and-using/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/07-template-aliases-and-using/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/08-templates-and-inheritance-crtp/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/08-templates-and-inheritance-crtp/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/08-templates-and-inheritance-crtp/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/cpp-templates-index/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/cpp-templates-index/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/cpp-templates-index/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/msvc-cpp-modules/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/msvc-cpp-modules/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol4-advanced/msvc-cpp-modules/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/01-atomic/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/01-atomic/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/01-atomic/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/02-memory-order/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/02-memory-order/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/02-memory-order/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-coroutine-echo-server/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-coroutine-echo-server/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-coroutine-echo-server/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-lock-free-data-structures/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/03-lock-free-data-structures/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/03-lock-free-data-structures/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/04-mutex-and-raii-guards/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/04-mutex-and-raii-guards/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/04-mutex-and-raii-guards/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/06-critical-section-protection/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/06-critical-section-protection/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol5-concurrency/06-critical-section-protection/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/02-inline-and-compiler-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/02-inline-and-compiler-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/02-inline-and-compiler-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/06-evaluating-performance-and-size/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/06-evaluating-performance-and-size/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/06-evaluating-performance-and-size/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/avx-avx2-deep-dive/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/avx-avx2-deep-dive/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol6-performance/avx-avx2-deep-dive/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-cross-compilation-and-cmake/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-cross-compilation-and-cmake/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-cross-compilation-and-cmake/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-file-copier-requirements-and-framework/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/01-file-copier-requirements-and-framework/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/01-file-copier-requirements-and-framework/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-compiler-options/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-compiler-options/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-compiler-options/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-file-copier-core-implementation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/02-file-copier-core-implementation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/02-file-copier-core-implementation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/03-linker-and-linker-scripts/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/03-linker-and-linker-scripts/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/03-linker-and-linker-scripts/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-development-on-wsl/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-development-on-wsl/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-development-on-wsl/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-modules-on-vs2026/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/cpp-modules-on-vs2026/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/cpp-modules-on-vs2026/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/msvc-debugging-internals/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/msvc-debugging-internals/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/msvc-debugging-internals/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/prompt/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/prompt/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol7-engineering/prompt/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/algorithms/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/algorithms/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/algorithms/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/data-storage/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/data-storage/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/data-storage/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-dynamic-allocation-issues/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-dynamic-allocation-issues/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-dynamic-allocation-issues/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-resource-and-realtime-constraints/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-resource-and-realtime-constraints/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-resource-and-realtime-constraints/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-zero-overhead-abstraction/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-zero-overhead-abstraction/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-zero-overhead-abstraction/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-static-and-stack-allocation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-static-and-stack-allocation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-static-and-stack-allocation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/03-object-pool-pattern/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/03-object-pool-pattern/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/03-object-pool-pattern/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-empty-base-optimization/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-empty-base-optimization/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-empty-base-optimization/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-placement-new/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/04-placement-new/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/04-placement-new/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-etl/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-etl/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-etl/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-fixed-pool-allocation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-fixed-pool-allocation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-fixed-pool-allocation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-interrupt-safe-coding/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/05-interrupt-safe-coding/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/05-interrupt-safe-coding/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/06-array-vs-raw-arrays/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/06-array-vs-raw-arrays/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/06-array-vs-raw-arrays/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/core-embedded-cpp-index/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/core-embedded-cpp-index/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/core-embedded-cpp-index/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/01-toolchain-setup/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/01-toolchain-setup/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/01-toolchain-setup/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/02-project-structure/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/02-project-structure/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/02-project-structure/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/03-cmake-configuration/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/03-cmake-configuration/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/03-cmake-configuration/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/04-wsl2-usb/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/04-wsl2-usb/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/04-wsl2-usb/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/05-debugging-guide/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/00-env-setup/05-debugging-guide/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/00-env-setup/05-debugging-guide/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/01-motivation-and-overview/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/01-motivation-and-overview/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/01-motivation-and-overview/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/02-what-is-gpio/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/02-what-is-gpio/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/02-what-is-gpio/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/03-output-modes-and-pc13/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/03-output-modes-and-pc13/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/03-output-modes-and-pc13/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/04-hal-gpio-clock/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/04-hal-gpio-clock/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/04-hal-gpio-clock/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/05-hal-gpio-init/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/05-hal-gpio-init/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/05-hal-gpio-init/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/06-hal-gpio-output/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/06-hal-gpio-output/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/06-hal-gpio-output/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/07-c-macro-led-implementation/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/07-c-macro-led-implementation/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/07-c-macro-led-implementation/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/09-cpp-template-gpio/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/09-cpp-template-gpio/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/09-cpp-template-gpio/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/11-cpp-led-template/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/11-cpp-led-template/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/11-cpp-led-template/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/01-led/13-pitfalls-and-exercises/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/01-from-output-to-input/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/01-from-output-to-input/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/01-from-output-to-input/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/02-gpio-input-circuits/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/02-gpio-input-circuits/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/02-gpio-input-circuits/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/03-button-hardware-and-bounce/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/04-hal-gpio-input/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/04-hal-gpio-input/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/04-hal-gpio-input/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/05-c-polling-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/05-c-polling-button/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/05-c-polling-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/06-non-blocking-debounce/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/06-non-blocking-debounce/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/06-non-blocking-debounce/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/07-debounce-state-machine/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/07-debounce-state-machine/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/07-debounce-state-machine/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/08-cpp-enum-class-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/08-cpp-enum-class-button/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/08-cpp-enum-class-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/09-cpp-variant-and-visit/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/10-cpp-template-button/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/10-cpp-template-button/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/10-cpp-template-button/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/11-cpp-concepts-callback/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/11-cpp-concepts-callback/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/11-cpp-concepts-callback/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/gui-graphics/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/gui-graphics/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/gui-graphics/"/>
+    </url>
+    <url>
+        <loc>https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/networking/</loc>
+        <lastmod>2026-04-16</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/networking/"/>
+        <xhtml:link rel="alternate" hreflang="zh" href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/networking/"/>
+    </url>
 </urlset>
