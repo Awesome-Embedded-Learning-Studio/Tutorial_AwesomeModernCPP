@@ -6,7 +6,9 @@ priority: P2
 status: pending
 created: 2026-04-15
 assignee: charliechen
-depends_on: ["architecture/002"]
+depends_on: ["architecture/002", "203"]
+# NOTE: 本 TODO 已对齐到卷四 ch05 (vol4-advanced/ch05-template-metaprogramming/)
+# 详细大纲见 todo/content/203-vol4-advanced-outline.md
 blocks: []
 estimated_effort: epic
 ---

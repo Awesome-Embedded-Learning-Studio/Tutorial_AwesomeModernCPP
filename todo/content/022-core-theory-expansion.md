@@ -8,6 +8,14 @@ created: 2026-04-15
 assignee: charliechen
 depends_on:
   - "architecture/002"
+# NOTE: 本 TODO 内容已拆分到多个卷：
+#   Ch13-Ch14 (中断/寄存器) → vol8-domains/embedded/ch03 + ch04
+#   Ch15-Ch16 (数据结构/设计模式) → vol3-standard-library + vol4-advanced/ch09
+#   Ch17-Ch18 (性能/工具链) → vol6-performance + vol7-engineering
+#   Ch19-Ch21 (能耗/网络/序列化) → vol8-domains/embedded + networking + data-storage
+#   Ch22-Ch23 (安全/测试) → vol7-engineering/ch02 + ch03
+#   Ch24-Ch28 (Linux/协程/高级) → vol8-domains/embedded + vol4-advanced/ch02
+# 详细大纲见各卷对应的 TODO 200-209 文件
 blocks: []
 estimated_effort: epic
 ---

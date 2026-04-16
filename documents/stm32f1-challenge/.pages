@@ -1,5 +1,0 @@
-title: 挑战：使用现代C/C++编写STM32F103C8T6
-nav:
-  - 00-env-setup
-  - 01-led
-  - 02-button
