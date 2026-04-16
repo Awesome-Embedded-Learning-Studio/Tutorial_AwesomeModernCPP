@@ -4,13 +4,15 @@ description: "深入理解C++11移动语义"
 chapter: 3
 order: 2
 tags:
-  - 移动语义
-  - 右值引用
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++：移动语义不是玄学，是资源转移的工程实践

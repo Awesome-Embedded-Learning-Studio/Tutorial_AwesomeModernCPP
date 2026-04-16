@@ -1,3 +1,13 @@
+---
+title: "第22篇：HAL GPIO 输入 API —— 怎么用代码读到按钮状态"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第22篇：HAL GPIO 输入 API —— 怎么用代码读到按钮状态
 
 > 承接上一篇：硬件准备好了，接线图画了，抖动也讲透了。现在终于要写代码了。这一篇拆解 HAL 库提供的 GPIO 输入接口。

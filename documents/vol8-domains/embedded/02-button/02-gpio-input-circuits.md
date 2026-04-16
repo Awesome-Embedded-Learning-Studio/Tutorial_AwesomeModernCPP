@@ -1,3 +1,13 @@
+---
+title: "第20篇：GPIO 输入模式内部电路 —— 芯片是如何"听"到外部信号的"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第20篇：GPIO 输入模式内部电路 —— 芯片是如何"听"到外部信号的
 
 > 承接上一篇：按钮比 LED 难在三个地方——读取而非写入、物理噪声、时序管理。这一篇我们解决第一个问题：GPIO 输入模式到底是怎么工作的。

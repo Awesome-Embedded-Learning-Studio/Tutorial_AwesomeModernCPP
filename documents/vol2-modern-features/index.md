@@ -1,6 +1,11 @@
 ---
 title: "卷二：现代 C++ 特性"
 description: "C++11-17 核心特性深入讲解"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷二：现代 C++ 特性

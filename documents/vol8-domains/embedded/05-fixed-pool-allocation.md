@@ -4,14 +4,15 @@ description: "固定大小内存池分配器"
 chapter: 5
 order: 5
 tags:
-  - 固定池
-  - 分配器
-  - 内存管理
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式 C++ 教程：Slab / Arena 实现与比较

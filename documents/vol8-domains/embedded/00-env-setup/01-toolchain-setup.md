@@ -1,3 +1,13 @@
+---
+title: "第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
 
 > 写给所有想在 Linux 下搞 STM32、却被一堆工具链名词搞得晕头转向的朋友。

@@ -4,13 +4,15 @@ description: "placement new应用策略"
 chapter: 5
 order: 4
 tags:
-  - placement-new
-  - 内存管理
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式C++教程：placement new

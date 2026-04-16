@@ -4,15 +4,15 @@ description: "介绍C++20新增关键字"
 chapter: 4
 order: 2
 tags:
-  - consteval
-  - constinit
-  - C++20
-  - 编译期
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [20]
+platform: host
 ---
 
 # 现代C++嵌入式教程——`consteval` 与 `constinit`

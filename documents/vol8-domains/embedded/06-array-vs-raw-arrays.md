@@ -4,14 +4,15 @@ description: "对比std::array与传统数组"
 chapter: 5
 order: 6
 tags:
-  - array
-  - 数组
-  - 容器
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式C++教程——`std::array` vs C 数组，你们知道嘛？

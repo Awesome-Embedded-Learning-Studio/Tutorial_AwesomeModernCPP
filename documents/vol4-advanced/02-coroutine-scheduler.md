@@ -1,3 +1,13 @@
+---
+title: "理解C++20的革命特性——协程支持2：编写简单的协程调度器"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 理解C++20的革命特性——协程支持2：编写简单的协程调度器
 
 ## 前言

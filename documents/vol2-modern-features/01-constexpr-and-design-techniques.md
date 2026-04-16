@@ -4,14 +4,15 @@ description: "深入探讨constexpr高级应用"
 chapter: 4
 order: 1
 tags:
-  - constexpr
-  - 编译期
-  - 设计
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式的现代C++教程——`constexpr` 与设计技巧

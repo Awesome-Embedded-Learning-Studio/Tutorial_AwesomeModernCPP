@@ -1,3 +1,13 @@
+---
+title: "一文读懂 MSVC C++ Modules：原理、动机与工程实践"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 一文读懂 MSVC C++ Modules：原理、动机与工程实践
 
 仙人指路，如果你之前就不知道如何在MSVC上使用模块，笔者的确会很严肃的向您推介，先试试，再说。

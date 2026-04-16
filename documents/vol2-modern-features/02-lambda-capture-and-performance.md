@@ -4,14 +4,15 @@ description: "Lambda捕获机制"
 chapter: 9
 order: 2
 tags:
-  - lambda
-  - 捕获
-  - 性能
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 8: 类型安全"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——Lambda捕获与性能影响

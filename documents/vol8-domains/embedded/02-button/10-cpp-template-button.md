@@ -1,3 +1,13 @@
+---
+title: "第28篇：Button 模板类设计 —— 把一切交给编译器"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第28篇：Button 模板类设计 —— 把一切交给编译器
 
 > 承接上一篇：`std::variant` + `std::visit` 搞定了事件表达。这一篇设计 Button 模板类，把端口、引脚、上下拉、电平极性全部编码进编译时类型。

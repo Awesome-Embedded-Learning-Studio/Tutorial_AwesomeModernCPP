@@ -4,15 +4,16 @@ description: "掌握现代C++类型别名的强大功能与标准库实现原理
 chapter: 12
 order: 7
 tags:
-  - 模板别名
-  - using声明
-  - type_traits
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 12: 类模板详解"
   - "Chapter 12: 模板元编程基础"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——模板别名与Using声明

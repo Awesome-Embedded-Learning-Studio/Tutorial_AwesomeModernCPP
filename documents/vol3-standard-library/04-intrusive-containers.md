@@ -4,13 +4,15 @@ description: "侵入式容器设计"
 chapter: 7
 order: 4
 tags:
-  - 侵入式容器
-  - 数据结构
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——侵入式容器设计

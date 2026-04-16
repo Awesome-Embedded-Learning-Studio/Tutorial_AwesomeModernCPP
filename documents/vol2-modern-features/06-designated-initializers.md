@@ -4,16 +4,16 @@ description: "现代C++指定初始化器详解与嵌入式应用"
 chapter: 11
 order: 6
 tags:
-  - 指定初始化器
-  - 聚合初始化
-  - C99
-  - C++20
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 30
 prerequisites:
   - "Chapter 11.1: auto与decltype"
   - "Chapter 11.2: 结构化绑定"
 cpp_standard: [20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——指定初始化器

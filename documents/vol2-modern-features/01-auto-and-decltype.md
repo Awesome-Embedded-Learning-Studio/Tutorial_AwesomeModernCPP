@@ -4,14 +4,15 @@ description: "现代C++类型推导机制详解"
 chapter: 11
 order: 1
 tags:
-  - auto
-  - decltype
-  - 类型推导
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 8: 类型系统基础"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——自动类型推导（auto与decltype）

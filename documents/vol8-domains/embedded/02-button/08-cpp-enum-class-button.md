@@ -1,3 +1,13 @@
+---
+title: "第26篇：`enum class` 重构按钮代码 —— 类型安全的输入"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第26篇：`enum class` 重构按钮代码 —— 类型安全的输入
 
 > 承接上一篇：7 状态消抖状态机已经讲透了。现在开始 C++ 重构之旅——和 LED 教程一样，先从 `enum class` 开始。

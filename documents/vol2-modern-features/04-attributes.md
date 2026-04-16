@@ -4,18 +4,16 @@ description: "现代C++属性语法详解：[[nodiscard]]、[[maybe_unused]]等"
 chapter: 11
 order: 4
 tags:
-  - 属性
-  - Attributes
-  - C++11
-  - C++14
-  - C++17
-  - C++20
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 28
 prerequisites:
   - "Chapter 11.1: auto与decltype"
   - "Chapter 11.2: 结构化绑定"
 cpp_standard: [11, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——属性（Attributes）

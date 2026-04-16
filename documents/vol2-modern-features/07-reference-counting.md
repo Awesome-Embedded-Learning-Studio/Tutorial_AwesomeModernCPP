@@ -4,13 +4,15 @@ description: "引用计数工作原理"
 chapter: 6
 order: 7
 tags:
-  - 引用计数
-  - 智能指针
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 5: 内存管理策略"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 引用计数的实现与性能

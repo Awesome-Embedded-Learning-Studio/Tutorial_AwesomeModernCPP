@@ -1,6 +1,11 @@
 ---
 title: "卷一：C++ 基础入门"
 description: "从零开始系统学习 C++ 基础知识"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷一：C++ 基础入门

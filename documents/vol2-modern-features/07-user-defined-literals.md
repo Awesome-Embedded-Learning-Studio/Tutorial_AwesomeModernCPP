@@ -4,17 +4,16 @@ description: "现代C++用户定义字面量详解：类型安全的单位系统
 chapter: 11
 order: 7
 tags:
-  - 字面量
-  - UDL
-  - operator""
-  - constexpr
-  - 编译期计算
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 35
 prerequisites:
   - "Chapter 11.1: auto与decltype"
   - "Chapter 8: constexpr"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——用户定义字面量

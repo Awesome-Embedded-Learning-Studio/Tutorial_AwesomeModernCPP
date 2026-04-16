@@ -1,3 +1,13 @@
+---
+title: "CMake 配置篇 —— 从零构建 STM32 构建系统"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # CMake 配置篇 —— 从零构建 STM32 构建系统
 
 我现在正盯着屏幕上的 CMakeLists.txt，手里的咖啡已经凉了。如果你跟着前两篇文章一路折腾过来，现在应该已经有了交叉编译工具链，也把 STM32 的固件库下载好了。但真正的问题才刚刚开始：怎么让这一切东西乖乖地编译链接成一个能烧进芯片的 .bin 文件？我第一次做这件事的时候，光是让 CMake 理解"这是一个裸机 ARM 项目，不要尝试运行测试程序"就花了半个下午。今天我们就来把这个构建系统从头到尾理清楚。

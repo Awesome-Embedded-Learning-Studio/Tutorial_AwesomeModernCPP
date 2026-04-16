@@ -1,3 +1,13 @@
+---
+title: "环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
 
 ## 前言：这是整个折腾路上最大的坑

@@ -4,14 +4,15 @@ description: "互斥锁和RAII锁守卫"
 chapter: 10
 order: 4
 tags:
-  - mutex
-  - 锁
-  - RAII
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: advanced
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 9: 函数式特性"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——mutex与RAII守卫

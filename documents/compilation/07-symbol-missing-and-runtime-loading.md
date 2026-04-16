@@ -1,3 +1,13 @@
+---
+title: "深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
 
 这一篇博客会更加重要一些，这里我们计划讨论的是各个平台上（Windows和GNU/Linux），当我们的可执行文件生成或者是其他库文件依赖的符号存在未定义时，不同平台的表现；以及比较重要的动态库动态加载编程。

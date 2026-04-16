@@ -1,6 +1,11 @@
 ---
 title: "GUI 与图形"
 description: "图形基础、最小 GUI 框架、ImGui、2D/3D 渲染"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # GUI 与图形

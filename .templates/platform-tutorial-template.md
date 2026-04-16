@@ -3,15 +3,27 @@ title: "平台教程标题"
 series: stm32f1|esp32|rp2040
 chapter: XX
 section: XX
+# 标签体系（四维分类）
+tags:
+  # platform（必填 1 个）
+  - stm32f1
+  # topic（必填 ≥1 个）: cpp-modern | peripheral | rtos | debugging | toolchain | architecture
+  - peripheral
+  # difficulty（必填 1 个）: beginner | intermediate | advanced
+  - beginner
+  # peripheral（可选）: gpio | uart | spi | i2c | adc | timer | pwm | dma | can
+  - gpio
 difficulty: beginner|intermediate|advanced
-tags: [tag1, tag2]
+platform: stm32f1  # stm32f1 | stm32f4 | esp32 | rp2040 | host
 cpp_standard: "C++XX"
 created: YYYY-MM-DD
 author: charliechen
 hardware:
   platform: STM32F103C8T6
   board: Blue Pill
-  peripherals: [GPIO, UART, ...]
+  peripherals:
+    # 使用标准词汇：gpio | uart | spi | i2c | adc | timer | pwm | dma | can
+    - gpio
 ---
 
 # 教程标题

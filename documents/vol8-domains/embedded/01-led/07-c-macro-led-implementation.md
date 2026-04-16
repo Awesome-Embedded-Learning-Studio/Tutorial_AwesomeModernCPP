@@ -1,3 +1,13 @@
+---
+title: "第12篇：C宏时代的LED驱动 —— 能跑但不优雅"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第12篇：C宏时代的LED驱动 —— 能跑但不优雅
 
 > 写给所有觉得"C宏封装已经够用了"的朋友。

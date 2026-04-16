@@ -4,14 +4,15 @@ description: "高效循环缓冲区"
 chapter: 7
 order: 3
 tags:
-  - 循环缓冲区
-  - 数据结构
-  - 嵌入式
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——循环缓冲区

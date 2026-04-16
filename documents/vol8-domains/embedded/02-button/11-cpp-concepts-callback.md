@@ -1,3 +1,13 @@
+---
+title: "第29篇：Concepts 约束回调 + 完整代码走读"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第29篇：Concepts 约束回调 + 完整代码走读
 
 > 承接上一篇：Button 模板类的骨架搭好了。这一篇解决最后一个 C++ 特性——用 Concepts 约束回调参数的类型，然后从头到尾走读一遍完整的 `main.cpp` 调用链。

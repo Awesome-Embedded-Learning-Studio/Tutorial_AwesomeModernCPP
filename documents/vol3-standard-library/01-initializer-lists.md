@@ -4,13 +4,15 @@ description: "详解成员初始化列表"
 chapter: 3
 order: 1
 tags:
-  - 初始化
-  - 构造函数
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 构造函数优化：初始化列表 vs 成员赋值

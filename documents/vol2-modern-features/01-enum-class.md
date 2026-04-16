@@ -4,14 +4,15 @@ description: "C++11强类型枚举"
 chapter: 8
 order: 1
 tags:
-  - enum
-  - enum_class
-  - 类型安全
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——enum class

@@ -1,3 +1,13 @@
+---
+title: "第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第9篇：HAL时钟使能 —— 不开时钟，外设就是一坨睡死的硅
 
 ## 前言：从硬件原理到软件API

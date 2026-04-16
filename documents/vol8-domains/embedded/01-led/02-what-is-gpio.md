@@ -1,3 +1,13 @@
+---
+title: "第7篇：GPIO到底是什么 —— 通用输入输出的前世今生"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第7篇：GPIO到底是什么 —— 通用输入输出的前世今生
 
 ## 前言：从环境搭建到追问本质

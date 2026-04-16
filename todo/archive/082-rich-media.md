@@ -3,7 +3,7 @@ id: "082"
 title: "富媒体内容支持：图表、视频与交互组件"
 category: mkdocs
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["003"]

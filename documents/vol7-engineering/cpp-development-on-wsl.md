@@ -1,3 +1,13 @@
+---
+title: "快速在WSL上开发一般的C++上位机程序"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 快速在WSL上开发一般的C++上位机程序
 
 ## 前言

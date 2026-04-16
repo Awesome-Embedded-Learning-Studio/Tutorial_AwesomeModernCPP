@@ -4,15 +4,16 @@ description: "详细介绍GCC/Clang编译器的常用选项，包括语言标准
 chapter: 1
 order: 2
 tags:
-  - 编译器选项
-  - 优化
-  - GCC
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 0: 前言与基础"
 related: []
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 现代嵌入式 C++ 教程：常见编译器参数指南

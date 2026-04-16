@@ -4,13 +4,15 @@ description: "嵌入式现代C++教程的介绍与概述"
 chapter: 0
 order: 0
 tags:
-  - 基础
-  - 入门
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 8
 prerequisites: []
 related: []
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 前言

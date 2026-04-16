@@ -3,7 +3,7 @@ id: "080"
 title: "重新设计 MkDocs 导航结构"
 category: mkdocs
 priority: P1
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["003"]

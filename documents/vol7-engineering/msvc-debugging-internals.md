@@ -1,3 +1,13 @@
+---
+title: "深入解构：MSVC 调试机制与 Visual Studio 调试器原理"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入解构：MSVC 调试机制与 Visual Studio 调试器原理
 
 笔者最近在家中做一些Windows的项目，项目比较大，这里就涉及到了MSVC的调试相关的内容了，笔者把这几天的一些收获结合MSVC的文档好好聊聊。

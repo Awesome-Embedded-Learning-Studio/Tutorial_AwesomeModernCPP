@@ -4,14 +4,15 @@ description: "C++17类型安全联合体"
 chapter: 8
 order: 3
 tags:
-  - variant
-  - 类型安全
-  - C++17
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 现代嵌入式C++教程：`std::variant`

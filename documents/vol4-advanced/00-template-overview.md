@@ -4,15 +4,16 @@ description: "理解C++模板的核心概念与学习路径"
 chapter: 12
 order: 0
 tags:
-  - 模板
-  - 泛型编程
-  - 基础
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 2: 零开销抽象"
   - "Chapter 11: 类型推导基础"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——模板入门概述

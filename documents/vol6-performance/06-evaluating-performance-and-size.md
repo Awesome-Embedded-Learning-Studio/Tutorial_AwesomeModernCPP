@@ -4,14 +4,15 @@ description: "学习如何评估程序的性能和体积开销，通过实测对
 chapter: 0
 order: 6
 tags:
-  - 性能优化
-  - 体积
-  - 测量
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 20
 prerequisites: []
 related: []
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 现代嵌入式C++教程——C++一定会使得代码膨胀嘛？

@@ -4,14 +4,15 @@ description: "详解unique_ptr使用"
 chapter: 6
 order: 2
 tags:
-  - unique_ptr
-  - 智能指针
-  - RAII
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 5: 内存管理策略"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权

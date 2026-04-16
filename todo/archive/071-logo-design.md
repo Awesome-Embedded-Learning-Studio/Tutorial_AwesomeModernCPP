@@ -3,7 +3,7 @@ id: "071"
 title: "设计专业 Logo 和统一视觉风格"
 category: branding
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: []

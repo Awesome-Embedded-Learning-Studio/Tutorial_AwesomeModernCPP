@@ -3,7 +3,7 @@ id: "084"
 title: "多语言支持准备：mkdocs-static-i18n 集成"
 category: mkdocs
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["003"]

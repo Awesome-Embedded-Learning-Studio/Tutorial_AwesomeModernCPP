@@ -3,7 +3,7 @@ id: "081"
 title: "代码展示增强：行号、复制、注释与高亮"
 category: mkdocs
 priority: P1
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["003"]

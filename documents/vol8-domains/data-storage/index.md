@@ -1,6 +1,11 @@
 ---
 title: "数据存储"
 description: "序列化、文件格式、SQLite、键值存储"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 数据存储

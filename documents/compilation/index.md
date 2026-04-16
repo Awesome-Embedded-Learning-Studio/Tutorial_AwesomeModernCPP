@@ -1,6 +1,11 @@
 ---
 title: "编译与链接深入"
 description: "深入理解 C/C++ 编译、链接、静态库、动态库"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 编译与链接深入

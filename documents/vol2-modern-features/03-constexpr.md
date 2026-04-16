@@ -4,14 +4,15 @@ description: "介绍constexpr关键字"
 chapter: 2
 order: 3
 tags:
-  - constexpr
-  - 编译期
-  - 优化
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 1: 构建工具链"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代 C++教程——constexpr：把计算推到编译期

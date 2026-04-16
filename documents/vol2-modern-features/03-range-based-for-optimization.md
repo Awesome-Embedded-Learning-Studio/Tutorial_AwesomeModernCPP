@@ -4,16 +4,16 @@ description: "现代C++范围for循环详解及性能优化"
 chapter: 11
 order: 3
 tags:
-  - 范围for
-  - 迭代器
-  - C++11
-  - C++20
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 22
 prerequisites:
   - "Chapter 11.1: auto与decltype"
   - "Chapter 11.2: 结构化绑定"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——范围for循环优化

@@ -1,3 +1,13 @@
+---
+title: "第10篇：HAL_GPIO_Init —— 把引脚配置告诉芯片的仪式"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第10篇：HAL_GPIO_Init —— 把引脚配置告诉芯片的仪式
 
 ## 引子：引脚醒了，但它还不知道自己该干什么

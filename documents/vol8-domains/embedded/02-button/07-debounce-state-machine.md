@@ -1,3 +1,13 @@
+---
+title: "第25篇：7 状态消抖状态机 —— 本系列的核心"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第25篇：7 状态消抖状态机 —— 本系列的核心
 
 > 承接上一篇：非阻塞消抖能工作，但状态变量散落、没有事件概念、没处理启动边界。这一篇用一个 7 状态的有限状态机解决所有问题。这是 `button.hpp` 中 `poll_events()` 方法的完整解读。

@@ -1,3 +1,13 @@
+---
+title: "深入理解C/C++编译技术——动态库A3：聊一聊符号可见性"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
 
 有笔者朋友可能感到奇怪——符号的可见性是什么呢？是不是咱们的C++中的关键字：`public`或者是`private`呢？值得指出的是，并不是，前者是语言语法和编译器检查一并提供的基础功能，这里，我们讨论的符号可见性更加的激进，是指代在符号ABI层次的可见性。

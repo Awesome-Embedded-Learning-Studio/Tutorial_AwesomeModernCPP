@@ -1,6 +1,7 @@
 site_name: 现代 C++ 教程  # 网站标题,显示在浏览器标签和页面顶部
 site_description: 系统化的现代 C++ 教程 — 从基础入门到领域实战  # 网站描述,用于SEO优化
 site_author: Charliechen  # 作者名称,可以改成你的真实姓名或网名
+site_url: https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/
 
 # 版权信息,显示在页面底部
 copyright: Copyright &copy; 2025 Charliechen - 保留所有权利
@@ -14,12 +15,13 @@ docs_dir: "documents"
 
 theme:
   name: material  # 使用 Material 主题
+  custom_dir: overrides  # 自定义模板覆盖目录（i18n 语言切换器等）
   language: zh  # 界面语言设置为简体中文
   
   # 自定义网站图标和Logo
-  logo: Awesome-Embedded.png  # 网站Logo
-  favicon: Awesome-Embedded.ico  # 浏览器标签图标
-  
+  logo: images/logo.svg  # 网站Logo（SVG 优先）
+  favicon: images/favicon.ico  # 浏览器标签图标
+
   # 调色板配置 - 支持亮色/暗色模式切换
   palette:
     # 亮色模式
@@ -177,8 +179,37 @@ plugins:
   # 标签插件 - 为文章添加标签分类
   - tags
 
-  # Awesome Pages 插件 - 灵活的页面组织方式
+  # Awesome Pages 插件 - 自动展开 nav 中的目录引用，支持 .pages 文件控制排序和标题
   - awesome-pages
+
+  # 多语言支持 - 使用后缀方案 (file.md + file.en.md)
+  # 注意：i18n 必须在 git-revision-date-localized 之前定义
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: zh
+          name: 中文
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            基础与特性: Basics & Features
+            标准库与高级: Std Library & Advanced
+            工程实践: Engineering
+            领域实战: Domains & Practice
+            卷一 · 基础入门: Vol.1 - C++ Basics
+            卷二 · 现代特性: Vol.2 - Modern Features
+            卷三 · 标准库深入: Vol.3 - Standard Library
+            卷四 · 高级主题: Vol.4 - Advanced Topics
+            卷五 · 并发编程: Vol.5 - Concurrency
+            卷六 · 性能优化: Vol.6 - Performance
+            卷七 · 工程实践: Vol.7 - Engineering
+            卷八 · 领域应用: Vol.8 - Domains
+            编译与链接: Compilation & Linking
+            实战项目: Projects
+            标签: Tags
 
   # Git 修订日期插件 - 自动显示文章的创建和更新时间
   - git-revision-date-localized:
@@ -210,13 +241,13 @@ plugins:
   # documents/，redirect_maps 无法匹配不存在的路径。重定向需在 hosting 层处理。
   # - redirects:
   #     redirect_maps: { ... }
-  #
-  # mkdocs-static-i18n: 需要翻译文件（如 index.en.md）才能启用，否则会产生混淆的语言切换 UI。
-  # - i18n:
-  #     default_language: zh
-  #     languages:
-  #       zh: "中文"
-  #       en: "English"
+
+
+# ==================== Hooks ====================
+# MkDocs 钩子脚本,用于在构建过程中自动处理内容
+
+hooks:
+  - documents/hooks/meta.py
 
 
 # ==================== 额外配置 ====================

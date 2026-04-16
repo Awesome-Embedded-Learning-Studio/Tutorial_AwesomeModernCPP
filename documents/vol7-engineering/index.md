@@ -1,6 +1,11 @@
 ---
 title: "卷七：软件工程实践"
 description: "CMake、包管理、测试、静态分析"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷七：软件工程实践

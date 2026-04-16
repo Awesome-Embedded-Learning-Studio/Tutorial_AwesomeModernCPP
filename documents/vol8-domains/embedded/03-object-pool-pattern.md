@@ -4,14 +4,15 @@ description: "对象池模式应用"
 chapter: 5
 order: 3
 tags:
-  - 对象池
-  - 模式
-  - 内存管理
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式C++教程：对象池（Object Pool）模式

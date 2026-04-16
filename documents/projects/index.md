@@ -1,6 +1,11 @@
 ---
 title: "贯穿式实战项目"
 description: "手写 STL、HTTP 服务器、GUI 框架、嵌入式 OS 等综合项目"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 贯穿式实战项目

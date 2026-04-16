@@ -1,3 +1,13 @@
+---
+title: "第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么""
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"
 
 > 承接上一篇：`enum class` 搞定了类型安全的配置和状态。这一篇引入 C++17 的 `std::variant` 来表达按钮事件——"按下"和"释放"不再是两个整数，而是两个不同的类型。

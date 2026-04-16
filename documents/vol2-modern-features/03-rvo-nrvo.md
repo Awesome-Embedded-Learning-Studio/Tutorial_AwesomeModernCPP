@@ -4,14 +4,15 @@ description: "详解返回值优化"
 chapter: 3
 order: 3
 tags:
-  - RVO
-  - NRVO
-  - 返回值优化
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # RVO 与 NRVO：C++ 返回值优化

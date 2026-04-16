@@ -4,14 +4,15 @@ description: "探讨内联函数的工作原理"
 chapter: 2
 order: 2
 tags:
-  - 内联
-  - 优化
-  - 编译器
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 1: 构建工具链"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代 C++教程——内联函数与编译器优化

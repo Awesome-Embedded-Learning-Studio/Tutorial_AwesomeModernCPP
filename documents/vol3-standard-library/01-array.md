@@ -4,14 +4,15 @@ description: "std::array容器详解"
 chapter: 7
 order: 1
 tags:
-  - array
-  - 容器
-  - STL
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——std::array：编译期固定大小数组

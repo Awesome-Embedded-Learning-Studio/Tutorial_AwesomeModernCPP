@@ -4,14 +4,15 @@ description: "使用静态存储和栈分配"
 chapter: 5
 order: 2
 tags:
-  - 栈
-  - 静态存储
-  - 内存策略
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式 C++ 教程——静态存储与栈上分配策略

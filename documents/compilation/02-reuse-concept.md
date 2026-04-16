@@ -1,3 +1,13 @@
+---
+title: "深入理解CC++的编译与链接技术2：动态库静态库导论"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入理解CC++的编译与链接技术2：动态库静态库导论
 
 ## 什么是重用概念，跟我们的编译与链接技术有什么关系

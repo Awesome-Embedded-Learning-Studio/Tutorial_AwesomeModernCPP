@@ -4,14 +4,15 @@ description: "分析智能指针选择"
 chapter: 6
 order: 4
 tags:
-  - 智能指针
-  - 权衡
-  - 嵌入式
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 5: 内存管理策略"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——智能指针

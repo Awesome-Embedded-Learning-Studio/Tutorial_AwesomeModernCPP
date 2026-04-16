@@ -1,3 +1,13 @@
+---
+title: "第24篇：非阻塞消抖 —— 不让 CPU 停下来等"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第24篇：非阻塞消抖 —— 不让 CPU 停下来等
 
 > 承接上一篇：C 语言轮询按钮能跑，但抖动导致多次触发。用 `HAL_Delay()` 阻塞消抖能解决抖动，但代价是 CPU 被冻结 20ms。这一篇引入非阻塞的时间管理方式。

@@ -3,7 +3,7 @@ id: "083"
 title: "搜索和 SEO 优化"
 category: mkdocs
 priority: P1
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["003"]

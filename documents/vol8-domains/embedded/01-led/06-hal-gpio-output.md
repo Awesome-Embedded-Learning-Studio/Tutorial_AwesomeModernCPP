@@ -1,3 +1,13 @@
+---
+title: "第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第11篇：HAL_GPIO_WritePin与TogglePin —— 让引脚动起来
 
 > 承接上一篇：引脚配置好了，时钟开了，推挽输出就绪。现在就差最后一步——告诉引脚"输出高电平"或"输出低电平"。这就是 `HAL_GPIO_WritePin()` 和 `HAL_GPIO_TogglePin()` 的工作。

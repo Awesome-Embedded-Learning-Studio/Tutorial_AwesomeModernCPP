@@ -4,14 +4,15 @@ description: "C++20数组视图"
 chapter: 7
 order: 2
 tags:
-  - span
-  - 视图
-  - C++20
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程：std::span——轻量、非拥有的数组视图

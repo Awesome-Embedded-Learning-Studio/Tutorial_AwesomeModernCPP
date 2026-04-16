@@ -1,3 +1,13 @@
+---
+title: "现代C++实战——从零开始写个文件拷贝器(上):需求分析与基础框架"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 现代C++实战——从零开始写个文件拷贝器(上):需求分析与基础框架
 
 ## 开篇碎碎念

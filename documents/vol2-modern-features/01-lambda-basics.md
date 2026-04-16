@@ -4,14 +4,15 @@ description: "Lambda基本语法"
 chapter: 9
 order: 1
 tags:
-  - lambda
-  - 函数式
-  - C++11
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 8: 类型安全"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # Lambda表达式基础

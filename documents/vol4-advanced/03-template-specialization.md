@@ -4,15 +4,16 @@ description: "深入理解C++模板特化机制与匹配规则"
 chapter: 12
 order: 3
 tags:
-  - 模板特化
-  - 偏特化
-  - 类型萃取
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 35
 prerequisites:
   - "Chapter 12: 模板入门概述"
   - "Chapter 12: 函数模板详解"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——模板特化与偏特化

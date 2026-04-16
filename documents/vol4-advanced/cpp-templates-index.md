@@ -1,3 +1,13 @@
+---
+title: "现代C++模板教程（计划中）"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 现代C++模板教程（计划中）
 
 四卷系列正在规划中，敬请期待！

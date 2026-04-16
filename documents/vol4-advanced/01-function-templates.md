@@ -4,14 +4,15 @@ description: "深入理解C++函数模板的推导规则与实战技巧"
 chapter: 12
 order: 1
 tags:
-  - 函数模板
-  - 类型推导
-  - 模板重载
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 30
 prerequisites:
   - "Chapter 12: 模板入门概述"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——函数模板详解

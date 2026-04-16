@@ -4,14 +4,15 @@ description: "嵌入式ETL库"
 chapter: 7
 order: 5
 tags:
-  - ETL
-  - 容器库
-  - 嵌入式
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式C++教程——ETL（Embedded Template Library）

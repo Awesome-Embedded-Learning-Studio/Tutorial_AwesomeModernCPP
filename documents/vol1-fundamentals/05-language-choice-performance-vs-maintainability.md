@@ -4,14 +4,15 @@ description: "探讨嵌入式开发中性能与可维护性的真实取舍，以
 chapter: 0
 order: 5
 tags:
-  - 性能
-  - 可维护性
-  - 权衡
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 15
 prerequisites: []
 related: []
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 语言选择原则：性能 vs 可维护性的真实取舍（一点碎碎念）

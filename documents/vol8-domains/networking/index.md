@@ -1,6 +1,11 @@
 ---
 title: "网络编程"
 description: "Socket、HTTP、异步 I/O、WebSocket、RPC"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 网络编程

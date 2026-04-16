@@ -1,3 +1,13 @@
+---
+title: "深入理解CC++的编译与链接技术3：如何制作和使用静态库"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入理解CC++的编译与链接技术3：如何制作和使用静态库
 
 在上一篇博客中，笔者就简单的提及了一下关于静态库和动态库的基本导论，笔者将链接放在这里：

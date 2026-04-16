@@ -4,15 +4,16 @@ description: "深入讲解链接器的工作原理、链接脚本的编写方法
 chapter: 1
 order: 3
 tags:
-  - 链接器
-  - 链接脚本
-  - 内存布局
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: beginner
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 0: 前言与基础"
 related: []
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 链接器与链接器脚本：从原理到实践

@@ -1,3 +1,13 @@
+---
+title: "第23篇：C 语言轮询按钮 —— 第一次亲手让按钮控制 LED"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第23篇：C 语言轮询按钮 —— 第一次亲手让按钮控制 LED
 
 前面的四篇文章里，我们从电路原理聊到了 HAL 库的 GPIO 输入 API。现在是时候把所有知识串起来，写一个真正能跑的程序了。

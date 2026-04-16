@@ -4,14 +4,15 @@ description: "表示可能不存在的值"
 chapter: 8
 order: 4
 tags:
-  - optional
-  - 类型安全
-  - C++17
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——`std::optional`

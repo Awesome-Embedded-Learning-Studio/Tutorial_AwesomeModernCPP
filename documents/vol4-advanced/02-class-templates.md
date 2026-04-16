@@ -4,14 +4,15 @@ description: "深入理解C++类模板的声明、实例化与嵌入式应用"
 chapter: 12
 order: 2
 tags:
-  - 类模板
-  - 泛型容器
-  - 模板实例化
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 40
 prerequisites:
   - "Chapter 12.1: 函数模板详解"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——类模板详解

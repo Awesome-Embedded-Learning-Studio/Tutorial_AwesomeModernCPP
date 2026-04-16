@@ -4,14 +4,15 @@ description: "介绍空基类优化技术"
 chapter: 3
 order: 4
 tags:
-  - EBO
-  - 空基类
-  - 优化
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 空基类优化（EBO）：C++ 的瘦身技巧

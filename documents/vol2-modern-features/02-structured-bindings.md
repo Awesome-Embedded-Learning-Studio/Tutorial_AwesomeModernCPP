@@ -4,15 +4,15 @@ description: "C++17结构化绑定详解"
 chapter: 11
 order: 2
 tags:
-  - 结构化绑定
-  - C++17
-  - tuple
-  - 解包
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 11.1: auto与decltype"
 cpp_standard: [17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——结构化绑定（Structured Binding）

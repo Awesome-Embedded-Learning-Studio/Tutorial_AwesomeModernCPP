@@ -3,17 +3,34 @@ title: "文章标题"
 description: "一句话描述这篇文章的核心内容"
 chapter: 0
 order: 0
+# 标签体系（四维分类，详见下方注释）
 tags:
-  - 示例标签1
-  - 示例标签2
+  # platform（必填 1 个）: stm32f1 | stm32f4 | esp32 | rp2040 | host
+  - host
+  # topic（必填 ≥1 个）: cpp-modern | peripheral | rtos | debugging | toolchain | architecture
+  - cpp-modern
+  # difficulty（必填 1 个）: beginner | intermediate | advanced
+  - beginner
+  # peripheral（可选，有外设内容时添加）: gpio | uart | spi | i2c | adc | timer | pwm | dma | can
+  # - gpio
 difficulty: beginner  # beginner | intermediate | advanced
 reading_time_minutes: 10
+platform: host  # stm32f1 | stm32f4 | esp32 | rp2040 | host
 prerequisites:
   - "Chapter X: 前置知识章节名称"
 related:
   - "相关文章标题"
 cpp_standard: [11, 14, 17, 20]
 ---
+
+<!--
+标签使用规则：
+1. 每篇文章必须包含 1 个 platform 标签（或 host 表示平台无关）
+2. 每篇文章必须包含 1 个 difficulty 标签
+3. 每篇文章至少包含 1 个 topic 标签
+4. peripheral 标签仅在有外设相关内容时添加
+5. 标签使用英文小写，中划线分隔
+-->
 
 # 文章标题
 

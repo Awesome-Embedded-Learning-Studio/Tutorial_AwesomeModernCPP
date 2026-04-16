@@ -4,16 +4,16 @@ description: "深入理解C++模板的两阶段查找与依赖名称处理"
 chapter: 12
 order: 5
 tags:
-  - 名字查找
-  - 两阶段查找
-  - ADL
-  - typename
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 40
 prerequisites:
   - "Chapter 12: 模板入门概述"
   - "Chapter 12: 函数模板详解"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——模板参数依赖与名字查找

@@ -4,14 +4,15 @@ description: "using关键字详解"
 chapter: 8
 order: 6
 tags:
-  - using
-  - 类型别名
-  - 模板
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——类型别名与using声明

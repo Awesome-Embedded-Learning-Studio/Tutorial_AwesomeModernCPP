@@ -1,6 +1,11 @@
 ---
 title: "嵌入式开发"
 description: "现代 C++ 在嵌入式系统中的实战应用"
+platform: stm32f1
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
 ---
 
 # 嵌入式开发

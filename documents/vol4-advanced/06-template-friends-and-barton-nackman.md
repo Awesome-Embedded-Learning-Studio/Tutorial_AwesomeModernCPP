@@ -4,16 +4,16 @@ description: "掌握友元注入机制与运算符重载的模板技巧"
 chapter: 12
 order: 6
 tags:
-  - 模板友元
-  - Barton-Nackman
-  - 运算符重载
-  - CRTP
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 35
 prerequisites:
   - "Chapter 12: 类模板详解"
   - "Chapter 12: 模板实例化与特化"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——模板友元与 Barton-Nackman 技巧

@@ -4,14 +4,15 @@ description: "ISR安全编程实践"
 chapter: 10
 order: 5
 tags:
-  - 中断
-  - ISR
-  - 并发
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: advanced
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 10.1-10.4: 原子操作与内存序"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 嵌入式现代C++开发——中断安全的代码编写

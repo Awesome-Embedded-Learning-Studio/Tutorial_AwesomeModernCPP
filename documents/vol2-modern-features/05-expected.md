@@ -4,14 +4,15 @@ description: "类型安全错误处理"
 chapter: 8
 order: 5
 tags:
-  - expected
-  - 错误处理
-  - C++23
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——std::expected

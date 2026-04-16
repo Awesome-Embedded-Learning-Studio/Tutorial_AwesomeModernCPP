@@ -3,7 +3,7 @@ id: "070"
 title: "重新设计 README.md：项目门户与快速开始"
 category: branding
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: []

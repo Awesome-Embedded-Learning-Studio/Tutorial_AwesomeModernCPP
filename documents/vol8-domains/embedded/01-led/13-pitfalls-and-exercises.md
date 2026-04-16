@@ -1,3 +1,13 @@
+---
+title: "第18篇：常见坑位与实战练习 —— 把LED玩出花样来"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第18篇：常见坑位与实战练习 —— 把LED玩出花样来
 
 > 承接：所有原理和代码都讲完了，LED能闪了。但实际动手时总会遇到各种诡异的问题——这一篇先把常见坑位全部标出来，然后给出三个递进式练习帮你把知识从"看懂"变成"写得出"。

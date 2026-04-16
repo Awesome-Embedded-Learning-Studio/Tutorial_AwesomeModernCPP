@@ -4,15 +4,16 @@ description: "深入理解C++非类型模板参数的用法与嵌入式应用"
 chapter: 12
 order: 4
 tags:
-  - 非类型模板参数
-  - 编译期常量
-  - 嵌入式封装
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 35
 prerequisites:
   - "Chapter 12: 模板入门概述"
   - "Chapter 12: 函数模板详解"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——非类型模板参数

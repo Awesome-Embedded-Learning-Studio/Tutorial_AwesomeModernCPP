@@ -1,3 +1,13 @@
+---
+title: "第19篇：从输出到输入 —— 为什么按钮比 LED 难"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第19篇：从输出到输入 —— 为什么按钮比 LED 难
 
 > 恭喜你走完了 LED 教程的 13 篇。现在我们有了 GPIO 输出的基础，有了模板和 `enum class` 的经验，是时候面对一个新的挑战了：让芯片听懂人类的操作。

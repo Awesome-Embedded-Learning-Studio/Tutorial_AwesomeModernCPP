@@ -4,14 +4,15 @@ description: "详解if constexpr应用"
 chapter: 4
 order: 4
 tags:
-  - if_constexpr
-  - 模板
-  - 编译期
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [17, 20]
+platform: host
 ---
 
 # `if constexpr`：把编译期分支写得像写注释 —— 工程味实战指南

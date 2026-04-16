@@ -4,14 +4,15 @@ description: "介绍shared_ptr工作原理"
 chapter: 6
 order: 3
 tags:
-  - shared_ptr
-  - 智能指针
-  - 引用计数
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 18
 prerequisites:
   - "Chapter 5: 内存管理策略"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——std::shared_ptr如何呢

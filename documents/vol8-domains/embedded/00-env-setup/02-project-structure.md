@@ -1,3 +1,13 @@
+---
+title: "第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
 
 > 上一篇我们把工具链装好了，现在来搭项目骨架。这篇记录我获取 STM32 HAL 库的全过程，包括那个让人摸不着头脑的嵌套 submodule 问题、启动文件命名规则背后的玄学，以及 `stm32f1xx_hal_conf.h` 里那些让你编译到一半报错的隐藏坑。

@@ -1,6 +1,11 @@
 ---
 title: "卷六：性能优化"
 description: "CPU 缓存、SIMD、汇编阅读、优化模式"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷六：性能优化

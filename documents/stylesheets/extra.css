@@ -146,6 +146,24 @@ html {
   color: var(--md-accent-fg-color);
 }
 
+/* ---------- Line Highlight ---------- */
+
+/* Highlighted lines in code blocks (via hl_lines) */
+.highlight .hll {
+  background-color: rgba(255, 235, 59, 0.15);
+}
+
+[data-md-color-scheme="slate"] .highlight .hll {
+  background-color: rgba(255, 235, 59, 0.1);
+}
+
+/* Line numbers */
+.highlight .linenos {
+  color: var(--md-default-fg-color--lighter);
+  user-select: none;
+  padding-right: 1em;
+}
+
 /* ---------- Tables ---------- */
 
 .md-typeset table:not([class]) {
@@ -359,4 +377,81 @@ html {
   .md-top {
     display: none !important;
   }
+}
+
+/* ==========================================================================
+   Rich Media & Custom Admonitions (TODO 082)
+   ========================================================================== */
+
+/* ---------- Responsive Video ---------- */
+
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  margin: 1.5em 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+[data-md-color-scheme="slate"] .video-container {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- Custom Admonition Types ---------- */
+
+/* 硬件相关提示 */
+.admonition.hardware {
+  border-left-color: #FF6F00;
+}
+.admonition.hardware > .admonition-title {
+  background-color: rgba(255, 111, 0, 0.1);
+}
+.admonition.hardware > .admonition-title::before {
+  background-color: #FF6F00;
+}
+
+/* 动手练习 */
+.admonition.practice {
+  border-left-color: #00BFA5;
+}
+.admonition.practice > .admonition-title {
+  background-color: rgba(0, 191, 165, 0.1);
+}
+.admonition.practice > .admonition-title::before {
+  background-color: #00BFA5;
+}
+
+/* 安全警告 */
+.admonition.safety {
+  border-left-color: #D32F2F;
+}
+.admonition.safety > .admonition-title {
+  background-color: rgba(211, 47, 47, 0.1);
+}
+.admonition.safety > .admonition-title::before {
+  background-color: #D32F2F;
+}
+
+/* ---------- Mermaid Responsive ---------- */
+
+.mermaid {
+  text-align: center;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
 }

@@ -4,14 +4,15 @@ description: "用户自定义字面量"
 chapter: 8
 order: 7
 tags:
-  - 字面量
-  - 类型安全
-  - 运算符重载
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 7: 容器与数据结构"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——字面量运算符与自定义单位

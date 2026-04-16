@@ -4,14 +4,15 @@ description: "零开支回调实现"
 chapter: 9
 order: 4
 tags:
-  - 回调
-  - 零开支
-  - 模板
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 8: 类型安全"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 回调机制的零开销实现

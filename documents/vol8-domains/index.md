@@ -1,6 +1,11 @@
 ---
 title: "卷八：领域应用"
 description: "嵌入式开发、网络编程、GUI 图形、数据存储、算法与数据结构"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷八：领域应用

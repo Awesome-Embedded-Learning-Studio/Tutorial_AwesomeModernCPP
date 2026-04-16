@@ -1,3 +1,13 @@
+---
+title: "深入理解C/C++的编译与链接技术8：库文件检索逻辑"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # 深入理解C/C++的编译与链接技术8：库文件检索逻辑
 
 ## 前言

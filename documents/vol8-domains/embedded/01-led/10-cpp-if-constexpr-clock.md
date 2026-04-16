@@ -1,3 +1,13 @@
+---
+title: "第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
 
 > 承接上篇：GPIO模板搭好了骨架，但时钟使能还没解决。核心问题是 `__HAL_RCC_GPIOA_CLK_ENABLE()` 和 `__HAL_RCC_GPIOC_CLK_ENABLE()` 是不同的宏，展开后写入不同的寄存器位。我们没法用一个"通用"的运行时函数来选择。解决方案是 `if constexpr`——C++17引入的编译时条件分支。

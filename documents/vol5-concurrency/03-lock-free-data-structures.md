@@ -4,14 +4,15 @@ description: "无锁数据结构设计"
 chapter: 10
 order: 3
 tags:
-  - 无锁
-  - 数据结构
-  - 并发
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: advanced
 reading_time_minutes: 25
 prerequisites:
   - "Chapter 9: 函数式特性"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++开发——无锁数据结构设计

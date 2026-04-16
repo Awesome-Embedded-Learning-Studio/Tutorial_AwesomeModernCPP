@@ -4,14 +4,15 @@ description: "探讨C++对象内存布局"
 chapter: 3
 order: 5
 tags:
-  - 对象大小
-  - 平凡类型
-  - 内存布局
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 2: 零开支抽象"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——对象大小、内存对齐、类型"平凡/标准布局"与聚合初始化

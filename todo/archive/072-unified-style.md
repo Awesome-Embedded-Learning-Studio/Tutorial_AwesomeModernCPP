@@ -3,7 +3,7 @@ id: "072"
 title: "统一内容风格：术语表、代码风格与标签体系"
 category: branding
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: []

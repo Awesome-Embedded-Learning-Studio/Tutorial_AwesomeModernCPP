@@ -4,14 +4,15 @@ description: "自定义STL分配器"
 chapter: 7
 order: 6
 tags:
-  - 分配器
-  - 容器
-  - 内存管理
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 6: RAII与智能指针"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——自定义分配器（Allocator）

@@ -1,13 +1,17 @@
 nav:
   - 首页: index.md
-  - 卷一 · 基础入门: vol1-fundamentals/
-  - 卷二 · 现代特性: vol2-modern-features/
-  - 卷三 · 标准库深入: vol3-standard-library/
-  - 卷四 · 高级主题: vol4-advanced/
-  - 卷五 · 并发编程: vol5-concurrency/
-  - 卷六 · 性能优化: vol6-performance/
-  - 卷七 · 工程实践: vol7-engineering/
-  - 卷八 · 领域应用: vol8-domains/
-  - 编译与链接: compilation/
-  - 实战项目: projects/
-  - tags.md
+  - 基础与特性:
+    - 卷一 · 基础入门: vol1-fundamentals/
+    - 卷二 · 现代特性: vol2-modern-features/
+  - 标准库与高级:
+    - 卷三 · 标准库深入: vol3-standard-library/
+    - 卷四 · 高级主题: vol4-advanced/
+  - 工程实践:
+    - 卷五 · 并发编程: vol5-concurrency/
+    - 卷六 · 性能优化: vol6-performance/
+    - 卷七 · 工程实践: vol7-engineering/
+  - 领域实战:
+    - 卷八 · 领域应用: vol8-domains/
+    - 编译与链接: compilation/
+    - 实战项目: projects/
+  - 标签: tags.md

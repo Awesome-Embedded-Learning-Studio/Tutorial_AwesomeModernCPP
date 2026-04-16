@@ -4,14 +4,15 @@ description: "统一调用可调用对象"
 chapter: 9
 order: 5
 tags:
-  - std_invoke
-  - 可调用对象
-  - C++17
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 8: 类型安全"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式C++教程——std::invoke与可调用对象

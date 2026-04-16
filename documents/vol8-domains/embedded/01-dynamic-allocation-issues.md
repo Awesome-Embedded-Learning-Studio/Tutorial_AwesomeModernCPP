@@ -4,14 +4,15 @@ description: "分析嵌入式动态内存问题"
 chapter: 5
 order: 1
 tags:
-  - 动态分配
-  - 堆
-  - 内存管理
+  - cpp-modern
+  - intermediate
+  - stm32f1
 difficulty: intermediate
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 3: 内存与对象管理"
 cpp_standard: [11, 14, 17, 20]
+platform: stm32f1
 ---
 
 # 动态内存的代价：碎片化与不确定性（内存布局、碎片化与内存对齐）

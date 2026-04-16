@@ -1,3 +1,13 @@
+---
+title: "第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
 
 > 承接上一篇：`enum class` 解决了类型安全问题，但端口和引脚仍然是运行时参数。这一篇引入C++模板的核心武器——非类型模板参数（NTTP），把端口和引脚变成编译时常量。

@@ -4,14 +4,15 @@ description: "Scope Guard模式"
 chapter: 6
 order: 8
 tags:
-  - scope_guard
-  - RAII
-  - 资源管理
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
   - "Chapter 5: 内存管理策略"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在"出门顺手关灯"那一刻执行

@@ -1,3 +1,13 @@
+---
+title: "第13篇：第一次重构 —— enum class取代宏，类型安全的开始"
+description: ""
+tags:
+  - beginner
+  - cpp-modern
+  - stm32f1
+difficulty: beginner
+platform: stm32f1
+---
 # 第13篇：第一次重构 —— enum class取代宏，类型安全的开始
 
 > 承接上一篇：C宏方案能跑但有问题——类型不安全、端口和时钟没有强制关联、代码无法复用。现在我们迈出C++重构的第一步：用 `enum class` 替代宏定义。

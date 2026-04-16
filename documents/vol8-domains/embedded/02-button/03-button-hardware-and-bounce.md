@@ -1,3 +1,13 @@
+---
+title: "第21篇：按钮电路与机械抖动 —— 真实世界的信号长什么样"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第21篇：按钮电路与机械抖动 —— 真实世界的信号长什么样
 
 > 承接上一篇：GPIO 输入路径已经搞清楚了——上拉输入、施密特触发器、IDR 寄存器。这一篇我们把理论落地：画接线图、算电流，然后面对一个 LED 教程从未遇到的问题——机械抖动。

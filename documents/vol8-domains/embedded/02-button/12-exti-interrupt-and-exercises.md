@@ -1,3 +1,13 @@
+---
+title: "第30篇：EXTI 中断 + 坑位与练习"
+description: ""
+tags:
+  - cpp-modern
+  - intermediate
+  - stm32f1
+difficulty: intermediate
+platform: stm32f1
+---
 # 第30篇：EXTI 中断 + 坑位与练习
 
 > 按钮教程的最后一篇。前面的 11 篇我们一直在用"轮询"方式检测按钮——主循环不断调用 `poll_events()`。这一篇介绍另一种方式：让硬件在按钮状态变化时主动通知 CPU。然后是常见坑位汇总和三个练习题。

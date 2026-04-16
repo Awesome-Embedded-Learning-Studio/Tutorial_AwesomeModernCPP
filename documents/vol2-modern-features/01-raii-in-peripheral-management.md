@@ -4,10 +4,9 @@ description: "介绍 RAII 模式在嵌入式外设管理中的应用，实现自
 chapter: 6
 order: 1
 tags:
-  - RAII
-  - 外设管理
-  - 资源管理
-  - GPIO
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 12
 prerequisites:
@@ -16,6 +15,7 @@ related:
   - "Scope Guard"
   - "unique_ptr"
 cpp_standard: [11, 14, 17]
+platform: host
 ---
 
 # 嵌入式C++开发——RAII 在驱动 / 外设管理中的应用

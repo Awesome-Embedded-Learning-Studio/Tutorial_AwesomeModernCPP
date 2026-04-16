@@ -1,3 +1,13 @@
+---
+title: "std::string_view 全攻略"
+description: ""
+tags:
+  - cpp-modern
+  - host
+  - intermediate
+difficulty: intermediate
+platform: host
+---
 # std::string_view 全攻略
 
 笔者最近常常跟字符串打交道，这篇博客也是跟先前的C++工程实践一起联动的——也就是解决IniParser的问题

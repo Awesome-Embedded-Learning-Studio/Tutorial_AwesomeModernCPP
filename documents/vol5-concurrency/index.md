@@ -1,6 +1,11 @@
 ---
 title: "卷五：并发编程"
 description: "从线程原语到协程异步"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷五：并发编程

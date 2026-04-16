@@ -1,6 +1,11 @@
 ---
 title: "卷三：标准库深入"
 description: "STL 容器、迭代器、算法深入讲解"
+platform: host
+tags:
+  - cpp-modern
+  - host
+  - intermediate
 ---
 
 # 卷三：标准库深入

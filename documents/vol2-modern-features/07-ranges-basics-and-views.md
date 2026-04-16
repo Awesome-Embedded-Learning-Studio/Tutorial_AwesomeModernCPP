@@ -4,14 +4,15 @@ description: "Ranges库基础"
 chapter: 9
 order: 7
 tags:
-  - ranges
-  - 视图
-  - C++20
+  - cpp-modern
+  - host
+  - intermediate
 difficulty: intermediate
 reading_time_minutes: 20
 prerequisites:
   - "Chapter 8: 类型安全"
 cpp_standard: [11, 14, 17, 20]
+platform: host
 ---
 
 # 现代嵌入式C++教程——C++20范围库基础与视图
