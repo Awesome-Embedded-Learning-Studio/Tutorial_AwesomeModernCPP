@@ -1,0 +1,112 @@
+[
+  {
+    "feature": "std::unique_ptr",
+    "cppref_url": "https://en.cppreference.com/w/cpp/memory/unique_ptr",
+    "output_path": "documents/cpp-reference/memory/01-unique-ptr.md",
+    "category": "memory",
+    "order": 1,
+    "difficulty": "beginner",
+    "cpp_standard": [11, 14, 17, 20],
+    "tutorial_link": "../vol2-modern-features/02-unique-ptr.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "std::shared_ptr",
+    "cppref_url": "https://en.cppreference.com/w/cpp/memory/shared_ptr",
+    "output_path": "documents/cpp-reference/memory/02-shared-ptr.md",
+    "category": "memory",
+    "order": 2,
+    "difficulty": "intermediate",
+    "cpp_standard": [11, 14, 17, 20],
+    "tutorial_link": "../vol2-modern-features/03-shared-ptr.md",
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::optional",
+    "cppref_url": "https://en.cppreference.com/w/cpp/utility/optional",
+    "output_path": "documents/cpp-reference/memory/03-optional.md",
+    "category": "memory",
+    "order": 3,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/04-optional.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "std::span",
+    "cppref_url": "https://en.cppreference.com/w/cpp/container/span",
+    "output_path": "documents/cpp-reference/containers/01-span.md",
+    "category": "containers",
+    "order": 1,
+    "difficulty": "beginner",
+    "cpp_standard": [20, 23],
+    "tutorial_link": "../vol3-standard-library/02-span.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "std::string_view",
+    "cppref_url": "https://en.cppreference.com/w/cpp/string/basic_string_view",
+    "output_path": "documents/cpp-reference/containers/02-string-view.md",
+    "category": "containers",
+    "order": 2,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/cpp17-string-view.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "std::variant",
+    "cppref_url": "https://en.cppreference.com/w/cpp/utility/variant",
+    "output_path": "documents/cpp-reference/containers/03-variant.md",
+    "category": "containers",
+    "order": 3,
+    "difficulty": "intermediate",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/03-variant.md",
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "constexpr",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/constexpr",
+    "output_path": "documents/cpp-reference/core-language/01-constexpr.md",
+    "category": "core-language",
+    "order": 1,
+    "difficulty": "intermediate",
+    "cpp_standard": [11, 14, 17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/03-constexpr.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "lambda",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/lambda",
+    "output_path": "documents/cpp-reference/core-language/02-lambda.md",
+    "category": "core-language",
+    "order": 2,
+    "difficulty": "beginner",
+    "cpp_standard": [11, 14, 17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/01-lambda-basics.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "auto",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/auto",
+    "output_path": "documents/cpp-reference/core-language/03-auto-decltype.md",
+    "category": "core-language",
+    "order": 3,
+    "difficulty": "beginner",
+    "cpp_standard": [11, 14, 17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/01-auto-and-decltype.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "concepts",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/constraints",
+    "output_path": "documents/cpp-reference/templates/01-concepts.md",
+    "category": "templates",
+    "order": 1,
+    "difficulty": "intermediate",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "high"
+  }
+]

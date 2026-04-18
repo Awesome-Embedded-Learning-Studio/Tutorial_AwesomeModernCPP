@@ -23,3 +23,7 @@ tags:
 - [C++98 基础](03-cpp98-basics.md)
 - [何时使用 C++](04-when-to-use-cpp.md)
 - [语言选择：性能 vs 可维护性](05-language-choice-performance-vs-maintainability.md)
+
+## C 语言教程（详细版）
+
+- [C 语言教程入口](c_tutorials/)

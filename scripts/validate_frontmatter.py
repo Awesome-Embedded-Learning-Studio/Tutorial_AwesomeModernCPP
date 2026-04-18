@@ -48,7 +48,7 @@ VALID_TAGS = {
     '交叉编译', '工具链', 'CMake',
 
     # General
-    '基础', '入门', '进阶', '实战', '优化',
+    '基础', '入门', '进阶', '实战', '优化', '工程实践',
 
     # Platforms
     'host', 'stm32f1',
@@ -184,7 +184,7 @@ class FrontmatterValidator:
 
         # Skip index.md files and tags.md (they don't need frontmatter)
         # Also skip non-article files (e.g. images/ directory)
-        skip_names = {'index.md', 'tags.md'}
+        skip_names = {'index.md', 'tags.md', 'README.md'}
         skip_dir_parts = {'images'}
         md_files = [
             f for f in md_files
