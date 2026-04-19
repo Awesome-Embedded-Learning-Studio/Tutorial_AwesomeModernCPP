@@ -66,19 +66,19 @@ int calculate_checksum(const unsigned char* data, unsigned int length) {
     }
     return sum & 0xFF;
 }
-```text
+```
 
 来验证一下，编译运行：
 
 ```bash
 gcc -Wall -Wextra -std=c17 checksum.c -o checksum && ./checksum
-```text
+```
 
 运行结果：
 
 ```text
 Checksum: 0x0a
-```text
+```
 
 在实际项目中，函数声明通常放在头文件（`.h`）里，函数定义放在源文件（`.c`）里。其他需要调用这个函数的文件只需 `#include` 对应的头文件就行——这就是模块化的基本模式，我们在编译基础那一篇已经见过了。
 
@@ -101,7 +101,7 @@ int main(void) {
     printf("%d\n", value);  // 仍然是 42
     return 0;
 }
-```text
+```
 
 `try_modify` 拿到的是 `value` 的一个副本（`x`），修改 `x` 不会影响外面的 `value`。这看起来像是"没起作用"，但换个角度想——这也意味着函数不会意外修改调用者的数据，这是一种安全保护。
 
@@ -122,7 +122,7 @@ int main(void) {
     printf("x=%d, y=%d\n", x, y);
     return 0;
 }
-```text
+```
 
 `swap` 接收的是 `x` 和 `y` 的地址（指针的值拷贝），然后通过解引用 `*` 直接读写那块内存。指针本身是拷贝的，但它指向的内存是原始数据。
 
@@ -130,13 +130,13 @@ int main(void) {
 
 ```bash
 gcc -Wall -Wextra -std=c17 swap_demo.c -o swap_demo && ./swap_demo
-```text
+```
 
 运行结果：
 
 ```text
 x=20, y=10
-```text
+```
 
 > ⚠️ **踩坑预警**
 > 传递大型结构体时如果用值传递，整块数据都会被拷贝——既浪费栈空间又消耗时间。应该传指针（通常是 `const` 指针），只拷贝一个地址（4 或 8 字节）就能让函数访问整个结构体。
@@ -159,7 +159,7 @@ int main(void) {
     printf("17 / 5 = %d 余 %d\n", q, r);
     return 0;
 }
-```text
+```
 
 这是一种很常见的 C 语言模式——需要"返回"的值通过指针参数传出去，函数的返回值本身通常用来表示成功或失败。
 
@@ -177,7 +177,7 @@ DivResult div_with_remainder(int dividend, int divisor) {
     result.remainder = dividend % divisor;
     return result;
 }
-```text
+```
 
 现代编译器对返回结构体有很好的优化（返回值优化 RVO），通常不会产生额外的拷贝开销。
 
@@ -194,7 +194,7 @@ int factorial(int n) {
     }
     return n * factorial(n - 1);  // 递归步骤
 }
-```text
+```
 
 递归调用链：`factorial(5)` → `5 * factorial(4)` → `5 * 4 * factorial(3)` → ... → `5 * 4 * 3 * 2 * 1 = 120`
 
@@ -216,7 +216,7 @@ int main(void) {
     }
     return 0;
 }
-```text
+```
 
 运行结果：
 
@@ -232,7 +232,7 @@ int main(void) {
 8! = 40320
 9! = 362880
 10! = 3628800
-```text
+```
 
 > ⚠️ **踩坑预警**
 > 递归的最大风险是**栈溢出**。每次递归调用都会占用栈空间，如果递归深度太大（比如 `factorial(100000)`），栈空间耗尽，程序直接崩溃。对于深度递归的场景，手动转为迭代循环更安全。
@@ -247,7 +247,7 @@ int factorial_tail(int n, int accumulator) {
     return factorial_tail(n - 1, n * accumulator);
 }
 // 使用：factorial_tail(5, 1) → 120
-```text
+```
 
 但要注意，C 标准并不保证编译器一定做尾递归优化。在深度递归场景下，手动转为迭代更安全。
 
@@ -281,14 +281,14 @@ int main(void) {
     printf("Avg: %.2f\n", average(5, 1, 2, 3, 4, 5));
     return 0;
 }
-```text
+```
 
 运行结果：
 
 ```text
 Avg: 20.00
 Avg: 3.00
-```text
+```
 
 可变参数机制的用法是四步走：`va_list` 声明参数列表 → `va_start` 初始化 → `va_arg` 逐个取参数 → `va_end` 清理。
 
@@ -322,7 +322,7 @@ typedef enum { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR } LogLevel;
 /// @param level 日志级别
 /// @param format 格式化字符串
 void log_message(LogLevel level, const char* format, ...);
-```text
+```
 
 ### 练习 2：递归与迭代——二分查找
 
@@ -331,7 +331,7 @@ void log_message(LogLevel level, const char* format, ...);
 ```c
 int binary_search_recursive(const int* arr, size_t len, int target);
 int binary_search_iterative(const int* arr, size_t len, int target);
-```text
+```
 
 ### 练习 3：多返回值实战
 
@@ -344,7 +344,7 @@ int binary_search_iterative(const int* arr, size_t len, int target);
 /// @param min_out 最小值输出指针
 /// @param max_out 最大值输出指针
 void find_min_max(const int* data, size_t len, int* min_out, int* max_out);
-```text
+```
 
 ## 参考资源
 

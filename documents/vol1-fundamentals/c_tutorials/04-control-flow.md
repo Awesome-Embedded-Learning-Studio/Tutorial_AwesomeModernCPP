@@ -54,7 +54,7 @@ if (temperature > kTempHighThreshold) {
 } else {
     maintain_temperature();
 }
-```text
+```
 
 这里有个小知识：`else if` 并不是 C 语言的一个独立关键字——它实际上是 `else` 后面跟了一个新的 `if` 语句。所以上面的代码在编译器眼里就是 `else { if (...) { } else { } }` 的嵌套结构。虽然理解成"多路分支"更直观，但编译器看到的就是一棵嵌套的二叉分支树。
 
@@ -68,7 +68,7 @@ if (a > 0)
         result = 1;
 else
     result = -1;
-```text
+```
 
 缩进看起来 `else` 是和第一个 `if` 配对的，但实际不是。C 语言的规则是：**`else` 总是和最近的、尚未配对的 `if` 绑定**。所以这段代码实际等价于：
 
@@ -80,7 +80,7 @@ if (a > 0) {
         result = -1;
     }
 }
-```text
+```
 
 如果我们的本意是让 `else` 和外层 `if` 配对，那这段代码就是错的。解决方法很简单——**永远用花括号明确界定每个分支的范围**。
 
@@ -122,7 +122,7 @@ void handle_command(Command cmd) {
             break;
     }
 }
-```text
+```
 
 ### 穿透特性：忘了 break 就会"漏水"
 
@@ -137,7 +137,7 @@ switch (cmd) {
         stop_operation();
         break;
 }
-```text
+```
 
 当 `cmd` 为 `kCmdStart` 时，`start_operation()` 执行完后不会停下来，而是继续执行 `stop_operation()`——一启动就停了，血压拉满。
 
@@ -158,7 +158,7 @@ int days_in_month(int month, int is_leap_year) {
             return -1;
     }
 }
-```text
+```
 
 如果你确实要利用穿透特性，建议加个 `/* fall through */` 注释说明意图，否则后来维护代码的人会以为这是 bug。
 
@@ -178,7 +178,7 @@ int days_in_month(int month, int is_leap_year) {
 for (int i = 0; i < count; i++) {
     process_item(items[i]);
 }
-```text
+```
 
 三个部分都可以省略。如果全部省略，就得到一个无限循环——在嵌入式系统的主循环中非常常见：
 
@@ -188,7 +188,7 @@ for (;;) {
     process_data();
     update_outputs();
 }
-```text
+```
 
 逗号运算符可以在 `for` 中同时操作多个变量：
 
@@ -198,7 +198,7 @@ for (int i = 0, j = length - 1; i < j; i++, j--) {
     arr[i] = arr[j];
     arr[j] = temp;
 }
-```text
+```
 
 ### while——先检查再决定
 
@@ -208,7 +208,7 @@ for (int i = 0, j = length - 1; i < j; i++, j--) {
 while (!uart_data_available()) {
     // 空转等待——实际项目中要加超时机制
 }
-```text
+```
 
 ### do-while——先干再说
 
@@ -219,7 +219,7 @@ do {
     result = attempt_communication();
     retry_count++;
 } while (result != kSuccess && retry_count < kMaxRetries);
-```text
+```
 
 不管条件怎样，通信至少会尝试一次。用普通 `while` 实现同样的逻辑需要把 `attempt_communication()` 写两次，不够优雅。
 
@@ -247,7 +247,7 @@ int main(void)
 
     return 0;
 }
-```text
+```
 
 运行结果：
 
@@ -255,7 +255,7 @@ int main(void)
 do-while: count = 0
 do-while: count = 1
 do-while: count = 2
-```text
+```
 
 很好，`while` 循环体一次都没执行，`do-while` 执行了三次。
 
@@ -274,7 +274,7 @@ for (int i = 0; i < rows; i++) {
         }
     }
 }
-```text
+```
 
 ### continue——跳过本次迭代
 
@@ -287,7 +287,7 @@ for (int i = 0; i < count; i++) {
     }
     process_valid_data(data[i]);
 }
-```text
+```
 
 ### goto——慎用但别妖魔化
 
@@ -313,7 +313,7 @@ error_peripherals:
 error_hardware:
     return kError;
 }
-```text
+```
 
 > ⚠️ **踩坑预警**
 > `goto` 的使用原则：**只向后跳转（向下跳到后面的标签），且只用于错误处理或跳出嵌套**。向前跳转（跳回前面的代码形成循环）是应该坚决避免的——那是 `for`/`while` 的工作。
@@ -387,7 +387,7 @@ ParseState parser_feed(Parser* p, unsigned char byte) {
     }
     return p->state;
 }
-```text
+```
 
 来验证一下，模拟接收一帧数据：
 
@@ -418,13 +418,13 @@ int main(void)
     }
     return 0;
 }
-```text
+```
 
 编译运行：
 
 ```bash
 gcc -Wall -Wextra -std=c17 parser.c -o parser && ./parser
-```text
+```
 
 运行结果：
 
@@ -436,7 +436,7 @@ Byte 0x02 → State 2
 Byte 0x03 → State 3
 Byte 0x00 → State 4
 Frame OK, payload: 0x01 0x02 0x03
-```text
+```
 
 很好，状态机正确地从 Idle 一路走到了 Done，每一步的状态转移都符合我们的预期。这种逐字节驱动的状态机模式在串口通信和网络协议解析中非常实用。
 
@@ -450,7 +450,7 @@ for (int x : arr) {
     std::cout << x << " ";
 }
 // 不需要手动管理索引、判断边界、递增计数器
-```text
+```
 
 C++17 引入了 `if constexpr`，它在编译期评估条件，直接把不满足条件的分支从代码中剔除。还有 `std::variant` + `std::visit`，提供了一种类型安全的方式来替代传统 `switch`——编译器会检查你是否处理了所有类型，少处理一个就直接编译报错。
 
@@ -478,7 +478,7 @@ typedef struct {
 } SearchResult;
 
 SearchResult matrix_search(int** matrix, int rows, int cols, int target);
-```text
+```
 
 ### 练习 3：带超时的等待
 
@@ -490,7 +490,7 @@ SearchResult matrix_search(int** matrix, int rows, int cols, int target);
 /// @param timeout_ms 超时时间（毫秒）
 /// @return 0 表示条件满足，-1 表示超时
 int wait_with_timeout(int (*check)(void), unsigned int timeout_ms);
-```text
+```
 
 ## 参考资源
 

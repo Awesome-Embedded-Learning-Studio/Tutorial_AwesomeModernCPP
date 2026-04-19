@@ -56,7 +56,7 @@ char greeting[] = "Hello";
 // 内容：    'H' 'e' 'l' 'l' 'o' '\0'
 // sizeof(greeting) == 6  （包含终止符）
 // strlen(greeting) == 5  （不包含终止符）
-```text
+```
 
 这里有一个非常容易混淆的点：`sizeof` 和 `strlen` 的区别。`sizeof` 是编译期运算符，返回整个数组占用的字节数，包括 `\0`；`strlen` 是运行时函数，从头开始数字符直到遇到 `\0`，返回的是不含终止符的长度。
 
@@ -71,7 +71,7 @@ char b[] = {'H', 'i'};        // sizeof == 2，这不是 C 字符串！
 
 // 方式三：手动加终止符
 char c[] = {'H', 'i', '\0'};  // sizeof == 3, strlen == 2，这才是合法的 C 字符串
-```text
+```
 
 方式二是一个合法的 `char` 数组，但**不是** C 字符串——把它传给 `strlen` 或 `printf("%s")` 会一直往后读内存，直到碰巧遇到一个 `0` 字节。这就是未定义行为。
 
@@ -88,7 +88,7 @@ const char* s = "Hello";   // s 指向只读内存中的 "Hello\0"
 
 char t[] = "Hello";        // 数组拷贝，数据在栈上，可以修改
 t[0] = 'h';               // 没问题
-```text
+```
 
 `const char* s = "Hello"` 让指针指向只读数据段中的字符串，`char t[] = "Hello"` 把字符串内容拷贝一份到栈上的数组里。前者不能修改，后者可以。搞混这两个的话，后面调试起来会非常痛苦。
 
@@ -119,17 +119,17 @@ int main(void)
     printf("dst = \"%s\"\n", dst);
     return 0;
 }
-```text
+```
 
 ```bash
 gcc -Wall -Wextra -std=c17 str_copy.c -o str_copy && ./str_copy
-```text
+```
 
 运行结果：
 
 ```text
 dst = "Hello, "
-```text
+```
 
 这个模式在 C 代码里反复出现：`strncpy` + 手动 `\0` 终止。如果你在某处看到 `strncpy` 但没有紧跟的 `\0` 终止处理，那大概率就是一个隐患。
 
@@ -144,7 +144,7 @@ dst = "Hello, "
 char buffer[32] = "Hello";
 strncat(buffer, ", World", sizeof(buffer) - strlen(buffer) - 1);
 // buffer 现在是 "Hello, World"
-```text
+```
 
 `strcmp` 逐字符比较两个字符串，相等返回 `0`。用 `==` 比较两个字符串只比较指针地址，不是内容——这是经典的新手错误。
 
@@ -152,7 +152,7 @@ strncat(buffer, ", World", sizeof(buffer) - strlen(buffer) - 1);
 if (strcmp(cmd, "START") == 0) {
     start_motor();
 }
-```text
+```
 
 ### 内存操作：memcpy、memmove、memset
 
@@ -179,14 +179,14 @@ int main(void)
     printf("src: %d %d %d %d %d\n", src[0], src[1], src[2], src[3], src[4]);
     return 0;
 }
-```text
+```
 
 运行结果：
 
 ```text
 dst: 1 2 3 4 5
 src: 1 1 2 3 5
-```text
+```
 
 > ⚠️ **踩坑预警**
 > `memcpy` 处理重叠区域是未定义行为。如果你不确定两块内存是否重叠，直接用 `memmove`——性能差异微乎其微，但安全性天差地别。
@@ -213,18 +213,18 @@ int main(void)
     }
     return 0;
 }
-```text
+```
 
 ```bash
 gcc -Wall -Wextra -std=c17 snprintf_demo.c -o snprintf_demo && ./snprintf_demo
-```text
+```
 
 运行结果：
 
 ```text
 Result: "Temperature: 42 degrees"
 Written: 23, Buffer size: 32
-```text
+```
 
 `snprintf` 的返回值非常有用：它返回**如果不截断的话会写入多少个字符**（不含终止符）。如果这个值大于等于缓冲区大小，说明输出被截断了。
 
@@ -248,7 +248,7 @@ void vulnerable_function(const char* user_input)
     strcpy(buffer, user_input);  // 如果 user_input 长度 >= 16，溢出！
     printf("You said: %s\n", buffer);
 }
-```text
+```
 
 ### 三道防线
 
@@ -269,7 +269,7 @@ void vulnerable_function(const char* user_input)
 ```bash
 # 推荐的开发编译命令
 gcc -std=c17 -Wall -Wextra -g -fsanitize=address -fstack-protector-all your_code.c
-```text
+```
 
 ## C++ 衔接
 
@@ -284,7 +284,7 @@ std::string s1 = "Hello";
 std::string s2 = "World";
 std::string result = s1 + ", " + s2 + "!";  // 自动扩容
 printf("C string: %s\n", result.c_str());    // 和 C API 无障碍交互
-```text
+```
 
 `std::string_view`（C++17）不拥有字符串数据，只持有一个指针和长度，本质上是 `(const char*, size_t)` 的封装。传参时零拷贝，兼容 C 字符串和 `std::string`。不过要注意它不拥有数据——指向临时对象的 `string_view` 是经典的悬空引用陷阱。
 
@@ -334,7 +334,7 @@ size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
 /// @param ... 格式参数
 /// @return 实际写入的字符数（不含终止符）
 size_t safe_str_format(char* dst, size_t dst_size, const char* format, ...);
-```text
+```
 
 提示：`safe_str_copy` 可以基于 `strncpy` 实现，但必须保证终止；`safe_str_cat` 需要先算出目标字符串当前长度，再计算剩余可用空间；`safe_str_format` 直接用 `vsnprintf` 实现即可。
 
@@ -357,7 +357,7 @@ size_t str_split(
     size_t* out_lengths,
     size_t max_tokens
 );
-```text
+```
 
 提示：遍历 `input`，记录每个子串的起始指针和长度。遇到分隔符时结束当前子串，开始下一个。不要忘记处理字符串末尾的最后一个子串。
 

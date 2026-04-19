@@ -50,7 +50,7 @@ init.Mode = GPIO_MODE_OUTPUT_PP;   // 推挽输出
 init.Pull = GPIO_NOPULL;
 init.Speed = GPIO_SPEED_FREQ_LOW;
 HAL_GPIO_Init(GPIOC, &init);
-```text
+```
 
 按钮的初始化只需要改两个参数：
 
@@ -61,7 +61,7 @@ init.Mode = GPIO_MODE_INPUT;       // 通用输入
 init.Pull = GPIO_PULLUP;           // 内部上拉
 init.Speed = GPIO_SPEED_FREQ_LOW;  // 输入模式下 Speed 无意义，但需要填值
 HAL_GPIO_Init(GPIOA, &init);
-```text
+```
 
 三个值得注意的地方：
 
@@ -77,7 +77,7 @@ HAL_GPIO_Init(GPIOA, &init);
 
 ```c
 __HAL_RCC_GPIOA_CLK_ENABLE();
-```text
+```
 
 如果你忘了这一步，`HAL_GPIO_Init()` 调用不会报错（它不知道你有没有开时钟），但写入的配置不会生效——引脚保持复位状态（浮空输入），读出来的值是不确定的。这是新手最常见的坑之一。
 
@@ -91,7 +91,7 @@ LED 教程中我们用 `if constexpr` 在编译时自动选择时钟使能宏，
 
 ```c
 GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
-```text
+```
 
 两个参数：`GPIOx` 指定端口（GPIOA、GPIOB、GPIOC...），`GPIO_Pin` 指定引脚编号（`GPIO_PIN_0` ~ `GPIO_PIN_15`）。返回值是 `GPIO_PinState` 枚举：
 
@@ -100,7 +100,7 @@ typedef enum {
     GPIO_PIN_RESET = 0,  // 低电平
     GPIO_PIN_SET   = 1   // 高电平
 } GPIO_PinState;
-```text
+```
 
 ### 底层实现
 
@@ -116,7 +116,7 @@ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
     }
     return bitstatus;
 }
-```text
+```
 
 核心就是一个位操作：`GPIOx->IDR & GPIO_Pin`。`IDR` 是 16 位只读寄存器，每个 bit 对应一个引脚。`GPIO_PIN_0` 的值是 `0x0001`，所以 `IDR & 0x0001` 就是取 bit 0 的值。如果不为 0，引脚是高电平；否则是低电平。
 
@@ -145,7 +145,7 @@ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
 [[nodiscard]] State read_pin_state() const {
     return static_cast<State>(HAL_GPIO_ReadPin(native_port(), PIN));
 }
-```text
+```
 
 这里有几个设计决策需要解释。
 
@@ -213,7 +213,7 @@ int main(void) {
         }
     }
 }
-```text
+```
 
 这段代码做了四件事：(1) 使能 GPIOA 和 GPIOC 时钟，(2) 配置 PA0 为上拉输入，(3) 配置 PC13 为推挽输出，(4) 主循环中读取 PA0 并控制 PC13。
 

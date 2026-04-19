@@ -65,7 +65,7 @@ int main(void) {
     fclose(fp);
     return 0;
 }
-```text
+```
 
 > ⚠️ **踩坑预警**：**永远检查 fopen 返回值是否为 NULL**。文件不存在、权限不足、路径错误都会导致打开失败。如果不检查就直接使用 NULL 指针，程序会直接崩溃——没有任何有意义的错误信息。
 
@@ -96,7 +96,7 @@ size_t written = fwrite(records, sizeof(Record), count, fp);
 
 // 读取
 size_t count = fread(buffer, sizeof(Record), max_count, fp);
-```text
+```
 
 返回值是成功处理的**完整块数**，不是字节数。如果返回值小于请求的块数，说明要么到了文件末尾，要么发生了错误。
 
@@ -112,7 +112,7 @@ long get_file_size(FILE* fp) {
     fseek(fp, original, SEEK_SET);
     return size;
 }
-```text
+```
 
 ### 别把 feof 当循环条件
 
@@ -123,7 +123,7 @@ int ch;
 while ((ch = fgetc(fp)) != EOF) {
     putchar(ch);
 }
-```text
+```
 
 > ⚠️ **踩坑预警**：`fgetc` 返回 `int` 而不是 `char`。如果你用 `char` 接收返回值，在某些平台上 `EOF`（-1）会被截断为一个有效的字符值，导致循环永远不会结束。这个坑每年都会炸到一批新手。
 
@@ -136,7 +136,7 @@ while ((ch = fgetc(fp)) != EOF) {
 ```c
 char buf[64];
 snprintf(buf, sizeof(buf), "%s:%d", name, age);
-```text
+```
 
 `snprintf` 的一个巧妙用法是探测所需缓冲区大小：
 
@@ -144,7 +144,7 @@ snprintf(buf, sizeof(buf), "%s:%d", name, age);
 int needed = snprintf(NULL, 0, "Result: %d items", item_count);
 char* buf = malloc(needed + 1);
 snprintf(buf, needed + 1, "Result: %d items", item_count);
-```text
+```
 
 ### scanf 家族
 
@@ -154,7 +154,7 @@ snprintf(buf, needed + 1, "Result: %d items", item_count);
 const char* input = "2024-01-15";
 int year, month, day;
 int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
-```text
+```
 
 > ⚠️ **踩坑预警**：`scanf` 的 `%s` 不检查缓冲区大小，安全的做法是用 `%Ns` 指定最大长度，或者改用 `fgets` + `sscanf` 组合。
 
@@ -186,7 +186,7 @@ if (fp == NULL) {
     perror("fopen failed");
     // 输出：fopen failed: No such file or directory
 }
-```text
+```
 
 `strerror` 返回错误码对应的字符串描述，适合用在自定义的错误信息中。
 
@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
-```text
+```
 
 `argv[0]` 是程序名，`argv[1]` 到 `argv[argc-1]` 是参数，`argv[argc]` 是 `NULL`。
 
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
 
 ```c
 assert(arr != NULL);   // Debug: 条件为假时终止程序
-```text
+```
 
 定义 `NDEBUG` 后所有 assert 完全移除。用于抓编程错误，不是处理运行时错误。
 
@@ -248,7 +248,7 @@ C++ 流库通过运算符重载实现**类型安全**——传错类型直接编
 
 ```cpp
 std::string s = std::format("{} is {} years old", name, age);
-```text
+```
 
 ### std::span（C++17）
 
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
     // TODO: 调用 parse_config 和 find_config
     return 0;
 }
-```text
+```
 
 提示：用 `fgets` 逐行读取，`strchr` 找 `=` 位置，`trim` 去除空白。
 
@@ -329,6 +329,6 @@ int main(int argc, char* argv[]) {
     // TODO: 解析命令行参数，调用 copy_file
     return 0;
 }
-```text
+```
 
 提示：用 `fseek` + `ftell` 获取源文件大小，`\r` 覆写同一行实现进度条。

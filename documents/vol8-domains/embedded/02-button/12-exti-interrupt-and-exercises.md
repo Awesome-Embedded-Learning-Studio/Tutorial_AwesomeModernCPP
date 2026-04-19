@@ -45,7 +45,7 @@ PA9, PB9, PC9, ... → EXTI9  ─┘
 PA10, PB10, PC10, ... → EXTI10 ─┐
 ...                              ├→ EXTI15_10_IRQn（共享中断向量）
 PA15, PB15, PC15, ... → EXTI15 ─┘
-```text
+```
 
 关键规则：同一时刻，一条 EXTI line 只能连接一个端口的对应引脚。比如 EXTI0 可以连接 PA0、PB0 或 PC0，但不能同时连接多个。连接选择通过 AFIO（Alternate Function I/O）的 `EXTICR` 寄存器配置。
 
@@ -87,7 +87,7 @@ HAL_GPIO_Init(GPIOA, &init);
 /* 4. 配置 NVIC 中断优先级和使能 */
 HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
 HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-```text
+```
 
 四步：使能 AFIO 时钟 → 配置 GPIO 中断模式 → 配置 NVIC。
 
@@ -108,7 +108,7 @@ HAL_NVIC_EnableIRQ(EXTI0_IRQn);
       → 调用 HAL_GPIO_EXTI_Callback(GPIO_PIN_0)
         → 用户在这里写处理逻辑
   → 返回被中断的代码继续执行
-```text
+```
 
 我们的 `hal_mock.c` 中已经定义了 `EXTI0_IRQHandler` 和一个弱 `HAL_GPIO_EXTI_Callback`：
 
@@ -120,7 +120,7 @@ void EXTI0_IRQHandler(void) {
 __attribute__((weak)) void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     (void)GPIO_Pin;
 }
-```text
+```
 
 `__attribute__((weak))` 是 GCC 的弱符号属性——如果其他 `.c`/`.cpp` 文件中定义了同名函数，链接器会使用那个定义；如果没有，就使用这个空实现。这让你可以在任何地方覆盖回调函数，不需要修改 `hal_mock.c`。
 
@@ -153,7 +153,7 @@ int main(void) {
         /* 其他任务 */
     }
 }
-```text
+```
 
 ### volatile 的作用
 
@@ -229,6 +229,7 @@ int main(void) {
 把按钮从 PA0 改为 PB5。你需要修改哪些地方？
 
 **提示**：
+
 - 模板参数改为 `GpioPort::B, GPIO_PIN_5`
 - EXTI line 变为 EXTI5
 - 中断向量变为 `EXTI9_5_IRQn`（共享向量）
@@ -242,6 +243,7 @@ int main(void) {
 实现一个方案：EXTI 中断触发时唤醒状态机，状态机在主循环中完成消抖和事件确认。
 
 **提示**：
+
 - ISR 中设置 `volatile bool exti_triggered = true` 和时间戳
 - 主循环检查 `exti_triggered`，如果为 true 调用 `poll_events()`
 - `poll_events()` 正常工作，不需要知道触发来自中断还是轮询
@@ -255,20 +257,24 @@ int main(void) {
 12 篇文章走完了。回顾一下我们的学习路径：
 
 **阶段一：硬件基础（01-03）**
+
 - 从输出到输入的范式转换
 - GPIO 输入模式内部电路：上拉/下拉/浮空、施密特触发器、IDR 寄存器
 - 按钮接线（PA0 上拉接 GND）和机械抖动物理原理
 
 **阶段二：HAL + C 实战（04-06）**
+
 - `HAL_GPIO_ReadPin()` 的底层实现
 - 纯 C 轮询按钮，亲眼看到抖动问题
 - `HAL_GetTick()` 非阻塞消抖
 
 **阶段三：状态机（07）**
+
 - 7 状态消抖状态机的完整解读
 - Boot-lock 边界处理
 
 **阶段四：C++ 重构（08-12）**
+
 - `enum class`：`ButtonActiveLevel` 和私有 `State`
 - `std::variant` + `std::visit`：类型安全的事件系统
 - Button 模板类：NTTP 四参数、`if constexpr`、`static_assert`
@@ -276,6 +282,7 @@ int main(void) {
 - EXTI 中断：配置流程、回调链、volatile 语义
 
 用到的 C++ 特性总结：
+
 - `enum class`（C++11）— LED 教程引入，按钮教程扩展
 - 非类型模板参数 NTTP（C++11）— LED 教程引入，按钮教程增加参数
 - `if constexpr`（C++17）— LED 教程引入，按钮教程新场景

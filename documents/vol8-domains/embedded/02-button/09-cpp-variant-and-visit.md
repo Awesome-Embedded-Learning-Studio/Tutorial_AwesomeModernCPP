@@ -26,7 +26,7 @@ order: 9
 
 // 或者
 enum ButtonEvent { Pressed = 1, Released = 0 };
-```text
+```
 
 然后在回调或返回值中传递这个整数：
 
@@ -39,7 +39,7 @@ void handle_event(int event) {
     }
     // 如果传了一个 42 进来呢？编译器不会警告你
 }
-```text
+```
 
 问题很明显：`int` 可以是任何值。你传个 `42` 进去，编译器一声不吭。即使用了 `enum`，C 语言的 `enum` 本质上也是整数，没有类型安全保证。
 
@@ -71,7 +71,7 @@ struct Released {};
 using ButtonEvent = std::variant<Pressed, Released>;
 
 } // namespace device
-```text
+```
 
 `Pressed` 和 `Released` 是空结构体——它们不携带任何数据，只是类型标签。`ButtonEvent` 是一个 `std::variant`，可以在同一时刻持有 `Pressed` 或 `Released` 中的一个。
 
@@ -81,7 +81,7 @@ using ButtonEvent = std::variant<Pressed, Released>;
 
 ```cpp
 struct Pressed { uint32_t timestamp; };
-```text
+```
 
 只需要在结构体里加字段，`variant` 的使用方式完全不变。如果用 `enum class`，携带数据就需要额外的 `struct` 包装。
 
@@ -100,7 +100,7 @@ union ButtonEvent {
 // C++17 variant — 安全
 using ButtonEvent = std::variant<Pressed, Released>;
 // variant 内部记录了当前持有的类型
-```text
+```
 
 C 的 `union` 不记录"当前是哪个成员"，你需要手动维护一个 tag 变量。如果你写了 tag 表示 `pressed` 但实际读的是 `released`，结果就是未定义行为。`variant` 在内部维护了这个 tag，通过 `std::visit` 强制你正确处理每种类型。
 
@@ -124,7 +124,7 @@ std::visit(
     },
     event
 );
-```text
+```
 
 这段代码做了什么？逐层拆解：
 
@@ -151,7 +151,7 @@ button.poll_events(
             event);
     },
     HAL_GetTick());
-```text
+```
 
 这里用了两层 lambda。外层 lambda 是 `poll_events()` 的回调参数，每次有事件发生时被调用，参数 `event` 是一个 `ButtonEvent`（即 `std::variant<Pressed, Released>`）。内层 lambda 是 `std::visit` 的访问者，负责处理具体的事件类型。
 
@@ -165,7 +165,7 @@ decltype(e) → Pressed&& （或 const Pressed&，取决于调用方式）
 std::decay_t<Pressed&&> → Pressed
 
 // 所以 T 就是 Pressed
-```text
+```
 
 ### if constexpr 的作用
 
@@ -186,7 +186,7 @@ struct ButtonEvent {
     virtual void handle() = 0;
 };
 struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
-```text
+```
 
 在桌面应用中这是经典做法。但在嵌入式环境中，它有几个致命问题：
 
@@ -195,6 +195,7 @@ struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
 3. **运行时分发**：虚函数调用通过 vtable 指针间接跳转，多一次内存访问。
 
 `std::variant` + `std::visit` 没有这些问题：
+
 - 不需要 vtable——类型信息编码在 `variant` 自身的 tag 中
 - 不需要堆分配——`variant` 直接在栈上存储值
 - 分发在编译时完成——编译器看到 `if constexpr` 就直接生成对应的代码
@@ -212,7 +213,7 @@ struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
 │ tag (1B) │ payload  │
 │ 0 或 1   │ (空)     │
 └──────────┴──────────┘
-```text
+```
 
 由于 `Pressed` 和 `Released` 都是空结构体（`sizeof = 1`），`variant` 只需要一个 tag 字节来标识当前持有哪个类型。加上对齐，`sizeof(ButtonEvent)` 通常是 2 字节。
 
@@ -224,7 +225,7 @@ if (event.tag == 0) {
 } else {
     led_off();  // Released 分支
 }
-```text
+```
 
 一次比较，一次跳转。和你手写 C 代码的 `if-else` 完全一样。variant 的 tag 检查就是 `if-else` 的条件判断——编译器把它优化成最简单的机器码。
 

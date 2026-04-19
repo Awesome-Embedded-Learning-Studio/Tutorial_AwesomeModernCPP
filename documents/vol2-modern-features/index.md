@@ -19,10 +19,12 @@ tags:
 ## 现有文章（待重写为通用内容）
 
 ### 移动语义
+
 - [移动语义](02-move-semantics.md)
 - [RVO 与 NRVO](03-rvo-nrvo.md)
 
 ### 智能指针与 RAII
+
 - [RAII 在外设管理中的应用](01-raii-in-peripheral-management.md)
 - [unique_ptr](02-unique-ptr.md)
 - [shared_ptr](03-shared-ptr.md)
@@ -33,12 +35,14 @@ tags:
 - [scope_guard](08-scope-guard.md)
 
 ### constexpr 与编译期
+
 - [constexpr](03-constexpr.md)
 - [constexpr 与设计技术](01-constexpr-and-design-techniques.md)
 - [consteval 与 constinit](02-consteval-constinit.md)
 - [编译期计算实战](03-compile-time-in-practice.md)
 
 ### Lambda 与函数式
+
 - [Lambda 基础](01-lambda-basics.md)
 - [Lambda 捕获与性能](02-lambda-capture-and-performance.md)
 - [std::function vs 函数指针](03-std-function-vs-function-ptr.md)
@@ -49,6 +53,7 @@ tags:
 - [Ranges 管道实战](08-ranges-pipeline-in-practice.md)
 
 ### 类型安全
+
 - [enum class](01-enum-class.md)
 - [variant](03-variant.md)
 - [optional](04-optional.md)
@@ -56,6 +61,7 @@ tags:
 - [类型别名与 using](06-type-aliases-and-using.md)
 
 ### 其他特性
+
 - [auto 与 decltype](01-auto-and-decltype.md)
 - [结构化绑定](02-structured-bindings.md)
 - [range-for 优化](03-range-based-for-optimization.md)

@@ -25,7 +25,7 @@ template <gpio::GpioPort PORT, uint16_t PIN,
           gpio::PullPush PULL = gpio::PullPush::PullUp,
           ButtonActiveLevel LEVEL = ButtonActiveLevel::Low>
 class Button : public gpio::GPIO<PORT, PIN> {
-```text
+```
 
 | 参数 | 类型 | 默认值 | 含义 |
 |------|------|--------|------|
@@ -44,7 +44,7 @@ device::Button<device::gpio::GpioPort::A, GPIO_PIN_0> button;
 device::Button<device::gpio::GpioPort::A, GPIO_PIN_0,
                device::gpio::PullPush::PullDown,
                device::ButtonActiveLevel::High> button;
-```text
+```
 
 ### 和 LED 模板的对比
 
@@ -58,7 +58,7 @@ template <gpio::GpioPort PORT, uint16_t PIN,
           gpio::PullPush PULL = gpio::PullPush::PullUp,
           ButtonActiveLevel LEVEL = ButtonActiveLevel::Low>
 class Button : public gpio::GPIO<PORT, PIN>;
-```text
+```
 
 结构几乎一样——都继承 `GPIO<PORT, PIN>`，都用非类型模板参数（NTTP）编码硬件配置。Button 多了一个 `PULL` 参数，因为输入模式需要明确指定上下拉方向，而输出模式不需要。
 
@@ -68,7 +68,7 @@ class Button : public gpio::GPIO<PORT, PIN>;
 
 ```cpp
 static_assert(PIN <= GPIO_PIN_15, "Pin number must be <= 15");
-```text
+```
 
 `static_assert` 在编译时检查一个常量表达式是否为真。如果为假，编译立即终止，输出你写的错误信息。
 
@@ -78,13 +78,13 @@ static_assert(PIN <= GPIO_PIN_15, "Pin number must be <= 15");
 
 ```cpp
 device::Button<device::gpio::GpioPort::A, 0xFFFF> button;  // 错误！
-```text
+```
 
 编译器会立即报错：
 
 ```text
 error: static assertion failed: Pin number must be <= 15
-```text
+```
 
 不用等到烧录到板子上才发现引脚号写错了。这就是编译时防御的价值。
 
@@ -98,7 +98,7 @@ error: static assertion failed: Pin number must be <= 15
 Button() {
     Base::setup(Base::Mode::Input, PULL, Base::Speed::Low);
 }
-```text
+```
 
 和 LED 的构造函数对比：
 
@@ -112,13 +112,15 @@ LED() {
 Button() {
     Base::setup(Base::Mode::Input, PULL, Base::Speed::Low);
 }
-```text
+```
 
 两个区别：
+
 1. `Mode::Input` 替代 `Mode::OutputPP` — 输入模式替代推挽输出
 2. `PULL` 替代 `PullPush::NoPull` — 上下拉由模板参数决定，不再是硬编码的 `NoPull`
 
 `setup()` 内部做了三件事（LED 教程第 09 篇拆解过）：
+
 1. 调用 `GPIOClock::enable_target_clock()` — 用 `if constexpr` 自动选择端口时钟
 2. 填充 `GPIO_InitTypeDef` 结构体
 3. 调用 `HAL_GPIO_Init()` 写入寄存器
@@ -138,7 +140,7 @@ bool is_pressed() const {
         return state == Base::State::Set;
     }
 }
-```text
+```
 
 这段代码和 LED 的 `on()`/`off()` 方法是同一个 `if constexpr` 模式：
 
@@ -148,7 +150,7 @@ void on() const {
     Base::set_gpio_pin_state(
         LEVEL == ActiveLevel::Low ? Base::State::UnSet : Base::State::Set);
 }
-```text
+```
 
 但有一个区别：LED 用的是三元运算符 `? :`，Button 用的是 `if constexpr`。效果完全一样——都是编译时选择分支。`if constexpr` 在语义上更清晰，特别是当两个分支的逻辑更复杂时（比如按下分支要做三件事，释放分支要做两件事）。
 
@@ -158,7 +160,7 @@ void on() const {
 bool is_pressed() const {
     return HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET;
 }
-```text
+```
 
 一次寄存器读取，一次比较。没有 `if constexpr` 的运行时开销——因为它根本不生成没有选择的分支的代码。
 
@@ -171,7 +173,7 @@ Button<GpioPort::A, GPIO_PIN_0>                        button1;  // PA0, 上拉,
 Button<GpioPort::A, GPIO_PIN_0, PullPush::PullDown, ButtonActiveLevel::High>
                                                       button2;  // PA0, 下拉, 高电平有效
 Button<GpioPort::B, GPIO_PIN_5>                        button3;  // PB5, 上拉, 低电平有效
-```text
+```
 
 `button1`、`button2`、`button3` 是三个完全不同的类型。编译器为每个不同的模板参数组合生成一份独立的代码。`button1::is_pressed()` 和 `button2::is_pressed()` 的实现不同——前者检查低电平，后者检查高电平。
 
@@ -203,9 +205,10 @@ class Button : public gpio::GPIO<PORT, PIN> {
     bool boot_locked_ = false;         // 启动锁标志
     uint32_t debounce_start_ = 0;      // 消抖计时起点
 };
-```text
+```
 
 `sizeof(Button<GpioPort::A, GPIO_PIN_0>)` 的组成：
+
 - 基类 `GPIO<PORT, PIN>` 没有成员变量（所有操作都是通过模板参数在编译时确定的），`sizeof` 为 1（空基类优化后通常为 0）
 - 派生类成员：`State` (4B) + 3 个 `bool` (3B) + `uint32_t` (4B) + 对齐 ≈ 12 字节
 

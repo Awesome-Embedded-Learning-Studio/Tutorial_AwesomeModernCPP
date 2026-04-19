@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     // argv: 参数字符串数组，argv[0] 是程序名
     return 0;
 }
-```text
+```
 
 `main` 的返回类型必须是 `int`——在某些老旧编译器上写 `void main()` 也能跑，但那是非标准行为。`return 0` 表示正常退出，非零值表示异常，shell 通过 `$?` 拿到这个值来判断程序是否正常执行。
 
@@ -73,13 +73,13 @@ int main(void) {
     printf("Hello, World!\n");
     return 0;
 }
-```text
+```
 
 运行结果：
 
 ```text
 Hello, World!
-```text
+```
 
 第一行的 `#include <stdio.h>` 是预处理指令，它把标准 I/O 库的头文件内容原样插入到当前位置。如果不包含这个头文件，编译器不知道 `printf` 是什么，会给出警告甚至报错。
 
@@ -94,7 +94,7 @@ Hello, World!
 ```bash
 # 只运行预处理，输出到文件方便查看
 gcc -E hello.c -o hello.i
-```text
+```
 
 预处理后的 `.i` 文件会非常大——一个 `#include <stdio.h>` 就会把整个标准 I/O 头文件及其间接包含的所有头文件全部展开进来。你可以打开 `hello.i` 看看，头几行是注释，后面跟着成百上千行的头文件内容，最后才是你自己写的几行代码。
 
@@ -106,7 +106,7 @@ gcc -E hello.c -o hello.i
 
 ```bash
 gcc -S hello.c -o hello.s
-```text
+```
 
 打开 `hello.s`，你会看到类似这样的 x86-64 汇编（不同平台输出不同）：
 
@@ -125,7 +125,7 @@ main:
     movl    $0, %eax
     popq    %rbp
     ret
-```text
+```
 
 有个有趣的细节：我们写的 `printf("Hello, World!\n")` 被编译器优化成了 `puts` 调用——因为格式串里只有一个字符串且以 `\n` 结尾，没有任何格式占位符，编译器知道 `puts` 更高效就直接替换了。
 
@@ -135,14 +135,14 @@ main:
 
 ```bash
 gcc -c hello.c -o hello.o
-```text
+```
 
 `.o` 文件是二进制格式（Linux 上是 ELF），包含机器指令、符号表和重定位信息。你可以用 `objdump` 查看反汇编，用 `nm` 查看符号表：
 
 ```bash
 objdump -d hello.o    # 反汇编查看
 nm hello.o            # 查看符号表
-```text
+```
 
 目标文件里的函数调用（比如对 `printf` 的调用）此时地址还是留空的，等着链接阶段来填补。
 
@@ -157,7 +157,7 @@ gcc hello.c -o hello
 # 也可以分步
 gcc -c hello.c -o hello.o
 gcc hello.o -o hello
-```text
+```
 
 这个阶段是理解多文件编程的关键。每个 `.c` 文件先独立编译成 `.o`，然后链接器把它们组装在一起。这种分离编译模型是 C/C++ 的核心设计——它允许我们只重新编译修改过的文件，而不需要重新编译整个项目。
 
@@ -169,7 +169,7 @@ hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → he
          #include 展开                                   合并 .o + 库
          #define 替换                                    解析外部符号
          条件编译                                        生成可执行文件
-```text
+```
 
 ## 第三步——搞清楚头文件怎么工作
 
@@ -178,7 +178,7 @@ hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → he
 ```c
 #include <stdio.h>    // 尖括号：只在系统/标准库目录搜索
 #include "myheader.h" // 引号：先搜索当前文件所在目录，找不到再搜索系统目录
-```text
+```
 
 逻辑很直观——尖括号是给"系统提供的东西"用的，引号是给"你自己写的东西"用的。编译器有一组默认的搜索路径（可以用 `gcc -E -Wp,-v - < /dev/null` 查看），`-I` 选项可以添加额外的搜索路径。
 
@@ -193,7 +193,7 @@ hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → he
 // 头文件内容
 
 #endif /* MYHEADER_H */
-```text
+```
 
 或者使用 `#pragma once`：
 
@@ -201,7 +201,7 @@ hello.c → [预处理] → hello.i → [编译] → hello.s → [汇编] → he
 #pragma once
 
 // 头文件内容
-```text
+```
 
 > ⚠️ **踩坑预警**：`#pragma once` 虽然简洁，但在某些边缘场景（符号链接文件、网络路径映射）下可能有兼容性问题。项目中选一种方案保持一致即可——如果你不确定，就用传统的 `#ifndef` 方案，它是标准保证的。
 
@@ -234,7 +234,7 @@ int main(void) {
     printf("[%010d]\n", i);   // 前导零填充：[0000000042]
     return 0;
 }
-```text
+```
 
 运行结果：
 
@@ -248,7 +248,7 @@ int main(void) {
 [        42]
 [42        ]
 [0000000042]
-```text
+```
 
 有个经常被忽略的细节：`printf` 的返回值是成功输出的字符数，负值表示出错。在嵌入式开发中，用返回值做简单的错误检测有时很有用。
 
@@ -266,7 +266,7 @@ scanf("%31s %d %f", name, &age, &weight);
 
 // name 是数组，不需要 &（数组名即地址）
 // age 和 weight 是普通变量，必须传地址
-```text
+```
 
 > ⚠️ **踩坑预警**：`scanf` 的 `%s` 遇到空白字符就停止，而且不检查缓冲区大小。如果输入超过缓冲区长度，直接导致缓冲区溢出。安全的做法是指定最大长度（`%63s`），或者用 `fgets` + `sscanf` 组合替代。实战项目中 `scanf` 用得很少，但学习阶段理解它的机制仍然重要。
 
@@ -279,7 +279,7 @@ calc/
 ├── main.c      // 主程序
 ├── math_ops.h  // 数学运算函数声明
 └── math_ops.c  // 数学运算函数实现
-```text
+```
 
 **math_ops.h** — 头文件，模块的"公开接口"：
 
@@ -293,7 +293,7 @@ int multiply(int a, int b);
 float divide(int a, int b);
 
 #endif /* MATH_OPS_H */
-```text
+```
 
 **math_ops.c** — 实现文件：
 
@@ -310,7 +310,7 @@ float divide(int a, int b) {
     }
     return (float)a / (float)b;
 }
-```text
+```
 
 **main.c** — 主程序：
 
@@ -326,7 +326,7 @@ int main(void) {
     printf("%d / %d = %.2f\n", x, y, divide(x, y));
     return 0;
 }
-```text
+```
 
 编译和运行：
 
@@ -336,7 +336,7 @@ gcc -c main.c -o main.o
 gcc -c math_ops.c -o math_ops.o
 gcc main.o math_ops.o -o calc
 ./calc
-```text
+```
 
 运行结果：
 
@@ -345,7 +345,7 @@ gcc main.o math_ops.o -o calc
 10 - 3 = 7
 10 * 3 = 30
 10 / 3 = 3.33
-```text
+```
 
 这种分步编译的模式非常有用。当你修改了 `math_ops.c` 但没动头文件和 `main.c`，只需要重新编译 `math_ops.o` 再链接就行了——`Makefile` 和 `CMake` 这些构建工具本质上就是在自动化这个过程。
 
@@ -396,7 +396,7 @@ int add(int a, int b);
 void print_result(const char* label, int value);
 
 #endif /* UTILS_H */
-```text
+```
 
 请自行完成：
 
@@ -415,7 +415,7 @@ printf("[%-5d]\n", 42);
 printf("[%05d]\n", 42);
 printf("[%.3f]\n", 3.14159);
 printf("[%10.2f]\n", 3.14159);
-```text
+```
 
 ## 参考资源
 

@@ -56,7 +56,7 @@ struct SensorReading {
     float humidity;
     uint8_t status;
 };
-```text
+```
 
 注意结尾那个分号——忘了它是新手最常见的编译错误之一，而且报错信息通常指向下一行，让你一头雾水。`struct SensorReading` 现在就是一个类型名了，但每次都写 `struct SensorReading` 确实有点啰嗦，所以我们通常会搭配 `typedef` 来简化：
 
@@ -67,7 +67,7 @@ typedef struct {
     float humidity;
     uint8_t status;
 } SensorReading;
-```text
+```
 
 这样我们就可以直接写 `SensorReading reading;` 来声明变量了，清爽很多。两种写法在功能上是等价的，区别只在于类型名的使用方式：前者需要带着 `struct` 前缀，后者不需要。在实际项目中，`typedef` 的用法更为普遍，尤其是在嵌入式开发里——你去看任何一个 MCU 厂商的 SDK，满眼都是 `typedef struct` 的身影。
 
@@ -77,7 +77,7 @@ typedef struct {
 
 ```c
 SensorReading r1 = {1700000000, 23.5f, 60.0f, 1};
-```text
+```
 
 这种方式能跑，但可读性不太好——你必须记住每个位置对应什么字段，一旦结构体定义调整了顺序，所有初始化代码都得跟着改。C99 给了我们一个更好的方案：**指定初始化器**（designated initializer），它可以按名字初始化任意字段：
 
@@ -95,7 +95,7 @@ SensorReading r3 = {
     .status = 0
     // timestamp 和 temperature 自动初始化为 0
 };
-```text
+```
 
 指定初始化器的好处非常明显：代码自文档化，不依赖字段顺序，未指定的字段自动清零。说实话，在现代 C 代码中，只要你用的编译器支持 C99（基本上都支持），就应该优先使用指定初始化器。
 
@@ -104,7 +104,7 @@ SensorReading r3 = {
 ```c
 SensorReading r4;
 r4 = r2;  // 把 r2 的所有字段复制到 r4
-```text
+```
 
 但要注意，C 语言的结构体赋值是**浅拷贝**——如果结构体里有指针成员，赋值后两个结构体的指针字段会指向同一块内存。这在处理包含动态分配内存的结构体时是一个经典的坑。
 
@@ -127,7 +127,7 @@ reading.temperature = 26.0f;
 SensorReading* ptr = &reading;
 ptr->humidity = 55.0f;
 // 等价于 (*ptr).humidity = 55.0f
-```text
+```
 
 `->` 运算符就是 `(*ptr).` 的语法糖，没有什么神秘的。但这个语法糖实在太常用以至于你根本不会去写 `(*ptr).`——在 C 语言里，只要函数参数里有结构体指针，你几乎必定在用 `->`。
 
@@ -144,7 +144,7 @@ void print_reading(const SensorReading* r) {
 void update_status(SensorReading* r, uint8_t new_status) {
     r->status = new_status;
 }
-```text
+```
 
 这种 `const SensorReading*` 和 `SensorReading*` 的区分，在 C++ 里会被继承到 `const` 成员函数和引用语义中，形成更完整的"只读 vs 可变"接口设计。
 
@@ -158,7 +158,7 @@ typedef struct {
     uint32_t b;   // 4 字节
     uint8_t  c;   // 1 字节
 } WeirdLayout;
-```text
+```
 
 直觉上，1 + 4 + 1 = 6 字节，对吧？但实际上，在大多数 32 位和 64 位平台上，`sizeof(WeirdLayout)` 是 **12 字节**。那多出来的 6 个字节去哪了？答案是它们被编译器当作**填充字节**（padding）塞进了结构体里。
 
@@ -181,7 +181,7 @@ typedef struct {
       |              |           b: 偏移 4（4 的倍数，满足）
       |              填充 3 字节让 b 对齐到 4
       a: 偏移 0（1 的倍数，满足）
-```text
+```
 
 `a` 在偏移 0，占 1 字节。`b` 的对齐要求是 4，但下一个可用偏移是 1，不是 4 的倍数，所以编译器填入 3 个字节的 padding，让 `b` 从偏移 4 开始。`c` 在偏移 8，对齐要求是 1，没问题。最后，结构体的最大对齐要求是 4（来自 `uint32_t b`），所以总大小必须是 4 的倍数——当前是 9，要填充到 12。
 
@@ -198,7 +198,7 @@ typedef struct {
     uint8_t  c;   // 1 字节，偏移 5
     // 填充 2 字节（偏移 6-7），使总大小为 4 的倍数
 } BetterLayout;
-```text
+```
 
 现在 `sizeof(BetterLayout)` 是 **8 字节**——比之前的 12 节省了三分之一。`b` 在偏移 0（天然对齐），`a` 和 `c` 紧挨着排在后面，最后只需要 2 字节的尾部填充。这个技巧在实际工程中非常有用，尤其是在内存受限的嵌入式系统上——养成按对齐要求从大到小排列字段的习惯是值得的。
 
@@ -214,7 +214,7 @@ printf("offset of a: %zu\n", offsetof(WeirdLayout, a));  // 0
 printf("offset of b: %zu\n", offsetof(WeirdLayout, b));  // 4
 printf("offset of c: %zu\n", offsetof(WeirdLayout, c));  // 8
 printf("total size: %zu\n", sizeof(WeirdLayout));         // 12
-```text
+```
 
 养成写完结构体就用 `offsetof` 打印一遍的习惯，特别是在设计通信协议帧的时候——你会发现有些字段的偏移跟你预想的不一样，而这通常意味着对齐问题。
 
@@ -234,7 +234,7 @@ printf("alignof(uint8_t)  = %zu\n", alignof(uint8_t));   // 1
 printf("alignof(uint32_t) = %zu\n", alignof(uint32_t));  // 4
 printf("alignof(double)   = %zu\n", alignof(double));    // 通常 8
 printf("alignof(WeirdLayout) = %zu\n", alignof(WeirdLayout)); // 4
-```text
+```
 
 结构体的对齐要求等于其成员中最大的对齐要求。`WeirdLayout` 里有 `uint32_t`，所以整体对齐要求是 4。
 
@@ -253,7 +253,7 @@ typedef struct {
     uint8_t header;
     alignas(4) uint32_t payload;  // 即使前面有 header，也保证 payload 4 字节对齐
 } AlignedFrame;
-```text
+```
 
 `alignas` 的参数必须是 2 的幂，且不能小于类型的自然对齐要求。如果你写 `alignas(2)` 给一个 `uint32_t`，编译器会忽略它或者报错——因为 `uint32_t` 本身就需要 4 字节对齐，你不可能把它降到 2。
 
@@ -276,7 +276,7 @@ Point3D p1 = {
     .flags = 0xFF  // 指定初始化 flags
     // z 自动为 0
 };
-```text
+```
 
 在数组中也可以使用指定初始化器：
 
@@ -288,7 +288,7 @@ uint8_t lookup[256] = {
     ['C'] = 3,
     // 其余全部为 0
 };
-```text
+```
 
 这种写法在做 ASCII 字符映射表、命令分发表的时候特别方便，比起手写 256 个元素的初始化列表要清晰得多。未指定的元素会被自动初始化为零（和全局变量一样）。
 
@@ -302,7 +302,7 @@ typedef struct {
     uint8_t  type;
     uint8_t  data[];  // 柔性数组成员，不占结构体大小
 } Packet;
-```text
+```
 
 `data[]` 是一个不完整类型的数组——它在结构体中不占用空间（`sizeof(Packet)` 不会包含 `data` 的大小），但它告诉编译器"这个结构体的末尾可能跟着一段连续内存"。使用时，我们需要手动分配足够的内存来容纳结构体本身加上数据：
 
@@ -328,7 +328,7 @@ uint8_t payload[] = {0x01, 0x02, 0x03};
 Packet* pkt = create_packet(0x42, payload, sizeof(payload));
 // 访问 pkt->data[0], pkt->data[1], pkt->data[2]
 free(pkt);
-```text
+```
 
 柔性数组成员在通信协议、变长消息处理、数据包解析中用得非常多。在 C 的早期年代，人们用一种叫做"struct hack"的技巧来实现类似功能——在结构体末尾放一个长度为 1（或 0）的数组，然后多分配一些空间。但那是未定义行为，C99 的 FAM 才是标准做法。
 
@@ -355,7 +355,7 @@ TaskConfig config_table[] = {
 
 // 获取数组元素个数
 size_t task_count = sizeof(config_table) / sizeof(config_table[0]);
-```text
+```
 
 遍历结构体数组的方式和普通数组一样，可以用下标也可以用指针：
 
@@ -373,7 +373,7 @@ uint8_t find_highest_priority(const TaskConfig* tasks, size_t count) {
     }
     return result_id;
 }
-```text
+```
 
 结构体数组在内存中的布局是紧密排列的——每个元素的大小为 `sizeof(TaskConfig)`（包含填充），第 i 个元素的地址就是 `base + i * sizeof(TaskConfig)`。这也是为什么结构体末尾需要填充的原因——如果不填充，数组中第二个元素的字段就可能不对齐。
 
@@ -388,7 +388,7 @@ typedef struct __attribute__((packed)) {
     uint8_t  command;
     uint32_t parameter;
 } PackedFrame;
-```text
+```
 
 加了这个属性后，`sizeof(PackedFrame)` 就是纯粹的 1 + 2 + 1 + 4 = 8 字节，没有任何填充。但要注意代价——访问未对齐的字段在某些架构上会导致性能下降甚至硬件异常。所以 `packed` 应该只在你确实需要紧凑布局的时候使用，而不是到处乱加。ARM Cortex-M 系列在大多数情况下能处理未对齐访问（有性能损失），但有些老架构（比如 ARM7TDMI）会直接 fault。
 
@@ -416,7 +416,7 @@ struct SensorReading {
         printf("T=%.1fC H=%.1f%%\n", temperature, humidity);
     }
 };
-```text
+```
 
 所以你在 C++ 代码里看到 `struct`，不要以为它跟 C 语言的结构体一样——它就是一个默认 public 的 class。
 
@@ -438,7 +438,7 @@ alignas(64) std::byte storage[sizeof(MyStruct)];
 
 // 或者使用 std::aligned_storage（C++23 前的做法）
 using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct)>;
-```text
+```
 
 这些概念在后续的 C++ 章节中会详细讨论。这里只需要知道：C 语言中对齐控制的思路，在 C++ 中被更系统化、更安全地实现了。
 
@@ -493,7 +493,7 @@ int main(void) {
     // TODO: 创建一个测试帧并验证偏移
     return 0;
 }
-```text
+```
 
 提示：在 packed 结构体中使用 `alignas` 需要注意——packed 会取消自动填充，但 `alignas` 可以强制某个字段的对齐。思考一下：在 packed 结构体中，如果帧头到时间戳之间恰好不是 4 的倍数偏移，你该怎么处理？
 
