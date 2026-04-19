@@ -46,3 +46,22 @@ jobs:
       - name: Validate frontmatter
         run: |
           python scripts/validate_frontmatter.py
+
+  check-generated-docs:
+    name: Generated Docs Freshness
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check generated docs are up to date
+        run: python3 scripts/generate_docs.py --ci

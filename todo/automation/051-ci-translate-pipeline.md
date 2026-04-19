@@ -1,84 +1,86 @@
 ---
 id: "051"
-title: "AI 翻译流水线：增量翻译与人工审核"
+title: "AI 翻译脚本：本地增量翻译"
 category: automation
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
+updated: 2026-04-19
 assignee: charliechen
 depends_on: ["002", "084"]
 blocks: ["102"]
-estimated_effort: large
+estimated_effort: medium
 ---
 
-# AI 翻译流水线：增量翻译与人工审核
+# AI 翻译脚本：本地增量翻译
 
 ## 目标
 
-构建完整的 AI 翻译 CI/CD 流水线，在推送到 main 分支时自动检测变更的中文 Markdown 文件，调用 AI API（OpenAI / Claude / DeepL）将中文内容翻译为英文，生成 `.en.md` 文件，并自动创建翻译 PR 供人工审核。
+构建本地运行的 AI 翻译脚本，由维护者手动触发，自动检测变更的中文 Markdown 文件，调用 AI API（OpenAI / Claude / DeepL）将中文内容翻译为英文，生成 `.en.md` 文件。翻译完成后由维护者自行提交和审核。
+
+> **不使用 CI/CD 流水线**：翻译内容在 CI 中运行存在泄露风险（日志、第三方服务等），改为纯本地脚本方案。API key 保存在本地环境变量或 `.env` 文件中，不进入仓库。
 
 核心要求：
-- **增量翻译**：仅翻译本次推送中变更的文件，避免全量翻译导致的高成本和长耗时
+- **本地运行**：所有翻译操作在本地执行，不依赖 CI 环境，避免内容泄露
+- **手动触发**：由维护者主动运行，支持翻译指定文件或自动检测变更文件
+- **增量翻译**：仅翻译有变更的文件，避免全量翻译导致的高成本和长耗时
 - **上下文感知**：翻译时提供术语表和写作风格指南，确保翻译质量
-- **人工审核**：翻译结果通过 PR 提交，由维护者审核后合并
 - **幂等性**：同一文件的翻译可以安全地重复执行
 
 ## 验收标准
 
-- [ ] `.github/workflows/translate.yml` 工作流在 main 分支推送时触发
-- [ ] 工作流能正确检测本次推送中变更的 `.md` 文件（排除 `.en.md` 和其他非中文文件）
-- [ ] `scripts/translate.py` 脚本调用 AI API 将中文翻译为英文
+- [ ] `scripts/translate.py` 脚本可在本地通过 `.venv` 环境直接运行
+- [ ] 支持 `--changed` 模式：自动检测相对于 main 分支有变更的 `.md` 文件（排除 `.en.md`）
+- [ ] 支持 `--file <path>` 模式：翻译单个指定文件
+- [ ] 支持 `--all` 模式：翻译所有中文 `.md` 文件（全量，需二次确认）
 - [ ] 翻译结果保存为对应的 `.en.md` 文件（如 `article.md` → `article.en.md`）
-- [ ] 自动创建翻译 PR，标题格式：`i18n: auto-translate YYYY-MM-DD`
-- [ ] PR 中列出所有翻译的文件及变更摘要
-- [ ] 支持增量翻译：仅处理 `git diff` 中变更的文件
-- [ ] 翻译 API key 通过 GitHub Secrets 安全存储
 - [ ] 代码块、表格、图片引用等特殊内容正确保留不翻译
 - [ ] frontmatter 正确处理（翻译 title/description，保留其他字段）
-- [ ] 本地可通过 `python3 scripts/translate.py --file path/to/article.md` 测试单个文件翻译
-- [ ] 包含费用估算和 API 调用限制保护机制
+- [ ] API key 从环境变量或 `.env` 文件读取，脚本提示缺失时给出配置说明
+- [ ] 包含费用估算和 `--dry-run` 预估模式
+- [ ] 包含 token 调用限制保护机制（单次运行上限可配置）
 
 ## 实施说明
 
-### 工作流架构
+### 使用方式
 
-```yaml
-# .github/workflows/translate.yml
-name: AI Translate
+```bash
+# 翻译单个文件
+python3 scripts/translate.py --file documents/vol1-fundamentals/01-introduction.md
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'documents/**/*.md'
-      - '!documents/**/*.en.md'
+# 翻译相对 main 分支所有变更的中文 .md 文件
+python3 scripts/translate.py --changed
 
-jobs:
-  detect-and-translate:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # 需要 diff HEAD~1
-      - name: Detect changed files
-        id: changes
-        run: |
-          # 获取变更的中文 .md 文件列表
-          CHANGED=$(git diff --name-only --diff-filter=ACM HEAD~1 HEAD -- 'documents/**/*.md' ':!documents/**/*.en.md')
-          echo "files=$CHANGED" >> "$GITHUB_OUTPUT"
-      - name: Translate
-        if: steps.changes.outputs.files != ''
-        run: python3 scripts/translate.py --files ${{ steps.changes.outputs.files }}
-        env:
-          TRANSLATE_API_KEY: ${{ secrets.TRANSLATE_API_KEY }}
-      - name: Create Translation PR
-        if: steps.changes.outputs.files != ''
-        run: |
-          # 创建分支，提交翻译文件，创建 PR
+# 翻译所有中文 .md 文件（会有二次确认提示）
+python3/ scripts/translate.py --all
+
+# 预估翻译费用，不实际调用 API
+python3 scripts/translate.py --changed --dry-run
+
+# 指定翻译引擎
+python3 scripts/translate.py --changed --engine openai
 ```
+
+### 变更检测逻辑
+
+```bash
+# --changed 模式：对比当前分支与 main 的差异
+git diff --name-only --diff-filter=ACM main...HEAD -- 'documents/**/*.md' ':!documents/**/*.en.md'
+```
+
+### API Key 管理
+
+```bash
+# 方式 1：环境变量
+export TRANSLATE_API_KEY="sk-..."
+python3 scripts/translate.py --changed
+
+# 方式 2：项目根目录 .env 文件（已在 .gitignore 中）
+echo "TRANSLATE_API_KEY=sk-..." >> .env
+python3 scripts/translate.py --changed
+```
+
+`.gitignore` 中已包含 `.env`，确保 key 不会被提交到仓库。
 
 ### translate.py 脚本设计
 
@@ -151,12 +153,10 @@ Writing style guide:
 
 ## 涉及文件
 
-- `.github/workflows/translate.yml` — 翻译工作流定义
-- `scripts/translate.py` — 翻译核心脚本
+- `scripts/translate.py` — 翻译核心脚本（唯一新增文件）
 
 ## 参考资料
 
 - [OpenAI API 文档](https://platform.openai.com/docs/api-reference/chat)
-- [Anthropic API 文档](https://docs.anthropic.com/en/docs/api-reference)
-- [GitHub Actions PR 创建](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow)
+- [Anthropic API 文档](https://docs.anthropometric.com/en/docs/api-reference)
 - [mkdocs-static-i18n 文件布局](https://ultrabug.github.io/mkdocs-static-i18n/)

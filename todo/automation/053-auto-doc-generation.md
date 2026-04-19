@@ -3,7 +3,7 @@ id: "053"
 title: "文档自动化生成：目录、索引与统计报告"
 category: automation
 priority: P2
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["002"]

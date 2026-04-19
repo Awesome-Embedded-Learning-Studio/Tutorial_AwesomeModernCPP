@@ -1,0 +1,34 @@
+# Content Quality Workflow
+# Runs comprehensive quality checks on documentation Markdown files
+
+name: Content Quality
+
+on:
+  pull_request:
+    paths:
+      - 'documents/**/*.md'
+      - 'scripts/check_quality.py'
+  push:
+    branches: [main]
+    paths:
+      - 'documents/**/*.md'
+
+jobs:
+  quality-check:
+    name: Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run quality checks
+        run: python3 scripts/check_quality.py documents/ --strict
