@@ -43,15 +43,17 @@ Result<std::string> fetch_http(const std::string& url) {
             return "Response body from " + url;
         case 1:
             std::cout << "  Request timed out" << std::endl;
-            return Error::timeout();
+            return std::unexpected(Error::timeout());
         case 2:
             std::cout << "  Server error 503" << std::endl;
-            return Error::server_error(503);
+            return std::unexpected(Error::server_error(503));
         case 3:
             std::cout << "  Rate limited" << std::endl;
-            return Error::rate_limited();
+            return std::unexpected(Error::rate_limited());
+        default:
+            break;
     }
-    return Error{Error::Unknown, "Unknown error"};
+    return std::unexpected(Error{Error::Unknown, "Unknown error"});
 }
 
 // Retry with exponential backoff
@@ -157,9 +159,9 @@ void demo_selective_retry() {
 // Retry with callback for each attempt
 template<typename F, typename LogCallback>
 auto retry_with_log(F&& func, unsigned max_attempts, LogCallback&& log_cb)
-    -> decltype(func())
+    -> decltype(std::forward<F>(func)())
 {
-    using ResultType = decltype(func());
+    using ResultType = decltype(std::forward<F>(func)());
 
     for (unsigned attempt = 0; attempt < max_attempts; ++attempt) {
         log_cb(attempt);

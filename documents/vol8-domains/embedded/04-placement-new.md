@@ -1,20 +1,23 @@
 ---
-title: "Placement New 的使用"
-description: "placement new应用策略"
 chapter: 5
-order: 4
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: placement new应用策略
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 11
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Placement New 的使用
 ---
-
 # 嵌入式C++教程：placement new
 
 在嵌入式世界里，`new` / `delete` 往往不是"万能钥匙"。有的目标平台根本没有自由堆（裸机、某些 RTOS），有的场景为了可预测性和实时性要**禁用 heap**，更有些情形下你需要把内存布局控制到厘米级——这就要靠 *placement new*（放置 new）来做事情了。
@@ -296,23 +299,3 @@ public:
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/04_placement_new/basic_placement_new.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/04_placement_new/bump_allocator.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/04_placement_new/inplace_wrapper.cpp"
-
-```
-
-</details>

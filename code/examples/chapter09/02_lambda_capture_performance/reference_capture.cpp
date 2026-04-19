@@ -63,12 +63,12 @@ int main() {
     */
 
     // GOOD: Return by value or use safe lifetime
-    auto safe_counter() {
+    auto safe_counter = []() {
         int count = 0;
         return [count]() mutable {  // Copy the value
             return ++count;
         };
-    }
+    };
 
     auto counter1 = safe_counter();
     std::cout << "safe_counter() = " << counter1() << std::endl;  // 1

@@ -2,6 +2,7 @@
 #include <span>
 #include <array>
 #include <cstdint>
+#include <iomanip>
 #include <iostream>
 
 void print_bytes(std::string_view label, std::span<const std::byte> bytes) {

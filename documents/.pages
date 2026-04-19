@@ -14,4 +14,6 @@ nav:
     - 卷八 · 领域应用: vol8-domains/
     - 编译与链接: compilation/
     - 实战项目: projects/
+  - 参考:
+    - C++ 特性参考卡: cpp-reference/
   - 标签: tags.md

@@ -1,20 +1,23 @@
 ---
-title: "循环缓冲区实现"
-description: "高效循环缓冲区"
 chapter: 7
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 高效循环缓冲区
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 6: RAII与智能指针"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 循环缓冲区实现
 ---
-
 # 嵌入式C++教程——循环缓冲区
 
 在嵌入式世界里，有一类问题反复出现：**数据源不停地产生数据，消费者慢慢地处理数据，中间还不想 malloc。**于是，一个古老但永不过时的数据结构登场了——**循环缓冲区（Circular Buffer / Ring Buffer）**。
@@ -277,38 +280,3 @@ int main()
 | std::vector | 是           | 否         | ❌          |
 | std::queue  | 取决于底层   | 否         | ❌          |
 | 循环缓冲区  | 否           | 是         | ✅          |
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```c
---8<-- "code/examples/chapter07/03_circular_buffer/ring_buffer.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/03_circular_buffer/basic_example.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看更多示例：UART 模拟、线程安全版本</summary>
-
-```cpp
---8<-- "code/examples/chapter07/03_circular_buffer/uart_example.cpp"
-
-```
-
-```c
---8<-- "code/examples/chapter07/03_circular_buffer/atomic_ring_buffer.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/03_circular_buffer/thread_safe_example.cpp"
-
-```
-
-</details>

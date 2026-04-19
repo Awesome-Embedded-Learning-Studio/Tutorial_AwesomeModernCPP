@@ -1,20 +1,23 @@
 ---
-title: "自定义分配器"
-description: "自定义STL分配器"
 chapter: 7
-order: 6
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 自定义STL分配器
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 6: RAII与智能指针"
-cpp_standard: [11, 14, 17, 20]
+order: 6
 platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 自定义分配器
 ---
-
 # 嵌入式现代C++教程——自定义分配器（Allocator）
 
 在嵌入式世界里，内存不是"无限"的抽屉，而是那只随时会嫌你占空间的行李箱。默认的 `new` / `malloc` 对我们友好吗？有时候很友好（没错，方便）；但更多时候，它们是潜在的性能炸弹、不可预测的延迟来源、以及碎片化萌生地。于是，写一个"自定义分配器"——你自己的内存管理策略，就变成了工程师的基本修行。
@@ -187,48 +190,3 @@ void destroy_with(Alloc& a, T* obj) noexcept {
 - 或实现兼容 `std::allocator` 接口的类（需要一堆 typedef 和 `rebind`），然后传给 `std::vector<T, MyAlloc<T>>`。
 
 如果构建环境允许，优先考虑 `std::pmr` —— 它语义更清晰，但开销与支持度要看你的平台。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```c
---8<-- "code/examples/chapter07/06_custom_allocator/bump_allocator.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/06_custom_allocator/bump_allocator_demo.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看更多示例：固定大小内存池、栈分配器、placement new</summary>
-
-```c
---8<-- "code/examples/chapter07/06_custom_allocator/fixed_pool.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/06_custom_allocator/fixed_pool_demo.cpp"
-
-```
-
-```c
---8<-- "code/examples/chapter07/06_custom_allocator/stack_allocator.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/06_custom_allocator/stack_allocator_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/06_custom_allocator/placement_new_demo.cpp"
-
-```
-
-</details>

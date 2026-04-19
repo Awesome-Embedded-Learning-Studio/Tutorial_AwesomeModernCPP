@@ -1,20 +1,23 @@
 ---
-title: "固定池分配"
-description: "固定大小内存池分配器"
 chapter: 5
-order: 5
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 固定大小内存池分配器
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 固定池分配
 ---
-
 # 嵌入式 C++ 教程：Slab / Arena 实现与比较
 
 这里开始的是使用固定池 / Slab / Arena来展开我们涉及到内存分配中剩下的一些内容——**Slab**、**Arena（Bump / Region）**。当然，部分内容实际上已经是操作系统的层次的知识了，但是知道了总不赖！
@@ -102,18 +105,3 @@ private:
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/05_fixed_pool_allocation/fixed_pool.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/05_fixed_pool_allocation/slab_allocator.cpp"
-
-```
-
-</details>

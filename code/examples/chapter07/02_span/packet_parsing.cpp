@@ -1,5 +1,6 @@
 // packet_parsing.cpp - 实际嵌入式场景：协议包解析
 #include <span>
+#include <array>
 #include <cstdint>
 #include <iostream>
 
@@ -47,7 +48,7 @@ void recv_packet(std::span<uint8_t> buffer) {
 
     // CRC 校验（把 payload 当作字节流）
     auto bytes = std::as_bytes(payload);
-    if (crc_check(static_cast<const uint8_t*>(bytes.data()), bytes.size())) {
+    if (crc_check(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size())) {
         std::cout << "CRC: OK\n";
     } else {
         std::cout << "CRC: FAILED\n";

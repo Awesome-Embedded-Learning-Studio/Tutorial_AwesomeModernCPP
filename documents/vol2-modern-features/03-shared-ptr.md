@@ -1,20 +1,23 @@
 ---
-title: "shared_ptr 共享所有权智能指针"
-description: "介绍shared_ptr工作原理"
 chapter: 6
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 介绍shared_ptr工作原理
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: shared_ptr 共享所有权智能指针
 ---
-
 # 嵌入式现代C++教程——std::shared_ptr如何呢
 
 unique_ptr在我们上一篇博客的时候，已经讲过了它可以表达资源独占的含义。那么，智能指针还有一个朋友，就是std::shared_ptr。理解std::shared_ptr，我们需要把 `std::shared_ptr` 想象成一个会记账的托管管家——谁拿着这把钥匙就多记一笔，钥匙都收回时，管家把东西收拾干净。听起来美好；在桌面/服务器上也常常很管用。但把它搬到内存受限、实时性敏感、没有操作系统的嵌入式世界，要先把账本翻一翻：这把"管家"到底要多大的办公桌、会不会老是在你耳边叨叨（原子操作）、会不会把内存分散得像散落的螺丝钉。
@@ -53,16 +56,6 @@ auto p = std::make_shared<MyType>(args...);
 
 `make_shared` 在多数实现里把控制块和对象放在一个连续内存块里，既减少一次分配，也提升缓存友好性。对于嵌入式，这点非常重要：少一次 malloc 就少一次碎片风险。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/03_shared_ptr_embedded_considerations/basic_usage.cpp"
-
-```
-
-</details>
-
 ### 如果你在乎内存布局，考虑显式池 + 自定义删除器
 
 如果你自己有内存池（你很可能有 —— 你之前的项目就实现过内存池），可以让 `shared_ptr` 在销毁时把内存还给池，而不是 `delete`：
@@ -100,16 +93,6 @@ struct A {
 
 `weak_ptr` 不增加引用计数，仅查看对象是否仍存活。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/03_shared_ptr_embedded_considerations/circular_reference.cpp"
-
-```
-
-</details>
-
 ### `enable_shared_from_this` 的正确使用
 
 如果对象方法需要返回一个 `shared_ptr` 指向自身，请通过 `enable_shared_from_this` 实现，而别尝试用 `shared_ptr(this)`（那会导致双重控制块和极其糟糕的后果）：
@@ -120,16 +103,6 @@ struct Foo : std::enable_shared_from_this<Foo> {
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/03_shared_ptr_embedded_considerations/circular_reference.cpp"
-
-```
-
-</details>
 
 ------
 

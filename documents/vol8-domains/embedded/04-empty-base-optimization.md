@@ -1,20 +1,23 @@
 ---
-title: "空基类优化(EBO)"
-description: "介绍空基类优化技术"
 chapter: 3
-order: 4
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 介绍空基类优化技术
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: stm32f1
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 空基类优化(EBO)
 ---
-
 # 空基类优化（EBO）：C++ 的瘦身技巧
 
 有一种低调而高效的内存优化，总在你看不到的地方帮你省下一点字节——**空基类优化（Empty Base Optimization, EBO）**。写库时常会用到空类作为"策略/标签/无状态的行为对象"，EBO 能把这些没有状态的基类挤出对象布局，节省空间、提升局部性。
@@ -56,16 +59,6 @@ static_assert(sizeof(A) >= sizeof(int) + 1);
 static_assert(sizeof(B) == sizeof(int)); // 在支持 EBO 的编译器上通常成立
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter03/04_ebo/ebo_example.cpp"
-
-```
-
-</details>
 
 在上面例子中，`A` 中的 `Empty e` 是数据成员，按语言规则它需要占非零字节（以保证数组等语义）；而 `B` 把 `Empty` 作为基类，编译器可以把它"压进"`B` 的布局中，从而 `sizeof(B)` 通常等于 `sizeof(int)`（不同编译器/ABI 可能细节不同）。
 

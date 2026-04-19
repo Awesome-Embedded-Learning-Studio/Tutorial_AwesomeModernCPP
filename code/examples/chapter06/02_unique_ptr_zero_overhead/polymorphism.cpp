@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <cstdio>
+#include <cstring>
 
 // 基类必须有虚析构函数
 struct Base {

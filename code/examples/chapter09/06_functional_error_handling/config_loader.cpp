@@ -47,7 +47,7 @@ struct Config {
 Result<std::string> read_file(const std::string& path) {
     std::ifstream f(path);
     if (!f) {
-        return ConfigError::file_not_found(path);
+        return std::unexpected{ConfigError::file_not_found(path)};
     }
 
     std::stringstream buffer;
@@ -62,7 +62,7 @@ struct JsonValue {
 
 Result<JsonValue> parse_json(const std::string& content) {
     if (content.empty() || content[0] != '{') {
-        return ConfigError::parse_error("not a JSON object");
+        return std::unexpected{ConfigError::parse_error("not a JSON object")};
     }
     return JsonValue{content};
 }
@@ -73,10 +73,10 @@ Result<Config> validate_config(const JsonValue& json) {
 
     // Simplified parsing
     if (json.raw.find("baudrate") == std::string::npos) {
-        return ConfigError::validation_error("baudrate");
+        return std::unexpected{ConfigError::validation_error("baudrate")};
     }
     if (json.raw.find("timeout") == std::string::npos) {
-        return ConfigError::validation_error("timeout");
+        return std::unexpected{ConfigError::validation_error("timeout")};
     }
 
     // Extract values (simplified)
@@ -96,20 +96,20 @@ Result<void> apply_config(const Config& cfg) {
 // TRY macro for clean error propagation
 #define TRY(...) ({ \
     auto _result = (__VA_ARGS__); \
-    if (!_result) return std::unexpected(_result.error()); \
+    if (!_result) return std::unexpected{_result.error()}; \
     _result.value(); \
 })
 
 // Load pipeline using manual propagation
 Result<void> load_config_manual(const std::string& path) {
     auto content_result = read_file(path);
-    if (!content_result) return content_result.error();
+    if (!content_result) return std::unexpected{content_result.error()};
 
     auto json_result = parse_json(content_result.value());
-    if (!json_result) return json_result.error();
+    if (!json_result) return std::unexpected{json_result.error()};
 
     auto config_result = validate_config(json_result.value());
-    if (!config_result) return config_result.error();
+    if (!config_result) return std::unexpected{config_result.error()};
 
     return apply_config(config_result.value());
 }

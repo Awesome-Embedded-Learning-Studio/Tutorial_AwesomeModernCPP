@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <utility>
 
 // ========== 单线程侵入式引用计数基类 ==========
 

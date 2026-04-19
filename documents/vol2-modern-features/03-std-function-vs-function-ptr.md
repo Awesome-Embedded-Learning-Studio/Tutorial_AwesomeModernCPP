@@ -60,16 +60,6 @@ BinaryOp op = add;
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/03_std_function_vs_pointers/function_pointer.cpp"
-
-```
-
-</details>
-
 ### 嵌入式场景示例
 
 ```cpp
@@ -202,16 +192,6 @@ public:
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/03_std_function_vs_pointers/std_function_demo.cpp"
-
-```
-
-</details>
 
 ### 嵌入式场景示例
 
@@ -398,16 +378,6 @@ void benchmark_std_function(benchmark::State& state) {
    ```
 
 内联后差异可能消失，但`std::function`的内联机会更少。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/03_std_function_vs_pointers/performance_comparison.cpp"
-
-```
-
-</details>
 
 ------
 

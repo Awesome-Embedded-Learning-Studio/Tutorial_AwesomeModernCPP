@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cstdint>
 
 int main() {
     std::cout << "=== Full Capture Demo ===" << std::endl;
@@ -74,16 +75,20 @@ int main() {
         return config > 50;
     };
     // temp is also captured even though we don't use it!
+    (void)bad1;
+    (void)temp;
 
     // RECOMMENDED: Explicitly list what you need
     auto good1 = [&config]() {
         return config > 50;
     };
+    (void)good1;
 
     // Or if it's just a value, capture by value
     auto good2 = [config]() {
         return config > 50;
     };
+    (void)good2;
 
     // Example with multiple variables
     int base = 10;

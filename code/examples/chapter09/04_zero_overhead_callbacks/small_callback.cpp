@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <array>
+#include <cstdint>
 
 template<typename Signature, size_t StorageSize = 32>
 class SmallCallback;
@@ -53,6 +54,7 @@ public:
     }
 
     SmallCallback(const SmallCallback&) = delete;
+    SmallCallback& operator=(const SmallCallback&) = delete;
 
     SmallCallback(SmallCallback&& other) noexcept {
         if (other.object) {
@@ -60,6 +62,21 @@ public:
             object = reinterpret_cast<Concept*>(storage);
             other.object = nullptr;
         }
+    }
+
+    SmallCallback& operator=(SmallCallback&& other) noexcept {
+        if (this != &other) {
+            if (object) {
+                object->~Concept();
+                object = nullptr;
+            }
+            if (other.object) {
+                other.object->move_to(storage);
+                object = reinterpret_cast<Concept*>(storage);
+                other.object = nullptr;
+            }
+        }
+        return *this;
     }
 
     R operator()(Args... args) {
@@ -79,11 +96,19 @@ public:
 
     struct Slot {
         Handler callback;
-        uint32_t user_data;
+        uint32_t user_data = 0;
 
         Slot() = default;
         Slot(Handler cb, uint32_t data = 0)
             : callback(std::move(cb)), user_data(data) {}
+
+        Slot& operator=(Slot&& other) noexcept {
+            if (this != &other) {
+                callback = std::move(other.callback);
+                user_data = other.user_data;
+            }
+            return *this;
+        }
     };
 
     bool register_handler(EventType evt, Handler cb, uint32_t data = 0) {

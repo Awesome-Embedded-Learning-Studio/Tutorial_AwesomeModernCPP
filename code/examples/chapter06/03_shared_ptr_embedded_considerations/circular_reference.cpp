@@ -46,7 +46,7 @@ void circular_reference_leak() {
 
 // ============ 使用 weak_ptr 解决循环引用 ============
 
-struct NodeGood {
+struct NodeGood : public std::enable_shared_from_this<NodeGood> {
     std::string name;
     std::shared_ptr<NodeGood> next;
     std::weak_ptr<NodeGood> prev;  // 使用 weak_ptr 打破循环

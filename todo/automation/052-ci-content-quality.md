@@ -3,7 +3,7 @@ id: "052"
 title: "内容质量自动检查 CI"
 category: automation
 priority: P1
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["002"]

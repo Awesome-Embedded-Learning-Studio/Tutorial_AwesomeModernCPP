@@ -1,20 +1,23 @@
 ---
-title: "对象大小与平凡类型"
-description: "探讨C++对象内存布局"
 chapter: 3
-order: 5
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 探讨C++对象内存布局
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 对象大小与平凡类型
 ---
-
 # 嵌入式现代C++教程——对象大小、内存对齐、类型"平凡/标准布局"与聚合初始化
 
 写底层代码、做嵌入式系统或者和 C 接口打交道时，常会被一串看似晦涩的名词绕晕：`sizeof`、`alignof`、`alignas`、`trivial`、`standard-layout`、`trivially_copyable`、聚合（aggregate）……这些概念看起来零碎，其实是一张互相勾连的地图：它们决定了对象的内存表现（object representation）、拷贝语义、以及能否安全地用 `memcpy`、能否与 C 结构体 ABI 兼容、以及初始化的灵活性。
@@ -41,16 +44,6 @@ struct A {
 // sizeof(A) == 8
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter03/05_object_size/object_size_example.cpp"
-
-```
-
-</details>
 
 如果把顺序换一下：
 

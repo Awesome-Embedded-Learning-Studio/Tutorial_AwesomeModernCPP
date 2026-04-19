@@ -16,6 +16,7 @@ void demo_basic_pipeline() {
         std::views::filter(data, [](int x) { return x > 2; }),
         [](int x) { return x * 2; }
     );
+    (void)result1;
 
     // Pipeline style (easy to read)
     auto result2 = data
@@ -29,7 +30,7 @@ void demo_basic_pipeline() {
     std::cout << std::endl;
 }
 
-void_demo_three_stage() {
+void demo_three_stage() {
     std::cout << "\n=== Three-Stage Pipeline ===" << std::endl;
 
     std::vector<int> readings = {12, 45, 23, 67, 34, 89, 56};

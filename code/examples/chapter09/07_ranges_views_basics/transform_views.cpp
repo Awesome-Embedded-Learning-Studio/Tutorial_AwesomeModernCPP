@@ -5,6 +5,7 @@
 #include <ranges>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 
 void demo_basic_transform() {
     std::cout << "=== Basic Transform ===" << std::endl;

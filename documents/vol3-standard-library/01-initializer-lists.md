@@ -1,20 +1,23 @@
 ---
-title: "初始化列表"
-description: "详解成员初始化列表"
 chapter: 3
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 详解成员初始化列表
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 5
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 初始化列表
 ---
-
 # 构造函数优化：初始化列表 vs 成员赋值
 
 在嵌入式 C++ 项目中，我们很容易把精力放在"看得见"的地方：中断、DMA、时序、缓存命中率、Flash/RAM 占用……而对于构造函数这种"看起来只执行一次"的代码，往往下意识地放松了警惕。
@@ -50,16 +53,6 @@ private:
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter03/01_init_list/init_list_example.cpp"
-
-```
-
-</details>
 
 乍一看没有任何问题，逻辑清晰、可读性也不错。
 

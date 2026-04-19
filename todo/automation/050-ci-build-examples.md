@@ -3,7 +3,7 @@ id: "050"
 title: "CI 自动编译 code/ 下所有 CMake 项目"
 category: automation
 priority: P1
-status: pending
+status: done
 created: 2026-04-15
 assignee: charliechen
 depends_on: ["002"]

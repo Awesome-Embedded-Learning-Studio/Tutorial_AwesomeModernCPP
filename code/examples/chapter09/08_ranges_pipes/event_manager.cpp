@@ -86,7 +86,7 @@ void demo_recent_events() {
 
     EventManager mgr;
     for (int i = 0; i < 10; ++i) {
-        mgr.add_event({EventType::Timer, static_cast<uint32_t>(i * 1000), i});
+        mgr.add_event({EventType::Timer, static_cast<uint32_t>(i * 1000), static_cast<uint32_t>(i)});
     }
 
     // Get last 3 events
@@ -124,7 +124,7 @@ void demo_complex_pipeline() {
     // Add mixed events
     for (int i = 0; i < 10; ++i) {
         EventType t = (i % 2 == 0) ? EventType::Timer : EventType::GPIO;
-        mgr.add_event({t, static_cast<uint32_t>(i * 500), i});
+        mgr.add_event({t, static_cast<uint32_t>(i * 500), static_cast<uint32_t>(i)});
     }
 
     // Filter Timer events, get last 3, extract data

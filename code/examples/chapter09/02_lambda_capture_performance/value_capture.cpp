@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <string>
+#include <cstdint>
 
 int main() {
     std::cout << "=== Value Capture Demo ===" << std::endl;
@@ -72,6 +73,7 @@ int main() {
         counter++;
         return counter;
     };
+    (void)get_lambda;
 
     // This creates a new lambda with a fresh copy each time
     auto lambda1 = [counter]() mutable {

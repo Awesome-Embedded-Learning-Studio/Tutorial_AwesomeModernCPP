@@ -11,7 +11,7 @@ int global_initialized = 100;
 int global_uninitialized;
 
 // 3. 只读常量 (.rodata段 - 通常在Flash中)
-static const uint16_t sine_table[16] = {
+static const int16_t sine_table[16] = {
     0,  6424,  11773,  15836,
     18479,  19595,  19151,  17205,
     13938,  9605,   4479,    0,
@@ -59,7 +59,7 @@ void constexpr_static_demo() {
 }
 
 // 演示静态存储用于查表
-uint16_t fast_sin(uint8_t angle) {
+int16_t fast_sin(uint8_t angle) {
     // 简化版：只演示查表访问
     return sine_table[angle % 16];
 }

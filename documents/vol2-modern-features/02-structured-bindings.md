@@ -1,20 +1,21 @@
 ---
-title: "结构化绑定（Structured Binding）"
-description: "C++17结构化绑定详解"
 chapter: 11
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: C++17结构化绑定详解
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 11.1: auto与decltype"
-cpp_standard: [17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+reading_time_minutes: 16
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 结构化绑定（Structured Binding）
 ---
-
 # 嵌入式现代C++开发——结构化绑定（Structured Binding）
 
 ## 引言

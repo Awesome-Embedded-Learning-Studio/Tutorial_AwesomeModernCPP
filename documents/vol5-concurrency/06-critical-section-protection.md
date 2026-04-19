@@ -1,20 +1,23 @@
 ---
-title: "临界区保护技术"
-description: "临界区保护与同步技术"
 chapter: 10
-order: 6
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 临界区保护与同步技术
 difficulty: advanced
-reading_time_minutes: 30
-prerequisites:
-  - "Chapter 10.1-10.5: 原子操作、内存序、中断安全"
-cpp_standard: [11, 14, 17, 20]
+order: 6
 platform: host
+prerequisites:
+- 'Chapter 10.1-10.5: 原子操作、内存序、中断安全'
+reading_time_minutes: 22
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 临界区保护技术
 ---
-
 # 嵌入式现代C++开发——临界区保护技术
 
 ## 引言

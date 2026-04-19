@@ -1,20 +1,23 @@
 ---
-title: "内联与编译器优化"
-description: "探讨内联函数的工作原理"
 chapter: 2
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 探讨内联函数的工作原理
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 1: 构建工具链"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 内联与编译器优化
 ---
-
 # 嵌入式现代 C++教程——内联函数与编译器优化
 
 在嵌入式开发中，`inline` 这个关键字几乎是每个工程师都会用到的东西。它看起来简单直接，甚至带着一点"性能保证"的意味：函数短、调用频繁、对时序敏感，那就 `inline` 掉，似乎天经地义。

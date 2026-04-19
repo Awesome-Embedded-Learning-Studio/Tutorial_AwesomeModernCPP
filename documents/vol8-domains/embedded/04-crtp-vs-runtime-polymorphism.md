@@ -1,20 +1,23 @@
 ---
-title: "CRTP vs 运行时多态"
-description: "对比CRTP与虚函数多态"
 chapter: 2
-order: 4
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 对比CRTP与虚函数多态
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 1: 构建工具链"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: stm32f1
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: CRTP vs 运行时多态
 ---
-
 # 编译期多态 vs 运行时多态
 
 在工程实践里说"多态"，大家第一反应往往是 `virtual` 与接口——也就是运行时多态。
@@ -57,16 +60,6 @@ void poll(ISensor* s) {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/04_crtp_polymorphism/runtime_polymorphism.cpp"
-
-```
-
-</details>
-
 再看编译期多态（模板）版本：
 
 ```cpp
@@ -81,16 +74,6 @@ struct ADCSensor {
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/04_crtp_polymorphism/compile_time_polymorphism.cpp"
-
-```
-
-</details>
 
 差异立竿见影：模板版本在 `poll<ADCSensor>` 处可以把 `read()` 内联，消除间接调用；运行时多态版本在二进制里则保留了虚表/间接跳转与对象的 vptr。
 
@@ -131,16 +114,6 @@ struct ADCSensor : SensorBase<ADCSensor> {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/04_crtp_polymorphism/crtp_example.cpp"
-
-```
-
-</details>
-
 CRTP 的优点是既有静态分派又能复用代码，常用于驱动框架、状态机实现等。
 
 ## `std::variant` / `std::visit`
@@ -160,16 +133,6 @@ std::visit([](auto&& e) {
 }, event);
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/04_crtp_polymorphism/variant_example.cpp"
-
-```
-
-</details>
 
 `std::variant` 在嵌入式里需要注意其内存占用（会分配为最宽变体的大小）——但它把类型信息放在对象内部，不需要外部 vptr。
 

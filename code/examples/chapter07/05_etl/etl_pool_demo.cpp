@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <cstddef>
+#include <array>
+#include <new>
 
 // 模拟 ETL object_pool 接口（用于演示）
 template<typename T, size_t N>

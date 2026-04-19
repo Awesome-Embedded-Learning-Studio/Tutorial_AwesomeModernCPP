@@ -1,0 +1,51 @@
+# Build Examples Workflow
+# Compiles all CMake projects under code/ to ensure code examples remain buildable
+
+name: Build Examples
+
+on:
+  pull_request:
+    paths:
+      - 'code/**'
+      - 'scripts/build_examples.py'
+      - '.github/workflows/build-examples.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'code/**'
+      - 'scripts/build_examples.py'
+
+jobs:
+  build-host:
+    name: Host Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ ninja-build
+
+      - name: Build host examples
+        run: python3 scripts/build_examples.py --host
+
+  build-stm32:
+    name: STM32 Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build
+
+      - name: Build STM32 examples
+        run: python3 scripts/build_examples.py --stm32

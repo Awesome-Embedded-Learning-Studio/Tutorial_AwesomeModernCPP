@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <expected>
-#include <optional>
 #include <string>
 
 // Error types
@@ -35,25 +34,25 @@ Result<int> parse_int(const std::string& s) {
         size_t pos = 0;
         int value = std::stoi(s, &pos);
         if (pos != s.length()) {
-            return Error::make(ErrorCode::InvalidFormat,
-                             "trailing characters: " + s.substr(pos));
+            return std::unexpected{Error::make(ErrorCode::InvalidFormat,
+                             "trailing characters: " + s.substr(pos))};
         }
         return value;
     } catch (const std::exception& e) {
-        return Error::make(ErrorCode::InvalidFormat, e.what());
+        return std::unexpected{Error::make(ErrorCode::InvalidFormat, e.what())};
     }
 }
 
 Result<std::string> read_file(const std::string& path) {
     if (path.empty()) {
-        return Error::make(ErrorCode::FileNotFound, "empty path");
+        return std::unexpected{Error::make(ErrorCode::FileNotFound, "empty path")};
     }
     return "file content: " + path;
 }
 
 VoidResult validate_data(const std::string& data) {
     if (data.empty()) {
-        return Error::make(ErrorCode::InvalidFormat, "empty data");
+        return std::unexpected{Error::make(ErrorCode::InvalidFormat, "empty data")};
     }
     return {};  // Success
 }
@@ -102,12 +101,12 @@ void demo_error_propagation() {
         // Manual error propagation
         auto content_result = read_file(path);
         if (!content_result) {
-            return content_result.error();
+            return std::unexpected{content_result.error()};
         }
 
         auto validation_result = validate_data(content_result.value());
         if (!validation_result) {
-            return validation_result.error();
+            return std::unexpected{validation_result.error()};
         }
 
         return content_result.value();
@@ -124,7 +123,7 @@ void demo_error_propagation() {
 // TRY macro simulation (GCC/Clang statement expression)
 #define TRY(...) ({ \
     auto _result = (__VA_ARGS__); \
-    if (!_result) return _result.error(); \
+    if (!_result) return std::unexpected{_result.error()}; \
     _result.value(); \
 })
 

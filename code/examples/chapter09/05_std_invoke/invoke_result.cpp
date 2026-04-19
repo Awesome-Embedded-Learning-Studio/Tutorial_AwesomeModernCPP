@@ -28,7 +28,8 @@ void demo_invoke_result() {
     static_assert(std::is_same_v<Result2, int>);
     std::cout << "add returns int" << std::endl;
 
-    using Result3 = std::invoke_result_t<decltype([]() { return 42; })>;
+    auto lambda_ret = []() { return 42; };
+    using Result3 = std::invoke_result_t<decltype(lambda_ret)>;
     static_assert(std::is_same_v<Result3, int>);
     std::cout << "Lambda returns int" << std::endl;
 }

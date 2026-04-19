@@ -1,20 +1,23 @@
 ---
-title: "std::optional 可选值"
-description: "表示可能不存在的值"
 chapter: 8
-order: 4
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 表示可能不存在的值
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 7: 容器与数据结构"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::optional 可选值
 ---
-
 # 嵌入式C++教程——`std::optional`
 
 想象一下：你问函数"有没有值？"它摇头说"也许"。`std::optional` 就是那句优雅的"也许"，比抛出异常、返回裸指针或约定用 `-1` 做"无值"标记，更有礼貌，也更不容易把别人坑死。
@@ -167,33 +170,3 @@ auto maybe_int = optional_map(s, [](auto& str){ return std::stoi(str); });
 这是"手工链式"，写成小工具函数后代码会更优雅。
 
 `std::optional` 是 C++ 标准库里很实用的小玩意儿：语义明确、表达力强、能让 API 更自描述。别把它当成万能胶：当你确实需要传递错误信息、或涉及复杂所有权时，选择适合的工具。但要是你只是要表达"这里可能有值，也可能没有值"——别再用 `-1`、别再用 `nullptr`，用 `std::optional`，让你的代码看起来更像成年人写的。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/04_optional/optional_basics.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看解析函数完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/04_optional/optional_parse.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看链式转换完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/04_optional/optional_chain.cpp"
-
-```
-
-</details>

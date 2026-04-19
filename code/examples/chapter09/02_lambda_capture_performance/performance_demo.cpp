@@ -131,7 +131,9 @@ int main() {
     std::cout << "Lambda object size = sum of captured variables" << std::endl;
     std::cout << "Empty lambda: " << sizeof([](){}) << " bytes" << std::endl;
     std::cout << "Lambda capturing one int: " << sizeof([x](){} ) << " bytes" << std::endl;
-    std::cout << "Lambda capturing two ints: " << sizeof([x, x](){} ) << " bytes" << std::endl;
+    int y = 24;
+    (void)y;
+    std::cout << "Lambda capturing two ints: " << sizeof([x, y](){} ) << " bytes" << std::endl;
 
     return 0;
 }

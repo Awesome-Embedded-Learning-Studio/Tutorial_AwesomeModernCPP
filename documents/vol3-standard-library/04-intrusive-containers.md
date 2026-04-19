@@ -1,20 +1,23 @@
 ---
-title: "侵入式容器设计"
-description: "侵入式容器设计"
 chapter: 7
-order: 4
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 侵入式容器设计
 difficulty: intermediate
-reading_time_minutes: 25
-prerequisites:
-  - "Chapter 6: RAII与智能指针"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 侵入式容器设计
 ---
-
 # 嵌入式现代C++教程——侵入式容器设计
 
 你记得普通容器对数据做什么吗？拷贝指针、分配节点、维护额外的内存布局，然后在某个时刻默默地吃掉你的缓存局部性。侵入式容器则更直白：数据对象自己把手伸出来当链表节点——谁要付额外内存和间接访问？不是我。
@@ -244,38 +247,3 @@ struct MyObject {
 ## 结语
 
 侵入式容器的思想不复杂：让数据自己负责"站位"。但这要求你对对象的责任更清晰——谁插它、谁删它、什么时候删它。把责任写成代码，再把代码写成规范。对嵌入式系统而言，这是一种非常"实在"的工程哲学：省一分内存，多一分确定性。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```c
---8<-- "code/examples/chapter07/04_intrusive_container/intrusive_list.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/04_intrusive_container/inheritance_example.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看更多示例：成员 hook、任务调度器</summary>
-
-```c
---8<-- "code/examples/chapter07/04_intrusive_container/member_hook.h"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/04_intrusive_container/member_hook_example.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/04_intrusive_container/task_scheduler_example.cpp"
-
-```
-
-</details>

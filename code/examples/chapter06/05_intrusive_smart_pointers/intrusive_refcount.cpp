@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <utility>
+#include <new>
 
 // ========== 侵入式引用计数基类 ==========
 

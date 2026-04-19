@@ -35,11 +35,11 @@ jobs:
       # 3. 安装依赖
       - name: 安装依赖
         run: pip install -e ./scripts
-      
+
       # 4. 构建网站
       - name: 构建网站
         run: mkdocs build --clean
-      
+
       # 5. 自动部署到 gh-pages 分支（这一步会自动触发 GitHub Pages）
       - name: 部署到 GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

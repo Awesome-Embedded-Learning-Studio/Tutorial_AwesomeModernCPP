@@ -100,6 +100,8 @@ int main() {
               << (100.0 * time_fp / time_direct) << "%" << std::endl;
     std::cout << "std::function vs Direct: "
               << (100.0 * time_sf / time_direct) << "%" << std::endl;
+    std::cout << "std::function (lambda) vs Direct: "
+              << (100.0 * time_sf_lambda / time_direct) << "%" << std::endl;
     std::cout << "Template vs Direct: "
               << (100.0 * time_template / time_direct) << "%" << std::endl;
 

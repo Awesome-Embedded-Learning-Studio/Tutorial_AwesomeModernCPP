@@ -1,20 +1,23 @@
 ---
-title: "Intrusive 智能指针与引用计数"
-description: "侵入式智能指针实现"
 chapter: 6
-order: 5
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 侵入式智能指针实现
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Intrusive 智能指针与引用计数
 ---
-
 # 嵌入式现代C++教程——intrusive 智能指针与引用计数
 
 ## 前言
@@ -116,13 +119,3 @@ private:
 从更高的角度看，intrusive 智能指针体现了一种非常"嵌入式"的设计哲学：**对象并不追求完全的自治，而是与系统环境达成一种明确的契约**。它知道自己可能被共享，也知道自己不会被随意释放内存。它承担了必要的责任，但并不越权行事。这种克制，在资源有限的系统中，往往比"功能齐全"更重要。
 
 如果说 `shared_ptr` 的设计目标是"让大多数程序员不必思考对象生命周期"，那么 intrusive 智能指针的目标恰恰相反：**它要求你在设计阶段就想清楚对象该如何被管理**。而在嵌入式系统中，这种提前思考，往往正是系统稳定性的来源。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/05_intrusive_smart_pointers/intrusive_refcount.cpp"
-
-```
-
-</details>

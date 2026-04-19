@@ -6,6 +6,8 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <cstdint>
+#include <optional>
 
 class ADCProcessor {
 public:

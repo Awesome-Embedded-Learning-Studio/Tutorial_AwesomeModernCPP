@@ -5,6 +5,7 @@
 #include <ranges>
 #include <vector>
 #include <algorithm>
+#include <cstdint>
 
 void demo_basic_filter() {
     std::cout << "=== Basic Filter ===" << std::endl;
@@ -118,6 +119,7 @@ void demo_filter_mutating() {
     // But you can iterate and modify underlying data
     auto is_even = [](int x) { return x % 2 == 0; };
     auto evens = std::views::filter(data, is_even);
+    (void)evens;
 
     std::cout << "Even numbers: ";
     for (int& x : data) {  // Iterate original, check condition manually

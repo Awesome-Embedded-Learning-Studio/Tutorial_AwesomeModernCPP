@@ -80,6 +80,10 @@ int main() {
     // Good: only capture what you need
     auto good_capture = [&config]() { return config > 50; };
 
+    (void)temp;
+    (void)bad_capture;
+    (void)good_capture;
+
     std::cout << "Use explicit capture to avoid unintended dependencies" << std::endl;
 
     return 0;

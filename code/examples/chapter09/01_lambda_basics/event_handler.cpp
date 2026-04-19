@@ -28,7 +28,7 @@ public:
     }
 
 private:
-    std::array<EventHandler, 16> rising_handlers;
+    std::array<EventHandler, 16> handlers;
 };
 
 // LED Controller example
@@ -38,6 +38,7 @@ public:
 
     std::function<void(uint32_t)> get_toggle_handler() {
         return [this](uint32_t timestamp) {
+            (void)timestamp;
             state = !state;
             std::cout << "  -> LED on pin " << pin << " toggled to "
                       << (state ? "ON" : "OFF") << std::endl;

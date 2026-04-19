@@ -1,20 +1,23 @@
 ---
-title: "ETL 嵌入式模板库"
-description: "嵌入式ETL库"
 chapter: 7
-order: 5
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 嵌入式ETL库
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 6: RAII与智能指针"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: stm32f1
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 3
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: ETL 嵌入式模板库
 ---
-
 # 嵌入式C++教程——ETL（Embedded Template Library）
 
 好奇心：为什么在嵌入式世界里，总有人把 `new` 当成"危险品"而随身带手套？答案很简单：堆是不可预测的。ETL（Embedded Template Library）就是为了解决这个问题而生：把熟悉的容器/算法思想搬到嵌入式场景，但把动态分配剔除掉，让一切变得可预测、可度量、可审计。
@@ -79,30 +82,3 @@ int main() {
 ETL 并不打算替代 STL 在所有场景的地位——它是"为嵌入式量身定做的替代/补充"。如果你项目中对象来自第三方库且无法改造，或者你确实需要动态增长到不确定的大小，STL（或堆）仍然是更方便的选择。ETL 的静态分配还可能导致二进制体积增加（模板实例化），需要权衡编译时的代码膨胀问题
 
 所以 ETL 不是魔法，而是工程上的折衷 —— 它用模板把"静态内存 + 熟悉 API"这两个愿望合二为一。对于需要确定性、低内存开销、对实时性有要求的系统（比如 bootloader、RTOS 任务队列、驱动层 buffer 管理），ETL 是一把好刀。拿它来修理日常的内存问题，往往比带着 `malloc` 在板子上做瑜伽要稳妥得多
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-> 注意：以下示例演示了 ETL 库的使用模式，但为了能独立编译，使用了模拟的 ETL 接口。实际使用时需要包含真正的 ETL 头文件。
-
-```cpp
---8<-- "code/examples/chapter07/05_etl/etl_vector_demo.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看更多示例：队列、对象池</summary>
-
-```cpp
---8<-- "code/examples/chapter07/05_etl/etl_queue_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/05_etl/etl_pool_demo.cpp"
-
-```
-
-</details>

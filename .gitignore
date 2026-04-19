@@ -1,5 +1,6 @@
 # AI
 .claude
+CLAUDE.md
 
 # Build directories
 build/
@@ -36,3 +37,9 @@ __pycache__/
 
 # pip editable install artifacts
 *.egg-info/
+
+# cppreference crawler cache (contains API keys in env)
+scripts/cppref_cache/
+
+# Environment variables
+.env

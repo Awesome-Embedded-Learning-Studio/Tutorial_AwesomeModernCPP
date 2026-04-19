@@ -1,20 +1,21 @@
 ---
-title: "if constexpr 编译期条件"
-description: "详解if constexpr应用"
 chapter: 4
-order: 4
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 详解if constexpr应用
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [17, 20]
+order: 4
 platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+title: if constexpr 编译期条件
 ---
-
 # `if constexpr`：把编译期分支写得像写注释 —— 工程味实战指南
 
 笔者一直认为，在介于最近的现代C++和比较古典的C++98之间，大部分模板编程的使用方式，都是为了组合出特定目的而编写的，这种复杂性有时候并不是我们想要的。比如说，我们在之后学习的模板编程里，很多依赖模板的 `enable_if`、特化、SFINAE 花活本质上只是为了达成我们特定的编译期匹配目的。好在现在，我们有`if constexpr` 来化简绝大多数的场景了。

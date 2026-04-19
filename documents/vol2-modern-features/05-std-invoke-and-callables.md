@@ -1,20 +1,23 @@
 ---
-title: "std::invoke 与可调用对象"
-description: "统一调用可调用对象"
 chapter: 9
-order: 5
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 统一调用可调用对象
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 8: 类型安全"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 22
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::invoke 与可调用对象
 ---
-
 # 嵌入式C++教程——std::invoke与可调用对象
 
 ## 引言
@@ -119,16 +122,6 @@ call_universal(&Widget::data, w) = 100;
 std::cout << "widget.data = " << w.data << std::endl;
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/05_std_invoke/invoke_basics.cpp"
-
-```
-
-</details>
 
 看到那个成员函数调用了吗？传统写法需要`(obj->*mem_func)(args)`，用`std::invoke`只需要`std::invoke(mem_func, obj, args)`。它在内部自动处理了所有这些细节。
 
@@ -330,16 +323,6 @@ void test_timed_invoke() {
 ```
 
 这种包装器在嵌入式系统中特别有用——你可以用它来统一测量关键路径的执行时间，而不用为每种函数类型写专门版本。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/05_std_invoke/wrapper.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -638,16 +621,6 @@ int main() {
 ```
 
 这个例子里，`std::invoke`让我们能够统一处理全局函数、Lambda和成员函数。命令注册的代码非常干净，调用者不需要关心底层是什么类型。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/05_std_invoke/command_parser.cpp"
-
-```
-
-</details>
 
 ------
 

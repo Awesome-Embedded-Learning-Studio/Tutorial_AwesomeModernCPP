@@ -6,6 +6,7 @@
 #include <thread>
 #include <vector>
 #include <chrono>
+#include <atomic>
 
 // 简单的测试对象
 struct Counter {

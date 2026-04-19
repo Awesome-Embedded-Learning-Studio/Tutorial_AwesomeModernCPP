@@ -1,20 +1,23 @@
 ---
-title: "对象池模式"
-description: "对象池模式应用"
 chapter: 5
-order: 3
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 对象池模式应用
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 对象池模式
 ---
-
 # 嵌入式C++教程：对象池（Object Pool）模式
 
 ## 前言
@@ -211,18 +214,3 @@ void on_receive() {
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/03_object_pool_pattern/object_pool.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/03_object_pool_pattern/specialized_pool.cpp"
-
-```
-
-</details>

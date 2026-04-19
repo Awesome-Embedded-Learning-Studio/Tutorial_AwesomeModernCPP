@@ -1,12 +1,15 @@
 // Ring Buffer Pipeline
-// Demonstrates custom range (ring buffer) working with pipeline operators
+// Demonstrates processing ring buffer data with pipeline operators
 
 #include <iostream>
 #include <ranges>
 #include <array>
+#include <vector>
 #include <algorithm>
+#include <cstdint>
+#include <numeric>
 
-// Ring buffer that implements the Range interface
+// Ring buffer for embedded data collection
 template<typename T, size_t N>
 class RingBuffer {
 public:
@@ -18,39 +21,27 @@ public:
         }
     }
 
-    // Range interface: iterators
-    struct Iterator {
-        using iterator_category = std::input_iterator_tag;
-        using value_type = T;
-        using difference_type = ptrdiff_t;
-
-        RingBuffer* buf;
-        size_t idx;
-
-        Iterator(RingBuffer* b, size_t i) : buf(b), idx(i) {}
-
-        T& operator*() {
-            size_t pos = (buf->head_ - buf->size_ + idx) % N;
-            return buf->data_[pos];
+    // Copy contents to a vector for range processing
+    std::vector<T> to_vector() const {
+        std::vector<T> result;
+        result.reserve(size_);
+        for (size_t i = 0; i < size_; ++i) {
+            size_t pos = (head_ + N - size_ + i) % N;
+            result.push_back(data_[pos]);
         }
+        return result;
+    }
 
-        Iterator& operator++() {
-            ++idx;
-            return *this;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return idx != other.idx;
-        }
-    };
-
-    Iterator begin() { return Iterator(this, 0); }
-    Iterator end() { return Iterator(this, size_); }
+    // Direct element access for range-based for
+    T operator[](size_t i) const {
+        size_t pos = (head_ + N - size_ + i) % N;
+        return data_[pos];
+    }
 
     size_t size() const { return size_; }
 
 private:
-    std::array<T, N> data_;
+    std::array<T, N> data_{};
     size_t head_ = 0;
     size_t size_ = 0;
 };
@@ -65,8 +56,9 @@ void demo_basic_pipeline() {
         buffer.push(i);
     }
 
-    // Process with pipeline
-    auto result = buffer
+    // Copy to vector, then process with pipeline
+    auto data = buffer.to_vector();
+    auto result = data
         | std::views::filter([](int x) { return x % 2 == 0; })
         | std::views::transform([](int x) { return x * x; });
 
@@ -88,8 +80,8 @@ void demo_overwrite_behavior() {
     }
 
     std::cout << "Initial: ";
-    for (int x : buffer) {
-        std::cout << x << " ";
+    for (size_t i = 0; i < buffer.size(); ++i) {
+        std::cout << buffer[i] << " ";
     }
     std::cout << std::endl;
 
@@ -100,8 +92,8 @@ void demo_overwrite_behavior() {
     }
 
     std::cout << "After overwrite: ";
-    for (int x : buffer) {
-        std::cout << x << " ";
+    for (size_t i = 0; i < buffer.size(); ++i) {
+        std::cout << buffer[i] << " ";
     }
     std::cout << std::endl;
 }
@@ -115,13 +107,13 @@ void demo_sensor_buffer() {
     for (uint16_t v : {100, 200, 300, 400, 500, 600, 700, 800, 900, 1000}) {
         adc_buffer.push(v);
         if (adc_buffer.size() > 5) {
-            // Process when buffer has enough data
-            auto avg = adc_buffer
+            auto data = adc_buffer.to_vector();
+            auto avg_view = data
                 | std::views::transform([](uint16_t v) { return v * 3.3f / 4095.0f; })
                 | std::views::take(5);
 
             float sum = 0;
-            for (float v : avg) {
+            for (float v : avg_view) {
                 sum += v;
             }
             std::cout << "Average (last 5): " << sum / 5.0f << " V" << std::endl;
@@ -140,7 +132,8 @@ void demo_filter_overflow() {
     }
 
     // Filter out invalid ADC values
-    auto valid = buffer
+    auto data = buffer.to_vector();
+    auto valid = data
         | std::views::filter([](uint16_t v) { return v >= 100 && v <= 4095; });
 
     std::cout << "Valid readings: ";
@@ -157,10 +150,10 @@ int main() {
     demo_filter_overflow();
 
     std::cout << "\n=== Key Points ===" << std::endl;
-    std::cout << "- Custom ranges work with pipeline operators" << std::endl;
-    std::cout << "- Just need begin()/end() methods" << std::endl;
+    std::cout << "- Ring buffers can be converted to vectors for range processing" << std::endl;
+    std::cout << "- This avoids iterator lifetime issues with views" << std::endl;
     std::cout << "- Ring buffers are common in embedded systems" << std::endl;
-    std::cout << "- No copying when passing views to algorithms" << std::endl;
+    std::cout << "- Use to_vector() when pipeline processing is needed" << std::endl;
 
     return 0;
 }

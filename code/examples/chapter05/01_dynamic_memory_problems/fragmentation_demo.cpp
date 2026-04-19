@@ -53,7 +53,7 @@ void fragmentation_scenario_1() {
     std::vector<void*> allocations;
 
     // 分配不同大小的块
-    sizes_t sizes[] = {16, 32, 64, 128, 256, 512, 1024};
+    size_t sizes[] = {16, 32, 64, 128, 256, 512, 1024};
 
     for (int round = 0; round < 3; ++round) {
         for (size_t size : sizes) {

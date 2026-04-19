@@ -1,20 +1,23 @@
 ---
-title: "memory_order 内存序"
-description: "C++内存模型和内存序"
 chapter: 10
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++内存模型和内存序
 difficulty: advanced
-reading_time_minutes: 25
-prerequisites:
-  - "Chapter 9: 函数式特性"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 9: 函数式特性'
+reading_time_minutes: 18
+tags:
+- cpp-modern
+- host
+- intermediate
+title: memory_order 内存序
 ---
-
 # 嵌入式现代C++开发——内存序（Memory Order）
 
 ## 引言

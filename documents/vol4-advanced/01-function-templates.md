@@ -1,20 +1,23 @@
 ---
-title: "函数模板详解"
-description: "深入理解C++函数模板的推导规则与实战技巧"
 chapter: 12
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解C++函数模板的推导规则与实战技巧
 difficulty: intermediate
-reading_time_minutes: 30
-prerequisites:
-  - "Chapter 12: 模板入门概述"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+reading_time_minutes: 24
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 函数模板详解
 ---
-
 # 嵌入式现代C++教程——函数模板详解
 
 函数模板是C++泛型编程的起点，它让你编写一套代码就能处理多种类型。但你真的理解编译器是如何推导模板参数的吗？为什么有时候推导会失败？`auto`和模板参数推导有什么区别？

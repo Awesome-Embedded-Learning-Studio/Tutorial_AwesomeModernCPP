@@ -150,10 +150,6 @@ public:
         // 析构时回退到初始位置
         // 注意：这不会调用析构函数！
         arena_.reset();
-        arena_ = BumpAllocator(
-            reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(&arena_) - initial_offset_),
-            arena_.capacity()
-        );
     }
 
     // 禁止拷贝和移动

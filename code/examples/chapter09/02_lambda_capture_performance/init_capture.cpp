@@ -70,7 +70,7 @@ int main() {
     std::cout << "\n=== Complex Init Capture ===" << std::endl;
 
     std::string name = "sensor";
-    auto [id = 1, label = std::move(name)]() {
+    [id = 1, label = std::move(name)]() {
         std::cout << "ID: " << id << ", Label: " << label << std::endl;
     }();
 
@@ -79,6 +79,7 @@ int main() {
     auto ref_alias = [ref = value]() {
         std::cout << "ref = " << ref << std::endl;
     };
+    (void)ref_alias;
 
     // Embedded: Capture computed register values
     std::cout << "\n=== Embedded: Register Configuration ===" << std::endl;

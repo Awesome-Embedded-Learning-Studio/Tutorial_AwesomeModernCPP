@@ -1,21 +1,24 @@
 ---
-title: "模板别名与Using声明"
-description: "掌握现代C++类型别名的强大功能与标准库实现原理"
 chapter: 12
-order: 7
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握现代C++类型别名的强大功能与标准库实现原理
 difficulty: intermediate
-reading_time_minutes: 25
-prerequisites:
-  - "Chapter 12: 类模板详解"
-  - "Chapter 12: 模板元编程基础"
-cpp_standard: [11, 14, 17, 20]
+order: 7
 platform: host
+prerequisites:
+- 'Chapter 12: 类模板详解'
+- 'Chapter 12: 模板元编程基础'
+reading_time_minutes: 35
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 模板别名与Using声明
 ---
-
 # 嵌入式现代C++教程——模板别名与Using声明
 
 你有没有被这种代码折磨过？

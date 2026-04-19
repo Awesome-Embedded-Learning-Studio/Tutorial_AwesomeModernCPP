@@ -58,14 +58,14 @@ void demo_callback_box() {
 
     // Type is known at compile time
     auto lambda = [](int x) { return x * 2; };
-    CallbackBox<decltype(lambda)> box(lambda);
+    CallbackBox<decltype(lambda)> box(std::move(lambda));
 
     std::cout << "box(21) = " << box(21) << std::endl;  // 42
 
     // With capture
     int multiplier = 10;
     auto captured = [multiplier](int x) { return x * multiplier; };
-    CallbackBox<decltype(captured)> box2(captured);
+    CallbackBox<decltype(captured)> box2(std::move(captured));
 
     std::cout << "box2(5) = " << box2(5) << std::endl;  // 50
 }
@@ -80,7 +80,7 @@ void demo_hybrid() {
     // For context: use CallbackBox with specific lambda type
     int offset = 100;
     auto with_offset = [offset](int x) { return x + offset; };
-    CallbackBox<decltype(with_offset)> slow(with_offset);
+    CallbackBox<decltype(with_offset)> slow(std::move(with_offset));
 
     std::cout << "fast(5, 3) = " << fast(5, 3) << std::endl;
     std::cout << "slow(5) = " << slow(5) << std::endl;

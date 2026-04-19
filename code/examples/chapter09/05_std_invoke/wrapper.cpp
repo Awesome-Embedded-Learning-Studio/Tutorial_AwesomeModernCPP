@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <chrono>
+#include <thread>
 #include <type_traits>
 
 // Timing wrapper
@@ -150,6 +151,7 @@ void demo_safe_call() {
     std::cout << "\n=== Safe Call Demo ===" << std::endl;
 
     Calculator calc;
+    (void)calc;
 
     std::cout << "Void lambda: ";
     safe_call([]() { std::cout << "Hello" << std::endl; });
