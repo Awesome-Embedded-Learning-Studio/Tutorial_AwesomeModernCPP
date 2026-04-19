@@ -63,7 +63,7 @@ int main() {
 
 ## 另见
 
-- [教程：unique_ptr 详解](../vol2-modern-features/02-unique-ptr.md)
+- [教程：unique_ptr 详解](../../vol2-modern-features/02-unique-ptr.md)
 - [cppreference: std::make_unique](https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique)
 
 ---

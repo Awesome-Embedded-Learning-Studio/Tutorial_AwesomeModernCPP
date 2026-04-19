@@ -406,8 +406,7 @@ class ReadingTimeChecker(QualityChecker):
 # Main runner
 # ---------------------------------------------------------------------------
 
-def run_all_checkers(directory: Path, strict: bool = False,
-                     fix: bool = False) -> Report:
+def run_all_checkers(directory: Path, fix: bool = False) -> Report:
     report = Report()
 
     md_files = sorted(f for f in directory.rglob('*.md') if is_article(f))
@@ -473,49 +472,33 @@ def _fix_reading_time(filepath: Path, content: str,
             pass
 
 
-def print_report(report: Report, strict: bool = False) -> None:
+def print_report(report: Report) -> None:
     print()
     print("=" * 60)
     print("Content Quality Report")
     print("=" * 60)
     print(f"Files scanned:  {report.files_scanned}")
-    print(f"Errors:         {len(report.errors)}")
-    print(f"Warnings:       {len(report.warnings)}")
+
+    all_issues = list(report.errors) + list(report.warnings)
+    print(f"Issues:         {len(all_issues)}")
     print()
 
-    if report.errors:
+    if all_issues:
         print("ERRORS:")
         print("-" * 60)
-        for issue in report.errors[:30]:
+        for issue in all_issues[:50]:
             loc = f"{issue.filepath}"
             if issue.line:
                 loc += f":{issue.line}"
             print(f"  [{issue.checker}] {loc} - {issue.message}")
-        if len(report.errors) > 30:
-            print(f"  ... and {len(report.errors) - 30} more errors")
+        if len(all_issues) > 50:
+            print(f"  ... and {len(all_issues) - 50} more errors")
         print()
 
-    if report.warnings:
-        print("WARNINGS:")
-        print("-" * 60)
-        for issue in report.warnings[:30]:
-            loc = f"{issue.filepath}"
-            if issue.line:
-                loc += f":{issue.line}"
-            print(f"  [{issue.checker}] {loc} - {issue.message}")
-        if len(report.warnings) > 30:
-            print(f"  ... and {len(report.warnings) - 30} more warnings")
-        print()
-
-    # Summary
-    total = len(report.errors)
-    if strict:
-        total += len(report.warnings)
-    if total == 0:
+    if len(all_issues) == 0:
         print("All checks passed!")
     else:
-        status = "FAILED" if strict else "passed with warnings"
-        print(f"Result: {status} ({total} issue(s))")
+        print(f"Result: FAILED ({len(all_issues)} issue(s))")
 
 
 def main():
@@ -523,8 +506,6 @@ def main():
         description='Content quality checker for tutorial articles')
     parser.add_argument('path', nargs='?', default='documents',
                         help='Directory to check (default: documents/)')
-    parser.add_argument('--strict', action='store_true',
-                        help='Treat warnings as errors')
     parser.add_argument('--fix', action='store_true',
                         help='Auto-fix issues where possible')
     parser.add_argument('--check-external', action='store_true',
@@ -539,7 +520,7 @@ def main():
         print(f"Error: Directory not found: {target}")
         sys.exit(1)
 
-    report = run_all_checkers(target, strict=args.strict, fix=args.fix)
+    report = run_all_checkers(target, fix=args.fix)
 
     # Optionally add external link checker
     if args.check_external:
@@ -554,11 +535,9 @@ def main():
             except Exception:
                 pass
 
-    print_report(report, strict=args.strict)
+    print_report(report)
 
-    fail_count = len(report.errors)
-    if args.strict:
-        fail_count += len(report.warnings)
+    fail_count = len(report.errors) + len(report.warnings)
     sys.exit(1 if fail_count > 0 else 0)
 
 

@@ -62,7 +62,7 @@ int main() {
 
 ## 另见
 
-- [教程：移动语义](../vol2-modern-features/02-move-semantics.md)
+- [教程：移动语义](../../vol2-modern-features/02-move-semantics.md)
 - [cppreference: std::move](https://en.cppreference.com/w/cpp/utility/move)
 
 ---

@@ -71,7 +71,7 @@ int main() {
 
 ## 另见
 
-- [教程：互斥锁与 RAII 守卫](../vol5-concurrency/04-mutex-and-raii-guards.md)
+- [教程：互斥锁与 RAII 守卫](../../vol5-concurrency/04-mutex-and-raii-guards.md)
 - [cppreference: std::mutex](https://en.cppreference.com/w/cpp/thread/mutex)
 
 ---

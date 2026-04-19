@@ -31,4 +31,4 @@ jobs:
         run: pip install pyyaml
 
       - name: Run quality checks
-        run: python3 scripts/check_quality.py documents/ --strict
+        run: python3 scripts/check_quality.py documents/

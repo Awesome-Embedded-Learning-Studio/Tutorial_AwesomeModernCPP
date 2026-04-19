@@ -69,7 +69,7 @@ int main() {
 
 ## 另见
 
-- [教程：对应章节](../vol5-concurrency/01-atomic.md)
+- [教程：对应章节](../../vol5-concurrency/01-atomic.md)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
 
 ---

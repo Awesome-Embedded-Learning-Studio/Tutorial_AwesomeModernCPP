@@ -4,6 +4,7 @@
 #include <iostream>
 #include <expected>
 #include <string>
+#include <cstdint>
 
 // Peripheral error types
 struct PeripheralError {
