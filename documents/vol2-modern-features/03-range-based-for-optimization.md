@@ -1,21 +1,24 @@
 ---
-title: "范围for循环优化"
-description: "现代C++范围for循环详解及性能优化"
 chapter: 11
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 现代C++范围for循环详解及性能优化
 difficulty: intermediate
-reading_time_minutes: 22
-prerequisites:
-  - "Chapter 11.1: auto与decltype"
-  - "Chapter 11.2: 结构化绑定"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+- 'Chapter 11.2: 结构化绑定'
+reading_time_minutes: 18
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 范围for循环优化
 ---
-
 # 嵌入式现代C++开发——范围for循环优化
 
 ## 引言

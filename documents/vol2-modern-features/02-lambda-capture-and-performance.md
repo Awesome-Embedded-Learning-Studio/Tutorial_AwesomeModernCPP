@@ -1,20 +1,23 @@
 ---
-title: "Lambda 捕获与性能影响"
-description: "Lambda捕获机制"
 chapter: 9
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Lambda捕获机制
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 8: 类型安全"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 14
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Lambda 捕获与性能影响
 ---
-
 # 嵌入式C++教程——Lambda捕获与性能影响
 
 ## 引言
@@ -69,16 +72,6 @@ void example_value_capture() {
 - Lambda创建时复制，之后外部修改不影响
 - Lambda内部修改也不会影响外部
 - 默认是`const`的，如果要修改需要加`mutable`
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/02_lambda_capture_performance/value_capture.cpp"
-
-```
-
-</details>
 
 ### mutable关键字
 
@@ -142,16 +135,6 @@ void example_ref_capture() {
 - Lambda持有外部变量的引用，不是副本
 - 外部修改会影响Lambda，反之亦然
 - 需要确保外部变量生命周期比Lambda长
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/02_lambda_capture_performance/reference_capture.cpp"
-
-```
-
-</details>
 
 ### 生命周期陷阱
 
@@ -291,16 +274,6 @@ auto lambda2 = [counter = 0]() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/02_lambda_capture_performance/init_capture.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 性能影响：到底有没有开销？
@@ -357,16 +330,6 @@ setg al
    ```
 
 **结论**：只要Lambda可内联，值捕获在调用时**零开销**。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/02_lambda_capture_performance/performance_demo.cpp"
-
-   ```
-
-</details>
 
 ### 引用捕获的开销
 

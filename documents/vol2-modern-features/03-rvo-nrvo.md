@@ -1,20 +1,23 @@
 ---
-title: "RVO与NRVO返回值优化"
-description: "详解返回值优化"
 chapter: 3
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 详解返回值优化
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+title: RVO与NRVO返回值优化
 ---
-
 # RVO 与 NRVO：C++ 返回值优化
 
 我相信绝大多数人在写C和老C++的时候，不会喜欢返回大结构体，因为这一定会触发一次对象拷贝，对不对？但是从C++11开始，有一种看不见却又非常实在的性能魔法——返回值优化（RVO, Return Value Optimization）和命名返回值优化（NRVO, Named RVO）悄然登场。它们悄无声息地消灭了很多本可以发生的拷贝（甚至移动），让你写"自然、直观"的代码而不用为性能担忧。今天把这事讲清楚：为什么会发生，什么时候发生，哪些写法能触发（或阻止）它，最后给出实用建议，能直接贴上博客去。
@@ -49,16 +52,6 @@ MyBigType make2() {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter03/03_rvo_nrvo/rvo_nrvo_example.cpp"
-
-```
-
-</details>
 
 在没有任何优化时，`make1` 可能会发生一次拷贝（或移动），而有了 NRVO/RVO，拷贝/移动被省了。
 

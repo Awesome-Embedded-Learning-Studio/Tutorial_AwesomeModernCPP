@@ -1,22 +1,25 @@
 ---
-title: "预处理器与多文件工程"
-description: "掌握 C 预处理器的工作原理，学会使用宏、条件编译和头文件防护，构建模块化的多文件 C 工程，对比 C++ 的 const/inline/constexpr/template 替代方案"
 chapter: 1
-order: 19
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - CMake
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握 C 预处理器的工作原理，学会使用宏、条件编译和头文件防护，构建模块化的多文件 C 工程，对比 C++ 的 const/inline/constexpr/template
+  替代方案
 difficulty: beginner
+order: 19
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "动态内存管理"
+- 动态内存管理
+reading_time_minutes: 7
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- CMake
+title: 预处理器与多文件工程
 ---
-
 # 预处理器与多文件工程
 
 如果你到目前为止所有的 C 程序都写在一个 `.c` 文件里，那迟早有一天你会撑不住的。实际工程中，我们把代码拆分到多个 `.c` 和 `.h` 文件中，每个模块各司其职，然后通过编译和链接把它们组装成完整的程序。

@@ -1,22 +1,22 @@
 ---
-title: "控制流：让程序学会选择和重复"
-description: "掌握 C 语言的条件分支、循环、switch 穿透特性与状态机模式，理解 break/continue/goto 的正确用法"
 chapter: 1
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 掌握 C 语言的条件分支、循环、switch 穿透特性与状态机模式，理解 break/continue/goto 的正确用法
 difficulty: beginner
+order: 6
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11]
 prerequisites:
-  - "位运算与求值顺序"
+- 位运算与求值顺序
+reading_time_minutes: 15
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 控制流：让程序学会选择和重复
 ---
-
 # 控制流：让程序学会选择和重复
 
 到目前为止我们写的程序都是从第一行一路跑到最后一行。但现实世界的逻辑不是这样的——"如果温度超过阈值就开风扇"、"重复读取传感器数据直到收到停止命令"。控制流语句就是干这个的：让程序根据条件选择不同的执行路径（分支），或者反复执行某段逻辑（循环）。

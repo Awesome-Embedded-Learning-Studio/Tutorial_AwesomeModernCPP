@@ -1,24 +1,26 @@
 ---
-title: "文件 I/O 与标准库概览"
-description: "掌握 C 语言的文件操作和标准库核心工具，包括文件读写、格式化 I/O、命令行参数处理，对比 C++ 流库和现代标准库工具"
 chapter: 1
-order: 20
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握 C 语言的文件操作和标准库核心工具，包括文件读写、格式化 I/O、命令行参数处理，对比 C++ 流库和现代标准库工具
 difficulty: beginner
+order: 20
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "11 C 字符串与缓冲区安全"
-  - "12 结构体与内存对齐"
-  - "14 动态内存管理"
+- 11 C 字符串与缓冲区安全
+- 12 结构体与内存对齐
+- 14 动态内存管理
+reading_time_minutes: 11
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 文件 I/O 与标准库概览
 ---
-
 # 文件 I/O 与标准库概览
 
 到目前为止，我们写过的程序有一个共同的局限——数据全在内存里，程序一结束就没了。现实世界的程序不是这样运作的：配置要从文件读、日志要写进文件、数据要在程序之间传来传去。这就轮到文件 I/O 登场了。

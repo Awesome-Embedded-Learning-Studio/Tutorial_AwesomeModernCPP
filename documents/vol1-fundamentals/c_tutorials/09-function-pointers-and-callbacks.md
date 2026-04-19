@@ -1,23 +1,23 @@
 ---
-title: "函数指针与回调模式"
-description: "掌握函数指针的声明与使用，理解回调函数模式在事件驱动编程中的应用，对比 C++ 的 lambda 和 std::function"
 chapter: 1
-order: 13
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+description: 掌握函数指针的声明与使用，理解回调函数模式在事件驱动编程中的应用，对比 C++ 的 lambda 和 std::function
 difficulty: beginner
+order: 13
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11]
 prerequisites:
-  - "07A 指针基础与核心用法"
-  - "07B 指针、数组与 const"
-  - "08A 多级指针与函数参数"
+- 07A 指针基础与核心用法
+- 07B 指针、数组与 const
+- 08A 多级指针与函数参数
+reading_time_minutes: 13
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 函数指针与回调模式
 ---
-
 # 函数指针与回调模式
 
 如果说指针是 C 语言最强大的特性，那函数指针就是指针世界里最容易让人血压拉满的一环。不过说真的，一旦你把它搞明白了，就会发现它是 C 语言中少有的几种能让你写出"灵活到不像 C"的代码的机制——回调、事件驱动、策略模式，这些听起来像是高级语言才有的东西，在 C 里全靠函数指针撑起一片天。

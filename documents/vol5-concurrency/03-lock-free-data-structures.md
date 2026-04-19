@@ -1,20 +1,23 @@
 ---
-title: "无锁数据结构设计"
-description: "无锁数据结构设计"
 chapter: 10
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 无锁数据结构设计
 difficulty: advanced
-reading_time_minutes: 25
-prerequisites:
-  - "Chapter 9: 函数式特性"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 9: 函数式特性'
+reading_time_minutes: 20
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 无锁数据结构设计
 ---
-
 # 嵌入式现代C++开发——无锁数据结构设计
 
 ## 引言

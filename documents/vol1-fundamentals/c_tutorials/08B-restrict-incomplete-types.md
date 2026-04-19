@@ -1,22 +1,23 @@
 ---
-title: "restrict、不完整类型与结构体指针"
-description: "理解 restrict 限定符的优化原理、不完整类型与前向声明的用途、opaque pointer 模式，以及 -> 运算符操作结构体指针"
 chapter: 1
-order: 12
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 17
+description: 理解 restrict 限定符的优化原理、不完整类型与前向声明的用途、opaque pointer 模式，以及 -> 运算符操作结构体指针
 difficulty: beginner
+order: 12
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11, 17]
 prerequisites:
-  - "多级指针与声明读法"
+- 多级指针与声明读法
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: restrict、不完整类型与结构体指针
 ---
-
 # restrict、不完整类型与结构体指针
 
 上一篇我们把多级指针和声明读法搞定了。这一篇来看几个相对独立但都很有用的机制：`restrict` 限定符让编译器敢于做更激进的优化，不完整类型和前向声明让我们在不暴露内部细节的情况下设计接口，而 `->` 运算符则是操作结构体指针的日常工具。

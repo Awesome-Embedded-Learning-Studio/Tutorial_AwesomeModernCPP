@@ -1,20 +1,23 @@
 ---
-title: "类模板详解"
-description: "深入理解C++类模板的声明、实例化与嵌入式应用"
 chapter: 12
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解C++类模板的声明、实例化与嵌入式应用
 difficulty: intermediate
-reading_time_minutes: 40
-prerequisites:
-  - "Chapter 12.1: 函数模板详解"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 12.1: 函数模板详解'
+reading_time_minutes: 51
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 类模板详解
 ---
-
 # 嵌入式现代C++教程——类模板详解
 
 类模板是C++泛型编程的核心机制，它允许你编写与类型无关的类定义。标准库中的容器（如`std::vector`、`std::array`）、智能指针（如`std::unique_ptr`）、元组（`std::tuple`）都是类模板的典型应用。

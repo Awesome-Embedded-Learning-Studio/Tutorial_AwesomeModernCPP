@@ -1,25 +1,28 @@
 ---
-title: "C++98运算符重载"
-description: "让自定义类型像内置类型一样工作——运算符重载的设计哲学、常用运算符的重载方法、成员与非成员重载的选择，以及哪些运算符不该碰"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 让自定义类型像内置类型一样工作——运算符重载的设计哲学、常用运算符的重载方法、成员与非成员重载的选择，以及哪些运算符不该碰
 difficulty: beginner
-reading_time_minutes: 25
-prerequisites:
-  - "C++98面向对象：类与对象深度剖析"
-related:
-  - "C++98面向对象：继承与多态"
-  - "C++98进阶：类型转换、动态内存与异常处理"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+reading_time_minutes: 13
+related:
+- C++98面向对象：继承与多态
+- C++98进阶：类型转换、动态内存与异常处理
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98运算符重载
 ---
-
 # C++98运算符重载
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

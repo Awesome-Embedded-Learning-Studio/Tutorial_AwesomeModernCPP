@@ -1,20 +1,23 @@
 ---
-title: "std::span 数组视图"
-description: "C++20数组视图"
 chapter: 7
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++20数组视图
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 6: RAII与智能指针"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::span 数组视图
 ---
-
 # 嵌入式C++教程：std::span——轻量、非拥有的数组视图
 
 把 `std::span` 想象成 C++ 里的「透明的传送带」：它不拥有上面的货物（内存），只是平静又高效地告诉你"这里有多少个元素、从哪里开始"。在嵌入式里，我们经常需要把一段内存传给函数——既不想拷贝，也不想丢失类型信息或边界信息，`std::span` 就是为这种场景生的。
@@ -212,43 +215,3 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 - `s.begin()`, `s.end()`（支持范围 for）
 - `s.subspan(offset, count)`, `s.first(n)`, `s.last(n)`
 - `std::as_bytes(s)`、`std::as_writable_bytes(s)`
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter07/02_span/basic_usage.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看更多示例：静态 extent、切片、协议解析等</summary>
-
-```cpp
---8<-- "code/examples/chapter07/02_span/static_extent.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/02_span/subspan_example.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/02_span/packet_parsing.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/02_span/bytes_view.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter07/02_span/function_parameter.cpp"
-
-```
-
-</details>

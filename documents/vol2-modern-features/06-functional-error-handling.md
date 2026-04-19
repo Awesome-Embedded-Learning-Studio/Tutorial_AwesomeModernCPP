@@ -1,20 +1,23 @@
 ---
-title: "函数式错误处理模式"
-description: "函数式错误处理"
 chapter: 9
-order: 6
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 函数式错误处理
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 8: 类型安全"
-cpp_standard: [11, 14, 17, 20]
+order: 6
 platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 26
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 函数式错误处理模式
 ---
-
 # 嵌入式C++教程——函数式错误处理模式
 
 ## 引言
@@ -198,16 +201,6 @@ void test_parse_int() {
 
 但这只是基础，函数式风格的威力在于**组合**。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/06_functional_error_handling/basic_result.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 组合器模式：and_then与map
@@ -284,16 +277,6 @@ result.map(transform).and_then(validate).map(finalize);
 ```
 
 如果你用的是C++17，可以给`expected`加上这些方法（参考第8章第5节的实现）。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/06_functional_error_handling/combinators.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -411,16 +394,6 @@ Result<void> load_config_chain(const std::string& path) {
 ```
 
 这个例子里，每个操作只关心自己的事情，错误的传播是自动的。你不需要在每个中间步骤写`if (error) return error;`。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/06_functional_error_handling/config_loader.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -623,16 +596,6 @@ PeriphResult<void> init_uart_system() {
 - 每一步的错误处理是一致的
 - 不用维护全局的"错误状态变量"
 - 流程是线性的，从上到下读一遍就知道做了什么
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/06_functional_error_handling/peripheral_init.cpp"
-
-```
-
-</details>
 
 ------
 

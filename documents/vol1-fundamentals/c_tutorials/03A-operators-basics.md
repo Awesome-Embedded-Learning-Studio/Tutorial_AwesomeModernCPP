@@ -1,22 +1,22 @@
 ---
-title: "运算符基础：让数据动起来"
-description: "掌握 C 语言的算术运算符、自增自减、关系与逻辑运算符、条件运算符和逗号运算符，理解短路求值和赋值运算符的用法"
 chapter: 1
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 掌握 C 语言的算术运算符、自增自减、关系与逻辑运算符、条件运算符和逗号运算符，理解短路求值和赋值运算符的用法
 difficulty: beginner
+order: 4
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "浮点、字符、const 与类型转换"
+- 浮点、字符、const 与类型转换
+reading_time_minutes: 11
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 运算符基础：让数据动起来
 ---
-
 # 运算符基础：让数据动起来
 
 上一篇里我们把 C 语言的数据类型从里到外拆了一遍——整数怎么存、小数怎么存、字符怎么存。但光有数据还不够，我们还得让数据"动起来"：做加减乘除、比较大小、判断真假。这些操作在 C 语言里由**运算符**来完成。

@@ -1,22 +1,24 @@
 ---
-title: "联合体、枚举、位域与 typedef"
-description: "掌握联合体、枚举、位域与 typedef 的使用，理解类型双关、硬件寄存器映射等技巧，对比 C++ 的类型安全替代方案"
 chapter: 1
-order: 17
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 类型安全
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握联合体、枚举、位域与 typedef 的使用，理解类型双关、硬件寄存器映射等技巧，对比 C++ 的类型安全替代方案
 difficulty: beginner
+order: 17
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "12 结构体与内存对齐"
+- 12 结构体与内存对齐
+reading_time_minutes: 15
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 类型安全
+title: 联合体、枚举、位域与 typedef
 ---
-
 # 联合体、枚举、位域与 typedef
 
 上一篇我们彻底拆了结构体的内存布局，搞清楚了编译器会在你的字段之间塞填充字节这件事。这一篇我们要看的四个语言特性——联合体（union）、枚举（enum）、位域（bit-field）和 typedef——看起来像是结构体的"配角"，但它们各自都有不可替代的用武之地。联合体让你在同一块内存上玩变戏法，枚举让你用有意义的名字代替魔法数字，位域让你按位精确控制内存布局，typedef 则让你给类型起别名、把复杂声明收拾干净。

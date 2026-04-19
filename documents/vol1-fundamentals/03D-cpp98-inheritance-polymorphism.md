@@ -1,25 +1,28 @@
 ---
-title: "C++98面向对象：继承与多态"
-description: "从单一类到类型层次——继承表达'是什么'关系、虚函数实现运行时多态、抽象类定义能力契约、虚析构函数保障安全释放"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从单一类到类型层次——继承表达'是什么'关系、虚函数实现运行时多态、抽象类定义能力契约、虚析构函数保障安全释放
 difficulty: beginner
-reading_time_minutes: 25
-prerequisites:
-  - "C++98面向对象：类与对象深度剖析"
-related:
-  - "C++98运算符重载"
-  - "何时用C++、用哪些C++特性"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+reading_time_minutes: 20
+related:
+- C++98运算符重载
+- 何时用C++、用哪些C++特性
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98面向对象：继承与多态
 ---
-
 # C++98面向对象：继承与多态
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

@@ -1,20 +1,23 @@
 ---
-title: "嵌入式的资源与实时约束"
-description: "介绍嵌入式系统的Flash、RAM、CPU等资源约束与实时性要求"
 chapter: 0
-order: 1
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 介绍嵌入式系统的Flash、RAM、CPU等资源约束与实时性要求
 difficulty: beginner
-reading_time_minutes: 15
-prerequisites: []
-related: []
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: stm32f1
+prerequisites: []
+reading_time_minutes: 12
+related: []
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 嵌入式的资源与实时约束
 ---
-
 # 嵌入式的资源与实时约束
 
 ## 一、前言：为什么嵌入式不能"随便写"

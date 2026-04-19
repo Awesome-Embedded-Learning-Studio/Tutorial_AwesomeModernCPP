@@ -1,22 +1,25 @@
 ---
-title: "语言选择原则"
-description: "探讨嵌入式开发中性能与可维护性的真实取舍，以及如何基于项目约束进行语言选择"
 chapter: 0
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 探讨嵌入式开发中性能与可维护性的真实取舍，以及如何基于项目约束进行语言选择
 difficulty: beginner
-reading_time_minutes: 15
-prerequisites: []
-related: []
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: host
+prerequisites: []
+reading_time_minutes: 5
+related: []
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 语言选择原则
 ---
-
 # 语言选择原则：性能 vs 可维护性的真实取舍
 
 笔者发个小牢骚——我注意到不少同志对工具选择缺乏一种理性思考，习惯基于标签而不是实际表现来评价工具。结果就是语言选择常常被讲成一种道德判断："C 是纯粹的、贴近硬件的真实工程；C++/Rust 是高级而懒惰的生产力工具。"这种说法很有感情色彩，但对工程决策毫无帮助。真正的工程问题从来不是"哪种语言更高级"，而是"现在这台机器、这条时序、这群人、这份产品路线图，哪种做法让我们在合理的成本内把东西做对且做完"。性能和可维护性不是天生对立的两团魔法，它们在不同的维度上带来不同的风险与开销。把语言当成万能钥匙或末日药方，而不当作工程工具链的一部分——这是我们能犯的最大错误。

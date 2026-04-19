@@ -1,20 +1,23 @@
 ---
-title: "静态存储与栈上分配策略"
-description: "使用静态存储和栈分配"
 chapter: 5
-order: 2
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 使用静态存储和栈分配
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 静态存储与栈上分配策略
 ---
-
 # 嵌入式 C++ 教程——静态存储与栈上分配策略
 
 > 最近感冒了，休息了好长一段时间。。。
@@ -172,23 +175,3 @@ public:
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/02_static_vs_stack_allocation/static_allocation_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/02_static_vs_stack_allocation/stack_allocation_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/02_static_vs_stack_allocation/ring_buffer_demo.cpp"
-
-```
-
-</details>

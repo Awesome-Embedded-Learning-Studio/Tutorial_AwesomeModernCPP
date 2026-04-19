@@ -480,36 +480,6 @@ void init_sequence() {
 
 这样写出来的 API，调用者不可能搞错单位——编译器会替你把关。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/07_literal_operators/time_units.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看频率单位完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/07_literal_operators/frequency_units.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看浮点单位完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/07_literal_operators/voltage_units.cpp"
-
-```
-
-</details>
-
 ## 小结：让数字说话
 
 嵌入式代码里到处都是魔法数字：波特率、时钟频率、延时、阈值……用字面量运算符把这些数字变成带单位的"量"，是提升代码可读性和安全性最简单也最有效的方法。

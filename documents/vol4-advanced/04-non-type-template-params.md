@@ -1,21 +1,24 @@
 ---
-title: "非类型模板参数"
-description: "深入理解C++非类型模板参数的用法与嵌入式应用"
 chapter: 12
-order: 4
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解C++非类型模板参数的用法与嵌入式应用
 difficulty: intermediate
-reading_time_minutes: 35
-prerequisites:
-  - "Chapter 12: 模板入门概述"
-  - "Chapter 12: 函数模板详解"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+reading_time_minutes: 53
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 非类型模板参数
 ---
-
 # 嵌入式现代C++教程——非类型模板参数
 
 ## 引言：编译期的魔法数字

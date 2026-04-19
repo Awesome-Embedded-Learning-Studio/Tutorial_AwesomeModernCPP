@@ -1,20 +1,23 @@
 ---
-title: "std::expected 错误处理"
-description: "类型安全错误处理"
 chapter: 8
-order: 5
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 类型安全错误处理
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 7: 容器与数据结构"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::expected 错误处理
 ---
-
 # 嵌入式C++教程——std::expected
 
 写一段可靠又不振聋发聩的错误处理代码，是每个 C++ 开发者的隐秘欲望。`std::expected`（C++23 标准中引入）像个温柔的中介：当你要么有一个值，要么有个错误，别再用 `throw`、别再滥用 `std::optional<T>` 或 `std::variant` 来凑合了——它专为这类场景设计。
@@ -145,18 +148,3 @@ int main(){
 - 与 `std::optional` 的区别：`optional<T>` 只是"可能没有值"，并不提供错误信息。`expected<T, E>` 则更具语义性，能承载失败原因。
 
 把错误当成值来处理，会让你的代码少些异常的惊吓，多些明确的控制流。C++23 的 `std::expected` 是标准对这一路线的肯定；而在不得不用 C++17 的时代，动手实现一个小巧的 `expected`，既能提升代码可读性，也能为团队带来更一致的错误处理风格。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/05_expected/expected.hpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter08/05_expected/parse_example.cpp"
-
-```
-
-</details>

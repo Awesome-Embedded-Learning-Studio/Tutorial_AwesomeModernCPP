@@ -1,22 +1,22 @@
 ---
-title: "结构体与内存对齐"
-description: "掌握结构体定义、内存对齐与填充规则、柔性数组成员及 offsetof 验证"
 chapter: 1
-order: 16
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 掌握结构体定义、内存对齐与填充规则、柔性数组成员及 offsetof 验证
 difficulty: beginner
+order: 16
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "restrict、不完整类型与结构体指针"
+- restrict、不完整类型与结构体指针
+reading_time_minutes: 24
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 结构体与内存对齐
 ---
-
 # 结构体与内存对齐
 
 如果你写 C 写到现在，只用过基本类型——int、float、char 这些——那大概率是因为你还没遇到过需要把一组相关数据打包在一起传递的场景。一旦你开始写稍微像样的程序，比如一个传感器数据包、一个配置表、一个通信协议帧，你会发现光靠散装变量根本没法管理。结构体（struct）就是 C 语言给出的答案：它让我们把不同类型的数据揉成一个整体，然后当做一个值来传递、存储和操作。

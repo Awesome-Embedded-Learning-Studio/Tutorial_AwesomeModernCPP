@@ -1,20 +1,23 @@
 ---
-title: "std::array vs 一般数组"
-description: "对比std::array与传统数组"
 chapter: 5
-order: 6
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 对比std::array与传统数组
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 6
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 5
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: std::array vs 一般数组
 ---
-
 # 嵌入式C++教程——`std::array` vs C 数组，你们知道嘛？
 
 写嵌入式代码时，你大概率会在两种写法间犹豫：`int buf[16];` 和 `std::array<int, 16> buf;`。如果你像我（或者像你之前的文章风格那样）既爱性能又爱优雅，你会想知道：哪种更"嵌入式友好"？
@@ -69,18 +72,3 @@ platform: stm32f1
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/06_array_vs_stdarray/basic_comparison.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/06_array_vs_stdarray/practical_examples.cpp"
-
-```
-
-</details>

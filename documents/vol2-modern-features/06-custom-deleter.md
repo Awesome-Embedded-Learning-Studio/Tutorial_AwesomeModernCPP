@@ -1,20 +1,23 @@
 ---
-title: "自定义 Deleter"
-description: "为智能指针自定义删除器"
 chapter: 6
-order: 6
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 为智能指针自定义删除器
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 6
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 11
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 自定义 Deleter
 ---
-
 # 嵌入式现代 C++教程——自定义删除器（Custom Deleter）
 
 写嵌入式代码，常常遇到"资源不是 new 就是 delete"的假象世界。现实里，你可能得释放的不只是 `new` 出来的内存：外设句柄、MMIO 映射、DMA 缓冲、FILE*、socket、或者某个 C API 的 `free()`。这时候，C++ 的自定义删除器就像一个可靠的清道夫——把资源清理的细节藏到智能指针后面，让你把注意力放回功能实现。今天我们带着一点幽默（和大量实例）把这个话题讲清楚，顺带告诉你在内存受限的嵌入式环境下应该注意什么。
@@ -53,16 +56,6 @@ void example() {
 ```
 
 注意这里 `unique_ptr` 的第二个模板参数是 `decltype(&fclose)`，也可以直接写成 `void(*)(FILE*)`。函数指针作为删除器时，`unique_ptr` 的类型大小会包含一个指针（即比裸指针大一倍）。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/06_custom_deleters/file_handle.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -127,16 +120,6 @@ void example(DmaController* ctrl) {
 ```
 
 有状态删除器的好处是灵活，但代价是：智能指针不再是"只含一个指针"的小结构——它包含删除器的状态。嵌入式工程师要衡量：每个实例是否真的需要自己的状态？还是可以把状态提升为全局/单例/线程本地，从而使用无状态删除器？
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/06_custom_deleters/file_handle.cpp"
-
-```
-
-</details>
 
 ------
 

@@ -39,16 +39,6 @@ void usb_rx_handler() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter03/02_move_semantics/move_semantics_example.cpp"
-
-```
-
-</details>
-
 这段代码跑起来没问题，但中断处理函数里多了8KB的内存拷贝——先构造`buffer`时拷贝一次，`push`进队列时再拷贝一次。在一个72MHz的Cortex-M4上，这可能消耗上百个时钟周期，而你的中断延迟预算可能只有几微秒。
 
 冷静下来一想，我们真的需要的时是两份数据吗？**我们需要的是把这块缓冲区的所有权从函数局部变量转移到队列里**。这就是移动语义要解决的核心问题。

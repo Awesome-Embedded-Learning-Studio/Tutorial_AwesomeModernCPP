@@ -1,20 +1,23 @@
 ---
-title: "Lambda 表达式基础"
-description: "Lambda基本语法"
 chapter: 9
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Lambda基本语法
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 8: 类型安全"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 11
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Lambda 表达式基础
 ---
-
 # Lambda表达式基础
 
 ## 引言
@@ -60,16 +63,6 @@ int result = add(3, 4);  // result = 7
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/basic_syntax.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 类型推导：自动识别返回类型
@@ -97,16 +90,6 @@ auto complex = [](int x) -> int {
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/type_deduction.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -137,16 +120,6 @@ void process_sensor_data() {
 ```
 
 这比传统写函数干净太多了——逻辑就在使用的地方，不用跳来跳去。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/algorithm_args.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -199,16 +172,6 @@ void configure_pwm(uint32_t base_addr, int frequency) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/capture_basics.cpp"
-
-```
-
-</details>
 
 ------
 
@@ -293,16 +256,6 @@ void setup_gpio_system() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/event_handler.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 实战示例：配置生成器
@@ -340,16 +293,6 @@ auto pwm_cfg = make_timer_config([](TimerConfig& c) {
 
 这种写法让配置代码非常清晰，所有参数都在一个地方集中管理。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/config_builder.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 泛型Lambda（C++14）
@@ -376,16 +319,6 @@ write_reg(0x40000000, uint32_t(0x12345678));
 write_reg(0x50000000, uint16_t(0xABCD));
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/01_lambda_basics/generic_lambda.cpp"
-
-```
-
-</details>
 
 ------
 

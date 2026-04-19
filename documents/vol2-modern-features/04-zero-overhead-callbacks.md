@@ -320,16 +320,6 @@ public:
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/04_zero_overhead_callbacks/zero_callback.cpp"
-
-```
-
-</details>
-
 ### 使用示例
 
 ```cpp
@@ -519,16 +509,6 @@ private:
 };
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/04_zero_overhead_callbacks/event_system.cpp"
-
-```
-
-</details>
 
 ### 使用示例
 

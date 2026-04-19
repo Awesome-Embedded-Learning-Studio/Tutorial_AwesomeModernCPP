@@ -1,20 +1,23 @@
 ---
-title: "引用计数原理与实现"
-description: "引用计数工作原理"
 chapter: 6
-order: 7
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 引用计数工作原理
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 7
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 引用计数原理与实现
 ---
-
 # 引用计数的实现与性能
 
 写引用计数的文章就像在讲"谁送快递给谁付钱"——每多一个人拿着快递，你的账本上就多记一笔；最后那个人把快递丢在门口，账本清零，快递就可以销毁。区别是：在嵌入式世界里，这个"账本"得很小心地放在口袋里，不能丢、不能被并发多人改错账，还要尽量别让 CPU 为了记一笔账掉进长时间的排队。
@@ -76,16 +79,6 @@ public:
 
 说明：没有 `std::atomic`，极简开销，适合没有并发的嵌入式场景。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/07_reference_counting/intrusive_refcount.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 多线程 / 中断上下文下的线程安全引用计数
@@ -132,16 +125,6 @@ private:
 ```
 
 关键点解释：`fetch_add(1, relaxed)` 用于提高并发下的吞吐（因为仅递增不用保证内存同步）；`fetch_sub(1, acq_rel)` 用来在最后一个引用离开时，以 `acq_rel` 保证前面的写入对删除线程可见；紧接着的 `atomic_thread_fence(acquire)` 确保在删除对象前已同步好所有内存状态（这是 `std::shared_ptr` 实现中的常见模式）。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/07_reference_counting/atomic_refcount.cpp"
-
-```
-
-</details>
 
 ------
 

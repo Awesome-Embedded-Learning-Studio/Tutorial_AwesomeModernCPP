@@ -1,20 +1,23 @@
 ---
-title: "零开销抽象"
-description: "深入理解C++零开销抽象原则"
 chapter: 2
-order: 1
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解C++零开销抽象原则
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 1: 构建工具链"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: stm32f1
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 19
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 零开销抽象
 ---
-
 # 嵌入式现代C++教程——零开销抽象
 
 ## 前言
@@ -58,16 +61,6 @@ void set_pin() {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/gpio_example.cpp"
-
-```
-
-</details>
 
 这种写法有什么问题呢?首先,到处都是魔法数字。`0x40020000`是什么?如果不看手册,你根本不知道。`PIN_5`虽然看起来有意义,但实际上它的定义`(1 << 5)`在代码里到处复制粘贴,一旦要改,就得全局搜索替换。
 
@@ -134,16 +127,6 @@ void process_event(int event) {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/state_machine.cpp"
-
-```
-
-</details>
-
 这种写法简单直接,但是有几个问题。首先,状态和事件处理逻辑都混在一个大函数里,状态一多就很难维护。其次,添加新状态需要修改多处代码。最重要的是,编译器很难对这种动态的switch-case进行深度优化。
 
 **零开销C++抽象(使用编译时多态)**
@@ -198,16 +181,6 @@ void configure_peripheral() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/raii_example.cpp"
-
-```
-
-</details>
-
 这个代码看起来没问题,但是有个隐患:如果`do_something()`里出了问题(虽然在嵌入式里我们通常不用异常,但可能有其他形式的错误处理),或者你在中间某个地方提前return了,`disable_clock()`就不会被执行。时钟一直开着,白白浪费功耗。
 
 **零开销RAII**
@@ -259,16 +232,6 @@ constexpr uint32_t DIVISOR = calculate_baud_divisor(72000000, 115200);
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/constexpr_example.cpp"
-
-```
-
-</details>
-
 你可能会想,这有什么区别?不就是加了个`constexpr`关键字吗?
 
 区别大了去了!第一个版本,每次调用都要执行除法运算。除法在很多MCU上是比较慢的操作,可能需要几十个时钟周期。
@@ -296,16 +259,6 @@ inline constexpr T max(T a, T b) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/inline_vs_macro.cpp"
-
-```
-
-</details>
 
 宏的问题太多了。首先,它没有类型检查,你传什么进去都行。其次,它有很多奇怪的副作用。比如`MAX(i++, j++)`,这个宏会展开成`((i++) > (j++) ? (i++) : (j++))`,结果i或j会被增加两次!
 
@@ -341,16 +294,6 @@ UnrollLoop<4>::execute([](size_t i) {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/loop_unroll.cpp"
-
-```
-
-</details>
-
 这段代码做了什么?它在编译期把循环展开了。最终生成的代码相当于:
 
 ```cpp
@@ -384,16 +327,6 @@ void delay_us(Microseconds us);
 delay(Milliseconds{100});  // 清晰明确
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/01_zero_overhead/strong_types.cpp"
-
-```
-
-</details>
 
 看第一个版本,`delay(100)`——这个100是什么单位?你得去看文档或者注释。而且你很容易搞混:
 

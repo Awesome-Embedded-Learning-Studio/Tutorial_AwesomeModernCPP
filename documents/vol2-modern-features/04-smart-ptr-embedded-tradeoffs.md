@@ -1,20 +1,23 @@
 ---
-title: "unique_ptr与shared_ptr的嵌入式取舍"
-description: "分析智能指针选择"
 chapter: 6
-order: 4
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 分析智能指针选择
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: unique_ptr与shared_ptr的嵌入式取舍
 ---
-
 # 嵌入式现代C++教程——智能指针
 
 写嵌入式代码久了，你会发现一件哲学级问题：谁来负责释放内存？是我？是你？还是大家一起？C++ 标准库给了两位主角：`unique_ptr`（独占式，单身贵族）和 `shared_ptr`（合租式，分摊生活费）
@@ -147,16 +150,6 @@ public:
 ```
 
 优点：没有额外 heap 分配，内存更可控。缺点：对象类型需要内嵌计数器（改变类设计），并且你要自己处理线程安全（原子 vs 非原子）。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/04_smart_ptr_tradeoffs/comparison.cpp"
-
-```
-
-</details>
 
 ------
 

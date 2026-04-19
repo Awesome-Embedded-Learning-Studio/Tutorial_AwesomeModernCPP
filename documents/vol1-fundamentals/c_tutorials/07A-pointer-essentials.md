@@ -1,22 +1,22 @@
 ---
-title: "指针入门：地址的世界"
-description: "从零开始理解 C 语言指针——内存模型直觉、声明初始化、取地址与解引用运算符、指针的加减运算和距离计算"
 chapter: 1
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+description: 从零开始理解 C 语言指针——内存模型直觉、声明初始化、取地址与解引用运算符、指针的加减运算和距离计算
 difficulty: beginner
+order: 9
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "数据类型基础：整数与内存"
-  - "运算符基础：让数据动起来"
+- 数据类型基础：整数与内存
+- 运算符基础：让数据动起来
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 指针入门：地址的世界
 ---
-
 # 指针入门：地址的世界
 
 指针大概是 C 语言里名声最响也最容易劝退新手的特性了。如果你之前接触过 Python 或 Java，可能习惯了"变量就是对象本身"的思维——变量里存的就是数据。但到了 C 这边，多了一个关键概念：每个变量都住在内存的某个位置，这个位置有一个编号（地址）。指针就是用来存储和操作这些地址的变量。

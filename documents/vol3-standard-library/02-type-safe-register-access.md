@@ -1,20 +1,23 @@
 ---
-title: "类型安全的寄存器访问"
-description: "类型安全寄存器封装"
 chapter: 8
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 类型安全寄存器封装
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 7: 容器与数据结构"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 类型安全的寄存器访问
 ---
-
 # 嵌入式C++教程——类型安全的寄存器访问
 
 写寄存器操作时我们常见的开胃菜是这样的单行悲歌：
@@ -176,23 +179,3 @@ void uart_init() {
 3. **考虑并发和中断**：读—改—写的操作在中断或多核环境下可能不是原子的。对于必须原子的寄存器修改，要在临界区禁中断或使用硬件提供的原子访问。
 4. **内存屏障**：初始化外设或交换控制寄存器后，若需要保证后续读/写对硬件立刻生效，请使用合适的 DSB/ISB 或 `atomic_thread_fence`。
 5. **别把寄存器当全局变量随便传参**：尽量保持寄存器封装为 `constexpr` 的类型/别名，便于静态审计与自动生成文档。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/02_type_safe_register/reg.hpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter08/02_type_safe_register/uart_regs.hpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter08/02_type_safe_register/main.cpp"
-
-```
-
-</details>

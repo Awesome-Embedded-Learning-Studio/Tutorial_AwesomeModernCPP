@@ -1,21 +1,24 @@
 ---
-title: "模板特化与偏特化"
-description: "深入理解C++模板特化机制与匹配规则"
 chapter: 12
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解C++模板特化机制与匹配规则
 difficulty: intermediate
-reading_time_minutes: 35
-prerequisites:
-  - "Chapter 12: 模板入门概述"
-  - "Chapter 12: 函数模板详解"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+reading_time_minutes: 62
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 模板特化与偏特化
 ---
-
 # 嵌入式现代C++教程——模板特化与偏特化
 
 在前面的章节中，我们学习了模板的基础语法和函数模板的推导规则。但有时候，通用的模板定义并不适合所有类型——你可能需要为某个特定类型提供完全不同的实现，或者为某类类型提供定制行为。

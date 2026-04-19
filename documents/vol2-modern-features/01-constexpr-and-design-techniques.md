@@ -1,20 +1,23 @@
 ---
-title: "constexpr 与设计技巧"
-description: "深入探讨constexpr高级应用"
 chapter: 4
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入探讨constexpr高级应用
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 2: 零开支抽象"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- intermediate
+title: constexpr 与设计技巧
 ---
-
 # 嵌入式的现代C++教程——`constexpr` 与设计技巧
 
 大伙都知道一个经典的技巧——如果一个配置项目是编译时就会确定的，一般都会做成宏的方式在编译器的预处理阶段替换掉。

@@ -1,20 +1,23 @@
 ---
-title: "C++20 范围库基础与视图"
-description: "Ranges库基础"
 chapter: 9
-order: 7
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Ranges库基础
 difficulty: intermediate
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 8: 类型安全"
-cpp_standard: [11, 14, 17, 20]
+order: 7
 platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 16
+tags:
+- cpp-modern
+- host
+- intermediate
+title: C++20 范围库基础与视图
 ---
-
 # 现代嵌入式C++教程——C++20范围库基础与视图
 
 ## 引言
@@ -157,16 +160,6 @@ void demo_view_ownership() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/07_ranges_views_basics/view_basics.cpp"
-
-```
-
-</details>
-
 ### O(1)拷贝
 
 视图的拷贝成本是常数级别的——它只存几个指针/迭代器，不会复制底层数据：
@@ -240,16 +233,6 @@ void transform_example() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/07_ranges_views_basics/filter_views.cpp"
-
-```
-
-</details>
-
 ### take和drop：取前N个或跳过前N个
 
 ```cpp
@@ -283,16 +266,6 @@ void parse_packet(std::span<const uint8_t> packet) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/08_ranges_pipes/protocol_parser.cpp"
-
-```
-
-</details>
 
 ### split：按分隔符切分
 
@@ -446,16 +419,6 @@ private:
 - 没有`filtered_readings`、`fahrenheit_readings`这种临时容器
 - 整个处理过程只遍历数据一次
 - 内存开销是O(1)——视图只存几个指针
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter09/07_ranges_views_basics/sensor_pipeline.cpp"
-
-```
-
-</details>
 
 ------
 

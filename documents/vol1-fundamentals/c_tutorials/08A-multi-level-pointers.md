@@ -1,22 +1,22 @@
 ---
-title: "多级指针与声明读法"
-description: "深入理解多级指针的内存模型和实际使用场景，区分指针数组与数组指针，掌握 cdecl 声明读法和多级 const 指针的组合"
 chapter: 1
-order: 11
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 深入理解多级指针的内存模型和实际使用场景，区分指针数组与数组指针，掌握 cdecl 声明读法和多级 const 指针的组合
 difficulty: beginner
+order: 11
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "指针与数组、const 和空指针"
+- 指针与数组、const 和空指针
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 多级指针与声明读法
 ---
-
 # 多级指针与声明读法
 
 上一篇我们把指针和数组、`const`、NULL 的关系理清楚了。现在来啃指针里更绕的部分——多级指针（指向指针的指针）、指针数组和数组指针那对"混淆双胞胎"，以及看到 `const int* const *` 这种声明时不至于大脑宕机的方法。

@@ -1,22 +1,25 @@
 ---
-title: "模板与继承：CRTP与静态多态"
-description: "深入理解奇异递归模板模式、静态多态与Mixin模式"
 chapter: 12
-order: 8
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解奇异递归模板模式、静态多态与Mixin模式
 difficulty: intermediate
-reading_time_minutes: 35
-prerequisites:
-  - "Chapter 12: 模板入门概述"
-  - "Chapter 12: 函数模板详解"
-  - "Chapter 2: CRTP vs 运行时多态"
-cpp_standard: [11, 14, 17, 20]
+order: 8
 platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+- 'Chapter 2: CRTP vs 运行时多态'
+reading_time_minutes: 49
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 模板与继承：CRTP与静态多态
 ---
-
 # 嵌入式现代C++教程——模板与继承：CRTP与静态多态
 
 ## 引言：当模板遇见继承

@@ -338,36 +338,6 @@ void setup_gpio() {
 
 这里的 `using` 声明让寄存器类型、宽度、地址全部变成了可读的类型别名，维护和扩展都变得轻松。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/06_type_aliases/using_basics.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看模板别名完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/06_type_aliases/using_templates.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看寄存器访问完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/06_type_aliases/using_register.cpp"
-
-```
-
-</details>
-
 ## 小结：从 typedef 到 using
 
 `typedef` 是 C 时代的遗产，`using` 是 C++ 的现代选择。它能做 `typedef` 能做的一切，还能做 `typedef` 做不到的（模板别名）。在嵌入式开发这种类型安全敏感、模板代码常见的领域，`using` 是更明智的选择。

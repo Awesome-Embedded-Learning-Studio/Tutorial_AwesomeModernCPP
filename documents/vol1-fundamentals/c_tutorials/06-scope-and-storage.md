@@ -1,22 +1,22 @@
 ---
-title: "作用域与存储类别"
-description: "深入理解 C 语言的作用域规则、存储类别和链接性，掌握 static 的三种用法"
 chapter: 1
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 深入理解 C 语言的作用域规则、存储类别和链接性，掌握 static 的三种用法
 difficulty: beginner
+order: 8
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "控制流：让程序学会选择和重复"
+- 控制流：让程序学会选择和重复
+reading_time_minutes: 24
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 作用域与存储类别
 ---
-
 # 作用域与存储类别
 
 如果你写过超过两个源文件的项目，大概率已经踩过这样的坑：两个文件里都定义了一个叫 `count` 的全局变量，编译的时候链接器一脸懵逼地告诉你 `multiple definition`。或者更隐蔽的情况——你在某个 `.c` 文件里定义了一个辅助函数，结果别的文件不小心也调用了它，后来你改了那个函数的实现，调用方毫无预警地崩了。

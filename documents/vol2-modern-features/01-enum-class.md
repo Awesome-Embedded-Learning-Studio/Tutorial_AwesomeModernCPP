@@ -1,20 +1,23 @@
 ---
-title: "enum class 强类型枚举"
-description: "C++11强类型枚举"
 chapter: 8
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++11强类型枚举
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 7: 容器与数据结构"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 5
+tags:
+- cpp-modern
+- host
+- intermediate
+title: enum class 强类型枚举
 ---
-
 # 嵌入式C++教程——enum class
 
 想象一下：你把一堆状态、模式、标志写成 `enum`，使用时却被隐式转换成 `int`，结果函数接收错了值、比较错了东西，bug 就笑着出来喝茶。`enum class` 就是 C++ 给你的安全带：强类型、作用域化、能指定底层类型——特别适合对内存、类型安全都有高要求的嵌入式世界。
@@ -167,33 +170,3 @@ case SensorState::Error: break;
 ```
 
 加上 `default` 会抹去某些警告；有时候想利用编译器帮你检查穷尽性，就不要写 `default`，这样缺少分支会被提示。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/01_enum_class/enum_class_basics.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看位标志完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/01_enum_class/enum_class_bitflags.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看内存优化与C接口互操作示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/01_enum_class/enum_class_memory.cpp"
-
-```
-
-</details>

@@ -1,20 +1,23 @@
 ---
-title: "unique_ptr 独占所有权智能指针"
-description: "详解unique_ptr使用"
 chapter: 6
-order: 2
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 详解unique_ptr使用
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 2
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: unique_ptr 独占所有权智能指针
 ---
-
 # 现代嵌入式C++教程——std::unique_ptr：零开销的独占所有权
 
 > 笔者突然想起来，好像我都没给这个系列写`std::unique_ptr`的意思。
@@ -49,16 +52,6 @@ void f() {
 } // 离开作用域时自动 delete
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/02_unique_ptr_zero_overhead/basic_usage.cpp"
-
-```
-
-</details>
 
 `std::make_unique` 是首选：一行代码既申请内存又构造对象，避免了 `new` 与构造之间的临界窗口（异常安全）。对于嵌入式项目，把 `make_unique` 和自定义分配器结合使用可以做到既安全又可控（后面示范）。
 
@@ -100,16 +93,6 @@ std::unique_ptr<char, void(*)(void*)> buf2(
 );
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/02_unique_ptr_zero_overhead/custom_deleter.cpp"
-
-```
-
-</details>
 
 关键提醒：
 
@@ -159,16 +142,6 @@ std::unique_ptr<Base> p = std::make_unique<Derived>();
 
 这是面向对象设计的基本规则，不是 `unique_ptr` 的特例。
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/02_unique_ptr_zero_overhead/polymorphism.cpp"
-
-```
-
-</details>
-
 ------
 
 ## 转移所有权、释放与重置
@@ -188,16 +161,6 @@ auto p2 = std::move(p1); // p1 变成空，p2 拥有对象
 - `p.get()`：返回内部裸指针（不转移所有权）。
 
 在嵌入式里，如果你必须与 C API 交互，`release()` 很常见，但记得把释放责任写清楚，避免内存泄漏。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/02_unique_ptr_zero_overhead/basic_usage.cpp"
-
-```
-
-</details>
 
 ------
 

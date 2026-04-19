@@ -1,23 +1,25 @@
 ---
-title: "RAII 在外设管理中的作用"
-description: "介绍 RAII 模式在嵌入式外设管理中的应用，实现自动资源管理"
 chapter: 6
-order: 1
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+description: 介绍 RAII 模式在嵌入式外设管理中的应用，实现自动资源管理
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-related:
-  - "Scope Guard"
-  - "unique_ptr"
-cpp_standard: [11, 14, 17]
+order: 1
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 9
+related:
+- Scope Guard
+- unique_ptr
+tags:
+- cpp-modern
+- host
+- intermediate
+title: RAII 在外设管理中的作用
 ---
-
 # 嵌入式C++开发——RAII 在驱动 / 外设管理中的应用
 
 ## 先问是什么
@@ -94,16 +96,6 @@ void blink_once() {
 
 ```
 
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/01_raii_peripheral_management/gpio_raii.cpp"
-
-```
-
-</details>
-
 注意：`hal_gpio_*` 是你实际平台的 HAL，实际实现要确保这些函数本身在中断上下文安全或不在 ISR 中被长时间调用。
 
 ------
@@ -169,16 +161,6 @@ void read_sensor(SPIBus& spi, uint8_t cs) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/01_raii_peripheral_management/spi_transaction.cpp"
-
-```
-
-</details>
 
 好处显而易见：任何 `return`、异常（若启用）或 early exit 都会正确释放 CS。
 
@@ -254,16 +236,6 @@ private:
 template <typename F> ScopeExit<F> make_scope_exit(F f) noexcept { return ScopeExit<F>(std::move(f)); }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/01_raii_peripheral_management/scope_guard.cpp"
-
-```
-
-</details>
 
 用法：
 

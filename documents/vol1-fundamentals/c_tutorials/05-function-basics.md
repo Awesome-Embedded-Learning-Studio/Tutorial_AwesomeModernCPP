@@ -1,22 +1,22 @@
 ---
-title: "函数基础与参数传递"
-description: "理解 C 函数的声明定义调用机制、值传递本质、指针参数、返回值策略和递归原理，为 C++ 引用传递和函数重载打好基础"
 chapter: 1
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 理解 C 函数的声明定义调用机制、值传递本质、指针参数、返回值策略和递归原理，为 C++ 引用传递和函数重载打好基础
 difficulty: beginner
+order: 7
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11]
 prerequisites:
-  - "指针与数组、const 和空指针"
+- 指针与数组、const 和空指针
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 函数基础与参数传递
 ---
-
 # 函数基础与参数传递
 
 到现在为止我们写的代码都塞在 `main` 函数里。但现实世界的程序不会这样——一个项目动辄几万行代码，如果全挤在一个函数里，那基本没法维护。函数就是 C 语言模块化编程的基本单元：把一段逻辑封装起来，给它起个名字，需要的时候调用就行。

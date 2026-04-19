@@ -1,20 +1,23 @@
 ---
-title: "std::variant 类型安全联合体"
-description: "C++17类型安全联合体"
 chapter: 8
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++17类型安全联合体
 difficulty: intermediate
-reading_time_minutes: 18
-prerequisites:
-  - "Chapter 7: 容器与数据结构"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::variant 类型安全联合体
 ---
-
 # 现代嵌入式C++教程：`std::variant`
 
 ------
@@ -161,33 +164,3 @@ void process(Message const& m) {
 - `std::variant`：**类型列表固定**、编译时已知、支持 `visit`，最适合有限且已枚举的类型集合。
 - `std::any`：可装任意类型，运行时类型检查繁琐，不适合做"有穷多种可能"的替代。
 - `boost::variant`：`std::variant` 的前身，功能类似，历史项目可能还在用，但新代码优先选标准库的 `std::variant`。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/03_variant/variant_basics.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看 std::visit 完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/03_variant/variant_visit.cpp"
-
-```
-
-</details>
-
-<details>
-<summary>查看消息队列完整示例</summary>
-
-```cpp
---8<-- "code/examples/chapter08/03_variant/variant_message.cpp"
-
-```
-
-</details>

@@ -1,20 +1,23 @@
 ---
-title: "constexpr 编译期计算"
-description: "介绍constexpr关键字"
 chapter: 2
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 介绍constexpr关键字
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 1: 构建工具链"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+title: constexpr 编译期计算
 ---
-
 # 嵌入式现代 C++教程——constexpr：把计算推到编译期
 
 在嵌入式开发中，我们习惯于用"时间"和"空间"来衡量一段代码的好坏。函数调用要不要内联，循环能不能展开，RAM 和 Flash 有没有被浪费。这些问题都很直观，也很工程。
@@ -33,16 +36,6 @@ constexpr int square(int x) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter02/03_constexpr/basic_constexpr.cpp"
-
-```
-
-</details>
 
 然后编译器把 `square(8)` 直接替换成 `64`，看起来很神奇。
 

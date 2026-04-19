@@ -1,24 +1,27 @@
 ---
-title: "C++98函数接口：重载与默认参数"
-description: "让函数接口更灵活——函数重载允许同名不同参、默认参数减少调用负担，以及两者共存时的陷阱与选择指南"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 让函数接口更灵活——函数重载允许同名不同参、默认参数减少调用负担，以及两者共存时的陷阱与选择指南
 difficulty: beginner
-reading_time_minutes: 20
-prerequisites:
-  - "C++98入门：命名空间、引用与作用域解析"
-related:
-  - "C++98面向对象：类与对象深度剖析"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C++98入门：命名空间、引用与作用域解析
+reading_time_minutes: 16
+related:
+- C++98面向对象：类与对象深度剖析
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98函数接口：重载与默认参数
 ---
-
 # C++98函数接口：重载与默认参数
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

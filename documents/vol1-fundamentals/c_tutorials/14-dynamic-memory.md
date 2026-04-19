@@ -1,22 +1,25 @@
 ---
-title: "动态内存管理"
-description: "深入理解 C 语言的动态内存分配机制，掌握 malloc/calloc/realloc/free 的正确使用，认识常见内存错误及调试方法，对比 C++ RAII 和智能指针的设计哲学"
 chapter: 1
-order: 18
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 进阶
-  - 内存管理
+cpp_standard:
+- 11
+- 14
+- 17
+description: 深入理解 C 语言的动态内存分配机制，掌握 malloc/calloc/realloc/free 的正确使用，认识常见内存错误及调试方法，对比
+  C++ RAII 和智能指针的设计哲学
 difficulty: intermediate
+order: 18
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "结构体与内存对齐"
+- 结构体与内存对齐
+reading_time_minutes: 10
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 内存管理
+title: 动态内存管理
 ---
-
 # 动态内存管理
 
 到目前为止我们写的所有程序，变量的大小都在编译期就确定了。但现实世界不是这么运转的——用户输入多少字符事先不知道、运行之前不知道会采集多少条记录、客户端发来的数据包大小可能每次都不同。这些场景的共同点是：**程序运行之前，你无法确定需要多少内存**。

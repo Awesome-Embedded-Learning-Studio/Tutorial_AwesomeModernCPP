@@ -1,20 +1,23 @@
 ---
-title: "Scope Guard 作用域守卫"
-description: "Scope Guard模式"
 chapter: 6
-order: 8
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Scope Guard模式
 difficulty: intermediate
-reading_time_minutes: 12
-prerequisites:
-  - "Chapter 5: 内存管理策略"
-cpp_standard: [11, 14, 17, 20]
+order: 8
 platform: host
+prerequisites:
+- 'Chapter 5: 内存管理策略'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Scope Guard 作用域守卫
 ---
-
 # 嵌入式现代C++教程——作用域守卫（Scope Guard）：让清理代码乖乖在"出门顺手关灯"那一刻执行
 
 写嵌入式代码时，总会遇到这样的人生真相：你在函数某处申请了资源（打开外设、上锁、禁中断、分配缓冲……），后来代码分叉、提前 `return`、甚至抛出异常——结果忘了释放/恢复。结果就是内存泄漏、死锁、外设状态奇怪，或者你被老大盯着问"为什么这段代码跑了两分钟还没返回"。
@@ -73,16 +76,6 @@ ScopeGuard<F> make_scope_guard(F&& f) {
 }
 
 ```
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/08_scope_guard_patterns/scope_guard.cpp"
-
-```
-
-</details>
 
 用法示例：
 
@@ -159,16 +152,6 @@ auto on_fail = make_scope_guard_fail([](){ rollback_tx(); });
 ```
 
 在嵌入式里如果禁用异常，这俩就没用武之地 —— 但是 `scope_exit`（总是执行）仍然非常有用。
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter06/08_scope_guard_patterns/scope_success_fail.cpp"
-
-```
-
-</details>
 
 ------
 

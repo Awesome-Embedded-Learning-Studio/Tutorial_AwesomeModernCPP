@@ -1,21 +1,24 @@
 ---
-title: "模板入门概述"
-description: "理解C++模板的核心概念与学习路径"
 chapter: 12
-order: 0
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解C++模板的核心概念与学习路径
 difficulty: beginner
-reading_time_minutes: 20
-prerequisites:
-  - "Chapter 2: 零开销抽象"
-  - "Chapter 11: 类型推导基础"
-cpp_standard: [11, 14, 17, 20]
+order: 0
 platform: host
+prerequisites:
+- 'Chapter 2: 零开销抽象'
+- 'Chapter 11: 类型推导基础'
+reading_time_minutes: 10
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 模板入门概述
 ---
-
 # 嵌入式现代C++教程——模板入门概述
 
 ## 引言：为什么需要模板？

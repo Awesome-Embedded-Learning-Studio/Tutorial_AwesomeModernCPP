@@ -1,24 +1,27 @@
 ---
-title: "构建可复用的C代码"
-description: "从模块化设计、头文件接口、不透明指针到平台抽象层，系统掌握 C 代码的工程化组织方法，以及 C++ 的 namespace/class/PIMPL 如何继承这些思想"
 chapter: 1
-order: 108
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 工程实践
-  - 基础
+cpp_standard:
+- 11
+- 17
+- 20
+description: 从模块化设计、头文件接口、不透明指针到平台抽象层，系统掌握 C 代码的工程化组织方法，以及 C++ 的 namespace/class/PIMPL
+  如何继承这些思想
 difficulty: intermediate
+order: 108
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 17, 20]
 prerequisites:
-  - "指针进阶：不完整类型与多级指针"
-  - "结构体与内存布局"
-  - "编译与链接基础"
+- 指针进阶：不完整类型与多级指针
+- 结构体与内存布局
+- 编译与链接基础
+reading_time_minutes: 32
+tags:
+- host
+- cpp-modern
+- intermediate
+- 工程实践
+- 基础
+title: 构建可复用的C代码
 ---
-
 # 构建可复用的C代码
 
 写过几万行 C 代码的朋友大概都有这种体验——项目刚开始的时候一切都好，几个 `.c` 文件拼拼凑凑就能跑起来，但随着功能越堆越多，代码开始变成一团乱麻：头文件到处乱 include，全局变量满天飞，改一个结构体字段要牵动十几个源文件重新编译，好不容易在 PC 上调通了，换到 STM32 上又是一堆移植问题。说实话，这些痛苦的根源往往不是算法写错了或者指针用炸了，而是从一开始就没有认真对待"代码组织"这件事。

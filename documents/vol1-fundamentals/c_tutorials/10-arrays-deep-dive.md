@@ -1,22 +1,22 @@
 ---
-title: "数组深入"
-description: "深入理解 C 数组的内存布局、多维数组、变长数组及其与指针的微妙关系"
 chapter: 1
-order: 14
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 深入理解 C 数组的内存布局、多维数组、变长数组及其与指针的微妙关系
 difficulty: beginner
+order: 14
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "指针与数组、const 和空指针"
+- 指针与数组、const 和空指针
+reading_time_minutes: 23
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 数组深入
 ---
-
 # 数组深入
 
 在前面的速通篇和指针篇里，我们都碰过数组，但说实话一直停留在"会用"的层面。数组这东西用起来简单——声明、初始化、下标访问，谁不会？但一旦你开始追问"多维数组到底怎么排布的"、"为什么数组不能直接赋值"、"数组和指针到底什么时候是一样的什么时候不一样"——就会发现里面有不少值得拆解的细节。这些细节不只是理论上的东西，理解了数组的内存模型，后面学 C++ 的 `std::array`、`std::vector`、`std::span` 的时候就能清楚地知道它们各自在解决什么问题。

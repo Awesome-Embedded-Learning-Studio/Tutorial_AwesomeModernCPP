@@ -1,20 +1,23 @@
 ---
-title: "动态分配问题"
-description: "分析嵌入式动态内存问题"
 chapter: 5
-order: 1
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 分析嵌入式动态内存问题
 difficulty: intermediate
-reading_time_minutes: 15
-prerequisites:
-  - "Chapter 3: 内存与对象管理"
-cpp_standard: [11, 14, 17, 20]
+order: 1
 platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 动态分配问题
 ---
-
 # 动态内存的代价：碎片化与不确定性（内存布局、碎片化与内存对齐）
 
 ## 前言
@@ -134,23 +137,3 @@ struct B {
 ------
 
 ## 代码示例
-
-<details>
-<summary>查看完整可编译示例</summary>
-
-```cpp
---8<-- "code/examples/chapter05/01_dynamic_memory_problems/memory_layout_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/01_dynamic_memory_problems/fragmentation_demo.cpp"
-
-```
-
-```cpp
---8<-- "code/examples/chapter05/01_dynamic_memory_problems/alignment_demo.cpp"
-
-```
-
-</details>
