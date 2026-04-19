@@ -36,15 +36,11 @@ jobs:
       - name: 安装依赖
         run: pip install -e ./scripts
 
-      # 4. 生成自动化文档（目录、交叉引用、统计）
-      - name: 生成自动化文档
-        run: python3 scripts/generate_docs.py --update
-
-      # 5. 构建网站
+      # 4. 构建网站
       - name: 构建网站
         run: mkdocs build --clean
-      
-      # 6. 自动部署到 gh-pages 分支（这一步会自动触发 GitHub Pages）
+
+      # 5. 自动部署到 gh-pages 分支（这一步会自动触发 GitHub Pages）
       - name: 部署到 GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
