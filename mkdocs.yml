@@ -177,7 +177,8 @@ plugins:
         - trimmer
 
   # 标签插件 - 为文章添加标签分类
-  - tags
+  - tags:
+      tags_file: tags.md
 
   # Awesome Pages 插件 - 自动展开 nav 中的目录引用，支持 .pages 文件控制排序和标题
   - awesome-pages

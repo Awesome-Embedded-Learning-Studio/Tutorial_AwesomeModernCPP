@@ -1397,7 +1397,8 @@ inline constexpr bool is_floating_point_v = TypeTraits<T>::is_floating_point;
 
 ### iterator_traits 的结构
 
-```cpp
+```
+
 // C++标准库中的简化版本
 namespace std {
 
@@ -1434,13 +1435,15 @@ public:
 };
 
 } // namespace std
-```
+
+```cpp
 
 ### 为什么需要指针特化？
 
 考虑一个自定义迭代器：
 
 ```cpp
+
 template<typename T>
 class MyIterator {
 public:
@@ -1452,11 +1455,13 @@ public:
 
     // ... 迭代器实现
 };
-```
+
+```cpp
 
 使用 `iterator_traits`：
 
 ```cpp
+
 template<typename Iter>
 void process(Iter begin, Iter end) {
     // 通过traits获取类型
@@ -1476,11 +1481,13 @@ process(it1, it2);  // 使用主模板，从迭代器类型中提取
 // 对于原生指针
 int arr[10];
 process(arr, arr + 10);  // 使用指针偏特化！
-```
+
+```cpp
 
 ### 嵌入式应用：环形缓冲区迭代器
 
 ```cpp
+
 #include <iterator>
 
 template<typename T, size_t Size>
@@ -1630,7 +1637,8 @@ void test_ring_buffer() {
     std::copy(buffer2.begin(), buffer2.end(),
               std::ostream_iterator<int>(std::cout, " "));
 }
-```
+
+```cpp
 
 ### iterator_traits 的完整实现要点
 
@@ -1648,6 +1656,7 @@ void test_ring_buffer() {
 C++20 引入了 `std::iter_reference_t` 等更简洁的别名：
 
 ```cpp
+
 // C++20风格
 template<typename Iter>
 using iter_value_t = typename std::iterator_traits<Iter>::value_type;
@@ -1660,6 +1669,7 @@ template<std::input_iterator Iter>
 void algorithm(Iter begin, Iter end) {
     std::iter_value_t<Iter> sum{};  // 更简洁的语法
 }
+
 ```
 
 ------
@@ -1669,6 +1679,7 @@ void algorithm(Iter begin, Iter end) {
 ### 陷阱1：特化不匹配导致的无限递归
 
 ```cpp
+
 // ❌ 错误：无限递归
 template<typename T>
 struct Traits {
@@ -1685,11 +1696,13 @@ template<typename T>
 struct Traits<T*> {
     using type = typename Traits<T>::type;  // 递归但会终止
 };
+
 ```
 
 ### 陷阱2：特化顺序依赖
 
 ```cpp
+
 // ❌ 不要依赖特化的定义顺序
 template<typename T>
 struct A;
@@ -1714,11 +1727,13 @@ template<typename T>
 struct A<T*> {
     using type = typename A<T>::type;  // 可以引用主模板
 };
+
 ```
 
 ### 陷阱3：const和引用的正确处理
 
 ```cpp
+
 // ❌ 错误：const T& 不能正确匹配
 template<typename T>
 struct RemoveConst {
@@ -1749,11 +1764,13 @@ struct RemoveConst {
 };
 
 RemoveConst<const int&>::type;  // int，正确！
+
 ```
 
 ### 陷阱4：函数模板特化与重载混淆
 
 ```cpp
+
 // ❌ 错误：想特化但实际上定义了新模板
 template<typename T>
 void f(T*);
@@ -1769,11 +1786,13 @@ void f(T);
 
 template<typename T>
 void f(T*);  // 重载，不是特化
+
 ```
 
 ### 陷阱5：忘记typename关键字
 
 ```cpp
+
 template<typename T>
 struct Traits {
     using value_type = T;
@@ -1787,6 +1806,7 @@ void func() {
     // ✅ 正确：使用 typename
     typename Traits<T>::value_type x = 10;
 }
+
 ```
 
 **规则**：在模板中访问依赖类型时，必须加上 `typename` 关键字。
@@ -1794,6 +1814,7 @@ void func() {
 ### 陷阱6：偏特化与SFINAE混用
 
 ```cpp
+
 // ❌ 可能有问题：enable_if作为偏特化参数
 template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 struct OnlyIntegral {
@@ -1822,6 +1843,7 @@ template<Integral T>
 struct OnlyIntegral {
     static constexpr bool value = true;
 };
+
 ```
 
 ------
@@ -1833,6 +1855,7 @@ struct OnlyIntegral {
 C++20 的 concepts 可以替代部分特化需求：
 
 ```cpp
+
 // 传统方式：使用SFINAE和特化
 template<typename T, typename = void>
 struct SupportsIncrement {
@@ -1853,16 +1876,18 @@ concept SupportsIncrement = requires(T t) {
 
 // 使用
 template<SupportsIncrement T>
-void increment_all(T* begin, T* end) {
+void increment_all(T*begin, T* end) {
     for (auto it = begin; it != end; ++it) {
         ++(*it);
     }
 }
+
 ```
 
 ### requires 子句替代特化
 
 ```cpp
+
 // 传统：偏特化
 template<typename T>
 class SmartPtr {
@@ -1885,11 +1910,13 @@ requires std::is_array_v<T>
 class SmartPtr<T> {
     // 数组版本（实际上是偏特化的语法糖）
 };
+
 ```
 
 ### concept 重载替代函数特化
 
 ```cpp
+
 // 传统：函数重载 + SFINAE
 template<typename T>
 std::enable_if_t<std::is_integral_v<T>, T>
@@ -1913,6 +1940,7 @@ template<std::floating_point T>
 T process(T value) {
     return value * 2.0;
 }
+
 ```
 
 ------

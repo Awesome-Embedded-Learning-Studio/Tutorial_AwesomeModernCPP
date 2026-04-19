@@ -66,7 +66,7 @@ C 程序从源代码变成可执行文件要经过四个阶段：预处理、编
 #define kVersionString "1.0.0"
 
 char buffer[kMaxBufferSize];
-```text
+```
 
 ⚠️ 宏定义末尾**不要加分号**。`#define kMaxBufferSize 1024;` 会把分号也作为替换文本的一部分。
 
@@ -77,14 +77,14 @@ char buffer[kMaxBufferSize];
 ```c
 #define SQUARE(x) ((x) * (x))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-```text
+```
 
 不加括号的后果：
 
 ```c
 #define BAD_SQUARE(x) x * x
 int r = BAD_SQUARE(2 + 3);   // 展开为 2 + 3 * 2 + 3 = 11，而不是 25
-```text
+```
 
 但括号解决不了**重复求值**问题：
 
@@ -93,7 +93,7 @@ int x = 5;
 int r = MAX(x++, 10);
 // 展开为 ((x++) > (10) ? (x++) : (10))
 // x++ 被求值了两次！x 最终变成了 7 而不是 6
-```text
+```
 
 ### 多行宏与 do-while(0) 惯用法
 
@@ -105,7 +105,7 @@ int r = MAX(x++, 10);
             (ptr) = NULL;        \
         }                       \
     } while (0)
-```text
+```
 
 `do { ... } while(0)` 作为一个整体构成一条语句，不会在 `if-else` 的分支中出现悬挂问题。这个技巧在 Linux 内核代码中随处可见。
 
@@ -118,7 +118,7 @@ int r = MAX(x++, 10);
 #define MAKE_VAR(prefix, num) prefix ## num
 
 int MAKE_VAR(value, 1) = 10;  // 展开为 int value1 = 10;
-```text
+```
 
 ## 条件编译
 
@@ -132,7 +132,7 @@ int MAKE_VAR(value, 1) = 10;  // 展开为 int value1 = 10;
 
 int add(int a, int b);
 int multiply(int a, int b);
-```text
+```
 
 `#pragma once` 不是 C 标准的一部分，但 GCC、Clang、MSVC 全都支持。在 C++ 项目中已经是事实上的标准做法。
 
@@ -153,7 +153,7 @@ extern int kConfigMaxRetryCount;
 // config.c
 #include "config.h"
 int kConfigMaxRetryCount = 3;
-```text
+```
 
 ⚠️ 头文件里写 `int kConfigMaxRetryCount = 3;`（没有 `extern`）被多个 `.c` 文件 include 会导致 `multiple definition` 错误。
 
@@ -172,7 +172,7 @@ gcc -c math_utils.c
 ar rcs libmath_utils.a math_utils.o
 # 使用静态库
 gcc -o demo main.c -L. -lmath_utils
-```text
+```
 
 ## C++ 衔接
 
@@ -208,7 +208,7 @@ int main(void) {
     // TODO: 调用两个函数，验证结果
     return 0;
 }
-```text
+```
 
 提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
 
@@ -224,6 +224,6 @@ int main(void) {
 // TODO: Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
 // 提示：使用 __FILE__、__LINE__、__VA_ARGS__
 #endif
-```text
+```
 
 提示：可变参数宏的写法是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。GCC 提供了 `##__VA_ARGS__` 扩展处理没有额外参数时的逗号问题。

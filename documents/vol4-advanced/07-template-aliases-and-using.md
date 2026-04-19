@@ -1013,14 +1013,17 @@ void process(T container);
 
 让我们用别名模板构建一个嵌入式项目中常用的类型系统。
 
-```cpp
 <details>
 <summary>点击展开完整代码</summary>
 
 ```cpp
+
 #include <cstdint>
+
 #include <type_traits>
+
 #include <array>
+
 #include <memory>
 
 // ==================== 基础类型别名 ====================
@@ -1221,10 +1224,10 @@ void example_usage() {
         // 处理错误
     };
 }
+
 ```
 
 </details>
-```
 
 ------
 

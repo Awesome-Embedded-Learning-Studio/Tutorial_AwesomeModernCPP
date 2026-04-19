@@ -210,7 +210,7 @@ void charlies_tools::split(const std::string& waited_splits, const std::string_v
 然后，在Linux机器上，利用-c指令只翻译test.cpp为机器码：
 
 
-```text
+```bash
 
 g++ -c test.cpp -o test_name
 
@@ -252,7 +252,7 @@ test.cpp
 随后，利用dumpbin小工具，得到：
 
 
-```cpp
+```text
 
 D:\DownloadFromInternet>dumpbin /SYMBOLS test.obj
 Microsoft (R) COFF/PE Dumper Version 14.44.35217.0

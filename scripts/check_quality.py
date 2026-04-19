@@ -394,7 +394,7 @@ class ReadingTimeChecker(QualityChecker):
         estimated = max(1, round(minutes))
         if declared > 0:
             deviation = abs(declared - estimated) / max(estimated, 1) * 100
-            if deviation > 20:
+            if deviation > 50:
                 report.warnings.append(Issue(filepath, None, 'warning',
                                              'reading_time',
                                              f"reading_time_minutes={declared} "

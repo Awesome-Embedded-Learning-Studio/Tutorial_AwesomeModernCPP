@@ -47,7 +47,7 @@ title: 指针入门：地址的世界
 
 ```c
 int value = 42;
-```text
+```
 
 这行代码做了两件事：在内存里分配了 4 个连续的柜子（因为 `int` 占 4 字节），在里面放上了值 `42`。`value` 是你给这 4 个柜子起的标签，但这 4 个柜子本身有一个起始编号——比如 `0x7ffd1234`。这个编号，就是地址。
 
@@ -71,13 +71,13 @@ int main(void)
 
     return 0;
 }
-```text
+```
 
 编译运行：
 
 ```bash
 gcc -Wall -Wextra -std=c17 addr_demo.c -o addr_demo && ./addr_demo
-```text
+```
 
 运行结果（地址每次运行都不同，这是正常的）：
 
@@ -85,7 +85,7 @@ gcc -Wall -Wextra -std=c17 addr_demo.c -o addr_demo && ./addr_demo
 value 的值:   42
 value 的地址: 0x7ffd3a2b1c4c
 other 的地址: 0x7ffd3a2b1c48
-```text
+```
 
 `%p` 是打印指针地址的格式说明符，`&value` 是取 `value` 的地址。两个变量的地址挨得很近（只差 4 字节），因为它们都在栈上连续分配。每次运行程序地址都会变化，这是操作系统的地址空间随机化（ASLR）安全机制，不影响我们理解概念。
 
@@ -98,7 +98,7 @@ other 的地址: 0x7ffd3a2b1c48
 ```c
 int value = 42;
 int* ptr = &value;  // ptr 存储了 value 的地址
-```text
+```
 
 `&` 是取地址运算符，它返回操作数的内存地址。`ptr` 现在持有 `value` 的地址，我们说"ptr 指向 value"。
 
@@ -109,7 +109,7 @@ int* ptr = &value;  // ptr 存储了 value 的地址
 ```c
 int* good_ptr = NULL;     // 好：明确表示"不指向任何东西"
 int* bad_ptr;             // 危险：包含随机地址，解引用是未定义行为
-```text
+```
 
 > ⚠️ **踩坑预警**
 > `int* p, q;` 声明了一个 `int*` 和一个 `int`——不是两个指针！`*` 只修饰紧跟在后面的变量名 `p`。如果要声明两个指针，必须写 `int *p, *q;`。这是 C 声明语法的一个经典陷阱。
@@ -128,14 +128,14 @@ int* ptr = &value;     // &value → 取得 value 的地址，赋给 ptr
 
 printf("value 的地址: %p\n", (void*)ptr);    // 打印地址
 printf("ptr 指向的值: %d\n", *ptr);          // *ptr → 解引用，得到 42
-```text
+```
 
 解引用 `*ptr` 的意思是"顺着 ptr 里存的地址，去那块内存里取值"。既然能读，自然也能写：
 
 ```c
 *ptr = 100;
 printf("value = %d\n", value);  // 输出 100——通过指针修改了原始变量
-```text
+```
 
 这就是指针的威力所在：你手里拿着一个地址，就能直接操作那块内存上的数据，不管那块内存是在当前函数的栈帧里、在堆上、还是在硬件寄存器的映射区域里。
 
@@ -157,7 +157,7 @@ int main(void)
 
     return 0;
 }
-```text
+```
 
 运行结果：
 
@@ -165,7 +165,7 @@ int main(void)
 初始: value = 42, *ptr = 42
 地址: &value = 0x7ffd1234abcd, ptr = 0x7ffd1234abcd
 修改后: value = 100, *ptr = 100
-```text
+```
 
 很好，`ptr` 和 `&value` 的地址完全一致，通过 `*ptr = 100` 确实修改了 `value` 的值。
 
@@ -194,7 +194,7 @@ p++;              // p 现在指向 arr[1]
                  // 地址增加了 sizeof(int)，即 4 字节
 
 int val = *(p + 2);  // p+2 跳过两个 int，指向 arr[3]，val = 40
-```text
+```
 
 `p + 2` 不是在地址值上加 2，而是加 `2 * sizeof(int)`。这个设计非常精妙——它让指针的加减天然适配数组的下标偏移。
 
@@ -208,7 +208,7 @@ int* start = &arr[1];
 int* end   = &arr[4];
 
 ptrdiff_t distance = end - start;   // 3，不是 12
-```text
+```
 
 `ptrdiff_t` 是 `<stddef.h>` 中定义的专门表示指针距离的类型。
 
@@ -237,7 +237,7 @@ int main(void)
 
     return 0;
 }
-```text
+```
 
 运行结果：
 
@@ -246,7 +246,7 @@ arr[0] = 10, *p = 10
 p++ 后: *p = 20 (arr[1])
 *(p+2) = 40 (arr[3])
 end - start = 3 个元素
-```text
+```
 
 一切如我们所预期。
 
@@ -277,7 +277,7 @@ C++ 在指针的基础上做了两个关键的改进。第一个是**引用**（
 /// @param data 数组首元素地址
 /// @param count 元素个数
 void print_int_array(const int* data, size_t count);
-```text
+```
 
 ## 参考资源
 

@@ -31,7 +31,7 @@ if ((HAL_GetTick() - last_change_time) >= debounce_ms) {
         // 触发事件
     }
 }
-```text
+```
 
 能工作，但有问题。这个 `if-else` 结构把"消抖等待"、"状态确认"、"事件触发"混在一起，没有清晰的边界。随着需求增加——要区分按下和释放、要处理启动时按钮已按住、要在消抖期间正确处理信号反弹——`if-else` 会越堆越乱。
 
@@ -53,7 +53,7 @@ enum class State {
     BootPressed,         // 启动锁定：上电时按钮已被按住
     BootReleaseDebouncing, // 启动释放消抖：启动锁定后的释放消抖
 };
-```text
+```
 
 先别被 7 个状态吓到。核心流程只有 4 个状态：`Idle → DebouncingPress → Pressed → DebouncingRelease → Idle`，和上一篇的非阻塞逻辑一一对应。额外的 3 个状态（`BootSync`、`BootPressed`、`BootReleaseDebouncing`）是专门处理"启动时按钮已被按住"这个边界情况的。
 
@@ -82,7 +82,7 @@ enum class State {
                                                  │  Idle    │
                                                  │ (解锁，无事件)│
                                                  └──────────┘
-```text
+```
 
 ---
 
@@ -98,11 +98,12 @@ case State::BootSync:
     boot_locked_ = sample;
     state_ = sample ? State::BootPressed : State::Idle;
     return;
-```text
+```
 
 这是状态机的初始状态（`state_` 的默认值是 `State::BootSync`）。它只执行一次——第一次调用 `poll_events()` 时。
 
 它做了三件事：
+
 1. 用第一次采样值初始化 `raw_pressed_` 和 `stable_pressed_`
 2. 如果按钮已经是按下状态，设置 `boot_locked_ = true`——进入"启动锁定"
 3. 根据采样结果跳转到 `BootPressed` 或 `Idle`
@@ -119,7 +120,7 @@ case State::Idle:
         state_ = State::DebouncingPress;
     }
     return;
-```text
+```
 
 空闲状态意味着按钮当前是松开的。只关心一件事：有没有检测到按下信号？如果有，记录时间戳，进入消抖状态。
 
@@ -144,7 +145,7 @@ case State::DebouncingPress:
     state_ = State::Pressed;
     cb(Pressed{});
     return;
-```text
+```
 
 这是消抖的核心。三个判断，对应三种情况：
 
@@ -155,6 +156,7 @@ case State::DebouncingPress:
 **情况 3：信号持续为高，且已经稳定了 `debounce_ms`。** 确认按下！更新稳定状态，跳转到 `Pressed`，触发 `Pressed` 事件。
 
 这三个判断的顺序很关键。先检查反弹（情况 1），再检查回到低（情况 2），最后检查超时确认（情况 3）。这个顺序确保了：
+
 - 抖动期间每次反弹都重置计时器
 - 如果信号明确回到了初始电平，立即放弃（不等超时）
 - 只有持续稳定才确认
@@ -169,7 +171,7 @@ case State::Pressed:
         state_ = State::DebouncingRelease;
     }
     return;
-```text
+```
 
 按钮被确认按下后，只关心一件事：有没有检测到释放信号？如果有，进入释放消抖状态。
 
@@ -203,7 +205,7 @@ case State::DebouncingRelease: {
     cb(Released{});
     return;
 }
-```text
+```
 
 和 `DebouncingPress` 结构对称，但方向相反。三个核心判断：
 
@@ -221,7 +223,7 @@ if (boot_locked_) {
     return;  // 不触发 Released 事件
 }
 cb(Released{});
-```text
+```
 
 如果 `boot_locked_` 为 true，说明这次"释放"是启动时按钮被按住的首次释放。在这种情况下，我们**不触发 `Released` 事件**——因为用户从未在系统运行期间"按下"过按钮。只是把 `boot_locked_` 清零，让状态机进入正常工作模式。
 
@@ -243,7 +245,7 @@ case State::BootReleaseDebouncing:
     stable_pressed_ = false;
     state_ = State::Idle;  // 静默进入 Idle，不触发 Released
     return;
-```text
+```
 
 为什么不让 `Pressed` 和 `DebouncingRelease` 同时承担启动锁的功能？因为那样需要在每个状态中都加 `if (boot_locked_)` 的判断，逻辑变得更复杂。独立出两个状态，虽然多了一对状态，但每个状态的逻辑更纯粹——要么只处理正常流程，要么只处理启动流程。
 

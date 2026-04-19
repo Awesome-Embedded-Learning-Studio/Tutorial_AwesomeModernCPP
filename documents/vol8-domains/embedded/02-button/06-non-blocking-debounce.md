@@ -31,7 +31,7 @@ if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
         while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {}
     }
 }
-```text
+```
 
 这个方案确实能消除大部分抖动问题。但它的代价是 `HAL_Delay(20)` 把 CPU 冻结了 20 毫秒。
 
@@ -49,7 +49,7 @@ if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 
 ```c
 uint32_t now = HAL_GetTick();  // 例如返回 12345，表示系统已运行 12.345 秒
-```text
+```
 
 `HAL_GetTick()` 的底层实现在 `hal_mock.c` 中——`SysTick_Handler()` 中断每 1ms 触发一次，调用 `HAL_IncTick()` 递增一个全局计数器。这个计数器就是我们获取时间的来源。
 
@@ -72,7 +72,7 @@ uint32_t now = HAL_GetTick();  // 例如返回 12345，表示系统已运行 12.
    c. 触发事件
 4. 如果在消抖期间状态又变了回来：
    a. 取消消抖（这是假信号）
-```text
+```
 
 用 ASCII 状态图表示：
 
@@ -83,7 +83,7 @@ uint32_t now = HAL_GetTick();  // 例如返回 12345，表示系统已运行 12.
     └──────────┘←──────────└──────────────┘           └──────────┘
                   状态回弹
                   (假信号)
-```text
+```
 
 ### C 语言实现
 
@@ -131,7 +131,7 @@ int main(void) {
          * 让我们修正 */
     }
 }
-```text
+```
 
 等等，上面的代码有问题。我只记录了时间戳但没有用它来做判断。让我重新写一个正确的版本：
 
@@ -173,16 +173,18 @@ int main(void) {
 
         /* 这里可以做其他任务 —— CPU 没有被阻塞！ */
     }
-```text
+```
 
 ### 逐行解读
 
 **状态变量：**
+
 - `last_stable`：上次确认的稳定按钮状态。只有在原始信号稳定了 20ms 之后才会更新。
 - `last_raw`：最近的原始采样值。每次采到不同的值就更新。
 - `last_change_time`：原始值最后一次变化的时间戳。
 
 **核心逻辑：**
+
 1. 每次循环采样 `current`。
 2. 如果 `current` 和 `last_raw` 不同，说明信号在跳变——更新 `last_raw` 并重置计时器。
 3. 如果距离上次变化已经过了 `debounce_ms`（20ms），且原始值和稳定值不同——确认状态真的变了，更新稳定值并触发事件。
@@ -222,6 +224,7 @@ int main(void) {
 这一篇做了三件事：解释了 `HAL_Delay()` 阻塞消抖的问题，引入了 `HAL_GetTick()` 做非阻塞时间管理，实现了一个可用的非阻塞消抖算法。
 
 关键收获：
+
 - `HAL_GetTick()` 返回毫秒时间戳，底层由 SysTick 中断驱动
 - 非阻塞消抖的核心：记录变化时间，检查是否稳定了足够长时间
 - 无符号整数减法天然处理溢出
