@@ -10,7 +10,7 @@ tags:
   - 入门
 difficulty: beginner
 platform: host
-reading_time_minutes: 16
+reading_time_minutes: 20
 cpp_standard: [11]
 prerequisites:
   - "无（本系列第一篇）"
