@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(lesson_02B_float_char C)
+
+add_executable(ex1_float_precision ex1_float_precision.c)
+target_link_libraries(ex1_float_precision m)
+
+add_executable(ex2_implicit_conversion ex2_implicit_conversion.c)
+add_executable(ex3_const_count_char ex3_const_count_char.c)
