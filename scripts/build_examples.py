@@ -192,10 +192,16 @@ def print_results(results: list[BuildResult], code_root: Path) -> None:
         for r in failed:
             rel = r.path.relative_to(code_root)
             print(f"\n  {rel}:")
-            # Show last 20 lines of output for failed builds
+            # Show error lines from the output
             lines = r.output.strip().split('\n')
-            for line in lines[-20:]:
-                print(f"    {line}")
+            error_lines = [l for l in lines if 'error:' in l.lower()]
+            if error_lines:
+                for line in error_lines:
+                    print(f"    {line}")
+            else:
+                # No 'error:' found, show last 20 lines
+                for line in lines[-20:]:
+                    print(f"    {line}")
 
     print()
     if failed:

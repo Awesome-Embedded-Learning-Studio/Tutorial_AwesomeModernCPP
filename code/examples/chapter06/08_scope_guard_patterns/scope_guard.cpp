@@ -4,6 +4,7 @@
 #include <utility>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 
 // ========== 基础 ScopeGuard 实现 ==========
 

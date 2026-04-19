@@ -1,5 +1,6 @@
 // basic_usage.cpp - std::span 基本用法演示
 #include <span>
+#include <cstdint>
 #include <vector>
 #include <array>
 #include <iostream>

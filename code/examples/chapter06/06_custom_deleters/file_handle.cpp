@@ -3,6 +3,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <unistd.h>
 #include <fcntl.h>

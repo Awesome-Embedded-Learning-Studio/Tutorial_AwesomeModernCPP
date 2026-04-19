@@ -84,7 +84,7 @@ State handle_connected(Event event, Context& ctx) {
     }
 }
 
-State handle_disconnecting(Event event, Context& ctx) {
+State handle_disconnecting(Event event, Context& /*ctx*/) {
     switch (event) {
         case Event::START:
             std::cout << "[DISCONNECTING] Reconnecting..." << std::endl;

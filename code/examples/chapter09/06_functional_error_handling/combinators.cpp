@@ -81,7 +81,7 @@ void demo_map() {
     std::cout << "=== Map Combinator ===" << std::endl;
 
     auto result = parse_number("42");
-    auto formatted = map(result, format_result);
+    auto formatted = and_then(result, format_result);
 
     if (formatted) {
         std::cout << formatted.value() << std::endl;
@@ -151,9 +151,9 @@ void demo_map_error() {
 }
 
 // Composition helper
-template<typename T1, typename T2, typename F1, typename F2>
+template<typename F1, typename F2>
 auto compose(F1&& f1, F2&& f2) {
-    return [f1, f2](auto&&... args) {
+    return [f1 = std::forward<F1>(f1), f2 = std::forward<F2>(f2)](auto&&... args) {
         auto r1 = f1(std::forward<decltype(args)>(args)...);
         if (!r1) {
             using R2 = decltype(f2(r1.value()));

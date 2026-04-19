@@ -26,12 +26,11 @@ std::optional<int> parse_int(const std::string& s) {
     }
 }
 
-std::optional<double> divide_by_2(int x) {
-    if (x == 0) return std::nullopt; // 避免 0 的某些情况
+double divide_by_2(int x) {
     return static_cast<double>(x) / 2.0;
 }
 
-std::optional<std::string> to_string(double d) {
+std::string to_string(double d) {
     return std::to_string(d);
 }
 

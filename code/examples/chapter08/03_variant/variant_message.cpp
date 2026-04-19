@@ -4,6 +4,7 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <cstdint>
 #include <iostream>
 
 // 消息类型定义
@@ -43,7 +44,7 @@ int main() {
     process(msg3);
 
     // 演示 in-place 构造
-    Message msg4 = std::in_place_type<Text, 10, 'x'; // "xxxxxxxxxx"
+    Message msg4 = Text{std::string(10, 'x')}; // "xxxxxxxxxx"
     process(msg4);
 
     return 0;

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <ranges>
 #include <vector>
+#include <cstdint>
 
 void demo_take() {
     std::cout << "=== Take Demo ===" << std::endl;
@@ -113,14 +114,16 @@ void demo_take_while() {
     std::vector<int> data = {1, 2, 3, 4, 5, 3, 2, 1};
 
     // Take while elements are increasing
-    auto increasing = std::views::take_while(data, [prev = 0](int x) mutable {
+    int prev = 0;
+    auto is_increasing = [&prev](int x) {
         bool result = x > prev;
         prev = x;
         return result;
-    });
+    };
 
     std::cout << "Increasing prefix: ";
-    for (int x : increasing) {
+    for (int x : data) {
+        if (!is_increasing(x)) break;
         std::cout << x << " ";
     }
     std::cout << std::endl;

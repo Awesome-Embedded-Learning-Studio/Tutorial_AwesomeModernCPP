@@ -26,8 +26,6 @@ int main() {
     std::cout << "\n=== Generic Register Write ===" << std::endl;
 
     auto write_reg = [](auto addr, auto value) {
-        using AddrType = decltype(addr);
-        using ValueType = decltype(value);
         std::cout << "Write 0x" << std::hex << static_cast<unsigned long>(value)
                   << " to address 0x" << static_cast<unsigned long>(addr)
                   << std::dec << std::endl;

@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <type_traits>
+#include <cstdint>
 #include <iostream>
 
 // using 支持模板别名，typedef 不支持
@@ -20,6 +21,10 @@ using underlying_type_t = std::underlying_type_t<T>;
 
 // 示例枚举
 enum class Mode : uint8_t { Low = 0, High = 1 };
+
+// 模板别名的实际应用：类型安全的寄存器数组
+template<typename T, std::size_t N>
+using RegArray = std::array<T, N>;
 
 int main() {
     std::cout << "=== Template Aliases ===\n\n";
@@ -38,10 +43,6 @@ int main() {
     // 使用类型萃取
     auto mode_value = underlying_type_t<Mode>(Mode::High);
     std::cout << "Mode::High underlying value: " << static_cast<int>(mode_value) << "\n";
-
-    // 模板别名的实际应用：类型安全的寄存器数组
-    template<typename T, std::size_t N>
-    using RegArray = std::array<T, N>;
 
     RegArray<uint32_t, 8> registers{};
     registers[0] = 0x12345678;

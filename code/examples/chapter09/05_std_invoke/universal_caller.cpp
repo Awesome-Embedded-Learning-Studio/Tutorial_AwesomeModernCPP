@@ -34,7 +34,7 @@ class LEDController {
 public:
     LEDController(int p) : pin(p) {}
 
-    void on_timer(uint32_t timestamp) {
+    void on_timer(uint32_t /*timestamp*/) {
         flash_count = (flash_count + 1) % 10;
         std::cout << "LED on pin " << pin << " flash: " << flash_count << std::endl;
     }
@@ -50,6 +50,7 @@ void demo_universal_caller() {
     std::cout << "=== Universal Caller Demo ===" << std::endl;
 
     CallbackManager manager;
+    (void)manager;
     LEDController led(5);
 
     // All these work with the same interface
@@ -100,12 +101,14 @@ class EmbeddedCallbackSystem {
 public:
     template<typename Func>
     void register_gpio_handler(int pin, Func&& handler) {
+        (void)handler;
         // Would store handler for later invocation
         std::cout << "Registered GPIO handler for pin " << pin << std::endl;
     }
 
     template<typename Func>
     void register_timer_handler(int timer_id, Func&& handler) {
+        (void)handler;
         std::cout << "Registered timer handler for timer " << timer_id << std::endl;
     }
 

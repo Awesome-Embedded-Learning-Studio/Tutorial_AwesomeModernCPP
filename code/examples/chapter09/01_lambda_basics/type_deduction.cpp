@@ -31,9 +31,9 @@ int main() {
     // Lambda returning different types based on condition
     auto conditional = [](bool flag) {
         if (flag) {
-            return 42;      // int
+            return 42.0;    // double
         } else {
-            return 3.14;    // double - common type is double
+            return 3.14;    // double - common type is double, int promotes to double
         }
     };
     std::cout << "conditional(true) = " << conditional(true) << std::endl;

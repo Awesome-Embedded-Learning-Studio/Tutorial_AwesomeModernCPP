@@ -2,7 +2,9 @@
 #include <array>
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 #include <cstdint>
+#include <cstdarg>
 
 // std::array 在实际嵌入式场景中的应用
 
@@ -237,7 +239,7 @@ void lookup_table_demo() {
     std::cout << "\n=== Lookup Table with std::array ===\n\n";
 
     // 正弦表（简化版）
-    constexpr std::array<float, 16> sin_table = [] {
+    std::array<float, 16> sin_table = [] {
         std::array<float, 16> table{};
         for (size_t i = 0; i < 16; ++i) {
             float angle = i * 3.14159f / 8.0f;  // 0 to 2pi

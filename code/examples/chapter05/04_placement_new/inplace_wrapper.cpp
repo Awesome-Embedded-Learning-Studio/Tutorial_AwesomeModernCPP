@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdio>
+#include <string>
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -132,7 +134,7 @@ void basic_inplace_demo() {
     w->print();
 
     w->update(10);
-    w.print();
+    w->print();
 
     std::cout << "\nLeaving scope (auto destruct)...\n";
 }

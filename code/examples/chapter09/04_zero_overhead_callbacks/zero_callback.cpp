@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 
 template<typename Signature, size_t Size = 32>
 class ZeroCallback;

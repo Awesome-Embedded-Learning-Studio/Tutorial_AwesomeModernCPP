@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <array>
+#include <cstdint>
 #include <functional>
+#include <cstring>
 #include <vector>
 
 // Simple zero-overhead callback
@@ -53,6 +55,16 @@ public:
         if (vtable) {
             std::memcpy(storage, other.storage, Size);
         }
+    }
+
+    // Copy assignment
+    ZeroCallback& operator=(const ZeroCallback& other) {
+        if (this != &other) {
+            if (vtable) vtable->destroy(storage);
+            vtable = other.vtable;
+            if (vtable) std::memcpy(storage, other.storage, Size);
+        }
+        return *this;
     }
 
     R operator()(Args... args) const {

@@ -112,6 +112,8 @@ struct SensorData {
         printf("SensorData constructed: id=%d, value=%.2f\n", id, v);
     }
 
+    SensorData() : sensor_id(0), value(0.0f), timestamp(0) {}
+
     ~SensorData() {
         printf("SensorData destroyed: id=%d\n", sensor_id);
     }
@@ -187,7 +189,7 @@ void shared_ptr_pool_usage() {
     // shared_ptr 也支持自定义删除器
     // 但注意控制块仍会从堆分配
     auto data = std::shared_ptr<SensorData>(
-        new(g_pool.allocate(sizeof(SensorData)) SensorData(99, 100.0f, 2000),
+        new(g_pool.allocate(sizeof(SensorData))) SensorData(99, 100.0f, 2000),
         [](SensorData* p) {
             p->~SensorData();
             g_pool.deallocate(p);

@@ -60,15 +60,15 @@ int main() {
     // Alignment considerations
     std::cout << "\n=== Alignment Effects ===" << std::endl;
 
-    char c = 'x';
+    char ch = 'x';
     double d = 3.14;
-    auto mixed = [c, d]() {};
+    auto mixed = [ch, d]() {};
     std::cout << "Mixed [char, double] size: " << sizeof(mixed) << " bytes" << std::endl;
-    std::cout << "char size: " << sizeof(c) << " bytes" << std::endl;
+    std::cout << "char size: " << sizeof(ch) << " bytes" << std::endl;
     std::cout << "double size: " << sizeof(d) << " bytes" << std::endl;
 
     // Capture with padding
-    auto multi_char = [c, c, c, c, c]() {};
+    auto multi_char = [ch]() {};
     std::cout << "Five chars size: " << sizeof(multi_char) << " bytes" << std::endl;
 
     // Array capture

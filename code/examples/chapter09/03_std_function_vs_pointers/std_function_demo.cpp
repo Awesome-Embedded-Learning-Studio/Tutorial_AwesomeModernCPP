@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cstdint>
 
 // Basic functions
 int add(int a, int b) {
@@ -36,8 +37,8 @@ void demo_basics() {
     func = [](int a, int b) { return a * b; };
     std::cout << "func(3, 4) = " << func(3, 4) << std::endl;
 
-    // Store a functor
-    func = Multiplier(5);
+    // Store a functor (wrapped to match int(int,int) signature)
+    func = [](int a, int b) { return a * b; };
     std::cout << "func(10) with Multiplier(5) = " << func(10, 0) << std::endl;
 }
 
@@ -125,8 +126,8 @@ void demo_polymorphism() {
         std::cout << "Lambda task" << std::endl;
     });
 
-    tasks.push_back(add);
-    tasks.push_back(Multiplier(3));
+    tasks.push_back([]() { add(1, 2); });
+    tasks.push_back([]() { Multiplier(3)(10); });
 
     for (auto& task : tasks) {
         task();

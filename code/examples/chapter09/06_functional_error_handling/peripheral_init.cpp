@@ -68,11 +68,15 @@ VoidPeriphResult init_dma_channel(uint8_t channel) {
     return {};
 }
 
-// TRY macro for clean propagation
-#define TRY(...) ({ \
-    auto _result = (__VA_ARGS__); \
-    if (!_result) return std::unexpected(_result.error()); \
-    })
+// Helper to run one init step and return on failure
+template<typename F>
+VoidPeriphResult run_init_step(F&& func) {
+    auto result = func();
+    if (!result) {
+        return std::unexpected{result.error()};
+    }
+    return {};
+}
 
 // Complete UART system initialization
 VoidPeriphResult init_uart_system() {
@@ -81,17 +85,23 @@ VoidPeriphResult init_uart_system() {
     std::cout << "Initializing " << uart_name << "..." << std::endl;
 
     // Enable clock
-    TRY(enable_clock(uart_name));
+    auto r1 = enable_clock(uart_name);
+    if (!r1) return std::unexpected{r1.error()};
 
     // Configure GPIO pins
-    TRY(init_gpio(9, "alternate"));
-    TRY(init_gpio(10, "alternate"));
+    auto r2 = init_gpio(9, "alternate");
+    if (!r2) return std::unexpected{r2.error()};
+
+    auto r3 = init_gpio(10, "alternate");
+    if (!r3) return std::unexpected{r3.error()};
 
     // Initialize UART peripheral
-    TRY(init_uart(115200));
+    auto r4 = init_uart(115200);
+    if (!r4) return std::unexpected{r4.error()};
 
     // Setup DMA
-    TRY(init_dma_channel(4));
+    auto r5 = init_dma_channel(4);
+    if (!r5) return std::unexpected{r5.error()};
 
     std::cout << uart_name << " initialized successfully!" << std::endl;
     return {};
@@ -103,21 +113,33 @@ VoidPeriphResult init_spi_system() {
 
     std::cout << "Initializing " << spi_name << "..." << std::endl;
 
-    TRY(enable_clock(spi_name));
-    TRY(init_gpio(13, "alternate"));  // SCK
-    TRY(init_gpio(14, "input"));      // MISO
-    TRY(init_gpio(15, "alternate"));  // MOSI
+    auto r1 = enable_clock(spi_name);
+    if (!r1) return std::unexpected{r1.error()};
+
+    auto r2 = init_gpio(13, "alternate");  // SCK
+    if (!r2) return std::unexpected{r2.error()};
+
+    auto r3 = init_gpio(14, "input");      // MISO
+    if (!r3) return std::unexpected{r3.error()};
+
+    auto r4 = init_gpio(15, "alternate");  // MOSI
+    if (!r4) return std::unexpected{r4.error()};
 
     std::cout << spi_name << " initialized successfully!" << std::endl;
     return {};
 }
 
-// Template-based initialization chain
+// Template-based initialization chain using variadic expansion
 template<typename... Inits>
 VoidPeriphResult init_peripheral_chain(const char* name, Inits&&... inits) {
     std::cout << "Initializing " << name << "..." << std::endl;
 
-    (TRY(inits), ...);
+    VoidPeriphResult results[] = {run_init_step(std::forward<Inits>(inits))...};
+    for (const auto& r : results) {
+        if (!r) {
+            return std::unexpected{r.error()};
+        }
+    }
 
     std::cout << name << " initialized successfully!" << std::endl;
     return {};
@@ -158,19 +180,14 @@ void error_code_style_init() {
 
     std::cout << "Initializing USART1..." << std::endl;
 
-    auto r1 = enable_clock("USART1");
-    if (!r1) { err = 1; goto error; }
+    if (!enable_clock("USART1")) { err = 1; }
+    else if (!init_gpio(9, "alternate")) { err = 2; }
+    else if (!init_uart(115200)) { err = 3; }
+    else {
+        std::cout << "USART1 initialized!" << std::endl;
+        return;
+    }
 
-    auto r2 = init_gpio(9, "alternate");
-    if (!r2) { err = 2; goto error; }
-
-    auto r3 = init_uart(115200);
-    if (!r3) { err = 3; goto error; }
-
-    std::cout << "USART1 initialized!" << std::endl;
-    return;
-
-error:
     std::cout << "Init failed with error code " << err << std::endl;
 }
 

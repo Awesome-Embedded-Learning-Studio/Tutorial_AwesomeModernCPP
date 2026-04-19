@@ -61,11 +61,11 @@ int main() {
     std::cout << "=== Frequency and Baud Rate Units ===\n\n";
 
     // 频率单位
-    Hertz sysclk = 72_MHz.to_hertz();
+    Hertz sysclk = (72_MHz).to_hertz();
     std::cout << "System clock: " << sysclk.value << " Hz\n";
 
-    set_clock_frequency(48_MHz.to_hertz());
-    set_clock_frequency(16_kHz.to_hertz());
+    set_clock_frequency((48_MHz).to_hertz());
+    set_clock_frequency((16_kHz).to_hertz());
     set_clock_frequency(1000_Hz);
 
     // 波特率
@@ -80,7 +80,7 @@ int main() {
     std::cout << "  delay(5000)      <- What unit?\n";
     std::cout << "  delay(5000_ms)   <- Clear: 5000 milliseconds\n";
     std::cout << "  set_clk(72000000)        <- What frequency?\n";
-    std::cout << "  set_clk(72_MHz.to_hertz()) <- Clear: 72 MHz\n";
+    std::cout << "  set_clk((72_MHz).to_hertz()) <- Clear: 72 MHz\n";
 
     return 0;
 }

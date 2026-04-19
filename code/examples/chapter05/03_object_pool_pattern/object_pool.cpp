@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <new>
 #include <type_traits>
 #include <cassert>
@@ -117,7 +118,7 @@ private:
     size_t free_head_ = kInvalidIndex;
     size_t used_count_ = 0;
 
-    static size_t ptr_to_index(T* ptr) {
+    size_t ptr_to_index(T* ptr) {
         uintptr_t base = reinterpret_cast<uintptr_t>(&storage_[0]);
         uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
         EP_ASSERT(p >= base);

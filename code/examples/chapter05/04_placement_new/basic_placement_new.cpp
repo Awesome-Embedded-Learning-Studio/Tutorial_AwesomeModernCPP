@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+#include <stdexcept>
 
 // 演示placement new的基础用法
 
@@ -157,40 +158,40 @@ void alignment_check_demo() {
         if (aligned) {
             int* p = new (ptr) int(42);
             std::cout << "    Successfully constructed int at " << p << "\n";
-            p->~int();
+            // No explicit destructor needed for trivial types
         }
     }
 }
 
 // 在栈上构造"动态"大小的对象
+template<size_t N>
+class StackVector {
+    alignas(double) unsigned char buffer_[N * sizeof(double)];
+    size_t size_ = 0;
+
+public:
+    void push(double v) {
+        if (size_ < N) {
+            new (buffer_ + size_ * sizeof(double)) double(v);
+            ++size_;
+        }
+    }
+
+    double& operator[](size_t i) {
+        return *reinterpret_cast<double*>(buffer_ + i * sizeof(double));
+    }
+
+    size_t size() const { return size_; }
+
+    ~StackVector() {
+        for (size_t i = 0; i < size_; ++i) {
+            reinterpret_cast<double*>(buffer_ + i * sizeof(double)); // trivial destructor, no-op
+        }
+    }
+};
+
 void stack_vector_demo() {
     std::cout << "\n=== Stack-Allocated \"Dynamic\" Container ===\n\n";
-
-    template<size_t N>
-    class StackVector {
-        alignas(double) unsigned char buffer_[N * sizeof(double)];
-        size_t size_ = 0;
-
-    public:
-        void push(double v) {
-            if (size_ < N) {
-                new (buffer_ + size_ * sizeof(double)) double(v);
-                ++size_;
-            }
-        }
-
-        double& operator[](size_t i) {
-            return *reinterpret_cast<double*>(buffer_ + i * sizeof(double));
-        }
-
-        size_t size() const { return size_; }
-
-        ~StackVector() {
-            for (size_t i = 0; i < size_; ++i) {
-                reinterpret_cast<double*>(buffer_ + i * sizeof(double))->~double();
-            }
-        }
-    };
 
     StackVector<10> vec;
     for (int i = 0; i < 5; ++i) {

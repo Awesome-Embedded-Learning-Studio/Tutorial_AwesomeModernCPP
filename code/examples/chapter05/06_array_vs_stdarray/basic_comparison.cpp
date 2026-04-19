@@ -244,6 +244,11 @@ void data_access_demo() {
     std::cout << "\n";
 }
 
+template<size_t N>
+void print_array_size(const std::array<int, N>&) {
+    std::cout << "Array size (template param): " << N << "\n";
+}
+
 void constexpr_demo() {
     std::cout << "\n=== Compile-Time Features ===\n\n";
 
@@ -268,11 +273,6 @@ void constexpr_demo() {
     static_assert(fib.size() == 5, "Size must be 5");
 
     // 作为模板参数
-    template<size_t N>
-    void print_array_size(const std::array<int, N>&) {
-        std::cout << "Array size (template param): " << N << "\n";
-    }
-
     std::array<int, 10> arr;
     print_array_size(arr);
 }

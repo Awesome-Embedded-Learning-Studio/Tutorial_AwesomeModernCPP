@@ -61,6 +61,19 @@ public:
 
     ZeroCallback(const ZeroCallback&) = delete;
     ZeroCallback& operator=(const ZeroCallback&) = delete;
+    ZeroCallback& operator=(ZeroCallback&& other) noexcept {
+        if (this != &other) {
+            if (vtable) {
+                vtable->destroy(storage);
+            }
+            vtable = other.vtable;
+            if (vtable) {
+                vtable->move(storage, other.storage);
+                other.vtable = nullptr;
+            }
+        }
+        return *this;
+    }
 
     R operator()(Args... args) const {
         return vtable->invoke(const_cast<std::byte*>(storage), args...);
@@ -90,6 +103,7 @@ public:
         Slot() = default;
         Slot(Handler cb, uint32_t data = 0)
             : callback(std::move(cb)), user_data(data) {}
+        Slot& operator=(Slot&&) = default;
     };
 
     bool register_handler(EventType evt, Handler cb, uint32_t data = 0) {
