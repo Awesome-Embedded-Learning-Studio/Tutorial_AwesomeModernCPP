@@ -50,9 +50,6 @@ theme:
   # 功能特性开关
   features:
     # ---------- 导航功能 ----------
-    - navigation.instant  # 即时加载,页面切换更流畅(类似SPA)
-    - navigation.instant.prefetch  # 预加载链接,提升访问速度
-    - navigation.instant.progress  # 显示加载进度条
     - navigation.tracking  # 地址栏自动更新为当前标题的锚点
     - navigation.tabs  # 顶部显示主要章节标签
     - navigation.tabs.sticky  # 滚动时标签栏保持固定
@@ -192,9 +189,13 @@ plugins:
           name: 中文
           default: true
           build: true
+          site_name: "现代 C++ 教程"
+          site_description: "系统化的现代 C++ 教程 — 从基础入门到领域实战"
         - locale: en
           name: English
           build: true
+          site_name: "Awesome Modern C++ for Embedded"
+          site_description: "Modern C++ Tutorial for Embedded Systems"
           nav_translations:
             基础与特性: Basics & Features
             标准库与高级: Std Library & Advanced
@@ -249,6 +250,7 @@ plugins:
 
 hooks:
   - documents/hooks/meta.py
+  - documents/hooks/i18n_banner.py
 
 
 # ==================== 额外配置 ====================

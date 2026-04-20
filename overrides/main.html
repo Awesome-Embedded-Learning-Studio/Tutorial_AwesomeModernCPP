@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if i18n_page_locale and i18n_page_locale != "zh" %}
+    {% if not page.file.src_path.endswith(".en.md") %}
+      <aside class="md-banner md-banner--info">
+        <div class="md-banner__inner md-grid md-typeset">
+          <p>
+            This page has not been translated yet.
+            The content below is in Chinese.
+          </p>
+        </div>
+      </aside>
+    {% endif %}
+  {% endif %}
+  {{ super() }}
+{% endblock %}

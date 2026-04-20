@@ -1,0 +1,12 @@
+{% extends "main.html" %}
+{% block content %}
+  <h1>页面未找到 / Page Not Found</h1>
+  <p>
+    抱歉，您访问的页面不存在。
+    <a href="{{ config.site_url | default('/', true) }}">返回首页</a>
+  </p>
+  <p>
+    Sorry, the page you requested was not found.
+    <a href="{{ config.site_url | default('/', true) }}en/">Go to Home</a>
+  </p>
+{% endblock %}
