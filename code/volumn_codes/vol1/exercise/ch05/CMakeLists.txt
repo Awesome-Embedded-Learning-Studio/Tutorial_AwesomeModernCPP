@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh05 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_array_sum_avg ex01_array_sum_avg.cpp)
+add_executable(ex02_matrix_transpose ex02_matrix_transpose.cpp)
+add_executable(ex03_fix_offbyone ex03_fix_offbyone.cpp)
+add_executable(ex04_stdarray_rewrite ex04_stdarray_rewrite.cpp)
+add_executable(ex05_grade_stats ex05_grade_stats.cpp)
+add_executable(ex06_stdarray_contains ex06_stdarray_contains.cpp)
+add_executable(ex07_word_count ex07_word_count.cpp)
+add_executable(ex08_replace_all ex08_replace_all.cpp)
+add_executable(ex09_trim ex09_trim.cpp)

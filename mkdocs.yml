@@ -215,6 +215,7 @@ plugins:
 
   # Git 修订日期插件 - 自动显示文章的创建和更新时间
   - git-revision-date-localized:
+      enabled: !ENV [MKDOCS_ENABLE_GIT, true]
       enable_creation_date: true  # 显示创建日期
       fallback_to_build_date: true  # 如果Git历史不可用,使用构建日期
       type: datetime  # 日期格式: datetime(日期+时间) / date(仅日期) / iso_date / iso_datetime
@@ -223,6 +224,7 @@ plugins:
 
   # Git 作者信息
   - git-authors:
+      enabled: !ENV [MKDOCS_ENABLE_GIT, true]
       show_line_count: false
       show_contribution: false
       sort_authors_by: "name"
@@ -230,6 +232,7 @@ plugins:
 
   # HTML/CSS/JS 压缩
   - minify:
+      enabled: !ENV [MKDOCS_ENABLE_MINIFY, true]
       minify_html: true
       minify_css: true
       minify_js: true

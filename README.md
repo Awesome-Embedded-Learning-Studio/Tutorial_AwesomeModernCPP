@@ -37,7 +37,7 @@ graph LR
 
 | 卷 | 主题 | 文章数 | 难度 | 状态 |
 |:--:|------|:------:|:----:|:----:|
-| 一 | [C++ 基础入门](documents/vol1-fundamentals/) -- 类型、控制流、函数、指针、类、模板初步 | 50-60 | beginner | 编写中 |
+| 一 | [C++ 基础入门](documents/vol1-fundamentals/) -- 类型、控制流、函数、指针、类、模板初步 | 49 | beginner | 已完成 |
 | 二 | [现代 C++ 特性](documents/vol2-modern-features/) -- 移动语义、智能指针、constexpr、Lambda | 35-40 | intermediate | 编写中 |
 | 三 | [标准库深入](documents/vol3-standard-library/) -- 容器、迭代器、算法、字符串、分配器 | 40-50 | intermediate | 规划中 |
 | 四 | [高级主题](documents/vol4-advanced/) -- Concepts、Ranges、协程、模块、模板元编程 | 50-60 | advanced | 规划中 |
@@ -63,13 +63,18 @@ flowchart TD
     subgraph PathC["Path C -- 两者都会"]
         C1["直接跳到感兴趣的主题"]
     end
+    subgraph PathD["Path D -- 零基础新手"]
+        D1["卷一：C++ 基础入门（含 C 语言速通）"] --> D2["卷二：现代 C++ 特性"]
+    end
     Start(["你的起点?"]) -->|"C + 嵌入式"| PathA
     Start -->|"C++ 经验"| PathB
     Start -->|"两者都会"| PathC
+    Start -->|"零基础"| PathD
 
     style PathA fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     style PathB fill:#dcfce7,stroke:#22c55e,color:#14532d
     style PathC fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    style PathD fill:#f3e8ff,stroke:#a855f7,color:#581c87
 ```
 
 ---
@@ -79,8 +84,8 @@ flowchart TD
 ```bash
 git clone https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP.git
 cd Tutorial_AwesomeModernCPP
-bash scripts/mkdoc_setup_local_dependency.sh
-bash scripts/local_preview.sh
+./scripts/mkdocs_dev.sh install   # 创建虚拟环境并安装依赖
+./scripts/mkdocs_dev.sh serve     # 构建并启动本地预览
 # 访问 http://127.0.0.1:8000
 ```
 
@@ -89,12 +94,18 @@ bash scripts/local_preview.sh
 
 | 脚本 | 功能 |
 |------|------|
-| `mkdoc_setup_local_dependency.sh` | 安装 MkDocs 依赖 |
-| `local_preview.sh` | 启动本地预览服务器 |
+| `mkdocs_dev.sh install` | 创建虚拟环境并安装 MkDocs 依赖 |
+| `mkdocs_dev.sh serve` | 构建并启动本地预览服务器 |
+| `mkdocs_dev.sh build` | 生产模式构建静态站点 |
+| `mkdocs_dev.sh clean` | 清理构建产物 |
+| `mkdocs_dev.sh reset` | 重建虚拟环境 |
 | `setup_precommit.sh` | 安装 pre-commit hooks |
 | `validate_frontmatter.py` | 验证文章 frontmatter |
 | `check_links.py` | 检查内部链接有效性 |
+| `check_nav_reachability.py` | 检查章节导航完整性 |
 | `analyze_frontmatter.py` | 分析教程统计信息 |
+| `build_examples.py` | 编译所有 CMake 示例项目 |
+| `check_quality.py` | 内容质量检查 |
 
 </details>
 
@@ -116,7 +127,7 @@ bash scripts/local_preview.sh
 ```
 Tutorial_AwesomeModernCPP/
 ├── documents/                  # 教程 Markdown 文件
-│   ├── vol1-fundamentals/      # 卷一：C++ 基础入门
+│   ├── vol1-fundamentals/      # 卷一：C++ 基础入门（ch00-ch12 + C 语言速通）
 │   ├── vol2-modern-features/   # 卷二：现代 C++ 特性
 │   ├── vol3-standard-library/  # 卷三：标准库深入
 │   ├── vol4-advanced/          # 卷四：高级主题
@@ -133,6 +144,8 @@ Tutorial_AwesomeModernCPP/
 │   ├── projects/               # 贯穿式实战项目
 │   └── index.md                # 教程首页
 ├── code/                       # 示例代码
+│   ├── volumn_codes/vol1/      #   卷一代码与练习
+│   └── examples/               #   历史代码示例
 ├── scripts/                    # 开发工具脚本
 ├── todo/                       # 内容规划与进度追踪
 └── mkdocs.yml                  # MkDocs 站点配置

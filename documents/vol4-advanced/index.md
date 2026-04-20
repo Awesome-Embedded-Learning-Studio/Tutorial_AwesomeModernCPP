@@ -37,6 +37,7 @@ tags:
 
 ### 其他
 
+- [现代 C++ 模板教程（计划中）](cpp-templates-index.md)
 - [if constexpr](04-if-constexpr.md)
 - [三路比较运算符](05-spaceship-operator.md)
 - [C++ Modules (MSVC)](msvc-cpp-modules.md)

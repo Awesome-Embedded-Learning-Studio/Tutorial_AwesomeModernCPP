@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh02 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_hollow_square ex01_hollow_square.cpp)
+add_executable(ex02_factorial ex02_factorial.cpp)
+add_executable(ex03_find_primes ex03_find_primes.cpp)
+add_executable(ex04_diamond ex04_diamond.cpp)
+add_executable(ex05_find_max ex05_find_max.cpp)
+add_executable(ex06_count_vowels ex06_count_vowels.cpp)
+add_executable(ex07_abs_inplace ex07_abs_inplace.cpp)
+add_executable(ex08_classify_number ex08_classify_number.cpp)
+add_executable(ex09_simple_calculator ex09_simple_calculator.cpp)
+add_executable(ex10_date_validation ex10_date_validation.cpp)

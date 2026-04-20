@@ -46,3 +46,22 @@ jobs:
       - name: Validate frontmatter
         run: |
           python scripts/validate_frontmatter.py
+
+  nav-reachability:
+    name: Navigation Reachability
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check navigation reachability
+        run: python scripts/check_nav_reachability.py --fail-on-incomplete

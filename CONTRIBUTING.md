@@ -128,11 +128,11 @@ void process_data(std::span<const uint32_t> data) {
 在提交前，建议本地预览文档：
 
 ```bash
-# 安装依赖
-pip install -r scripts/requirements.txt
+# 安装依赖（创建虚拟环境并安装）
+./scripts/mkdocs_dev.sh install
 
 # 启动本地服务器
-mkdocs serve
+./scripts/mkdocs_dev.sh serve
 
 # 访问 http://127.0.0.1:8000
 ```

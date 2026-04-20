@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh08 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_animal_hierarchy ex01_animal_hierarchy.cpp)
+add_executable(ex02_fix_slicing ex02_fix_slicing.cpp)
+add_executable(ex03_polymorphic_doc ex03_polymorphic_doc.cpp)
+add_executable(ex04_virtual_dtor ex04_virtual_dtor.cpp)
+add_executable(ex05_icomparable ex05_icomparable.cpp)
+add_executable(ex06_plugin_system ex06_plugin_system.cpp)
+add_executable(ex07_multi_interface ex07_multi_interface.cpp)
+add_executable(ex08_diamond_fix ex08_diamond_fix.cpp)
+add_executable(ex09_add_shapes ex09_add_shapes.cpp)
+add_executable(ex10_shape_group ex10_shape_group.cpp)
+add_executable(ex11_shape_json ex11_shape_json.cpp)

@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh12 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_memory_regions ex01_memory_regions.cpp)
+add_executable(ex02_stack_overflow ex02_stack_overflow.cpp)
+add_executable(ex03_verify_layout ex03_verify_layout.cpp)
+add_executable(ex04_raw_to_smart ex04_raw_to_smart.cpp)
+add_executable(ex05_memory_pool ex05_memory_pool.cpp)
+add_executable(ex06_manual_sizeof ex06_manual_sizeof.cpp)
+add_executable(ex07_optimize_layout ex07_optimize_layout.cpp)
+add_executable(ex08_aligned_buffer ex08_aligned_buffer.cpp)
