@@ -7,12 +7,13 @@
 ##   ./scripts/mkdocs_dev.sh <command> [OPTIONS]
 ##
 ## Commands:
-##   serve    Start MkDocs dev server (default)
-##   build    Build static site to site/
-##   install  Create/update virtual environment and install dependencies
-##   clean    Clean build artifacts (site/, __pycache__, .cache)
-##   reset    Delete and recreate .venv
-##   help     Show this help message
+##   serve       Build-fast then serve site/ via HTTP
+##   build       Build static site to site/ (clean, production)
+##   build-fast  Build static site to site/ (incremental, no git/minify)
+##   install     Create/update virtual environment and install dependencies
+##   clean       Clean build artifacts (site/, __pycache__, .cache)
+##   reset       Delete and recreate .venv
+##   help        Show this help message
 ##
 ## Options:
 ##   -p, --port PORT    Dev server port (default: 8000)
@@ -117,15 +118,21 @@ ensure_venv() {
 # =============================================================================
 
 cmd_serve() {
-    ensure_venv
+    local site_path="$PROJECT_ROOT/$SITE_DIR"
 
     echo ""
-    log_info "=== MkDocs Dev Server ==="
+    log_info "=== Pre-build (fast mode) ==="
+    cmd_build_fast
+
+    echo ""
+    log_info "=== Static File Server ==="
     log_info "Address: http://${DEV_ADDR}:${DEV_PORT}"
+    log_info "Serving: $site_path"
+    log_info "Tip:     Use 'build-fast' in another terminal to rebuild incrementally"
     echo ""
 
-    cd "$PROJECT_ROOT"
-    mkdocs serve --dev-addr="${DEV_ADDR}:${DEV_PORT}"
+    cd "$site_path"
+    python3 -m http.server "$DEV_PORT" --bind "$DEV_ADDR"
 }
 
 cmd_build() {
@@ -147,6 +154,27 @@ cmd_build() {
 cmd_install() {
     ensure_venv
     log_ok "Environment ready"
+}
+
+cmd_build_fast() {
+    ensure_venv
+
+    local output_path="$PROJECT_ROOT/$SITE_DIR"
+
+    echo ""
+    log_info "=== MkDocs Build (Fast Mode) ==="
+    log_info "Output:      $output_path"
+    log_info "Mode:        Incremental (no --clean)"
+    log_info "Git plugins: DISABLED"
+    log_info "Minify:      DISABLED"
+    echo ""
+
+    cd "$PROJECT_ROOT"
+    MKDOCS_ENABLE_GIT=false \
+    MKDOCS_ENABLE_MINIFY=false \
+    mkdocs build --dirty
+
+    log_ok "Fast build complete: $output_path"
 }
 
 cmd_clean() {
@@ -212,7 +240,7 @@ parse_args() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            serve|build|install|clean|reset|help)
+            serve|build|build-fast|install|clean|reset|help)
                 command="$1"
                 shift
                 ;;
@@ -238,12 +266,13 @@ parse_args() {
     command="${command:-serve}"
 
     case "$command" in
-        serve)    cmd_serve ;;
-        build)    cmd_build ;;
-        install)  cmd_install ;;
-        clean)    cmd_clean ;;
-        reset)    cmd_reset ;;
-        help)     show_help ;;
+        serve)       cmd_serve ;;
+        build)       cmd_build ;;
+        build-fast)  cmd_build_fast ;;
+        install)     cmd_install ;;
+        clean)       cmd_clean ;;
+        reset)       cmd_reset ;;
+        help)        show_help ;;
     esac
 }
 
