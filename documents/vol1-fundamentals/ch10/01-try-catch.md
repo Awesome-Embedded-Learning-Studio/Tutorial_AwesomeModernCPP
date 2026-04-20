@@ -18,7 +18,7 @@ cpp_standard: [11, 14, 17, 20]
 
 # 异常基础
 
-到目前为止，我们处理错误的方式基本上就两种：要么用返回值表示失败（比如函数返回 `-1` 或者 `nullptr`），要么直接 `assert` 炸掉让程序崩溃。这两种方式在小程序里勉强够用，但一旦项目规模上去了，问题就暴露了——返回值错误码容易被调用者忽略，`assert` 在 Release 构建里直接被编译器删掉。更麻烦的是，如果错误发生在深层嵌套的调用链里，你得一层一层地把错误码往外传，中间每一层都得检查、都得处理，代码很快就变成一棵巨大的 `if (error)` 圣诞树。
+到目前为止，我们处理错误的方式基本上就两种：要么用返回值表示失败（比如函数返回 `-1` 或者 `nullptr`），要么直接 `assert` 炸掉让程序崩溃。这两种方式在小程序里勉强够用，但一旦项目规模上去了，问题就暴露了——返回值错误码容易被调用者忽略，`assert` 在 Release 构建里直接被编译器删掉。更麻烦的是，如果错误发生在深层嵌套的调用链里，你得一层一层地把错误码往外传，中间每一层都得检查、都得处理，代码很快就变成一棵巨大的 `if (error)` 圣诞树。（见到好多次这个玩意了，真的想吐出来。。。）
 
 C++ 的异常机制就是为了解决这个问题而生的。它提供了一种**结构化的错误传播通道**——函数可以直接抛出异常来报告"出问题了"，而调用链上任何一个有能力的调用者都可以捕获并处理，中间的函数不需要知道也不需要传递。这一章我们从最基础的 `try`/`catch`/`throw` 语法学起，理清标准异常类的层次关系，最后写一段完整的实战代码把所有知识点串起来。
 
@@ -339,18 +339,18 @@ g++ -std=c++17 -Wall -Wextra exceptions.cpp -o exceptions && ./exceptions
 ```text
 === Safe Divide Demo ===
   10 / 3 = 3
-  zero: Division by zero is not allowed
+  7 / 0 =   zero: Division by zero is not allowed
   -20 / 4 = -5
 
 === File Parser Demo ===
-[parse_int_file] Error at line 3: stoi: no conversion
-  Caught: stoi: no conversion
+[parse_int_file] Error at line 3: stoi
+  Caught: stoi
 
 === Catch-all Demo ===
   Unknown exception
 ```
 
-逐段验证。安全除法部分：`10 / 3` 正常得到 `3`；`7 / 0` 触发 `std::invalid_argument` 被精确捕获；`-20 / 4` 得到 `-5`。文件解析部分：测试文件第三行 `"not_a_number"` 无法被 `std::stoi` 解析，`parse_int_file` 的 `catch` 块打印行号上下文后用 `throw;` 重新抛出，主函数捕获到了它——注意 `print_results` 没有被调用，因为异常在第 3 行就中断了解析循环。`catch(...)` 部分演示了对非标准异常类型的兜底捕获。
+逐段验证。安全除法部分：`10 / 3` 正常得到 `3`；`7 / 0` 在 `safe_divide` 抛出异常之前，`std::cout` 已经输出了 `7 / 0 =`，所以错误消息会跟在这个前缀后面；`-20 / 4` 得到 `-5`。文件解析部分：测试文件第三行 `"not_a_number"` 无法被 `std::stoi` 解析，`parse_int_file` 的 `catch` 块打印行号上下文后用 `throw;` 重新抛出，主函数捕获到了它——注意 `print_results` 没有被调用，因为异常在第 3 行就中断了解析循环。`catch(...)` 部分演示了对非标准异常类型的兜底捕获。`stoi` 的 `what()` 消息内容因编译器和标准库版本而异（例如 libstdc++ 可能输出 `stoi` 或 `stoi: no conversion`）。
 
 > **踩坑预警**：`std::stoi` 在解析失败时抛出的是 `std::invalid_argument`（无法转换）或 `std::out_of_range`（数值超出 `int` 范围）。这两个异常都继承自 `std::logic_error`。如果你在 `catch` 块里需要区分这两种情况，应该用两个独立的 `catch` 分别处理，而不是统一用 `catch (const std::exception&)` 吞掉——后者会丢失错误的具体类型信息，增加调试难度。
 

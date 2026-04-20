@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh04 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_pointer_swap ex01_pointer_swap.cpp)
+add_executable(ex02_trace_pointer ex02_trace_pointer.cpp)
+add_executable(ex03_fix_nullptr ex03_fix_nullptr.cpp)
+add_executable(ex04_my_strlen ex04_my_strlen.cpp)
+add_executable(ex05_reverse_array ex05_reverse_array.cpp)
+add_executable(ex06_my_strcmp ex06_my_strcmp.cpp)
+add_executable(ex07_ref_doubles ex07_ref_doubles.cpp)
+add_executable(ex08_ref_find_bugs ex08_ref_find_bugs.cpp)
+add_executable(ex09_chained_config ex09_chained_config.cpp)
+add_executable(ex10_unique_ptr_sensor ex10_unique_ptr_sensor.cpp)
+add_executable(ex11_unique_ptr_leak ex11_unique_ptr_leak.cpp)

@@ -19,7 +19,7 @@ cpp_standard: [11, 14, 17, 20]
 
 # STL 常用模式
 
-前面三章我们分别搞定了 `vector`、关联容器和算法库，每一章都在各自的领域里深耕。但实际写代码的时候，问题往往不是"某个容器怎么用"或"某个算法怎么调"，而是"我该选哪个容器"、"为什么我的程序跑得这么慢"、"怎么又踩到迭代器失效的坑了"。这些都是跨容器、跨算法的综合问题，需要一个系统化的视角来应对。
+前面三章，我们分别搞定了 `vector`、关联容器和算法库，每一章都在各自的领域里深耕。但实际写代码的时候，问题往往不是"某个容器怎么用"或"某个算法怎么调"，而是"我该选哪个容器"、"为什么我的程序跑得这么慢"、"怎么又踩到迭代器失效的坑了"。这些都是跨容器、跨算法的综合问题，需要一个系统化的视角来应对。
 
 这一章我们要做的事情就是把前面零散的知识串成线。我们先搞清楚"什么场景用什么容器"这个最高频的决策问题，再过一遍 STL 使用中最容易踩的几个大坑，然后聊聊性能相关的基本常识，最后用一个综合实战程序把容器选择、算法搭配、踩坑防御全部串起来。学完这一章，你对 STL 的理解会从"知道怎么用"升级到"知道怎么用对"。
 
@@ -205,30 +205,35 @@ struct Report {
     std::size_t count;
 };
 
-/// 过滤异常值：去掉偏离均值超过 kSigma 个标准差的数据
+/// 过滤异常值：按传感器分组，去掉偏离该传感器均值超过 kSigma 个标准差的数据
 void filter_outliers(std::vector<Reading>& readings, double k_sigma)
 {
     if (readings.empty()) {
         return;
     }
 
-    // 计算均值
-    double sum = 0.0;
+    // 按传感器分组，分别计算均值和标准差
+    std::unordered_map<std::string, std::vector<double>> groups;
     for (const auto& r : readings) {
-        sum += r.value;
+        groups[r.sensor_id].push_back(r.value);
     }
-    double mean = sum / static_cast<double>(readings.size());
 
-    // 计算标准差
-    double sq_sum = 0.0;
-    for (const auto& r : readings) {
-        sq_sum += (r.value - mean) * (r.value - mean);
+    std::unordered_map<std::string, std::pair<double, double>> stats;
+    for (const auto& [id, values] : groups) {
+        double sum = std::accumulate(values.begin(), values.end(), 0.0);
+        double mean = sum / static_cast<double>(values.size());
+
+        double sq_sum = std::accumulate(values.begin(), values.end(), 0.0,
+            [mean](double acc, double v) { return acc + (v - mean) * (v - mean); });
+        double stddev = std::sqrt(sq_sum / static_cast<double>(values.size()));
+
+        stats[id] = {mean, stddev};
     }
-    double stddev = std::sqrt(sq_sum / static_cast<double>(readings.size()));
 
     // remove-erase 删除异常值
     auto it = std::remove_if(readings.begin(), readings.end(),
-        [mean, stddev, k_sigma](const Reading& r) {
+        [&](const Reading& r) {
+            const auto& [mean, stddev] = stats[r.sensor_id];
             return std::abs(r.value - mean) > k_sigma * stddev;
         });
     readings.erase(it, readings.end());
@@ -334,11 +339,15 @@ int main()
         {"temp-01", 22.5, 1001},  // 重复
         {"temp-01", 85.0, 1003},  // 异常值
         {"temp-01", 22.9, 1004},
+        {"temp-01", 22.6, 1005},
+        {"temp-01", 23.0, 1006},
         {"press-01", 1013.2, 1001},
         {"press-01", 1013.5, 1002},
         {"press-01", 1013.2, 1001},  // 重复
         {"press-01", 12.0, 1003},    // 异常值
         {"press-01", 1013.8, 1004},
+        {"press-01", 1013.0, 1005},
+        {"press-01", 1013.6, 1006},
     };
 
     std::cout << "=== Raw readings: " << readings.size() << " ===\n";
@@ -375,16 +384,18 @@ g++ -std=c++20 -Wall -Wextra -o stl_patterns stl_patterns.cpp && ./stl_patterns
 预期输出：
 
 ```text
-=== Raw readings: 10 ===
-After dedup: 8
-After outlier filter: 6
+=== Raw readings: 14 ===
+After dedup: 12
+After outlier filter: 10
 
 === Analysis Reports ===
-  [press-01] min=1013.2, max=1013.8, avg=1013.5, n=3
-  [temp-01] min=22.5, max=22.9, avg=22.7, n=3
+  [press-01] min=1013, max=1013.8, avg=1013.42, n=5
+  [temp-01] min=22.5, max=23, avg=22.74, n=5
 ```
 
 我们来逐层拆解这个程序里的设计决策。去重部分选择 `unordered_set` 而不是 `set`，因为我们只关心"见没见过"而不需要有序遍历，O(1) 的查找比 O(log n) 更合适。注意这里必须自定义 `KeyHash` 和 `KeyEqual`——因为 `Key` 是自定义结构体，标准库没有默认的哈希函数。如果你忘了提供，编译器会用一堆模板实例化错误来"温馨提示"你。
+
+异常值过滤的关键设计是**按传感器分组计算统计量**。不同传感器的量纲和数值范围差异巨大（温度约 22-23°C，气压约 1013 hPa），如果把所有读数混在一起计算均值和标准差，任何单个值都不会被视为异常。所以 `filter_outliers` 先按 `sensor_id` 分组，再对每组独立计算均值和标准差，这样温度传感器中的 85.0°C 和气压传感器中的 12.0 hPa 才能被正确识别为异常值。
 
 分组部分选择 `unordered_map<string, vector<Reading>>`，同样是因为不需要按 key 有序遍历。`reserve(16)` 是一个经验性的预分配——传感器数量通常不多，一次分配避免后续 rehash。过滤异常值用的是 `remove_if` + `erase`，而不是在遍历中直接删除——这样既安全又清晰。统计部分全部用 STL 算法完成——`minmax_element` 一趟找到最大最小值，`accumulate` 求和，没有手写循环。
 

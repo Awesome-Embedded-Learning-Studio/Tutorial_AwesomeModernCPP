@@ -17,9 +17,9 @@ cpp_standard: [11, 14, 17, 20]
 
 # Linux 环境搭建
 
-在开始写 C++ 之前，我们得先把工位收拾好。这一篇要做的事情很简单——在 Linux 上从零搭建一套能编译、能构建、能舒服写代码的 C++ 开发环境。整个过程大概十五分钟，但如果你是第一次折腾 Linux 环境配置，留半小时比较稳妥。
+在开始写 C++ 之前，我们得先把工位收拾好。这一篇要做的事情很简单——在 Linux 上从零搭建一套能编译、能构建、能舒服写代码的 C++ 开发环境。整个过程大概十五分钟，但如果你是第一次折腾 Linux 环境配置，留半小时，嗯，说不定也有可能是一天，比较稳妥。前提是你早就熟悉Linux了，不熟悉Linux的朋友下一篇——Windows部署走起。
 
-为什么选 Linux？说白了，C++ 的整个工具链生态就是围绕 Unix/Linux 生长出来的。GCC 的第一行代码诞生于 1987 年，Clang 和 CMake 也都是 Unix-first 的设计。在 Linux 上编译调试 C++ 代码，遇到问题的时候你能找到的资料、 Stack Overflow 上的回答、开源项目的 CI 配置——几乎全部默认你跑的是 Linux。而且后续教程中我们会涉及嵌入式交叉编译、WSL 开发等工作，Linux 环境是绕不过去的基础。
+为什么选 Linux？说白了，C++ 的整个工具链生态就是围绕 Unix/Linux 生长出来的。GCC 的第一行代码诞生于 1987 年，Clang 和 CMake 也都是 Unix-first 的设计。在 Linux 上编译调试 C++ 代码，遇到问题的时候你能找到的资料、 Stack Overflow 上的回答、开源项目的 CI 配置——几乎全部默认你跑的是 Linux。而且后续教程中我们会涉及嵌入式交叉编译、WSL 开发等工作，Linux 环境是绕不过去的基础。（私货：我Linux放在Windows前面也是因为更喜欢Linux开发，我的电脑Windows纯打游戏的，谁不会急头白脸的跑去Linux写代码啊（大雾））
 
 > **学习目标**
 >
@@ -37,7 +37,7 @@ cpp_standard: [11, 14, 17, 20]
 - **Shell**：Bash / Zsh 均可
 - **WSL**：Windows 11 自带的 WSL2（Ubuntu 22.04）同样适用，后面会单独提一下 WSL 的注意事项
 
-如果你用的是其他发行版，包管理器命令会有些不同，但思路完全一样——装编译器、装 CMake、装编辑器，三件事。
+如果你用的是其他发行版，包管理器命令会有些不同，但思路完全一样——装编译器、装 CMake、装编辑器，三件事。这里，咱们就默认小白在用Linux吧！
 
 ## 第一步——把编译器装上
 
@@ -107,7 +107,17 @@ Clang 的报错信息比 GCC 更友好一些，在做模板元编程的调试时
 
 ## 第二步——装好 CMake
 
-有了编译器，我们还需要一个构建工具来管理项目的编译流程。你可能会问——直接 `g++ hello.cpp -o hello` 不就行了？对于单个文件当然没问题，但真实项目的源文件往往有几十甚至上百个，彼此之间有依赖关系，手动敲编译命令根本不现实。CMake 就是干这件事的：它读取一个叫 `CMakeLists.txt` 的配置文件，然后自动生成对应的构建脚本（比如 Makefile 或 Ninja 文件），把编译、链接这些脏活累活替你打理好。
+有了编译器，我们还需要一个构建工具来管理项目的编译流程。你可能会问——直接 `g++ hello.cpp -o hello` 不就行了？对于单个文件当然没问题，但真实项目的源文件往往有几十甚至上百个，彼此之间有依赖关系，手动敲编译命令根本不现实。
+
+> 啥，你没看过？这样，你打开Github，翻到
+>
+> - CFBox: <https://github.com/Awesome-Embedded-Learning-Studio/CFBox>
+> - CFDesktop: <https://github.com/Awesome-Embedded-Learning-Studio/CFDesktop>
+>
+> 随便转转，我打赌你肯定不会手敲编译器命令的
+> （当然没有再推广我的项目，我确信）
+
+CMake 就是干这件事的：它读取一个叫 `CMakeLists.txt` 的配置文件，然后自动生成对应的构建脚本（比如 Makefile 或 Ninja 文件），把编译、链接这些脏活累活替你打理好。
 
 安装 CMake 同样一行命令搞定：
 
@@ -120,6 +130,9 @@ sudo dnf install cmake -y
 
 # Arch
 sudo pacman -S cmake
+
+# Yay用户狂喜
+yay -S cmake
 ```
 
 验证安装：
@@ -136,16 +149,12 @@ CMake suite maintained and supported by Kitware (kitware.com/cmake).
 
 CMake 的版本我们建议不低于 3.16——从 3.16 开始 CMake 引入了一些对 C++20 模块和预设（presets）的支持，后续教程中我们写的 `CMakeLists.txt` 会用到这些特性。如果你的发行版仓库里的 CMake 版本偏低，可以从 Kitware 官方源或者 pip 安装更新的版本：
 
-```bash
-# 通过 pip 安装最新版 CMake（推荐）
-pip install cmake --upgrade
-```
-
-> ⚠️ **踩坑预警**：通过 `apt install cmake` 在 Ubuntu 22.04 上装到的版本是 3.22，这个版本可以完成本篇的所有操作，但后续用到 CMake Presets 时至少需要 3.21+。如果你不想折腾版本问题，直接用 pip 装最新版是最省心的选择。装完后记得确认 `which cmake` 指向的是你期望的版本——有时候系统会同时存在 apt 装的和 pip 装的两个 cmake，`PATH` 里谁在前面谁先生效。
-
 ## 第三步——配好 VS Code
 
 编辑器这东西见仁见智，vim 和 emacs 当然没问题，但如果你想要一个开箱即用、插件生态成熟的 C++ 开发环境，VS Code 是目前最主流的选择。而且它在 WSL 下的远程开发体验做得相当好——代码在 Linux 上编译运行，编辑界面留在 Windows 上，两全其美。
+
+> 是的，教程我就是VSCode写的！这个东西很好用，强烈安利！
+
 
 安装 VS Code 的方式很多，最简单的办法是去[官网](https://code.visualstudio.com/)下载 `.deb` 包（Ubuntu/Debian）或 `.rpm` 包（Fedora），然后双击安装。Arch 用户可以直接 `sudo pacman -S code`。
 
@@ -154,25 +163,6 @@ pip install cmake --upgrade
 - **C/C++**（Microsoft 出品）——提供语法高亮、智能提示、调试支持，VS Code 写 C++ 的基石
 - **CMake Tools**（Microsoft 出品）——在 VS Code 里直接配置、构建、调试 CMake 项目，不用切终端
 - **CMake**（twxs 出品）——为 `CMakeLists.txt` 提供语法高亮和补全
-
-装完之后，我们来做一个简单的配置。按 `Ctrl+Shift+P` 打开命令面板，输入 `settings json`，选择 `Preferences: Open User Settings (JSON)`，把下面的内容加进去（如果文件里已有配置，合并进去就好，不要覆盖已有内容）：
-
-```json
-{
-    "C_Cpp.default.compilerPath": "/usr/bin/g++",
-    "C_Cpp.default.cStandard": "c17",
-    "C_Cpp.default.cppStandard": "c++20",
-    "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
-    "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build"
-}
-```
-
-这里的配置含义很直白：告诉 C/C++ 扩展我们的编译器路径和目标 C++ 标准，让 CMake Tools 在打开项目时自动配置，构建产物放到 `build/` 目录下。`cmake.configureOnOpen` 设成 `true` 之后，每次用 VS Code 打开一个包含 `CMakeLists.txt` 的目录，它都会自动跑一遍 `cmake` 配置，省得手动操作。
-
-如果你用 Clang，把 `compilerPath` 改成 `/usr/bin/clang++`，`intelliSenseMode` 改成 `linux-clang-x64` 就行。
-
-> ⚠️ **踩坑预警**：如果你在 WSL 里用 VS Code，需要额外安装 **Remote - WSL** 扩展。装好之后，在 WSL 终端里输入 `code .`，VS Code 会自动以远程模式连接到 WSL，这时候代码智能提示、构建、调试都在 Linux 侧完成。千万别在 Windows 侧装了 VS Code 然后通过网络路径（`\\wsl$\`）去编辑 Linux 文件——虽然技术上能打开文件，但编译器路径、调试配置全部对不上，属于给自己找不痛快。
 
 ## 第四步——跑通第一个 CMake 项目
 
@@ -268,6 +258,12 @@ Hello, Modern C++!
 **WSL 下文件系统性能慢**
 
 WSL 访问 Windows 文件系统（`/mnt/c/` 下的路径）速度会比访问 Linux 原生文件系统慢很多。如果你的项目放在 `/mnt/c/Users/.../projects/` 下面，编译速度会明显卡顿。解决办法是把项目放到 Linux 侧的 home 目录（`~/projects/`），通过 VS Code 的 Remote - WSL 来编辑就好。
+
+**其他问题？**
+
+- 社区，请
+- 问AI，问周边大佬
+- 私信发邮件或者跑到<https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP>这个仓库下发Issue问我，我有时候看Issue比翻邮件更快，为什么跟独立上一条的原因我说过了，我很菜，真不是大佬，但是小白问题我可以帮忙看看的
 
 ## 小结
 

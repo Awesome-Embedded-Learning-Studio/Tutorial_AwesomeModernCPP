@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh11 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_frequency_count ex01_frequency_count.cpp)
+add_executable(ex02_deduplicate ex02_deduplicate.cpp)
+add_executable(ex03_reserve_benchmark ex03_reserve_benchmark.cpp)
+add_executable(ex04_student_db ex04_student_db.cpp)
+add_executable(ex05_word_freq_map ex05_word_freq_map.cpp)
+add_executable(ex06_set_operations ex06_set_operations.cpp)
+add_executable(ex07_multi_field_sort ex07_multi_field_sort.cpp)
+add_executable(ex08_text_pipeline ex08_text_pipeline.cpp)
+add_executable(ex09_container_selection ex09_container_selection.cpp)
+add_executable(ex10_fix_problematic ex10_fix_problematic.cpp)
+add_executable(ex11_perf_comparison ex11_perf_comparison.cpp)

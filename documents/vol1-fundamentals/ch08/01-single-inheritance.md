@@ -132,7 +132,7 @@ print_person(s);  // 看起来没问题，实际上已经切片了
 
 这段代码编译能过，运行也不崩溃，但 `Student` 特有的信息（"I study at MIT"）完全消失了。原因在于 `print_person` 的参数 `p` 是按值传递的 `Person` 类型。编译器在传参时需要把 `Student` 对象拷贝到一个 `Person` 类型的变量里，而 `Person` 的内存空间只够放 `name_` 和 `age_`，`school_` 以及任何 `Student` 特有的东西都被——字面意义上——"切掉"了。
 
-这不是什么编译器的 bug，而是 C++ 值语义的直接后果。解决方案很简单：**用引用或指针，不要用值类型**。
+兄弟们。这不是什么编译器的 bug，这是 C++ 值语义的直接后果。解决方案很简单：**用引用或指针，不要用值类型**。
 
 ```cpp
 void print_person(const Person& p)   // 引用，不切片
@@ -306,7 +306,7 @@ g++ -Wall -Wextra -std=c++17 inheritance.cpp -o inheritance && ./inheritance
   [Car] constructed: 5 seats
 
 === 按引用传递 ===
-[ref]   Toyota at 120 km/h, 5 seats
+[ref]   Toyota at 120 km/h
 
 === 按值传递（切片）===
   [Vehicle] constructed: Toyota
@@ -316,7 +316,7 @@ g++ -Wall -Wextra -std=c++17 inheritance.cpp -o inheritance && ./inheritance
 === 另一个派生类 ===
   [Vehicle] constructed: Volvo
   [Truck] constructed: 15.5 tons
-[ref]   Volvo at 90 km/h, 15.5 tons
+[ref]   Volvo at 90 km/h
   [Truck] destroyed
   [Vehicle] destroyed: Volvo
 
@@ -325,7 +325,7 @@ g++ -Wall -Wextra -std=c++17 inheritance.cpp -o inheritance && ./inheritance
   [Vehicle] destroyed: Toyota
 ```
 
-逐段来看：构造 `Car` 时先 `[Vehicle]` 再 `[Car]`——基类先构造。按引用传递时输出包含 "5 seats"，对象完整；按值传递时只有 "Toyota at 120 km/h"，seats 信息消失了，而且多出了临时 `Vehicle` 副本的构造和析构——切片的铁证。析构方面，`Truck` 离开块作用域时先析构 `[Truck]` 再析构 `[Vehicle]`，`Car` 在 `main` 结束时析构——析构顺序始终与构造顺序相反。
+逐段来看：构造 `Car` 时先 `[Vehicle]` 再 `[Car]`——基类先构造。你可能注意到，按引用传递时输出也只有 "Toyota at 120 km/h"，并没有出现 "5 seats"——这是因为 `describe()` 不是虚函数，编译器根据引用的静态类型 `Vehicle&` 绑定了 `Vehicle::describe()`，即使实际对象是 `Car`。但引用传递和值传递有一个关键区别：按值传递时多出了临时 `Vehicle` 副本的构造和析构（切片的铁证），而引用传递没有这个过程——对象完整，只是函数调用还没"多态"起来。要实现"传引用就能调到派生类版本"，需要虚函数，那是下一章的内容。析构方面，`Truck` 离开块作用域时先析构 `[Truck]` 再析构 `[Vehicle]`，`Car` 在 `main` 结束时析构——析构顺序始终与构造顺序相反。
 
 ## 练习
 

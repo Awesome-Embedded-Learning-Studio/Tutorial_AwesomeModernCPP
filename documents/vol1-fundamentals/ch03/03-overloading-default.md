@@ -305,9 +305,9 @@ max_value("apple", "banana") -> banana
 
 写一个 `log_message` 函数，签名为 `void log_message(const char* text, const char* level = "INFO", bool show_timestamp = false)`。分别用不同的参数组合调用它，观察默认参数的行为。
 
-### 练习三：亲手解决歧义
+### 练习三：能编译还是歧义
 
-下面这段代码会编译失败。请分析原因，并给出至少两种修复方案：
+下面这段代码能编译通过吗？如果可以，会调用哪个 `func`？先想清楚再上机验证：
 
 ```cpp
 void func(int x) { }
@@ -320,7 +320,7 @@ int main()
 }
 ```
 
-提示：`'A'` 的类型是 `int` 还是 `char`？`char` 到 `int` 和 `char` 到 `short` 的转换分别属于什么级别？
+提示：`'A'` 的类型是 `char`。`char` → `int` 和 `char` → `short` 分别属于什么转换级别？整型提升（promotion）和整型转换（conversion）在重载决议中的优先级一样吗？
 
 ## 小结
 

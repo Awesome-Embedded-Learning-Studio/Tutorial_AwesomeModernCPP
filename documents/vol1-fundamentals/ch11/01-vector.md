@@ -176,7 +176,7 @@ for (auto& elem : v) {
 
 ## 实战时间——用 vector 写一个任务管理器
 
-我们把前面学的所有知识点揉到一个实战程序里——支持添加任务、标记完成并删除、列出所有任务、查看容量信息。
+兄弟们，我们把前面学的所有知识点揉到一个实战程序里——支持添加任务、标记完成并删除、列出所有任务、查看容量信息。
 
 ```cpp
 #include <algorithm>
@@ -300,8 +300,8 @@ g++ -std=c++17 -Wall -Wextra -o task_manager task_manager.cpp && ./task_manager
   Removed 2 completed task(s)
 
 === Remaining tasks ===
-  [1] [ ] Review pull requests
-  [3] [ ] Update documentation
+  [0] [ ] Review pull requests
+  [1] [ ] Update documentation
   size: 2, capacity: 4
 ```
 

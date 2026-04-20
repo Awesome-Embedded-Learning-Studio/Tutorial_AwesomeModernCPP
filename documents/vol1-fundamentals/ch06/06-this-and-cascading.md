@@ -148,7 +148,7 @@ p.set_x(3).set_y(4).print();
 
 原理我们拆开来看：`p.set_x(3)` 返回的是 `p` 的引用，所以紧接着的 `.set_y(4)` 等价于在 `p` 上调用 `set_y`；`set_y` 又返回 `p` 的引用，所以 `.print()` 还是在 `p` 上调用。整条链串在一起，每一步都操作同一个对象。
 
-这种模式在实际工程里用得非常广泛。C++ 标准库中的 `std::cout` 就是最经典的例子——`operator<<` 返回 `std::ostream&`，所以我们可以写 `std::cout << "a" << "b" << "c";`。嵌入式开发中的硬件配置接口、日志系统也经常用链式调用来让代码更紧凑。
+实际上，这种模式在实际工程里用得非常广泛。C++ 标准库中的 `std::cout` 就是最经典的例子——`operator<<` 返回 `std::ostream&`，所以我们可以写 `std::cout << "a" << "b" << "c";`。嵌入式开发中的硬件配置接口、日志系统也经常用链式调用来让代码更紧凑。
 
 > **踩坑预警**：链式调用中，如果某个方法返回的是值而不是引用（比如不小心写了 `StringBuilder append(...)` 而不是 `StringBuilder& append(...)`），链式调用仍然能编译通过——但每一次链式调用操作的都会是一个新的副本，而不是原始对象。结果就是前面的调用全部白费，只有最后一个方法的结果被保留。这种 bug 非常隐蔽，因为代码"看起来"是对的，编译器也不报错，但运行结果就是不对。记住：链式调用必须返回**引用**。
 
@@ -201,44 +201,55 @@ class Config {
     int timeout_ms_;
 
     // 私有构造，强制通过 Builder 创建
-    Config() : baudrate_(9600), use_parity_(false), timeout_ms_(1000)
+    Config(const char* name, int baud, bool parity, int timeout)
+        : baudrate_(baud), use_parity_(parity), timeout_ms_(timeout)
     {
-        name_[0] = '\0';
+        std::strncpy(name_, name, 63);
+        name_[63] = '\0';
     }
 
 public:
     class Builder {
-        Config config_;
+        char name_[64];
+        int baudrate_;
+        bool use_parity_;
+        int timeout_ms_;
 
     public:
-        Builder() = default;
+        Builder() : baudrate_(9600), use_parity_(false), timeout_ms_(1000)
+        {
+            name_[0] = '\0';
+        }
 
         Builder& set_name(const char* name)
         {
-            std::strncpy(config_.name_, name, 63);
-            config_.name_[63] = '\0';
+            std::strncpy(name_, name, 63);
+            name_[63] = '\0';
             return *this;
         }
 
         Builder& set_baudrate(int baud)
         {
-            config_.baudrate_ = baud;
+            baudrate_ = baud;
             return *this;
         }
 
         Builder& set_parity(bool parity)
         {
-            config_.use_parity_ = parity;
+            use_parity_ = parity;
             return *this;
         }
 
         Builder& set_timeout(int ms)
         {
-            config_.timeout_ms_ = ms;
+            timeout_ms_ = ms;
             return *this;
         }
 
-        Config build() const { return config_; }
+        Config build() const
+        {
+            return Config(name_, baudrate_, use_parity_, timeout_ms_);
+        }
     };
 
     void print() const
@@ -296,7 +307,7 @@ g++ -std=c++17 -Wall -Wextra -o this_demo this_demo.cpp && ./this_demo
 ```text
 --- StringBuilder ---
 Hello, this is a chain!
-Total length: 23
+Total length: 24
 
 --- Config Builder ---
 Config: name=UART1, baud=115200, parity=no, timeout=500ms

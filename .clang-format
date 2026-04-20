@@ -1,0 +1,111 @@
+---
+# .clang-format 配置文件
+# 用于 clangd 格式化和代码检查
+# 生成日期: 2026-02-15
+
+# 基础风格: LLVM (简洁现代)
+BasedOnStyle: LLVM
+
+# 缩进设置
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+# 大括号风格: 附加式 { 在语句末尾
+BreakBeforeBraces: Attach
+
+# 指针/引用星号位置: 左侧 (int* a)
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# 命名风格 (仅供参考，不影响已有代码)
+# 可以让 clangd 警告不符合命名规范的代码
+# 需要配合 clang-tidy 使用
+
+# 函数声明: 返回类型和函数名在同一行
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: No
+
+# 结构体初始化: 按位置赋值
+# C++11UnifiedBraceList: false 使用传统风格
+
+# 预处理器缩进: 与代码对齐
+IndentPPDirectives: AfterHash
+
+# 其他实用设置
+
+# 在二元运算符后换行
+BreakBeforeBinaryOperators: None
+
+# 在三元运算符后换行
+BreakBeforeTernaryOperators: true
+
+# 连续赋值时的对齐
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+
+# 转换类型周围的空格
+SpaceAfterCStyleCast: false
+
+# 逻辑运算符周围的空格
+SpaceAfterLogicalNot: false
+
+# 模板列表中的空格
+SpaceAfterTemplateKeyword: true
+
+# 控制语句括号内的空格: if (x) 而非 if (x )
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+
+# 圆括号内的空格
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# 容器类型周围的空格
+SpacesInContainerLiterals: false
+
+# lambda 相关
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+
+# 对齐
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+
+# 允许函数参数在同一行
+AllowAllArgumentsOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# 允许短函数在一行
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# 自动对齐注释
+ReflowComments: true
+
+# 最大连续空行数
+MaxEmptyLinesToKeep: 1
+
+# 命名空间缩进
+NamespaceIndentation: None
+
+# 访问修饰符缩进
+IndentAccessModifiers: false
+IndentCaseLabels: true
+
+# 换行符设置
+LineEnding: LF
+
+# C/C++ 语言设置
+Language: Cpp
+Standard: Latest
+
+# 包含块排序
+SortIncludes: true
+IncludeBlocks: Preserve

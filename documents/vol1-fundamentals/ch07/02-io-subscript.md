@@ -17,8 +17,6 @@ cpp_standard: [11, 14, 17, 20]
 ---
 # 流与下标运算符
 
-> 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者
-
 到目前为止，我们重载了算术和比较运算符，让 `Fraction` 和 `Vector3D` 这样的自定义类型能像 `int` 一样参与运算和比较。但如果你试着写 `std::cout << fraction;`，编译器会毫不留情地报错——它不知道怎么把你的类型塞进输出流。同样，自定义容器的 `container[0]` 也需要手动重载 `operator[]` 才能生效。
 
 这两组运算符——流运算符 `<<`/`>>` 和下标运算符 `[]`——是让自定义类型真正"融入语言生态"的关键。一旦搞定它们，你的类型就能直接用 `cout` 打印、用 `cin` 读取、用方括号索引，和内置类型的体验完全一致。

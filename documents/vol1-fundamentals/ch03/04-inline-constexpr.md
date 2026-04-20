@@ -19,8 +19,6 @@ cpp_standard: [11, 14, 17, 20]
 
 # inline 与 constexpr 函数
 
-> 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者
-
 我们到现在已经写过不少函数了。每次调用一个函数，程序要做的事情其实不少——保存当前执行位置、分配栈帧、跳转到函数体、执行完再跳回来、销毁栈帧、恢复现场。对于几十行的大函数来说这点开销不算什么，但如果是一个只做 `return x * x` 的小函数，调用开销可能比函数本身的计算还要大。能不能把这些"薄得像纸一样"的函数调用直接展开，省掉所有跳转和栈帧的代价？这就是 `inline` 和 `constexpr` 要解决的问题。
 
 ## inline——被误解最深的关键字

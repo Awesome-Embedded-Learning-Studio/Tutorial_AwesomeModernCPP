@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.20)
+project(Vol1ExerciseCh10 CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(ex01_safe_array_access ex01_safe_array_access.cpp)
+add_executable(ex02_parse_doubles ex02_parse_doubles.cpp)
+add_executable(ex03_noexcept_check ex03_noexcept_check.cpp)
+add_executable(ex04_fix_unsafe_code ex04_fix_unsafe_code.cpp)
+add_executable(ex05_scoped_file ex05_scoped_file.cpp)
+add_executable(ex06_overflow_error ex06_overflow_error.cpp)
+add_executable(ex07_error_design ex07_error_design.cpp)
+add_executable(ex08_error_chain ex08_error_chain.cpp)
