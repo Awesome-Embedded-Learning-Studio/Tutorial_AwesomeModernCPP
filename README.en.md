@@ -37,7 +37,7 @@ graph LR
 
 | Volume | Topic | Articles | Difficulty | Status |
 |:--:|------|:------:|:----:|:----:|
-| 1 | [C++ Fundamentals](documents/vol1-fundamentals/) -- types, control flow, functions, pointers, classes, template basics | 50-60 | beginner | In Progress |
+| 1 | [C++ Fundamentals](documents/vol1-fundamentals/) -- types, control flow, functions, pointers, classes, template basics | 49 | beginner | Completed |
 | 2 | [Modern C++ Features](documents/vol2-modern-features/) -- move semantics, smart pointers, constexpr, Lambda | 35-40 | intermediate | In Progress |
 | 3 | [Standard Library In Depth](documents/vol3-standard-library/) -- containers, iterators, algorithms, strings, allocators | 40-50 | intermediate | Planned |
 | 4 | [Advanced Topics](documents/vol4-advanced/) -- Concepts, Ranges, coroutines, modules, template metaprogramming | 50-60 | advanced | Planned |
@@ -63,13 +63,18 @@ flowchart TD
     subgraph PathC["Path C -- Both"]
         C1["Jump to any topic of interest"]
     end
+    subgraph PathD["Path D -- Complete Beginner"]
+        D1["Volume 1: C++ Fundamentals (incl. C crash course)"] --> D2["Volume 2: Modern C++ Features"]
+    end
     Start(["Your starting point?"]) -->|"C + Embedded"| PathA
     Start -->|"C++ Experience"| PathB
     Start -->|"Both"| PathC
+    Start -->|"No experience"| PathD
 
     style PathA fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
     style PathB fill:#dcfce7,stroke:#22c55e,color:#14532d
     style PathC fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    style PathD fill:#f3e8ff,stroke:#a855f7,color:#581c87
 ```
 
 ---
@@ -79,8 +84,8 @@ flowchart TD
 ```bash
 git clone https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP.git
 cd Tutorial_AwesomeModernCPP
-bash scripts/mkdoc_setup_local_dependency.sh
-bash scripts/local_preview.sh
+./scripts/mkdocs_dev.sh install   # Create venv and install dependencies
+./scripts/mkdocs_dev.sh serve     # Build and start local preview
 # Visit http://127.0.0.1:8000
 ```
 
@@ -89,12 +94,18 @@ bash scripts/local_preview.sh
 
 | Script | Purpose |
 |------|------|
-| `mkdoc_setup_local_dependency.sh` | Install MkDocs dependencies |
-| `local_preview.sh` | Start local preview server |
+| `mkdocs_dev.sh install` | Create virtual environment and install MkDocs dependencies |
+| `mkdocs_dev.sh serve` | Build and start local preview server |
+| `mkdocs_dev.sh build` | Production static site build |
+| `mkdocs_dev.sh clean` | Clean build artifacts |
+| `mkdocs_dev.sh reset` | Rebuild virtual environment from scratch |
 | `setup_precommit.sh` | Install pre-commit hooks |
 | `validate_frontmatter.py` | Validate article frontmatter |
 | `check_links.py` | Check internal link validity |
+| `check_nav_reachability.py` | Check chapter navigation completeness |
 | `analyze_frontmatter.py` | Analyze tutorial statistics |
+| `build_examples.py` | Compile all CMake example projects |
+| `check_quality.py` | Content quality checks |
 
 </details>
 
@@ -116,7 +127,7 @@ bash scripts/local_preview.sh
 ```
 Tutorial_AwesomeModernCPP/
 ├── documents/                  # Tutorial Markdown files
-│   ├── vol1-fundamentals/      # Volume 1: C++ Fundamentals
+│   ├── vol1-fundamentals/      # Volume 1: C++ Fundamentals (ch00-ch12 + C crash course)
 │   ├── vol2-modern-features/   # Volume 2: Modern C++ Features
 │   ├── vol3-standard-library/  # Volume 3: Standard Library In Depth
 │   ├── vol4-advanced/          # Volume 4: Advanced Topics
