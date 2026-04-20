@@ -2,6 +2,8 @@
 title: "Volume 1: C++ Fundamentals"
 description: "Learn C++ basics systematically from scratch"
 platform: host
+chapter: 1
+order: 0
 tags:
   - cpp-modern
   - host
@@ -31,4 +33,4 @@ This volume covers C++ fundamentals, from environment setup to object-oriented p
 
 ## C Language Tutorials (Detailed)
 
-- [C Language Tutorials](c_tutorials/)
+- [C Language Tutorials](c_tutorials/index.md)

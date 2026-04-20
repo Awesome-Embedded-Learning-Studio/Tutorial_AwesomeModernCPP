@@ -6,6 +6,8 @@ tags:
   - host
   - intermediate
 difficulty: intermediate
+chapter: 0
+order: 0
 platform: host
 ---
 # Welcome to the Modern C++ Tutorial

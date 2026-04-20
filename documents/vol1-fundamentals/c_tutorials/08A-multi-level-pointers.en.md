@@ -53,11 +53,7 @@ We will run all the following experiments in this environment:
 
 ### Memory Model: Nested Layers
 
-If the address stored in a pointer points to another pointer, that's a multi-level pointer. `int**` points to `int*`, `int***` points to `int**`, and so on. In memory, they form a chain:
-
-![Multi-level pointer memory model](images/multi-level-pointer.svg)
-
-Each level stores the address of the next level. Dereferencing `pp` yields `p` (an `int*`), dereferencing `p` yields `val` (an `int`), and only `*p` gives us the final value. Let's verify this:
+If the address stored in a pointer points to another pointer, that's a multi-level pointer. `int**` points to `int*`, `int***` points to `int**`, and so on. In memory, they form a chain: level stores the address of the next level. Dereferencing `pp` yields `p` (an `int*`), dereferencing `p` yields `val` (an `int`), and only `*p` gives us the final value. Let's verify this:
 
 ```cpp
 int val = 42;
@@ -116,8 +112,6 @@ int main(int argc, char* argv[]) { /* ... */ }
 
 `char* argv[]` in the parameter list decays to `char** argv`, so the two forms are identical. `argv` points to a `char*` array, where each element points to a command-line argument string, terminated by a `nullptr` sentinel:
 
-![argv memory layout](images/argv-layout.svg)
-
 ## Step 2 — Distinguish Between Pointer Arrays and Array Pointers
 
 `int* arr[10]` and `int (*arr)[10]` look like they only differ by a pair of parentheses, but their meanings are completely different. This is the most classic pair of "confusing twins" in C declaration syntax.
@@ -135,8 +129,6 @@ for (int i = 0; i < 3; ++i)
 ```
 
 Memory layout—the array contiguously stores three pointer values, and each pointer points to a different `int`:
-
-![Pointer array memory layout](images/pointer-array.svg)
 
 ### Array Pointer: `int (*arr)[10]`
 
