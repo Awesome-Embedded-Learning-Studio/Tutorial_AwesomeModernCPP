@@ -1,1 +1,14 @@
 title: 卷二 · 现代 C++ 特性
+nav:
+  - ch00-move-semantics
+  - ch01-smart-pointers
+  - ch02-constexpr
+  - ch03-lambda
+  - ch04-type-safety
+  - ch05-structured-bindings
+  - ch06-auto-decltype
+  - ch07-attributes
+  - ch08-string-view
+  - ch09-filesystem
+  - ch10-error-handling
+  - ch11-user-defined-literals
