@@ -10,63 +10,19 @@ tags:
 
 # 卷二：现代 C++ 特性
 
-> 状态：部分内容已有（待重写）
+本卷覆盖 C++11/14/17 核心现代特性，从移动语义到智能指针、从 constexpr 到 Lambda、从类型安全到文件系统——系统性地掌握区分"现代 C++"和"旧 C++"的关键知识。
 
-## 概述
+## 章节导航
 
-本卷覆盖 C++11/14/17 核心现代特性。
-
-## 现有文章（待重写为通用内容）
-
-### 移动语义
-
-- [移动语义](02-move-semantics.md)
-- [RVO 与 NRVO](03-rvo-nrvo.md)
-
-### 智能指针与 RAII
-
-- [RAII 在外设管理中的应用](01-raii-in-peripheral-management.md)
-- [unique_ptr](02-unique-ptr.md)
-- [shared_ptr](03-shared-ptr.md)
-- [智能指针嵌入式权衡](04-smart-ptr-embedded-tradeoffs.md)
-- [侵入式指针与引用计数](05-intrusive-ptr-and-ref-counting.md)
-- [自定义删除器](06-custom-deleter.md)
-- [引用计数](07-reference-counting.md)
-- [scope_guard](08-scope-guard.md)
-
-### constexpr 与编译期
-
-- [constexpr](03-constexpr.md)
-- [constexpr 与设计技术](01-constexpr-and-design-techniques.md)
-- [consteval 与 constinit](02-consteval-constinit.md)
-- [编译期计算实战](03-compile-time-in-practice.md)
-
-### Lambda 与函数式
-
-- [Lambda 基础](01-lambda-basics.md)
-- [Lambda 捕获与性能](02-lambda-capture-and-performance.md)
-- [std::function vs 函数指针](03-std-function-vs-function-ptr.md)
-- [零开销回调](04-zero-overhead-callbacks.md)
-- [std::invoke 与可调用对象](05-std-invoke-and-callables.md)
-- [函数式错误处理](06-functional-error-handling.md)
-- [Ranges 基础与视图](07-ranges-basics-and-views.md)
-- [Ranges 管道实战](08-ranges-pipeline-in-practice.md)
-
-### 类型安全
-
-- [enum class](01-enum-class.md)
-- [variant](03-variant.md)
-- [optional](04-optional.md)
-- [expected](05-expected.md)
-- [类型别名与 using](06-type-aliases-and-using.md)
-
-### 其他特性
-
-- [auto 与 decltype](01-auto-and-decltype.md)
-- [结构化绑定](02-structured-bindings.md)
-- [range-for 优化](03-range-based-for-optimization.md)
-- [属性](04-attributes.md)
-- [指定初始化器](06-designated-initializers.md)
-- [用户自定义字面量](07-user-defined-literals.md)
-- [字面量运算符与自定义单位](07-literal-operators-and-custom-units.md)
-- [string_view](cpp17-string-view.md)
+- [ch00：移动语义与右值引用](ch00-move-semantics/)
+- [ch01：智能指针与 RAII](ch01-smart-pointers/)
+- [ch02：constexpr 与编译期计算](ch02-constexpr/)
+- [ch03：Lambda 与函数式编程](ch03-lambda/)
+- [ch04：类型安全](ch04-type-safety/)
+- [ch05：结构化绑定与初始化](ch05-structured-bindings/)
+- [ch06：auto 与 decltype](ch06-auto-decltype/)
+- [ch07：属性系统](ch07-attributes/)
+- [ch08：string_view 深入](ch08-string-view/)
+- [ch09：文件系统库](ch09-filesystem/)
+- [ch10：错误处理的现代方式](ch10-error-handling/)
+- [ch11：用户自定义字面量](ch11-user-defined-literals/)

@@ -69,7 +69,6 @@ int main() {
 
 ## 另见
 
-- [教程：enum class 详解](../../vol2-modern-features/01-enum-class.md)
 - [cppreference: Enumeration declaration](https://en.cppreference.com/w/cpp/language/enum)
 
 ---

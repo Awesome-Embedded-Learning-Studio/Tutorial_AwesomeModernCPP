@@ -72,7 +72,6 @@ int main() {
 
 ## 另见
 
-- [教程：C++17 string_view 详解](../../vol2-modern-features/cpp17-string-view.md)
 - [cppreference: std::basic_string_view](https://en.cppreference.com/w/cpp/string/basic_string_view)
 
 ---

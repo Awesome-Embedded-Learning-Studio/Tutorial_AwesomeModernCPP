@@ -61,7 +61,6 @@ int main() {
 
 ## 另见
 
-- [教程：范围 for 与底层优化](../../vol2-modern-features/03-range-based-for-optimization.md)
 - [cppreference: Range-based for loop](https://en.cppreference.com/w/cpp/language/range-for)
 
 ---

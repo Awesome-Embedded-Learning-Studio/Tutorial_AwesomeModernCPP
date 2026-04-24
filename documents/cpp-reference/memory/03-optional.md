@@ -69,7 +69,6 @@ int main() {
 
 ## 另见
 
-- [教程：optional](../../vol2-modern-features/04-optional.md)
 - [cppreference: std::optional](https://en.cppreference.com/w/cpp/utility/optional)
 
 ---

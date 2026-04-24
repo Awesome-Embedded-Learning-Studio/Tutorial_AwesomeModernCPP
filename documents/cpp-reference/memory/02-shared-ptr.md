@@ -76,7 +76,6 @@ int main() {
 
 ## 另见
 
-- [教程：shared_ptr 详解](../../vol2-modern-features/03-shared-ptr.md)
 - [cppreference: std::shared_ptr](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 
 ---

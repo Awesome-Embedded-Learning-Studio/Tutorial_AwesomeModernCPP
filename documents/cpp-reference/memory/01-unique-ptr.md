@@ -77,7 +77,6 @@ int main() {
 
 ## 另见
 
-- [教程：unique_ptr 详解](../../vol2-modern-features/02-unique-ptr.md)
 - [cppreference: std::unique_ptr](https://en.cppreference.com/w/cpp/memory/unique_ptr)
 
 ---

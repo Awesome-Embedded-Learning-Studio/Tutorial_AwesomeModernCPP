@@ -67,7 +67,6 @@ int main() {
 
 ## 另见
 
-- [教程：Lambda 基础](../../vol2-modern-features/01-lambda-basics.md)
 - [cppreference: Lambda expressions](https://en.cppreference.com/w/cpp/language/lambda)
 
 ---
