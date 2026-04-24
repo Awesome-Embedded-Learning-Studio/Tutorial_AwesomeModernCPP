@@ -14,6 +14,7 @@
  * 注意: 此基准测试简化了原始测试，使用单生产者单消费者模型
  */
 
+#include <iomanip>
 #include <memory>
 #include <thread>
 #include <vector>

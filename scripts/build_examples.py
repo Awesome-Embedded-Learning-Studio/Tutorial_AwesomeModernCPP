@@ -11,10 +11,12 @@ Usage:
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -222,6 +224,8 @@ def main():
                        help='Build all projects')
     parser.add_argument('--discover', action='store_true',
                         help='Only list discovered projects, do not build')
+    parser.add_argument('-j', '--jobs', type=int, default=os.cpu_count(),
+                        help=f'Max concurrent builds (default: {os.cpu_count()})')
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
@@ -247,18 +251,24 @@ def main():
         sys.exit(0)
 
     print()
-    print(f"Building {len(projects)} project(s)...")
+    print(f"Building {len(projects)} project(s) with {args.jobs} worker(s)...")
     print()
 
-    results = []
-    for i, project_dir in enumerate(projects, 1):
-        rel = project_dir.relative_to(code_root)
-        print(f"[{i}/{len(projects)}] Building {rel}...", end=' ', flush=True)
-        result = build_project(project_dir)
-        status = "OK" if result.success else "FAILED"
-        print(f"{status} ({result.duration:.1f}s)")
-        results.append(result)
+    results_map: dict[Path, BuildResult] = {}
+    with ThreadPoolExecutor(max_workers=args.jobs) as executor:
+        futures = {
+            executor.submit(build_project, p): p for p in projects
+        }
+        done_count = 0
+        for future in as_completed(futures):
+            done_count += 1
+            result = future.result()
+            rel = result.path.relative_to(code_root)
+            status = "OK" if result.success else "FAILED"
+            print(f"[{done_count}/{len(projects)}] {rel}: {status} ({result.duration:.1f}s)")
+            results_map[futures[future]] = result
 
+    results = [results_map[p] for p in projects]
     print_results(results, code_root)
     sys.exit(1 if any(not r.success for r in results) else 0)
 
