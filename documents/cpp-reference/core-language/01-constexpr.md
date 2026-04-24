@@ -66,7 +66,6 @@ int main() {
 
 ## 另见
 
-- [教程：constexpr 详解](../../vol2-modern-features/03-constexpr.md)
 - [cppreference: constexpr specifier](https://en.cppreference.com/w/cpp/language/constexpr)
 
 ---

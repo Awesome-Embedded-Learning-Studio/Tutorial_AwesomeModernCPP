@@ -39,22 +39,16 @@ order: 0
 
 - [零开销抽象](./01-zero-overhead-abstraction.md)
 - [内联与编译器优化](../../vol6-performance/02-inline-and-compiler-optimization.md)
-- [constexpr](../../vol2-modern-features/03-constexpr.md)
 - [CRTP VS 运行时多态，你们知道吗？](./04-crtp-vs-runtime-polymorphism.md)
 
 ## Chapter 3 - 内存与对象管理
 
 - [初始化列表](../../vol3-standard-library/01-initializer-lists.md)
-- [移动语义](../../vol2-modern-features/02-move-semantics.md)
-- [RVO, NRVO](../../vol2-modern-features/03-rvo-nrvo.md)
 - [空基类优化（EBO）](./04-empty-base-optimization.md)
 - [对象大小，平凡类型](../../vol3-standard-library/05-object-size-and-trivial-types.md)
 
 ## Chapter 4 - 编译期计算
 
-- [constexpr 与设计技巧](../../vol2-modern-features/01-constexpr-and-design-techniques.md)
-- [consteval、constinit](../../vol2-modern-features/02-consteval-constinit.md)
-- [编译期实战](../../vol2-modern-features/03-compile-time-in-practice.md)
 - [if_constexpr](../../vol4-advanced/04-if-constexpr.md)
 
 ## Chapter 5 - 内存管理策略
@@ -65,17 +59,6 @@ order: 0
 - [禁用 heap 或限制 heap 时的替代策略：放置new（Placement New）的使用](./04-placement-new.md)
 - [固定池分配](./05-fixed-pool-allocation.md)
 - [array vs 一般数组，你们知道嘛？](./06-array-vs-raw-arrays.md)
-
-## Chapter 6 - RAII与智能指针
-
-- [RAII在外设管理的作用](../../vol2-modern-features/01-raii-in-peripheral-management.md)
-- [unique_ptr](../../vol2-modern-features/02-unique-ptr.md)
-- [shared_ptr](../../vol2-modern-features/03-shared-ptr.md)
-- [unique_ptr、shared_ptr 的嵌入式取舍](../../vol2-modern-features/04-smart-ptr-embedded-tradeoffs.md)
-- [intrusive 智能指针与引用计数（非堆实现）](../../vol2-modern-features/05-intrusive-ptr-and-ref-counting.md)
-- [自定义Deleter](../../vol2-modern-features/06-custom-deleter.md)
-- [引用计数](../../vol2-modern-features/07-reference-counting.md)
-- [Scope Guard](../../vol2-modern-features/08-scope-guard.md)
 
 ## Chapter 7 - 容器与数据结构
 
@@ -88,24 +71,7 @@ order: 0
 
 ## Chapter 8 - 类型安全与工具类型
 
-- [enum class](../../vol2-modern-features/01-enum-class.md)
 - [类型安全的寄存器访问](../../vol3-standard-library/02-type-safe-register-access.md)
-- [variant](../../vol2-modern-features/03-variant.md)
-- [optional](../../vol2-modern-features/04-optional.md)
-- [expected](../../vol2-modern-features/05-expected.md)
-- [类型别名与using声明](../../vol2-modern-features/06-type-aliases-and-using.md)
-- [字面量运算符与自定义单位](../../vol2-modern-features/07-literal-operators-and-custom-units.md)
-
-## Chapter 9 - 函数式编程特性
-
-- [Lambda表达式基础](../../vol2-modern-features/01-lambda-basics.md)
-- [Lambda捕获与性能影响](../../vol2-modern-features/02-lambda-capture-and-performance.md)
-- [std function vs 函数指针](../../vol2-modern-features/03-std-function-vs-function-ptr.md)
-- [回调机制的零开销实现](../../vol2-modern-features/04-zero-overhead-callbacks.md)
-- [std invoke与可调用对象](../../vol2-modern-features/05-std-invoke-and-callables.md)
-- [函数式错误处理模式](../../vol2-modern-features/06-functional-error-handling.md)
-- [C++20范围库基础与视图](../../vol2-modern-features/07-ranges-basics-and-views.md)
-- [管道操作与Ranges实战](../../vol2-modern-features/08-ranges-pipeline-in-practice.md)
 
 ## Chapter 10 - 并发与原子操作
 
@@ -118,13 +84,7 @@ order: 0
 
 ## Chapter 11 - 现代C++特性速览
 
-- [auto与decltype](../../vol2-modern-features/01-auto-and-decltype.md)
-- [结构化绑定](../../vol2-modern-features/02-structured-bindings.md)
-- [范围for循环优化](../../vol2-modern-features/03-range-based-for-optimization.md)
-- [属性](../../vol2-modern-features/04-attributes.md)
 - [三路比较运算符](../../vol4-advanced/05-spaceship-operator.md)
-- [指定初始化器](../../vol2-modern-features/06-designated-initializers.md)
-- [用户定义字面量](../../vol2-modern-features/07-user-defined-literals.md)
 
 ## Chapter 12 - 模板基础
 

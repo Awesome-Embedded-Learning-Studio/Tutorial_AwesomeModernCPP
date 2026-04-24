@@ -68,7 +68,6 @@ int main() {
 
 ## 另见
 
-- [教程：对应章节](../../vol2-modern-features/03-variant.md)
 - [cppreference: std::variant](https://en.cppreference.com/w/cpp/utility/variant)
 
 ---

@@ -65,7 +65,6 @@ int main() {
 
 ## 另见
 
-- [教程：auto 与 decltype](../../vol2-modern-features/01-auto-and-decltype.md)
 - [cppreference: Placeholder type specifiers](https://en.cppreference.com/w/cpp/language/auto)
 
 ---
