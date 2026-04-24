@@ -126,7 +126,7 @@ string_view::substr:    0.4 ms (sink=5000000)
 
 我们从原理上先分析。当函数签名是 `const std::string&` 时，如果调用者传入的是一个 `const char*`（比如字符串字面量或 C API 返回的字符串），编译器需要先隐式构造一个临时的 `std::string`，然后传引用进去。这个临时构造涉及 `strlen` 计算长度加上可能的堆分配。函数返回后，临时对象析构，堆内存释放。
 
-而当函数签名是 `std::string_view` 时，无论传入的是 `std::string`、`const char*` 还是字符串字面量，都只是构造一个 16 字节的 view 对象。从 `const char*` 构造时，还需要一次 `strlen`，但不需要分配堆内存。从 `std::string` 构造时，连 `strlen` 都不需要，直接取 `data()` 和 `size()`。
+而当函数签名是 `std::string_view` 时，无论传入的是 `std::string`、`const char*` 还是字符串字面量，都只是构造一个 16 字节的 view 对象。从 `const char*` 构造时，还需要一次 `strlen`（O(n) 遍历），但不需要分配堆内存。从 `std::string` 构造时，连 `strlen` 都不需要，直接取 `data()` 和 `size()`。
 
 我们写一个基准测试来验证。测试场景：一个函数接收字符串参数并做简单的处理（计算字符出现次数），分别用两种签名，然后分别传入 `std::string` 和 `const char*` 调用。
 
@@ -237,7 +237,7 @@ bool is_http_method_sv(std::string_view method) {
 }
 ```
 
-`string_view` 与字符串字面量的比较运算符（`==`）不需要构造任何临时对象——它直接逐字符比较。而 `const std::string&` 与字符串字面量比较时，字面量会被隐式转换为临时 `std::string`（虽然有些编译器会优化掉这个转换，但标准并不保证）。
+`string_view` 与字符串字面量的比较运算符（`==`）会构造一个轻量的 `string_view` 临时对象（16 字节，无堆分配），然后逐字符比较。而 `const std::string&` 与字符串字面量比较时，字面量会被隐式转换为临时 `std::string`（可能涉及堆分配，虽然有些编译器会优化掉这个转换，但标准并不保证）。
 
 另外一个常见的"临时 string"来源是函数返回值。考虑这个模式：
 

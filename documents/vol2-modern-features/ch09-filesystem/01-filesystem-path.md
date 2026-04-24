@@ -41,7 +41,7 @@ C++17 引入的 `<filesystem>` 库彻底解决了这个问题。`std::filesystem
 
 这种设计非常重要，因为它意味着 `path` 的所有操作都是纯计算——不涉及系统调用，不会失败（除非内存不足），也不会因为文件权限等问题抛异常。你可以放心地在任何上下文中使用 `path`，不用担心它会触发 I/O 操作。
 
-`path` 内部使用一种叫做"通用格式"（generic format）的表示方式。无论你在什么平台上构造 `path`，内部的路径分隔符都会被统一为正斜杠 `/`。当你调用 `native()` 或 `string()` 获取平台原生格式时，它才会转换回对应平台的分隔符。这个设计让你可以用同一套代码处理不同平台的路径。
+`path` 内部使用**平台原生格式**存储路径——在 Windows 上是反斜杠 `\`，在 POSIX 系统上是正斜杠 `/`。当你调用 `generic_string()` 时，它会按需转换为通用格式（总是使用正斜杠 `/`）。这个设计既保证了与操作系统的兼容性，又提供了跨平台的统一接口。
 
 ## 构造 path 对象
 
@@ -82,12 +82,14 @@ p3: "C:\\Users\\Alice\\Documents"
 
 注意 `operator<<` 输出 `path` 时会加上引号。如果你不想要引号，可以用 `p.string()` 输出。
 
-⚠️ `path` 的构造函数只接受 `std::string` 或 `const char*`，不接受 `std::string_view`（这是一个已知的限制）。如果你有 `string_view`，需要先转为 `std::string`：
+⚠️ `path` 的构造函数支持 `std::string_view`（从 C++17 起）。你可以直接传入 `string_view`：
 
 ```cpp
 std::string_view sv = "/tmp/test";
-fs::path p(std::string(sv));  // 必须显式转 string
+fs::path p(sv);  // 直接使用 string_view
 ```
+
+不过，由于模板推导规则，某些复杂场景下可能需要显式指定类型或转换为 `std::string`。
 
 ## 路径分解：把路径拆开来看
 

@@ -22,7 +22,7 @@ related:
 
 # unique_ptr 详解：独占所有权的零开销智能指针
 
-在上一篇我们聊了 RAII——C++ 资源管理的基石。现在我们来看 RAII 思想在智能指针领域最直接的体现：`std::unique_ptr`。这个类的设计哲学可以用一句话概括：**一个对象，一个主人，零开销**。它不搞什么引用计数、不做原子操作、不分配额外的控制块——你给它一个对象，它替你管好；你离开作用域，它替你删掉。就这么简单。
+在上一篇我们聊了 RAII——C++ 资源管理的基石。现在我们来看 RAII 思想在智能指针领域最直接的体现：`std::unique_ptr`。这个类的设计哲学可以用一句话概括：**一个对象，一个主人，零开销**。它不搞什么引用计数、不做原子操作、不分配额外的控制块——你给它一个对象，它替你管好；你离开作用域，它替你删掉。就这么简单。（btw，这玩意怎么面试这么爱考）
 
 但简单不代表肤浅。`unique_ptr` 背后涉及的所有权语义、移动语义、自定义删除器、空基类优化（EBO）等话题，每一条都值得深入理解。今天我们就把这些全部拆开来看。
 
@@ -85,7 +85,9 @@ process(std::unique_ptr<Widget>(new Widget(42)), compute_something());
 process(std::make_unique<Widget>(42), compute_something());
 ```
 
-在危险写法中，C++ 编译器需要在调用 `process` 之前依次完成：`new Widget(42)`、构造 `unique_ptr`、调用 `compute_something()`。但 C++ 标准并不规定这三步的精确顺序——编译器可能先 `new`，然后调用 `compute_something()`，最后构造 `unique_ptr`。如果 `compute_something()` 抛出异常，那个 `new` 出来的 `Widget` 就泄漏了——因为 `unique_ptr` 还没来得及接管它。
+在危险写法中，C++ 编译器需要在调用 `process` 之前依次完成：`new Widget(42)`、构造 `unique_ptr`、调用 `compute_something()`。在 **C++17 之前**，C++ 标准并不规定函数参数的求值顺序——编译器可能先 `new`，然后调用 `compute_something()`，最后构造 `unique_ptr`。如果 `compute_something()` 抛出异常，那个 `new` 出来的 `Widget` 就泄漏了——因为 `unique_ptr` 还没来得及接管它。
+
+⚠️ **重要更新**：从 **C++17 开始**，标准规定了函数参数必须按照从左到右的顺序求值。因此在 C++17 及更高版本中，危险写法实际上也是安全的。不过，`make_unique` 仍然有其他优势（代码简洁、避免重复类型名），并且兼容旧标准，所以仍然是推荐做法。
 
 `make_unique` 把分配和构造包装在一个函数调用里，不存在这种"中间态"，因此是异常安全的。
 
@@ -140,6 +142,8 @@ int main() {
 ```
 
 这里有一个重要的细节：`unique_ptr` 的移动构造函数和移动赋值运算符都标记为 `noexcept`。这对 `std::vector` 的行为有直接影响——当 vector 扩容时，如果元素的移动构造是 `noexcept` 的，vector 会优先使用移动；否则会退化为拷贝（但 `unique_ptr` 不可拷贝，所以必须移动）。因此 `noexcept` 的移动操作是 `unique_ptr` 能够安全存入容器的关键保证。
+
+你可以运行 `code/volumn_codes/vol2/ch01-smart-pointers/test_vector_noexcept.cpp` 来验证这一点。该示例展示了 vector 在扩容时如何安全地移动 `unique_ptr` 管理的对象，并验证所有元素在扩容后仍然有效。
 
 ## unique_ptr<T[]>：数组版本
 
@@ -245,6 +249,18 @@ sizeof(unique_ptr<int, void(*)(int*)>): 16
 
 默认删除器和无状态函数对象的 `unique_ptr` 和裸指针大小完全一样——8 字节。这就是空基类优化（EBO）的功劳：`unique_ptr` 内部通常继承自删除器类型，当删除器是空类（没有数据成员）时，编译器会把它的大小优化为 0，因此 `unique_ptr` 只需要存储那一个裸指针。
 
+你可以运行 `code/volumn_codes/vol2/ch01-smart-pointers/test_ebo_sizeof.cpp` 来验证这一点。在 x86_64-linux 平台（g++ 15.2.1）上的典型输出：
+
+```text
+sizeof(int*):                                  8 bytes
+sizeof(unique_ptr<int>):                        8 bytes
+sizeof(unique_ptr<int, EmptyDeleter>):         8 bytes
+sizeof(unique_ptr<int, void(*)(int*)>):        16 bytes
+sizeof(unique_ptr<int, StatefulDeleter>):      16 bytes
+```
+
+可以看到，使用无状态删除器时 `unique_ptr` 的大小与裸指针完全相同，而使用函数指针或有状态删除器时会增加额外开销。
+
 而使用函数指针作为删除器时，`unique_ptr` 需要额外存储一个函数指针，所以大小翻倍——16 字节。这就是"零开销"的前提条件：**删除器必须是无状态的**。
 
 我们再从汇编的角度验证。下面是一个简单的例子：
@@ -265,7 +281,14 @@ int use_raw_ptr() {
 }
 ```
 
-在开启优化（`-O2`）后，这两个函数生成的汇编代码几乎完全相同——编译器把 `unique_ptr` 的构造和析构直接内联为 `new` 和 `delete`，没有任何额外的指令开销。这就是 C++ 抽象的威力：你在源码层面获得了安全性和可读性，但在机器码层面没有付出任何代价。
+在开启优化（`-O2`）后，这两个函数生成的汇编代码几乎完全相同。查看 `code/volumn_codes/vol2/ch01-smart-pointers/test_assembly_optimization.cpp` 并用 `g++ -std=c++17 -O2 -S` 编译，你会看到两个函数都生成：
+
+```asm
+movl    $42, %eax
+ret
+```
+
+编译器把 `unique_ptr` 的构造和析构直接内联优化掉了，连 `new` 和 `delete` 都被消除了（因为对象的生命周期很短且没有副作用）。这就是 C++ 抽象的威力：你在源码层面获得了安全性和可读性，但在机器码层面没有付出任何代价。
 
 ## PIMPL 惯用法：隐藏实现细节
 
@@ -331,6 +354,24 @@ void Widget::do_something() {
 
 PIMPL 的好处是显而易见的：修改 `Impl` 的定义（比如添加成员、修改方法）只需要重新编译 `widget.cpp`，所有包含 `widget.h` 的文件都不需要重新编译。对于大型项目来说，这能显著缩短编译时间。
 
+完整的 PIMPL 示例代码可以在 `code/volumn_codes/vol2/ch01-smart-pointers/` 中找到：
+
+- `pimpl_widget.h` - 公共接口头文件
+- `pimpl_widget.cpp` - 实现（包含 `Widget::Impl` 的完整定义）
+- `pimpl_user.cpp` - 用户代码示例
+
+你可以这样编译和运行：
+
+```bash
+cd code/volumn_codes/vol2/ch01-smart-pointers
+g++ -std=c++17 -c pimpl_widget.cpp -o pimpl_widget.o
+g++ -std=c++17 -c pimpl_user.cpp -o pimpl_user.o
+g++ -std=c++17 pimpl_widget.o pimpl_user.o -o test_pimpl
+./test_pimpl
+```
+
+这个示例展示了 PIMPL 模式的关键特性：公共接口完全不暴露实现细节，修改 `Impl` 结构体不需要重新编译用户代码。
+
 ⚠️ PIMPL 使用 `unique_ptr` 时有几个注意点。首先，`~Widget()` 必须在实现文件中定义——因为析构时需要 `Impl` 是完整类型，而头文件中只有前向声明。其次，移动构造和移动赋值也应该在实现文件中 `= default`，原因相同。如果你在头文件中 `= default` 它们，编译器会尝试在头文件中实例化 `unique_ptr<Impl>` 的析构，而此时 `Impl` 不完整，会导致编译错误。
 
 ## 工厂函数返回 unique_ptr
@@ -384,7 +425,14 @@ void application() {
 
 这种模式还有一个妙处：工厂函数返回 `unique_ptr<Logger>`（基类指针），但实际创建的是 `ConsoleLogger` 或 `FileLogger`（派生类对象）。只要 `Logger` 有虚析构函数（我们确实声明了 `virtual ~Logger() = default`），多态析构就是安全的。
 
-值得注意的是，返回 `unique_ptr` 并不会带来任何性能损失。在现代编译器中，返回值优化（RVO）或者移动语义会确保整个过程零拷贝——工厂函数中创建的 `unique_ptr` 直接"搬到"了调用者的变量中。
+值得注意的是，返回 `unique_ptr` 并不会带来任何性能损失。在现代编译器中，返回值优化（RVO）和移动语义会确保整个过程零拷贝——工厂函数中创建的 `unique_ptr` 直接"搬到"了调用者的变量中。
+
+具体来说：
+
+- C++11/14：主要依赖移动语义（移动构造函数）
+- C++17：保证的拷贝省略（guaranteed copy elision）进一步优化了这种情况
+
+无论哪种情况，都不会发生额外的内存分配或引用计数操作，性能与直接返回裸指针相当。
 
 ## release()、reset() 和 get()：三个关键操作
 

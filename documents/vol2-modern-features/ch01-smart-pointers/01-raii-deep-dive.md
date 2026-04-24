@@ -22,7 +22,7 @@ related:
 
 # RAII 深入理解：资源管理的基石
 
-笔者最早学 C++ 的时候，对"资源管理"这件事完全没有概念——new 了一个对象就忘了 delete，打开了一个文件就忘了 fclose，锁住了 mutex 就忘了 unlock。后来项目越来越大，这种"手抖忘释放"的 bug 开始像蟑螂一样，发现一只就意味着角落里还有十只。直到有一天笔者认真读了 Bjarne Stroustrup 的书，才明白 C++ 早就为我们准备了一套优雅的解决方案：RAII。
+笔者最早学 C++ 的时候，对"资源管理"这件事完全没有概念——new 了一个对象就忘了 delete，打开了一个文件就忘了 fclose，锁住了 mutex 就忘了 unlock。后来项目越来越大，这种"手抖忘释放"的 bug 开始像蟑螂一样，发现一只就意味着角落里还有十只(嗯，事实证明发现的时候我可能还要同时写项目复盘报告咯，哭)。直到有一天笔者认真读了 Bjarne Stroustrup 的书，才明白 C++ 早就为我们准备了一套优雅的解决方案：RAII。
 
 RAII（Resource Acquisition Is Initialization）是 C++ 最核心的资源管理思想，也是现代 C++ 智能指针、锁守卫、文件句柄封装等一切"自动清理"机制的根基。理解了 RAII，你就不只是在"用工具"，而是在理解工具背后的设计哲学。今天这篇文章，我们就从机制到实战，把 RAII 彻底搞透。
 
@@ -30,9 +30,9 @@ RAII（Resource Acquisition Is Initialization）是 C++ 最核心的资源管理
 
 RAII 的核心思想非常朴素：**资源的获取放在构造函数里，资源的释放在析构函数里**。只要对象创建成功，资源就到手了；只要对象离开作用域（无论是正常返回、提前 return 还是异常抛出），析构函数就一定会被调用，资源就一定会被释放。
 
-听起来简单得像废话？但就是这条"废话"，解决了 C 程序员几十年来头疼的资源泄漏问题。在 C 语言里，你只能靠程序员自己记住"每个 return path 都要释放资源"，而人类——说实话——并不擅长这种机械式的记忆力工作。
+我当时第一反应是——嗯？隔这隔这呢？要不然呢？但是我后面仔细一品——欸有道理啊！笔者之前是写驱动的，在 C 语言里（特别是我写驱动的时候，一想到我要处理4~5个goto我忍俊不禁），咱们要是只靠程序员自己记住"每个 return path 都要释放资源"这句话来回避出bug，那我觉得我没法做人类程序员。
 
-我们来看一个最朴素的例子，用 RAII 封装文件句柄：
+不扯皮了，来看一个最朴素的例子，用 RAII 封装文件句柄：
 
 ```cpp
 #include <cstdio>
@@ -92,7 +92,7 @@ void write_log(const char* msg) {
 }
 ```
 
-如果你熟悉 C 语言，对比一下就能感受到差距：在 C 里，每个可能提前返回的分支都要手动 `fclose`，漏了一个就是文件描述符泄漏。而 RAII 把这种"别忘了"的负担交给了编译器——析构函数一定会被调用，这不是约定，而是 C++ 语言规范的保证。
+如果你熟悉 C 语言，对比一下就能感受到差距：在 C 里，每个可能提前返回的分支都要手动 `fclose`，漏了一个就是文件描述符泄漏。而 RAII 把这种"别忘了"的负担交给了编译器——析构函数一定会被调用（只要程序是通过正常控制流退出的，而非直接调用 `std::exit()` 或 `std::abort()`），这不是约定，而是 C++ 语言规范的保证。
 
 ## 栈展开：RAII 背后的引擎
 
@@ -145,7 +145,78 @@ Tracer(b) 构造
 
 注意看：异常抛出后，`b` 和 `a` 依然被正确析构了——而且顺序是**后构造的先析构**（LIFO）。`c` 没有构造所以也不需要析构。这就是栈展开的全部秘密：不管控制流如何离开作用域，所有已构造的局部对象都会被依次销毁。
 
-⚠️ 这也是为什么析构函数绝对不能抛出异常的原因。如果在栈展开的过程中，某个析构函数又抛出了新异常，C++ 运行时会直接调用 `std::terminate()` 终止程序——因为此时已经有了一个正在传播的异常，系统无法同时处理两个。所以，请永远把析构函数标记为 `noexcept`，并在里面用 try-catch 吞掉可能的异常。
+我们可以用代码验证这个保证：
+
+```cpp
+// GCC 13, -O2 -std=c++11
+#include <iostream>
+#include <stdexcept>
+
+struct Tracer {
+    const char* name;
+    explicit Tracer(const char* n) : name(n) {
+        std::cout << "Tracer(" << name << ") constructed\n";
+    }
+    ~Tracer() {
+        std::cout << "~Tracer(" << name << ") destroyed\n";
+    }
+};
+
+void may_throw() {
+    throw std::runtime_error("Exception thrown");
+}
+
+void test_stack_unwinding() {
+    Tracer t1("t1");
+    Tracer t2("t2");
+    may_throw();  // 异常在这里抛出
+    Tracer t3("t3");  // 永远不会执行到这里
+}
+
+int main() {
+    try {
+        test_stack_unwinding();
+    } catch (const std::exception& e) {
+        std::cout << "Caught: " << e.what() << "\n";
+    }
+}
+```
+
+运行输出：
+
+```text
+Tracer(t1) constructed
+Tracer(t2) constructed
+~Tracer(t2) destroyed
+~Tracer(t1) destroyed
+Caught: Exception thrown
+```
+
+⚠️ 析构函数应保证不抛异常。在异常传播（栈展开）期间若析构函数抛出新异常，程序会调用 `std::terminate()`。C++11 起，用户声明的析构函数默认为 `noexcept(true)`（即使没有显式指定），抛出异常即终止。因此析构函数中应捕获并处理所有异常，或将可能失败的操作移出析构函数，提供显式接口处理错误。
+
+我们可以验证这个行为：
+
+```cpp
+// GCC 13, -O2 -std=c++11
+#include <iostream>
+#include <type_traits>
+
+struct TestDestructor {
+    ~TestDestructor() {
+        std::cout << "Destructor called\n";
+    }
+};
+
+int main() {
+    std::cout << "Is destructor noexcept? "
+              << std::is_nothrow_destructible<TestDestructor>::value << "\n";
+    // 输出：Is destructor noexcept? 1
+}
+```
+
+如果试图在析构函数中抛出异常（即使显式指定 `noexcept(false)`），在栈展开期间仍会导致 `std::terminate()` 被调用。这是 C++ 标准的强制要求，目的是防止异常处理机制本身崩溃。
+
+⚠️ **边界情况**：析构函数保证只适用于"正常控制流退出"。如果程序调用 `std::exit()`、`std::abort()` 或 `_exit()`，或者被信号杀死，栈展开不会发生，局部对象的析构函数也不会被调用。这也是为什么应该优先使用异常而非 `std::exit()` 的原因之一。
 
 ## 异常安全保证：RAII 的实战价值
 
@@ -415,12 +486,9 @@ public:
 
     ~ScopeGuard() noexcept {
         if (active_) {
-            try {
-                func_();
-            } catch (...) {
-                // 析构中绝不能让异常逃逸
-                std::terminate();
-            }
+            func_();
+            // 如果 func_() 抛出异常，由于析构函数标记为 noexcept
+            // C++ 运行时会自动调用 std::terminate()
         }
     }
 
@@ -463,6 +531,50 @@ void complex_operation() {
 ```
 
 这个 `ScopeGuard` 的实现其实和 Andrei Alexandrescu 在 2000 年代提出的经典方案一脉相承。在后面的章节中，我们会看到 C++ 标准是如何将这个模式标准化为 `std::scope_exit` / `std::scope_fail` 的，以及 Boost.Scope 库是如何提供更丰富的功能的。
+
+## 验证边界情况：何时析构函数不会被调用
+
+为了完整理解 RAII 的适用边界，我们需要明确哪些情况下析构函数不会被调用。这有助于我们在设计系统时做出正确的决策：
+
+```cpp
+// GCC 13, -O2 -std=c++11
+#include <iostream>
+#include <cstdlib>
+
+struct Tracer {
+    const char* name;
+    explicit Tracer(const char* n) : name(n) {
+        std::cout << "Tracer(" << name << ") constructed\n";
+    }
+    ~Tracer() {
+        std::cout << "~Tracer(" << name << ") destroyed\n";
+    }
+};
+
+void test_normal_return() {
+    Tracer t("normal");
+    return;  // 析构函数会被调用
+}
+
+void test_exit() {
+    Tracer t("exit");
+    std::exit(0);  // 析构函数不会被调用！
+}
+```
+
+运行结果：
+
+```text
+Normal case:
+Tracer(normal) constructed
+~Tracer(normal) destroyed
+
+std::exit() case:
+Tracer(exit) constructed
+(程序直接终止，没有析构输出)
+```
+
+这个验证告诉我们：RAII 的保证仅适用于**正常控制流**（包括异常处理）。如果程序通过 `std::exit()`、`std::abort()`、`_exit()` 或信号处理等方式非正常退出，析构函数不会执行。这也是为什么现代 C++ 推荐使用异常而非 `std::exit()` 的原因之一——异常能保证栈展开和资源清理，而 `std::exit()` 不能。
 
 ## 小结
 

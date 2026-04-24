@@ -167,7 +167,7 @@ if (std::lock_guard lock(mtx); ready) {
 
 这里 `std::lock_guard lock(mtx)` 利用了 C++17 的 CTAD（类模板参数推导），不需要写 `std::lock_guard<std::mutex> lock(mtx)` 了。`lock` 对象在 `if/else` 整个块结束时析构，自动调用 `mtx.unlock()`。
 
-不过需要注意一点：锁的持有范围覆盖了整个 `if/else` 块，包括 `else` 分支。如果你的目的是只在 `if` 分支持锁，`else` 分支不需要锁，那这种写法会让 `else` 分支也在持锁状态下执行。这种情况下你可能需要更细粒度的控制。
+需要注意一点：锁的持有范围覆盖了整个 `if/else` 块，包括 `else` 分支。如果你的目的是只在 `if` 分支持锁，`else` 分支不需要锁，那这种写法会让 `else` 分支也在持锁状态下执行。这种情况下你可能需要更细粒度的控制。
 
 ### 文件或资源检查
 
@@ -188,7 +188,7 @@ if (auto f = std::ifstream("config.txt"); f.is_open()) {
 
 ### 互斥锁 + 条件检查组合
 
-在多线程编程中，"先持锁，再检查条件"是非常常见的模式。if 初始化器让这个模式的代码变得简洁而正确：
+在多线程编程中，"先持锁，再检查条件"是非常常见的模式。if 初始化器能让这个模式的代码变得更紧凑：
 
 ```cpp
 std::mutex mtx;
@@ -203,15 +203,17 @@ std::map<int, Data> data_store;
     }
 }
 
-// 用 if 初始化器：更紧凑
+// 尝试用 if 初始化器：更紧凑？
 if (std::lock_guard lock(mtx); auto it = data_store.find(id); it != data_store.end()) {
     process(it->second);
 }
 ```
 
-等等——上面这个例子有问题。if 初始化器只支持一个分号（一个 init-statement），不能写两个。上面的 `std::lock_guard lock(mtx); auto it = data_store.find(id)` 是两条语句，语法不支持。
+等等——上面这个例子有问题。if 初始化器只支持一个分号（一个 init-statement），不能写两个。上面的写法试图把 `std::lock_guard lock(mtx)` 和 `auto it = data_store.find(id)` 都放进去，语法不支持。
 
-但我们可以利用逗号表达式或者把 `find` 的结果作为条件来绕过：
+如果你尝试这样写，会得到编译错误。结构化绑定声明不能作为条件的一部分，它必须出现在 init-statement 中。
+
+正确的做法是：
 
 ```cpp
 // 方法1：锁放在 init，find 放在 condition
@@ -219,28 +221,14 @@ if (std::lock_guard lock(mtx); data_store.count(id) > 0) {
     process(data_store.at(id));
 }
 
-// 方法2：使用结构化绑定 + insert
-if (std::lock_guard lock(mtx); auto [it, ok] = data_store.emplace(id, Data{}); !ok) {
-    // key 已存在，处理已有数据
-    process(it->second);
-}
-```
-
-实际上方法 2 利用了 `emplace` 的返回值：如果 key 已存在，`ok` 为 `false`，`it` 指向已有元素。这个技巧在并发容器操作中很有用。
-
-但更准确地说，标准 C++17 确实只允许一个 init-statement。如果你需要多个初始化，可以用嵌套的方式：
-
-```cpp
-if (std::lock_guard lock(mtx)) {
+// 方法2：使用嵌套 if
+if (std::lock_guard lock(mtx); true) {
     if (auto it = data_store.find(id); it != data_store.end()) {
         process(it->second);
     }
 }
-```
 
-嗯，但 `std::lock_guard` 没有声明 `operator bool()`，所以 `if (std::lock_guard lock(mtx))` 会编译失败。真正的做法是在外层用花括号限制锁的作用域，或者就用最朴素的代码块：
-
-```cpp
+// 方法3：还是用朴素的代码块
 {
     std::lock_guard lock(mtx);
     if (auto it = data_store.find(id); it != data_store.end()) {
@@ -248,6 +236,8 @@ if (std::lock_guard lock(mtx)) {
     }
 }
 ```
+
+方法 2 中的 `if (std::lock_guard lock(mtx); true)` 可能看起来奇怪，但这是合法的。锁的析构会在整个 if/else 块结束时发生，所以内层的 if 仍在持锁状态下执行。
 
 有时候最简单的方案反而是最好的。
 

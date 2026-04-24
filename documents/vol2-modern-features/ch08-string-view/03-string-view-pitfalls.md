@@ -334,9 +334,9 @@ g++ -std=c++17 -O0 -g -fsanitize=address -fno-omit-frame-pointer main.cpp
 # 如果有 use-after-free，ASan 会打印详细的错误报告
 ```
 
-## 前瞻：C++23 std::zstring_view
+## 前瞻：C++26 std::zstring_view（提案 P3655）
 
-C++ 社区也意识到了 `string_view` 在 NUL 终止方面的不足。C++23 引入了 `std::zstring_view`（或者更准确地说，相关的提案仍在推进中，P3655R0 等提案讨论了这一方向），它的核心目标是提供一个保证 NUL 终止的 `string_view` 变体。
+C++ 社区也意识到了 `string_view` 在 NUL 终止方面的不足。P3655 提案建议引入 `std::zstring_view`（或称 `std::cstring_view`），目标是提供一个保证 NUL 终止的 `string_view` 变体。该提案目前瞄准 C++26 标准，尚未正式发布。
 
 `zstring_view` 的设计理念是：在 `string_view` 的基础上增加 NUL 终止保证，使其可以安全地传给 C API。它仍然是非拥有的，所以生命周期问题依然存在，但至少解决了 NUL 终止这一半的痛点。
 

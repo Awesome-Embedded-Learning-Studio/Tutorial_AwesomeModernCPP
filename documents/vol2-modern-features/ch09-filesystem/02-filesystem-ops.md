@@ -205,7 +205,7 @@ fs::copy("/tmp/source_dir", "/tmp/dest_dir",
          fs::copy_options::overwrite_existing);
 ```
 
-`fs::copy_file(from, to, options)` 是专门用于文件复制的函数。它和 `copy` 的区别在于：`copy_file` 只处理普通文件，而且提供了更精细的控制。比如 `copy_file` 可以保证原子性——在复制完成之前，目标文件不会被部分覆盖。
+`fs::copy_file(from, to, options)` 是专门用于文件复制的函数。它和 `copy` 的区别在于：`copy_file` 只处理普通文件，而且提供了更精细的控制。⚠️ 注意：`copy_file` **不提供原子性保证**——如果复制过程中失败（如磁盘空间不足、断电等），目标文件可能处于部分写入状态。如需原子性，应使用"复制到临时文件 + 原子重命名"模式。
 
 ```cpp
 // 安全的文件复制（原子性保证）
@@ -246,7 +246,7 @@ std::cout << "删除了 " << count << " 个文件/目录\n";
 
 ⚠️ `remove_all` 是不可逆的操作。笔者有一次在调试时不小心把路径写错了（少了一层目录），差点把整个项目目录清空。幸好当时跑在测试环境里，没有造成实际损失。从那以后，笔者在调用 `remove_all` 之前一定会打印路径并确认。建议你也养成这个习惯。
 
-`fs::rename(old_path, new_path)` 重命名或移动文件/目录。它在同一个文件系统上是原子操作（只修改目录项，不移动数据），跨文件系统时等同于复制+删除：
+`fs::rename(old_path, new_path)` 重命名或移动文件/目录。在大多数实现中，同一文件系统上的重命名是原子操作（只修改目录项，不移动数据）。⚠️ 注意：跨文件系统的重命名通常**会失败**（抛出异常或返回错误），而不是自动执行复制+删除。如需跨文件系统移动，应显式使用 `copy` + `remove`：
 
 ```cpp
 std::error_code ec;
@@ -363,6 +363,7 @@ bool safe_write_file(const fs::path& target, const std::string& data) {
 ```cpp
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <vector>
 #include <string>

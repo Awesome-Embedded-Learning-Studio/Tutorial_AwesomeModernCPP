@@ -44,7 +44,7 @@ ReturnType operator""_suffix(const char* str, size_t length);
 ReturnType operator""_suffix(char c);
 ```
 
-这里有两对概念需要区分：**cooked** 和 **raw**。Cooked 字面量是指编译器已经解析并转换后的字面量——对于整型和浮点型，编译器会先把它们解析成数值类型再传给 `operator""`。Raw 字面量则接收原始的字符序列，编译器不做任何解析——只有字符串字面量和整数字面量支持 raw 形式（整数的 raw 形式参数为 `const char*`）。
+这里有两对概念需要区分：**cooked** 和 **raw**。Cooked 字面量是指编译器已经解析并转换后的字面量——对于整型和浮点型，编译器会先把它们解析成数值类型再传给 `operator""`。Raw 字面量则接收原始的字符序列，编译器不做任何解析。字符串字面量只支持 raw 形式，而整数字面量同时支持 cooked（`unsigned long long`）和 raw（`const char*`）两种形式。
 
 先从一个最简单的例子开始：
 
@@ -269,8 +269,8 @@ consteval Milliseconds operator""_ms(unsigned long long v) {
 }
 
 constexpr auto t1 = 100_ms;   // OK，编译期执行
-// int x = 100;
-// auto t2 = x_ms;            // 错误！x 不是编译期常量
+// 注意：consteval 要求字面量必须是编译期常量
+// 例如：std::stoi("123")_ms 会编译失败，因为 stoi 不是 constexpr
 ```
 
 ------
@@ -311,7 +311,7 @@ auto y = 100_km / (2 * 3); // 100_km / 6 ≈ 16.67_km
 
 ### 整数溢出
 
-大数字的单位转换可能溢出。如果你的 UDL 涉及乘法（比如 `operator""_ms` 里乘以 1000000），要考虑 `unsigned long long` 的上限（约 1.8 * 10^19），并在文档中注明范围限制。
+大数字的单位转换可能溢出。如果你的 UDL 涉及乘法（比如 `operator""_ms` 里乘以 1000000），要考虑 `unsigned long long` 的上限（约 1.8 * 10^19），并在文档中注明范围限制。注意整数溢出在 C++ 中是**未定义行为**，编译器可能不会发出警告。
 
 ------
 
@@ -404,15 +404,8 @@ auto room_temp = 25.0_degC;
 auto angle = 3.14159_rad;
 ```
 
-每个数字后面都带着它的单位，代码几乎不需要注释。这就是 UDL 的价值。
+每个数字后面都带着它的单位，代码几乎不需要注释(看着是真的爽啊!)
 
-------
-
-## 小结
-
-用户自定义字面量是 C++11 引入的一个精巧机制，它让我们能够为字面量添加类型和语义。核心要点有三个：`operator""` 的四种形式（整型、浮点、字符串、字符）及其 cooked/raw 区别；后缀必须以下划线 `_` 开头，标准库后缀不带下划线；务必标记 `constexpr` 以获得编译期计算和零运行时开销。
-
-下一篇我们会进入实战，用 UDL 构建一个类型安全的物理单位系统——包括长度、时间、速度的单位组合与编译期检查。
 
 ## 参考资源
 

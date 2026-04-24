@@ -144,12 +144,14 @@ void list_all_files(const fs::path& dir) {
 
 ```cpp
 void list_with_depth_limit(const fs::path& dir, int max_depth) {
-    for (const auto& entry : fs::recursive_directory_iterator(dir)) {
-        if (entry.depth() > max_depth) {
-            continue;  // 超过深度限制，跳过
+    for (auto it = fs::recursive_directory_iterator(dir);
+         it != fs::recursive_directory_iterator(); ++it) {
+        if (it.depth() > max_depth) {
+            it.disable_recursion_pending();  // 跳过该子目录
+            continue;
         }
-        std::cout << std::string(entry.depth() * 2, ' ')
-                  << entry.path().filename().string() << "\n";
+        std::cout << std::string(it.depth() * 2, ' ')
+                  << it->path().filename().string() << "\n";
     }
 }
 ```
@@ -191,7 +193,7 @@ for (const auto& entry : fs::recursive_directory_iterator(
 
 ### 缓存的优势
 
-在遍历目录时，操作系统通常会一次性返回文件名和基本状态（类型、大小等）。`directory_entry` 把这些信息缓存下来，后续调用 `is_regular_file()`、`is_directory()`、`file_size()` 等方法时，直接从缓存读取，不需要再次调用系统调用。这个优化在遍历大型目录时效果显著——避免了成千上万次冗余的 `stat()` 调用。
+`directory_entry` 可能会缓存文件状态信息（类型、大小等），以减少系统调用次数。当你在遍历过程中多次调用 `is_regular_file()`、`is_directory()`、`file_size()` 等方法时，可以直接从缓存读取，避免重复的 `stat()` 调用。⚠️ 注意：缓存行为是**实现定义的**（implementation-defined），标准不保证一定会缓存或缓存何时失效。
 
 ```cpp
 for (const auto& entry : fs::directory_iterator(dir)) {
@@ -236,8 +238,9 @@ std::vector<fs::path> search_files(const fs::path& root,
 
     auto options = fs::directory_options::skip_permission_denied;
 
-    for (const auto& entry :
-         fs::recursive_directory_iterator(root, options, ec)) {
+    for (auto it =
+         fs::recursive_directory_iterator(root, options, ec);
+         it != fs::recursive_directory_iterator(); ++it) {
         if (ec) {
             std::cerr << "遍历错误: " << ec.message() << "\n";
             ec.clear();
@@ -246,9 +249,12 @@ std::vector<fs::path> search_files(const fs::path& root,
 
         // 深度过滤
         if (filter.max_depth >= 0 &&
-            entry.depth() > filter.max_depth) {
+            it.depth() > filter.max_depth) {
+            it.disable_recursion_pending();
             continue;
         }
+
+        const auto& entry = *it;
 
         // 只处理普通文件
         if (!entry.is_regular_file()) {

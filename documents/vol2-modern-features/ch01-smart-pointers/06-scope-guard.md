@@ -126,7 +126,7 @@ ScopeGuard<F> make_scope_guard(F&& func) noexcept {
 }
 ```
 
-这个实现有几个值得注意的设计决策。析构函数用 `try-catch(...)` 包裹了 `func_()` 的调用，并在 catch 块中调用 `std::terminate()`。这是因为析构函数在栈展开过程中被调用时，如果再次抛出异常，C++ 运行时会直接终止程序（因为无法同时处理两个异常）。虽然 `noexcept` 函数抛异常也会导致 `terminate()`，但显式的 try-catch 给了我们一个将来添加日志的机会。
+这个实现有几个值得注意的设计决策。析构函数用 `try-catch(...)` 包裹了 `func_()` 的调用，并在 catch 块中调用 `std::terminate()`。在 C++ 标准中，如果析构函数在栈展开过程中抛出异常，程序会直接调用 `std::terminate()` —— 毕竟运行时无法同时处理两个异常。虽然标注了 `noexcept` 的函数抛异常也会导致 `terminate()`（这是编译器通过 `-Wterminate` 警告会提醒你的），但显式的 try-catch 给了我们一个将来添加日志或清理的机会。如果你对 noexcept 异常处理的行为不太确定，可以运行本章节的验证代码（`06-scope-guard-verification.cpp`）中的相关测试，实际观察一下 terminate 的触发时机。
 
 `dismiss()` 方法允许你在成功路径上取消守卫。这在"只在失败时回滚"的场景中非常有用——我们后面会看到更优雅的 `scope_fail` 实现。
 
@@ -174,7 +174,7 @@ void process_with_defer() {
 
 `DEFER` 宏的好处是把清理代码和获取代码放在了一起——读者不需要跳到函数末尾就能看到"这个资源会在什么时候释放"。这种局部性大大提高了代码的可读性和可维护性。
 
-⚠️ `DEFER` 宏的 lambda 捕获了 `[&]`（引用捕获），这意味着它引用了外层作用域的局部变量。如果在 `DEFER` 执行时这些变量已经离开作用域，就会产生悬垂引用。不过在实际使用中，`DEFER` 和它捕获的变量通常在同一个作用域内，所以这个问题很少出现——但你要意识到这个风险。
+⚠️ `DEFER` 宏的 lambda 捕获了 `[&]`（引用捕获），这意味着它引用了外层作用域的局部变量。如果在 `DEFER` 执行时这些变量已经离开作用域，就会产生悬垂引用。不过在实际使用中，`DEFER` 和它捕获的变量通常在同一个作用域内，所以这个问题很少出现——但你要意识到这个风险。如果确实需要跨作用域使用守卫对象，可以考虑按值捕获（`[=]`）或者确保守卫对象的生命周期不会超过被捕获的变量。
 
 ## scope_success 和 scope_fail：区分成功与失败路径
 
@@ -342,17 +342,46 @@ void update_both(SubsystemA& a, SubsystemB& b, const Config& cfg) {
 
 ## 标准化进展：std::scope_exit 与 Boost.Scope
 
-scope_guard 模式已经被 C++ 标准委员会注意到。Library Fundamentals TS v3（ISO/IEC TS 19568:2024）定义了三个作用域守卫类模板：`std::experimental::scope_exit`（作用域退出时执行）、`std::experimental::scope_success`（仅在正常退出时执行）和 `std::experimental::scope_fail`（仅在异常退出时执行）。它们的行为与我们上面实现的基本一致，但提供了更严格的接口约束和更好的编译器支持。
+scope_guard 模式已经被 C++ 标准委员会注意到。Library Fundamentals TS v3（ISO/IEC TS 19568:2024）定义了三个作用域守卫类模板：`std::experimental::scope_exit`（作用域退出时执行）、`std::experimental::scope_success`（仅在正常退出时执行）和 `std::experimental::scope_fail`（仅在异常退出时执行）。它们的行为与我们上面实现的基本一致，但标准化版本提供了更严格的异常安全保证和更完善的接口约束 —— 比如 `scope_exit` 的构造函数是 `noexcept` 的，并且不允许在构造时抛异常（否则会直接调用 `terminate()`）。
 
 Boost 库也提供了 Boost.Scope，实现了类似的组件。如果你不想自己实现 scope_guard，可以直接使用 Boost.Scope 或者头文件-only 的 scope-lite 库（Martin Moene 编写，提供与标准提案兼容的接口，支持 C++98 起的编译器）。
 
-在实际项目中，笔者通常的做法是：如果项目已经依赖 Boost，就用 Boost.Scope；如果不想引入 Boost 依赖，就用自己的轻量实现（就像我们今天写的那个 `ScopeGuard`）——总共不到 40 行代码，但能显著提高代码的异常安全性。
+在实际项目中，笔者通常的做法是：如果项目已经依赖 Boost，就用 Boost.Scope；如果不想引入 Boost 依赖，就用自己的轻量实现（就像我们今天写的那个 `ScopeGuard`）。从功能完整性来看，我们的基础实现大约 40 行代码，已经覆盖了核心功能 —— 你可以运行 `06-scope-guard-verification.cpp` 看看它在多返回路径、异常处理、事务模式等场景下的实际表现。
+
+## 验证代码
+
+我们为本章节编写了完整的验证测试，你可以用它来验证 scope_guard 的各种行为：
+
+```bash
+# 编译（使用 g++）
+g++ -std=c++17 -Wall -Wextra -O2 \
+    code/volumn_codes/vol2/ch01-smart-pointers/06-scope-guard-verification.cpp \
+    -o /tmp/06-scope-guard-verification
+
+# 运行
+/tmp/06-scope-guard-verification
+```
+
+验证代码包含以下测试用例：
+
+1. **基础 ScopeGuard** —— 验证作用域退出时执行
+2. **dismiss() 功能** —— 验证取消守卫
+3. **多返回路径** —— 验证提前 return 和正常退出都执行清理
+4. **ScopeFail（异常时执行）** —— 验证异常退出时触发
+5. **ScopeFail（无异常时不执行）** —— 验证正常退出不触发
+6. **ScopeSuccess（正常时执行）** —— 验证正常退出触发
+7. **ScopeSuccess（异常时不执行）** —— 验证异常退出不触发
+8. **事务模式** —— 验证实际事务处理场景
+9. **DEFER 宏模拟** —— 验证资源释放顺序
+10. **std::uncaught_exceptions() 行为** —— 验证异常检测机制
+
+这些测试覆盖了我们讨论的所有关键场景，你可以直接运行观察输出，也可以修改代码来测试边界情况。
 
 ## 小结
 
 scope_guard 是 RAII 思想的通用化——不仅管理资源的获取和释放，还管理任何需要在作用域退出时执行的操作。通过把操作包装在一个栈对象的析构函数中，scope_guard 保证了不管控制流如何离开作用域（正常返回、提前 return、异常传播），操作都会被执行。
 
-我们今天实现了三个守卫变体：`ScopeGuard`（总是执行）、`ScopeSuccess`（仅正常退出时执行）、`ScopeFail`（仅异常退出时执行），以及 `DEFER` 宏来提供 Go 风格的延迟执行语法。这些工具在事务处理、状态回滚、资源清理等场景中都能显著简化代码并提高可靠性。
+我们今天实现了三个守卫变体：`ScopeGuard`（总是执行）、`ScopeSuccess`（仅正常退出时执行）、`ScopeFail`（仅异常退出时执行），以及 `DEFER` 宏来提供 Go 风格的延迟执行语法。这些工具在事务处理、状态回滚、资源清理等场景中都能简化代码并提高可靠性 —— 你可以运行验证代码看看它们在实际场景中的表现。
 
 这个章节到这里就告一段落了。从 RAII 到智能指针（`unique_ptr`、`shared_ptr`、`weak_ptr`），从自定义删除器到侵入式引用计数，再到通用的 scope_guard——我们完整地覆盖了现代 C++ 资源管理的核心工具链。掌握这些工具，就掌握了写出安全、高效、可维护的 C++ 代码的基础。
 

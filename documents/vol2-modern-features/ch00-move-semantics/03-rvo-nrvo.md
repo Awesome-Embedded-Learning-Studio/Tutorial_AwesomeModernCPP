@@ -20,9 +20,15 @@ related:
 
 # RVO 与 NRVO：编译器的返回值优化
 
-笔者以前写 C 的时候，有一个根深蒂固的习惯：绝不返回大结构体。因为按值返回一个结构体，意味着函数里构造一份，再把这份拷贝给调用者——对于那些动辄几百字节的结构体来说，这个开销在性能敏感的代码里完全不可接受。所以 C 程序员发明了各种绕法：传出指针参数、返回静态局部变量、用 malloc 让调用者自己 free……
 
-C++ 有了拷贝构造和移动构造之后，按值返回大对象的代价已经大幅降低了——但编译器还能做得更好。它有一个"零成本"的秘密武器：**返回值优化**（Return Value Optimization，RVO）和**命名返回值优化**（Named Return Value Optimization，NRVO）。这两者的核心思路是：既然最终的对象要放在调用者的栈帧上，那何必在函数内部先构造一份再拷贝/移动过去？直接在调用者的空间里构造不就完了？这篇我们就把 RVO 和 NRVO 的机制、C++17 的保证消除、以及常见的失效场景全部讲清楚。
+我相信各位如果是从写C的，特别是写单片机C的，在特别的是从RAM贼小的片子来的朋友，一定不会在编程的时候返回大结构体，我的意思是，一定不会写`struct X GetSth(...)`这样的东西，对吧（栈一不小心就打爆了），这是因为按值返回一个结构体，意味着函数里构造一份，再把这份拷贝给调用者——对于那些动辄几百字节的结构体来说，这个开销在性能敏感的代码里完全不可接受。所以我们当时发明了各种绕法：传出指针参数、返回静态局部变量、用 malloc 让调用者自己 free……
+
+C++ 有了拷贝构造和移动构造之后，按值返回大对象的代价已经大幅降低了——但编译器还能做得更好。它有一个"零成本"的秘密武器：
+
+第一个，是**返回值优化**（Return Value Optimization，RVO），
+第二个，是**命名返回值优化**（Named Return Value Optimization，NRVO）。
+
+这两者的核心思路是：既然最终的对象要放在调用者的栈帧上，那何必在函数内部先构造一份再拷贝/移动过去？直接在调用者的空间里构造不就完了？由此疑惑，派生两者。就这个意思。
 
 ## RVO 和 NRVO 到底做了什么
 
@@ -36,6 +42,7 @@ struct Point {
 
     Point(double x, double y) : x(x), y(y)
     {
+        // 我知道好像在这里塞中文可能会造成问题，但是怕啥，demo而已
         std::cout << "  构造 Point(" << x << ", " << y << ")\n";
     }
 
@@ -114,19 +121,22 @@ g++ -std=c++17 -Wall -fno-elide-constructors -o rvo_no_elide rvo_test.cpp
 ./rvo_no_elide
 ```
 
-输出变成了：
+输出变成了（GCC 15, `-std=c++17`）：
 
 ```text
 === RVO ===
   构造 Point(1, 2)
-  移动 Point(1, 2)
 
 === NRVO ===
   构造 Point(3, 4)
   移动 Point(3, 4)
 ```
 
-现在我们看到了"真实"的行为：每个函数都先构造了一次 `Point`，然后做了一次移动构造把它搬到调用者的空间。注意这里用的是移动而不是拷贝——因为 C++11 之后，当编译器遇到 `return local_var;` 的时候，会自动把 `local_var` 当作右值来处理（隐式移动），即使 `local_var` 在函数内部是一个左值。这是一个很重要的保证：即使拷贝消除没生效，你也至少能获得移动语义的性能。
+这里有一个很重要的细节值得注意：RVO 部分**没有变化**——即使加了 `-fno-elide-constructors`，`make_point_rvo` 仍然只构造了一次，没有移动。这是因为 C++17 对 prvalue 返回的拷贝消除是语言语义保证，不是编译器优化开关能关闭的（这一点我们后面详细展开）。真正被影响的是 NRVO：`make_point_nrvo` 从"零成本"退化到了一次移动构造。
+
+注意 NRVO 退化后用的是移动而不是拷贝——因为 C++11 之后，当编译器遇到 `return local_var;` 的时候，会自动把 `local_var` 当作右值来处理（隐式移动），即使 `local_var` 在函数内部是一个左值。这是一个很重要的保证：即使拷贝消除没生效，你也至少能获得移动语义的性能。
+
+> （如果你想观察"全退化"行为——也就是连 RVO 也退化成移动——可以用 C++14 模式编译：`g++ -std=c++14 -fno-elide-constructors`。在 C++14 下，`-fno-elide-constructors` 对 RVO 和 NRVO 都生效，两个函数都会多出移动操作。）
 
 ## C++17 的保证消除——从"允许"到"必须"
 
@@ -231,32 +241,50 @@ Heavy without_rvo(Heavy h)
 }
 ```
 
-在 x86-64 上用 `g++ -std=c++17 -O2` 编译，`with_rvo` 的汇编大致如下：
+在 x86-64 上用 `g++ -std=c++17 -O2` 编译（GCC 15），`with_rvo` 的汇编如下：
 
 ```asm
+// GCC 15, -O2 -std=c++17
 with_rvo(int):
-    ; 参数 v 在 edi 中
-    ; 隐含的返回值地址在 rdi 中（调用者提供的空间）
-    ; 直接在 rdi 指向的空间里填充数据
-    mov     eax, edi
-    movd    xmm0, eax
-    pshufd  xmm0, xmm0, 0
-    ; ... 用 SIMD 指令快速填充 ...
+    movd    %esi, %xmm1         ; 参数 v 加载到 SSE 寄存器
+    movq    %rdi, %rax          ; rdi = 调用者提供的返回值地址
+    leaq    1024(%rdi), %rdx    ; 循环终止地址 = 起始 + 1024
+    pshufd  $0, %xmm1, %xmm0   ; 将 v 广播到 xmm0 的全部 4 个 int
+.L2:
+    movups  %xmm0, (%rax)      ; 每次写入 16 字节
+    addq    $32, %rax
+    movups  %xmm0, -16(%rax)
+    cmpq    %rdx, %rax
+    jne     .L2
+    movq    %rdi, %rax
     ret
 ```
 
-注意没有 `memcpy` 调用，没有额外的寄存器操作——函数直接在调用者提供的空间里工作。`without_rvo` 的汇编则明显不同：
+注意几点：函数通过隐含的 `rdi` 参数（调用者提供的空间地址）直接在调用者的内存上工作。它把 `v` 用 `pshufd` 广播到 SSE 寄存器的 4 个 lane，然后每次循环写 32 字节（两条 `movups`），循环 1024/32 = 32 次填满整个 `data[256]`（共 1024 字节）。没有 `memcpy` 调用，没有额外的内存拷贝——构造和返回合二为一。
+
+`without_rvo` 的汇编则明显不同：
 
 ```asm
+// GCC 15, -O2 -std=c++17
 without_rvo(Heavy):
-    ; 必须把参数 h 移动到返回值空间
-    mov     rax, rdi          ; 保存返回值地址
-    mov     ecx, 256
-    rep movsq                   ; memcpy 256 个四字（2048 字节）
+    movq    (%rsi), %rax
+    movq    %rdi, %rdx
+    leaq    8(%rdi), %rdi
+    movq    %rax, -8(%rdi)
+    movq    1016(%rsi), %rax
+    movq    %rax, 1008(%rdi)
+    andq    $-8, %rdi
+    movq    %rdx, %rax
+    subq    %rdi, %rax
+    leal    1024(%rax), %ecx   ; 待复制的字节数：1024
+    subq    %rax, %rsi
+    movq    %rdx, %rax
+    shrl    $3, %ecx           ; 1024 / 8 = 128 个四字（qword）
+    rep movsq                  ; 复制 128 * 8 = 1024 字节
     ret
 ```
 
-这里有 `rep movsq`——一个 2048 字节的内存复制操作。这就是没有 RVO/NRVO 时的代价。对于大对象来说，这个差异可能是决定性的。
+这里有 `rep movsq`，`ecx` 被计算为 `1024 / 8 = 128`——一次 1024 字节的内存复制操作（`int data[256]` 的大小就是 256 * 4 = 1024 字节）。编译器先处理了首尾各 8 字节的对齐问题，然后把中间部分用 `rep movsq` 一次性搬过去。这就是没有 RVO/NRVO 时的代价：对大对象来说，这 1024 字节的拷贝可能成为热点路径上的瓶颈。
 
 ## RVO 和移动语义的关系
 
@@ -487,7 +515,7 @@ g++ -std=c++17 -Wall -Wextra -O2 -o rvo_demo rvo_demo.cpp
 ./rvo_demo
 ```
 
-预期输出：
+实际输出（GCC 15, `-std=c++17 -O2`）：
 
 ```text
 === 1. RVO（返回 prvalue）===
@@ -519,16 +547,16 @@ g++ -std=c++17 -Wall -Wextra -O2 -o rvo_demo rvo_demo.cpp
 === 5. 返回参数（隐式移动）===
   [E_param] 构造
   [E_param] 移动构造
-  [(moved-from)] 析构
   [E_param] 移动构造
   [(moved-from)] 析构
   结果: E_param
   [E_param] 析构
+  [(moved-from)] 析构
 ```
 
-我们来仔细分析这些输出。第 1 和第 2 步是完美的情况——RVO 和 NRVO 都生效了，每个对象只构造了一次，没有任何拷贝或移动。第 3 步中 NRVO 失效了，因为两个分支返回不同的命名对象，编译器选择了隐式移动 `a`（`C_a` 变成了移动构造），`b` 则正常析构。第 4 步展示了 `return std::move(t)` 的后果——NRVO 被阻止，额外的移动构造发生了。第 5 步比较有意思：`return_param` 接收参数时发生了一次移动构造（`std::move(param)` 触发），返回参数时又发生了一次隐式移动——总共两次移动。
+我们来仔细分析这些输出。第 1 和第 2 步是完美的情况——RVO 和 NRVO 都生效了，每个对象只构造了一次，没有任何拷贝或移动。第 3 步中 NRVO 失效了，因为两个分支返回不同的命名对象，编译器选择了隐式移动 `a`（`C_a` 变成了移动构造），`b` 则正常析构。第 4 步展示了 `return std::move(t)` 的后果——NRVO 被阻止，额外的移动构造发生了。第 5 步比较有意思：`return_param` 接收参数时发生了一次移动构造（`std::move(param)` 触发），返回参数时又发生了一次隐式移动——总共两次移动。注意析构的顺序——`param` 的析构在 `e` 之后，因为 `param` 在外层作用域声明，它比 `e` 的作用域更晚结束。
 
-如果你用 `-fno-elide-constructors` 关闭消除重新编译，你会发现第 1 和第 2 步也出现了移动构造——这就是 C++17 保证消除和非保证优化的区别。第 1 步在 C++17 下是保证消除的，`-fno-elide-constructors` 对它其实无效（因为保证消除是语言语义，不是编译器优化开关能控制的）。但实际测试中，部分编译器版本的行为可能有所不同——如果好奇，可以在你的编译器上试试看。
+如果你用 `-fno-elide-constructors` 关闭消除重新编译，你会发现第 2 步（NRVO）出现了移动构造，但第 1 步（RVO）不受影响——这就是 C++17 保证消除和非保证优化的区别。第 1 步在 C++17 下是保证消除的，`-fno-elide-constructors` 对它无效（因为保证消除是语言语义，不是编译器优化开关能控制的）。而 NRVO 仍然是"允许但非必需"的优化，所以能被 `-fno-elide-constructors` 关闭。
 
 ## 实战指导
 

@@ -20,7 +20,7 @@ related:
 
 # 结构化绑定：一行解包多个值
 
-笔者在写代码的时候，经常遇到一个很别扭的场景：函数返回了多个值，你得一个个拆开赋给变量。用 `pair` 的时候写 `result.first`、`result.second`，用 `tuple` 的时候写 `std::get<0>(t)` —— 要么语义不明，要么写法丑陋。C++11 引入了 `std::tie` 来缓解这个问题，但老实说，那语法也不算优雅：你得先声明好所有变量，再用 `tie` 往里塞。
+笔者在写代码的时候，经常遇到一个很别扭的场景：函数返回了多个值，你得一个个拆开赋给变量。用 `pair` 的时候写 `result.first`、`result.second`，用 `tuple` 的时候写 `std::get<0>(t)` —— 要么语义不明，要么写法丑陋。C++11 引入了 `std::tie` 来缓解这个问题，但老实说，那语法也不算优雅：你得先声明好所有变量，再用 `tie` 往里塞。有没有那种,跟Python返回多个值的拆分写法一样爽的feature呢? 真有了孩子们!
 
 C++17 终于给了我们一个真正的答案——结构化绑定（Structured Binding）。一行代码把 `pair`、`tuple`、数组、结构体全部拆开，直接拿到有名字的变量，语义清晰、零开销。
 
@@ -89,7 +89,7 @@ double value;
 std::tie(record_id, name, value) = query_database(42);
 ```
 
-对比一下就很明显了：结构化绑定的变量声明和解包一步到位，而 `std::tie` 得拆成两步。更关键的是，`std::tie` 内部用的是引用，对于 `std::tuple` 中含有不可拷贝类型（比如 `std::unique_ptr`）的情况，`tie` 就无能为力了。结构化绑定没有这个限制。
+对比一下就很明显了：结构化绑定的变量声明和解包一步到位，而 `std::tie` 得拆成两步。虽然 `std::tie` 内部用的是引用，实际上它也能处理含有不可拷贝类型（如 `std::unique_ptr`）的 tuple——因为引用绑定不涉及拷贝。但结构化绑定的语法更简洁，而且支持按值、按引用、按转发引用等多种语义。
 
 ------
 
@@ -134,7 +134,7 @@ auto [id, val, ts, valid] = reading;
 
 这恐怕是结构化绑定最直观的用法了。你甚至不需要理解任何模板元编程，只要结构体成员是公有的就能用。
 
-但这里有个限制：结构化绑定要求数据成员的声明顺序一致，且不能有位域（bit field）。如果结构体里有 `mutable` 成员，行为也可能不符合预期，因为绑定到的"匿名变量"可能被 `const` 修饰但 `mutable` 成员不受此限制。
+结构化绑定要求数据成员按声明顺序绑定，且完全支持位域（bit field）。如果结构体里有 `mutable` 成员，行为可能需要注意：绑定到的"匿名变量"可能被 `const` 修饰，但 `mutable` 成员不受此限制，仍可修改。
 
 ------
 
@@ -246,33 +246,39 @@ auto [id, value] = data;    // id = 5, value = 23.5
 
 ## C++20 的增强
 
-C++20 对结构化绑定做了两个实用的增强。
+C++20 对结构化绑定做了一些增强，主要与 constexpr 上下文相关。
 
-第一，结构化绑定可以在 `constexpr` 上下文中使用了，这意味着编译期计算函数也能返回多值并用结构化绑定接收：
+结构化绑定可以在 `constexpr` 函数内部使用，这意味着编译期计算函数也能返回多值并用结构化绑定接收：
 
 ```cpp
 constexpr auto get_point() {
     return std::make_pair(3, 4);
 }
 
-constexpr auto [x, y] = get_point();
-static_assert(x == 3 && y == 4);
+constexpr bool test_structured_binding() {
+    auto [x, y] = get_point();
+    return x == 3 && y == 4;
+}
+
+static_assert(test_structured_binding());
 ```
 
-第二，lambda 可以通过初始化捕获来"捕获"结构化绑定的值了。这在循环中非常有用：
+不过要注意，你不能在命名空间作用域直接声明 `constexpr` 的结构化绑定（比如 `constexpr auto [x, y] = get_point();` 是编译错误的）。这是因为结构化绑定本质上是一组引用变量的声明，而不是单个变量声明。
+
+在 lambda 捕获方面，C++17 其实就支持直接捕获结构化绑定变量。下面的代码在 C++17 中就能工作：
 
 ```cpp
 std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
 
 for (const auto& [k, v] : m) {
-    auto callback = [key = k, value = v] {
-        std::cout << key << ": " << value << '\n';
+    auto callback = [k, v] {  // C++17 就支持直接捕获
+        std::cout << k << ": " << v << '\n';
     };
     callback();
 }
 ```
 
-C++17 中直接捕获结构化绑定变量（`[k, v]`）是编译错误，C++20 的这个改动解决了这个痛点。不过在 C++20 中，你仍然不能直接捕获绑定名（比如 `[=]` 不会捕获 `[k, v]`），必须用初始化捕获 `key = k` 这种形式。
+C++20 新增的是初始化捕获语法（`key = k`），这在某些情况下更灵活。但需要注意，`[=]` 默认捕获不会自动捕获结构化绑定变量，你需要显式列出它们。
 
 ------
 

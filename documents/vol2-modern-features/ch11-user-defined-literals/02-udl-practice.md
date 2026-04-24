@@ -73,10 +73,19 @@ struct Quantity {
 };
 
 /// 标量 × 单位（反向乘法）
+/// 注意：这个模板要求标量类型 T 必须与 Quantity 的 T 完全匹配
+/// 如果需要支持类型转换，需要提供额外的重载
 template <typename T, typename UnitTag>
 constexpr Quantity<T, UnitTag> operator*(
     T scalar, Quantity<T, UnitTag> q) {
     return q * scalar;
+}
+
+/// 支持整数标量 × long double Quantity 的重载
+template <typename UnitTag>
+constexpr Quantity<long double, UnitTag> operator*(
+    int scalar, Quantity<long double, UnitTag> q) {
+    return Quantity<long double, UnitTag>{q.value * scalar};
 }
 ```
 
@@ -119,15 +128,15 @@ constexpr Length operator""_km(unsigned long long v) {
 ```cpp
 void test_length() {
     constexpr auto d1 = 1.5_m;       // 1.5 米
-    constexpr auto d2 = 2_km;        // 2000 米
+    constexpr auto d2 = 2.0_km;      // 2000 米（注意：2_km 会失败，因为只定义了浮点重载）
     constexpr auto d3 = 100.0_cm;    // 1 米
-    constexpr auto d4 = 500_mm;      // 0.5 米
+    constexpr auto d4 = 500.0_mm;    // 0.5 米
 
     // 编译期计算
     constexpr auto total = 1.0_km + 500.0_m;  // 1500 米
     static_assert(total.value == 1500.0L);
 
-    // 标量乘法
+    // 标量乘法（现在支持整数了）
     constexpr auto doubled = 2 * 100.0_m;  // 200 米
     static_assert(doubled.value == 200.0L);
 
@@ -265,8 +274,8 @@ void test_temperature() {
 
     static_assert(to_kelvin(t1) == 273.15L);
 
-    // 温度差可以相加
-    constexpr auto delta = 10.0_degC - 0.0_degC;
+    // 温度差可以相减（在开尔文空间中）
+    constexpr auto delta = 10.0_degC - 0.0_degC;  // 10K
     static_assert(delta.value == 10.0L);
 
     // 摄氏 -> 华氏
@@ -374,7 +383,7 @@ constexpr std::uint16_t compute_brr(
 }
 
 void configure_uart() {
-    constexpr auto sysclk = 72_MHz;
+    constexpr auto sysclk = 72.0_MHz;  // 注意：必须用浮点字面量
     constexpr auto baud = 115200_Hz;
 
     // USART1->BRR = compute_brr(sysclk, baud);
@@ -476,11 +485,12 @@ using Speed = Quantity<long double, SpeedTag>;
 
 // 验证
 void test() {
-    constexpr auto marathon = 26.2_mi;  // 英里转米
-    constexpr auto pace = marathon / 4.0_s;  // 不对...应该是小时
+    constexpr auto marathon = 26.2_mi;     // 英里转米
+    // constexpr auto pace = marathon / 4.0_h;  // 配速（米/小时）
+    // 注意：需要先定义 _h 字面量才能使用
 
     // 提示：1 英里 = 1609.344 米
-    // static_assert(marathon.value > 42000.0);
+    static_assert(marathon.value > 42000.0);
 }
 ```
 

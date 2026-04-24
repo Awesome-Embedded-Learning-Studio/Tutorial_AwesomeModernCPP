@@ -100,23 +100,33 @@ std::vector v3(s.begin(), s.end());             // std::vector<int>
 
 ### smart pointers
 
-`std::unique_ptr` 和 `std::shared_ptr` 也支持 CTAD，但用法有限制：
+⚠️ **注意**：`std::unique_ptr` 和 `std::shared_ptr` **不支持**从裸指针的 CTAD。以下代码会编译失败：
 
 ```cpp
-// 从 new 表达式推导
-std::unique_ptr up(new int(42));           // std::unique_ptr<int>
-std::shared_ptr sp(new int(42));           // std::shared_ptr<int>
-
-// 但 make_unique/make_shared 仍然推荐使用（异常安全）
-auto up2 = std::make_unique<int>(42);      // 仍然推荐
-auto sp2 = std::make_shared<int>(42);      // 仍然推荐
+// 编译错误！智能指针不支持从 new 表达式 CTAD
+// std::unique_ptr up(new int(42));
+// std::shared_ptr sp(new int(42));
 ```
 
-对于 `unique_ptr` 和 `shared_ptr`，`make_unique` 和 `make_shared` 仍然是首选，因为它们提供了异常安全的内存分配。CTAD 主要在你必须使用 `new` 的场景（比如自定义删除器）中有用：
+这是因为智能指针的构造函数模板参数推导规则与普通类模板不同——它们的构造函数接受指针类型，但无法从裸指针推导出模板参数。
+
+**正确的做法**是使用 `make_unique` 和 `make_shared`（推荐）或显式指定模板参数：
 
 ```cpp
-std::unique_ptr fp(std::fopen("file.txt", "r"), &std::fclose);
-// 推导为 std::unique_ptr<FILE, int(*)(FILE*)>
+// 推荐：使用 make 函数（异常安全）
+auto up1 = std::make_unique<int>(42);
+auto sp1 = std::make_shared<int>(42);
+
+// 或显式指定模板参数
+std::unique_ptr<int> up2(new int(42));
+std::shared_ptr<int> sp2(new int(42));
+```
+
+CTAD 在智能指针中主要用于带自定义删除器的场景，但此时仍需显式指定删除器类型：
+
+```cpp
+std::unique_ptr<FILE, decltype(&std::fclose)> fp(std::fopen("file.txt", "r"), &std::fclose);
+// 需要显式指定模板参数，不能 CTAD
 ```
 
 ### optional 和 variant
@@ -140,15 +150,16 @@ std::array a = {1, 2, 3, 4, 5};  // std::array<int, 5>
 
 ### 小结：标准库 CTAD 一览
 
-| 类模板 | CTAD 写法 | 推导结果 |
-|--------|----------|---------|
-| `std::pair` | `std::pair p(1, 2.0)` | `pair<int, double>` |
-| `std::tuple` | `std::tuple t(1, 2.0, "hi")` | `tuple<int, double, const char*>` |
-| `std::vector` | `std::vector v = {1,2,3}` | `vector<int>` |
-| `std::array` | `std::array a = {1,2,3}` | `array<int, 3>` |
-| `std::optional` | `std::optional o = 42` | `optional<int>` |
-| `std::unique_ptr` | `std::unique_ptr up(new T)` | `unique_ptr<T>` |
-| `std::lock_guard` | `std::lock_guard lock(mtx)` | `lock_guard<mutex>` |
+| 类模板 | CTAD 写法 | 推导结果 | 备注 |
+|--------|----------|---------|------|
+| `std::pair` | `std::pair p(1, 2.0)` | `pair<int, double>` | ✓ 支持 |
+| `std::tuple` | `std::tuple t(1, 2.0, "hi")` | `tuple<int, double, const char*>` | ✓ 支持 |
+| `std::vector` | `std::vector v = {1,2,3}` | `vector<int>` | ✓ 支持 |
+| `std::array` | `std::array a = {1,2,3}` | `array<int, 3>` | ✓ 支持（推导指引） |
+| `std::optional` | `std::optional o = 42` | `optional<int>` | ✓ 支持 |
+| `std::unique_ptr` | `std::unique_ptr up(new T)` | — | ✗ **不支持** |
+| `std::shared_ptr` | `std::shared_ptr sp(new T)` | — | ✗ **不支持** |
+| `std::lock_guard` | `std::lock_guard lock(mtx)` | `lock_guard<mutex>` | ✓ 支持 |
 
 ------
 
@@ -310,20 +321,32 @@ struct MyArray {
 MyArray a = {1, 2, 3};  // C++17：编译错误！聚合不支持 CTAD
 ```
 
-### C++20：聚合 CTAD
+### C++20：聚合 CTAD 的限制
 
-C++20 终于让聚合类型也能享受 CTAD 了。编译器会根据聚合初始化的元素自动推导模板参数：
+⚠️ **重要澄清**：C++20 **并未**为所有聚合类型添加通用的 CTAD 支持。以下代码在 C++20 中**仍然会编译失败**：
 
 ```cpp
 template<typename T, std::size_t N>
 struct MyArray {
-    T data[N];
+    T data[N];  // 没有构造函数，是聚合类型
 };
 
-MyArray a = {1, 2, 3};  // C++20：推导为 MyArray<int, 3>
+MyArray a = {1, 2, 3};  // C++20：仍然编译错误！
 ```
 
-这个改进让很多轻量级的数据结构不再需要手写推导指引。
+C++20 对聚合 CTAD 的支持非常有限——主要改进是允许某些特定场景的推导，但不是通用的聚合 CTAD。要让上面的代码工作，你仍然需要手动写推导指引或添加构造函数。
+
+**为什么 `std::array` 能用 CTAD？**
+
+`std::array` 之所以支持 `std::array a = {1, 2, 3}`，是因为标准库为它写了专门的推导指引，而不是因为 C++20 的聚合 CTAD：
+
+```cpp
+// 标准库中的推导指引（简化版）
+template<typename T, typename... Args>
+array(T, Args...) -> array<T, 1 + sizeof...(Args)>;
+```
+
+如果你需要让自己的聚合类型支持 CTAD，最可靠的方法是添加推导指引或提供一个构造函数。
 
 ### 别名模板不支持 CTAD
 
@@ -423,9 +446,9 @@ int main() {
 
 CTAD 是 C++17 中一个实用的"减少样板代码"的特性。它让类模板的实例化更接近普通类的使用方式。标准库中的 `pair`、`tuple`、`vector`、`array`、`optional`、`lock_guard` 等都支持 CTAD，日常开发中已经非常够用。
 
-核心要点有三条：第一，隐式推导指引从构造函数自动生成，覆盖了大部分场景；第二，当隐式推导不够用时，可以写自定义推导指引来扩展推导行为；第三，C++20 为聚合类型添加了 CTAD 支持，补上了 C++17 的一个缺口。
+核心要点有三条：第一，隐式推导指引从构造函数自动生成，覆盖了大部分场景；第二，当隐式推导不够用时，可以写自定义推导指引来扩展推导行为；第三，**但要注意并非所有类模板都支持 CTAD**——比如智能指针和聚合类型就有明显限制。
 
-需要注意的限制包括：C++17 中聚合类型不支持 CTAD、别名模板不支持 CTAD、转发引用可能导致意外的引用类型推导。这些坑只要知道就好，遇到的时候能快速定位。
+需要注意的限制包括：智能指针（`unique_ptr`/`shared_ptr`）不支持从裸指针 CTAD、聚合类型在 C++20 中仍然不支持通用 CTAD、别名模板不支持 CTAD、转发引用可能导致意外的引用类型推导。这些坑只要知道就好，遇到的时候能快速定位。
 
 ## 参考资源
 

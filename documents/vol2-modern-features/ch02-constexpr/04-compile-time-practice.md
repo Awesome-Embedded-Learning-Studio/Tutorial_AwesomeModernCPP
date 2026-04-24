@@ -76,7 +76,7 @@ constexpr std::uint32_t crc32(const std::uint8_t* data, std::size_t length)
 }
 ```
 
-`kCrc32Table` 在编译期完整生成并被写入目标文件的只读数据段。`static_assert` 验证了几个关键项的值与标准 CRC-32 表一致，确保生成逻辑没有 bug。运行时的 `crc32` 函数只做简单的查表和 XOR 操作，非常快。
+`kCrc32Table` 在编译期完整生成并被写入目标文件的只读数据段（`.rodata`）。你可以用 `objdump -s -j .rodata` 查看生成的二进制文件来验证表数据确实存在于只读段中。`static_assert` 验证了几个关键项的值与标准 CRC-32 表一致，确保生成逻辑没有 bug。运行时的 `crc32` 函数只做简单的查表和 XOR 操作，非常快。
 
 ### 正弦函数查表
 
@@ -95,12 +95,12 @@ constexpr std::array<float, N> make_sin_table()
     for (std::size_t i = 0; i < N; ++i) {
         double angle = 2.0 * kPi * static_cast<double>(i) / static_cast<double>(N);
 
-        // 泰勒展开近似 sin(x)
+        // 泰勒展开近似 sin(x) - 使用前5项（最高到 x^9/9!）
         // sin(x) ≈ x - x^3/3! + x^5/5! - x^7/7! + x^9/9!
         double x = angle;
         double term = x;
         double sum = term;
-        for (int n = 1; n <= 5; ++n) {
+        for (int n = 1; n <= 4; ++n) {  // 4次迭代计算第2-5项
             term *= -x * x / static_cast<double>((2 * n) * (2 * n + 1));
             sum += term;
         }
@@ -124,7 +124,7 @@ constexpr float fast_sin_index(std::size_t index)
 }
 ```
 
-注意这里的泰勒展开用了 5 阶近似，对于大多数嵌入式应用来说精度足够了。如果你需要更高精度，可以增加展开项数，或者使用切比雪夫多项式等其他逼近方法——只要把数学写成 `constexpr` 函数，就能在编译期生成查表。
+注意这里的泰勒展开使用了 5 项（最高到 x^9/9!），对于大多数嵌入式应用来说精度足够了（误差通常小于 0.1%）。如果你需要更高精度，可以增加展开项数，或者使用切比雪夫多项式等其他逼近方法——只要把数学写成 `constexpr` 函数，就能在编译期生成查表。
 
 ## 第二步——编译期字符串处理
 
@@ -183,7 +183,7 @@ void dispatch_command(const char* cmd)
 }
 ```
 
-这里有一点需要注意：运行时的 `fnv1a32` 调用计算的是运行时传入的字符串的哈希，而 `kHashStart` 等是编译期计算的常量。`switch` 比较的是编译期常量与运行时哈希值，所以匹配逻辑是正确的。当然，哈希冲突在理论上总是存在的，`static_assert` 可以覆盖你已知命令之间的冲突检测，但无法防范未知输入之间的冲突。如果你的应用对正确性要求极高，可以在哈希匹配后再做一次 `strcmp` 确认。
+这里有一点需要注意：运行时的 `fnv1a32` 调用计算的是运行时传入的字符串的哈希，而 `kHashStart` 等是编译期计算的常量。`switch` 比较的是编译期常量与运行时哈希值，所以匹配逻辑是正确的。当然，哈希冲突在理论上总是存在的，`static_assert` 可以覆盖你已知命令之间的冲突检测，但无法防范未知输入之间的冲突。如果你的应用对正确性要求极高（比如安全关键系统），可以在哈希匹配后再做一次 `strcmp` 确认——这会增加少量运行时开销，但能完全避免冲突导致的错误行为。
 
 ## 第三步——编译期状态机
 
@@ -259,7 +259,7 @@ static_assert(all_states_have_transitions(kDebounceTable),
               "Some states have no outgoing transitions");
 ```
 
-如果有人修改了转移表导致出现重复条目或者遗漏了某个状态的处理，`static_assert` 会在编译期立刻报错。这种"编译期保证"比任何代码审查都可靠。
+如果有人修改了转移表导致出现重复条目或者遗漏了某个状态的处理，`static_assert` 会在编译期立刻报错，提供明确的错误信息。这种"编译期保证"比任何代码审查都可靠——它能捕获人眼容易遗漏的错误，而且是在代码无法编译通过时就被强制修正。
 
 ### 运行时状态机引擎
 
@@ -345,7 +345,7 @@ constexpr auto checksum(const std::uint8_t* data, std::size_t len)
 }
 ```
 
-编译器根据模板参数直接内联了对应策略的计算代码，没有任何虚函数表或运行时分派。每个策略的 `name` 都是编译期常量，可以在 `static_assert` 或日志系统中使用。
+编译器根据模板参数在编译期确定使用哪个策略，现代编译器（GCC/Clang 在 -O2 及以上优化级别）会直接内联对应的计算代码，没有任何虚函数表或运行时分派开销。你可以在编译生成的汇编代码中验证这一点——对于给定的模板参数，只有对应策略的代码会被生成，其他策略的代码完全不会出现在最终的二进制文件中。每个策略的 `name` 都是编译期常量，可以在 `static_assert` 或日志系统中使用。
 
 ### 编译期计算链
 
@@ -471,7 +471,10 @@ struct BaudRateConfig {
 
     constexpr double error_percent() const
     {
-        double actual = static_cast<double>(clock_freq / brr_value());
+        // 注意：这里假设波特率寄存器值直接作为分频系数
+        // 实际的USART配置还需要考虑过采样倍数（8或16）
+        std::uint32_t brr = brr_value();
+        double actual = static_cast<double>(clock_freq) / static_cast<double>(brr);
         double target = static_cast<double>(target_baud);
         return (actual - target) / target * 100.0;
     }
@@ -484,7 +487,7 @@ struct BaudRateConfig {
 };
 
 constexpr BaudRateConfig kDebugUart{72000000, 115200};
-static_assert(kDebugUart.brr_value() == 625);
+static_assert(kDebugUart.brr_value() == 625, "BRR value should be 625");
 static_assert(kDebugUart.is_acceptable(), "Baud rate error too large");
 ```
 

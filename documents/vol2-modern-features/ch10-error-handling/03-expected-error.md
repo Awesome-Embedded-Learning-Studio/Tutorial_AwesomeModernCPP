@@ -68,7 +68,7 @@ int main() {
         std::cout << "Value: " << r1.value() << "\n";  // 42
     }
 
-    auto r2 = parse_int("abc");
+    auto r2 = parse_int("42abc");
     if (!r2) {
         std::cout << "Error: " << static_cast<int>(r2.error()) << "\n";
         // 输出 Error: 1（kInvalidCharacter）
