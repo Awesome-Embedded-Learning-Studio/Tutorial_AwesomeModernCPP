@@ -38,7 +38,7 @@ graph LR
 | 卷 | 主题 | 文章数 | 难度 | 状态 |
 |:--:|------|:------:|:----:|:----:|
 | 一 | [C++ 基础入门](documents/vol1-fundamentals/) -- 类型、控制流、函数、指针、类、模板初步 | 49 | beginner | 已完成 |
-| 二 | [现代 C++ 特性](documents/vol2-modern-features/) -- 移动语义、智能指针、constexpr、Lambda | 35-40 | intermediate | 编写中 |
+| 二 | [现代 C++ 特性](documents/vol2-modern-features/) -- 移动语义、智能指针、constexpr、Lambda | 44 | intermediate | 已完成 |
 | 三 | [标准库深入](documents/vol3-standard-library/) -- 容器、迭代器、算法、字符串、分配器 | 40-50 | intermediate | 规划中 |
 | 四 | [高级主题](documents/vol4-advanced/) -- Concepts、Ranges、协程、模块、模板元编程 | 50-60 | advanced | 规划中 |
 | 五 | [并发编程](documents/vol5-concurrency/) -- 线程原语、原子操作、无锁编程、异步 I/O | 25-30 | advanced | 规划中 |
