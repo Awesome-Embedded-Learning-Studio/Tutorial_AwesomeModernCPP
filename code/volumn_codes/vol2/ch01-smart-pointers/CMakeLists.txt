@@ -17,7 +17,6 @@ target_link_libraries(shared_ptr_cache_benchmark PRIVATE Threads::Threads)
 
 # Verification tests for unique_ptr article
 add_executable(test_ebo_sizeof test_ebo_sizeof.cpp)
-add_executable(test_assembly_optimization test_assembly_optimization.cpp)
 add_executable(test_vector_noexcept test_vector_noexcept.cpp)
 
 # PIMPL pattern demonstration (split compilation)
