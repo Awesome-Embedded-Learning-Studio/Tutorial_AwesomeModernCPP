@@ -171,45 +171,58 @@ def build_project(project_dir: Path) -> BuildResult:
 
 def print_results(results: list[BuildResult], code_root: Path) -> None:
     """Print build results summary."""
+    in_ci = os.environ.get('CI') is not None
     passed = [r for r in results if r.success]
     failed = [r for r in results if not r.success]
 
-    print()
-    print("=" * 60)
-    print("Build Results")
-    print("=" * 60)
+    print(flush=True)
+    print("=" * 60, flush=True)
+    print("Build Results", flush=True)
+    print("=" * 60, flush=True)
 
     for r in results:
         status = "PASS" if r.success else "FAIL"
         rel = r.path.relative_to(code_root)
-        print(f"  [{status}] {rel} - {r.duration:.1f}s")
+        print(f"  [{status}] {rel} - {r.duration:.1f}s", flush=True)
 
-    print()
-    print(f"Total: {len(results)} | Passed: {len(passed)} | Failed: {len(failed)}")
+    print(flush=True)
+    print(f"Total: {len(results)} | Passed: {len(passed)} | Failed: {len(failed)}", flush=True)
 
-    if failed:
-        print()
-        print("Failed builds:")
-        print("-" * 60)
-        for r in failed:
-            rel = r.path.relative_to(code_root)
-            print(f"\n  {rel}:")
-            # Show error lines from the output
+    # Print detailed output for all builds, grouped in CI
+    for r in results:
+        if not r.output.strip():
+            continue
+        rel = r.path.relative_to(code_root)
+        status = "PASS" if r.success else "FAIL"
+        if in_ci:
+            print(f"\n::group::[{status}] {rel}", flush=True)
+        else:
+            print(f"\n--- [{status}] {rel} ---", flush=True)
+
+        if r.success:
+            # Passing builds: show last 5 lines (configure + build summary)
+            lines = r.output.strip().split('\n')
+            for line in lines[-5:]:
+                print(f"  {line}", flush=True)
+        else:
+            # Failed builds: show error lines, fallback to last 20
             lines = r.output.strip().split('\n')
             error_lines = [l for l in lines if 'error:' in l.lower()]
             if error_lines:
                 for line in error_lines:
-                    print(f"    {line}")
+                    print(f"  {line}", flush=True)
             else:
-                # No 'error:' found, show last 20 lines
                 for line in lines[-20:]:
-                    print(f"    {line}")
+                    print(f"  {line}", flush=True)
 
-    print()
+        if in_ci:
+            print("::endgroup::", flush=True)
+
+    print(flush=True)
     if failed:
-        print(f"FAILED: {len(failed)} build(s) failed")
+        print(f"FAILED: {len(failed)} build(s) failed", flush=True)
     else:
-        print("All builds passed!")
+        print("All builds passed!", flush=True)
 
 
 def main():
@@ -243,16 +256,16 @@ def main():
         print(f"No {target} projects found under {code_root}")
         sys.exit(0)
 
-    print(f"Discovered {len(projects)} {target} project(s):")
+    print(f"Discovered {len(projects)} {target} project(s):", flush=True)
     for p in projects:
-        print(f"  {p.relative_to(code_root)}")
+        print(f"  {p.relative_to(code_root)}", flush=True)
 
     if args.discover:
         sys.exit(0)
 
     print()
-    print(f"Building {len(projects)} project(s) with {args.jobs} worker(s)...")
-    print()
+    print(f"Building {len(projects)} project(s) with {args.jobs} worker(s)...", flush=True)
+    print(flush=True)
 
     results_map: dict[Path, BuildResult] = {}
     with ThreadPoolExecutor(max_workers=args.jobs) as executor:
@@ -265,7 +278,7 @@ def main():
             result = future.result()
             rel = result.path.relative_to(code_root)
             status = "OK" if result.success else "FAILED"
-            print(f"[{done_count}/{len(projects)}] {rel}: {status} ({result.duration:.1f}s)")
+            print(f"[{done_count}/{len(projects)}] {rel}: {status} ({result.duration:.1f}s)", flush=True)
             results_map[futures[future]] = result
 
     results = [results_map[p] for p in projects]
