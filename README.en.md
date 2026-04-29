@@ -3,6 +3,7 @@
 [中文](README.md) | English
 
 ![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)
+![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Issues](https://img.shields.io/github/issues/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
@@ -38,7 +39,7 @@ graph LR
 | Volume | Topic | Articles | Difficulty | Status |
 |:--:|------|:------:|:----:|:----:|
 | 1 | [C++ Fundamentals](documents/vol1-fundamentals/) -- types, control flow, functions, pointers, classes, template basics | 49 | beginner | Completed |
-| 2 | [Modern C++ Features](documents/vol2-modern-features/) -- move semantics, smart pointers, constexpr, Lambda | 35-40 | intermediate | In Progress |
+| 2 | [Modern C++ Features](documents/vol2-modern-features/) -- move semantics, smart pointers, constexpr, Lambda | 35-40 | intermediate | Completed |
 | 3 | [Standard Library In Depth](documents/vol3-standard-library/) -- containers, iterators, algorithms, strings, allocators | 40-50 | intermediate | Planned |
 | 4 | [Advanced Topics](documents/vol4-advanced/) -- Concepts, Ranges, coroutines, modules, template metaprogramming | 50-60 | advanced | Planned |
 | 5 | [Concurrent Programming](documents/vol5-concurrency/) -- thread primitives, atomic operations, lock-free programming, async I/O | 25-30 | advanced | Planned |
@@ -108,6 +109,16 @@ cd Tutorial_AwesomeModernCPP
 | `check_quality.py` | Content quality checks |
 
 </details>
+
+---
+
+## Version History
+
+| Version | Date | Notes |
+|------|------|------|
+| [v0.1.0](changelogs/v0.1.0.md) | 2026-04-29 | Initial public release -- Vol 1/2, compilation, and embedded tutorials |
+
+See [changelogs/](changelogs/) for full release history.
 
 ---
 

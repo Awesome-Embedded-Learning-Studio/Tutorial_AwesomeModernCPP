@@ -3,6 +3,7 @@
 [English](README.en.md) | 中文
 
 ![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)
+![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Issues](https://img.shields.io/github/issues/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
@@ -108,6 +109,16 @@ cd Tutorial_AwesomeModernCPP
 | `check_quality.py` | 内容质量检查 |
 
 </details>
+
+---
+
+## 版本历史
+
+| 版本 | 日期 | 说明 |
+|------|------|------|
+| [v0.1.0](changelogs/v0.1.0.md) | 2026-04-29 | 首个公开版本，卷一/卷二/编译卷/嵌入式教程 |
+
+完整变更记录见 [changelogs/](changelogs/) 目录。
 
 ---
 
