@@ -27,7 +27,11 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ ninja-build
+          sudo apt-get install -y cmake g++-14 ninja-build
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-14 100
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-14 100
 
       - name: Build host examples
         run: python3 scripts/build_examples.py --host

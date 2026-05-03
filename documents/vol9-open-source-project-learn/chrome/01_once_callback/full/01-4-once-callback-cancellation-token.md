@@ -14,7 +14,7 @@ tags:
 difficulty: beginner
 platform: host
 cpp_standard: [23]
-reading_time_minutes: 20
+reading_time_minutes: 9
 prerequisites:
   - "OnceCallback 实战（二）：核心骨架搭建"
   - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"

@@ -12,7 +12,7 @@ tags:
 difficulty: beginner
 platform: host
 cpp_standard: [23]
-reading_time_minutes: 25
+reading_time_minutes: 11
 prerequisites:
   - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
   - "OnceCallback 前置知识（五）：std::move_only_function"

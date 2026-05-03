@@ -13,7 +13,7 @@ tags:
 difficulty: beginner
 platform: host
 cpp_standard: [23]
-reading_time_minutes: 30
+reading_time_minutes: 13
 prerequisites:
   - "OnceCallback 实战（一）：动机与接口设计"
   - "OnceCallback 前置知识（一）：函数类型与模板偏特化"

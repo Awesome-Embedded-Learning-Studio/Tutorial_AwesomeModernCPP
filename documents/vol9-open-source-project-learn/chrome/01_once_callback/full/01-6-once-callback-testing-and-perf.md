@@ -12,7 +12,7 @@ tags:
 difficulty: beginner
 platform: host
 cpp_standard: [23]
-reading_time_minutes: 25
+reading_time_minutes: 10
 prerequisites:
   - "OnceCallback 实战（二）：核心骨架搭建"
   - "OnceCallback 实战（三）：bind_once 实现"

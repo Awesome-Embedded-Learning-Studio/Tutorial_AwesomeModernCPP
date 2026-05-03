@@ -12,7 +12,7 @@ tags:
 difficulty: intermediate
 platform: host
 cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 20
+reading_time_minutes: 10
 prerequisites:
   - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
 related:
