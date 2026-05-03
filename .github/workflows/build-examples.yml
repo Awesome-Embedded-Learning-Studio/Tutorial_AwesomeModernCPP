@@ -42,7 +42,9 @@ jobs:
             ccache-host-
 
       - name: Build host examples
-        run: python3 scripts/build_examples.py --host
+        run: |
+          mkdir -p ~/.cache/ccache
+          python3 scripts/build_examples.py --host
         env:
           CCACHE_DIR: ~/.cache/ccache
 
@@ -59,7 +61,19 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-stm32-${{ github.run_id }}
+          restore-keys: |
+            ccache-stm32-
 
       - name: Build STM32 examples
-        run: python3 scripts/build_examples.py --stm32
+        run: |
+          mkdir -p ~/.cache/ccache
+          python3 scripts/build_examples.py --stm32
+        env:
+          CCACHE_DIR: ~/.cache/ccache
