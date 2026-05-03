@@ -7,21 +7,6 @@ build/
 **/build/
 *.build/
 
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-*.cmake
-!CMakeLists.txt
-
-# Compiled binaries
-*.o
-*.a
-*.so
-*.exe
-*.out
-
 # MkDocs build output
 site/
 
