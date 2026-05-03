@@ -105,7 +105,8 @@ def build_project(project_dir: Path) -> BuildResult:
     all_output = []
 
     # Configure
-    configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja']
+    configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja',
+                      '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache']
     try:
         result = subprocess.run(
             configure_cmd,
