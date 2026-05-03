@@ -27,10 +27,25 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ ninja-build
+          sudo apt-get install -y cmake g++-14 ninja-build ccache
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-14 100
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-14 100
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-host-${{ github.run_id }}
+          restore-keys: |
+            ccache-host-
 
       - name: Build host examples
-        run: python3 scripts/build_examples.py --host
+        run: |
+          export CCACHE_DIR="$HOME/.cache/ccache"
+          mkdir -p "$CCACHE_DIR"
+          python3 scripts/build_examples.py --host
 
   build-stm32:
     name: STM32 Examples
@@ -45,7 +60,18 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-stm32-${{ github.run_id }}
+          restore-keys: |
+            ccache-stm32-
 
       - name: Build STM32 examples
-        run: python3 scripts/build_examples.py --stm32
+        run: |
+          export CCACHE_DIR="$HOME/.cache/ccache"
+          mkdir -p "$CCACHE_DIR"
+          python3 scripts/build_examples.py --stm32

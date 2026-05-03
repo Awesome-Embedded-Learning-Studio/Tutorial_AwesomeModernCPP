@@ -16,7 +16,7 @@
 
 ## 特色亮点
 
-- **系统化学习路径** -- 8 卷从入门到高级，每卷有明确前置知识，循序渐进
+- **系统化学习路径** -- 9 卷从入门到高级，每卷有明确前置知识，循序渐进
 - **实战驱动** -- 每个概念配合可编译的 CMake 项目，而非孤立代码片段
 - **多平台覆盖** -- STM32 / ESP32 / RP2040 嵌入式实战，不止于桌面端
 - **标签导航** -- 按主题、C++ 标准、难度、平台等维度检索文章
@@ -32,6 +32,8 @@ graph LR
     V2 --> V3["卷三 标准库"] & V4["卷四 高级"] & V5["卷五 并发"] & V6["卷六 性能"] & V7["卷七 工程"]
     V2 --> V8["卷八 领域应用"]
     V8 --> E["嵌入式"] & N["网络"] & G["GUI"] & D["数据"] & A["算法"]
+    V2 --> V9["卷九 开源项目学习"]
+    V9 --> OC["Chrome 代码研读"] & OS["其他开源项目"]
 ```
 
 ### 教程结构
@@ -46,6 +48,7 @@ graph LR
 | 六 | [性能优化](documents/vol6-performance/) -- CPU 缓存、SIMD、汇编阅读、基准测试 | 18-22 | advanced | 规划中 |
 | 七 | [软件工程实践](documents/vol7-engineering/) -- CMake、测试、静态分析、DevOps | 30-35 | intermediate | 规划中 |
 | 八 | [领域应用](documents/vol8-domains/) -- 嵌入式 / 网络 / GUI / 数据存储 / 算法 | 80-100 | intermediate | 编写中 |
+| 九 | [开源项目学习](documents/vol9-open-source-project-learn/) -- 开源项目代码研读 | 13+ | intermediate | 编写中 |
 | - | [编译与链接深入](documents/compilation/) -- 预处理、汇编、链接、调试符号 | 10+ | intermediate | 已完成 |
 | - | [贯穿式实战项目](documents/projects/) -- 手写 STL、迷你 HTTP 服务器、嵌入式 OS | - | advanced | 规划中 |
 
@@ -151,6 +154,7 @@ Tutorial_AwesomeModernCPP/
 │   │   ├── gui-graphics/       #   GUI 与图形
 │   │   ├── data-storage/       #   数据存储
 │   │   └── algorithms/         #   算法与数据结构
+│   ├── vol9-open-source-project-learn/  # 卷九：开源项目学习
 │   ├── compilation/            # 编译与链接深入
 │   ├── projects/               # 贯穿式实战项目
 │   └── index.md                # 教程首页
