@@ -86,6 +86,14 @@ Practical applications of modern C++ across domains: embedded development, netwo
 
 ---
 
+### Volume 9: Open Source Project Study
+
+Learn industrial-grade C++ design and implementation by analyzing real open source codebases (e.g., Chromium).
+
+- [Start Reading](vol9-open-source-project-learn/index.md)
+
+---
+
 ### Compilation & Linking In-Depth
 
 Deep exploration of C/C++ compilation, linking, static libraries, dynamic libraries, symbol visibility, and related core concepts. 10 articles in total.

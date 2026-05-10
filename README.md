@@ -2,25 +2,28 @@
 
 [English](README.en.md) | 中文
 
+> 一套系统化的现代 C++ 教程 -- 从基础语法到嵌入式实战，每个概念配有可编译的代码示例
+
+<p align="center">
+  <a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/">
+    <img src="https://img.shields.io/badge/📖_在线阅读文档站-Live-blue?style=for-the-badge" alt="Online Docs">
+  </a>
+</p>
+
 ![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)
 ![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
-![Stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
-![Issues](https://img.shields.io/github/issues/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)
-
-> 一套系统化的现代 C++ 教程 -- 从基础语法到嵌入式实战，从标准库深入到并发编程，每个概念配有可编译的代码示例
 
 ---
 
 ## 特色亮点
 
-- **系统化学习路径** -- 9 卷从入门到高级，每卷有明确前置知识，循序渐进
-- **实战驱动** -- 每个概念配合可编译的 CMake 项目，而非孤立代码片段
-- **多平台覆盖** -- STM32 / ESP32 / RP2040 嵌入式实战，不止于桌面端
-- **标签导航** -- 按主题、C++ 标准、难度、平台等维度检索文章
-- **在线阅读** -- MkDocs 文档站，支持搜索与导航
+- **9 卷体系** -- 从 C 语言速通到嵌入式实战，形成完整学习闭环
+- **可编译示例** -- 每个概念配 CMake 工程，不是孤立的代码片段
+- **嵌入式实战** -- STM32 / ESP32 / RP2040 多平台真机项目
+- **标签导航** -- 按主题、C++ 标准、难度、平台多维检索
+- **在线阅读** -- 搜索、导航、暗色模式一应俱全的文档站
 
 ---
 
@@ -36,7 +39,8 @@ graph LR
     V9 --> OC["Chrome 代码研读"] & OS["其他开源项目"]
 ```
 
-### 教程结构
+<details>
+<summary>各卷详细内容与进度</summary>
 
 | 卷 | 主题 | 文章数 | 难度 | 状态 |
 |:--:|------|:------:|:----:|:----:|
@@ -51,6 +55,8 @@ graph LR
 | 九 | [开源项目学习](documents/vol9-open-source-project-learn/) -- 开源项目代码研读 | 13+ | intermediate | 编写中 |
 | - | [编译与链接深入](documents/compilation/) -- 预处理、汇编、链接、调试符号 | 10+ | intermediate | 已完成 |
 | - | [贯穿式实战项目](documents/projects/) -- 手写 STL、迷你 HTTP 服务器、嵌入式 OS | - | advanced | 规划中 |
+
+</details>
 
 ---
 
@@ -115,7 +121,10 @@ cd Tutorial_AwesomeModernCPP
 
 ---
 
-## 版本历史
+<details>
+<summary>版本历史 / 分支 / 目录结构</summary>
+
+**版本历史**
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
@@ -123,9 +132,7 @@ cd Tutorial_AwesomeModernCPP
 
 完整变更记录见 [changelogs/](changelogs/) 目录。
 
----
-
-## 分支说明
+**分支说明**
 
 | 分支 | 用途 | 状态 |
 |------|------|------|
@@ -133,12 +140,9 @@ cd Tutorial_AwesomeModernCPP
 | `archive/legacy_20260415` | 重构前存档 | Read-only |
 | `gh-pages` | 自动部署的文档站 | Auto-generated |
 
----
+**项目目录结构**
 
-<details>
-<summary>项目目录结构</summary>
-
-```
+```text
 Tutorial_AwesomeModernCPP/
 ├── documents/                  # 教程 Markdown 文件
 │   ├── vol1-fundamentals/      # 卷一：C++ 基础入门（ch00-ch12 + C 语言速通）
@@ -195,11 +199,5 @@ Tutorial_AwesomeModernCPP/
 
 - **许可证**：[MIT License](./LICENSE)
 - **Issues**：[提交问题](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)
-- **Email**：725610365@qq.com
+- **Email**：<725610365@qq.com>
 - **组织**：[Awesome-Embedded-Learning-Studio](https://github.com/Awesome-Embedded-Learning-Studio)
-
----
-
-<p align="center">
-  <b>系统化学习现代 C++，从基础到实战</b>
-</p>

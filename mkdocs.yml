@@ -4,7 +4,7 @@ site_author: Charliechen  # 作者名称,可以改成你的真实姓名或网名
 site_url: https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/
 
 # 版权信息,显示在页面底部
-copyright: Copyright &copy; 2025 Charliechen - 保留所有权利
+copyright: Copyright &copy; 2025-2026 Charliechen - 保留所有权利
 
 # 文档源文件夹
 docs_dir: "documents"
@@ -208,6 +208,7 @@ plugins:
             卷六 · 性能优化: Vol.6 - Performance
             卷七 · 工程实践: Vol.7 - Engineering
             卷八 · 领域应用: Vol.8 - Domains
+            卷九 · 开源项目学习: Vol.9 - Open Source Projects
             编译与链接: Compilation & Linking
             实战项目: Projects
             标签: Tags

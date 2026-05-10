@@ -2,25 +2,28 @@
 
 [中文](README.md) | English
 
+> A systematic modern C++ tutorial -- from foundational syntax to embedded practice, with compilable code examples for every concept
+
+<p align="center">
+  <a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/">
+    <img src="https://img.shields.io/badge/📖_Read_Docs_Online-Live-blue?style=for-the-badge" alt="Online Docs">
+  </a>
+</p>
+
 ![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)
 ![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
-![Stars](https://img.shields.io/github/stars/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
-![Issues](https://img.shields.io/github/issues/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)
-
-> A systematic modern C++ tutorial -- from foundational syntax to embedded practice, from the standard library in depth to concurrent programming, with compilable code examples for every concept
 
 ---
 
 ## Highlights
 
-- **Systematic Learning Path** -- 8 volumes from beginner to advanced, each with clear prerequisites, building progressively
-- **Practice-Driven** -- Every concept comes with a compilable CMake project, not isolated code snippets
-- **Multi-Platform Coverage** -- STM32 / ESP32 / RP2040 embedded practice, going beyond desktop
-- **Tag Navigation** -- Browse articles by topic, C++ standard, difficulty, platform, and more
-- **Online Reading** -- MkDocs documentation site with search and navigation
+- **9-Volume System** -- From C crash course to embedded practice, forming a complete learning loop
+- **Compilable Examples** -- Every concept comes with a CMake project, not isolated code snippets
+- **Embedded Practice** -- STM32 / ESP32 / RP2040 multi-platform real hardware projects
+- **Tag Navigation** -- Browse articles by topic, C++ standard, difficulty, and platform
+- **Online Reading** -- Full-featured documentation site with search, navigation, and dark mode
 
 ---
 
@@ -28,26 +31,32 @@
 
 ```mermaid
 graph LR
-    V1["Volume 1 Fundamentals"] --> V2["Volume 2 Modern Features"]
-    V2 --> V3["Volume 3 Std Library"] & V4["Volume 4 Advanced"] & V5["Volume 5 Concurrency"] & V6["Volume 6 Performance"] & V7["Volume 7 Engineering"]
-    V2 --> V8["Volume 8 Domain Apps"]
+    V1["Vol.1 Fundamentals"] --> V2["Vol.2 Modern Features"]
+    V2 --> V3["Vol.3 Std Library"] & V4["Vol.4 Advanced"] & V5["Vol.5 Concurrency"] & V6["Vol.6 Performance"] & V7["Vol.7 Engineering"]
+    V2 --> V8["Vol.8 Domain Apps"]
     V8 --> E["Embedded"] & N["Networking"] & G["GUI"] & D["Data"] & A["Algorithms"]
+    V2 --> V9["Vol.9 Open Source"]
+    V9 --> OC["Chrome Code Study"] & OS["Other Projects"]
 ```
 
-### Tutorial Structure
+<details>
+<summary>Volume details and progress</summary>
 
 | Volume | Topic | Articles | Difficulty | Status |
 |:--:|------|:------:|:----:|:----:|
 | 1 | [C++ Fundamentals](documents/vol1-fundamentals/) -- types, control flow, functions, pointers, classes, template basics | 49 | beginner | Completed |
-| 2 | [Modern C++ Features](documents/vol2-modern-features/) -- move semantics, smart pointers, constexpr, Lambda | 35-40 | intermediate | Completed |
+| 2 | [Modern C++ Features](documents/vol2-modern-features/) -- move semantics, smart pointers, constexpr, Lambda | 44 | intermediate | Completed |
 | 3 | [Standard Library In Depth](documents/vol3-standard-library/) -- containers, iterators, algorithms, strings, allocators | 40-50 | intermediate | Planned |
 | 4 | [Advanced Topics](documents/vol4-advanced/) -- Concepts, Ranges, coroutines, modules, template metaprogramming | 50-60 | advanced | Planned |
 | 5 | [Concurrent Programming](documents/vol5-concurrency/) -- thread primitives, atomic operations, lock-free programming, async I/O | 25-30 | advanced | Planned |
 | 6 | [Performance Optimization](documents/vol6-performance/) -- CPU cache, SIMD, reading assembly, benchmarking | 18-22 | advanced | Planned |
 | 7 | [Software Engineering Practices](documents/vol7-engineering/) -- CMake, testing, static analysis, DevOps | 30-35 | intermediate | Planned |
 | 8 | [Domain Applications](documents/vol8-domains/) -- embedded / networking / GUI / data storage / algorithms | 80-100 | intermediate | In Progress |
+| 9 | [Open Source Project Study](documents/vol9-open-source-project-learn/) -- reading and analyzing open source codebases | 13+ | intermediate | In Progress |
 | - | [Compilation & Linking In Depth](documents/compilation/) -- preprocessing, assembly, linking, debug symbols | 10+ | intermediate | Completed |
 | - | [Capstone Projects](documents/projects/) -- hand-rolled STL, mini HTTP server, embedded OS | - | advanced | Planned |
+
+</details>
 
 ---
 
@@ -56,16 +65,16 @@ graph LR
 ```mermaid
 flowchart TD
     subgraph PathA["Path A -- C and Embedded Experience"]
-        A1["Volume 2: Modern C++ Features"] --> A2["Volume 8: Embedded Development"]
+        A1["Vol.2: Modern C++ Features"] --> A2["Vol.8: Embedded Development"]
     end
     subgraph PathB["Path B -- C++ Experience"]
-        B1["Volume 8: Fundamentals Review"] --> B2["Platform Tutorials"] --> B3["RTOS Practice"]
+        B1["Vol.8: Fundamentals Review"] --> B2["Platform Tutorials"] --> B3["RTOS Practice"]
     end
     subgraph PathC["Path C -- Both"]
         C1["Jump to any topic of interest"]
     end
     subgraph PathD["Path D -- Complete Beginner"]
-        D1["Volume 1: C++ Fundamentals (incl. C crash course)"] --> D2["Volume 2: Modern C++ Features"]
+        D1["Vol.1: C++ Fundamentals (incl. C crash course)"] --> D2["Vol.2: Modern C++ Features"]
     end
     Start(["Your starting point?"]) -->|"C + Embedded"| PathA
     Start -->|"C++ Experience"| PathB
@@ -112,7 +121,10 @@ cd Tutorial_AwesomeModernCPP
 
 ---
 
-## Version History
+<details>
+<summary>Version history / Branches / Directory structure</summary>
+
+**Version History**
 
 | Version | Date | Notes |
 |------|------|------|
@@ -120,9 +132,7 @@ cd Tutorial_AwesomeModernCPP
 
 See [changelogs/](changelogs/) for full release history.
 
----
-
-## Branch Overview
+**Branch Overview**
 
 | Branch | Purpose | Status |
 |------|------|------|
@@ -130,12 +140,9 @@ See [changelogs/](changelogs/) for full release history.
 | `archive/legacy_20260415` | Pre-restructuring archive | Read-only |
 | `gh-pages` | Auto-deployed documentation site | Auto-generated |
 
----
+**Project Directory Structure**
 
-<details>
-<summary>Project directory structure</summary>
-
-```
+```text
 Tutorial_AwesomeModernCPP/
 ├── documents/                  # Tutorial Markdown files
 │   ├── vol1-fundamentals/      # Volume 1: C++ Fundamentals (ch00-ch12 + C crash course)
@@ -151,10 +158,13 @@ Tutorial_AwesomeModernCPP/
 │   │   ├── gui-graphics/       #   GUI and Graphics
 │   │   ├── data-storage/       #   Data Storage
 │   │   └── algorithms/         #   Algorithms and Data Structures
+│   ├── vol9-open-source-project-learn/  # Volume 9: Open Source Project Study
 │   ├── compilation/            # Compilation & Linking In Depth
 │   ├── projects/               # Capstone Projects
 │   └── index.md                # Tutorial home page
 ├── code/                       # Example code
+│   ├── volumn_codes/vol1/      #   Volume 1 code and exercises
+│   └── examples/               #   Legacy code examples
 ├── scripts/                    # Developer tool scripts
 ├── todo/                       # Content planning and progress tracking
 └── mkdocs.yml                  # MkDocs site configuration
@@ -189,11 +199,5 @@ This project references the following excellent resources:
 
 - **License**: [MIT License](./LICENSE)
 - **Issues**: [Submit an issue](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)
-- **Email**: 725610365@qq.com
+- **Email**: <725610365@qq.com>
 - **Organization**: [Awesome-Embedded-Learning-Studio](https://github.com/Awesome-Embedded-Learning-Studio)
-
----
-
-<p align="center">
-  <b>Learn modern C++ systematically, from fundamentals to practice</b>
-</p>
