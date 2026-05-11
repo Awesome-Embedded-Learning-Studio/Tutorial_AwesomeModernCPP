@@ -57,7 +57,7 @@ function log(msg: string) { console.log(`[${ts()}] ${msg}`) }
 function logStep(msg: string) {
   console.log(`\n[${ts()}] ${'═'.repeat(60)}`)
   log(`  ${msg}`)
-  console.log('═'.repeat(60))
+  console.log(`[${ts()}] ${'═'.repeat(60)}`)
 }
 
 function memMB(): string {

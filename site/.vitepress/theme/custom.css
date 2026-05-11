@@ -45,6 +45,7 @@
 
 .vp-doc table th {
   font-weight: 600;
+  background-color: var(--vp-c-bg-soft);
 }
 
 .vp-doc table tr:nth-child(even) {
@@ -63,6 +64,7 @@
   text-decoration: underline;
   text-decoration-style: dotted;
   text-underline-offset: 3px;
+  transition: color 0.2s ease;
 }
 
 .vp-doc a:hover {
@@ -144,19 +146,19 @@
   }
 }
 
-.VPFeatures .item { animation: feature-fade-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.VPFeatures .item { animation: feature-fade-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 .VPFeatures .item:nth-child(1)  { animation-delay: 0ms; }
-.VPFeatures .item:nth-child(2)  { animation-delay: 60ms; }
-.VPFeatures .item:nth-child(3)  { animation-delay: 120ms; }
-.VPFeatures .item:nth-child(4)  { animation-delay: 180ms; }
-.VPFeatures .item:nth-child(5)  { animation-delay: 240ms; }
-.VPFeatures .item:nth-child(6)  { animation-delay: 300ms; }
-.VPFeatures .item:nth-child(7)  { animation-delay: 360ms; }
-.VPFeatures .item:nth-child(8)  { animation-delay: 420ms; }
-.VPFeatures .item:nth-child(9)  { animation-delay: 480ms; }
-.VPFeatures .item:nth-child(10) { animation-delay: 540ms; }
-.VPFeatures .item:nth-child(11) { animation-delay: 600ms; }
-.VPFeatures .item:nth-child(12) { animation-delay: 660ms; }
+.VPFeatures .item:nth-child(2)  { animation-delay: 78ms; }
+.VPFeatures .item:nth-child(3)  { animation-delay: 156ms; }
+.VPFeatures .item:nth-child(4)  { animation-delay: 234ms; }
+.VPFeatures .item:nth-child(5)  { animation-delay: 312ms; }
+.VPFeatures .item:nth-child(6)  { animation-delay: 390ms; }
+.VPFeatures .item:nth-child(7)  { animation-delay: 468ms; }
+.VPFeatures .item:nth-child(8)  { animation-delay: 546ms; }
+.VPFeatures .item:nth-child(9)  { animation-delay: 624ms; }
+.VPFeatures .item:nth-child(10) { animation-delay: 702ms; }
+.VPFeatures .item:nth-child(11) { animation-delay: 780ms; }
+.VPFeatures .item:nth-child(12) { animation-delay: 858ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .VPFeatures .item {
@@ -179,9 +181,9 @@
   background-color: var(--vp-c-bg) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
               0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: border-color 0.3s ease,
-              box-shadow 0.3s ease,
-              transform 0.3s ease;
+  transition: border-color 0.39s ease,
+              box-shadow 0.39s ease,
+              transform 0.39s ease;
 }
 
 .VPFeature.link:hover {
@@ -208,9 +210,9 @@
   ) !important;
   color: var(--vp-c-brand-1) !important;
   font-size: 22px !important;
-  transition: background 0.3s ease,
-              color 0.3s ease,
-              transform 0.3s ease;
+  transition: background 0.39s ease,
+              color 0.39s ease,
+              transform 0.39s ease;
 }
 
 .VPFeature.link:hover .icon {
@@ -224,7 +226,7 @@
   font-weight: 600 !important;
   line-height: 1.5 !important;
   color: var(--vp-c-text-1) !important;
-  transition: color 0.3s ease;
+  transition: color 0.39s ease;
 }
 
 .VPFeature.link:hover .title {
@@ -243,7 +245,7 @@
 /* ── Link Arrow ──────────────────────────────────────────────── */
 
 .VPFeature .link-text-icon {
-  transition: transform 0.3s ease;
+  transition: transform 0.39s ease;
 }
 
 .VPFeature.link:hover .link-text-icon {
@@ -337,4 +339,38 @@
   .VPFeature .details {
     font-size: 12.5px !important;
   }
+}
+
+/* ================================================================
+   Content Page Enhancements
+   ================================================================ */
+
+/* ── Horizontal Rules ──────────────────────────────────────────── */
+
+.vp-doc hr {
+  border: none;
+  border-top: 1px dashed var(--vp-c-divider);
+  margin: 2.5em 0;
+  opacity: 0.6;
+}
+
+/* ── Custom Containers ─────────────────────────────────────────── */
+
+.vp-doc .custom-block {
+  border-radius: 8px;
+  margin: 1.2em 0;
+}
+
+/* ── Content Dark Mode ─────────────────────────────────────────── */
+
+.dark .vp-doc blockquote {
+  background: rgba(81, 107, 232, 0.08);
+}
+
+.dark .vp-doc table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dark .vp-doc img {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
