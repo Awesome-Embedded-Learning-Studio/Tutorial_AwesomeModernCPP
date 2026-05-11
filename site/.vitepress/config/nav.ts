@@ -43,6 +43,33 @@ export const navEn: DefaultTheme.NavItem[] = [
     text: 'Fundamentals',
     items: [
       { text: 'Vol.1 Fundamentals', link: '/en/vol1-fundamentals/' },
+      { text: 'Vol.2 Modern Features', link: '/en/vol2-modern-features/' },
     ],
   },
+  {
+    text: 'Advanced',
+    items: [
+      { text: 'Vol.3 Standard Library', link: '/en/vol3-standard-library/' },
+      { text: 'Vol.4 Advanced Topics', link: '/en/vol4-advanced/' },
+    ],
+  },
+  {
+    text: 'Engineering',
+    items: [
+      { text: 'Vol.5 Concurrency', link: '/en/vol5-concurrency/' },
+      { text: 'Vol.6 Performance', link: '/en/vol6-performance/' },
+      { text: 'Vol.7 Engineering', link: '/en/vol7-engineering/' },
+    ],
+  },
+  {
+    text: 'Domains',
+    items: [
+      { text: 'Vol.8 Domain Applications', link: '/en/vol8-domains/' },
+      { text: 'Vol.9 Open Source Projects', link: '/en/vol9-open-source-project-learn/' },
+      { text: 'Compilation & Linking', link: '/en/compilation/' },
+      { text: 'Projects', link: '/en/projects/' },
+    ],
+  },
+  { text: 'Reference', link: '/en/cpp-reference/' },
+  { text: 'Appendix', link: '/en/appendix/' },
 ]
