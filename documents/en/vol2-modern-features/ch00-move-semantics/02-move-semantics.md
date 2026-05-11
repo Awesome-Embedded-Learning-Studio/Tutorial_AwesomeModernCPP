@@ -237,7 +237,7 @@ This is not just theory on paper—we can write an experiment to verify the actu
   [Throwing版] 拷贝构造    <-- vector 退回拷贝，确保异常安全
 ```
 
-Compiled and run under GCC 15 and `-O2`, the behavior perfectly matches expectations. The complete code is available at [move_noexcept_demo.cpp](move_noexcept_demo.cpp).
+Compiled and run under GCC 15 and `-O2`, the behavior perfectly matches expectations.
 
 ## Rule of Five
 
@@ -271,7 +271,7 @@ static_assert(std::is_move_constructible_v<OnlyDestructor>,
               "但 is_move_constructible 为 true——退回到拷贝构造");
 ```
 
-Seems contradictory? Not really. `std::is_move_constructible` being true is because the compiler can use the copy constructor to "satisfy" the demand for move construction (an rvalue can bind to `const&`), but this does not mean a true move constructor exists to perform the pointer transfer. The complete verification code is in [rule_of_five_demo.cpp](rule_of_five_demo.cpp).
+Seems contradictory? Not really. `std::is_move_constructible` being true is because the compiler can use the copy constructor to "satisfy" the demand for move construction (an rvalue can bind to `const&`), but this does not mean a true move constructor exists to perform the pointer transfer.
 
 For classes that manage resources, the safest approach is to **either fully customize all five special member functions, or make them all `= default`**. If you use smart pointers to manage resources, you can typically use `= default` to let the compiler generate the correct versions—this is exactly the approach recommended by modern C++. But for classes like ours that manually manage raw pointers, we must dutifully write all five:
 
