@@ -295,6 +295,81 @@ async function runParallel<T>(tasks: T[], fn: (t: T) => Promise<void>, limit: nu
   await Promise.all(workers)
 }
 
+// ── Cross-Volume Data Unification ────────────────────────────
+
+function unifyCrossVolumeData(distDir: string) {
+  logStep('Step 3.5/4: Unifying cross-volume hash maps & site data')
+
+  const htmlFiles: string[] = []
+  function walk(d: string) {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const full = join(d, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (e.name.endsWith('.html')) htmlFiles.push(full)
+    }
+  }
+  walk(distDir)
+  log(`  Found ${htmlFiles.length} HTML files`)
+
+  // 1. Collect all hash map entries and find the root site data
+  const mergedHashMap: Record<string, string> = {}
+  let rootSiteDataExpr = ''
+
+  for (const f of htmlFiles) {
+    const c = readFileSync(f, 'utf-8')
+
+    // Extract hash map — captured content is JS string literal (has \" escaping)
+    const hmMatch = c.match(/__VP_HASH_MAP__\s*=\s*JSON\.parse\("(.+?)"\)/)
+    if (hmMatch) {
+      try {
+        const mapObj: Record<string, string> = JSON.parse(new Function(`return "${hmMatch[1]}"`)())
+        Object.assign(mergedHashMap, mapObj)
+      } catch { /* skip */ }
+    }
+
+    // Extract site data expression — use root's (has full sidebar/nav)
+    if (f === join(distDir, 'index.html')) {
+      const sdMatch = c.match(/__VP_SITE_DATA__\s*=\s*JSON\.parse\("(.+?)"\)/)
+      if (sdMatch) rootSiteDataExpr = sdMatch[1]
+    }
+  }
+
+  const totalEntries = Object.keys(mergedHashMap).length
+  log(`  Merged hash map: ${totalEntries} entries`)
+  log(`  Root site data: ${rootSiteDataExpr ? 'found' : 'MISSING'}`)
+
+  // 2. Build replacement expressions using JSON.stringify for proper JS string literal escaping
+  const hmJsLiteral = JSON.stringify(JSON.stringify(mergedHashMap))
+
+  let patched = 0
+  for (const f of htmlFiles) {
+    let c = readFileSync(f, 'utf-8')
+    let changed = false
+
+    // Replace hash map
+    const hmReplace = c.replace(
+      /__VP_HASH_MAP__\s*=\s*JSON\.parse\(".+?"\)/,
+      `__VP_HASH_MAP__=JSON.parse(${hmJsLiteral})`
+    )
+    if (hmReplace !== c) { c = hmReplace; changed = true }
+
+    // Replace site data with root's (full nav/sidebar) — skip root itself
+    if (rootSiteDataExpr && f !== join(distDir, 'index.html')) {
+      const sdReplace = c.replace(
+        /__VP_SITE_DATA__\s*=\s*JSON\.parse\(".+?"\)/,
+        `__VP_SITE_DATA__=JSON.parse("${rootSiteDataExpr}")`
+      )
+      if (sdReplace !== c) { c = sdReplace; changed = true }
+    }
+
+    if (changed) {
+      writeFileSync(f, c)
+      patched++
+    }
+  }
+  log(`  Patched ${patched} files with unified data`)
+}
+
 // ── Search Index Merge ──────────────────────────────────────
 
 function findSearchIndexFiles(dir: string): Map<string, string> {
@@ -456,6 +531,9 @@ async function main() {
 
   // ── Step 3: Merge search indexes ────────────────────────
   await mergeSearchIndexes(outputDirs, DIST_FINAL)
+
+  // ── Step 3.5: Unify hash maps and site data ─────────────
+  unifyCrossVolumeData(DIST_FINAL)
 
   // ── Step 4: Finalize ────────────────────────────────────
   logStep('Step 4/4: Finalizing')
