@@ -112,9 +112,9 @@ int main(void) {
 
 Let's verify this:
 
-```text
-$ gcc -Wall -Wextra -Werror -std=c17 -O2 -o swap swap.c
-$ ./swap
+```bash
+gcc -Wall -Wextra -Werror -std=c17 -O2 -o swap swap.c
+./swap
 ```
 
 Result:
@@ -213,9 +213,9 @@ Each recursive call allocates a new stack frame on the stack (saving local varia
 
 Let's verify this:
 
-```text
-$ gcc -Wall -Wextra -Werror -std=c17 -O2 -o factorial factorial.c
-$ ./factorial
+```bash
+gcc -Wall -Wextra -Werror -std=c17 -O2 -o factorial factorial.c
+./factorial
 ```
 
 Result:

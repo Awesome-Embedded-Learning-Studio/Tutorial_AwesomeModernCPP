@@ -26,6 +26,11 @@ fi
 echo -e "${GREEN}✅ Python detected: $(python3 --version)${NC}"
 
 echo -e "🔄 Activating environment..."
+if [ ! -f "$ENV_DIR/bin/activate" ]; then
+    echo -e "${RED}❌ Virtual environment not found at $ENV_DIR/${NC}"
+    echo "   Please create it first: python3 -m venv $ENV_DIR"
+    exit 1
+fi
 source $ENV_DIR/bin/activate
 
 # 2. Check pip
@@ -69,8 +74,12 @@ pip install pyyaml
 echo ""
 if command -v node &> /dev/null && command -v npm &> /dev/null; then
     echo -e "${GREEN}✅ Node.js detected: $(node --version)${NC}"
-    echo "📦 Installing markdownlint-cli..."
-    sudo npm install -g markdownlint-cli
+    if command -v markdownlint &> /dev/null; then
+        echo -e "${GREEN}✅ markdownlint already installed: $(markdownlint --version)${NC}"
+    else
+        echo "📦 Installing markdownlint-cli..."
+        sudo npm install -g markdownlint-cli
+    fi
 
     if command -v markdownlint &> /dev/null; then
         echo -e "${GREEN}✅ markdownlint installed${NC}"
@@ -86,6 +95,12 @@ fi
 echo ""
 echo "🔧 Installing git hooks..."
 cd "$PROJECT_ROOT"
+
+# Clear core.hooksPath if set (pre-commit refuses to install otherwise)
+if git config --get core.hooksPath &> /dev/null; then
+    echo -e "🔄 Clearing core.hooksPath..."
+    git config --unset-all core.hooksPath
+fi
 
 if pre-commit install; then
     echo -e "${GREEN}✅ Git hooks installed successfully${NC}"

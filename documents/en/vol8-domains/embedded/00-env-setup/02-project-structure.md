@@ -47,8 +47,8 @@ This command looks reasonable: it adds the library as a submodule, and `--depth 
 
 When you check the directory structure later, you'll notice a bizarre phenomenon:
 
-```text
-$ ls vendor/STM32CubeF1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/
+```bash
+ls vendor/STM32CubeF1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/
 ```
 
 Normally, this directory should contain a bunch of startup files (like `startup_stm32f103xb.s`), but if you used a shallow clone, it will be empty. During compilation, you'll see an error like this:
