@@ -57,8 +57,8 @@ sudo dnf install gcc-c++ make -y
 
 ```bash [Arch Linux]
 sudo pacman -S gcc make
-
 ```
+
 :::
 
 `build-essential` 是一个元包（meta package），它本身不包含任何软件，但会拉下来 `g++`、`gcc`、`make`、`libc6-dev` 等一系列编译必需的工具。装完这一个包，基本的 C 和 C++ 编译环境就有了。
