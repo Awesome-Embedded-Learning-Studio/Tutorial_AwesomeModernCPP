@@ -508,6 +508,7 @@ private:
 ```
 
 ::: details 查看完整单例实现示例
+
 ```cpp
 #include <cstring>
 #include <mutex>
@@ -589,7 +590,9 @@ int main() {
     void* dev = dm.get_device("UART1");
     return 0;
 }
+
 ```
+
 :::
 
 ------
@@ -608,6 +611,7 @@ int main() {
 ### 基础实现
 
 ```cpp
+
 template<typename Derived>
 class ObjectCounter {
 public:
@@ -807,6 +811,7 @@ public:
 ```
 
 ::: details 查看完整对象计数器实现
+
 ```cpp
 #include <cstdio>
 #include <stdexcept>
@@ -942,7 +947,9 @@ int main() {
 
     return 0;
 }
+
 ```
+
 :::
 
 ------
@@ -956,6 +963,7 @@ Mixin是一种通过继承来组合功能的模式，它允许你将可复用的
 ### 基本Mixin
 
 ```cpp
+
 // Printable Mixin：为类添加打印功能
 template<typename Derived>
 class Printable {
@@ -1226,6 +1234,7 @@ public:
 ```
 
 ::: details 查看完整Mixin示例
+
 ```cpp
 #include <iostream>
 #include <unordered_map>
@@ -1341,7 +1350,9 @@ int main() {
 
     return 0;
 }
+
 ```
+
 :::
 
 ------
@@ -1353,6 +1364,7 @@ int main() {
 让我们通过一个实际的测试来比较CRTP和虚函数的性能差异：
 
 ```cpp
+
 // 虚函数版本
 class ShapeVirtual {
 public:
@@ -1532,6 +1544,7 @@ int main() {
 - 代码大小比性能更重要
 
 ::: details 查看完整性能测试代码
+
 ```cpp
 #include <chrono>
 #include <iostream>
@@ -1745,7 +1758,9 @@ int main() {
 
     return 0;
 }
+
 ```
+
 :::
 
 ------
@@ -1755,6 +1770,7 @@ int main() {
 ### 1. 完美转发到派生类
 
 ```cpp
+
 template<typename Derived>
 class Base {
 public:

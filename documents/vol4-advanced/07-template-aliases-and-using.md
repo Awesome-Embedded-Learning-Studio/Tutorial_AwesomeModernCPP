@@ -1014,6 +1014,7 @@ void process(T container);
 让我们用别名模板构建一个嵌入式项目中常用的类型系统。
 
 ::: details 点击展开完整代码
+
 ```cpp
 
 #include <cstdint>
@@ -1224,6 +1225,7 @@ void example_usage() {
 }
 
 ```
+
 :::
 
 ------
@@ -1244,6 +1246,7 @@ void example_usage() {
 ### 代码大小
 
 ```cpp
+
 // 测试代码大小
 template<typename T>
 using Ptr = T*;

@@ -866,6 +866,7 @@ public:
 ### 完整实现示例
 
 ::: details 点击展开完整的RingBuffer实现（含迭代器支持）
+
 ```cpp
 #include <array>
 #include <cstddef>
@@ -1070,12 +1071,15 @@ private:
         full_ = false;
     }
 };
+
 ```
+
 :::
 
 ### 使用示例
 
 ```cpp
+
 // 串口接收缓冲区
 RingBuffer<uint8_t, 256> uart_rx_buffer;
 

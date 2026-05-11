@@ -815,6 +815,7 @@ static_assert(all_positive);
 ### 完整示例：嵌入式缓冲区工具
 
 ::: details 点击展开完整的编译期缓冲区工具代码
+
 ```cpp
 #include <cstdint>
 #include <cstddef>
@@ -945,6 +946,7 @@ void buffer_example() {
 }
 
 ```
+
 :::
 
 ------
@@ -954,6 +956,7 @@ void buffer_example() {
 ### 编译期位操作工具集
 
 ```cpp
+
 #include <type_traits>
 
 namespace bits {
@@ -1403,6 +1406,7 @@ using SPI1_MOSI = AlternateFunction<Pin<0, 7>, SPI_AF::AF5>; // PA7 -> AF5
 ### 完整示例：DMA配置
 
 ::: details 点击展开DMA编译期配置示例
+
 ```cpp
 namespace stm32f4 {
 
@@ -1502,6 +1506,7 @@ void uart_dma_send_example() {
 } // namespace stm32f4
 
 ```
+
 :::
 
 ------
@@ -1513,6 +1518,7 @@ void uart_dma_send_example() {
 **问题**：C++17之前不支持浮点类型的非类型模板参数：
 
 ```cpp
+
 // C++17之前：错误
 template<double Value>
 struct DoubleConstant { };
