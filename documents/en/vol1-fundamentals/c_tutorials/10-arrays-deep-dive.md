@@ -1,32 +1,6 @@
----
-chapter: 1
-cpp_standard:
-- 11
-description: Deep dive into the memory layout of C arrays, multidimensional arrays,
-  variable-length arrays, and their subtle relationship with pointers.
-difficulty: beginner
-order: 14
-platform: host
-prerequisites:
-- 指针与数组、const 和空指针
-reading_time_minutes: 23
-tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
-title: Arrays In Depth
-translation:
-  source: documents/vol1-fundamentals/c_tutorials/10-arrays-deep-dive.md
-  source_hash: 68cafa122521b4f5ac8765bd9beb1beb161954ae85c386774bd891976a67ef9f
-  translated_at: '2026-04-20T03:27:31.661173+00:00'
-  engine: anthropic
-  token_count: 2966
----
 # A Deeper Look at Arrays
 
-In the quick start and pointer chapters, we touched on arrays, but honestly, we only scratched the surface of "knowing how to use them." Arrays seem simple to use—declare, initialize, access by index—who can't do that? But once you start asking questions like "how are multi-dimensional arrays actually laid out in memory?", "why can't we assign arrays directly?", and "when are arrays and pointers truly interchangeable versus when are they not?"—you'll find there are quite a few details worth breaking down. These aren't just theoretical nuances; understanding the memory model of arrays sets the stage for later C++ topics like `std::array`, `std::vector`, and `std::span`, where you'll see exactly what problems each one solves.
+In the quick start and pointer chapters, we touched on arrays, but honestly, we only scratched the surface of "knowing how to use them." Arrays seem simple to use—declare, initialize, access by index—but once you start asking questions like "how are multi-dimensional arrays actually laid out in memory?", "why can't we assign arrays directly?", and "when are arrays and pointers the same, and when are they different?"—you'll find there are quite a few details worth breaking down. These aren't just theoretical nuances; understanding the memory model of arrays will give you clear insight into what problems C++'s `std::array`, `std::vector`, and `std::span` are designed to solve.
 
 > **Learning Objectives**
 >
@@ -40,11 +14,11 @@ In the quick start and pointer chapters, we touched on arrays, but honestly, we 
 
 ## Environment Notes
 
-All code in this chapter is based on the C99 standard, tested under GCC 13.x / Clang 17.x, and runs on Linux x86-64. Parts involving VLA require compiler support for C99 (`-std=c99` or `-std=c11`). If you are using MSVC, note that Microsoft's C compiler has incomplete C99 support, and some VLA features may be unavailable—we recommend using GCC or Clang.
+All code in this chapter is based on the C99 standard, tested under GCC 13.x / Clang 17.x, and runs on Linux x86-64. The sections involving VLA require compiler support for C99 (`-std=c99` or `-std=c11`). If you are using MSVC, note that Microsoft's C compiler has incomplete C99 support, and some VLA features may be unavailable—we recommend using GCC or Clang.
 
 ## Step 1 — Master Various Array Initialization Methods
 
-Everyone knows how to declare an array—`int arr[10];` and you're done. But the details of initialization are richer than many people realize. Let's start with the basics and work our way up to the designated initializers introduced in C99.
+Everyone knows how to declare an array—just `int arr[10];` and you're done. But the details of initialization are richer than many people realize. Let's start with the basics and work our way up to the designated initializers introduced in C99.
 
 ### Basic Initialization
 
@@ -59,11 +33,11 @@ int data[10] = {1, 2, 3};  // data[0]=1, data[1]=2, data[2]=3, data[3..9]=0
 int zeros[100] = {0};  // 第一个元素显式为 0，其余自动填 0
 ```
 
-The behavior of partial initialization is very important—the C standard dictates that as long as an array is initialized (even if only one element is explicitly set), all uninitialized elements are automatically zero-initialized to the appropriate type's zero value. Therefore, `{0}` has become the idiomatic way to zero out an array, much cleaner than writing a manual loop.
+Partial initialization is an important behavior—the C standard dictates that as long as an array is initialized (even if only one element is explicitly set), all uninitialized elements are automatically set to zero for their respective type. Therefore, `{0}` has become the idiomatic way to zero out an array, which is much cleaner than writing a manual loop.
 
 ### Designated Initializers (C99)
 
-C99 introduced a highly practical feature: the designated initializer. It allows you to specify "which index gets what value," with the rest automatically filled with zero. This is especially convenient when dealing with sparse arrays, configuration tables, or register mappings:
+C99 introduced a highly practical feature: the designated initializer. It allows you to specify "which index gets what value," automatically filling the rest with zero. This is particularly handy when dealing with sparse arrays, configuration tables, or register mappings:
 
 ```c
 // 只初始化特定的位置，其余自动为 0
@@ -79,7 +53,7 @@ int seq[10] = {[3] = 10, 20, 30};
 // seq[3] = 10, seq[4] = 20, seq[5] = 30, 其余 0
 ```
 
-Honestly, designated initializers are extremely common in embedded development. For example, if you have an interrupt vector table or a command dispatch table where most entries are empty and only a few need to be filled, code written with designated initializers is both clean and error-resistant. C++ didn't officially support designated initializers until C++20 (and with some restrictions), so this feature has a clearer advantage in pure C code.
+Honestly, designated initializers are extremely common in embedded development. For example, if you have an interrupt vector table or a command dispatch table where most entries are empty and only a few need to be populated, code written with designated initializers is both clean and less error-prone. C++ didn't officially support designated initializers until C++20 (and with some restrictions), so this feature has a more obvious advantage in pure C code.
 
 ## Step 2 — Understand the Memory Layout of Multi-Dimensional Arrays
 
@@ -122,7 +96,7 @@ int main(void) {
 }
 ```
 
-You can see that the memory is completely linear—`matrix[1][0]` sits right next to `matrix[0][3]`. Understanding this is crucial because many performance optimizations (like cache-friendly access) are built on this foundation: traversing by row is much faster than traversing by column, as contiguous memory accesses utilize CPU cache lines much more effectively.
+As you can see, the memory is completely linear—`matrix[1][0]` sits immediately after `matrix[0][3]`. Understanding this is crucial because many performance optimizations (like cache-friendly access) are built upon this foundation: traversing by row is much faster than traversing by column because contiguous memory accesses utilize CPU cache lines much more effectively.
 
 ### Initializing Multi-Dimensional Arrays
 
@@ -176,11 +150,11 @@ void print_matrix_v2(int rows, int (*m)[4]) {
 }
 ```
 
-If you want a function to accept two-dimensional arrays with different column counts, you have to abandon the direct 2D array syntax and use a one-dimensional array with manual index calculation, or use an array of pointers. This is indeed a trade-off between flexibility and type safety.
+If you want a function to accept two-dimensional arrays with different column counts, you have to abandon the direct 2D array syntax and instead use a one-dimensional array with manual index calculation, or an array of pointers. This is indeed a trade-off between flexibility and type safety.
 
-## Step 3 — Understand the Pros and Cons of Variable Length Arrays (VLA)
+## Step 3 — Understand the Pros and Cons of VLA
 
-C99 introduced Variable Length Arrays, allowing runtime variables to determine the array size. Note that "variable length" here doesn't mean the array size can change dynamically—once created, the size is fixed—but rather that the size determination is deferred to runtime:
+C99 introduced the Variable Length Array (VLA), which allows runtime variables to be used as the array size. Note that "variable length" here doesn't mean the array size can change dynamically—once created, the size is fixed—but rather that the size determination is deferred to runtime:
 
 ```c
 #include <stdio.h>
@@ -199,7 +173,7 @@ int main(void) {
 }
 ```
 
-VLA can also be used in two-dimensional scenarios, which is particularly convenient in function parameters:
+VLA can also be used in two-dimensional scenarios, which is especially convenient in function parameters:
 
 ```c
 // VLA 作为函数参数——行数和列数都是运行时确定的
@@ -225,22 +199,22 @@ See how the size of `m[rows][cols]` in the parameter list of `print_vla_matrix` 
 
 ### Limitations and Controversies of VLA
 
-VLA sounds great, but it has several issues that make it rather unpopular in industry.
+VLA sounds great, but it has several issues that make it rather unpopular in the industry.
 
-First, VLA is allocated on the stack. Stack space is typically limited (Linux defaults to 8 MB, and embedded systems might only have a few KB). If a user inputs a very large number—say, `int vla[1000000]`—you might blow the stack directly, with no means of recovery. Unlike `malloc` returning `NULL` which you can handle, stack overflow is straight-up undefined behavior.
+First, VLA is allocated on the stack. Stack space is usually limited (8MB by default on Linux, and potentially only a few KB in embedded systems). If a user inputs a very large number—like `int vla[1000000]`—you might blow the stack directly, with no means of recovery. Unlike `malloc` returning `NULL` where you can still handle the error, a stack overflow is straight-up undefined behavior.
 
 > ⚠️ **Pitfall Warning**
-> VLA is allocated on the stack, its size is unpredictable, and allocation failure has no recovery mechanism—it's undefined behavior directly. In the embedded domain, MISRA-C explicitly prohibits the use of VLA. If you need an array whose size is determined at runtime, using `malloc` and checking the return value is the safe approach.
+> VLA is allocated on the stack, its size is unpredictable, and allocation failure has no recovery mechanism—it's undefined behavior right away. In the embedded domain, MISRA-C explicitly prohibits the use of VLA. If you need an array whose size is determined at runtime, using `malloc` and checking the return value is the safe approach.
 
-Second, C11 demoted VLA from a mandatory feature to an optional one—compilers can claim not to support VLA and indicate this using a macro `__STDC_NO_VLA__`. This means you cannot rely on VLA being available on all C11 compilers.
+Second, C11 demoted VLA from a mandatory feature to an optional one—compilers can claim not to support VLA by defining a macro `__STDC_NO_VLA__`. This means you cannot rely on VLA being available on all C11 compilers.
 
-In the embedded domain, VLA is essentially prohibited. Static analysis tools (like MISRA-C) typically explicitly forbid VLA because its size is unpredictable, conflicting directly with the requirements of real-time performance and deterministic memory usage.
+In the embedded domain, VLA is essentially forbidden. Static analysis tools (like MISRA-C) typically explicitly prohibit VLA because its size is unpredictable, which completely conflicts with the requirements for real-time performance and deterministic memory usage.
 
-Our recommendation is to simply know that VLA exists and be able to read VLA code written by others. When writing your own code, prefer fixed-size arrays or `malloc`. In scenarios requiring flexible sizes where dynamic allocation is acceptable, `malloc` with bounds checking is much safer than VLA.
+My recommendation is to simply know that VLA exists and be able to read VLA code written by others. When writing your own code, prefer fixed-size arrays or `malloc`. In scenarios where you need flexible sizing and can accept dynamic allocation, `malloc` with bounds checking is much safer than VLA.
 
 ## Step 4 — Understand the Fundamental Limitations of Arrays
 
-Arrays in C have several fundamental limitations, and understanding these is key to grasping the design motivations behind C++ containers later on.
+Arrays in C have several fundamental limitations. Understanding these is key to grasping the design motivations behind C++ containers later on.
 
 ### Arrays Are Not Assignable
 
@@ -252,7 +226,7 @@ int b[3];
 // b = a;  // 编译错误！数组不能直接赋值
 ```
 
-The reason is that in an assignment expression, the array name decays to a pointer to its first element, and the left side of the assignment operator must be a modifiable lvalue—the decayed pointer is an rvalue and cannot be assigned to. Therefore, to copy an array, you must copy element by element or use `memcpy`:
+The reason is that the array name decays into a pointer to its first element in an assignment expression, and the left side of the assignment operator must be a modifiable lvalue—the decayed pointer is an rvalue and cannot be assigned to. Therefore, to copy an array, you must either copy it element by element or use `memcpy`:
 
 ```c
 #include <string.h>
@@ -262,9 +236,9 @@ int b[3];
 memcpy(b, a, sizeof(a));  // 正确的数组拷贝方式
 ```
 
-### Arrays Cannot Be Function Return Values
+### Arrays Cannot Be Function Return Types
 
-A function cannot return an array type. You can't write a signature like `int[10] foo(void)`. If you want to "return" an array from a function, there are three common approaches: return a pointer (pointing to a static or dynamically allocated array), pass an array out via a parameter, or wrap the array in a struct and return that. The last method is actually quite practical—C allows struct assignment and returning structs by value, and structs can contain arrays:
+A function cannot return an array type. You cannot write a signature like `int[10] foo(void)`. If you want to "return" an array from a function, there are three common approaches: return a pointer (pointing to a static or dynamically allocated array), pass an array out via a parameter, or wrap the array in a struct and return that. The last method is actually quite practical—C allows struct assignment and returning structs by value, and a struct can contain an array:
 
 ```c
 typedef struct {
@@ -277,7 +251,7 @@ IntArray10 make_array(void) {
 }
 ```
 
-You can also see this technique in the C standard library's math functions (returning complex numbers, structures like `div_t`, etc.).
+You can also see this trick in the C standard library's math functions (returning complex numbers, structures like `div_t`, etc.).
 
 ### Array Size Must Be a Compile-Time Constant (Except for VLA)
 
@@ -285,11 +259,11 @@ The size of a regular array must be determined at compile time. `int arr[n]` (wh
 
 ## Step 5 — Precisely Distinguish Between Arrays and Pointers
 
-In both the quick start and pointer chapters, we mentioned that "array names decay to pointers." This statement is fine, but it easily leads people to assume "arrays are pointers"—which is incorrect. Arrays are arrays, and pointers are pointers; they are only interchangeable in specific situations.
+In both the quick start and pointer chapters, we mentioned that "array names decay to pointers." This statement is fine, but it easily leads people to assume "arrays are pointers"—which is incorrect. Arrays are arrays, and pointers are pointers; they can only be converted to each other in specific situations.
 
-### When Array Names Decay to Pointers
+### When Do Array Names Decay to Pointers?
 
-Array names decay to pointers to their first element in the following scenarios: when passed as function arguments, when used in arithmetic operations, and when used in expressions (most cases). However, there are three exceptions—array names do not decay when used as operands of `sizeof`, `_Alignof` (C11), or the address-of operator `&`:
+Array names decay to pointers to their first element in the following scenarios: when passed as function parameters, when used in arithmetic operations, and when used in expressions (most cases). However, there are three exceptions—array names do not decay when used as operands of `sizeof`, `_Alignof` (C11), or the address-of operator `&`:
 
 ```c
 int arr[10] = {0};
@@ -306,7 +280,7 @@ int* p = arr;  // 等价于 int* p = &arr[0];
 printf("%zu\n", sizeof(p));  // 8（指针本身的大小，64 位系统）
 ```
 
-`sizeof(arr)` returns 40 while `sizeof(p)` returns 8—this is the most direct evidence that arrays are not pointers.
+`sizeof(arr)` returns 40 while `sizeof(p)` returns 8—this is the most direct evidence that an array is not a pointer.
 
 ### Pointer Arithmetic vs. Array Subscripting
 
@@ -328,18 +302,18 @@ int** pp:
        [....] [....] [....]  ← 每行各自的内存
 ```
 
-A two-dimensional array is a single contiguous block of memory, where the compiler calculates addresses directly using the row-column formula. An array of pointers adds a layer of indirection—you first find the pointer for row `i`, then use that pointer to find the element at index `j`. Therefore, `int m[3][4]` cannot be passed to a function accepting a `int**` parameter, and vice versa. Their types are incompatible, and forcing a cast will lead to undefined behavior.
+A two-dimensional array is a single contiguous block of memory, where the compiler calculates addresses directly using the row-column formula. An array of pointers adds a layer of indirection—you first find the pointer for row `i`, then use that pointer to find the element at index `j`. Therefore, `int m[3][4]` cannot be passed to a function expecting a `int**` parameter, and vice versa. Their types are incompatible, and forcing a cast will result in undefined behavior.
 
 > ⚠️ **Pitfall Warning**
 > Although both `int m[3][4]` and `int** pp` can be accessed using `m[i][j]` / `pp[i][j]`, their memory models are completely different—the former is contiguous memory, while the latter has a layer of indirection. Never pass a 2D array to a `int**` parameter; the compiler might let it slide, but the address calculations at runtime will be completely wrong.
 
-## Bridging to C++
+## C++ Connections
 
-Now that we understand the limitations of C arrays, let's look at how C++ solves them one by one.
+Now that we understand these limitations of C arrays, let's look at how C++ solves them one by one.
 
 ### `std::array` — Assignable Fixed-Size Arrays
 
-`std::array` is a fixed-size array container introduced in C++11. It allocates memory on the stack (just like C arrays) but fills in the features missing from C arrays: it supports assignment, copying, returning from functions, and knowing its own size:
+`std::array` is a fixed-size array container introduced in C++11. It allocates memory on the stack (just like C arrays) but adds the features missing from C arrays: it can be assigned, copied, returned from functions, and it knows its own size:
 
 ```cpp
 #include <array>
@@ -384,7 +358,7 @@ int main() {
 }
 ```
 
-`std::vector` can be seen as a safe alternative to VLA—its size is mutable, allocation failure throws an exception (rather than the undefined behavior of a stack overflow), it provides bounds checking (the `at()` method), and it automatically frees memory. The only cost is a small amount of heap allocation overhead, but in the vast majority of scenarios, this overhead is perfectly acceptable.
+`std::vector` can be seen as a safe alternative to VLA—its size is variable, allocation failure throws an exception (instead of the undefined behavior of a stack overflow), it has bounds checking (the `at()` method), and it automatically frees memory. The only cost is a small heap allocation overhead, but in the vast majority of scenarios, this overhead is perfectly acceptable.
 
 ### Range-based for Loop Traversal
 
@@ -409,15 +383,15 @@ int main() {
 }
 ```
 
-It's worth noting that the range-based for loop can also be used with raw C arrays (as long as the array's size is visible in the current scope), but its use cases are somewhat limited—once an array decays to a pointer, the size information is lost, and the range-based for loop can no longer be used. This is yet another advantage of `std::array` over raw arrays.
+It's worth noting that the range-based for loop can also be used with raw C arrays (as long as the array's size is visible in the current scope), but its use cases are quite limited—once an array decays to a pointer, the size information is lost, and the range-based for loop can no longer be used. This is yet another advantage of `std::array` over raw arrays.
 
 ## Summary
 
-The memory model of arrays isn't actually that complex—it's just a contiguous sequence of elements of the same type. One-dimensional arrays offer diverse initialization methods, and C99's designated initializers are particularly handy for sparse data. Multi-dimensional arrays are "arrays of arrays" stored in row-major order, and understanding this is important for performance optimization. VLA is convenient but carries the risk of stack overflow, and it is generally not recommended in industry or embedded domains. Arrays have a few fundamental limitations—they can't be assigned and can't be returned from functions—which are perfectly resolved by `std::array` in C++. And while arrays and pointers are interchangeable in most scenarios, they are fundamentally different types—`sizeof` and `&` are the places most likely to expose these differences. Understanding these low-level details means that when you learn C++ containers later, you'll be able to appreciate the motivation behind every design decision.
+The memory model of arrays isn't actually that complex—it's just a contiguous sequence of elements of the same type. One-dimensional arrays have diverse initialization methods, and C99's designated initializers are particularly handy for sparse data. Multi-dimensional arrays are "arrays of arrays" stored in row-major order, and understanding this is important for performance optimization. VLA is convenient but carries the risk of stack overflow, and it is generally not recommended in industry or embedded domains. Arrays have several fundamental limitations—they cannot be assigned or returned from functions—which are perfectly resolved by `std::array` in C++. Although arrays and pointers are interchangeable in most scenarios, they are fundamentally different types—`sizeof` and `&` are the places most likely to expose these differences. Understanding these low-level details will help you appreciate the motivation behind every design decision when you move on to C++ containers.
 
 ### Key Takeaways
 
-- [ ] During partial initialization, unspecified elements are automatically filled with zero; `{0}` is the idiomatic way to zero out an array
+- [ ] When partially initialized, unspecified elements are automatically filled with zero; `{0}` is the idiomatic way to zero out an array
 - [ ] C99 designated initializers allow initialization by position, suitable for sparse data and configuration tables
 - [ ] Multi-dimensional arrays are stored contiguously in row-major order; the address of `m[i][j]` is `base + i * cols + j`
 - [ ] VLA is allocated on the stack, its size is unpredictable, and it was demoted to an optional feature in C11
@@ -430,7 +404,7 @@ The memory model of arrays isn't actually that complex—it's just a contiguous 
 
 ### Exercise 1: Matrix Operations
 
-Implement the following three functions to perform basic matrix operations. Matrices are represented using standard C two-dimensional arrays; please implement matrix transposition and matrix multiplication yourself:
+Implement the following three functions to perform basic matrix operations. Matrices are represented using standard C two-dimensional arrays. Please implement matrix transposition and matrix multiplication yourself:
 
 ```c
 #define kMaxRows 10
@@ -464,7 +438,7 @@ void matrix_multiply(int m, int n, int p,
 void matrix_print(int rows, int cols, const int mat[rows][cols]);
 ```
 
-Hint: The core of transposition is `dst[j][i] = src[i][j]`. The core of multiplication is a triple loop—`c[i][j]` is the dot product of the `i`th row of `a` and the `j`th column of `b`. The function parameters here use VLA syntax so that the column count can be specified dynamically.
+Hint: The core of transposition is `dst[j][i] = src[i][j]`. The core of multiplication is a triple loop—`c[i][j]` is the dot product of row `i` of `a` and column `j` of `b`. Note that the function parameters here use VLA syntax, allowing the column count to be specified dynamically.
 
 ### Exercise 2: Comparing VLA and malloc
 

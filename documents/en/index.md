@@ -1,50 +1,109 @@
----
-title: "Welcome to the Modern C++ Tutorial"
-description: "A comprehensive, systematic Modern C++ development tutorial and knowledge base"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
-difficulty: intermediate
-chapter: 0
-order: 0
-platform: host
----
 # Welcome to the Modern C++ Tutorial
 
-> A comprehensive, systematic Modern C++ development tutorial and knowledge base
+> A comprehensive, systematic modern C++ development tutorial and knowledge base
 
-Visit the deployed site for a better reading experience: [Static Site](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)
+Click here for a better reading experience: [Static Site Deployment](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)
 
-If you prefer reading on GitHub directly, browse the series below.
+If you prefer reading the documentation in its native GitHub format, browse the series below directly.
 
 ---
 
-## English Content
+## Tutorial Navigation
 
 ### Volume 1: C++ Fundamentals
 
-Learn C++ basics from scratch, systematically. Suitable for beginners.
+Learn C++ fundamentals systematically from scratch. Suitable for absolute beginners.
 
-- [Start Reading](vol1-fundamentals/)
-
----
-
-## Chinese Content (中文内容)
-
-The following volumes are currently available in Chinese only:
-
-- [Volume 2: Modern C++ Features](/vol2-modern-features/)
-- [Volume 3: Standard Library In-Depth](/vol3-standard-library/)
-- [Volume 4: Advanced Topics](/vol4-advanced/)
-- [Volume 5: Concurrency](/vol5-concurrency/)
-- [Volume 6: Performance Optimization](/vol6-performance/)
-- [Volume 7: Software Engineering Practices](/vol7-engineering/)
-- [Volume 8: Domain Applications](/vol8-domains/)
-- [Volume 9: Open Source Project Study](/vol9-open-source-project-learn/)
-- [Compilation & Linking](/compilation/)
-- [Projects](/projects/)
+- [Start Reading](vol1-fundamentals/index.md)
 
 ---
 
-> Please note that tutorials have a time-sensitive nature. Compare dates as reference, then adapt accordingly. Official documentation should always be your first reference.
+### Volume 2: Modern C++ Features
+
+In-depth exploration of core C++11/14/17 features. The key volume that distinguishes "modern C++" from "legacy C++."
+
+- [Start Reading](vol2-modern-features/index.md)
+
+---
+
+### Volume 3: Standard Library In-Depth
+
+Deep dives and source code analysis of STL containers, iterators, and algorithms.
+
+- [Start Reading](vol3-standard-library/index.md)
+
+---
+
+### Volume 4: Advanced Topics
+
+Advanced C++20/23/26 features: concepts, ranges, coroutines, modules, and template metaprogramming.
+
+- [Start Reading](vol4-advanced/index.md)
+
+---
+
+### Volume 5: Concurrent Programming
+
+Master C++ concurrent programming comprehensively, from thread primitives to asynchronous coroutines.
+
+- [Start Reading](vol5-concurrency/index.md)
+
+---
+
+### Volume 6: Performance Optimization
+
+CPU caches, SIMD, assembly reading, optimization patterns, and benchmarking.
+
+- [Start Reading](vol6-performance/index.md)
+
+---
+
+### Volume 7: Software Engineering Practices
+
+CMake, package management, testing, static analysis, and DevOps.
+
+- [Start Reading](vol7-engineering/index.md)
+
+---
+
+### Volume 8: Domain Applications
+
+Practical applications of modern C++ across various domains: embedded development, network programming, GUI graphics, data storage, and algorithms and data structures.
+
+- [Start Reading](vol8-domains/index.md)
+
+---
+
+### Volume 9: Open Source Project Study
+
+Learn the design and implementation of industrial-grade C++ code by analyzing real open source projects (such as Chromium).
+
+- [Start Reading](vol9-open-source-project-learn/index.md)
+
+---
+
+### Compilation and Linking In-Depth
+
+An in-depth look at core C/C++ concepts including compilation, linking, static libraries, shared libraries, and symbol visibility. Ten articles in total.
+
+- [Compilation and Linking Techniques (Part 1)](compilation/01-compilation-and-linking-overview.md)
+
+---
+
+### Comprehensive Hands-On Projects
+
+Integrated projects including hand-writing STL components, a mini HTTP server, a GUI framework, and an embedded OS.
+
+- [Start Reading](projects/index.md)
+
+---
+
+> Please note that tutorials are time-sensitive. We recommend comparing the publication dates and adapting the content accordingly. The official documentation should always be your primary reference.
+
+---
+
+### Tag Index
+
+Browse all tutorial articles by tag, making it easy to find related content by topic.
+
+- [Tag Index](tags.md)

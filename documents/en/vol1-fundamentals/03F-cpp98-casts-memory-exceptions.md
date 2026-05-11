@@ -1,52 +1,20 @@
----
-title: 'C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling'
-description: Precise use cases for the four C++ type casting operators, managing dynamic
-  objects with `new`/`delete` and placement new, exception handling mechanisms and
-  embedded trade-offs, and `inline` and `typedef`
-chapter: 0
-order: 3
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
-difficulty: intermediate
-reading_time_minutes: 25
-prerequisites:
-- C++98面向对象：类与对象深度剖析
-- C++98面向对象：继承与多态
-related:
-- 何时用C++、用哪些C++特性
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-platform: host
-translation:
-  source: documents/vol1-fundamentals/03F-cpp98-casts-memory-exceptions.md
-  source_hash: dcfc538a941ebfe4ed5f6119516b31472737563ff87dcd9a152dc548e2b5e36e
-  translated_at: '2026-04-20T03:08:23.243560+00:00'
-  engine: anthropic
-  token_count: 3446
----
 # C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
 
-In this chapter, we focus on several relatively "advanced" features in C++98: the four type conversion operators, dynamic memory management (`new`/`delete` and `placement new`), exception handling, and `inline` functions and `typedef`. They don't have strong dependencies on each other, but all require a basic understanding of classes as a prerequisite.
+In this chapter, we focus on several relatively "advanced" features in C++98: the four type conversion operators, dynamic memory management (`new`/`delete` and `placement new`), exception handling, as well as `inline` functions and `typedef`. They do not have strong dependencies on each other, but all require a basic understanding of classes as a prerequisite.
 
-These features share a common trait: they either enhance existing C mechanisms (type conversions replace C-style casts, `new`/`delete` replace `malloc`/`free`), or they are entirely new to C++ (exception handling). Understanding their design intent and applicable boundaries is a prerequisite for using modern C++ correctly.
+These features share a common trait: they either enhance existing C mechanisms (type conversions replace C-style casts, `new`/`delete` replace `malloc`/`free`), or they are entirely new to C++ (exception handling). Understanding their design intent and applicable boundaries is a prerequisite for correctly using modern C++.
 
 ## 1. C++ Type Conversion Operators
 
-C++ provides four dedicated type conversion operators, which are safer and more explicit than C-style casts `(type)value`. Each has clear use cases and constraints.
+C++ provides four dedicated type conversion operators, which are safer and more explicit than C-style casts `(Type)expr`. Each has a clear applicable scenario and usage constraints.
 
 ### 1.1 static_cast
 
-`static_cast` is used for **type conversions known at compile time**. It is the "gentlest" of the four conversions—it doesn't perform any dangerous low-level reinterpretation; it simply tells the compiler, "I know this conversion is reasonable, please execute it for me."
+`static_cast` is used for **type conversions known at compile time**. It is the "mildest" of the four conversions—it does not perform any dangerous low-level reinterpretation, but simply tells the compiler, "I know this conversion is reasonable, please execute it for me."
 
-Applicable scenarios include: conversions between fundamental types (such as `int` to `float`), conversions between pointers or references with an inheritance relationship (upcasting is always safe, downcasting requires the programmer to ensure safety), and conversions between `void*` and other pointer types.
+Applicable scenarios include: conversions between fundamental types (such as `int` to `double`), conversions between pointers or references with an inheritance relationship (upcasting is always safe, downcasting requires the programmer to ensure safety), and conversions between `void*` and other pointer types.
 
 ```cpp
 // 基本类型转换
@@ -68,11 +36,11 @@ Base b;
 // Derived* derived_ptr = static_cast<Derived*>(&b);  // 危险！
 ```
 
-The safety of `static_cast` lies in its basic compile-time checking—if you try to convert between two completely unrelated pointer types (such as `int*` to `float*`), the compiler will directly report an error. For this kind of cross-type low-level conversion, you need to use `reinterpret_cast`.
+The safety of `static_cast` lies in its basic compile-time checks—if you try to convert between two completely unrelated pointer types (such as `int*` to `float*`), the compiler will directly report an error. For this kind of cross-type low-level conversion, you need to use `reinterpret_cast`.
 
 ### 1.2 reinterpret_cast
 
-`reinterpret_cast` performs the **lowest-level reinterpreting conversion**, allowing you to convert between almost any pointer types, and even between pointers and integers. As the name suggests, it simply "reinterprets" the meaning of a memory block—the compiler performs no safety checks.
+`reinterpret_cast` performs the **lowest-level reinterpreting conversion**, allowing you to convert between almost any pointer types, and even between pointers and integers. As the name suggests, it merely "reinterprets" the meaning of a memory block—the compiler performs no safety checks.
 
 In embedded systems, `reinterpret_cast` is the standard method for accessing hardware registers:
 
@@ -100,9 +68,9 @@ typedef struct {
 GPIOA->MODER |= 0x01;  // 配置引脚模式
 ```
 
-This usage is unavoidable in embedded development—you genuinely need to "treat" a fixed memory address as a certain structure. But note that the danger of `reinterpret_cast` lies exactly here: it completely bypasses the type system, and if you provide the wrong address or mess up the struct layout, you bear the full consequences.
+This usage is unavoidable in embedded development—you genuinely need to treat a fixed memory address "as" a certain structure. But note that the danger of `reinterpret_cast` lies exactly here: it completely bypasses the type system, and if you provide the wrong address or mess up the struct layout, you bear the full consequences.
 
-Another common use case is converting function pointers, such as in an interrupt vector table:
+Another common use case is converting function pointers, such as for interrupt vector tables:
 
 ```cpp
 typedef void (*ISR_Handler)(void);
@@ -116,7 +84,7 @@ uint32_t isr_address = reinterpret_cast<uint32_t>(timer_isr);
 
 ### 1.3 dynamic_cast
 
-`dynamic_cast` is used for **runtime type checking**, primarily for downcasting polymorphic types (classes containing virtual functions). It checks at runtime whether the conversion is safe—if safe, it returns the converted pointer; if unsafe, it returns `nullptr` (pointer version) or throws a `std::bad_cast` exception (reference version).
+`dynamic_cast` is used for **runtime type checking**, primarily for downcasting in polymorphic types (classes containing virtual functions). It checks at runtime whether the conversion is safe—if safe, it returns the converted pointer; if unsafe, it returns `nullptr` (pointer version) or throws a `std::bad_cast` exception (reference version).
 
 ```cpp
 class Base {
@@ -136,15 +104,15 @@ if (derived_ptr != nullptr) {
 }
 ```
 
-Note that `dynamic_cast` requires **RTTI (Runtime Type Information)** support. RTTI stores type information in every object with virtual functions, which increases code size and runtime overhead. Many embedded compilers disable RTTI by default to save resources—if your project uses the `-fno-rtti` compiler flag, `dynamic_cast` cannot be used.
+It is important to note that `dynamic_cast` requires **RTTI (Runtime Type Information)** support. RTTI stores type information in every object with virtual functions, which increases code size and runtime overhead. Many embedded compilers disable RTTI by default to save resources—if your project uses the `-fno-rtti` compiler flag, `dynamic_cast` cannot be used.
 
-Therefore, in embedded development, `dynamic_cast` is used far less frequently than the other three conversions. If you truly need to perform type checking within an inheritance hierarchy, there are usually better alternatives—such as defining a `type()` method in the base class, or using the Visitor pattern.
+Therefore, in embedded development, the usage frequency of `dynamic_cast` is much lower than the other three conversions. If you truly need to perform type checking within an inheritance hierarchy, there are usually better alternatives—such as defining a `type()` method in the base class, or using the Visitor pattern.
 
 ### 1.4 const_cast
 
-`const_cast` is used to **add or remove the `const` or `volatile` qualifier**. It is the only C++ conversion operator that can do this—the other three cannot alter the `const` nature of an object.
+`const_cast` is used to **add or remove `const` or `volatile` qualifiers**. It is the only C++ conversion operator that can do this—the other three cannot alter `const`-ness.
 
-The most common legitimate use case is calling legacy C APIs whose signatures aren't very `const`-friendly:
+The most common legitimate use case is calling legacy C APIs whose signatures are not `const`-friendly:
 
 ```cpp
 // 遗留 C 函数：参数应该是 const 的，但当时没写
@@ -170,17 +138,17 @@ int* modifiable = const_cast<int*>(&const_value);
 
 ### 1.5 Type Conversion Decision Guide
 
-The choice among the four conversions can be decided with a simple logic chain:
+The choice among the four conversions can be decided using a simple logic chain:
 
-First, ask yourself: do you need to remove `const` or `volatile`? If yes, use `const_cast`. Second, do you need to do low-level memory reinterpretation (such as integer address to pointer, or between unrelated pointer types)? If yes, use `reinterpret_cast`—but be extra careful. Third, do you need runtime type checking in an inheritance hierarchy with virtual functions? If yes, use `dynamic_cast`—but be mindful of the RTTI overhead. If none of the above apply, use `static_cast`—it covers the vast majority of everyday type conversion needs.
+First, ask yourself: do you need to remove `const` or `volatile`? If yes, use `const_cast`. Second, do you need to do low-level memory reinterpreting (such as integer address to pointer, or between unrelated pointer types)? If yes, use `reinterpret_cast`—but be extremely careful. Third, do you need runtime type checking in an inheritance hierarchy with virtual functions? If yes, use `dynamic_cast`—but be mindful of the RTTI overhead. If none of the above apply, use `static_cast`—it covers the vast majority of everyday type conversion needs.
 
-**A practical principle is: prefer `static_cast`, and only use the other three when you clearly know why you need them.** If you find yourself heavily using `reinterpret_cast` or `const_cast`, it likely indicates a problem with your design that is worth re-examining.
+**A practical principle is: prefer `static_cast`, and only use the other three when you clearly know why you need them.** If you find yourself heavily using `reinterpret_cast` or `const_cast`, it may indicate a problem with your design that is worth re-examining.
 
 ## 2. Dynamic Memory Management
 
 ### 2.1 new and delete
 
-C++ provides the `new` and `delete` operators to replace C's `malloc` and `free`. Put simply and loosely—`new` is a thin wrapper around `malloc` plus the corresponding constructor call, allowing you to construct an object in-place on a block of `sizeof(TargetType)` bytes; `delete` first calls the destructor, and then frees the memory.
+C++ provides the `new` and `delete` operators to replace C's `malloc` and `free`. In a simplified and not entirely rigorous sense—`new` is a simple wrapper around `malloc` plus the corresponding constructor call, allowing you to construct an object in-place on a block of `malloc`-sized memory; `delete` first calls the destructor and then reclaims the memory.
 
 ```cpp
 // 分配单个对象
@@ -213,9 +181,9 @@ MyClass* objs = new MyClass[5];  // 调用 5 次构造函数
 delete[] objs;                    // 调用 5 次析构函数
 ```
 
-**The key difference between `new`/`delete` and `malloc`/`free`** is that `new` calls the constructor and `delete` calls the destructor, whereas `malloc`/`free` only handle allocating and freeing raw memory, knowing nothing about object construction and destruction. This means if you use `malloc` to allocate memory for a C++ type, you must manually call placement `new` to construct the object, and manually call the destructor before freeing—this is error-prone and completely unnecessary.
+**The key difference between `new`/`delete` vs `malloc`/`free`** is that `new` calls the constructor and `delete` calls the destructor, whereas `malloc`/`free` only handle allocating and freeing raw memory, knowing nothing about object construction and destruction. This means if you use `malloc` to allocate memory for a C++ type, you must manually call placement `new` to construct the object, and manually call the destructor before freeing—this is error-prone and completely unnecessary.
 
-A classic and highly dangerous mistake is mismatching `delete` and `delete[]`:
+A classic and highly dangerous mistake is mismatching `new` and `delete`:
 
 ```cpp
 int* arr = new int[10];
@@ -224,11 +192,11 @@ delete arr;    // 错误！应该用 delete[]
 // 但行为是未定义的
 ```
 
-For fundamental types (like `int`), some platforms might "happen" to work without issues, because the destructor of a fundamental type is a no-op. But for arrays of class types, `delete` (without `[]`) will only call the destructor of the first element, leaving all other elements leaked—if the destructor is responsible for releasing other resources (like nested dynamic memory), the consequences are severe. **Make it a habit to use them in pairs: `new` with `delete`, and `new[]` with `delete[]`.**
+For fundamental types (like `int`), some platforms might "happen" to not exhibit problems, because the destructors of fundamental types are no-ops. But for arrays of class types, `delete` (without `[]`) will only call the destructor of the first element, leaving all other elements leaked—if the destructors are responsible for releasing other resources (like nested dynamic memory), the consequences are severe. **Form the habit of using them in pairs: `new` with `delete`, `new[]` with `delete[]`.**
 
 ### 2.2 placement new
 
-`placement new` allows you to construct an object at a **specified memory location**, rather than letting `new` find a new block of memory on its own. In application development, this feature isn't used very often, but it is highly valuable in embedded systems—it lets you construct objects in pre-allocated memory pools, avoiding the use of the standard heap.
+`placement new` allows you to construct an object at a **specified memory location**, rather than letting `new` find a new block of memory itself. In application development, this feature is not used very often, but it is highly valuable in embedded systems—it allows you to construct objects in pre-allocated memory pools, avoiding the use of the standard heap.
 
 ```cpp
 #include <new>  // 需要包含这个头文件
@@ -248,7 +216,7 @@ obj->~MyClass();
 // 不要使用 delete！内存不是用 new 分配的
 ```
 
-There are a few points to note when using `placement new`. First, the alignment of the memory buffer must satisfy the object's requirements—`alignas(MyClass)` ensures this. Second, because the memory wasn't allocated via `new`, you cannot use `delete`—you can only explicitly call the destructor to clean up the object's state, and then decide for yourself when to reuse or release that memory block. Finally, explicitly calling a destructor is a very rare operation in C++, almost exclusively seen in conjunction with `placement new`—under normal circumstances, you never need to manually call a destructor.
+There are a few points to note when using `placement new`. First, the alignment of the memory buffer must satisfy the object's requirements—`alignas` ensures this. Second, because the memory was not allocated via `new`, you cannot use `delete`—you can only explicitly call the destructor to clean up the object's state, and then decide yourself when to reuse or release this memory block. Finally, explicitly calling a destructor is a very rare operation in C++, almost exclusively appearing in conjunction with `placement new`—under normal circumstances, you never need to manually call a destructor.
 
 In embedded systems, the most typical application of `placement new` is a **fixed-size memory pool**:
 
@@ -290,15 +258,15 @@ if (mem) {
 }
 ```
 
-The advantage of a memory pool is that the time overhead of allocation and deallocation is completely predictable (just pointer movement), it doesn't produce memory fragmentation, and it won't suffer from the degradation issues that the standard heap experiences after running for a long time. In embedded systems, these characteristics are very important.
+The advantage of a memory pool is that the time overhead of allocation and deallocation is completely predictable (just pointer movement), it does not produce memory fragmentation, and it avoids the degradation issues that the standard heap can experience after running for a long time. In embedded systems, these characteristics are very important.
 
 ## 3. Exception Handling
 
 ### 3.1 Basic Exception Handling
 
-Exception handling provides a structured error-handling mechanism that separates error-handling code from normal logic. At least on the surface, it makes the code cleaner. Later, we will discuss why in many cases we prohibit the use of exception handling.
+Exception handling provides a structured error-handling mechanism that separates error-handling code from normal logic. At least on the surface, the code looks cleaner. Later, we will discuss why in many cases we prohibit the use of exception handling.
 
-The C++ exception handling paradigm is try-catch-throw: attempt to execute code, throw an exception when an error is encountered, and then catch and handle the exception.
+The C++ exception handling paradigm is try-catch-throw: try executing code, throw an exception when an error is encountered, and then catch and handle the exception.
 
 ```cpp
 #include <exception>
@@ -328,7 +296,7 @@ void caller() {
 }
 ```
 
-`catch (...)` catches all types of exceptions and usually serves as a last-resort fallback. The C++ standard library defines a series of exception classes derived from `std::exception`, such as `std::runtime_error`, `std::logic_error`, and `std::out_of_range`. You can also define your own exception types by inheriting from these standard exception classes.
+`catch (...)` catches all types of exceptions and usually serves as a final fallback. The C++ standard library defines a series of exception classes derived from `std::exception`, such as `std::runtime_error`, `std::logic_error`, `std::out_of_range`, and so on. You can also define your own exception types by inheriting from these standard exception classes.
 
 ### 3.2 Exception Safety
 
@@ -343,7 +311,7 @@ void unsafe_function() {
 }
 ```
 
-If `risky_operation()` throws an exception, the program flow jumps directly to the nearest `catch` block, and the line `delete[] data` never executes—resulting in a memory leak.
+If `do_something()` throws an exception, the program flow jumps directly to the nearest `catch` block, and the `delete p` line never executes—resulting in a memory leak.
 
 The most direct fix is to wrap it with try-catch:
 
@@ -385,15 +353,15 @@ RAII is the core paradigm for resource management in C++. When an exception is t
 
 ### 3.3 Exception Safety Levels
 
-From an exception safety perspective, functions can be divided into three levels:
+From the perspective of exception safety, functions can be divided into three levels:
 
-**No guarantee**: If an exception occurs, the object may be left in an inconsistent state, and resources may leak. This is the worst case, but also the most common—whenever you use bare `new`/`delete` without wrapping them in RAII.
+**No guarantee**: If an exception occurs, the object may be left in an inconsistent state, and resources may leak. This is the worst case, but also the most common to encounter—whenever you use raw `new`/`delete` without wrapping them in RAII.
 
 **Basic guarantee**: If an exception occurs, the object is left in a valid but unspecified state, and no resources are leaked. All standard library containers provide at least the basic guarantee.
 
 **Strong guarantee**: If an exception occurs, the operation is completely rolled back, and the object state is exactly the same as before the call. This is typically implemented using the "copy-and-swap" idiom.
 
-In embedded development, **the basic guarantee is usually sufficient**. Pursuing the strong guarantee is ideal, but the implementation cost is often very high—you need to create a complete backup before each operation, which is not friendly for resource-constrained systems.
+In embedded development, **the basic guarantee is usually sufficient**. Pursuing the strong guarantee is ideal, but the implementation cost is often very high—you need to create a complete backup before each operation, which is not friendly to resource-constrained systems.
 
 ### 3.4 Exception Specifications
 
@@ -409,7 +377,7 @@ void specific_throw(int value) throw(std::invalid_argument, std::out_of_range) {
 }
 ```
 
-However, this feature was deprecated in C++11. The reason is that its runtime checking mechanism (if a function throws an exception not in the list, it calls `std::unexpected()`) was considered too costly, and in practice it was found to be of almost no help. C++11 replaced this mechanism with the `noexcept` keyword—`noexcept` is simply a boolean promise: "this function will not throw exceptions," and the compiler can use this to perform more aggressive optimizations.
+However, this feature was deprecated in C++11. The reason is that its runtime checking mechanism (if a function throws an exception not in the list, it calls `std::unexpected`) was considered too costly, and in practice it was found to be of almost no help. C++11 replaced this mechanism with the `noexcept` keyword—`noexcept` is simply a boolean promise: "this function will not throw exceptions," and the compiler can use this to perform more aggressive optimizations.
 
 ### 3.5 Exception Handling in Embedded Systems
 
@@ -417,11 +385,11 @@ Using exceptions in embedded systems requires great caution. There are several k
 
 **Code size**: Exception handling requires additional "unwind tables" and runtime support code, which significantly increase binary size. On small MCUs with only a few dozen KB of Flash, this can directly lead to insufficient space.
 
-**Time unpredictability**: When an exception occurs, the time required to handle it is completely unpredictable—it depends on factors like the depth of the call stack and the number of objects that need to be destructed. In embedded real-time systems where timeliness is paramount, this unpredictability is unacceptable.
+**Time indeterminism**: When an exception occurs, the time required to handle it is completely unpredictable—it depends on factors such as the depth of the call stack and the number of objects that need to be destructed. In embedded real-time systems where real-time performance is paramount, this indeterminism is unacceptable.
 
 **Implicit control flow**: Exceptions introduce an "invisible goto"—any function call might exit early due to an exception, making the code's execution paths harder to reason about.
 
-Therefore, many embedded projects choose to disable exceptions entirely (using the `-fno-exceptions` compiler flag), opting instead for return values or error codes for error handling:
+Therefore, many embedded projects choose to disable exceptions entirely (using the `-fno-exceptions` compiler flag), turning instead to return values or error codes for error handling:
 
 ```cpp
 // 推荐的嵌入式错误处理方式
@@ -448,7 +416,7 @@ if (result != ERROR_OK) {
 }
 ```
 
-In modern C++, `std::optional` (C++17) and `std::expected` (C++23) provide more elegant solutions than bare error codes—they can express "operation failed" without introducing the runtime overhead of exceptions. In my actual projects, I use these approaches.
+In modern C++, `std::optional` (C++17) and `std::expected` (C++23) provide more elegant solutions than raw error codes—they can express "operation failed" without introducing the runtime overhead of exceptions. The author uses these solutions in actual projects.
 
 ## 4. Inline Functions
 
@@ -460,7 +428,7 @@ In C, we use macros to define short "functions":
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 ```
 
-The problems with macros are well-known: no type checking, parameters may be evaluated multiple times (`MAX(i++, j)` increments twice), and macro content is invisible during debugging. C++'s `inline` functions solve all these problems:
+The problems with macros are well-known: no type checking, parameters may be evaluated multiple times (`x++` would increment twice), and macro contents are invisible during debugging. C++'s `inline` functions solve all these problems:
 
 ```cpp
 inline int max(int a, int b) {
@@ -468,13 +436,13 @@ inline int max(int a, int b) {
 }
 ```
 
-The original intent of the `inline` keyword was to suggest to the compiler "embed the function body directly at the call site, rather than generating a function call instruction." But in modern compilers, this "suggestion" feature of `inline` is largely ignored—compilers have their own inlining strategies that are more accurate than a programmer's annotation. The compiler decides whether to inline based on factors like function complexity, call frequency, and optimization level, regardless of whether you wrote `inline`.
+The original intent of the `inline` keyword was to suggest to the compiler "embed the function body directly at the call site, rather than generating a function call instruction." But in modern compilers, this "suggestion" aspect of `inline` has been largely ignored—compilers have their own inlining strategies that are more accurate than a programmer's annotation. The compiler decides whether to inline based on factors like function complexity, call frequency, and optimization level, regardless of whether you wrote `inline` or not.
 
-So what is `inline` still good for? Its true value lies in **allowing the same function to be defined in multiple translation units without violating the one definition rule (ODR)**. As long as all definitions are identical, the linker knows they are the same function and won't report a "multiple definition" error. This is why we typically put the definition of an `inline` function in a header file—every translation unit (`.cpp`) that `#include` this header gets a copy of the definition, but only one is kept at link time.
+So what is `inline` still useful for? Its true value lies in **allowing the same function to be defined in multiple translation units without violating the one definition rule (ODR)**. As long as all definitions are exactly identical, the linker knows they are the same function and will not report a "multiple definition" error. This is why we usually put the definition of `inline` functions in header files—each translation unit (`cpp` file) that includes this header gets a copy of the definition, but only one is retained at link time.
 
 ### 4.2 Implicit inline for In-Class Definitions
 
-Member functions with their bodies written directly inside a class definition are **implicitly `inline`**:
+Member functions whose bodies are written directly inside a class definition are **implicitly `inline`**:
 
 ```cpp
 class Math {
@@ -495,7 +463,7 @@ inline int Math::multiply(int a, int b) {
 
 ### 4.3 Inline Functions in Embedded Systems
 
-In embedded development, `inline` functions are particularly well-suited for replacing macros that manipulate registers:
+In embedded development, `inline` functions are particularly suitable for replacing macros that manipulate registers:
 
 ```cpp
 inline void set_bit(volatile uint32_t& reg, int bit) {
@@ -511,13 +479,13 @@ inline bool read_bit(volatile uint32_t& reg, int bit) {
 }
 ```
 
-Compared to macros, `inline` functions provide type checking, don't suffer from multiple parameter evaluation issues, and show full information in a debugger. In terms of performance, there is usually no difference—the compiler will expand an `inline` function into machine code similar to that of a macro.
+Compared to macros, `inline` functions provide type checking, do not suffer from multiple parameter evaluation issues, and show complete information in a debugger. In terms of performance, there is usually no difference—the compiler will expand `inline` functions into machine code similar to that of macros.
 
 ## 5. Type Aliases (typedef)
 
 ### 5.1 Basic Usage
 
-Aside from C's `typedef`, the usage of C++'s `typedef` hasn't changed fundamentally, but C++ has a better alternative (C++11's `using`):
+Aside from C's `typedef`, C++'s `typedef` has no essential change in usage, but in C++ there is a better alternative (C++11's `using`):
 
 ```cpp
 // 传统 typedef
@@ -550,10 +518,10 @@ using Vector = std::vector<T>;  // C++11 模板别名
 Vector<int> v;  // 等价于 std::vector<int>
 ```
 
-In C++98, you can only use `typedef`. If your project has already migrated to C++11 or later, it is recommended to use `using` exclusively for new code—its syntax is clearer and its capabilities are more powerful.
+In C++98, you can only use `typedef`. If your project has already migrated to C++11 or later, it is recommended to use `using` exclusively for new code—its syntax is clearer, and its capabilities are more powerful.
 
 ## Summary
 
-In this chapter, we learned several advanced features in C++98. The four type conversion operators each have clear use cases: `static_cast` covers everyday needs, `reinterpret_cast` is for low-level memory operations, `dynamic_cast` is for runtime type checking, and `const_cast` is for adjusting const qualifiers. `new`/`delete` and `placement new` provide more complete dynamic memory management capabilities than `malloc`/`free`. Although exception handling is powerful, its use in embedded systems requires careful trade-offs. `inline` functions and `typedef` serve as safe replacements for C macros and type aliases.
+In this chapter, we learned several advanced features in C++98. The four type conversion operators each have clear applicable scenarios: `static_cast` covers everyday needs, `reinterpret_cast` is for low-level memory operations, `dynamic_cast` is for runtime type checking, and `const_cast` is for adjusting const qualifiers. `new`/`delete` and `placement new` provide more complete dynamic memory management capabilities than `malloc`/`free`. Although exception handling is powerful, its use in embedded systems requires careful trade-offs. `inline` functions and `typedef` serve as safe replacements for macros and type aliases in C.
 
-At this point, we have completed our study of all the fundamental features of C++98. In subsequent chapters, we will enter the world of Modern C++—exploring what improvements and replacements C++11 and later standards have brought to these "old features."
+At this point, we have completed our study of all the fundamental features of C++98. In subsequent chapters, we will enter the world of Modern C++—to see what improvements and replacements the C++11 and later standards have brought to these "old features."

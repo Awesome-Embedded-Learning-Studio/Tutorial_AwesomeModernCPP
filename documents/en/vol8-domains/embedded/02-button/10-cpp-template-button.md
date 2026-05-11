@@ -1,0 +1,219 @@
+# Part 28: Designing the Button Template Class — Let the Compiler Handle Everything
+
+> Following up on the previous part: `std::variant` + `std::visit` solved event expression. In this part, we design the Button template class, encoding the port, pin, pull-up/pull-down configuration, and active level into compile-time types.
+
+---
+
+## Template Parameters: Four-Dimensional Configuration
+
+In the LED tutorial, the `LED` template accepts three parameters: `GpioPort`, `PIN`, and `ActiveLevel`. The Button template adds one more dimension:
+
+```cpp
+template <gpio::GpioPort PORT, uint16_t PIN,
+          gpio::PullPush PULL = gpio::PullPush::PullUp,
+          ButtonActiveLevel LEVEL = ButtonActiveLevel::Low>
+class Button : public gpio::GPIO<PORT, PIN> {
+```
+
+| Parameter | Type | Default | Meaning |
+|-----------|------|---------|---------|
+| `PORT` | `GpioPort` enum | None (required) | GPIO port (A/B/C/D/E) |
+| `PIN` | `uint16_t` | None (required) | Pin number (GPIO_PIN_0 ~ GPIO_PIN_15) |
+| `PULL` | `PullPush` enum | `PullUp` | Pull-up/pull-down mode |
+| `LEVEL` | `ButtonActiveLevel` enum | `Low` | Active level when pressed |
+
+All four parameters have default values (except `PORT` and `PIN`), so the most common usage is very concise:
+
+```cpp
+// PA0 上拉输入，低电平有效 — 最常见的配置
+device::Button<device::gpio::GpioPort::A, GPIO_PIN_0> button;
+
+// 如果需要下拉输入 + 高电平有效
+device::Button<device::gpio::GpioPort::A, GPIO_PIN_0,
+               device::gpio::PullPush::PullDown,
+               device::ButtonActiveLevel::High> button;
+```
+
+### Comparison with the LED Template
+
+```cpp
+// LED 模板：PORT + PIN + ActiveLevel（输出模式）
+template <gpio::GpioPort PORT, uint16_t PIN, ActiveLevel LEVEL = ActiveLevel::Low>
+class LED : public gpio::GPIO<PORT, PIN>;
+
+// Button 模板：PORT + PIN + PullPush + ButtonActiveLevel（输入模式）
+template <gpio::GpioPort PORT, uint16_t PIN,
+          gpio::PullPush PULL = gpio::PullPush::PullUp,
+          ButtonActiveLevel LEVEL = ButtonActiveLevel::Low>
+class Button : public gpio::GPIO<PORT, PIN>;
+```
+
+The structure is almost identical—both inherit from `GPIO<PORT, PIN>` and both use non-type template parameters (NTTPs) to encode hardware configuration. Button adds a `PULL` parameter because input mode requires an explicit pull-up/pull-down direction, whereas output mode does not.
+
+---
+
+## static_assert: Compile-Time Defense
+
+```cpp
+static_assert(PIN <= GPIO_PIN_15, "Pin number must be <= 15");
+```
+
+`static_assert` checks at compile time whether a constant expression is true. If false, compilation immediately terminates and outputs your custom error message.
+
+The values from `GPIO_PIN_0` to `GPIO_PIN_15` are `0x0001` to `0x8000` (each bit corresponds to one pin). `GPIO_PIN_15` is `0x8000` (bit 15 is set). Any pin number exceeding this value is invalid—the STM32F103 has at most 16 pins per GPIO port.
+
+If you write:
+
+```cpp
+device::Button<device::gpio::GpioPort::A, 0xFFFF> button;  // 错误！
+```
+
+The compiler will immediately report an error:
+
+```text
+error: static assertion failed: Pin number must be <= 15
+```
+
+There is no need to wait until flashing to the board to discover a wrong pin number. This is the value of compile-time defense.
+
+⚠️ Note the position of `static_assert`—it is inside the class body, before `public`. This means it executes at template instantiation time (when you write `Button<GpioPort::A, GPIO_PIN_0>`). Only template instances that are actually used will trigger the check.
+
+---
+
+## Constructor: Automatically Configuring Input Mode
+
+```cpp
+Button() {
+    Base::setup(Base::Mode::Input, PULL, Base::Speed::Low);
+}
+```
+
+Compared with the LED constructor:
+
+```cpp
+// LED 构造函数
+LED() {
+    Base::setup(Base::Mode::OutputPP, Base::PullPush::NoPull, Base::Speed::Low);
+}
+
+// Button 构造函数
+Button() {
+    Base::setup(Base::Mode::Input, PULL, Base::Speed::Low);
+}
+```
+
+Two differences:
+
+1. `Mode::Input` replaces `Mode::OutputPP` — input mode replaces push-pull output
+2. `PULL` replaces `PullPush::NoPull` — pull-up/pull-down is determined by the template parameter, no longer hardcoded as `NoPull`
+
+Internally, `setup()` does three things (broken down in LED tutorial Part 09):
+
+1. Calls `GPIOClock::enable_target_clock()` — uses `if constexpr` to automatically select the port clock
+2. Fills in the `GPIO_InitTypeDef` struct
+3. Calls `HAL_GPIO_Init()` to write to the registers
+
+When the constructor is called, PA0 is configured as a pull-up input and the GPIOA clock is automatically enabled. You do not need to remember "enable the clock before initializing"—the template handles it for you.
+
+---
+
+## is_pressed(): Compile-Time Branching
+
+```cpp
+bool is_pressed() const {
+    auto state = Base::read_pin_state();
+    if constexpr (LEVEL == ButtonActiveLevel::Low) {
+        return state == Base::State::UnSet;
+    } else {
+        return state == Base::State::Set;
+    }
+}
+```
+
+This code uses the same `if constexpr` pattern as the LED's `on()`/`off()` methods:
+
+```cpp
+// LED::on()
+void on() const {
+    Base::set_gpio_pin_state(
+        LEVEL == ActiveLevel::Low ? Base::State::UnSet : Base::State::Set);
+}
+```
+
+But there is one difference: LED uses the ternary operator `? :`, while Button uses `if constexpr`. The effect is exactly the same—both select a branch at compile time. `if constexpr` is semantically clearer, especially when the logic in each branch is more complex (for example, the pressed branch does three things and the released branch does two).
+
+For a `ButtonActiveLevel::Low` button (pull-up scheme, pressed = low level), the compiled `is_pressed()` is equivalent to:
+
+```cpp
+bool is_pressed() const {
+    return HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET;
+}
+```
+
+One register read, one comparison. There is no runtime overhead from `if constexpr`—because it simply does not generate code for the unselected branch.
+
+---
+
+## Template Instantiation: Different Configurations = Different Types
+
+```cpp
+Button<GpioPort::A, GPIO_PIN_0>                        button1;  // PA0, 上拉, 低电平有效
+Button<GpioPort::A, GPIO_PIN_0, PullPush::PullDown, ButtonActiveLevel::High>
+                                                      button2;  // PA0, 下拉, 高电平有效
+Button<GpioPort::B, GPIO_PIN_5>                        button3;  // PB5, 上拉, 低电平有效
+```
+
+`button1`, `button2`, and `button3` are three completely different types. The compiler generates a separate piece of code for each unique combination of template parameters. The implementations of `button1::is_pressed()` and `button2::is_pressed()` differ—the former checks for a low level, while the latter checks for a high level.
+
+This is the "cost" of templates: increased compilation time and potentially increased code size (if there are many different instantiations). But in embedded scenarios, there are usually only a few button configurations, so the code size increase is negligible. The benefit we get in return is compile-time type safety and zero runtime overhead.
+
+---
+
+## Complete Class Layout
+
+```cpp
+template <...>
+class Button : public gpio::GPIO<PORT, PIN> {
+    using Base = gpio::GPIO<PORT, PIN>;
+
+    static_assert(PIN <= GPIO_PIN_15, "Pin number must be <= 15");
+
+  public:
+    Button();                          // 构造：配置输入模式
+    bool is_pressed() const;           // 读取：当前是否按下
+    template <typename Callback>
+        requires std::invocable<Callback, ButtonEvent>
+    void poll_events(Callback&&, uint32_t, uint32_t = 20);  // 状态机轮询
+
+  private:
+    enum class State { ... };          // 7 状态枚举
+    State state_ = State::BootSync;    // 当前状态
+    bool raw_pressed_ = false;         // 原始采样值
+    bool stable_pressed_ = false;      // 确认的稳定值
+    bool boot_locked_ = false;         // 启动锁标志
+    uint32_t debounce_start_ = 0;      // 消抖计时起点
+};
+```
+
+Composition of `sizeof(Button<GpioPort::A, GPIO_PIN_0>)`:
+
+- The base class `GPIO<PORT, PIN>` has no member variables (all operations are determined at compile time through template parameters), and `sizeof` is 1 (typically 0 after EBO (Empty Base Optimization))
+- Derived class members: `State` (4B) + 3 `bool`s (3B) + `uint32_t` (4B) + alignment ≈ 12 bytes
+
+12 bytes of state storage. On an STM32F103C8T6 with 20KB of RAM, this is nothing.
+
+---
+
+## Looking Back
+
+In this part, we designed the skeleton of the Button template class:
+
+- **Four template parameters**: `PORT`, `PIN`, `PULL`, and `LEVEL`, determining all hardware configuration at compile time
+- **`static_assert`**: compile-time validation of pin number legality
+- **Constructor**: automatically configures input mode + enables the clock
+- **`is_pressed()`**: `if constexpr` compile-time branching, zero overhead
+- **Memory footprint**: only 12 bytes of state variables
+
+This follows the same design lineage as the LED template class—the same NTTP pattern, the same `if constexpr`, the same zero-overhead abstraction. The only addition is `static_assert`, a simple but effective compile-time defense mechanism.
+
+The next part is the final one in the C++ refactoring series: using Concepts to constrain callback parameters, followed by a walkthrough of the complete `main.cpp` call chain.

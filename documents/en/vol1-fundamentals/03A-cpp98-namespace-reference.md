@@ -1,54 +1,22 @@
----
-title: 'C++98 Basics: Namespaces, References, and Scope Resolution'
-description: 'The first step from C to C++ — a thorough explanation of three fundamental
-  features: namespaces for resolving name conflicts, references replacing pointers
-  for passing arguments, and scope resolution for accessing global and namespace members.'
-chapter: 0
-order: 3
-tags:
-- cpp-modern
-- host
-- beginner
-- 入门
-- 基础
-difficulty: beginner
-reading_time_minutes: 20
-prerequisites:
-- C语言速通复习
-related:
-- C++98函数接口：重载与默认参数
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-platform: host
-translation:
-  source: documents/vol1-fundamentals/03A-cpp98-namespace-reference.md
-  source_hash: 4f81ce08cfa313804f0c53b34fe3077e5cebd280457fa5a7ee351963b957c1e0
-  translated_at: '2026-04-20T03:02:22.938128+00:00'
-  engine: anthropic
-  token_count: 2504
----
 # Getting Started with C++98: Namespaces, References, and Scope Resolution
 
 > The full repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
 
-In the previous chapter, we systematically reviewed the core syntax of C. Starting from this chapter, we officially step into the world of C++. But before diving into object-oriented programming, let's look at the immediate, non-object-oriented improvements C++ offers—namespaces solve naming conflicts in large projects, references free function parameters from clunky pointer syntax, and the scope resolution operator lets us precisely tell the compiler "this is the name I mean."
+In the previous chapter, we systematically reviewed the core syntax of C. Starting from this chapter, we officially step into the world of C++. But before diving into object-oriented programming, let's first look at the immediate improvements C++ offers on the "non-object-oriented" level—namespaces solve name collision issues in large projects, references free function parameter passing from the clumsiness of pointer syntax, and the scope resolution operator lets us precisely tell the compiler "which name we want."
 
-None of these three features involve classes, nor do they require any object-oriented background. They belong to the set of improvements you can leverage the moment you migrate from C to C++. We place them first because they are simple enough, practical enough, and—most importantly—they do not interfere with performance at any level.
+None of these three features involve classes, nor do they require any object-oriented background knowledge. They belong to the things you can use immediately after migrating from C to C++. We put them at the very beginning because they are simple enough, practical enough, and—most importantly—they do not interfere with performance at any level.
 
 ## 1. Namespaces
 
 ### 1.1 Why We Need Namespaces
 
-In C projects, naming conflicts are a chronic headache. If your project uses three third-party libraries, and each has a function called `init()`, congratulations—you'll get a bunch of "multiple definition" errors at link time. The C convention is to prefix every name: `sensor_init()`, `uart_init()`, `display_init()`... It sounds workable, but it's verbose to write and doesn't completely prevent conflicts (what if two libraries both use `network_buffer_create()`?).
+In C projects, name collision is an old and headache-inducing problem. If your project uses three third-party libraries, and each library has a function called ``init()``, then congratulations—you will receive a bunch of "multiple definition" errors at the linking stage. The C convention is to add prefixes to all names: ``sensor_init()``, ``uart_init()``, ``display_init()``... It sounds workable, but it's tedious to write, and it doesn't completely avoid collisions (what if two libraries both use ``network_buffer_create()``?).
 
-C++ namespaces solve this problem at the language level. Essentially, they automatically append a "last name" to every name during compilation, but this "last name" is a structured, nestable prefix system provided by the namespace. Because this substitution happens at compile time, namespaces incur zero runtime overhead—the final compiled symbol names are exactly the same as if you had handwritten the prefixes, but you don't have to type out those long, ugly fully qualified names yourself.
+C++ namespaces solve this problem at the language level. In essence, they automatically add a "last name" to every name during compilation, but this "last name" is a structured, nestable prefix system provided by namespaces. Because this substitution happens at compile time, namespaces incur zero runtime overhead—the final compiled symbol names are exactly the same as if you had handwritten the prefixes, but you don't have to manually type out those long, ugly fully qualified names while writing code.
 
 ### 1.2 Defining and Using Namespaces
 
-Let's look at some embedded-style code directly. Suppose we are developing a sensor module:
+Let's look directly at a piece of embedded-style code. Suppose we are developing a sensor module:
 
 ```cpp
 namespace sensor {
@@ -64,7 +32,7 @@ namespace sensor {
 }
 ```
 
-Definitions can be spread across multiple files—that is, you can declare `sensor::init()` in a header file first, and then wrap the implementation in the same `namespace sensor { ... }` in the corresponding `.cpp` file. The compiler automatically "merges" all declarations within the same namespace.
+The definitions can be spread across multiple files—meaning you can first declare ``sensor::init()`` in a header file, and then wrap the implementation with the same ``namespace sensor { ... }`` in the corresponding ``.cpp`` file. The compiler will automatically "merge" all declarations within the same namespace together.
 
 When implementing, we write it like this:
 
@@ -83,7 +51,7 @@ namespace sensor {
 }
 ```
 
-There are three ways to use them, from most explicit to most permissive:
+There are three ways to use them, from the most explicit to the most permissive:
 
 ```cpp
 int main() {
@@ -104,13 +72,13 @@ int main() {
 }
 ```
 
-Each approach has its use cases. Approach one is best suited for function bodies in `.cpp` files; while it requires more typing, it is completely bulletproof. Approach two is ideal when you frequently use only a few names from a particular namespace. As for approach three... honestly, if you use `using namespace std` inside a function body in a `.cpp` file, most people won't say anything. But if you put it in a header file at global scope—that's basically planting a landmine in your codebase that will inevitably go off.
+Each of these three methods has its own applicable scenarios. Method one is best suited for function bodies in ``.cpp`` files; although it requires more typing, it absolutely won't cause problems. Method two is suitable when you only frequently use a few specific names from a certain namespace. As for method three... honestly, if you use ``using namespace std`` inside a function body in a ``.cpp`` file, most people won't say anything; but if you put it in a header file, and at global scope level—that's basically burying a landmine in your codebase that will eventually go off.
 
-Regarding the dangers of `using namespace` in header files, we won't go into a lengthy rant here. Just remember one ironclad rule: **never write `using namespace` in a header file**. The reason is simple—`using namespace` is irreversible. Once a header file globally introduces a namespace, all code that `#include` that header is forced to accept all symbols from that namespace, possibly without even knowing it. When two different libraries define symbols with the same name in their respective namespaces, and your header `using` both—congratulations, ambiguity errors will pop up in the most unexpected places.
+Regarding the dangers of ``using namespace`` in header files, the author doesn't plan to launch into a lengthy discourse here. You just need to remember one ironclad rule: **never write ``using namespace`` in a header file**. The reason is simple—``using namespace`` is irreversible. Once a header file globally introduces a namespace, all code that ``#include``s this header file is forced to accept all symbols from that namespace, and they might not even know it. When two different libraries define symbols with the same name in their respective namespaces, and your header file ``using``s both namespaces—congratulations, ambiguity errors will pop up in the places you least expect.
 
 ### 1.3 Nested Namespaces
 
-Namespaces can be nested. This feature is extremely practical when organizing complex codebases because we can use namespace hierarchy to reflect module hierarchy. For example, a hardware abstraction layer:
+Namespaces can be nested. This feature is extremely practical when organizing complex codebases because we can use the namespace hierarchy to reflect the module hierarchy. For example, a hardware abstraction layer:
 
 ```cpp
 namespace hardware {
@@ -138,7 +106,7 @@ hardware::gpio::set_mode(5, hardware::gpio::OUTPUT);
 hardware::uart::init(115200);
 ```
 
-If `hardware::gpio::` feels too long, we can use a namespace alias to simplify it:
+If you find ``hardware::gpio::`` too long, you can use a namespace alias to simplify it:
 
 ```cpp
 namespace hw = hardware;
@@ -156,13 +124,13 @@ namespace hardware::gpio {
 }
 ```
 
-This syntax is just syntactic sugar, functionally equivalent to manual nesting, but it does make the code much cleaner. If your project is still on C++11/14, just write them out layer by layer the old-fashioned way.
+This syntax is just syntactic sugar, functionally completely equivalent to manual nesting, but it does make the code much cleaner. If your project is still using C++11/14, just honestly write it out layer by layer.
 
 ### 1.4 Anonymous Namespaces
 
-Anonymous namespaces are an easily overlooked but highly practical feature in C++. Their purpose is to provide **file-level scope**—anything defined inside an anonymous namespace is visible only to the current translation unit (i.e., the current `.cpp` file) and completely invisible to the outside world.
+Anonymous namespaces are an easily overlooked but highly practical feature in C++. Their purpose is to provide **file-level scope**—anything defined inside an anonymous namespace is only visible to the current translation unit (i.e., the current ``.cpp`` file), and is completely invisible to the outside.
 
-In C, we use the `static` keyword to achieve a similar effect:
+In C, we use the ``static`` keyword to achieve a similar effect:
 
 ```c
 // C 风格：限制在当前文件可见
@@ -170,7 +138,7 @@ static int buffer_size = 256;
 static void internal_helper() { /* ... */ }
 ```
 
-In C++, we recommend using anonymous namespaces to replace `static`:
+In C++, it's recommended to use anonymous namespaces to replace ``static``:
 
 ```cpp
 // C++ 风格：推荐
@@ -187,15 +155,15 @@ void public_function() {
 }
 ```
 
-Why does C++ recommend anonymous namespaces over `static`? There are two key reasons. First, `static` only applies to functions, variables, and anonymous unions, but **not** to type definitions—you can't write `static class Foo { ... };`. Anonymous namespaces, on the other hand, can wrap anything: classes, structs, enums, templates—nothing is off-limits. Second, starting from C++11, entities in anonymous namespaces are explicitly given internal linkage, making them semantically equivalent to `static` but with a broader scope of application. Both the C++ Core Guidelines and clang-tidy recommend favoring anonymous namespaces.
+Why does C++ recommend anonymous namespaces over ``static``? There are two key reasons. First, ``static`` only applies to functions, variables, and anonymous unions, but **not** to type definitions—you can't write ``static class Foo { ... };``. Anonymous namespaces, on the other hand, can wrap anything: classes, structs, enums, templates—they handle it all. Second, starting from C++11, entities in anonymous namespaces are explicitly given internal linkage, which is semantically completely equivalent to ``static`` but with a broader scope of application. Both the C++ Core Guidelines and clang-tidy recommend preferring anonymous namespaces.
 
-Of course, `static` hasn't been deprecated—it's retained for C compatibility. In practice, mixing the two won't cause issues, but consistency is a good habit. Our advice: **use anonymous namespaces for all new code, and don't rush to change old code when you see it**, unless you're actively refactoring that section.
+Of course, ``static`` hasn't been deprecated—it's retained for C compatibility. In actual projects, mixing the two won't cause problems, but maintaining consistency is a good habit. The author's advice is: **use anonymous namespaces for all new code, and don't rush to change it when you see it in old code**, unless you are refactoring that particular section.
 
 ## 2. References
 
 ### 2.1 What Is a Reference
 
-A reference is a core concept introduced in C++—it provides an **alias** for a variable. Calling it an "alias" might sound a bit abstract, but we can think of it this way: a reference is like a nickname for a person; whether you call them by their real name or their nickname, you're referring to the same person. Under the hood, references are typically implemented via pointers, but syntactically, references are much safer and cleaner than pointers.
+A reference is a core concept introduced in C++—it provides an **alias** for a variable. Saying "alias" might be a bit abstract; we can understand it this way: a reference is like giving a person a nickname. Whether you call them by their real name or their nickname, you're referring to the same person. Under the hood, references are usually implemented via pointers, but at the syntax level, references are much safer and more concise than pointers.
 
 The most basic usage:
 
@@ -207,20 +175,20 @@ ref = 100;         // 修改 ref 就是修改 value
 // 此时 value 也变成了 100
 ```
 
-References have two very important constraints, and understanding them is essential to avoiding pitfalls. First, **a reference must be initialized at declaration**—you cannot declare a reference first and bind it to a variable later. This differs from pointers: a pointer can be declared as `nullptr` first and assigned later, but a reference cannot. Second, **once a reference is bound, it cannot be rebound to another variable**. Look at this easily confusing example:
+References have two very important constraints, and understanding them is a prerequisite to avoiding pitfalls. First, **a reference must be initialized at declaration**—you cannot declare a reference first and then make it point to a variable later. This is different from pointers: a pointer can first be declared as ``nullptr`` and assigned later, but a reference cannot. Second, **once a reference is bound, it cannot be rebound to another variable**. Look at this easily confusing example:
 
 ```cpp
 int other = 200;
 ref = other;  // 这不是重新绑定！
 ```
 
-This line does not make `ref` point to `other`; rather, it assigns the value of `other` (200) to the object referenced by `ref` (which is `value`). After execution, `value` becomes 200, and `ref` is still a reference to `value`. This distinction is crucial—the binding of a reference is **one-time**, and subsequent assignment operations merely modify the value of the referenced object.
+This line of code does not make ``ref`` point to ``other``; rather, it assigns the value of ``other`` (200) to the object referenced by ``ref`` (which is ``value``). After execution, ``value`` becomes 200, and ``ref`` is still a reference to ``value``. This distinction is very important—the binding of a reference is **one-time**, and subsequent assignment operations only modify the value of the referenced object.
 
 ### 2.2 References as Function Parameters
 
-The most common use of references is as function parameters. In C, if a function needs to modify the caller's variable or avoid the copy overhead of a large object, we pass a pointer. But pointer syntax is clunky—`*` and `->` are everywhere, and you have to check for null pointers every time before using them. References solve both problems perfectly.
+The most common use of references is as function parameters. In C, if a function needs to modify the caller's variable, or needs to avoid the copy overhead of a large object, we pass a pointer. But pointer syntax is clumsy—there are ``*``s and ``->``s everywhere, and you have to check for null pointers every time before using them. References perfectly solve both problems.
 
-Let's use an embedded scenario to compare three parameter-passing approaches:
+Let's use an embedded scenario as an example to compare three parameter-passing methods:
 
 ```cpp
 struct SensorData {
@@ -250,9 +218,9 @@ void process_by_reference(SensorData& data) {
 }
 ```
 
-Passing by reference is the cleanest approach—no `*`, no `->`, no null pointer checks. In most cases, if you want a function to "modify the caller's variable" in C++, references should be your first choice.
+The pass-by-reference approach is the cleanest—no ``*``, no ``->``, and no null pointer checks needed. In most cases, if you want to "let a function modify the caller's variable" in C++, references should be your first choice.
 
-But the story doesn't end there. Often, we pass parameters not to modify them, but to avoid copy overhead—such as with a struct containing lots of data, or a string. In these cases, a `const` reference is the best choice:
+But the story doesn't end here. Often, we pass parameters not to modify them, but to avoid copy overhead—such as a struct containing a large amount of data, or a string. In these cases, using a ``const`` reference is the best choice:
 
 ```cpp
 // const 引用：既高效又防止修改
@@ -262,18 +230,18 @@ void read_only_access(const SensorData& data) {
 }
 ```
 
-The elegance of a `const` reference lies in how it achieves both "no copy" and "no modification" simultaneously. The caller sees `const SensorData&` and knows the function won't touch their data; the compiler sees `const` and intercepts any modification attempts at compile time. This pattern was already very common in C++98 and is essentially the standard paradigm for "passing read-only large objects."
+The elegance of a ``const`` reference lies in that it simultaneously achieves the two goals of "no copy" and "no modification." The caller sees ``const SensorData&`` and knows this function won't modify their data; the compiler sees ``const`` and will intercept any modification attempts at compile time. This pattern was already very common in C++98 and is basically the standard paradigm for "passing read-only large objects."
 
-### 2.3 const References and Temporary Object Lifetimes
+### 2.3 const References and the Lifetime of Temporary Objects
 
-Here is a very important detail, and a common pitfall for C++ learners. When we bind a `const` reference to a temporary object (an rvalue), C++ **extends the lifetime of that temporary object**, making it live as long as the reference:
+Here is a very important detail, and also a place where many C++ learners easily stumble. When we use a ``const`` reference to bind to a temporary object (an rvalue), C++ will **extend the lifetime of this temporary object**, making it live as long as the reference:
 
 ```cpp
 const int& ref = 42;  // OK！42 本来是个临时值，但 const 引用延长了它的寿命
 // ref 在整个作用域内都有效
 ```
 
-This might not seem like a big deal—after all, how large is an `int`? But when the temporary object is a complex type, this rule becomes crucial:
+This might not seem like a big deal—after all, how big is a ``int``? But when the temporary object is a complex type, this rule becomes crucial:
 
 ```cpp
 std::string get_name();
@@ -284,13 +252,13 @@ const std::string& name = get_name();
 // 所以 name 在整个作用域内都是安全的
 ```
 
-However, this lifetime extension has a **key prerequisite**: the reference must **directly bind** to the temporary object. If the reference is indirectly bound through an intermediate value returned by a function, the lifetime extension does not take effect. This is a somewhat advanced topic; for now, just remember the rule that "direct binding is required for it to work." We'll revisit this in detail later when we discuss return value optimization and move semantics.
+However, this lifetime extension has a **key prerequisite**: the reference must **directly bind** to the temporary object. If the reference is indirectly bound through an intermediate value returned by a function, the lifetime extension will not take effect. This is a rather advanced topic; for now, it's enough to just remember the rule that "direct binding is required for it to work." Later, when we discuss return value optimization and move semantics, we will come back and expand on this.
 
 ### 2.4 References as Return Values
 
-Functions can return references, which gives us two very practical programming patterns: chained calls and subscript access.
+Functions can return references, which provides us with two very practical programming patterns: chained calls and subscript access.
 
-The core idea of chained calls is to have a function return a reference to `*this`, allowing the caller to chain multiple operations in a single line of code:
+The core idea of chained calls is to have the function return a reference to ``*this``, so the caller can continuously chain multiple operations in a single line of code:
 
 ```cpp
 class Buffer {
@@ -314,7 +282,7 @@ Buffer buf;
 buf.append(0x01).append(0x02).append(0x03);
 ```
 
-Subscript access, by returning a reference to an internal element, allows the caller to directly read from or write to data inside a container via `[]`:
+Subscript access, by returning a reference to an internal element, allows the caller to directly read and write data inside the container via ``[]``:
 
 ```cpp
 class ByteBuffer {
@@ -338,7 +306,7 @@ ByteBuffer buf;
 buf[0] = 0xFF;  // 通过引用直接修改内部数据
 ```
 
-But returning a reference has a **fatal trap**: never return a reference to a local variable. Local variables are stored on the stack, and once the function returns, the stack frame is reclaimed. At that point, the reference points to freed memory—this is typical undefined behavior (UB). The program might seem to run fine sometimes and crash other times, with the crash location and cause following no discernible pattern.
+But returning a reference has a **fatal trap**: never return a reference to a local variable. Local variables are stored on the stack, and the stack frame is reclaimed after the function returns. At that point, the reference points to a piece of memory that has already been freed—this is typical undefined behavior, and the program might occasionally run, occasionally crash, and the crash location and reason will be completely unpredictable.
 
 ```cpp
 // 危险！绝对不要这样做！
@@ -354,23 +322,23 @@ int& safe_function(int& input) {
 }
 ```
 
-The principle for determining whether returning a reference is safe is simple: **the lifetime of the referenced object must outlive the function call itself**. Member variables, global variables, static variables, and objects passed in via parameters—all safe. Local variables inside a function body—not safe.
+The principle for determining whether returning a reference is safe is simple: **the lifetime of the referenced object must be longer than the function call itself**. Member variables, global variables, static variables, objects passed in via parameters—these are all safe. Local variables inside the function body—not safe.
 
 ### 2.5 References vs. Pointers: When to Use Which
 
-Since references are so great, are pointers useless? Of course not. References and pointers each have their own use cases; the key is understanding their differences.
+Since references are so good, are pointers useless now? Of course not. References and pointers each have their own use cases; the key is understanding their differences.
 
-The advantage of references lies in safety and conciseness: they must be initialized, cannot be null, cannot be rebound, and don't require a dereference operator when used. These characteristics make references a better choice than pointers in scenarios where you need to "pass an object that definitely exists."
+The advantage of references lies in safety and conciseness: they must be initialized, cannot be null, cannot be rebound, and don't require a dereference operator when used. These characteristics make references a better choice than pointers in the scenario of "passing an object that definitely exists."
 
-But there are many things references cannot do: you can't make a reference "point to null" to express the concept of "no object"; you can't make a reference "repoint" to another object; you can't make a reference point to an element array (there is no concept of an "array of references," although you can create an array of references); and you can't perform arithmetic on references to traverse memory. In these scenarios, pointers remain irreplaceable.
+But there are many things references cannot do: you cannot make a reference "point to null" to express the concept of "no object"; you cannot make a reference "repoint" to another object; you cannot make a reference point to an array of elements (there is no concept of an "array of references," although you can create an array of references); you cannot perform arithmetic operations on references to traverse memory. In these scenarios, pointers remain irreplaceable.
 
-Our advice: **default to references, unless you need something references can't do**. Specifically, prefer references for function parameter passing (especially `const` references); use pointers (or C++17's `std::optional`) when you need to express "there might be no object"; and use pointers when you need to manually manage memory, traverse arrays, or implement data structures.
+The author's advice is: **default to references, unless you need something references can't do**. Specifically, prioritize references for function parameter passing (especially ``const`` references); use pointers (or C++17's ``std::optional``) when you need to express "there might be no object"; and use pointers when you need to manually manage memory, traverse arrays, or implement data structures.
 
-## 3. The Scope Resolution Operator `::`
+## 3. The Scope Resolution Operator ``::``
 
 ### 3.1 Accessing Global Scope
 
-The scope resolution operator `::` is a very fundamental but easily overlooked tool in C++. Its simplest use case is: when a local variable shadows a global variable, use `::` to tell the compiler "I mean the global one":
+The scope resolution operator ``::`` is a very basic but easily overlooked tool in C++. Its simplest use case is: when a local variable shadows a global variable, use ``::`` to tell the compiler "I want the global one":
 
 ```cpp
 int value = 100;  // 全局变量
@@ -383,11 +351,11 @@ void function() {
 }
 ```
 
-In C, once a local variable shadows a global variable, there is no way to access the global version inside the function—unless you change the name. C++'s `::` solves this problem. That being said, **the best practice is still to avoid same-name shadowing**, because variables with the same name easily lead to confusion when reading code. While `::` can solve the syntactic problem, it doesn't solve the readability problem.
+In C, once a local variable shadows a global variable, you have no way to access the global version inside the function—unless you change the name. C++'s ``::`` solves this problem. That being said, **the best practice is still to avoid same-name shadowing**, because variables with the same name easily lead to confusion when reading code, and while ``::`` can solve the syntax-level problem, it doesn't solve the readability problem.
 
 ### 3.2 Accessing Namespace Members
 
-Another core use of `::` is accessing members within a namespace. We already used this operator extensively when discussing namespaces earlier:
+Another core use of ``::`` is to access members within a namespace. We already used this operator extensively when discussing namespaces earlier:
 
 ```cpp
 namespace math {
@@ -402,11 +370,11 @@ double c = math::circumference(5.0);
 double pi = math::PI;
 ```
 
-The semantics of `::` here are very clear: "retrieve the name on the right from the scope on the left." The left side can be a namespace, a class, a struct—or even empty (representing global scope).
+The semantics of ``::`` here are very clear: from the "scope" on the left, take out the "name" on the right. The left side can be a namespace, a class, a struct—or even empty (representing global scope).
 
-### 3.3 Accessing Static Class Members
+### 3.3 Accessing Static Members of a Class
 
-`::` can also be used to access static class members and nested types. Although we haven't formally covered classes in this chapter, this usage is very similar to namespaces, so let's get a quick glimpse:
+``::`` can also be used to access static members and nested types of a class. Although we haven't formally covered classes in this chapter, this usage is very similar to namespaces, so let's get familiar with it first:
 
 ```cpp
 class UARTConfig {
@@ -419,10 +387,10 @@ int baud = UARTConfig::DEFAULT_BAUDRATE;
 UARTConfig::Parity p = UARTConfig::NONE;
 ```
 
-As we can see, the semantics of `::` are always consistent—"retrieve a certain name from a certain scope." Whether that scope is global, a namespace, or a class, `::` is the same operator doing the same thing.
+As we can see, the semantics of ``::`` are always consistent—"take out a certain name from a certain scope." Whether that scope is global, a namespace, or a class, ``::`` is the same operator doing the same thing.
 
 ## Summary
 
-In this chapter, we learned three fundamental C++ features. Namespaces solve naming conflicts at the language level without introducing any runtime overhead—they are purely a compile-time "automatic prefix" mechanism. References provide aliases for variables, making function parameter passing safer and more concise than pointers, and `const` references can even bind to temporary objects and extend their lifetimes. The scope resolution operator `::` lets us precisely specify "which scope's name we want."
+In this chapter, we learned three fundamental features of C++. Namespaces solve the name collision problem at the language level without introducing any runtime overhead—they are purely a compile-time "automatic prefix" mechanism. References provide aliases for variables, making function parameter passing safer and more concise than pointers, and ``const`` references can even bind to temporary objects and extend their lifetime. The scope resolution operator ``::`` allows us to precisely specify "which name from which scope we want."
 
-None of these three features involve object-oriented programming. You can use them immediately when writing any C++ code—even the simplest "better C" style code. In the next chapter, we'll look at two important improvements C++ made to function interface design: function overloading and default arguments.
+None of these three features involve object-oriented programming; you can use them immediately when writing any C++ code—even the simplest "better C" style code. In the next article, we will look at two important improvements C++ made to function interface design: function overloading and default arguments.

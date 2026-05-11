@@ -1,42 +1,16 @@
----
-chapter: 1
-cpp_standard:
-- 11
-description: Gain a deep understanding of C scope rules, storage classes, and linkage,
-  and master the three uses of `static`.
-difficulty: beginner
-order: 8
-platform: host
-prerequisites:
-- 控制流：让程序学会选择和重复
-reading_time_minutes: 24
-tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
-title: Scope and Storage Duration
-translation:
-  source: documents/vol1-fundamentals/c_tutorials/06-scope-and-storage.md
-  source_hash: 6f5f04a7650642fc294fdf8488f92465e74b56f8ba33056c3273f3747b315674
-  translated_at: '2026-04-20T03:20:10.737396+00:00'
-  engine: anthropic
-  token_count: 3100
----
 # Scope and Storage Duration
 
-If you have ever written a project with more than two source files, you have probably run into this pitfall: defining a global variable called `count` in two files, only for the linker to get confused and throw a `multiple definition` at you. Or a more subtle scenario—you define a helper function in some `.c` file, another file happens to call it, and when you change the function's implementation, the caller crashes without any warning.
+If you have ever written a project with more than two source files, you have probably run into this pitfall: you defined a global variable called `count` in two files, and the linker gives you a confused `multiple definition` error at compile time. Or an even more subtle scenario—you defined a helper function in some `.c` file, and another file accidentally called it. Later, when you changed that function's implementation, the caller crashed without any warning.
 
-The root cause of all these problems lies in **scope** and **storage duration**. The former determines which parts of a program can use a given name, while the latter determines how long the entity behind that name lives in memory and who can see it. These two concepts are intertwined, and since the `static` keyword wears multiple hats in C, beginners often get confused.
+The root cause of all these problems lies in **scope** and **storage duration**. The former determines which parts of a program can use a given name, while the latter determines how long the entity backing that name lives in memory and who can see it. These two concepts are intertwined, and since the `static` keyword wears multiple hats in C, beginners can easily get confused.
 
-Today, we will untangle this mess—starting from the basic scope rules, moving through storage duration and linkage, and finally examining the three entirely different uses of `static`. Once you understand these concepts, you will no longer have to rely on gut feeling when organizing code in multi-file projects.
+Today, we will untangle this mess—starting from the most basic scope rules, moving through storage duration, linkage, and lifetime, and finally examining the three completely distinct uses of `static`. Once you understand these concepts, you will no longer have to rely on guesswork when organizing code in multi-file projects.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Name the four types of scope in C and explain their differences
+> - [ ] Name the four scopes in C and explain their differences
 > - [ ] Explain the meanings of `auto`, `static`, `extern`, and `register`
 > - [ ] Understand how linkage (internal/external/none) controls symbol visibility
 > - [ ] Correctly use the three semantics of `static`
@@ -44,7 +18,7 @@ Today, we will untangle this mess—starting from the basic scope rules, moving 
 
 ## Environment Setup
 
-We use GCC 12+ or Clang 15+, compiling on Linux or WSL2. All examples can be compiled and run with a single command:
+We use GCC 12+ or Clang 15+, compiling on Linux or WSL2. All examples can be compiled and run with a single simple command:
 
 ```bash
 gcc -Wall -Wextra -std=c11 -o scope_demo scope_demo.c && ./scope_demo
@@ -56,13 +30,13 @@ Multi-file projects require compiling separately and then linking, or doing it a
 gcc -Wall -Wextra -std=c11 -o multi_file_demo file1.c file2.c && ./multi_file_demo
 ```
 
-## Step 1 — Understanding the Four Types of Scope
+## Step 1 — Understand the Four Scopes
 
-The C standard defines four types of scope: block scope, file scope, function scope, and function prototype scope. Let's go through them one by one.
+The C standard defines four scopes: block scope, file scope, function scope, and function prototype scope. Let's go through them one by one.
 
 ### Block Scope
 
-Block scope is the most common—the area enclosed by curly braces `{}` is a block, and variables declared inside a block are only visible within that block (and its nested sub-blocks). The loop bodies of `if`, `for`, and `while`, or even a pair of curly braces you casually write, all create new block scopes:
+Block scope is the most common—any region enclosed in curly braces `{}` is a block, and variables declared inside a block are only visible within that block (and its nested sub-blocks). The loop bodies of `if`, `for`, and `while`, or even a random pair of curly braces you write, all create new block scopes:
 
 ```c
 #include <stdio.h>
@@ -89,7 +63,7 @@ int main(void) {
 }
 ```
 
-One point worth noting is that an inner block can shadow a variable with the same name in an outer block—the inner `x` temporarily "hides" the outer `x` until the inner block ends:
+One point worth noting here is that an inner block can shadow a variable with the same name in an outer block—the inner `x` temporarily "hides" the outer `x` until the inner block ends:
 
 ```c
 #include <stdio.h>
@@ -108,11 +82,11 @@ int main(void) {
 }
 ```
 
-Since C99, the initialization part of a `for` loop can also declare variables. The scope of such a variable spans the entire loop (including the loop body and the condition check), and it is not visible outside the loop. This behavior is consistent with C++, but if you are using an ancient C89 compiler (which is unlikely these days), the loop variable must be declared outside the loop.
+Since C99, the initialization part of a `for` loop can also declare variables. The scope of such a variable is the entire loop (including the loop body and the condition part), and it is not visible outside the loop. This behavior is consistent with C++, but if you are using an ancient C89 compiler (which is highly unlikely nowadays), the loop variable must be declared outside the loop.
 
 ### File Scope
 
-Variables and functions declared outside of all functions have file scope—they are visible from the point of declaration to the end of the current translation unit (that is, the `.c` file plus everything it `#include` in). By convention, we call these variables "global variables," but their visibility is not truly "global"—whether they can be seen by other translation units depends on linkage, which we will discuss in detail later:
+Variables and functions declared outside of all functions have file scope—they are visible from the point of declaration to the end of the current translation unit (that is, the `.c` file plus everything it `#include` in). By convention, we call these variables "global variables," but their visibility is not truly "global"—whether they are seen by other translation units depends on linkage, which we will discuss in detail later:
 
 ```c
 #include <stdio.h>
@@ -134,7 +108,7 @@ int main(void) {
 
 ### Function Scope
 
-This scope is rather special—it **only applies to labels**, which are the names with colons used as jump targets for `goto`. A label is visible throughout the entire function where it resides, regardless of the nesting level where it is declared. Honestly, since you are unlikely to use `goto` much, just knowing that this scope exists is enough:
+This scope is rather special—it **only applies to labels**, which are the names followed by colons that serve as jump targets for `goto`. A label is visible throughout its entire enclosing function, regardless of the nesting level where it is declared. Honestly, since you are highly unlikely to use `goto`, just having a basic awareness of this scope is enough—knowing it exists is sufficient:
 
 ```c
 #include <stdio.h>
@@ -154,7 +128,7 @@ cleanup:
 
 ### Function Prototype Scope
 
-This is the smallest scope—parameter names appearing in a function declaration (prototype) are only valid within the parentheses of that declaration, and cease to exist outside them. In practice, the compiler does not care about parameter names in prototypes (it only looks at the types), so this scope can basically be ignored:
+This is the smallest scope—parameter names appearing in a function declaration (prototype) are only valid within the parentheses of that declaration and cease to exist outside them. In practice, the compiler does not care about parameter names in prototypes (it only looks at the types), so this scope can be safely ignored:
 
 ```c
 // name 只在这个声明的括号里有效，出了括号就没了
@@ -165,21 +139,21 @@ void greet(const char* name);
 void greet(const char*);
 ```
 
-## Step 2 — Understanding How Storage Duration Manages Lifetimes
+## Step 2 — Understand How Storage Duration Manages Lifetime
 
-Scope answers the question "where is a name visible?", while storage duration answers "when is data created, when is it destroyed, and where does it live?". C defines several storage class specifiers: `auto`, `static`, `extern`, `register`, and the C11 addition `_Thread_local`.
+Scope solves the question of "where is a name visible," while storage duration solves the question of "when is data created, when is it destroyed, and where does it live." C defines several storage class specifiers: `auto`, `static`, `extern`, `register`, and the C11 addition `_Thread_local`.
 
 ### auto: The Default Automatic Storage
 
-`auto` is the default storage duration for local variables—writing `int x = 10;` inside a function is completely equivalent to writing `auto int x = 10;`. Because this is the default behavior, nobody explicitly writes `auto`, so you will basically never see it in real code. It means the variable is created when entering its block (allocated on the stack) and destroyed when leaving the block.
+`auto` is the default storage duration for local variables—writing `int x = 10;` inside a function is completely equivalent to writing `auto int x = 10;`. Because this is the default behavior, nobody explicitly writes `auto`, so you will basically never see it in real code. It means the variable is created when entering its enclosing block (allocated on the stack) and destroyed when leaving the block.
 
-There is a point of confusion: C++11 repurposed `auto` as a type deduction keyword, which has nothing to do with the C language's `auto`. If you later write C++ code and see `auto x = 10;`, it tells the compiler to deduce the type of `x` as `int`, not any kind of storage duration.
+There is an easily confused point here: C++11 repurposed `auto` as a type deduction keyword, which has absolutely nothing to do with the C language's `auto`. If you later write C++ code and see `auto x = 10;`, it tells the compiler to deduce the type of `x` as `int`, not any kind of storage duration.
 
-### static: Living for the Entire Program
+### static: Persisting Throughout the Program
 
 `static` is one of the keywords with the most meanings in C—it does completely different things depending on where it appears. Let's first look at its meaning as a storage class specifier—**changing a variable's lifetime from automatic to static**.
 
-An ordinary local variable is reinitialized every time the function is entered, and disappears when the function leaves. But if you add `static` to a local variable, it is initialized only once when the program starts (if you don't provide an initial value, it is initialized to zero). Even after the function returns, the variable is not destroyed, and the next time you call the function, you can still see the previous value:
+An ordinary local variable is reinitialized every time the function is entered, and it disappears when the function exits. But if you add `static` to a local variable, it is initialized only once when the program starts up (if you don't provide an initial value, it is initialized to zero). After that, even if the function returns, this variable is not destroyed, and the next time you call the function, you can still see the value from the previous call:
 
 ```c
 #include <stdio.h>
@@ -198,13 +172,13 @@ int main(void) {
 }
 ```
 
-Although this `call_count` looks like a "local variable," it is not stored on the stack—it lives in the Data Segment or BSS Segment, alongside global variables. The only difference is that its **scope** is still block scope; only the code inside the `counter` function can access it.
+Although this `call_count` looks like a "local variable," it is not stored on the stack—it resides in the Data Segment or BSS Segment, right alongside global variables. The only difference is that its **scope** remains block scope; only the inside of the `counter` function can access it.
 
 Why do this? Imagine you are writing a module that needs to maintain some internal state (such as a buffer, counter, or configuration info), but you don't want external code to touch this data directly. Using a `static` local variable achieves the perfect combination of "data persistence + restricted access"—a simple implementation of information hiding.
 
 ### extern: Declaring a Symbol Defined Elsewhere
 
-`extern` tells the compiler "this variable/function is defined somewhere else; don't worry about where, the linker will find it." Its typical use case is sharing global variables in multi-file projects:
+`extern` tells the compiler, "This variable/function is defined somewhere else; don't worry about where it is for now, the linker will find it." Its typical use case is sharing global variables in multi-file projects:
 
 ```c
 // === config.c（定义） ===
@@ -236,7 +210,7 @@ int main(void) {
 }
 ```
 
-The key distinction here is: a **definition** allocates memory and can only appear once; a **declaration** using `extern` means "it is defined elsewhere" and can appear multiple times. Putting declarations in header files and definitions in source files is the basic organizational pattern for multi-file C projects.
+The key distinction here is: a **definition** allocates memory and can appear only once; a **declaration** using `extern` means "it is defined elsewhere" and can appear multiple times. Putting declarations in header files and definitions in source files is the fundamental organizational pattern for multi-file C projects.
 
 A common pitfall is writing it like this:
 
@@ -247,22 +221,22 @@ extern int kValue = 42;  // 千万别这么干！
 
 If you assign an initial value to an `extern` declaration, the `extern` is ignored—this becomes a definition. If this header file is `#include` by multiple `.c` files, each translation unit will generate a definition for `kValue`, and you will get a `multiple definition` error at link time.
 
-> ⚠️ **Watch Out**
-> Putting `extern int kValue = 42;` in a header file is a typical mistake—an `extern` with an initial value equals a definition, and including the header multiple times will cause link conflicts. Remember: only put declarations (without initial values) in header files, and put definitions in `.c` files.
+> ⚠️ **Pitfall Warning**
+> Putting `extern int kValue = 42;` in a header file is a classic mistake—an `extern` with an initial value equals a definition, and having the header included multiple times will cause link conflicts. Remember: put only declarations (without initial values) in header files, and put definitions in `.c` files.
 
 ### register: A Historical Suggestion
 
-`register` is a keyword from early C used to suggest to the compiler "put this variable in a register." On 1970s PDP-11 machines, compiler optimization capabilities were limited, and manually specifying `register` could genuinely improve performance.
+`register` is a keyword from early C used to suggest to the compiler "put this variable in a register." On 1970s PDP-11 machines, where compiler optimization capabilities were limited, programmers manually specifying `register` could genuinely improve performance.
 
-But in front of modern compilers, this keyword is basically useless—GCC and Clang's optimizers know better than you do which variables should go in registers. In fact, even if you write `register`, the compiler is free to ignore it. Furthermore, you cannot take the address of a `register` variable (you cannot use `&` on it) because it might not even be in memory—this restriction can occasionally trip you up.
+But in front of modern compilers, this keyword is basically useless—GCC and Clang optimizers know far better than you do which variables should go in registers. In fact, even if you write `register`, the compiler is completely free to ignore it. Furthermore, you cannot take the address of a `register` variable (you cannot use `&` on it) because it might not even be in memory—this restriction can occasionally trip you up.
 
-Just be aware of it; it is not recommended for modern code.
+Just be aware of it; it is not recommended for use in modern code.
 
-## Step 3 — Mastering Linkage to Control Symbol Visibility
+## Step 3 — Master Linkage to Control Symbol Visibility
 
 Linkage describes the visibility of a name across different translation units. C defines three types of linkage: external linkage, internal linkage, and no linkage.
 
-- Names with **external linkage** can be accessed by all translation units in the program. Ordinary global variables and functions have external linkage by default—as long as you declare them with `extern` in another file, you can use them.
+- Names with **external linkage** can be accessed by all translation units in the entire program. Ordinary global variables and functions have external linkage by default—as long as you declare them with `extern` in another file, you can use them.
 - Names with **internal linkage** are only visible within the current translation unit; other files cannot find them even if they `extern` them. Adding `static` to a file-scope variable or function makes it internal linkage.
 - Names with **no linkage** are only valid within their own scope—local variables, function parameters, and `typedef` in block scope all have no linkage.
 
@@ -270,15 +244,15 @@ The relationship between these three can be summarized in a table:
 
 | Declaration Location | Keyword | Linkage | Scope | Lifetime |
 | --- | --- | --- | --- | --- |
-| Inside a function | (none) | None | Block | Automatic |
-| Inside a function | `static` | None | Block | Static |
-| Outside a function | (none) | External | File | Static |
-| Outside a function | `static` | Internal | File | Static |
-| Outside a function | `extern` | (Depends on first declaration) | File | Static |
+| Inside function | (none) | None | Block | Automatic |
+| Inside function | `static` | None | Block | Static |
+| Outside function | (none) | External | File | Static |
+| Outside function | `static` | Internal | File | Static |
+| Outside function | `extern` | (Depends on first declaration) | File | Static |
 
 This table is worth a few extra looks—note that `static` outside a function changes the linkage (from external to internal), not the scope or lifetime.
 
-Let's feel how linkage works through a practical multi-file example:
+Let's walk through a practical multi-file example to see how linkage works:
 
 ```c
 // === logger.c ===
@@ -344,22 +318,22 @@ Output:
 [INFO #3] Retrying...
 ```
 
-The `log_count` and `format_prefix` in `logger.c` are marked with `static` for internal linkage, meaning even if another file has a global variable also named `log_count`, there will be no conflict. This is the core value of `static` at the file level—**information hiding**, encapsulating a module's internal implementation details and only exposing the public interface through header files.
+The `log_count` and `format_prefix` in `logger.c` are marked with `static` for internal linkage, meaning even if another file has a global variable also named `log_count`, there will be no conflict. This is the core value of `static` at the file level—**information hiding**, encapsulating the internal implementation details of a module and only exposing the public interface through the header file.
 
-If you are curious about what happens without `static`—try defining a `int log_count = 0;` in two different `.c` files, and you will most likely see the linker report a `multiple definition of 'log_count'` during compilation. This is why global variables and helper functions that are not intended to be exposed externally must always have `static` added.
+If you are curious about what happens without `static`—try defining a `int log_count = 0;` in two different `.c` files, and you will most likely see the linker report a `multiple definition of 'log_count'` error during compilation. This is why global variables and helper functions that are not intended to be exposed externally must always have `static` added.
 
-## Step 4 — Clarifying the Three Uses of static
+## Step 4 — Clarify the Three Uses of static
 
-Now that we understand scope and linkage, the final dimension is **lifetime** (storage duration)—the time span from an object's creation to its destruction. Lifetime is closely tied to the uses of static, so we will discuss them together.
+Having understood scope and linkage, the final dimension is **lifetime** (storage duration)—the time span from an object's creation to its destruction. Lifetime is closely tied to the uses of static, so we will discuss them together.
 
-> ⚠️ **Watch Out**
+> ⚠️ **Pitfall Warning**
 > You must not return a pointer to a local variable—after the function returns, that stack space is reclaimed, the pointer becomes a dangling pointer, and dereferencing it is undefined behavior. If you need to pass data between functions, either pass by value, use a `static` local variable, or allocate memory dynamically.
 
-**Automatic lifetime** is the most common: ordinary local variables are created when entering their block and destroyed when leaving it. They are stored on the stack, and each time the function is called, the local variables are created once and gone after the function returns. This is also why you cannot return a pointer to a local variable—after the function returns, that stack space is reclaimed, the pointer becomes a dangling pointer, and dereferencing it is undefined behavior.
+**Automatic lifetime** is the most common: ordinary local variables are created when entering their enclosing block and destroyed when leaving it. They are stored on the stack, and each time the function is called, the local variables are created anew, and they are gone after the function returns. This is also why you cannot return a pointer to a local variable—after the function returns, that stack space is reclaimed, the pointer becomes a dangling pointer, and dereferencing it is undefined behavior.
 
-Objects with **static lifetime** exist from program startup and live until the program ends. This includes all file-scope variables (regardless of whether they have `static`), as well as local variables declared with `static` inside functions. They are stored in the Data Segment (if they have initial values) or the BSS Segment (if they don't, automatically initialized to zero).
+Objects with **static lifetime** exist from program startup and live until the program ends. This includes all file-scope variables (regardless of whether they have `static`), as well as local variables declared with `static` inside functions. They are stored in the Data Segment (if they have initial values) or the BSS Segment (if they lack initial values and are automatically initialized to zero).
 
-Objects with **dynamic lifetime** are allocated on the heap via `malloc`/`calloc`/`realloc`, and are manually managed by the programmer—when to `free` and when to destroy. We will discuss this in detail in a later chapter on memory management.
+Objects with **dynamic lifetime** are allocated on the heap via `malloc`/`calloc`/`realloc` and are manually managed by the programmer—when to `free` and when to destroy. We will discuss this in detail in a later chapter on memory management.
 
 ```c
 #include <stdio.h>
@@ -385,23 +359,23 @@ void demonstrate_lifetime(void) {
 }
 ```
 
-An easily overlooked fact is: the initialization order of global variables is deterministic within the same translation unit (following the definition order), but the initialization order across translation units is **undefined**. For C, this is usually not a big problem (because global variables are typically initialized with constant expressions), but in C++ it is a famous pitfall—C++ allows global objects to have constructors, and the construction order across files is undefined. This is the so-called "static initialization order fiasco." We just need to know about it for now.
+An easily overlooked fact is: the initialization order of global variables is deterministic within the same translation unit (following the definition order), but the initialization order across translation units is **undefined**. For C, this is usually not a big problem (because global variables are generally initialized with constant expressions), but in C++ this is a famous pitfall—C++ allows global objects to have constructors, and the construction order across files is undefined. This is the so-called "static initialization order fiasco." It is enough to just be aware of this for now.
 
 Since `static` has different meanings in different locations, let's do a complete summary.
 
-**Use 1: Static local variables**—Inside a function, `static` gives a local variable static lifetime; the variable is not destroyed after the function returns, and the next call retains the previous value, but the scope remains block scope.
+**Use case one: static local variables**—inside a function, `static` gives a local variable static lifetime; the variable is not destroyed after the function returns, it retains its value from the previous call the next time the function is called, but its scope remains block scope.
 
-**Use 2: Static global variables**—Outside a function, `static` makes a global variable have internal linkage, invisible to other translation units. The scope is still file scope, the lifetime is still static, and the only thing that changes is the linkage.
+**Use case two: static global variables**—outside a function, `static` makes a global variable have internal linkage, invisible to other translation units. The scope remains file scope, the lifetime remains static, and the only thing that changes is the linkage.
 
-**Use 3: Static functions**—Adding `static` to a function works the same way as static global variables; the function gets internal linkage and is only visible in the current translation unit.
+**Use case three: static functions**—adding `static` to a function works on the same principle as static global variables; the function gets internal linkage and is only visible within the current translation unit.
 
-Note that among these three uses, "static local variables" changes the lifetime (from automatic to static), while "static global variables" and "static functions" change the linkage (from external to internal). The same keyword does two different things—this is a historical design issue in C, but you get used to it after a while.
+Note that among these three use cases, "static local variables" change the lifetime (from automatic to static), while "static global variables" and "static functions" change the linkage (from external to internal). The same keyword does two different things—this is a historical design issue in C, but you get used to it after using it enough.
 
 ## C++ Connection
 
 C++ has made quite a few enhancements and improvements on top of scope and storage duration.
 
-Most notably, there are **namespaces**. In C, if you don't want file-level helper symbols exposed to the outside, the only tool is `static`—our `logger.c` earlier did exactly this. But C++ introduced `namespace`, providing a more structured way to organize symbols and avoid naming conflicts. Even better, C++17 introduced **`inline` variables**, eliminating the tedious pattern of needing `extern` paired with a source file definition for constants in header files:
+Most noteworthy are **namespaces**. In C, if you don't want file-level helper symbols exposed to the outside, the only mechanism is `static`—our `logger.c` earlier did exactly this. But C++ introduced `namespace`, providing a more structured way to organize symbols and avoid naming conflicts. Even better, C++17 introduced **`inline` variables**, eliminating the tedious pattern of needing `extern` paired with a source file definition for constants in header files:
 
 ```cpp
 // C++17 的头文件——不需要配套的 .cpp 文件
@@ -414,7 +388,7 @@ inline constexpr const char* kServerAddress = "192.168.1.100";
 #endif
 ```
 
-C++ **`static` class members** carry yet another semantic—they indicate that the member belongs to the class itself rather than to any particular instance, and all objects share the same copy. This is again different from C's `static`:
+C++ **`static` class members** carry yet another semantic—they indicate that the member belongs to the class itself rather than to any specific instance, and all objects share the same copy. This is again a different concept from C's `static`:
 
 ```cpp
 class Counter {
@@ -426,21 +400,21 @@ public:
 int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static）
 ```
 
-Additionally, C++ anonymous namespaces can completely replace file-level `static` usage, and they do it more thoroughly—symbols in an anonymous namespace are hidden from the outside, and they cannot even participate in template argument deduction. In C++ projects, using anonymous namespaces instead of `static` is recommended.
+Additionally, C++ anonymous namespaces can completely replace file-level `static` usage, and they do so more thoroughly—symbols in an anonymous namespace are not only hidden from the outside, but they also cannot participate in template argument deduction. In C++ projects, using anonymous namespaces instead of `static` is recommended.
 
-Finally, C++11's `thread_local` provides thread-local storage duration—each thread has its own independent copy of the variable. This is very useful in multithreaded programming. C11 also has a corresponding `_Thread_local`, but its compiler support and ease of use are not as good as C++.
+Finally, C++11's `thread_local` provides thread-local storage duration—each thread has its own independent copy of the variable. This is extremely useful in multithreaded programming. C11 also has a corresponding `_Thread_local`, but its compiler support and ease of use are not as good as C++.
 
 ## Summary
 
 Scope, storage duration, and linkage together form the complete system of "name management" in C. Scope determines where a name is visible, storage duration determines how long data lives and where it resides, and linkage determines whether a name can be accessed across files.
 
-`static` is the most confusing keyword in this system—inside a function it changes the lifetime, and outside a function it changes the linkage. But as long as you remember this distinction, you won't get mixed up again. `extern` is the tool for sharing global variables in multi-file projects, used in conjunction with the pattern of declarations in header files and definitions in source files.
+`static` is the most easily confused keyword in this system—inside a function it changes the lifetime, and outside a function it changes the linkage. But as long as you remember this distinction, you won't get mixed up again. `extern` is the tool for sharing global variables in multi-file projects, used in conjunction with the header-file-declaration and source-file-definition pattern.
 
-In real projects, build a habit: **always add `static` to global variables and helper functions that are not intended to be exposed externally**. This is the most practical information-hiding mechanism at the C language level, and it can drastically reduce naming conflicts and unintended dependencies in multi-file projects.
+In real projects, build a habit: **add `static` to all global variables and helper functions that are not intended to be exposed externally**. This is the most practical information-hiding mechanism at the C language level, and it can drastically reduce naming conflicts and unintended dependencies in multi-file projects.
 
 ### Key Takeaways
 
-- [ ] C has four types of scope: block, file, function, and function prototype
+- [ ] C has four scopes: block, file, function, and function prototype
 - [ ] `static` local variables have static lifetime but block scope
 - [ ] `static` global variables/functions have internal linkage and are invisible to other files
 - [ ] `extern` declares a symbol that is defined elsewhere
@@ -451,7 +425,7 @@ In real projects, build a habit: **always add `static` to global variables and h
 
 ### Exercise 1: Modular Counter
 
-Design a simple module where the header file only exposes three functions: `counter_increment`, `counter_get`, and `counter_reset`. Internally, use a `static` variable to maintain the count. External code must not be able to directly access or modify this counter variable.
+Design a simple module where the header file only exposes three functions: `counter_increment`, `counter_get`, and `counter_reset`. Internally, use a `static` variable to maintain the count. The external code must not be able to directly access or modify this counter variable.
 
 ```c
 // === counter.h ===
@@ -466,9 +440,9 @@ Please implement `counter.c` yourself.
 
 Create three files: `a.c`, `b.c`, and `main.c`. Requirements:
 
-- `a.c` defines an external linkage global variable `int kSharedValue` with an initial value of `0`
-- `a.c` defines an internal linkage helper function `static void helper_a(void)`
-- `b.c` also defines a helper function with the same name, `static void helper_a(void)`, as internal linkage (no conflict!)
+- `a.c` defines a global variable `int kSharedValue` with external linkage, initialized to `0`
+- `a.c` defines a helper function `static void helper_a(void)` with internal linkage
+- `b.c` also defines a helper function `static void helper_a(void)` with the same name and internal linkage (no conflict!)
 - `b.c` accesses `kSharedValue` via `extern` and provides a function to modify it
 - `main.c` calls the functions provided by each module and verifies the results
 
@@ -480,7 +454,7 @@ Create three files: `a.c`, `b.c`, and `main.c`. Requirements:
 
 ### Exercise 3: Lazy Initialization
 
-Use a `static` local variable to implement a `get_config` function: on the first call, it performs initialization (prints "Initializing..." and sets a default value); on subsequent calls, it directly returns the already-initialized value without reinitializing.
+Use a `static` local variable to implement a `get_config` function: on the first call, it performs initialization (prints "Initializing..." and sets a default value), and on subsequent calls, it directly returns the already-initialized value without reinitializing.
 
 ```c
 typedef struct {
@@ -492,7 +466,7 @@ typedef struct {
 const Config* get_config(void);
 ```
 
-> Tip: A `static` local variable is only initialized the first time the function is entered—perfect for implementing "initialize exactly once" semantics.
+> Tip: A `static` local variable is only initialized the first time execution enters the function—perfect for implementing "initialize-once" semantics.
 
 ## References
 

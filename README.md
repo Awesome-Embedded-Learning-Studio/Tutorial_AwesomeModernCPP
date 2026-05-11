@@ -17,6 +17,10 @@
 
 ---
 
+<!-- COVERAGE_START -->
+![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 337/337 docs translated
+<!-- COVERAGE_END -->
+
 ## 特色亮点
 
 - **9 卷体系** -- 从 C 语言速通到嵌入式实战，形成完整学习闭环

@@ -21,3 +21,6 @@ scripts/cppref_cache/
 
 # Environment variables
 .env
+
+# Ignore Any Caches brought from local
+.cache/

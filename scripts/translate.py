@@ -2,17 +2,20 @@
 """
 AI Translation Script — local incremental translation of Chinese Markdown docs.
 
-Translates Chinese .md files to English .en.md files using OpenAI/Anthropic API.
+Translates Chinese .md files in documents/ to English, outputting to the
+VitePress i18n folder structure (documents/en/).
 Runs entirely locally, no CI involvement.
 
 Usage:
     python3 scripts/translate.py --changed              # Translate changed files vs main
     python3 scripts/translate.py --file <path>           # Translate single file
+    python3 scripts/translate.py --dir <path>            # Translate all files under directory
     python3 scripts/translate.py --all                   # Translate all (with confirmation)
     python3 scripts/translate.py --changed --dry-run     # Estimate cost only
     python3 scripts/translate.py --changed --engine anthropic  # Use Anthropic API
     python3 scripts/translate.py --changed --force       # Force re-translation
     python3 scripts/translate.py --all --batch-size 20   # Translate max 20 files
+    python3 scripts/translate.py --all --workers 3       # Concurrent translation
 
 API key is read from:
     1. Environment variables (ANTHROPIC_AUTH_TOKEN / OPENAI_API_KEY / DEEPL_API_KEY)
@@ -28,7 +31,7 @@ import os
 import re
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -68,6 +71,10 @@ SUPPORTED_ENGINES = {'openai', 'anthropic', 'deepl'}
 MAX_TOKENS_PER_RUN = 100_000
 CHARS_PER_TOKEN = 4  # rough estimate for mixed CJK/English
 MAX_SINGLE_FILE_CHARS = 60_000  # ~15K tokens; split files larger than this
+
+# VitePress i18n paths (relative to project root)
+DOCS_DIR = 'documents'
+I18N_OUTPUT_DIR = Path('documents') / 'en'
 
 # ---------------------------------------------------------------------------
 # Terminology Glossary
@@ -228,10 +235,6 @@ class ContentPreprocessor:
         for key, value in placeholders.items():
             content = content.replace(key, value)
         return content
-
-    @staticmethod
-    def count_preserved(placeholders: Dict[str, str]) -> int:
-        return len(placeholders)
 
 
 # ---------------------------------------------------------------------------
@@ -549,7 +552,8 @@ class TranslationPipeline:
                  engine_name: str,
                  dry_run: bool = False,
                  force: bool = False,
-                 max_tokens: int = MAX_TOKENS_PER_RUN):
+                 max_tokens: int = MAX_TOKENS_PER_RUN,
+                 project_root: Path = None):
         self.client = client
         self.manifest = manifest
         self.preprocessor = preprocessor
@@ -558,6 +562,7 @@ class TranslationPipeline:
         self.dry_run = dry_run
         self.force = force
         self.max_tokens = max_tokens
+        self.project_root = project_root
         self.tokens_used = 0
         self.files_translated = 0
         self.files_skipped = 0
@@ -603,7 +608,7 @@ class TranslationPipeline:
 
         # Estimate tokens
         estimated_tokens = self.client.count_tokens(content)
-        if self.tokens_used + estimated_tokens > self.max_tokens:
+        if self.max_tokens > 0 and self.tokens_used + estimated_tokens > self.max_tokens:
             logger.info(
                 'SKIP %s: would exceed token limit (%d + %d > %d)',
                 rel_path, self.tokens_used, estimated_tokens, self.max_tokens)
@@ -640,8 +645,7 @@ class TranslationPipeline:
             except Exception as e:
                 logger.error('FAILED %s chunk %d/%d: %s',
                              rel_path, i + 1, len(chunks), e)
-                self.files_failed += 1
-                return None
+                raise
 
         translated_body = '\n'.join(translated_parts)
 
@@ -712,8 +716,8 @@ class TranslationPipeline:
 # Post-translation validation
 # ---------------------------------------------------------------------------
 
-def validate_translation(output_path: Path, source_block_count: int) -> List[str]:
-    """Validate a translated .en.md file. Returns list of warnings."""
+def validate_translation(output_path: Path) -> List[str]:
+    """Validate a translated file. Returns list of warnings."""
     warnings: List[str] = []
     try:
         content = output_path.read_text(encoding='utf-8')
@@ -742,11 +746,11 @@ def validate_translation(output_path: Path, source_block_count: int) -> List[str
 # ---------------------------------------------------------------------------
 
 def detect_changed_files(project_root: Path) -> List[Path]:
-    """Detect changed .md files relative to main branch."""
+    """Detect changed .md files in documents/ relative to main branch."""
     try:
         result = subprocess.run(
             ['git', 'diff', '--name-only', '--diff-filter=ACM', 'main...HEAD',
-             '--', 'documents/**/*.md'],
+             '--', f'{DOCS_DIR}/**/*.md'],
             cwd=str(project_root),
             capture_output=True,
             text=True,
@@ -756,9 +760,13 @@ def detect_changed_files(project_root: Path) -> List[Path]:
             if not line:
                 continue
             path = project_root / line
-            # Skip .en.md files
-            if path.name.endswith('.en.md'):
-                continue
+            # Skip files inside the en/ output directory
+            try:
+                rel = path.relative_to(project_root / DOCS_DIR)
+                if rel.parts and rel.parts[0] == 'en':
+                    continue
+            except ValueError:
+                pass
             if path.exists() and path.suffix == '.md':
                 files.append(path)
         return files
@@ -768,11 +776,17 @@ def detect_changed_files(project_root: Path) -> List[Path]:
 
 
 def find_all_chinese_md(docs_root: Path) -> List[Path]:
-    """Find all Chinese .md files (excluding .en.md)."""
+    """Find all Chinese .md files in documents/ (excluding en/ output directory)."""
     files = []
     for f in docs_root.rglob('*.md'):
-        if f.name.endswith('.en.md') or f.name in ('index.md', 'tags.md'):
-            continue
+        # Skip files inside the en/ i18n output directory
+        try:
+            rel = f.relative_to(docs_root)
+            if rel.parts and rel.parts[0] == 'en':
+                continue
+        except ValueError:
+            pass
+        # Skip non-content directories
         if any(part in ('images', 'generated', 'hooks', 'stylesheets',
                         'javascripts') for part in f.parts):
             continue
@@ -780,9 +794,14 @@ def find_all_chinese_md(docs_root: Path) -> List[Path]:
     return sorted(files)
 
 
-def get_output_path(input_path: Path) -> Path:
-    """Compute .en.md output path for a given .md file."""
-    return input_path.with_suffix('.en.md')
+def get_output_path(input_path: Path, project_root: Path) -> Path:
+    """Compute VitePress i18n output path for a given source file.
+
+    Input:  documents/vol1-fundamentals/00-preface.md
+    Output: documents/en/vol1-fundamentals/00-preface.md
+    """
+    rel = input_path.relative_to(project_root / DOCS_DIR)
+    return project_root / I18N_OUTPUT_DIR / rel
 
 
 # ---------------------------------------------------------------------------
@@ -825,30 +844,40 @@ def load_api_key(engine: str) -> Optional[str]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Translate Chinese Markdown docs to English')
+        description='Translate Chinese Markdown docs to English (VitePress i18n)')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--changed', action='store_true',
                        help='Translate files changed relative to main')
     group.add_argument('--file', type=str,
-                       help='Translate a single file')
+                       help='Translate a single file (relative to project root)')
+    group.add_argument('--dir', type=str,
+                       help='Translate all .md files under a directory (relative to project root)')
     group.add_argument('--all', action='store_true',
-                       help='Translate all Chinese .md files')
+                       help='Translate all Chinese .md files in documents/')
     parser.add_argument('--engine', choices=SUPPORTED_ENGINES,
-                        default='openai', help='Translation engine (default: openai)')
+                        default='anthropic', help='Translation engine (default: anthropic)')
     parser.add_argument('--dry-run', action='store_true',
                         help='Estimate tokens and cost without translating')
     parser.add_argument('--force', action='store_true',
                         help='Force re-translation regardless of content hash')
-    parser.add_argument('--max-tokens', type=int, default=MAX_TOKENS_PER_RUN,
-                        help=f'Max tokens per run (default: {MAX_TOKENS_PER_RUN})')
+    parser.add_argument('--max-tokens', type=int, default=0,
+                        help='Max tokens per run (default: unlimited)')
     parser.add_argument('--batch-size', type=int, default=0,
                         help='Max files to translate per run (default: unlimited)')
+    parser.add_argument('--delay', type=float, default=2,
+                        help='Delay in seconds between files (default: 2)')
+    parser.add_argument('--retries', type=int, default=3,
+                        help='Retry attempts on API errors (default: 3)')
+    parser.add_argument('--workers', type=int, default=1,
+                        help='Concurrent translation workers (default: 1)')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Enable debug-level logging')
+    parser.add_argument('-y', '--yes', action='store_true',
+                        help='Skip confirmation prompt')
     args = parser.parse_args()
 
     project_root = Path(__file__).parent.parent
-    docs_root = project_root / 'documents'
+    docs_root = project_root / DOCS_DIR
     cache_dir = project_root / '.cache' / 'translations'
 
     # Setup logging
@@ -865,6 +894,23 @@ def main():
             logger.error('File not found: %s', target)
             sys.exit(1)
         files = [target]
+    elif args.dir:
+        target = Path(args.dir)
+        if not target.is_absolute():
+            target = project_root / target
+        if not target.is_dir():
+            logger.error('Directory not found: %s', target)
+            sys.exit(1)
+        files = find_all_chinese_md(target)
+        if not files:
+            logger.info('No Chinese .md files found in %s.', target)
+            sys.exit(0)
+        logger.info('Found %d Chinese .md files in %s.', len(files), target)
+        if not args.dry_run and not args.yes:
+            confirm = input(f'Translate {len(files)} files? [y/N] ').strip().lower()
+            if confirm != 'y':
+                logger.info('Aborted.')
+                sys.exit(0)
     elif args.changed:
         files = detect_changed_files(project_root)
         if not files:
@@ -876,10 +922,10 @@ def main():
     elif args.all:
         files = find_all_chinese_md(docs_root)
         if not files:
-            logger.info('No Chinese .md files found.')
+            logger.info('No Chinese .md files found in %s.', docs_root)
             sys.exit(0)
         logger.info('Found %d Chinese .md files.', len(files))
-        if not args.dry_run:
+        if not args.dry_run and not args.yes:
             confirm = input('Translate all? [y/N] ').strip().lower()
             if confirm != 'y':
                 logger.info('Aborted.')
@@ -918,47 +964,137 @@ def main():
         dry_run=args.dry_run,
         force=args.force,
         max_tokens=args.max_tokens,
+        project_root=project_root,
     )
 
-    # Translate files
+    # Translate
+    import time
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    total_files = len(files)
     batch_count = 0
-    for filepath in files:
+    batch_lock = threading.Lock()
+    done_counter = [0]
+    done_lock = threading.Lock()
+
+    def translate_one(filepath: Path) -> str:
+        """Translate a single file with retry logic. Returns status string."""
+        nonlocal batch_count
         rel = filepath.relative_to(project_root)
-        output_path = get_output_path(filepath)
+        output_path = get_output_path(filepath, project_root)
 
-        if args.dry_run:
-            pipeline.translate_file(filepath, project_root)
-            continue
+        with done_lock:
+            done_counter[0] += 1
+            progress = f'[{done_counter[0]}/{total_files}]'
 
-        # Track preserved block count for validation
-        source_content = filepath.read_text(encoding='utf-8')
-        _, source_blocks = preprocessor.extract_all(source_content)
-        source_block_count = len(source_blocks)
-
-        result = pipeline.translate_file(filepath, project_root)
-        if result is not None:
+        # Retry loop
+        result = None
+        for attempt in range(1, args.retries + 1):
             try:
-                output_path.write_text(result.rstrip('\n') + '\n',
-                                       encoding='utf-8')
-                logger.info('Written: %s', output_path.relative_to(project_root))
-
-                # Validate
-                warns = validate_translation(output_path, source_block_count)
-                for w in warns:
-                    logger.warning('Validation %s: %s', rel, w)
-
-                batch_count += 1
+                result = pipeline.translate_file(filepath, project_root)
+                break
             except Exception as e:
-                logger.error('Error writing %s: %s', output_path, e)
-                pipeline.files_failed += 1
+                if attempt < args.retries:
+                    wait = args.delay + attempt * 3
+                    logger.warning('%s %s attempt %d/%d failed (%s), retrying in %.0fs...',
+                                   progress, rel, attempt, args.retries, str(e)[:80], wait)
+                    time.sleep(wait)
+                else:
+                    logger.error('%s FAILED %s: %s', progress, rel, e)
+                    return 'failed'
 
-        # Check batch limit
-        if args.batch_size > 0 and batch_count >= args.batch_size:
-            logger.info('Batch limit reached (%d files). Stopping.',
-                        args.batch_size)
-            break
+        if result is None:
+            return 'skipped'
 
-    # Save manifest
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(result.rstrip('\n') + '\n',
+                                   encoding='utf-8')
+            logger.info('%s Written: %s', progress, output_path.relative_to(project_root))
+
+            warns = validate_translation(output_path)
+            for w in warns:
+                logger.warning('Validation %s: %s', rel, w)
+        except Exception as e:
+            logger.error('Error writing %s: %s', output_path, e)
+            return 'failed'
+
+        with batch_lock:
+            batch_count += 1
+
+        # Delay between requests (per worker)
+        if args.delay > 0:
+            time.sleep(args.delay)
+
+        return 'ok'
+
+    if args.dry_run:
+        for filepath in files:
+            pipeline.translate_file(filepath, project_root)
+    elif args.workers > 1:
+        logger.info('Starting %d workers for %d files...', args.workers, total_files)
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = {executor.submit(translate_one, f): f for f in files}
+            for future in as_completed(futures):
+                status = future.result()
+                if status == 'failed':
+                    pipeline.files_failed += 1
+                if args.batch_size > 0:
+                    with batch_lock:
+                        if batch_count >= args.batch_size:
+                            logger.info('Batch limit reached (%d files). Stopping.',
+                                        args.batch_size)
+                            executor.shutdown(wait=False, cancel_futures=True)
+                            break
+    else:
+        # Single-threaded mode with progress
+        for idx, filepath in enumerate(files, 1):
+            progress = f'[{idx}/{total_files}]'
+            rel = filepath.relative_to(project_root)
+            output_path = get_output_path(filepath, project_root)
+
+            result = None
+            for attempt in range(1, args.retries + 1):
+                try:
+                    result = pipeline.translate_file(filepath, project_root)
+                    break
+                except Exception as e:
+                    if attempt < args.retries:
+                        wait = args.delay + attempt * 3
+                        logger.warning('%s %s attempt %d/%d failed (%s), retrying in %.0fs...',
+                                       progress, rel, attempt, args.retries, str(e)[:80], wait)
+                        time.sleep(wait)
+                    else:
+                        logger.error('%s FAILED %s: %s', progress, rel, e)
+                        pipeline.files_failed += 1
+                        result = None
+                        break
+
+            if result is not None:
+                try:
+                    output_path.parent.mkdir(parents=True, exist_ok=True)
+                    output_path.write_text(result.rstrip('\n') + '\n',
+                                           encoding='utf-8')
+                    logger.info('%s Written: %s', progress, output_path.relative_to(project_root))
+
+                    warns = validate_translation(output_path)
+                    for w in warns:
+                        logger.warning('Validation %s: %s', rel, w)
+
+                    batch_count += 1
+                except Exception as e:
+                    logger.error('Error writing %s: %s', output_path, e)
+                    pipeline.files_failed += 1
+
+                if args.delay > 0 and idx < total_files:
+                    time.sleep(args.delay)
+
+            if args.batch_size > 0 and batch_count >= args.batch_size:
+                logger.info('Batch limit reached (%d files). Stopping.',
+                            args.batch_size)
+                break
+
     manifest.save()
 
     # Summary
