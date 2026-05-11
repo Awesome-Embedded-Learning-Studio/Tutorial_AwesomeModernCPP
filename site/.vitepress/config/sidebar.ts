@@ -78,7 +78,7 @@ function scanDir(dir: string, urlPrefix: string, depth = 0): SidebarItem[] {
   return items
 }
 
-function volumeSidebar(relDir: string, urlPrefix: string): DefaultTheme.SidebarItem[] {
+export function volumeSidebar(relDir: string, urlPrefix: string): DefaultTheme.SidebarItem[] {
   const dir = join(DOCS_ROOT, relDir)
   const indexPath = join(dir, 'index.md')
   const items = scanDir(dir, urlPrefix)

@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev site",
-    "build": "vitepress build site",
+    "build": "npx tsx scripts/build.ts",
+    "build:single": "vitepress build site",
     "preview": "vitepress preview site"
   },
   "devDependencies": {
+    "@types/node": "^25.6.2",
     "markdown-it-mathjax3": "^4.3.2",
+    "tsx": "^4.21.0",
     "vitepress": "^1.6.4",
     "vue": "^3.5.34"
   },
@@ -17,5 +20,8 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
+  },
+  "dependencies": {
+    "minisearch": "^7.2.0"
   }
 }
