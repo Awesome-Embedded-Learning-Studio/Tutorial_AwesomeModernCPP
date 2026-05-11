@@ -1,3 +1,25 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 17
+description: Understand the optimization principles of the restrict qualifier, the
+  purposes of incomplete types and forward declarations, the opaque pointer pattern,
+  and the -> operator for operating on struct pointers
+difficulty: beginner
+order: 12
+platform: host
+prerequisites:
+- 多级指针与声明读法
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: restrict, incomplete types, and structure pointers
+---
 # restrict, Incomplete Types, and Struct Pointers
 
 In the previous chapter, we covered multi-level pointers and how to read declarations. Now we will look at three relatively independent but highly useful mechanisms: the ``restrict`` qualifier lets the compiler perform more aggressive optimizations, incomplete types and forward declarations allow us to design interfaces without exposing internal details, and the ``->`` operator is an everyday tool for working with struct pointers.

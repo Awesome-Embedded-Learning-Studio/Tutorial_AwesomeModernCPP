@@ -1,3 +1,16 @@
+---
+title: 'Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof
+  of Zero-Overhead Abstraction'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 12
+---
 # Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof of Zero-Overhead Abstraction
 
 > Picking up where we left off: four refactors are done, and the code is running. In this part, we round up the scattered C++ features for a consolidated review, followed by a final performance verification. None of these features are "flashy syntactic sugar" — they all have practical significance in embedded development.

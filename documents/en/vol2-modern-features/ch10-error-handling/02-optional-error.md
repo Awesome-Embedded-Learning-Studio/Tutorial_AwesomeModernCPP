@@ -1,3 +1,27 @@
+---
+title: optional is used for error handling
+description: Use std::optional to represent 'operations that may fail', replacing
+  error codes and exceptions.
+chapter: 10
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- optional
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+- 23
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 4: std::optional'
+related:
+- std::expected
+---
 # Using optional for Error Handling
 
 In the previous article, we traced the evolution of C++ error handling, and finally mentioned that `std::optional` can be used to express "operations that might fail." In this article, we take a deep dive into whether `optional` is actually good for error handling, how to use it, and when you shouldn't.

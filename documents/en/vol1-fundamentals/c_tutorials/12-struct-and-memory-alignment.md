@@ -1,3 +1,23 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Master struct definitions, memory alignment and padding rules, flexible
+  array members, and offsetof validation
+difficulty: beginner
+order: 16
+platform: host
+prerequisites:
+- restrict、不完整类型与结构体指针
+reading_time_minutes: 24
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: Structs and memory alignment
+---
 # Structs and Memory Alignment
 
 If you have been writing C up to this point and have only used basic types—`int`, `float`, `char`, and the like—it is probably because you have not yet encountered a scenario where you need to bundle related data together for passing around. Once you start writing more substantial programs, such as a sensor data packet, a configuration table, or a communication protocol frame, you will find that loose variables are simply unmanageable. The struct is C's answer to this: it lets us combine data of different types into a single whole, which we can then pass, store, and operate on as one value.

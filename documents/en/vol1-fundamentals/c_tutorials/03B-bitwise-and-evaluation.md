@@ -1,3 +1,23 @@
+---
+title: Bitwise operations and evaluation order
+description: Dive deep into the four major bitwise operations, shift caveats, operator
+  precedence traps, evaluation order and sequence points, and understand the essence
+  of undefined behavior.
+chapter: 1
+order: 5
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+difficulty: beginner
+platform: host
+reading_time_minutes: 15
+cpp_standard:
+- 11
+prerequisites:
+- 运算符基础：让数据动起来
+---
 # Bitwise Operations and Evaluation Order
 
 In the previous chapter, we covered common operators like arithmetic, relational, and logical ones. Now we tackle two tougher topics: bitwise operations and evaluation order. Bitwise operations are rarely used in general application-level programming, but if you plan to work with embedded systems or low-level system programming, they become your daily tools—configuring hardware registers, parsing bit fields in communication protocols, and implementing flag sets all rely on them. Evaluation order and sequence points are the keys to understanding "why some code produces different results on different compilers."

@@ -1,3 +1,24 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Learn how to evaluate the performance and size overhead of programs by
+  benchmarking and comparing the performance of C and C++ in embedded environments.
+difficulty: beginner
+order: 6
+platform: host
+prerequisites: []
+reading_time_minutes: 44
+related: []
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Performance and size evaluation
+---
 # Modern Embedded C++ Tutorial — Does C++ Always Bloat Your Code?
 
 When it comes to performance evaluation and program size, I believe most developers have a good feel for the former, but might find the latter slightly unfamiliar — especially those working on host applications. In an era where storage seems increasingly cheap, few people care about the release package size of desktop applications anymore. In embedded systems, however, where every byte of Flash is as precious as gold, we absolutely need to consider program size.

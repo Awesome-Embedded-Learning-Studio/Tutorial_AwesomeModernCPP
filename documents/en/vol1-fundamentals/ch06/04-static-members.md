@@ -1,3 +1,26 @@
+---
+title: static members
+description: Master class static variables and functions, and understand class-level
+  shared state and the basic concept of the singleton pattern.
+chapter: 6
+order: 4
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- 析构函数与资源管理
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # static Members
 
 So far, every member variable and member function we have encountered is bound to an "object" — each time we create a `Sensor`, we get another `pin` and another `cached_value`, each independent of the others. In real-world engineering, however, some data and operations naturally do not belong to any specific object, but rather to the **entire class**. For example: how many `UARTPort` instances have been created in the current system? Has the HAL (Hardware Abstraction Layer) been initialized? What is the default sampling frequency shared by all `Sensor` instances?

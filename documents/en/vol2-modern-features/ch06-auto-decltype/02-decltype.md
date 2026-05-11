@@ -1,3 +1,24 @@
+---
+title: decltype and return type deduction
+description: Deduction rules of decltype, decltype(auto), and trailing return types
+chapter: 6
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 6: auto 推导深入'
+related:
+- 类模板参数推导
+---
 # decltype and Return Type Deduction
 
 In the previous chapter, we covered the deduction rules of `auto` in detail—specifically, how it discards references and top-level `const` by default. But sometimes we need to preserve the exact type of an expression, including references and `const`. This is where `decltype` comes in.

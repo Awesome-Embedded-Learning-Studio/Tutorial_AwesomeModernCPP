@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Custom STL allocator
+difficulty: intermediate
+order: 6
+platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Custom allocator
+---
 # Modern C++ for Embedded Systems Tutorial — Custom Allocators
 
 In the embedded world, memory isn't an "infinite" set of drawers, but rather a suitcase that constantly complains about how much space you're taking up. Are the default `new` / `malloc` friendly to us? Sometimes they are (yes, they're convenient); but more often, they are latent performance bombs, sources of unpredictable latency, and breeding grounds for fragmentation. Therefore, writing a "custom allocator"—your own memory management strategy—becomes an essential rite of passage for engineers.

@@ -1,3 +1,29 @@
+---
+title: 'OnceCallback in Practice (Part 5): Chaining with then'
+description: Line-by-line breakdown of the ownership chain design of then() — from
+  pipeline thinking to void/non-void branch handling, understanding the most exquisite
+  ownership management in OnceCallback
+chapter: 1
+order: 5
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 9
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+related:
+- OnceCallback 实战（六）：测试与性能对比
+---
 # OnceCallback in Practice (Part 5): Chaining with then
 
 ## Introduction

@@ -1,3 +1,26 @@
+---
+title: std::string
+description: Master the construction, concatenation, searching, and substring operations
+  of std::string, and learn to handle strings safely and efficiently in C++.
+chapter: 5
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- std::array
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # std::string
 
 In the previous tutorial, we spent a lot of time wrestling with C-style strings—manually managing the ``\0`` terminator, carefully preventing buffer overflows, and treading on thin ice with ``strncpy`` and ``snprintf`` when manipulating every character array. If you are as exhausted by this as I am, you will breathe a huge sigh of relief at this next piece of news: the C++ standard library provides a true string type called ``std::string``. It automatically manages memory, handles length automatically, supports intuitive concatenation and comparison, and essentially fills in all the pitfalls we encountered in C.

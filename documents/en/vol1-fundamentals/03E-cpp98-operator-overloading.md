@@ -1,3 +1,30 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Making custom types work like built-in types—the design philosophy of
+  operator overloading, how to overload common operators, choosing between member
+  and non-member overloading, and which operators to avoid
+difficulty: beginner
+order: 3
+platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+reading_time_minutes: 13
+related:
+- C++98面向对象：继承与多态
+- C++98进阶：类型转换、动态内存与异常处理
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98 operator overloading
+---
 # C++98 Operator Overloading
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

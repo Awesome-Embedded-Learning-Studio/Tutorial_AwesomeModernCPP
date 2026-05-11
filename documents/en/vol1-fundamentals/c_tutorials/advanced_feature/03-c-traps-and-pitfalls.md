@@ -1,3 +1,28 @@
+---
+title: C Pitfalls and Common Mistakes
+description: Systematically categorize the most common syntax and semantic pitfalls
+  in C, understand why errors occur from the perspectives of compiler behavior and
+  language standards, and explore what improvements C++ has made.
+chapter: 1
+order: 19
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 基础
+difficulty: intermediate
+platform: host
+reading_time_minutes: 20
+cpp_standard:
+- 11
+- 14
+- 17
+prerequisites:
+- 数据类型基础：整数与内存
+- 运算符与表达式基础
+- 控制流：条件与循环
+---
 # C Traps and Common Mistakes
 
 Honestly, when I was learning C, I fell into more traps than I wrote correct code. The design philosophy of C is "trust the programmer"—the compiler won't stop you from doing something stupid; it will silently compile your stupidity into machine code and then watch you segfault. Many design decisions from the K&R era seem "archaic" by today's standards, but for backward compatibility, these traps have been passed down from generation to generation, becoming a required lesson for every C/C++ programmer.

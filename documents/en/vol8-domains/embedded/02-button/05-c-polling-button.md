@@ -1,3 +1,16 @@
+---
+title: 'Part 23: C Language Button Polling — My First Time Using a Button to Control
+  an LED'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 5
+---
 # Part 23: Polling a Button in C — Making a Button Control an LED for the First Time
 
 In the previous four articles, we covered everything from circuit principles to the HAL library's GPIO input APIs. Now it is time to bring all that knowledge together and write a program that actually runs.

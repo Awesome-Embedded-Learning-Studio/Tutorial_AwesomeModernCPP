@@ -1,3 +1,23 @@
+---
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Comparing CRTP and virtual function polymorphism
+difficulty: intermediate
+order: 4
+platform: stm32f1
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: CRTP vs runtime polymorphism
+---
 # Compile-Time Polymorphism vs Runtime Polymorphism
 
 When engineers talk about "polymorphism," the first thing that comes to mind is usually `virtual` and interfaces—what we call runtime polymorphism.

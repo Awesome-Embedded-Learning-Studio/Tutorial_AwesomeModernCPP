@@ -1,3 +1,26 @@
+---
+title: 'UDL in Practice: A Type-Safe Unit System'
+description: Implement a type-safe physical unit system using user-defined literals
+chapter: 11
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- 字面量
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 11: 用户自定义字面量基础'
+- 'Chapter 4: 强类型 typedef'
+related:
+- constexpr 基础
+---
 # UDL in Practice: A Type-Safe Unit System
 
 In the previous article, we covered the basic syntax of user-defined literals — `operator""` forms, standard library literals, and naming rules. Now, we will put that knowledge to use and build a truly practical **type-safe unit system**.

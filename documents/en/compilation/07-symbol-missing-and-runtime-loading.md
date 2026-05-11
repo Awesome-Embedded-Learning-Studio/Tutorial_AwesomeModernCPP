@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation Technology — Dynamic Library A4:
+  Link-time Missing Symbol Behavior and Runtime Dynamic Loading'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 7
+---
 # Deep Dive into C/C++ Compilation Technology — Dynamic Libraries A4: Link-Time Missing Symbol Behavior and Runtime Dynamic Loading
 
 This blog post is particularly important. Here, we plan to discuss how different platforms (Windows and GNU/Linux) behave when our executable or other dependent libraries have undefined symbols, as well as the crucial topic of runtime dynamic loading programming.

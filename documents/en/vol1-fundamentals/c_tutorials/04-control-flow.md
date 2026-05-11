@@ -1,3 +1,23 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Master C language conditional branches, loops, switch fall-through behavior,
+  and the state machine pattern, and understand the correct usage of break/continue/goto.
+difficulty: beginner
+order: 6
+platform: host
+prerequisites:
+- 位运算与求值顺序
+reading_time_minutes: 15
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 'Control flow: Teaching programs to choose and repeat'
+---
 # Control Flow: Teaching Programs to Choose and Repeat
 
 So far, every program we've written runs straight from the first line to the last. But real-world logic doesn't work that way—"if the temperature exceeds the threshold, turn on the fan," "keep reading sensor data until a stop command is received." Control flow statements do exactly this: they let programs choose different execution paths based on conditions (branching), or repeatedly execute a block of logic (looping).

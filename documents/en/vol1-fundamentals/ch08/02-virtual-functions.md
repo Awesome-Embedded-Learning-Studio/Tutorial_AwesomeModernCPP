@@ -1,3 +1,25 @@
+---
+title: Virtual functions and polymorphism
+description: Understand the virtual, override, and vtable mechanisms, and master the
+  implementation principles and correct usage of runtime polymorphism.
+chapter: 8
+order: 2
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 单继承
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Virtual Functions and Polymorphism
 
 In the previous chapter, we covered single inheritance—a derived class inherits members from a base class and can extend them with new behaviors. But inheritance alone only solves half the problem: if we use a base class pointer to operate on a derived class object, we always end up calling the base class version of the function, which severely limits the expressiveness of inheritance. Virtual functions are the key to completing the other half—they make it possible to "call a derived class implementation through a base class interface," and this is runtime polymorphism.

@@ -1,3 +1,16 @@
+---
+title: 'Understanding the Revolutionary Features of C++20 — Coroutine Support Part
+  2: Writing a Simple Coroutine Scheduler'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 10
+order: 9
+---
 # Understanding the Revolutionary Features of C++20 — Coroutine Support Part 2: Writing a Simple Coroutine Scheduler
 
 ## Preface

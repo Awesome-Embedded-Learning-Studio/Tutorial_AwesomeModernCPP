@@ -1,3 +1,15 @@
+---
+title: 'Part 8: Push-Pull, Open-Drain, and PC13 — The Hardware Secrets of LED Lighting'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 3
+---
 # Part 8: Push-Pull, Open-Drain, and PC13 — The Hardware Secrets Behind Lighting an LED
 
 > In the previous part, we dissected the four GPIO modes inside and out, and made the P-MOS and N-MOS in the internal structure diagram crystal clear. But we left a few key questions unanswered: what exactly is the difference between push-pull and open-drain output? Why choose push-pull for LED control? And what about the on-board LED on the Blue Pill board—why does it light up at a low level? The answers to these questions are hidden in the hardware circuitry. Without understanding them, even the most elegant code is just a house of cards. In this part, we'll dismantle these hardware secrets one by one.

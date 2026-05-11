@@ -1,3 +1,24 @@
+---
+title: 'C++20-23 New Attributes: Performance-Oriented Compiler Hints'
+description: New attributes such as [[likely]]/[[unlikely]], [[no_unique_address]],
+  [[assume]], etc.
+chapter: 7
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 20
+- 23
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 7: 标准属性详解'
+related:
+- constexpr 构造函数与字面类型
+---
 # C++20-23 New Attributes: Performance-Oriented Compiler Hints
 
 In the previous chapter, we looked at C++11-17 standard attributes, which primarily addressed "code correctness" — enforcing return value checks, suppressing warnings, and marking deprecated APIs. The new attributes in C++20 and C++23 shift focus: they are more concerned with performance, providing optimization hints to the compiler. `[[likely]]` and `[[unlikely]]` help the compiler with branch prediction optimization (ah, I remember first encountering this when reading GNU C feature code), `[[no_unique_address]]` saves redundant space in memory layouts, and `[[assume]]` lets the compiler make more aggressive optimizations based on assumptions.

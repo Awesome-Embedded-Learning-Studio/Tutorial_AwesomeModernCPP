@@ -1,3 +1,26 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Exploring the real trade-offs between performance and maintainability
+  in embedded development, and how to choose a language based on project constraints
+difficulty: beginner
+order: 5
+platform: host
+prerequisites: []
+reading_time_minutes: 5
+related: []
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: Language selection principles
+---
 # Language Selection Principles: The Real Trade-offs Between Performance and Maintainability
 
 Allow me a brief rant—I've noticed that many developers lack rational thinking when choosing tools, often evaluating them based on labels rather than actual performance. As a result, language selection is frequently framed as a moral judgment: "C is pure, close-to-the-hardware real engineering; C++/Rust are high-level, lazy productivity tools." This rhetoric is emotionally charged but utterly useless for engineering decisions. The real engineering question is never "which language is more advanced," but rather "given this machine, these timing constraints, this team, and this product roadmap, which approach lets us build things correctly and completely at a reasonable cost?" Performance and maintainability are not inherently opposing magical forces; they introduce different risks and overheads across different dimensions. Treating a language as a master key or a silver bullet, rather than as part of an engineering toolchain, is the biggest mistake we can make.

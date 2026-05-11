@@ -1,3 +1,28 @@
+---
+title: 'OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention'
+description: Deeply understand how std::invoke unifies the calling conventions of
+  function pointers, member function pointers, lambdas, and functors, as well as the
+  role of std::invoke_result_t in type deduction within OnceCallback
+chapter: 0
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- 函数对象
+- std_invoke
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 10
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+related:
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（五）：then 链式组合
+---
 # OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention
 
 ## Introduction

@@ -1,3 +1,16 @@
+---
+title: 'Part 39: std::expected Error Handling — A Better Choice Than Exceptions in
+  Embedded Systems'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 9
+---
 # Part 39: std::expected Error Handling — A Better Choice Than Exceptions in Embedded
 
 > Phase five begins with error handling. Embedded projects disable exceptions, and bare error codes are easily ignored. C++23's `std::expected` fills this gap perfectly.

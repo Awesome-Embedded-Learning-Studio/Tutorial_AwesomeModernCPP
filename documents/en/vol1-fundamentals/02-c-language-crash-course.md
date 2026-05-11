@@ -1,3 +1,24 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Quick review of C language basic syntax, including core concepts such
+  as data types, operators, control flow, pointers, arrays, and structures.
+difficulty: beginner
+order: 2
+platform: host
+prerequisites: []
+reading_time_minutes: 40
+related: []
+tags:
+- cpp-modern
+- host
+- intermediate
+title: C Language Quick Review
+---
 # A Quick C Language Review
 
 > The full repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

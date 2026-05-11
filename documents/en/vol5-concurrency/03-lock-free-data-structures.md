@@ -1,3 +1,23 @@
+---
+chapter: 10
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Lock-free data structure design
+difficulty: advanced
+order: 3
+platform: host
+prerequisites:
+- 'Chapter 9: 函数式特性'
+reading_time_minutes: 20
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Lock-free data structure design
+---
 # Modern C++ for Embedded Systems — Lock-Free Data Structure Design
 
 ## Introduction

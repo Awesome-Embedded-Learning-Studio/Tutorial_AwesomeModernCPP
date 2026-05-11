@@ -1,3 +1,16 @@
+---
+title: 'An In-Depth Introduction to the AVX Instruction Set Family: Domains, Significance,
+  and Basic Usage and Examples of AVX / AVX2'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 2
+order: 3
+---
 # An In-Depth Look at the AVX Instruction Set Family: Domains, Significance, and Basic Usage & Examples of AVX / AVX2
 
 ## Preface

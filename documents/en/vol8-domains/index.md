@@ -1,3 +1,13 @@
+---
+title: 'Volume 8: Domain Applications'
+description: Embedded development, network programming, GUI graphics, data storage,
+  algorithms and data structures
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 8: Domain Applications
 
 > Status: Planned

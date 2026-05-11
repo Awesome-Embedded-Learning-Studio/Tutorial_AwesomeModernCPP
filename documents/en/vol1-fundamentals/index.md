@@ -1,3 +1,12 @@
+---
+title: 'Volume 1: Introduction to C++ Basics'
+description: Systematically learn C++ basics from scratch
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 1: C++ Fundamentals
 
 This volume covers C++ fundamentals, from environment setup to object-oriented programming, templates, exception handling, the STL, and the memory model.

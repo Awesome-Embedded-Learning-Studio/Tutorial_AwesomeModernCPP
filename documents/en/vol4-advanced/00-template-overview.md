@@ -1,3 +1,24 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Understanding the Core Concepts and Learning Path of C++ Templates
+difficulty: beginner
+order: 0
+platform: host
+prerequisites:
+- 'Chapter 2: 零开销抽象'
+- 'Chapter 11: 类型推导基础'
+reading_time_minutes: 10
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Template Beginner Overview
+---
 # Modern C++ for Embedded Systems Tutorial — Template Basics Overview
 
 ## Introduction: Why Do We Need Templates?

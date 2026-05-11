@@ -1,3 +1,27 @@
+---
+title: Cache Mechanism and Memory Hierarchy
+description: Starting from the memory hierarchy, break down the working mechanisms
+  of cache lines, mapping policies, and the MESI coherence protocol, and culminate
+  in cache-friendly programming practices and C++ cache line alignment tools.
+chapter: 1
+order: 102
+tags:
+- host
+- cpp-modern
+- intermediate
+- 优化
+- 内存管理
+difficulty: intermediate
+platform: host
+reading_time_minutes: 25
+cpp_standard:
+- 11
+- 17
+prerequisites:
+- 数据类型基础：整数与内存
+- 指针与数组
+- 结构体与内存布局
+---
 # Cache Mechanisms and the Memory Hierarchy
 
 If your program is running slow and you have already pushed the time complexity to its theoretical limit at the algorithm level, the bottleneck probably is not the CPU failing to keep up with the math. Instead, it is likely sitting idle waiting for data to arrive from memory. The gap between modern CPU compute speed and main memory access speed spans several orders of magnitude. Without building a few bridges across this chasm, even the most powerful execution units can only wait helplessly. These "bridges" are the star of today's discussion: Cache.

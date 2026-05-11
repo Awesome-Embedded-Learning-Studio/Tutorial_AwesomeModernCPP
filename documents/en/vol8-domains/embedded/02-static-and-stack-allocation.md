@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Use static storage and stack allocation
+difficulty: intermediate
+order: 2
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Static storage and stack allocation strategies
+---
 # Embedded C++ Tutorial — Static Storage and Stack Allocation Strategies
 
 > I caught a cold recently and took a long break to rest...

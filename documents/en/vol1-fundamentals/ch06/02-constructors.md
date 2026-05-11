@@ -1,3 +1,26 @@
+---
+title: Constructor
+description: Master the complete usage of default constructors, parameterized constructors,
+  copy constructors, initializer lists, and delegating constructors
+chapter: 6
+order: 2
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 类的定义
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Constructors
 
 In the previous chapter, we learned how to define a class—writing member variables, writing member functions, and using `public` and `private` to control access. But we've been sidestepping one question: when an object is created, what is actually inside its member variables? The answer is—if you do nothing, the member variables of a local object hold **garbage values!** They are random leftover data from the previous use of that memory.

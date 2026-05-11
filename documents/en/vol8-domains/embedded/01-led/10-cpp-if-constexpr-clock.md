@@ -1,3 +1,16 @@
+---
+title: 'Part 15: The Third Refactoring — Using if constexpr to Automatically Select
+  the Correct Clock Enable at Compile Time'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 10
+---
 # Part 15: Third Refactoring — Let `if constexpr` Automatically Select the Right Clock Enable at Compile Time
 
 > Continuing from the previous article: we have the GPIO template skeleton in place, but clock enable remains unsolved. The core issue is that ``__HAL_RCC_GPIOA_CLK_ENABLE()`` and ``__HAL_RCC_GPIOC_CLK_ENABLE()`` are different macros that expand to write to different register bits. We cannot use a single "generic" runtime function to choose between them. The solution is ``if constexpr``—a compile-time conditional branch introduced in C++17.

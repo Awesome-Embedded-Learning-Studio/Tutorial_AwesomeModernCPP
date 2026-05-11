@@ -1,3 +1,30 @@
+---
+title: 'The Evolution of Error Handling: From Error Codes to Type Safety'
+description: Error codes, exceptions, optional, expected — the evolution and selection
+  of error handling approaches
+chapter: 10
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 4: std::optional'
+- 'Chapter 4: std::variant'
+related:
+- optional 用于错误处理
+- std::expected
+---
 # The Evolution of Error Handling: From Error Codes to Type Safety
 
 In my years of writing C++, one thing has stood out above all else: **error handling is always the hardest part to get right in a project**. Not because it's complex—precisely because it looks too simple. Many people assume ``if (ret != 0)`` or ``try { ... } catch (...)`` is good enough, but once you hit the maintenance phase, you discover unhandled errors everywhere, swallowed exceptions, and function calls failing for completely unknown reasons.

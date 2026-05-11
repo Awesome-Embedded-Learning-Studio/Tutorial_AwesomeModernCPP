@@ -1,3 +1,24 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-Depth Understanding of C++ Function Template Deduction Rules and Practical
+  Techniques
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+reading_time_minutes: 24
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Detailed Explanation of Function Templates
+---
 # Modern C++ for Embedded Systems Tutorial—A Deep Dive into Function Templates
 
 Function templates are the starting point of C++ generic programming, allowing us to write a single piece of code that handles multiple types. But do you truly understand how the compiler deduces template parameters? Why does deduction sometimes fail? What is the difference between `auto` and template argument deduction?

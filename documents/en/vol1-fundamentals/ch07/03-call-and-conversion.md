@@ -1,3 +1,25 @@
+---
+title: Function calls and type conversions
+description: Master the overloading of operator() and type conversion operators, and
+  learn to implement function objects and safe implicit conversions.
+chapter: 7
+order: 3
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 流与下标运算符
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Function Calls and Type Conversions
 
 In previous chapters, we enabled custom types to support arithmetic operations, subscript access, and stream I/O—making objects behave like values, containers, and printable entities. But operator overloading is capable of much more. In this chapter, we tackle two fascinating scenarios: making objects behave like functions, and allowing objects to implicitly or explicitly "transform" into another type.

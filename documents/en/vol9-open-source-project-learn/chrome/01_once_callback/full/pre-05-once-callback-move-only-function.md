@@ -1,3 +1,28 @@
+---
+title: 'OnceCallback Prerequisites (Part 5): std::move_only_function (C++23)'
+description: Deep dive into C++23's std::move_only_function—the core storage type
+  of OnceCallback, from the evolution motivation of std::function to SBO behavior,
+  and why OnceCallback requires independent three-state management
+chapter: 0
+order: 5
+tags:
+- host
+- cpp-modern
+- intermediate
+- 函数对象
+- 智能指针
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 10
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（六）：测试与性能对比
+---
 # Prerequisites for OnceCallback (Part 5): std::move_only_function (C++23)
 
 ## Introduction

@@ -1,3 +1,29 @@
+---
+title: std::function, std::invoke, and callable objects
+description: Understanding type erasure, function call mechanisms, and zero-overhead
+  callback design
+chapter: 3
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- std_function
+- std_invoke
+- 函数对象
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+related:
+- 函数式编程模式
+---
 # std::function, std::invoke, and Callable Objects
 
 ## Introduction

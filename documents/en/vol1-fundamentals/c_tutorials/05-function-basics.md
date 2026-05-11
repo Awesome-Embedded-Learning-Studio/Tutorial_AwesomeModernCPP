@@ -1,3 +1,24 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Understand the declaration, definition, and calling mechanisms of C functions,
+  the essence of pass-by-value, pointer parameters, return value strategies, and recursion
+  principles, laying a solid foundation for C++ pass-by-reference and function overloading.
+difficulty: beginner
+order: 7
+platform: host
+prerequisites:
+- 指针与数组、const 和空指针
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: Function basics and parameter passing
+---
 # Function Basics and Parameter Passing
 
 So far, all the code we've written has been stuffed into the `main` function. But real-world programs don't work like this — a project can easily reach tens of thousands of lines of code, and cramming everything into a single function makes it practically unmaintainable. Functions are the fundamental unit of modular programming in C: we encapsulate a piece of logic, give it a name, and call it whenever we need it.

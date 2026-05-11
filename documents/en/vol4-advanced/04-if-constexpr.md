@@ -1,3 +1,21 @@
+---
+chapter: 4
+cpp_standard:
+- 17
+- 20
+description: Detailed Explanation of if constexpr Applications
+difficulty: intermediate
+order: 4
+platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+title: compile-time condition with if constexpr
+---
 # `if constexpr`: Making Compile-Time Branches Read Like Comments — A Practical Engineering Guide
 
 I have always believed that between modern C++ and classical C++98, most template programming techniques are written to combine for specific purposes, and this complexity is not always what we want. For example, in the template programming we will study later, many template-dependent `enable_if`, specializations, and SFINAE tricks are essentially just to achieve specific compile-time matching. Fortunately, we now have `if constexpr` to simplify the vast majority of these scenarios.

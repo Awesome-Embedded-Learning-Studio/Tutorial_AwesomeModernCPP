@@ -1,3 +1,16 @@
+---
+title: 'Modern C++ in Practice — Writing a File Copier from Scratch (Part 1): Requirements
+  Analysis and Basic Framework'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 1
+order: 4
+---
 # Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements Analysis and Basic Framework
 
 ## A Few Words to Start

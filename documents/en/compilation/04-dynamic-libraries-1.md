@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Technology 4: Dynamic
+  Libraries A1: Basic Discussion on `-fPIC`'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 4
+---
 # Deep Dive into C/C++ Compilation and Linking Part 4: Shared Libraries A1: Basic Discussion on `-fPIC`
 
 ## Preface

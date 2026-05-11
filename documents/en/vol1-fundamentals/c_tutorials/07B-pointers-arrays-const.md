@@ -1,3 +1,23 @@
+---
+title: Pointers and arrays, const, and null pointers
+description: Deeply understanding the mechanism of array name decay to pointers, the
+  four combinations of const and pointers, and the prevention of NULL pointers and
+  wild pointers lays the foundation for learning C++ references and smart pointers.
+chapter: 1
+order: 10
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+difficulty: beginner
+platform: host
+reading_time_minutes: 15
+cpp_standard:
+- 11
+prerequisites:
+- 指针入门：地址的世界
+---
 # Pointers, Arrays, const, and Null Pointers
 
 In the previous chapter, we mastered the basics of pointers—declaration, initialization, taking addresses, dereferencing, and pointer arithmetic. Now let's tackle a few tricky but crucial applications: what exactly is the relationship between arrays and pointers, how many meanings can `const` and pointers combine to create, and why NULL pointers and wild pointers are so dangerous.

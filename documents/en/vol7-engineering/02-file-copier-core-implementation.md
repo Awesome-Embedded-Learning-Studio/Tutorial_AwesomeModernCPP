@@ -1,3 +1,16 @@
+---
+title: 'Modern C++ Engineering Practice — Writing a File Copier from Scratch (Part
+  2): Core Implementation and Practical Testing'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 1
+order: 5
+---
 # Modern C++ Engineering Practice — Building a File Copier from Scratch (Part 2): Core Implementation and Practical Testing
 
 ## Picking Up Where We Left Off

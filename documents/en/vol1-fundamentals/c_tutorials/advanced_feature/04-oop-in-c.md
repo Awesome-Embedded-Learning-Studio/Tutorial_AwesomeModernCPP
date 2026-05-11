@@ -1,3 +1,26 @@
+---
+title: Implementing object-oriented programming in C
+description: Using structs + function pointers to simulate classes, encapsulation,
+  inheritance, and polymorphism, to understand the underlying implementation mechanism
+  of OOP.
+chapter: 1
+order: 104
+tags:
+- host
+- cpp-modern
+- advanced
+- 实战
+- 基础
+difficulty: advanced
+platform: host
+reading_time_minutes: 25
+cpp_standard:
+- 11
+prerequisites:
+- 指针进阶：多级指针、指针与 const
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+---
 # Implementing OOP in C
 
 Honestly, I debated for a long time whether to write this topic. After all, it's 2026—who's still hand-rolling OOP in C? But then I thought about it—embedded development, the Linux kernel, GTK/GLib, the Lua source code: which of these heavyweight C projects doesn't use structs + function pointers for object-oriented programming? More importantly, if you don't understand how OOP is pieced together at the C level, your understanding of virtual function tables, vptrs, and dynamic binding in C++ will always be built on sand—you'll know the syntax, but you won't know what's happening underneath.

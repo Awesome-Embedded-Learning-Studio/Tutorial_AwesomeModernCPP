@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Techniques 9: Dynamic
+  Library Details (Final)'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 9
+---
 # Deep Dive into C/C++ Compilation and Linking Part 9: Shared Library Details (Finale)
 
 ## Preface

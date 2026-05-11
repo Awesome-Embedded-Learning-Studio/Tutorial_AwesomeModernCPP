@@ -1,3 +1,15 @@
+---
+title: Quickly develop general C++ host computer programs on WSL
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 1
+order: 6
+---
 # Quickly Developing General C++ Host Applications on WSL
 
 ## Preface

@@ -1,3 +1,30 @@
+---
+title: 'Error Handling Patterns Summary: Selection Guide and Best Practices'
+description: Comprehensive comparison of all error handling solutions, providing a
+  scenario-based selection guide.
+chapter: 10
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 10: optional 用于错误处理'
+- 'Chapter 10: std::expected'
+related:
+- RAII 深入理解
+---
 # Error Handling Patterns Summary: A Selection Guide and Best Practices
 
 Building on the previous three articles, we discussed the pros and cons of error codes, exceptions, `optional`, and `variant`. This article serves as the conclusion to our error handling topic—we will put all approaches together for a comprehensive comparison, provide a practical selection guide, and share best practices learned from real-world pitfalls.

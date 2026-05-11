@@ -1,3 +1,16 @@
+---
+title: 'Part 43: Common Pitfalls and Practical Exercises — Playing with UART in Creative
+  Ways'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 13
+---
 # Part 43: Common Pitfalls and Hands-On Exercises — Mastering UART
 
 > The final article in the UART tutorial. Pitfall avoidance + three exercises to help you truly make the knowledge your own.

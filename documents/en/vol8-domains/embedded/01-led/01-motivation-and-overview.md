@@ -1,3 +1,16 @@
+---
+title: 'Part 6: Starting with Lighting Up the First LED — Why We Use Modern C++ to
+  Write STM32'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 1
+---
 # Part 6: Starting with the First LED — Why We Use Modern C++ for STM32
 
 > For everyone who just finished setting up their toolchain and can't wait to make the board do something.

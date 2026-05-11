@@ -1,3 +1,23 @@
+---
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Exploring C++ Object Memory Layout
+difficulty: intermediate
+order: 5
+platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Object size and plain types
+---
 # Modern C++ for Embedded Systems Tutorial — Object Size, Memory Alignment, Type "Trivial/Standard-Layout", and Aggregate Initialization
 
 When writing low-level code, developing embedded systems, or interfacing with C APIs, we often get tripped up by a string of seemingly obscure terms: `sizeof`, `alignof`, `alignas`, `trivial`, `standard-layout`, `trivially_copyable`, aggregate…… These concepts might seem fragmented, but they actually form an interconnected map: they dictate an object's object representation, copy semantics, whether we can safely use `memcpy`, whether it is ABI-compatible with C structs, and initialization flexibility.

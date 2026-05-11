@@ -1,3 +1,16 @@
+---
+title: 'Part 35: printf Redirection and Blocking Reception — Making the Chip Speak
+  with printf, and Also Learn to Listen'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 17
+order: 5
+---
 # Part 35: printf Retargeting and Blocking Receive — Making the Chip Speak with printf, and Learning to Listen
 
 > In the previous part, the chip spoke its first words. In this part, we do two things: make `printf()` output directly to the serial port, and then try blocking receive — after which you will understand exactly why blocking receive does not work.

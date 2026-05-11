@@ -1,3 +1,28 @@
+---
+title: 'In-Depth Understanding of RAII: The Cornerstone of Resource Management'
+description: From underlying mechanisms to practical applications, master the RAII
+  principle comprehensively
+chapter: 1
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII
+- 内存管理
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+related:
+- unique_ptr 详解
+- scope_guard 与 defer
+---
 # A Deep Dive into RAII: The Cornerstone of Resource Management
 
 When I first learned C++, I had absolutely no concept of "resource management"—I would `new` an object and forget to `delete` it, open a file and forget to `fclose` it, lock a mutex and forget to `unlock` it. As my projects grew, these "forgot to release" bugs started multiplying like cockroaches: spotting one meant there were ten more hiding in the corners (and yes, finding them usually meant I also had to write a post-mortem report, cry). It wasn't until I seriously read Bjarne Stroustrup's book that I realized C++ had long since prepared an elegant solution for us: RAII.

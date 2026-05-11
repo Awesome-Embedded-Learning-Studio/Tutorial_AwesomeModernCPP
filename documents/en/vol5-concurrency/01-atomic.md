@@ -1,3 +1,23 @@
+---
+title: std::atomic atomic operations
+description: Detailed Explanation of C++ Atomic Operations
+chapter: 10
+order: 1
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: advanced
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 9: 函数式特性'
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # Modern C++ for Embedded Systems—Atomic Operations (std::atomic)
 
 ## Introduction

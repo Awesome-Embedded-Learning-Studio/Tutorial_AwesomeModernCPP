@@ -1,3 +1,25 @@
+---
+title: C Strings and Buffer Safety
+description: Understand the \0-terminated memory model of C strings, master core string.h
+  functions and safe formatting with snprintf, and identify and prevent buffer overflow
+  vulnerabilities.
+chapter: 1
+order: 15
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+platform: host
+reading_time_minutes: 20
+cpp_standard:
+- 11
+- 17
+prerequisites:
+- 指针与数组、const 和空指针
+---
 # C Strings and Buffer Safety
 
 C has no real "string type"—every developer transitioning from C to C++ makes this observation. In the C world, a string is simply a `char` array terminated by `\0`, and all operations are built on this convention. This convention is simple enough to be elegant, yet fragile enough to be maddening—if you forget that `\0`, the entire program's behavior is undefined; if you copy a 100-byte string into a 50-byte buffer, you trample the memory right after it.

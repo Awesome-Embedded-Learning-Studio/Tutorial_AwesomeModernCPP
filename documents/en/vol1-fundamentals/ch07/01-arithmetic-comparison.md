@@ -1,3 +1,25 @@
+---
+title: Arithmetic and comparison operators
+description: Master the overloading methods for arithmetic and comparison operators
+  to implement a complete Fraction class.
+chapter: 7
+order: 1
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- this 指针与链式调用
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Arithmetic and Comparison Operators
 
 So far, we could only manipulate our custom types through member functions — to add two objects, we had to write `a.add(b)`; to check equality, we had to write `a.equals(b)`. Frankly, this style is fine for business logic, but once we deal with types that have "natural arithmetic semantics" like mathematical operations, physical quantities, or dates, a screen full of `.add()` and `.compare()` becomes really painful to read. We want our code to read like the math itself: `a + b`, `x == y`, `p1 < p2`.

@@ -1,3 +1,22 @@
+---
+title: 'if/switch initializers: narrow variable scope'
+description: C++17 if and switch initializers make variable lifetimes just right
+chapter: 5
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 12
+prerequisites:
+- 'Chapter 5: 结构化绑定'
+related:
+- RAII 深入理解
+---
 # if/switch Initializers: Narrowing Variable Scope
 
 When reviewing code, we often see this pattern: a variable is declared, used for a condition check, and then remains visible for the rest of the function—even if it is only meaningful inside a specific branch. This issue of "variable leakage into outer scopes" has existed in C++ for a long time, but C++17 finally gave us an elegant solution: init statements for if and switch.

@@ -1,3 +1,16 @@
+---
+title: 'Part 13: First Refactoring — Replacing Macros with enum class, the Start of
+  Type Safety'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 8
+---
 # Part 13: The First Refactor — Replacing Macros with enum class, the Start of Type Safety
 
 > Following up on the previous part: the C macro approach works but has issues — lack of type safety, no enforced association between ports and clocks, and code that cannot be reused. Now we take the first step in our C++ refactor: replacing macro definitions with `enum class`.

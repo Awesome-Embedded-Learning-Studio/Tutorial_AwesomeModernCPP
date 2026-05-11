@@ -1,3 +1,21 @@
+---
+title: std::move
+description: Convert an lvalue to an rvalue reference, triggering move semantics to
+  achieve efficient resource transfer.
+chapter: 99
+order: 8
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # std::move (C++11)
 
 ## In a Nutshell

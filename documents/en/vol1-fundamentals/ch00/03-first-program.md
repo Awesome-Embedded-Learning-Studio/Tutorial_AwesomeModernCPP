@@ -1,3 +1,27 @@
+---
+title: First C++ Program
+description: Write, compile, and run your first C++ program, and understand the main
+  function, input/output, and the compilation process.
+chapter: 0
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- Linux 环境搭建
+- Windows 环境搭建
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Your First C++ Program
 
 Now that our environment is set up and the compiler is installed, it's time to get down to business—writing our first line of C++ code.

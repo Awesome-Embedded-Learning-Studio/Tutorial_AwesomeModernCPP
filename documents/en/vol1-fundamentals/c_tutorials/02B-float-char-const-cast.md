@@ -1,3 +1,24 @@
+---
+title: Floating-point, character, const, and type conversion
+description: Master C language floating-point types and precision issues, character
+  storage and encoding, the const qualifier, and implicit type conversion rules, and
+  understand the motivation behind C++ type-safe design.
+chapter: 1
+order: 3
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+platform: host
+reading_time_minutes: 15
+cpp_standard:
+- 11
+prerequisites:
+- 数据类型基础：整数与内存
+---
 # Floating Point, Characters, const, and Type Conversions
 
 In the previous chapter, we took the integer family apart from the inside out—integer ranks, signedness, fixed-width types, and `sizeof`. But the programming world isn't limited to integers: product prices need decimals, on-screen text needs characters, variables sometimes need protection from accidental modification, and when different types are mixed in an expression, we need to know exactly how the compiler handles it. These are the topics we'll tackle one by one today.

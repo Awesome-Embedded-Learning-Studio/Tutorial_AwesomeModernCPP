@@ -1,3 +1,21 @@
+---
+title: enum class
+description: Scoped enumerations, preventing enumeration values from polluting the
+  outer namespace and prohibiting implicit type conversions.
+chapter: 99
+order: 5
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # enum class (C++11)
 
 ## In a Nutshell

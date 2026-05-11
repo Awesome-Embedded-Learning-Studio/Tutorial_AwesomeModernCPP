@@ -1,3 +1,25 @@
+---
+title: Single inheritance
+description: Master the syntax of single inheritance, the order of construction and
+  destruction, and understand the object slicing problem and its solutions.
+chapter: 8
+order: 1
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 函数调用与类型转换
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Single Inheritance
 
 So far, all the classes we have written are "standalone" — a class encapsulates its own data, provides its own interface, and has no familial relationship with any other class. But real-world entities do not exist in isolation: a student (Student) is a person (Person), a car (Car) is a type of vehicle (Vehicle). This "is-a" relationship is the core semantic that inheritance aims to express.

@@ -1,3 +1,12 @@
+---
+title: Network programming
+description: Socket, HTTP, asynchronous I/O, WebSocket, RPC
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Network Programming
 
 > Status: Planned

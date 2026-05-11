@@ -1,3 +1,16 @@
+---
+title: 'Part 14: The Second Refactoring — Templates Take the Stage, Binding Ports
+  and Pins at Compile Time'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 9
+---
 # Part 14: The Second Refactoring — Templates Take the Stage, Binding Ports and Pins at Compile Time
 
 > Continuing from the previous article: `enum class` solved the type safety issue, but the port and pin were still runtime parameters. This article introduces the core weapon of C++ templates—non-type template parameters (NTTPs)—to turn ports and pins into compile-time constants.

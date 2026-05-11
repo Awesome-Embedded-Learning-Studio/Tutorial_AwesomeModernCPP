@@ -1,3 +1,23 @@
+---
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Detailed explanation of member initializer lists
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 5
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Initialization list
+---
 # Constructor Optimization: Initialization Lists vs. Member Assignment
 
 In embedded C++ projects, we easily focus on the "visible" areas: interrupts, DMA (Direct Memory Access), timing, cache hit rates, Flash/RAM usage... But for code that "seems to only run once" like constructors, we tend to let our guard down.

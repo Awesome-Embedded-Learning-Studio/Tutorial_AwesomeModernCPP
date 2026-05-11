@@ -1,3 +1,32 @@
+---
+title: 'OnceCallback in Practice (Part 2): Building the Core Skeleton'
+description: Building the OnceCallback Class Skeleton in 5 Steps from Scratch — Template
+  Partial Specialization, Data Members, Constructor Constraints, run() Consumption
+  Semantics, Query Interface
+chapter: 1
+order: 2
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 13
+prerequisites:
+- OnceCallback 实战（一）：动机与接口设计
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+related:
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
+---
 # OnceCallback in Practice (Part 2): Building the Core Skeleton
 
 ## Introduction

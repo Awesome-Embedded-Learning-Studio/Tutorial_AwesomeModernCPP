@@ -1,3 +1,15 @@
+---
+title: 'In-Depth Understanding of C/C++ Compilation and Linking Technologies: Introduction'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 1
+---
 # Deep Dive into C/C++ Compilation and Linking: Introduction
 
 ## Preface

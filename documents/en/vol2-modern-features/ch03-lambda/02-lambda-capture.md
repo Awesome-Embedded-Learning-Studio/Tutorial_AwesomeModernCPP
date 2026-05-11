@@ -1,3 +1,27 @@
+---
+title: Deep Dive into Lambda Capture Mechanisms
+description: Semantics and pitfalls of value capture, reference capture, and init
+  capture
+chapter: 3
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+related:
+- 泛型 Lambda 与模板 Lambda
+---
 # A Deep Dive into Lambda Capture Mechanisms
 
 ## Introduction

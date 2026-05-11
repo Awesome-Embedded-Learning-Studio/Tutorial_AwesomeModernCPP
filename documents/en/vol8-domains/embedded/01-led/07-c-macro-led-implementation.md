@@ -1,3 +1,15 @@
+---
+title: 'Part 12: LED Driver in the C Macro Era — Works but Not Elegant'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 7
+---
 # Part 12: LED Drivers in the C Macro Era — It Works, But It Isn't Elegant
 
 > For everyone who thinks "C macro wrappers are good enough."

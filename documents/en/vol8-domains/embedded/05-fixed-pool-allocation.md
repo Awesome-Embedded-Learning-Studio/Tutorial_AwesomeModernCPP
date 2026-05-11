@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Fixed-size memory pool allocator
+difficulty: intermediate
+order: 5
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Fixed pool allocation
+---
 # Embedded C++ Tutorial: Slab / Arena Implementation and Comparison
 
 We now continue our exploration of memory allocation using fixed pools, slabs, and arenas—specifically **Slab** and **Arena (Bump / Region)**. While some of these concepts belong to the operating system level, understanding them is always beneficial!

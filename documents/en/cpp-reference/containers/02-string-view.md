@@ -1,3 +1,19 @@
+---
+title: std::string_view
+description: Lightweight non-owning string view, zero-copy reference to a contiguous
+  character sequence
+chapter: 99
+order: 2
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 17
+- 20
+- 23
+---
 # std::string_view (C++17)
 
 ## In a Nutshell

@@ -1,3 +1,27 @@
+---
+title: Parameter passing method
+description: Understand the differences between pass-by-value, pass-by-reference,
+  and pass-by-const-reference, and learn to choose the correct parameter passing method
+  for different scenarios.
+chapter: 3
+order: 2
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 函数基础
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Parameter Passing
 
 How data "enters" a function and how the processed result "comes out" directly determine a program's correctness and performance. You might think "it's just passing a parameter, what's there to discuss?" but it's precisely these seemingly trivial details that create a massive number of bugs and performance issues in real-world projects—copying a large object that shouldn't be copied causes performance to plummet, or accidentally modifying the caller's data through a reference leads to hard-to-trace logic errors.

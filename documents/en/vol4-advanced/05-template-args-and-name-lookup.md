@@ -1,3 +1,25 @@
+---
+title: Template parameter dependent name lookup
+description: In-depth Understanding of Two-Phase Lookup and Dependent Name Handling
+  in C++ Templates
+chapter: 12
+order: 5
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+reading_time_minutes: 40
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # Modern C++ for Embedded Systems Tutorial — Template Argument Dependence and Name Lookup
 
 Have you ever run into this puzzle: a piece of template code that looks perfectly correct, yet the compiler complains that it cannot find a certain type? Or when calling a function inside a template, the function clearly exists, but the compiler insists it is undefined?

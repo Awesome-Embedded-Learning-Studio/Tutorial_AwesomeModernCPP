@@ -1,3 +1,12 @@
+---
+title: 'Volume 3: In-Depth Standard Library'
+description: In-depth explanation of STL containers, iterators, and algorithms
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 3: Deep Dive into the Standard Library
 
 > Status: Partial content available (pending rewrite)

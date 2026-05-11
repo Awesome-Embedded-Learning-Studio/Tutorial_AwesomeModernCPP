@@ -1,3 +1,26 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-depth understanding of the Curiously Recurring Template Pattern, static
+  polymorphism, and the Mixin pattern
+difficulty: intermediate
+order: 8
+platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+- 'Chapter 2: CRTP vs 运行时多态'
+reading_time_minutes: 49
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 'Templates and Inheritance: CRTP and Static Polymorphism'
+---
 # Modern C++ for Embedded Systems Tutorial—Templates and Inheritance: CRTP and Static Polymorphism
 
 ## Introduction: When Templates Meet Inheritance

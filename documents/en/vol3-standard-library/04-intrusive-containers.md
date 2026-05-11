@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Intrusive container design
+difficulty: intermediate
+order: 4
+platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Intrusive container design
+---
 # Modern C++ for Embedded Systems Tutorial — Intrusive Container Design
 
 Do you remember what standard containers do to your data? They copy pointers, allocate nodes, maintain extra memory layouts, and at some point quietly devour your cache locality. Intrusive containers are more straightforward: data objects reach out their own hands to act as list nodes — who's going to pay for extra memory and indirection? Not me.

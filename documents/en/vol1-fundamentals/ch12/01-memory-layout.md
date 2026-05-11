@@ -1,3 +1,25 @@
+---
+title: Memory layout
+description: Understand the memory model of the stack, heap, static area, and code
+  segment, and learn to analyze the storage location and lifetime of variables.
+chapter: 12
+order: 1
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- STL 常用模式
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Memory Layout
 
 We previously spent a lot of time discussing language-level features like types, containers, and templates, but we haven't directly answered a fundamental question: when you write `int x = 42;`, where does this `42` actually live? Where is it located in memory? When is it created, and when is it destroyed? These might seem like "low-level details," but honestly, if you don't know which memory region your data resides in, debugging certain bizarre issues will feel like the blind men and the elephant—the address from a segmentation fault tells you the stack blew up, but you're left completely clueless.

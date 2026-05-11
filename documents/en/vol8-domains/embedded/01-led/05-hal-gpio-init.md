@@ -1,3 +1,15 @@
+---
+title: 'Part 10: HAL_GPIO_Init — The ceremony of telling the chip the pin configuration'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 5
+---
 # Part 10: HAL_GPIO_Init — The Ritual of Telling the Chip How to Configure Its Pins
 
 ## Introduction: The Pin Is Awake, But It Doesn't Know What to Do Yet

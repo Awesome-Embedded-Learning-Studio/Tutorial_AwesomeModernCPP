@@ -1,3 +1,25 @@
+---
+title: Function template
+description: Master the syntax, instantiation mechanism, and type deduction of template<typename
+  T>, and learn to write generic functions.
+chapter: 9
+order: 1
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- OOP 实战
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Function Templates
 
 Suppose we want to write a `max` function that takes two values and returns the larger one. The logic is straightforward—we can do it in two lines of code. But if our program needs to compare `int`, `double`, and `std::string` at the same time, we would need to write three versions: one `max(int, int)`, one `max(double, double)`, and one `max(std::string, std::string)`. The logic of all three versions is exactly the same—just `(a > b) ? a : b`—with the only difference being the parameter types.

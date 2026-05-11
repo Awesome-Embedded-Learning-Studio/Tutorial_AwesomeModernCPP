@@ -1,3 +1,22 @@
+---
+title: override specifier
+description: Used after a member function declaration to ensure that the function
+  actually overrides a base class virtual function, otherwise a compilation error
+  occurs.
+chapter: 99
+order: 6
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # override Specifier (C++11)
 
 ## In a Nutshell

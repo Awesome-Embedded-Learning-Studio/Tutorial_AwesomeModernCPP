@@ -1,3 +1,22 @@
+---
+title: File and directory operations
+description: exists, copy, move, remove, permission and space query
+chapter: 9
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 9: path 操作'
+related:
+- 目录遍历与搜索
+---
 # File and Directory Operations
 
 In the previous article, we learned how to use `std::filesystem::path` to handle path syntax—constructing, decomposing, modifying, and comparing paths, all as pure computations without touching the disk. In this article, we get down to business: using the `<filesystem>` library to directly manipulate the file system—checking if files exist, creating directories, copying files, deleting files, and querying permissions and disk space.

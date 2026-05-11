@@ -1,3 +1,26 @@
+---
+title: 'std::expected<T, E>: Type-safe error propagation'
+description: C++23's expected type and monadic operations, implementing elegant error
+  propagation chains
+chapter: 10
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- expected
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 10: optional 用于错误处理'
+related:
+- 错误处理模式总结
+---
 # std::expected<T, E>: Type-Safe Error Propagation
 
 In the previous article, we discussed `std::optional` for error handling and pointed out its limitation—it cannot carry error information. When you need to know *why* something failed, `std::optional` falls short. `std::expected`, introduced in C++23, fills this gap: it tells you both whether a value exists and why it doesn't.

@@ -1,3 +1,24 @@
+---
+title: 'string_view internals: non-owning string view'
+description: Understanding the implementation mechanism of string_view, its comparison
+  with SSO, and its construction sources
+chapter: 8
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 0: 右值引用'
+related:
+- string_view 性能分析
+- string_view 陷阱与最佳实践
+---
 # string_view Internals: A Non-Owning String View
 
 While working on an IniParser project recently, I dealt with strings so much I nearly got sick of it—split, trim, substr, operations flying everywhere. Every substring operation using `std::string` meant a heap allocation, and after parsing a single config file, the heap fragmentation was messier than my desk. Later, I dug into `std::string_view` and realized that C++17 gave us such a handy tool. But using it well requires truly understanding its internal mechanisms—otherwise, it is easy to fall into lifetime traps, which we will save for the next article on pitfalls.

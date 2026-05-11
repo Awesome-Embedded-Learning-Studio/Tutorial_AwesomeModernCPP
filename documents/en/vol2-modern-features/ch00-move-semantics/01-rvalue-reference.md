@@ -1,3 +1,27 @@
+---
+title: 'Rvalue references: from copy to move'
+description: Understand the C++ value category system, and master the binding rules
+  and core semantics of rvalue references.
+chapter: 0
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 卷一：C++ 基础入门
+related:
+- 移动构造与移动赋值
+- 完美转发
+---
 # Rvalue References: From Copying to Moving
 
 Welcome to modern C++! Although the term "modern C++" generally refers to C++11 and later, the feature changes are significant enough to warrant a dedicated discussion.

@@ -1,3 +1,16 @@
+---
+title: 'Part 18: Common Pitfalls and Practical Exercises — Playing with LEDs in Creative
+  Ways'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 13
+---
 # Part 18: Common Pitfalls and Hands-On Exercises — Having Fun with LEDs
 
 > Picking up from where we left off: we have covered all the principles and code, and the LED blinks. But when you actually get your hands dirty, you will inevitably run into all sorts of bizarre issues. In this part, we will first flag all the common pitfalls, and then provide three progressive exercises to help you transition your knowledge from "understanding it" to "being able to write it."

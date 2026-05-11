@@ -1,3 +1,23 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Deep understanding of C array memory layout, multidimensional arrays,
+  variable-length arrays, and their subtle relationship with pointers
+difficulty: beginner
+order: 14
+platform: host
+prerequisites:
+- 指针与数组、const 和空指针
+reading_time_minutes: 23
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: In-depth Arrays
+---
 # A Deeper Look at Arrays
 
 In the quick start and pointer chapters, we touched on arrays, but honestly, we only scratched the surface of "knowing how to use them." Arrays seem simple to use—declare, initialize, access by index—but once you start asking questions like "how are multi-dimensional arrays actually laid out in memory?", "why can't we assign arrays directly?", and "when are arrays and pointers the same, and when are they different?"—you'll find there are quite a few details worth breaking down. These aren't just theoretical nuances; understanding the memory model of arrays will give you clear insight into what problems C++'s `std::array`, `std::vector`, and `std::span` are designed to solve.

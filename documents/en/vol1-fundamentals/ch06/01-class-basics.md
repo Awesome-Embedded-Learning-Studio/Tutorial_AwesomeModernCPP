@@ -1,3 +1,26 @@
+---
+title: Class definition
+description: 'From struct to class: Mastering the basic usage of C++ class definition,
+  member variables and functions, and access control'
+chapter: 6
+order: 1
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- std::string
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Defining Classes
 
 In previous chapters, we used `std::string` to handle text and `std::array` to manage fixed-size collections—these types are convenient to use, but how were they "invented" in the first place? The answer is classes. `std::string` itself is a class, `std::array` is also a class, and almost every tool in the C++ standard library is built using classes. We can confidently say that classes are C++'s core abstraction mechanism: they bundle "data" and "the functions that operate on that data" into a single whole, allowing us to use custom types just like built-in types.

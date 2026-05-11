@@ -1,3 +1,27 @@
+---
+title: 'Lambda Basics: The Elegant Expression of Anonymous Functions'
+description: From syntactic elements to STL integration, master the core usage of
+  C++ lambda expressions
+chapter: 3
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+related:
+- Lambda 捕获机制深入
+- std::function 与类型擦除
+---
 # Lambda Basics: The Elegant Expression of Anonymous Functions
 
 ## Introduction

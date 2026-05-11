@@ -1,3 +1,15 @@
+---
+title: 'Part 33: STM32 USART Peripheral — The Serial Engine Inside the Chip'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 17
+order: 3
+---
 # Part 33: STM32 USART Peripheral — The Serial Engine Inside the Chip
 
 > Picking up from the previous article: we covered the UART protocol's frame format, baud rate, and oversampling. Now let's look at how the STM32F103 chip implements this protocol internally.

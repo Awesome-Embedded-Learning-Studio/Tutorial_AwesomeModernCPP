@@ -1,3 +1,25 @@
+---
+title: Linux environment setup
+description: 'Setting up a C++ development environment on Linux: installing a compiler,
+  CMake, and VS Code, from zero configuration to compiling and running your first
+  program'
+chapter: 0
+order: 1
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Setting Up the Linux Environment
 
 Before we start writing C++, we need to set up our workspace. The goal here is simple: build a C++ development environment on Linux from scratch that can compile, build, and provide a comfortable coding experience. The whole process takes about fifteen minutes, but if this is your first time configuring a Linux environment, set aside thirty minutes—or, honestly, maybe a whole day, just to be safe. This assumes you are already familiar with Linux. If you are not, skip ahead to the next chapter on Windows setup.

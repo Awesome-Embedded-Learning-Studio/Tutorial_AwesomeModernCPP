@@ -1,3 +1,15 @@
+---
+title: C++ Features Reference Card
+description: A quick-reference index of all major features from C++98 to C++23, organized
+  in a dual-view layout by standard version and functional category
+chapter: 99
+order: 1
+tags:
+- host
+- cpp-modern
+- 入门
+difficulty: beginner
+---
 <!-- markdownlint-disable MD051 -->
 
 # C++ Feature Reference Card

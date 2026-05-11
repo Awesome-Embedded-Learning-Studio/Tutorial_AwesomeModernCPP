@@ -1,3 +1,20 @@
+---
+title: std::make_unique
+description: Factory function for safely constructing unique_ptr, avoiding exception
+  safety issues caused by direct use of new
+chapter: 99
+order: 4
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+---
 # std::make_unique (C++14)
 
 ## In a Nutshell

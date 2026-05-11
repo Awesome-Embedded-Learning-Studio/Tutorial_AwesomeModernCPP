@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Techniques 6 — A2:
+  Basics of Dynamic Library Design: ABI Design Interfaces'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 5
+---
 # Deep Dive into C/C++ Compilation and Linking Techniques 6 — A2: Dynamic Library Design Basics — ABI Interface Design
 
 ## Preface

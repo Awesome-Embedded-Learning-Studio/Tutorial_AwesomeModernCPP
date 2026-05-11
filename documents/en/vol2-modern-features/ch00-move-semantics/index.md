@@ -1,3 +1,8 @@
+---
+title: Move semantics and rvalue references
+description: Understand the value category system, master move construction, RVO,
+  and perfect forwarding.
+---
 # Move Semantics and Rvalue References
 
 Move semantics is one of the most important features in C++11—it makes "transferring resource ownership" a first-class citizen, fundamentally changing how we handle copy overhead. In this chapter, we start from the value category system to understand what lvalues and rvalues are and why we need rvalue references. We then dive into the implementation principles of move constructors and move assignments, see how much the compiler's RVO optimization saves you, and finally tie everything together with perfect forwarding. Move semantics is not just a performance optimization; it is the cornerstone of understanding modern C++ resource management.

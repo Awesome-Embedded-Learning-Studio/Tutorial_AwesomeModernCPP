@@ -1,3 +1,21 @@
+---
+title: std::atomic
+description: Lock-free atomic operation types for safe data sharing between multiple
+  threads without data races
+chapter: 99
+order: 1
+tags:
+- host
+- atomic
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # std::atomic (C++11)
 
 ## In a Nutshell

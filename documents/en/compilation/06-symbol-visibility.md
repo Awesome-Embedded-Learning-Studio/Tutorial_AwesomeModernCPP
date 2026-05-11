@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation Technology — Dynamic Libraries
+  A3: Let''s Talk About Symbol Visibility'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 6
+---
 # Deep Dive into C/C++ Compilation Technology — Shared Libraries A3: A Discussion on Symbol Visibility
 
 Some readers might be wondering—what exactly is symbol visibility? Is it the C++ keywords ``public`` or ``private``? It is worth pointing out that it is neither. The former are basic features provided alongside language syntax and compiler checks. Here, the symbol visibility we discuss is more aggressive, referring to visibility at the symbol ABI level.

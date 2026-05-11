@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Techniques 2: Introduction
+  to Dynamic and Static Libraries'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 2
+---
 # Deep Dive into C/C++ Compilation and Linking Techniques 2: Introduction to Static and Shared Libraries
 
 ## What is the concept of reuse, and how does it relate to compilation and linking?

@@ -1,3 +1,21 @@
+---
+title: auto
+description: A placeholder that lets the compiler automatically deduce the type of
+  a variable or function return value
+chapter: 99
+order: 3
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # auto (C++11)
 
 ## One-Liner

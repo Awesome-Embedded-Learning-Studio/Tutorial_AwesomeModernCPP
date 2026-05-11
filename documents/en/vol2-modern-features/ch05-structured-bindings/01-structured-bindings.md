@@ -1,3 +1,24 @@
+---
+title: 'Structured bindings: unpack multiple values in one line'
+description: Elegantly unpack pairs, tuples, arrays, and structs using structured
+  bindings
+chapter: 5
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 4: std::variant'
+- 'Chapter 4: std::optional'
+related:
+- if/switch 初始化器
+---
 # Structured Bindings: Unpacking Multiple Values in One Line
 
 When writing code, we often run into an awkward scenario: a function returns multiple values, and we have to unpack them one by one into variables. When using `std::pair`, we write `first` and `second`; when using `std::tuple`, we write `std::get<0>` and `std::get<1>` — the semantics are unclear, and the syntax is ugly. C++11 introduced `std::tie` to alleviate this problem, but honestly, the syntax isn't exactly elegant either: you have to declare all variables upfront, then stuff values into them with `std::tie`. Is there a feature that feels as smooth as Python's multiple return value unpacking? We finally got one, folks!

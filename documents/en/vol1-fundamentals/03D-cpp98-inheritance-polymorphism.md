@@ -1,3 +1,30 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: From a single class to a type hierarchy — inheritance expresses the "is-a"
+  relationship, virtual functions implement runtime polymorphism, abstract classes
+  define capability contracts, and virtual destructors ensure safe release
+difficulty: beginner
+order: 3
+platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+reading_time_minutes: 20
+related:
+- C++98运算符重载
+- 何时用C++、用哪些C++特性
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 'C++98 Object-Oriented: Inheritance and Polymorphism'
+---
 # C++98 Object-Oriented Programming: Inheritance and Polymorphism
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

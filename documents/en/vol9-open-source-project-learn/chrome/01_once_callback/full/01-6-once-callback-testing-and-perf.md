@@ -1,3 +1,29 @@
+---
+title: 'OnceCallback in Practice (Part 6): Testing and Performance Comparison'
+description: Systematically design six categories of test cases to verify all core
+  behaviors of OnceCallback, and compare performance differences with the original
+  Chromium version and standard library solutions.
+chapter: 1
+order: 6
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 10
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
+- OnceCallback 实战（五）：then 链式组合
+related:
+- OnceCallback 前置知识（五）：std::move_only_function
+---
 # OnceCallback in Practice (Part 6): Testing and Performance Comparison
 
 ## Introduction

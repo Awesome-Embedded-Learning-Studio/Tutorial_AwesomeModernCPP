@@ -1,3 +1,25 @@
+---
+title: Comparison of error handling methods
+description: Comparing error handling strategies for exceptions, error codes, optional,
+  and expected
+chapter: 10
+order: 3
+difficulty: intermediate
+reading_time_minutes: 14
+platform: host
+prerequisites:
+- 异常安全
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Comparing Error Handling Strategies
 
 C++ gives us more error handling tools than most languages. In the C era, we only had return values and ``errno``; Java and C# rely almost entirely on exceptions; Rust gives us ``Result<T, E>`` and the ``?`` operator. And C++? It has all of them. Error codes, exceptions, ``std::optional``, ``std::expected``—the toolbox is packed. Having more options isn't a bad thing, but if we don't understand the design intent and trade-offs of each tool, we easily end up with inconsistent code: in the same project, one function returns ``-1``, another throws an exception, and yet another returns ``std::nullopt``, forcing the caller to dig through documentation every time to figure out how to handle errors.

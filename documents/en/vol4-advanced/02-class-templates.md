@@ -1,3 +1,24 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-depth Understanding of C++ Class Template Declaration, Instantiation,
+  and Embedded Applications
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 12.1: 函数模板详解'
+reading_time_minutes: 51
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Detailed Explanation of Class Templates
+---
 # Modern C++ for Embedded Systems Tutorial — A Deep Dive into Class Templates
 
 Class templates are the core mechanism of C++ generic programming, allowing us to write type-agnostic class definitions. Standard library containers (such as `std::vector`, `std::array`), smart pointers (such as `std::unique_ptr`), and tuples (`std::tuple`) are all typical applications of class templates.

@@ -1,3 +1,26 @@
+---
+title: A First Look at const
+description: Master the various usages of const with variables and pointers, and gain
+  a preliminary understanding of constexpr compile-time constants.
+chapter: 1
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 类型转换
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # A First Look at const
 
 When writing code, some things simply should not be changed—configuration parameters should not be accidentally overwritten once set, an array's declared capacity should not change, and physical constants like pi go without saying. If we relied solely on "discipline" to ensure these values remain untouched, it would be like walking blindfolded at night. Sooner or later, a slip of the finger would alter a critical value, and we would spend half a day tracking down a baffling bug.

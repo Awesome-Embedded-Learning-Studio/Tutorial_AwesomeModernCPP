@@ -1,3 +1,15 @@
+---
+title: 'Part 22: HAL GPIO Input API - How to read button status using code'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 4
+---
 # Part 22: HAL GPIO Input API — How to Read Button State in Code
 
 > Following up on the previous article: the hardware is ready, the wiring diagram is drawn, and bouncing is thoroughly explained. Now we finally get to write some code. This article breaks down the GPIO input interface provided by the HAL library.

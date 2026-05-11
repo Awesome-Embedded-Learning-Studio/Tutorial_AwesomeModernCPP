@@ -1,3 +1,26 @@
+---
+title: OOP in Practice
+description: Comprehensively utilize inheritance, polymorphism, and operator overloading
+  to implement a complete graphics drawing system, and discuss the design choice between
+  inheritance vs. composition.
+chapter: 8
+order: 5
+difficulty: intermediate
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 多继承与虚继承
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # OOP in Practice
 
 So far, we have broken down all the core components of OOP—classes and objects, construction and destruction, inheritance and polymorphism, operator overloading, and virtual inheritance. Each concept alone isn't overly complex, but in a real project, these components work together simultaneously. In this chapter, we take a different approach: instead of covering isolated concepts, we build a complete graphics rendering system from scratch, tying together all the OOP techniques we have learned. Finally, we discuss the design choice between inheritance and composition.

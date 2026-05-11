@@ -1,3 +1,24 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Master C language's arithmetic operators, increment and decrement operators,
+  relational and logical operators, conditional operators, and comma operators, and
+  understand short-circuit evaluation and the usage of assignment operators.
+difficulty: beginner
+order: 4
+platform: host
+prerequisites:
+- 浮点、字符、const 与类型转换
+reading_time_minutes: 11
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 'Operator Basics: Making Data Move'
+---
 # Operator Basics: Making Data Move
 
 In the previous chapter, we took C data types apart from the inside out—how integers are stored, how floating-point numbers are stored, how characters are stored. But data alone isn't enough; we need to make data "move": performing addition, subtraction, multiplication, and division, comparing sizes, and evaluating true or false. In C, these operations are handled by **operators**.

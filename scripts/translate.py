@@ -36,6 +36,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Ensure pyyaml is available (needed for frontmatter parsing)
+try:
+    import yaml
+except ImportError:
+    print('ERROR: pyyaml is not installed. Please activate the virtual environment first:',
+          file=sys.stderr)
+    print('  python3 -m venv .venv && source .venv/bin/activate && pip install pyyaml',
+          file=sys.stderr)
+    sys.exit(1)
+
 # ---------------------------------------------------------------------------
 # Logging setup
 # ---------------------------------------------------------------------------
@@ -269,7 +279,6 @@ def parse_frontmatter(content: str) -> Tuple[Dict, str, str]:
     if not match:
         return {}, '', content
     try:
-        import yaml
         fm = yaml.safe_load(match.group(1))
         return fm or {}, match.group(1), match.group(2)
     except Exception:
@@ -283,12 +292,7 @@ def compute_source_hash(content: str) -> str:
 
 def reconstruct_frontmatter(fm: Dict, translated_fm: Dict,
                             metadata: Optional[TranslationMetadata] = None) -> str:
-    """Reconstruct frontmatter with translated fields and metadata.
-
-    Uses YAML serialization for robustness.
-    """
-    import yaml
-
+    """Reconstruct frontmatter with translated fields and metadata."""
     merged = dict(fm)
     # Overlay translated fields
     if 'title' in translated_fm:

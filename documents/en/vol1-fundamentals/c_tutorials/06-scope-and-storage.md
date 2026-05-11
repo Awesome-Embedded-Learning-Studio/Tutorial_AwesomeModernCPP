@@ -1,3 +1,23 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Deeply understand C language's scoping rules, storage classes, and linkage,
+  and master the three uses of static.
+difficulty: beginner
+order: 8
+platform: host
+prerequisites:
+- 控制流：让程序学会选择和重复
+reading_time_minutes: 24
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: Scope and storage class
+---
 # Scope and Storage Duration
 
 If you have ever written a project with more than two source files, you have probably run into this pitfall: you defined a global variable called `count` in two files, and the linker gives you a confused `multiple definition` error at compile time. Or an even more subtle scenario—you defined a helper function in some `.c` file, and another file accidentally called it. Later, when you changed that function's implementation, the caller crashed without any warning.

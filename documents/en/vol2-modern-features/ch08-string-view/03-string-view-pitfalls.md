@@ -1,3 +1,23 @@
+---
+title: string_view Pitfalls and Best Practices
+description: Dangling references, null termination, implicit conversions — common
+  pitfalls of string_view and how to avoid them
+chapter: 8
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 8: string_view 内部原理'
+related:
+- string_view 性能分析
+---
 # string_view Pitfalls and Best Practices
 
 In the previous two articles, we covered the internal mechanics and performance benefits of `string_view`. It seems like a perfect tool—lightweight, fast, and zero-allocation. But we need to offer a reality check: `string_view` is one of the easiest C++ features to use when accidentally introducing undefined behavior (UB). The reason is simple: it does not own the underlying data. The moment you forget this, dangling references, wild pointers, garbled output, and even security vulnerabilities are waiting for you.

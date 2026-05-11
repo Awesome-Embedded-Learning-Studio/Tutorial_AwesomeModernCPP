@@ -1,3 +1,12 @@
+---
+title: Embedded development
+description: Practical Applications of Modern C++ in Embedded Systems
+platform: stm32f1
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+---
 # Embedded Development
 
 > Status: Planned

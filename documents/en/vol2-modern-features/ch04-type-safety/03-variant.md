@@ -1,3 +1,27 @@
+---
+title: 'std::variant: A type-safe union'
+description: Replace union with variant, combined with visit to achieve type-safe
+  polymorphism.
+chapter: 4
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- variant
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 4: enum class'
+related:
+- std::optional
+- 错误处理的现代方式
+---
 # std::variant: A Type-Safe Union
 
 ## Introduction

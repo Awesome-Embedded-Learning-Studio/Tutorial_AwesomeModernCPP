@@ -1,3 +1,23 @@
+---
+chapter: 10
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++ Memory Model and Memory Order
+difficulty: advanced
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 9: 函数式特性'
+reading_time_minutes: 18
+tags:
+- cpp-modern
+- host
+- intermediate
+title: memory_order
+---
 # Modern C++ for Embedded Systems Development—Memory Order
 
 ## Introduction

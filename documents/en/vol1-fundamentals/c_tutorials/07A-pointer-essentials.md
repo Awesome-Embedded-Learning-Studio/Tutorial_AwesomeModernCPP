@@ -1,3 +1,24 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Understanding C Pointers from Scratch — Memory Model Intuition, Declaration
+  and Initialization, Address-of and Dereference Operators, Pointer Arithmetic and
+  Distance Calculation
+difficulty: beginner
+order: 9
+platform: host
+prerequisites:
+- 数据类型基础：整数与内存
+- 运算符基础：让数据动起来
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 'Introduction to Pointers: The World of Addresses'
+---
 # Pointer Basics: The World of Addresses
 
 Pointers are arguably the most famous feature in C, and the one most likely to scare away newcomers. If you have a background in Python or Java, you might be used to thinking that "a variable is the object itself"—the variable holds the data directly. But in C, there is an extra key concept: every variable resides at a specific location in memory, and that location has a number (an address). Pointers are simply variables designed to store and manipulate these addresses.

@@ -1,3 +1,20 @@
+---
+title: std::array
+description: Fixed-size contiguous container, zero-overhead wrapper for C-style arrays
+chapter: 99
+order: 4
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # std::array (C++11)
 
 ## In a Nutshell

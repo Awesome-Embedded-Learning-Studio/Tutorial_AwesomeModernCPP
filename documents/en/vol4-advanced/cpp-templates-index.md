@@ -1,3 +1,15 @@
+---
+title: Modern C++ Template Tutorial (Planned)
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 12
+order: 9
+---
 # Modern C++ Template Tutorial (Planned)
 
 A four-volume series is currently being planned, so stay tuned!

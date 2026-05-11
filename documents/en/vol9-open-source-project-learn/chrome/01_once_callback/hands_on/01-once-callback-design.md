@@ -1,3 +1,27 @@
+---
+title: 'once_callback Design Guide (Part 1): Motivation and Interface Design'
+description: Starting from Chromium's OnceCallback, designing a C++23 move-only, single-use
+  callback component—Part 1 focuses on motivation analysis and API design
+chapter: 1
+order: 1
+tags:
+- host
+- cpp-modern
+- advanced
+- 回调机制
+- 函数对象
+difficulty: advanced
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 20
+prerequisites:
+- std::function、std::invoke 与可调用对象
+- 移动语义与完美转发
+related:
+- OnceCallback 与 RepeatingCallback
+- bind_once / bind_repeating 与参数绑定
+---
 # once_callback Design Guide (Part 1): Motivation and Interface Design
 
 ## Introduction

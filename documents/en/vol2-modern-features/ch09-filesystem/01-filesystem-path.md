@@ -1,3 +1,22 @@
+---
+title: 'Path operations: Cross-platform path handling'
+description: Use std::filesystem::path to handle cross-platform paths uniformly
+chapter: 9
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+related:
+- 文件与目录操作
+---
 # Path Operations: Cross-Platform Path Handling
 
 When writing cross-platform code in the past, nothing gave me more headaches than path handling. Windows uses backslashes `\`, while Linux and macOS use forward slashes `/`. Different path separators are annoying enough, but absolute paths are also represented differently (`C:\foo` vs `/foo`), not to mention advanced topics like Unicode filenames and symbolic links. We used to have to rely on a bunch of `#ifdef`s plus string concatenation to make do, resulting in code I didn't even want to look at.

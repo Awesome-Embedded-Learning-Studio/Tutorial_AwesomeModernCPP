@@ -1,3 +1,24 @@
+---
+title: 'Preface: Why Learn C++'
+description: Understand the core value, application areas, and learning path of C++,
+  and start your modern C++ journey
+chapter: 0
+order: 0
+difficulty: beginner
+reading_time_minutes: 8
+platform: host
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # Preface: Why Learn C++
 
 To be honest, I spent a long time thinking about how to open this preface. If I just coldly listed a bunch of reasons why "C++ is powerful," it would be no different from reading Wikipedia, which would be pretty boring. So I want to take a different approach: let's talk about why I personally bother with C++, and why I believe that in 2026, C++ is still worth your time to learn seriously.

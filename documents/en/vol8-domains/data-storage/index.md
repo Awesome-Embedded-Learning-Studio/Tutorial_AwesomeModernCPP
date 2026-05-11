@@ -1,3 +1,12 @@
+---
+title: Data storage
+description: Serialization, file formats, SQLite, key-value stores
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Data Storage
 
 > Status: Planned

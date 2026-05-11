@@ -1,3 +1,30 @@
+---
+title: 'Compile-time Computation in Practice: From Table Lookup to Compile-time Strings'
+description: Comprehensively using constexpr to implement compile-time lookup tables,
+  string processing, state machines, and design patterns
+chapter: 2
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- constexpr
+- 编译期计算
+- 零开销抽象
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+- 'Chapter 2: constexpr 构造函数与字面类型'
+related:
+- 卷四：模板元编程
+---
 # Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings
 
 ## Introduction

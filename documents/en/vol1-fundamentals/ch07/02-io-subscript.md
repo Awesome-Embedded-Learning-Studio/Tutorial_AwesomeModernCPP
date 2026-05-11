@@ -1,3 +1,25 @@
+---
+title: Stream and subscript operators
+description: Master the overloading of << >> and the implementation of operator[]
+  to enable custom types to support stream I/O and indexed access.
+chapter: 7
+order: 2
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 算术与比较运算符
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Stream and Subscript Operators
 
 So far, we have overloaded arithmetic and comparison operators, allowing custom types like `Fraction` and `Vector3D` to participate in calculations and comparisons just like `int`. But if we try to write `std::cout << fraction;`, the compiler will flatly throw an error—it does not know how to feed our type into the output stream. Similarly, the `container[0]` of a custom container requires us to manually overload `operator[]` to work.

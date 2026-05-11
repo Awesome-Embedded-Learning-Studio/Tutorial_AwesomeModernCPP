@@ -1,3 +1,21 @@
+---
+title: Lambda expression
+description: Define an anonymous function object in-place, capable of capturing variables
+  within scope.
+chapter: 99
+order: 2
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # Lambda Expressions (C++11)
 
 ## In a Nutshell

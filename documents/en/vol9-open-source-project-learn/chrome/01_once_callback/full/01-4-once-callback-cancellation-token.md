@@ -1,3 +1,30 @@
+---
+title: 'OnceCallback in Practice (Part 4): Cancellation Token Design'
+description: Deep dive into the design of CancelableToken — implementing a lightweight
+  cancellation mechanism with shared_ptr + atomic<bool>, and how it integrates into
+  the execution flow of OnceCallback
+chapter: 1
+order: 4
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- atomic
+- 智能指针
+- 引用计数
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 9
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+related:
+- OnceCallback 实战（五）：then 链式组合
+- OnceCallback 实战（六）：测试与性能对比
+---
 # OnceCallback in Practice (Part 4): Cancellation Token Design
 
 ## Introduction

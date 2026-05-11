@@ -1,3 +1,24 @@
+---
+title: Class template argument deduction (CTAD)
+description: C++17 CTAD Mechanism and Custom Deduction Guides
+chapter: 6
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- 泛型
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+- 20
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 6: auto 推导深入'
+related:
+- decltype 与返回类型推导
+---
 # Class Template Argument Deduction (CTAD)
 
 Before C++17, every class template instantiation required spelling out all the template parameters. Even when the compiler could perfectly deduce the template arguments from the constructor parameters, we still had to write them out explicitly:

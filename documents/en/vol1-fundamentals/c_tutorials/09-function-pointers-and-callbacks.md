@@ -1,3 +1,25 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Master the declaration and use of function pointers, understand the application
+  of the callback function pattern in event-driven programming, and compare C++ lambdas
+  and std::function
+difficulty: beginner
+order: 13
+platform: host
+prerequisites:
+- 07A 指针基础与核心用法
+- 07B 指针、数组与 const
+- 08A 多级指针与函数参数
+reading_time_minutes: 13
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: Function pointers and callback patterns
+---
 # Function Pointers and the Callback Pattern
 
 If pointers are the most powerful feature of C, then function pointers are the part of the pointer world most likely to send your blood pressure through the roof. But honestly, once you grasp them, you will find that they are one of the few mechanisms in C that let you write code "so flexible it doesn't feel like C"—callbacks, event-driven design, the strategy pattern; these concepts sound like they belong to high-level languages, but in C, they all rely on function pointers to make them happen.

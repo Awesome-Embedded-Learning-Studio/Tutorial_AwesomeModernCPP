@@ -1,3 +1,16 @@
+---
+title: 'Part 38: UART IRQ Handling and Callbacks — The Complete Puzzle of Interrupt
+  Reception'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 8
+---
 # Part 38: UART IRQ Handling and Callbacks — The Complete Picture of Interrupt-Driven Reception
 
 > NVIC, ring buffers, and single-byte reception strategies—the previous three parts prepared all the pieces. This part assembles them into a complete interrupt-driven reception pipeline.

@@ -1,3 +1,21 @@
+---
+title: std::initializer_list
+description: A lightweight proxy type when initializing objects or passing parameters
+  using curly braces `{}`
+chapter: 99
+order: 5
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.

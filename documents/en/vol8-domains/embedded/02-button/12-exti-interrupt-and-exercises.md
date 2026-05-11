@@ -1,3 +1,15 @@
+---
+title: 'Part 30: EXTI Interrupts + Pitfalls and Exercises'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 12
+---
 # Part 30: EXTI Interrupts + Pitfalls and Exercises
 
 > The final article in the button tutorial. In the previous 11 parts, we have been using "polling" to detect button presses — the main loop continuously calls `poll_events()`. This part introduces another approach: letting the hardware proactively notify the CPU when the button state changes. Then, we cover a summary of common pitfalls and three exercises.

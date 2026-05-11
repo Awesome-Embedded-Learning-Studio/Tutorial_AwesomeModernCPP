@@ -1,3 +1,30 @@
+---
+title: 'OnceCallback Prerequisites Quick Reference: Review of C++11/14/17 Core Features'
+description: A quick review of all the C++ fundamentals required for the OnceCallback
+  series—move semantics, perfect forwarding, variadic templates, smart pointers, atomics,
+  lambdas, type traits, and more—preparing for deeper learning ahead.
+chapter: 0
+order: 0
+tags:
+- host
+- cpp-modern
+- intermediate
+- 基础
+- 入门
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+reading_time_minutes: 25
+prerequisites:
+- 卷一 C++ 基础入门
+related:
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（三）：Lambda 高级特性
+---
 # OnceCallback Prerequisite Cheat Sheet: A Review of Core C++11/14/17 Features
 
 ## Introduction

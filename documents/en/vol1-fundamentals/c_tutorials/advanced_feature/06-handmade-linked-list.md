@@ -1,3 +1,27 @@
+---
+title: Implementing a Singly Linked List from Scratch — A Practical Guide to Pointers
+  and Memory
+description: Implement a classic singly linked list from scratch, mastering insertion,
+  deletion, and search algorithms along with sentinel node techniques
+chapter: 1
+order: 106
+tags:
+- host
+- cpp-modern
+- advanced
+- 实战
+- 内存管理
+- 智能指针
+difficulty: advanced
+platform: host
+reading_time_minutes: 30
+cpp_standard:
+- 11
+prerequisites:
+- 手搓动态数组——malloc 与 realloc 实战
+- 指针到底在指什么
+- C 语言陷阱与常见错误
+---
 # Building a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
 
 So far, we have worked with dynamic arrays. In that chapter, we used `malloc` and `free` to manage a contiguous block of memory, experiencing the thrill of "manual transmission" memory management. However, contiguous memory has an inherent limitation — when inserting or deleting elements in the middle, you have to shift all subsequent data, resulting in an O(n) time complexity. For scenarios with frequent insertions and deletions, this is clearly not elegant.

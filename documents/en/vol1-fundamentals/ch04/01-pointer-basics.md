@@ -1,3 +1,26 @@
+---
+title: Pointer basics
+description: 'Understanding pointers from scratch: taking addresses, dereferencing,
+  pointer types, and null pointers—master the core mechanisms of C++ memory access.'
+chapter: 4
+order: 1
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- inline 与 constexpr 函数
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Pointer Basics
 
 Pointers are arguably the most notorious feature in C++, and the one most likely to scare off newcomers. If you come from Python or Java, you are probably used to thinking that "a variable is the object itself"—the variable holds the data, and you just use it. But C++ is different. It gives us the ability to manipulate memory addresses directly, and pointers are the gateway to that ability.

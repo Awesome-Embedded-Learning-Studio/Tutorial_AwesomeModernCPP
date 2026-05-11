@@ -1,3 +1,29 @@
+---
+title: 'C++98 Introduction: Namespaces, References, and Scope Resolution'
+description: 'The First Step from C to C++: Three Fundamental Features Thoroughly
+  Explained—Namespaces for Resolving Name Conflicts, References Instead of Pointers
+  for Passing Arguments, and Scope Resolution for Accessing Global and Namespace Members'
+chapter: 0
+order: 3
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+reading_time_minutes: 20
+prerequisites:
+- C语言速通复习
+related:
+- C++98函数接口：重载与默认参数
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # Getting Started with C++98: Namespaces, References, and Scope Resolution
 
 > The full repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

@@ -1,3 +1,24 @@
+---
+title: Windows environment setup
+description: 'Setting up a C++ development environment on Windows: installing Visual
+  Studio or MinGW, configuring CMake and vcpkg, from scratch to compiling and running'
+chapter: 0
+order: 2
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Windows Environment Setup
 
 > ⚠LLM: The author hasn't had the time to thoroughly verify this section. Experts are welcome to point out any mistakes!

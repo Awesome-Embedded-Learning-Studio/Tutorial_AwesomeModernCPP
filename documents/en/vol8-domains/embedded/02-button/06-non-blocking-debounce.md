@@ -1,3 +1,15 @@
+---
+title: 'Part 24: Non-blocking Debouncing — Don''t Let the CPU Stop and Wait'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 6
+---
 # Part 24: Non-Blocking Debounce — Don't Make the CPU Wait
 
 > Continuing from the previous article: C language polling buttons work, but bounce causes multiple triggers. Using `HAL_Delay()` for blocking debounce solves the bounce, but at the cost of freezing the CPU for 20ms. This article introduces a non-blocking approach to time management.

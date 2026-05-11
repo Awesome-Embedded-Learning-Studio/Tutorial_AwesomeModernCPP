@@ -1,3 +1,16 @@
+---
+title: 'Part 41: Concepts Constrained GPIO Initialization + UartManager — Type-Safe
+  Assembly'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 11
+---
 # Part 41: Concepts-Constrained GPIO Initialization + UartManager — Type-Safe Assembly
 
 > The button tutorial uses concepts to constrain callback function signatures. The UART tutorial uses them to constrain GPIO initialization callbacks. The same mechanism, different scenarios — the value of concepts lies in "letting the compiler check your interface contracts for you."

@@ -1,3 +1,26 @@
+---
+title: range-for loop
+description: Master the range-for loop introduced in C++11 to iterate over arrays
+  and containers in the most concise way.
+chapter: 2
+order: 3
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- 循环语句
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # The range-for Loop
 
 When writing traditional for loops to iterate over arrays, we always have to do one thing—manage that index variable. `for (int i = 0; i < n; ++i)`, we have written this line countless times, but we have also gotten it wrong countless times: writing `<` as `<=` causing out-of-bounds access, forgetting to increment `i` causing an infinite loop, changing the array length but forgetting to update the loop condition... Frankly, bugs introduced by these kinds of typos are the most frustrating, because they are not logic errors—they are simply careless mistakes.

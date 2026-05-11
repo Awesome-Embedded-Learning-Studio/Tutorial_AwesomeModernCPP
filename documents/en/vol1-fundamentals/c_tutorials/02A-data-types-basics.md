@@ -1,3 +1,24 @@
+---
+title: 'Data Type Basics: Integers and Memory'
+description: Understanding the integer family of C from scratch, the difference between
+  signed and unsigned, fixed-width types, and the sizeof operator, laying the foundation
+  of the type system for subsequent learning.
+chapter: 1
+order: 2
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+platform: host
+reading_time_minutes: 15
+cpp_standard:
+- 11
+prerequisites:
+- 程序结构与编译基础
+---
 # Data Type Basics: Integers and Memory
 
 If you have used Python before, you might remember that writing `x = 42` just works—you don't need to tell Python whether `x` is an integer or a decimal. The interpreter figures it out on its own. But in C, the rules change: the moment a variable is born, we must explicitly tell the compiler "what type is this thing." At first glance, this might seem like unnecessary busywork, but this act of "declaring a type" is the foundation of C's performance—because the compiler knows exactly how much memory each variable occupies and how the data is stored, it can generate the most efficient machine code.

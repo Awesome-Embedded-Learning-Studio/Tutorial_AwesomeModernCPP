@@ -1,3 +1,26 @@
+---
+title: Loop statement
+description: Master for, while, and do-while loops and break/continue control, and
+  learn to make programs repeatedly execute tasks.
+chapter: 2
+order: 2
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 条件语句
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Loop Statements
 
 Computers excel at tirelessly repeating the same task. In fact, our entire internet world is built on endlessly storing and retrieving data, relentlessly evaluating zeros and ones, and looping through it all!

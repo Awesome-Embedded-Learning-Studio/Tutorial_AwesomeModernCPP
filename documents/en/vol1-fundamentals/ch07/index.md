@@ -1,3 +1,8 @@
+---
+title: Operator overloading
+description: Make custom types support operators such as arithmetic, comparison, stream,
+  and subscript
+---
 # Operator Overloading
 
 Operator overloading lets custom types participate in operations as naturally as built-in types—we can add two `Vec3` directly, support `[]` indexing for custom matrix types, or even make objects callable like functions. In this chapter, we walk through all the commonly used operator overloads, clarifying which ones can be overloaded, which cannot, and how to avoid the pitfalls of unintended implicit conversions.

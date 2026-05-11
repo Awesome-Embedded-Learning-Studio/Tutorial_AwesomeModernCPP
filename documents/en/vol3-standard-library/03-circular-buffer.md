@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Efficient circular buffer
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Circular buffer implementation
+---
 # Embedded C++ Tutorial — Circular Buffer
 
 In the embedded world, one class of problems pops up again and again: **a data source continuously produces data, a consumer processes it slowly, and we want to avoid `malloc` in between.** Enter an ancient yet timeless data structure — the **circular buffer (also known as a ring buffer)**.

@@ -12,8 +12,8 @@ tags:
   - cpp-modern
   - host
   - beginner
-  - getting-started
-  - fundamentals
+  - 入门
+  - 基础
 cpp_standard: [11, 14, 17, 20]
 ---
 

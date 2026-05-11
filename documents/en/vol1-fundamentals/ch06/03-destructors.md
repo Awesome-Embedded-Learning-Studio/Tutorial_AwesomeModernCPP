@@ -1,3 +1,26 @@
+---
+title: Destructors and resource management
+description: Understanding the timing of destructor calls, an initial introduction
+  to the design concepts of the RAII principle and the Rule of Three
+chapter: 6
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 构造函数
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Destructors and Resource Management
 
 Constructors bring an object into a valid state—allocating memory, opening files, initializing hardware. But all these resources share a common problem: they must be returned at some point. `malloc` without `free`, `fopen` without `fclose`, locking a mutex without unlocking—the program slowly leaks resources, eventually exhausting system quotas or falling into a dead lock.

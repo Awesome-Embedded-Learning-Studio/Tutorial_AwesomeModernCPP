@@ -1,3 +1,30 @@
+---
+title: 'OnceCallback Prerequisites (Part 1): Function Types and Template Partial Specialization'
+description: Deeply understand what the function type int(int,int) is, and the template
+  partial specialization trick behind OnceCallback<R(Args...)>—how the compiler decomposes
+  function signatures through pattern matching
+chapter: 0
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+reading_time_minutes: 10
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+related:
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 实战（二）：核心骨架搭建
+---
 # Prerequisites for OnceCallback (Part 1): Function Types and Template Partial Specialization
 
 ## Introduction

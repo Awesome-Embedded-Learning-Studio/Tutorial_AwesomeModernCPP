@@ -1,3 +1,16 @@
+---
+title: 'In-depth Deconstruction: MSVC Debugging Mechanisms and Visual Studio Debugger
+  Principles'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 1
+order: 8
+---
 # Deep Dive: MSVC Debugging Mechanisms and Visual Studio Debugger Principles
 
 I've been working on some Windows projects at home recently. Given the large scale of these projects, I found myself dealing with MSVC debugging-related topics. I'd like to share what I've learned over the past few days, combined with MSVC's official documentation.

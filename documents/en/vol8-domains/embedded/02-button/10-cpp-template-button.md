@@ -1,3 +1,15 @@
+---
+title: 'Part 28: Button Template Class Design — Leave Everything to the Compiler'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 10
+---
 # Part 28: Designing the Button Template Class — Let the Compiler Handle Everything
 
 > Following up on the previous part: `std::variant` + `std::visit` solved event expression. In this part, we design the Button template class, encoding the port, pin, pull-up/pull-down configuration, and active level into compile-time types.

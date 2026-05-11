@@ -1,3 +1,25 @@
+---
+title: Exception safety
+description: Understand the four levels of exception safety, and master the RAII guard
+  pattern to ensure resources are properly released when exceptions occur.
+chapter: 10
+order: 2
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 异常基础
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Exception Safety
 
 Throwing an exception is easy — `throw std::runtime_error("oops")` a single line is all it takes. But the real headache is this: when an exception flies by, who cleans up the files that were opened, the memory that was allocated, the mutexes that were locked? If no one handles this, the best-case scenario is a memory leak, and the worst-case scenario is completely corrupted program state. Exception safety is about exactly this — not "how to throw exceptions," but "can the program's state still be trusted after an exception occurs?"

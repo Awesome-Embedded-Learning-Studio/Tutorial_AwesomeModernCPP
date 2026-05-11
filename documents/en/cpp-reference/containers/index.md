@@ -1,3 +1,13 @@
+---
+title: Container and View
+description: Reference cards for containers, views, type-safe unions, etc.
+chapter: 99
+order: 2
+tags:
+- host
+- cpp-modern
+- 容器
+---
 # Containers and Views Cheat Sheet
 
 - [std::span](01-span.md)

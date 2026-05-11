@@ -1,3 +1,26 @@
+---
+title: Conditional statement
+description: Master if/else, switch, and ternary operators, and learn to use conditional
+  statements to control program flow.
+chapter: 2
+order: 1
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 值类别简介
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Conditional Statements
 
 Well, you can't write a program without `if`/`else`, right? If a program only ever executed in a straight line from top to bottom, it would be no different from a machine that just repeats things. Real-world programs need to make decisions—"Did the user enter a negative number? Then show an error." "Is the sensor reading above the threshold? Then trigger an alarm." Conditional statements are the mechanism that gives programs this ability to "make decisions."

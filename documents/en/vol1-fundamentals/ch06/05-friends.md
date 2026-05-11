@@ -1,3 +1,26 @@
+---
+title: Friend
+description: Understand the usage of friend functions and friend classes, and master
+  the appropriate use cases and risks of abusing friend.
+chapter: 6
+order: 5
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- static 成员
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Friends
 
 Hey! My friend! Today we introduce `friend`! Don't get the wrong idea—`friend` is actually a C++ keyword, haha! In previous chapters, we kept emphasizing encapsulation—`private` members are hidden inside the class, and external code can only manipulate objects through `public` interfaces. But occasionally you'll run into a situation where some external function or another class genuinely needs to access private members, and this access is reasonable and unavoidable. C++ provides a dedicated mechanism for this scenario—**`friend`**.

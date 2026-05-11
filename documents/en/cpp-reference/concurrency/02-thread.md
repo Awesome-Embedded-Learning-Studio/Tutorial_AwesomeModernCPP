@@ -1,3 +1,21 @@
+---
+title: std::thread
+description: A class representing a single execution thread, allowing concurrent execution
+  of multiple functions.
+chapter: 99
+order: 2
+tags:
+- host
+- mutex
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # std::thread (C++11)
 
 ## In a Nutshell

@@ -1,3 +1,15 @@
+---
+title: 'Part 29: Concepts Constrained Callbacks + Complete Code Walkthrough'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 11
+---
 # Part 29: Constraining Callbacks with Concepts + Full Code Walkthrough
 
 > Continuing from the previous article: we have set up the skeleton for the `Button` template class. In this article, we tackle the final C++ feature—using concepts to constrain the callback parameter types—and then do a complete walkthrough of the entire ``main.cpp`` call chain from start to finish.

@@ -1,3 +1,23 @@
+---
+chapter: 9
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Ranges library basics
+difficulty: intermediate
+order: 7
+platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 16
+tags:
+- cpp-modern
+- host
+- intermediate
+title: C++20 Ranges Library Basics and Views
+---
 # Modern Embedded C++ Tutorial — C++20 Ranges Library Basics and Views
 
 ## Introduction

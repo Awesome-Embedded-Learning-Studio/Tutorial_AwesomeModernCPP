@@ -1,3 +1,16 @@
+---
+title: 'Part 20: GPIO Input Mode Internal Circuitry — How the Chip "Hears" External
+  Signals'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 2
+---
 # Part 20: GPIO Input Mode Internal Circuitry — How the Chip "Hears" External Signals
 
 > Following up on the previous article: buttons are harder than LEDs in three ways—reading instead of writing, physical noise, and timing management. In this article, we tackle the first problem: how does GPIO input mode actually work?

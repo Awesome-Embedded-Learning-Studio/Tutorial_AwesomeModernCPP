@@ -1,3 +1,19 @@
+---
+title: std::optional
+description: A wrapper that may or may not contain a value, used to safely express
+  the "no value" semantics.
+chapter: 99
+order: 3
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 17
+- 20
+- 23
+---
 # std::optional (C++17)
 
 ## One-Liner

@@ -1,3 +1,28 @@
+---
+title: Generic Lambdas and Template Lambdas
+description: 'From auto parameters to template parameters: lambda''s generic programming
+  capabilities'
+chapter: 3
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- 泛型
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 14
+- 17
+- 20
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 3: Lambda 捕获机制深入'
+related:
+- 函数式编程模式
+---
 # Generic Lambdas and Template Lambdas
 
 ## Introduction

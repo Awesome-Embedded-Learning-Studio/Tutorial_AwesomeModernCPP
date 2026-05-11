@@ -1,3 +1,25 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-depth explanation of how linkers work, how to write linker scripts,
+  and how to implement startup code
+difficulty: beginner
+order: 3
+platform: host
+prerequisites:
+- 'Chapter 0: 前言与基础'
+reading_time_minutes: 15
+related: []
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Linker and linker scripts
+---
 # Linker and Linker Scripts: From Principles to Practice
 
 ## Introduction

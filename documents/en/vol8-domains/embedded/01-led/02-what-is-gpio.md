@@ -1,3 +1,15 @@
+---
+title: 'Part 7: What Exactly is GPIO — The Past and Present of General-Purpose Input/Output'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 2
+---
 # Part 7: What Exactly is GPIO — The Past and Present of General-Purpose I/O
 
 ## Preface: From Environment Setup to Questioning the Essence

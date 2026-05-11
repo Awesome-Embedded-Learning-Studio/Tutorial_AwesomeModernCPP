@@ -1,3 +1,8 @@
+---
+title: Modern approach to error handling
+description: 'From Error Codes to Expected: The Evolution and Selection of Error Handling
+  Strategies'
+---
 # Modern Error Handling
 
 Error handling is a core challenge every C++ programmer must face—C-style error codes can be silently ignored, exceptions are restricted in embedded environments, and raw pointers lack clear semantics for representing "no value." Modern C++ provides type-safe alternatives like `optional`, `variant`, and `expected`. In this chapter, we review the evolution of error handling, master the use cases for each approach, and finally provide a scenario-based selection guide.

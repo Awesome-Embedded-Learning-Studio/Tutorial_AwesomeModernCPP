@@ -1,3 +1,25 @@
+---
+title: Dynamic memory management
+description: Master the use and pitfalls of new/delete, understand the core position
+  of RAII
+chapter: 12
+order: 2
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 内存布局
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Dynamic Memory Management
 
 In the previous chapter, we divided a program's memory space into four regions: the stack, the heap, the static storage, and the code segment. We clarified where data "lives" and how long it "survives." But we left one question open: how exactly do we manage dynamic memory on the heap? What happens behind the scenes with `new` and `delete`? Why has nearly every chapter so far stressed "use smart pointers, avoid raw `delete`"?

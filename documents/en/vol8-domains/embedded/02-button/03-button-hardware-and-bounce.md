@@ -1,3 +1,16 @@
+---
+title: 'Part 21: Button Circuits and Mechanical Bouncing — What Do Real-World Signals
+  Look Like'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 3
+---
 # Part 21: Button Circuits and Mechanical Bounce — What Real-World Signals Look Like
 
 > Following up on the previous article: we've cleared up the GPIO input path—pull-up input, Schmitt trigger, and the IDR register. In this article, we put theory into practice: drawing the wiring diagram, calculating current, and tackling a problem that LED tutorials never mention—mechanical bounce.

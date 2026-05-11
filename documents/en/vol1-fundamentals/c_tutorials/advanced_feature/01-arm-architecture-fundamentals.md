@@ -1,3 +1,29 @@
+---
+title: ARM Architecture and Architecture Fundamentals
+description: Starting from the von Neumann and Harvard architectures, deconstruct
+  the ARM Cortex-M instruction set, register file, exception vector table, and processor
+  modes to build a low-level hardware mental model.
+chapter: 1
+order: 101
+tags:
+- host
+- cpp-modern
+- intermediate
+- 嵌入式
+- 寄存器
+- 基础
+difficulty: intermediate
+platform: host
+reading_time_minutes: 25
+cpp_standard:
+- 11
+- 14
+- 17
+prerequisites:
+- C 语言基础：数据类型与内存
+- 指针与内存地址
+- 基本的嵌入式开发概念
+---
 # ARM Architecture and Fundamentals
 
 Honestly, if you have only ever written C/C++ on a PC, you have probably never cared about how a processor actually turns a line of code into electrical signals. The x86 ecosystem is so abstracted that the compiler and operating system shield you from almost all low-level details. But once you step into the embedded world, especially when facing ARM Cortex-M series MCUs, this knowledge is no longer a nice-to-have—it is a prerequisite for writing correct code. We have seen too many people jump straight into STM32 without even being able to explain what processor modes or exception vector tables are, leaving them staring blankly at registers when a HardFault hits.

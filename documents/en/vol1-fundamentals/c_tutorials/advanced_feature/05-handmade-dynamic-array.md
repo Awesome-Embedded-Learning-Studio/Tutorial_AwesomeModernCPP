@@ -1,3 +1,30 @@
+---
+title: Implementing a dynamic array from scratch — building a container from zero
+description: Design and implement a type-safe dynamic array library from scratch,
+  understand memory resizing strategies, error handling patterns, and API design principles,
+  and pave the way to understanding std::vector.
+chapter: 1
+order: 105
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 容器
+- 内存管理
+difficulty: intermediate
+platform: host
+reading_time_minutes: 30
+cpp_standard:
+- 11
+- 14
+- 17
+prerequisites:
+- 指针进阶：多级指针、指针与 const
+- 动态内存管理：malloc/free/realloc 的正确使用
+- 结构体、联合体与内存对齐
+- C 语言陷阱与常见错误
+---
 # Building a Dynamic Array from Scratch — Implementing a Container from Zero
 
 One of the most painful things about writing C programs is that array sizes must be determined at compile time. If you want to store 10 items, you declare `int arr[10]`; later, when requirements change to 100, you have to go back, modify the code, and recompile. What's worse, in many cases you have no idea how many items will arrive at runtime — how many records a user enters, how many packets the network receives, how many samples a sensor collects — these can only be determined at runtime.
@@ -348,7 +375,7 @@ printf("\n");
 ```
 
 ```text
-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 ```
 
 The callback function pattern is used extensively in the C standard library — the comparison function in `qsort`, `bsearch`, and others all follow this pattern.

@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Comparing std::array with traditional arrays
+difficulty: intermediate
+order: 6
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 5
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: std::array vs regular arrays
+---
 # Embedded C++ Tutorial — `std::array` vs C Arrays, Do You Know the Difference?
 
 When writing embedded code, you will likely hesitate between two approaches: `int buf[16];` and `std::array<int, 16> buf;`. If you are like me—valuing both performance and elegance—you will want to know: which one is more "embedded-friendly"?

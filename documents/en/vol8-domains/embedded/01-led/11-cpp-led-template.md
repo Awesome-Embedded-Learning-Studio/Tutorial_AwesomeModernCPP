@@ -1,3 +1,16 @@
+---
+title: 'Part 16: Fourth Refactoring — LED Template, From General-Purpose GPIO to Dedicated
+  Abstraction'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 11
+---
 # Part 16: Fourth Refactoring — The LED Template, From General-Purpose GPIO to Domain-Specific Abstraction
 
 ## Preface: When Generic Isn't Good Enough

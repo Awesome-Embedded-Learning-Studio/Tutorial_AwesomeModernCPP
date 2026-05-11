@@ -1,3 +1,15 @@
+---
+title: 'Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISR and Main Loop'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 7
+---
 # Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISR and Main Loop
 
 > Following up on the previous part: each time the ISR receives a byte, it needs to pass it to the main loop for processing. In this part, we design a dedicated data structure to accomplish this task — a lock-free ring buffer.

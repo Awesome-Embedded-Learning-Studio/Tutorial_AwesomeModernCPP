@@ -1,3 +1,25 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Master the powerful features of modern C++ type aliases and the implementation
+  principles of the standard library
+difficulty: intermediate
+order: 7
+platform: host
+prerequisites:
+- 'Chapter 12: 类模板详解'
+- 'Chapter 12: 模板元编程基础'
+reading_time_minutes: 35
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Template aliases and using declarations
+---
 # Modern C++ for Embedded Systems Tutorial — Template Aliases and Using Declarations
 
 Have you ever been tortured by code like this?

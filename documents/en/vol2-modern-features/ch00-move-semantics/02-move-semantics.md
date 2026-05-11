@@ -1,3 +1,27 @@
+---
+title: Move constructor and move assignment
+description: Master the core mechanism of move semantics to achieve zero-copy resource
+  transfer.
+chapter: 0
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 0: 右值引用'
+related:
+- RVO 与 NRVO
+- 完美转发
+---
 # Move Construction and Move Assignment
 
 In the previous article, we laid the groundwork for value categories and rvalue references. Now it is time to get to the real work—teaching our classes to truly "move" instead of "copy." To be honest, I made quite a few mistakes the first time I wrote a move constructor by hand: forgetting to null out the source object's pointer, forgetting to handle self-assignment, and being unclear on when to add `noexcept`... This article shares all the pitfalls I stumbled into, hoping to save you some headaches.

@@ -1,3 +1,24 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+description: Deeply understand the memory model and practical use cases of multi-level
+  pointers, distinguish between pointer arrays and array pointers, and master the
+  cdecl declaration reading method and combinations of multi-level const pointers.
+difficulty: beginner
+order: 11
+platform: host
+prerequisites:
+- 指针与数组、const 和空指针
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: Multi-level pointers and declaration reading
+---
 # Multi-Level Pointers and Reading Declarations
 
 In the previous chapter, we clarified the relationships between pointers, arrays, `void*`, and `NULL`. Now let's tackle the trickier parts of pointers—multi-level pointers (pointers to pointers), the "confusing twins" of pointer arrays and array pointers, and a method to keep your brain from crashing when you see declarations like `int (*(*fp)(int))[10]`.
@@ -26,8 +47,6 @@ We will run all the following experiments in this environment:
 ### Memory Model: Chains Within Chains
 
 If the address stored in a pointer points to another pointer, that's a multi-level pointer. `int**` points to `int*`, `int***` points to `int**`, and `int****` points to `int***`, and so on. In memory, they form a chain:
-
-![Multi-level pointer memory chain](images/multi-level-pointer-chain.svg)
 
 Each level stores the address of the next level. Dereferencing `pp` yields `p` (an `int*`), dereferencing `p` yields `val` (an `int`), and only then do we get the final `42`. Let's verify this:
 
@@ -97,8 +116,6 @@ int main(int argc, char** argv)  { /* ... */ }
 
 `char* argv[]` in a parameter list decays to `char** argv`, so the two forms are exactly the same. `argv` points to a `char*` array, where each element points to a command-line argument string, terminated by a `NULL` sentinel:
 
-![argv memory layout](images/argv-memory-layout.svg)
-
 ## Step 2 — Distinguish Between Pointer Arrays and Array Pointers
 
 `int* arr[10]` and `int (*arr)[10]` look like they only differ by a pair of parentheses, but their meanings are completely different. This is the most classic pair of "confusing twins" in C declaration syntax.
@@ -117,8 +134,6 @@ printf("%d\n", *arr[2]); // 3
 ```
 
 Memory layout—the array contiguously stores three pointer values, and each pointer points to a different `int`:
-
-![Pointer array memory layout](images/pointer-array-layout.svg)
 
 ### Array Pointer: `int (*arr)[10]`
 

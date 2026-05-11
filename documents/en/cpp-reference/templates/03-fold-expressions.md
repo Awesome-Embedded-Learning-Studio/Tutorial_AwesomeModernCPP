@@ -1,3 +1,19 @@
+---
+title: Fold expression
+description: Fold the parameter pack over a binary operator, replacing recursive template
+  expansion
+chapter: 99
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 17
+- 20
+- 23
+---
 # Fold Expressions (C++17)
 
 ## One-Liner

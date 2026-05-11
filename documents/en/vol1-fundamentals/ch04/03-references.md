@@ -1,3 +1,27 @@
+---
+title: Quote
+description: 'Deeply Understanding C++ References: Reference Syntax, Differences Between
+  References and Pointers, and the Important Role of const References in Function
+  Parameters'
+chapter: 4
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 指针运算与数组
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # References
 
 Pointers are powerful, but honestly, they are also easy to get into trouble with. In the last chapter, we spent a lot of time dealing with pointers—dereferencing, taking addresses, null pointer checks, the ``->`` operator... The more you write, the more you realize that in many scenarios, we don't need the full power of pointers. We just want to "pass a large object to a function without copying it," or "let a function modify the caller's variable." Pointers can certainly do these things, but the syntax always feels clunky. C++ gives us a safer, more concise alternative: **references**. In this chapter, we will thoroughly understand references from start to finish.

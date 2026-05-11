@@ -1,3 +1,16 @@
+---
+title: 'Part 9: HAL Clock Enable - Without enabling the clock, a peripheral is just
+  a dead piece of sleeping silicon'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 4
+---
 # Part 9: HAL Clock Enable — Without a Clock, a Peripheral Is Just a Dead Piece of Silicon
 
 ## Preface: From Hardware Principles to Software APIs

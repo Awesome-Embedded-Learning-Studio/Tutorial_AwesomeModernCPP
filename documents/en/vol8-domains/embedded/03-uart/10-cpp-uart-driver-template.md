@@ -1,3 +1,15 @@
+---
+title: 'Part 40: UART Driver Template — Zero-Sized Abstraction and Compile-Time Dispatch'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 10
+---
 # Part 40: UART Driver Template — Zero-Size Abstraction and Compile-Time Dispatch
 
 > The LED tutorial uses templates to select ports and pins, and the button tutorial uses templates to select pull-up/pull-down and active levels. The dimension of the UART driver template is the USART instance—but the implementation technique is more elegant than the previous two series.

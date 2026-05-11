@@ -1,3 +1,13 @@
+---
+title: Core language features
+description: Reference card for core language features such as constexpr, lambda,
+  and type deduction
+chapter: 99
+order: 3
+tags:
+- host
+- cpp-modern
+---
 # Core Language Features Cheat Sheet
 
 - [constexpr / consteval / constinit](01-constexpr.md)

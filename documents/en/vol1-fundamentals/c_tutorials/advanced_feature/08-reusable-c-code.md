@@ -1,3 +1,28 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 17
+- 20
+description: From modular design, header file interfaces, and opaque pointers to platform
+  abstraction layers, systematically master the engineering organization methods of
+  C code, as well as how C++'s namespace/class/PIMPL inherit these concepts.
+difficulty: intermediate
+order: 108
+platform: host
+prerequisites:
+- 指针进阶：不完整类型与多级指针
+- 结构体与内存布局
+- 编译与链接基础
+reading_time_minutes: 32
+tags:
+- host
+- cpp-modern
+- intermediate
+- 工程实践
+- 基础
+title: Building reusable C code
+---
 # Building Reusable C Code
 
 Anyone who has written tens of thousands of lines of C code has probably experienced this—at the start of a project, everything is fine; a few ``.c`` files cobbled together are enough to get things running. But as features pile up, the code turns into a tangled mess: header files include each other indiscriminately, global variables are everywhere, changing a single struct field triggers recompilation of a dozen source files, and just when you finally get it working on a PC, porting it to an STM32 brings a whole new set of issues. Frankly, the root of this pain often isn't a flawed algorithm or a blown pointer—it's failing to take "code organization" seriously from day one.

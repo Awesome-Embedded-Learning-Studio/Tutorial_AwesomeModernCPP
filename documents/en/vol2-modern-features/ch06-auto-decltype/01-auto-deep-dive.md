@@ -1,3 +1,28 @@
+---
+title: 'Deep dive into auto inference: It''s not just about being lazy'
+description: Understanding the complete deduction rules, common pitfalls, and best
+  practices of auto
+chapter: 6
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型别名
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 0: 右值引用'
+related:
+- decltype 与返回类型推导
+- 类模板参数推导
+---
 # Deep Dive into auto Type Deduction: More Than Just Laziness
 
 Whenever we see someone describe `auto` as "letting the compiler guess the type," we want to correct them. The deduction rules for `auto` are completely deterministic and follow the exact same mechanism as template argument deduction. It is not magic, and it is certainly not laziness—in many scenarios, using `auto` is actually safer than writing the type out by hand. When you change a function's return type, every place that receives it with `auto` updates automatically, eliminating the risk of forgetting to update them.

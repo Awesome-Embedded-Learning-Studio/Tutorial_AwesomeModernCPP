@@ -1,3 +1,27 @@
+---
+title: 'weak_ptr and circular references: breaking the ownership deadlock'
+description: Master the weak reference mechanism of weak_ptr to solve the circular
+  reference problem of shared_ptr
+chapter: 1
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- weak_ptr
+- 智能指针
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 1: shared_ptr 详解'
+related:
+- 自定义删除器
+---
 # weak pointer and Circular References: Breaking the Ownership Deadlock
 
 In the previous article, we discussed `shared_ptr`—shared ownership implemented via reference counting. `shared_ptr` seems wonderful: as long as the last holder goes out of scope, the object is automatically destroyed. But in reality, this "automatic destruction" has a fatal enemy: **circular references**. When two objects hold each other's `shared_ptr`, their reference counts never reach zero—two "managers" each assume the other still holds the key, and neither dares to close the door. The result is a memory leak.

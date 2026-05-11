@@ -1,3 +1,25 @@
+---
+title: Introduction to Template Specialization
+description: Understand the concepts of full specialization and partial specialization,
+  and learn to provide customized template implementations for specific types.
+chapter: 9
+order: 3
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 类模板
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Introduction to Template Specialization
 
 The power of templates lies in "one code, many types." But in real-world engineering, we often run into a situation where the generic version works well for most types, yet a few specific types—due to different semantics or performance requirements—need a custom implementation. For example, if we write a generic `PRESERVED_16` function template that correctly compares sizes for `PRESERVED_17` and `PRESERVED_18`, passing in two `PRESERVED_19` values would compare pointer addresses instead of string contents, which is clearly not what we want.

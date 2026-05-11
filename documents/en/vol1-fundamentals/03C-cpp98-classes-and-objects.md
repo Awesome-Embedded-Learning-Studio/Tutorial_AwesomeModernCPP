@@ -1,3 +1,31 @@
+---
+title: 'C++98 Object-Oriented: In-Depth Analysis of Classes and Objects'
+description: The leap from C structs to C++ classes — access control, constructors
+  and destructors, initializer lists, the this pointer, static members, const member
+  functions, friends, explicit, and mutable, explaining every detail clearly.
+chapter: 0
+order: 3
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+reading_time_minutes: 30
+prerequisites:
+- C++98入门：命名空间、引用与作用域解析
+- C++98函数接口：重载与默认参数
+related:
+- C++98面向对象：继承与多态
+- C++98运算符重载
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # C++98 Object-Oriented Programming: A Deep Dive into Classes and Objects
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

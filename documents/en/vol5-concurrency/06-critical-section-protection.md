@@ -1,3 +1,23 @@
+---
+chapter: 10
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Critical Section Protection and Synchronization Techniques
+difficulty: advanced
+order: 6
+platform: host
+prerequisites:
+- 'Chapter 10.1-10.5: 原子操作、内存序、中断安全'
+reading_time_minutes: 22
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Critical section protection techniques
+---
 # Modern C++ for Embedded Systems — Critical Section Protection Techniques
 
 ## Introduction

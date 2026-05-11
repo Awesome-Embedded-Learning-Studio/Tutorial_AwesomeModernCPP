@@ -1,3 +1,23 @@
+---
+title: Directory Traversal and Search
+description: Usage and performance of directory_iterator and recursive_directory_iterator
+chapter: 9
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 9: path 操作'
+- 'Chapter 9: 文件与目录操作'
+related:
+- Lambda 基础
+---
 # Directory Traversal and Search
 
 In the previous two articles, we learned how to handle paths with `std::filesystem::path` and manage files and directories with file operation functions. But in real projects, the most common need is actually "finding the files I want in a certain directory." For example: collecting all `.cpp` files to pass to the compiler, finding all texture images in a resource directory, or counting the total lines of code in a project.

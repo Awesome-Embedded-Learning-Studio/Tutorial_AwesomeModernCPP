@@ -1,3 +1,23 @@
+---
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Exploring how inline functions work
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Inlining and compiler optimization
+---
 # Modern C++ for Embedded Systems Tutorial—Inline Functions and Compiler Optimization
 
 In embedded development, `inline` is a keyword almost every engineer uses. It seems simple and straightforward, even carrying a hint of "performance guarantee": if a function is short, called frequently, and timing-sensitive, just `inline` it—seems like a no-brainer.

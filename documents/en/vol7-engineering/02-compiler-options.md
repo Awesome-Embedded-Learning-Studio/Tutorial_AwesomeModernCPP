@@ -1,3 +1,25 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Detailed introduction to common options of GCC/Clang compilers, including
+  language standards, optimization levels, warning control, and C++ runtime trimming.
+difficulty: beginner
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 0: 前言与基础'
+reading_time_minutes: 9
+related: []
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Common Compiler Options Guide
+---
 # Modern Embedded C++ Tutorial: Common Compiler Flags Guide
 
 In real-world embedded development, every single byte of Flash and RAM is truly saved by the developer. Although C++ carries the stigma of being a "heavyweight language," we can precisely trim runtime overhead through proper compiler flag configuration, achieving performance and size that even surpass hand-written C code. (I believe everyone has already seen this in Chapter 0.)

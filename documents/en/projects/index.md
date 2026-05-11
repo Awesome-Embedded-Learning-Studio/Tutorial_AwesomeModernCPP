@@ -1,3 +1,13 @@
+---
+title: End-to-end practical project
+description: Comprehensive projects such as hand-writing an STL, HTTP server, GUI
+  framework, embedded OS, etc.
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Comprehensive Hands-on Projects
 
 > Status: Planned

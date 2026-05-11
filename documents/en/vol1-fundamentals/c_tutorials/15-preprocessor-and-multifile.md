@@ -1,3 +1,26 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+description: Master how the C preprocessor works, learn to use macros, conditional
+  compilation, and header guards to build modular multi-file C projects, and compare
+  C++ const/inline/constexpr/template alternatives.
+difficulty: beginner
+order: 19
+platform: host
+prerequisites:
+- 动态内存管理
+reading_time_minutes: 7
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- CMake
+title: Preprocessor and Multi-file Projects
+---
 # The Preprocessor and Multi-File Projects
 
 If you have been writing all of your C programs in a single `.c` file up to this point, you will eventually hit a wall. In real-world projects, we split code into multiple `.c` and `.h` files, where each module handles its own responsibilities, and then we assemble them into a complete program through compilation and linking.

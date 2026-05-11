@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: C++20 array view
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::span array view
+---
 # Embedded C++ Tutorial: std::span—A Lightweight, Non-owning Array View
 
 Think of `std::span` as a "transparent conveyor belt" in C++: it doesn't own the cargo on top (memory), but calmly and efficiently tells you "how many elements are here and where they start." In embedded development, we often need to pass a chunk of memory to a function—without copying it, and without losing type or boundary information. `std::span` was born for exactly this scenario.

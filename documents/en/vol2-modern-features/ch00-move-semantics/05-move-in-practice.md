@@ -1,3 +1,27 @@
+---
+title: 'Move Semantics in Practice: From STL to Custom Types'
+description: Practical applications and performance comparison of move semantics in
+  the standard library and custom types
+chapter: 0
+order: 5
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: RVO 与 NRVO'
+related:
+- 完美转发
+---
 # Move Semantics in Practice: From STL to Custom Types
 
 In the previous four articles, we thoroughly covered the theoretical foundations of move semantics: value categories, rvalue references, move construction and move assignment, RVO/NRVO, and perfect forwarding. Now it is time to put theory into practice. We will look at the actual performance differences move semantics can bring to real code, and how to correctly use them in STL containers and custom types. This article includes plenty of code and real benchmark data, so we recommend you type along and experience the difference between copying and moving firsthand.

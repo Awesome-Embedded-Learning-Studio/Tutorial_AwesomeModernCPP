@@ -1,3 +1,29 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Making function interfaces more flexible—function overloading allows
+  same names with different parameters, default parameters reduce calling overhead,
+  and a guide to the pitfalls and choices when both coexist
+difficulty: beginner
+order: 3
+platform: host
+prerequisites:
+- C++98入门：命名空间、引用与作用域解析
+reading_time_minutes: 16
+related:
+- C++98面向对象：类与对象深度剖析
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 'C++98 function interfaces: overloading and default arguments'
+---
 # C++98 Function Interfaces: Overloading and Default Arguments
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.

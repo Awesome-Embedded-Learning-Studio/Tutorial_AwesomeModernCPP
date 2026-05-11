@@ -1,3 +1,19 @@
+---
+title: std::shared_ptr
+description: A smart pointer that shares object ownership through reference counting
+chapter: 2
+order: 0
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.

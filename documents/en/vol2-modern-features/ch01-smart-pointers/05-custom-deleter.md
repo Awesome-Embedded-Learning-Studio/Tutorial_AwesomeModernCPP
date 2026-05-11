@@ -1,3 +1,29 @@
+---
+title: Custom deleters and intrusive reference counting
+description: Wrapping C APIs, managing special resources, and implementing intrusive
+  smart pointers
+chapter: 1
+order: 5
+tags:
+- host
+- cpp-modern
+- intermediate
+- 智能指针
+- intrusive_ptr
+- 引用计数
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 1: unique_ptr 详解'
+- 'Chapter 1: shared_ptr 详解'
+related:
+- scope_guard 与 defer
+---
 # Custom Deleters and Intrusive Reference Counting
 
 So far, the smart pointers we have discussed all manage "objects created with new" — calling `delete` upon destruction, which happens naturally. But the real world is far more complex. The resources you need to manage might be a `FILE*` returned by `fopen` (which needs to be closed with `fclose`), memory allocated by `malloc` (which needs to be freed with `free`), a POSIX file descriptor `int fd` (which needs to be closed with `close`), an SDL window, an OpenGL texture, a CUDA stream — each resource has its own release function. If a smart pointer could only `delete`, it would be far too limited.

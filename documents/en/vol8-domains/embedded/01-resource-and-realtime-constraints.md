@@ -1,3 +1,24 @@
+---
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Introduction to the resource constraints of Flash, RAM, CPU, etc., and
+  real-time requirements in embedded systems
+difficulty: beginner
+order: 1
+platform: stm32f1
+prerequisites: []
+reading_time_minutes: 12
+related: []
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Embedded resources and real-time constraints
+---
 # Embedded Resource and Real-Time Constraints
 
 ## 1. Introduction: Why We Can't Just "Write Whatever" in Embedded

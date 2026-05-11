@@ -1,3 +1,25 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-depth Understanding of the Usage and Embedded Applications of C++
+  Non-Type Template Parameters
+difficulty: intermediate
+order: 4
+platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+reading_time_minutes: 53
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Non-type template parameters
+---
 # Modern C++ for Embedded Systems Tutorial — Non-Type Template Parameters
 
 ## Introduction: Compile-Time Magic Numbers

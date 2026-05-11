@@ -1,3 +1,13 @@
+---
+title: Welcome to the Modern C++ Tutorial
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+---
 # Welcome to the Modern C++ Tutorial
 
 > A comprehensive, systematic modern C++ development tutorial and knowledge base

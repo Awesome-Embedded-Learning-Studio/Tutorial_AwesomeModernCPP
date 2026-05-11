@@ -1,3 +1,21 @@
+---
+title: std::mutex
+description: Provides exclusive, non-recursive ownership semantics to protect shared
+  data from simultaneous access by multiple threads.
+chapter: 99
+order: 3
+tags:
+- host
+- mutex
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # std::mutex (C++11)
 
 ## In a Nutshell

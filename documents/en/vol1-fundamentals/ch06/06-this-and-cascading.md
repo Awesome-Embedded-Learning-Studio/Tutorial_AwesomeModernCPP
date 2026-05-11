@@ -1,3 +1,26 @@
+---
+title: '`this` pointer and method chaining'
+description: Understand the essence of the this pointer, master the method chaining
+  pattern and the correct usage of const member functions
+chapter: 6
+order: 6
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- 友元
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # The `this` Pointer and Method Chaining
 
 So far, the classes we have written share an unspoken assumption—member functions "know" which object they operate on. Calling `led.on()` operates on `led`; calling `other_led.on()` operates on `other_led`. The same function behaves differently depending on which object calls it. This might seem obvious, but the underlying mechanism is worth a closer look: how exactly does the compiler let a function "know" who the caller is?

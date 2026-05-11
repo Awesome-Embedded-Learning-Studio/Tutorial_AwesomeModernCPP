@@ -1,3 +1,16 @@
+---
+title: 'Part 1: Building an STM32 Development Toolchain from Scratch — Cross-Compilation
+  Principles and Installation Guide'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 14
+order: 1
+---
 # Part 1: Building an STM32 Toolchain from Scratch — Cross-Compilation Principles and Installation Guide
 
 > For everyone who wants to work with STM32 on Linux but feels dizzy from the barrage of toolchain jargon.

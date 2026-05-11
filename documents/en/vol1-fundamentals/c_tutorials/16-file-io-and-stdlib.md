@@ -1,3 +1,28 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+description: Master C language file operations and core standard library tools, including
+  file reading and writing, formatted I/O, and command-line argument handling, and
+  compare them with C++ stream libraries and modern standard library tools.
+difficulty: beginner
+order: 20
+platform: host
+prerequisites:
+- 11 C 字符串与缓冲区安全
+- 12 结构体与内存对齐
+- 14 动态内存管理
+reading_time_minutes: 11
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: File I/O and Standard Library Overview
+---
 # File I/O and Standard Library Overview
 
 So far, every program we have written shares a common limitation—data lives entirely in memory and vanishes once the program ends. Real-world programs do not work this way: configurations are read from files, logs are written to files, and data is passed between programs. This is where file I/O comes in.

@@ -1,3 +1,30 @@
+---
+title: 'Detailed Explanation of shared_ptr: Shared Ownership and Reference Counting'
+description: Understanding the control block mechanism, thread safety, and performance
+  characteristics of shared_ptr
+chapter: 1
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- shared_ptr
+- 智能指针
+- 引用计数
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 20
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+- 'Chapter 1: unique_ptr 详解'
+related:
+- weak_ptr 与循环引用
+- 自定义删除器
+---
 # A Deep Dive into shared_ptr: Shared Ownership and Reference Counting
 
 In the previous article, we discussed `unique_ptr`—the zero-overhead smart pointer for exclusive ownership. But in the real world, resources aren't always exclusively owned by a single master. Sometimes, an object genuinely needs to be held and managed jointly by multiple modules—such as a configuration object read by multiple subsystems, a network connection shared across tasks, or a cache entry accessed by multiple consumers. In these cases, the "exclusive" semantics of `unique_ptr` fall short.
@@ -55,12 +82,12 @@ graph LR
         A[ptr to object]
         B[ptr to control block]
     end
-    
+
     subgraph Heap Memory
         C[Managed Object T]
         D[Control Block<br/>strong_count<br/>weak_count<br/>deleter<br/>allocator]
     end
-    
+
     A --> C
     B --> D
 ```
@@ -125,7 +152,7 @@ struct Counter {
 
 int main() {
     auto counter = std::make_shared<Counter>();
-    
+
     // 安全：多个线程拷贝 shared_ptr（引用计数原子操作）
     std::thread t1([counter]() {  // 拷贝发生在这里
         counter->increment();     // 安全：对象访问有 mutex 保护
@@ -133,7 +160,7 @@ int main() {
     std::thread t2([counter]() {  // 拷贝发生在这里
         counter->increment();     // 安全：对象访问有 mutex 保护
     });
-    
+
     t1.join();
     t2.join();
     std::cout << "Counter value: " << counter->value << "\n"; // 输出 2
@@ -186,13 +213,13 @@ int main() {
     auto person = std::make_shared<Person>();
     person->name = "Alice";
     person->age = 30;
-    
+
     // 创建一个 shared_ptr，共享 person 的所有权，但指向 age 成员
     std::shared_ptr<int> age_ptr(person, &person->age);
-    
+
     std::cout << "Age: " << *age_ptr << "\n";  // 输出 30
     std::cout << "Use count: " << person.use_count() << "\n";  // 输出 2
-    
+
     person.reset();  // person 被释放，但 age_ptr 仍然有效
     std::cout << "Age still valid: " << *age_ptr << "\n";  // 输出 30
 }
@@ -214,12 +241,12 @@ public:
         // 正确：使用 enable_shared_from_this
         return shared_from_this();
     }
-    
+
     // 错误示例（不要这样做！）：
     // std::shared_ptr<NetworkConnection> get_bad() {
     //     return std::shared_ptr<NetworkConnection>(this); // 双重释放！
     // }
-    
+
     ~NetworkConnection() { std::cout << "Connection closed\n"; }
 };
 
@@ -350,7 +377,7 @@ int main() {
     SchedulerV1 s1;
     s1.submit(std::make_unique<PrintTask>("Hello from V1"));
     s1.run_all();
-    
+
     SchedulerV2 s2;
     auto shared_task = std::make_shared<PrintTask>("Hello from V2");
     s2.submit(shared_task);  // 调度器和 main 都持有引用

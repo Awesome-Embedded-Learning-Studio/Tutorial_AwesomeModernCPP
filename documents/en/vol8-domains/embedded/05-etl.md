@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Embedded ETL library
+difficulty: intermediate
+order: 5
+platform: stm32f1
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 3
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: ETL Embedded Template Library
+---
 # Embedded C++ Tutorial — ETL (Embedded Template Library)
 
 Curiosity: Why do people in the embedded world always treat `new` like a "hazardous material" and handle it with kid gloves? The answer is simple: the heap is unpredictable. ETL (Embedded Template Library) was born to solve this problem: it brings familiar container and algorithm concepts to embedded scenarios, but strips out dynamic allocation, making everything predictable, measurable, and auditable.

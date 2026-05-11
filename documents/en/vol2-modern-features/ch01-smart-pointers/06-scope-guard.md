@@ -1,3 +1,26 @@
+---
+title: 'scope_guard and defer: Generic Scope Guards'
+description: Implement a lightweight, zero-overhead generic scope guard pattern
+chapter: 1
+order: 6
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII守卫
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+related:
+- 自定义删除器
+---
 # scope_guard and defer: A General-Purpose Scope Guard
 
 In previous chapters, we discussed smart pointers—they manage the "lifecycle of resources" (memory, file handles, sockets, etc.). But in real-world engineering, there is another category of scenarios: you need to perform an action when a scope exits, but that action isn't necessarily "releasing a resource." It might be restoring a global state, committing or rolling back a transaction, logging a message, or notifying a monitoring component. This "execute on exit" need is more universal and flexible than resource management, and smart pointers designed specifically for resource management don't cover these scenarios well.

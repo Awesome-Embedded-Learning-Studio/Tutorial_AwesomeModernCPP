@@ -1,3 +1,27 @@
+---
+title: C-style array
+description: Master the declaration, initialization, and multidimensional usage of
+  C-style arrays, and understand array decay and its impact on function parameter
+  passing.
+chapter: 5
+order: 1
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 智能指针预告
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # C-Style Arrays
 
 So far, we have handled data by storing one value per variable. But real-world data rarely exists in isolation—a set of sensor readings, a string of characters, a matrix, or a grade table are all naturally "a row of identical data types." Arrays are the most primitive mechanism provided by C and C++ for storing this kind of contiguous, homogeneous data.

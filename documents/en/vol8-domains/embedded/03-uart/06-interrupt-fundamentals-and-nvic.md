@@ -1,3 +1,16 @@
+---
+title: 'Part 36: Interrupt Basics and NVIC — Letting Hardware Proactively Notify the
+  CPU'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 6
+---
 # Part 36: Interrupt Basics and NVIC — Letting Hardware Notify the CPU Proactively
 
 > In the previous part, we discovered the fatal flaw of blocking receives. In this part, we start building a solution: first, we need to understand how the Cortex-M3 interrupt mechanism works.

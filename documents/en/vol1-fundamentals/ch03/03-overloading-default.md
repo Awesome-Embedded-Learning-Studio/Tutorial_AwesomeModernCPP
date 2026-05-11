@@ -1,3 +1,27 @@
+---
+title: Overloading and default parameters
+description: Master the rules of function overloading and the usage of default parameters,
+  understand the overload resolution mechanism, and avoid common conflicts between
+  the two.
+chapter: 3
+order: 3
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 参数传递方式
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Overloading and Default Arguments
 
 In the previous chapter, we clarified the various methods of parameter passing—pass by value, pass by pointer, and pass by reference. Now a new question arises: suppose we want to write a `print` function to print an integer, a floating-point number, and a string. These three tasks are essentially all "printing," but the rule in C is that every function must have a unique name. So you end up writing `print_int`, `print_float`, `print_str`—just coming up with names is exhausting enough, and you still have to figure out which one to call each time.

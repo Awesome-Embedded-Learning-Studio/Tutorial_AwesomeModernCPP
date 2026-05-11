@@ -1,3 +1,20 @@
+---
+title: nullptr
+description: Type-safe null pointer literal, replacing NULL and 0
+chapter: 99
+order: 4
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # nullptr (C++11)
 
 ## In a Nutshell

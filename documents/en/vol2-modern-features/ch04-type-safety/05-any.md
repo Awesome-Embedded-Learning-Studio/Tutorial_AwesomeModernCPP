@@ -1,3 +1,26 @@
+---
+title: std::any and type erasure
+description: Understanding the type erasure mechanism, applicable scenarios, and performance
+  characteristics of `any`
+chapter: 4
+order: 5
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+- 类型别名
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 4: std::variant'
+- 'Chapter 4: std::optional'
+related:
+- std::function 与类型擦除
+---
 # std::any and Type Erasure
 
 ## Introduction

@@ -1,3 +1,22 @@
+---
+title: Designated initializer
+description: Detailed Explanation of Modern C++ Designated Initializers and Embedded
+  Applications
+chapter: 11
+order: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+reading_time_minutes: 30
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+- 'Chapter 11.2: 结构化绑定'
+cpp_standard:
+- 20
+platform: host
+---
 # Modern C++ for Embedded Development — Designated Initializers
 
 ## Introduction

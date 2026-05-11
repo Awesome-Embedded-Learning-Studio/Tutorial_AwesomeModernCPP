@@ -1,3 +1,15 @@
+---
+title: 'Part 19: From Output to Input — Why Buttons Are Harder Than LEDs'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 1
+---
 # Part 19: From Output to Input — Why Buttons Are Harder Than LEDs
 
 > Congratulations on making it through all 13 parts of the LED tutorial. Now that we have a solid foundation in GPIO output, along with experience using templates and `enum class`, it is time to face a new challenge: making the chip understand human input.

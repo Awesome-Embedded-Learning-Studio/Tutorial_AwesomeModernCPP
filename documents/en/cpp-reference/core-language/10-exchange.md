@@ -1,3 +1,19 @@
+---
+title: std::exchange
+description: Replace the old value with the new value and return the old value
+chapter: 99
+order: 10
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+---
 # std::exchange (C++14)
 
 ## In a Nutshell

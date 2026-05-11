@@ -1,3 +1,21 @@
+---
+title: Variadic templates
+description: A template mechanism that accepts zero or more template arguments or
+  function arguments
+chapter: 99
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.

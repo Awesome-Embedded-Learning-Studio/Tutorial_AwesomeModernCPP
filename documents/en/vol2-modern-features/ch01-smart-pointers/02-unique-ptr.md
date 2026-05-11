@@ -1,3 +1,28 @@
+---
+title: 'unique_ptr Explained: A Zero-Overhead Smart Pointer with Exclusive Ownership'
+description: 'Deep dive into unique_ptr: implementation principles, usage, and best
+  practices'
+chapter: 1
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- unique_ptr
+- 智能指针
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+related:
+- shared_ptr 详解
+- 自定义删除器
+---
 # unique_ptr In-Depth: The Zero-Overhead Smart Pointer for Exclusive Ownership
 
 In the previous article, we discussed RAII (Resource Acquisition Is Initialization)—the cornerstone of C++ resource management. Now let's look at the most direct manifestation of the RAII philosophy in the realm of smart pointers: `std::unique_ptr`. The design philosophy of this class can be summed up in one sentence: **one object, one owner, zero overhead**. It doesn't bother with reference counting, atomic operations, or extra control block allocations—you give it an object, it manages it for you; you leave the scope, it deletes it for you. It's that simple. (By the way, why do interviewers love asking about this so much?)

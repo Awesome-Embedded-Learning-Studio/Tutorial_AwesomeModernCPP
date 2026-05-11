@@ -1,3 +1,15 @@
+---
+title: CMake Configuration Chapter — Building an STM32 Build System from Scratch
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 14
+order: 3
+---
 # CMake Configuration — Building an STM32 Build System from Scratch
 
 I'm staring at the CMakeLists.txt on my screen, and my coffee has gone cold. If you've been following along through the previous two articles, you should now have a cross-compilation toolchain and the STM32 firmware library downloaded. But the real problem is just beginning: how do we get all of this to compile and link into a .bin file that we can flash into the chip? The first time I did this, I spent half an afternoon just getting CMake to understand that "this is a bare-metal ARM project, don't try to run test programs." Today, we're going to break this build system down from start to finish.

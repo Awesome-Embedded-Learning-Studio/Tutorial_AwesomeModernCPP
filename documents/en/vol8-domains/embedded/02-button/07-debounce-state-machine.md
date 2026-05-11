@@ -1,3 +1,15 @@
+---
+title: 'Part 25: 7-State Debounce State Machine — The Core of This Series'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 7
+---
 # Part 25: The 7-State Debounce State Machine — The Core of This Series
 
 > Following up on the previous article: non-blocking debounce works, but state variables are scattered, there is no concept of events, and startup edge cases are unhandled. This article solves all these problems with a 7-state finite state machine. This is a complete breakdown of the `poll_events()` method in `button.hpp`.

@@ -1,3 +1,25 @@
+---
+chapter: 12
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: In-depth understanding of C++ template specialization mechanisms and
+  matching rules
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 'Chapter 12: 模板入门概述'
+- 'Chapter 12: 函数模板详解'
+reading_time_minutes: 62
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Template specialization and partial specialization
+---
 # Modern C++ for Embedded Systems Tutorial — Template Specialization and Partial Specialization
 
 In previous chapters, we covered the basic syntax of templates and the deduction rules for function templates. However, a generic template definition is not always suitable for every type—you might need to provide a completely different implementation for a specific type, or customize behavior for a category of types.

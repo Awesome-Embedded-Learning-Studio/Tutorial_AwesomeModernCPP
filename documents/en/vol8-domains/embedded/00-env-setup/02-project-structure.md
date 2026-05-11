@@ -1,3 +1,16 @@
+---
+title: 'Part 2: Project Structure — HAL Library Acquisition, Startup File Pitfalls,
+  and Directory Setup'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 14
+order: 2
+---
 # Part 2: Project Structure — Fetching the HAL Library, Startup File Pitfalls, and Directory Setup
 
 > In the previous part, we installed the toolchain. Now let's set up the project skeleton. This post documents my entire process of fetching the STM32 HAL library, including that baffling nested submodule issue, the hidden logic behind startup file naming conventions, and the hidden pitfalls in `stm32f1xx_hal_conf.h` that will crash your build halfway through.

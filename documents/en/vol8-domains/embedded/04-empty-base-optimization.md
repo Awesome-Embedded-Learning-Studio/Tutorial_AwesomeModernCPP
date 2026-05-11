@@ -1,3 +1,23 @@
+---
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Introduction to space-based class optimization techniques
+difficulty: intermediate
+order: 4
+platform: stm32f1
+prerequisites:
+- 'Chapter 2: 零开支抽象'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Entity-based optimization (EBO)
+---
 # EBO (Empty Base Optimization): C++'s Slimming Trick
 
 There is a low-profile yet highly effective memory optimization that silently saves bytes for you behind the scenes—**EBO (Empty Base Optimization)**. When writing libraries, we often use empty classes as "policies, tags, or stateless behavior objects." EBO squeezes these stateless base classes out of the object layout, saving space and improving locality.

@@ -1,3 +1,12 @@
+---
+title: 'Volume 4: Advanced Topics'
+description: C++20-26 Advanced Features
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 4: Advanced Topics
 
 > Status: Partial content available (pending rewrite)

@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Techniques 8: Library
+  File Search Logic'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 8
+---
 # Deep Dive into C/C++ Compilation and Linking Part 8: Library File Search Logic
 
 ## Preface

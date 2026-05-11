@@ -1,3 +1,29 @@
+---
+title: 'OnceCallback in Practice (Part 1): Motivation and Interface Design'
+description: Starting from a real asynchronous callback bug, break down the three
+  major flaws of std::function in asynchronous scenarios, and design the complete
+  target API for OnceCallback.
+chapter: 1
+order: 1
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 11
+prerequisites:
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+---
 # OnceCallback in Practice (Part 1): Motivation and Interface Design
 
 ## Introduction

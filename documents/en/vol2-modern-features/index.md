@@ -1,3 +1,12 @@
+---
+title: 'Volume 2: Modern C++ Features'
+description: In-depth Explanation of C++11-17 Core Features
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 2: Modern C++ Features
 
 This volume covers the core modern features of C++11/14/17, from move semantics to smart pointers, from constexpr to lambda expressions, and from type safety to the filesystem library—systematically mastering the key knowledge that distinguishes "modern C++" from "old C++".

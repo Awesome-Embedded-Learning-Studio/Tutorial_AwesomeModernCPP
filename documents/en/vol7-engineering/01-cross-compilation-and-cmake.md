@@ -1,3 +1,25 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Introduces the basic concepts of cross-compilation, toolchains, and configuration
+  methods for multi-target builds using CMake.
+difficulty: beginner
+order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 前言与基础'
+reading_time_minutes: 18
+related: []
+tags:
+- cpp-modern
+- host
+- intermediate
+title: A Simple Guide to Cross-Compilation and CMake
+---
 # Modern Embedded C++ Tutorial: Cross-Compilation Basics and CMake Multi-Target Builds
 
 ## Introduction

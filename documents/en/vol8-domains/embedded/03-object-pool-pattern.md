@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Object Pool Pattern Application
+difficulty: intermediate
+order: 3
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Object Pool Pattern
+---
 # Embedded C++ Tutorial: Object Pool Pattern
 
 ## Introduction

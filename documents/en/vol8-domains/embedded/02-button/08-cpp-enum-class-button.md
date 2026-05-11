@@ -1,3 +1,15 @@
+---
+title: 'Part 26: Refactoring Button Code with `enum class` — Type-Safe Input'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 8
+---
 # Part 26: `enum class` Refactoring Button Code — Type-Safe Input
 
 > Following up on the previous article: the 7-state debounce state machine has been thoroughly explained. Now we begin the C++ refactoring journey—just like the LED tutorial, starting with `enum class`.

@@ -1,3 +1,23 @@
+---
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Deep Understanding of the C++ Zero-Overhead Abstraction Principle
+difficulty: intermediate
+order: 1
+platform: stm32f1
+prerequisites:
+- 'Chapter 1: 构建工具链'
+reading_time_minutes: 19
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Zero-overhead abstraction
+---
 # Modern C++ for Embedded Systems Tutorial — Zero-Overhead Abstraction
 
 ## Preface

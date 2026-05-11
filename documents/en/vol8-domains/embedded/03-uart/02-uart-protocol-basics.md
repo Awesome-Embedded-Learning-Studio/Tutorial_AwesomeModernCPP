@@ -1,3 +1,16 @@
+---
+title: 'Part 32: Detailed Explanation of the UART Protocol — How to Synchronize Without
+  a Clock Line'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 17
+order: 2
+---
 # Part 32: UART Protocol In Depth — How to Synchronize Without a Clock Line
 
 > Following up on the previous article: we learned what UART is, why we should learn it, and how to wire the hardware. In this article, we tear down the protocol itself to understand exactly what "no clock line" means.

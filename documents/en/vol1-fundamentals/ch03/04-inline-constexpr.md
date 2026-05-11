@@ -1,3 +1,27 @@
+---
+title: inline and constexpr functions
+description: Understanding the true meaning of inline and the compile-time evaluation
+  capability of constexpr functions lays the foundation for zero-overhead abstraction
+  in modern C++.
+chapter: 3
+order: 4
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 重载与默认参数
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # `inline` and `constexpr` Functions
 
 We have written quite a few functions by now. Every time we call a function, the program actually has a lot of work to do—saving the current execution position, allocating a stack frame, jumping to the function body, jumping back after execution, destroying the stack frame, and restoring the scene. For a large function of dozens of lines, this overhead is negligible, but for a small function that only does `return x * x`, the call overhead might exceed the computation of the function itself. Can we directly expand these "paper-thin" function calls, eliminating all the costs of jumping and stack frames? This is exactly the problem that `inline` and `constexpr` aim to solve.

@@ -1,3 +1,6 @@
+---
+title: Memory Model Basics
+---
 # Memory Model Basics
 
 ## Chapter Contents

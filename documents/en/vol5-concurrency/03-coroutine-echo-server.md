@@ -1,3 +1,16 @@
+---
+title: Understanding the Revolutionary Features of C++20 — Coroutines Reference —
+  Building a Mini Echo Server Using Coroutines
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 10
+order: 5
+---
 # Understanding the Revolutionary Features of C++20 — Coroutines Reference — Building a Mini Echo Server with Coroutines
 
 ## Preface

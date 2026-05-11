@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking Techniques 3: How
+  to Create and Use Static Libraries'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 3
+---
 # Deep Dive into C/C++ Compilation and Linking Part 3: How to Create and Use Static Libraries
 
 In the previous blog post, I briefly covered the basic introduction to static and dynamic libraries. I have linked them here:

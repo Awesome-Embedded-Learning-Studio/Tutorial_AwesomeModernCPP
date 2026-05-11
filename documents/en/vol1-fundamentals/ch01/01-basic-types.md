@@ -1,3 +1,26 @@
+---
+title: Basic data types
+description: Master C++ integer, floating-point, character, and boolean types, and
+  understand type sizes, value ranges, and platform differences.
+chapter: 1
+order: 1
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 第一个 C++ 程序
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Basic Data Types
 
 In the previous chapter, we wrote our first C++ program, declared integer variables with `int`, and handled input and output with `std::cin` and `std::cout`. You might have been wondering at the time: how large a number can `int` actually hold? What about decimals? How do we represent text? These are great questions because they cut straight to the heart of the C++ type system. In this chapter, we will thoroughly explore the basic data types C++ provides, what each type can store, how much it can hold, and where the boundaries lie.

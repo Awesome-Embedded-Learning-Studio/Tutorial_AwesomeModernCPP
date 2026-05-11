@@ -1,3 +1,27 @@
+---
+title: 'once_callback Design Guide (Part 2): Step-by-Step Implementation'
+description: From the core skeleton to the complete component, a four-step walkthrough
+  of the implementation strategy of once_callback, focusing on understanding template
+  techniques and ownership design.
+chapter: 1
+order: 2
+tags:
+- host
+- cpp-modern
+- advanced
+- 回调机制
+- 函数对象
+difficulty: advanced
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 30
+prerequisites:
+- once_callback 设计指南（一）：动机与接口设计
+related:
+- bind_once / bind_repeating 与参数绑定
+- 回调取消与组合模式
+---
 # once_callback Design Guide (Part 2): Step-by-Step Implementation
 
 ## Introduction

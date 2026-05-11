@@ -1,3 +1,26 @@
+---
+title: Type conversion
+description: Understand C++ implicit and explicit conversion rules, master the use
+  of static_cast, and avoid classic pitfalls in type casting.
+chapter: 1
+order: 2
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 基本数据类型
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Type Conversions
 
 After writing a few lines of C++, you will inevitably run into this situation: a `float` needs to become an `int`, a `long long` needs to be truncated to an `int`, or a signed number is being compared with an unsigned number. Type conversions are almost everywhere in real programs—and if you don't understand the rules, the compiler will quietly make decisions for you behind the scenes, and you will end up with a completely baffling bug late at night.

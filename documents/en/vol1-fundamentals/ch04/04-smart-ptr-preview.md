@@ -1,3 +1,27 @@
+---
+title: Smart pointer preview
+description: Understand why smart pointers are needed, get an initial look at how
+  unique_ptr automatically manages memory, and lay the groundwork for deeper study
+  in Volume Two.
+chapter: 4
+order: 4
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- 引用
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # A Preview of Smart Pointers
 
 So far, we have been working with raw pointers for several chapters. Pointers are indeed powerful, but they are also dangerous—every time you `new` a block of memory, you must constantly remember to `delete` it. If you miss it along any code path, you get a memory leak. Modern C++ provides a systematic solution: **smart pointers**. We won't dive deep in this chapter; instead, we will just introduce the problems they solve and what their basic usage looks like. The comprehensive explanation will come in Volume Two, where we will systematically explore them alongside move semantics and RAII.

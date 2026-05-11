@@ -1,3 +1,26 @@
+---
+title: 'std::optional: Elegantly expressing ''possibly no value'''
+description: Use optional instead of special values and raw pointers to safely express
+  optional semantics.
+chapter: 4
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- optional
+- 类型安全
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+- 23
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 4: std::variant'
+related:
+- 错误处理的现代方式
+---
 # std::optional: Elegantly Expressing "Maybe No Value"
 
 ## Introduction

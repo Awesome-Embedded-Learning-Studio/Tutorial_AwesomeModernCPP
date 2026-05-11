@@ -1,3 +1,15 @@
+---
+title: 'Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 15
+order: 6
+---
 # Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move
 
 > Picking up from the previous article: the pin is configured, the clock is enabled, and push-pull output is ready. Now we need the final step — telling the pin to "output high" or "output low." This is the job of `HAL_GPIO_WritePin()` and `HAL_GPIO_TogglePin()`.

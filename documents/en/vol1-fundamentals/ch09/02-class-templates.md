@@ -1,3 +1,25 @@
+---
+title: Class template
+description: Master class template definitions, member functions, and template parameters
+  to implement a generic stack.
+chapter: 9
+order: 2
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 函数模板
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Class Templates
 
 In the previous chapter, we learned how to use `template <typename T>` to make functions generic — a single `max_value` can handle various types. But function templates only generalize "a piece of logic." What if we want a generic "data structure"? Take a stack, for example — its push, pop, and top operations share the exact same logic across all types, but the stack internally needs to store a set of elements of the same type, and this "type" is determined when we write the class. The reason the C++ standard library can provide flexible containers like `std::vector<int>` and `std::vector<std::string>` comes down to class templates. That is the star of this chapter! Class templates let us parameterize types at the entire class level — member variables, member functions, and even nested types can all use template parameters. In this chapter, we will clarify the syntax of class templates, how to define member functions, the types of template parameters, and finally walk through implementing a complete generic stack step by step.

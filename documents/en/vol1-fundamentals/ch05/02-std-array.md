@@ -1,3 +1,26 @@
+---
+title: std::array
+description: Master the usage of std::array and its comparison with C arrays, and
+  learn to use fixed-size containers in modern C++.
+chapter: 5
+order: 2
+difficulty: beginner
+reading_time_minutes: 10
+platform: host
+prerequisites:
+- C 风格数组
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # std::array
 
 Do C-style arrays get the job done? Absolutely, and we covered this in the previous section—in fact, we've been using them since our very first day of learning C. (If you're not familiar with C, the repository also includes a detailed C tutorial!)

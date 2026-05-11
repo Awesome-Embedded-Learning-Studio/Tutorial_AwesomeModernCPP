@@ -1,3 +1,27 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+description: Gain a deep understanding of C's dynamic memory allocation mechanism,
+  master the correct usage of malloc/calloc/realloc/free, recognize common memory
+  errors and debugging methods, and compare the design philosophies of C++ RAII and
+  smart pointers.
+difficulty: intermediate
+order: 18
+platform: host
+prerequisites:
+- 结构体与内存对齐
+reading_time_minutes: 10
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 内存管理
+title: Dynamic memory management
+---
 # Dynamic Memory Management
 
 So far, all the programs we have written use variables whose sizes are determined at compile time. But the real world does not work that way—we do not know in advance how many characters a user will input, how many records will be collected before running, or what size data packet a client will send next. The common thread in these scenarios is: **before the program runs, you cannot determine how much memory is needed**.

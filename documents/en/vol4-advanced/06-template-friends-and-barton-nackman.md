@@ -1,3 +1,24 @@
+---
+title: Template friends and the Barton-Nackman trick
+description: Mastering template techniques for friend injection and operator overloading
+chapter: 12
+order: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+reading_time_minutes: 35
+prerequisites:
+- 'Chapter 12: 类模板详解'
+- 'Chapter 12: 模板实例化与特化'
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # Modern C++ for Embedded Systems Tutorial — Template Friends and the Barton-Nackman Trick
 
 Have you ever wondered why standard library ``std::complex`` or ``std::pair`` can be compared directly using ``==``? Why don't they need a bunch of operator functions defined in the global scope? The answer is **friend injection** and the **Barton-Nackman Trick**.

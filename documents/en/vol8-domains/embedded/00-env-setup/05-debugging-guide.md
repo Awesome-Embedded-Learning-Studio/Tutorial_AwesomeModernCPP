@@ -1,3 +1,15 @@
+---
+title: 'Part 5: Advanced Debugging — From printf to a Complete GDB Debugging Environment'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 14
+order: 5
+---
 # Part 5: Advanced Debugging — From printf to a Complete GDB Environment
 
 > For everyone still debugging STM32 programs with printf, wondering "why can't I just single-step like a normal program."

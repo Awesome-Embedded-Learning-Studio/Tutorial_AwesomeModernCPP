@@ -1,3 +1,16 @@
+---
+title: 'In-depth Understanding of C/C++ Compilation and Linking (Bonus): Can a dynamic
+  library be executed like an executable file?'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 13
+order: 10
+---
 # Deep Dive into C/C++ Compilation and Linking (Bonus): Can We Execute a Shared Library Like an Executable?
 
 I know some of you might laugh instinctively at this topic and think I'm talking nonsense. To be honest, when I first encountered this idea, I dismissed it with a laugh too, thinking it was absurd. But the truth is, a shared library **can actually be executed just like an executable.**

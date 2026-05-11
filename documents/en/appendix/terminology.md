@@ -1,3 +1,12 @@
+---
+title: Glossary
+description: Standard Chinese-English Technical Terminology Translation Reference
+  Table for the Project
+tags:
+- 基础
+chapter: 99
+order: 0
+---
 # Glossary
 
 This document compiles the core terms used throughout the project tutorials, grouped by domain, with Chinese and English translations. Its purpose is to ensure consistent terminology across all articles, preventing the same concept from being translated differently in different places.

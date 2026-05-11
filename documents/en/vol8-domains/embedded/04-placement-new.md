@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Placement new application strategies
+difficulty: intermediate
+order: 4
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 11
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Use of Placement New
+---
 # Embedded C++ Tutorial: placement new
 
 In the embedded world, `malloc` / `new` are often not a silver bullet. Some target platforms have no free heap at all (bare-metal, certain RTOSes), some scenarios require **disabling the heap** for predictability and real-time performance, and in some cases you need to control the memory layout down to the byte — that's where *placement new* comes in.

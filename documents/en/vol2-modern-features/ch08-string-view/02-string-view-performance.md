@@ -1,3 +1,22 @@
+---
+title: string_view performance analysis
+description: Benchmarking the performance gains of replacing const string& with string_view
+chapter: 8
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 8: string_view 内部原理'
+related:
+- string_view 陷阱与最佳实践
+---
 # string_view Performance Analysis
 
 In the previous article, we dove into the internals of `string_view`, learning that it is a non-owning view consisting of a pointer and a length. In this article, we let the data speak—exactly how much faster is `string_view` than `const std::string&`? In which scenarios do the benefits peak? Are there cases where it is actually slower?

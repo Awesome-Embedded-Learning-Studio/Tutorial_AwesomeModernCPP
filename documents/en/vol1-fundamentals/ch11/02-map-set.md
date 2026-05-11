@@ -1,3 +1,26 @@
+---
+title: Getting Started with Associative Containers
+description: Master the core operations of std::map, std::set, and std::unordered_map,
+  and learn to search by key and maintain ordered sets.
+chapter: 11
+order: 2
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- std::vector 快速上手
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Getting Started with Associative Containers
 
 In the previous chapter, we walked through `std::vector` from start to finish—dynamic arrays, contiguous storage, O(1) random access by index. When dealing with ordered sequences, it is our go-to container. However, in many scenarios, we do not care about "what is the element at index *n*", but rather "what is the value for a given key". For example, counting how many times each word appears in a text, or checking if a word exists in a spelling dictionary—these "given a key, look up a result" tasks are cumbersome and inefficient with a `vector`, requiring either a sorted binary search or a linear scan. The C++ standard library provides a group of containers specifically designed for these problems, known as **associative containers**.

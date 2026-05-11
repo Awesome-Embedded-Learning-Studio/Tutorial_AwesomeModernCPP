@@ -1,3 +1,20 @@
+---
+title: Generic lambda
+description: Allow Lambda expression parameters to use the auto placeholder, with
+  the compiler automatically deducing the type.
+chapter: 99
+order: 9
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+---
 # Generic Lambda (C++14)
 
 ## In a Nutshell

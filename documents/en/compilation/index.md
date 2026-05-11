@@ -1,3 +1,13 @@
+---
+title: In-Depth Compilation and Linking
+description: In-depth understanding of C/C++ compilation, linking, static libraries,
+  and dynamic libraries
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Deep Dive into Compilation and Linking
 
 > Status: Existing content

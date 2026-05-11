@@ -1,3 +1,26 @@
+---
+title: Introduction to Value Categories
+description: Understand the concepts of lvalues and rvalues, master the basic usage
+  of references, and lay the foundation for subsequent move semantics.
+chapter: 1
+order: 4
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- const 初探
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Introduction to Value Categories
 
 By this chapter, we have worked extensively with variables, types, and `const`. But have you ever wondered: why can some expressions appear on the left side of an assignment, while others can only appear on the right? Why does `x = 42` compile, but `42 = x` does not? These seemingly scattered phenomena actually share a unifying thread—**value categories**.

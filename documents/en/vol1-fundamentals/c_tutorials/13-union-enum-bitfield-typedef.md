@@ -1,3 +1,26 @@
+---
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+description: Master the use of unions, enumerations, bit fields, and typedef; understand
+  techniques such as type punning and hardware register mapping; and compare type-safe
+  alternatives in C++.
+difficulty: beginner
+order: 17
+platform: host
+prerequisites:
+- 12 结构体与内存对齐
+reading_time_minutes: 15
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 类型安全
+title: Unions, enumerations, bit fields, and typedef
+---
 # Unions, Enums, Bit-Fields, and typedef
 
 In the previous chapter, we thoroughly dissected the memory layout of structs and figured out that compilers insert padding bytes between your fields. In this chapter, we look at four language features—unions, enums, bit-fields, and typedef—that might seem like "supporting characters" next to structs, but each has an irreplaceable role to play. Unions let you perform tricks on the same block of memory, enums let you replace magic numbers with meaningful names, bit-fields let you control memory layout down to the bit, and typedef lets you create aliases for types and clean up complex declarations.

@@ -1,3 +1,19 @@
+---
+title: std::variant
+description: A type-safe union that holds a value of one of its candidate types at
+  any given time
+chapter: 99
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+cpp_standard:
+- 17
+- 20
+- 23
+---
 # std::variant (C++17)
 
 ## In a Nutshell

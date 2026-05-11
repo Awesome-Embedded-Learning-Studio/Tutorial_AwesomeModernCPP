@@ -1,3 +1,21 @@
+---
+title: Range for loop
+description: Iterate over all elements in a container or array using more concise
+  syntax.
+chapter: 99
+order: 7
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+---
 # Range-based for Loop (C++11)
 
 ## One-Liner

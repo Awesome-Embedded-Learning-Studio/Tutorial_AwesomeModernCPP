@@ -1,3 +1,23 @@
+---
+chapter: 9
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Ranges Pipeline in Practice
+difficulty: intermediate
+order: 8
+platform: host
+prerequisites:
+- 'Chapter 8: 类型安全'
+reading_time_minutes: 19
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Piping and Ranges in Practice
+---
 # Modern Embedded C++ Tutorial — Pipeline Operations and Ranges in Practice
 
 ## Introduction

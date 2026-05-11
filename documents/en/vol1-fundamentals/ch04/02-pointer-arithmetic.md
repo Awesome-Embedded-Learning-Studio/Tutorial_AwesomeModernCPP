@@ -1,3 +1,26 @@
+---
+title: Pointer arithmetic and arrays
+description: Master pointer arithmetic, the relationship between pointers and arrays,
+  and pointer operations on C-style strings.
+chapter: 4
+order: 2
+difficulty: beginner
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 指针基础
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Pointer Arithmetic and Arrays
 
 If you already understand that "a pointer is an address," then we need to face a deeper truth—in C++, pointers and arrays are, **at their most fundamental level**, practically two sides of the same coin. (We strongly advise against conflating the concepts of pointers and arrays, as doing so will only lead to flawed engineering logic.)

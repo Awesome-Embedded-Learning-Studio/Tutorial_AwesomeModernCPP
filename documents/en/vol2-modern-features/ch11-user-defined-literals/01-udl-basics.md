@@ -1,3 +1,25 @@
+---
+title: Fundamentals of user-defined literals
+description: Raw/cooked forms of operator"" and standard library literals
+chapter: 11
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+- 字面量
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 15
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+related:
+- UDL 实战
+---
 # User-Defined Literal Basics
 
 When writing embedded code, we often run into frustrating scenarios: is the 1000 in `timeout = 1000` in milliseconds or microseconds? Is `baud = 9600` really 9600 or 115200? Is `buffer_size = 1024` in bytes or words? These "magic numbers" are not only hard to understand but also error-prone—worse yet, conversions between different units rely entirely on manual calculation, leaving ample room for mistakes.

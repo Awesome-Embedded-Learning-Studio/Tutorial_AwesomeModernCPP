@@ -1,3 +1,26 @@
+---
+title: Multiple inheritance and virtual inheritance
+description: Understand the syntax of multiple inheritance, the diamond inheritance
+  problem, and the solution of virtual inheritance, and learn to use multiple inheritance
+  judiciously.
+chapter: 8
+order: 4
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 抽象类与接口
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Multiple Inheritance and Virtual Inheritance
 
 In previous chapters, we focused exclusively on single inheritance—where a class has only one direct base class. This covers the vast majority of object-oriented design needs. However, C++ also allows a class to inherit from multiple base classes simultaneously, known as multiple inheritance. Multiple inheritance is powerful but highly controversial—used well, it enables flexible designs; used poorly, it makes the entire inheritance hierarchy a nightmare to maintain. (For this reason, the author generally prefers composition.)

@@ -1,3 +1,15 @@
+---
+title: Table of Contents
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 0
+order: 0
+---
 # Table of Contents
 
 This is the table of contents for *Modern C++ for Embedded Systems*. Click any item to jump directly to the corresponding chapter.

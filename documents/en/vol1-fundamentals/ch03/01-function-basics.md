@@ -1,3 +1,26 @@
+---
+title: Function basics
+description: Master the definition, declaration, parameter passing, and return values
+  of C++ functions, and understand scope and lifetime.
+chapter: 3
+order: 1
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- range-for 循环
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Function Basics
 
 Kids, I've actually seen someone write a ten-thousand-line program with just `main()` one function from start to finish, with all the code tangled together like spaghetti. Obviously, this person doesn't really understand functions (beginners excepted).

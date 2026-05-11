@@ -1,3 +1,27 @@
+---
+title: 'Perfect forwarding: preserving the exact passing of value categories'
+description: Understand reference collapsing and universal references, master the
+  correct use of std::forward
+chapter: 0
+order: 4
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 0: 右值引用'
+- 'Chapter 0: 移动构造与移动赋值'
+related:
+- 移动语义实战
+---
 # Perfect Forwarding: Preserving Value Categories Exactly
 
 If you've ever written a template function that takes a parameter and passes it to another function, you've likely run into this dilemma: when passing an lvalue, you want the receiver to get an lvalue; when passing an rvalue, you want the receiver to get an rvalue. Sounds simple, right? But before C++11, this was nearly impossible — you either wrote two overloads (one taking an lvalue reference, one taking an rvalue reference), or you accepted everything by const reference and lost the rvalue information, sacrificing the performance benefits of move semantics. What a headache — you couldn't have both efficiency and performance!

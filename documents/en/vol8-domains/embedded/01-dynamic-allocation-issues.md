@@ -1,3 +1,23 @@
+---
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Analyzing embedded dynamic memory issues
+difficulty: intermediate
+order: 1
+platform: stm32f1
+prerequisites:
+- 'Chapter 3: 内存与对象管理'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Dynamic allocation problem
+---
 # The Cost of Dynamic Memory: Fragmentation and Non-Determinism (Memory Layout, Fragmentation, and Memory Alignment)
 
 ## Introduction

@@ -1,3 +1,16 @@
+---
+title: 'Part 42: Command Processor and Complete Code Walkthrough — From Serial Input
+  to LED Control'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 17
+order: 12
+---
 # Part 42: Command Handler and Full Code Walkthrough — From Serial Input to LED Control
 
 > All the parts are ready. In this part, we do a complete walkthrough of `main.cpp`, seeing how they work together.

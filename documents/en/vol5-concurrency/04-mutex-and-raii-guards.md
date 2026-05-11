@@ -1,3 +1,23 @@
+---
+title: Mutex and RAII guard
+description: Mutexes and RAII lock guards
+chapter: 10
+order: 4
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: advanced
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 9: 函数式特性'
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # Modern C++ for Embedded Development—mutex and RAII Guards
 
 ## Introduction

@@ -1,3 +1,15 @@
+---
+title: 'Part 34: HAL UART Initialization and Transmission — Making the Chip Speak'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 17
+order: 4
+---
 # Part 34: HAL UART Initialization and Transmission — Making the Chip Talk
 
 > We've covered hardware theory for three parts, and now we can finally write some code. The goal of this part is simple: make the chip send its first message to your computer via UART.

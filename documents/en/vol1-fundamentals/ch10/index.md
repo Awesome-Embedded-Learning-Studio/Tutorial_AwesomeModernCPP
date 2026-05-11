@@ -1,3 +1,6 @@
+---
+title: Exception handling
+---
 # Exception Handling
 
 ## Chapter Contents

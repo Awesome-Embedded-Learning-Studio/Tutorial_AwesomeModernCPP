@@ -1,3 +1,23 @@
+---
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Detailed Explanation of std::array Container
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- 'Chapter 6: RAII与智能指针'
+reading_time_minutes: 6
+tags:
+- cpp-modern
+- host
+- intermediate
+title: std::array fixed-size container
+---
 # Modern C++ for Embedded Systems Tutorial — std::array: Compile-Time Fixed-Size Arrays
 
 When writing embedded code, the heap often feels like an unreliable roommate: it can flip the room upside down at any moment. `std::array` is like that steady, quiet friend—its size is determined at compile time, it lives on the stack or in static storage, it has no dynamic allocation, its performance is predictable, and its semantics are clear. A key focus for us is how it compares to traditional C-style arrays.

@@ -1,3 +1,24 @@
+---
+title: Abnormal foundation
+description: Master try/catch/throw syntax and the standard exception hierarchy
+chapter: 10
+order: 1
+difficulty: intermediate
+reading_time_minutes: 14
+platform: host
+prerequisites:
+- 模板特化初步
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Exception Basics
 
 So far, we have essentially relied on two approaches for handling errors: either using return values to indicate failure (such as a function returning `false` or an error code), or calling `abort` to crash the program outright. These two approaches barely suffice in small programs, but once the project scales up, their problems become apparent—return value error codes are easily ignored by callers, and `assert` gets stripped out entirely by the compiler in Release builds. What makes things even more troublesome is that if an error occurs deep within a nested call chain, you have to propagate the error code outward layer by layer. Every intermediate layer must check and handle it, and the code quickly turns into a giant `if` Christmas tree. (I've seen this thing so many times, it literally makes me want to throw up...)

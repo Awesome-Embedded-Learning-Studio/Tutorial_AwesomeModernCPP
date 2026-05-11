@@ -1,3 +1,29 @@
+---
+title: 'OnceCallback in Practice (Part 3): Implementing bind_once'
+description: Line-by-line breakdown of the parameter binding implementation of bind_once—from
+  the motivation to lambda capture pack expansion, and then manually expanding a complete
+  template instantiation example
+chapter: 1
+order: 3
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+difficulty: beginner
+platform: host
+cpp_standard:
+- 23
+reading_time_minutes: 9
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+related:
+- OnceCallback 实战（四）：取消令牌设计
+---
 # OnceCallback in Practice (Part 3): Implementing bind_once
 
 ## Introduction

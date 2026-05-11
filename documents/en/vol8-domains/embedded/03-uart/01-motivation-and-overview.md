@@ -1,3 +1,16 @@
+---
+title: 'Part 31: From Buttons to Serial Ports — Why UART is the Cornerstone of Embedded
+  Communication'
+description: ''
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+difficulty: beginner
+platform: stm32f1
+chapter: 17
+order: 1
+---
 # Part 31: From Buttons to Serial — Why UART Is the Cornerstone of Embedded Communication
 
 > The LED tutorial taught the chip to "speak," and the button tutorial taught it to "listen." Now it is time to learn something new: how to make the chip "talk" with other devices.

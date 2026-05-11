@@ -1,3 +1,23 @@
+---
+title: Program Structure and Compilation Fundamentals
+description: Understand the basic structure of C programs, the four-stage compilation
+  process, the header file mechanism, and basic I/O, laying a compilation model foundation
+  for subsequent C++ learning.
+chapter: 1
+order: 1
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+difficulty: beginner
+platform: host
+reading_time_minutes: 20
+cpp_standard:
+- 11
+prerequisites:
+- 无（本系列第一篇）
+---
 # Program Structure and Compilation Basics
 
 If you have written some C code before, you probably just clicked "Run" in an IDE and called it a day—you might have never cared about the intermediate process of how code in a `.c` file becomes a runnable binary. But honestly, understanding the compilation model becomes crucial when learning C++ later on: template instantiation, header file strategies, and the one definition rule (ODR)—if we don't understand the basic compilation workflow, we are basically operating in a black box. So let's clear this up right from the start.

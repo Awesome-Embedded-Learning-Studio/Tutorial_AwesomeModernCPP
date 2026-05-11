@@ -1,3 +1,23 @@
+---
+title: Interrupt-safe coding
+description: ISR Secure Coding Practices
+chapter: 10
+order: 5
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: advanced
+reading_time_minutes: 25
+prerequisites:
+- 'Chapter 10.1-10.4: 原子操作与内存序'
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: stm32f1
+---
 # Modern C++ for Embedded Systems — Writing Interrupt-Safe Code
 
 ## Introduction

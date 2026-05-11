@@ -1,3 +1,25 @@
+---
+title: Abstract classes and interfaces
+description: Master the design methods of pure virtual functions and abstract classes,
+  and learn to use the Interface Segregation Principle to organize type hierarchies.
+chapter: 8
+order: 3
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 虚函数与多态
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Abstract Classes and Interfaces
 
 In the previous chapter, we thoroughly broke down the mechanisms behind virtual functions and polymorphism. We saw exactly how the compiler looks up the vtable and finds the real function address at runtime when we call a method through a base class pointer. But we deliberately sidestepped one question—what if the base class itself shouldn't be instantiated? For example, if we define a `Shape` class to represent "shapes," the concept of a "shape" itself is abstract. No `Shape` object exists in the real world that "isn't a circle, a rectangle, or any other specific shape." It is simply a common interface; the truly meaningful entities are its derived classes.

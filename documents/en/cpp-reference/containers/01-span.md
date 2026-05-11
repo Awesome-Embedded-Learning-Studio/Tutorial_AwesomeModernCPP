@@ -1,3 +1,18 @@
+---
+title: std::span
+description: Non-owning view of a contiguous sequence, zero-overhead alternative to
+  passing pointer + length
+chapter: 99
+order: 1
+tags:
+- host
+- cpp-modern
+- beginner
+difficulty: beginner
+cpp_standard:
+- 20
+- 23
+---
 # std::span (C++20)
 
 ## In a Nutshell

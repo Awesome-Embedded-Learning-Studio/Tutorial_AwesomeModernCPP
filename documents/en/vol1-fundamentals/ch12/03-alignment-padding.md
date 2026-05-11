@@ -1,3 +1,25 @@
+---
+title: Memory alignment and padding
+description: Understand alignment rules and sizeof calculation methods, master the
+  usage of alignas/alignof
+chapter: 12
+order: 3
+difficulty: intermediate
+reading_time_minutes: 12
+platform: host
+prerequisites:
+- 动态内存管理
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Memory Alignment and Padding
 
 In the previous chapter, we divided a program's memory space into four major regions: the stack, the heap, the static storage, and the code segment, clarifying where data "lives" and how long it "survives." Now let's dig one level deeper—even when data resides in the same memory region, it can't just be arranged arbitrarily. If you've written C++ for a while, you've probably encountered this puzzle: a struct clearly has only three members, but the `sizeof` result is noticeably larger than the sum of those three members' sizes. What in the world happened to those extra bytes?

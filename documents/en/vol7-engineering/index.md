@@ -1,3 +1,12 @@
+---
+title: 'Volume 7: Software Engineering Practice'
+description: CMake, package management, testing, static analysis
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 7: Software Engineering Practices
 
 > Status: Partial content exists (pending rewrite)

@@ -1,3 +1,24 @@
+---
+title: 'Detailed Explanation of Standard Attributes: Make the Compiler Your Code Reviewer'
+description: Semantics, Usage, and Best Practices of C++11-17 Standard Attributes
+chapter: 7
+order: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 11
+- 14
+- 17
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+related:
+- C++20-23 新属性
+---
 # Standard Attributes Explained: Making the Compiler Your Code Reviewer
 
 When writing code, we often run into a few frustrating situations: calling a function that returns an error code but forgetting to check it, and the compiler silently lets it pass; having a parameter that goes unused under a certain build configuration, and the compiler floods the screen with unused variable warnings; wanting to mark an API as obsolete but relying solely on documentation or comments to notify callers. The standard attribute syntax `[[...]]`, introduced in C++11 and gradually expanded in subsequent versions, solves these problems—it provides a standardized way to pass extra information to the compiler, letting it perform static checks for us.

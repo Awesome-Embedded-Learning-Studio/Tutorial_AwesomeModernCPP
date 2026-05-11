@@ -1,3 +1,16 @@
+---
+title: 'Understanding MSVC C++ Modules in One Article: Principles, Motivations, and
+  Engineering Practices'
+description: ''
+tags:
+- cpp-modern
+- host
+- intermediate
+difficulty: intermediate
+platform: host
+chapter: 11
+order: 8
+---
 # Understanding MSVC C++ Modules: Principles, Motivation, and Engineering Practice
 
 A quick pointer: if you don't already know how to use modules on MSVC, I would seriously recommend that you try them first before drawing any conclusions.

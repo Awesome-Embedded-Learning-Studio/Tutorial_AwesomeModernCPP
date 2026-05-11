@@ -1,3 +1,27 @@
+---
+title: 'consteval and constinit: New Tools for Compile-Time Guarantees'
+description: Immediate functions and compile-time initialization in C++20, and the
+  precise distinction and selection strategy from constexpr
+chapter: 2
+order: 3
+tags:
+- host
+- cpp-modern
+- intermediate
+- consteval
+- constinit
+- 编译期计算
+difficulty: intermediate
+platform: host
+cpp_standard:
+- 20
+- 23
+reading_time_minutes: 18
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+related:
+- constexpr 构造函数与字面类型
+---
 # consteval and constinit: New Tools for Compile-Time Guarantees
 
 ## Introduction

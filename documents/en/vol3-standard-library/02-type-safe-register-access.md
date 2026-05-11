@@ -1,3 +1,23 @@
+---
+chapter: 8
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Type-safe register wrapper
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 'Chapter 7: 容器与数据结构'
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- host
+- intermediate
+title: Type-safe register access
+---
 # Embedded C++ Tutorial — Type-Safe Register Access
 
 When writing register operations, our common appetizer is a one-line tragedy like this:

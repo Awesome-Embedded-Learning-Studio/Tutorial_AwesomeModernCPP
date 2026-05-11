@@ -1,3 +1,26 @@
+---
+title: Embedded C Programming Patterns
+description: Register access patterns, correct use of volatile, interrupt-safe programming,
+  peripheral abstraction layer design, and bare-metal development models
+chapter: 1
+order: 107
+tags:
+- host
+- cpp-modern
+- intermediate
+- 嵌入式
+- 单片机
+difficulty: intermediate
+platform: host
+reading_time_minutes: 25
+cpp_standard:
+- 11
+- 17
+prerequisites:
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+- 指针进阶：多级指针、指针与 const
+---
 # Embedded C Programming Patterns
 
 When writing desktop applications, we rarely worry about whether the compiler might silently optimize away a memory read, or whether two pieces of code might trample the same data at the same time. But once we turn our attention to bare metal—no operating system, no standard library, not even a standard entry point—these problems all surface. Embedded C programming has its own pattern language: registers are mapped using structures, hardware state must be protected with `volatile`, and data exchange between interrupts and the main loop requires carefully designed synchronization mechanisms.

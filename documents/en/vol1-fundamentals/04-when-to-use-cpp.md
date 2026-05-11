@@ -1,3 +1,26 @@
+---
+title: When to use C++ and which C++ features to use
+description: Exploring when to choose C++ over C, and how to wisely use C++ features
+  in embedded environments, including recommended, compromised, and prohibited features.
+chapter: 0
+order: 4
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+difficulty: beginner
+reading_time_minutes: 18
+prerequisites: []
+related: []
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+platform: host
+---
 # When to Use C++ and Which Features to Use
 
 Honestly, whenever I see the "C vs C++" holy wars erupt in the embedded community, I find it quite frustrating. The debates quickly devolve into matters of faith—C developers treating C++ as a cult, and C++ developers treating C as the Stone Age. But the real question is: for this specific project, on this specific hardware, is using this language actually worth it? No one can answer that question for you, but I can share the lessons learned from real-world projects to help you avoid some common pitfalls.

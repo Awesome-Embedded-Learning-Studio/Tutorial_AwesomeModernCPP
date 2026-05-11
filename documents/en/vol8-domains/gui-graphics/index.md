@@ -1,3 +1,12 @@
+---
+title: GUI and graphics
+description: Graphics basics, minimal GUI framework, ImGui, 2D/3D rendering
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # GUI and Graphics
 
 > Status: Planned

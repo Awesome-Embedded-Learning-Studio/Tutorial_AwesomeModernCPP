@@ -1,3 +1,25 @@
+---
+title: Common STL Patterns
+description: Container selection guide, common pitfalls, and performance fundamentals
+chapter: 11
+order: 4
+difficulty: beginner
+reading_time_minutes: 15
+platform: host
+prerequisites:
+- 算法库初见
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+---
 # Common STL Patterns
 
 In the previous three chapters, we covered `vector`, associative containers, and the algorithm library, diving deep into each domain. But in real-world code, the questions are rarely "how do I use this container" or "how do I call this algorithm." Instead, they are "which container should I choose," "why is my program so slow," and "did I just hit iterator invalidation again." These are cross-cutting concerns that require a systematic perspective.

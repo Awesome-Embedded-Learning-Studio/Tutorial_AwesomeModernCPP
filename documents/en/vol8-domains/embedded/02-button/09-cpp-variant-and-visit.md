@@ -1,3 +1,16 @@
+---
+title: 'Part 27: `std::variant` Events + `std::visit` Dispatching — Type-Safe "What
+  Happened'
+description: ''
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+difficulty: intermediate
+platform: stm32f1
+chapter: 16
+order: 9
+---
 # Part 27: `std::variant` Events + `std::visit` Dispatch — Type-Safe "What Happened"
 
 > Following up on the previous article: `enum class` achieved type-safe configuration and state. This article introduces the C++17 `std::variant` to express button events—"Pressed" and "Released" are no longer two integers, but two distinct types.

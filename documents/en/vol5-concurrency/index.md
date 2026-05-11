@@ -1,3 +1,12 @@
+---
+title: 'Volume 5: Concurrent Programming'
+description: From thread primitives to coroutine asynchrony
+platform: host
+tags:
+- cpp-modern
+- host
+- intermediate
+---
 # Volume 5: Concurrent Programming
 
 > Status: Partial content available (pending rewrite)

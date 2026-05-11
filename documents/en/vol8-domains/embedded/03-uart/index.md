@@ -1,3 +1,13 @@
+---
+title: UART serial communication
+description: 'Building an STM32 UART Driver in Modern C++: From Hardware Protocols
+  to Interrupt-Driven Reception'
+platform: stm32f1
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+---
 # UART Serial Communication
 
 > From serial protocol principles to interrupt-driven reception, building an STM32 UART driver and command processor with modern C++23.
