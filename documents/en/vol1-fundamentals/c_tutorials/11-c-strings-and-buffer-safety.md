@@ -103,7 +103,7 @@ t[0] = 'h';               // 没问题
 
 ## Step Two — Master the Core Functions of string.h
 
-`&lt;string.h&gt;` is the core header file for C string and memory operations. We'll look at them in three groups: length and copying, concatenation and comparison, and memory operations.
+`<string.h>` is the core header file for C string and memory operations. We'll look at them in three groups: length and copying, concatenation and comparison, and memory operations.
 
 ### Length and Copying
 
@@ -111,7 +111,7 @@ t[0] = 'h';               // 没问题
 
 `strcpy` copies the entire source string to the destination buffer. The problem is that it **completely ignores** how large the destination buffer is—if the source string is longer than the destination buffer, it overflows.
 
-`strncpy` is the length-limited version, but its behavior is a bit subtle: it copies at most `n` characters. If `strlen(src) &gt;= n`, it stops after copying `n` characters, **but does not automatically append a terminator**. This behavior has tripped up countless people.
+`strncpy` is the length-limited version, but its behavior is a bit subtle: it copies at most `n` characters. If `strlen(src) >= n`, it stops after copying `n` characters, **but does not automatically append a terminator**. This behavior has tripped up countless people.
 
 ```c
 #include <stdio.h>

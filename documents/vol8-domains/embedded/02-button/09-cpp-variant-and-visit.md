@@ -130,9 +130,9 @@ std::visit(
 
 1. `std::visit(visitor, event)` — 根据 `event` 持有的类型调用 `visitor`
 2. `[](auto&& e)` — 泛型 lambda，`auto&&` 是转发引用，`e` 的类型由 `variant` 中实际持有的类型推导
-3. `using T = std::decay_t&lt;decltype(e)&gt;` — 提取 `e` 的"裸类型"（去掉引用和 const）
-4. `if constexpr (std::is_same_v&lt;T, Pressed&gt;)` — 编译时判断 `T` 是不是 `Pressed`
-5. `else if constexpr (std::is_same_v&lt;T, Released&gt;)` — 编译时判断 `T` 是不是 `Released`
+3. `using T = std::decay_t<decltype(e)>` — 提取 `e` 的"裸类型"（去掉引用和 const）
+4. `if constexpr (std::is_same_v<T, Pressed>)` — 编译时判断 `T` 是不是 `Pressed`
+5. `else if constexpr (std::is_same_v<T, Released>)` — 编译时判断 `T` 是不是 `Released`
 
 ### main.cpp 中的实际用法
 
@@ -153,7 +153,7 @@ button.poll_events(
     HAL_GetTick());
 ```
 
-这里用了两层 lambda。外层 lambda 是 `poll_events()` 的回调参数，每次有事件发生时被调用，参数 `event` 是一个 `ButtonEvent`（即 `std::variant&lt;Pressed, Released&gt;`）。内层 lambda 是 `std::visit` 的访问者，负责处理具体的事件类型。
+这里用了两层 lambda。外层 lambda 是 `poll_events()` 的回调参数，每次有事件发生时被调用，参数 `event` 是一个 `ButtonEvent`（即 `std::variant<Pressed, Released>`）。内层 lambda 是 `std::visit` 的访问者，负责处理具体的事件类型。
 
 ### std::decay_t 和 decltype
 
@@ -206,7 +206,7 @@ struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
 
 ## 零开销证明
 
-`std::variant&lt;Pressed, Released&gt;` 的内存布局：
+`std::variant<Pressed, Released>` 的内存布局：
 
 ```text
 ┌──────────┬──────────┐
@@ -235,10 +235,10 @@ if (event.tag == 0) {
 
 这一篇引入了两个 C++17 特性来构建类型安全的事件系统：
 
-- **`std::variant&lt;Pressed, Released&gt;`** — 类型安全的联合体，替代 C 风格的整数事件码
+- **`std::variant<Pressed, Released>`** — 类型安全的联合体，替代 C 风格的整数事件码
 - **`std::visit` + 泛型 lambda** — 编译时类型分发，保证处理了所有事件类型
 - **空结构体作为类型标签** — 可扩展，将来可以加字段
-- **`std::decay_t&lt;decltype(e)&gt;` + `std::is_same_v`** — 编译时类型判断的工具组合
+- **`std::decay_t<decltype(e)>` + `std::is_same_v`** — 编译时类型判断的工具组合
 
 和虚函数方案相比，`variant` + `visit` 不需要 vtable、不需要堆分配、不需要 RTTI——完美适配我们的嵌入式环境。
 

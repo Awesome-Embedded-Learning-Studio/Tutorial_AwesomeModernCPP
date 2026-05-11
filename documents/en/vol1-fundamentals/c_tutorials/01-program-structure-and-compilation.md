@@ -89,7 +89,7 @@ Output:
 Hello, World!
 ```
 
-The first line, `#include &lt;stdio.h&gt;`, is a preprocessor directive that inserts the contents of the standard I/O library header file directly into the current position. Without including this header, the compiler doesn't know what `printf` is and will issue a warning or an error.
+The first line, `#include <stdio.h>`, is a preprocessor directive that inserts the contents of the standard I/O library header file directly into the current position. Without including this header, the compiler doesn't know what `printf` is and will issue a warning or an error.
 
 ## Step 2 — Breaking Down the Four Stages of Compilation
 
@@ -104,7 +104,7 @@ The preprocessor handles all directives starting with `#`—expanding macros, in
 gcc -E hello.c -o hello.i
 ```
 
-The preprocessed `.i` file will be very large—a single `#include &lt;stdio.h&gt;` expands the entire standard I/O header along with all indirectly included headers. If you open the `.i` file, the first few lines are comments, followed by hundreds or thousands of lines of header content, with your own code appearing only at the very end.
+The preprocessed `.i` file will be very large—a single `#include <stdio.h>` expands the entire standard I/O header along with all indirectly included headers. If you open the `.i` file, the first few lines are comments, followed by hundreds or thousands of lines of header content, with your own code appearing only at the very end.
 
 What the preprocessor does sounds simple—pure text substitution—but this mechanism is a major source of C's flexibility and forms the foundation for understanding C++ templates and header file organization.
 
@@ -361,7 +361,7 @@ This step-by-step compilation pattern is very useful. When you modify `math_ops.
 
 C++ retains the same separate compilation model but adds more complex mechanisms. Header files remain the primary modularization tool in C++ (until C++20 Modules arrived), but C++ templates introduce a new problem—template code usually must be written in header files because the compiler needs to see the complete definition to perform template instantiation. Understanding the compilation model is important precisely because template instantiation happens at the compilation stage, and the linker only sees already-instantiated symbols.
 
-C++ recommends using header files without the `.h` suffix (such as `&lt;cstdio&gt;` instead of `&lt;stdio.h&gt;`), which place C library functions into the `std` namespace. `std::cout` provides type-safe I/O, but `printf` is typically faster performance-wise—because it lacks the locale overhead, virtual function calls, and formatting object construction costs of `std::cout`. In performance-sensitive embedded scenarios, C-style `printf`/`scanf` remains the better choice.
+C++ recommends using header files without the `.h` suffix (such as `<cstdio>` instead of `<stdio.h>`), which place C library functions into the `std` namespace. `std::cout` provides type-safe I/O, but `printf` is typically faster performance-wise—because it lacks the locale overhead, virtual function calls, and formatting object construction costs of `std::cout`. In performance-sensitive embedded scenarios, C-style `printf`/`scanf` remains the better choice.
 
 The one definition rule (ODR) is the core rule of the C++ linking model: an entity can have only one definition across the entire program. Violating the ODR also causes problems in C, but C++ templates, inline functions, and `inline` variables make this issue much more prominent—we will discuss this in detail in later C++ chapters.
 
@@ -383,7 +383,7 @@ At this point, we have a clear understanding of the complete pipeline of a C pro
 
 - [ ] The entry point of a C program is `int main(void)` or `int main(int argc, char *argv[])`
 - [ ] Four compilation stages: preprocessing → compilation → assembly → linking
-- [ ] `&lt; &gt;` searches system directories, `" "` searches the current directory first
+- [ ] `< >` searches system directories, `" "` searches the current directory first
 - [ ] Use include guards in header files to prevent multiple inclusion
 - [ ] Multi-file compilation: compile `.c` → `.o` separately, then link
 - [ ] Understanding the compilation model is a prerequisite for learning C++ templates and the ODR

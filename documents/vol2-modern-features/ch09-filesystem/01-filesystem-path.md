@@ -80,7 +80,7 @@ p2: "/home/user/docs"
 p3: "C:\\Users\\Alice\\Documents"
 ```
 
-注意 `operator&lt;&lt;` 输出 `path` 时会加上引号。如果你不想要引号，可以用 `p.string()` 输出。
+注意 `operator<<` 输出 `path` 时会加上引号。如果你不想要引号，可以用 `p.string()` 输出。
 
 ⚠️ `path` 的构造函数支持 `std::string_view`（从 C++17 起）。你可以直接传入 `string_view`：
 
@@ -311,7 +311,7 @@ const char* c = p.c_str();  // Windows 上是 const wchar_t*
 
 ## 路径比较与迭代
 
-两个 `path` 对象可以用 `==`、`!=`、`&lt;` 等运算符比较。比较规则是逐组件比较——先比较 root_name，再比较 root_directory，然后依次比较每个路径组件。这意味着 `/a/b/c` 和 `/a/b/c` 是相等的，但 `/a/b/c` 和 `/a/b/./c` 不一定相等（因为 `.` 没有被规范化）。
+两个 `path` 对象可以用 `==`、`!=`、`<` 等运算符比较。比较规则是逐组件比较——先比较 root_name，再比较 root_directory，然后依次比较每个路径组件。这意味着 `/a/b/c` 和 `/a/b/c` 是相等的，但 `/a/b/c` 和 `/a/b/./c` 不一定相等（因为 `.` 没有被规范化）。
 
 ```cpp
 fs::path p1 = "/usr/local/bin";
@@ -396,7 +396,7 @@ int main() {
 
 `std::filesystem::path` 是 C++17 给我们带来的跨平台路径处理利器。它只做语法层面的路径处理（不碰文件系统），提供了完整的路径分解（root_name、parent_path、filename、stem、extension）、修改（replace_extension、remove_filename、append、concat）、比较和迭代功能。它内部使用通用格式（正斜杠），自动处理跨平台分隔符差异。在路径拼接时，`/=` 是语义拼接（推荐），`+=` 是纯字符串拼接（小心使用）。
 
-理解了 `path` 的操作之后，下一篇我们就来看看如何用 `&lt;filesystem&gt;` 库进行实际的文件和目录操作——创建、复制、删除、权限管理，以及一个实用的日志轮转工具。
+理解了 `path` 的操作之后，下一篇我们就来看看如何用 `<filesystem>` 库进行实际的文件和目录操作——创建、复制、删除、权限管理，以及一个实用的日志轮转工具。
 
 ## 参考资源
 

@@ -378,7 +378,7 @@ if (a > INT_MAX - b) {
 ```
 
 > ⚠️ **Pitfall Warning**
-> Never use "the result is negative" to detect signed integer overflow — once overflow occurs, all assumptions about the result are unreliable. The correct approach is to check the operands before the operation, for example `a &gt; INT_MAX - b`.
+> Never use "the result is negative" to detect signed integer overflow — once overflow occurs, all assumptions about the result are unreliable. The correct approach is to check the operands before the operation, for example `a > INT_MAX - b`.
 
 ### Unterminated Strings
 

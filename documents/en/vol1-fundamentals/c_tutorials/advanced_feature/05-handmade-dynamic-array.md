@@ -82,12 +82,12 @@ typedef struct {
 } DynArr;
 ```
 
-The four fields each have their own role: `data` manages "where it exists," `size` manages "how many are used," `capacity` manages "how many slots there are in total," and `elem_size` manages "how large each slot is." With `elem_size`, locating the address of the `i`th element is `(char *)arr-&gt;data + i * arr-&gt;elem_size` — we must first cast to `char *` because `sizeof(char)` is exactly 1 byte, making the pointer arithmetic a precise byte offset. Doing addition directly on `void *` will cause a compiler error (the C standard does not allow it, although GCC permits it as an extension, but it is not portable).
+The four fields each have their own role: `data` manages "where it exists," `size` manages "how many are used," `capacity` manages "how many slots there are in total," and `elem_size` manages "how large each slot is." With `elem_size`, locating the address of the `i`th element is `(char *)arr->data + i * arr->elem_size` — we must first cast to `char *` because `sizeof(char)` is exactly 1 byte, making the pointer arithmetic a precise byte offset. Doing addition directly on `void *` will cause a compiler error (the C standard does not allow it, although GCC permits it as an extension, but it is not portable).
 
 > ⚠️ **Pitfall Warning**
-> `size` is "how many valid elements actually exist," `capacity` is "how many elements this memory block can hold at most," `size &lt;= capacity`. If you use `capacity` instead of `size` as the upper bound when iterating, you will read uninitialized garbage data.
+> `size` is "how many valid elements actually exist," `capacity` is "how many elements this memory block can hold at most," `size <= capacity`. If you use `capacity` instead of `size` as the upper bound when iterating, you will read uninitialized garbage data.
 
-The internal data layout of `std::vector` is almost identical to ours, except that the template parameter `T` replaces the `elem_size` + `void *` combination, and type safety is guaranteed at compile time. `std::vector&lt;int&gt;` is 24 bytes in most implementations — three 8-byte fields (pointer + size + capacity), and `elem_size` does not need to be stored after template instantiation.
+The internal data layout of `std::vector` is almost identical to ours, except that the template parameter `T` replaces the `elem_size` + `void *` combination, and type safety is guaranteed at compile time. `std::vector<int>` is 24 bytes in most implementations — three 8-byte fields (pointer + size + capacity), and `elem_size` does not need to be stored after template instantiation.
 
 ## Step 2 — Establish an Error Handling System
 
@@ -143,7 +143,7 @@ DynArrResult dynarr_create(DynArr *arr, size_t elem_size, size_t init_capacity) 
 }
 ```
 
-After allocating the struct memory, you must immediately check the `malloc` return value — accessing `arr-&gt;data` without checking will cause an immediate segfault. We set a minimum capacity of 8 as a rule of thumb; too small leads to frequent growth, too large wastes memory.
+After allocating the struct memory, you must immediately check the `malloc` return value — accessing `arr->data` without checking will cause an immediate segfault. We set a minimum capacity of 8 as a rule of thumb; too small leads to frequent growth, too large wastes memory.
 
 > ⚠️ **Pitfall Warning**
 > Note the presence of error checking. This is a very classic resource leak scenario: the struct allocation succeeds, but the data area allocation fails. If you simply `return` without `free`ing, that struct memory is leaked forever. This situation of "allocating some resources but failing in subsequent steps" is the most error-prone part of C memory management.
@@ -169,7 +169,7 @@ void dynarr_destroy(DynArr *arr) {
 }
 ```
 
-The release order must not be reversed — if you `free(arr)` first, accessing `arr-&gt;data` is a use-after-free. Another issue is that after `free(arr-&gt;data)`, the `arr-&gt;data` pointer itself does not become `NULL`; it still points to that freed memory. C function parameters are passed by value, so we can only rely on the caller to manually set it to NULL:
+The release order must not be reversed — if you `free(arr)` first, accessing `arr->data` is a use-after-free. Another issue is that after `free(arr->data)`, the `arr->data` pointer itself does not become `NULL`; it still points to that freed memory. C function parameters are passed by value, so we can only rely on the caller to manually set it to NULL:
 
 ```c
 dynarr_destroy(&arr);
@@ -201,7 +201,7 @@ static DynArrResult dynarr_reserve(DynArr *arr, size_t new_capacity) {
 `realloc` tries to expand in place at the original location; if that fails, it finds a larger block on the heap and copies the old data over. In either case, the returned pointer points to valid memory and the old data is intact.
 
 > ⚠️ **Pitfall Warning**
-> `realloc` may return a different address! You must use the return value to update the pointer. If you write `realloc(arr-&gt;data, ...)` without receiving the return value, you lose the new address after the "move," and the memory pointed to by the old address has already been freed — a double disaster.
+> `realloc` may return a different address! You must use the return value to update the pointer. If you write `realloc(arr->data, ...)` without receiving the return value, you lose the new address after the "move," and the memory pointed to by the old address has already been freed — a double disaster.
 
 ### Shrinkage — Avoid Thrashing
 
@@ -266,7 +266,7 @@ DynArrResult dynarr_push_back(DynArr *arr, const void *elem) {
 }
 ```
 
-The destination of `memcpy` is `(char *)arr-&gt;data + arr-&gt;size * arr-&gt;elem_size` — skipping all existing elements to reach the first empty slot. Thanks to the 2x growth strategy, the total time for N consecutive `push_back` calls is O(N), amortized O(1).
+The destination of `memcpy` is `(char *)arr->data + arr->size * arr->elem_size` — skipping all existing elements to reach the first empty slot. Thanks to the 2x growth strategy, the total time for N consecutive `push_back` calls is O(N), amortized O(1).
 
 Let's verify the growth behavior:
 
@@ -422,7 +422,7 @@ At this point we have hand-rolled a complete dynamic array library. Looking back
 
 Using `void *` for generic programming brought us three problems: no type checking, needing to manually pass `elem_size`, and requiring forced type casts inside callback functions. `std::vector` solves all three perfectly with templates — the compiler determines the type `T` at instantiation time, all type checks are completed at compile time, and `elem_size` is automatically calculated. `std::vector`'s destructor automatically frees the internal array, whether the function returns normally or exits due to an exception — this is the core idea of RAII: binding resource lifetime to object lifetime. C++11's move semantics turn `std::vector` copying into an O(1) pointer swap, while in C we can only `memcpy` the entire data block.
 
-There are two easily confused functions: `reserve` only changes `capacity` without changing `size`, pre-allocating memory without creating new elements; `resize` changes `size`, with extra positions value-initialized and excess elements destroyed. Our C version only implements `reserve`, leaving `resize` as an exercise. Additionally, `std::vector&lt;bool&gt;` uses bit-packing optimization (each `bool` takes only 1 bit), but at the cost of not being able to take the address of individual elements. C++17's `std::span` provides a non-owning view over contiguous memory and is a very important composition tool.
+There are two easily confused functions: `reserve` only changes `capacity` without changing `size`, pre-allocating memory without creating new elements; `resize` changes `size`, with extra positions value-initialized and excess elements destroyed. Our C version only implements `reserve`, leaving `resize` as an exercise. Additionally, `std::vector<bool>` uses bit-packing optimization (each `bool` takes only 1 bit), but at the cost of not being able to take the address of individual elements. C++17's `std::span` provides a non-owning view over contiguous memory and is a very important composition tool.
 
 ## Exercises
 

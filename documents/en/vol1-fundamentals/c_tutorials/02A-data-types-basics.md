@@ -261,7 +261,7 @@ We will explore the mechanism of array-to-pointer decay in detail in the chapter
 
 C++ fully inherits all of C's integer types, while making several important improvements to make the type system safer.
 
-First, C++11 introduced the `&lt;cstdint&gt;` header (note the absence of the `.h` suffix), which provides the same functionality as C's `&lt;stdint.h&gt;`, but places the types inside the `std` namespace. Second, C++'s `{}` initialization prohibits "narrowing conversions" — you cannot initialize a variable with a value that falls outside the target type's range:
+First, C++11 introduced the `<cstdint>` header (note the absence of the `.h` suffix), which provides the same functionality as C's `<stdint.h>`, but places the types inside the `std` namespace. Second, C++'s `{}` initialization prohibits "narrowing conversions" — you cannot initialize a variable with a value that falls outside the target type's range:
 
 ```cpp
 int x = 3.14;      // C/C++ 都允许，隐式截断为 3（编译器可能警告）

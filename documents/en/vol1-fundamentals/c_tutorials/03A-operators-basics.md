@@ -170,7 +170,7 @@ if (ptr != NULL && ptr->value > 0) {
 }
 ```
 
-If `ptr` is a null pointer, `ptr != NULL` is false. Thanks to short-circuit evaluation, `ptr-&gt;value` is never evaluated, and the program stays safe. Without short-circuit evaluation, even if `ptr` were null, the program would still attempt to access `ptr-&gt;value`, causing an immediate crash.
+If `ptr` is a null pointer, `ptr != NULL` is false. Thanks to short-circuit evaluation, `ptr->value` is never evaluated, and the program stays safe. Without short-circuit evaluation, even if `ptr` were null, the program would still attempt to access `ptr->value`, causing an immediate crash.
 
 Let's verify the effect of short-circuit evaluation:
 
@@ -250,7 +250,7 @@ Note that the comma in `int i = 0, j = n - 1` is a declaration separator (not th
 
 ## Bridging to C++
 
-C++ does two important things regarding operators. The first is introducing C++ versions of `&lt;stdbool.h&gt;`—`bool`, `true`, and `false` are built-in language keywords in C++, unlike in C where they are macros. The second is operator overloading—you can define behaviors for operators like `+` and `==` on custom types, making them feel as natural to use as built-in types.
+C++ does two important things regarding operators. The first is introducing C++ versions of `<stdbool.h>`—`bool`, `true`, and `false` are built-in language keywords in C++, unlike in C where they are macros. The second is operator overloading—you can define behaviors for operators like `+` and `==` on custom types, making them feel as natural to use as built-in types.
 
 But there is an important limitation: although C++ allows overloading `&&` and `||`, **overloading them causes the loss of short-circuit evaluation**. Because overloaded operators are essentially function calls, both arguments are evaluated, and the short-circuit property is lost. Therefore, in practice, never overload `&&` and `||`.
 

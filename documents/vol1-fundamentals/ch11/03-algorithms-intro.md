@@ -80,7 +80,7 @@ std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
 
 `std::stable_sort` 和 `sort` 的区别在于"稳定性"——当两个元素比较结果相等时，`stable_sort` 保证它们保持原来的相对顺序。比如你先按成绩排序，再按班级排序，第二次排序时同一个班级内的学生仍然保持成绩从高到低的顺序。`stable_sort` 的代价是时间和空间开销略大，但对于需要保持排序稳定性的场景来说无可替代。
 
-> **踩坑预警**：给 `sort` 传入的比较函数必须满足"严格弱序"（strict weak ordering）。简单说就是：`comp(a, a)` 必须返回 `false`，如果 `comp(a, b)` 为 `true` 则 `comp(b, a)` 必须为 `false`，传递性也必须成立。如果你写了 `&lt;=` 而不是 `&lt;`，在某些标准库实现上会导致未定义行为——可能死循环，可能崩溃，也可能只是排序结果不对。所以比较函数永远用 `&lt;`（升序）或 `&gt;`（降序），不要用 `&lt;=` 或 `&gt;=`。
+> **踩坑预警**：给 `sort` 传入的比较函数必须满足"严格弱序"（strict weak ordering）。简单说就是：`comp(a, a)` 必须返回 `false`，如果 `comp(a, b)` 为 `true` 则 `comp(b, a)` 必须为 `false`，传递性也必须成立。如果你写了 `<=` 而不是 `<`，在某些标准库实现上会导致未定义行为——可能死循环，可能崩溃，也可能只是排序结果不对。所以比较函数永远用 `<`（升序）或 `>`（降序），不要用 `<=` 或 `>=`。
 
 ## 找东西——std::find 家族与二分查找
 
@@ -162,7 +162,7 @@ v.erase(new_end, v.end());
 
 ## 算一算——累积、计数、极值
 
-最后一组常用算法做的是"把一堆数据归纳成一个值"。`std::accumulate`（需要 `&lt;numeric&gt;` 头文件）对范围内的元素逐个累加，初始值由你指定——它还可以接受一个自定义的二元操作来求乘积、拼接字符串等。`std::count` / `std::count_if` 统计等于指定值或满足条件的元素个数。`std::min_element` / `std::max_element` 分别返回指向最小和最大元素的迭代器：
+最后一组常用算法做的是"把一堆数据归纳成一个值"。`std::accumulate`（需要 `<numeric>` 头文件）对范围内的元素逐个累加，初始值由你指定——它还可以接受一个自定义的二元操作来求乘积、拼接字符串等。`std::count` / `std::count_if` 统计等于指定值或满足条件的元素个数。`std::min_element` / `std::max_element` 分别返回指向最小和最大元素的迭代器：
 
 ```cpp
 std::vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6};
@@ -300,7 +300,7 @@ struct Employee {
 
 ### 练习 2：文本处理管道
 
-给定一个 `std::vector&lt;std::string&gt;` 表示若干行文本，用 STL 算法实现一个简单的文本处理管道：把所有空行删掉（`remove_if`），把每一行转成全小写（`std::transform` 逐字符处理），然后按字典序排序并去重（`std::unique` + `erase`）。每一步都用一个独立的算法调用完成，不要写手动的 for 循环。
+给定一个 `std::vector<std::string>` 表示若干行文本，用 STL 算法实现一个简单的文本处理管道：把所有空行删掉（`remove_if`），把每一行转成全小写（`std::transform` 逐字符处理），然后按字典序排序并去重（`std::unique` + `erase`）。每一步都用一个独立的算法调用完成，不要写手动的 for 循环。
 
 ```cpp
 std::vector<std::string> lines = {
@@ -310,7 +310,7 @@ std::vector<std::string> lines = {
 
 ## 小结
 
-这一章我们把 `&lt;algorithm&gt;` 和 `&lt;numeric&gt;` 里最常用的一批算法过了一遍。排序用 `std::sort`，需要稳定性时用 `std::stable_sort`。查找分两路走：无序数据用 `std::find` / `std::find_if` 做线性搜索，有序数据用 `std::binary_search` / `std::lower_bound` 做二分查找。修改序列靠 `std::copy`、`std::transform`、`std::replace`，删除元素用 remove-erase 惯用法。统计归纳则有 `std::accumulate`、`std::count` / `std::count_if`、`std::min_element` / `std::max_element`。
+这一章我们把 `<algorithm>` 和 `<numeric>` 里最常用的一批算法过了一遍。排序用 `std::sort`，需要稳定性时用 `std::stable_sort`。查找分两路走：无序数据用 `std::find` / `std::find_if` 做线性搜索，有序数据用 `std::binary_search` / `std::lower_bound` 做二分查找。修改序列靠 `std::copy`、`std::transform`、`std::replace`，删除元素用 remove-erase 惯用法。统计归纳则有 `std::accumulate`、`std::count` / `std::count_if`、`std::min_element` / `std::max_element`。
 
 贯穿所有这些算法的是一个核心理念：不要手写循环来表达"做什么"，而是用算法的名字直接声明意图。配合 lambda 表达式，我们可以灵活定制比较规则、过滤条件、变换逻辑，同时保持代码的可读性。
 

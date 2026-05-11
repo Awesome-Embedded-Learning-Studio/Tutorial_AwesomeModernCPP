@@ -218,7 +218,7 @@ int* end   = &arr[4];
 ptrdiff_t distance = end - start;   // 3，不是 12
 ```
 
-`ptrdiff_t` is a type defined in `&lt;stddef.h&gt;` specifically for representing pointer distances.
+`ptrdiff_t` is a type defined in `<stddef.h>` specifically for representing pointer distances.
 
 > ⚠️ **Gotcha Warning**
 > Pointer arithmetic is only meaningful when the pointers point into the same array (or the same contiguous block of allocated memory). Subtracting two completely unrelated pointers is undefined behavior. The compiler won't flag it as an error, but the result is unpredictable.

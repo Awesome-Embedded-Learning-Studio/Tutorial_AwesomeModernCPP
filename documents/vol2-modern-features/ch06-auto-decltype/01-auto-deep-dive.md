@@ -125,7 +125,7 @@ auto&& r2 = 42;         // int&&（右值初始化，推导为 int&&）
 auto&& r3 = get_value(); // 取决于返回值类型
 ```
 
-`auto&&` 在范围 for 循环中很有用：它不管容器返回的是左值引用还是代理类型（比如 `vector&lt;bool&gt;` 的 `operator[]`），都能正确绑定。
+`auto&&` 在范围 for 循环中很有用：它不管容器返回的是左值引用还是代理类型（比如 `vector<bool>` 的 `operator[]`），都能正确绑定。
 
 ------
 
@@ -135,7 +135,7 @@ auto&& r3 = get_value(); // 取决于返回值类型
 
 ### auto x = {1, 2, 3} 推导为 initializer_list
 
-在 C++11/14 中，`auto x = {1, 2, 3}` 会被推导为 `std::initializer_list&lt;int&gt;`。这往往不是你想要的：
+在 C++11/14 中，`auto x = {1, 2, 3}` 会被推导为 `std::initializer_list<int>`。这往往不是你想要的：
 
 ```cpp
 auto x1 = {1, 2, 3};      // std::initializer_list<int>
@@ -157,7 +157,7 @@ auto x4{1, 2};  // 编译错误（C++17），不再是 initializer_list
 
 ## auto 与代理类型
 
-这是笔者踩过的一个大坑。`std::vector&lt;bool&gt;` 是标准库中一个臭名昭著的特化——它为了节省空间把 `bool` 值打包成了位。结果是它的 `operator[]` 不返回 `bool&`，而是返回一个代理对象 `std::vector&lt;bool&gt;::reference`。
+这是笔者踩过的一个大坑。`std::vector<bool>` 是标准库中一个臭名昭著的特化——它为了节省空间把 `bool` 值打包成了位。结果是它的 `operator[]` 不返回 `bool&`，而是返回一个代理对象 `std::vector<bool>::reference`。
 
 ```cpp
 std::vector<bool> bits = {true, false, true};
@@ -182,7 +182,7 @@ for (std::size_t i = 0; i < bits.size(); ++i) {
 }
 ```
 
-这个问题不只出现在 `vector&lt;bool&gt;` 中。Eigen 等数学库的表达式模板、某些 range adapter 的迭代器也返回代理类型。遇到 `auto&` 编译失败但 `auto` 能通过时，首先怀疑代理类型。
+这个问题不只出现在 `vector<bool>` 中。Eigen 等数学库的表达式模板、某些 range adapter 的迭代器也返回代理类型。遇到 `auto&` 编译失败但 `auto` 能通过时，首先怀疑代理类型。
 
 ------
 
@@ -361,7 +361,7 @@ for (const auto& s : sensors) {
 
 ### auto 与花括号
 
-记住 `auto x = {1, 2, 3}` 是 `std::initializer_list&lt;int&gt;`，不是 `std::vector&lt;int&gt;`：
+记住 `auto x = {1, 2, 3}` 是 `std::initializer_list<int>`，不是 `std::vector<int>`：
 
 ```cpp
 auto v = {1, 2, 3};

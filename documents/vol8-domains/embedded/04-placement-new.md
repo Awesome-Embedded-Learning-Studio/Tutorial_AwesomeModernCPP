@@ -54,7 +54,7 @@ int main() {
 
 ```
 
-看到了这个new嘛？实际上这里的new(buffer) Foo(args...)只是调用构造函数，在 `buffer` 指定的位置构造对象，而且注意到，这个区域是实际放在栈上的，**不能**对 placement-new 的对象使用 `delete p;`；必须显式调用 `p-&gt;~Foo()`。当然，为了满足对齐，缓冲区应使用 `alignas(T)` 或 `std::aligned_storage_t`。
+看到了这个new嘛？实际上这里的new(buffer) Foo(args...)只是调用构造函数，在 `buffer` 指定的位置构造对象，而且注意到，这个区域是实际放在栈上的，**不能**对 placement-new 的对象使用 `delete p;`；必须显式调用 `p->~Foo()`。当然，为了满足对齐，缓冲区应使用 `alignas(T)` 或 `std::aligned_storage_t`。
 
 不过这只是一个示例用法，没有人真的会这样使用的。。。
 
@@ -278,7 +278,7 @@ public:
 
 ```
 
-有了 `InPlace&lt;T&gt;`，你可以把生命周期绑定到函数/对象上，防止忘记析构（RAII FTW）。
+有了 `InPlace<T>`，你可以把生命周期绑定到函数/对象上，防止忘记析构（RAII FTW）。
 
 ------
 

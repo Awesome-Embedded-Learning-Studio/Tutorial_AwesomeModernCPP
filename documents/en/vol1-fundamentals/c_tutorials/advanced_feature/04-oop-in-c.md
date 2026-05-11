@@ -128,7 +128,7 @@ int strbuf_length(const StrBuf* sb) { return sb->length; }
 const char* strbuf_data(const StrBuf* sb) { return sb->data; }
 ```
 
-The full definition of `struct StrBuf` only appears in the `.c` file. If a caller tries to write `sb-&gt;length`, the compiler will immediately throw an error about "dereferencing pointer to incomplete type." In C, the `.h` file is equivalent to the `public` part in C++, and the `.c` file is equivalent to the `private` members and function implementations—the difference is that C relies on the compiler's incomplete type checking, while C++ relies on language-level access control keywords.
+The full definition of `struct StrBuf` only appears in the `.c` file. If a caller tries to write `sb->length`, the compiler will immediately throw an error about "dereferencing pointer to incomplete type." In C, the `.h` file is equivalent to the `public` part in C++, and the `.c` file is equivalent to the `private` members and function implementations—the difference is that C relies on the compiler's incomplete type checking, while C++ relies on language-level access control keywords.
 
 ## Step 2 — Simulating Classes with Structs + Function Pointers
 
@@ -249,7 +249,7 @@ void cat_init(Cat* self, const char* name, int age, int lives)
 }
 ```
 
-Here's the key part—because the first member of both `Dog` and `Cat` is `Animal base`, it follows that `&dog-&gt;base == (Animal*)dog`. We can safely cast a `Dog*` to a `Animal*` and call through the base class pointer uniformly:
+Here's the key part—because the first member of both `Dog` and `Cat` is `Animal base`, it follows that `&dog->base == (Animal*)dog`. We can safely cast a `Dog*` to a `Animal*` and call through the base class pointer uniformly:
 
 ```c
 Dog dog;
@@ -427,7 +427,7 @@ Serializable* s = &ts->serializable;    // 正确
 ```
 
 > ⚠️ **Pitfall Warning**
-> In C++, the compiler automatically calculates the offsets for multiple inheritance. But when hand-rolling OOP in C, you must manually guarantee the correctness of pointer conversions. This is why many C projects (like the Linux kernel) tend to stick to single inheritance + callbacks rather than multiple interface inheritance. If you absolutely must use multiple interfaces, make sure to use `&obj-&gt;interface` to obtain the pointer instead of casting directly.
+> In C++, the compiler automatically calculates the offsets for multiple inheritance. But when hand-rolling OOP in C, you must manually guarantee the correctness of pointer conversions. This is why many C projects (like the Linux kernel) tend to stick to single inheritance + callbacks rather than multiple interface inheritance. If you absolutely must use multiple interfaces, make sure to use `&obj->interface` to obtain the pointer instead of casting directly.
 
 ## Step 6 — Hands-on: Assembling a Graphics Management Framework
 
@@ -551,8 +551,8 @@ When you write `class Shape { virtual double area() = 0; }` in C++, the compiler
 |---|---|
 | Define a `ShapeVtable` struct | The compiler auto-generates a vtable (in the `.rodata` section) |
 | Assign `vtable = &kCircleVtable` in the constructor | The constructor automatically sets the vptr |
-| Manually write `shape_area()` for virtual dispatch | `s-&gt;area()` automatically looks up the table via the vptr |
-| Manually downcast with `(Circle*)shape` | `dynamic_cast&lt;Circle*&gt;(shape)` for safe casting |
+| Manually write `shape_area()` for virtual dispatch | `s->area()` automatically looks up the table via the vptr |
+| Manually downcast with `(Circle*)shape` | `dynamic_cast<Circle*>(shape)` for safe casting |
 | Manually call the constructor with `counter_init(&c, 0, 100)` | `Counter c(0, 100)` for automatic construction |
 | Hide fields with opaque pointers | `private:` access control |
 | Use struct embedding for inheritance | `class Derived : public Base` |

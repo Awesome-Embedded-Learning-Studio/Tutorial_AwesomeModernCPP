@@ -154,9 +154,9 @@ __HAL_RCC_GPIOE_CLK_ENABLE();    // 使能GPIOE的时钟
 
 让我们逐行拆解这个展开结果。
 
-`RCC-&gt;APB2ENR |= RCC_APB2ENR_IOPCEN;`是核心操作。`RCC`是一个指向RCC寄存器结构体的指针，`APB2ENR`是APB2外设时钟使能寄存器（APB2 Peripheral Clock Enable Register），它的物理地址是`0x40021018`。`|=`是"读-改-写"操作——先读出寄存器当前的值，与`RCC_APB2ENR_IOPCEN`做按位或运算（也就是把特定位置1），然后写回寄存器。`RCC_APB2ENR_IOPCEN`是一个位掩码，代表第4位（bit4），置1就表示使能GPIOC的时钟。
+`RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;`是核心操作。`RCC`是一个指向RCC寄存器结构体的指针，`APB2ENR`是APB2外设时钟使能寄存器（APB2 Peripheral Clock Enable Register），它的物理地址是`0x40021018`。`|=`是"读-改-写"操作——先读出寄存器当前的值，与`RCC_APB2ENR_IOPCEN`做按位或运算（也就是把特定位置1），然后写回寄存器。`RCC_APB2ENR_IOPCEN`是一个位掩码，代表第4位（bit4），置1就表示使能GPIOC的时钟。
 
-`tmpreg = RCC-&gt;APB2ENR; (void)tmpreg;`这两行看起来很奇怪——读出来赋给一个临时变量然后又不用。这不是Bug，而是刻意为之的延迟操作。ARM Cortex-M3的总线写操作是缓冲的，写入指令执行完毕时，数据可能还没有真正到达寄存器。紧接着读一次同一个寄存器，可以强制等待前一次写操作完成，确保时钟使能真正生效后再继续执行后续代码。这是一个非常重要的细节——如果你在使能时钟之后立刻去操作外设的寄存器，而时钟还没有真正稳定，可能会导致不可预测的行为。
+`tmpreg = RCC->APB2ENR; (void)tmpreg;`这两行看起来很奇怪——读出来赋给一个临时变量然后又不用。这不是Bug，而是刻意为之的延迟操作。ARM Cortex-M3的总线写操作是缓冲的，写入指令执行完毕时，数据可能还没有真正到达寄存器。紧接着读一次同一个寄存器，可以强制等待前一次写操作完成，确保时钟使能真正生效后再继续执行后续代码。这是一个非常重要的细节——如果你在使能时钟之后立刻去操作外设的寄存器，而时钟还没有真正稳定，可能会导致不可预测的行为。
 
 每个GPIO端口对应APB2ENR寄存器的不同位：
 
@@ -249,7 +249,7 @@ class GPIOClock {
 
 `if constexpr`是C++17引入的编译期条件判断。和普通的`if`语句不同，`if constexpr`的条件在编译时就被求值，只有条件为`true`的那个分支会被编译进最终的代码，其他分支会被直接丢弃。因为`PORT`是模板的非类型参数（`GpioPort`枚举值），它在编译时就确定了，所以编译器可以完全确定应该调用哪个时钟使能宏。
 
-这意味着，当你写下`GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;`这个模板实例化时，编译器自动生成了只包含`__HAL_RCC_GPIOC_CLK_ENABLE()`的`enable_target_clock()`函数——没有运行时的`if-else`判断开销，没有函数指针，没有任何多余的东西。最终生成的机器码和你手写一行`__HAL_RCC_GPIOC_CLK_ENABLE()`完全等价。
+这意味着，当你写下`GPIO<GpioPort::C, GPIO_PIN_13>`这个模板实例化时，编译器自动生成了只包含`__HAL_RCC_GPIOC_CLK_ENABLE()`的`enable_target_clock()`函数——没有运行时的`if-else`判断开销，没有函数指针，没有任何多余的东西。最终生成的机器码和你手写一行`__HAL_RCC_GPIOC_CLK_ENABLE()`完全等价。
 
 这就是C++模板元编程的魅力——**零成本抽象**。你在源代码层面获得了"不可能忘记开时钟"的安全性（因为`setup()`自动帮你做了），在编译后的二进制层面又没有任何额外开销。
 
@@ -270,7 +270,7 @@ int main() {
 }
 ```
 
-当你实例化`device::LED&lt;device::gpio::GpioPort::C, GPIO_PIN_13&gt;`这个对象时，它的构造函数会调用`GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;::setup()`，而`setup()`会自动调用`GPIOClock::enable_target_clock()`，后者在编译期被确定为`__HAL_RCC_GPIOC_CLK_ENABLE()`。整个链条严丝合缝，用户在`main.cpp`中不需要写一行与时钟有关的代码。
+当你实例化`device::LED<device::gpio::GpioPort::C, GPIO_PIN_13>`这个对象时，它的构造函数会调用`GPIO<GpioPort::C, GPIO_PIN_13>::setup()`，而`setup()`会自动调用`GPIOClock::enable_target_clock()`，后者在编译期被确定为`__HAL_RCC_GPIOC_CLK_ENABLE()`。整个链条严丝合缝，用户在`main.cpp`中不需要写一行与时钟有关的代码。
 
 关键点是：使用这个模板系统后，你**不可能**忘记开时钟——只要你的初始化路径经过`setup()`方法，时钟使能就一定会被执行。这是一个非常好的工程设计：把容易出错的手动步骤封装成自动化的基础设施，让开发者无法犯错，而不是依赖开发者的记忆力和纪律性。
 

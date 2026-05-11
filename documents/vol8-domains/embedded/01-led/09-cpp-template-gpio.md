@@ -41,7 +41,7 @@ class GPIO {
 
 这里有两个NTTP：`PORT` 是 `GpioPort` 类型的枚举值（如 `GpioPort::C`），`PIN` 是 `uint16_t` 类型的整数（如 `GPIO_PIN_13 = 0x2000`）。
 
-当你写 `GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;` 时，编译器会生成一个全新的类，其中 `PORT` 被替换为 `GpioPort::C`，`PIN` 被替换为 `GPIO_PIN_13`。这个类不包含任何成员变量——`PORT` 和 `PIN` 不存在于对象中，它们只存在于类型系统中。
+当你写 `GPIO<GpioPort::C, GPIO_PIN_13>` 时，编译器会生成一个全新的类，其中 `PORT` 被替换为 `GpioPort::C`，`PIN` 被替换为 `GPIO_PIN_13`。这个类不包含任何成员变量——`PORT` 和 `PIN` 不存在于对象中，它们只存在于类型系统中。
 
 这意味着：
 
@@ -68,9 +68,9 @@ static constexpr GPIO_TypeDef* native_port() noexcept {
 
 它做了三件事，每一步都有明确的理由。
 
-第一步，`static_cast&lt;uintptr_t&gt;(PORT)`：从 `GpioPort` 枚举中提取底层地址值。因为 `PORT` 是 `GpioPort::C`，底层值是 `GPIOC_BASE = 0x40011000`。这个操作在编译时完成——`PORT` 是模板参数，编译器知道它的精确值。
+第一步，`static_cast<uintptr_t>(PORT)`：从 `GpioPort` 枚举中提取底层地址值。因为 `PORT` 是 `GpioPort::C`，底层值是 `GPIOC_BASE = 0x40011000`。这个操作在编译时完成——`PORT` 是模板参数，编译器知道它的精确值。
 
-第二步，`reinterpret_cast&lt;GPIO_TypeDef*&gt;(...)`：把整数地址转换为GPIO寄存器结构体指针。这告诉编译器"在地址 `0x40011000` 处有一组GPIO寄存器"。`reinterpret_cast` 是C++中表示"我知道我在干什么，请信任我"的转型——它不做任何检查，因为嵌入式开发中我们确实知道硬件寄存器的地址。
+第二步，`reinterpret_cast<GPIO_TypeDef*>(...)`：把整数地址转换为GPIO寄存器结构体指针。这告诉编译器"在地址 `0x40011000` 处有一组GPIO寄存器"。`reinterpret_cast` 是C++中表示"我知道我在干什么，请信任我"的转型——它不做任何检查，因为嵌入式开发中我们确实知道硬件寄存器的地址。
 
 第三步，`constexpr`：整个函数可以在编译时求值。调用 `native_port()` 在概念上等同于写 `GPIOC`，但它是类型安全的、经过编译器验证的。`noexcept` 承诺这个函数不会抛出异常——在 `-fno-exceptions` 的嵌入式环境中，这是自然的保证。
 
@@ -90,7 +90,7 @@ void setup(Mode gpio_mode, PullPush pull_push = PullPush::NoPull, Speed speed = 
 }
 ```
 
-我们逐行拆解。`GPIOClock::enable_target_clock()` 首先使能时钟——下一篇会详细讲它的 `if constexpr` 实现。`GPIO_InitTypeDef init_types{}` 用聚合初始化把所有字段清零。`init_types.Pin = PIN` 中 `PIN` 是模板参数，编译时已知，编译器会直接把 `GPIO_PIN_13` 嵌入到指令中。三个 `static_cast&lt;uint32_t&gt;()` 从 `enum class` 提取底层值传给HAL。最后 `HAL_GPIO_Init(native_port(), &init_types)` 调用HAL初始化——`native_port()` 在编译时返回 `GPIOC`。
+我们逐行拆解。`GPIOClock::enable_target_clock()` 首先使能时钟——下一篇会详细讲它的 `if constexpr` 实现。`GPIO_InitTypeDef init_types{}` 用聚合初始化把所有字段清零。`init_types.Pin = PIN` 中 `PIN` 是模板参数，编译时已知，编译器会直接把 `GPIO_PIN_13` 嵌入到指令中。三个 `static_cast<uint32_t>()` 从 `enum class` 提取底层值传给HAL。最后 `HAL_GPIO_Init(native_port(), &init_types)` 调用HAL初始化——`native_port()` 在编译时返回 `GPIOC`。
 
 注意 `PullPush` 和 `Speed` 参数有默认值，这意味着你可以只传 `Mode`：
 
@@ -118,7 +118,7 @@ void toggle_pin_state() const {
 }
 ```
 
-`State` 枚举封装了引脚状态——`Set` 对应高电平，`UnSet` 对应低电平。`static_cast&lt;GPIO_PinState&gt;(s)` 把我们的 `State` 转换回HAL的 `GPIO_PinState`。`const` 修饰表示这些方法不修改对象状态——虽然对象本来就没有成员变量。
+`State` 枚举封装了引脚状态——`Set` 对应高电平，`UnSet` 对应低电平。`static_cast<GPIO_PinState>(s)` 把我们的 `State` 转换回HAL的 `GPIO_PinState`。`const` 修饰表示这些方法不修改对象状态——虽然对象本来就没有成员变量。
 
 `native_port()` 和 `PIN` 在编译时已知，编译器会在 `-O2` 优化下把这两个函数完全内联。最终生成的机器码与直接调用 `HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET)` 完全一致。
 

@@ -203,7 +203,7 @@ while (rx.pop(b)) {
 
 这是主循环中的 UART 接收处理。`rx.pop(b)` 从环形缓冲区弹出一个字节——ISR 在后台不断往里 push，主循环在这里消费。`while (rx.pop(b))` 一次性弹出所有可用字节，不会遗漏。
 
-行解析逻辑很直接：把弹出的字节逐个拼入 `line_buf`，遇到 `\r` 或 `\n` 时认为一行结束，把完整行交给 `handle_command()` 处理，然后重置行缓冲。`line_len &lt; line_buf.size() - 1` 确保不会溢出——超过 127 个字符的部分被丢弃。
+行解析逻辑很直接：把弹出的字节逐个拼入 `line_buf`，遇到 `\r` 或 `\n` 时认为一行结束，把完整行交给 `handle_command()` 处理，然后重置行缓冲。`line_len < line_buf.size() - 1` 确保不会溢出——超过 127 个字符的部分被丢弃。
 
 方向和按钮相反：PC → 芯片。你在终端里输入 "LED ON" 然后回车，这个字符串从 PC 通过 UART 发到芯片，ISR 把字节逐个 push 进环形缓冲区，主循环 pop 出来拼成一行，识别为 "LED ON" 命令，然后点亮 LED。
 
@@ -238,7 +238,7 @@ static void handle_command(std::string_view cmd,
 
 `handle_command({line_buf.data(), line_len}, led)` 这一行创建了 `std::string_view`——它只包含一个指针和长度，不拷贝任何字符数据。`line_buf` 中的原始字符被直接比较，没有中间的 `std::string` 构造、内存分配和释放。
 
-在 bare-metal 环境中，动态内存分配（`new`/`malloc`）可能导致碎片化和不确定性。`std::string_view` 让你能在不分配内存的情况下操作字符串——它只是指向已有数据的视图。配合 `std::array&lt;char, 128&gt;` 行缓冲（栈上分配），整个命令解析过程不涉及任何堆操作。
+在 bare-metal 环境中，动态内存分配（`new`/`malloc`）可能导致碎片化和不确定性。`std::string_view` 让你能在不分配内存的情况下操作字符串——它只是指向已有数据的视图。配合 `std::array<char, 128>` 行缓冲（栈上分配），整个命令解析过程不涉及任何堆操作。
 
 ---
 

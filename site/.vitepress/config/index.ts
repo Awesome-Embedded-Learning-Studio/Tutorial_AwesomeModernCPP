@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 import { navZh, navEn } from './nav'
 import { buildSidebar } from './sidebar'
 import { kbdPlugin } from '../plugins/kbd-plugin'
+import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 
 export default defineConfig({
   srcDir: '../documents',
@@ -56,6 +57,7 @@ export default defineConfig({
       dark: 'github-dark',
     },
     config(md) {
+      cppTemplateEscapePlugin(md)
       md.use(kbdPlugin)
     },
   },

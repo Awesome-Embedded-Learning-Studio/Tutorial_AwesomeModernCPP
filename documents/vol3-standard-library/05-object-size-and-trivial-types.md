@@ -97,7 +97,7 @@ C++ 标准将一组类型特性分拆开来，用以精确表达"这个类型的
 - **trivially_copyable（可平凡拷贝）类型**：这类类型可以安全地通过按字节拷贝（`memcpy`）来复制（复制后目标对象具有同样的对象表示并且能正常析构等）。`trivially_copyable` 是能否使用 `memcpy` 的关键判据。
 - **standard-layout（标准布局）类型**：这样的类型有可预测的内存布局规则（比如非静态数据成员按声明顺序排布、对于与 C 互操作时有一定的保证）。它避免了复杂的访问控制、虚继承或多重基类导致的不可预测内存布局。
 
-一个非常重要的事实是：以前老概念 `POD`（Plain Old Data）在 C++11 被拆分成 `trivial` 与 `standard-layout`；而 `POD` 在语义上就是"既 trivial 又 standard-layout"。很多与 ABI、C 互操作相关的安全假设都可以用 `std::is_standard_layout_v&lt;T&gt;`、`std::is_trivially_copyable_v&lt;T&gt;` 来检查。
+一个非常重要的事实是：以前老概念 `POD`（Plain Old Data）在 C++11 被拆分成 `trivial` 与 `standard-layout`；而 `POD` 在语义上就是"既 trivial 又 standard-layout"。很多与 ABI、C 互操作相关的安全假设都可以用 `std::is_standard_layout_v<T>`、`std::is_trivially_copyable_v<T>` 来检查。
 
 为什么这些信息有用？因为它们直接影响到：
 
@@ -132,7 +132,7 @@ struct T {
 
 ```
 
-再强调一条易错的点：**trivial ≠ trivially_copyable**，前者强调特殊成员（尤其默认构造）的"平凡性"，后者强调按字节复制是否安全。实践中，判断是否能 `memcpy`，请用 `std::is_trivially_copyable_v&lt;T&gt;`。
+再强调一条易错的点：**trivial ≠ trivially_copyable**，前者强调特殊成员（尤其默认构造）的"平凡性"，后者强调按字节复制是否安全。实践中，判断是否能 `memcpy`，请用 `std::is_trivially_copyable_v<T>`。
 
 ------
 

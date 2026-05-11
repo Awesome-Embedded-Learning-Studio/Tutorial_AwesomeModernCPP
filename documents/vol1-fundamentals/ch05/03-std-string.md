@@ -201,7 +201,7 @@ std::string line;
 std::getline(std::cin, line);
 ```
 
-`std::to_string` 对浮点数的结果可能不太"漂亮"——`to_string(3.14)` 输出 `3.140000`，因为它用的是 `%f` 格式化。如果你需要精确控制浮点数的输出格式，还是得用 `&lt;iomanip&gt;` 里的 `std::setprecision` 或者 `std::snprintf`。
+`std::to_string` 对浮点数的结果可能不太"漂亮"——`to_string(3.14)` 输出 `3.140000`，因为它用的是 `%f` 格式化。如果你需要精确控制浮点数的输出格式，还是得用 `<iomanip>` 里的 `std::setprecision` 或者 `std::snprintf`。
 
 ## 实战演练——综合字符串处理
 

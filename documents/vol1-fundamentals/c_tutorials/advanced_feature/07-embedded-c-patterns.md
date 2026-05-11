@@ -116,7 +116,7 @@ typedef struct {
 #define GPIOB  ((GpioReg*) 0x40020400U)
 ```
 
-现在配置代码变得非常清晰：`GPIOA-&gt;MODER &= ~(3U &lt;&lt; 10); GPIOA-&gt;MODER |= (1U &lt;&lt; 10);`。
+现在配置代码变得非常清晰：`GPIOA->MODER &= ~(3U << 10); GPIOA->MODER |= (1U << 10);`。
 
 结构体映射有一个隐含前提：内存布局必须和硬件寄存器布局完全一致。大多数 ARM 外设寄存器是 32 位对齐排列的，和 `uint32_t` 的自然对齐完全匹配。如果遇到寄存器之间有保留空间的，得在结构体里加 `volatile uint32_t RESERVED0` 占位——Cortex-M 的 CMSIS 头文件就是这么做的。
 
@@ -400,7 +400,7 @@ __attribute__((weak)) void HardFault_Handler(void) { default_handler(); }
 
 ### 链接脚本
 
-链接脚本告诉链接器程序的内存布局——Flash 从哪到哪、SRAM 从哪到哪、各段分别放哪里。关键概念是 `&gt; RAM AT &gt; FLASH`——`.data` 段的运行地址在 RAM，但加载地址在 Flash。上电后启动代码把它拷贝到 RAM。`.bss` 段只有起始和结束地址，启动代码直接清零。
+链接脚本告诉链接器程序的内存布局——Flash 从哪到哪、SRAM 从哪到哪、各段分别放哪里。关键概念是 `> RAM AT > FLASH`——`.data` 段的运行地址在 RAM，但加载地址在 Flash。上电后启动代码把它拷贝到 RAM。`.bss` 段只有起始和结束地址，启动代码直接清零。
 
 ```c
 /* link.ld — Cortex-M3 最小链接脚本 */

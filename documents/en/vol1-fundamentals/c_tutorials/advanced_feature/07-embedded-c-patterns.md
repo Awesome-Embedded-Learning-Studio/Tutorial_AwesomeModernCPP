@@ -99,7 +99,7 @@ typedef struct {
 #define GPIOA ((GPIO_TypeDef *)0x40020000U)
 ```
 
-Now the configuration code becomes very clear: `GPIOA-&gt;MODER |= (1U &lt;&lt; 10);`.
+Now the configuration code becomes very clear: `GPIOA->MODER |= (1U << 10);`.
 
 Struct mapping has an implicit prerequisite: the memory layout must match the hardware register layout exactly. Most ARM peripheral registers are 32-bit aligned, which perfectly matches the natural alignment of `uint32_t`. If there are reserved spaces between registers, we must add `uint32_t` padding placeholders in the struct—this is exactly how Cortex-M CMSIS header files do it.
 
@@ -347,7 +347,7 @@ const handler_t vector_table[] = {
 
 ### Linker Script
 
-The linker script tells the linker about the program's memory layout—where Flash starts and ends, where SRAM starts and ends, and where each section goes. The key concept is `AT&gt;`—the run address of the `.data` section is in RAM, but its load address is in Flash. After power-on, the startup code copies it to RAM. The `.bss` section only has start and end addresses, and the startup code zeros it out directly.
+The linker script tells the linker about the program's memory layout—where Flash starts and ends, where SRAM starts and ends, and where each section goes. The key concept is `AT>`—the run address of the `.data` section is in RAM, but its load address is in Flash. After power-on, the startup code copies it to RAM. The `.bss` section only has start and end addresses, and the startup code zeros it out directly.
 
 ```c
 MEMORY

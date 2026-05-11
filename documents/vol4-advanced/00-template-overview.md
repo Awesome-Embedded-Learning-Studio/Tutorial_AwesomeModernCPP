@@ -255,7 +255,7 @@ Stack<std::string> string_stack;
 
 ### 第二阶段：深入类型系统（2-3周）
 
-1. **类型萃取**（Type Traits）：`&lt;type_traits&gt;`库的使用
+1. **类型萃取**（Type Traits）：`<type_traits>`库的使用
 2. **SFINAE**：理解"替换失败并非错误"
 3. **`std::enable_if`**：条件编译的技术
 4. **标签分发**（Tag Dispatching）：编译期算法选择
@@ -347,7 +347,7 @@ if (Pin5::is_set(gpio_mode)) {
 
 - **类型安全**：编译期保证位索引有效
 - **零开销**：所有函数都会内联为单条指令
-- **自文档**：`Pin5::set()`比`gpio_mode |= (1 &lt;&lt; 5)`更清晰
+- **自文档**：`Pin5::set()`比`gpio_mode |= (1 << 5)`更清晰
 
 ------
 

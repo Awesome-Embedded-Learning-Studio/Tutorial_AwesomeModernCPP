@@ -112,7 +112,7 @@ uint8_t reg = 0x0F;       // 00001111
 reg &= ~(1 << 3);         // 清除第 3 位 → 00000111 = 0x07
 ```
 
-The value of `~(1 &lt;&lt; 3)` is `0xF7` (`11110111`). After ANDing with `0x0F`, bit 3 becomes 0 while all other bits remain unchanged.
+The value of `~(1 << 3)` is `0xF7` (`11110111`). After ANDing with `0x0F`, bit 3 becomes 0 while all other bits remain unchanged.
 
 ### Toggle — Flip a bit
 
@@ -192,7 +192,7 @@ Output:
 第1位是: 1
 ```
 
-This matches our expectations perfectly. If you find the `(1 &lt;&lt; n)` syntax unintuitive, you can wrap it in macros:
+This matches our expectations perfectly. If you find the `(1 << n)` syntax unintuitive, you can wrap it in macros:
 
 ```c
 #define BIT(n)              (1U << (n))
@@ -203,13 +203,13 @@ This matches our expectations perfectly. If you find the `(1 &lt;&lt; n)` syntax
 ```
 
 > ⚠️ **Pitfall Warning**
-> Every parameter and the overall expression in the macro definitions are wrapped in parentheses. This is not redundant. Without parentheses, `CLEAR_BIT(x | y, 3)` would expand to `x | y &= ~(1 &lt;&lt; 3)`. Since `&=` has lower precedence than `|`, the meaning changes completely. Parentheses in macros are the cheapest insurance.
+> Every parameter and the overall expression in the macro definitions are wrapped in parentheses. This is not redundant. Without parentheses, `CLEAR_BIT(x | y, 3)` would expand to `x | y &= ~(1 << 3)`. Since `&=` has lower precedence than `|`, the meaning changes completely. Parentheses in macros are the cheapest insurance.
 
 ## Step 3 — Shift Caveats
 
 ### Left Shift and Right Shift Behavior
 
-Left shifting `&lt;&lt;` on unsigned types has well-defined behavior—low bits are filled with 0, and high bits are discarded. Right shifting `&gt;&gt;` on unsigned types is also well-defined (high bits are filled with 0).
+Left shifting `<<` on unsigned types has well-defined behavior—low bits are filled with 0, and high bits are discarded. Right shifting `>>` on unsigned types is also well-defined (high bits are filled with 0).
 
 However, right shifting signed types is **implementation-defined**—the compiler can choose arithmetic right shift (high bits filled with the sign bit, preserving negative values) or logical right shift (high bits filled with 0). Most platforms use arithmetic right shift, but this is not guaranteed by the standard:
 
@@ -221,11 +221,11 @@ int8_t y = x >> 1;     // 可能是 -2（算术右移，高位补 1）
 ```
 
 > ⚠️ **Pitfall Warning**
-> If the shift amount is negative, or equal to or greater than the bit width of the type (e.g., shifting a `int32_t` by 32 bits), the behavior is **undefined**. Intuitively, you might think the result of `1 &lt;&lt; 32` is 0, but the standard dictates this is UB—in practice, you might get 1 (because the CPU only takes the low 5 bits of the shift amount, turning 32 into 0).
+> If the shift amount is negative, or equal to or greater than the bit width of the type (e.g., shifting a `int32_t` by 32 bits), the behavior is **undefined**. Intuitively, you might think the result of `1 << 32` is 0, but the standard dictates this is UB—in practice, you might get 1 (because the CPU only takes the low 5 bits of the shift amount, turning 32 into 0).
 
 ### Bitwise Operator Precedence Traps
 
-This is the most common pitfall for bitwise operation beginners—**bitwise operators all have lower precedence than relational operators**. In other words, `&`, `|`, and `^` all have lower precedence than `==`, `!=`, `&lt;`, and `&gt;`.
+This is the most common pitfall for bitwise operation beginners—**bitwise operators all have lower precedence than relational operators**. In other words, `&`, `|`, and `^` all have lower precedence than `==`, `!=`, `<`, and `>`.
 
 ```c
 if (flags & 0x0F == 0) { }    // 实际解析为 flags & (0x0F == 0)
@@ -239,11 +239,11 @@ The core principle: **Whenever bitwise and comparison operations are mixed, you 
 
 A practical precedence mnemonic, from highest to lowest:
 
-1. Parentheses `()` > Subscript `[]` > Member access `.` `-&gt;`
+1. Parentheses `()` > Subscript `[]` > Member access `.` `->`
 2. Unary operators (`!` `~` `++` `--` `*` `&` `sizeof`)
 3. Arithmetic (`*` `/` `%` > `+` `-`)
-4. Shift (`&lt;&lt;` `&gt;&gt;`)
-5. Relational (`&lt;` `&gt;` `&lt;=` `&gt;=` > `==` `!=`)
+4. Shift (`<<` `>>`)
+5. Relational (`<` `>` `<=` `>=` > `==` `!=`)
 6. Bitwise (`&` > `^` > `|`)
 7. Logical (`&&` > `||`)
 8. Ternary `?:` > Assignment `=` > Comma `,`
@@ -290,13 +290,13 @@ If you want to deeply understand the concept of UB, think of it as a traffic rul
 
 ## C++ Connection
 
-C++ does a few useful things regarding bitwise operations. In `&lt;bitset&gt;`, `std::bitset&lt;N&gt;` can use the `[]` operator to access individual bits directly, and it provides semantically clear operations like `test()`, `set()`, `reset()`, and `flip()`—safer and more readable than hand-writing bitwise operations. In C++, you should prefer `std::bitset` unless you truly need extreme performance or direct hardware manipulation.
+C++ does a few useful things regarding bitwise operations. In `<bitset>`, `std::bitset<N>` can use the `[]` operator to access individual bits directly, and it provides semantically clear operations like `test()`, `set()`, `reset()`, and `flip()`—safer and more readable than hand-writing bitwise operations. In C++, you should prefer `std::bitset` unless you truly need extreme performance or direct hardware manipulation.
 
 Regarding evaluation order, C++17 strengthened the rules—a function expression is guaranteed to be evaluated before its arguments, which is more deterministic than C's "unspecified" rule. Additionally, if a `constexpr` function triggers UB during compile-time evaluation, the compiler will directly report an error—acting as a free UB detector.
 
 ## Summary
 
-The four classic bitwise operations—set (`|=` + `&lt;&lt;`), clear (`&=` + `~` + `&lt;&lt;`), toggle (`^=` + `&lt;&lt;`), and check (`&` + `&lt;&lt;`)—are essential skills for embedded development. The biggest trap in operator precedence is that bitwise operators have lower precedence than relational operators; when mixing bitwise and comparison operations, you must use parentheses. The core principle of evaluation order and sequence points is: never modify the same variable multiple times within a single expression—that is undefined behavior.
+The four classic bitwise operations—set (`|=` + `<<`), clear (`&=` + `~` + `<<`), toggle (`^=` + `<<`), and check (`&` + `<<`)—are essential skills for embedded development. The biggest trap in operator precedence is that bitwise operators have lower precedence than relational operators; when mixing bitwise and comparison operations, you must use parentheses. The core principle of evaluation order and sequence points is: never modify the same variable multiple times within a single expression—that is undefined behavior.
 
 At this point, we have covered every aspect of C language operators. Next, we will learn about control flow—how to make a program execute different code based on conditions, and how to repeat a block of code.
 

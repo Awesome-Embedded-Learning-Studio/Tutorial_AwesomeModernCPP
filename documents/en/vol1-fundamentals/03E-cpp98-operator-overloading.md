@@ -277,7 +277,7 @@ For a **non-member function**, the left and right operands are symmetric. The co
 A widely accepted rule of thumb is:
 
 - **Symmetric binary operators** (`+`, `-`, `*`, `/`, `==`, `!=`, etc.) should preferably be implemented as **non-member functions**
-- **Assignment-like operators** (`=`, `+=`, `-=`, `[]`, `()`, `-&gt;`, etc.) must be implemented as **member functions** (the language mandates that certain operators can only be members)
+- **Assignment-like operators** (`=`, `+=`, `-=`, `[]`, `()`, `->`, etc.) must be implemented as **member functions** (the language mandates that certain operators can only be members)
 - **Unary operators** (`-`, `!`, `~`, etc.) are typically implemented as **member functions**
 
 For `Vector3D`, a better approach might be to implement `operator+` and `operator*` as non-member friend functions:

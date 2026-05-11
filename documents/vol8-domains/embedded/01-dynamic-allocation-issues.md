@@ -132,7 +132,7 @@ struct B {
 
 #### 对象池 + RAII（C++ 风格）
 
-- 用 `std::unique_ptr&lt;T, Deleter&gt;` 或自定义智能指针与内存池结合，保证异常安全与自动释放。
+- 用 `std::unique_ptr<T, Deleter>` 或自定义智能指针与内存池结合，保证异常安全与自动释放。
 
 ------
 

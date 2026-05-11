@@ -67,7 +67,7 @@ u.s.~basic_string();
 
 ### 构造与赋值
 
-`std::variant&lt;Types...&gt;` 可以在同一时刻持有 `Types...` 中**恰好一种**类型的值。默认构造时，它会构造第一个备选类型（除非你用 `std::monostate` 占位）：
+`std::variant<Types...>` 可以在同一时刻持有 `Types...` 中**恰好一种**类型的值。默认构造时，它会构造第一个备选类型（除非你用 `std::monostate` 占位）：
 
 ```cpp
 #include <variant>
@@ -423,11 +423,11 @@ struct UnaryExpr {
 };
 ```
 
-⚠️ 注意这里使用了 `std::unique_ptr&lt;BinaryExpr&gt;` 而不是直接的 `BinaryExpr`，因为 `variant` 不能直接包含不完整类型。递归数据结构必须通过指针（或 `std::unique_ptr`）来打破循环依赖。
+⚠️ 注意这里使用了 `std::unique_ptr<BinaryExpr>` 而不是直接的 `BinaryExpr`，因为 `variant` 不能直接包含不完整类型。递归数据结构必须通过指针（或 `std::unique_ptr`）来打破循环依赖。
 
 ## 内存布局与性能考量
 
-`variant` 的大小等于"最大备选类型的大小"加上一个小的元数据字段（用于记录当前持有的类型索引）。这意味着即使你当前只持有一个 `int`，`variant&lt;int, std::string&gt;` 也至少有 `sizeof(std::string) + sizeof(size_t)` 那么大。
+`variant` 的大小等于"最大备选类型的大小"加上一个小的元数据字段（用于记录当前持有的类型索引）。这意味着即使你当前只持有一个 `int`，`variant<int, std::string>` 也至少有 `sizeof(std::string) + sizeof(size_t)` 那么大。
 
 ```cpp
 std::cout << "sizeof(variant<int, double, string>): "

@@ -209,7 +209,7 @@ struct Point *ptr = &p;
 ptr->x = 10;   // Directly access member through pointer
 ```
 
-`-&gt;` is syntactic sugar invented to save us typing. Just remember the rule: **use `.` for struct variables, use `-&gt;` for struct pointers**.
+`->` is syntactic sugar invented to save us typing. Just remember the rule: **use `.` for struct variables, use `->` for struct pointers**.
 
 ```c
 void move_point(struct Point *p, int dx, int dy) {
@@ -219,7 +219,7 @@ void move_point(struct Point *p, int dx, int dy) {
 ```
 
 > ⚠️ **Pitfall Warning**
-> Confusing `.` and `-&gt;` is one of the most common mistakes beginners make. `ptr-&gt;x` is correct, but `ptr.x` will not compile (`ptr` is a pointer, not a variable), and while `(*ptr).x` is equivalent, the parentheses are easy to forget. Just build the habit of using `-&gt;`.
+> Confusing `.` and `->` is one of the most common mistakes beginners make. `ptr->x` is correct, but `ptr.x` will not compile (`ptr` is a pointer, not a variable), and while `(*ptr).x` is equivalent, the parentheses are easy to forget. Just build the habit of using `->`.
 
 ## C++ Connections
 
@@ -252,12 +252,12 @@ The C++ standard has never introduced `restrict`. C++ class semantics and refere
 |---------|-------------|----------|
 | Passing overlapping pointers under restrict | Undefined behavior (UB), the compiler will not check it | Ensure the memory pointed to by restrict pointers truly does not overlap |
 | Accessing members directly after a forward declaration | All member accesses will fail | Forward declarations can only declare pointers; full usage requires a complete definition |
-| Confusing `.` and `-&gt;` | Use `-&gt;` for pointers, use `.` for variables | `ptr-&gt;x` is equivalent to `(*ptr).x` |
+| Confusing `.` and `->` | Use `->` for pointers, use `.` for variables | `ptr->x` is equivalent to `(*ptr).x` |
 | Mixing up memcpy and memmove | Using memcpy when source and destination overlap is UB | Use memmove if there is a risk of overlap |
 
 ## Summary
 
-In this chapter, we looked at three independent but practical mechanisms. `restrict` enables the compiler to perform more aggressive optimizations by eliminating pointer aliasing, but it is a "programmer's guarantee to the compiler"—breaking it results in undefined behavior (UB). Incomplete types and forward declarations allow us to design interfaces without exposing internal details, and the opaque pointer pattern is a classic technique for information hiding in C. `-&gt;` is the everyday tool for manipulating struct pointers; just remember "use `.` for variables, use `-&gt;` for pointers" and you are set.
+In this chapter, we looked at three independent but practical mechanisms. `restrict` enables the compiler to perform more aggressive optimizations by eliminating pointer aliasing, but it is a "programmer's guarantee to the compiler"—breaking it results in undefined behavior (UB). Incomplete types and forward declarations allow us to design interfaces without exposing internal details, and the opaque pointer pattern is a classic technique for information hiding in C. `->` is the everyday tool for manipulating struct pointers; just remember "use `.` for variables, use `->` for pointers" and you are set.
 
 ## Exercises
 

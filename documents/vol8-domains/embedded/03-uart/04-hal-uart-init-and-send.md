@@ -166,7 +166,7 @@ void send_string(std::string_view str) {
 }
 ```
 
-`std::string_view` 是 C++17 的字符串视图——不拷贝数据，只持有一个指向原始字符数据的指针和长度。`std::as_bytes()` 把字符视图转换成字节视图，然后传给 `send()`。`send()` 内部调用 `HAL_UART_Transmit()`，返回 `std::expected&lt;size_t, UartError&gt;`——但 `send_string()` 简单地忽略了返回值（`[[maybe_unused]]`），因为它主要用于调试日志，出错也不需要特殊处理。
+`std::string_view` 是 C++17 的字符串视图——不拷贝数据，只持有一个指向原始字符数据的指针和长度。`std::as_bytes()` 把字符视图转换成字节视图，然后传给 `send()`。`send()` 内部调用 `HAL_UART_Transmit()`，返回 `std::expected<size_t, UartError>`——但 `send_string()` 简单地忽略了返回值（`[[maybe_unused]]`），因为它主要用于调试日志，出错也不需要特殊处理。
 
 如果你需要更精细的错误控制，可以直接调用 `send()`：
 

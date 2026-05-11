@@ -372,15 +372,15 @@ using OptimalAdd = std::conditional_t<
 
 | 别名模板 | 说明 | 示例 |
 |---------|------|------|
-| `enable_if_t&lt;B, T&gt;` | 条件启用类型 | `std::enable_if_t&lt;std::is_integral_v&lt;T&gt;&gt;` |
-| `conditional_t&lt;B, T, F&gt;` | 条件选择类型 | `std::conditional_t&lt;flag, int, double&gt;` |
-| `remove_reference_t&lt;T&gt;` | 移除引用 | `std::remove_reference_t&lt;int&&gt;` = `int` |
-| `add_const_t&lt;T&gt;` | 添加 const | `std::add_const_t&lt;int&gt;` = `const int` |
-| `make_signed_t&lt;T&gt;` | 转为有符号 | `std::make_signed_t&lt;unsigned int&gt;` = `int` |
-| `make_unsigned_t&lt;T&gt;` | 转为无符号 | `std::make_unsigned_t&lt;int&gt;` = `unsigned int` |
-| `common_type_t&lt;T, U&gt;` | 公共类型 | `std::common_type_t&lt;int, double&gt;` = `double` |
-| `decay_t&lt;T&gt;` | 衰退类型 | `std::decay_t&lt;int[5]&gt;` = `int*` |
-| `invoke_result_t&lt;F, Args&gt;` | 调用结果类型 | `std::invoke_result_t&lt;decltype(func), int&gt;` |
+| `enable_if_t<B, T>` | 条件启用类型 | `std::enable_if_t<std::is_integral_v<T>>` |
+| `conditional_t<B, T, F>` | 条件选择类型 | `std::conditional_t<flag, int, double>` |
+| `remove_reference_t<T>` | 移除引用 | `std::remove_reference_t<int&>` = `int` |
+| `add_const_t<T>` | 添加 const | `std::add_const_t<int>` = `const int` |
+| `make_signed_t<T>` | 转为有符号 | `std::make_signed_t<unsigned int>` = `int` |
+| `make_unsigned_t<T>` | 转为无符号 | `std::make_unsigned_t<int>` = `unsigned int` |
+| `common_type_t<T, U>` | 公共类型 | `std::common_type_t<int, double>` = `double` |
+| `decay_t<T>` | 衰退类型 | `std::decay_t<int[5]>` = `int*` |
+| `invoke_result_t<F, Args>` | 调用结果类型 | `std::invoke_result_t<decltype(func), int>` |
 
 ------
 

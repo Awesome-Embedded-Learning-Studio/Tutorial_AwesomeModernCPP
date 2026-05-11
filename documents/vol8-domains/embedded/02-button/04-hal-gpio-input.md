@@ -118,7 +118,7 @@ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
 }
 ```
 
-核心就是一个位操作：`GPIOx-&gt;IDR & GPIO_Pin`。`IDR` 是 16 位只读寄存器，每个 bit 对应一个引脚。`GPIO_PIN_0` 的值是 `0x0001`，所以 `IDR & 0x0001` 就是取 bit 0 的值。如果不为 0，引脚是高电平；否则是低电平。
+核心就是一个位操作：`GPIOx->IDR & GPIO_Pin`。`IDR` 是 16 位只读寄存器，每个 bit 对应一个引脚。`GPIO_PIN_0` 的值是 `0x0001`，所以 `IDR & 0x0001` 就是取 bit 0 的值。如果不为 0，引脚是高电平；否则是低电平。
 
 几个时钟周期就能完成（LDR + AND + CMP，编译器优化后约 2-4 个周期）。72MHz 的 CPU 意味着读引脚状态只需要约数十纳秒。
 
@@ -163,7 +163,7 @@ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
 
 ### static_cast 的零开销
 
-`HAL_GPIO_ReadPin()` 返回 `GPIO_PinState`（0 或 1），`static_cast&lt;State&gt;()` 把它转成 `State::Set` 或 `State::UnSet`。`static_cast` 在枚举之间的转换是纯编译时操作——底层值（0 或 1）不变，只是类型信息变了。生成的机器码和直接用 `GPIO_PinState` 完全一样。
+`HAL_GPIO_ReadPin()` 返回 `GPIO_PinState`（0 或 1），`static_cast<State>()` 把它转成 `State::Set` 或 `State::UnSet`。`static_cast` 在枚举之间的转换是纯编译时操作——底层值（0 或 1）不变，只是类型信息变了。生成的机器码和直接用 `GPIO_PinState` 完全一样。
 
 ### const 成员函数
 

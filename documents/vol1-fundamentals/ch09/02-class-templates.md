@@ -51,7 +51,7 @@ private:
 };
 ```
 
-`data_` 是 `std::vector&lt;T&gt;` 类型——模板里面套模板，这在 C++ 中非常常见。实例化时，`Stack&lt;int&gt;` 的 `data_` 就是 `std::vector&lt;int&gt;`，`Stack&lt;std::string&gt;` 的 `data_` 就是 `std::vector&lt;std::string&gt;`。
+`data_` 是 `std::vector<T>` 类型——模板里面套模板，这在 C++ 中非常常见。实例化时，`Stack<int>` 的 `data_` 就是 `std::vector<int>`，`Stack<std::string>` 的 `data_` 就是 `std::vector<std::string>`。
 
 使用类模板时，必须提供具体的模板参数（C++17 的 CTAD 场景稍后讨论）：
 
@@ -61,7 +61,7 @@ Stack<double> double_stack;     // T = double
 Stack<std::string> str_stack;   // T = std::string
 ```
 
-敲桌子孩子们。这里和函数模板的一个重要区别：函数模板的参数类型通常可以通过调用参数推导出来，但类模板不行——实例化对象时编译器没法从构造函数推导出 `T`（C++17 之前），你必须老老实实写明 `Stack&lt;int&gt;`。
+敲桌子孩子们。这里和函数模板的一个重要区别：函数模板的参数类型通常可以通过调用参数推导出来，但类模板不行——实例化对象时编译器没法从构造函数推导出 `T`（C++17 之前），你必须老老实实写明 `Stack<int>`。
 
 ## 第二步——搞定成员函数的类内与类外定义
 
@@ -82,7 +82,7 @@ private:
 };
 ```
 
-类外定义时，需要用 `Stack&lt;T&gt;::` 来限定成员函数所属的类，而且函数前面必须加上模板头部 `template &lt;typename T&gt;`。每一个在类外定义的成员函数都需要这样做，一个都不能漏：
+类外定义时，需要用 `Stack<T>::` 来限定成员函数所属的类，而且函数前面必须加上模板头部 `template <typename T>`。每一个在类外定义的成员函数都需要这样做，一个都不能漏：
 
 ```cpp
 template <typename T>
@@ -119,7 +119,7 @@ const T& Stack<T>::top() const
 }
 ```
 
-`Stack&lt;T&gt;::` 中的 `&lt;T&gt;` 不能省——因为 `Stack` 本身是一个模板，只有 `Stack&lt;T&gt;` 才是具体的类。如果有多个模板参数，比如 `template &lt;typename T, typename Alloc&gt;`，类外定义就要写 `Stack&lt;T, Alloc&gt;::`，模板头部也要完整带上。
+`Stack<T>::` 中的 `<T>` 不能省——因为 `Stack` 本身是一个模板，只有 `Stack<T>` 才是具体的类。如果有多个模板参数，比如 `template <typename T, typename Alloc>`，类外定义就要写 `Stack<T, Alloc>::`，模板头部也要完整带上。
 
 ## 第三步——摸清模板参数的三副面孔
 
@@ -137,7 +137,7 @@ class Dictionary
 };
 ```
 
-`std::map&lt;Key, Value&gt;` 就是这种模式。
+`std::map<Key, Value>` 就是这种模式。
 
 ### 非类型参数——编译期的常量
 
@@ -191,15 +191,15 @@ Stack<int> s1;                                  // Container 默认为 std::vect
 Stack<int, std::deque<int>> s2;                 // Container 显式指定为 std::deque<int>
 ```
 
-标准库的 `std::stack` 就是这种设计——第二参数默认为 `std::vector&lt;T&gt;`，可以换成 `std::deque&lt;T&gt;` 或 `std::list&lt;T&gt;`。
+标准库的 `std::stack` 就是这种设计——第二参数默认为 `std::vector<T>`，可以换成 `std::deque<T>` 或 `std::list<T>`。
 
 ## 快速了解 CTAD——让编译器推导模板参数（C++17）
 
-C++17 引入了 CTAD（Class Template Argument Deduction），让编译器根据构造函数参数自动推导模板参数类型。最常见的例子：`std::vector v = {1, 2, 3}` 会被推导为 `std::vector&lt;int&gt;`，`std::pair p(1, 2.5)` 会被推导为 `std::pair&lt;int, double&gt;`。对于我们自己写的类模板，如果构造函数参数能唯一确定模板参数类型，CTAD 也能工作。不过 CTAD 的推导规则比较复杂，有时结果和预期不一样。初学阶段了解这个特性就行，不确定时老老实实写明模板参数。
+C++17 引入了 CTAD（Class Template Argument Deduction），让编译器根据构造函数参数自动推导模板参数类型。最常见的例子：`std::vector v = {1, 2, 3}` 会被推导为 `std::vector<int>`，`std::pair p(1, 2.5)` 会被推导为 `std::pair<int, double>`。对于我们自己写的类模板，如果构造函数参数能唯一确定模板参数类型，CTAD 也能工作。不过 CTAD 的推导规则比较复杂，有时结果和预期不一样。初学阶段了解这个特性就行，不确定时老老实实写明模板参数。
 
 ## 上号——实现一个完整的泛型栈
 
-现在我们把前面的内容综合起来，实现一个完整的泛型栈。底层用 `std::vector&lt;T&gt;` 存储，提供 push、pop、top、empty、size 五个操作。所有代码写在一个头文件中——模板代码必须放在头文件里，原因稍后解释。
+现在我们把前面的内容综合起来，实现一个完整的泛型栈。底层用 `std::vector<T>` 存储，提供 push、pop、top、empty、size 五个操作。所有代码写在一个头文件中——模板代码必须放在头文件里，原因稍后解释。
 
 ```cpp
 // stack.hpp
@@ -259,7 +259,7 @@ private:
 };
 ```
 
-所有操作都委托给内部的 `std::vector&lt;T&gt;` 来完成。`pop` 和 `top` 在栈为空时抛出 `std::out_of_range` 异常，这和标准库 `std::stack` 的行为不同——标准库在空栈上是未定义行为（UB）。我们选择抛异常是为了让错误更容易被发现。
+所有操作都委托给内部的 `std::vector<T>` 来完成。`pop` 和 `top` 在栈为空时抛出 `std::out_of_range` 异常，这和标准库 `std::stack` 的行为不同——标准库在空栈上是未定义行为（UB）。我们选择抛异常是为了让错误更容易被发现。
 
 接下来写测试程序，用三种不同类型来实例化 `Stack`：
 
@@ -347,13 +347,13 @@ after pop, top: world
 caught: Stack::pop(): stack is empty
 ```
 
-核对关键结果：`Stack&lt;int&gt;` 压入三个元素后 top 是 `30`（最后压入的），pop 一次后 top 变成 `20`，正确。`Stack&lt;double&gt;` 和 `Stack&lt;std::string&gt;` 的行为也符合 LIFO（后进先出）预期。空栈调用 `pop` 时正确抛出 `std::out_of_range` 异常。
+核对关键结果：`Stack<int>` 压入三个元素后 top 是 `30`（最后压入的），pop 一次后 top 变成 `20`，正确。`Stack<double>` 和 `Stack<std::string>` 的行为也符合 LIFO（后进先出）预期。空栈调用 `pop` 时正确抛出 `std::out_of_range` 异常。
 
 ## 踩坑预警——模板的三个暗坑
 
 写类模板时，有三个坑几乎是所有 C++ 程序员都踩过的。我们逐个拆解。
 
-**暗坑一：模板声明和实现必须放在头文件中。** 你可能注意到了，我们把 `Stack` 的声明和实现全部放在了 `stack.hpp` 头文件中，没有分成 `.hpp` 和 `.cpp`。这不是偷懒——这是由 C++ 的编译模型决定的。每个 `.cpp` 文件独立编译，编译器在处理一个编译单元时只需要看到声明就能编译通过，具体实现留到链接阶段再解决。但模板不同——模板本身不是代码，它是"代码配方"。编译器必须看到模板的完整定义才能实例化出具体的代码。如果把声明放在 `.h`、实现放在 `.cpp`，其他编译单元在实例化 `Stack&lt;int&gt;` 时只能看到声明、找不到实现，链接时就会报 `undefined reference` 错误。最常见的做法就是把所有代码写在头文件里。如果你确实想分离声明和实现，可以使用显式实例化——在 `.cpp` 文件中写 `template class Stack&lt;int&gt;;`，强制编译器在这个编译单元内生成 `Stack&lt;int&gt;` 的所有成员函数——但这样一来，模板就只能支持你显式列出的那些类型了，失去了泛型的灵活性。
+**暗坑一：模板声明和实现必须放在头文件中。** 你可能注意到了，我们把 `Stack` 的声明和实现全部放在了 `stack.hpp` 头文件中，没有分成 `.hpp` 和 `.cpp`。这不是偷懒——这是由 C++ 的编译模型决定的。每个 `.cpp` 文件独立编译，编译器在处理一个编译单元时只需要看到声明就能编译通过，具体实现留到链接阶段再解决。但模板不同——模板本身不是代码，它是"代码配方"。编译器必须看到模板的完整定义才能实例化出具体的代码。如果把声明放在 `.h`、实现放在 `.cpp`，其他编译单元在实例化 `Stack<int>` 时只能看到声明、找不到实现，链接时就会报 `undefined reference` 错误。最常见的做法就是把所有代码写在头文件里。如果你确实想分离声明和实现，可以使用显式实例化——在 `.cpp` 文件中写 `template class Stack<int>;`，强制编译器在这个编译单元内生成 `Stack<int>` 的所有成员函数——但这样一来，模板就只能支持你显式列出的那些类型了，失去了泛型的灵活性。
 
 **暗坑二：模板错误信息又臭又长。** 因为模板实例化发生在编译期，如果模板代码内部有错误，编译器会把模板展开后的完整上下文都塞进错误信息里。一个简单的类型不匹配可能产生上百行的报错。C++20 的 Concepts 在很大程度上改善了这个问题——它让你在模板参数上添加约束，错误信息会直接告诉你"哪个约束不满足"而不是"在这一大坨实例化链中某个操作符不匹配"。不过 Concepts 我们后面才会讲到，现阶段遇到模板报错，先看最后一行，找到你自己的调用代码，然后往回推导类型。
 
@@ -363,14 +363,14 @@ caught: Stack::pop(): stack is empty
 
 ### 练习 1：实现 Pair\<T, U\>
 
-实现一个泛型的 `Pair` 类模板，存储两个不同类型的值。要求提供 `first()` 和 `second()` 访问器（const 和非 const 版本），以及一个 `swap(Pair& other)` 成员函数用来交换两个 `Pair` 对象的内容。用 `Pair&lt;int, std::string&gt;` 和 `Pair&lt;double, char&gt;` 分别测试。提示：类模板可以接受多个类型参数，写法是 `template &lt;typename T, typename U&gt;`。
+实现一个泛型的 `Pair` 类模板，存储两个不同类型的值。要求提供 `first()` 和 `second()` 访问器（const 和非 const 版本），以及一个 `swap(Pair& other)` 成员函数用来交换两个 `Pair` 对象的内容。用 `Pair<int, std::string>` 和 `Pair<double, char>` 分别测试。提示：类模板可以接受多个类型参数，写法是 `template <typename T, typename U>`。
 
 ### 练习 2：实现 RingBuffer\<T, N\>
 
-实现一个环形缓冲区类模板，使用非类型模板参数 `std::size_t kCapacity` 指定容量。要求提供 `push(const T&)` 写入元素、`pop()` 读取并移除最早写入的元素、`full() const` 和 `empty() const` 判断状态、以及 `size() const` 返回当前元素数量。底层使用 `std::array&lt;T, kCapacity&gt;` 存储，用两个索引（读和写）追踪位置。环形缓冲区的核心思路是用取模运算 `% kCapacity` 让索引在数组末尾回绕到头部。
+实现一个环形缓冲区类模板，使用非类型模板参数 `std::size_t kCapacity` 指定容量。要求提供 `push(const T&)` 写入元素、`pop()` 读取并移除最早写入的元素、`full() const` 和 `empty() const` 判断状态、以及 `size() const` 返回当前元素数量。底层使用 `std::array<T, kCapacity>` 存储，用两个索引（读和写）追踪位置。环形缓冲区的核心思路是用取模运算 `% kCapacity` 让索引在数组末尾回绕到头部。
 
 ## 小结
 
-这一章我们把泛型的能力从函数扩展到了类。类模板的核心语法和函数模板几乎一样——`template &lt;typename T&gt;` 打头，`T` 可以出现在成员变量、成员函数参数、返回类型等任何需要类型的地方。类外定义成员函数时必须带上完整的模板头部并用 `ClassName&lt;T&gt;::` 限定，这是新手最容易踩的坑。模板参数分为类型参数（`typename T`）和非类型参数（`std::size_t N`），两者可以混合使用，默认值从右向左连续提供。组织模板代码时，声明和实现必须放在头文件中（或使用显式实例化），同时需要注意代码膨胀——每种实例化类型都会生成一份完整的代码副本。
+这一章我们把泛型的能力从函数扩展到了类。类模板的核心语法和函数模板几乎一样——`template <typename T>` 打头，`T` 可以出现在成员变量、成员函数参数、返回类型等任何需要类型的地方。类外定义成员函数时必须带上完整的模板头部并用 `ClassName<T>::` 限定，这是新手最容易踩的坑。模板参数分为类型参数（`typename T`）和非类型参数（`std::size_t N`），两者可以混合使用，默认值从右向左连续提供。组织模板代码时，声明和实现必须放在头文件中（或使用显式实例化），同时需要注意代码膨胀——每种实例化类型都会生成一份完整的代码副本。
 
 下一章我们进入模板特化——当通用方案对某些特定类型不够好时，如何为它们提供专门的实现。函数模板那一章我们已经简单接触过特化的概念，但类模板的特化更加灵活和强大，支持偏特化（partial specialization），这是构建高级泛型组件的核心工具。

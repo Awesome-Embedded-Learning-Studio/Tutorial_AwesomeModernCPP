@@ -87,9 +87,9 @@ public:
 };
 ```
 
-`virtual ~Shape() = default;` 看起来不起眼，但忘了写 `virtual` 后果严重——通过 `unique_ptr&lt;Shape&gt;` 持有 `Circle` 时，析构走的是 `Shape` 的析构函数，如果不是 virtual 的，派生类析构根本不会被调用，资源泄漏就在眼前。这是多态类体系的底线要求，没有例外。
+`virtual ~Shape() = default;` 看起来不起眼，但忘了写 `virtual` 后果严重——通过 `unique_ptr<Shape>` 持有 `Circle` 时，析构走的是 `Shape` 的析构函数，如果不是 virtual 的，派生类析构根本不会被调用，资源泄漏就在眼前。这是多态类体系的底线要求，没有例外。
 
-四个 `= 0` 的纯虚函数让 `Shape` 成为抽象类，无法实例化。任何想要成为"图形"的类都必须实现这四个接口——这就是"接口契约"。至于 `operator==` 里的 `std::abs(area() - other.area()) &lt; 1e-9`，这里用 epsilon 容差而不是直接 `==`，是因为浮点运算存在精度误差。两个数学上相等的值经过不同的计算路径，可能差了 `1e-15` 这么多，直接写 `area() == other.area()` 会导致半径相同的两个圆被判为"不等"。
+四个 `= 0` 的纯虚函数让 `Shape` 成为抽象类，无法实例化。任何想要成为"图形"的类都必须实现这四个接口——这就是"接口契约"。至于 `operator==` 里的 `std::abs(area() - other.area()) < 1e-9`，这里用 epsilon 容差而不是直接 `==`，是因为浮点运算存在精度误差。两个数学上相等的值经过不同的计算路径，可能差了 `1e-15` 这么多，直接写 `area() == other.area()` 会导致半径相同的两个圆被判为"不等"。
 
 ## 三个具体图形——override 防线
 
@@ -223,7 +223,7 @@ public:
 
 ## 全局 operator<<——让图形能直接 cout
 
-每次都调用 `shape.draw(std::cout)` 稍微有点烦，我们来重载一个全局的 `operator&lt;&lt;`，让所有 `Shape` 都能直接 `cout &lt;&lt; shape`：
+每次都调用 `shape.draw(std::cout)` 稍微有点烦，我们来重载一个全局的 `operator<<`，让所有 `Shape` 都能直接 `cout << shape`：
 
 ```cpp
 std::ostream& operator<<(std::ostream& os, const Shape& shape)
@@ -233,11 +233,11 @@ std::ostream& operator<<(std::ostream& os, const Shape& shape)
 }
 ```
 
-短短四行，做的事情就是委托给 `Shape` 的虚函数 `draw`。因为 `draw` 是虚函数，这里同样享受多态——传入 `Circle` 就调用 `Circle::draw`，传入 `Triangle` 就调用 `Triangle::draw`。返回 `os` 是为了支持链式调用，比如 `cout &lt;&lt; shape1 &lt;&lt; " and " &lt;&lt; shape2`。
+短短四行，做的事情就是委托给 `Shape` 的虚函数 `draw`。因为 `draw` 是虚函数，这里同样享受多态——传入 `Circle` 就调用 `Circle::draw`，传入 `Triangle` 就调用 `Triangle::draw`。返回 `os` 是为了支持链式调用，比如 `cout << shape1 << " and " << shape2`。
 
 ## Canvas——unique_ptr 管理多态对象
 
-三个图形类写完了，现在需要一个"画布"来统一管理它们。`Canvas` 是最能体现"多态实战"的类——它用 `vector&lt;unique_ptr&lt;Shape&gt;&gt;` 持有多种图形对象，所有操作通过虚函数接口完成。
+三个图形类写完了，现在需要一个"画布"来统一管理它们。`Canvas` 是最能体现"多态实战"的类——它用 `vector<unique_ptr<Shape>>` 持有多种图形对象，所有操作通过虚函数接口完成。
 
 ```cpp
 class Canvas {
@@ -265,7 +265,7 @@ public:
     }
 ```
 
-用的时候写 `canvas.emplace&lt;Circle&gt;(0, 0, 5)` 就行，比 `canvas.add(make_unique&lt;Circle&gt;(0, 0, 5))` 简洁不少。模板参数推导配合完美转发（`std::forward`），参数原封不动地传给具体图形的构造函数。
+用的时候写 `canvas.emplace<Circle>(0, 0, 5)` 就行，比 `canvas.add(make_unique<Circle>(0, 0, 5))` 简洁不少。模板参数推导配合完美转发（`std::forward`），参数原封不动地传给具体图形的构造函数。
 
 然后是几个功能方法：
 
@@ -305,7 +305,7 @@ public:
 };
 ```
 
-`draw_all` 遍历所有图形并调用 `draw`——`shape-&gt;draw(os)` 根据实际对象类型调用对应版本，这就是运行时多态在干活。`total_area` 汇总面积，`find_largest` 找出面积最大的图形并返回裸指针（注意这里返回的是非拥有指针，调用者不应该 `delete` 它）。
+`draw_all` 遍历所有图形并调用 `draw`——`shape->draw(os)` 根据实际对象类型调用对应版本，这就是运行时多态在干活。`total_area` 汇总面积，`find_largest` 找出面积最大的图形并返回裸指针（注意这里返回的是非拥有指针，调用者不应该 `delete` 它）。
 
 ## ShapeSerializer——工具类
 
@@ -352,7 +352,7 @@ public:
 };
 ```
 
-注意 `ColoredShape` **没有**继承 `Shape`。它内部持有一个 `unique_ptr&lt;Shape&gt;`，计算面积和周长直接委托给它，颜色信息自己管理。为什么不用继承？因为如果用继承，`ColoredShape` 不知道自己是什么图形，无法计算面积和周长。而用组合，你可以给任何图形加颜色，不需要为每种图形创建 `ColoredCircle`、`ColoredRectangle` 这样的子类。将来想加"带透明度"或"带边框"，同样用组合一层套一层，类体系不会膨胀。
+注意 `ColoredShape` **没有**继承 `Shape`。它内部持有一个 `unique_ptr<Shape>`，计算面积和周长直接委托给它，颜色信息自己管理。为什么不用继承？因为如果用继承，`ColoredShape` 不知道自己是什么图形，无法计算面积和周长。而用组合，你可以给任何图形加颜色，不需要为每种图形创建 `ColoredCircle`、`ColoredRectangle` 这样的子类。将来想加"带透明度"或"带边框"，同样用组合一层套一层，类体系不会膨胀。
 
 ## 上号——main 函数试跑
 
@@ -400,7 +400,7 @@ int main()
 }
 ```
 
-`canvas.emplace&lt;Circle&gt;(0, 0, 5)` 往画布里塞了一个半径 5 的圆，接着是 10x4 的矩形和直角三角形。`draw_all` 一次性画出所有图形，`find_largest` 找出面积最大的那个——用 `operator&lt;&lt;` 直接输出，因为它返回的是 `Shape*`，解引用后虚函数 `draw` 自动调用正确版本。最后测试了 `ColoredShape` 和 `operator==`。
+`canvas.emplace<Circle>(0, 0, 5)` 往画布里塞了一个半径 5 的圆，接着是 10x4 的矩形和直角三角形。`draw_all` 一次性画出所有图形，`find_largest` 找出面积最大的那个——用 `operator<<` 直接输出，因为它返回的是 `Shape*`，解引用后虚函数 `draw` 自动调用正确版本。最后测试了 `ColoredShape` 和 `operator==`。
 
 ## 验证运行
 
@@ -461,7 +461,7 @@ c1 == c3: 0
 
 ### 练习 2：图形分组
 
-实现一个 `ShapeGroup` 类，它**继承 `Shape`** 且内部持有 `vector&lt;unique_ptr&lt;Shape&gt;&gt;`。面积是所有子图形面积之和，周长返回 0。它可以被添加到 `Canvas` 中，甚至可以嵌套。这是继承和组合同时使用的经典案例。
+实现一个 `ShapeGroup` 类，它**继承 `Shape`** 且内部持有 `vector<unique_ptr<Shape>>`。面积是所有子图形面积之和，周长返回 0。它可以被添加到 `Canvas` 中，甚至可以嵌套。这是继承和组合同时使用的经典案例。
 
 ### 练习 3：JSON 序列化
 
@@ -469,7 +469,7 @@ c1 == c3: 0
 
 ## 小结
 
-这一章我们从头到尾实现了一个完整的图形绘制系统。抽象基类 `Shape` 定义了多态接口，三个具体图形类通过继承和 `override` 实现了各自的计算逻辑，`Canvas` 用 `unique_ptr&lt;Shape&gt;` 统一管理所有图形对象，`ColoredShape` 展示了组合优于继承的实践。
+这一章我们从头到尾实现了一个完整的图形绘制系统。抽象基类 `Shape` 定义了多态接口，三个具体图形类通过继承和 `override` 实现了各自的计算逻辑，`Canvas` 用 `unique_ptr<Shape>` 统一管理所有图形对象，`ColoredShape` 展示了组合优于继承的实践。
 
 几个核心经验：虚析构函数是多态类体系的底线要求；`override` 是免费的查错工具；`unique_ptr` 是管理多态对象的最佳选择；在继承和组合之间犹豫时，问自己"Is-a 还是 Has-a"，关系不稳定就用组合。
 

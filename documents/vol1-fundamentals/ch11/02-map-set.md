@@ -102,7 +102,7 @@ scores.clear();                 // 清空整个 map
 
 ## 换个姿势——std::set 维护唯一有序集合
 
-`std::set` 声明在 `&lt;set&gt;` 头文件中，可以理解为"只有 key 没有 value 的 map"。它的所有元素都是唯一的，并且始终有序。当我们需要去重、判断"某个东西是否属于一个集合"的时候，`set` 就派上用场了。
+`std::set` 声明在 `<set>` 头文件中，可以理解为"只有 key 没有 value 的 map"。它的所有元素都是唯一的，并且始终有序。当我们需要去重、判断"某个东西是否属于一个集合"的时候，`set` 就派上用场了。
 
 基本操作和 map 非常类似：
 
@@ -139,7 +139,7 @@ int main()
 }
 ```
 
-你会发现 set 的接口和 map 几乎一模一样，只是没有 `operator[]` 和 `at`——因为 set 没有"值"可以访问，迭代器解引用直接拿到的是 key 本身。另一个小区别是 set 的 `insert` 返回一个 `pair&lt;iterator, bool&gt;`，其中 `bool` 告诉你这次插入是否真的发生了（如果元素已经存在则返回 `false`）。
+你会发现 set 的接口和 map 几乎一模一样，只是没有 `operator[]` 和 `at`——因为 set 没有"值"可以访问，迭代器解引用直接拿到的是 key 本身。另一个小区别是 set 的 `insert` 返回一个 `pair<iterator, bool>`，其中 `bool` 告诉你这次插入是否真的发生了（如果元素已经存在则返回 `false`）。
 
 一个容易被忽略的特性是 set 提供了 `lower_bound` 和 `upper_bound`，可以用来做范围查询。比如找到 set 中所有大于等于 3 且小于 7 的元素：
 
@@ -154,7 +154,7 @@ for (auto it = lo; it != hi; ++it) {
 
 ## 把键值对过一遍——遍历关联容器
 
-关联容器的遍历和 vector 一样支持 range-for 循环。但 map 的元素类型是 `pair&lt;const Key, Value&gt;`，在 C++11 里你需要通过 `.first` 和 `.second` 来访问键和值：
+关联容器的遍历和 vector 一样支持 range-for 循环。但 map 的元素类型是 `pair<const Key, Value>`，在 C++11 里你需要通过 `.first` 和 `.second` 来访问键和值：
 
 ```cpp
 std::map<std::string, int> scores = {
@@ -197,7 +197,7 @@ for (const auto& elem : s) {
 
 ## 换个引擎——std::unordered_map
 
-`std::unordered_map` 声明在 `&lt;unordered_map&gt;` 头文件中，功能和 `std::map` 几乎一样——都是键值对容器，都支持 `insert`、`emplace`、`erase`、`find`、`count`、`contains`（C++20）、`operator[]`、`at` 这些操作。但底层数据结构完全不同：`map` 用红黑树，`unordered_map` 用哈希表。
+`std::unordered_map` 声明在 `<unordered_map>` 头文件中，功能和 `std::map` 几乎一样——都是键值对容器，都支持 `insert`、`emplace`、`erase`、`find`、`count`、`contains`（C++20）、`operator[]`、`at` 这些操作。但底层数据结构完全不同：`map` 用红黑树，`unordered_map` 用哈希表。
 
 这个区别带来了几个实际影响。查找性能上，`map` 是稳定的 O(log n)，`unordered_map` 平均 O(1) 但最坏情况 O(n)——当大量 key 发生哈希冲突时会退化。元素顺序上，`map` 始终按 key 有序，`unordered_map` 的元素顺序是不可预测的，每次插入或删除都可能导致顺序变化。内存占用上，哈希表通常比红黑树占用更多内存。
 
@@ -229,7 +229,7 @@ int main()
 }
 ```
 
-> **踩坑预警**：`unordered_map` 要求 key 类型要么有默认的 `std::hash` 特化，要么你手动提供哈希函数。标准库已经为内置类型（`int`、`double`、`std::string` 等）提供了 `std::hash` 特化，所以这些类型可以直接用作 key。但如果你想把自定义结构体当作 `unordered_map` 的 key，你需要自己实现 `std::hash` 特化和 `operator==`，否则编译直接报错。相比之下，`std::map` 只要求 key 支持 `operator&lt;`（或自定义比较器），门槛更低。如果你发现自定义类型做 key 编译不过，先检查是不是用了 `unordered_map` 却忘了提供哈希函数。
+> **踩坑预警**：`unordered_map` 要求 key 类型要么有默认的 `std::hash` 特化，要么你手动提供哈希函数。标准库已经为内置类型（`int`、`double`、`std::string` 等）提供了 `std::hash` 特化，所以这些类型可以直接用作 key。但如果你想把自定义结构体当作 `unordered_map` 的 key，你需要自己实现 `std::hash` 特化和 `operator==`，否则编译直接报错。相比之下，`std::map` 只要求 key 支持 `operator<`（或自定义比较器），门槛更低。如果你发现自定义类型做 key 编译不过，先检查是不是用了 `unordered_map` 却忘了提供哈希函数。
 
 ## 实战时间——词频统计与拼写检查
 
@@ -354,7 +354,7 @@ Input: "the cat danced on the roof"
 
 ### 练习 1：学生成绩管理
 
-用 `std::map&lt;std::string, int&gt;` 实现一个简单的成绩管理程序：支持添加学生和成绩、按姓名查询成绩、删除学生、列出所有学生及其成绩（按姓名排序）。要求使用 `find` 来判断学生是否存在，而不是 `operator[]`。
+用 `std::map<std::string, int>` 实现一个简单的成绩管理程序：支持添加学生和成绩、按姓名查询成绩、删除学生、列出所有学生及其成绩（按姓名排序）。要求使用 `find` 来判断学生是否存在，而不是 `operator[]`。
 
 ```cpp
 void add_student(std::map<std::string, int>& db,
@@ -366,11 +366,11 @@ void list_all(const std::map<std::string, int>& db);
 
 ### 练习 2：用 unordered_map 重写词频统计
 
-把上面实战程序中的 `std::map` 替换成 `std::unordered_map`，观察输出顺序的变化。然后用 `&lt;chrono&gt;` 计时，对比两种实现在处理一个包含 100000 个随机单词的文本时的性能差异。体会一下 O(1) 和 O(log n) 在数据量大时的实际差别。
+把上面实战程序中的 `std::map` 替换成 `std::unordered_map`，观察输出顺序的变化。然后用 `<chrono>` 计时，对比两种实现在处理一个包含 100000 个随机单词的文本时的性能差异。体会一下 O(1) 和 O(log n) 在数据量大时的实际差别。
 
 ### 练习 3：集合运算
 
-用两个 `std::set&lt;int&gt;` 分别存储集合 A 和 B，手动实现交集、并集和差集运算。（提示：遍历其中一个 set，用 `contains` 或 `find` 在另一个 set 中查找。）
+用两个 `std::set<int>` 分别存储集合 A 和 B，手动实现交集、并集和差集运算。（提示：遍历其中一个 set，用 `contains` 或 `find` 在另一个 set 中查找。）
 
 ```cpp
 std::set<int> set_union(const std::set<int>& a, const std::set<int>& b);

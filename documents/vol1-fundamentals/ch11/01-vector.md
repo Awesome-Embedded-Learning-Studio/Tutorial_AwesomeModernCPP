@@ -51,7 +51,7 @@ std::vector<int> v6(std::move(v5));     // 移动构造，接管资源
 
 这里有一个值得注意的点：`v2(10)` 创建了 10 个元素，每个值都是 `int()` 也就是 0。这不是"预留 10 个位置但没有元素"，而是真的有 10 个元素在里面。预留空间和实际元素是两个概念，后面讲到 `reserve` 的时候会深入讨论。
 
-> **踩坑预警**：`vector&lt;bool&gt;` 是 `vector` 的一个特化版本，它为了节省空间把每个 `bool` 压缩成了 1 bit。这导致 `vector&lt;bool&gt;` 的很多行为和普通 `vector&lt;T&gt;` 不一样——比如 `operator[]` 返回的不是 `bool&` 而是一个代理对象。如果你需要一个真正的 bool 数组，用 `vector&lt;char&gt;` 或者 `deque&lt;bool&gt;` 更安全。
+> **踩坑预警**：`vector<bool>` 是 `vector` 的一个特化版本，它为了节省空间把每个 `bool` 压缩成了 1 bit。这导致 `vector<bool>` 的很多行为和普通 `vector<T>` 不一样——比如 `operator[]` 返回的不是 `bool&` 而是一个代理对象。如果你需要一个真正的 bool 数组，用 `vector<char>` 或者 `deque<bool>` 更安全。
 
 ## 往里面塞东西——添加元素
 
@@ -172,7 +172,7 @@ for (auto& elem : v) {
 }
 ```
 
-注意这里用 `const auto&` 而不是 `auto`。对于 `int` 来说区别不大，但遍历 `vector&lt;std::string&gt;` 时，`auto` 会触发拷贝，而 `const auto&` 只是引用。如果你需要索引，用传统循环：`for (std::size_t i = 0; i &lt; v.size(); ++i)`。需要配合 STL 算法或做更精细控制时，用迭代器：`for (auto it = v.begin(); it != v.end(); ++it)`。日常开发中 range-for 能覆盖 90% 的遍历需求。
+注意这里用 `const auto&` 而不是 `auto`。对于 `int` 来说区别不大，但遍历 `vector<std::string>` 时，`auto` 会触发拷贝，而 `const auto&` 只是引用。如果你需要索引，用传统循环：`for (std::size_t i = 0; i < v.size(); ++i)`。需要配合 STL 算法或做更精细控制时，用迭代器：`for (auto it = v.begin(); it != v.end(); ++it)`。日常开发中 range-for 能覆盖 90% 的遍历需求。
 
 ## 实战时间——用 vector 写一个任务管理器
 
@@ -331,7 +331,7 @@ std::vector<int> deduplicate(const std::vector<int>& sorted);
 
 ### 练习 3：感受 reserve 的威力
 
-分别用"不调用 reserve"和"调用 reserve(100000)"两种方式向 vector 中插入 100000 个元素，用 `&lt;chrono&gt;` 计时并比较两者的耗时。体会一下提前分配内存的威力。
+分别用"不调用 reserve"和"调用 reserve(100000)"两种方式向 vector 中插入 100000 个元素，用 `<chrono>` 计时并比较两者的耗时。体会一下提前分配内存的威力。
 
 ## 小结
 

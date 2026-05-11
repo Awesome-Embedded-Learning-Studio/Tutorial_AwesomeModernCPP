@@ -94,7 +94,7 @@ auto t_start = std::chrono::steady_clock::now();
 
 ```
 
-`steady_clock`保证时间只会向前走,不受系统时间调整影响,适合测量时间间隔。`auto`类型推导在这里派上用场,不然你得写`std::chrono::time_point&lt;std::chrono::steady_clock&gt;`,想想就头大。
+`steady_clock`保证时间只会向前走,不受系统时间调整影响,适合测量时间间隔。`auto`类型推导在这里派上用场,不然你得写`std::chrono::time_point<std::chrono::steady_clock>`,想想就头大。
 
 ## 基础框架搭建
 

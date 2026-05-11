@@ -84,13 +84,13 @@ public:
 
 ### 为什么要用嵌套结构体 Flag
 
-你可能觉得奇怪——为什么不直接在 `CancelableToken` 里放一个 `std::atomic&lt;bool&gt;`？原因是 `shared_ptr` 管理的是一个堆上的对象。如果直接在 `CancelableToken` 里放 `atomic&lt;bool&gt;`，`shared_ptr` 管理的是 `CancelableToken` 本身——但 `CancelableToken` 还有自己的 `flag_` 成员，这就变成了 `shared_ptr&lt;CancelableToken&gt;` 包含 `shared_ptr&lt;Flag&gt;` 的循环。
+你可能觉得奇怪——为什么不直接在 `CancelableToken` 里放一个 `std::atomic<bool>`？原因是 `shared_ptr` 管理的是一个堆上的对象。如果直接在 `CancelableToken` 里放 `atomic<bool>`，`shared_ptr` 管理的是 `CancelableToken` 本身——但 `CancelableToken` 还有自己的 `flag_` 成员，这就变成了 `shared_ptr<CancelableToken>` 包含 `shared_ptr<Flag>` 的循环。
 
 用嵌套的 `Flag` 结构体把需要共享的状态隔离出来，`shared_ptr` 直接管理 `Flag`，`CancelableToken` 的拷贝和移动都通过 `shared_ptr` 的引用计数自动处理——简洁又正确。另一个好处是 `Flag` 结构体方便后续扩展——如果以后需要加更多原子标志（比如取消原因码），直接往 `Flag` 里加就行。
 
 ### shared_ptr 的共享机制
 
-`CancelableToken` 的拷贝构造和拷贝赋值是编译器默认生成的——它做的就是把 `shared_ptr&lt;Flag&gt;` 拷贝一份，引用计数 +1。所有通过拷贝创建的令牌副本共享同一个 `Flag` 对象。当任何一个副本调用 `invalidate()` 时，修改的是同一个 `Flag::valid`，所有副本在下次调用 `is_valid()` 时都会看到 `false`。
+`CancelableToken` 的拷贝构造和拷贝赋值是编译器默认生成的——它做的就是把 `shared_ptr<Flag>` 拷贝一份，引用计数 +1。所有通过拷贝创建的令牌副本共享同一个 `Flag` 对象。当任何一个副本调用 `invalidate()` 时，修改的是同一个 `Flag::valid`，所有副本在下次调用 `is_valid()` 时都会看到 `false`。
 
 ```cpp
 auto token1 = std::make_shared<CancelableToken>();
@@ -118,7 +118,7 @@ void set_token(std::shared_ptr<CancelableToken> token) {
 }
 ```
 
-`token_` 是 `shared_ptr&lt;CancelableToken&gt;` 类型，默认是空指针（不启用取消机制）。设置之后，取消令牌的所有权被转移到 OnceCallback 内部。
+`token_` 是 `shared_ptr<CancelableToken>` 类型，默认是空指针（不启用取消机制）。设置之后，取消令牌的所有权被转移到 OnceCallback 内部。
 
 ### is_cancelled() 的完整逻辑
 
@@ -203,7 +203,7 @@ assert(!executed);     // 回调没有被执行
 
 ## 小结
 
-这一篇我们实现了取消令牌并把它集成到了 OnceCallback 中。`CancelableToken` 用 `shared_ptr` + `atomic&lt;bool&gt;` 实现了轻量级的取消机制——所有令牌副本共享同一个 `Flag` 对象，一个 `invalidate()` 让所有副本同时失效。集成方式是在 `impl_run()` 执行前检查令牌状态——如果已取消，直接消费回调但不执行。void 回调直接 return，非 void 回调抛出 `std::bad_function_call`，这个差异来自调用方对返回值的不同期望。
+这一篇我们实现了取消令牌并把它集成到了 OnceCallback 中。`CancelableToken` 用 `shared_ptr` + `atomic<bool>` 实现了轻量级的取消机制——所有令牌副本共享同一个 `Flag` 对象，一个 `invalidate()` 让所有副本同时失效。集成方式是在 `impl_run()` 执行前检查令牌状态——如果已取消，直接消费回调但不执行。void 回调直接 return，非 void 回调抛出 `std::bad_function_call`，这个差异来自调用方对返回值的不同期望。
 
 下一篇我们去看 `then()` 链式组合——OnceCallback 四个功能中所有权设计最精巧的一个。
 

@@ -61,17 +61,17 @@ template <UartInstance INSTANCE> class UartDriver {
 };
 ```
 
-注意一个关键特征：这个类**没有实例数据成员**。所有数据都是 `static inline` 的。这意味着什么？意味着 `sizeof(UartDriver&lt;UartInstance::Usart1&gt;)` 等于 1——空类大小。这个类本身不占用任何 RAM。
+注意一个关键特征：这个类**没有实例数据成员**。所有数据都是 `static inline` 的。这意味着什么？意味着 `sizeof(UartDriver<UartInstance::Usart1>)` 等于 1——空类大小。这个类本身不占用任何 RAM。
 
 ---
 
 ## 零大小空类优化
 
-C++ 标准规定，任何完整对象类型的大小至少为 1 字节（即使它没有数据成员），因为每个对象都需要有唯一的地址。所以 `sizeof(UartDriver&lt;Usart1&gt;)` 是 1，不是 0。
+C++ 标准规定，任何完整对象类型的大小至少为 1 字节（即使它没有数据成员），因为每个对象都需要有唯一的地址。所以 `sizeof(UartDriver<Usart1>)` 是 1，不是 0。
 
-但这个 1 字节只是对象本身的开销。真正的状态——HAL 句柄、回调函数指针——全部存储在 `static inline` 成员中。这些成员不属于对象实例，而是属于模板特化。`UartDriver&lt;Usart1&gt;` 和 `UartDriver&lt;Usart2&gt;` 各有自己独立的一套 static 成员，存储在 BSS 段中。
+但这个 1 字节只是对象本身的开销。真正的状态——HAL 句柄、回调函数指针——全部存储在 `static inline` 成员中。这些成员不属于对象实例，而是属于模板特化。`UartDriver<Usart1>` 和 `UartDriver<Usart2>` 各有自己独立的一套 static 成员，存储在 BSS 段中。
 
-这个设计的妙处在于：你可以在代码中创建 `UartDriver` 的实例（比如通过 `UartManager::driver()` 返回的静态实例），但实例本身几乎不占空间。状态被从对象剥离到了模板特化级别——每个 USART 实例只有一份状态，而不是每个对象一份。如果你的代码中写了 `auto& drv1 = UartManager&lt;Usart1&gt;::driver();` 十次，不会有十份 `huart_`，只有一份。
+这个设计的妙处在于：你可以在代码中创建 `UartDriver` 的实例（比如通过 `UartManager::driver()` 返回的静态实例），但实例本身几乎不占空间。状态被从对象剥离到了模板特化级别——每个 USART 实例只有一份状态，而不是每个对象一份。如果你的代码中写了 `auto& drv1 = UartManager<Usart1>::driver();` 十次，不会有十份 `huart_`，只有一份。
 
 ---
 
@@ -130,7 +130,7 @@ static inline void enable_clock() {
 }
 ```
 
-`INSTANCE` 是编译时常量（NTTP），所以 `if constexpr` 在编译时就确定了走哪个分支。`UartDriver&lt;Usart1&gt;::enable_clock()` 编译后只剩 `__HAL_RCC_USART1_CLK_ENABLE();` 一条语句——其他两个分支的代码被完全丢弃，不出现在二进制中。
+`INSTANCE` 是编译时常量（NTTP），所以 `if constexpr` 在编译时就确定了走哪个分支。`UartDriver<Usart1>::enable_clock()` 编译后只剩 `__HAL_RCC_USART1_CLK_ENABLE();` 一条语句——其他两个分支的代码被完全丢弃，不出现在二进制中。
 
 ### enable_interrupt()
 
@@ -202,12 +202,12 @@ void init(const UartConfig& config) {
 
 四步：使能时钟 → 配置 GPIO（通过回调）→ 填充 HAL 初始化结构体 → 调用 HAL 初始化。每一步的顺序都不能调换——时钟没开就配不了寄存器，GPIO 没配好引脚信号就到不了 USART，HAL 初始化必须在所有参数就位后调用。
 
-`static_cast&lt;uint32_t&gt;(config.word_length)` 这些转换把我们的 `enum class` 值转回 HAL 库期望的 `uint32_t` 常量。`enum class` 的底层类型是 `uint32_t`（在 `uart_config.hpp` 中声明为 `enum class WordLength : uint32_t`），所以 `static_cast` 是安全的、零开销的。
+`static_cast<uint32_t>(config.word_length)` 这些转换把我们的 `enum class` 值转回 HAL 库期望的 `uint32_t` 常量。`enum class` 的底层类型是 `uint32_t`（在 `uart_config.hpp` 中声明为 `enum class WordLength : uint32_t`），所以 `static_cast` 是安全的、零开销的。
 
 ---
 
 ## 小结
 
-这一篇拆解了 `UartDriver&lt;UartInstance&gt;` 模板的核心设计：零大小空类优化（对象本身不占 RAM）、`static inline` 成员（每特化一份 BSS 存储，不需要 .cpp 定义）、`if constexpr` 编译时分发（选择不同的时钟使能和 NVIC 配置）、`native_instance()` 的 `reinterpret_cast` 指针映射。
+这一篇拆解了 `UartDriver<UartInstance>` 模板的核心设计：零大小空类优化（对象本身不占 RAM）、`static inline` 成员（每特化一份 BSS 存储，不需要 .cpp 定义）、`if constexpr` 编译时分发（选择不同的时钟使能和 NVIC 配置）、`native_instance()` 的 `reinterpret_cast` 指针映射。
 
 下一篇是 C++ 抽象的最后一篇：Concepts 如何约束 GPIO 初始化回调，以及 `UartManager` 如何管理驱动的生命周期。

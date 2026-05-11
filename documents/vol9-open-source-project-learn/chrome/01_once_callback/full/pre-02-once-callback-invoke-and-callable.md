@@ -66,7 +66,7 @@ int result2 = fn(3, 4);  // 同样通过 operator() 调用
 
 ### 成员函数指针
 
-这里语法开始变得古怪了。成员函数指针不能像普通函数那样直接调用——你必须有一个对象实例，然后用 `.*` 或 `-&gt;*` 运算符来调用。
+这里语法开始变得古怪了。成员函数指针不能像普通函数那样直接调用——你必须有一个对象实例，然后用 `.*` 或 `->*` 运算符来调用。
 
 ```cpp
 struct Calculator {
@@ -151,7 +151,7 @@ std::invoke([](int a, int b) { return a + b; }, 3, 4);  // lambda(3, 4)
 
 光有统一调用还不够——有时候你还需要在编译期知道 `std::invoke(f, args...)` 的返回类型是什么。比如在 `then()` 的实现中，我们需要推导"把前一个回调的返回值传给下一个回调，返回什么类型"。
 
-`std::invoke_result_t&lt;F, Args...&gt;` 就是干这个的。给定可调用对象类型 `F` 和参数类型 `Args...`，它在编译期计算出 `std::invoke(f, args...)` 的返回类型。
+`std::invoke_result_t<F, Args...>` 就是干这个的。给定可调用对象类型 `F` 和参数类型 `Args...`，它在编译期计算出 `std::invoke(f, args...)` 的返回类型。
 
 ```cpp
 #include <type_traits>

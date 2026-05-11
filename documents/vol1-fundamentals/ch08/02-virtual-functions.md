@@ -73,7 +73,7 @@ Shape::draw()
 Shape::draw()
 ```
 
-三次全都是 `Shape::draw()`。编译器在编译 `shapes[i]-&gt;draw()` 时，只看到 `shapes[i]` 的静态类型是 `Shape*`，于是老老实实地绑定了 `Shape::draw()`。它根本不知道、也不关心这个指针在运行时实际指向的是 `Circle` 还是 `Rectangle`——这就是**静态绑定**（也叫早绑定）。在我们需要"统一接口、不同行为"的时候，静态绑定就是绊脚石，而 `virtual` 正是打破它的关键。
+三次全都是 `Shape::draw()`。编译器在编译 `shapes[i]->draw()` 时，只看到 `shapes[i]` 的静态类型是 `Shape*`，于是老老实实地绑定了 `Shape::draw()`。它根本不知道、也不关心这个指针在运行时实际指向的是 `Circle` 还是 `Rectangle`——这就是**静态绑定**（也叫早绑定）。在我们需要"统一接口、不同行为"的时候，静态绑定就是绊脚石，而 `virtual` 正是打破它的关键。
 
 ## virtual 关键字——让函数调用"等到运行时再定"
 
@@ -169,7 +169,7 @@ Rectangle 的 vtable: [ &Rectangle::draw ]
 
 而每个包含虚函数的对象，在内存布局中都会多出一个隐藏的成员——**虚表指针**（vptr），指向该对象所属类的 vtable。
 
-当你写下 `shapes[i]-&gt;draw()` 时，编译器生成的代码大致做了这几步：先通过对象找到 `vptr`，定位到对应的 vtable，然后从表中取出 `draw()` 对应的函数指针，最后通过这个指针发起间接调用：
+当你写下 `shapes[i]->draw()` 时，编译器生成的代码大致做了这几步：先通过对象找到 `vptr`，定位到对应的 vtable，然后从表中取出 `draw()` 对应的函数指针，最后通过这个指针发起间接调用：
 
 ```text
 shapes[1] (Shape*)  ----->  Circle 对象
@@ -361,7 +361,7 @@ int main() {
 
 ## 练习
 
-1. **多态文档打印**：设计一个文档类层次。基类 `Document` 有纯虚函数 `void print() const` 和虚析构函数。派生出 `TextDocument`（打印文本内容）、`ImageDocument`（打印图片描述信息）、`PdfDocument`（打印页数和作者）。在 `main()` 中创建不同类型的文档，存入 `vector&lt;Document*&gt;`，遍历调用 `print()`，验证每个类型都输出了自己的内容。
+1. **多态文档打印**：设计一个文档类层次。基类 `Document` 有纯虚函数 `void print() const` 和虚析构函数。派生出 `TextDocument`（打印文本内容）、`ImageDocument`（打印图片描述信息）、`PdfDocument`（打印页数和作者）。在 `main()` 中创建不同类型的文档，存入 `vector<Document*>`，遍历调用 `print()`，验证每个类型都输出了自己的内容。
 
 2. **验证虚析构函数**：在练习 1 的基础上，给每个派生类的析构函数加上 `printf` 输出。先正常清理（`delete` 每个指针），观察析构顺序。然后把基类析构函数的 `virtual` 去掉再跑一次，看看有什么变化——你会亲眼看到派生类的析构函数被跳过的过程。
 

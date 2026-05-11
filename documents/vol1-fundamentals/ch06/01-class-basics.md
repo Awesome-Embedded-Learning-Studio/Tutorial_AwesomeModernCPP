@@ -368,7 +368,7 @@ distance(p1, origin) = 5
 
 ### 练习 2：Timer 类
 
-设计一个 `Timer` 类模拟简单计时器。私有成员变量包括 `start_time_` 和 `running_`，公共成员函数包括 `start()`、`stop()` 和 `elapsed_seconds()`。提示：用 `&lt;chrono&gt;` 的 `std::chrono::steady_clock` 获取时间点。
+设计一个 `Timer` 类模拟简单计时器。私有成员变量包括 `start_time_` 和 `running_`，公共成员函数包括 `start()`、`stop()` 和 `elapsed_seconds()`。提示：用 `<chrono>` 的 `std::chrono::steady_clock` 获取时间点。
 
 ## 小结
 

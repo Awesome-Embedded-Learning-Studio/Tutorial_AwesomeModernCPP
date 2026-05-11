@@ -199,7 +199,7 @@ void example(Allocator<T> alloc) {
 | 情况 | 是否需要 | 示例 |
 |------|----------|------|
 | 访问成员类型 | 需要`typename` | `typename T::type` |
-| 访问成员模板 | 需要`template` | `obj.template foo&lt;int&gt;()` |
+| 访问成员模板 | 需要`template` | `obj.template foo<int>()` |
 | 访问普通成员 | 不需要 | `obj.method()` |
 | 访问静态成员 | 不需要 | `T::static_var` |
 
@@ -653,7 +653,7 @@ int main() {
 |------|-------------|------|
 | 普通函数 | 是 | `func(obj)` 找到 `NS::func` |
 | 运算符 | 是 | `a + b` 找到 `NS::operator+` |
-| 类模板 | 否 | `MyClass&lt;T&gt;` 需要完整路径 |
+| 类模板 | 否 | `MyClass<T>` 需要完整路径 |
 | 成员函数 | N/A | `obj.method()` 不涉及ADL |
 | 命名空间别名 | 是 | 通过别名类型仍能触发 |
 
@@ -1343,7 +1343,7 @@ struct Derived : Base<T> {
 };
 ```
 
-**解释**：因为`Base&lt;T&gt;`是依赖基类（依赖模板参数），编译器在阶段1不会查找它的成员。必须使用`this-&gt;`或完全限定名令其成为依赖名称。
+**解释**：因为`Base<T>`是依赖基类（依赖模板参数），编译器在阶段1不会查找它的成员。必须使用`this->`或完全限定名令其成为依赖名称。
 
 ### 陷阱对照表
 
@@ -1352,8 +1352,8 @@ struct Derived : Base<T> {
 | `t.clear()` 不工作 | `T` 没有 `clear` 方法 | SFINAE/Concepts 约束 |
 | 找不到同名函数 | 名字隐藏 | 显式命名空间或 `using` |
 | `typename` 位置错误 | 非函数体的类型不需要 | 只在依赖类型处使用 |
-| 成员模板访问 | 缺少 `template` 关键字 | 使用 `obj.template foo&lt;T&gt;()` |
-| 基类成员不可见 | 依赖基类查找规则 | 使用 `this-&gt;` 或 `using` |
+| 成员模板访问 | 缺少 `template` 关键字 | 使用 `obj.template foo<T>()` |
+| 基类成员不可见 | 依赖基类查找规则 | 使用 `this->` 或 `using` |
 | 友元函数不可见 | ADL 规则限制 | 确保在命名空间作用域定义 |
 
 ### 调试模板名字查找问题
@@ -1389,7 +1389,7 @@ void debug_process(T t) {
 |------|----------|----------|
 | **依赖名称** | 依赖模板参数的名称 | 在模板中访问`T::XXX` |
 | **typename** | 标明依赖类型 | `typename T::value_type` |
-| **template** | 标明依赖成员模板 | `obj.template foo&lt;T&gt;()` |
+| **template** | 标明依赖成员模板 | `obj.template foo<T>()` |
 | **两阶段查找** | 定义时查非依赖，实例化时查依赖 | 理解编译错误时机 |
 | **ADL** | 在参数类型命名空间查找函数 | 运算符重载、swap 等 |
 

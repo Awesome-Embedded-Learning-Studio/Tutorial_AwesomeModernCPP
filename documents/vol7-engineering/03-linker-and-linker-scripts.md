@@ -222,7 +222,7 @@ PROVIDE(_estack = _estack);
 2. **代码段**（`.text`）紧随其后，包含所有可执行代码和只读常量
 3. **`.data` 段的双重地址**：
    - `AT(ADDR(.text) + SIZEOF(.text))` 指定加载地址（LMA），即数据在 FLASH 中的位置
-   - `&gt; RAM` 指定运行地址（VMA），即数据运行时应该在 RAM 中的位置
+   - `> RAM` 指定运行地址（VMA），即数据运行时应该在 RAM 中的位置
    - 启动代码需要将数据从 LMA 复制到 VMA
 4. **符号导出**：`_sdata`、`_edata`、`_sbss`、`_ebss` 等符号会被启动代码使用
 

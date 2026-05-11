@@ -57,7 +57,7 @@ int _write(int fd [[maybe_unused]], char* ptr, int len) {
 
 `[[maybe_unused]]` 属性告诉编译器"我知道 `fd` 没被使用，不要警告"。这是 C++17 的属性，比 `(void)fd;` 这种旧式写法更清晰地表达了意图。
 
-### `auto* huart = UartManager&lt;UartInstance::Usart1&gt;::handle()`
+### `auto* huart = UartManager<UartInstance::Usart1>::handle()`
 
 获取 USART1 的 HAL 句柄指针。`handle()` 是一个静态方法，返回 `UART_HandleTypeDef*`——这是 HAL 库所有 UART 函数都需要的参数。我们通过 `UartManager` 来获取句柄，而不是使用全局变量 `extern UART_HandleTypeDef huart1`。这样做的好处是：句柄的生命周期和访问权限完全由 C++ 类型系统管理，没有任何全局状态泄漏。
 

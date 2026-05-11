@@ -147,7 +147,7 @@ int main() {
 
 ## unique_ptr<T[]>：数组版本
 
-`unique_ptr` 有一个针对数组的偏特化版本 `unique_ptr&lt;T[]&gt;`，它在析构时会调用 `delete[]` 而不是 `delete`。
+`unique_ptr` 有一个针对数组的偏特化版本 `unique_ptr<T[]>`，它在析构时会调用 `delete[]` 而不是 `delete`。
 
 ```cpp
 auto arr = std::make_unique<int[]>(64);  // 分配 64 个 int
@@ -156,7 +156,7 @@ arr[1] = 17;
 // 析构时自动 delete[]
 ```
 
-不过说实话，在 C++ 中需要手动管理动态数组的场景已经非常少了。如果你需要一个固定大小的数组，用 `std::array` 或 `std::vector` 几乎总是更好的选择。`unique_ptr&lt;T[]&gt;` 主要用于对接那些返回动态分配数组的 C API，比如：
+不过说实话，在 C++ 中需要手动管理动态数组的场景已经非常少了。如果你需要一个固定大小的数组，用 `std::array` 或 `std::vector` 几乎总是更好的选择。`unique_ptr<T[]>` 主要用于对接那些返回动态分配数组的 C API，比如：
 
 ```cpp
 // 假设某个 C API 返回 malloc 分配的数组
@@ -170,11 +170,11 @@ auto buffer = std::unique_ptr<int[], void(*)(int*)>(
 buffer[0] = 42;
 ```
 
-⚠️ 笔者强烈建议：不要用 `unique_ptr&lt;T[]&gt;` 来替代 `std::vector`。`vector` 提供了 `size()`、迭代器、边界检查（通过 `at()`）等能力，而 `unique_ptr&lt;T[]&gt;` 除了自动释放之外什么都没有。
+⚠️ 笔者强烈建议：不要用 `unique_ptr<T[]>` 来替代 `std::vector`。`vector` 提供了 `size()`、迭代器、边界检查（通过 `at()`）等能力，而 `unique_ptr<T[]>` 除了自动释放之外什么都没有。
 
 ## 自定义删除器基础
 
-`unique_ptr` 的第二个模板参数就是删除器的类型。默认是 `std::default_delete&lt;T&gt;`，内部就是简单的 `delete ptr`。但你可以替换为任何可调用对象——函数指针、lambda、函数对象，只要是 `void operator()(T*)` 的签名就行。
+`unique_ptr` 的第二个模板参数就是删除器的类型。默认是 `std::default_delete<T>`，内部就是简单的 `delete ptr`。但你可以替换为任何可调用对象——函数指针、lambda、函数对象，只要是 `void operator()(T*)` 的签名就行。
 
 最常见的场景是管理 C API 返回的资源：
 
@@ -372,7 +372,7 @@ g++ -std=c++17 pimpl_widget.o pimpl_user.o -o test_pimpl
 
 这个示例展示了 PIMPL 模式的关键特性：公共接口完全不暴露实现细节，修改 `Impl` 结构体不需要重新编译用户代码。
 
-⚠️ PIMPL 使用 `unique_ptr` 时有几个注意点。首先，`~Widget()` 必须在实现文件中定义——因为析构时需要 `Impl` 是完整类型，而头文件中只有前向声明。其次，移动构造和移动赋值也应该在实现文件中 `= default`，原因相同。如果你在头文件中 `= default` 它们，编译器会尝试在头文件中实例化 `unique_ptr&lt;Impl&gt;` 的析构，而此时 `Impl` 不完整，会导致编译错误。
+⚠️ PIMPL 使用 `unique_ptr` 时有几个注意点。首先，`~Widget()` 必须在实现文件中定义——因为析构时需要 `Impl` 是完整类型，而头文件中只有前向声明。其次，移动构造和移动赋值也应该在实现文件中 `= default`，原因相同。如果你在头文件中 `= default` 它们，编译器会尝试在头文件中实例化 `unique_ptr<Impl>` 的析构，而此时 `Impl` 不完整，会导致编译错误。
 
 ## 工厂函数返回 unique_ptr
 
@@ -423,7 +423,7 @@ void application() {
 }
 ```
 
-这种模式还有一个妙处：工厂函数返回 `unique_ptr&lt;Logger&gt;`（基类指针），但实际创建的是 `ConsoleLogger` 或 `FileLogger`（派生类对象）。只要 `Logger` 有虚析构函数（我们确实声明了 `virtual ~Logger() = default`），多态析构就是安全的。
+这种模式还有一个妙处：工厂函数返回 `unique_ptr<Logger>`（基类指针），但实际创建的是 `ConsoleLogger` 或 `FileLogger`（派生类对象）。只要 `Logger` 有虚析构函数（我们确实声明了 `virtual ~Logger() = default`），多态析构就是安全的。
 
 值得注意的是，返回 `unique_ptr` 并不会带来任何性能损失。在现代编译器中，返回值优化（RVO）和移动语义会确保整个过程零拷贝——工厂函数中创建的 `unique_ptr` 直接"搬到"了调用者的变量中。
 

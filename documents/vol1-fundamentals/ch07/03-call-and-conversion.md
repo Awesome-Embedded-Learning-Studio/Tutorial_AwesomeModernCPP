@@ -329,17 +329,17 @@ g++ -std=c++17 -Wall -Wextra -o callable callable.cpp && ./callable
 
 写一个模板类 `GenericComparator`，它的构造函数接受一个排序策略（升序或降序），然后通过 `operator()` 执行比较。要求支持任意可比较的类型（用模板实现），并且提供一个成员函数返回总比较次数。
 
-提示：可以用枚举 `enum class Order { kAscending, kDescending };` 来表示排序策略，在 `operator()` 内部根据策略决定返回 `a &lt; b` 还是 `a &gt; b`。
+提示：可以用枚举 `enum class Order { kAscending, kDescending };` 来表示排序策略，在 `operator()` 内部根据策略决定返回 `a < b` 还是 `a > b`。
 
-验证方式：用你的 `GenericComparator` 配合 `std::sort` 对一个 `std::vector&lt;double&gt;` 进行升序和降序排序，输出排序前后的结果。
+验证方式：用你的 `GenericComparator` 配合 `std::sort` 对一个 `std::vector<double>` 进行升序和降序排序，输出排序前后的结果。
 
 **练习 2：为 Result 类实现 explicit operator bool**
 
-实现一个 `Result&lt;T&gt;` 类模板，它要么持有一个有效值，要么持有一个错误信息字符串。要求：重载 `explicit operator bool()` 来判断是否持有有效值；提供 `value()` 成员函数获取有效值（无值时输出错误信息并终止）；提供 `error()` 成员函数获取错误信息。
+实现一个 `Result<T>` 类模板，它要么持有一个有效值，要么持有一个错误信息字符串。要求：重载 `explicit operator bool()` 来判断是否持有有效值；提供 `value()` 成员函数获取有效值（无值时输出错误信息并终止）；提供 `error()` 成员函数获取错误信息。
 
-提示：可以用 `std::optional&lt;T&gt;` 或者一个 `bool` 标志加 `union` 的方式来存储数据。
+提示：可以用 `std::optional<T>` 或者一个 `bool` 标志加 `union` 的方式来存储数据。
 
-验证方式：创建一个持有值的 `Result&lt;int&gt;` 和一个持有错误的 `Result&lt;int&gt;`，分别用 `if (result)` 测试布尔转换行为，确认逻辑正确。
+验证方式：创建一个持有值的 `Result<int>` 和一个持有错误的 `Result<int>`，分别用 `if (result)` 测试布尔转换行为，确认逻辑正确。
 
 ## 小结
 

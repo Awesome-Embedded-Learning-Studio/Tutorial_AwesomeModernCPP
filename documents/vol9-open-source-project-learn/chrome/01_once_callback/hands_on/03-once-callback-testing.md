@@ -59,7 +59,7 @@ TEST_CASE("void return", "[once_callback]") {
 }
 ```
 
-最基本的场景——构造一个回调，调用它，验证返回值。void 返回类型走的是 `if constexpr (std::is_void_v&lt;ReturnType&gt;)` 的另一条分支，确认我们的编译期分支逻辑是正确的。
+最基本的场景——构造一个回调，调用它，验证返回值。void 返回类型走的是 `if constexpr (std::is_void_v<ReturnType>)` 的另一条分支，确认我们的编译期分支逻辑是正确的。
 
 ### B 类：移动语义
 
@@ -83,7 +83,7 @@ TEST_CASE("move semantics: source becomes null", "[once_callback]") {
 }
 ```
 
-move-only capture 测试（`std::make_unique&lt;int&gt;(42)` 被捕获进 lambda）确认了 `OnceCallback` 真正支持 move-only 的可调用对象——如果底层用的是 `std::function` 而不是 `std::move_only_function`，这段代码直接编译失败。移动语义测试验证了移动构造后源对象变为 `kEmpty` 状态（通过 `is_null()` 检查），目标对象保持有效并可以正常调用。
+move-only capture 测试（`std::make_unique<int>(42)` 被捕获进 lambda）确认了 `OnceCallback` 真正支持 move-only 的可调用对象——如果底层用的是 `std::function` 而不是 `std::move_only_function`，这段代码直接编译失败。移动语义测试验证了移动构造后源对象变为 `kEmpty` 状态（通过 `is_null()` 检查），目标对象保持有效并可以正常调用。
 
 有一个容易搞混的概念点——移动操作转移了所有权，但不会触发消费。只有 `run()` 才会消费回调。这个区别在 Chromium 里也很重要：`PostTask(FROM_HERE, std::move(cb))` 只是转移所有权，回调在任务被执行之前一直处于活跃状态。
 
@@ -176,7 +176,7 @@ TEST_CASE("then with void first callback", "[then]") {
 }
 ```
 
-`then()` 测试覆盖了三种组合模式：两级非 void 管道、多级管道（跨越类型边界——从 `int` 到 `std::string`）、以及 void 前缀回调。多级管道测试特别有趣——`(5*2)+10 = 20`，最终被 `std::to_string` 转换为字符串 `"20"`。这个测试验证了 `then()` 在每一级都正确地推导了返回类型，并且类型擦除（通过 `std::move_only_function`）在不同类型的 lambda 之间正确工作。void 前缀测试验证了 `if constexpr (std::is_void_v&lt;ReturnType&gt;)` 分支——第一个回调设置 `value = 7`，第二个回调通过引用读取 `value` 并返回 `21`。
+`then()` 测试覆盖了三种组合模式：两级非 void 管道、多级管道（跨越类型边界——从 `int` 到 `std::string`）、以及 void 前缀回调。多级管道测试特别有趣——`(5*2)+10 = 20`，最终被 `std::to_string` 转换为字符串 `"20"`。这个测试验证了 `then()` 在每一级都正确地推导了返回类型，并且类型擦除（通过 `std::move_only_function`）在不同类型的 lambda 之间正确工作。void 前缀测试验证了 `if constexpr (std::is_void_v<ReturnType>)` 分支——第一个回调设置 `value = 7`，第二个回调通过引用读取 `value` 并返回 `21`。
 
 ### 测试框架与构建配置
 
@@ -226,7 +226,7 @@ int main() {
 }
 ```
 
-在 GCC 上，典型值如下：`std::function&lt;void()&gt;` 约 32 字节，`std::move_only_function&lt;void()&gt;` 约 32 字节，我们的 `OnceCallback&lt;void()&gt;` 加上 `Status` 枚举和可选的 `CancelableToken` 指针，大约 56-64 字节。Chromium 的 `OnceCallback&lt;void()&gt;` 只有 8 字节——一个指向 `BindState` 的 `scoped_refptr`。
+在 GCC 上，典型值如下：`std::function<void()>` 约 32 字节，`std::move_only_function<void()>` 约 32 字节，我们的 `OnceCallback<void()>` 加上 `Status` 枚举和可选的 `CancelableToken` 指针，大约 56-64 字节。Chromium 的 `OnceCallback<void()>` 只有 8 字节——一个指向 `BindState` 的 `scoped_refptr`。
 
 差距的根源在于存储策略。Chromium 把所有状态（可调用对象 + 绑定参数）都放在堆上的 `BindState` 里，回调对象本身只持有一个指针。我们用 `std::move_only_function` 的 SBO 把小对象直接内联存储在回调对象内部，避免了堆分配但增大了对象大小。
 
@@ -234,7 +234,7 @@ int main() {
 
 `std::move_only_function` 的 SBO 阈值是实现定义的，通常是 2-3 个指针大小（16-24 字节）。捕获少量参数的 lambda（比如 `[x = 42]` 或 `[&ref]`）通常能放进 SBO，不会触发堆分配。但如果 lambda 捕获了大量数据（比如一个 `std::string` + 几个 `int`），就会在构造时堆分配。
 
-Chromium 的方案总是堆分配（`new BindState&lt;Functor, BoundArgs...&gt;`），但分配只发生一次——在 `BindOnce` 时。之后 `OnceCallback` 的移动操作只是复制一个指针（8 字节），代价极低。我们的方案在小对象时不分配（SBO），但移动操作需要复制整个 `std::move_only_function`（32 字节）加上 `token_` 指针，代价稍高。
+Chromium 的方案总是堆分配（`new BindState<Functor, BoundArgs...>`），但分配只发生一次——在 `BindOnce` 时。之后 `OnceCallback` 的移动操作只是复制一个指针（8 字节），代价极低。我们的方案在小对象时不分配（SBO），但移动操作需要复制整个 `std::move_only_function`（32 字节）加上 `token_` 指针，代价稍高。
 
 两种策略在不同场景下各有优势。对于高频投递的小回调（Chrome 浏览器的主场景），Chromium 的方案更优——移动代价低、大小一致有利于 CPU 缓存。对于低频的大回调（比如一次性初始化任务），我们的方案更优——省去一次堆分配。
 

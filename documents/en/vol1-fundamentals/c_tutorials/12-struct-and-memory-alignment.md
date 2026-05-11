@@ -117,7 +117,7 @@ But note that struct assignment in C is a **shallow copy**—if the struct conta
 
 ### Struct Pointers and the Arrow Operator
 
-When a struct is large, or when we need to modify the caller's struct inside a function, passing a pointer is the only reasonable approach. This is where the difference between `.` and `-&gt;` comes in:
+When a struct is large, or when we need to modify the caller's struct inside a function, passing a pointer is the only reasonable approach. This is where the difference between `.` and `->` comes in:
 
 ```c
 SensorReading reading = {
@@ -136,7 +136,7 @@ ptr->humidity = 55.0f;
 // 等价于 (*ptr).humidity = 55.0f
 ```
 
-The `-&gt;` operator is simply syntactic sugar for `(*ptr).`; there is nothing mysterious about it. But this syntactic sugar is so commonly used that you would almost never write `(*ptr).`—in C, whenever a function parameter is a struct pointer, you are almost certainly using `-&gt;`.
+The `->` operator is simply syntactic sugar for `(*ptr).`; there is nothing mysterious about it. But this syntactic sugar is so commonly used that you would almost never write `(*ptr).`—in C, whenever a function parameter is a struct pointer, you are almost certainly using `->`.
 
 Passing a struct pointer instead of the struct itself as a function parameter not only avoids expensive copy overhead but also allows the function to modify the caller's data. If you do not want the function to modify the data, simply add `const`:
 
@@ -211,7 +211,7 @@ Now `sizeof(BetterLayout)` is **8 bytes**—saving one-third compared to the pre
 
 ### Verifying Offsets with offsetof
 
-The C standard library provides the `offsetof` macro (defined in `&lt;stddef.h&gt;`), which can precisely tell you the offset of a specific field within a struct. We frequently use it when debugging alignment issues or designing binary protocols:
+The C standard library provides the `offsetof` macro (defined in `<stddef.h>`), which can precisely tell you the offset of a specific field within a struct. We frequently use it when debugging alignment issues or designing binary protocols:
 
 ```c
 #include <stddef.h>
@@ -227,7 +227,7 @@ Make it a habit to print the offsets with `offsetof` right after defining a stru
 
 ## C11 Alignment Control: _Alignas and alignof
 
-In the C99 era, if you needed to manually control alignment, you had to rely on compiler extensions—GCC's `__attribute__((aligned(n)))`, MSVC's `__declspec(align(n))`, and the like. C11 finally standardized this capability, providing the `_Alignas` and `_Alignof` keywords, along with the more friendly macro aliases `alignas` and `alignof` (defined in `&lt;stdalign.h&gt;`).
+In the C99 era, if you needed to manually control alignment, you had to rely on compiler extensions—GCC's `__attribute__((aligned(n)))`, MSVC's `__declspec(align(n))`, and the like. C11 finally standardized this capability, providing the `_Alignas` and `_Alignof` keywords, along with the more friendly macro aliases `alignas` and `alignof` (defined in `<stdalign.h>`).
 
 ### alignof: Querying Alignment Requirements
 
@@ -455,7 +455,7 @@ In this tutorial, we thoroughly broke down structs from "how to use them" to "wh
 
 ### Key Takeaways
 
-- [ ] Structs are defined with `typedef struct { ... } Name;`, and members are accessed via `-&gt;` when using pointers
+- [ ] Structs are defined with `typedef struct { ... } Name;`, and members are accessed via `->` when using pointers
 - [ ] C99 designated initializers (`.field = value`) are safer and more readable than sequential initialization
 - [ ] The compiler inserts padding bytes between members and at the end of the struct to ensure each member is aligned
 - [ ] Ordering fields from largest to smallest alignment requirement reduces padding and saves memory

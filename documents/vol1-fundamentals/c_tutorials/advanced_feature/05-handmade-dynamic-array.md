@@ -78,9 +78,9 @@ typedef struct _DynamicArray_ {
 四个字段各司其职：`data` 管"存在哪里"，`size` 管"用了几个"，`capacity` 管"总共有几个坑位"，`element_size` 管"每个坑位多大"。有了 `element_size`，定位第 `i` 个元素的地址就是 `(char*)data + i * element_size`——必须先转成 `char*`，因为 `char` 恰好是 1 字节，这样指针运算才是精确的字节偏移。直接对 `void*` 做加减，编译器会报错（C 标准不允许，虽然 GCC 作为扩展允许，但不可移植）。
 
 > ⚠️ **踩坑预警**
-> `size` 是"实际有多少个有效元素"，`capacity` 是"这块内存最多能放多少个元素"，`size &lt;= capacity`。如果你在遍历的时候用了 `capacity` 而不是 `size` 作上界，就会读到未初始化的垃圾数据。
+> `size` 是"实际有多少个有效元素"，`capacity` 是"这块内存最多能放多少个元素"，`size <= capacity`。如果你在遍历的时候用了 `capacity` 而不是 `size` 作上界，就会读到未初始化的垃圾数据。
 
-`std::vector` 内部的数据布局和我们几乎一模一样，只不过模板参数 `T` 替代了 `void*` + `element_size` 的组合，类型安全在编译期就得到了保证。`sizeof(std::vector&lt;int&gt;)` 在大多数实现上是 24 字节——三个 8 字节字段（指针 + size + capacity），`element_size` 在模板实例化后不需要存储。
+`std::vector` 内部的数据布局和我们几乎一模一样，只不过模板参数 `T` 替代了 `void*` + `element_size` 的组合，类型安全在编译期就得到了保证。`sizeof(std::vector<int>)` 在大多数实现上是 24 字节——三个 8 字节字段（指针 + size + capacity），`element_size` 在模板实例化后不需要存储。
 
 ## 第二步——建立错误处理体系
 
@@ -149,7 +149,7 @@ DynamicArray* dynamic_array_create(size_t initial_capacity, size_t element_size)
 }
 ```
 
-分配结构体内存后必须立刻检查 `malloc` 返回值——不检查就访问 `arr-&gt;data`，程序直接段错误。我们设定了最小容量 8 作为经验值，太小导致频繁扩容，太大浪费内存。
+分配结构体内存后必须立刻检查 `malloc` 返回值——不检查就访问 `arr->data`，程序直接段错误。我们设定了最小容量 8 作为经验值，太小导致频繁扩容，太大浪费内存。
 
 > ⚠️ **踩坑预警**
 > 注意 `free(arr)` 的存在。这是一个非常经典的资源泄露场景：结构体分配成功了，但数据区分配失败了。如果你直接 `return NULL` 而不 `free(arr)`，那块结构体内存就永远泄露了。这种"分配了一部分资源但后续步骤失败"的情况是 C 内存管理中最容易出错的地方。
@@ -181,7 +181,7 @@ DynamicArrayStatus dynamic_array_destroy(DynamicArray* arr)
 }
 ```
 
-释放顺序不能反——先 `free(arr)` 的话，`arr-&gt;data` 就是对已释放内存的访问（Use After Free）。另一个问题是 `destroy` 之后 `arr` 指针本身并没有变成 `NULL`，它还指向那块已释放的内存。C 函数参数是值传递，只能靠调用者自觉手动置 NULL：
+释放顺序不能反——先 `free(arr)` 的话，`arr->data` 就是对已释放内存的访问（Use After Free）。另一个问题是 `destroy` 之后 `arr` 指针本身并没有变成 `NULL`，它还指向那块已释放的内存。C 函数参数是值传递，只能靠调用者自觉手动置 NULL：
 
 ```c
 dynamic_array_destroy(nums);
@@ -218,7 +218,7 @@ DynamicArrayStatus dynamic_array_reserve(DynamicArray* arr, size_t min_capacity)
 `realloc` 会尝试在原位置就地扩展，不行就在堆上找一块更大的空间并把旧数据复制过去。无论哪种情况返回的指针都指向有效内存，旧数据完好无损。
 
 > ⚠️ **踩坑预警**
-> `realloc` 可能返回不同的地址！你必须用 `arr-&gt;data = new_data` 更新指针。如果你写成 `realloc(arr-&gt;data, ...)` 而不接收返回值，搬家后就丢失了新地址，旧地址指向的内存也已经被释放了——双重灾难。
+> `realloc` 可能返回不同的地址！你必须用 `arr->data = new_data` 更新指针。如果你写成 `realloc(arr->data, ...)` 而不接收返回值，搬家后就丢失了新地址，旧地址指向的内存也已经被释放了——双重灾难。
 
 ### 缩容——避免抖动
 
@@ -308,7 +308,7 @@ DynamicArrayStatus dynamic_array_push_back(DynamicArray* arr, const void* elemen
 }
 ```
 
-`memcpy` 的目标地址是 `(char*)arr-&gt;data + arr-&gt;size * arr-&gt;element_size`——跳过所有已有元素来到第一个空坑位。由于 2x 增长策略，连续 N 次 `push_back` 的总时间 O(N)，摊还 O(1)。
+`memcpy` 的目标地址是 `(char*)arr->data + arr->size * arr->element_size`——跳过所有已有元素来到第一个空坑位。由于 2x 增长策略，连续 N 次 `push_back` 的总时间 O(N)，摊还 O(1)。
 
 来验证扩容效果：
 
@@ -486,9 +486,9 @@ size_t dynamic_array_find(
 
 到这里我们已经手搓了一个完整的动态数组库。回过头来系统对照 `std::vector`，理解这些设计取舍比记住 API 重要得多。
 
-我们用 `void*` 实现泛型带来了三个问题：没有类型检查、需要手动传 `element_size`、回调函数里要强制类型转换。`std::vector&lt;T&gt;` 用模板完美解决了这三个——编译器在实例化时就确定了类型 `T`，所有类型检查在编译期完成，`sizeof(T)` 也自动计算。`std::vector` 的析构函数会自动释放内部数组，无论函数正常 return 还是因为异常退出，这就是 RAII 的核心思想——资源生命周期和对象生命周期绑定。C++11 的 move 语义让 `vec2 = std::move(vec1)` 变成了 O(1) 的指针交换，而 C 里只能 `memcpy` 整块数据。
+我们用 `void*` 实现泛型带来了三个问题：没有类型检查、需要手动传 `element_size`、回调函数里要强制类型转换。`std::vector<T>` 用模板完美解决了这三个——编译器在实例化时就确定了类型 `T`，所有类型检查在编译期完成，`sizeof(T)` 也自动计算。`std::vector` 的析构函数会自动释放内部数组，无论函数正常 return 还是因为异常退出，这就是 RAII 的核心思想——资源生命周期和对象生命周期绑定。C++11 的 move 语义让 `vec2 = std::move(vec1)` 变成了 O(1) 的指针交换，而 C 里只能 `memcpy` 整块数据。
 
-有两个容易混淆的函数：`reserve(n)` 只改变 `capacity` 不改变 `size`，预先分配内存但不创建新元素；`resize(n)` 会改变 `size`，多出来的位置被值初始化，多余的元素被析构。我们的 C 版本只实现了 `reserve`，`resize` 留作练习。另外 `std::vector&lt;bool&gt;` 做了位压缩优化（每个 `bool` 只占 1 bit），但代价是不能取单个元素的地址。C++17 的 `std::span&lt;T&gt;` 提供对连续内存的非拥有视图，是非常重要的组合工具。
+有两个容易混淆的函数：`reserve(n)` 只改变 `capacity` 不改变 `size`，预先分配内存但不创建新元素；`resize(n)` 会改变 `size`，多出来的位置被值初始化，多余的元素被析构。我们的 C 版本只实现了 `reserve`，`resize` 留作练习。另外 `std::vector<bool>` 做了位压缩优化（每个 `bool` 只占 1 bit），但代价是不能取单个元素的地址。C++17 的 `std::span<T>` 提供对连续内存的非拥有视图，是非常重要的组合工具。
 
 ## 练习
 

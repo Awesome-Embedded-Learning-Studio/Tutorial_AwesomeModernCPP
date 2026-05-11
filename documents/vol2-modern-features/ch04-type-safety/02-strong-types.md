@@ -92,7 +92,7 @@ set_rect(h, w);    // 编译错误！参数类型不匹配
 set_rect(Width(100), Height(200));  // OK
 ```
 
-`WidthTag` 和 `HeightTag` 是空的类，不占用任何存储空间（因为 C++ 的空基类优化 EBO）。编译器在生成代码时，`StrongInt&lt;WidthTag&gt;` 和 `StrongInt&lt;HeightTag&gt;` 的运行时表现和裸 `int` 完全一样——零额外开销。
+`WidthTag` 和 `HeightTag` 是空的类，不占用任何存储空间（因为 C++ 的空基类优化 EBO）。编译器在生成代码时，`StrongInt<WidthTag>` 和 `StrongInt<HeightTag>` 的运行时表现和裸 `int` 完全一样——零额外开销。
 
 这个模式的精髓在于：**用编译期的类型信息换取运行时的零开销**。类型检查全部在编译期完成，运行时就是普通的整数操作。
 

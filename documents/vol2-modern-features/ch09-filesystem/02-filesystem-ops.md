@@ -443,7 +443,7 @@ app.5.log       ← 最老的备份
 
 ## 错误处理的两种模式
 
-贯穿这篇文，笔者一直在用两种方式处理错误：抛异常和 `std::error_code`。我们来总结一下 `&lt;filesystem&gt;` 中错误处理的最佳实践。
+贯穿这篇文，笔者一直在用两种方式处理错误：抛异常和 `std::error_code`。我们来总结一下 `<filesystem>` 中错误处理的最佳实践。
 
 大多数 `fs::xxx()` 函数都有两个重载版本：一个在出错时抛 `fs::filesystem_error` 异常，另一个接受一个 `std::error_code&` 参数并在出错时通过它返回错误码。选择哪种取决于你的场景：
 
@@ -463,7 +463,7 @@ if (ec) {
 
 ## 小结
 
-这一篇我们覆盖了 `&lt;filesystem&gt;` 库的核心文件操作。文件状态查询（`exists`、`is_regular_file`、`is_directory`）和元数据查询（`file_size`、`last_write_time`、`status`）让我们能了解"文件系统上到底有什么"。`create_directory` 和 `create_directories` 负责创建目录，后者会自动创建中间目录，非常方便。`copy` / `copy_file` 提供灵活的文件复制，`remove` / `remove_all` 提供文件删除，`rename` 提供原子重命名。`permissions` 和 `space` 分别处理权限和磁盘空间查询。`temp_directory_path` 和"写临时文件 + 原子重命名"模式是保证数据完整性的关键技巧。
+这一篇我们覆盖了 `<filesystem>` 库的核心文件操作。文件状态查询（`exists`、`is_regular_file`、`is_directory`）和元数据查询（`file_size`、`last_write_time`、`status`）让我们能了解"文件系统上到底有什么"。`create_directory` 和 `create_directories` 负责创建目录，后者会自动创建中间目录，非常方便。`copy` / `copy_file` 提供灵活的文件复制，`remove` / `remove_all` 提供文件删除，`rename` 提供原子重命名。`permissions` 和 `space` 分别处理权限和磁盘空间查询。`temp_directory_path` 和"写临时文件 + 原子重命名"模式是保证数据完整性的关键技巧。
 
 下一篇我们来聊聊目录遍历——`directory_iterator` 和 `recursive_directory_iterator`，以及如何高效地在文件系统中搜索文件。
 

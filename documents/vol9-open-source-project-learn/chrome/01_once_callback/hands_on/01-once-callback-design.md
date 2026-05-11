@@ -120,9 +120,9 @@ int main() {
 - **移动语义与完美转发**：`OnceCallback` 的核心就是 move-only，如果对 `std::move` 和 `std::forward` 的原理不熟，实现过程中会非常痛苦。对应文章：卷二 ch00 移动语义系列。
 - **`std::function` 的类型擦除与 SBO**：我们直接在 `std::move_only_function` 之上构建，需要理解类型擦除的基本原理和小对象优化是什么、为什么重要。对应文章：卷二 ch03 `std::function` 与可调用对象。
 - **`std::invoke` 与统一调用协议**：`bind_once` 内部用 `std::invoke` 来统一处理函数指针、成员函数指针、仿函数等不同类型的可调用对象。对应文章：同上。
-- **可变参数模板与参数包展开**：`OnceCallback&lt;R(Args...)&gt;` 的模板特化、`bind_once` 的参数绑定都需要熟悉参数包语法。对应文章：卷二 ch00 完美转发、卷四 模板基础。
+- **可变参数模板与参数包展开**：`OnceCallback<R(Args...)>` 的模板特化、`bind_once` 的参数绑定都需要熟悉参数包语法。对应文章：卷二 ch00 完美转发、卷四 模板基础。
 - **`std::invoke` 与统一调用协议**：`bind_once` 内部用 `std::invoke` 来统一处理函数指针、成员函数指针、仿函数等不同类型的可调用对象。对应文章：同上。
-- **可变参数模板与参数包展开**：`OnceCallback&lt;R(Args...)&gt;` 的模板特化、`bind_once` 的参数绑定都需要熟悉参数包语法。对应文章：卷二 ch00 完美转发、卷四 模板基础。
+- **可变参数模板与参数包展开**：`OnceCallback<R(Args...)>` 的模板特化、`bind_once` 的参数绑定都需要熟悉参数包语法。对应文章：卷二 ch00 完美转发、卷四 模板基础。
 
 ---
 
@@ -238,9 +238,9 @@ auto run(this Self&& self, FuncArgs&&... args) -> ReturnType {
 
 ### 为什么选 `std::move_only_function`
 
-`std::move_only_function&lt;R(Args...)&gt;` 是 C++23 引入的，它的定位就是"move-only 版本的 `std::function`"。它内部实现了类型擦除和 SBO，行为和 `std::function` 类似，但删除了拷贝操作。
+`std::move_only_function<R(Args...)>` 是 C++23 引入的，它的定位就是"move-only 版本的 `std::function`"。它内部实现了类型擦除和 SBO，行为和 `std::function` 类似，但删除了拷贝操作。
 
-你可能已经注意到了 `OnceCallback&lt;R(Args...)&gt;` 这种写法——`R(Args...)` 看起来像一个函数声明，但在模板参数的上下文中，它是一个**函数类型**（function type）。`int(int, int)` 描述的是"接受两个 int 参数、返回 int 的函数"，它是一种合法的 C++ 类型。我们通过模板偏特化来拆解这个类型——下一篇会详细讲解这个技巧。
+你可能已经注意到了 `OnceCallback<R(Args...)>` 这种写法——`R(Args...)` 看起来像一个函数声明，但在模板参数的上下文中，它是一个**函数类型**（function type）。`int(int, int)` 描述的是"接受两个 int 参数、返回 int 的函数"，它是一种合法的 C++ 类型。我们通过模板偏特化来拆解这个类型——下一篇会详细讲解这个技巧。
 
 用 `std::move_only_function` 做内部存储有几个好处。它省去了我们手写类型擦除的工作——回想卷二的 `LightCallback`，我们花了一整个章节来手写函数指针表、SBO 缓冲区、移动/析构操作，而 `std::move_only_function` 把这些全部封装好了，直接拿来用。它也天然支持 move-only 的可调用对象——如果我们的回调捕获了 `std::unique_ptr`，`std::function` 会因为拷贝语义的要求直接编译失败，而 `std::move_only_function` 没有这个问题。而且它的 SBO 实现经过了标准库作者的精心调优，在绝大多数情况下不需要堆分配——对于捕获少量参数的 lambda 来说，性能完全够用。
 

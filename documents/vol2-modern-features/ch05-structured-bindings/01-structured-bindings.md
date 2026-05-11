@@ -50,7 +50,7 @@ if (inserted) {
 }
 ```
 
-在范围 for 中遍历 map 的时候更是优雅到不行。以前写 `it-&gt;first`、`it-&gt;second`，现在直接 `[key, value]`：
+在范围 for 中遍历 map 的时候更是优雅到不行。以前写 `it->first`、`it->second`，现在直接 `[key, value]`：
 
 ```cpp
 std::map<int, std::string> sensor_names = {
@@ -64,7 +64,7 @@ for (const auto& [id, name] : sensor_names) {
 }
 ```
 
-> 为什么要写 `+id`？因为 `uint8_t` 的 `operator&lt;&lt;` 会把它当字符输出，`+` 会做整型提升（integral promotion），强制转换成 `int` 再打印。
+> 为什么要写 `+id`？因为 `uint8_t` 的 `operator<<` 会把它当字符输出，`+` 会做整型提升（integral promotion），强制转换成 `int` 再打印。
 
 ### tuple：超过两个值的情况
 
@@ -190,9 +190,9 @@ auto [x, y] = std::make_pair(1, 2);
 
 如果你的类有私有成员，不能直接用结构体方式解绑。但 C++ 提供了另一条路：让编译器把你的类当作 "tuple-like" 类型来处理。只需要三样东西：
 
-1. 特化 `std::tuple_size&lt;YourType&gt;`，告诉编译器有多少个元素。
-2. 特化 `std::tuple_element&lt;I, YourType&gt;`，告诉编译器第 `I` 个元素的类型。
-3. 在 `YourType` 的命名空间中提供 `get&lt;I&gt;()` 函数，返回第 `I` 个元素。
+1. 特化 `std::tuple_size<YourType>`，告诉编译器有多少个元素。
+2. 特化 `std::tuple_element<I, YourType>`，告诉编译器第 `I` 个元素的类型。
+3. 在 `YourType` 的命名空间中提供 `get<I>()` 函数，返回第 `I` 个元素。
 
 ```cpp
 #include <utility>
@@ -238,7 +238,7 @@ SensorData data{5, 23.5f};
 auto [id, value] = data;    // id = 5, value = 23.5
 ```
 
-> 这里的关键是 `get&lt;I&gt;()` 函数必须定义在类所在的命名空间中（ADL 规则），这样编译器才能找到它。对于标准命名空间 `std` 中的特化，你需要在 `std` 命名空间中写 `tuple_size` 和 `tuple_element` 的特化，但 `get` 函数放在类所在的命名空间即可。
+> 这里的关键是 `get<I>()` 函数必须定义在类所在的命名空间中（ADL 规则），这样编译器才能找到它。对于标准命名空间 `std` 中的特化，你需要在 `std` 命名空间中写 `tuple_size` 和 `tuple_element` 的特化，但 `get` 函数放在类所在的命名空间即可。
 
 这套机制被称为 "tuple-like protocol"，标准库的 `std::pair`、`std::tuple`、`std::array` 都是靠它实现结构化绑定支持的。
 

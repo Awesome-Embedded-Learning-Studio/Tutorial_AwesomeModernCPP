@@ -31,9 +31,9 @@ cpp_standard: [11, 14, 17, 20]
 friend std::ostream& operator<<(std::ostream& os, const Fraction& f);
 ```
 
-返回 `os` 的引用是为了支持链式调用——`cout &lt;&lt; a &lt;&lt; b` 等价于 `operator&lt;&lt;(operator&lt;&lt;(cout, a), b)`，第一次调用返回 `cout` 的引用，作为第二次调用的左操作数。
+返回 `os` 的引用是为了支持链式调用——`cout << a << b` 等价于 `operator<<(operator<<(cout, a), b)`，第一次调用返回 `cout` 的引用，作为第二次调用的左操作数。
 
-我们拿 `Fraction` 类来演示，只看 `operator&lt;&lt;` 部分（完整的类定义后面实战环节再给出）：
+我们拿 `Fraction` 类来演示，只看 `operator<<` 部分（完整的类定义后面实战环节再给出）：
 
 ```cpp
 friend std::ostream& operator<<(std::ostream& os, const Fraction& f)
@@ -48,13 +48,13 @@ friend std::ostream& operator<<(std::ostream& os, const Fraction& f)
 }
 ```
 
-使用起来和打印内置类型完全一样：`std::cout &lt;&lt; Fraction(3, 4)` 输出 `3/4`，`std::cout &lt;&lt; Fraction(5, 1)` 输出 `5`，链式调用 `cout &lt;&lt; a &lt;&lt; " and " &lt;&lt; b` 也毫无问题。
+使用起来和打印内置类型完全一样：`std::cout << Fraction(3, 4)` 输出 `3/4`，`std::cout << Fraction(5, 1)` 输出 `5`，链式调用 `cout << a << " and " << b` 也毫无问题。
 
-这里有一个值得思考的设计选择：`operator&lt;&lt;` 需要访问 `Fraction` 的私有成员。把它声明为 `friend` 是最直接的做法；另一个方案是提供一个公有 `print` 成员函数，然后 `operator&lt;&lt;` 调用它。`friend` 更简洁，`print` 方法则在需要支持不同格式化输出时更灵活。
+这里有一个值得思考的设计选择：`operator<<` 需要访问 `Fraction` 的私有成员。把它声明为 `friend` 是最直接的做法；另一个方案是提供一个公有 `print` 成员函数，然后 `operator<<` 调用它。`friend` 更简洁，`print` 方法则在需要支持不同格式化输出时更灵活。
 
 ## 重载 >> 让对象能从流中读取
 
-有输出就得有输入。`operator&gt;&gt;` 的签名和 `operator&lt;&lt;` 对称，但有两个关键区别：第二参数不是 `const` 引用（因为要往里写入数据），并且流是 `std::istream` 而非 `ostream`：
+有输出就得有输入。`operator>>` 的签名和 `operator<<` 对称，但有两个关键区别：第二参数不是 `const` 引用（因为要往里写入数据），并且流是 `std::istream` 而非 `ostream`：
 
 ```cpp
 friend std::istream& operator>>(std::istream& is, Fraction& f);
@@ -85,11 +85,11 @@ friend std::istream& operator>>(std::istream& is, Fraction& f)
 }
 ```
 
-> **踩坑预警**：`operator&gt;&gt;` 里一定要检查流状态。很多示例代码直接 `is &gt;&gt; num &gt;&gt; slash &gt;&gt; denom;` 就完事了，压根不判断读取是否成功。如果用户输入的不是数字（比如敲了个 `abc`），`is &gt;&gt; num` 就会失败，但后续代码依然用不确定的值去构造对象——这完全是未定义行为。正确做法是用 `if (is)` 检查流状态，再验证分隔符和分母合法性。此外，输入失败时**不要修改对象**——让它保持在输入前的状态，而不是赋予一个半初始化的垃圾值。
+> **踩坑预警**：`operator>>` 里一定要检查流状态。很多示例代码直接 `is >> num >> slash >> denom;` 就完事了，压根不判断读取是否成功。如果用户输入的不是数字（比如敲了个 `abc`），`is >> num` 就会失败，但后续代码依然用不确定的值去构造对象——这完全是未定义行为。正确做法是用 `if (is)` 检查流状态，再验证分隔符和分母合法性。此外，输入失败时**不要修改对象**——让它保持在输入前的状态，而不是赋予一个半初始化的垃圾值。
 >
-> **踩坑预警**：另一个常见错误是在输入失败时没有设置 `failbit`。如果你只检查了流状态但不设置 `failbit`，调用者就无法通过 `if (cin &gt;&gt; fraction)` 来判断输入是否成功。上面代码中 `is.setstate(std::ios::failbit)` 就是处理这种情况的。
+> **踩坑预警**：另一个常见错误是在输入失败时没有设置 `failbit`。如果你只检查了流状态但不设置 `failbit`，调用者就无法通过 `if (cin >> fraction)` 来判断输入是否成功。上面代码中 `is.setstate(std::ios::failbit)` 就是处理这种情况的。
 
-使用方式和 `cin &gt;&gt;` 读取 `int` 一模一样：`if (std::cin &gt;&gt; f)` 在输入 `3/4` 后会让 `f` 变成 `Fraction(3, 4)`，输入 `abc` 则进入 `else` 分支报错。
+使用方式和 `cin >>` 读取 `int` 一模一样：`if (std::cin >> f)` 在输入 `3/4` 后会让 `f` 变成 `Fraction(3, 4)`，输入 `abc` 则进入 `else` 分支报错。
 
 ## 下标运算符 operator[]
 
@@ -365,7 +365,7 @@ const_arr[2] = 20
 
 ### 练习一：给之前的 Fraction 添加流运算符
 
-如果你按照上一章的练习实现了自己的 `Fraction` 类，现在给它加上 `operator&lt;&lt;` 和 `operator&gt;&gt;`。要求 `operator&lt;&lt;` 在分母为 1 时只输出分子，`operator&gt;&gt;` 支持 `分子/分母` 格式的输入。输入失败时不要修改对象，并正确设置流的 `failbit`。写一段测试代码验证 `cin &gt;&gt; fraction` 和 `cout &lt;&lt; fraction` 都能正常工作。
+如果你按照上一章的练习实现了自己的 `Fraction` 类，现在给它加上 `operator<<` 和 `operator>>`。要求 `operator<<` 在分母为 1 时只输出分子，`operator>>` 支持 `分子/分母` 格式的输入。输入失败时不要修改对象，并正确设置流的 `failbit`。写一段测试代码验证 `cin >> fraction` 和 `cout << fraction` 都能正常工作。
 
 ### 练习二：实现 Matrix 类的 operator[]
 
@@ -375,6 +375,6 @@ const_arr[2] = 20
 
 ## 小结
 
-这一章我们掌握了两组让自定义类型"融入语言生态"的运算符。流运算符 `&lt;&lt;` 和 `&gt;&gt;` 必须实现为非成员函数（因为左操作数是流对象，不是你的类），通常声明为友元以便访问私有数据；返回流的引用是为了支持 `cout &lt;&lt; a &lt;&lt; b &lt;&lt; c` 这样的链式调用。`operator&gt;&gt;` 要特别注意检查流状态和输入合法性，失败时设置 `failbit` 且不修改对象。下标运算符 `operator[]` 是容器类的标配，必须同时提供 `const` 和非 `const` 两个版本——非 `const` 版本返回可修改的引用用于写入，`const` 版本返回只读引用用于读取。如果需要边界检查，额外提供 `at()` 方法，越界时抛出 `std::out_of_range` 异常。
+这一章我们掌握了两组让自定义类型"融入语言生态"的运算符。流运算符 `<<` 和 `>>` 必须实现为非成员函数（因为左操作数是流对象，不是你的类），通常声明为友元以便访问私有数据；返回流的引用是为了支持 `cout << a << b << c` 这样的链式调用。`operator>>` 要特别注意检查流状态和输入合法性，失败时设置 `failbit` 且不修改对象。下标运算符 `operator[]` 是容器类的标配，必须同时提供 `const` 和非 `const` 两个版本——非 `const` 版本返回可修改的引用用于写入，`const` 版本返回只读引用用于读取。如果需要边界检查，额外提供 `at()` 方法，越界时抛出 `std::out_of_range` 异常。
 
 下一章我们来看函数调用运算符 `operator()` 和类型转换运算符——前者让你的对象变成"可调用的"，后者控制你的类型如何与其他类型相互转换。这两个运算符用好了解放生产力，用不好就是调试噩梦的起点。

@@ -9,6 +9,17 @@ export const kbdPlugin: PluginSimple = (md: MarkdownIt) => {
     if (state.src.charCodeAt(start) !== 0x2B /* + */) return false
     if (state.src.charCodeAt(start + 1) !== 0x2B /* + */) return false
 
+    // Reject if preceded by alphanumeric (e.g. "C++", "operator++")
+    if (start > 0) {
+      const prev = state.src.charCodeAt(start - 1)
+      if (
+        (prev >= 0x30 && prev <= 0x39) || // 0-9
+        (prev >= 0x41 && prev <= 0x5A) || // A-Z
+        (prev >= 0x61 && prev <= 0x7A) || // a-z
+        prev === 0x5F // _
+      ) return false
+    }
+
     let pos = start + 2
     while (pos < max) {
       if (state.src.charCodeAt(pos) === 0x2B /* + */ && state.src.charCodeAt(pos + 1) === 0x2B /* + */) {

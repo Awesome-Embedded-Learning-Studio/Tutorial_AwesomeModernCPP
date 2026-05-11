@@ -120,7 +120,7 @@ err.error();             // "oops"
 result.value_or(0);      // 如果有值返回值，否则返回 0
 ```
 
-`value()` 和 `operator*` 的区别在于：前者在 `expected` 处于错误状态时会抛出 `std::bad_expected_access&lt;E&gt;` 异常，后者是未定义行为。所以在"你确信有值"的路径上用 `*`，在"不太确定"的路径上用 `value()` 或者先检查 `has_value()`。
+`value()` 和 `operator*` 的区别在于：前者在 `expected` 处于错误状态时会抛出 `std::bad_expected_access<E>` 异常，后者是未定义行为。所以在"你确信有值"的路径上用 `*`，在"不太确定"的路径上用 `value()` 或者先检查 `has_value()`。
 
 ------
 
@@ -522,7 +522,7 @@ int main() {
 
 ## 小结
 
-`std::expected&lt;T, E&gt;` 是 C++23 在类型安全错误处理方面的核心工具。它比 `optional` 多了错误信息，比异常更适合性能敏感和嵌入式场景，monadic 操作让错误传播链变得优雅。如果你还在 C++17，一个简化版的 `expected` 实现就能覆盖大部分需求。
+`std::expected<T, E>` 是 C++23 在类型安全错误处理方面的核心工具。它比 `optional` 多了错误信息，比异常更适合性能敏感和嵌入式场景，monadic 操作让错误传播链变得优雅。如果你还在 C++17，一个简化版的 `expected` 实现就能覆盖大部分需求。
 
 下一篇我们会综合对比所有错误处理方案，给出一个场景化的选择指南。
 

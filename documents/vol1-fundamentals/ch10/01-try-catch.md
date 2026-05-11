@@ -358,11 +358,11 @@ g++ -std=c++17 -Wall -Wextra exceptions.cpp -o exceptions && ./exceptions
 
 ### 练习一：安全的数组访问
 
-写一个函数 `int safe_get(const std::vector&lt;int&gt;& v, std::size_t index)`，当 `index` 越界时抛出 `std::out_of_range`，错误信息包含请求的索引和 vector 的实际大小。在 `main` 中测试正常访问和越界访问两种情况。
+写一个函数 `int safe_get(const std::vector<int>& v, std::size_t index)`，当 `index` 越界时抛出 `std::out_of_range`，错误信息包含请求的索引和 vector 的实际大小。在 `main` 中测试正常访问和越界访问两种情况。
 
 ### 练习二：字符串转数字解析器
 
-写一个函数 `std::vector&lt;double&gt; parse_doubles(const std::string& input)`，把用逗号分隔的字符串（如 `"1.5,2.7,3.14"`）解析为 `double` 向量。要求：无效的数字格式用 `std::invalid_argument` 报告，空输入用 `std::runtime_error` 报告。在调用端用 `try`/`catch` 分别处理两种异常并给出友好提示。
+写一个函数 `std::vector<double> parse_doubles(const std::string& input)`，把用逗号分隔的字符串（如 `"1.5,2.7,3.14"`）解析为 `double` 向量。要求：无效的数字格式用 `std::invalid_argument` 报告，空输入用 `std::runtime_error` 报告。在调用端用 `try`/`catch` 分别处理两种异常并给出友好提示。
 
 ### 练习三：noexcept 运算符
 

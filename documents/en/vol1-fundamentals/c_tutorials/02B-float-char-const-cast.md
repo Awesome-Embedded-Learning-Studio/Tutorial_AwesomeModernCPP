@@ -258,7 +258,7 @@ if (i < u) {
 ```
 
 > ⚠️ **Pitfall Warning**
-> When comparing signed and unsigned numbers, the signed number is implicitly converted to unsigned. The result of `-1 &lt; 10u` in C is false. This kind of bug is particularly insidious because the compiler might not warn you at all. It's especially common in mixed comparisons involving `size_t` (unsigned) and `int` (signed).
+> When comparing signed and unsigned numbers, the signed number is implicitly converted to unsigned. The result of `-1 < 10u` in C is false. This kind of bug is particularly insidious because the compiler might not warn you at all. It's especially common in mixed comparisons involving `size_t` (unsigned) and `int` (signed).
 
 Our advice is simple: **avoid mixing signed and unsigned types whenever possible**. If you must mix them, write an explicit cast to make your intent clear:
 
@@ -290,7 +290,7 @@ C++ made extensive safety improvements to its type system, with many changes dir
 - Named cast operators make type conversion intent more explicit
 - `constexpr` guarantees compile-time evaluation on top of `const`
 - `char16_t`, `char32_t`, and `char8_t` solve type safety issues with encoding
-- `std::numeric_limits&lt;T&gt;::epsilon()` provides more precise floating-point comparison tools than hand-written epsilon checks
+- `std::numeric_limits<T>::epsilon()` provides more precise floating-point comparison tools than hand-written epsilon checks
 
 The motivation for all of these improvements comes directly from the "pitfalls" we discussed today. Once you understand "what goes wrong in C," learning "how C++ fixes these problems" will feel completely natural.
 

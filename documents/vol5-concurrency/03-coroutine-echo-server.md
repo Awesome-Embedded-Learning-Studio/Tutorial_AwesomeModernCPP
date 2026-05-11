@@ -88,9 +88,9 @@ int main() {
 
 ​ 有趣的是，Boost ASIO因为是库而不是标准的语法，因此采用的是函数的方式进行生成和调用。
 
-#### `awaitable&lt;T&gt;`
+#### `awaitable<T>`
 
-`awaitable&lt;T&gt;` 是 Boost.Asio 提供的协程返回类型（在协程中可以 `co_await` 异步操作并最终返回 `T`）。在示例中我们使用 `awaitable&lt;void&gt;` 表示协程没有显式返回值。
+`awaitable<T>` 是 Boost.Asio 提供的协程返回类型（在协程中可以 `co_await` 异步操作并最终返回 `T`）。在示例中我们使用 `awaitable<void>` 表示协程没有显式返回值。
 
 #### `use_awaitable`
 
@@ -295,7 +295,7 @@ void IOManager::add_waiter(int fd, uint32_t events, std::coroutine_handle<> h) {
 
 ```
 
-​ 上面的接口中，第一个参数是等待timeout_ms毫秒收集指定的IO任务的，第二个参数是填装out_handles。这个参数中承装了咱们的`std::coroutine_handle&lt;&gt;`就绪句柄集合。那么理清楚这个事情，事情变得轻而易举了
+​ 上面的接口中，第一个参数是等待timeout_ms毫秒收集指定的IO任务的，第二个参数是填装out_handles。这个参数中承装了咱们的`std::coroutine_handle<>`就绪句柄集合。那么理清楚这个事情，事情变得轻而易举了
 
 ```cpp
 void IOManager::poll(int timeout_ms, std::vector<std::coroutine_handle<>>& out_handles) {

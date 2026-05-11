@@ -33,7 +33,7 @@ template<typename Functor>
 explicit OnceCallback(Functor&& function);
 ```
 
-你可能会问——为什么不直接写 `template&lt;typename Functor&gt;` 就完事了？多加一个 `requires not_the_same_t` 是在防什么？
+你可能会问——为什么不直接写 `template<typename Functor>` 就完事了？多加一个 `requires not_the_same_t` 是在防什么？
 
 这一篇我们就来回答这个问题。答案涉及 C++ 重载决议中一个不太为人知的陷阱：**模板构造函数可能在某些情况下劫持移动构造函数的调用**。Concepts 和 `requires` 约束是 C++20 给我们的防御武器。
 
@@ -114,7 +114,7 @@ template<typename T>
 concept Integral = std::is_integral_v<T>;
 ```
 
-`Integral` 是一个 concept，它检查 `T` 是否是整数类型。`std::is_integral_v&lt;T&gt;` 是一个编译期布尔常量。我们这里表达的意思很简单——我们就只要一个整形！拿着这个概念，就能下一步的被requires使用了。
+`Integral` 是一个 concept，它检查 `T` 是否是整数类型。`std::is_integral_v<T>` 是一个编译期布尔常量。我们这里表达的意思很简单——我们就只要一个整形！拿着这个概念，就能下一步的被requires使用了。
 
 ### 使用 requires 子句
 
@@ -133,7 +133,7 @@ foo(3.14);  // 编译错误：double 不满足 Integral
 
 ### 标准库常用 concept
 
-C++20 在 `&lt;concepts&gt;` 头文件中提供了一批预定义的 concept：
+C++20 在 `<concepts>` 头文件中提供了一批预定义的 concept：
 
 ```cpp
 #include <concepts>
@@ -169,11 +169,11 @@ concept not_the_same_t = !std::is_same_v<std::decay_t<F>, T>;
 
 ### std::is_same_v<...>：比较两个类型
 
-`std::is_same_v&lt;A, B&gt;` 在 `A` 和 `B` 完全相同时返回 `true`。注意"完全相同"是很严格的——`int` 和 `const int` 不同，`int&` 和 `int` 也不同。这就是为什么我们需要 `std::decay_t` 先统一形式。
+`std::is_same_v<A, B>` 在 `A` 和 `B` 完全相同时返回 `true`。注意"完全相同"是很严格的——`int` 和 `const int` 不同，`int&` 和 `int` 也不同。这就是为什么我们需要 `std::decay_t` 先统一形式。
 
 ### 取反 `!`：F 不是 T 时约束通过
 
-整个 concept 的值是 `!std::is_same_v&lt;std::decay_t&lt;F&gt;, T&gt;`——取反意味着当 `F` 退化后和 `T` 相同时约束失败（模板被排除），不同时约束通过（模板参与重载决议）。
+整个 concept 的值是 `!std::is_same_v<std::decay_t<F>, T>`——取反意味着当 `F` 退化后和 `T` 相同时约束失败（模板被排除），不同时约束通过（模板参与重载决议）。
 
 ### 加上约束后的效果
 
@@ -183,7 +183,7 @@ template<typename Functor>
 explicit OnceCallback(Functor&& f) : status_(Status::kValid), func_(std::move(f)) {}
 ```
 
-当传入的是 `OnceCallback` 本身时（比如移动构造的场景），`not_the_same_t&lt;OnceCallback, OnceCallback&gt;` 求值为 `!true = false`，约束不满足，模板被排除出候选列表，编译器只能选择移动构造函数。当传入的是 lambda、函数指针等其他类型时，约束满足，模板正常参与重载决议，被选为构造函数。
+当传入的是 `OnceCallback` 本身时（比如移动构造的场景），`not_the_same_t<OnceCallback, OnceCallback>` 求值为 `!true = false`，约束不满足，模板被排除出候选列表，编译器只能选择移动构造函数。当传入的是 lambda、函数指针等其他类型时，约束满足，模板正常参与重载决议，被选为构造函数。
 
 ---
 
@@ -204,7 +204,7 @@ explicit OnceCallback(Functor&& f) : status_(Status::kValid), func_(std::move(f)
 
 ### 如果忘记 std::decay_t
 
-如果只写 `!std::is_same_v&lt;F, T&gt;` 而不加 `std::decay_t`，问题出在 `F` 的推导结果可能带引用也可能不带引用，取决于调用上下文。考虑以下场景：
+如果只写 `!std::is_same_v<F, T>` 而不加 `std::decay_t`，问题出在 `F` 的推导结果可能带引用也可能不带引用，取决于调用上下文。考虑以下场景：
 
 ```cpp
 OnceCallback cb1([](int x) { return x; });

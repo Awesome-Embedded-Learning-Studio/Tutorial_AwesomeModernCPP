@@ -84,7 +84,7 @@ A header file is the sole contract between a module and the outside world, so it
 
 ### Header Guards and Include Principles
 
-Header guards are fundamental—you can use `#ifndef`/`#define`/`#endif` or `#pragma once` (supported by all mainstream compilers). What matters more is the include principle: a header file should only include what it directly depends on. If your header uses `size_t`, then `#include &lt;stddef.h&gt;`; if it uses `uint32_t`, then `#include &lt;stdint.h&gt;`. Never rely on the assumption that "the caller must have already included it"—that's just digging a hole for yourself.
+Header guards are fundamental—you can use `#ifndef`/`#define`/`#endif` or `#pragma once` (supported by all mainstream compilers). What matters more is the include principle: a header file should only include what it directly depends on. If your header uses `size_t`, then `#include <stddef.h>`; if it uses `uint32_t`, then `#include <stdint.h>`. Never rely on the assumption that "the caller must have already included it"—that's just digging a hole for yourself.
 
 Let's write a clean header file example:
 
@@ -543,7 +543,7 @@ void platform_mutex_destroy(PlatformMutex* mtx) {
 
 With the platform abstraction layer in place, the ring buffer code doesn't need to care at all about what platform it's running on—`platform_alloc` calls `malloc` on Linux and allocates from a static memory pool on STM32; `platform_mutex_lock` uses `pthread_mutex` on Linux and disables interrupts on bare metal. When porting to a new platform, you only need to write a new `platform_xxx.c`, and the core business logic doesn't change a single line.
 
-Cross-platform code also has a common type trap: the size of fundamental types may differ across platforms. `int` might be 16-bit on an 8-bit MCU but 32-bit on a 32-bit platform, and `long` is 64-bit on 64-bit Linux but 32-bit on Windows. Therefore, cross-platform code should uniformly use the fixed-width types defined in `&lt;stdint.h&gt;`: `uint8_t`, `uint16_t`, `uint32_t`, `size_t`, and so on.
+Cross-platform code also has a common type trap: the size of fundamental types may differ across platforms. `int` might be 16-bit on an 8-bit MCU but 32-bit on a 32-bit platform, and `long` is 64-bit on 64-bit Linux but 32-bit on Windows. Therefore, cross-platform code should uniformly use the fixed-width types defined in `<stdint.h>`: `uint8_t`, `uint16_t`, `uint32_t`, `size_t`, and so on.
 
 ## Step Six—Evolve Your API Stably
 

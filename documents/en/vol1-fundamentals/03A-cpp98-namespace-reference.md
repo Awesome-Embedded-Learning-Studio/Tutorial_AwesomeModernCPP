@@ -218,7 +218,7 @@ This line does not make `ref` point to `other`; rather, it assigns the value of 
 
 ### 2.2 References as Function Parameters
 
-The most common use of references is as function parameters. In C, if a function needs to modify the caller's variable or avoid the copy overhead of a large object, we pass a pointer. But pointer syntax is clunky—`*` and `-&gt;` are everywhere, and you have to check for null pointers every time before using them. References solve both problems perfectly.
+The most common use of references is as function parameters. In C, if a function needs to modify the caller's variable or avoid the copy overhead of a large object, we pass a pointer. But pointer syntax is clunky—`*` and `->` are everywhere, and you have to check for null pointers every time before using them. References solve both problems perfectly.
 
 Let's use an embedded scenario to compare three parameter-passing approaches:
 
@@ -250,7 +250,7 @@ void process_by_reference(SensorData& data) {
 }
 ```
 
-Passing by reference is the cleanest approach—no `*`, no `-&gt;`, no null pointer checks. In most cases, if you want a function to "modify the caller's variable" in C++, references should be your first choice.
+Passing by reference is the cleanest approach—no `*`, no `->`, no null pointer checks. In most cases, if you want a function to "modify the caller's variable" in C++, references should be your first choice.
 
 But the story doesn't end there. Often, we pass parameters not to modify them, but to avoid copy overhead—such as with a struct containing lots of data, or a string. In these cases, a `const` reference is the best choice:
 

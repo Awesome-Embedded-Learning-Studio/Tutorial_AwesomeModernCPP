@@ -257,7 +257,7 @@ public:
 
 Since the size is determined at compile time, the compiler can perform thorough optimizations.
 
-⚠️ But watch out for a pitfall: every distinct combination of template parameters generates a separate copy of the code. If you instantiate both `CircularBuffer&lt;uint8_t, 64&gt;` and `CircularBuffer&lt;uint8_t, 128&gt;`, you will end up with two nearly identical copies in Flash. So use templates, but don't overuse them.
+⚠️ But watch out for a pitfall: every distinct combination of template parameters generates a separate copy of the code. If you instantiate both `CircularBuffer<uint8_t, 64>` and `CircularBuffer<uint8_t, 128>`, you will end up with two nearly identical copies in Flash. So use templates, but don't overuse them.
 
 ### SFINAE and if constexpr: Use if Needed, but Keep It Simple
 
@@ -418,7 +418,7 @@ The alternative is to use fixed-size data structures. The standard library's `st
 
 `vector`, `map`, `unordered_map`, `string`—these containers all rely on dynamic memory allocation and are unsuitable for embedded environments. The reference counting in `shared_ptr` involves atomic operations, which carry significant overhead on some platforms. `iostream` should be avoided entirely; a simple `cout` can introduce over 50KB of code.
 
-But not everything in the standard library is off-limits. `std::array`, algorithms in `&lt;algorithm&gt;` (note that some allocate temporary memory), compile-time utilities like `&lt;type_traits&gt;`, and `&lt;utility&gt;` and `move` from `forward`—these are all great, zero-overhead or low-overhead tools.
+But not everything in the standard library is off-limits. `std::array`, algorithms in `<algorithm>` (note that some allocate temporary memory), compile-time utilities like `<type_traits>`, and `<utility>` and `move` from `forward`—these are all great, zero-overhead or low-overhead tools.
 
 If you genuinely need containers, look into the Embedded Template Library (ETL), which provides fixed-size containers that don't use dynamic memory and are compatible with STL interfaces.
 

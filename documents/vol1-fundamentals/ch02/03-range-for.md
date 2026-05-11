@@ -152,7 +152,7 @@ for (auto& c : text) {
 }
 ```
 
-这里的 `static_cast&lt;unsigned char&gt;` 不是多此一举。`std::toupper` 的参数是 `int`，而 C++ 中 `char` 可能是 signed 的——直接传负值字符进去是未定义行为。先转 `unsigned char` 再提升为 `int`，这是处理字符函数时的标准写法。
+这里的 `static_cast<unsigned char>` 不是多此一举。`std::toupper` 的参数是 `int`，而 C++ 中 `char` 可能是 signed 的——直接传负值字符进去是未定义行为。先转 `unsigned char` 再提升为 `int`，这是处理字符函数时的标准写法。
 
 > ⚠️ **踩坑预警**
 > 直接对 `char` 调用 `std::toupper` 而不先转成 `unsigned char`，碰到扩展 ASCII 或中文字符时会产生未定义行为。编译器不会警告你，但结果可能完全不对。养成习惯，字符函数调用前总是先做这个转换。
@@ -261,7 +261,7 @@ g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
 
 ### 练习一：找最大值
 
-给定一个 `std::array&lt;int, 8&gt;`，用 range-for 找出最大值并打印。提示：声明 `max_val` 初始化为首元素，遍历比较即可。
+给定一个 `std::array<int, 8>`，用 range-for 找出最大值并打印。提示：声明 `max_val` 初始化为首元素，遍历比较即可。
 
 ```text
 数组: 12 3 45 7 23 56 8 19

@@ -77,7 +77,7 @@ uart_driver/
 
 ### 头文件保护和 include 原则
 
-头文件保护是基本功——用 `#ifndef`/`#define`/`#endif` 或者 `#pragma once`（主流编译器都支持）都行。更重要的是 include 的原则：头文件里应该只 include 它直接依赖的东西。如果你的头文件里用到了 `size_t`，那就 `#include &lt;stddef.h&gt;`；如果用到了 `uint32_t`，那就 `#include &lt;stdint.h&gt;`。千万不要依赖"调用者肯定已经 include 过了"这种假设——那是在给自己挖坑。
+头文件保护是基本功——用 `#ifndef`/`#define`/`#endif` 或者 `#pragma once`（主流编译器都支持）都行。更重要的是 include 的原则：头文件里应该只 include 它直接依赖的东西。如果你的头文件里用到了 `size_t`，那就 `#include <stddef.h>`；如果用到了 `uint32_t`，那就 `#include <stdint.h>`。千万不要依赖"调用者肯定已经 include 过了"这种假设——那是在给自己挖坑。
 
 我们来写一个干净的头文件示例：
 
@@ -536,7 +536,7 @@ void platform_mutex_destroy(PlatformMutex* mtx) {
 
 有了平台抽象层之后，环形缓冲区的代码就完全不需要关心自己跑在什么平台上了——`platform_alloc` 在 Linux 上调用 `malloc`，在 STM32 上从静态内存池分配；`platform_mutex_lock` 在 Linux 上用 `pthread_mutex`，在裸机上用关中断。移植到新平台的时候，只需要写一个新的 `platform_xxx.c`，核心业务逻辑一行不改。
 
-跨平台代码还有一个常见的类型陷阱：基本类型的大小在不同平台上可能不同。`int` 在 8 位单片机上可能是 16 位的，在 32 位平台上是 32 位的，`long` 在 64 位 Linux 上是 64 位的但在 Windows 上是 32 位的。所以跨平台代码应该统一使用 `&lt;stdint.h&gt;` 里定义的定宽类型：`uint8_t`、`uint16_t`、`uint32_t`、`size_t` 等等。
+跨平台代码还有一个常见的类型陷阱：基本类型的大小在不同平台上可能不同。`int` 在 8 位单片机上可能是 16 位的，在 32 位平台上是 32 位的，`long` 在 64 位 Linux 上是 64 位的但在 Windows 上是 32 位的。所以跨平台代码应该统一使用 `<stdint.h>` 里定义的定宽类型：`uint8_t`、`uint16_t`、`uint32_t`、`size_t` 等等。
 
 ## 第六步——让 API 稳定地演进
 

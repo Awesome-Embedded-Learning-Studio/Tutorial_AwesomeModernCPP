@@ -183,7 +183,7 @@ bool linked_list_push_front(LinkedList* list, int data) {
 }
 ```
 
-Let's draw this process. Suppose the list was originally `1 -&gt; 2 -&gt; 3`, and now we want to insert `0` at the head:
+Let's draw this process. Suppose the list was originally `1 -> 2 -> 3`, and now we want to insert `0` at the head:
 
 ```text
 插入前：
@@ -241,7 +241,7 @@ bool linked_list_push_back(LinkedList* list, int data) {
 ```
 
 > ⚠️ **Pitfall Warning**
-> When traversing to find the tail, the termination condition must be `curr-&gt;next != NULL`, not `curr != NULL`. If you use the latter, when the loop ends `curr` is `NULL` — you've lost the reference to the last node and can't hook the new node onto it. Executing `curr-&gt;next = new_node` would be a null pointer dereference, causing an immediate segfault. This is a very high-frequency bug in linked list code.
+> When traversing to find the tail, the termination condition must be `curr->next != NULL`, not `curr != NULL`. If you use the latter, when the loop ends `curr` is `NULL` — you've lost the reference to the last node and can't hook the new node onto it. Executing `curr->next = new_node` would be a null pointer dereference, causing an immediate segfault. This is a very high-frequency bug in linked list code.
 
 Tail insertion has a time complexity of O(n) because you have to traverse to the tail. If you frequently do tail insertions, you could maintain a `tail` pointer just like you maintain `size`, making tail insertion O(1) as well. However, maintaining an additional `tail` pointer adds considerable complexity to edge cases (you also need to update it when deleting the tail node), so we won't introduce it here. It will be naturally resolved later when we cover doubly linked lists.
 
@@ -342,7 +342,7 @@ bool linked_list_remove(LinkedList* list, int target) {
 }
 ```
 
-There is a very critical design decision here — when traversing, we maintain the **predecessor node** `prev`, not the current node `curr`. Because a singly linked list can only move forward, if you stand on the node to be deleted, you can't go back to modify the predecessor's `next` pointer. So we must always operate from the predecessor's position, using `prev-&gt;next` to check and manipulate the target node. This idea appears repeatedly in linked list operations, and we recommend thoroughly understanding it — in the sentinel node section later, we will see an elegant solution that eliminates the "head node special case."
+There is a very critical design decision here — when traversing, we maintain the **predecessor node** `prev`, not the current node `curr`. Because a singly linked list can only move forward, if you stand on the node to be deleted, you can't go back to modify the predecessor's `next` pointer. So we must always operate from the predecessor's position, using `prev->next` to check and manipulate the target node. This idea appears repeatedly in linked list operations, and we recommend thoroughly understanding it — in the sentinel node section later, we will see an elegant solution that eliminates the "head node special case."
 
 ### Delete at a Specified Position
 
@@ -591,9 +591,9 @@ Compared to the C version's pointer assignment, the C++ version's `std::move()` 
 
 ### The Iterator Pattern
 
-When we wrote linked list traversal earlier, it was always `Node* curr = list.head; while (curr) { ... curr = curr-&gt;next; }`. This traversal logic is tightly coupled to the specific linked list implementation — if you want to switch to a different container (like an array), all the traversal code would need to change.
+When we wrote linked list traversal earlier, it was always `Node* curr = list.head; while (curr) { ... curr = curr->next; }`. This traversal logic is tightly coupled to the specific linked list implementation — if you want to switch to a different container (like an array), all the traversal code would need to change.
 
-C++'s iterator pattern abstracts the "traversal" operation. Whether it's a linked list, an array, or a tree, as long as it provides iterators, you can use a uniform `begin()/end()` to traverse, or even use a range-based for loop `for (auto& x : list)` to traverse. The underlying implementation of iterators is of course still pointer operations — for a linked list, `++it` is `it = it-&gt;next`, and for an array it's pointer increment. But the caller doesn't need to care about these details.
+C++'s iterator pattern abstracts the "traversal" operation. Whether it's a linked list, an array, or a tree, as long as it provides iterators, you can use a uniform `begin()/end()` to traverse, or even use a range-based for loop `for (auto& x : list)` to traverse. The underlying implementation of iterators is of course still pointer operations — for a linked list, `++it` is `it = it->next`, and for an array it's pointer increment. But the caller doesn't need to care about these details.
 
 Doing iterators in pure C is rather troublesome — without operator overloading or templates, achieving generics can only be done with function pointers or macros. But after understanding the design intent of C++ iterators, we can achieve similar abstraction in C — define a traversal function that accepts a callback function pointer and calls it for each element. This pattern is also used in the C standard library (like the comparison function in `qsort`, the callback in `pthread_create`, etc.).
 

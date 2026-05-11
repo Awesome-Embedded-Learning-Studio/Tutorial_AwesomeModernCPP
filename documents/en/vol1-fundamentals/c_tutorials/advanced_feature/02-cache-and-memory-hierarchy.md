@@ -370,7 +370,7 @@ Containers in the C++ standard library are also designed with Cache in mind. The
 
 1. **Stride Experiment Verification**: Modify the stride test code from this article by changing the array size to 4MB (which neatly fits into most CPUs' L3 cache). Observe the curve of execution time as the stride increases from one to 32. Question: Why does the execution time start to plateau again after the stride exceeds 16?
 
-2. **False Sharing Reproduction**: Write a multi-threaded program (using pthreads or C++ `&lt;thread&gt;`) that creates two threads, each incrementing a different field in a shared struct one hundred million times. First, run it without alignment, then run it again after using `alignas(64)` to align the two fields to different cache lines. Compare the execution times.
+2. **False Sharing Reproduction**: Write a multi-threaded program (using pthreads or C++ `<thread>`) that creates two threads, each incrementing a different field in a shared struct one hundred million times. First, run it without alignment, then run it again after using `alignas(64)` to align the two fields to different cache lines. Compare the execution times.
 
 3. **Matrix Transposition Optimization**: Implement a square matrix transposition function. First, write a naive double-loop version, then try blocking—divide the matrix into 32x32 small blocks and perform the transposition within each block. Compare the performance differences of the two versions on a large matrix (2048x2048).
 

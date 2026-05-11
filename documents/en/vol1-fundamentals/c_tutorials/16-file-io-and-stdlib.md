@@ -184,7 +184,7 @@ On Windows, text mode automatically converts `\n` to `\r\n`, while binary mode d
 
 ## Step Four — Error Handling with errno
 
-`errno` (`&lt;errno.h&gt;`) is a global error code variable. It is **not** cleared to zero when a function succeeds; it is only set when an error occurs. The correct approach is to check the return value first to confirm an error, and then read `errno`.
+`errno` (`<errno.h>`) is a global error code variable. It is **not** cleared to zero when a function succeeds; it is only set when an error occurs. The correct approach is to check the return value first to confirm an error, and then read `errno`.
 
 `perror` concatenates your provided string with the system error message and prints it:
 
@@ -214,21 +214,21 @@ int main(int argc, char* argv[]) {
 
 ## Standard Library Quick Reference
 
-### `&lt;stdlib.h&gt;`: General Utilities
+### `<stdlib.h>`: General Utilities
 
 `atoi` is simple but lacks error detection, while `strtol` is safer (it can detect overflow and partial parsing). `qsort` performs quicksort, and `bsearch` performs binary search, both comparing via function pointers. `rand`/`srand` provide pseudo-random numbers with relatively poor randomness quality—good enough for basic use, but don't rely on them for security-related tasks.
 
-### `&lt;math.h&gt;`: Math Functions
+### `<math.h>`: Math Functions
 
 Trigonometric functions (sin/cos/tan), exponentials and logarithms (pow/sqrt/log/exp), rounding (ceil/floor/round), and absolute values (fabs). All have three versions: float (f suffix), double, and long double (l suffix).
 
 > ⚠️ **Pitfall Warning**: Linking the math library on GCC/Linux requires the `-lm` option. If you forget to add this option, the compiler will report errors like `undefined reference to 'sin'`—the code itself is fine, it's just missing a linker option.
 
-### `&lt;ctype.h&gt;`: Character Classification
+### `<ctype.h>`: Character Classification
 
 `isalpha`/`isdigit`/`isspace`/`isalnum`/`isupper`/`islower` determine character categories, and `tolower`/`toupper` convert between uppercase and lowercase. The argument must be explicitly cast to `unsigned char` first, otherwise negative values from a signed char will lead to undefined behavior.
 
-### `&lt;assert.h&gt;`: Assert Macro
+### `<assert.h>`: Assert Macro
 
 ```c
 assert(arr != NULL);   // Debug: 条件为假时终止程序
@@ -236,9 +236,9 @@ assert(arr != NULL);   // Debug: 条件为假时终止程序
 
 Defining `NDEBUG` completely removes all asserts. Use this to catch programming errors, not to handle runtime errors.
 
-### `&lt;stddef.h&gt;`: Fundamental Types
+### `<stddef.h>`: Fundamental Types
 
-`size_t` (object size), `NULL` (null pointer), `offsetof` (struct offset), `ptrdiff_t` (pointer difference). `size_t` is unsigned, so watch out for underflow when iterating in reverse: `for (size_t i = count; i-- &gt; 0; )` is the safe way to write it.
+`size_t` (object size), `NULL` (null pointer), `offsetof` (struct offset), `ptrdiff_t` (pointer difference). `size_t` is unsigned, so watch out for underflow when iterating in reverse: `for (size_t i = count; i-- > 0; )` is the safe way to write it.
 
 ## C++ Connection
 
@@ -260,9 +260,9 @@ std::string s = std::format("{} is {} years old", name, age);
 
 ### std::span (C++17)
 
-`std::span&lt;const int&gt;` binds a pointer and a length together, solving the old problem of arrays decaying and losing their length information.
+`std::span<const int>` binds a pointer and a length together, solving the old problem of arrays decaying and losing their length information.
 
-### `&lt;system_error&gt;`
+### `<system_error>`
 
 `std::error_code` is a value type and thread-safe, making it much safer than the global `errno`.
 

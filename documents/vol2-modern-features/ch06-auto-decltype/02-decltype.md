@@ -243,7 +243,7 @@ static_assert(!has_push_back<int, int>::value);
 
 ### std::declval 的用途
 
-`std::declval&lt;T&gt;()` 是一个只在不求值上下文（unevaluated context）中才能使用的工具函数。它返回一个 `T&&` 的右值引用，不需要 `T` 有默认构造函数。这样你就能在 `decltype`、`sizeof`、`noexcept` 等不求值上下文中构造"假想的"对象来探测类型信息：
+`std::declval<T>()` 是一个只在不求值上下文（unevaluated context）中才能使用的工具函数。它返回一个 `T&&` 的右值引用，不需要 `T` 有默认构造函数。这样你就能在 `decltype`、`sizeof`、`noexcept` 等不求值上下文中构造"假想的"对象来探测类型信息：
 
 ```cpp
 #include <utility>
@@ -274,7 +274,7 @@ using value_t = decltype(global_data)::value_type;  // int
 using iter_t  = decltype(global_data)::iterator;    // std::vector<int>::iterator
 ```
 
-这种写法的好处是：当 `global_data` 的类型从 `std::vector&lt;int&gt;` 改成 `std::deque&lt;int&gt;` 时，所有通过 `decltype` 获取的类型别名都会自动更新。
+这种写法的好处是：当 `global_data` 的类型从 `std::vector<int>` 改成 `std::deque<int>` 时，所有通过 `decltype` 获取的类型别名都会自动更新。
 
 ### 在 constexpr 中使用
 

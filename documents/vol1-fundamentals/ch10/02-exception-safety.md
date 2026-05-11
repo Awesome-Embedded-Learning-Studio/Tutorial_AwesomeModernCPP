@@ -99,7 +99,7 @@ void safe_process() {
 
 ## lock_guard：一个具体的 RAII 守卫
 
-`std::lock_guard&lt;std::mutex&gt;` 是 RAII 在并发编程中最经典的落地案例。它的实现原理简洁得令人赞叹：构造函数里调用 `mutex.lock()`，析构函数里调用 `mutex.unlock()`。仅此而已。
+`std::lock_guard<std::mutex>` 是 RAII 在并发编程中最经典的落地案例。它的实现原理简洁得令人赞叹：构造函数里调用 `mutex.lock()`，析构函数里调用 `mutex.unlock()`。仅此而已。
 
 ```cpp
 #include <mutex>

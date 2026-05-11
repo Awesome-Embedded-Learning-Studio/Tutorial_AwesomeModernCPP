@@ -122,8 +122,8 @@ std::cout << TypeInfo<double>::name();     // "double precision float"
 
 **语法要点**：
 
-- `template&lt;&gt;` 表示这是一个特化
-- 后面紧跟类名和具体类型：`class TypeInfo&lt;int&gt;`
+- `template<>` 表示这是一个特化
+- 后面紧跟类名和具体类型：`class TypeInfo<int>`
 - 特化版本可以完全重新定义类的内容
 
 ### 函数模板的全特化

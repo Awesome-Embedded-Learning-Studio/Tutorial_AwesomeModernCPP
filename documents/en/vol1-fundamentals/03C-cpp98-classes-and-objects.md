@@ -320,7 +320,7 @@ The compiler actually translates it into a call something like this (pseudocode)
 LED::on(&led);  // 把 led 的地址作为 this 指针传入
 ```
 
-Inside a member function, `this` points to the current object. You can access member variables and member functions through `this`. In most cases, you don't need to explicitly write `this`—the compiler automatically resolves "bare" member names as `this-&gt;成员名`. But in certain scenarios, explicitly using `this` is necessary or helpful.
+Inside a member function, `this` points to the current object. You can access member variables and member functions through `this`. In most cases, you don't need to explicitly write `this`—the compiler automatically resolves "bare" member names as `this->成员名`. But in certain scenarios, explicitly using `this` is necessary or helpful.
 
 The most common case is when **parameter names conflict with member variable names**:
 
@@ -382,7 +382,7 @@ printf("%s", sb.c_str());
 
 This pattern is particularly well-suited for building configuration interfaces or log output in embedded development—each call returns itself, making the code compact to write and fluent to read.
 
-Compared to the C approach, the underlying principle of chained calls is actually the same as "a function returning a struct pointer" in C. The difference is that C++ makes the syntax more natural through `this` and references, eliminating the need to write `-&gt;` and the address-of operator everywhere.
+Compared to the C approach, the underlying principle of chained calls is actually the same as "a function returning a struct pointer" in C. The difference is that C++ makes the syntax more natural through `this` and references, eliminating the need to write `->` and the address-of operator everywhere.
 
 ## 5. Static Members
 
