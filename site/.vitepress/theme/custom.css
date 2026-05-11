@@ -82,3 +82,259 @@
     line-height: 1.7;
   }
 }
+
+/* ================================================================
+   Home Layout — Hero & Feature Cards
+   ================================================================ */
+
+/* ── Hero Section ────────────────────────────────────────────── */
+
+.VPHero {
+  padding-bottom: 48px !important;
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding-bottom: 64px !important;
+  }
+}
+
+.VPHome .VPHero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    135deg,
+    var(--vp-c-brand-soft) 0%,
+    transparent 50%,
+    var(--vp-c-indigo-soft) 100%
+  );
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.VPHero .name.clip {
+  background: linear-gradient(
+    135deg,
+    var(--vp-c-brand-1) 0%,
+    var(--vp-c-indigo-1) 50%,
+    var(--vp-c-purple-1) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.VPHero .tagline {
+  font-weight: 400 !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+/* ── Feature Card Entrance Animation ────────────────────────── */
+
+@keyframes feature-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.VPFeatures .item { animation: feature-fade-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.VPFeatures .item:nth-child(1)  { animation-delay: 0ms; }
+.VPFeatures .item:nth-child(2)  { animation-delay: 60ms; }
+.VPFeatures .item:nth-child(3)  { animation-delay: 120ms; }
+.VPFeatures .item:nth-child(4)  { animation-delay: 180ms; }
+.VPFeatures .item:nth-child(5)  { animation-delay: 240ms; }
+.VPFeatures .item:nth-child(6)  { animation-delay: 300ms; }
+.VPFeatures .item:nth-child(7)  { animation-delay: 360ms; }
+.VPFeatures .item:nth-child(8)  { animation-delay: 420ms; }
+.VPFeatures .item:nth-child(9)  { animation-delay: 480ms; }
+.VPFeatures .item:nth-child(10) { animation-delay: 540ms; }
+.VPFeatures .item:nth-child(11) { animation-delay: 600ms; }
+.VPFeatures .item:nth-child(12) { animation-delay: 660ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeatures .item {
+    animation: none;
+  }
+}
+
+/* ── Features Grid ───────────────────────────────────────────── */
+
+.VPFeatures {
+  padding-top: 16px;
+  padding-bottom: 48px;
+}
+
+/* ── Individual Card ─────────────────────────────────────────── */
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider) !important;
+  border-radius: 14px !important;
+  background-color: var(--vp-c-bg) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
+              0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.3s ease,
+              box-shadow 0.3s ease,
+              transform 0.3s ease;
+}
+
+.VPFeature.link:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1),
+              0 4px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+}
+
+.VPFeature .box {
+  padding: 28px 24px !important;
+}
+
+/* ── Icon Container ──────────────────────────────────────────── */
+
+.VPFeature .icon {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(
+    135deg,
+    var(--vp-c-brand-soft) 0%,
+    var(--vp-c-indigo-soft) 100%
+  ) !important;
+  color: var(--vp-c-brand-1) !important;
+  font-size: 22px !important;
+  transition: background 0.3s ease,
+              color 0.3s ease,
+              transform 0.3s ease;
+}
+
+.VPFeature.link:hover .icon {
+  transform: scale(1.1);
+}
+
+/* ── Card Title ──────────────────────────────────────────────── */
+
+.VPFeature .title {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  color: var(--vp-c-text-1) !important;
+  transition: color 0.3s ease;
+}
+
+.VPFeature.link:hover .title {
+  color: var(--vp-c-brand-1) !important;
+}
+
+/* ── Card Details ────────────────────────────────────────────── */
+
+.VPFeature .details {
+  font-size: 13px !important;
+  line-height: 1.7 !important;
+  color: var(--vp-c-text-2) !important;
+  font-weight: 400 !important;
+}
+
+/* ── Link Arrow ──────────────────────────────────────────────── */
+
+.VPFeature .link-text-icon {
+  transition: transform 0.3s ease;
+}
+
+.VPFeature.link:hover .link-text-icon {
+  transform: translateX(4px);
+}
+
+/* ── Tier Color Coding: Core (1-4) ─ Brand/Indigo ────────────── */
+
+.VPFeatures .item:nth-child(-n+4) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-brand-soft), var(--vp-c-indigo-soft)) !important;
+  color: var(--vp-c-brand-1) !important;
+}
+
+.VPFeatures .item:nth-child(-n+4) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-indigo-1)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+/* ── Tier Color Coding: Engineering (5-7) ─ Green ────────────── */
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-green-soft), rgba(16, 185, 129, 0.08)) !important;
+  color: var(--vp-c-green-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-green-1), var(--vp-c-green-2)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover {
+  border-color: var(--vp-c-green-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature.link:hover .title {
+  color: var(--vp-c-green-1) !important;
+}
+
+/* ── Tier Color Coding: Domain (8-12) ─ Purple ───────────────── */
+
+.VPFeatures .item:nth-child(n+8) .VPFeature .icon {
+  background: linear-gradient(135deg, var(--vp-c-purple-soft), rgba(159, 122, 234, 0.08)) !important;
+  color: var(--vp-c-purple-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover .icon {
+  background: linear-gradient(135deg, var(--vp-c-purple-1), var(--vp-c-purple-2)) !important;
+  color: var(--vp-c-white) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover {
+  border-color: var(--vp-c-purple-1) !important;
+}
+
+.VPFeatures .item:nth-child(n+8) .VPFeature.link:hover .title {
+  color: var(--vp-c-purple-1) !important;
+}
+
+/* ── Dark Mode ───────────────────────────────────────────────── */
+
+.dark .VPFeature {
+  background-color: var(--vp-c-bg-elv) !important;
+  border-color: var(--vp-c-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.dark .VPFeature.link:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3),
+              0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 639px) {
+  .VPFeature .box {
+    padding: 20px 18px !important;
+  }
+
+  .VPFeature .icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    font-size: 18px !important;
+  }
+
+  .VPFeature .title {
+    font-size: 14px !important;
+  }
+
+  .VPFeature .details {
+    font-size: 12.5px !important;
+  }
+}
