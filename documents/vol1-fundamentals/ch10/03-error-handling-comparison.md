@@ -76,7 +76,7 @@ try {
 
 ## std::optional：有还是没有
 
-C++17 引入了 `std::optional<T>`，它表达的是一个很朴素的概念：这个值**可能存在，也可能不存在**。和错误码不同，`optional` 是类型系统的一部分——函数签名 `std::optional<int> divide(int a, int b)` 明确告诉你"返回值可能没有"，调用者必须面对这个事实。
+C++17 引入了 `std::optional&lt;T&gt;`，它表达的是一个很朴素的概念：这个值**可能存在，也可能不存在**。和错误码不同，`optional` 是类型系统的一部分——函数签名 `std::optional&lt;int&gt; divide(int a, int b)` 明确告诉你"返回值可能没有"，调用者必须面对这个事实。
 
 ```cpp
 #include <optional>
@@ -105,7 +105,7 @@ if (result.has_value()) {
 
 ## std::expected：既要值也要原因
 
-`std::expected<T, E>` 是 C++23 引入的类型，它结合了 `std::optional` 的类型安全性和异常的错误信息丰富性。简单来说，`expected<T, E>` 要么包含一个成功的值 `T`，要么包含一个错误 `E`——而且这个错误可以是任意类型，完全由你定义。
+`std::expected&lt;T, E&gt;` 是 C++23 引入的类型，它结合了 `std::optional` 的类型安全性和异常的错误信息丰富性。简单来说，`expected&lt;T, E&gt;` 要么包含一个成功的值 `T`，要么包含一个错误 `E`——而且这个错误可以是任意类型，完全由你定义。
 
 ```cpp
 #include <expected>
@@ -147,7 +147,7 @@ C++23 还为 `std::expected` 提供了一组 monadic 操作，让我们能够链
 
 不过，`std::expected` 也有它的代价。在 C++23 标准正式落地之前，主流编译器的支持还不完善（GCC 12+、MSVC 19.34+ 支持基本功能，Clang 的支持相对滞后）。如果你的项目还在用 C++17 或更早的标准，可以用第三方库（比如 `tl::expected`）作为替代——接口基本一致，迁移成本很低。
 
-> **踩坑预警**：`std::expected` 的 `value()` 方法在值为空时会抛出 `std::bad_expected_access<E>` 异常。如果你选 `expected` 的初衷就是"不用异常"，那切记要用 `has_value()` 先检查，或者用 `*` 解引用（值为空时是 UB，但不会抛异常）。混用 `expected` 和异常处理是一种很容易忽视的风格不一致。
+> **踩坑预警**：`std::expected` 的 `value()` 方法在值为空时会抛出 `std::bad_expected_access&lt;E&gt;` 异常。如果你选 `expected` 的初衷就是"不用异常"，那切记要用 `has_value()` 先检查，或者用 `*` 解引用（值为空时是 UB，但不会抛异常）。混用 `expected` 和异常处理是一种很容易忽视的风格不一致。
 
 ## 四种策略的正面交锋
 

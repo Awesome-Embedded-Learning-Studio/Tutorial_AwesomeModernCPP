@@ -142,7 +142,7 @@ add_explicit(3.0, 4.0);   // T = double
 // add_explicit(3, 4.0);  // 编译错误：T 不能同时是 int 和 double
 ```
 
-这里 `<typename T>` 的语法和普通模板完全一致。两个参数都是 `T` 类型，所以调用时两个参数必须是同一类型——这正是 C++14 的 `auto` 做不到的事情。
+这里 `&lt;typename T&gt;` 的语法和普通模板完全一致。两个参数都是 `T` 类型，所以调用时两个参数必须是同一类型——这正是 C++14 的 `auto` 做不到的事情。
 
 ### 在 lambda 内部使用模板参数名
 
@@ -172,7 +172,7 @@ void demo_template_param_name() {
 }
 ```
 
-如果用 C++14 的 `auto` 参数，你拿到的是 `const std::vector<int>&`，但在 lambda 内部你不知道元素类型是 `int`——你得用 `decltype` 去推。有了 C++20 模板参数 `T`，一切都直截了当。
+如果用 C++14 的 `auto` 参数，你拿到的是 `const std::vector&lt;int&gt;&`，但在 lambda 内部你不知道元素类型是 `int`——你得用 `decltype` 去推。有了 C++20 模板参数 `T`，一切都直截了当。
 
 ### 配合 Concepts 进行约束
 
@@ -230,7 +230,7 @@ auto r1 = identity(42);
 auto r2 = identity.template operator()<int>(42);
 ```
 
-那个 `.template operator()<T>()` 的语法确实不太好看，但实际上你很少需要显式调用它——大部分时候编译器的推导就够用了。需要显式指定的场景主要是你想强制某种转换（比如把 `int` 强制作为 `double` 处理），或者 lambda 内部用 `if constexpr` 根据模板参数选择不同的分支。
+那个 `.template operator()&lt;T&gt;()` 的语法确实不太好看，但实际上你很少需要显式调用它——大部分时候编译器的推导就够用了。需要显式指定的场景主要是你想强制某种转换（比如把 `int` 强制作为 `double` 处理），或者 lambda 内部用 `if constexpr` 根据模板参数选择不同的分支。
 
 ---
 
@@ -405,7 +405,7 @@ void demo_generic_transformer() {
 
 ### 多态容器操作
 
-泛型 lambda 配合模板函数，可以写出不依赖具体容器类型的通用算法。下面这个例子用泛型 lambda 来打印任意类型的容器，只要容器的元素支持 `operator<<`：
+泛型 lambda 配合模板函数，可以写出不依赖具体容器类型的通用算法。下面这个例子用泛型 lambda 来打印任意类型的容器，只要容器的元素支持 `operator&lt;&lt;`：
 
 ```cpp
 #include <iostream>
@@ -449,7 +449,7 @@ void demo_polymorphic_container() {
 
 - C++14 泛型 lambda 的 `auto` 参数对应闭包类型 `operator()` 的模板参数
 - `if constexpr` 让泛型 lambda 可以根据类型信息选择不同的代码路径
-- C++20 模板 lambda 用 `[]<typename T>` 语法提供了显式模板参数和 Concepts 约束
+- C++20 模板 lambda 用 `[]&lt;typename T&gt;` 语法提供了显式模板参数和 Concepts 约束
 - 递归 lambda 可以通过 `std::function`（简单但有开销）或 Y 组合子模式（高效但语法稍复杂）来实现
 - 泛型 lambda 在通用比较器、变换器、容器操作等场景下极其有用
 

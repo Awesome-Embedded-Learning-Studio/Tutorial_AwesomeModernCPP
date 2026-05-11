@@ -51,7 +51,7 @@ std::optional<int> parse_int(const std::string& s) {
 }
 ```
 
-这种写法最大的好处是**语义在类型里**。函数签名 `std::optional<int>` 就已经告诉调用方"这个函数可能不返回值"，你不需要查文档、不需要记约定——类型本身就是文档。调用方拿到返回值后，第一件事自然是检查有没有值：
+这种写法最大的好处是**语义在类型里**。函数签名 `std::optional&lt;int&gt;` 就已经告诉调用方"这个函数可能不返回值"，你不需要查文档、不需要记约定——类型本身就是文档。调用方拿到返回值后，第一件事自然是检查有没有值：
 
 ```cpp
 auto result = parse_int("42");
@@ -216,7 +216,7 @@ if (!cfg) {
 }
 ```
 
-这种情况应该用 `std::expected<Config, ConfigError>` 或者一个携带错误信息的返回结构体。
+这种情况应该用 `std::expected&lt;Config, ConfigError&gt;` 或者一个携带错误信息的返回结构体。
 
 ### 需要错误传播链
 
@@ -333,9 +333,9 @@ auto result = fetch_from_cache(user_id)
 
 用过 Rust 的朋友可能觉得 C++ 的 `optional` 有点"不够力"。确实如此，主要体现在两个方面：
 
-Rust 的 `Option<T>` 有编译器的 `#[must_use]` 检查——如果你忽略了一个 `Option` 返回值，编译器会发出警告。C++ 的 `std::optional` 没有这个保证，虽然你可以用 `[[nodiscard]]` 标注返回类型，但标准库并没有这么做。
+Rust 的 `Option&lt;T&gt;` 有编译器的 `#[must_use]` 检查——如果你忽略了一个 `Option` 返回值，编译器会发出警告。C++ 的 `std::optional` 没有这个保证，虽然你可以用 `[[nodiscard]]` 标注返回类型，但标准库并没有这么做。
 
-Rust 的 `Option<T>` 有一个强大的 `?` 操作符用于错误传播。在函数里写 `let val = might_fail()?;`，如果 `might_fail` 返回 `None`，函数立即返回 `None`。C++ 没有这么优雅的语法，你需要手动检查，或者用宏来模拟（比如前面提到的 `TRY` 宏）。
+Rust 的 `Option&lt;T&gt;` 有一个强大的 `?` 操作符用于错误传播。在函数里写 `let val = might_fail()?;`，如果 `might_fail` 返回 `None`，函数立即返回 `None`。C++ 没有这么优雅的语法，你需要手动检查，或者用宏来模拟（比如前面提到的 `TRY` 宏）。
 
 不过 C++23 的 monadic 操作已经在很大程度上弥补了这个差距——链式调用虽然不如 `?` 操作符简洁，但已经足够好用了。
 
@@ -444,7 +444,7 @@ int main() {
 
 C++23 的 monadic 操作（`and_then`、`transform`、`or_else`）让 `optional` 的链式处理变得优雅，大大减少了嵌套的 `if/else` 代码。如果你的项目还在 C++17，手写几个辅助函数也能达到类似效果。
 
-下一篇我们就来看看 `std::expected<T, E>` —— 当你需要"值 + 错误信息"时，它是怎么做的。
+下一篇我们就来看看 `std::expected&lt;T, E&gt;` —— 当你需要"值 + 错误信息"时，它是怎么做的。
 
 ## 参考资源
 

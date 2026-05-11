@@ -9,7 +9,7 @@ description: "让计算发生在编译期，实现真正的零开销抽象"
 
 ## 本章内容
 
-- [constexpr 基础：编译期求值的艺术](01-constexpr-basics/)
-- [constexpr 构造函数与字面类型](02-constexpr-ctor/)
-- [consteval 与 constinit：编译期保证的新工具](03-consteval-constinit/)
-- [编译期计算实战：从查表到编译期字符串](04-compile-time-practice/)
+- [constexpr 基础：编译期求值的艺术](01-constexpr-basics)
+- [constexpr 构造函数与字面类型](02-constexpr-ctor)
+- [consteval 与 constinit：编译期保证的新工具](03-consteval-constinit)
+- [编译期计算实战：从查表到编译期字符串](04-compile-time-practice)

@@ -814,9 +814,7 @@ static_assert(all_positive);
 
 ### 完整示例：嵌入式缓冲区工具
 
-<details>
-<summary>点击展开完整的编译期缓冲区工具代码</summary>
-
+::: details 点击展开完整的编译期缓冲区工具代码
 ```cpp
 #include <cstdint>
 #include <cstddef>
@@ -947,8 +945,7 @@ void buffer_example() {
 }
 
 ```
-
-</details>
+:::
 
 ------
 
@@ -1405,9 +1402,7 @@ using SPI1_MOSI = AlternateFunction<Pin<0, 7>, SPI_AF::AF5>; // PA7 -> AF5
 
 ### 完整示例：DMA配置
 
-<details>
-<summary>点击展开DMA编译期配置示例</summary>
-
+::: details 点击展开DMA编译期配置示例
 ```cpp
 namespace stm32f4 {
 
@@ -1507,8 +1502,7 @@ void uart_dma_send_example() {
 } // namespace stm32f4
 
 ```
-
-</details>
+:::
 
 ------
 

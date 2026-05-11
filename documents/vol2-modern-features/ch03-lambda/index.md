@@ -9,8 +9,8 @@ Lambda 表达式是 C++11 引入的最受欢迎的特性之一——它让匿名
 
 ## 本章内容
 
-- [Lambda 基础：匿名函数的优雅表达](01-lambda-basics/)
-- [Lambda 捕获机制深入](02-lambda-capture/)
-- [泛型 Lambda 与模板 Lambda](03-generic-lambda/)
-- [std::function、std::invoke 与可调用对象](04-std-function/)
-- [函数式编程模式](05-functional-patterns/)
+- [Lambda 基础：匿名函数的优雅表达](01-lambda-basics)
+- [Lambda 捕获机制深入](02-lambda-capture)
+- [泛型 Lambda 与模板 Lambda](03-generic-lambda)
+- [std::function、std::invoke 与可调用对象](04-std-function)
+- [函数式编程模式](05-functional-patterns)

@@ -9,6 +9,6 @@ description: "让自定义类型支持算术、比较、流和下标等运算符
 
 ## 本章内容
 
-- [算术与比较运算符](01-arithmetic-comparison/)
-- [流与下标运算符](02-io-subscript/)
-- [函数调用与类型转换](03-call-and-conversion/)
+- [算术与比较运算符](01-arithmetic-comparison)
+- [流与下标运算符](02-io-subscript)
+- [函数调用与类型转换](03-call-and-conversion)

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Subtle gradient for the chip body -->
+    <linearGradient id="chipBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5C6BC0" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#3F51B5" stop-opacity="0.06"/>
+    </linearGradient>
+
+    <!-- Gradient for bracket strokes -->
+    <linearGradient id="bracketGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3F51B5"/>
+      <stop offset="100%" stop-color="#5C6BC0"/>
+    </linearGradient>
+
+    <!-- Subtle glow filter for brackets -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- ============================================ -->
+  <!-- CHIP PIN MARKINGS (top edge)                 -->
+  <!-- ============================================ -->
+  <g stroke="#5C6BC0" stroke-width="6" stroke-linecap="round" opacity="0.55">
+    <!-- Top pins -->
+    <line x1="148" y1="68" x2="148" y2="42"/>
+    <line x1="188" y1="68" x2="188" y2="42"/>
+    <line x1="228" y1="68" x2="228" y2="42"/>
+    <line x1="268" y1="68" x2="268" y2="42"/>
+    <line x1="308" y1="68" x2="308" y2="42"/>
+    <line x1="348" y1="68" x2="348" y2="42"/>
+
+    <!-- Bottom pins -->
+    <line x1="148" y1="444" x2="148" y2="470"/>
+    <line x1="188" y1="444" x2="188" y2="470"/>
+    <line x1="228" y1="444" x2="228" y2="470"/>
+    <line x1="268" y1="444" x2="268" y2="470"/>
+    <line x1="308" y1="444" x2="308" y2="470"/>
+    <line x1="348" y1="444" x2="348" y2="470"/>
+
+    <!-- Left pins -->
+    <line x1="68" y1="148" x2="42" y2="148"/>
+    <line x1="68" y1="188" x2="42" y2="188"/>
+    <line x1="68" y1="228" x2="42" y2="228"/>
+    <line x1="68" y1="268" x2="42" y2="268"/>
+    <line x1="68" y1="308" x2="42" y2="308"/>
+    <line x1="68" y1="348" x2="42" y2="348"/>
+
+    <!-- Right pins -->
+    <line x1="444" y1="148" x2="470" y2="148"/>
+    <line x1="444" y1="188" x2="470" y2="188"/>
+    <line x1="444" y1="228" x2="470" y2="228"/>
+    <line x1="444" y1="268" x2="470" y2="268"/>
+    <line x1="444" y1="308" x2="470" y2="308"/>
+    <line x1="444" y1="348" x2="470" y2="348"/>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- CHIP BODY (rounded rectangle)                -->
+  <!-- ============================================ -->
+  <rect
+    x="68" y="68" width="376" height="376" rx="28" ry="28"
+    fill="url(#chipBody)"
+    stroke="#3F51B5"
+    stroke-width="4"
+  />
+
+  <!-- Pin 1 indicator (notch) -->
+  <path
+    d="M 230 68 A 26 26 0 0 1 282 68"
+    fill="none" stroke="#3F51B5" stroke-width="4" stroke-linecap="round"
+    opacity="0.7"
+  />
+
+  <!-- Inner border for depth -->
+  <rect
+    x="96" y="96" width="320" height="320" rx="14" ry="14"
+    fill="none"
+    stroke="#3F51B5"
+    stroke-width="1.5"
+    opacity="0.2"
+  />
+
+  <!-- ============================================ -->
+  <!-- BRACKET  {                                   -->
+  <!-- ============================================ -->
+  <path
+    d="
+      M 148 155
+      C 148 155, 128 155, 128 180
+      L 128 240
+      C 128 250, 128 256, 118 256
+      C 128 256, 128 262, 128 272
+      L 128 332
+      C 128 357, 148 357, 148 357
+    "
+    fill="none"
+    stroke="url(#bracketGrad)"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#softGlow)"
+  />
+
+  <!-- ============================================ -->
+  <!-- BRACKET  }                                   -->
+  <!-- ============================================ -->
+  <path
+    d="
+      M 364 155
+      C 364 155, 384 155, 384 180
+      L 384 240
+      C 384 250, 384 256, 394 256
+      C 384 256, 384 262, 384 272
+      L 384 332
+      C 384 357, 364 357, 364 357
+    "
+    fill="none"
+    stroke="url(#bracketGrad)"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#softGlow)"
+  />
+
+  <!-- ============================================ -->
+  <!-- SEMICOLONS / CODE DOTS inside brackets       -->
+  <!-- ============================================ -->
+  <g fill="#5C6BC0" opacity="0.35">
+    <circle cx="222" cy="200" r="5"/>
+    <circle cx="256" cy="200" r="5"/>
+    <circle cx="290" cy="200" r="5"/>
+    <circle cx="222" cy="240" r="5"/>
+    <circle cx="256" cy="240" r="5"/>
+    <circle cx="290" cy="240" r="5"/>
+    <circle cx="222" cy="280" r="5"/>
+    <circle cx="256" cy="280" r="5"/>
+    <circle cx="290" cy="280" r="5"/>
+  </g>
+
+  <!-- ============================================ -->
+  <!-- C++ TEXT                                      -->
+  <!-- ============================================ -->
+  <text
+    x="256" y="395"
+    text-anchor="middle"
+    font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace"
+    font-size="52"
+    font-weight="700"
+    letter-spacing="6"
+    fill="#009688"
+    opacity="0.85"
+  >C++</text>
+
+  <!-- ============================================ -->
+  <!-- VERSION TAG (small detail)                    -->
+  <!-- ============================================ -->
+  <text
+    x="256" y="425"
+    text-anchor="middle"
+    font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace"
+    font-size="14"
+    font-weight="400"
+    letter-spacing="3"
+    fill="#5C6BC0"
+    opacity="0.4"
+  >TUTORIAL</text>
+
+</svg>

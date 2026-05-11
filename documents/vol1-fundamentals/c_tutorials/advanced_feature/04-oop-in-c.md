@@ -120,7 +120,7 @@ int strbuf_length(const StrBuf* sb) { return sb->length; }
 const char* strbuf_data(const StrBuf* sb) { return sb->data; }
 ```
 
-`struct StrBuf` 的完整定义只出现在 `.c` 文件里。如果调用者尝试写 `sb->length`，编译器直接报错"dereferencing pointer to incomplete type"。C 的 `.h` 文件相当于 C++ 的 `public` 部分，`.c` 文件相当于 `private` 成员和函数实现——区别是 C 靠编译器的类型不完整性检查，C++ 靠语言层面的访问控制关键字。
+`struct StrBuf` 的完整定义只出现在 `.c` 文件里。如果调用者尝试写 `sb-&gt;length`，编译器直接报错"dereferencing pointer to incomplete type"。C 的 `.h` 文件相当于 C++ 的 `public` 部分，`.c` 文件相当于 `private` 成员和函数实现——区别是 C 靠编译器的类型不完整性检查，C++ 靠语言层面的访问控制关键字。
 
 ## 第二步——用结构体 + 函数指针模拟类
 
@@ -241,7 +241,7 @@ void cat_init(Cat* self, const char* name, int age, int lives)
 }
 ```
 
-关键的地方来了——因为 `Dog` 和 `Cat` 的第一个成员都是 `Animal base`，所以 `&dog->base == (Animal*)dog`。我们可以把 `Dog*` 安全地转成 `Animal*`，然后通过基类指针统一调用：
+关键的地方来了——因为 `Dog` 和 `Cat` 的第一个成员都是 `Animal base`，所以 `&dog-&gt;base == (Animal*)dog`。我们可以把 `Dog*` 安全地转成 `Animal*`，然后通过基类指针统一调用：
 
 ```c
 Dog dog;
@@ -419,7 +419,7 @@ Serializable* s = &ts->serializable;    // 正确
 ```
 
 > ⚠️ **踩坑预警**
-> 在 C++ 里编译器会自动计算多重继承的偏移量，但在 C 里做手搓 OOP，你必须自己保证指针转换的正确性。这就是为什么很多 C 项目（比如 Linux 内核）倾向于只做单继承 + 回调函数，而不是搞多重接口继承。如果你一定要做多接口，务必用 `&obj->interface` 来获取指针，不要直接 cast。
+> 在 C++ 里编译器会自动计算多重继承的偏移量，但在 C 里做手搓 OOP，你必须自己保证指针转换的正确性。这就是为什么很多 C 项目（比如 Linux 内核）倾向于只做单继承 + 回调函数，而不是搞多重接口继承。如果你一定要做多接口，务必用 `&obj-&gt;interface` 来获取指针，不要直接 cast。
 
 ## 第六步——实战：拼一个图形管理框架
 
@@ -543,8 +543,8 @@ Found: Rectangle("Box", w=3.00, h=4.00) -> area=12.00
 |---|---|
 | 定义 `ShapeVtable` 结构体 | 编译器自动生成 vtable（`.rodata` 段） |
 | 构造函数里赋值 `vtable = &kCircleVtable` | 构造函数自动设置 vptr |
-| 手动写 `shape_area()` 做虚函数分派 | `s->area()` 自动通过 vptr 查表 |
-| `(Circle*)shape` 手动向下转型 | `dynamic_cast<Circle*>(shape)` 安全转型 |
+| 手动写 `shape_area()` 做虚函数分派 | `s-&gt;area()` 自动通过 vptr 查表 |
+| `(Circle*)shape` 手动向下转型 | `dynamic_cast&lt;Circle*&gt;(shape)` 安全转型 |
 | `counter_init(&c, 0, 100)` 手动调构造函数 | `Counter c(0, 100)` 自动构造 |
 | 不透明指针隐藏字段 | `private:` 访问控制 |
 | 结构体嵌套做继承 | `class Derived : public Base` |

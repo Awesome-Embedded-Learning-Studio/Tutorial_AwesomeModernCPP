@@ -88,7 +88,7 @@ if (auto it = cache.find(key); it != cache.end()) {
 
 ### 结合结构化绑定
 
-上一章我们讲了结构化绑定，当它和 if 初始化器结合时，威力更大。`std::map::insert` 返回一个 `pair<iterator, bool>`，其中 `bool` 表示是否插入成功。我们可以一行搞定：
+上一章我们讲了结构化绑定，当它和 if 初始化器结合时，威力更大。`std::map::insert` 返回一个 `pair&lt;iterator, bool&gt;`，其中 `bool` 表示是否插入成功。我们可以一行搞定：
 
 ```cpp
 if (auto [it, ok] = cache.insert({key, compute_value(key)}); ok) {
@@ -165,7 +165,7 @@ if (std::lock_guard lock(mtx); ready) {
 // lock 在 if/else 结束时析构，自动释放锁
 ```
 
-这里 `std::lock_guard lock(mtx)` 利用了 C++17 的 CTAD（类模板参数推导），不需要写 `std::lock_guard<std::mutex> lock(mtx)` 了。`lock` 对象在 `if/else` 整个块结束时析构，自动调用 `mtx.unlock()`。
+这里 `std::lock_guard lock(mtx)` 利用了 C++17 的 CTAD（类模板参数推导），不需要写 `std::lock_guard&lt;std::mutex&gt; lock(mtx)` 了。`lock` 对象在 `if/else` 整个块结束时析构，自动调用 `mtx.unlock()`。
 
 需要注意一点：锁的持有范围覆盖了整个 `if/else` 块，包括 `else` 分支。如果你的目的是只在 `if` 分支持锁，`else` 分支不需要锁，那这种写法会让 `else` 分支也在持锁状态下执行。这种情况下你可能需要更细粒度的控制。
 

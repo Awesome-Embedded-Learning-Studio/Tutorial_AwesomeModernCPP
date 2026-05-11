@@ -9,9 +9,9 @@ description: "掌握 C++ 类的定义、构造析构、static 成员和友元"
 
 ## 本章内容
 
-- [类的定义](01-class-basics/)
-- [构造函数](02-constructors/)
-- [析构函数与资源管理](03-destructors/)
-- [static 成员](04-static-members/)
-- [友元](05-friends/)
-- [this 指针与链式调用](06-this-and-cascading/)
+- [类的定义](01-class-basics)
+- [构造函数](02-constructors)
+- [析构函数与资源管理](03-destructors)
+- [static 成员](04-static-members)
+- [友元](05-friends)
+- [this 指针与链式调用](06-this-and-cascading)

@@ -185,7 +185,7 @@ slow_path:
 
 ARM 处理器的状态信息保存在程序状态寄存器中。在 Cortex-M 上它被拆分为三个子寄存器，合称 xPSR。
 
-**APSR（Application PSR）** 保存算术逻辑运算的结果标志：N（Negative）、Z（Zero）、C（Carry）、V（oVerflow）、Q（饱和标志）。前四个就是我们熟悉的条件码标志，C 代码里的 `if (a > b)` 编译后就变成对这些标志位的判断。
+**APSR（Application PSR）** 保存算术逻辑运算的结果标志：N（Negative）、Z（Zero）、C（Carry）、V（oVerflow）、Q（饱和标志）。前四个就是我们熟悉的条件码标志，C 代码里的 `if (a &gt; b)` 编译后就变成对这些标志位的判断。
 
 **EPSR（Execution PSR）** 包含 Thumb 状态位（T-bit）和中断可继续指令位。Cortex-M 的 T-bit 始终为 1（因为只支持 Thumb），基本不需要手动操作。
 

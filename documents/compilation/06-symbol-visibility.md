@@ -87,7 +87,7 @@ File Type: DLL
 
 第一种方式是最粗暴的方式，假设我们存在一个私有的依赖工程完全不想暴露任何符号，这个时候，我们就可以在编译的时候向gcc/g++传递-fvisibility。默认的讲，对于GNU C/C++工具链**对于任何未加以任何可见性修饰或者是指定可见性的符号**都是公开的。也就是`-fvisibility=default`，假设我们想要隐藏，在生成动态库的步骤中，需要我们指定为`-fvisibility=hidden`，所有的符号都会不被导出。不过笔者是没有使用过的，仅仅是查询到存在用法。
 
-##### 方式2：最常用的方式：利用`__attribute__((visibility(< "default" | "hidden" >)))`
+##### 方式2：最常用的方式：利用`__attribute__((visibility(&lt; "default" | "hidden" &gt;)))`
 
 笔者很喜欢这样指定，以笔者自己充当玩具编写的一个简单的日志库为例子，对于所有计划在ABI层次公开的API，笔者强制指定`__attribute__((visibility("default")))`，反之，任何不应该被使用的符号，施加以`__attribute__((visibility("hidden")))`
 

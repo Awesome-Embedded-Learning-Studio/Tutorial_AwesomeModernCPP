@@ -78,7 +78,7 @@ TEST_CASE("void return", "[once_callback]") {
 }
 ```
 
-验证最基本的构造和调用行为——非 void 回调返回正确的值，void 回调正常执行。void 返回走的是 `if constexpr (std::is_void_v<ReturnType>)` 的另一条分支。
+验证最基本的构造和调用行为——非 void 回调返回正确的值，void 回调正常执行。void 返回走的是 `if constexpr (std::is_void_v&lt;ReturnType&gt;)` 的另一条分支。
 
 ### B 类：移动语义
 

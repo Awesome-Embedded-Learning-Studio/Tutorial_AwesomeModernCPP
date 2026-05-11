@@ -96,7 +96,7 @@ std::set<int> s = {1, 2, 3};
 std::vector v3(s.begin(), s.end());             // std::vector<int>
 ```
 
-⚠️ 注意：`std::vector v = {1, 2, 3}` 能推导是因为标准库为 `std::vector` 提供了接受 `std::initializer_list<T>` 的推导指引。但不是所有容器都有类似的推导指引——比如 `std::map` 的花括号初始化推导在 C++17 中并不完善，到 C++26 才有正式的 pair-like 推导支持。
+⚠️ 注意：`std::vector v = {1, 2, 3}` 能推导是因为标准库为 `std::vector` 提供了接受 `std::initializer_list&lt;T&gt;` 的推导指引。但不是所有容器都有类似的推导指引——比如 `std::map` 的花括号初始化推导在 C++17 中并不完善，到 C++26 才有正式的 pair-like 推导支持。
 
 ### smart pointers
 
@@ -152,14 +152,14 @@ std::array a = {1, 2, 3, 4, 5};  // std::array<int, 5>
 
 | 类模板 | CTAD 写法 | 推导结果 | 备注 |
 |--------|----------|---------|------|
-| `std::pair` | `std::pair p(1, 2.0)` | `pair<int, double>` | ✓ 支持 |
-| `std::tuple` | `std::tuple t(1, 2.0, "hi")` | `tuple<int, double, const char*>` | ✓ 支持 |
-| `std::vector` | `std::vector v = {1,2,3}` | `vector<int>` | ✓ 支持 |
-| `std::array` | `std::array a = {1,2,3}` | `array<int, 3>` | ✓ 支持（推导指引） |
-| `std::optional` | `std::optional o = 42` | `optional<int>` | ✓ 支持 |
+| `std::pair` | `std::pair p(1, 2.0)` | `pair&lt;int, double&gt;` | ✓ 支持 |
+| `std::tuple` | `std::tuple t(1, 2.0, "hi")` | `tuple&lt;int, double, const char*&gt;` | ✓ 支持 |
+| `std::vector` | `std::vector v = {1,2,3}` | `vector&lt;int&gt;` | ✓ 支持 |
+| `std::array` | `std::array a = {1,2,3}` | `array&lt;int, 3&gt;` | ✓ 支持（推导指引） |
+| `std::optional` | `std::optional o = 42` | `optional&lt;int&gt;` | ✓ 支持 |
 | `std::unique_ptr` | `std::unique_ptr up(new T)` | — | ✗ **不支持** |
 | `std::shared_ptr` | `std::shared_ptr sp(new T)` | — | ✗ **不支持** |
-| `std::lock_guard` | `std::lock_guard lock(mtx)` | `lock_guard<mutex>` | ✓ 支持 |
+| `std::lock_guard` | `std::lock_guard lock(mtx)` | `lock_guard&lt;mutex&gt;` | ✓ 支持 |
 
 ------
 
@@ -203,7 +203,7 @@ Wrapper w2(&x);        // 使用第二个构造函数，推导为 Wrapper<int>
 
 ### 隐式推导的局限
 
-隐式推导指引不能推导嵌套的模板参数。比如你有一个 `Container<std::vector<T>>`，隐式推导无法从 `std::vector<int>` 反推出 `T = int`。这需要自定义推导指引来解决。
+隐式推导指引不能推导嵌套的模板参数。比如你有一个 `Container&lt;std::vector&lt;T&gt;&gt;`，隐式推导无法从 `std::vector&lt;int&gt;` 反推出 `T = int`。这需要自定义推导指引来解决。
 
 此外，如果构造函数有默认参数，隐式推导指引只考虑没有默认值的参数。带默认值的模板参数不会被自动推导——除非你写自定义推导指引。
 
@@ -376,7 +376,7 @@ int x = 42;
 Wrapper w(x);  // T 推导为 int&（不是 int！）
 ```
 
-这里 `T&&` 在转发引用的规则下，当传入左值 `x` 时 `T` 被推导为 `int&`。所以 `Wrapper w(x)` 的类型是 `Wrapper<int&>`，其成员 `value_` 的类型是 `int&`。这可能不是你想要的行为。解决方法是使用 `std::remove_reference_t` 或自定义推导指引来约束推导结果。
+这里 `T&&` 在转发引用的规则下，当传入左值 `x` 时 `T` 被推导为 `int&`。所以 `Wrapper w(x)` 的类型是 `Wrapper&lt;int&&gt;`，其成员 `value_` 的类型是 `int&`。这可能不是你想要的行为。解决方法是使用 `std::remove_reference_t` 或自定义推导指引来约束推导结果。
 
 ### 拷贝初始化 vs 直接初始化
 

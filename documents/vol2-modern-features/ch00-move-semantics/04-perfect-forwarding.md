@@ -82,7 +82,7 @@ identify(name);              // 传左值，T = std::string&，T&& = std::string
 identify(std::string("Bob")); // 传右值，T = std::string，T&& = std::string&&
 ```
 
-万能引用的出现有两个必要条件，缺一不可：第一，类型必须通过模板参数推导（`template<typename T>` 中的 `T`）；第二，声明形式必须恰好是 `T&&`，不能加 const 或其他修饰。如果你写 `const T&&`，那它就是普通的 const 右值引用，不是万能引用。如果你写 `std::vector<T>&&`，也不是万能引用——`T` 虽然被推导了，但 `std::vector<T>&&` 这个整体不是 `T&&` 的形式。
+万能引用的出现有两个必要条件，缺一不可：第一，类型必须通过模板参数推导（`template&lt;typename T&gt;` 中的 `T`）；第二，声明形式必须恰好是 `T&&`，不能加 const 或其他修饰。如果你写 `const T&&`，那它就是普通的 const 右值引用，不是万能引用。如果你写 `std::vector&lt;T&gt;&&`，也不是万能引用——`T` 虽然被推导了，但 `std::vector&lt;T&gt;&&` 这个整体不是 `T&&` 的形式。
 
 ```cpp
 template<typename T>
@@ -161,9 +161,9 @@ constexpr T&& my_forward(std::remove_reference_t<T>&& t) noexcept
 }
 ```
 
-这两个重载配合引用折叠完成了"有条件转换"的逻辑。当传入左值时，`T` 被推导为 `U&`（U 是实际类型），`static_cast<T&&>` 就是 `static_cast<U& &&>`，折叠为 `U&`——返回左值引用。当传入右值时，`T` 被推导为 `U`，`static_cast<T&&>` 就是 `static_cast<U&&>`——返回右值引用。
+这两个重载配合引用折叠完成了"有条件转换"的逻辑。当传入左值时，`T` 被推导为 `U&`（U 是实际类型），`static_cast&lt;T&&&gt;` 就是 `static_cast&lt;U& &&&gt;`，折叠为 `U&`——返回左值引用。当传入右值时，`T` 被推导为 `U`，`static_cast&lt;T&&&gt;` 就是 `static_cast&lt;U&&&gt;`——返回右值引用。
 
-关键的洞察在于：`std::forward` 的"条件性"不是来自 `std::forward` 本身的逻辑，而是来自**模板参数 `T` 携带了原始实参的值类别信息**。当万能引用接收左值时，`T` 被推导为 `U&`，这个 `&` 就像一枚印章，把"这是左值"的信息刻在了类型里。`std::forward` 通过 `static_cast<T&&>` 和引用折叠把这枚印章"解印"出来。
+关键的洞察在于：`std::forward` 的"条件性"不是来自 `std::forward` 本身的逻辑，而是来自**模板参数 `T` 携带了原始实参的值类别信息**。当万能引用接收左值时，`T` 被推导为 `U&`，这个 `&` 就像一枚印章，把"这是左值"的信息刻在了类型里。`std::forward` 通过 `static_cast&lt;T&&&gt;` 和引用折叠把这枚印章"解印"出来。
 
 ## 完美转发在标准库中的应用
 
@@ -178,7 +178,7 @@ std::unique_ptr<T> make_unique(Args&&... args)
 }
 ```
 
-这里的 `Args&&... args` 是万能引用的参数包。每个 `Args` 独立推导，所以如果你传入一个左值和一个右值，它们各自的值类别都被保留。`std::forward<Args>(args)...` 把每个参数按照它原始的值类别转发给 `T` 的构造函数。
+这里的 `Args&&... args` 是万能引用的参数包。每个 `Args` 独立推导，所以如果你传入一个左值和一个右值，它们各自的值类别都被保留。`std::forward&lt;Args&gt;(args)...` 把每个参数按照它原始的值类别转发给 `T` 的构造函数。
 
 ```cpp
 struct User {
@@ -240,7 +240,7 @@ void double_forward(T&& x)
 }
 ```
 
-如果 `x` 是右值引用，第一次 `std::forward<T>(x)` 会把 `x` 转成右值传递给 `target`——`target` 可能已经偷走了 `x` 的资源。第二次再 forward 时，`x` 已经处于"有效但未指定"的状态，你把一个可能已经空了的右值传了出去。这就是所谓的"use-after-move"——虽然编译器不会报错，但运行时行为不可预测。
+如果 `x` 是右值引用，第一次 `std::forward&lt;T&gt;(x)` 会把 `x` 转成右值传递给 `target`——`target` 可能已经偷走了 `x` 的资源。第二次再 forward 时，`x` 已经处于"有效但未指定"的状态，你把一个可能已经空了的右值传了出去。这就是所谓的"use-after-move"——虽然编译器不会报错，但运行时行为不可预测。
 
 ```cpp
 // 错误 3：在返回语句中用 std::forward + decltype(auto)
@@ -251,9 +251,9 @@ decltype(auto) bad_return(T&& x)
 }
 ```
 
-这里的 `decltype(auto)` 会根据 `return` 表达式推导返回类型，所以返回类型取决于 `std::forward<T>(x)` 的结果。当你传入一个右值时，`T` 被推导为非引用类型（比如 `std::string`），`std::forward<std::string>(x)` 返回 `std::string&&`——`decltype(auto)` 推导出的返回类型就是 `std::string&&`。但这个右值引用指向的是函数参数 `x`，`x` 在函数返回时就销毁了。调用者拿到的引用指向了一块已经不存在的内存——经典的悬空引用，GCC 的 `-Wdangling-reference` 会对此发出警告。
+这里的 `decltype(auto)` 会根据 `return` 表达式推导返回类型，所以返回类型取决于 `std::forward&lt;T&gt;(x)` 的结果。当你传入一个右值时，`T` 被推导为非引用类型（比如 `std::string`），`std::forward&lt;std::string&gt;(x)` 返回 `std::string&&`——`decltype(auto)` 推导出的返回类型就是 `std::string&&`。但这个右值引用指向的是函数参数 `x`，`x` 在函数返回时就销毁了。调用者拿到的引用指向了一块已经不存在的内存——经典的悬空引用，GCC 的 `-Wdangling-reference` 会对此发出警告。
 
-传入左值时 `T` 被推导为 `U&`（比如 `std::string&`），`std::forward<std::string&>(x)` 通过引用折叠返回 `std::string&`——引用链最终指向调用者的原始变量，仍然存活，所以是安全的。但问题在于这个函数模板对左值安全、对右值危险，而 `decltype(auto)` 又无法在签名中体现这种区分，非常容易在维护时被误用。
+传入左值时 `T` 被推导为 `U&`（比如 `std::string&`），`std::forward&lt;std::string&&gt;(x)` 通过引用折叠返回 `std::string&`——引用链最终指向调用者的原始变量，仍然存活，所以是安全的。但问题在于这个函数模板对左值安全、对右值危险，而 `decltype(auto)` 又无法在签名中体现这种区分，非常容易在维护时被误用。
 
 如果你真的需要在返回语句中做转发，确保返回类型是值类型（`T` 而不是 `decltype(auto)`），这样右值场景下会触发移动构造而不是返回引用。上一节缓存包装器中的 `emplace_get` 就是一个正确的例子：它返回 `Value&`（固定类型，不是转发来的），只对参数使用 `std::forward`。
 
@@ -411,7 +411,7 @@ g++ -std=c++17 -Wall -Wextra -o perfect_forwarding perfect_forwarding.cpp
 === 程序结束 ===
 ```
 
-`emplace_get` 中的 `Args&&... args` 是万能引用参数包。当你传入 `("first", 100)` 时，`Args` 被推导为 `const char (&)[6]` 和 `int`（近似理解为 `const char*` 和 `int`）。`std::forward<Args>(args)...` 把这些参数原封不动地转发给 `ExpensiveData` 的构造函数，构造函数拿到的参数类型和值类别与你直接传给它时完全一致。
+`emplace_get` 中的 `Args&&... args` 是万能引用参数包。当你传入 `("first", 100)` 时，`Args` 被推导为 `const char (&)[6]` 和 `int`（近似理解为 `const char*` 和 `int`）。`std::forward&lt;Args&gt;(args)...` 把这些参数原封不动地转发给 `ExpensiveData` 的构造函数，构造函数拿到的参数类型和值类别与你直接传给它时完全一致。
 
 当传入 `std::move(label)` 时，`Args` 被推导为 `std::string`（非引用），`std::forward` 把它转成右值引用——`ExpensiveData` 的 `std::string` 参数通过移动构造来初始化，避免了字符串的深拷贝。这就是完美转发的威力：一个模板，自动处理所有值类别的组合。
 
@@ -502,6 +502,6 @@ g++ -std=c++17 -Wall -Wextra -o ref_collapsing ref_collapsing.cpp
 
 ## 小结
 
-完美转发的三个核心组件构成了一个精密的协作链条：**万能引用**（`T&&`）根据传入实参推导 `T` 的类型，把值类别信息编码到类型中；**引用折叠**处理"引用的引用"这种理论上不应该存在的情况，保证最终类型符合直觉——只要有左值引用参与就是左值引用；**`std::forward`** 通过 `static_cast<T&&>` 和引用折叠把编码在 `T` 中的值类别信息还原出来，实现精确转发。
+完美转发的三个核心组件构成了一个精密的协作链条：**万能引用**（`T&&`）根据传入实参推导 `T` 的类型，把值类别信息编码到类型中；**引用折叠**处理"引用的引用"这种理论上不应该存在的情况，保证最终类型符合直觉——只要有左值引用参与就是左值引用；**`std::forward`** 通过 `static_cast&lt;T&&&gt;` 和引用折叠把编码在 `T` 中的值类别信息还原出来，实现精确转发。
 
 记住几条实战规则：只在万能引用上使用 `std::forward`，不要 forward 两次同一个参数，不要在 `decltype(auto)` 返回类型的函数中对右值参数 forward（会返回悬空引用）。下一篇我们来看移动语义在实战中的完整应用——从 STL 容器到自定义类型，看看这些理论知识如何转化为实实在在的性能提升。

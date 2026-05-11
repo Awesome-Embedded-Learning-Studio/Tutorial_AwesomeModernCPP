@@ -68,7 +68,7 @@ std::pair<int, bool> find_pair_old(const std::vector<int>& v, int target)
 
 ## 第二步——optional 的核心语义与 API
 
-`std::optional<T>` 表示"要么持有一个 `T` 类型的值，要么什么都没有"。它是一个值类型（不是指针），持有的对象直接嵌套在 `optional` 内部的存储中——没有动态内存分配。
+`std::optional&lt;T&gt;` 表示"要么持有一个 `T` 类型的值，要么什么都没有"。它是一个值类型（不是指针），持有的对象直接嵌套在 `optional` 内部的存储中——没有动态内存分配。
 
 ### 构造
 
@@ -127,7 +127,7 @@ int port = get_config("server_port")
 
 ## 第三步——optional 的内存布局
 
-`optional<T>` 的内部存储通常由两部分组成：一个用于存放 `T` 的对齐缓冲区，加上一个 `bool` 标志位表示是否有值。这意味着 `sizeof(std::optional<T>)` 通常大于 `sizeof(T)`。
+`optional&lt;T&gt;` 的内部存储通常由两部分组成：一个用于存放 `T` 的对齐缓冲区，加上一个 `bool` 标志位表示是否有值。这意味着 `sizeof(std::optional&lt;T&gt;)` 通常大于 `sizeof(T)`。
 
 ```cpp
 #include <optional>
@@ -140,15 +140,15 @@ std::cout << "sizeof(string):           " << sizeof(std::string) << "\n";    // 
 std::cout << "sizeof(optional<string>): " << sizeof(std::optional<std::string>) << "\n"; // 典型：40
 ```
 
-实际的 `sizeof` 结果取决于标准库的实现和平台的对齐要求。但核心事实是：`optional<T>` 大约比 `T` 大一个对齐后的 `bool` 的大小。由于对齐的要求，有时候会增加得比预期多一些。这不是 `optional` 的设计缺陷——它是在栈上直接存储 `T` 的值，不涉及堆分配，所以这个额外开销是合理的。
+实际的 `sizeof` 结果取决于标准库的实现和平台的对齐要求。但核心事实是：`optional&lt;T&gt;` 大约比 `T` 大一个对齐后的 `bool` 的大小。由于对齐的要求，有时候会增加得比预期多一些。这不是 `optional` 的设计缺陷——它是在栈上直接存储 `T` 的值，不涉及堆分配，所以这个额外开销是合理的。
 
 `optional` 持有的对象和"是否有值"的标志在同一个对象内部，不涉及任何动态内存分配。析构时，如果 `optional` 持有值，就会自动调用 `T` 的析构函数。这一切都是自动的，不需要手工管理。
 
 ## 第四步——optional 与指针的区别
 
-`optional<T>` 和 `T*` 都能表达"可能没有值"，但它们的语义截然不同。
+`optional&lt;T&gt;` 和 `T*` 都能表达"可能没有值"，但它们的语义截然不同。
 
-`optional<T>` 是值语义——它持有（或打算持有）一个完整的 `T` 对象。拷贝 `optional` 会拷贝 `T` 的值（如果有值的话），析构 `optional` 会析构 `T`。它表达的是"这里有一个 `T`，或者暂时没有"。
+`optional&lt;T&gt;` 是值语义——它持有（或打算持有）一个完整的 `T` 对象。拷贝 `optional` 会拷贝 `T` 的值（如果有值的话），析构 `optional` 会析构 `T`。它表达的是"这里有一个 `T`，或者暂时没有"。
 
 `T*` 是引用语义——它指向某个外部的 `T` 对象（或者为空）。拷贝指针只是拷贝地址，不会拷贝对象本身。它表达的是"某个地方有一个 `T`，我可能指向它"。
 
@@ -396,7 +396,7 @@ void print_temperature(TemperatureSensor& sensor)
 
 ## 小结
 
-`std::optional` 是 C++17 中表达"可能没有值"的标准方式。它比哨兵值更安全（不会和合法值混淆），比裸指针语义更清晰（值语义 vs 引用语义），比 `std::pair<T, bool>` 更优雅（API 专门为此设计）。
+`std::optional` 是 C++17 中表达"可能没有值"的标准方式。它比哨兵值更安全（不会和合法值混淆），比裸指针语义更清晰（值语义 vs 引用语义），比 `std::pair&lt;T, bool&gt;` 更优雅（API 专门为此设计）。
 
 `optional` 的核心 API 非常简洁：`has_value()` 检查、`operator*` 解引用、`value_or()` 提供默认值。它不涉及动态内存分配，对象直接存储在 `optional` 内部。C++23 的 `transform`、`and_then`、`or_else` 则为链式处理提供了更优雅的语法。
 

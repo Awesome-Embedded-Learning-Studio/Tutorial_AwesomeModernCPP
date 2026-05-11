@@ -76,7 +76,7 @@ const uint16_t lookup[] __attribute__((section(".rodata.lookup"))) = { ... };
 
 在嵌入式工程，我们通常会改链接脚本来将段放到合适的内存区域
 
-```ld
+```c
 MEMORY
 {
   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K

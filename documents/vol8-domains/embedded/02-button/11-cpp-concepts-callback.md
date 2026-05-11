@@ -48,7 +48,7 @@ template <typename Callback>
 void poll_events(Callback&& cb, uint32_t now_ms, uint32_t debounce_ms = 20) {
 ```
 
-`requires std::invocable<Callback, ButtonEvent>` 是一个 Concepts 约束。它告诉编译器：`Callback` 类型的对象必须能用一个 `ButtonEvent` 参数来调用。
+`requires std::invocable&lt;Callback, ButtonEvent&gt;` 是一个 Concepts 约束。它告诉编译器：`Callback` 类型的对象必须能用一个 `ButtonEvent` 参数来调用。
 
 如果传入签名不对的回调：
 
@@ -63,16 +63,16 @@ error: constraint 'std::invocable<lambda, ButtonEvent>' not satisfied
 note: the expression 'std::invocable<lambda, ButtonEvent>' evaluated to 'false'
 ```
 
-一句话就说明白了：你的回调不满足 `std::invocable<Callback, ButtonEvent>` 约束。不需要去翻模板实例化堆栈——约束失败直接告诉你问题所在。
+一句话就说明白了：你的回调不满足 `std::invocable&lt;Callback, ButtonEvent&gt;` 约束。不需要去翻模板实例化堆栈——约束失败直接告诉你问题所在。
 
 ### std::invocable 什么意思
 
-`std::invocable<F, Args...>` 是 C++20 `<concepts>` 头文件中定义的概念。它检查：给定类型 `F` 的对象 `f`，`f(args...)` 是否是合法的调用表达式。
+`std::invocable&lt;F, Args...&gt;` 是 C++20 `&lt;concepts&gt;` 头文件中定义的概念。它检查：给定类型 `F` 的对象 `f`，`f(args...)` 是否是合法的调用表达式。
 
-对于 `std::invocable<Callback, ButtonEvent>`：
+对于 `std::invocable&lt;Callback, ButtonEvent&gt;`：
 
 - `Callback` 是你传入的 lambda 或函数对象
-- `ButtonEvent` 是 `std::variant<Pressed, Released>`
+- `ButtonEvent` 是 `std::variant&lt;Pressed, Released&gt;`
 - 约束要求：`cb(ButtonEvent{})` 必须是合法的调用
 
 合法的回调示例：
@@ -121,7 +121,7 @@ void poll_events(Callback&& cb, ...)
 
 为什么不用 `const Callback&`？因为 `const` 引用不能调用非 const 的 `operator()`。虽然我们的 lambda 不修改捕获的变量，但保持通用性更安全。
 
-在这个场景中我们没有用 `std::forward<Callback>(cb)`——因为回调只在 `poll_events()` 内部调用一次，不需要完美转发。如果 `cb` 是左值，直接调用就行；如果是右值，也是直接调用。转发引用在这里的作用只是"接受任意类型的可调用对象"，而不是"完美转发"。
+在这个场景中我们没有用 `std::forward&lt;Callback&gt;(cb)`——因为回调只在 `poll_events()` 内部调用一次，不需要完美转发。如果 `cb` 是左值，直接调用就行；如果是右值，也是直接调用。转发引用在这里的作用只是"接受任意类型的可调用对象"，而不是"完美转发"。
 
 ---
 
@@ -192,7 +192,7 @@ int main() {
 
 **`HAL_GetTick()`** 获取当前时间戳（毫秒），传给状态机做时间判断。
 
-**回调 lambda** `[&](device::ButtonEvent event)` 按引用捕获了 `led`。当状态机确认状态变化时，调用这个 lambda，参数 `event` 是 `std::variant<Pressed, Released>`。
+**回调 lambda** `[&](device::ButtonEvent event)` 按引用捕获了 `led`。当状态机确认状态变化时，调用这个 lambda，参数 `event` 是 `std::variant&lt;Pressed, Released&gt;`。
 
 **`std::visit`** 根据 `event` 持有的类型分发：
 
@@ -223,7 +223,7 @@ main() 循环
 
 这一篇完成了 C++ 重构的最后一环：
 
-- **Concepts** (`requires std::invocable<Callback, ButtonEvent>`) 约束回调签名，提供清晰的编译错误
+- **Concepts** (`requires std::invocable&lt;Callback, ButtonEvent&gt;`) 约束回调签名，提供清晰的编译错误
 - **转发引用** `Callback&&` 接受任意可调用对象
 - **完整代码走读** 从 `main()` 到 `HAL_GPIO_WritePin()` 的整条调用链
 

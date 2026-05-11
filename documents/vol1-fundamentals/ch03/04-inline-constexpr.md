@@ -316,7 +316,7 @@ runtime  square(7)  = 49
 
 ### 练习二：编译期斐波那契查找表
 
-写一个 `constexpr` 函数生成一个包含 30 个元素的 `std::array<uint32_t, 30>`，其中第 i 个元素是第 i 个 Fibonacci 数。用 `static_assert` 验证 `table[10] == 55`、`table[20] == 6765`。注意用迭代而不是递归，避免指数级编译时间。
+写一个 `constexpr` 函数生成一个包含 30 个元素的 `std::array&lt;uint32_t, 30&gt;`，其中第 i 个元素是第 i 个 Fibonacci 数。用 `static_assert` 验证 `table[10] == 55`、`table[20] == 6765`。注意用迭代而不是递归，避免指数级编译时间。
 
 ### 练习三：constexpr popcount
 

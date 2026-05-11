@@ -97,7 +97,7 @@ void main() {
 
 **MEMORY 区域定义** 定义物理内存区域的名称、起始地址和长度。例如：
 
-```ld
+```c
 MEMORY {
   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
   RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
@@ -107,7 +107,7 @@ MEMORY {
 
 **SECTIONS 输出节定义** 告诉链接器把各个输入节（来自目标文件）如何组织成输出节，并放到哪个 MEMORY 区域：
 
-```ld
+```c
 SECTIONS {
   .text : { *(.text*) } > FLASH
   .data : { *(.data*) } > RAM
@@ -144,7 +144,7 @@ SECTIONS {
 
 ### 3.1 最小可用链接脚本
 
-```ld
+```c
 /* minimal-arm.ld - ARM Cortex-M 最小链接脚本 */
 
 /* 指定程序入口点 */
@@ -222,7 +222,7 @@ PROVIDE(_estack = _estack);
 2. **代码段**（`.text`）紧随其后，包含所有可执行代码和只读常量
 3. **`.data` 段的双重地址**：
    - `AT(ADDR(.text) + SIZEOF(.text))` 指定加载地址（LMA），即数据在 FLASH 中的位置
-   - `> RAM` 指定运行地址（VMA），即数据运行时应该在 RAM 中的位置
+   - `&gt; RAM` 指定运行地址（VMA），即数据运行时应该在 RAM 中的位置
    - 启动代码需要将数据从 LMA 复制到 VMA
 4. **符号导出**：`_sdata`、`_edata`、`_sbss`、`_ebss` 等符号会被启动代码使用
 
@@ -342,7 +342,7 @@ private:
 
 确保链接脚本正确处理 C++ 相关的节：
 
-```ld
+```c
 .text : {
     /* ... */
     KEEP(*(.init_array*))    /* 构造函数指针数组 */
@@ -409,7 +409,7 @@ uint8_t buffer[10240];
 
 **技巧 3：使用 `ASSERT` 进行约束检查**
 
-```ld
+```c
 SECTIONS {
     .text : { /* ... */ } > FLASH
     ASSERT(SIZEOF(.text) < 0x7E000, "代码段超出 FLASH 空间")

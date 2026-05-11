@@ -144,7 +144,7 @@ bool pop(T& value) {
 - **延迟回收**：把待释放节点放到一个链表里，定期批量清理
 - **Hazard Pointer**：C++26引入的标准方案，让线程声明"我正在用这个指针"
 - **RCU（Read-Copy-Update）**：读端无锁，写端延迟释放
-- **引用计数**：`std::atomic<std::shared_ptr<Node>>`，但性能开销大
+- **引用计数**：`std::atomic&lt;std::shared_ptr&lt;Node&gt;&gt;`，但性能开销大
 
 对于嵌入式系统，如果你的栈深度有限，最简单的方案是预分配节点池，用对象池模式管理——我们第5章讲过，配合无锁算法可以避免动态分配。
 

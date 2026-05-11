@@ -156,9 +156,9 @@ Alice 退场。
 继续执行...
 ```
 
-"Alice 退场。"出现在"继续执行..."之前——析构函数在花括号作用域结束时自动调用了。`unique_ptr` 的基本操作就三个：`*p` 解引用，`p->member` 访问成员，`p.get()` 获取裸指针（传给 C 接口时有用）。
+"Alice 退场。"出现在"继续执行..."之前——析构函数在花括号作用域结束时自动调用了。`unique_ptr` 的基本操作就三个：`*p` 解引用，`p-&gt;member` 访问成员，`p.get()` 获取裸指针（传给 C 接口时有用）。
 
-> 为什么推荐 `make_unique` 而不是 `unique_ptr<int>(new int(42))`？第一更简洁，不需要写 `new`。第二在涉及函数参数组合时直接写 `new` 可能因求值顺序未指定而导致泄漏，这个细节卷二会展开。
+> 为什么推荐 `make_unique` 而不是 `unique_ptr&lt;int&gt;(new int(42))`？第一更简洁，不需要写 `new`。第二在涉及函数参数组合时直接写 `new` 可能因求值顺序未指定而导致泄漏，这个细节卷二会展开。
 
 ### 不能复制，只能移动
 
@@ -230,7 +230,7 @@ int main()
 - 裸指针的三大内存问题：**泄漏**（忘了 delete）、**重复释放**（double free）、**悬空指针**（use-after-free），根源是资源的获取和释放被分散在不同位置
 - **RAII** 利用 C++ 析构函数的自动调用机制，将资源的生命周期绑定到对象的作用域
 - `std::unique_ptr` 提供独占所有权的智能指针，离开作用域时自动释放内存，不能复制但可以移动
-- `std::make_unique<T>(args...)` 是创建 `unique_ptr` 的推荐方式，比直接写 `new` 更安全也更简洁
+- `std::make_unique&lt;T&gt;(args...)` 是创建 `unique_ptr` 的推荐方式，比直接写 `new` 更安全也更简洁
 - `unique_ptr` 相比裸指针是**零开销**的，没有理由不在新代码中使用它
 
 ### 常见错误
@@ -238,14 +238,14 @@ int main()
 | 错误 | 原因 | 解决方法 |
 |------|------|----------|
 | 尝试复制 `unique_ptr` | 独占语义禁止拷贝 | 用 `std::move()` 转移所有权 |
-| `make_unique` 在 C++11 下不可用 | C++14 才引入 | 升级标准或用 `unique_ptr<T>(new T(...))` |
-| `unique_ptr<int[]>` 用 `*p` 解引用 | 数组版不支持 `*` | 用 `p[i]` 下标访问或 `p.get()` |
+| `make_unique` 在 C++11 下不可用 | C++14 才引入 | 升级标准或用 `unique_ptr&lt;T&gt;(new T(...))` |
+| `unique_ptr&lt;int[]&gt;` 用 `*p` 解引用 | 数组版不支持 `*` | 用 `p[i]` 下标访问或 `p.get()` |
 
 ## 练习
 
 ### 练习一：改造裸指针程序
 
-下面这段代码在 `early_exit` 为 `true` 时会泄漏。请改写为 `unique_ptr` 版本，确保任何路径下都不泄漏。提示：只需把 `Sensor* s = new Sensor(1)` 换成 `auto s = std::make_unique<Sensor>(1)`，删掉 `delete s`，其他不动。
+下面这段代码在 `early_exit` 为 `true` 时会泄漏。请改写为 `unique_ptr` 版本，确保任何路径下都不泄漏。提示：只需把 `Sensor* s = new Sensor(1)` 换成 `auto s = std::make_unique&lt;Sensor&gt;(1)`，删掉 `delete s`，其他不动。
 
 ```cpp
 struct Sensor

@@ -147,13 +147,13 @@ auto run(this Self&& self, FuncArgs&&... args) -> ReturnType {
 
 ### 拦截左值调用
 
-`std::is_lvalue_reference_v<Self>` 检查 `Self` 是否是左值引用类型。当调用方写 `cb.run(args)` 时，`cb` 是左值，`Self` 被推导为 `OnceCallback&`——这是一个左值引用类型，`is_lvalue_reference_v` 返回 `true`，取反后为 `false`，`static_assert` 失败，编译器报出我们写的那句错误信息："OnceCallback::run() must be called on an rvalue. Use std::move(cb).run(...) instead."
+`std::is_lvalue_reference_v&lt;Self&gt;` 检查 `Self` 是否是左值引用类型。当调用方写 `cb.run(args)` 时，`cb` 是左值，`Self` 被推导为 `OnceCallback&`——这是一个左值引用类型，`is_lvalue_reference_v` 返回 `true`，取反后为 `false`，`static_assert` 失败，编译器报出我们写的那句错误信息："OnceCallback::run() must be called on an rvalue. Use std::move(cb).run(...) instead."
 
 当调用方写 `std::move(cb).run(args)` 时，`std::move(cb)` 是右值（严格说是 xvalue），`Self` 被推导为 `OnceCallback`——不是引用类型，`is_lvalue_reference_v` 返回 `false`，取反后为 `true`，`static_assert` 通过，代码继续执行。
 
 ### 转发到 impl_run
 
-`std::forward<Self>(self)` 根据 `Self` 的类型决定是返回左值引用还是右值引用。由于 `static_assert` 已经排除了左值的情况，到达这里的 `Self` 一定是非引用类型（右值），所以 `std::forward<Self>(self)` 返回的是右值引用——确保 `impl_run` 在右值上被调用。
+`std::forward&lt;Self&gt;(self)` 根据 `Self` 的类型决定是返回左值引用还是右值引用。由于 `static_assert` 已经排除了左值的情况，到达这里的 `Self` 一定是非引用类型（右值），所以 `std::forward&lt;Self&gt;(self)` 返回的是右值引用——确保 `impl_run` 在右值上被调用。
 
 ### 惰性实例化（Lazy Instantiation）
 

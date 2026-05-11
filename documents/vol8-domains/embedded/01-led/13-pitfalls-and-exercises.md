@@ -95,7 +95,7 @@ int main() {
 }
 ```
 
-**讨论：** 两个LED是不同的类型——`LED<GpioPort::C, GPIO_PIN_13, ActiveLevel::Low>` 和 `LED<GpioPort::A, GPIO_PIN_0, ActiveLevel::High>`。编译器为每个类型生成独立的代码。板载LED用默认的 `ActiveLevel::Low`（省略了第三个模板参数），外接LED显式指定 `ActiveLevel::High`。每个LED的构造函数自动使能对应端口的时钟——board_led使能GPIOC时钟，ext_led使能GPIOA时钟，你不需要手动管理。
+**讨论：** 两个LED是不同的类型——`LED&lt;GpioPort::C, GPIO_PIN_13, ActiveLevel::Low&gt;` 和 `LED&lt;GpioPort::A, GPIO_PIN_0, ActiveLevel::High&gt;`。编译器为每个类型生成独立的代码。板载LED用默认的 `ActiveLevel::Low`（省略了第三个模板参数），外接LED显式指定 `ActiveLevel::High`。每个LED的构造函数自动使能对应端口的时钟——board_led使能GPIOC时钟，ext_led使能GPIOA时钟，你不需要手动管理。
 
 ---
 
@@ -227,7 +227,7 @@ public:
 
 **讨论：** 这个 `GpioPin` 模板与之前的 `GPIO` 模板有几个关键区别。
 
-`PinMode` 作为模板参数决定了引脚的角色。声明 `GpioPin<GpioPort::C, GPIO_PIN_13, PinMode::Output>` 时，编译器就知道这是一个输出引脚，`write()` 和 `toggle()` 方法会正常工作。`write()` 和 `read()` 方法内部使用了 `if constexpr` 做编译时守卫。如果你在一个输入引脚上调用 `write()`，由于 `if constexpr` 的条件为假，整个调用会被编译器丢弃——不会产生任何代码。这比运行时的"模式检查+返回错误码"方案高效得多。
+`PinMode` 作为模板参数决定了引脚的角色。声明 `GpioPin&lt;GpioPort::C, GPIO_PIN_13, PinMode::Output&gt;` 时，编译器就知道这是一个输出引脚，`write()` 和 `toggle()` 方法会正常工作。`write()` 和 `read()` 方法内部使用了 `if constexpr` 做编译时守卫。如果你在一个输入引脚上调用 `write()`，由于 `if constexpr` 的条件为假，整个调用会被编译器丢弃——不会产生任何代码。这比运行时的"模式检查+返回错误码"方案高效得多。
 
 构造函数根据 `PinMode` 自动选择正确的HAL模式。`mode_to_hal()` 是一个 `constexpr` 函数，在编译时把 `PinMode` 枚举映射到HAL的 `GPIO_MODE_xxx` 宏。使用方式也很直观：
 

@@ -45,27 +45,23 @@ cpp_standard: [11, 14, 17, 20]
 
 根据你的发行版，执行对应的命令：
 
-=== "Ubuntu / Debian"
+::: code-group
+```bash [Ubuntu / Debian]
+sudo apt update && sudo apt install build-essential -y
+```
 
-    ```bash
-    sudo apt update && sudo apt install build-essential -y
-    ```
+```bash [Fedora]
+sudo dnf install gcc-c++ make -y
+```
 
-    `build-essential` 是一个元包（meta package），它本身不包含任何软件，但会拉下来 `g++`、`gcc`、`make`、`libc6-dev` 等一系列编译必需的工具。装完这一个包，基本的 C 和 C++ 编译环境就有了。
+```bash [Arch Linux]
+sudo pacman -S gcc make
+```
+:::
 
-=== "Fedora"
+`build-essential` 是一个元包（meta package），它本身不包含任何软件，但会拉下来 `g++`、`gcc`、`make`、`libc6-dev` 等一系列编译必需的工具。装完这一个包，基本的 C 和 C++ 编译环境就有了。
 
-    ```bash
-    sudo dnf install gcc-c++ make -y
-    ```
-
-=== "Arch Linux"
-
-    ```bash
-    sudo pacman -S gcc make
-    ```
-
-    Arch 默认的 `gcc` 包已经包含 C++ 支持，不需要额外装 `gcc-c++`。
+Arch 默认的 `gcc` 包已经包含 C++ 支持，不需要额外装 `gcc-c++`。
 
 装好之后，我们先来验证一下。打开终端，执行：
 
@@ -186,7 +182,7 @@ int main()
 }
 ```
 
-这是一个最简单的 C++ 程序——`#include <iostream>` 引入标准输入输出库，`std::cout` 是 C++ 的标准输出流，`<<` 运算符把字符串送到输出流里。`std::endl` 除了换行之外还会刷新输出缓冲区，确保内容立刻显示。
+这是一个最简单的 C++ 程序——`#include &lt;iostream&gt;` 引入标准输入输出库，`std::cout` 是 C++ 的标准输出流，`&lt;&lt;` 运算符把字符串送到输出流里。`std::endl` 除了换行之外还会刷新输出缓冲区，确保内容立刻显示。
 
 接下来创建 `CMakeLists.txt`——这个文件告诉 CMake 我们的项目怎么构建：
 

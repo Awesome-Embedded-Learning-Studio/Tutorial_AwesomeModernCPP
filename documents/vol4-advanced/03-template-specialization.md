@@ -122,8 +122,8 @@ std::cout << TypeInfo<double>::name();     // "double precision float"
 
 **语法要点**：
 
-- `template<>` 表示这是一个特化
-- 后面紧跟类名和具体类型：`class TypeInfo<int>`
+- `template&lt;&gt;` 表示这是一个特化
+- 后面紧跟类名和具体类型：`class TypeInfo&lt;int&gt;`
 - 特化版本可以完全重新定义类的内容
 
 ### 函数模板的全特化
@@ -1147,9 +1147,7 @@ UniquePtr<int> ptr1(new int(42));
 UniquePtr<int[]> arr(new int[10]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
 ```
 
-<details>
-<summary>完整 TypeTraits 实现（可展开）</summary>
-
+::: details 完整 TypeTraits 实现（可展开）
 ```cpp
 #ifndef TYPE_TRAITS_HPP
 #define TYPE_TRAITS_HPP
@@ -1385,7 +1383,7 @@ inline constexpr bool is_floating_point_v = TypeTraits<T>::is_floating_point;
 #endif // TYPE_TRAITS_HPP
 
     ```
-</details>
+:::
 
 ------
 

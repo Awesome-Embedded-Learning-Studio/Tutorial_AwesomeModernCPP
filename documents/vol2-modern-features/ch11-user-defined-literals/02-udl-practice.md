@@ -89,7 +89,7 @@ constexpr Quantity<long double, UnitTag> operator*(
 }
 ```
 
-`Quantity<T, UnitTag>` 是一个模板，`UnitTag` 是一个空的标签类型，唯一的作用是让不同单位的物理量成为不同的类型。`MeterTag` 和 `SecondTag` 之间没有任何继承关系，所以 `Quantity<double, MeterTag>` 和 `Quantity<double, SecondTag>` 是完全不同的类型——你不可能把一个赋给另一个。
+`Quantity&lt;T, UnitTag&gt;` 是一个模板，`UnitTag` 是一个空的标签类型，唯一的作用是让不同单位的物理量成为不同的类型。`MeterTag` 和 `SecondTag` 之间没有任何继承关系，所以 `Quantity&lt;double, MeterTag&gt;` 和 `Quantity&lt;double, SecondTag&gt;` 是完全不同的类型——你不可能把一个赋给另一个。
 
 现在定义长度类型别名和字面量：
 
@@ -145,7 +145,7 @@ void test_length() {
 }
 ```
 
-`1.0_km + 500.0_m` 在编译期就被计算为 `1500.0_m`。如果你试图把长度和时间相加，编译器会直接报错——因为 `Quantity<long double, MeterTag>` 和 `Quantity<long double, SecondTag>` 是不同的类型。
+`1.0_km + 500.0_m` 在编译期就被计算为 `1500.0_m`。如果你试图把长度和时间相加，编译器会直接报错——因为 `Quantity&lt;long double, MeterTag&gt;` 和 `Quantity&lt;long double, SecondTag&gt;` 是不同的类型。
 
 ------
 
@@ -500,7 +500,7 @@ void test() {
 
 ## 小结
 
-这一篇我们把 UDL 的基础知识用到了实处。通过 `Quantity<T, UnitTag>` 模板 + 运算符重载 + 字面量运算符的组合，我们构建了一个类型安全的物理单位系统：长度可以和长度相加，长度除以时间得到速度，但长度和时间不能直接相加——所有这些检查都在编译期完成，运行时零开销。
+这一篇我们把 UDL 的基础知识用到了实处。通过 `Quantity&lt;T, UnitTag&gt;` 模板 + 运算符重载 + 字面量运算符的组合，我们构建了一个类型安全的物理单位系统：长度可以和长度相加，长度除以时间得到速度，但长度和时间不能直接相加——所有这些检查都在编译期完成，运行时零开销。
 
 嵌入式场景下，UDL 特别适合用于频率/波特率字面量（`72_MHz`、`115200_Hz`）、内存大小字面量（`4_KiB`、`512_KiB`）和寄存器地址字面量。这些字面量让裸机代码的可读性大幅提升，配合 `static_assert` 还能在编译期发现资源分配错误。
 

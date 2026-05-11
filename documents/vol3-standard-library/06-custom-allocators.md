@@ -184,9 +184,9 @@ void destroy_with(Alloc& a, T* obj) noexcept {
 
 ## 如何把自定义分配器和 STL 一起用
 
-标准库的 `std::allocator` 接口在老标准中较为笨重。C++17/20 引入了 `std::pmr::memory_resource`（更现代）用于替换默认分配策略。但在嵌入式里往往不启用完整的 `<memory_resource>`，于是你可以自己：
+标准库的 `std::allocator` 接口在老标准中较为笨重。C++17/20 引入了 `std::pmr::memory_resource`（更现代）用于替换默认分配策略。但在嵌入式里往往不启用完整的 `&lt;memory_resource&gt;`，于是你可以自己：
 
 - 为容器写一个简单的 wrapper，内部使用你的池分配节点。
-- 或实现兼容 `std::allocator` 接口的类（需要一堆 typedef 和 `rebind`），然后传给 `std::vector<T, MyAlloc<T>>`。
+- 或实现兼容 `std::allocator` 接口的类（需要一堆 typedef 和 `rebind`），然后传给 `std::vector&lt;T, MyAlloc&lt;T&gt;&gt;`。
 
 如果构建环境允许，优先考虑 `std::pmr` —— 它语义更清晰，但开销与支持度要看你的平台。

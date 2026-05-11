@@ -257,7 +257,7 @@ const int* const* pp3 = &ptr;
 
 C 的多级指针机制在 C++ 中都有对应的现代替代，理解底层原理有助于更好地使用这些高层工具。
 
-`std::unique_ptr<T[]>` 自动管理动态数组，不需要手动 `malloc`/`free`。C 语言里用 `int**` 手动管理二维数组的那种痛苦（分配、逐行释放、容易忘），在 C++ 里可以一行搞定：
+`std::unique_ptr&lt;T[]&gt;` 自动管理动态数组，不需要手动 `malloc`/`free`。C 语言里用 `int**` 手动管理二维数组的那种痛苦（分配、逐行释放、容易忘），在 C++ 里可以一行搞定：
 
 ```cpp
 auto matrix = std::make_unique<int[]>(rows * cols);
@@ -266,9 +266,9 @@ auto matrix = std::make_unique<int[]>(rows * cols);
 
 移动语义本质上就是指针的转移——不是拷贝数据，而是把资源的所有权"偷"过来再把源对象置空，这和 C 里手动交换指针然后置空如出一辙，只是 C++ 把这个模式标准化了。
 
-`std::span<const int>` 把 C 函数里"指针+长度"的经典组合打包成一个类型安全的对象，不需要手动管长度，还能从数组、vector、array 自动构造。
+`std::span&lt;const int&gt;` 把 C 函数里"指针+长度"的经典组合打包成一个类型安全的对象，不需要手动管长度，还能从数组、vector、array 自动构造。
 
-`std::reference_wrapper<int>` 提供了可重新绑定的引用语义，在容器里存放"引用"时可以替代多级指针。
+`std::reference_wrapper&lt;int&gt;` 提供了可重新绑定的引用语义，在容器里存放"引用"时可以替代多级指针。
 
 这些内容我们会在后续 C++ 教程中深入讨论。现在只需要记住核心思路：**C++ 的哲学是用类型系统来自动管理资源，而不是靠程序员的自觉性**。
 

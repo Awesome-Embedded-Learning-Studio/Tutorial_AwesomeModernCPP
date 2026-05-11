@@ -136,7 +136,7 @@ public:
 };
 ```
 
-从这段伪代码可以看到类型擦除的三个要素：一个统一的抽象接口（`ICallable`）、一个模板化的具体实现（`CallableImpl<T>`）、一个指向接口的指针（`ptr_`）。存储的时候类型信息被"擦除"了——外部看到的只是 `ICallable*`；调用的时候通过虚函数表恢复回来。
+从这段伪代码可以看到类型擦除的三个要素：一个统一的抽象接口（`ICallable`）、一个模板化的具体实现（`CallableImpl&lt;T&gt;`）、一个指向接口的指针（`ptr_`）。存储的时候类型信息被"擦除"了——外部看到的只是 `ICallable*`；调用的时候通过虚函数表恢复回来。
 
 ### 小对象优化（SBO）
 
@@ -171,7 +171,7 @@ void demo_sbo_size() {
 }
 ```
 
-我们实际测一下 libstdc++ 的 SBO 行为。在 GCC 15.2.1 上，`std::function<int()>` 的大小是 32 字节。但测试结果显示，即使是捕获单个 `int` 的 lambda（闭包对象仅 4 字节）不会触发堆分配，而捕获 5 个 `int` 或一个指针的 lambda 就会分配——说明 GCC 15.2 的 SBO 实现比较保守，可能需要额外的空间存储虚函数表指针和管理元数据。libc++（Clang）的实现可能不同，具体行为因版本而异。
+我们实际测一下 libstdc++ 的 SBO 行为。在 GCC 15.2.1 上，`std::function&lt;int()&gt;` 的大小是 32 字节。但测试结果显示，即使是捕获单个 `int` 的 lambda（闭包对象仅 4 字节）不会触发堆分配，而捕获 5 个 `int` 或一个指针的 lambda 就会分配——说明 GCC 15.2 的 SBO 实现比较保守，可能需要额外的空间存储虚函数表指针和管理元数据。libc++（Clang）的实现可能不同，具体行为因版本而异。
 
 > **验证代码**：`code/volumn_codes/vol2/ch03-lambda/test_sbo_size.cpp`（GCC 15.2.1，`-O2`）
 >
@@ -221,7 +221,7 @@ int (*fp2)(int, int) = [x](int a, int b) { return a + b + x; };  // 编译错误
 
 ## std::invoke——统一调用接口
 
-C++17 引入的 `std::invoke`（定义在 `<functional>` 中）是一个"万能调用器"。不管你的可调用对象是什么类型——普通函数、成员函数指针、lambda、仿函数——`std::invoke` 都能用同一个语法调用。它实现了标准中定义的 INVOKE 表达式的语义：
+C++17 引入的 `std::invoke`（定义在 `&lt;functional&gt;` 中）是一个"万能调用器"。不管你的可调用对象是什么类型——普通函数、成员函数指针、lambda、仿函数——`std::invoke` 都能用同一个语法调用。它实现了标准中定义的 INVOKE 表达式的语义：
 
 ```cpp
 #include <functional>

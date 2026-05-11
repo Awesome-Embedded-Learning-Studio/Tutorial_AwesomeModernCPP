@@ -70,7 +70,7 @@ int main() {
 
 ```
 
-`print_bytes` 用 `std::span<const uint8_t>` 接收输入：既说明了不修改内容，又接受多种容器来源，调用方无需拷贝数据。
+`print_bytes` 用 `std::span&lt;const uint8_t&gt;` 接收输入：既说明了不修改内容，又接受多种容器来源，调用方无需拷贝数据。
 
 ------
 
@@ -78,8 +78,8 @@ int main() {
 
 `std::span` 有两种形态：
 
-- `std::span<T>`（或 `std::span<T, std::dynamic_extent>`）：运行时大小；
-- `std::span<T, N>`：编译期固定元素数 `N`（称为静态 extent）。
+- `std::span&lt;T&gt;`（或 `std::span&lt;T, std::dynamic_extent&gt;`）：运行时大小；
+- `std::span&lt;T, N&gt;`：编译期固定元素数 `N`（称为静态 extent）。
 
 示例：
 
@@ -155,7 +155,7 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ```
 
-这比写 `template<class Container> void process(const Container& c)` 更直观，也避免了不必要的编译膨胀。
+这比写 `template&lt;class Container&gt; void process(const Container& c)` 更直观，也避免了不必要的编译膨胀。
 
 ------
 
@@ -173,18 +173,18 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 1. **以为有所有权**：span 不持有内存，不会析构或释放。若需要所有权，用 `std::vector`、`unique_ptr` 等。
 
-1. **不恰当的字节视图**：`std::as_bytes` 返回 `span<const std::byte>`，用于只读字节访问；`as_writable_bytes` 仅在底层可写时使用。
+1. **不恰当的字节视图**：`std::as_bytes` 返回 `span&lt;const std::byte&gt;`，用于只读字节访问；`as_writable_bytes` 仅在底层可写时使用。
 
 1. **越界访问**：`operator[]` 不检查边界。必要时做显式检查或使用调试断言。
 
-1. **不是以 null 结尾的字符串**：`std::span<char>` 不是 `C` 字符串，不保证以 `'\0'` 结尾。处理字符串请用 `std::string_view` 或明确长度处理。
+1. **不是以 null 结尾的字符串**：`std::span&lt;char&gt;` 不是 `C` 字符串，不保证以 `'\0'` 结尾。处理字符串请用 `std::string_view` 或明确长度处理。
 
 ------
 
 ## 与 `std::string_view` 的对比
 
 - `std::string_view` 是专门为字符序列设计的（只读视图），并带有字符串语义（常用于文本）。
-- `std::span<char>`/`std::span<std::byte>` 通用于任意元素类型，包括可写情况。
+- `std::span&lt;char&gt;`/`std::span&lt;std::byte&gt;` 通用于任意元素类型，包括可写情况。
   在处理二进制协议/缓冲区时，`std::span` 更合适；处理不可变文本时，用 `string_view` 更语义化。
 
 ------
@@ -199,8 +199,8 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ## 代码小贴士
 
-1. 将函数参数写成 `std::span<const T>`，以表达只读意图。
-2. 若想允许传入大小为 N 的 buffer，但不更改逻辑，可接受 `std::span<T, N>`（静态 extent）。
+1. 将函数参数写成 `std::span&lt;const T&gt;`，以表达只读意图。
+2. 若想允许传入大小为 N 的 buffer，但不更改逻辑，可接受 `std::span&lt;T, N&gt;`（静态 extent）。
 3. 使用 `subspan`, `first`, `last` 构造子视图，而非手动计算指针偏移。
 4. 在公共 API 文档里明确说明：**span 不负责生命周期管理**。
 
@@ -208,7 +208,7 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ## 速查 API
 
-`s` 为 `std::span<T>`：
+`s` 为 `std::span&lt;T&gt;`：
 
 - `s.size()`, `s.size_bytes()`, `s.data()`, `s.empty()`
 - `s[i]`（无边界检查）、`s.front()`、`s.back()`

@@ -9,7 +9,7 @@ description: "从错误码到 expected，错误处理方案的演进与选择"
 
 ## 本章内容
 
-- [错误处理的演进：从错误码到类型安全](01-error-handling-evolution/)
-- [optional 用于错误处理](02-optional-error/)
-- [std::expected<T, E>：类型安全的错误传播](03-expected-error/)
-- [错误处理模式总结：选择指南与最佳实践](04-error-patterns/)
+- [错误处理的演进：从错误码到类型安全](01-error-handling-evolution)
+- [optional 用于错误处理](02-optional-error)
+- [std::expected<T, E>：类型安全的错误传播](03-expected-error)
+- [错误处理模式总结：选择指南与最佳实践](04-error-patterns)

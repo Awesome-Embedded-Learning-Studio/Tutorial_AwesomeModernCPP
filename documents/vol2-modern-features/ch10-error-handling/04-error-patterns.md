@@ -334,7 +334,7 @@ std::expected<void, HalError> send_command(const uint8_t* cmd, int len) {
 
 ### 2. 错误类型要轻量
 
-`expected<T, E>` 里的 `E` 应该尽量轻量——枚举、小型结构体、或者 `std::string_view`。避免用 `std::string` 或者包含堆分配成员的结构体作为错误类型，因为在错误传播过程中，错误对象可能被多次拷贝或移动。如果你的错误类型需要携带复杂信息，考虑用错误码 + 错误消息查找表的方式。
+`expected&lt;T, E&gt;` 里的 `E` 应该尽量轻量——枚举、小型结构体、或者 `std::string_view`。避免用 `std::string` 或者包含堆分配成员的结构体作为错误类型，因为在错误传播过程中，错误对象可能被多次拷贝或移动。如果你的错误类型需要携带复杂信息，考虑用错误码 + 错误消息查找表的方式。
 
 ### 3. 用 [[nodiscard]] 强制检查返回值
 
@@ -352,7 +352,7 @@ struct [[nodiscard]] Result {
 
 ### 4. 不要在 expected 的 E 里存异常
 
-`std::expected<T, std::exception_ptr>` 看起来很诱人——既能避免异常的开销，又能保留异常的丰富信息。但实际上这会让 `expected` 变得笨重，而且你需要在最终处理处重新抛出异常才能获取信息。更好的做法是定义一个轻量的错误类型。
+`std::expected&lt;T, std::exception_ptr&gt;` 看起来很诱人——既能避免异常的开销，又能保留异常的丰富信息。但实际上这会让 `expected` 变得笨重，而且你需要在最终处理处重新抛出异常才能获取信息。更好的做法是定义一个轻量的错误类型。
 
 ### 5. 错误处理要有层次
 

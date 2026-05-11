@@ -253,7 +253,7 @@ int factorial_tail(int n, int accumulator) {
 
 ## 第五步——可变参数函数
 
-有些函数的参数个数是不固定的——最典型的例子就是 `printf`。C 语言通过 `<stdarg.h>` 提供了可变参数函数的机制：
+有些函数的参数个数是不固定的——最典型的例子就是 `printf`。C 语言通过 `&lt;stdarg.h&gt;` 提供了可变参数函数的机制：
 
 ```c
 #include <stdarg.h>

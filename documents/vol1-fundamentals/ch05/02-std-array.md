@@ -67,7 +67,7 @@ int main()
 
 `size()`、`max_size()`、`empty()` 这几个函数对固定大小的 `std::array` 来说看起来有点多余。它们存在的意义在于统一接口——让 `std::array` 和 `std::vector` 等容器拥有相同的访问方式，泛型代码不需要关心底层到底是固定大小还是动态大小。
 
-> `std::array<int, 0>` 是合法的，此时 `empty()` 返回 `true`。但说实话，大小为 0 的 `std::array` 在实际代码里极少出现。如果你需要一个"可能为空"的容器，请用 `std::vector`。
+> `std::array&lt;int, 0&gt;` 是合法的，此时 `empty()` 返回 `true`。但说实话，大小为 0 的 `std::array` 在实际代码里极少出现。如果你需要一个"可能为空"的容器，请用 `std::vector`。
 
 ## 访问元素
 
@@ -158,7 +158,7 @@ arr2[0] = 99
 
 上面每一行都是 C 数组做不到的事。C 数组不能直接赋值（`a = b` 编译都过不了），不能作为函数返回值，作为函数参数时会退化成指针从而丢失长度。`std::array` 之所以能做到这些，是因为它是一个类，封装了内部的 C 数组，并提供了拷贝构造函数和拷贝赋值运算符。编译器知道如何复制这个对象，也知道它的大小——从根本上消除了数组退化问题。
 
-> 按值传递 `std::array` 会拷贝整个数组内容。如果数组很大（比如 `std::array<int, 10000>`），应该用 `const` 引用：`void process(const std::array<int, 10000>& arr)`。对于小数组，按值传递的开销基本可以忽略。
+> 按值传递 `std::array` 会拷贝整个数组内容。如果数组很大（比如 `std::array&lt;int, 10000&gt;`），应该用 `const` 引用：`void process(const std::array&lt;int, 10000&gt;& arr)`。对于小数组，按值传递的开销基本可以忽略。
 
 ## C 数组 vs std::array 正面交锋
 
@@ -166,7 +166,7 @@ arr2[0] = 99
 
 | 操作 | C 数组 | std::array |
 |------|--------|------------|
-| 声明 | `int arr[5];` | `std::array<int, 5> arr;` |
+| 声明 | `int arr[5];` | `std::array&lt;int, 5&gt; arr;` |
 | 获取大小 | `sizeof(arr)/sizeof(arr[0])`（传参后失效） | `arr.size()`（始终有效） |
 | 赋值 | 不支持 | `arr2 = arr1` |
 | 拷贝 | 手动 `memcpy` | `auto copy = arr;` |
@@ -296,13 +296,13 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 反转后: 96 92 88 85 78
 ```
 
-改进是全方位的：`print_stats` 的参数是 `const std::array<int, 5>&`，类型和大小一目了然；所有 STL 算法直接使用——排序、查找、反转、求极值，都是一行调用；而且永远不会遇到数组退化丢失长度的问题。
+改进是全方位的：`print_stats` 的参数是 `const std::array&lt;int, 5&gt;&`，类型和大小一目了然；所有 STL 算法直接使用——排序、查找、反转、求极值，都是一行调用；而且永远不会遇到数组退化丢失长度的问题。
 
-> 如果你在代码中看到 `void func(int arr[], int n)` 这种 C 风格签名，建议改成 `void func(const std::array<int, N>& arr)`（大小固定）或 `void func(std::span<int> arr)`（大小运行时确定）。两种方式都不会丢失长度信息，比手传 `n` 安全得多。
+> 如果你在代码中看到 `void func(int arr[], int n)` 这种 C 风格签名，建议改成 `void func(const std::array&lt;int, N&gt;& arr)`（大小固定）或 `void func(std::span&lt;int&gt; arr)`（大小运行时确定）。两种方式都不会丢失长度信息，比手传 `n` 安全得多。
 
 ## 小结
 
-- `std::array<T, N>` 在栈上分配，和 C 数组一样紧凑，但没有数组退化问题
+- `std::array&lt;T, N&gt;` 在栈上分配，和 C 数组一样紧凑，但没有数组退化问题
 - 访问元素用 `[]`（无检查）或 `at()`（越界抛异常），与 C API 交互用 `data()`
 - 拥有真正的值语义——可以拷贝、赋值、传参、返回，这是相比 C 数组最大的优势
 - `fill()`、`swap()` 和迭代器接口让它与 STL 算法无缝配合
@@ -312,7 +312,7 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 
 | 错误 | 原因 | 解决方法 |
 |------|------|----------|
-| 不初始化就读取 | 局部 `std::array` 不初始化时元素值未定义 | `std::array<int, N> arr = {};` 或 `arr.fill(0)` |
+| 不初始化就读取 | 局部 `std::array` 不初始化时元素值未定义 | `std::array&lt;int, N&gt; arr = {};` 或 `arr.fill(0)` |
 | `arr[arr.size()]` 越界 | 下标范围是 `[0, size())` | 用 `arr.at()` 做边界检查 |
 | 对大数组按值传参 | 拷贝整个数组内容 | 使用 `const` 引用传递 |
 | 试图动态改变大小 | `std::array` 大小编译期固定 | 需要动态大小请用 `std::vector` |
@@ -325,11 +325,11 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 
 ### 练习二：成绩排序与统计
 
-创建 `std::array<int, 8>` 存放一组成绩，使用 `std::sort` 排序，然后输出最高分、最低分和平均分。所有统计操作要求使用 `<algorithm>` 中的函数。
+创建 `std::array&lt;int, 8&gt;` 存放一组成绩，使用 `std::sort` 排序，然后输出最高分、最低分和平均分。所有统计操作要求使用 `&lt;algorithm&gt;` 中的函数。
 
 ### 练习三：判断元素是否存在
 
-编写 `bool contains(const std::array<int, 5>& arr, int value)`，用 `std::find` 判断数组中是否包含指定值。在 `main` 中分别测试存在和不存在的值。
+编写 `bool contains(const std::array&lt;int, 5&gt;& arr, int value)`，用 `std::find` 判断数组中是否包含指定值。在 `main` 中分别测试存在和不存在的值。
 
 ---
 

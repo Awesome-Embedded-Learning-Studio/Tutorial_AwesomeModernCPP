@@ -60,7 +60,7 @@ std::function<int()> f = [p = std::move(ptr)]() { return *p; };
 
 ### std::move_only_function 的解决方案
 
-`std::move_only_function`（C++23，定义在 `<functional>` 中）就是"move-only 版本的 `std::function`"。它删除了拷贝操作，只保留移动操作，从而不再要求存储的可调用对象可拷贝。
+`std::move_only_function`（C++23，定义在 `&lt;functional&gt;` 中）就是"move-only 版本的 `std::function`"。它删除了拷贝操作，只保留移动操作，从而不再要求存储的可调用对象可拷贝。
 
 ```cpp
 #include <functional>
@@ -82,7 +82,7 @@ int result = f();  // result == 42
 
 ### 构造：从可调用对象创建
 
-`std::move_only_function<R(Args...)>` 接受任何匹配签名 `R(Args...)` 的可调用对象——lambda、函数指针、仿函数，甚至另一个 `std::move_only_function`：
+`std::move_only_function&lt;R(Args...)&gt;` 接受任何匹配签名 `R(Args...)` 的可调用对象——lambda、函数指针、仿函数，甚至另一个 `std::move_only_function`：
 
 ```cpp
 // 从 lambda 构造
@@ -191,7 +191,7 @@ int main() {
 }
 ```
 
-在 GCC 上，典型值是 `std::function<void()>` 约 32 字节，`std::move_only_function<void()>` 也约 32 字节。两者大小差不多，因为它们使用类似的 SBO 策略。
+在 GCC 上，典型值是 `std::function&lt;void()&gt;` 约 32 字节，`std::move_only_function&lt;void()&gt;` 也约 32 字节。两者大小差不多，因为它们使用类似的 SBO 策略。
 
 ---
 
@@ -219,7 +219,7 @@ enum class Status : uint8_t {
 
 Chromium 没有使用标准库的类型擦除设施——它手写了一套 `BindState` 系统。对比一下两种方案的核心差异。
 
-Chromium 的 `BindState<Functor, BoundArgs...>` 是一个堆分配的对象，存储了可调用对象和所有绑定参数。`OnceCallback` 本身只持有一个指向 `BindState` 的智能指针（`scoped_refptr`），大小只有 8 字节——一个指针。所有状态都放在堆上的 `BindState` 里，回调对象本身只是一个"瘦代理"。
+Chromium 的 `BindState&lt;Functor, BoundArgs...&gt;` 是一个堆分配的对象，存储了可调用对象和所有绑定参数。`OnceCallback` 本身只持有一个指向 `BindState` 的智能指针（`scoped_refptr`），大小只有 8 字节——一个指针。所有状态都放在堆上的 `BindState` 里，回调对象本身只是一个"瘦代理"。
 
 我们的方案用 `std::move_only_function` 替代了整个 `BindState` 层——它内部实现了类型擦除和 SBO，省去了我们手写函数指针表、SBO 缓冲区、移动/析构操作的工作。代价是对象大小从 8 字节膨胀到约 32 字节（`std::move_only_function` 本身的大小），再加上 `Status` 枚举和可选的 `CancelableToken` 指针，整个 `OnceCallback` 大约 56-64 字节。
 

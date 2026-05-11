@@ -137,7 +137,7 @@ Copyright (C) 2023 Free Software Foundation, Inc.
 This is free software; see the source for copying conditions.  There is no warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```
 
-这里有个坑需要提前预警一下。Arch 上装完 `arm-none-eabi-gcc` 之后，你可能会发现编译时找不到 `<stdint.h>` 这类头文件，或者链接时报 `cannot read spec file 'nano.specs'`。原因都是同一个 —— Arch 的 `arm-none-eabi-gcc` 包不包含 newlib，你需要额外装一个 AUR 上的包：
+这里有个坑需要提前预警一下。Arch 上装完 `arm-none-eabi-gcc` 之后，你可能会发现编译时找不到 `&lt;stdint.h&gt;` 这类头文件，或者链接时报 `cannot read spec file 'nano.specs'`。原因都是同一个 —— Arch 的 `arm-none-eabi-gcc` 包不包含 newlib，你需要额外装一个 AUR 上的包：
 
 ```bash
 yay -S arm-none-eabi-newlib
@@ -145,7 +145,7 @@ yay -S arm-none-eabi-newlib
 
 如果你没有装 `yay`，那得先装这个 AUR helper，或者手动从 AUR 克隆 PKGBUILD 来装。这个过程我就不展开了，用 Arch 的人应该都熟。
 
-装完 newlib 之后，`<stdint.h>`、`<string.h>` 这些头文件就有了，`nano.specs` 和 `nosys.specs` 也能正常使用。这两个 specs 文件是干嘛的？`nano.specs` 告诉链接器用 newlib-nano（精简版 C 库），`nosys.specs` 则提供一个空的系统调用实现 —— 毕竟裸机环境没有操作系统，像 `read()`、`write()` 这类函数根本没法实现，用 nosys.specs 能让链接时不报错。
+装完 newlib 之后，`&lt;stdint.h&gt;`、`&lt;string.h&gt;` 这些头文件就有了，`nano.specs` 和 `nosys.specs` 也能正常使用。这两个 specs 文件是干嘛的？`nano.specs` 告诉链接器用 newlib-nano（精简版 C 库），`nosys.specs` 则提供一个空的系统调用实现 —— 毕竟裸机环境没有操作系统，像 `read()`、`write()` 这类函数根本没法实现，用 nosys.specs 能让链接时不报错。
 
 ---
 

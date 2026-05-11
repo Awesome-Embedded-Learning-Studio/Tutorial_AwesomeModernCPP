@@ -60,7 +60,7 @@ template <gpio::GpioPort PORT, uint16_t PIN,
 class Button : public gpio::GPIO<PORT, PIN>;
 ```
 
-结构几乎一样——都继承 `GPIO<PORT, PIN>`，都用非类型模板参数（NTTP）编码硬件配置。Button 多了一个 `PULL` 参数，因为输入模式需要明确指定上下拉方向，而输出模式不需要。
+结构几乎一样——都继承 `GPIO&lt;PORT, PIN&gt;`，都用非类型模板参数（NTTP）编码硬件配置。Button 多了一个 `PULL` 参数，因为输入模式需要明确指定上下拉方向，而输出模式不需要。
 
 ---
 
@@ -88,7 +88,7 @@ error: static assertion failed: Pin number must be <= 15
 
 不用等到烧录到板子上才发现引脚号写错了。这就是编译时防御的价值。
 
-⚠️ 注意 `static_assert` 的位置——它在类体内部、`public` 之前。这意味着它在模板实例化时（也就是你写 `Button<GpioPort::A, GPIO_PIN_0>` 的时候）执行。只有被实际使用的模板实例才会触发检查。
+⚠️ 注意 `static_assert` 的位置——它在类体内部、`public` 之前。这意味着它在模板实例化时（也就是你写 `Button&lt;GpioPort::A, GPIO_PIN_0&gt;` 的时候）执行。只有被实际使用的模板实例才会触发检查。
 
 ---
 
@@ -207,9 +207,9 @@ class Button : public gpio::GPIO<PORT, PIN> {
 };
 ```
 
-`sizeof(Button<GpioPort::A, GPIO_PIN_0>)` 的组成：
+`sizeof(Button&lt;GpioPort::A, GPIO_PIN_0&gt;)` 的组成：
 
-- 基类 `GPIO<PORT, PIN>` 没有成员变量（所有操作都是通过模板参数在编译时确定的），`sizeof` 为 1（空基类优化后通常为 0）
+- 基类 `GPIO&lt;PORT, PIN&gt;` 没有成员变量（所有操作都是通过模板参数在编译时确定的），`sizeof` 为 1（空基类优化后通常为 0）
 - 派生类成员：`State` (4B) + 3 个 `bool` (3B) + `uint32_t` (4B) + 对齐 ≈ 12 字节
 
 12 字节的状态存储。在一个 20KB RAM 的 STM32F103C8T6 上，这什么都不算。

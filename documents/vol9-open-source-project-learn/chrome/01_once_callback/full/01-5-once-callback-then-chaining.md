@@ -116,7 +116,7 @@ auto then(Next&& next) &&
 
 末尾的 `&&` 使其成为右值限定的成员函数——只能通过 `std::move(cb).then(next)` 或临时对象 `.then(next)` 调用。如果调用方写了 `cb.then(next)`（左值调用），编译器直接报"没有匹配的重载函数"。这是表达消费语义的另一种方式——和 `run()` 用 deducing this 不同，`then()` 不需要区分左值和右值给出不同的错误信息，直接用 ref-qualifier 更简洁。
 
-### std::decay_t<Next>：退化去掉引用
+### std::decay_t\<Next\>：退化去掉引用
 
 ```cpp
 using NextType = std::decay_t<Next>;
@@ -134,7 +134,7 @@ using NextType = std::decay_t<Next>;
 using NextRet = std::invoke_result_t<NextType, ReturnType>;
 ```
 
-`std::invoke_result_t<NextType, ReturnType>` 在编译期推导"把 `ReturnType` 类型的值传给 `NextType` 类型的可调用对象，返回什么类型"。这就是新回调的返回类型。
+`std::invoke_result_t&lt;NextType, ReturnType&gt;` 在编译期推导"把 `ReturnType` 类型的值传给 `NextType` 类型的可调用对象，返回什么类型"。这就是新回调的返回类型。
 
 lambda 内部的执行流程：先调用原回调拿到中间结果 `mid`，再把 `mid` 传给后续回调。
 
@@ -149,7 +149,7 @@ return std::invoke(std::move(cont), std::move(mid));
 using NextRet = std::invoke_result_t<NextType>;
 ```
 
-`std::invoke_result_t<NextType>` 推导的是"不带参数调用 `NextType`，返回什么类型"。
+`std::invoke_result_t&lt;NextType&gt;` 推导的是"不带参数调用 `NextType`，返回什么类型"。
 
 lambda 内部的执行流程：先执行原回调（不拿返回值），再执行后续回调（不传参数）。
 
@@ -166,9 +166,9 @@ return std::invoke(std::move(cont));
 
 `self = std::move(*this)` 是整个所有权链的关键——它把当前 OnceCallback 对象的**所有内容**（`func_`、`status_`、`token_`）移动到 lambda 的闭包对象里。移动之后，当前对象进入"被移走"的状态——`func_` 和 `token_` 已经被搬走了。
 
-`cont = std::forward<Next>(next)` 把后续回调也搬进 lambda 闭包。`std::forward` 保持 `next` 的值类别——右值就移动，左值就拷贝。
+`cont = std::forward&lt;Next&gt;(next)` 把后续回调也搬进 lambda 闭包。`std::forward` 保持 `next` 的值类别——右值就移动，左值就拷贝。
 
-这个 lambda 又被传给一个新的 `OnceCallback<NextRet(FuncArgs...)>` 构造函数，存入新回调的 `std::move_only_function` 里。`move_only_function` 的类型擦除能力保证了不管 lambda 的实际类型是什么，都能被统一存储。
+这个 lambda 又被传给一个新的 `OnceCallback&lt;NextRet(FuncArgs...)&gt;` 构造函数，存入新回调的 `std::move_only_function` 里。`move_only_function` 的类型擦除能力保证了不管 lambda 的实际类型是什么，都能被统一存储。
 
 ---
 

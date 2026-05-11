@@ -37,8 +37,8 @@ concept UartGpioInitializer =
 
 这个 Concept 要求 `F` 满足两个条件：
 
-1. **`std::invocable<F>`**：`F` 可以无参数调用（`f()`）。不接受带参数的函数。
-2. **`std::is_nothrow_invocable_v<F>`**：调用 `F` 不会抛出异常。
+1. **`std::invocable&lt;F&gt;`**：`F` 可以无参数调用（`f()`）。不接受带参数的函数。
+2. **`std::is_nothrow_invocable_v&lt;F&gt;`**：调用 `F` 不会抛出异常。
 
 然后在 `set_gpio_init()` 中使用这个 Concept 作为约束：
 
@@ -53,7 +53,7 @@ static void set_gpio_init(F fn) noexcept { gpio_init_ = fn; }
 
 我们的项目通过 `-fno-exceptions` 禁用了异常。如果 GPIO 初始化函数允许抛出异常，而 `init()` 在内部调用它时异常被触发，程序会调用 `std::terminate()` 直接终止——因为没有异常处理机制来捕获它。
 
-`std::is_nothrow_invocable_v<F>` 在编译时检查：如果 `F` 的 `operator()` 或函数签名没有 `noexcept` 声明，Concept 检查可能仍然通过（因为编译器在禁用异常时不会严格区分 nothrow 和可能抛出）。但明确声明 Concept 约束至少表达了设计意图："GPIO 初始化不应该抛出异常。"
+`std::is_nothrow_invocable_v&lt;F&gt;` 在编译时检查：如果 `F` 的 `operator()` 或函数签名没有 `noexcept` 声明，Concept 检查可能仍然通过（因为编译器在禁用异常时不会严格区分 nothrow 和可能抛出）。但明确声明 Concept 约束至少表达了设计意图："GPIO 初始化不应该抛出异常。"
 
 在我们的代码中，`usart1_gpio_init()` 确实被声明为 `noexcept`：
 
@@ -93,7 +93,7 @@ class UartManager {
 
 ### 删除所有构造函数
 
-五个 `= delete` 声明确保了这个类不可能被实例化、拷贝或移动。任何尝试创建 `UartManager<Usart1> mgr;` 的代码都会编译报错。这不是过度防御——因为 `UartManager` 没有实例状态（`UartDriver` 的状态都在 `static inline` 成员中），创建实例没有任何意义。
+五个 `= delete` 声明确保了这个类不可能被实例化、拷贝或移动。任何尝试创建 `UartManager&lt;Usart1&gt; mgr;` 的代码都会编译报错。这不是过度防御——因为 `UartManager` 没有实例状态（`UartDriver` 的状态都在 `static inline` 成员中），创建实例没有任何意义。
 
 ### driver()：Meyer's Singleton
 
@@ -108,7 +108,7 @@ static auto driver() -> Driver& {
 
 `static Driver drv` 是一个函数内的静态局部变量。C++ 保证它只被初始化一次（第一次调用 `driver()` 时），后续调用直接返回已有的实例。而且初始化是线程安全的（C++11 保证）——虽然在我们的 bare-metal 环境中没有多线程，但这个保证也没有运行时代价。
 
-由于 `Driver`（即 `UartDriver<INSTANCE>`）没有实例数据成员，`sizeof(Driver)` 是 1。`static Driver drv` 占用 1 字节的 BSS 空间——几乎可以忽略。
+由于 `Driver`（即 `UartDriver&lt;INSTANCE&gt;`）没有实例数据成员，`sizeof(Driver)` 是 1。`static Driver drv` 占用 1 字节的 BSS 空间——几乎可以忽略。
 
 ### handle()：extern "C" 的桥梁
 

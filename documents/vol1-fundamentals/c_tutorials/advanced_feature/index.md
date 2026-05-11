@@ -13,6 +13,6 @@
 - [嵌入式 C 编程模式](07-embedded-c-patterns.md)
 - [可复用 C 代码设计](08-reusable-c-code.md)
 
-!!! info "阅读建议"
-
-    进阶专题之间没有严格的前后依赖，可以按需阅读。每篇文章的 `prerequisites` 字段标注了推荐的前置知识。
+::: info 阅读建议
+进阶专题之间没有严格的前后依赖，可以按需阅读。每篇文章的 `prerequisites` 字段标注了推荐的前置知识。
+:::

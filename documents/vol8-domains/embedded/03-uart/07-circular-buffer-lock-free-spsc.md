@@ -67,7 +67,7 @@ class CircularBuffer {
     static constexpr size_t next(size_t v) noexcept { return (v + 1) & (2 * N - 1); }
 ```
 
-`static_assert` 在编译时强制检查 N 必须是 2 的幂。如果你写了 `CircularBuffer<100>`，编译直接报错。这比运行时检查好得多——你不会在烧录到板子之后才发现缓冲区大小选错了。
+`static_assert` 在编译时强制检查 N 必须是 2 的幂。如果你写了 `CircularBuffer&lt;100&gt;`，编译直接报错。这比运行时检查好得多——你不会在烧录到板子之后才发现缓冲区大小选错了。
 
 `next(v)` 也用了一个巧妙的设计。它不直接对 v 加 1 然后取模，而是用 `(v + 1) & (2 * N - 1)`。这意味着 head 和 tail 的实际取值范围是 0 到 2N-1，而不是 0 到 N-1。这样做的好处是 `size()` 计算更简单：`head - tail` 不需要处理环绕，因为 head 和 tail 不会相互"绕过"（它们是单调递增的，只是通过 `mask()` 映射到实际的数组下标）。
 
@@ -137,7 +137,7 @@ class CircularBuffer {
 
 ### size()
 
-当前缓冲区中的数据量。当 `head_ >= tail_` 时（没发生环绕），直接 `head_ - tail_`。当 `head_ < tail_` 时（head 绕过了 tail），数据量是 head 前面的部分加上 tail 后面的部分。
+当前缓冲区中的数据量。当 `head_ &gt;= tail_` 时（没发生环绕），直接 `head_ - tail_`。当 `head_ &lt; tail_` 时（head 绕过了 tail），数据量是 head 前面的部分加上 tail 后面的部分。
 
 不过，由于我们使用了 `next()` 的设计（head 和 tail 的范围是 0 到 2N-1），实际上 `head_ - tail_` 在大多数情况下就足够了——但为了防御性编程，代码还是处理了两种情况。
 
@@ -178,7 +178,7 @@ volatile size_t tail_ = 0;
 
 但如果主循环在做耗时操作（比如处理一个复杂命令时），可能有几十个字节在缓冲区里排队。128 字节大约能缓冲 1.1 毫秒的数据。对于绝大多数交互场景（人打字、终端发送命令），1.1 毫秒的缓冲已经足够了。
 
-如果真的不够，改模板参数就行——`CircularBuffer<256>` 或 `CircularBuffer<512>`。只要还是 2 的幂，编译时的 `static_assert` 就会通过，性能不会有任何变化。
+如果真的不够，改模板参数就行——`CircularBuffer&lt;256&gt;` 或 `CircularBuffer&lt;512&gt;`。只要还是 2 的幂，编译时的 `static_assert` 就会通过，性能不会有任何变化。
 
 ---
 

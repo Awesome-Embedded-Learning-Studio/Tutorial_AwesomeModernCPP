@@ -251,7 +251,7 @@ add_compile_options(
 )
 ```
 
-这个 `$<$<COMPILE_LANGUAGE:CXX>:...>` 语法叫做 **generator expression**，是 CMake 的条件表达式，表示"只有在编译 C++ 文件时才应用这些选项"。你可能会问：为什么不直接把这些选项和公共选项放一起？
+这个 `$&lt;$&lt;COMPILE_LANGUAGE:CXX&gt;:...&gt;` 语法叫做 **generator expression**，是 CMake 的条件表达式，表示"只有在编译 C++ 文件时才应用这些选项"。你可能会问：为什么不直接把这些选项和公共选项放一起？
 
 问题在于：`-fno-exceptions` 和 `-fno-rtti` 是 C++ 特定的选项，GCC 在编译 C 文件时会警告这些选项对 C 语言无效。虽然只是 warning 不会导致编译失败，但看满屏的黄色警告会强迫症发作。更严重的是，某些工具链（比如某些版本的 ARM GCC）会在遇到这些选项时直接报错。
 
@@ -290,7 +290,7 @@ add_link_options(
 
 首先是 MEMORY 定义：
 
-```ld
+```c
 MEMORY
 {
   FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 128K
@@ -302,7 +302,7 @@ MEMORY
 
 接下来是 SECTIONS 定义，这是最关键的部分：
 
-```ld
+```c
 ENTRY(Reset_Handler)
 
 SECTIONS
@@ -331,13 +331,13 @@ SECTIONS
 
 `.text` 段存放所有代码和只读数据（比如字符串字面量）。它们都放在 Flash 里。
 
-`.data` 段存放已初始化的全局变量和静态变量，比如 `int count = 0;`。这里有个很关键的语法：`> RAM AT > FLASH`。它的意思是：这些变量最终要放在 RAM 里（因为运行时需要修改），但它们的初始值存放在 Flash 里。为什么？因为 Flash 里的内容断电后不会丢失，而 RAM 断电后数据就没了。启动代码会在 `Reset_Handler` 里把 Flash 里的初始值复制到 RAM 里，这个过程叫"data 段初始化"。
+`.data` 段存放已初始化的全局变量和静态变量，比如 `int count = 0;`。这里有个很关键的语法：`&gt; RAM AT &gt; FLASH`。它的意思是：这些变量最终要放在 RAM 里（因为运行时需要修改），但它们的初始值存放在 Flash 里。为什么？因为 Flash 里的内容断电后不会丢失，而 RAM 断电后数据就没了。启动代码会在 `Reset_Handler` 里把 Flash 里的初始值复制到 RAM 里，这个过程叫"data 段初始化"。
 
-如果忘记加 `AT > FLASH`，链接器会认为初始值就放在 RAM 里，但 RAM 里断电后是空的，结果就是所有变量初始值都是错的。我见过有人在调试时发现全局变量总是随机值，最后查出来是链接脚本写错了。
+如果忘记加 `AT &gt; FLASH`，链接器会认为初始值就放在 RAM 里，但 RAM 里断电后是空的，结果就是所有变量初始值都是错的。我见过有人在调试时发现全局变量总是随机值，最后查出来是链接脚本写错了。
 
 最后是堆栈设置：
 
-```ld
+```c
 _stack_start = ORIGIN(RAM) + LENGTH(RAM);
 _stack_end = _stack_start - 0x400;  /* 1KB stack */
 
@@ -393,7 +393,7 @@ text    data     bss     dec     hex filename
 
 **警告：`ignoring option '-fno-rtti' because it is not a valid option for C language`**
 
-你把 C++ 专属选项加到了公共编译选项里，导致编译 C 文件时 GCC 警告。用 generator expression 把这些选项包起来：`"$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>"`。
+你把 C++ 专属选项加到了公共编译选项里，导致编译 C 文件时 GCC 警告。用 generator expression 把这些选项包起来：`"$&lt;$&lt;COMPILE_LANGUAGE:CXX&gt;:-fno-rtti&gt;"`。
 
 现在你可以试着运行 `./build.sh`，如果一切顺利，你应该能在 `build/` 目录下看到 `.elf` 和 `.bin` 文件，终端里会显示固件的大小信息。如果有报错，对照上面的错误列表一个个排查。
 

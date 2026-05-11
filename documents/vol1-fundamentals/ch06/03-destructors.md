@@ -138,7 +138,7 @@ int main() {
 === end ===
 ```
 
-构造是 `local -> member_a -> member_b -> Container body`，析构严格反过来——"后构造的先析构"保证了资源以正确的层次被释放。
+构造是 `local -&gt; member_a -&gt; member_b -&gt; Container body`，析构严格反过来——"后构造的先析构"保证了资源以正确的层次被释放。
 
 ## RAII——C++ 资源管理的核心思想
 
@@ -369,7 +369,7 @@ cat raii_demo.txt
 
 ## 练习
 
-**练习 1：作用域日志计时器**。写一个 `ScopedLogger` 类，构造时记录时间戳（格式 `HH:MM:SS`），析构时打印"elapsed X seconds"。提示：使用 `<ctime>` 中的 `std::time` 和 `std::localtime`。
+**练习 1：作用域日志计时器**。写一个 `ScopedLogger` 类，构造时记录时间戳（格式 `HH:MM:SS`），析构时打印"elapsed X seconds"。提示：使用 `&lt;ctime&gt;` 中的 `std::time` 和 `std::localtime`。
 
 **练习 2：简易文件句柄**。实现一个 `FileHandle` 类，构造时打开文件，析构时自动关闭。提供 `read_line()` 方法（返回 `std::string`）和 `is_valid()` 方法。用 Rule of Three 的思路想想：这个类需要禁用拷贝吗？为什么？
 

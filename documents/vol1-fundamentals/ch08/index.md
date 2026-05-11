@@ -9,8 +9,8 @@ description: "深入理解继承体系、虚函数、抽象类和多态机制"
 
 ## 本章内容
 
-- [单继承](01-single-inheritance/)
-- [虚函数与多态](02-virtual-functions/)
-- [抽象类与接口](03-abstract-classes/)
-- [多继承与虚继承](04-multiple-inheritance/)
-- [OOP 实战](05-oop-in-practice/)
+- [单继承](01-single-inheritance)
+- [虚函数与多态](02-virtual-functions)
+- [抽象类与接口](03-abstract-classes)
+- [多继承与虚继承](04-multiple-inheritance)
+- [OOP 实战](05-oop-in-practice)

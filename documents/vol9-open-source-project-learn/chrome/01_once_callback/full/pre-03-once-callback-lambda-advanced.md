@@ -123,7 +123,7 @@ self = std::move(*this)
 cont = std::forward<Next>(next)
 ```
 
-`std::forward<Next>(next)` 保持 `next` 的值类别——如果传入的是右值，它就是移动；如果传入的是左值，它就是拷贝。通常 `then()` 接受的都是临时 lambda（右值），所以这里是移动。
+`std::forward&lt;Next&gt;(next)` 保持 `next` 的值类别——如果传入的是右值，它就是移动；如果传入的是左值，它就是拷贝。通常 `then()` 接受的都是临时 lambda（右值），所以这里是移动。
 
 ### 所有权链
 
@@ -179,7 +179,7 @@ auto bind_new(F&& f, BoundArgs&&... args) {
 
 ### 手动展开一个具体例子
 
-假设我们调用 `bind_new([](int a, std::string b, int c) { ... }, 10, std::string("hello"))`，此时 `BoundArgs = {int, std::string}`。编译器把包展开 `...bound = std::forward<BoundArgs>(args)` 展开成：
+假设我们调用 `bind_new([](int a, std::string b, int c) { ... }, 10, std::string("hello"))`，此时 `BoundArgs = {int, std::string}`。编译器把包展开 `...bound = std::forward&lt;BoundArgs&gt;(args)` 展开成：
 
 ```cpp
 [f = std::forward<F>(f),
@@ -196,7 +196,7 @@ auto bind_new(F&& f, BoundArgs&&... args) {
 
 ### 为什么用 std::move 而不是 std::forward
 
-你可能注意到 lambda 内部用的是 `std::move(bound)...` 而不是 `std::forward<BoundArgs>(bound)...`。原因是 lambda 是 `mutable` 的，捕获变量 `bound` 在 lambda 内部是**左值**（具名变量永远是左值）。由于我们希望绑定参数在回调被调用时以右值的方式传出（触发移动语义），所以用 `std::move` 把它们转成右值。如果用 `std::forward`，因为 `bound` 已经是左值了，`std::forward` 只会返回左值引用——移动语义就丢失了。
+你可能注意到 lambda 内部用的是 `std::move(bound)...` 而不是 `std::forward&lt;BoundArgs&gt;(bound)...`。原因是 lambda 是 `mutable` 的，捕获变量 `bound` 在 lambda 内部是**左值**（具名变量永远是左值）。由于我们希望绑定参数在回调被调用时以右值的方式传出（触发移动语义），所以用 `std::move` 把它们转成右值。如果用 `std::forward`，因为 `bound` 已经是左值了，`std::forward` 只会返回左值引用——移动语义就丢失了。
 
 ---
 
@@ -216,7 +216,7 @@ f(v);       // x 绑定到左值
 f(10);      // x 绑定到右值
 ```
 
-`auto&&...` 的组合意味着这个 lambda 可以接受任意数量、任意类型的参数，同时保持每个参数的值类别信息。配合 `std::forward<decltype(call_args)>(call_args)...`，这些参数可以被完美转发到最终的可调用对象。
+`auto&&...` 的组合意味着这个 lambda 可以接受任意数量、任意类型的参数，同时保持每个参数的值类别信息。配合 `std::forward&lt;decltype(call_args)&gt;(call_args)...`，这些参数可以被完美转发到最终的可调用对象。
 
 ---
 

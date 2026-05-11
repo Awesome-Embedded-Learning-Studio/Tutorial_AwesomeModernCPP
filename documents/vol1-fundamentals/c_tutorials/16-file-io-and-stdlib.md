@@ -176,7 +176,7 @@ int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
 
 ## 第四步——用 errno 做错误处理
 
-`errno`（`<errno.h>`）是全局错误码变量。函数执行成功时**不会**清零 `errno`，只有出错时才设置。正确做法是先检查返回值确认出错了，再读 `errno`。
+`errno`（`&lt;errno.h&gt;`）是全局错误码变量。函数执行成功时**不会**清零 `errno`，只有出错时才设置。正确做法是先检查返回值确认出错了，再读 `errno`。
 
 `perror` 把你传入的字符串和系统错误信息拼接输出：
 
@@ -206,21 +206,21 @@ int main(int argc, char* argv[]) {
 
 ## 标准库速查
 
-### `<stdlib.h>`：通用工具
+### `&lt;stdlib.h&gt;`：通用工具
 
 `atoi` 简单但无错误检测，`strtol` 更安全（可检测溢出和部分解析）。`qsort` 快速排序、`bsearch` 二分查找，都通过函数指针比较。`rand`/`srand` 伪随机数的随机质量较差，够用但别依赖它做安全相关的事。
 
-### `<math.h>`：数学函数
+### `&lt;math.h&gt;`：数学函数
 
 三角函数（sin/cos/tan）、指数对数（pow/sqrt/log/exp）、取整（ceil/floor/round）、绝对值（fabs）。都有 float（f 后缀）、double、long double（l 后缀）三个版本。
 
 > ⚠️ **踩坑预警**：链接数学库在 GCC/Linux 上需要 `-lm` 选项。如果你忘了加这个选项，编译器会报 `undefined reference to 'sin'` 之类的错误——代码本身没问题，就是少了个链接选项。
 
-### `<ctype.h>`：字符分类
+### `&lt;ctype.h&gt;`：字符分类
 
 `isalpha`/`isdigit`/`isspace`/`isalnum`/`isupper`/`islower` 判断字符类别，`tolower`/`toupper` 大小写转换。参数必须先强转为 `unsigned char`，否则有符号 char 的负值会导致未定义行为。
 
-### `<assert.h>`：断言宏
+### `&lt;assert.h&gt;`：断言宏
 
 ```c
 assert(arr != NULL);   // Debug: 条件为假时终止程序
@@ -228,9 +228,9 @@ assert(arr != NULL);   // Debug: 条件为假时终止程序
 
 定义 `NDEBUG` 后所有 assert 完全移除。用于抓编程错误，不是处理运行时错误。
 
-### `<stddef.h>`：基础类型
+### `&lt;stddef.h&gt;`：基础类型
 
-`size_t`（对象大小）、`NULL`（空指针）、`offsetof`（结构体偏移量）、`ptrdiff_t`（指针差值）。`size_t` 是无符号的，反向遍历时注意下溢：`for (size_t i = count; i-- > 0; )` 是安全写法。
+`size_t`（对象大小）、`NULL`（空指针）、`offsetof`（结构体偏移量）、`ptrdiff_t`（指针差值）。`size_t` 是无符号的，反向遍历时注意下溢：`for (size_t i = count; i-- &gt; 0; )` 是安全写法。
 
 ## C++ 衔接
 
@@ -252,9 +252,9 @@ std::string s = std::format("{} is {} years old", name, age);
 
 ### std::span（C++17）
 
-`std::span<const int>` 把指针+长度绑在一起，解决了数组退化丢失长度信息的老问题。
+`std::span&lt;const int&gt;` 把指针+长度绑在一起，解决了数组退化丢失长度信息的老问题。
 
-### `<system_error>`
+### `&lt;system_error&gt;`
 
 `std::error_code` 是值类型，线程安全，比全局 `errno` 安全得多。
 

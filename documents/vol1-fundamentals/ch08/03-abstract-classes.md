@@ -309,7 +309,7 @@ int main() {
 
 ### 练习一：设计 IComparable 接口
 
-定义一个 `IComparable<T>` 接口模板，包含一个纯虚函数 `compare_to`。然后实现一个 `Student` 类，按学号排序。
+定义一个 `IComparable&lt;T&gt;` 接口模板，包含一个纯虚函数 `compare_to`。然后实现一个 `Student` 类，按学号排序。
 
 ```cpp
 template <typename T>
@@ -323,7 +323,7 @@ public:
 
 ### 练习二：插件系统框架
 
-设计一个简单的插件框架：定义一个 `IPlugin` 接口（包含 `name()`、`version()`、`initialize()` 和 `shutdown()` 四个纯虚函数），然后实现两到三个具体的插件类。编写一个 `PluginManager`，用 `std::vector<IPlugin*>` 管理所有插件，并提供 `load_all()` 和 `unload_all()` 方法。这个练习能帮你把抽象类、接口和运行时多态综合起来用一遍。
+设计一个简单的插件框架：定义一个 `IPlugin` 接口（包含 `name()`、`version()`、`initialize()` 和 `shutdown()` 四个纯虚函数），然后实现两到三个具体的插件类。编写一个 `PluginManager`，用 `std::vector&lt;IPlugin*&gt;` 管理所有插件，并提供 `load_all()` 和 `unload_all()` 方法。这个练习能帮你把抽象类、接口和运行时多态综合起来用一遍。
 
 ## 小结
 

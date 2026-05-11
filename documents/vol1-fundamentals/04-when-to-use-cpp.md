@@ -247,7 +247,7 @@ public:
 
 由于大小在编译期确定，编译器可以做充分优化。
 
-⚠️ 但有一个坑需要注意：每一个模板参数的不同组合都会生成一份独立的代码。如果你实例化了 `CircularBuffer<uint8_t, 64>` 和 `CircularBuffer<uint8_t, 128>`，Flash 里就会有两份几乎一样的代码。所以模板要用，但别滥用。
+⚠️ 但有一个坑需要注意：每一个模板参数的不同组合都会生成一份独立的代码。如果你实例化了 `CircularBuffer&lt;uint8_t, 64&gt;` 和 `CircularBuffer&lt;uint8_t, 128&gt;`，Flash 里就会有两份几乎一样的代码。所以模板要用，但别滥用。
 
 ### SFINAE 和 if constexpr：能用但别搞复杂
 
@@ -408,7 +408,7 @@ Result read_sensor() {
 
 `vector`、`map`、`unordered_map`、`string`——这些容器都依赖动态内存分配，在嵌入式环境里不适用。`shared_ptr` 的引用计数涉及原子操作，在某些平台上开销也不小。`iostream` 更是应该完全避免，一个简单的 `cout` 可能引入 50KB 以上的代码。
 
-但标准库不是全都不能用。`std::array`、`<algorithm>` 里的算法（注意有些会分配临时内存）、`<type_traits>` 这类编译期工具、`<utility>` 里的 `move` 和 `forward`——这些都是零开销或低开销的好东西。
+但标准库不是全都不能用。`std::array`、`&lt;algorithm&gt;` 里的算法（注意有些会分配临时内存）、`&lt;type_traits&gt;` 这类编译期工具、`&lt;utility&gt;` 里的 `move` 和 `forward`——这些都是零开销或低开销的好东西。
 
 如果确实需要容器，可以看看 Embedded Template Library（ETL），它提供了不使用动态内存的固定大小容器，接口和 STL 兼容。
 

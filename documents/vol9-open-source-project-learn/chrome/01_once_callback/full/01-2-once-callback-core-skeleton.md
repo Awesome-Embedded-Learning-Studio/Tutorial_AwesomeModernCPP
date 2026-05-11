@@ -65,7 +65,7 @@ public:
 } // namespace tamcpp::chrome
 ```
 
-当你写 `OnceCallback<int(int, int)>` 时，编译器把 `int(int, int)` 匹配到主模板的 `FuncSignature`，然后发现偏特化能把它拆成 `ReturnType = int`、`FuncArgs = {int, int}`，于是选择偏特化版本。`FuncSig` 是一个类型别名，保存了完整的函数签名——后面声明 `std::move_only_function<FuncSig>` 时会用到。
+当你写 `OnceCallback&lt;int(int, int)&gt;` 时，编译器把 `int(int, int)` 匹配到主模板的 `FuncSignature`，然后发现偏特化能把它拆成 `ReturnType = int`、`FuncArgs = {int, int}`，于是选择偏特化版本。`FuncSig` 是一个类型别名，保存了完整的函数签名——后面声明 `std::move_only_function&lt;FuncSig&gt;` 时会用到。
 
 ---
 
@@ -149,7 +149,7 @@ public:
 
 让我们逐个理解这些构造函数。
 
-**模板构造函数**是最常用的——当你写 `OnceCallback<int(int)>([](int x) { return x; })` 时调用的就是这个。`Functor` 被推导为 lambda 的闭包类型，`requires not_the_same_t` 确保当传入的是 `OnceCallback` 本身时模板被排除（让移动构造函数来处理）。`std::move(function)` 把传入的可调用对象移入 `func_`，`status_` 设为 `kValid`。
+**模板构造函数**是最常用的——当你写 `OnceCallback&lt;int(int)&gt;([](int x) { return x; })` 时调用的就是这个。`Functor` 被推导为 lambda 的闭包类型，`requires not_the_same_t` 确保当传入的是 `OnceCallback` 本身时模板被排除（让移动构造函数来处理）。`std::move(function)` 把传入的可调用对象移入 `func_`，`status_` 设为 `kValid`。
 
 **默认构造函数**创建一个空的 OnceCallback——`status_` 是 `kEmpty`（由成员初始化器的默认值决定），`func_` 和 `token_` 都是空的。
 
@@ -215,7 +215,7 @@ ReturnType OnceCallback<ReturnType(FuncArgs...)>::impl_run(FuncArgs... args) {
 
 先看消费顺序——`impl_run` 先把 `func_` move 出来作为局部变量 `functor`，然后把 `func_` 置空、`status_` 设为 kConsumed，最后执行 `functor`。这个顺序很重要：先把可调用对象拿出去、状态标记好，再执行。即使可调用对象内部抛出异常，`status_` 也已经是 `kConsumed` 了，回调不会处于不一致的状态。
 
-再看 `if constexpr`——void 返回类型不能用常规方式赋值和返回。`if constexpr (std::is_void_v<ReturnType>)` 在编译期选择分支，void 的情况走"调用但不赋值"的路径，非 void 的情况走"调用并赋值给 return"的路径。这是我们速查篇里讲过的标准模式。
+再看 `if constexpr`——void 返回类型不能用常规方式赋值和返回。`if constexpr (std::is_void_v&lt;ReturnType&gt;)` 在编译期选择分支，void 的情况走"调用但不赋值"的路径，非 void 的情况走"调用并赋值给 return"的路径。这是我们速查篇里讲过的标准模式。
 
 最后看取消检查——在执行前检查取消令牌。如果已取消，直接消费回调但不执行。void 返回直接 `return`，非 void 返回抛出 `std::bad_function_call`。非 void 的抛异常行为可能看起来激进，但理由很充分：调用方期望得到一个返回值，但我们无法提供一个有意义的值，所以抛异常比返回未定义值更安全。
 
@@ -298,7 +298,7 @@ int main() {
 
 ## 小结
 
-这一篇我们分五步搭建了 OnceCallback 的核心骨架。模板偏特化 `OnceCallback<R(Args...)>` 通过模式匹配拆解函数类型。三个数据成员各司其职——`func_` 负责类型擦除、`status_` 负责三态管理、`token_` 负责取消机制。构造函数用 `requires not_the_same_t` 保护移动构造函数不被劫持。`run()` 用 deducing this 在编译期拦截左值调用，`impl_run()` 通过"先 move 出 func_ 再执行"的顺序保证消费语义的异常安全。
+这一篇我们分五步搭建了 OnceCallback 的核心骨架。模板偏特化 `OnceCallback&lt;R(Args...)&gt;` 通过模式匹配拆解函数类型。三个数据成员各司其职——`func_` 负责类型擦除、`status_` 负责三态管理、`token_` 负责取消机制。构造函数用 `requires not_the_same_t` 保护移动构造函数不被劫持。`run()` 用 deducing this 在编译期拦截左值调用，`impl_run()` 通过"先 move 出 func_ 再执行"的顺序保证消费语义的异常安全。
 
 下一篇我们往骨架上加第一个组件——`bind_once()`，实现参数绑定。
 

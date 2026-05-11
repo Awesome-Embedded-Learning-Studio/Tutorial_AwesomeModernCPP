@@ -156,7 +156,7 @@ void safe_function()
 
 ## 智能指针——RAII 的标准答案
 
-C++11 引入了三种智能指针，全部定义在 `<memory>` 头文件中，分别对应不同的所有权语义。
+C++11 引入了三种智能指针，全部定义在 `&lt;memory&gt;` 头文件中，分别对应不同的所有权语义。
 
 ### unique_ptr——独占所有权
 
@@ -172,7 +172,7 @@ std::cout << *p2 << "\n";            // 42
 // 离开作用域，p2 析构，内存自动释放
 ```
 
-`std::make_unique`（C++14）比直接 `std::unique_ptr<int>(new int(42))` 更安全——它将分配和构造合并在一个不可中断的步骤中，避免边缘情况下的泄漏。C++11 项目可以直接写 `std::unique_ptr<int>(new int(42))`。
+`std::make_unique`（C++14）比直接 `std::unique_ptr&lt;int&gt;(new int(42))` 更安全——它将分配和构造合并在一个不可中断的步骤中，避免边缘情况下的泄漏。C++11 项目可以直接写 `std::unique_ptr&lt;int&gt;(new int(42))`。
 
 `unique_ptr` 还支持自定义删除器和数组版本。自定义删除器让你在释放内存时执行自定义操作，这在嵌入式开发中非常有用——比如把内存归还给内存池而不是标准堆：
 
@@ -185,7 +185,7 @@ std::unique_ptr<int, decltype(pool_deleter)> p(new int(42), pool_deleter);
 // p 析构时，pool_deleter 被调用，而不是默认的 delete
 ```
 
-数组版本则替代 `new[]`/`delete[]`：`auto arr = std::make_unique<int[]>(10);` 会自动提供 `operator[]`，离开作用域自动调用 `delete[]`。
+数组版本则替代 `new[]`/`delete[]`：`auto arr = std::make_unique&lt;int[]&gt;(10);` 会自动提供 `operator[]`，离开作用域自动调用 `delete[]`。
 
 ### shared_ptr——共享所有权
 
@@ -207,7 +207,7 @@ std::cout << p1.use_count() << "\n";  // 2
 // p1 和 p2 离开作用域后，计数归零，内存释放
 ```
 
-`std::make_shared` 比 `std::shared_ptr<int>(new int(42))` 更高效——它只需一次分配就能同时分配控制块和对象本身，后者需要两次。除非需要自定义删除器，否则应优先使用它。
+`std::make_shared` 比 `std::shared_ptr&lt;int&gt;(new int(42))` 更高效——它只需一次分配就能同时分配控制块和对象本身，后者需要两次。除非需要自定义删除器，否则应优先使用它。
 
 > **踩坑预警**：`shared_ptr` 的引用计数本身是线程安全的（原子操作），但指向的对象的并发访问不是——多个线程同时读写 `*p` 依然是数据竞争。另外，`shared_ptr` 有性能开销：控制块的内存开销、引用计数的原子操作开销、对象和控制块可能不在同一缓存行上导致的缓存不友好。如果你的所有权语义是唯一的，请使用 `unique_ptr`，不要"为了安全"而滥用 `shared_ptr`。
 

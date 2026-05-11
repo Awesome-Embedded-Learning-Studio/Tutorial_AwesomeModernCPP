@@ -9,8 +9,8 @@ description: "理解值类别体系，掌握移动构造、RVO 和完美转发"
 
 ## 本章内容
 
-- [右值引用：从拷贝到移动](01-rvalue-reference/)
-- [移动构造与移动赋值](02-move-semantics/)
-- [RVO 与 NRVO：编译器的返回值优化](03-rvo-nrvo/)
-- [完美转发：保持值类别的精确传递](04-perfect-forwarding/)
-- [移动语义实战：从 STL 到自定义类型](05-move-in-practice/)
+- [右值引用：从拷贝到移动](01-rvalue-reference)
+- [移动构造与移动赋值](02-move-semantics)
+- [RVO 与 NRVO：编译器的返回值优化](03-rvo-nrvo)
+- [完美转发：保持值类别的精确传递](04-perfect-forwarding)
+- [移动语义实战：从 STL 到自定义类型](05-move-in-practice)

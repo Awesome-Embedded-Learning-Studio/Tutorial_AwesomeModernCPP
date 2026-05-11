@@ -54,7 +54,7 @@ int main() {
 ## 嵌入式适用性：高
 
 - 零运行时开销，`auto` 纯属编译期类型推导，不产生任何额外指令
-- 简化寄存器/外设类型声明（如 `auto reg = reinterpret_cast<volatile uint32_t*>(0x40001000)`），提高可读性且不损失精度
+- 简化寄存器/外设类型声明（如 `auto reg = reinterpret_cast&lt;volatile uint32_t*&gt;(0x40001000)`），提高可读性且不损失精度
 - 配合模板和 STL 容器迭代器时，可避免手写冗长类型名，减少拼写错误
 
 ## 编译器支持

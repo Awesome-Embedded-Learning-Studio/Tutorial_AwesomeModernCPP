@@ -397,7 +397,7 @@ After outlier filter: 10
 
 异常值过滤的关键设计是**按传感器分组计算统计量**。不同传感器的量纲和数值范围差异巨大（温度约 22-23°C，气压约 1013 hPa），如果把所有读数混在一起计算均值和标准差，任何单个值都不会被视为异常。所以 `filter_outliers` 先按 `sensor_id` 分组，再对每组独立计算均值和标准差，这样温度传感器中的 85.0°C 和气压传感器中的 12.0 hPa 才能被正确识别为异常值。
 
-分组部分选择 `unordered_map<string, vector<Reading>>`，同样是因为不需要按 key 有序遍历。`reserve(16)` 是一个经验性的预分配——传感器数量通常不多，一次分配避免后续 rehash。过滤异常值用的是 `remove_if` + `erase`，而不是在遍历中直接删除——这样既安全又清晰。统计部分全部用 STL 算法完成——`minmax_element` 一趟找到最大最小值，`accumulate` 求和，没有手写循环。
+分组部分选择 `unordered_map&lt;string, vector&lt;Reading&gt;&gt;`，同样是因为不需要按 key 有序遍历。`reserve(16)` 是一个经验性的预分配——传感器数量通常不多，一次分配避免后续 rehash。过滤异常值用的是 `remove_if` + `erase`，而不是在遍历中直接删除——这样既安全又清晰。统计部分全部用 STL 算法完成——`minmax_element` 一趟找到最大最小值，`accumulate` 求和，没有手写循环。
 
 ## 动手试试——练习题
 
@@ -420,7 +420,7 @@ for (auto it = data.begin(); it != data.end(); ++it) {
 
 ### 练习 3：性能对比
 
-写一个基准测试：分别用 `std::vector<int>` 和 `std::list<int>` 存储 100000 个随机整数，用 `<chrono>` 计时比较两者的 (a) 顺序遍历求和耗时，(b) 排序耗时。用实际数据体会缓存友好性的影响。
+写一个基准测试：分别用 `std::vector&lt;int&gt;` 和 `std::list&lt;int&gt;` 存储 100000 个随机整数，用 `&lt;chrono&gt;` 计时比较两者的 (a) 顺序遍历求和耗时，(b) 排序耗时。用实际数据体会缓存友好性的影响。
 
 ## 小结
 

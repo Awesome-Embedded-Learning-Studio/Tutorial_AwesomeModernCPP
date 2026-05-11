@@ -69,7 +69,7 @@ int main()
 
 - **必须使用位置无关代码（PIC）**：`-fPIC`（或 `-fpic`）用于生成能在任意地址运行的代码（函数内存访问使用相对地址或通过 GOT）。不使用 PIC 会导致链接器/运行时产生重定位冲突或不可重定位段。
 - **使用 `-shared` 生成共享对象**：链接器会把类型标记为动态库（ELF type = DYN）。
-- **设置 SONAME**：通过链接器选项 `-Wl,-soname,libfoo.so.1` 指明 ABI 名称（客户端在 DT_NEEDED 中记录 SONAME）。实际文件通常是 `libfoo.so.1.0`，并提供软链接 `libfoo.so.1 -> libfoo.so.1.0`，`libfoo.so -> libfoo.so.1`（开发时方便 `-lfoo`）
+- **设置 SONAME**：通过链接器选项 `-Wl,-soname,libfoo.so.1` 指明 ABI 名称（客户端在 DT_NEEDED 中记录 SONAME）。实际文件通常是 `libfoo.so.1.0`，并提供软链接 `libfoo.so.1 -&gt; libfoo.so.1.0`，`libfoo.so -&gt; libfoo.so.1`（开发时方便 `-lfoo`）
 - **控制导出符号（visibility / version script）**：默认会导出全局符号，可用 GCC `-fvisibility=hidden` + `__attribute__((visibility("default")))` 标出需要导出的接口，或使用链接器版本脚本控制符号表，减少 API 污染并降低符号冲突风险。
 - **可选：符号版本（symbol versioning）**：用于在同一 SONAME 内支持不同版本的符号，便于兼容性管理（需要链接器版本脚本）。
 

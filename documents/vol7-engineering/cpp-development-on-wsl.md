@@ -68,7 +68,7 @@ sudo apt install -y python3 python3-pip ccache
 ## 在 WSL 中用 VS Code 打开项目（真正 "在 Linux 下开发"）
 
 1. 在 Windows 中打开 VS Code，按 `F1` -> 输入 `Remote-WSL: New Window`（或在 Ubuntu 终端进入项目目录后执行 `code .`，这会在 WSL 上打开 VS Code 窗口）。
-2. VS Code 会在 WSL 中自动安装必要的服务器组件，并在 "左下角绿色区域" 显示 `WSL: <distro>`，表示当前窗口已连接到 WSL。
+2. VS Code 会在 WSL 中自动安装必要的服务器组件，并在 "左下角绿色区域" 显示 `WSL: &lt;distro&gt;`，表示当前窗口已连接到 WSL。
 
 > 当 VS Code 在 WSL context 下打开时，左侧的 Extensions 面板会提示你"安装到 WSL:Ubuntu"的扩展（即扩展会安装在 WSL 环境而不是 Windows）。推荐把 C/C++、CMake Tools 等在 WSL 上安装（点击"Install in WSL: Ubuntu"）。
 

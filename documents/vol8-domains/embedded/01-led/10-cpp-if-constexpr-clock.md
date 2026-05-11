@@ -90,7 +90,7 @@ private:
 
 最核心的是 `if constexpr` 的条件。`PORT == GpioPort::A` 是一个编译时常量表达式——因为 `PORT` 是模板参数，它在编译时就已知。编译器会逐个检查这些条件，只保留为真的那个分支。
 
-当模板被实例化为 `GPIO<GpioPort::C, GPIO_PIN_13>` 时，编译器看到 `PORT == GpioPort::C` 为真，于是只有 `__HAL_RCC_GPIOC_CLK_ENABLE()` 被编译进代码。其他四个分支（A、B、D、E）在编译时被完全丢弃。如果你用 `arm-none-eabi-objdump` 反汇编最终的 `.elf` 文件，你会发现只有一个时钟使能调用——没有条件跳转，没有 `switch` 表，只有一条直接的寄存器写入指令。
+当模板被实例化为 `GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;` 时，编译器看到 `PORT == GpioPort::C` 为真，于是只有 `__HAL_RCC_GPIOC_CLK_ENABLE()` 被编译进代码。其他四个分支（A、B、D、E）在编译时被完全丢弃。如果你用 `arm-none-eabi-objdump` 反汇编最终的 `.elf` 文件，你会发现只有一个时钟使能调用——没有条件跳转，没有 `switch` 表，只有一条直接的寄存器写入指令。
 
 ⚠️ 注意：`if constexpr` 的条件必须是编译时常量表达式。如果你尝试用一个运行时变量（比如函数参数）作为条件，编译器会报错。这个限制其实是好事——它确保分支决策在编译时就确定了，不会偷偷引入运行时开销。如果你确实需要运行时选择，那就不是模板的设计目标了。
 
@@ -110,7 +110,7 @@ void setup(Mode gpio_mode, PullPush pull_push = PullPush::NoPull, Speed speed = 
 }
 ```
 
-`GPIOClock::enable_target_clock()` 是 `setup()` 的第一行调用。因为 `setup()` 本身也是模板类的方法，编译器在实例化 `GPIO<GpioPort::C, GPIO_PIN_13>` 时会展开整条调用链：
+`GPIOClock::enable_target_clock()` 是 `setup()` 的第一行调用。因为 `setup()` 本身也是模板类的方法，编译器在实例化 `GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;` 时会展开整条调用链：
 
 1. `GPIOClock::enable_target_clock()` → `if constexpr (PORT == GpioPort::C)` → `__HAL_RCC_GPIOC_CLK_ENABLE()`
 2. `PIN` → `GPIO_PIN_13`
@@ -155,7 +155,7 @@ void enable_clock(int port_index) {
 
 ## 编译产物验证
 
-我们可以用 `arm-none-eabi-objdump` 查看编译后的代码来验证 `if constexpr` 的效果。对于 `GPIO<GpioPort::C, GPIO_PIN_13>` 实例，在 `setup()` 中应该只看到 `__HAL_RCC_GPIOC_CLK_ENABLE()` 对应的指令——一个对 `RCC_APB2ENR` 寄存器（地址 `0x40021018`）的写入操作，将 bit4（IOPCEN）置为1。
+我们可以用 `arm-none-eabi-objdump` 查看编译后的代码来验证 `if constexpr` 的效果。对于 `GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;` 实例，在 `setup()` 中应该只看到 `__HAL_RCC_GPIOC_CLK_ENABLE()` 对应的指令——一个对 `RCC_APB2ENR` 寄存器（地址 `0x40021018`）的写入操作，将 bit4（IOPCEN）置为1。
 
 ```text
 ; 预期的汇编输出（-O2优化）
@@ -170,6 +170,6 @@ STR     R1, [R1]           ; 写入寄存器（简化表示）
 
 ## 我们走到了哪一步
 
-`if constexpr` 解决了GPIO模板的最后一个核心问题——时钟使能的编译时自动选择。现在GPIO类完整了：类型安全的端口和引脚（`enum class` + NTTP）、编译时地址转换（`constexpr native_port()`）、自动时钟使能（`if constexpr`）。你可以用 `GPIO<GpioPort::C, GPIO_PIN_13>` 声明一个GPIO对象，调用 `setup(Mode::OutputPP)` 就自动完成所有初始化。
+`if constexpr` 解决了GPIO模板的最后一个核心问题——时钟使能的编译时自动选择。现在GPIO类完整了：类型安全的端口和引脚（`enum class` + NTTP）、编译时地址转换（`constexpr native_port()`）、自动时钟使能（`if constexpr`）。你可以用 `GPIO&lt;GpioPort::C, GPIO_PIN_13&gt;` 声明一个GPIO对象，调用 `setup(Mode::OutputPP)` 就自动完成所有初始化。
 
 下一步：在GPIO的基础上构建LED专用模板——把"推挽输出、低电平有效、低速"这些LED特有的知识封装起来，让使用者只需要一行代码就能声明一个LED。

@@ -107,7 +107,7 @@ void setup(Mode gpio_mode, PullPush pull_push = PullPush::NoPull, Speed speed = 
 }
 ```
 
-`static_cast<uint32_t>(gpio_mode)` 在编译时解析——如果 `gpio_mode` 是 `Mode::OutputPP`（底层值 `0x01`），那么 `static_cast` 的结果就是 `0x01`。这个过程不产生任何运行时代码，它就是从枚举中取出底层存储的整数。
+`static_cast&lt;uint32_t&gt;(gpio_mode)` 在编译时解析——如果 `gpio_mode` 是 `Mode::OutputPP`（底层值 `0x01`），那么 `static_cast` 的结果就是 `0x01`。这个过程不产生任何运行时代码，它就是从枚举中取出底层存储的整数。
 
 对比C风格的隐式转换：
 
@@ -147,7 +147,7 @@ enum class State { Set = GPIO_PIN_SET, UnSet = GPIO_PIN_RESET };
 
 ## C++23的 std::to_underlying —— 未来的优雅替代
 
-我们当前代码中使用 `static_cast<uint32_t>(value)` 从枚举提取底层值。C++23引入了一个更优雅的工具函数 `std::to_underlying(enum_value)`，它是 `static_cast<std::underlying_type_t<E>>(e)` 的简写：
+我们当前代码中使用 `static_cast&lt;uint32_t&gt;(value)` 从枚举提取底层值。C++23引入了一个更优雅的工具函数 `std::to_underlying(enum_value)`，它是 `static_cast&lt;std::underlying_type_t&lt;E&gt;&gt;(e)` 的简写：
 
 ```cpp
 // 当前写法（C++11兼容）
@@ -157,9 +157,9 @@ init_types.Mode = static_cast<uint32_t>(gpio_mode);
 init_types.Mode = std::to_underlying(gpio_mode);
 ```
 
-`std::to_underlying` 更简洁，也不需要你手动写出底层类型——编译器会自动推导。但我们的代码目前没有使用它，原因是 `arm-none-eabi-g++` 搭配 `newlib-nano` 标准库可能还没有完整支持C++23的 `<utility>` 头文件。`static_cast` 是C++11就有的特性，兼容性更好。
+`std::to_underlying` 更简洁，也不需要你手动写出底层类型——编译器会自动推导。但我们的代码目前没有使用它，原因是 `arm-none-eabi-g++` 搭配 `newlib-nano` 标准库可能还没有完整支持C++23的 `&lt;utility&gt;` 头文件。`static_cast` 是C++11就有的特性，兼容性更好。
 
-当你确认你的工具链支持C++23的完整标准库后，可以安全地把所有 `static_cast<uint32_t>(xxx)` 替换为 `std::to_underlying(xxx)`。这是一个纯机械式的替换，不涉及任何逻辑变更。
+当你确认你的工具链支持C++23的完整标准库后，可以安全地把所有 `static_cast&lt;uint32_t&gt;(xxx)` 替换为 `std::to_underlying(xxx)`。这是一个纯机械式的替换，不涉及任何逻辑变更。
 
 ---
 
@@ -171,7 +171,7 @@ init_types.Mode = std::to_underlying(gpio_mode);
 
 ---
 
-⚠️ 注意：虽然 `enum class` 解决了类型安全问题，但它也带来了一个新问题——不能隐式转换为整数。每次传递给HAL API都需要 `static_cast<uint32_t>(value)`。如果你觉得这个转换写起来繁琐，C++23提供了 `std::to_underlying(enum_value)` 作为更优雅的替代——但由于我们的arm-none-eabi工具链可能不支持完整的C++23标准库，所以暂时使用 `static_cast` 是最稳妥的选择。
+⚠️ 注意：虽然 `enum class` 解决了类型安全问题，但它也带来了一个新问题——不能隐式转换为整数。每次传递给HAL API都需要 `static_cast&lt;uint32_t&gt;(value)`。如果你觉得这个转换写起来繁琐，C++23提供了 `std::to_underlying(enum_value)` 作为更优雅的替代——但由于我们的arm-none-eabi工具链可能不支持完整的C++23标准库，所以暂时使用 `static_cast` 是最稳妥的选择。
 
 ---
 

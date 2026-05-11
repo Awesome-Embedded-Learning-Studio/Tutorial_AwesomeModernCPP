@@ -64,8 +64,8 @@ float_stack.push(3.14f);
 
 **关键点**：
 
-- `template<typename T>`声明了一个类型模板参数`T`
-- 使用类模板时必须显式指定模板参数：`Stack<int>`
+- `template&lt;typename T&gt;`声明了一个类型模板参数`T`
+- 使用类模板时必须显式指定模板参数：`Stack&lt;int&gt;`
 - 每个不同的模板参数组合都会生成独立的类
 
 ### 多个类型参数
@@ -201,12 +201,12 @@ template<typename T, class U> class Both;  // 混用
 
 | 惯例 | 含义 | 示例 |
 |------|------|------|
-| `T` | 单个类型参数 | `template<typename T>` |
-| `T, U` | 多个类型参数 | `template<typename T, typename U>` |
-| `Key`, `Value` | 容器相关 | `template<typename Key, typename Value>` |
-| `N`, `Size` | 大小参数 | `template<std::size_t N>` |
-| `Fn` | 函数/可调用对象 | `template<typename Fn>` |
-| `IntType` | 整数类型 | `template<typename IntType>` |
+| `T` | 单个类型参数 | `template&lt;typename T&gt;` |
+| `T, U` | 多个类型参数 | `template&lt;typename T, typename U&gt;` |
+| `Key`, `Value` | 容器相关 | `template&lt;typename Key, typename Value&gt;` |
+| `N`, `Size` | 大小参数 | `template&lt;std::size_t N&gt;` |
+| `Fn` | 函数/可调用对象 | `template&lt;typename Fn&gt;` |
+| `IntType` | 整数类型 | `template&lt;typename IntType&gt;` |
 
 ```cpp
 // 良好的命名示例
@@ -865,9 +865,7 @@ public:
 
 ### 完整实现示例
 
-<details>
-<summary>点击展开完整的RingBuffer实现（含迭代器支持）</summary>
-
+::: details 点击展开完整的RingBuffer实现（含迭代器支持）
 ```cpp
 #include <array>
 #include <cstddef>
@@ -1073,8 +1071,7 @@ private:
     }
 };
 ```
-
-</details>
+:::
 
 ### 使用示例
 
@@ -1377,11 +1374,11 @@ constexpr int factorial(int n) {
 
 | 技巧 | 说明 | 示例 |
 |------|------|------|
-| 使用`static_assert` | 在模板开头添加约束 | `static_assert(std::is_integral_v<T>)` |
+| 使用`static_assert` | 在模板开头添加约束 | `static_assert(std::is_integral_v&lt;T&gt;)` |
 | 查看错误位置 | 向上滚动找到首次错误位置 | 找到"instantiated from" |
 | 使用`-fverbose-asm` | 查看生成的汇编 | 理解模板展开结果 |
 | 使用`-ftime-report` | 分析编译时间 | 找出编译慢的模板 |
-| 使用C++20 Concepts | 约束模板参数 | `template<std::integral T>` |
+| 使用C++20 Concepts | 约束模板参数 | `template&lt;std::integral T&gt;` |
 
 ### 使用概念（C++20）简化错误信息
 

@@ -143,7 +143,7 @@ void print_person(const Person& p)   // 引用，不切片
 
 引用和指针只是指向原始对象的别名或地址，不涉及任何拷贝动作，对象完整无损。
 
-> **踩坑预警**：对象切片不仅发生在函数参数传递时，在容器里也会悄悄出现。如果你写了 `std::vector<Person> vec; vec.push_back(student);`，同样会发生切片。正确做法是使用 `std::vector<std::unique_ptr<Person>>` 或者 `std::vector<Person*>` 这样的指针容器。另外，赋值操作 `Person p = student;` 也会切片——任何从派生类到基类的值类型转换都逃不掉这个命运。
+> **踩坑预警**：对象切片不仅发生在函数参数传递时，在容器里也会悄悄出现。如果你写了 `std::vector&lt;Person&gt; vec; vec.push_back(student);`，同样会发生切片。正确做法是使用 `std::vector&lt;std::unique_ptr&lt;Person&gt;&gt;` 或者 `std::vector&lt;Person*&gt;` 这样的指针容器。另外，赋值操作 `Person p = student;` 也会切片——任何从派生类到基类的值类型转换都逃不掉这个命运。
 
 ## 受保护成员——为继承而生的访问级别
 

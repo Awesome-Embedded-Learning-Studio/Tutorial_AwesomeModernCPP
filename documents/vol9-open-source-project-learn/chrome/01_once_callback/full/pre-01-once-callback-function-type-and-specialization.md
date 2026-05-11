@@ -77,7 +77,7 @@ template<typename FuncSignature>
 class OnceCallback;  // 主模板：只有声明，没有定义
 ```
 
-主模板故意不提供实现。这不是遗忘，而是设计——如果有人不小心写出了 `OnceCallback<int>` 这种用法（传了一个普通的 int 类型而不是函数签名），编译器会在实例化时报错，因为找不到定义。这是一种编译期的安全网。
+主模板故意不提供实现。这不是遗忘，而是设计——如果有人不小心写出了 `OnceCallback&lt;int&gt;` 这种用法（传了一个普通的 int 类型而不是函数签名），编译器会在实例化时报错，因为找不到定义。这是一种编译期的安全网。
 
 ### 第二步：偏特化版本
 
@@ -88,13 +88,13 @@ class OnceCallback<ReturnType(FuncArgs...)> {
 };
 ```
 
-这个偏特化版本的模板参数列表是 `<typename ReturnType, typename... FuncArgs>`，而类名后面跟的 `OnceCallback<ReturnType(FuncArgs...)>` 是偏特化的**模式匹配条件**——它说的是："当 `FuncSignature` 能被拆解成 `ReturnType(FuncArgs...)` 这种形式时，用这个版本。"
+这个偏特化版本的模板参数列表是 `&lt;typename ReturnType, typename... FuncArgs&gt;`，而类名后面跟的 `OnceCallback&lt;ReturnType(FuncArgs...)&gt;` 是偏特化的**模式匹配条件**——它说的是："当 `FuncSignature` 能被拆解成 `ReturnType(FuncArgs...)` 这种形式时，用这个版本。"
 
 ### 编译器的匹配过程
 
-当你写 `OnceCallback<int(int, int)>` 时，编译器做了这么几件事：
+当你写 `OnceCallback&lt;int(int, int)&gt;` 时，编译器做了这么几件事：
 
-首先，它看到你在实例化 `OnceCallback`，模板参数是 `int(int, int)`。然后它去看主模板 `template<typename FuncSignature> class OnceCallback`，把 `FuncSignature` 绑定为 `int(int, int)` 这个整体类型。接下来它去检查有没有偏特化版本能用——偏特化要求 `FuncSignature` 能匹配 `ReturnType(FuncArgs...)` 的模式。`int(int, int)` 恰好可以拆成 `ReturnType = int`、`FuncArgs = {int, int}`，匹配成功！于是偏特化版本被选中。
+首先，它看到你在实例化 `OnceCallback`，模板参数是 `int(int, int)`。然后它去看主模板 `template&lt;typename FuncSignature&gt; class OnceCallback`，把 `FuncSignature` 绑定为 `int(int, int)` 这个整体类型。接下来它去检查有没有偏特化版本能用——偏特化要求 `FuncSignature` 能匹配 `ReturnType(FuncArgs...)` 的模式。`int(int, int)` 恰好可以拆成 `ReturnType = int`、`FuncArgs = {int, int}`，匹配成功！于是偏特化版本被选中。
 
 你可以把这个过程想象成一种类型层面的模式匹配——就像正则表达式 `(\w+)\((\w+(?:,\s*\w+)*)\)` 可以从字符串 `int(int, int)` 中提取出返回值和参数列表一样，模板偏特化从类型 `int(int, int)` 中提取出返回类型和参数包。
 
@@ -160,7 +160,7 @@ static_assert(std::is_same_v<
 
 ## 为什么不用 OnceCallback<R, Args...>？
 
-你可能会想，既然目的是拿到返回类型和参数列表，为什么不直接写成 `OnceCallback<R, Args...>` 这种形式？像这样：
+你可能会想，既然目的是拿到返回类型和参数列表，为什么不直接写成 `OnceCallback&lt;R, Args...&gt;` 这种形式？像这样：
 
 ```cpp
 template<typename R, typename... Args>
@@ -181,7 +181,7 @@ OnceCallback<int(int, int)> cb1([](int a, int b) { return a + b; });
 OnceCallback<int, int, int> cb2([](int a, int b) { return a + b; });
 ```
 
-第一种更自然——`int(int, int)` 就是一个完整的函数签名，读起来一目了然。第二种需要你在大脑里把第一个 `int` 解读为返回类型、后面的 `int, int` 解读为参数列表，这增加了认知负担。标准库的选择也是签名式——`std::function<int(int, int)>` 而不是 `std::function<int, int, int>`。
+第一种更自然——`int(int, int)` 就是一个完整的函数签名，读起来一目了然。第二种需要你在大脑里把第一个 `int` 解读为返回类型、后面的 `int, int` 解读为参数列表，这增加了认知负担。标准库的选择也是签名式——`std::function&lt;int(int, int)&gt;` 而不是 `std::function&lt;int, int, int&gt;`。
 
 签名式写法还有一个微妙的好处：它和 C++ 的类型系统更一致。`int(int, int)` 是一个真实的类型，而"一个返回类型加上一组参数类型"不是一个类型——它只是几个类型的罗列。用函数类型作为模板参数，是在类型系统的层面上操作，而不是在语法糖的层面上操作。
 
@@ -191,7 +191,7 @@ OnceCallback<int, int, int> cb2([](int a, int b) { return a + b; });
 
 ## 小结
 
-这一篇我们搞清楚了三件事。函数类型 `int(int, int)` 是 C++ 中的一种合法类型，它完整描述了函数的签名，不是函数指针也不是函数引用。"主模板 + 偏特化"这个模式通过模式匹配把函数类型拆解成返回类型和参数包，`std::function`、`std::move_only_function` 和我们的 `OnceCallback` 都用了同样的技巧。签名式写法 `OnceCallback<R(Args...)>` 比参数罗列式 `OnceCallback<R, Args...>` 更自然、更符合 C++ 类型系统的设计哲学。
+这一篇我们搞清楚了三件事。函数类型 `int(int, int)` 是 C++ 中的一种合法类型，它完整描述了函数的签名，不是函数指针也不是函数引用。"主模板 + 偏特化"这个模式通过模式匹配把函数类型拆解成返回类型和参数包，`std::function`、`std::move_only_function` 和我们的 `OnceCallback` 都用了同样的技巧。签名式写法 `OnceCallback&lt;R(Args...)&gt;` 比参数罗列式 `OnceCallback&lt;R, Args...&gt;` 更自然、更符合 C++ 类型系统的设计哲学。
 
 下一篇我们去看 `std::invoke`——它是让 `bind_once` 能够统一处理函数指针、成员函数指针和 lambda 的关键工具。
 

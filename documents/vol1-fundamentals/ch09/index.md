@@ -9,6 +9,6 @@ description: "函数模板、类模板和模板特化的入门"
 
 ## 本章内容
 
-- [函数模板](01-function-templates/)
-- [类模板](02-class-templates/)
-- [模板特化初步](03-specialization-basics/)
+- [函数模板](01-function-templates)
+- [类模板](02-class-templates)
+- [模板特化初步](03-specialization-basics)

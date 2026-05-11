@@ -1,0 +1,84 @@
+/* Chinese Typography */
+.vp-doc {
+  line-height: 1.85;
+  font-size: 0.82rem;
+}
+
+.vp-doc h1 { line-height: 1.4; }
+.vp-doc h2 { line-height: 1.45; }
+.vp-doc h3 { line-height: 1.5; }
+.vp-doc h4 { line-height: 1.55; }
+
+.vp-doc p {
+  margin-bottom: 1.2em;
+}
+
+/* Content Width */
+:root {
+  --vp-layout-max-width: 80rem;
+}
+
+/* Code Blocks */
+.vp-doc div[class*='language-'] {
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.vp-doc div[class*='language-'] code {
+  font-size: 0.75rem;
+}
+
+.vp-doc :not(pre) > code {
+  font-size: 0.78em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+}
+
+/* Tables */
+.vp-doc table {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vp-doc table th {
+  font-weight: 600;
+}
+
+.vp-doc table tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Blockquotes */
+.vp-doc blockquote {
+  border-left: 4px solid var(--vp-c-brand-1);
+  border-radius: 0 4px 4px 0;
+  background: rgba(81, 107, 232, 0.04);
+}
+
+/* Links */
+.vp-doc a {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.vp-doc a:hover {
+  text-decoration-style: solid;
+}
+
+/* Images */
+.vp-doc img {
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Print */
+@media print {
+  .vp-doc {
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+}

@@ -110,7 +110,7 @@ r4 = r2;  // 把 r2 的所有字段复制到 r4
 
 ### 结构体指针与箭头运算符
 
-当结构体比较大，或者我们需要在函数中修改调用者的结构体时，传递指针是唯一合理的做法。这里就会遇到 `.` 和 `->` 的区别：
+当结构体比较大，或者我们需要在函数中修改调用者的结构体时，传递指针是唯一合理的做法。这里就会遇到 `.` 和 `-&gt;` 的区别：
 
 ```c
 SensorReading reading = {
@@ -129,7 +129,7 @@ ptr->humidity = 55.0f;
 // 等价于 (*ptr).humidity = 55.0f
 ```
 
-`->` 运算符就是 `(*ptr).` 的语法糖，没有什么神秘的。但这个语法糖实在太常用以至于你根本不会去写 `(*ptr).`——在 C 语言里，只要函数参数里有结构体指针，你几乎必定在用 `->`。
+`-&gt;` 运算符就是 `(*ptr).` 的语法糖，没有什么神秘的。但这个语法糖实在太常用以至于你根本不会去写 `(*ptr).`——在 C 语言里，只要函数参数里有结构体指针，你几乎必定在用 `-&gt;`。
 
 在函数参数中传递结构体指针而非结构体本身，不仅能避免昂贵的拷贝开销，还允许函数修改调用者的数据。如果你不想让函数修改数据，加上 `const` 就行了：
 
@@ -204,7 +204,7 @@ typedef struct {
 
 ### 用 offsetof 验证偏移
 
-C 标准库提供了 `offsetof` 宏（定义在 `<stddef.h>` 中），它可以精确地告诉你某个字段在结构体中的偏移量。我们在调试对齐问题、设计二进制协议时，经常会用到它：
+C 标准库提供了 `offsetof` 宏（定义在 `&lt;stddef.h&gt;` 中），它可以精确地告诉你某个字段在结构体中的偏移量。我们在调试对齐问题、设计二进制协议时，经常会用到它：
 
 ```c
 #include <stddef.h>
@@ -220,7 +220,7 @@ printf("total size: %zu\n", sizeof(WeirdLayout));         // 12
 
 ## C11 的对齐控制：_Alignas 与 alignof
 
-C99 时代，如果你需要手动控制对齐，只能依赖编译器扩展——GCC 的 `__attribute__((aligned(n)))`、MSVC 的 `__declspec(align(n))` 之类的。C11 终于把这个能力标准化了，提供了 `_Alignas` 和 `_Alignof` 关键字，以及更友好的宏别名 `alignas` 和 `alignof`（定义在 `<stdalign.h>` 中）。
+C99 时代，如果你需要手动控制对齐，只能依赖编译器扩展——GCC 的 `__attribute__((aligned(n)))`、MSVC 的 `__declspec(align(n))` 之类的。C11 终于把这个能力标准化了，提供了 `_Alignas` 和 `_Alignof` 关键字，以及更友好的宏别名 `alignas` 和 `alignof`（定义在 `&lt;stdalign.h&gt;` 中）。
 
 ### alignof：查询对齐要求
 
@@ -448,7 +448,7 @@ using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct
 
 ### 关键要点
 
-- [ ] 结构体用 `typedef struct { ... } Name;` 定义，搭配指针用 `->` 访问成员
+- [ ] 结构体用 `typedef struct { ... } Name;` 定义，搭配指针用 `-&gt;` 访问成员
 - [ ] C99 指定初始化器 `.field = value` 比顺序初始化更安全、更可读
 - [ ] 编译器会在成员间和结构体尾部插入填充字节，确保每个成员对齐
 - [ ] 按对齐要求从大到小排列字段可以减少填充，节省内存

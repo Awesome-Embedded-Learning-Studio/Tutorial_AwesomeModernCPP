@@ -9,6 +9,6 @@ description: "用 std::filesystem 实现跨平台的路径和文件操作"
 
 ## 本章内容
 
-- [path 操作：跨平台路径处理](01-filesystem-path/)
-- [文件与目录操作](02-filesystem-ops/)
-- [目录遍历与搜索](03-directory-iteration/)
+- [path 操作：跨平台路径处理](01-filesystem-path)
+- [文件与目录操作](02-filesystem-ops)
+- [目录遍历与搜索](03-directory-iteration)

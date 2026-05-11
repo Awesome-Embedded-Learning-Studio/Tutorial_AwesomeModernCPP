@@ -7,21 +7,14 @@ build/
 **/build/
 *.build/
 
-# MkDocs build output
-site/
-
-# Python virtual environment
-.venv/
+# VitePress
+node_modules/
+site/.vitepress/dist/
+site/.vitepress/cache/
 
 # Python cache
 __pycache__/
 *.pyc
-
-# MkDocs cache
-.cache/
-
-# pip editable install artifacts
-*.egg-info/
 
 # cppreference crawler cache (contains API keys in env)
 scripts/cppref_cache/

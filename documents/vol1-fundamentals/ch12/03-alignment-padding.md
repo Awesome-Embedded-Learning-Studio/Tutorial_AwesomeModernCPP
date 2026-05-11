@@ -124,7 +124,7 @@ struct alignas(64) CacheLine {
 
 > **踩坑预警**：`alignas` 只能增大对齐要求，不能减小。`alignas(1) int x;` 不会真的把 `int` 变成 1 字节对齐——编译器会忽略这个请求，因为 `int` 的自然对齐就是 4。如果你试图写 `alignas(3)` 这种不是 2 的幂次的值，编译器会直接报错。
 
-另外，C++17 还引入了 `std::aligned_storage`（C++23 起被 deprecated，建议直接用 `alignas`），以及 `<memory>` 里的 `std::align` 函数，用于在运行时在给定的缓冲区中找到一个满足对齐要求的地址。这些工具在实现自定义分配器或类型擦除容器（比如 `std::any` 的底层存储）时非常实用。
+另外，C++17 还引入了 `std::aligned_storage`（C++23 起被 deprecated，建议直接用 `alignas`），以及 `&lt;memory&gt;` 里的 `std::align` 函数，用于在运行时在给定的缓冲区中找到一个满足对齐要求的地址。这些工具在实现自定义分配器或类型擦除容器（比如 `std::any` 的底层存储）时非常实用。
 
 ## 打包结构体——pragma pack 的双刃剑
 
