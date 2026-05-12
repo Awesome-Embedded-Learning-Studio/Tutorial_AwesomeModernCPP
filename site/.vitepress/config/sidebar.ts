@@ -118,6 +118,9 @@ export function buildSidebar(): DefaultTheme.Sidebar {
       { text: '附录', link: '/appendix/' },
       { text: '术语表', link: '/appendix/terminology' },
     ],
+    '/team/': [
+      { text: '贡献者', link: '/team/' },
+    ],
   }
 
   return { ...sidebar, ...enSidebar() }

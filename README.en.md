@@ -191,6 +191,21 @@ If you have questions, feel free to open an issue at [GitHub Issues](https://git
 
 ---
 
+## Contributors
+
+Thanks to everyone who has contributed to this project! See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for details.
+
+<!-- ALL_CONTRIBUTORS_START -->
+| Contributor | Contributions |
+|-------------|--------------|
+| [Charliechen](https://github.com/Charliechen114514) | 📝 Content · 🔍 Review · 💡 Examples |
+| [Doll-Attire](https://github.com/Doll-Attire) | 🎨 UI Design · 📝 UX Improvements |
+<!-- ALL_CONTRIBUTORS_END -->
+
+> Contributions are not limited to code — UI design, illustrations, issue reports, and content suggestions all count. See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+---
+
 ## Acknowledgements
 
 This project references the following excellent resources:

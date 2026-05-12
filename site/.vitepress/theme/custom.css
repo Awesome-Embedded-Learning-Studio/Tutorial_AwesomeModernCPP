@@ -341,6 +341,115 @@
   }
 }
 
+/* ── Contributor Card Grid ──────────────────────────────────── */
+
+.contributor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin: 1.5em 0;
+}
+
+.contributor-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  background-color: var(--vp-c-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.39s ease, box-shadow 0.39s ease, transform 0.39s ease;
+  text-decoration: none !important;
+  color: inherit;
+}
+
+.contributor-card:hover {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-4px);
+}
+
+.dark .contributor-card {
+  background-color: var(--vp-c-bg-elv);
+  border-color: var(--vp-c-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.dark .contributor-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.contributor-card .card-avatar {
+  width: 56px;
+  height: 56px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--vp-c-divider);
+  flex-shrink: 0;
+  transition: border-color 0.39s ease;
+}
+
+.contributor-card:hover .card-avatar {
+  border-color: var(--vp-c-brand-1);
+}
+
+.contributor-card .card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contributor-card .card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  text-decoration: none !important;
+  transition: color 0.39s ease;
+}
+
+.contributor-card .card-name:hover {
+  color: var(--vp-c-brand-1) !important;
+}
+
+.contributor-card .card-role {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  line-height: 1.5;
+}
+
+.contributor-card .card-types {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+
+.contributor-card .card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--vp-c-text-3);
+  line-height: 1.6;
+}
+
+@media (max-width: 639px) {
+  .contributor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contributor-card {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .contributor-card .card-avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ================================================================
    Content Page Enhancements
    ================================================================ */

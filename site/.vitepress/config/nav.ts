@@ -35,6 +35,7 @@ export const navZh: DefaultTheme.NavItem[] = [
   },
   { text: '参考', link: '/cpp-reference/' },
   { text: '附录', link: '/appendix/' },
+  { text: '贡献者', link: '/team/' },
 ]
 
 export const navEn: DefaultTheme.NavItem[] = [
@@ -72,4 +73,5 @@ export const navEn: DefaultTheme.NavItem[] = [
   },
   { text: 'Reference', link: '/en/cpp-reference/' },
   { text: 'Appendix', link: '/en/appendix/' },
+  { text: 'Team', link: '/en/team/' },
 ]

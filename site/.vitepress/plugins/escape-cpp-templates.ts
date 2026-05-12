@@ -31,6 +31,8 @@ function looksLikeCppTemplate(inner: string): boolean {
   const trimmed = inner.trim()
   if (!trimmed) return false
   if (HTML_TAGS.has(trimmed.toLowerCase())) return false
+  // Vue components use PascalCase (e.g. <ChapterNav>); C++ templates are lowercase
+  if (/^[A-Z][a-zA-Z0-9]+$/.test(trimmed)) return false
   return /^[A-Za-z_][A-Za-z0-9_:,\s*&.]*(?:\.\.\.)?$/.test(trimmed)
 }
 
@@ -81,6 +83,8 @@ function sanitizeHtml(html: string): string {
     /<\/?([a-zA-Z][a-zA-Z0-9:-]*)([^>]*)>/g,
     (match, tag: string) => {
       if (HTML_TAGS.has(tag.toLowerCase())) return match
+      // Vue components use PascalCase — skip them (C++ templates are lowercase)
+      if (tag[0] === tag[0].toUpperCase() && tag[0] !== tag[0].toLowerCase()) return match
       return match.replace(/^</, '&lt;').replace(/>$/, '&gt;')
     }
   )

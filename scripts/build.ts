@@ -36,6 +36,7 @@ const VOLUMES: Volume[] = [
   { name: 'cpp-reference', srcDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { name: 'projects', srcDir: 'projects', urlPrefix: '/projects' },
   { name: 'appendix', srcDir: 'appendix', urlPrefix: '/appendix' },
+  { name: 'team', srcDir: 'team', urlPrefix: '/team' },
 ]
 
 const PROJECT_ROOT = resolve(import.meta.dirname, '..')

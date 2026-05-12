@@ -91,5 +91,3 @@ features:
     link: /en/tags/
     linkText: Browse Tags
 ---
-
-> Please note that tutorials are time-sensitive. We recommend comparing the publication dates and adapting the content accordingly. The official documentation should always be your primary reference.

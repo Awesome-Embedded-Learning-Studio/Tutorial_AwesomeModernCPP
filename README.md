@@ -195,6 +195,21 @@ Tutorial_AwesomeModernCPP/
 
 ---
 
+## 贡献者
+
+感谢所有为本项目做出贡献的人！详见 [CONTRIBUTORS.md](./CONTRIBUTORS.md)。
+
+<!-- ALL_CONTRIBUTORS_START -->
+| 贡献者 | 贡献类型 |
+|--------|---------|
+| [Charliechen](https://github.com/Charliechen114514) | 📝 内容 · 🔍 审阅 · 💡 示例 |
+| [Doll-Attire](https://github.com/Doll-Attire) | 🎨 界面设计 · 📝 体验改进 |
+<!-- ALL_CONTRIBUTORS_END -->
+
+> 贡献方式不限于代码，包括界面设计、插画、问题反馈、内容建议等。详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
+---
+
 ## 致谢
 
 本项目参考了以下优秀资源：
