@@ -33,15 +33,15 @@ tags:
 ## 补充材料
 
 <ChapterNav variant="sub">
-  <ChapterLink href="00-preface.md">前言</ChapterLink>
-  <ChapterLink href="02-c-language-crash-course.md">C 语言速通复习</ChapterLink>
-  <ChapterLink href="03A-cpp98-namespace-reference.md">C++98 入门：命名空间、引用与作用域解析</ChapterLink>
-  <ChapterLink href="03B-cpp98-function-overload-default-args.md">C++98 函数接口：重载与默认参数</ChapterLink>
-  <ChapterLink href="03C-cpp98-classes-and-objects.md">C++98 面向对象：类与对象深度剖析</ChapterLink>
-  <ChapterLink href="03D-cpp98-inheritance-polymorphism.md">C++98 面向对象：继承与多态</ChapterLink>
-  <ChapterLink href="03E-cpp98-operator-overloading.md">C++98 运算符重载</ChapterLink>
-  <ChapterLink href="03F-cpp98-casts-memory-exceptions.md">C++98 进阶：类型转换、动态内存与异常处理</ChapterLink>
-  <ChapterLink href="04-when-to-use-cpp.md">何时用 C++、用哪些 C++ 特性</ChapterLink>
-  <ChapterLink href="05-language-choice-performance-vs-maintainability.md">语言选择原则：性能 vs 可维护性的真实取舍</ChapterLink>
+  <ChapterLink href="00-preface">前言</ChapterLink>
+  <ChapterLink href="02-c-language-crash-course">C 语言速通复习</ChapterLink>
+  <ChapterLink href="03A-cpp98-namespace-reference">C++98 入门：命名空间、引用与作用域解析</ChapterLink>
+  <ChapterLink href="03B-cpp98-function-overload-default-args">C++98 函数接口：重载与默认参数</ChapterLink>
+  <ChapterLink href="03C-cpp98-classes-and-objects">C++98 面向对象：类与对象深度剖析</ChapterLink>
+  <ChapterLink href="03D-cpp98-inheritance-polymorphism">C++98 面向对象：继承与多态</ChapterLink>
+  <ChapterLink href="03E-cpp98-operator-overloading">C++98 运算符重载</ChapterLink>
+  <ChapterLink href="03F-cpp98-casts-memory-exceptions">C++98 进阶：类型转换、动态内存与异常处理</ChapterLink>
+  <ChapterLink href="04-when-to-use-cpp">何时用 C++、用哪些 C++ 特性</ChapterLink>
+  <ChapterLink href="05-language-choice-performance-vs-maintainability">语言选择原则：性能 vs 可维护性的真实取舍</ChapterLink>
   <ChapterLink href="c_tutorials/">C 语言教程（详细版）</ChapterLink>
 </ChapterNav>

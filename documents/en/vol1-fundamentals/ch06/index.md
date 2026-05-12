@@ -9,9 +9,11 @@ Classes are C++'s mechanism for bundling "data" and "operations" together, and t
 
 ## Chapter Contents
 
-- [Class Definitions](01-class-basics)
-- [Constructors](02-constructors)
-- [Destructors and Resource Management](03-destructors)
-- [static Members](04-static-members)
-- [Friends](05-friends)
-- [The this Pointer and Cascading Calls](06-this-and-cascading)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-class-basics">Class Definitions</ChapterLink>
+  <ChapterLink href="02-constructors">Constructors</ChapterLink>
+  <ChapterLink href="03-destructors">Destructors and Resource Management</ChapterLink>
+  <ChapterLink href="04-static-members">static Members</ChapterLink>
+  <ChapterLink href="05-friends">Friends</ChapterLink>
+  <ChapterLink href="06-this-and-cascading">The this Pointer and Cascading Calls</ChapterLink>
+</ChapterNav>

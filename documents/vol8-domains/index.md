@@ -26,8 +26,10 @@ tags:
 
 ## 子领域导航
 
-- [嵌入式开发](embedded/)
-- [网络编程](networking/) — 规划中
-- [GUI 与图形](gui-graphics/) — 规划中
-- [数据存储](data-storage/) — 规划中
-- [算法与数据结构](algorithms/) — 规划中
+<ChapterNav variant="sub">
+  <ChapterLink href="embedded/">嵌入式开发</ChapterLink>
+  <ChapterLink href="networking/">网络编程 — 规划中</ChapterLink>
+  <ChapterLink href="gui-graphics/">GUI 与图形 — 规划中</ChapterLink>
+  <ChapterLink href="data-storage/">数据存储 — 规划中</ChapterLink>
+  <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
+</ChapterNav>

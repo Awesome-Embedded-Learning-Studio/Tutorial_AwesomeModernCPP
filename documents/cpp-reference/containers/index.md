@@ -11,8 +11,10 @@ tags:
 
 # 容器与视图参考卡
 
-- [std::span](01-span.md)
-- [std::string_view](02-string-view.md)
-- [std::variant](03-variant.md)
-- [std::array](04-array.md)
-- [std::initializer_list](05-initializer-list.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-span">std::span</ChapterLink>
+  <ChapterLink href="02-string-view">std::string_view</ChapterLink>
+  <ChapterLink href="03-variant">std::variant</ChapterLink>
+  <ChapterLink href="04-array">std::array</ChapterLink>
+  <ChapterLink href="05-initializer-list">std::initializer_list</ChapterLink>
+</ChapterNav>

@@ -5,6 +5,8 @@ title: Memory Model Basics
 
 ## Chapter Contents
 
-- [Memory Layout](01-memory-layout)
-- [Dynamic Memory Management](02-new-delete)
-- [Memory Alignment and Padding](03-alignment-padding)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-memory-layout">Memory Layout</ChapterLink>
+  <ChapterLink href="02-new-delete">Dynamic Memory Management</ChapterLink>
+  <ChapterLink href="03-alignment-padding">Memory Alignment and Padding</ChapterLink>
+</ChapterNav>

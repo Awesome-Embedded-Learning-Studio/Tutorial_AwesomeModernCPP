@@ -10,13 +10,15 @@ tags:
 
 # 核心语言特性参考卡
 
-- [constexpr / consteval / constinit](01-constexpr.md)
-- [lambda 表达式](02-lambda.md)
-- [auto / decltype](03-auto-decltype.md)
-- [nullptr](04-nullptr.md)
-- [enum class](05-enum-class.md)
-- [override 说明符](06-override-final.md)
-- [范围 for 循环](07-range-for.md)
-- [std::move](08-move-forward.md)
-- [泛型 Lambda](09-generic-lambda.md)
-- [std::exchange](10-exchange.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-constexpr">constexpr / consteval / constinit</ChapterLink>
+  <ChapterLink href="02-lambda">lambda 表达式</ChapterLink>
+  <ChapterLink href="03-auto-decltype">auto / decltype</ChapterLink>
+  <ChapterLink href="04-nullptr">nullptr</ChapterLink>
+  <ChapterLink href="05-enum-class">enum class</ChapterLink>
+  <ChapterLink href="06-override-final">override 说明符</ChapterLink>
+  <ChapterLink href="07-range-for">范围 for 循环</ChapterLink>
+  <ChapterLink href="08-move-forward">std::move</ChapterLink>
+  <ChapterLink href="09-generic-lambda">泛型 Lambda</ChapterLink>
+  <ChapterLink href="10-exchange">std::exchange</ChapterLink>
+</ChapterNav>

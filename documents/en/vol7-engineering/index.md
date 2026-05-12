@@ -19,17 +19,23 @@ This volume covers C++ software engineering practices.
 
 ### Build and Environment
 
-- [Cross-Compilation and CMake](01-cross-compilation-and-cmake.md)
-- [Compiler Flags](02-compiler-options.md)
-- [Linker and Linker Scripts](03-linker-and-linker-scripts.md)
-- [Using C++ Modules in VS2026](cpp-modules-on-vs2026.md)
-- [C++ Development on WSL](cpp-development-on-wsl.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-cross-compilation-and-cmake">Cross-Compilation and CMake</ChapterLink>
+  <ChapterLink href="02-compiler-options">Compiler Flags</ChapterLink>
+  <ChapterLink href="03-linker-and-linker-scripts">Linker and Linker Scripts</ChapterLink>
+  <ChapterLink href="cpp-modules-on-vs2026">Using C++ Modules in VS2026</ChapterLink>
+  <ChapterLink href="cpp-development-on-wsl">C++ Development on WSL</ChapterLink>
+</ChapterNav>
 
 ### File I/O
 
-- [File Copier (Part 1)](01-file-copier-requirements-and-framework.md)
-- [File Copier (Part 2)](02-file-copier-core-implementation.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-file-copier-requirements-and-framework">File Copier (Part 1)</ChapterLink>
+  <ChapterLink href="02-file-copier-core-implementation">File Copier (Part 2)</ChapterLink>
+</ChapterNav>
 
 ### Debugging
 
-- [MSVC Debugging Internals](msvc-debugging-internals.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="msvc-debugging-internals">MSVC Debugging Internals</ChapterLink>
+</ChapterNav>

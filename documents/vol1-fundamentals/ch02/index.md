@@ -9,6 +9,8 @@ description: "掌握 C++ 的条件分支、循环和 range-for 语法"
 
 ## 本章内容
 
-- [条件语句](01-conditionals)
-- [循环语句](02-loops)
-- [range-for 循环](03-range-for)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-conditionals">条件语句</ChapterLink>
+  <ChapterLink href="02-loops">循环语句</ChapterLink>
+  <ChapterLink href="03-range-for">range-for 循环</ChapterLink>
+</ChapterNav>

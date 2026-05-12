@@ -13,15 +13,17 @@ This volume covers the core modern features of C++11/14/17, from move semantics 
 
 ## Chapter Navigation
 
-- [ch00: Move Semantics and Rvalue References](ch00-move-semantics/)
-- [ch01: Smart Pointers and RAII](ch01-smart-pointers/)
-- [ch02: constexpr and Compile-Time Computation](ch02-constexpr/)
-- [ch03: Lambda Expressions and Functional Programming](ch03-lambda/)
-- [ch04: Type Safety](ch04-type-safety/)
-- [ch05: Structured Bindings and Initialization](ch05-structured-bindings/)
-- [ch06: auto and decltype](ch06-auto-decltype/)
-- [ch07: Attribute System](ch07-attributes/)
-- [ch08: string_view In Depth](ch08-string-view/)
-- [ch09: Filesystem Library](ch09-filesystem/)
-- [ch10: Modern Error Handling](ch10-error-handling/)
-- [ch11: User-Defined Literals](ch11-user-defined-literals/)
+<ChapterNav>
+  <ChapterLink num="0" href="ch00-move-semantics/">Move Semantics and Rvalue References</ChapterLink>
+  <ChapterLink num="1" href="ch01-smart-pointers/">Smart Pointers and RAII</ChapterLink>
+  <ChapterLink num="2" href="ch02-constexpr/">constexpr and Compile-Time Computation</ChapterLink>
+  <ChapterLink num="3" href="ch03-lambda/">Lambda Expressions and Functional Programming</ChapterLink>
+  <ChapterLink num="4" href="ch04-type-safety/">Type Safety</ChapterLink>
+  <ChapterLink num="5" href="ch05-structured-bindings/">Structured Bindings and Initialization</ChapterLink>
+  <ChapterLink num="6" href="ch06-auto-decltype/">auto and decltype</ChapterLink>
+  <ChapterLink num="7" href="ch07-attributes/">Attribute System</ChapterLink>
+  <ChapterLink num="8" href="ch08-string-view/">string_view In Depth</ChapterLink>
+  <ChapterLink num="9" href="ch09-filesystem/">Filesystem Library</ChapterLink>
+  <ChapterLink num="10" href="ch10-error-handling/">Modern Error Handling</ChapterLink>
+  <ChapterLink num="11" href="ch11-user-defined-literals/">User-Defined Literals</ChapterLink>
+</ChapterNav>

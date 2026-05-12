@@ -17,4 +17,6 @@ By analyzing real open source project source code, we learn the design and imple
 
 ### Chromium
 
-- [OnceCallback: Callback Design Learned from Chromium](chrome/01_once_callback/)
+<ChapterNav variant="sub">
+  <ChapterLink href="chrome/01_once_callback/">OnceCallback: Callback Design Learned from Chromium</ChapterLink>
+</ChapterNav>

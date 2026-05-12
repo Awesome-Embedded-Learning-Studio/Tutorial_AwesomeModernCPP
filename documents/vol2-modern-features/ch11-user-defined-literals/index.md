@@ -9,5 +9,7 @@ description: "用 operator\"\" 实现类型安全的字面量与单位系统"
 
 ## 本章内容
 
-- [用户自定义字面量基础](01-udl-basics)
-- [UDL 实战：类型安全的单位系统](02-udl-practice)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-udl-basics">用户自定义字面量基础</ChapterLink>
+  <ChapterLink href="02-udl-practice">UDL 实战：类型安全的单位系统</ChapterLink>
+</ChapterNav>

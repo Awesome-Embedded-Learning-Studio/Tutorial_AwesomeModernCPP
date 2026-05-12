@@ -9,7 +9,9 @@ description: "理解指针、引用及其与内存的关系，初识智能指针
 
 ## 本章内容
 
-- [指针基础](01-pointer-basics)
-- [指针运算与数组](02-pointer-arithmetic)
-- [引用](03-references)
-- [智能指针预告](04-smart-ptr-preview)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-pointer-basics">指针基础</ChapterLink>
+  <ChapterLink href="02-pointer-arithmetic">指针运算与数组</ChapterLink>
+  <ChapterLink href="03-references">引用</ChapterLink>
+  <ChapterLink href="04-smart-ptr-preview">智能指针预告</ChapterLink>
+</ChapterNav>

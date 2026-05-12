@@ -9,4 +9,8 @@ Supplementary reference material to help you better understand the tutorial.
 
 ## References
 
-- [Glossary](terminology/) — Standard Chinese-English technical term translations
+<ChapterNav variant="sub">
+  <ChapterLink href="terminology/">Glossary</ChapterLink>
+</ChapterNav>
+
+Standard Chinese-English technical term translations

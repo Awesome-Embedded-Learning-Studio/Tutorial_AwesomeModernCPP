@@ -18,9 +18,11 @@ tags:
 
 ## 现有文章（待重写为通用内容）
 
-- [原子操作](01-atomic.md)
-- [内存序](02-memory-order.md)
-- [无锁数据结构](03-lock-free-data-structures.md)
-- [mutex 与 RAII 守卫](04-mutex-and-raii-guards.md)
-- [临界区保护](06-critical-section-protection.md)
-- [协程 Echo Server](03-coroutine-echo-server.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-atomic">原子操作</ChapterLink>
+  <ChapterLink href="02-memory-order">内存序</ChapterLink>
+  <ChapterLink href="03-lock-free-data-structures">无锁数据结构</ChapterLink>
+  <ChapterLink href="04-mutex-and-raii-guards">mutex 与 RAII 守卫</ChapterLink>
+  <ChapterLink href="06-critical-section-protection">临界区保护</ChapterLink>
+  <ChapterLink href="03-coroutine-echo-server">协程 Echo Server</ChapterLink>
+</ChapterNav>

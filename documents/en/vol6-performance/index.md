@@ -17,6 +17,8 @@ This volume covers C++ performance optimization.
 
 ## Existing Articles (Pending Rewrite to Generic Content)
 
-- [Inlining and Compiler Optimization](02-inline-and-compiler-optimization.md)
-- [Evaluating Performance and Size](06-evaluating-performance-and-size.md)
-- [AVX/AVX2 Deep Dive](avx-avx2-deep-dive.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="02-inline-and-compiler-optimization">Inlining and Compiler Optimization</ChapterLink>
+  <ChapterLink href="06-evaluating-performance-and-size">Evaluating Performance and Size</ChapterLink>
+  <ChapterLink href="avx-avx2-deep-dive">AVX/AVX2 Deep Dive</ChapterLink>
+</ChapterNav>

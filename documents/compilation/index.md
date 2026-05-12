@@ -18,13 +18,15 @@ tags:
 
 ## 章节导航
 
-- [01 编译与链接概述](01-compilation-and-linking-overview.md)
-- [02 复用的概念](02-reuse-concept.md)
-- [03 创建和使用静态库](03-creating-and-using-static-libs.md)
-- [04 动态库（上）](04-dynamic-libraries-1.md)
-- [05 动态库设计](05-dynamic-library-design.md)
-- [06 符号可见性](06-symbol-visibility.md)
-- [07 符号缺失与运行时加载](07-symbol-missing-and-runtime-loading.md)
-- [08 库搜索逻辑](08-library-search-logic.md)
-- [09 动态库细节](09-dynamic-library-details.md)
-- [10 动态库作为可执行文件](10-dynamic-lib-as-executable.md)
+<ChapterNav>
+  <ChapterLink num="1" href="01-compilation-and-linking-overview.md">编译与链接概述</ChapterLink>
+  <ChapterLink num="2" href="02-reuse-concept.md">复用的概念</ChapterLink>
+  <ChapterLink num="3" href="03-creating-and-using-static-libs.md">创建和使用静态库</ChapterLink>
+  <ChapterLink num="4" href="04-dynamic-libraries-1.md">动态库（上）</ChapterLink>
+  <ChapterLink num="5" href="05-dynamic-library-design.md">动态库设计</ChapterLink>
+  <ChapterLink num="6" href="06-symbol-visibility.md">符号可见性</ChapterLink>
+  <ChapterLink num="7" href="07-symbol-missing-and-runtime-loading.md">符号缺失与运行时加载</ChapterLink>
+  <ChapterLink num="8" href="08-library-search-logic.md">库搜索逻辑</ChapterLink>
+  <ChapterLink num="9" href="09-dynamic-library-details.md">动态库细节</ChapterLink>
+  <ChapterLink num="10" href="10-dynamic-lib-as-executable.md">动态库作为可执行文件</ChapterLink>
+</ChapterNav>

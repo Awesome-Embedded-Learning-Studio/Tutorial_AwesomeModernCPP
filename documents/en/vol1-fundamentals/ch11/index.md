@@ -5,7 +5,9 @@ title: First Encounter with STL
 
 ## Chapter Contents
 
-- [Getting Started with std::vector](01-vector)
-- [Getting Started with Associative Containers](02-map-set)
-- [First Look at the Algorithms Library](03-algorithms-intro)
-- [Common STL Patterns](04-stl-patterns)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-vector">Getting Started with std::vector</ChapterLink>
+  <ChapterLink href="02-map-set">Getting Started with Associative Containers</ChapterLink>
+  <ChapterLink href="03-algorithms-intro">First Look at the Algorithms Library</ChapterLink>
+  <ChapterLink href="04-stl-patterns">Common STL Patterns</ChapterLink>
+</ChapterNav>

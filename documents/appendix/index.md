@@ -9,4 +9,8 @@ description: "辅助参考内容与术语表"
 
 ## 参考资料
 
-- [术语表](terminology/) — 中英文技术术语标准翻译对照表
+<ChapterNav variant="sub">
+  <ChapterLink href="terminology/">术语表</ChapterLink>
+</ChapterNav>
+
+中英文技术术语标准翻译对照表

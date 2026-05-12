@@ -6,24 +6,28 @@
 
 先掌握 OnceCallback 所需的 C++ 核心特性：
 
-1. [OnceCallback 前置知识速查：C++11/14/17 核心特性回顾](pre-00-once-callback-cpp-basics-review.md)
-2. [OnceCallback 前置知识（一）：函数类型与模板偏特化](pre-01-once-callback-function-type-and-specialization.md)
-3. [OnceCallback 前置知识（二）：std::invoke 与统一调用协议](pre-02-once-callback-invoke-and-callable.md)
-4. [OnceCallback 前置知识（三）：Lambda 高级特性](pre-03-once-callback-lambda-advanced.md)
-5. [OnceCallback 前置知识（四）：Concepts 与 requires 约束](pre-04-once-callback-concepts-and-requires.md)
-6. [OnceCallback 前置知识（五）：std::move_only_function (C++23)](pre-05-once-callback-move-only-function.md)
-7. [OnceCallback 前置知识（六）：Deducing this (C++23)](pre-06-once-callback-deducing-this.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="pre-00-once-callback-cpp-basics-review">OnceCallback 前置知识速查：C++11/14/17 核心特性回顾</ChapterLink>
+  <ChapterLink href="pre-01-once-callback-function-type-and-specialization">OnceCallback 前置知识（一）：函数类型与模板偏特化</ChapterLink>
+  <ChapterLink href="pre-02-once-callback-invoke-and-callable">OnceCallback 前置知识（二）：std::invoke 与统一调用协议</ChapterLink>
+  <ChapterLink href="pre-03-once-callback-lambda-advanced">OnceCallback 前置知识（三）：Lambda 高级特性</ChapterLink>
+  <ChapterLink href="pre-04-once-callback-concepts-and-requires">OnceCallback 前置知识（四）：Concepts 与 requires 约束</ChapterLink>
+  <ChapterLink href="pre-05-once-callback-move-only-function">OnceCallback 前置知识（五）：std::move_only_function (C++23)</ChapterLink>
+  <ChapterLink href="pre-06-once-callback-deducing-this">OnceCallback 前置知识（六）：Deducing this (C++23)</ChapterLink>
+</ChapterNav>
 
 ## 动手实践
 
 学完前置知识后，开始实现 OnceCallback：
 
-1. [OnceCallback 实战（一）：动机与接口设计](01-1-once-callback-motivation-and-api-design.md)
-2. [OnceCallback 实战（二）：核心骨架搭建](01-2-once-callback-core-skeleton.md)
-3. [OnceCallback 实战（三）：bind_once 实现](01-3-once-callback-bind-once.md)
-4. [OnceCallback 实战（四）：取消令牌设计](01-4-once-callback-cancellation-token.md)
-5. [OnceCallback 实战（五）：then 链式组合](01-5-once-callback-then-chaining.md)
-6. [OnceCallback 实战（六）：测试与性能对比](01-6-once-callback-testing-and-perf.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-1-once-callback-motivation-and-api-design">OnceCallback 实战（一）：动机与接口设计</ChapterLink>
+  <ChapterLink href="01-2-once-callback-core-skeleton">OnceCallback 实战（二）：核心骨架搭建</ChapterLink>
+  <ChapterLink href="01-3-once-callback-bind-once">OnceCallback 实战（三）：bind_once 实现</ChapterLink>
+  <ChapterLink href="01-4-once-callback-cancellation-token">OnceCallback 实战（四）：取消令牌设计</ChapterLink>
+  <ChapterLink href="01-5-once-callback-then-chaining">OnceCallback 实战（五）：then 链式组合</ChapterLink>
+  <ChapterLink href="01-6-once-callback-testing-and-perf">OnceCallback 实战（六）：测试与性能对比</ChapterLink>
+</ChapterNav>
 
 ## 配套代码
 

@@ -4,7 +4,7 @@ import {
   readdirSync, readFileSync, existsSync,
   symlinkSync, statSync,
 } from 'fs'
-import { join, resolve, relative } from 'path'
+import { join, resolve, relative, basename } from 'path'
 import { createHash } from 'crypto'
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
@@ -443,10 +443,15 @@ async function mergeSearchIndexes(outputDirs: string[], finalDist: string) {
       log(`  ⚠ ${locale}: no target index files in final dist!`)
       continue
     }
-    for (const target of allTargets) {
-      writeFileSync(target, js)
+    // Write canonical index to the first file, re-export stubs for the rest
+    writeFileSync(allTargets[0], js)
+    const canonicalName = basename(allTargets[0])
+    const stub = `export{default}from"./${canonicalName}";`
+    for (let i = 1; i < allTargets.length; i++) {
+      writeFileSync(allTargets[i], stub)
     }
-    log(`  ${locale}: ✓ wrote unified index to ${allTargets.length} files (${(js.length / 1024 / 1024).toFixed(1)} MB)`)
+    const savedMB = ((js.length - stub.length) * (allTargets.length - 1) / 1024 / 1024).toFixed(1)
+    log(`  ${locale}: ✓ 1 canonical + ${allTargets.length - 1} stubs (saved ${savedMB} MB)`)
   }
 }
 

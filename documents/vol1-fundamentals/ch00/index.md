@@ -11,7 +11,9 @@ description: "搭建 C++ 开发环境，编写并运行第一个程序"
 
 ## 本章内容
 
-- [前言：为什么学 C++](00-preface)
-- [Linux 环境搭建](01-setup-linux)
-- [Windows 环境搭建](02-setup-windows)
-- [第一个 C++ 程序](03-first-program)
+<ChapterNav variant="sub">
+  <ChapterLink href="00-preface">前言：为什么学 C++</ChapterLink>
+  <ChapterLink href="01-setup-linux">Linux 环境搭建</ChapterLink>
+  <ChapterLink href="02-setup-windows">Windows 环境搭建</ChapterLink>
+  <ChapterLink href="03-first-program">第一个 C++ 程序</ChapterLink>
+</ChapterNav>

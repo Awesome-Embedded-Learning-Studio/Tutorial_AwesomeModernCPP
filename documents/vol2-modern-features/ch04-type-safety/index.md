@@ -9,8 +9,10 @@ C 时代的枚举、联合体和裸指针留下了太多类型安全的隐患—
 
 ## 本章内容
 
-- [enum class 与强类型枚举](01-enum-class)
-- [强类型 typedef：防止混淆的类型安全](02-strong-types)
-- [std::variant：类型安全的联合体](03-variant)
-- [std::optional：优雅表达"可能没有值"](04-optional)
-- [std::any 与类型擦除](05-any)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-enum-class">enum class 与强类型枚举</ChapterLink>
+  <ChapterLink href="02-strong-types">强类型 typedef：防止混淆的类型安全</ChapterLink>
+  <ChapterLink href="03-variant">std::variant：类型安全的联合体</ChapterLink>
+  <ChapterLink href="04-optional">std::optional：优雅表达"可能没有值"</ChapterLink>
+  <ChapterLink href="05-any">std::any 与类型擦除</ChapterLink>
+</ChapterNav>

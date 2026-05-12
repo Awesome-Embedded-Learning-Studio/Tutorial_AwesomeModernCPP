@@ -9,7 +9,9 @@ description: "函数定义、参数传递、重载与 constexpr 函数"
 
 ## 本章内容
 
-- [函数基础](01-function-basics)
-- [参数传递方式](02-pass-by-value-ref)
-- [重载与默认参数](03-overloading-default)
-- [inline 与 constexpr 函数](04-inline-constexpr)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-function-basics">函数基础</ChapterLink>
+  <ChapterLink href="02-pass-by-value-ref">参数传递方式</ChapterLink>
+  <ChapterLink href="03-overloading-default">重载与默认参数</ChapterLink>
+  <ChapterLink href="04-inline-constexpr">inline 与 constexpr 函数</ChapterLink>
+</ChapterNav>

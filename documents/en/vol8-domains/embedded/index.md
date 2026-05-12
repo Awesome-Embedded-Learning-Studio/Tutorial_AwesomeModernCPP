@@ -27,16 +27,18 @@ This directory contains a large number of embedded-related articles and an STM32
 
 ### Article List
 
-- [Modern C++ for Embedded Systems Tutorial — Zero-Overhead Abstraction](01-zero-overhead-abstraction.md)
-- [Resource and Real-Time Constraints in Embedded Systems](01-resource-and-realtime-constraints.md)
-- [The Cost of Dynamic Memory: Fragmentation and Non-Determinism](01-dynamic-allocation-issues.md)
-- [Embedded C++ Tutorial — Static Storage and Stack Allocation Strategies](02-static-and-stack-allocation.md)
-- [Embedded C++ Tutorial: Object Pool Pattern](03-object-pool-pattern.md)
-- [Compile-Time Polymorphism vs Runtime Polymorphism](04-crtp-vs-runtime-polymorphism.md)
-- [EBO (Empty Base Optimization): A Slimming Technique in C++](04-empty-base-optimization.md)
-- [Embedded C++ Tutorial: placement new](04-placement-new.md)
-- [Embedded C++ Tutorial: Slab / Arena Implementation and Comparison](05-fixed-pool-allocation.md)
-- [Embedded C++ Tutorial — ETL](05-etl.md)
-- [Writing Interrupt-Safe Code](05-interrupt-safe-coding.md)
-- [Embedded C++ Tutorial — std::array vs C Arrays](06-array-vs-raw-arrays.md)
-- [Index](core-embedded-cpp-index.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-zero-overhead-abstraction">Modern C++ for Embedded Systems Tutorial — Zero-Overhead Abstraction</ChapterLink>
+  <ChapterLink href="01-resource-and-realtime-constraints">Resource and Real-Time Constraints in Embedded Systems</ChapterLink>
+  <ChapterLink href="01-dynamic-allocation-issues">The Cost of Dynamic Memory: Fragmentation and Non-Determinism</ChapterLink>
+  <ChapterLink href="02-static-and-stack-allocation">Embedded C++ Tutorial — Static Storage and Stack Allocation Strategies</ChapterLink>
+  <ChapterLink href="03-object-pool-pattern">Embedded C++ Tutorial: Object Pool Pattern</ChapterLink>
+  <ChapterLink href="04-crtp-vs-runtime-polymorphism">Compile-Time Polymorphism vs Runtime Polymorphism</ChapterLink>
+  <ChapterLink href="04-empty-base-optimization">EBO (Empty Base Optimization): A Slimming Technique in C++</ChapterLink>
+  <ChapterLink href="04-placement-new">Embedded C++ Tutorial: placement new</ChapterLink>
+  <ChapterLink href="05-fixed-pool-allocation">Embedded C++ Tutorial: Slab / Arena Implementation and Comparison</ChapterLink>
+  <ChapterLink href="05-etl">Embedded C++ Tutorial — ETL</ChapterLink>
+  <ChapterLink href="05-interrupt-safe-coding">Writing Interrupt-Safe Code</ChapterLink>
+  <ChapterLink href="06-array-vs-raw-arrays">Embedded C++ Tutorial — std::array vs C Arrays</ChapterLink>
+  <ChapterLink href="core-embedded-cpp-index">Index</ChapterLink>
+</ChapterNav>

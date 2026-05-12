@@ -9,7 +9,9 @@ When it comes to the tricky parts of C++, pointers definitely make the list—bu
 
 ## Chapter Contents
 
-- [Pointer Basics](01-pointer-basics)
-- [Pointer Arithmetic and Arrays](02-pointer-arithmetic)
-- [References](03-references)
-- [Smart Pointer Preview](04-smart-ptr-preview)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-pointer-basics">Pointer Basics</ChapterLink>
+  <ChapterLink href="02-pointer-arithmetic">Pointer Arithmetic and Arrays</ChapterLink>
+  <ChapterLink href="03-references">References</ChapterLink>
+  <ChapterLink href="04-smart-ptr-preview">Smart Pointer Preview</ChapterLink>
+</ChapterNav>

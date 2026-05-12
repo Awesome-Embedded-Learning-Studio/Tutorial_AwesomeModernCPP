@@ -9,6 +9,8 @@ Operator overloading lets custom types participate in operations as naturally as
 
 ## Chapter Contents
 
-- [Arithmetic and Comparison Operators](01-arithmetic-comparison)
-- [Stream and Subscript Operators](02-io-subscript)
-- [Function Call and Type Conversion](03-call-and-conversion)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-arithmetic-comparison">Arithmetic and Comparison Operators</ChapterLink>
+  <ChapterLink href="02-io-subscript">Stream and Subscript Operators</ChapterLink>
+  <ChapterLink href="03-call-and-conversion">Function Call and Type Conversion</ChapterLink>
+</ChapterNav>

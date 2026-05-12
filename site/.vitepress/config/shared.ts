@@ -8,6 +8,12 @@ export const sharedBase = {
   cleanUrls: true,
   lastUpdated: true,
 
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 5000,
+    },
+  },
+
   vue: {
     template: {
       compilerOptions: {

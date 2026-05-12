@@ -13,30 +13,34 @@ This volume covers C++ fundamentals, from environment setup to object-oriented p
 
 ## Chapter Navigation
 
-- [ch00: Environment Setup and Your First Program](ch00/)
-- [ch01: Types and Value Categories](ch01/)
-- [ch02: Control Flow](ch02/)
-- [ch03: Functions](ch03/)
-- [ch04: Pointers and References](ch04/)
-- [ch05: Arrays and Strings](ch05/)
-- [ch06: Classes and Object-Oriented Programming](ch06/)
-- [ch07: Operator Overloading](ch07/)
-- [ch08: Inheritance and Polymorphism](ch08/)
-- [ch09: Introduction to Templates](ch09/)
-- [ch10: Exception Handling](ch10/)
-- [ch11: Introduction to the STL](ch11/)
-- [ch12: Memory Model Basics](ch12/)
+<ChapterNav>
+  <ChapterLink num="0" href="ch00/">Environment Setup and Your First Program</ChapterLink>
+  <ChapterLink num="1" href="ch01/">Types and Value Categories</ChapterLink>
+  <ChapterLink num="2" href="ch02/">Control Flow</ChapterLink>
+  <ChapterLink num="3" href="ch03/">Functions</ChapterLink>
+  <ChapterLink num="4" href="ch04/">Pointers and References</ChapterLink>
+  <ChapterLink num="5" href="ch05/">Arrays and Strings</ChapterLink>
+  <ChapterLink num="6" href="ch06/">Classes and Object-Oriented Programming</ChapterLink>
+  <ChapterLink num="7" href="ch07/">Operator Overloading</ChapterLink>
+  <ChapterLink num="8" href="ch08/">Inheritance and Polymorphism</ChapterLink>
+  <ChapterLink num="9" href="ch09/">Introduction to Templates</ChapterLink>
+  <ChapterLink num="10" href="ch10/">Exception Handling</ChapterLink>
+  <ChapterLink num="11" href="ch11/">Introduction to the STL</ChapterLink>
+  <ChapterLink num="12" href="ch12/">Memory Model Basics</ChapterLink>
+</ChapterNav>
 
 ## Supplementary Materials
 
-- [Preface](00-preface.md)
-- [C Language Crash Course](02-c-language-crash-course.md)
-- [C++98 Basics: Namespaces, References, and Scope Resolution](03A-cpp98-namespace-reference.md)
-- [C++98 Function Interfaces: Overloading and Default Arguments](03B-cpp98-function-overload-default-args.md)
-- [C++98 Object-Oriented Programming: In-Depth Look at Classes and Objects](03C-cpp98-classes-and-objects.md)
-- [C++98 Object-Oriented Programming: Inheritance and Polymorphism](03D-cpp98-inheritance-polymorphism.md)
-- [C++98 Operator Overloading](03E-cpp98-operator-overloading.md)
-- [C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling](03F-cpp98-casts-memory-exceptions.md)
-- [When to Use C++ and Which Features to Use](04-when-to-use-cpp.md)
-- [Language Selection Principles: The Real Trade-Off Between Performance and Maintainability](05-language-choice-performance-vs-maintainability.md)
-- [C Language Tutorial (Detailed Version)](c_tutorials/) — for readers without a C language background
+<ChapterNav variant="sub">
+  <ChapterLink href="00-preface">Preface</ChapterLink>
+  <ChapterLink href="02-c-language-crash-course">C Language Crash Course</ChapterLink>
+  <ChapterLink href="03A-cpp98-namespace-reference">C++98 Basics: Namespaces, References, and Scope Resolution</ChapterLink>
+  <ChapterLink href="03B-cpp98-function-overload-default-args">C++98 Function Interfaces: Overloading and Default Arguments</ChapterLink>
+  <ChapterLink href="03C-cpp98-classes-and-objects">C++98 Object-Oriented Programming: In-Depth Look at Classes and Objects</ChapterLink>
+  <ChapterLink href="03D-cpp98-inheritance-polymorphism">C++98 Object-Oriented Programming: Inheritance and Polymorphism</ChapterLink>
+  <ChapterLink href="03E-cpp98-operator-overloading">C++98 Operator Overloading</ChapterLink>
+  <ChapterLink href="03F-cpp98-casts-memory-exceptions">C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling</ChapterLink>
+  <ChapterLink href="04-when-to-use-cpp">When to Use C++ and Which Features to Use</ChapterLink>
+  <ChapterLink href="05-language-choice-performance-vs-maintainability">Language Selection Principles: The Real Trade-Off Between Performance and Maintainability</ChapterLink>
+  <ChapterLink href="c_tutorials/">C Language Tutorial (Detailed Version)</ChapterLink>
+</ChapterNav>

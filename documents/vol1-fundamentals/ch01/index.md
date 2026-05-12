@@ -9,7 +9,9 @@ description: "理解 C++ 的类型系统、类型转换规则和值类别基础"
 
 ## 本章内容
 
-- [基本数据类型](01-basic-types)
-- [类型转换](02-type-conversion)
-- [const 初探](03-const-basics)
-- [值类别简介](04-value-categories)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-basic-types">基本数据类型</ChapterLink>
+  <ChapterLink href="02-type-conversion">类型转换</ChapterLink>
+  <ChapterLink href="03-const-basics">const 初探</ChapterLink>
+  <ChapterLink href="04-value-categories">值类别简介</ChapterLink>
+</ChapterNav>

@@ -18,11 +18,13 @@ tags:
 
 ## 现有文章（待重写为通用内容）
 
-- [初始化列表](01-initializer-lists.md)
-- [对象大小与平凡类型](05-object-size-and-trivial-types.md)
-- [array](01-array.md)
-- [span](02-span.md)
-- [环形缓冲区](03-circular-buffer.md)
-- [侵入式容器](04-intrusive-containers.md)
-- [自定义分配器](06-custom-allocators.md)
-- [类型安全寄存器访问](02-type-safe-register-access.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-initializer-lists">初始化列表</ChapterLink>
+  <ChapterLink href="05-object-size-and-trivial-types">对象大小与平凡类型</ChapterLink>
+  <ChapterLink href="01-array">array</ChapterLink>
+  <ChapterLink href="02-span">span</ChapterLink>
+  <ChapterLink href="03-circular-buffer">环形缓冲区</ChapterLink>
+  <ChapterLink href="04-intrusive-containers">侵入式容器</ChapterLink>
+  <ChapterLink href="06-custom-allocators">自定义分配器</ChapterLink>
+  <ChapterLink href="02-type-safe-register-access">类型安全寄存器访问</ChapterLink>
+</ChapterNav>

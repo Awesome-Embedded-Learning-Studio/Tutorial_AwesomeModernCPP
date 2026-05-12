@@ -20,17 +20,23 @@ tags:
 
 ### 构建与环境
 
-- [交叉编译与 CMake](01-cross-compilation-and-cmake.md)
-- [编译器选项](02-compiler-options.md)
-- [链接器与链接脚本](03-linker-and-linker-scripts.md)
-- [VS2026 使用 C++ 模块](cpp-modules-on-vs2026.md)
-- [WSL 开发 C++](cpp-development-on-wsl.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-cross-compilation-and-cmake">交叉编译与 CMake</ChapterLink>
+  <ChapterLink href="02-compiler-options">编译器选项</ChapterLink>
+  <ChapterLink href="03-linker-and-linker-scripts">链接器与链接脚本</ChapterLink>
+  <ChapterLink href="cpp-modules-on-vs2026">VS2026 使用 C++ 模块</ChapterLink>
+  <ChapterLink href="cpp-development-on-wsl">WSL 开发 C++</ChapterLink>
+</ChapterNav>
 
 ### 文件 I/O
 
-- [文件拷贝器（上）](01-file-copier-requirements-and-framework.md)
-- [文件拷贝器（下）](02-file-copier-core-implementation.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-file-copier-requirements-and-framework">文件拷贝器（上）</ChapterLink>
+  <ChapterLink href="02-file-copier-core-implementation">文件拷贝器（下）</ChapterLink>
+</ChapterNav>
 
 ### 调试
 
-- [MSVC 调试原理](msvc-debugging-internals.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="msvc-debugging-internals">MSVC 调试原理</ChapterLink>
+</ChapterNav>

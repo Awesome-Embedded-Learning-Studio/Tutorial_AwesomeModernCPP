@@ -14,15 +14,17 @@ tags:
 
 ## 章节导航
 
-- [ch00：移动语义与右值引用](ch00-move-semantics/)
-- [ch01：智能指针与 RAII](ch01-smart-pointers/)
-- [ch02：constexpr 与编译期计算](ch02-constexpr/)
-- [ch03：Lambda 与函数式编程](ch03-lambda/)
-- [ch04：类型安全](ch04-type-safety/)
-- [ch05：结构化绑定与初始化](ch05-structured-bindings/)
-- [ch06：auto 与 decltype](ch06-auto-decltype/)
-- [ch07：属性系统](ch07-attributes/)
-- [ch08：string_view 深入](ch08-string-view/)
-- [ch09：文件系统库](ch09-filesystem/)
-- [ch10：错误处理的现代方式](ch10-error-handling/)
-- [ch11：用户自定义字面量](ch11-user-defined-literals/)
+<ChapterNav>
+  <ChapterLink num="0" href="ch00-move-semantics/">移动语义与右值引用</ChapterLink>
+  <ChapterLink num="1" href="ch01-smart-pointers/">智能指针与 RAII</ChapterLink>
+  <ChapterLink num="2" href="ch02-constexpr/">constexpr 与编译期计算</ChapterLink>
+  <ChapterLink num="3" href="ch03-lambda/">Lambda 与函数式编程</ChapterLink>
+  <ChapterLink num="4" href="ch04-type-safety/">类型安全</ChapterLink>
+  <ChapterLink num="5" href="ch05-structured-bindings/">结构化绑定与初始化</ChapterLink>
+  <ChapterLink num="6" href="ch06-auto-decltype/">auto 与 decltype</ChapterLink>
+  <ChapterLink num="7" href="ch07-attributes/">属性系统</ChapterLink>
+  <ChapterLink num="8" href="ch08-string-view/">string_view 深入</ChapterLink>
+  <ChapterLink num="9" href="ch09-filesystem/">文件系统库</ChapterLink>
+  <ChapterLink num="10" href="ch10-error-handling/">错误处理的现代方式</ChapterLink>
+  <ChapterLink num="11" href="ch11-user-defined-literals/">用户自定义字面量</ChapterLink>
+</ChapterNav>

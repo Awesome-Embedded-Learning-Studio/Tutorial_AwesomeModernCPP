@@ -11,6 +11,8 @@ tags:
 
 # 模板与元编程参考卡
 
-- [Concepts](01-concepts.md)
-- [可变参数模板](02-variadic-templates.md)
-- [折叠表达式](03-fold-expressions.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-concepts">Concepts</ChapterLink>
+  <ChapterLink href="02-variadic-templates">可变参数模板</ChapterLink>
+  <ChapterLink href="03-fold-expressions">折叠表达式</ChapterLink>
+</ChapterNav>

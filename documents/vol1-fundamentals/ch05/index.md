@@ -9,6 +9,8 @@ description: "从 C 风格数组到 std::array 和 std::string 的演进"
 
 ## 本章内容
 
-- [C 风格数组](01-c-arrays)
-- [std::array](02-std-array)
-- [std::string](03-std-string)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-c-arrays">C 风格数组</ChapterLink>
+  <ChapterLink href="02-std-array">std::array</ChapterLink>
+  <ChapterLink href="03-std-string">std::string</ChapterLink>
+</ChapterNav>

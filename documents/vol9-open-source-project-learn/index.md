@@ -17,4 +17,6 @@ platform: host
 
 ### Chromium
 
-- [OnceCallback：从 Chromium 学到的回调设计](chrome/01_once_callback/)
+<ChapterNav variant="sub">
+  <ChapterLink href="chrome/01_once_callback/">OnceCallback：从 Chromium 学到的回调设计</ChapterLink>
+</ChapterNav>

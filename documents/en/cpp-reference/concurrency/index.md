@@ -11,6 +11,8 @@ tags:
 ---
 # Concurrency Cheat Sheet
 
-- [std::atomic](01-atomic.md)
-- [std::thread](02-thread.md)
-- [std::mutex](03-mutex.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-atomic">std::atomic</ChapterLink>
+  <ChapterLink href="02-thread">std::thread</ChapterLink>
+  <ChapterLink href="03-mutex">std::mutex</ChapterLink>
+</ChapterNav>

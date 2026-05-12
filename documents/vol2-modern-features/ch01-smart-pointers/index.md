@@ -9,9 +9,11 @@ description: "用 RAII 和智能指针实现自动资源管理"
 
 ## 本章内容
 
-- [RAII 深入理解：资源管理的基石](01-raii-deep-dive)
-- [unique_ptr 详解：独占所有权的零开销智能指针](02-unique-ptr)
-- [shared_ptr 详解：共享所有权与引用计数](03-shared-ptr)
-- [weak_ptr 与循环引用](04-weak-ptr)
-- [自定义删除器与侵入式引用计数](05-custom-deleter)
-- [scope_guard 与 defer：通用作用域守卫](06-scope-guard)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-raii-deep-dive">RAII 深入理解：资源管理的基石</ChapterLink>
+  <ChapterLink href="02-unique-ptr">unique_ptr 详解：独占所有权的零开销智能指针</ChapterLink>
+  <ChapterLink href="03-shared-ptr">shared_ptr 详解：共享所有权与引用计数</ChapterLink>
+  <ChapterLink href="04-weak-ptr">weak_ptr 与循环引用</ChapterLink>
+  <ChapterLink href="05-custom-deleter">自定义删除器与侵入式引用计数</ChapterLink>
+  <ChapterLink href="06-scope-guard">scope_guard 与 defer：通用作用域守卫</ChapterLink>
+</ChapterNav>

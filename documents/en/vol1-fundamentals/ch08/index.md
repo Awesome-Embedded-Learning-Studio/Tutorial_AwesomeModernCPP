@@ -9,8 +9,10 @@ The power of object-oriented programming lies in "manipulating different types o
 
 ## Chapter Contents
 
-- [Single Inheritance](01-single-inheritance)
-- [Virtual Functions and Polymorphism](02-virtual-functions)
-- [Abstract Classes and Interfaces](03-abstract-classes)
-- [Multiple Inheritance and Virtual Inheritance](04-multiple-inheritance)
-- [OOP in Practice](05-oop-in-practice)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-single-inheritance">Single Inheritance</ChapterLink>
+  <ChapterLink href="02-virtual-functions">Virtual Functions and Polymorphism</ChapterLink>
+  <ChapterLink href="03-abstract-classes">Abstract Classes and Interfaces</ChapterLink>
+  <ChapterLink href="04-multiple-inheritance">Multiple Inheritance and Virtual Inheritance</ChapterLink>
+  <ChapterLink href="05-oop-in-practice">OOP in Practice</ChapterLink>
+</ChapterNav>

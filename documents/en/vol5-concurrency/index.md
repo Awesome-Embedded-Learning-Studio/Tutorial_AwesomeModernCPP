@@ -17,9 +17,11 @@ This volume provides comprehensive coverage of C++ concurrent programming.
 
 ## Existing Articles (Pending Rewrite to General Content)
 
-- [Atomic Operations](01-atomic.md)
-- [Memory Order](02-memory-order.md)
-- [Lock-Free Data Structures](03-lock-free-data-structures.md)
-- [Mutex and RAII Guards](04-mutex-and-raii-guards.md)
-- [Critical Section Protection](06-critical-section-protection.md)
-- [Coroutine Echo Server](03-coroutine-echo-server.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-atomic">Atomic Operations</ChapterLink>
+  <ChapterLink href="02-memory-order">Memory Order</ChapterLink>
+  <ChapterLink href="03-lock-free-data-structures">Lock-Free Data Structures</ChapterLink>
+  <ChapterLink href="04-mutex-and-raii-guards">Mutex and RAII Guards</ChapterLink>
+  <ChapterLink href="06-critical-section-protection">Critical Section Protection</ChapterLink>
+  <ChapterLink href="03-coroutine-echo-server">Coroutine Echo Server</ChapterLink>
+</ChapterNav>

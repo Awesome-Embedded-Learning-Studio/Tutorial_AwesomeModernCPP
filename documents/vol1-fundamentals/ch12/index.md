@@ -1,11 +1,14 @@
 ---
-title: "内存模型基础"
+title: "STL 初见"
 ---
 
-# 内存模型基础
+# STL 初见
 
 ## 本章内容
 
-- [内存布局](01-memory-layout)
-- [动态内存管理](02-new-delete)
-- [内存对齐与填充](03-alignment-padding)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-vector">std::vector 快速上手</ChapterLink>
+  <ChapterLink href="02-map-set">关联容器快速上手</ChapterLink>
+  <ChapterLink href="03-algorithms-intro">算法库初见</ChapterLink>
+  <ChapterLink href="04-stl-patterns">STL 常用模式</ChapterLink>
+</ChapterNav>

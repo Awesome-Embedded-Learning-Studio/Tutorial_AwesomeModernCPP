@@ -10,7 +10,9 @@ This chapter is intended for readers with absolutely no C++ experience. If you a
 
 ## Chapter Contents
 
-- [Preface: Why Learn C++](00-preface)
-- [Linux Environment Setup](01-setup-linux)
-- [Windows Environment Setup](02-setup-windows)
-- [The First C++ Program](03-first-program)
+<ChapterNav variant="sub">
+  <ChapterLink href="00-preface">Preface: Why Learn C++</ChapterLink>
+  <ChapterLink href="01-setup-linux">Linux Environment Setup</ChapterLink>
+  <ChapterLink href="02-setup-windows">Windows Environment Setup</ChapterLink>
+  <ChapterLink href="03-first-program">The First C++ Program</ChapterLink>
+</ChapterNav>

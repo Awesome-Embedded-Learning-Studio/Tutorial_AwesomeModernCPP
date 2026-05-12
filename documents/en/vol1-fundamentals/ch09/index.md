@@ -8,6 +8,8 @@ Templates are the core mechanism for generic programming in C++—write one piec
 
 ## Chapter Contents
 
-- [Function Templates](01-function-templates)
-- [Class Templates](02-class-templates)
-- [Template Specialization Basics](03-specialization-basics)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-function-templates">Function Templates</ChapterLink>
+  <ChapterLink href="02-class-templates">Class Templates</ChapterLink>
+  <ChapterLink href="03-specialization-basics">Template Specialization Basics</ChapterLink>
+</ChapterNav>

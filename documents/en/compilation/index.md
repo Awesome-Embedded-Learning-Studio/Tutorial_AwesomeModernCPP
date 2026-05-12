@@ -18,13 +18,15 @@ An in-depth exploration of core C/C++ concepts including compilation, linking, s
 
 ## Chapter Navigation
 
-- [01 Compilation and Linking Overview](01-compilation-and-linking-overview.md)
-- [02 The Concept of Reuse](02-reuse-concept.md)
-- [03 Creating and Using Static Libraries](03-creating-and-using-static-libs.md)
-- [04 Shared Libraries (Part 1)](04-dynamic-libraries-1.md)
-- [05 Shared Library Design](05-dynamic-library-design.md)
-- [06 Symbol Visibility](06-symbol-visibility.md)
-- [07 Missing Symbols and Runtime Loading](07-symbol-missing-and-runtime-loading.md)
-- [08 Library Search Logic](08-library-search-logic.md)
-- [09 Shared Library Details](09-dynamic-library-details.md)
-- [10 Shared Libraries as Executables](10-dynamic-lib-as-executable.md)
+<ChapterNav>
+  <ChapterLink num="1" href="01-compilation-and-linking-overview.md">Compilation and Linking Overview</ChapterLink>
+  <ChapterLink num="2" href="02-reuse-concept.md">The Concept of Reuse</ChapterLink>
+  <ChapterLink num="3" href="03-creating-and-using-static-libs.md">Creating and Using Static Libraries</ChapterLink>
+  <ChapterLink num="4" href="04-dynamic-libraries-1.md">Shared Libraries (Part 1)</ChapterLink>
+  <ChapterLink num="5" href="05-dynamic-library-design.md">Shared Library Design</ChapterLink>
+  <ChapterLink num="6" href="06-symbol-visibility.md">Symbol Visibility</ChapterLink>
+  <ChapterLink num="7" href="07-symbol-missing-and-runtime-loading.md">Missing Symbols and Runtime Loading</ChapterLink>
+  <ChapterLink num="8" href="08-library-search-logic.md">Library Search Logic</ChapterLink>
+  <ChapterLink num="9" href="09-dynamic-library-details.md">Shared Library Details</ChapterLink>
+  <ChapterLink num="10" href="10-dynamic-lib-as-executable.md">Shared Libraries as Executables</ChapterLink>
+</ChapterNav>

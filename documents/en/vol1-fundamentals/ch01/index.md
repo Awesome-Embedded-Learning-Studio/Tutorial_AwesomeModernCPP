@@ -9,7 +9,9 @@ The type system is one of the most core designs in C++—it determines how data 
 
 ## Chapter Contents
 
-- [Fundamental Data Types](01-basic-types)
-- [Type Conversion](02-type-conversion)
-- [Introduction to const](03-const-basics)
-- [Introduction to Value Categories](04-value-categories)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-basic-types">Fundamental Data Types</ChapterLink>
+  <ChapterLink href="02-type-conversion">Type Conversion</ChapterLink>
+  <ChapterLink href="03-const-basics">Introduction to const</ChapterLink>
+  <ChapterLink href="04-value-categories">Introduction to Value Categories</ChapterLink>
+</ChapterNav>

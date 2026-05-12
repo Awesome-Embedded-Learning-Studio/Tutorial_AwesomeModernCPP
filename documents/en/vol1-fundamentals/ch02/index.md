@@ -8,6 +8,8 @@ At its core, a program is about "doing different things based on conditions" and
 
 ## Chapter Contents
 
-- [Conditional Statements](01-conditionals)
-- [Loop Statements](02-loops)
-- [range-for Loops](03-range-for)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-conditionals">Conditional Statements</ChapterLink>
+  <ChapterLink href="02-loops">Loop Statements</ChapterLink>
+  <ChapterLink href="03-range-for">range-for Loops</ChapterLink>
+</ChapterNav>

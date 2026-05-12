@@ -17,11 +17,13 @@ This volume provides a deep dive into the C++ standard library.
 
 ## Existing Articles (Pending Rewrite to Generic Content)
 
-- [Initializer Lists](01-initializer-lists.md)
-- [Object Size and Trivial Types](05-object-size-and-trivial-types.md)
-- [array](01-array.md)
-- [span](02-span.md)
-- [Circular Buffer](03-circular-buffer.md)
-- [Intrusive Containers](04-intrusive-containers.md)
-- [Custom Allocators](06-custom-allocators.md)
-- [Type-Safe Register Access](02-type-safe-register-access.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-initializer-lists">Initializer Lists</ChapterLink>
+  <ChapterLink href="05-object-size-and-trivial-types">Object Size and Trivial Types</ChapterLink>
+  <ChapterLink href="01-array">array</ChapterLink>
+  <ChapterLink href="02-span">span</ChapterLink>
+  <ChapterLink href="03-circular-buffer">Circular Buffer</ChapterLink>
+  <ChapterLink href="04-intrusive-containers">Intrusive Containers</ChapterLink>
+  <ChapterLink href="06-custom-allocators">Custom Allocators</ChapterLink>
+  <ChapterLink href="02-type-safe-register-access">Type-Safe Register Access</ChapterLink>
+</ChapterNav>

@@ -11,7 +11,9 @@ tags:
 
 # 内存管理参考卡
 
-- [std::unique_ptr](01-unique-ptr.md)
-- [std::shared_ptr](02-shared-ptr.md)
-- [std::optional](03-optional.md)
-- [std::make_unique](04-make-unique.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-unique-ptr">std::unique_ptr</ChapterLink>
+  <ChapterLink href="02-shared-ptr">std::shared_ptr</ChapterLink>
+  <ChapterLink href="03-optional">std::optional</ChapterLink>
+  <ChapterLink href="04-make-unique">std::make_unique</ChapterLink>
+</ChapterNav>
