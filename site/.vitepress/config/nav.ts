@@ -29,6 +29,7 @@ export const navZh: DefaultTheme.NavItem[] = [
     items: [
       { text: '卷八 · 领域应用', link: '/vol8-domains/' },
       { text: '卷九 · 开源项目学习', link: '/vol9-open-source-project-learn/' },
+      { text: '卷十 · 课程与演讲笔记', link: '/vol10-open-lecture-notes/' },
       { text: '编译与链接', link: '/compilation/' },
       { text: '实战项目', link: '/projects/' },
     ],
@@ -67,6 +68,7 @@ export const navEn: DefaultTheme.NavItem[] = [
     items: [
       { text: 'Vol.8 Domain Applications', link: '/en/vol8-domains/' },
       { text: 'Vol.9 Open Source Projects', link: '/en/vol9-open-source-project-learn/' },
+      { text: 'Vol.10 Courses & Talks', link: '/en/vol10-open-lecture-notes/' },
       { text: 'Compilation & Linking', link: '/en/compilation/' },
       { text: 'Projects', link: '/en/projects/' },
     ],

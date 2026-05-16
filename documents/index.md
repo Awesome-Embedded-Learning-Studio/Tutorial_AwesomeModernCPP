@@ -73,6 +73,12 @@ features:
     link: /vol9-open-source-project-learn/
     linkText: 开始阅读
 
+  - title: "卷十 · 课程与演讲笔记"
+    details: "CppCon 等技术会议演讲与开源课程的学习笔记与二次创作。"
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>'
+    link: /vol10-open-lecture-notes/
+    linkText: 开始阅读
+
   - title: "编译与链接深入"
     details: "编译、链接、静态库、动态库、符号可见性等核心概念。共 10 篇文章。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'

@@ -4,6 +4,10 @@ import type { Theme } from 'vitepress'
 import HomeTipBanner from './components/HomeTipBanner.vue'
 import ChapterNav from './components/ChapterNav.vue'
 import ChapterLink from './components/ChapterLink.vue'
+import TalkInfoCard from './components/TalkInfoCard.vue'
+import RefLink from './components/RefLink.vue'
+import ReferenceCard from './components/ReferenceCard.vue'
+import ReferenceItem from './components/ReferenceItem.vue'
 import './custom.css'
 
 export default {
@@ -16,5 +20,9 @@ export default {
   enhanceApp({ app }) {
     app.component('ChapterNav', ChapterNav)
     app.component('ChapterLink', ChapterLink)
+    app.component('TalkInfoCard', TalkInfoCard)
+    app.component('RefLink', RefLink)
+    app.component('ReferenceCard', ReferenceCard)
+    app.component('ReferenceItem', ReferenceItem)
   }
 } satisfies Theme

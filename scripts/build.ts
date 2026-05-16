@@ -32,6 +32,7 @@ const VOLUMES: Volume[] = [
   { name: 'vol7', srcDir: 'vol7-engineering', urlPrefix: '/vol7-engineering' },
   { name: 'vol8', srcDir: 'vol8-domains', urlPrefix: '/vol8-domains' },
   { name: 'vol9', srcDir: 'vol9-open-source-project-learn', urlPrefix: '/vol9-open-source-project-learn' },
+  { name: 'vol10', srcDir: 'vol10-open-lecture-notes', urlPrefix: '/vol10-open-lecture-notes' },
   { name: 'compilation', srcDir: 'compilation', urlPrefix: '/compilation' },
   { name: 'cpp-reference', srcDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { name: 'projects', srcDir: 'projects', urlPrefix: '/projects' },
