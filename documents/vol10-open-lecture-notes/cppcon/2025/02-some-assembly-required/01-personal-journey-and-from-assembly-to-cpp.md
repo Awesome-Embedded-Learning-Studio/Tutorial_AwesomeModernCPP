@@ -100,30 +100,30 @@ main:
 这里有个坑必须提醒。一开始用 `-O1` 编译，结果发现 `add` 函数的汇编就两三行，参数根本没进栈，直接在寄存器里就算完了(熟悉编译器优化的朋友估计不会感觉如何，本来就是寄存器层能操作的东西，对吧！)。这是因为 `-O1` 就已经开始做寄存器分配优化了——编译器发现没必要把参数存到栈上再读回来，直接用寄存器就算了。所以如果你也想跟着做实验，一定要用 `-O0`，不然你会看到一堆看不懂的东西。
 
 ```asm
-	.file	"demo.cpp"
-	.text
-	.globl	_Z3addii
-	.type	_Z3addii, @function
+    .file   "demo.cpp"
+    .text
+    .globl  _Z3addii
+    .type   _Z3addii, @function
 _Z3addii:
 .LFB0:
-	.cfi_startproc
-	leal	(%rdi,%rsi), %eax
-	ret
-	.cfi_endproc
+    .cfi_startproc
+    leal    (%rdi,%rsi), %eax
+    ret
+    .cfi_endproc
 .LFE0:
-	.size	_Z3addii, .-_Z3addii
-	.globl	main
-	.type	main, @function
+    .size   _Z3addii, .-_Z3addii
+    .globl  main
+    .type   main, @function
 main:
 .LFB1:
-	.cfi_startproc
-	movl	$7, %eax
-	ret
-	.cfi_endproc
+    .cfi_startproc
+    movl    $7, %eax
+    ret
+    .cfi_endproc
 .LFE1:
-	.size	main, .-main
-	.ident	"GCC: (GNU) 16.1.1 20260430"
-	.section	.note.GNU-stack,"",@progbits
+    .size   main, .-main
+    .ident  "GCC: (GNU) 16.1.1 20260430"
+    .section    .note.GNU-stack,"",@progbits
 ```
 
 另一个坑是不同平台的调用约定不一样。上面展示的是 x86-64 的 System V ABI<RefLink :id="3" preview="System V Application Binary Interface, AMD64, calling convention" />，前两个整数参数分别放在 `%edi` 和 `%esi` 里，返回值放在 `%eax` 里。如果在 Windows 上用 MSVC 编译，参数传递的方式是不一样的（用的是 `%rcx`、`%rdx`<RefLink :id="4" preview="Microsoft, x64 Calling Convention, RCX/RDX/R8/R9" />）。所以如果跑出来的结果不一样，先检查平台和编译器。
@@ -307,7 +307,7 @@ int main() {
 编译一下看汇编输出（我用的环境后面会说）：
 
 ```bash
-$ g++ -O0 -S simple_call.cpp -o simple_call.s
+g++ -O0 -S simple_call.cpp -o simple_call.s
 ```
 
 `-O0` 是关掉所有优化，因为开了优化之后编译器会把整个东西折叠成常量，我们就看不到函数调用的过程了。打开 `simple_call.s`，你会看到类似这样的东西（我截取了关键部分，AT&T 语法）：
@@ -613,7 +613,7 @@ int main() {
 ::: details 实际验证结果（Arch Linux WSL, GCC 16.1.1, -O3 -mavx2 -mfma）
 在验证环境中，由于 GCC 16.1 的自动向量化能力已经非常强，标量版本被编译器自动优化到了接近手动 AVX2/FMA 的水平，实际加速比只有约 1.16x：
 
-```
+```text
 scalar: 1.09 ms
 avx2/fma: 0.94 ms
 speedup: 1.16x

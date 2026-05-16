@@ -321,7 +321,7 @@ int main() {
 
 跑一下看看输出：
 
-```
+```text
 捕获到: narrowing conversion detected
 捕获到: narrowing conversion detected
 捕获到: narrowing conversion detected
@@ -386,7 +386,7 @@ int main() {
 
 输出：
 
-```
+```text
 x = 42, y = 3, z = 100
 sum = 142
 捕获到: narrowing conversion detected
@@ -780,7 +780,7 @@ int main() {
 
 跑起来输出是这样的：
 
-```
+```text
 3
 捕获到异常: 下标越界了兄弟
 ```
@@ -845,7 +845,7 @@ int main() {
 
 输出：
 
-```
+```text
 捕获到异常: 负数下标，你想干嘛
 ```
 
@@ -904,7 +904,7 @@ int main() {
 
 输出：
 
-```
+```text
 前 3 个元素的和: 6
 捕获到异常: params[0] 不是合法的正整数
 ```
@@ -1045,7 +1045,7 @@ int main() {
 
 输出：
 
-```
+```text
 前3个: 10 20 30 
 中间3个: 30 40 50 
 捕获: take_front: n 超过了 span 的大小

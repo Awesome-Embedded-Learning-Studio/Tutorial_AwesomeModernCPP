@@ -637,7 +637,7 @@ g++-14 -std=c++20 -fmodules-ts math_utils.cppm main.cpp -o demo
 
 跑一下看看：
 
-```
+```text
 5^2 = 25
 pi = 3.14159
 ```
@@ -653,7 +653,7 @@ pi = 3.14159
 ::: warning 原文错误更正
 原版示例使用了 `reinterpret_cast` 来判断字节序，但 `reinterpret_cast` 在 C++ 标准中**不允许出现在常量表达式求值中**（[expr.const]<RefLink :id="12" preview="cppreference.com, Constant expressions" />），因此 `consteval` 函数中不能使用它。GCC 16.1.1 的实际报错信息如下：
 
-```
+```text
 /tmp/test.cpp:4:12: warning: 'reinterpret_cast' is not a constant expression [-Winvalid-constexpr]
     4 |     return reinterpret_cast<const char*>(&test)[0] == 1;
       |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -74,7 +74,7 @@ int main() {
 
 运行结果：
 
-```
+```text
 use_count: 1
 value: 42
 after copy, use_count: 2
@@ -121,7 +121,7 @@ int main() {
 
 运行结果（GCC 16.1.1, `-std=c++20`）：
 
-```
+```text
 created: "/tmp/test_dir"
 removed: "/tmp/test_dir"
 ```
