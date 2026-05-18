@@ -82,7 +82,6 @@ int main() {
 
 ## 另见
 
-- [教程：std::thread](../../vol5-concurrency/ch01-thread-basics/01-std-thread.md)
 - [cppreference: std::jthread](https://en.cppreference.com/w/cpp/thread/jthread)
 - [cppreference: std::stop_token](https://en.cppreference.com/w/cpp/thread/stop_token)
 
