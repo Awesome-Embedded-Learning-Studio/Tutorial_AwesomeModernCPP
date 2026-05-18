@@ -3,9 +3,9 @@ id: 029
 title: "C++ 特性参考卡（Feature Reference Cards）"
 category: content
 priority: P2
-status: in-progress
+status: completed
 created: 2026-04-15
-updated: 2026-04-18
+updated: 2026-05-18
 assignee: charliechen
 depends_on: ["028"]
 blocks: []
@@ -37,14 +37,14 @@ scripts/cppref_card_generator.py  → JSON + Claude API → .md 参考卡
 
 ## 验收标准
 
-- [ ] 参考卡模板文件存在（`.templates/reference-card-template.md`）
-- [ ] 按功能类别分目录：memory/、containers/、concurrency/、core-language/、templates/
-- [ ] 每张参考卡包含统一模板：一句话、头文件、API 速查表、最小示例、嵌入式适用性、编译器支持、另见
-- [ ] 第一批覆盖 10 个高频特性
-- [ ] 每页底部包含 CC-BY-SA 4.0 归属声明
-- [ ] 与 vol2/vol3 对应教程文章的交叉链接正确
-- [ ] 所有页面通过 markdownlint 和 validate_frontmatter.py 校验
-- [ ] MkDocs 渲染正常，侧边栏独立分区可见
+- [x] 参考卡模板文件存在（`.templates/reference-card-template.md`）
+- [x] 按功能类别分目录：memory/、containers/、concurrency/、core-language/、templates/
+- [x] 每张参考卡包含统一模板：一句话、头文件、API 速查表、最小示例、嵌入式适用性、编译器支持、另见
+- [x] 第一批覆盖 10 个高频特性（实际完成 40 张，覆盖三批）
+- [x] 每页底部包含 CC-BY-SA 4.0 归属声明
+- [x] 与 vol2/vol3 对应教程文章的交叉链接正确
+- [x] 所有页面通过 markdownlint 和 validate_frontmatter.py 校验
+- [x] VitePress 构建正常，侧边栏独立分区可见
 
 ## 目录结构
 

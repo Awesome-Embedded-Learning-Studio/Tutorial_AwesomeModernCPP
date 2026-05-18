@@ -273,5 +273,170 @@
     "cpp_standard": [17, 20, 23],
     "tutorial_link": null,
     "embedded_rating": "medium"
+  },
+  {
+    "feature": "structured bindings",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/structured_binding",
+    "output_path": "documents/cpp-reference/core-language/11-structured-binding.md",
+    "category": "core-language",
+    "order": 11,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/ch05-structured-bindings/01-structured-bindings.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "three-way comparison (<=>)",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/default_comparisons",
+    "output_path": "documents/cpp-reference/core-language/12-spaceship-operator.md",
+    "category": "core-language",
+    "order": 12,
+    "difficulty": "intermediate",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::jthread",
+    "cppref_url": "https://en.cppreference.com/w/cpp/thread/jthread",
+    "output_path": "documents/cpp-reference/concurrency/04-jthread.md",
+    "category": "concurrency",
+    "order": 4,
+    "difficulty": "beginner",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::expected",
+    "cppref_url": "https://en.cppreference.com/w/cpp/utility/expected",
+    "output_path": "documents/cpp-reference/memory/05-expected.md",
+    "category": "memory",
+    "order": 5,
+    "difficulty": "intermediate",
+    "cpp_standard": [23],
+    "tutorial_link": "../vol2-modern-features/ch10-error-handling/03-expected-error.md",
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "if constexpr",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/if",
+    "output_path": "documents/cpp-reference/core-language/13-if-constexpr.md",
+    "category": "core-language",
+    "order": 13,
+    "difficulty": "intermediate",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "inline variables",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/inline",
+    "output_path": "documents/cpp-reference/core-language/14-inline-variables.md",
+    "category": "core-language",
+    "order": 14,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "high"
+  },
+  {
+    "feature": "nested namespaces",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/namespace",
+    "output_path": "documents/cpp-reference/core-language/15-nested-namespace.md",
+    "category": "core-language",
+    "order": 15,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "low"
+  },
+  {
+    "feature": "std::filesystem",
+    "cppref_url": "https://en.cppreference.com/w/cpp/filesystem",
+    "output_path": "documents/cpp-reference/containers/06-filesystem.md",
+    "category": "containers",
+    "order": 6,
+    "difficulty": "beginner",
+    "cpp_standard": [17, 20, 23],
+    "tutorial_link": "../vol2-modern-features/ch09-filesystem/01-filesystem-path.md",
+    "embedded_rating": "low"
+  },
+  {
+    "feature": "std::format",
+    "cppref_url": "https://en.cppreference.com/w/cpp/utility/format",
+    "output_path": "documents/cpp-reference/containers/07-format.md",
+    "category": "containers",
+    "order": 7,
+    "difficulty": "beginner",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::flat_map",
+    "cppref_url": "https://en.cppreference.com/w/cpp/container/flat_map",
+    "output_path": "documents/cpp-reference/containers/08-flat-map.md",
+    "category": "containers",
+    "order": 8,
+    "difficulty": "beginner",
+    "cpp_standard": [23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "coroutines",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/coroutines",
+    "output_path": "documents/cpp-reference/core-language/16-coroutines.md",
+    "category": "core-language",
+    "order": 16,
+    "difficulty": "intermediate",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "modules",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/modules",
+    "output_path": "documents/cpp-reference/core-language/17-modules.md",
+    "category": "core-language",
+    "order": 17,
+    "difficulty": "intermediate",
+    "cpp_standard": [20, 23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::generator",
+    "cppref_url": "https://en.cppreference.com/w/cpp/coroutine/generator",
+    "output_path": "documents/cpp-reference/containers/09-generator.md",
+    "category": "containers",
+    "order": 9,
+    "difficulty": "intermediate",
+    "cpp_standard": [23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
+  },
+  {
+    "feature": "std::print",
+    "cppref_url": "https://en.cppreference.com/w/cpp/io/print",
+    "output_path": "documents/cpp-reference/containers/10-print.md",
+    "category": "containers",
+    "order": 10,
+    "difficulty": "beginner",
+    "cpp_standard": [23],
+    "tutorial_link": null,
+    "embedded_rating": "low"
+  },
+  {
+    "feature": "deducing this",
+    "cppref_url": "https://en.cppreference.com/w/cpp/language/member_functions",
+    "output_path": "documents/cpp-reference/core-language/18-deducing-this.md",
+    "category": "core-language",
+    "order": 18,
+    "difficulty": "intermediate",
+    "cpp_standard": [23],
+    "tutorial_link": null,
+    "embedded_rating": "medium"
   }
 ]

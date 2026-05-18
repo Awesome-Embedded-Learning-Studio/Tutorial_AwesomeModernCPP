@@ -1,6 +1,6 @@
 ---
 id: "210"
-title: "卷九·开源项目学习 — Chrome Base Library 设计模式大纲"
+title: "卷九·开源项目学习 — Chrome Base 与工业级并发源码大纲"
 category: content
 priority: P2
 status: pending
@@ -11,20 +11,35 @@ blocks: []
 estimated_effort: large
 ---
 
-# 卷九·开源项目学习 — Chrome Base Library 设计模式大纲
+# 卷九·开源项目学习 — Chrome Base 与工业级并发源码大纲
 
 ## 总览
 
 - **卷名**：vol9-open-source-project-learn
-- **章节名**：chrome/（vol9-1）
+- **章节名**：
+  - `chrome/`（vol9-1）：Chrome Base Library 设计模式
+  - `concurrency/`（vol9-2）：工业级并发源码专题
 - **难度范围**：intermediate → advanced
-- **预计文章数**：22 篇
-- **前置知识**：卷一 + 卷二（RAII、移动语义、智能指针、lambda），卷五（并发基础）
+- **预计文章数**：26 篇（Chrome Base 22 篇 + 并发源码专题 4 篇）
+- **前置知识**：卷一 + 卷二（RAII、移动语义、智能指针、lambda），卷五（并发基础、任务模型、异步 I/O、内存模型）
 - **C++ 标准覆盖**：C++11-23
-- **目录位置**：`documents/vol9-open-source-project-learn/chrome/`
-- **学习目标**：通过剖析 Chromium `base` 库中与浏览器无关的通用组件，掌握大型 C++ 项目的基础库设计范式，理解工业级代码如何平衡类型安全、性能与可测试性
+- **目录位置**：
+  - `documents/vol9-open-source-project-learn/chrome/`
+  - `documents/vol9-open-source-project-learn/concurrency/`
+- **学习目标**：通过剖析工业级 C++ 基础库，掌握大型项目如何平衡类型安全、并发正确性、性能、可测试性与可维护性
 
-## 章节大纲
+## 卷九定位
+
+卷五负责讲清并发标准原语、工程项目和轻量工业库案例盒；卷九负责回答更深的问题：真实基础库为什么这样设计，源码如何把标准知识组织成可维护的系统。
+
+卷九的源码阅读不追求逐行翻译，而是围绕四个问题展开：
+
+1. **问题域**：这个库到底在解决什么工程问题？
+2. **核心抽象**：它用哪些类型和接口把问题稳定下来？
+3. **关键路径**：一次典型调用如何穿过调度、同步、生命周期和错误处理？
+4. **可迁移经验**：我们能把哪些设计缩小后用在自己的项目里？
+
+## vol9-1：Chrome Base Library 设计模式
 
 ### ch00：导论 — 为什么读 Chrome 源码
 
@@ -104,17 +119,51 @@ estimated_effort: large
 | 07-01 | 21-observer-delegate-patterns.md | Observer 与 Delegate 模式 | `base::ObserverList<T>` / `base::CheckedObserver` 的安全观察者模式（检查观察者是否已被销毁）；`base::ScopedObservation` 的 RAII 注册/反注册；Delegate 模式在 Chrome 中的广泛应用：依赖注入、打破循环依赖、测试替身；`base::SupportsUserData` 的扩展点设计；这些模式如何用 Modern C++ 实现得比传统 GoF 更安全 | C++11 `std::function`，C++20 concepts |
 | 07-02 | 22-factory-pimpl-testability.md | Factory、Pimpl 与可测试性架构 | Chrome 的 Factory 模式：异步/可能失败的构造（`Create()` 静态方法返回 `std::unique_ptr`）；`base::NoDestructor<T>`（懒初始化单例）；`base::LazyInstance`（已废弃，讨论废弃原因）；Pimpl 在 Chrome 中的使用；Abstract Base Class + Impl + Fake 的测试三层架构；如何将这些模式应用到自己的项目中提升可测试性 | C++11 `std::unique_ptr`，C++20 modules |
 
+## vol9-2：工业级并发源码专题
+
+- **目录位置**：`documents/vol9-open-source-project-learn/concurrency/`
+- **预计篇数**：4
+- **前置知识**：卷五 ch03-ch06（内存模型、并发数据结构、任务模型、异步 I/O）
+- **写作边界**：卷五只放轻量案例盒；本专题才进入源码结构、关键路径和设计取舍。
+
+### 专题文章列表
+
+| 编号 | 文件名 | 标题 | 核心内容 | 对应卷五知识 |
+|------|--------|------|---------|-------------|
+| conc-01 | 01-boost-asio-io-context-executor.md | Boost.Asio：io_context、executor 与异步操作生命周期 | `io_context` 事件循环、executor 绑定、handler 生命周期、work guard、timer/TCP 异步路径、协程 `co_spawn` 接入；从最小 async timer 追踪到异步操作完成 | ch06 异步 I/O 与协程 |
+| conc-02 | 02-chromium-base-task-sequence-threadpool.md | Chromium base：TaskRunner、Sequence 与 ThreadPool | `base::TaskRunner`、`SequencedTaskRunner`、`SingleThreadTaskRunner`、`PostTask`、`PostTaskAndReply`、Sequence 语义、ThreadPool 关键组件；解释“序列优于线程”的工程价值 | ch05 任务模型与线程池 |
+| conc-03 | 03-folly-onetbb-executor-scheduler.md | Folly / oneTBB：Executor、Future 与 Work Stealing | Folly executor/future chaining 的任务组合思路、oneTBB task scheduler 与 work stealing 的负载均衡思路；对比服务端基础库与任务并行库的抽象边界 | ch05 future、executor、任务调度 |
+| conc-04 | 04-moodycamel-concurrentqueue-mpmc.md | moodycamel concurrentqueue：生产级 MPMC 队列设计 | MPMC queue 使用模型、producer token、block layout、缓存友好设计、内存分配策略、无锁队列的工程取舍；说明哪些设计适合学习，哪些不该轻易复刻 | ch03 内存模型 + ch04 并发数据结构 |
+
+### 与卷五案例盒的关系
+
+| 卷五案例盒 | 卷九深挖文章 | 衔接方式 |
+|------------|--------------|----------|
+| Boost.Asio：`io_context`、timer、TCP echo | conc-01 | 从“会用 Asio 写异步程序”推进到“理解异步操作如何被调度和完成” |
+| Chromium base：`PostTask`、Sequence、TaskRunner | conc-02 | 从“任务模型画面感”推进到“源码如何表达序列化执行与线程池调度” |
+| Folly / oneTBB：executor、future chaining、work stealing | conc-03 | 从“调度器形态”推进到“不同基础库如何选择抽象边界” |
+| moodycamel concurrentqueue：MPMC queue、producer token | conc-04 | 从“知道高性能队列长什么样”推进到“理解缓存布局和无锁工程取舍” |
+
+### 专题产出要求
+
+- 每篇文章必须给出源码版本或阅读入口，优先引用官方仓库、官方文档和稳定公开接口。
+- 每篇文章都要有一个“简化复刻”或“最小调用链”练习，帮助读者把源码设计落回自己的小项目。
+- 不大段搬运源码；只摘取关键接口、关键数据结构和关键调用路径。
+- 每篇文章结尾必须有“能迁移到自己项目的 3 条经验”和“不要盲目复刻的 3 个点”。
+
 ## 练习与项目
 
 ### 文章末尾练习
 - 每篇 3-5 道，重点关注设计决策的权衡分析（而非纯代码实现）
 - 包含"用标准 C++ 重写 Chrome 组件的简化版"练习
 - 包含"分析你自己的项目是否适用此模式"的思考题
+- 并发源码专题额外包含"最小调用链追踪"和"简化复刻"练习
 
 ### 实战项目
 1. **类型安全回调库**：参考 `OnceCallback`/`RepeatingCallback`，用 C++23 实现一个简化版的类型安全回调库，支持移动语义和弱引用取消
 2. **序列化任务调度器**：参考 Chrome 的 Sequence 概念，实现一个基于任务队列的调度器，支持优先级、延迟任务和 `PostTaskAndReply` 模式
 3. **缓存友好容器库**：实现 `flat_map`/`flat_set` 和 `small_map`，用 Google Benchmark 做性能对比测试，生成性能分析报告
+4. **工业并发库阅读笔记**：围绕 Asio、Chromium base、Folly/oneTBB、moodycamel 各写一份调用链图与简化复刻代码
 
 ## 可复用组件库规划
 
@@ -212,6 +261,14 @@ documents/vol9-open-source-project-learn/chrome/components/
 - [Chrome Sequence Manager 设计文档](https://source.chromium.org/chromium/chromium/src/+/main:base/task/sequence_manager/README.md)
 - [Component Cookbook](https://www.chromium.org/developers/design-documents/cookbook/)
 - [Multi-process Architecture](https://www.chromium.org/developers/design-documents/multi-process-architecture/)
+
+### 并发源码专题入口
+- [Boost.Asio 官方文档](https://www.boost.org/doc/libs/release/doc/html/boost_asio.html)
+- [Boost.Asio GitHub 仓库](https://github.com/boostorg/asio)
+- [Folly GitHub 仓库](https://github.com/facebook/folly)
+- [oneTBB 官方文档](https://uxlfoundation.github.io/oneTBB/)
+- [oneTBB GitHub 仓库](https://github.com/uxlfoundation/oneTBB)
+- [moodycamel concurrentqueue GitHub 仓库](https://github.com/cameron314/concurrentqueue)
 
 ### 标准参考
 - [cppreference: std::move_only_function (C++23)](https://en.cppreference.com/w/cpp/utility/functional/move_only_function)

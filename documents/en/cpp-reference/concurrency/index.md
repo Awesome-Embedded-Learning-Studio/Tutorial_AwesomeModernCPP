@@ -15,4 +15,5 @@ tags:
   <ChapterLink href="01-atomic">std::atomic</ChapterLink>
   <ChapterLink href="02-thread">std::thread</ChapterLink>
   <ChapterLink href="03-mutex">std::mutex</ChapterLink>
+  <ChapterLink href="04-jthread">std::jthread</ChapterLink>
 </ChapterNav>

@@ -16,4 +16,5 @@ tags:
   <ChapterLink href="02-shared-ptr">std::shared_ptr</ChapterLink>
   <ChapterLink href="03-optional">std::optional</ChapterLink>
   <ChapterLink href="04-make-unique">std::make_unique</ChapterLink>
+  <ChapterLink href="05-expected">std::expected</ChapterLink>
 </ChapterNav>

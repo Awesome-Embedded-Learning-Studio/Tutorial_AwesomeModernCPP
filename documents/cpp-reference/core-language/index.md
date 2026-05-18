@@ -21,4 +21,12 @@ tags:
   <ChapterLink href="08-move-forward">std::move</ChapterLink>
   <ChapterLink href="09-generic-lambda">泛型 Lambda</ChapterLink>
   <ChapterLink href="10-exchange">std::exchange</ChapterLink>
+  <ChapterLink href="11-structured-binding">结构化绑定</ChapterLink>
+  <ChapterLink href="12-spaceship-operator">三路比较 <=></ChapterLink>
+  <ChapterLink href="13-if-constexpr">if constexpr</ChapterLink>
+  <ChapterLink href="14-inline-variables">内联变量</ChapterLink>
+  <ChapterLink href="15-nested-namespace">嵌套命名空间</ChapterLink>
+  <ChapterLink href="16-coroutines">Coroutines</ChapterLink>
+  <ChapterLink href="17-modules">Modules</ChapterLink>
+  <ChapterLink href="18-deducing-this">Deducing this</ChapterLink>
 </ChapterNav>
