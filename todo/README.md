@@ -1,20 +1,22 @@
 # TODO 追踪系统
 
-本目录是 Tutorial_AwesomeModernCPP 仓库的 TODO 追踪系统，按方向分类管理所有待办事项。
+本目录是 Tutorial_AwesomeModernCPP 仓库的 TODO 追踪系统，所有待办事项以扁平化 Markdown 文件管理。
 
-## 目录结构
+## 文件组织
 
-```
-todo/
-├── architecture/    # 架构和重构 TODO（P0 优先）
-├── content/         # 内容创建 TODO（P0-P1 优先）
-├── automation/      # CI/CD 和自动化 TODO（P1 优先）
-├── branding/        # 品牌和推广 TODO（P2 优先）
-├── mkdocs/          # MkDocs 优化 TODO（P1 优先）
-├── community/       # 社区和贡献 TODO（P2 优先）
-├── translation/     # 翻译流水线 TODO（P2 优先）
-└── interactive/     # 交互式元素 TODO（P3 优先）
-```
+所有 TODO 文件直接存放于 `todo/` 根目录，按编号区间区分类别：
+
+| 编号区间 | 类别 | 说明 |
+|----------|------|------|
+| 001–009 | 架构 | 架构和重构 TODO |
+| 010–049 | 内容 | 内容创建 TODO |
+| 050–069 | 自动化 | CI/CD 和自动化 TODO |
+| 070–079 | 品牌 | 品牌和推广 TODO |
+| 080–089 | 文档系统 | 文档系统优化 TODO |
+| 090–099 | 社区 | 社区和贡献 TODO |
+| 100–109 | 翻译 | 翻译流水线 TODO |
+| 110–119 | 交互 | 交互式元素 TODO |
+| 200–299 | 大纲 | 各卷内容大纲 |
 
 ## 优先级定义
 
@@ -55,23 +57,12 @@ estimated_effort: small|medium|large|epic
 | blocked | 被阻塞（等待依赖完成） |
 | done | 已完成 |
 
-## 编号规则
-
-- `001-009`：架构相关（architecture/）
-- `010-049`：内容相关（content/）
-- `050-069`：自动化相关（automation/）
-- `070-079`：品牌相关（branding/）
-- `080-089`：MkDocs 相关（mkdocs/）
-- `090-099`：社区相关（community/）
-- `100-109`：翻译相关（translation/）
-- `110-119`：交互相关（interactive/）
-
 ## 模板
 
 新建 TODO 文件时，使用 `.templates/todo-template.md` 模板。
 
 ## 归档
 
-完成的 TODO 文件从对应分类目录移入 `todo/archive/`，保留原始内容便于回溯。归档文件的 status 字段标记为 `done`，验收标准中已完成的项标记 `[x]`。
+完成的 TODO 文件可直接删除或保留于本目录，status 字段标记为 `done`。
 
 已完成：001（创建归档分支 archive/legacy_20260415）、201（卷二现代 C++ 特性大纲，44 篇文章全部到位）
