@@ -18,7 +18,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 337/337 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-88%25-green.svg) 347/393 docs translated
 <!-- COVERAGE_END -->
 
 ## 特色亮点
@@ -99,6 +99,7 @@ flowchart TD
 git clone https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP.git
 cd Tutorial_AwesomeModernCPP
 pnpm install              # 安装依赖
+pnpm hooks:install        # 安装提交前自动格式化和覆盖率更新 hook
 
 # 构建后预览（更接近生产环境效果）
 # 并发构建加速，建议值填写您的 nproc 输出结果
@@ -119,7 +120,9 @@ pnpm dev
 | `pnpm build` | 生产模式构建（分卷并行构建 + 搜索索引合并） |
 | `pnpm build:single` | 单体构建（不分卷） |
 | `pnpm preview` | 预览生产构建结果 |
-| `scripts/setup_precommit.sh` | 安装 pre-commit hooks |
+| `pnpm hooks:install` / `scripts/setup_precommit.sh` | 安装提交前 Git hook |
+| `pnpm coverage` | 查看英文翻译覆盖率 |
+| `pnpm coverage:update` | 更新 `README.md` 中的英文翻译覆盖率徽章 |
 | `scripts/validate_frontmatter.py` | 验证文章 frontmatter |
 | `scripts/check_links.py` | 检查内部链接有效性 |
 | `scripts/analyze_frontmatter.py` | 分析教程统计信息 |

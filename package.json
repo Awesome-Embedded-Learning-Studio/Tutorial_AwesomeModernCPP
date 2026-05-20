@@ -7,7 +7,10 @@
     "dev": "vitepress dev site",
     "build": "tsx scripts/build.ts",
     "build:single": "vitepress build site",
-    "preview": "vitepress preview site"
+    "preview": "vitepress preview site",
+    "hooks:install": "scripts/setup_precommit.sh",
+    "coverage": "python3 scripts/coverage.py",
+    "coverage:update": "python3 scripts/coverage.py --update"
   },
   "devDependencies": {
     "@types/node": "^25.6.2",

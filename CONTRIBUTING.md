@@ -6,9 +6,38 @@
 
 1. Fork 本仓库
 2. 创建你的特性分支 (`git switch -c feature/amazing-feature`)
-3. 提交更改 (`git commit -m '添加某功能'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+3. 安装本地 Git hook (`pnpm hooks:install` 或 `scripts/setup_precommit.sh`)
+4. 提交更改 (`git commit -m '添加某功能'`)
+5. 推送到分支 (`git push origin feature/amazing-feature`)
+6. 创建 Pull Request
+
+## 提交前自动化
+
+本仓库使用可追踪的原生 Git hook，配置位于 `.githooks/pre-commit`。安装后，每次 `git commit` 前会自动执行：
+
+- 对已暂存的 C/C++ 源文件和头文件运行 `clang-format -i`
+- 运行 `python3 scripts/coverage.py --update` 检查英文翻译覆盖率并更新 `README.md`
+- 对 hook 自动修改的文件执行 `git add`，因此通常不需要因为格式化或覆盖率徽章变化再次手动提交
+
+首次克隆仓库后运行：
+
+```bash
+pnpm install
+pnpm hooks:install
+```
+
+如果不使用 pnpm，也可以直接运行：
+
+```bash
+scripts/setup_precommit.sh
+```
+
+hook 依赖本机已安装：
+
+- `python3`：用于翻译覆盖率统计
+- `clang-format`：用于 C/C++ 代码格式化
+
+为了避免把未准备提交的内容一起带入 commit，如果已暂存的 C/C++ 文件或 `README.md` 同时还有未暂存改动，hook 会停止并提示先整理工作区。确实需要临时跳过 hook 时，可以使用 `git commit --no-verify`，但不建议在 PR 提交中长期绕过。
 
 ## 文章规范
 

@@ -95,6 +95,7 @@ flowchart TD
 git clone https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP.git
 cd Tutorial_AwesomeModernCPP
 pnpm install              # Install dependencies
+pnpm hooks:install        # Install the pre-commit formatting and coverage hook
 
 # Build and preview (closer to production behavior)
 # Set BUILD_CONCURRENCY to your nproc output for faster parallel builds
@@ -115,7 +116,9 @@ pnpm dev
 | `pnpm build` | Production build (parallel per-volume build + search index merge) |
 | `pnpm build:single` | Single build (no volume splitting) |
 | `pnpm preview` | Preview production build |
-| `scripts/setup_precommit.sh` | Install pre-commit hooks |
+| `pnpm hooks:install` / `scripts/setup_precommit.sh` | Install the pre-commit Git hook |
+| `pnpm coverage` | Show English translation coverage |
+| `pnpm coverage:update` | Update the English coverage badge in `README.md` |
 | `scripts/validate_frontmatter.py` | Validate article frontmatter |
 | `scripts/check_links.py` | Check internal link validity |
 | `scripts/analyze_frontmatter.py` | Analyze tutorial statistics |

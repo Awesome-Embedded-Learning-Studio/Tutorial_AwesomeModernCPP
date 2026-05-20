@@ -1,141 +1,64 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-ENV_DIR=".venv"
+HOOKS_DIR="$PROJECT_ROOT/.githooks"
+PRE_COMMIT_HOOK="$HOOKS_DIR/pre-commit"
 
-echo "=============================="
-echo " Pre-commit Setup "
-echo "=============================="
-echo ""
-
-# Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# 1. Check python3
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}❌ python3 not found.${NC}"
-    echo "   Please install Python 3 first."
-    exit 1
-fi
-echo -e "${GREEN}✅ Python detected: $(python3 --version)${NC}"
-
-echo -e "🔄 Activating environment..."
-if [ ! -f "$ENV_DIR/bin/activate" ]; then
-    echo -e "${RED}❌ Virtual environment not found at $ENV_DIR/${NC}"
-    echo "   Please create it first: python3 -m venv $ENV_DIR"
-    exit 1
-fi
-source $ENV_DIR/bin/activate
-
-# 2. Check pip
-if ! command -v pip &> /dev/null && ! python3 -m pip --version &> /dev/null; then
-    echo -e "${RED}❌ pip not found.${NC}"
-    echo "   Please install pip first."
-    exit 1
-fi
-echo -e "${GREEN}✅ pip available${NC}"
-
-# 3. Install pre-commit
-echo ""
-echo "📦 Installing pre-commit..."
-python3 -m pip install pre-commit || {
-    echo -e "${YELLOW}⚠ User install failed, trying system install...${NC}"
-    python3 -m pip install pre-commit
-}
-
-# Verify pre-commit installation
-if command -v pre-commit &> /dev/null; then
-    echo -e "${GREEN}✅ pre-commit installed: $(pre-commit --version)${NC}"
-else
-    # Add user base to PATH if not already there
-    USER_BASE=$(python3 -m site --user-base)
-    export PATH="$USER_BASE/bin:$PATH"
-
-    if command -v pre-commit &> /dev/null; then
-        echo -e "${GREEN}✅ pre-commit installed: $(pre-commit --version)${NC}"
-    else
-        echo -e "${RED}❌ pre-commit installation failed${NC}"
-        exit 1
-    fi
-fi
-
-# 4. Install pyyaml (for frontmatter validation)
-echo ""
-echo "📦 Installing pyyaml (for frontmatter validation)..."
-pip install pyyaml
-
-# 5. Check for node and npm (for markdownlint)
-echo ""
-if command -v node &> /dev/null && command -v npm &> /dev/null; then
-    echo -e "${GREEN}✅ Node.js detected: $(node --version)${NC}"
-    if command -v markdownlint &> /dev/null; then
-        echo -e "${GREEN}✅ markdownlint already installed: $(markdownlint --version)${NC}"
-    else
-        echo "📦 Installing markdownlint-cli..."
-        sudo npm install -g markdownlint-cli
-    fi
-
-    if command -v markdownlint &> /dev/null; then
-        echo -e "${GREEN}✅ markdownlint installed${NC}"
-    else
-        echo -e "${YELLOW}⚠ markdownlint installation failed, pre-commit will skip it${NC}"
-    fi
-else
-    echo -e "${YELLOW}⚠ Node.js/npm not found, skipping markdownlint installation${NC}"
-    echo "   To install markdownlint manually, visit: https://github.com/igorshubovych/markdownlint-cli"
-fi
-
-# 6. Install git hooks
-echo ""
-echo "🔧 Installing git hooks..."
-cd "$PROJECT_ROOT"
-
-# Clear core.hooksPath if set (pre-commit refuses to install otherwise)
-if git config --get core.hooksPath &> /dev/null; then
-    echo -e "🔄 Clearing core.hooksPath..."
-    git config --unset-all core.hooksPath
-fi
-
-if pre-commit install; then
-    echo -e "${GREEN}✅ Git hooks installed successfully${NC}"
-else
-    echo -e "${YELLOW}⚠ Pre-commit install failed, trying with --allow-missing-config${NC}"
-    pre-commit install --allow-missing-config || {
-        echo -e "${RED}❌ Failed to install git hooks${NC}"
-        echo "   You may need to install pre-commit manually:"
-        echo "   pip install pre-commit"
-        echo "   pre-commit install"
-        exit 1
-    }
-fi
-
-# 7. Summary
-echo ""
 echo "=============================="
-echo -e "${GREEN}🎉 Setup completed!${NC}"
+echo " Git Hook Setup"
 echo "=============================="
 echo ""
-echo "Installed tools:"
-echo "  - pre-commit: $(pre-commit --version 2>/dev/null || echo 'not available')"
-echo "  - pyyaml: $(python3 -c 'import yaml; print(yaml.__version__)' 2>/dev/null || echo 'not available')"
-if command -v markdownlint &> /dev/null; then
-    echo "  - markdownlint: $(markdownlint --version 2>/dev/null || echo 'available')"
+
+if ! git -C "$PROJECT_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    echo -e "${RED}ERROR: not inside a Git repository.${NC}"
+    exit 1
 fi
+
+if [ ! -f "$PRE_COMMIT_HOOK" ]; then
+    echo -e "${RED}ERROR: missing $PRE_COMMIT_HOOK${NC}"
+    exit 1
+fi
+
+chmod +x "$PRE_COMMIT_HOOK"
+git -C "$PROJECT_ROOT" config core.hooksPath .githooks
+
+echo -e "${GREEN}Installed native Git hooks via core.hooksPath=.githooks${NC}"
 echo ""
-echo "Usage:"
-echo "  # Run all checks manually"
-echo "  pre-commit run --all-files"
+
+missing_tools=()
+for tool in python3 clang-format; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        missing_tools+=("$tool")
+    fi
+done
+
+if [ "${#missing_tools[@]}" -gt 0 ]; then
+    echo -e "${YELLOW}Missing optional/required hook tools:${NC}"
+    printf '  - %s\n' "${missing_tools[@]}"
+    echo ""
+    echo "Install them before committing files that need the corresponding checks."
+else
+    echo -e "${GREEN}Required hook tools detected:${NC}"
+    echo "  - python3: $(python3 --version 2>&1)"
+    echo "  - clang-format: $(clang-format --version 2>&1)"
+fi
+
 echo ""
-echo "  # Run checks on staged files"
-echo "  pre-commit run"
+echo "What runs before each commit:"
+echo "  - clang-format on staged C/C++ source and header files"
+echo "  - python3 scripts/coverage.py --update"
+echo "  - git add for files updated by the hook, so one git commit is enough"
 echo ""
-echo "  # Skip hooks (not recommended)"
+echo "Run manually:"
+echo "  .githooks/pre-commit"
+echo ""
+echo "Bypass only when necessary:"
 echo "  git commit --no-verify -m 'message'"
-echo ""
-echo "Configuration: .pre-commit-config.yaml"

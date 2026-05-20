@@ -9,6 +9,13 @@ const props = withDefaults(defineProps<{
   variant: undefined
 })
 
+if (/\.md\s*$/.test(props.href)) {
+  throw new Error(
+    `[ChapterLink] href must not end with ".md": "${props.href}". ` +
+    'Remove the extension — VitePress resolves clean paths to .html automatically.'
+  )
+}
+
 const navVariant = inject<'main' | 'sub'>('chapterNavVariant', 'main')
 const effectiveVariant = computed(() => props.variant ?? navVariant)
 </script>

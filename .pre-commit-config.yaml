@@ -1,6 +1,6 @@
-# Pre-commit hooks configuration
-# Install: pip install pre-commit
-# Enable: pre-commit install
+# Optional pre-commit framework checks.
+# The default one-step commit automation lives in .githooks/pre-commit.
+# Install the native Git hook with: pnpm hooks:install
 
 repos:
   # Markdown linting
