@@ -102,6 +102,16 @@ private:
 
 当然上面的代码不是线程安全的，这个需要注意了。
 
+<OnlineCompilerDemo
+  title="固定池分配器：O(1) 分配与释放 demo"
+  source-path="code/examples/chapter05/05_fixed_pool_allocation/fixed_pool.cpp"
+  arm-source-path="code/examples/compiler_explorer/fixed_pool_arm.cpp"
+  description="固定池示例可以直接运行，也适合观察优化后分配路径里剩下哪些指令。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 ------
 
 ## 代码示例

@@ -354,6 +354,17 @@ std::function<int(int)> g = [](int x) { return x * 2; };
 
 ---
 
+## 在线运行
+
+在线运行 Lambda 事件处理系统示例，观察引用捕获和值捕获的实际行为：
+
+<OnlineCompilerDemo
+  title="Lambda 基础：事件处理系统"
+  source-path="code/examples/vol2/08_lambda_basics.cpp"
+  description="在线运行并观察 Lambda 的引用捕获和值捕获在事件分发中的实际行为。"
+  allow-run
+/>
+
 ## 小结
 
 Lambda 表达式是现代 C++ 中最实用的特性之一。它把"在使用处定义函数"这件事件的成本降到了最低——不需要额外的命名、不需要类定义、不需要分离声明和实现。核心要点回顾：

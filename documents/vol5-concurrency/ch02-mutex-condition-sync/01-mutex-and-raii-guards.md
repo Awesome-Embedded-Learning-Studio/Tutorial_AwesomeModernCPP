@@ -390,6 +390,17 @@ void safe_thread()
 
 > 💡 完整示例代码在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)，访问 `code/volumn_codes/vol5/ch02-mutex-condition-sync/`。
 
+## 在线运行
+
+在线体验 lock_guard、unique_lock + condition_variable 和 scoped_lock 三种 RAII 锁守卫：
+
+<OnlineCompilerDemo
+  title="mutex 与 RAII 锁"
+  source-path="code/examples/vol34567/10_mutex_raii.cpp"
+  description="体验 lock_guard 计数、unique_lock+CV 生产消费队列和 scoped_lock 多锁安全交换"
+  allow-run
+/>
+
 ## 练习
 
 ### 练习 1：为 stack 实现线程安全包装器

@@ -331,6 +331,17 @@ switch 判定结果:  F
 
 很好，三种条件语句都给出了正确一致的结果。注意 `grade_by_switch` 利用 `score / 10` 把分数映射到 0-10，再用穿透特性合并 10 和 9。这种技巧在实际项目中偶尔能见到，但如果你觉得不好读，用 `if-else` 链也没问题，可读性优先。
 
+## 在线运行
+
+在线运行下面的综合示例，观察 if-else、switch 和三元运算符的判定结果：
+
+<OnlineCompilerDemo
+  title="条件语句综合演示：if-else / switch / 三元运算符"
+  source-path="code/examples/vol1/05_conditionals.cpp"
+  description="在线运行并观察成绩等级判定的多种实现方式。试着修改 kScore 的值再看结果。"
+  allow-run
+/>
+
 ## 动手试试
 
 光看不练等于没学。以下是三个练习，难度递增，建议每个都动手写一遍。

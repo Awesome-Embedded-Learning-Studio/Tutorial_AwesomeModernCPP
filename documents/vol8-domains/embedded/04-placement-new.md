@@ -242,6 +242,20 @@ Foo* safe_b = std::launder(reinterpret_cast<Foo*>(buf));
 
 ------
 
+## 在线运行
+
+在线运行 InPlace<T> RAII 封装示例，观察 placement new 的安全使用：
+
+<OnlineCompilerDemo
+  title="placement new RAII 封装：InPlace<T>"
+  source-path="code/examples/compiler_explorer/placement_new_inplace_host.cpp"
+  arm-source-path="code/examples/compiler_explorer/placement_new_inplace_arm.cpp"
+  description="在线运行并观察 InPlace<T> 如何在无堆环境下安全构造与析构对象。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 ## 把繁琐变得可用：写一个小型 InPlace RAII wrapper
 
 重复写 placement + 显式析构容易出错，做个小封装能让代码更干净：

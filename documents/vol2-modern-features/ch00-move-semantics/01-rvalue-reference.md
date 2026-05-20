@@ -420,6 +420,17 @@ g++ -std=c++17 -Wall -Wextra -o rvalue_demo rvalue_demo.cpp
 
 第 5 步的移动赋值也值得注意。`d = std::move(b);` 把 `b` 的资源转移给 `d`——`d` 原来的名字 `"D"` 被覆盖成了 `"A_copy"`，`b` 变成了 `"(moved-from)"`。这个过程中 `d` 原来的资源（那块存着 `"D"` 的内存）被正确释放了，因为移动赋值运算符在覆盖之前要确保旧资源被清理。
 
+## 在线运行
+
+在线运行右值引用示例，追踪构造、拷贝、移动和析构的完整过程：
+
+<OnlineCompilerDemo
+  title="右值引用与值类别：构造、拷贝、移动、析构追踪"
+  source-path="code/examples/vol2/01_rvalue_reference.cpp"
+  description="在线运行并观察 Tracker 对象的构造、拷贝构造、移动构造和析构顺序。"
+  allow-run
+/>
+
 ## 小结
 
 这一篇我们把右值引用的地基打好了。C++ 的值类别体系分为 lvalue、xvalue、prvalue 三类，它们按"有身份"和"可移动"两个维度交叉组合。右值引用 `T&&` 只能绑定到右值（prvalue 或 xvalue）上，这保证了我们不会意外偷走一个还在使用的左值的资源。`std::move` 本质上是一个 `static_cast<T&&>`，它不做任何移动操作——真正移动资源的是移动构造函数和移动赋值运算符。临时对象绑定到右值引用时，生命周期会被延长到引用的作用域结束。

@@ -63,3 +63,15 @@ title: 内联与编译器优化
 这正是现代 C++ 在嵌入式领域最迷人的地方：**抽象不是负担，而是可以被完全优化掉的语义工具。**
 
 在中断服务函数或极端热路径中，inline 也可能是合理的，但前提永远只有一个：你真的看过汇编，并且确认它解决了实际问题。
+
+## 在线运行
+
+在线对比 C 风格函数调用与 C++ 模板零开销抽象，观察编译器内联优化效果：
+
+<OnlineCompilerDemo
+  title="内联与编译器优化"
+  source-path="code/examples/vol34567/12_inline_optimization.cpp"
+  description="对比 C 风格函数与 C++ 模板的内联优化效果，观察 constexpr 编译期计算"
+  allow-run
+  allow-x86-asm
+/>

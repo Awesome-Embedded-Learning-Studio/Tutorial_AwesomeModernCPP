@@ -349,6 +349,17 @@ Hello, World! Welcome to Modern C++.
 
 `build_greeting` 的两次调用也值得注意：第一次传左值 `name`，第二次传临时对象 `std::string("World")`——两者都能通过 `const std::string&` 接收，这正是 const 引用的灵活性所在。
 
+## 在线运行
+
+在线运行参数传递对比示例，观察值传递与 const 引用传递的性能差异：
+
+<OnlineCompilerDemo
+  title="参数传递方式对比：值传递 vs const 引用"
+  source-path="code/examples/vol1/09_passing.cpp"
+  description="在线运行并对比值传递拷贝 16KB 结构体与 const 引用零拷贝的性能差异。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：实现 swap

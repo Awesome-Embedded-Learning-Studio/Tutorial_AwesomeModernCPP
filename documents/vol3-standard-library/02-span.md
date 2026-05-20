@@ -206,6 +206,17 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ------
 
+## 在线运行
+
+在线体验 std::span 从不同容器类型构造视图、subspan 切片操作：
+
+<OnlineCompilerDemo
+  title="std::span 数组视图"
+  source-path="code/examples/vol34567/02_span.cpp"
+  description="体验 std::span 从不同容器构造视图、subspan 切片等操作"
+  allow-run
+/>
+
 ## 速查 API
 
 `s` 为 `std::span<T>`：

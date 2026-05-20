@@ -125,3 +125,15 @@ constexpr uint64_t factorial(uint64_t n) {
 ```
 
 注意：这里的 `if constexpr` 与 `constexpr` 函数搭配，结果在编译期求值（如果使用场景允许）。
+
+## 在线运行
+
+在线体验 if constexpr 的类型分派、成员检测和编译期计算：
+
+<OnlineCompilerDemo
+  title="if constexpr 编译期条件"
+  source-path="code/examples/vol34567/05_if_constexpr.cpp"
+  description="体验 if constexpr 的类型分派、has_size 检测和编译期阶乘计算"
+  allow-run
+  allow-x86-asm
+/>

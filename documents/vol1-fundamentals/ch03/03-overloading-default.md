@@ -289,6 +289,17 @@ overload.cpp:xx:xx: error: call of overloaded 'process(int)' is ambiguous
 
 解决方案就是我们演示的做法——把两个版本拆成不同函数名，或者去掉其中一个重载改用默认参数（只保留一个版本），让调用点的语义不再含糊。
 
+## 在线运行
+
+在线运行函数重载与默认参数的综合示例：
+
+<OnlineCompilerDemo
+  title="函数重载与默认参数"
+  source-path="code/examples/vol1/11_overloading_default.cpp"
+  description="在线运行并观察函数重载的类型匹配和默认参数的填充行为。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：max 的重载家族

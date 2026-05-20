@@ -59,6 +59,18 @@ title: 动态分配问题
 
 ------
 
+## 在线运行
+
+在线运行结构体对齐示例，观察成员排列对 sizeof 的影响：
+
+<OnlineCompilerDemo
+  title="结构体对齐与填充：BadLayout vs GoodLayout"
+  source-path="code/examples/compiler_explorer/struct_alignment_host.cpp"
+  description="在线运行并对比两种结构体布局的 sizeof 差异，理解对齐填充的机制。"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 对齐（alignment）与填充（padding）
 
 ### 为什么需要对齐

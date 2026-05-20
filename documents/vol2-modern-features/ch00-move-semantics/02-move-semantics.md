@@ -680,6 +680,18 @@ g++ -std=c++17 -Wall -Wextra -o move_demo move_semantics_demo.cpp
 
 注意到析构时没有"释放 0 字节"的输出——那些就是被移动过的对象，它们的 `data_` 是 `nullptr`，析构函数里的 `if (data_)` 检查跳过了 `delete[]`。vector 中的三个元素各自独立析构——第一个是 `c` 的拷贝（1024 字节），第二个是 `c` 移动过来的（1024 字节），第三个是 `emplace_back` 原位构造的（512 字节）。
 
+## 在线运行
+
+在线运行 Buffer 移动语义示例，对比拷贝与移动的资源开销：
+
+<OnlineCompilerDemo
+  title="移动构造与移动赋值：Buffer 资源转移"
+  source-path="code/examples/vol2/02_move_semantics.cpp"
+  description="在线运行并对比 Buffer 的拷贝构造 vs 移动构造，以及在 vector 中的行为差异。"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 小结
 
 这一篇我们把移动构造函数和移动赋值运算符从头到尾拆解了一遍。移动操作的核心是**资源所有权转移**——不复制数据，只偷指针，然后把源对象置空。移动赋值比移动构造多一步：要先释放目标对象持有的旧资源。所有移动操作都应该标记 `noexcept`，这直接影响 `std::vector` 等容器在扩容时的行为。如果你的类管理了资源，记住规则五：析构函数、拷贝构造、移动构造、拷贝赋值、移动赋值，五个要么全写，要么全 `= default`。

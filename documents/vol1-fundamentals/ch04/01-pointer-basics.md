@@ -283,6 +283,17 @@ x = 100
 
 地址每次运行可能不同，但 `p` 的值始终和 `&x` 一致，swap 后值互换了，空指针被正确处理。建议拷到本地编译运行，自己观察地址变化。
 
+## 在线运行
+
+在线运行指针基础综合示例，观察取地址、解引用、指针 swap 和空指针检查：
+
+<OnlineCompilerDemo
+  title="指针基础综合演练：取地址、解引用、swap、空指针"
+  source-path="code/examples/vol1/10_pointer_basics.cpp"
+  description="在线运行并观察指针的基本操作。试着修改指针指向的值，观察原变量的变化。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：手写 swap 并观察地址

@@ -330,6 +330,17 @@ g++ -Wall -Wextra -o loops loops.cpp
 
 来拆一下金字塔的逻辑。第 `row` 行需要 `kHeight - row` 个前导空格让星号居中，然后打印 `2 * row - 1` 个星号。这个 `2n-1` 的规律在图案打印中非常常见。猜数字游戏里的 `while (true)` + `break` 也是一种经典模式——当退出条件不容易浓缩成一个布尔表达式时，在循环体内部判断然后 break 是一种清晰的做法。
 
+## 在线运行
+
+在线运行综合循环示例，观察九九乘法表、金字塔图案和素数筛选的输出：
+
+<OnlineCompilerDemo
+  title="循环语句综合演示：乘法表、金字塔、素数"
+  source-path="code/examples/vol1/06_loops.cpp"
+  description="在线运行并观察 for 循环、嵌套循环和 break 的综合运用。试着修改 kHeight 或素数范围。"
+  allow-run
+/>
+
 ## 动手试试
 
 光看懂不够，得自己写一遍才算真的会。以下是四个练习，建议每个都动手完成。

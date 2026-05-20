@@ -459,6 +459,17 @@ void benchmark_lambda_styles() {
 
 ---
 
+## 在线运行
+
+在线运行 Lambda 捕获机制示例，对比不同捕获方式的效果：
+
+<OnlineCompilerDemo
+  title="Lambda 捕获机制：值捕获、引用捕获与闭包大小"
+  source-path="code/examples/vol2/09_lambda_capture.cpp"
+  description="在线运行并对比值捕获、引用捕获、mutable 和初始化捕获的行为差异。"
+  allow-run
+/>
+
 ## 小结
 
 Lambda 的捕获机制是理解 lambda 性能和安全性的关键。核心要点：

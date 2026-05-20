@@ -399,6 +399,18 @@ constexpr int bad_divide(int a, int b)
 
 这个特性让 `constexpr` 成为一种"安全网"——你在编译期能算出来的东西，编译器会帮你检查合法性。
 
+## 在线运行
+
+在线运行 constexpr 基础示例，观察编译期求值与运行时求值的差异：
+
+<OnlineCompilerDemo
+  title="constexpr 基础：编译期阶乘与 CRC-32 查找表"
+  source-path="code/examples/vol2/05_constexpr_basics.cpp"
+  description="在线运行并观察 constexpr 函数的编译期和运行时行为，以及 static_assert 校验。"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 小结
 
 到这里，我们已经把 `constexpr` 的基础机制梳理了一遍。总结几个关键点：

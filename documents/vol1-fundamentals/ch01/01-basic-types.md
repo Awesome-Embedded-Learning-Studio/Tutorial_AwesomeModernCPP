@@ -355,6 +355,17 @@ long double:   16 字节
 
 布尔逻辑用 `bool`，不要拿 `int` 当布尔值用。C 语言时代确实有"零是假，非零是真"的习惯（当然，现在C23也有正儿八经的bool了，不知道的朋友去试试！），但在 C++ 里我们有正经的 `bool` 类型，用它能让代码意图更清晰，也能让编译器做更好的类型检查。
 
+## 在线运行
+
+在你的平台上实际运行一下，看看每种类型到底占多少字节：
+
+<OnlineCompilerDemo
+  title="基本数据类型：sizeof 与范围一览"
+  source-path="code/examples/vol1/02_basic_types.cpp"
+  description="在线运行并观察你的平台上各种 C++ 基本类型的大小和取值范围。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：完整的大小和范围报告

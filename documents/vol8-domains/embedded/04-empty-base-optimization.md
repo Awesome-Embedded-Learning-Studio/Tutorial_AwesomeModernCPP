@@ -103,6 +103,20 @@ struct Holder {
 
 ------
 
+## 在线运行
+
+在线运行 EBO 示例，对比空类作为成员 vs 基类时的 sizeof 变化：
+
+<OnlineCompilerDemo
+  title="空基类优化与 C++20 [[no_unique_address]]"
+  source-path="code/examples/compiler_explorer/ebo_host.cpp"
+  arm-source-path="code/examples/compiler_explorer/ebo_arm.cpp"
+  description="在线运行并观察 EBO 如何消除空类的额外开销。切换到 ARM 汇编查看 Cortex-M 上的效果。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 ## 小结
 
 EBO 是 C++ 里一门"看得见效果却不显山露水"的微优化：让空策略类不再浪费字节。历史上我们用私有继承实现 EBO，现代 C++（C++20）通过 `[[no_unique_address]]` 让空成员也能被压缩，代码更直观更安全。实际工程里优先写清晰可维护的代码：当对象大小敏感时，再用 EBO / `[[no_unique_address]]` / compressed-pair 等技巧去手工优化，并在目标编译器上验证行为。

@@ -1221,6 +1221,17 @@ keys.insert({"Network", "IP"});
 
 ------
 
+## 在线运行
+
+在线体验 C++20 三路比较运算符的 default 生成、自定义版本号比较和 partial_ordering：
+
+<OnlineCompilerDemo
+  title="C++20 三路比较运算符（Spaceship）"
+  source-path="code/examples/vol34567/08_spaceship.cpp"
+  description="体验 default <=> 自动生成比较、自定义版本号比较和 partial_ordering"
+  allow-run
+/>
+
 我们回过头来再看看：三路比较运算符是C++20引入的重要特性，大幅简化了自定义类型的比较逻辑：
 
 **核心概念**：

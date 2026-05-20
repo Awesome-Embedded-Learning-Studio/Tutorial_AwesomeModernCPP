@@ -8,6 +8,7 @@ import TalkInfoCard from './components/TalkInfoCard.vue'
 import RefLink from './components/RefLink.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 import ReferenceItem from './components/ReferenceItem.vue'
+import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
 import './custom.css'
 
 export default {
@@ -24,5 +25,6 @@ export default {
     app.component('RefLink', RefLink)
     app.component('ReferenceCard', ReferenceCard)
     app.component('ReferenceItem', ReferenceItem)
+    app.component('OnlineCompilerDemo', OnlineCompilerDemo)
   }
 } satisfies Theme

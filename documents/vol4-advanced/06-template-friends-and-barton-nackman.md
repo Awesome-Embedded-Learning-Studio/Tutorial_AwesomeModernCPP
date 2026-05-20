@@ -1303,6 +1303,17 @@ static_assert(!eq);
 
 ------
 
+## 在线运行
+
+在线体验友元注入的运算符重载、ADL 查找和 C++20 spaceship 运算符：
+
+<OnlineCompilerDemo
+  title="模板友元与 Barton-Nackman 技巧"
+  source-path="code/examples/vol34567/07_barton_nackman.cpp"
+  description="体验友元注入运算符重载、ADL 查找及 C++20 spaceship 运算符"
+  allow-run
+/>
+
 ## 小结
 
 本章我们深入探讨了模板友元与 Barton-Nackman Trick：

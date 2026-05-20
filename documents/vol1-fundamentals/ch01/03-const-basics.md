@@ -288,6 +288,17 @@ ref = 100
 
 你可以把注释掉的那些"编译错误"行逐个取消注释，看看编译器会给出什么样的报错信息。实际动手感受一下编译器是怎么拦截这些操作的，比光看文字印象深刻得多。
 
+## 在线运行
+
+在线运行 const_demo.cpp，观察各种 const 用法的实际输出：
+
+<OnlineCompilerDemo
+  title="const 初探：变量、指针、引用与 constexpr"
+  source-path="code/examples/vol1/04_const_demo.cpp"
+  description="在线运行并观察 const 指针、const 引用和 constexpr 的实际行为。"
+  allow-run
+/>
+
 ## 动手试试
 
 理论看完了，接下来轮到你自己上手了。下面三个练习帮你检验对 `const` 的理解程度，建议每个都完整地写出来、编译运行。

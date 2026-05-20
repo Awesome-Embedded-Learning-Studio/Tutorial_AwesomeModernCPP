@@ -146,6 +146,18 @@ c_api(arr.data(), arr.size());
 - 如果 `T` 有复杂构造/析构，静态初始化（尤其零初始化）行为会不同，要保证构造成本被接受。
 - 对于需要通过 DMA 读写的缓冲区，`T` 应该是 trivially copyable。
 
+## 在线运行
+
+在线体验 std::array 的基本用法、constexpr 查表与结构化绑定：
+
+<OnlineCompilerDemo
+  title="std::array 固定大小容器"
+  source-path="code/examples/vol34567/01_array.cpp"
+  description="体验 std::array 的基本操作、constexpr CRC 查表和结构化绑定"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 可以一试——把 `std::array` 用作编译期 CRC 表
 
 ```cpp

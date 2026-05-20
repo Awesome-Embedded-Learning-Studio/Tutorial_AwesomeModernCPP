@@ -451,6 +451,17 @@ int main()
 
 但这个模式有一个问题——如果某个线程的 `process_range` 函数抛出了异常，`threads` 的析构函数会在栈展开时被调用，而我们前面说过，`joinable` 的线程析构会调用 `std::terminate`。要解决这个问题，我们需要用 RAII 把 join 的逻辑包装起来，确保即使发生异常也能正确 join。这个改进版本我们会在后续的"线程所有权与 RAII"一文中实现。
 
+## 在线运行
+
+在线体验 std::thread 的三种构造方式、线程 ID 查询和数据分区并行处理：
+
+<OnlineCompilerDemo
+  title="std::thread 基础"
+  source-path="code/examples/vol34567/09_std_thread.cpp"
+  description="体验函数指针、lambda 和 functor 三种线程构造方式及数据分区并行"
+  allow-run
+/>
+
 ## 小结
 
 这一篇我们完成了对 `std::thread` 基本接口的全面梳理。我们看到了三种构造线程的方式——函数指针、lambda 和 functor，它们的本质都是传入一个可调用对象和参数。`join()` 和 `detach()` 是两种截然不同的线程管理策略：join 是"等我干完再走"，detach 是"你先走，我自己收尾"。如果你什么都不做就让 `std::thread` 析构，标准会毫不留情地调用 `std::terminate`——这是 C++ 在用最严厉的方式提醒你：线程的生命周期必须显式管理。

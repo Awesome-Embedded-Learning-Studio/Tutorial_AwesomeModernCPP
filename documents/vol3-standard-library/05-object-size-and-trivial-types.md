@@ -248,6 +248,18 @@ DeviceConfig cfg {
 
 ------
 
+## 在线运行
+
+在线体验内存对齐与填充、type traits 判断以及 C++20 指定初始化器：
+
+<OnlineCompilerDemo
+  title="对象大小与平凡类型"
+  source-path="code/examples/vol34567/04_object_size.cpp"
+  description="观察内存对齐与填充、is_trivially_copyable 判断及 C++20 指定初始化"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 小结
 
 - `alignof` 决定对象对齐要求；`sizeof` 报对象在内存中真正占用多少（包含填充）。

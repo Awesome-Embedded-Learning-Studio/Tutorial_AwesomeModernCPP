@@ -500,6 +500,17 @@ g++ -std=c++17 -Wall -Wextra -o ref_collapsing ref_collapsing.cpp
 
 这组输出完美地印证了引用折叠规则：传入左值（无论是否 const）时，`T` 被推导为引用类型，`T&&` 折叠为左值引用。传入右值时，`T` 被推导为非引用类型，`T&&` 就是右值引用。const 的信息也通过 `T` 传递下去了——虽然这个简化程序没有区分 const 和非 const，但 `T` 中确实包含了 const 修饰符，`std::forward` 会正确地保留它。
 
+## 在线运行
+
+在线运行引用折叠示例，验证万能引用的类型推导规则：
+
+<OnlineCompilerDemo
+  title="完美转发：万能引用与引用折叠"
+  source-path="code/examples/vol2/04_perfect_forwarding.cpp"
+  description="在线运行并观察传入左值和右值时模板参数 T 的推导结果。"
+  allow-run
+/>
+
 ## 小结
 
 完美转发的三个核心组件构成了一个精密的协作链条：**万能引用**（`T&&`）根据传入实参推导 `T` 的类型，把值类别信息编码到类型中；**引用折叠**处理"引用的引用"这种理论上不应该存在的情况，保证最终类型符合直觉——只要有左值引用参与就是左值引用；**`std::forward`** 通过 `static_cast<T&&>` 和引用折叠把编码在 `T` 中的值类别信息还原出来，实现精确转发。

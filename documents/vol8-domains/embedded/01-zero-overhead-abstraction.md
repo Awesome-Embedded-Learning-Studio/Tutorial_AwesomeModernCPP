@@ -99,6 +99,15 @@ void set_pin() {
 
 更重要的是,现在你有了类型安全。`GPIO_Port<0x40020000>`和`GPIO_Port<0x40020400>`是两个完全不同的类型,不会混淆。而且所有的操作都通过明确的接口进行,不会有意外覆盖寄存器的情况。
 
+<OnlineCompilerDemo
+  title="GPIO 位操作：C 宏 vs C++ 类型安全抽象"
+  source-path="code/examples/chapter02/01_zero_overhead/gpio_example.cpp"
+  arm-source-path="code/examples/compiler_explorer/gpio_zero_overhead_arm.cpp"
+  description="这个示例包含真实 MMIO 地址，适合直接观察优化后的汇编，不在宿主机上执行寄存器写入。"
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 #### 例子：状态机实现
 
 状态机在嵌入式系统里太常见了。按键处理、协议解析、电机控制……到处都是状态机。
@@ -239,6 +248,16 @@ constexpr uint32_t DIVISOR = calculate_baud_divisor(72000000, 115200);
 而第二个版本,编译器在编译时就把结果算出来了。最终的机器码里,`DIVISOR`就是一个常量,直接写在代码里,不需要任何计算。这对于嵌入式系统来说是巨大的优势——既节省了CPU时间,又让代码的执行时间变得可预测(对实时系统很重要)。
 
 更妙的是,你可以写很复杂的`constexpr`函数,包括循环、条件判断等等。只要参数在编译期已知,编译器就能算出结果。这让你可以把很多配置计算放在编译期完成,而不是在每次启动时计算。
+
+<OnlineCompilerDemo
+  title="constexpr 波特率分频：运行结果与优化输出"
+  source-path="code/examples/chapter02/01_zero_overhead/constexpr_example.cpp"
+  arm-source-path="code/examples/compiler_explorer/constexpr_baud_arm.cpp"
+  description="这个 demo 可以在宿主机运行，也可以对比 x86-64 与 Cortex-M 的优化输出。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
 
 ## 实战技巧
 

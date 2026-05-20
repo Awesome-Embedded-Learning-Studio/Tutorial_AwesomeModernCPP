@@ -214,3 +214,16 @@ target_link_libraries(my_firmware PRIVATE project_warnings)
 3. **重新排序运算**：这可能导致在某些算法中出现不稳定的结果。
 
 **建议**：除非你在做纯数字信号处理（DSP）且对精度有完全的掌控，否则始终坚持使用 `-Os` 或 `-O2`。
+
+## 在线运行
+
+在线对比不同优化等级（-O0 / -Os / -O2）下编译器生成的汇编代码，观察内联和常量折叠效果：
+
+<OnlineCompilerDemo
+  title="常见编译器选项"
+  source-path="code/examples/vol34567/14_compiler_options.cpp"
+  description="对比 -O0 / -Os / -O2 下编译器生成的汇编，观察内联和常量折叠"
+  allow-x86-asm
+  arm-source-path="code/examples/compiler_explorer/compiler_opts_arm.cpp"
+  allow-arm-asm
+/>

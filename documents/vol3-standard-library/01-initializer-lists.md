@@ -222,6 +222,17 @@ private:
 
 ------
 
+## 在线运行
+
+在线对比构造函数体内赋值与初始化列表的差异，观察 const 成员和引用成员的初始化方式：
+
+<OnlineCompilerDemo
+  title="初始化列表 vs 成员赋值"
+  source-path="code/examples/vol34567/03_initializer_lists.cpp"
+  description="对比构造函数体内赋值与初始化列表，体验 const 和引用成员的初始化"
+  allow-run
+/>
+
 ## 最后
 
 初始化列表并不是什么"高级技巧"，其实并不复杂，对于嵌入式系统中，**每一次多余的初始化，都会真实地变成指令、变成 Flash、变成时间**。而初始化列表，正是那种**不写就亏、写了稳赚**的现代 C++ 基本功。

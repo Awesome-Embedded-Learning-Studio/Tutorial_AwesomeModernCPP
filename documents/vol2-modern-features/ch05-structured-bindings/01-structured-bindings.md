@@ -339,6 +339,17 @@ class MyClass {
 
 ------
 
+## 在线运行
+
+在线运行结构化绑定示例，体验 pair、tuple、数组和结构体的解包：
+
+<OnlineCompilerDemo
+  title="结构化绑定：pair、tuple、数组与结构体解包"
+  source-path="code/examples/vol2/11_structured_bindings.cpp"
+  description="在线运行并观察结构化绑定在 pair、tuple、数组和结构体上的解包效果。"
+  allow-run
+/>
+
 ## 小结
 
 结构化绑定是 C++17 中最实用的特性之一。它支持的类型覆盖了日常开发的绝大部分场景：`pair`、`tuple`、原生数组、公有成员结构体，以及实现了 tuple-like protocol 的自定义类型。绑定的语义完全由 `auto` 前面的修饰符决定——`auto` 是拷贝，`auto&` 是引用，`const auto&` 是只读引用，`auto&&` 是转发引用。

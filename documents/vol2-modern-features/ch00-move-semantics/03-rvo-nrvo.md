@@ -570,6 +570,17 @@ g++ -std=c++17 -Wall -Wextra -O2 -o rvo_demo rvo_demo.cpp
 
 第四，**性能敏感的代码要测量**。RVO/NRVO 是编译器的优化，不同编译器、不同版本、不同优化级别的行为可能不同。如果你真的在意某次返回的性能，写一个 benchmark 来测量，而不是靠猜测。
 
+## 在线运行
+
+在线运行 RVO/NRVO 示例，观察不同返回场景下的拷贝消除效果：
+
+<OnlineCompilerDemo
+  title="RVO/NRVO 对比：5 种返回场景"
+  source-path="code/examples/vol2/03_rvo_nrvo.cpp"
+  description="在线运行并观察 RVO、NRVO、NRVO 失效和 std::move 阻止优化的不同行为。"
+  allow-x86-asm
+/>
+
 ## 小结
 
 RVO 和 NRVO 是现代 C++ 给我们的免费午餐——在不牺牲代码可读性的前提下，编译器把返回值的开销抹掉了。C++17 进一步把 prvalue 返回的消除提升为语言保证，让我们可以更安心地按值返回大对象。NRVO 虽然不是保证的，但主流编译器在开启优化后几乎都会做。记住最关键的一条规则：**返回局部变量时，直接 `return`，不要加 `std::move`**——让编译器做它最擅长的事。

@@ -449,6 +449,18 @@ int b = x.load();
 
 第三个误区：在 `std::atomic<std::string>` 这样的非 trivially-copyable 类型上使用 `std::atomic`。标准不允许——编译器会直接报错。`std::string` 有用户定义的拷贝构造函数（内部涉及堆内存分配），不满足 trivially copyable 的要求。如果需要原子地共享字符串，可以用 `std::atomic<std::shared_ptr<std::string>>`（C++20 起支持）或者用 mutex 保护。
 
+## 在线运行
+
+在线体验 atomic 的 load/store、fetch_add、compare_exchange 和 atomic_flag 自旋锁原语：
+
+<OnlineCompilerDemo
+  title="atomic 操作"
+  source-path="code/examples/vol34567/11_atomic.cpp"
+  description="体验 atomic load/store、fetch_add、compare_exchange_strong 和 atomic_flag"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 练习
 
 ### 练习 1：无锁计数器

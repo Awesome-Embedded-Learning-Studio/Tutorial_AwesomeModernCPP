@@ -275,6 +275,17 @@ g++ -Wall -Wextra -o conversion conversion.cpp
 
 逐行看下来，每一行输出都对应了前面讲过的某个规则。特别注意第 3 行和第 2 行的对比——同样是 `7 / 2`，有没有 `static_cast<double>` 结果完全不同。
 
+## 在线运行
+
+在线运行下面的综合示例，先在心里预测每行输出，再和实际结果对比：
+
+<OnlineCompilerDemo
+  title="类型转换综合演示"
+  source-path="code/examples/vol1/03_type_conversion.cpp"
+  description="观察隐式转换、static_cast、整数除法陷阱、浮点精度和溢出的实际行为。"
+  allow-run
+/>
+
 ## 动手试试
 
 理论讲完了，接下来该你上场了。下面的练习层层递进，建议每道都动手写、动手编译、动手运行。

@@ -2090,6 +2090,18 @@ void A<D>::method_impl() {
 
 ------
 
+## 在线运行
+
+在线体验 CRTP 对象计数器、Singleton 设备管理器等经典模式：
+
+<OnlineCompilerDemo
+  title="CRTP 与静态多态"
+  source-path="code/examples/vol34567/06_crtp.cpp"
+  description="体验 CRTP 实现的对象计数器、Singleton 设备管理器等经典模式"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 小结
 
 CRTP是C++中一个强大而优雅的模式，它让模板和继承协同工作，实现了：

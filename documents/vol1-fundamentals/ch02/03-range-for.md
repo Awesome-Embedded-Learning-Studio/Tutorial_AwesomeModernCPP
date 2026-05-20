@@ -257,6 +257,17 @@ g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
 转大写: RANGE-FOR IS ELEGANT
 ```
 
+## 在线运行
+
+在线运行 range-for 综合示例，观察求和、计数、原地修改和字符串操作：
+
+<OnlineCompilerDemo
+  title="range-for 综合演练：求和、计数、修改、字符串"
+  source-path="code/examples/vol1/07_range_for.cpp"
+  description="在线运行并观察 range-for 的四种典型用法。试着修改数组内容或 target 值。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：找最大值

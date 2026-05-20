@@ -457,6 +457,17 @@ void set_device_mode(HalMode mode)
 
 如果你需要频繁做这种转换，`to_underlying` 辅助函数（或者 C++23 的 `std::to_underlying`）能帮你少写几行 `static_cast`。不过从笔者的经验来看，这种转换通常集中在接口层（adapter 层），不会散布在业务逻辑中，所以代码量并不算大。
 
+## 在线运行
+
+在线运行 enum class 示例，对比 C 风格 enum 的问题与强类型改进：
+
+<OnlineCompilerDemo
+  title="enum class：强类型枚举与类型安全"
+  source-path="code/examples/vol2/10_enum_class.cpp"
+  description="在线运行并观察 C 风格 enum 的隐式转换问题和 enum class 的类型安全改进。"
+  allow-run
+/>
+
 ## 小结
 
 `enum class` 从 C++11 开始就存在了，到今天已经是现代 C++ 中不可或缺的基础工具。它通过三个核心改进——作用域隔离、禁止隐式转换、可指定底层类型——彻底修复了 C 风格 `enum` 的类型安全问题。

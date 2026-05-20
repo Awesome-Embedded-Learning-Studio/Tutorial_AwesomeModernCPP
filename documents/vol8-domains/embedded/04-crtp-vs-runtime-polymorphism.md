@@ -77,6 +77,16 @@ struct ADCSensor {
 
 差异立竿见影：模板版本在 `poll<ADCSensor>` 处可以把 `read()` 内联，消除间接调用；运行时多态版本在二进制里则保留了虚表/间接跳转与对象的 vptr。
 
+<OnlineCompilerDemo
+  title="编译期多态：模板 poll 的内联机会"
+  source-path="code/examples/chapter02/04_crtp_polymorphism/compile_time_polymorphism.cpp"
+  arm-source-path="code/examples/compiler_explorer/static_polymorphism_arm.cpp"
+  description="这个示例可运行；查看汇编时可以观察模板版本在具体 Sensor 类型上的优化空间。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 ------
 
 ## 性能与空间（嵌入式常关心的两大资源）

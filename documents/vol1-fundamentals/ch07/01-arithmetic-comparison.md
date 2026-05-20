@@ -353,6 +353,17 @@ auto operator<=>(const Fraction&, const Fraction&) = default;
 
 如果类的成员变量本身都支持三路比较（`int` 当然支持），直接 `= default` 就完事了。这省去了手写六个比较函数的工作量，也彻底杜绝了"改了 `<` 忘了改 `<=`"这类 bug。不过目前我们的教程以 C++17 为基准线，手写比较运算符仍然是必须掌握的基本功。
 
+## 在线运行
+
+在线运行 Fraction 分数类，观察运算符重载的效果：
+
+<OnlineCompilerDemo
+  title="运算符重载：Fraction 分数类"
+  source-path="code/examples/vol1/13_fraction_operators.cpp"
+  description="在线运行并观察算术运算符和比较运算符的重载行为。试着修改分数值。"
+  allow-run
+/>
+
 ## 练习
 
 **练习 1：补全 Fraction 的减法和除法**

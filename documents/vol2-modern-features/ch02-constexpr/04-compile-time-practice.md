@@ -501,6 +501,18 @@ static_assert(kDebugUart.is_acceptable(), "Baud rate error too large");
 
 查表大小与 Flash 预算的权衡也不可忽视。编译期生成的表数据通常被放到 `.rodata`（Flash）。在 Flash 预算紧张的嵌入式项目中，一张 256 项的 `uint32_t` 表占 1KB，可能没什么影响；但 4096 项的 `float` 表占 16KB，对于 64KB Flash 的 MCU 来说就不是小数目了。在决定把什么放到编译期查表之前，先算一下 Flash 预算。
 
+## 在线运行
+
+在线运行编译期实战示例，观察 CRC-32 查找表和编译期状态机：
+
+<OnlineCompilerDemo
+  title="编译期实战：CRC-32 表与编译期状态机"
+  source-path="code/examples/vol2/07_compile_time_practice.cpp"
+  description="在线运行并观察编译期生成的 CRC-32 查找表和状态机转移表校验。"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 小结
 
 这一章我们从实战角度综合运用了前面学到的所有编译期计算技术。查表生成（CRC、三角函数、多项式）展示了 `constexpr` 在数据预处理方面的威力；字符串哈希和编译期状态机展示了 `constexpr` 在代码结构设计方面的价值；嵌入式寄存器地址计算和配置校验展示了它在实际工程中的安全保障能力。

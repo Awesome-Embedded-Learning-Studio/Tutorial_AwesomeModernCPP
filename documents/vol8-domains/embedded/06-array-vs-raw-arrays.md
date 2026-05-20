@@ -71,4 +71,18 @@ title: std::array vs 一般数组
 
 ------
 
+## 在线运行
+
+在线运行 std::array vs C 数组的对比示例，验证零开销抽象：
+
+<OnlineCompilerDemo
+  title="std::array 与 C 数组：零开销对比"
+  source-path="code/examples/compiler_explorer/array_vs_carray_host.cpp"
+  arm-source-path="code/examples/compiler_explorer/array_vs_carray_arm.cpp"
+  description="在线运行并验证 std::array 与 C 数组的 sizeof 一致性，以及指针退化问题。"
+  allow-run
+  allow-x86-asm
+  allow-arm-asm
+/>
+
 ## 代码示例

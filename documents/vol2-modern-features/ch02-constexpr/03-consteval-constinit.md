@@ -369,6 +369,17 @@ static_assert(check_config(115200, 8), "Invalid UART config");
 
 `consteval` 可以用于函数模板，但要注意：如果模板实例化后不能满足 `consteval` 的要求（比如内部调用了非 `constexpr` 的函数），编译器会报错。这与 `constexpr` 函数模板不同——`constexpr` 模板只需要至少有一组参数能在编译期工作就行，而 `consteval` 要求所有调用都必须在编译期完成。
 
+## 在线运行
+
+在线运行 consteval 与 constinit 示例，观察 C++20 编译期保证：
+
+<OnlineCompilerDemo
+  title="consteval 与 constinit：C++20 编译期保证"
+  source-path="code/examples/vol2/06_consteval_constinit.cpp"
+  description="在线运行并观察 consteval 强制编译期哈希和 constinit 可变全局变量。"
+  allow-run
+/>
+
 ## 小结
 
 C++20 的 `consteval` 和 `constinit` 是对 `constexpr` 体系的精准补充。`consteval` 填补了"我想强制编译期求值"这个需求空白，而 `constinit` 解决了 C++ 长期以来的静态初始化顺序问题。三者各有分工：`constexpr` 提供灵活性，`consteval` 提供强制性，`constinit` 提供初始化安全。理解它们之间的精确差异并合理选择，是写出高质量编译期计算代码的关键。

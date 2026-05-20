@@ -369,6 +369,17 @@ void handle_command(std::string_view cmd) {
 
 这个例子展示了嵌入式场景中 `string_view` 的典型用法：接收一个从串口缓冲区切出来的命令片段，通过 `remove_suffix` 去掉换行符，按空格分割动词和参数，然后做简单的字符串匹配。全程零堆分配——所有操作都是指针和长度的调整。对于只有几十 KB RAM 的 MCU 来说，这种"零分配"的字符串处理方式几乎是唯一可行的选择。
 
+## 在线运行
+
+在线运行 string_view 示例，体验零拷贝字符串操作：
+
+<OnlineCompilerDemo
+  title="string_view：零拷贝字符串分割与解析"
+  source-path="code/examples/vol2/12_string_view.cpp"
+  description="在线运行并观察 string_view 的 split 分割和 key-value 解析的零拷贝特性。"
+  allow-run
+/>
+
 ## 小结
 
 `string_view` 的本质就是一个"指针 + 长度"的非拥有视图。它不分配内存，复制代价极低（16 字节），子串操作全是 O(1)。它可以从 `const char*`、`std::string`、字面量等多种来源构造，是函数参数的理想选择。但它不保证 NUL 终止，不管理数据生命周期——这些"不负责"的事情，才是使用时需要格外小心的地方。

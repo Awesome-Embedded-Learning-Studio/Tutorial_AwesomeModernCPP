@@ -337,6 +337,17 @@ max(42, 17) = 42
 
 值得注意的一点是 `print_result` 函数的参数类型是 `const std::string&` 而不是 `std::string`。这里的 `&` 表示引用传递，避免了字符串的拷贝开销；`const` 表示函数内部不会修改这个字符串。虽然引用传递的细节要到下一章才正式讲解，但这个写法在实际代码中极为常见，先混个眼熟就好。
 
+## 在线运行
+
+在线运行函数基础综合示例，观察函数声明、递归和参数传递：
+
+<OnlineCompilerDemo
+  title="函数基础综合演练：声明、递归阶乘、奇偶判断"
+  source-path="code/examples/vol1/08_function_basics.cpp"
+  description="在线运行并观察函数声明、定义、递归和多种参数传递的实际行为。"
+  allow-run
+/>
+
 ## 动手试试
 
 ### 练习一：最大公约数
