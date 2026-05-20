@@ -391,32 +391,118 @@ function findSearchIndexFiles(dir: string): Map<'root' | 'en', string> {
   return result
 }
 
-function extractSearchDocs(indexPath: string): Array<Record<string, unknown>> {
+type SerializedSearchIndex = {
+  documentCount: number
+  nextId: number
+  documentIds: Record<string, string>
+  fieldIds: Record<string, number>
+  fieldLength: Record<string, number[]>
+  averageFieldLength: number[]
+  storedFields: Record<string, Record<string, unknown>>
+  dirtCount: number
+  index: Array<[string, Record<string, Record<string, number>>]>
+  serializationVersion: number
+}
+
+function findSearchIndexExportStart(content: string): number {
+  let match: RegExpExecArray | null
+  let exportStart = -1
+  const exportPattern = /;?\s*export\s*\{/g
+  while ((match = exportPattern.exec(content)) !== null) {
+    exportStart = match.index
+  }
+  return exportStart
+}
+
+function extractSearchIndex(indexPath: string): SerializedSearchIndex | null {
   const content = readFileSync(indexPath, 'utf-8')
   const assignment = content.match(/^const\s+\w+\s*=\s*/)
-  const exportStart = content.search(/\nexport\s*\{/)
+  const exportStart = findSearchIndexExportStart(content)
   if (!assignment || exportStart === -1) {
     log(`  ⚠ Could not parse: ${relative(PROJECT_ROOT, indexPath)}`)
-    return []
+    return null
   }
   let expr = content.slice(assignment[0].length, exportStart).trim()
   if (expr.endsWith(';')) expr = expr.slice(0, -1).trim()
   const jsonStr: string = new Function(`return (${expr})`)()
-  const data = JSON.parse(jsonStr)
-  const docs: Array<Record<string, unknown>> = []
-  for (const [idStr, url] of Object.entries<string>(data.documentIds)) {
-    const fields = data.storedFields[idStr]
-    if (!fields) continue
-    docs.push({ id: url, title: fields.title || '', titles: fields.titles || [] })
-  }
-  return docs
+  return JSON.parse(jsonStr)
 }
 
-async function buildSearchIndexJs(docs: Array<Record<string, unknown>>): Promise<string> {
-  const MiniSearch = require('minisearch')
-  const ms = new MiniSearch({ fields: ['title', 'titles', 'text'], storeFields: ['title', 'titles'] })
-  ms.addAll(docs)
-  const json = JSON.stringify(ms.toJSON())
+function mergeSerializedSearchIndexes(indexes: SerializedSearchIndex[]): SerializedSearchIndex {
+  if (indexes.length === 0) throw new Error('No search indexes to merge')
+
+  const fieldIds = indexes[0].fieldIds
+  const fieldCount = Object.keys(fieldIds).length
+  const merged: SerializedSearchIndex = {
+    documentCount: 0,
+    nextId: 0,
+    documentIds: {},
+    fieldIds,
+    fieldLength: {},
+    averageFieldLength: Array(fieldCount).fill(0),
+    storedFields: {},
+    dirtCount: 0,
+    index: [],
+    serializationVersion: indexes[0].serializationVersion,
+  }
+
+  const termIndex = new Map<string, Record<string, Record<string, number>>>()
+  const fieldLengthSums = Array(fieldCount).fill(0)
+
+  for (const data of indexes) {
+    const localToGlobal = new Map<string, string>()
+    const fieldMap = new Map<string, string>()
+
+    for (const [fieldName, localFieldId] of Object.entries(data.fieldIds)) {
+      const targetFieldId = fieldIds[fieldName]
+      if (targetFieldId === undefined) {
+        throw new Error(`Incompatible search field: ${fieldName}`)
+      }
+      fieldMap.set(String(localFieldId), String(targetFieldId))
+    }
+
+    for (const [localId, url] of Object.entries(data.documentIds)) {
+      const globalId = String(merged.nextId++)
+      localToGlobal.set(localId, globalId)
+      merged.documentIds[globalId] = url
+      merged.storedFields[globalId] = data.storedFields[localId] || {}
+      const lengths = data.fieldLength[localId] || []
+      merged.fieldLength[globalId] = Array(fieldCount).fill(0)
+      for (const [localFieldId, targetFieldId] of fieldMap) {
+        const len = lengths[Number(localFieldId)] || 0
+        const targetIndex = Number(targetFieldId)
+        merged.fieldLength[globalId][targetIndex] = len
+        fieldLengthSums[targetIndex] += len
+      }
+    }
+
+    merged.dirtCount += data.dirtCount || 0
+
+    for (const [term, postings] of data.index) {
+      const mergedPostings = termIndex.get(term) || {}
+      for (const [localFieldId, docs] of Object.entries(postings)) {
+        const targetFieldId = fieldMap.get(localFieldId)
+        if (targetFieldId === undefined) continue
+        const fieldPostings = mergedPostings[targetFieldId] || {}
+        for (const [localId, frequency] of Object.entries(docs)) {
+          const globalId = localToGlobal.get(localId)
+          if (globalId === undefined) continue
+          fieldPostings[globalId] = (fieldPostings[globalId] || 0) + frequency
+        }
+        mergedPostings[targetFieldId] = fieldPostings
+      }
+      termIndex.set(term, mergedPostings)
+    }
+  }
+
+  merged.documentCount = Object.keys(merged.documentIds).length
+  merged.averageFieldLength = fieldLengthSums.map((sum) => merged.documentCount > 0 ? sum / merged.documentCount : 0)
+  merged.index = [...termIndex.entries()]
+  return merged
+}
+
+function buildSearchIndexJs(index: SerializedSearchIndex): string {
+  const json = JSON.stringify(index)
   // Double-stringify to get a properly escaped JS string literal (handles backticks, quotes, etc.)
   return `const e=${JSON.stringify(json)};export{e as default};`
 }
@@ -424,7 +510,7 @@ async function buildSearchIndexJs(docs: Array<Record<string, unknown>>): Promise
 async function mergeSearchIndexes(sources: SearchIndexSource[], finalDist: string) {
   logStep('Step 3/4: Merging search indexes')
 
-  const docsByLang: Record<'zh' | 'en', Array<Record<string, unknown>>> = { zh: [], en: [] }
+  const indexesByLang: Record<'zh' | 'en', SerializedSearchIndex[]> = { zh: [], en: [] }
   const targetsByLang: Record<'zh' | 'en', Set<string>> = { zh: new Set(), en: new Set() }
 
   for (const source of sources) {
@@ -432,9 +518,10 @@ async function mergeSearchIndexes(sources: SearchIndexSource[], finalDist: strin
       const lang = source.lang === 'mixed'
         ? (locale === 'en' ? 'en' : 'zh')
         : source.lang
-      const docs = extractSearchDocs(indexPath)
-      log(`  ${lang}: ${docs.length} docs from ${relative(PROJECT_ROOT, source.dir)} (${locale})`)
-      docsByLang[lang].push(...docs)
+      const index = extractSearchIndex(indexPath)
+      if (!index) continue
+      log(`  ${lang}: ${index.documentCount} docs from ${relative(PROJECT_ROOT, source.dir)} (${locale})`)
+      indexesByLang[lang].push(index)
 
       const target = join(finalDist, 'assets', 'chunks', basename(indexPath))
       if (existsSync(target)) {
@@ -446,10 +533,11 @@ async function mergeSearchIndexes(sources: SearchIndexSource[], finalDist: strin
   }
 
   for (const lang of ['zh', 'en'] as const) {
-    const allDocs = docsByLang[lang]
-    if (allDocs.length === 0) { log(`  ${lang}: no docs, skipping`); continue }
-    log(`  ${lang}: merging ${allDocs.length} total docs...`)
-    const js = await buildSearchIndexJs(allDocs)
+    const indexes = indexesByLang[lang]
+    if (indexes.length === 0) { log(`  ${lang}: no indexes, skipping`); continue }
+    const mergedIndex = mergeSerializedSearchIndexes(indexes)
+    log(`  ${lang}: merging ${mergedIndex.documentCount} total docs...`)
+    const js = buildSearchIndexJs(mergedIndex)
     const allTargets = [...targetsByLang[lang]]
     if (allTargets.length === 0) {
       log(`  ⚠ ${lang}: no target index files in final dist!`)
