@@ -31,10 +31,12 @@ CATEGORIES = [
     'vol7-engineering',
     'vol8-domains',
     'vol9-open-source-project-learn',
+    'vol10-open-lecture-notes',
     'compilation',
     'cpp-reference',
     'projects',
     'appendix',
+    'team',
 ]
 
 EXCLUDE_DIRS = {'images', 'generated', 'hooks', 'stylesheets', 'javascripts', 'en'}
@@ -50,10 +52,12 @@ LABELS = {
     'vol7-engineering': 'Vol.7 Engineering',
     'vol8-domains': 'Vol.8 Domains',
     'vol9-open-source-project-learn': 'Vol.9 Open Source',
+    'vol10-open-lecture-notes': 'Vol.10 Lecture Notes',
     'compilation': 'Compilation',
     'cpp-reference': 'C++ Reference',
     'projects': 'Projects',
     'appendix': 'Appendix',
+    'team': 'Team',
     '_root': 'Root Pages',
 }
 
