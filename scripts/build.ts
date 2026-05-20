@@ -1,4 +1,4 @@
-import { exec } from 'child_process'
+import { execFile } from 'child_process'
 import {
   cpSync, mkdirSync, rmSync, writeFileSync,
   readdirSync, readFileSync, existsSync,
@@ -48,6 +48,7 @@ const CACHE_DIR = join(MAIN_VP, '.build-cache')
 const MANIFEST_PATH = join(CACHE_DIR, 'manifest.json')
 const DIST_FINAL = join(MAIN_VP, 'dist')
 const DOCUMENTS = join(PROJECT_ROOT, 'documents')
+const VITEPRESS_BIN = join(resolve(require.resolve('vitepress/package.json'), '..'), 'bin', 'vitepress.js')
 
 // ── Logging ─────────────────────────────────────────────────
 
@@ -211,6 +212,11 @@ interface BuildTask {
   cached: boolean           // can skip build?
 }
 
+interface SearchIndexSource {
+  dir: string
+  lang: 'zh' | 'en' | 'mixed'
+}
+
 function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest): BuildTask {
   const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
   const id = lang === 'en' ? `${vol.name}-en` : vol.name
@@ -220,9 +226,9 @@ function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest): Buil
   return { id, vol, lang, cacheKey, cached }
 }
 
-function execAsync(cmd: string, opts?: { cwd?: string }): Promise<void> {
+function execFileAsync(file: string, args: string[], opts?: { cwd?: string }): Promise<void> {
   return new Promise((resolve, reject) => {
-    exec(cmd, { cwd: opts?.cwd ?? PROJECT_ROOT }, (err, stdout, stderr) => {
+    execFile(file, args, { cwd: opts?.cwd ?? PROJECT_ROOT }, (err, stdout, stderr) => {
       if (stdout) process.stdout.write(stdout)
       if (stderr) process.stderr.write(stderr)
       if (err) reject(err)
@@ -268,7 +274,7 @@ async function buildVolume(task: BuildTask): Promise<string> {
   symlinkDir(join(MAIN_VP, 'public'), join(tmpSite, '.vitepress', 'public'))
 
   const t0 = Date.now()
-  await execAsync(`npx vitepress build ${relative(PROJECT_ROOT, tmpSite)}`)
+  await execFileAsync(process.execPath, [VITEPRESS_BIN, 'build', relative(PROJECT_ROOT, tmpSite)])
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1)
 
   if (!existsSync(volOutput)) throw new Error(`${id}: output dir not found after build`)
@@ -374,22 +380,28 @@ function unifyCrossVolumeData(distDir: string) {
 
 // ── Search Index Merge ──────────────────────────────────────
 
-function findSearchIndexFiles(dir: string): Map<string, string> {
-  const result = new Map<string, string>()
+function findSearchIndexFiles(dir: string): Map<'root' | 'en', string> {
+  const result = new Map<'root' | 'en', string>()
   const chunksDir = join(dir, 'assets', 'chunks')
   if (!existsSync(chunksDir)) return result
   for (const f of readdirSync(chunksDir)) {
     const m = f.match(/^@localSearchIndex(root|en)\.[^.]+\.js$/)
-    if (m) result.set(m[1], join(chunksDir, f))
+    if (m) result.set(m[1] as 'root' | 'en', join(chunksDir, f))
   }
   return result
 }
 
 function extractSearchDocs(indexPath: string): Array<Record<string, unknown>> {
   const content = readFileSync(indexPath, 'utf-8')
-  const m = content.match(/^const \w+=(.+);export\{/)
-  if (!m) { log(`  ⚠ Could not parse: ${relative(PROJECT_ROOT, indexPath)}`); return [] }
-  const jsonStr: string = new Function(`return ${m[1]}`)()
+  const assignment = content.match(/^const\s+\w+\s*=\s*/)
+  const exportStart = content.search(/\nexport\s*\{/)
+  if (!assignment || exportStart === -1) {
+    log(`  ⚠ Could not parse: ${relative(PROJECT_ROOT, indexPath)}`)
+    return []
+  }
+  let expr = content.slice(assignment[0].length, exportStart).trim()
+  if (expr.endsWith(';')) expr = expr.slice(0, -1).trim()
+  const jsonStr: string = new Function(`return (${expr})`)()
   const data = JSON.parse(jsonStr)
   const docs: Array<Record<string, unknown>> = []
   for (const [idStr, url] of Object.entries<string>(data.documentIds)) {
@@ -409,42 +421,40 @@ async function buildSearchIndexJs(docs: Array<Record<string, unknown>>): Promise
   return `const e=${JSON.stringify(json)};export{e as default};`
 }
 
-function findAllSearchIndexFiles(dir: string): Map<string, string[]> {
-  const result = new Map<string, string[]>()
-  const chunksDir = join(dir, 'assets', 'chunks')
-  if (!existsSync(chunksDir)) return result
-  for (const f of readdirSync(chunksDir)) {
-    const m = f.match(/^@localSearchIndex(root|en)\.[^.]+\.js$/)
-    if (m) {
-      const list = result.get(m[1]) || []
-      list.push(join(chunksDir, f))
-      result.set(m[1], list)
+async function mergeSearchIndexes(sources: SearchIndexSource[], finalDist: string) {
+  logStep('Step 3/4: Merging search indexes')
+
+  const docsByLang: Record<'zh' | 'en', Array<Record<string, unknown>>> = { zh: [], en: [] }
+  const targetsByLang: Record<'zh' | 'en', Set<string>> = { zh: new Set(), en: new Set() }
+
+  for (const source of sources) {
+    for (const [locale, indexPath] of findSearchIndexFiles(source.dir)) {
+      const lang = source.lang === 'mixed'
+        ? (locale === 'en' ? 'en' : 'zh')
+        : source.lang
+      const docs = extractSearchDocs(indexPath)
+      log(`  ${lang}: ${docs.length} docs from ${relative(PROJECT_ROOT, source.dir)} (${locale})`)
+      docsByLang[lang].push(...docs)
+
+      const target = join(finalDist, 'assets', 'chunks', basename(indexPath))
+      if (existsSync(target)) {
+        targetsByLang[lang].add(target)
+      } else {
+        log(`  ⚠ ${lang}: target missing for ${basename(indexPath)}`)
+      }
     }
   }
-  return result
-}
 
-async function mergeSearchIndexes(outputDirs: string[], finalDist: string) {
-  logStep('Step 3/4: Merging search indexes')
-  for (const locale of ['root', 'en']) {
-    const allDocs: Array<Record<string, string>> = []
-    for (const dir of outputDirs) {
-      const f = findSearchIndexFiles(dir).get(locale)
-      if (!f) continue
-      const docs = extractSearchDocs(f)
-      log(`  ${locale}: ${docs.length} docs from ${relative(PROJECT_ROOT, dir)}`)
-      allDocs.push(...docs)
-    }
-    if (allDocs.length === 0) { log(`  ${locale}: no docs, skipping`); continue }
-    log(`  ${locale}: merging ${allDocs.length} total docs...`)
+  for (const lang of ['zh', 'en'] as const) {
+    const allDocs = docsByLang[lang]
+    if (allDocs.length === 0) { log(`  ${lang}: no docs, skipping`); continue }
+    log(`  ${lang}: merging ${allDocs.length} total docs...`)
     const js = await buildSearchIndexJs(allDocs)
-    // Replace ALL search index files for this locale (one per volume page set)
-    const allTargets = findAllSearchIndexFiles(finalDist).get(locale) || []
+    const allTargets = [...targetsByLang[lang]]
     if (allTargets.length === 0) {
-      log(`  ⚠ ${locale}: no target index files in final dist!`)
+      log(`  ⚠ ${lang}: no target index files in final dist!`)
       continue
     }
-    // Write canonical index to the first file, re-export stubs for the rest
     writeFileSync(allTargets[0], js)
     const canonicalName = basename(allTargets[0])
     const stub = `export{default}from"./${canonicalName}";`
@@ -452,7 +462,7 @@ async function mergeSearchIndexes(outputDirs: string[], finalDist: string) {
       writeFileSync(allTargets[i], stub)
     }
     const savedMB = ((js.length - stub.length) * (allTargets.length - 1) / 1024 / 1024).toFixed(1)
-    log(`  ${locale}: ✓ 1 canonical + ${allTargets.length - 1} stubs (saved ${savedMB} MB)`)
+    log(`  ${lang}: ✓ 1 canonical + ${allTargets.length - 1} stubs (saved ${savedMB} MB)`)
   }
 }
 
@@ -502,7 +512,7 @@ async function main() {
   symlinkDir(join(MAIN_VP, 'public'), join(rootTmpSite, '.vitepress', 'public'))
 
   const rootT0 = Date.now()
-  await execAsync('npx vitepress build .', { cwd: rootTmpSite })
+  await execFileAsync(process.execPath, [VITEPRESS_BIN, 'build', '.'], { cwd: rootTmpSite })
   const rootOutput = join(BUILD_TMP, 'output', 'root')
   if (existsSync(rootOutput)) cpSync(rootOutput, DIST_FINAL, { recursive: true })
   log(`  Root: ${((Date.now() - rootT0) / 1000).toFixed(1)}s`)
@@ -525,19 +535,19 @@ async function main() {
   log(`  Tasks: ${tasks.length} total, ${cachedCount} cached, ${buildCount} to build`)
   log(`  Concurrency: ${CONCURRENCY}\n`)
 
-  const outputDirs: string[] = [rootOutput]
+  const searchSources: SearchIndexSource[] = [{ dir: rootOutput, lang: 'mixed' }]
   const newManifest: Manifest = {}
 
   await runParallel(tasks, async (task) => {
     const volOutput = await buildVolume(task)
-    outputDirs.push(volOutput)
+    searchSources.push({ dir: volOutput, lang: task.lang })
     // Copy to final dist
     cpSync(volOutput, DIST_FINAL, { recursive: true })
     newManifest[task.id] = { hash: task.cacheKey, timestamp: new Date().toISOString() }
   }, CONCURRENCY)
 
   // ── Step 3: Merge search indexes ────────────────────────
-  await mergeSearchIndexes(outputDirs, DIST_FINAL)
+  await mergeSearchIndexes(searchSources, DIST_FINAL)
 
   // ── Step 3.5: Unify hash maps and site data ─────────────
   unifyCrossVolumeData(DIST_FINAL)

@@ -75,12 +75,12 @@ order: 0
 
 ## Chapter 10 - 并发与原子操作
 
-- [atomic](../../vol5-concurrency/01-atomic.md)
-- [memory_order](../../vol5-concurrency/02-memory-order.md)
-- [无锁数据结构设计](../../vol5-concurrency/03-lock-free-data-structures.md)
-- [mutex与RAII守卫](../../vol5-concurrency/04-mutex-and-raii-guards.md)
+- [atomic](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [memory_order](../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md)
+- [无锁数据结构设计](../../vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md)
+- [mutex与RAII守卫](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
 - [中断安全的代码编写](./05-interrupt-safe-coding.md)
-- [临界区保护技术](../../vol5-concurrency/06-critical-section-protection.md)
+- [临界区保护技术](./05-interrupt-safe-coding.md)
 
 ## Chapter 11 - 现代C++特性速览
 

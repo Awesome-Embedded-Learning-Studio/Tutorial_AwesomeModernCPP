@@ -75,12 +75,12 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 
 ## Chapter 10 - Concurrency and Atomic Operations
 
-- [atomic](../../vol5-concurrency/01-atomic.md)
-- [memory_order](../../vol5-concurrency/02-memory-order.md)
-- [Lock-Free Data Structure Design](../../vol5-concurrency/03-lock-free-data-structures.md)
-- [mutex and RAII Guards](../../vol5-concurrency/04-mutex-and-raii-guards.md)
+- [atomic](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [memory_order](../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md)
+- [Lock-Free Data Structure Design](../../vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md)
+- [mutex and RAII Guards](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
 - [Writing Interrupt-Safe Code](./05-interrupt-safe-coding.md)
-- [Critical Section Protection Techniques](../../vol5-concurrency/06-critical-section-protection.md)
+- [Critical Section Protection Techniques](./05-interrupt-safe-coding.md)
 
 ## Chapter 11 - Modern C++ Features at a Glance
 

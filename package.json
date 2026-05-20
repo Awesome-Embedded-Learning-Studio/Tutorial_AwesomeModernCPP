@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev site",
-    "build": "npx tsx scripts/build.ts",
+    "build": "tsx scripts/build.ts",
     "build:single": "vitepress build site",
     "preview": "vitepress preview site"
   },
