@@ -11,7 +11,7 @@ tags:
   - 入门
 difficulty: beginner
 platform: host
-reading_time_minutes: 20
+reading_time_minutes: 12
 cpp_standard: [11, 17, 20]
 related:
   - "并发基本问题"

@@ -108,7 +108,7 @@ private:
 
 `mutex_` 和 `cv_` 是线程池同步的核心。`mutex_` 保护 `tasks_` 队列和 `stop_` 标志，确保只有一个线程在同一时刻操作队列。`cv_` 用于通知 worker：有新任务来了（`notify_one`）或者该停了（`notify_all`）。
 
-`stop_` 标志控制关闭序列。当析构函数设置 `stop_ = true` 并 `notify_all()` 时，所有 worker 被唤醒。注意 worker 的退出条件不是"stop_ 为 true 就立刻退出"，而是"stop_ 为 true **且**队列为空"——这保证了已提交但还没执行的任务不会被丢弃。
+`stop_` 标志控制关闭序列。当析构函数设置 `stop_ = true` 并 `notify_all()` 时，所有 worker 被唤醒。注意 worker 的退出条件不是"`stop_` 为 true 就立刻退出"，而是"`stop_` 为 true **且**队列为空"——这保证了已提交但还没执行的任务不会被丢弃。
 
 我们用一段简单的测试代码验证它能跑：
 

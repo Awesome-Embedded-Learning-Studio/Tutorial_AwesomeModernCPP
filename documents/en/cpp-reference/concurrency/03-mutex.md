@@ -76,7 +76,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: Mutexes and RAII Guards](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
+- [Tutorial: Mutexes and RAII Guards](../../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
 - [cppreference: std::mutex](https://en.cppreference.com/w/cpp/thread/mutex)
 
 ---
