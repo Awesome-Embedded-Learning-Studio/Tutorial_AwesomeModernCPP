@@ -47,6 +47,7 @@
         <span v-else>{{ action.label }}</span>
       </button>
       <button
+        v-if="actions.length"
         class="online-compiler-demo__button online-compiler-demo__button--secondary"
         type="button"
         :disabled="Boolean(activeAction)"
@@ -67,10 +68,67 @@
         class="online-compiler-demo__button online-compiler-demo__button--secondary"
         type="button"
         :disabled="Boolean(activeAction)"
+        @click="optionsOpen = !optionsOpen"
+      >
+        编译条件
+      </button>
+      <button
+        class="online-compiler-demo__button online-compiler-demo__button--secondary"
+        type="button"
+        :disabled="Boolean(activeAction)"
         @click="openGodbolt"
       >
         打开 Godbolt
       </button>
+    </div>
+
+    <div v-if="optionsOpen && actions.length" class="online-compiler-demo__options">
+      <div class="online-compiler-demo__options-header">
+        <strong>编译条件</strong>
+        <span>运行、汇编和 Godbolt 外链都会使用当前设置</span>
+      </div>
+      <div class="online-compiler-demo__option-list">
+        <label
+          v-for="action in actions"
+          :key="action.id"
+          class="online-compiler-demo__option-row"
+        >
+          <span class="online-compiler-demo__option-label">{{ action.label }}</span>
+          <input
+            v-model.trim="actionSettings[action.id].compiler"
+            class="online-compiler-demo__input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="compiler id"
+          />
+          <textarea
+            v-model="actionSettings[action.id].options"
+            class="online-compiler-demo__options-textarea"
+            rows="2"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="compiler options"
+          />
+        </label>
+      </div>
+      <div class="online-compiler-demo__editor-actions">
+        <button
+          class="online-compiler-demo__button online-compiler-demo__button--secondary"
+          type="button"
+          :disabled="Boolean(activeAction)"
+          @click="resetCompileOptions"
+        >
+          还原编译条件
+        </button>
+        <button
+          class="online-compiler-demo__button online-compiler-demo__button--secondary"
+          type="button"
+          @click="optionsOpen = false"
+        >
+          收起编译条件
+        </button>
+      </div>
     </div>
 
     <div v-if="editorOpen" class="online-compiler-demo__editor">
@@ -126,7 +184,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { withBase } from 'vitepress'
+import { computed, reactive, ref } from 'vue'
 
 type ActionId = 'run' | 'x86-asm' | 'arm-asm'
 type SourceKind = 'default' | 'arm'
@@ -144,6 +203,11 @@ interface CompileResult {
   compiler: string
   options: string
   text: string
+}
+
+interface ActionSetting {
+  compiler: string
+  options: string
 }
 
 const props = withDefaults(defineProps<{
@@ -183,13 +247,21 @@ const activeAction = ref<ActionId | 'godbolt' | 'source' | ''>('')
 const error = ref('')
 const result = ref<CompileResult | null>(null)
 const editorOpen = ref(false)
+const optionsOpen = ref(false)
 const editorSourceKind = ref<SourceKind>('default')
 const editorSource = ref('')
+const actionSettings = reactive<Record<ActionId, ActionSetting>>({
+  run: { compiler: props.runCompiler, options: props.runOptions },
+  'x86-asm': { compiler: props.x86Compiler, options: props.x86Options },
+  'arm-asm': { compiler: props.armCompiler, options: props.armOptions },
+})
 
 const normalizedSourcePath = computed(() => props.sourcePath.replace(/^\/+/, ''))
 const normalizedArmSourcePath = computed(() => (props.armSourcePath || props.sourcePath).replace(/^\/+/, ''))
-const sourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedSourcePath.value}`)
-const armSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedArmSourcePath.value}`)
+const sourceUrl = computed(() => withBase(`/${normalizedSourcePath.value}`))
+const armSourceUrl = computed(() => withBase(`/${normalizedArmSourcePath.value}`))
+const rawSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedSourcePath.value}`)
+const rawArmSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedArmSourcePath.value}`)
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
@@ -197,8 +269,8 @@ const actions = computed<DemoAction[]>(() => {
     available.push({
       id: 'run',
       label: '运行',
-      compiler: props.runCompiler,
-      options: props.runOptions,
+      compiler: actionSettings.run.compiler,
+      options: actionSettings.run.options,
       executorRequest: true,
     })
   }
@@ -206,8 +278,8 @@ const actions = computed<DemoAction[]>(() => {
     available.push({
       id: 'x86-asm',
       label: '看 x86-64 汇编',
-      compiler: props.x86Compiler,
-      options: props.x86Options,
+      compiler: actionSettings['x86-asm'].compiler,
+      options: actionSettings['x86-asm'].options,
       executorRequest: false,
     })
   }
@@ -215,8 +287,8 @@ const actions = computed<DemoAction[]>(() => {
     available.push({
       id: 'arm-asm',
       label: '看 ARM 汇编',
-      compiler: props.armCompiler,
-      options: props.armOptions,
+      compiler: actionSettings['arm-asm'].compiler,
+      options: actionSettings['arm-asm'].options,
       executorRequest: false,
     })
   }
@@ -238,21 +310,42 @@ async function loadSource(action?: DemoAction): Promise<string> {
 async function loadSourceForKind(kind: SourceKind): Promise<string> {
   const useArmSource = kind === 'arm'
   const cachedSource = useArmSource ? armSource : source
-  const url = useArmSource ? armSourceUrl.value : sourceUrl.value
+  const localUrl = useArmSource ? armSourceUrl.value : sourceUrl.value
+  const rawUrl = useArmSource ? rawArmSourceUrl.value : rawSourceUrl.value
 
   if (cachedSource.value) return cachedSource.value
 
-  const response = await fetch(url)
-  if (!response.ok) {
-    const fallback = useArmSource ? builtInArmSources[normalizedArmSourcePath.value] : ''
-    if (fallback) {
-      cachedSource.value = fallback
-      return cachedSource.value
-    }
-    throw new Error(`无法读取源码 (${response.status} ${response.statusText})`)
+  const localSource = await fetchText(localUrl)
+  if (localSource.ok) {
+    cachedSource.value = localSource.text
+    return cachedSource.value
   }
-  cachedSource.value = await response.text()
-  return cachedSource.value
+
+  const rawSource = await fetchText(rawUrl)
+  if (rawSource.ok) {
+    cachedSource.value = rawSource.text
+    return cachedSource.value
+  }
+
+  const fallback = useArmSource ? builtInArmSources[normalizedArmSourcePath.value] : ''
+  if (fallback) {
+    cachedSource.value = fallback
+    return cachedSource.value
+  }
+
+  throw new Error(`无法读取源码（本地: ${localSource.status}; GitHub raw: ${rawSource.status}）`)
+}
+
+async function fetchText(url: string): Promise<{ ok: true; text: string } | { ok: false; status: string }> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      return { ok: false, status: `${response.status} ${response.statusText}`.trim() }
+    }
+    return { ok: true, text: await response.text() }
+  } catch (err) {
+    return { ok: false, status: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 async function openEditor(kind: SourceKind): Promise<void> {
@@ -287,6 +380,15 @@ async function resetEditor(): Promise<void> {
   } finally {
     activeAction.value = ''
   }
+}
+
+function resetCompileOptions(): void {
+  actionSettings.run.compiler = props.runCompiler
+  actionSettings.run.options = props.runOptions
+  actionSettings['x86-asm'].compiler = props.x86Compiler
+  actionSettings['x86-asm'].options = props.x86Options
+  actionSettings['arm-asm'].compiler = props.armCompiler
+  actionSettings['arm-asm'].options = props.armOptions
 }
 
 function linesToText(value: unknown): string {
@@ -351,6 +453,10 @@ async function compile(action: DemoAction): Promise<void> {
   result.value = null
 
   try {
+    if (!action.compiler.trim()) {
+      throw new Error(`${action.label} 缺少 compiler id`)
+    }
+
     const currentSource = await loadSource(action)
     const response = await fetch(`https://godbolt.org/api/compiler/${action.compiler}/compile`, {
       method: 'POST',

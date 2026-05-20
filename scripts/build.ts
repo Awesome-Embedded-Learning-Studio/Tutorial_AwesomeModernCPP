@@ -48,6 +48,7 @@ const CACHE_DIR = join(MAIN_VP, '.build-cache')
 const MANIFEST_PATH = join(CACHE_DIR, 'manifest.json')
 const DIST_FINAL = join(MAIN_VP, 'dist')
 const DOCUMENTS = join(PROJECT_ROOT, 'documents')
+const CODE_EXAMPLES = join(PROJECT_ROOT, 'code', 'examples')
 const VITEPRESS_BIN = join(resolve(require.resolve('vitepress/package.json'), '..'), 'bin', 'vitepress.js')
 
 // ── Logging ─────────────────────────────────────────────────
@@ -639,6 +640,14 @@ async function main() {
 
   // ── Step 3.5: Unify hash maps and site data ─────────────
   unifyCrossVolumeData(DIST_FINAL)
+
+  // Make code examples available to interactive client-side components.
+  if (existsSync(CODE_EXAMPLES)) {
+    const examplesOutput = join(DIST_FINAL, 'code', 'examples')
+    mkdirSync(join(DIST_FINAL, 'code'), { recursive: true })
+    if (existsSync(examplesOutput)) rmSync(examplesOutput, { recursive: true })
+    cpSync(CODE_EXAMPLES, examplesOutput, { recursive: true })
+  }
 
   // ── Step 4: Finalize ────────────────────────────────────
   logStep('Step 4/4: Finalizing')

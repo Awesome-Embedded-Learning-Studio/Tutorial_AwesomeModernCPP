@@ -202,7 +202,16 @@
   overflow: hidden;
 }
 
-.online-compiler-demo__editor-header {
+.online-compiler-demo__options {
+  margin-top: 14px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg);
+  overflow: hidden;
+}
+
+.online-compiler-demo__editor-header,
+.online-compiler-demo__options-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -213,8 +222,60 @@
   font-size: 12px;
 }
 
-.online-compiler-demo__editor-header strong {
+.online-compiler-demo__editor-header strong,
+.online-compiler-demo__options-header strong {
   color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__option-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.online-compiler-demo__option-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(96px, 150px) minmax(240px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.online-compiler-demo__option-label {
+  padding-top: 8px;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.online-compiler-demo__input,
+.online-compiler-demo__options-textarea {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.online-compiler-demo__input {
+  height: 34px;
+  padding: 0 10px;
+}
+
+.online-compiler-demo__options-textarea {
+  min-height: 58px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.online-compiler-demo__input:focus,
+.online-compiler-demo__options-textarea:focus {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 2px var(--vp-c-brand-soft);
 }
 
 .online-compiler-demo__textarea {
@@ -316,13 +377,23 @@
     display: block;
   }
 
-  .online-compiler-demo__editor-header {
+  .online-compiler-demo__editor-header,
+  .online-compiler-demo__options-header {
     display: block;
   }
 
-  .online-compiler-demo__editor-header span {
+  .online-compiler-demo__editor-header span,
+  .online-compiler-demo__options-header span {
     display: block;
     margin-top: 4px;
+  }
+
+  .online-compiler-demo__option-row {
+    grid-template-columns: 1fr;
+  }
+
+  .online-compiler-demo__option-label {
+    padding-top: 0;
   }
 
   .online-compiler-demo__textarea {
