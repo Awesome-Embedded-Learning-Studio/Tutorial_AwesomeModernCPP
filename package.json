@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev site",
-    "build": "tsx scripts/build.ts",
-    "build:single": "vitepress build site",
+    "check:links": "python3 scripts/check_links.py",
+    "build": "pnpm check:links && tsx scripts/build.ts",
+    "build:single": "pnpm check:links && vitepress build site",
     "preview": "vitepress preview site",
     "hooks:install": "scripts/setup_precommit.sh",
     "coverage": "python3 scripts/coverage.py",

@@ -26,7 +26,7 @@ class LinkChecker:
     IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
 
     # Files to skip from checking
-    SKIP_FILES = {'index.md', 'tags.md'}
+    SKIP_FILES = {'tags.md'}
 
     def __init__(self, tutorial_dir: Path, fix: bool = False):
         self.tutorial_dir = tutorial_dir
@@ -57,7 +57,12 @@ class LinkChecker:
         """
         links = []
         # Match [text](url) and [text](<url>)
-        pattern = r'\[([^\]]+)\]\(([^)]+)\)|\[([^\]]+)\]\(<([^>]+)>\)'
+        markdown_pattern = r'\[([^\]]+)\]\(([^)]+)\)|\[([^\]]+)\]\(<([^>]+)>\)'
+        # Match Vue components with literal href attributes, such as
+        # <ChapterLink href="01-vector">Title</ChapterLink>.
+        component_href_pattern = (
+            r'<([A-Z][\w.]*)\b[^>]*\bhref=(["\'])([^"\']+)\2'
+        )
 
         in_code_block = False
         for line_num, line in enumerate(content.split('\n'), 1):
@@ -72,7 +77,7 @@ class LinkChecker:
             # Strip inline code spans to avoid matching C++ syntax like `[&](args)`
             cleaned = re.sub(r'`[^`]+`', '', line)
 
-            for match in re.finditer(pattern, cleaned):
+            for match in re.finditer(markdown_pattern, cleaned):
                 groups = match.groups()
                 if groups[1]:  # Regular link
                     link_text, link_url = groups[0], groups[1]
@@ -81,25 +86,43 @@ class LinkChecker:
 
                 links.append((line_num, link_text, link_url))
 
+            for match in re.finditer(component_href_pattern, cleaned):
+                component_name = match.group(1)
+                link_url = match.group(3)
+                links.append((line_num, component_name, link_url))
+
         return links
 
-    def normalize_path(self, link_url: str, source_file: Path) -> str:
-        """Normalize a relative link path."""
+    def candidate_paths(self, link_url: str, source_file: Path) -> List[str]:
+        """Return possible markdown targets for a link path."""
         # Remove fragments/anchors
         link_url = link_url.split('#')[0]
         if not link_url:
-            return ''
+            return []
 
-        # Get source directory
-        source_dir = source_file.parent
+        # VitePress treats a trailing slash as an index page.
+        link_url = link_url.rstrip('/')
 
-        # Resolve relative path
+        if not link_url:
+            link_url = 'index'
+
+        if link_url.startswith('/'):
+            target = self.tutorial_dir / link_url.lstrip('/')
+        else:
+            target = source_file.parent / link_url
+
         try:
-            resolved = (source_dir / link_url).resolve()
-            # Convert back to relative path from tutorial_dir
-            return str(resolved.relative_to(self.tutorial_dir))
+            resolved = target.resolve()
+            rel = resolved.relative_to(self.tutorial_dir)
         except (ValueError, RuntimeError):
-            return link_url
+            return [link_url]
+
+        candidates = [rel]
+        if rel.suffix != '.md':
+            candidates.append(rel.with_suffix('.md'))
+            candidates.append(rel / 'index.md')
+
+        return [str(candidate) for candidate in candidates]
 
     def check_file(self, filepath: Path):
         """Check links in a single file."""
@@ -123,44 +146,27 @@ class LinkChecker:
             # Check image links against filesystem
             link_ext = Path(link_url.split('#')[0]).suffix.lower()
             if link_ext in self.IMAGE_EXTENSIONS:
-                normalized = self.normalize_path(link_url, filepath)
-                if normalized:
-                    resolved = self.tutorial_dir / normalized
-                    if not resolved.exists():
-                        self.errors.append(
-                            f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
-                        )
+                candidates = self.candidate_paths(link_url, filepath)
+                if candidates and not any((self.tutorial_dir / candidate).exists() for candidate in candidates):
+                    self.errors.append(
+                        f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
+                    )
                 continue
 
-            # Normalize the link path
-            normalized = self.normalize_path(link_url, filepath)
+            candidates = self.candidate_paths(link_url, filepath)
 
-            if not normalized:
+            if not candidates:
                 continue
 
             # Check if file exists
-            if normalized not in self.all_files:
-                # Try with .md extension if missing
-                if not normalized.endswith('.md'):
-                    normalized_with_md = normalized + '.md'
-                    if normalized_with_md not in self.all_files:
-                        self.errors.append(
-                            f"{rel_path}:{line_num} - Broken link: [{link_text}]({link_url})"
-                        )
-                    else:
-                        # Track for potential fix
-                        self.warnings.append(
-                            f"{rel_path}:{line_num} - Missing .md extension: [{link_text}]({link_url})"
-                        )
-                        if self.fix:
-                            self.suggest_fix(filepath, line_num, link_url, link_url + '.md')
-                else:
-                    self.errors.append(
-                        f"{rel_path}:{line_num} - Broken link: [{link_text}]({link_url})"
-                    )
+            existing = next((candidate for candidate in candidates if candidate in self.all_files), None)
+            if existing is None:
+                self.errors.append(
+                    f"{rel_path}:{line_num} - Broken link: [{link_text}]({link_url})"
+                )
             else:
                 # Track valid link for reverse index
-                key = str(normalized)
+                key = str(existing)
                 if key not in self.link_map:
                     self.link_map[key] = []
                 self.link_map[key].append((filepath, link_text))
