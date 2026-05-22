@@ -202,7 +202,6 @@ estimated_effort: epic
 - code/examples/theory/（每章对应的示例代码子目录）
 
 ## 参考资料
-- drafts/Content-Table-Draft.md（完整的章节规划草稿）
 - ISO C++23 标准文档
 - ARM Cortex-M Programming Guide
 - MISRA C++ Guidelines
