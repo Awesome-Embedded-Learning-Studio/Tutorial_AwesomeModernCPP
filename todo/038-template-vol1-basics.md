@@ -100,17 +100,17 @@ estimated_effort: epic
 - [ ] 综合运用：类模板、非类型参数、特化、CRTP、友元
 
 ## 涉及文件
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/index.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/01-introduction.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/02-function-templates.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/03-class-templates.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/04-specialization.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/05-nttp.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/06-name-lookup.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/07-friends-barton-nackman.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/08-aliases.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/09-inheritance-crtp.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol1-basics/10-project-fixed-vector.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/index.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/01-template-introduction.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/02-function-templates.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/03-class-templates.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/04-specialization.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/05-nttp.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/06-name-lookup.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/07-friends-barton-nackman.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/08-aliases.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/09-inheritance-crtp.md
+- documents/vol4-advanced/vol1-basics-cpp11-14/10-project-fixed-vector.md
 
 ## 参考资料
 - 《C++ Templates: The Complete Guide》(2nd Edition) Part I & II

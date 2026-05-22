@@ -49,7 +49,7 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 
 ## Chapter 4 - Compile-Time Computation
 
-- [if_constexpr](../../vol4-advanced/04-if-constexpr.md)
+- [if constexpr](../../vol4-advanced/vol3-metaprogramming-cpp20-23/index.md)
 
 ## Chapter 5 - Memory Management Strategies
 
@@ -88,12 +88,7 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 
 ## Chapter 12 - Template Basics
 
-- [Template Overview](../../vol4-advanced/00-template-overview.md)
-- [Function Templates in Detail](../../vol4-advanced/01-function-templates.md)
-- [Class Templates in Detail](../../vol4-advanced/02-class-templates.md)
-- [Template Specialization and Partial Specialization](../../vol4-advanced/03-template-specialization.md)
-- [Non-Type Template Parameters](../../vol4-advanced/04-non-type-template-params.md)
-- [Template Argument Dependent Name Lookup](../../vol4-advanced/05-template-args-and-name-lookup.md)
-- [Template Friends and the Barton-Nackman Trick](../../vol4-advanced/06-template-friends-and-barton-nackman.md)
-- [Template Aliases and Using Declarations](../../vol4-advanced/07-template-aliases-and-using.md)
-- [Templates and Inheritance with CRTP](../../vol4-advanced/08-templates-and-inheritance-crtp.md)
+- [Template Basics (C++11-14)](../../vol4-advanced/vol1-basics-cpp11-14/index.md)
+- [Modern Template Techniques (C++17)](../../vol4-advanced/vol2-modern-cpp17/index.md)
+- [Metaprogramming Essentials (C++20-23)](../../vol4-advanced/vol3-metaprogramming-cpp20-23/index.md)
+- [Generic Design Patterns](../../vol4-advanced/vol4-generics-patterns/index.md)

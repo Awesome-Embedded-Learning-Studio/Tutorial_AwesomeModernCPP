@@ -108,18 +108,18 @@ estimated_effort: epic
 - [ ] 性能验证：中断延迟测量 + 内存占用分析
 
 ## 涉及文件
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/index.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/01-policy-based-design.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/02-type-erasure.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/03-nvi-template-method.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/04-factory-pattern.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/05-visitor-pattern.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/06-singleton-pattern.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/07-observer-pattern.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/08-mixin-composition.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/09-tag-dispatching.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/10-dsl.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol4-design-patterns/11-project-event-system.md
+- documents/vol4-advanced/vol4-generics-patterns/index.md
+- documents/vol4-advanced/vol4-generics-patterns/01-policy-based-design.md
+- documents/vol4-advanced/vol4-generics-patterns/02-type-erasure.md
+- documents/vol4-advanced/vol4-generics-patterns/03-nvi-template-method.md
+- documents/vol4-advanced/vol4-generics-patterns/04-factory-pattern.md
+- documents/vol4-advanced/vol4-generics-patterns/05-visitor-pattern.md
+- documents/vol4-advanced/vol4-generics-patterns/06-singleton-pattern.md
+- documents/vol4-advanced/vol4-generics-patterns/07-observer-pattern.md
+- documents/vol4-advanced/vol4-generics-patterns/08-mixin-composition.md
+- documents/vol4-advanced/vol4-generics-patterns/09-tag-dispatching.md
+- documents/vol4-advanced/vol4-generics-patterns/10-dsl.md
+- documents/vol4-advanced/vol4-generics-patterns/11-project-event-system.md
 
 ## 参考资料
 - 《Modern C++ Design》— Andrei Alexandrescu（Policy-Based Design 开山之作）

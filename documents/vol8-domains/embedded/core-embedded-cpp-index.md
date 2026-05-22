@@ -49,7 +49,7 @@ order: 0
 
 ## Chapter 4 - 编译期计算
 
-- [if_constexpr](../../vol4-advanced/04-if-constexpr.md)
+- [if constexpr](../../vol4-advanced/vol3-metaprogramming-cpp20-23/index.md)
 
 ## Chapter 5 - 内存管理策略
 
@@ -88,12 +88,7 @@ order: 0
 
 ## Chapter 12 - 模板基础
 
-- [模板入门概述](../../vol4-advanced/00-template-overview.md)
-- [函数模板详解](../../vol4-advanced/01-function-templates.md)
-- [类模板详解](../../vol4-advanced/02-class-templates.md)
-- [模板特化与偏特化](../../vol4-advanced/03-template-specialization.md)
-- [非类型模板参数](../../vol4-advanced/04-non-type-template-params.md)
-- [模板参数依赖与名字查找](../../vol4-advanced/05-template-args-and-name-lookup.md)
-- [模板友元与Barton-Nackman技巧](../../vol4-advanced/06-template-friends-and-barton-nackman.md)
-- [模板别名与Using声明](../../vol4-advanced/07-template-aliases-and-using.md)
-- [模板与继承CRTP](../../vol4-advanced/08-templates-and-inheritance-crtp.md)
+- [模板基础（C++11-14）](../../vol4-advanced/vol1-basics-cpp11-14/index.md)
+- [现代模板技术（C++17）](../../vol4-advanced/vol2-modern-cpp17/index.md)
+- [元编程精要（C++20-23）](../../vol4-advanced/vol3-metaprogramming-cpp20-23/index.md)
+- [泛型设计模式实战](../../vol4-advanced/vol4-generics-patterns/index.md)

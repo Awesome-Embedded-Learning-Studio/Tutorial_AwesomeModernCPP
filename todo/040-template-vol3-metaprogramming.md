@@ -96,16 +96,16 @@ estimated_effort: epic
 - [ ] 嵌入式裁剪版本：无异常、无 RTTI、固定大小容器优先
 
 ## 涉及文件
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/index.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/01-concepts.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/02-constraining-templates.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/03-requires-expressions.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/04-tmp-techniques.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/05-compile-time-strings.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/06-reflection-basics.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/07-instantiation-control.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/08-exception-safety.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol3-metaprogramming/09-project-mini-stl.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/index.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/01-concepts.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/02-constraining-templates.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/03-requires-expressions.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/04-tmp-techniques.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/05-compile-time-strings.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/06-reflection-basics.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/07-instantiation-control.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/08-exception-safety.md
+- documents/vol4-advanced/vol3-metaprogramming-cpp20-23/09-project-mini-stl.md
 
 ## 参考资料
 - 《C++ Templates: The Complete Guide》(2nd Edition) Part V

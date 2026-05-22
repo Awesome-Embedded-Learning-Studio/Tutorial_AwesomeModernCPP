@@ -104,16 +104,16 @@ estimated_effort: epic
 - [ ] 与 `std::any` 的接口兼容与性能对比
 
 ## 涉及文件
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/index.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/01-type-traits.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/02-sfinae.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/03-if-constexpr.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/04-variadic-templates.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/05-fold-expressions.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/06-perfect-forwarding.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/07-constexpr.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/08-ctad.md
-- documents/vol4-advanced/ch05-template-metaprogramming/vol2-modern/09-project-any.md
+- documents/vol4-advanced/vol2-modern-cpp17/index.md
+- documents/vol4-advanced/vol2-modern-cpp17/01-type-traits.md
+- documents/vol4-advanced/vol2-modern-cpp17/02-sfinae.md
+- documents/vol4-advanced/vol2-modern-cpp17/03-if-constexpr.md
+- documents/vol4-advanced/vol2-modern-cpp17/04-variadic-templates.md
+- documents/vol4-advanced/vol2-modern-cpp17/05-fold-expressions.md
+- documents/vol4-advanced/vol2-modern-cpp17/06-perfect-forwarding.md
+- documents/vol4-advanced/vol2-modern-cpp17/07-constexpr.md
+- documents/vol4-advanced/vol2-modern-cpp17/08-ctad.md
+- documents/vol4-advanced/vol2-modern-cpp17/09-project-any.md
 
 ## 参考资料
 - 《C++ Templates: The Complete Guide》(2nd Edition) Part III & IV

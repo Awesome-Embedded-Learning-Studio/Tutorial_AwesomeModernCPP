@@ -18,18 +18,13 @@ tags:
 
 ## 现有文章（待重写为通用内容）
 
-### 模板
+### 模板编程（按 C++ 标准分类）
 
 <ChapterNav variant="sub">
-  <ChapterLink href="00-template-overview">模板概述</ChapterLink>
-  <ChapterLink href="01-function-templates">函数模板</ChapterLink>
-  <ChapterLink href="02-class-templates">类模板</ChapterLink>
-  <ChapterLink href="03-template-specialization">模板特化</ChapterLink>
-  <ChapterLink href="04-non-type-template-params">非类型模板参数</ChapterLink>
-  <ChapterLink href="05-template-args-and-name-lookup">模板参数与名称查找</ChapterLink>
-  <ChapterLink href="06-template-friends-and-barton-nackman">模板友元与 Barton-Nackman</ChapterLink>
-  <ChapterLink href="07-template-aliases-and-using">模板别名与 using</ChapterLink>
-  <ChapterLink href="08-templates-and-inheritance-crtp">模板与继承 CRTP</ChapterLink>
+  <ChapterLink href="vol1-basics-cpp11-14/">模板基础（C++11-14）</ChapterLink>
+  <ChapterLink href="vol2-modern-cpp17/">现代模板技术（C++17）</ChapterLink>
+  <ChapterLink href="vol3-metaprogramming-cpp20-23/">元编程精要（C++20-23）</ChapterLink>
+  <ChapterLink href="vol4-generics-patterns/">泛型设计模式实战</ChapterLink>
 </ChapterNav>
 
 ### 协程
@@ -42,8 +37,6 @@ tags:
 ### 其他
 
 <ChapterNav variant="sub">
-  <ChapterLink href="cpp-templates-index">现代 C++ 模板教程（计划中）</ChapterLink>
-  <ChapterLink href="04-if-constexpr">if constexpr</ChapterLink>
   <ChapterLink href="05-spaceship-operator">三路比较运算符</ChapterLink>
   <ChapterLink href="msvc-cpp-modules">C++ Modules (MSVC)</ChapterLink>
 </ChapterNav>
