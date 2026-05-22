@@ -1,6 +1,4 @@
-# Optional pre-commit framework checks.
-# The default one-step commit automation lives in .githooks/pre-commit.
-# Install the native Git hook with: pnpm hooks:install
+# Install with: pnpm hooks:install
 
 repos:
   # Markdown linting
@@ -22,6 +20,19 @@ repos:
         additional_dependencies: ['pyyaml']
         files: '^documents/core-embedded-cpp/.*\.md$'
         exclude: '(index\.md|tags\.md)$'
+        pass_filenames: false
+
+      - id: clang-format
+        name: clang-format C/C++ sources
+        entry: clang-format -i
+        language: system
+        files: '\.(c|cc|cpp|cxx|h|hh|hpp|hxx)$'
+
+      - id: update-translation-coverage
+        name: Update translation coverage
+        entry: python3 scripts/coverage.py --update
+        language: system
+        always_run: true
         pass_filenames: false
 
   # Check for added large files

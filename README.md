@@ -135,7 +135,7 @@ flowchart TD
 | `pnpm build:single` | 使用 VitePress 单体构建 |
 | `pnpm check:links` | 检查 Markdown 与组件内部链接有效性 |
 | `pnpm preview` | 预览生产构建结果 |
-| `pnpm hooks:install` / `scripts/setup_precommit.sh` | 安装提交前 Git hook |
+| `pnpm hooks:install` / `scripts/setup_precommit.sh` | 安装 pre-commit 提交前检查 |
 | `pnpm coverage` | 查看英文翻译覆盖率 |
 | `pnpm coverage:update` | 更新 `README.md` 中的英文翻译覆盖率徽章 |
 | `python3 scripts/validate_frontmatter.py` | 验证文章 frontmatter |

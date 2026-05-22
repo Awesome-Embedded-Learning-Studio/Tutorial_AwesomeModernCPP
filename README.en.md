@@ -127,7 +127,7 @@ flowchart TD
 | `pnpm build` | Production build with per-volume parallel build and search-index merge |
 | `pnpm build:single` | Run the regular single VitePress build |
 | `pnpm preview` | Preview the production build |
-| `pnpm hooks:install` / `scripts/setup_precommit.sh` | Install the pre-commit Git hook |
+| `pnpm hooks:install` / `scripts/setup_precommit.sh` | Install pre-commit checks |
 | `pnpm coverage` | Show English translation coverage |
 | `pnpm coverage:update` | Update the English coverage badge in `README.md` |
 | `python3 scripts/validate_frontmatter.py` | Validate article frontmatter |
