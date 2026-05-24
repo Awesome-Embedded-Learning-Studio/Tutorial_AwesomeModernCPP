@@ -12,7 +12,7 @@ tags:
   - 回调机制
 difficulty: advanced
 platform: host
-reading_time_minutes: 25
+reading_time_minutes: 12
 prerequisites:
   - "SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进"
 related:

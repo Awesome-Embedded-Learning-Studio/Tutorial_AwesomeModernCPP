@@ -11,7 +11,7 @@ tags:
   - 引用计数
 difficulty: advanced
 platform: host
-reading_time_minutes: 20
+reading_time_minutes: 11
 prerequisites:
   - "非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr"
 related:

@@ -11,7 +11,7 @@ tags:
   - 引用计数
 difficulty: intermediate
 platform: host
-reading_time_minutes: 18
+reading_time_minutes: 8
 prerequisites:
   - "WeakPtr 反模式：T* + raw Flag* 的致命陷阱"
 related:

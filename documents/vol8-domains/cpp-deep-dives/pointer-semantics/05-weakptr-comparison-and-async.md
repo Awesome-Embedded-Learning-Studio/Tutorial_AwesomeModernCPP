@@ -12,7 +12,7 @@ tags:
   - 回调机制
 difficulty: advanced
 platform: host
-reading_time_minutes: 25
+reading_time_minutes: 8
 prerequisites:
   - "Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory"
   - "卷二 · 第一章：weak_ptr 与循环引用"

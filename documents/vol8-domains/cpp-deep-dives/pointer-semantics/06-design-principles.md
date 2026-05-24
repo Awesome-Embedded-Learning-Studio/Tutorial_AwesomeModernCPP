@@ -11,7 +11,7 @@ tags:
   - 内存管理
 difficulty: intermediate
 platform: host
-reading_time_minutes: 18
+reading_time_minutes: 7
 prerequisites:
   - "std::weak_ptr 对比与异步回调实战"
 related:
