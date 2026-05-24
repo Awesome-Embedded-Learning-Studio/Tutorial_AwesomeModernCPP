@@ -179,24 +179,32 @@ bool linked_list_push_front(LinkedList* list, int data) {
 
 Let's draw this process. Suppose the list was originally `1 -> 2 -> 3`, and now we want to insert `0` at the head:
 
-```text
-插入前：
-head
-  │
-  ▼
-[10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "Before insertion"
+        H0["head"] --> N10a["10"] --> N20a["20"] --> N30a["30"] --> NULL0["NULL"]
+    end
+```
 
-Step 1: 创建新节点 node(5)
-[node(5) | next=NULL]
+```mermaid
+graph LR
+    subgraph "Step 1: Create new node node(5)"
+        S1["node(5)<br/>next=NULL"]
+    end
+```
 
-Step 2: node->next = list->head
-[node(5) | next] ──→ [10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "Step 2: node->next = list->head"
+        S2["node(5)"] --> N10b["10"] --> N20b["20"] --> N30b["30"] --> NULL1["NULL"]
+    end
+```
 
-Step 3: list->head = node
-head
-  │
-  ▼
-[node(5)] -> [10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "Step 3: list->head = node"
+        H3["head"] --> S3["node(5)"] --> N10c["10"] --> N20c["20"] --> N30c["30"] --> NULL2["NULL"]
+    end
 ```
 
 The whole process only changes two pointers, with no traversal, so it is O(1). Note that the order of these two steps cannot be reversed — if you update `head` first, the address of the original first node is lost, and the list is instantly broken. This order is an iron rule for head operations on linked lists: **connect first, disconnect second** — hook the new node onto the chain first, then modify the `head` pointer.

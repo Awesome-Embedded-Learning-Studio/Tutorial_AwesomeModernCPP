@@ -59,29 +59,37 @@ enum class State {
 
 ### 状态转换图
 
-```text
-                        ┌──────────────────────────────────────────────────┐
-                        │                                                  │
-                        ▼                                                  │
-┌──────────┐  按下   ┌──────────────┐  稳定   ┌─────────┐  释放   ┌────────────────┐
-│  Idle    │───────→│DebouncingPress│───────→│ Pressed │───────→│DebouncingRelease│
-│ (松开中) │←───────│  (消抖中)     │        │(按住中) │←───────│   (消抖中)      │
-└──────────┘  反弹   └──────────────┘        └─────────┘  反弹   └────────────────┘
-     ↑                                                       │
-     │                  确认释放                              │ 稳定
-     └───────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    state "核心路径" as Core {
+        direction LR
+        Idle: Idle（松开中）
+        DebouncingPress: DebouncingPress（消抖中）
+        Pressed: Pressed（按住中）
+        DebouncingRelease: DebouncingRelease（消抖中）
 
-启动路径（上电时按钮已按住）：
-┌──────────┐         ┌──────────────┐         ┌───────────────────────┐
-│ BootSync │──按下──→│ BootPressed  │──释放──→│ BootReleaseDebouncing │
-│ (初始同步)│        │ (启动锁定中) │         │   (启动释放消抖)       │
-└──────────┘         └──────────────┘         └───────────────────────┘
-                                                      │ 稳定
-                                                      ▼
-                                                 ┌──────────┐
-                                                 │  Idle    │
-                                                 │ (解锁，无事件)│
-                                                 └──────────┘
+        [*] --> Idle
+        Idle --> DebouncingPress : 检测到按下
+        DebouncingPress --> Idle : 信号反弹
+        DebouncingPress --> Pressed : 稳定确认
+        Pressed --> DebouncingRelease : 检测到释放
+        DebouncingRelease --> Pressed : 信号反弹
+        DebouncingRelease --> Idle : 确认释放\n（触发 Released 事件）
+    }
+
+    state "启动路径（上电时按钮已按住）" as Boot {
+        direction LR
+        BootSync: BootSync（初始同步）
+        BootPressed: BootPressed（启动锁定中）
+        BootReleaseDebouncing: BootReleaseDebouncing（启动释放消抖）
+
+        BootSync --> BootPressed : 检测到按下\n（设置 boot_locked）
+        BootSync --> Idle : 检测到松开
+        BootPressed --> BootReleaseDebouncing : 检测到释放
+        BootReleaseDebouncing --> Idle : 稳定确认\n（解锁，无事件）
+    }
+
+    [*] --> BootSync
 ```
 
 ---

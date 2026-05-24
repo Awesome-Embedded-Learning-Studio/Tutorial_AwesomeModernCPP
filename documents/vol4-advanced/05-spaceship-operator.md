@@ -416,20 +416,20 @@ struct ConfigKey {
 
 ### 比较类别关系图
 
-```text
-strong_ordering (最强)
-  ├─ 替换性：a == b 意味着 a 可以完全替代 b
-  ├─ 等价即相等
-  └─ 例子：整数、枚举
+```mermaid
+graph TD
+    subgraph strong["strong_ordering（最强）"]
+        strong_props["替换性：a == b 意味着 a 可以完全替代 b<br/>等价即相等<br/>例子：整数、枚举"]
+    end
+    subgraph weak["weak_ordering"]
+        weak_props["替换性：a == b 不一定能完全替代 b<br/>等价但不相等<br/>例子：大小写不敏感字符串"]
+    end
+    subgraph partial["partial_ordering（最弱）"]
+        partial_props["某些值不可比较<br/>例子：浮点数（NaN）"]
+    end
 
-weak_ordering
-  ├─ 替换性：a == b 不一定能完全替代 b
-  ├─ 等价但不相等
-  └─ 例子：大小写不敏感字符串
-
-partial_ordering (最弱)
-  ├─ 某些值不可比较
-  └─ 例子：浮点数（NaN）
+    strong -.->|弱化| weak
+    weak -.->|弱化| partial
 ```
 
 ------

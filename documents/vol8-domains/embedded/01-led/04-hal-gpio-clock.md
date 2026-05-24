@@ -42,35 +42,29 @@ order: 4
 
 下面是我们项目配置下的简化时钟树。注意，这是**我们实际使用的配置**，而不是STM32参考手册里那张让人看一眼就头疼的完整时钟树。我们先只看与我们相关的部分：
 
-```text
-                            ┌──────────────┐
-                            │  HSI 8MHz    │
-                            │ (内部RC振荡器) │
-                            └──────┬───────┘
-                                   │
-                                /2 分频
-                                   │
-                              4MHz ──→ PLL ×16 ──→ 64MHz
-                                              │
-                                         SYSCLK
-                                         64MHz
-                                              │
-                    ┌─────────────────────────┤
-                    │                         │
-                AHB /1                    AHB /1
-               HCLK = 64MHz             HCLK = 64MHz
-                    │                         │
-         ┌──────────┤                  ┌──────┤
-         │          │                  │      │
-     APB1 /2    APB2 /1            DMA   Flash
-     32MHz      64MHz             控制器  接口
-         │          │
-    ┌────┤     ┌────┴────┐
-    │    │     │         │
-  TIM2-4  USART1     GPIOA-E
-  USART2-3 SPI1      ADC1-2
-  I2C1-2   TIM1
-  SPI2-3   ...
+```mermaid
+graph TD
+    HSI["HSI 8MHz\n（内部RC振荡器）"]
+    DIV["÷2 分频\n4MHz"]
+    PLL["PLL ×16\n64MHz"]
+    SYSCLK["SYSCLK\n64MHz"]
+    AHB1["AHB ÷1\nHCLK = 64MHz"]
+    APB1["APB1 ÷2\n32MHz"]
+    APB2["APB2 ÷1\n64MHz"]
+    DMA["DMA 控制器"]
+    Flash["Flash 接口"]
+    APB1_PERIPH["TIM2-4, USART2-3\nI2C1-2, SPI2-3"]
+    APB2_PERIPH["USART1, SPI1\nTIM1, ..."]
+    GPIO["GPIOA-E"]
+    ADC["ADC1-2"]
+
+    HSI --> DIV --> PLL --> SYSCLK --> AHB1
+    AHB1 --> APB1 --> APB1_PERIPH
+    AHB1 --> APB2 --> APB2_PERIPH
+    APB2 --> GPIO
+    APB2 --> ADC
+    AHB1 --> DMA
+    AHB1 --> Flash
 ```
 
 我们逐层来看这棵树。

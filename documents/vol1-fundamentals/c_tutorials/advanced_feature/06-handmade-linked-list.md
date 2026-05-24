@@ -177,24 +177,32 @@ bool linked_list_push_front(LinkedList* list, int data) {
 
 我们来画一下这个过程。假设链表原来是 `10 -> 20 -> 30`，现在要在头部插入 `5`：
 
-```text
-插入前：
-head
-  │
-  ▼
-[10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "插入前"
+        H0["head"] --> N10a["10"] --> N20a["20"] --> N30a["30"] --> NULL0["NULL"]
+    end
+```
 
-Step 1: 创建新节点 node(5)
-[node(5) | next=NULL]
+```mermaid
+graph LR
+    subgraph "Step 1: 创建新节点 node(5)"
+        S1["node(5)<br/>next=NULL"]
+    end
+```
 
-Step 2: node->next = list->head
-[node(5) | next] ──→ [10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "Step 2: node->next = list->head"
+        S2["node(5)"] --> N10b["10"] --> N20b["20"] --> N30b["30"] --> NULL1["NULL"]
+    end
+```
 
-Step 3: list->head = node
-head
-  │
-  ▼
-[node(5)] -> [10] -> [20] -> [30] -> NULL
+```mermaid
+graph LR
+    subgraph "Step 3: list->head = node"
+        H3["head"] --> S3["node(5)"] --> N10c["10"] --> N20c["20"] --> N30c["30"] --> NULL2["NULL"]
+    end
 ```
 
 整个过程只改了两个指针，没有遍历，所以是 O(1)。注意这两步的顺序不能反——如果先 `list->head = node`，那原来第一个节点的地址就丢了，链表直接断链。这个顺序是链表头部操作的铁律：**先连后断**——先把新节点接到链上，再改 `head` 指针。

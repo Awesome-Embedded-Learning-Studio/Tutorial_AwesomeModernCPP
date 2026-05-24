@@ -417,20 +417,20 @@ struct ConfigKey {
 
 ### Comparison Category Relationship Diagram
 
-```text
-strong_ordering (最强)
-  ├─ 替换性：a == b 意味着 a 可以完全替代 b
-  ├─ 等价即相等
-  └─ 例子：整数、枚举
+```mermaid
+graph TD
+    subgraph strong["strong_ordering (strongest)"]
+        strong_props["Substitutability: a == b means a can fully substitute b<br/>Equivalent means equal<br/>Examples: integers, enums"]
+    end
+    subgraph weak["weak_ordering"]
+        weak_props["Substitutability: a == b does not necessarily mean a can substitute b<br/>Equivalent but not equal<br/>Examples: case-insensitive strings"]
+    end
+    subgraph partial["partial_ordering (weakest)"]
+        partial_props["Some values are not comparable<br/>Examples: floating-point (NaN)"]
+    end
 
-weak_ordering
-  ├─ 替换性：a == b 不一定能完全替代 b
-  ├─ 等价但不相等
-  └─ 例子：大小写不敏感字符串
-
-partial_ordering (最弱)
-  ├─ 某些值不可比较
-  └─ 例子：浮点数（NaN）
+    strong -.->|weakens| weak
+    weak -.->|weakens| partial
 ```
 
 ------

@@ -84,14 +84,11 @@ The advantage of eventual consistency lies in performance and availability: beca
 
 Great, now let us look at all four models together. They form a hierarchy from strong to weak:
 
-```text
-线性一致性 (Linearizability)
-    ↓ 满足线性一致 → 必然满足以下所有
-顺序一致性 (Sequential Consistency)
-    ↓ 满足顺序一致 → 必然满足以下所有
-因果一致性 (Causal Consistency)
-    ↓ 满足因果一致 → 必然满足以下所有
-最终一致性 (Eventual Consistency)
+```mermaid
+flowchart TD
+    A["Linearizability"] -->|"Satisfies linearizability → implies all below"| B["Sequential Consistency"]
+    B -->|"Satisfies sequential consistency → implies all below"| C["Causal Consistency"]
+    C -->|"Satisfies causal consistency → implies all below"| D["Eventual Consistency"]
 ```
 
 The hierarchical relationship means: a system that satisfies linearizability also satisfies sequential consistency, causal consistency, and eventual consistency. Conversely, a system that satisfies eventual consistency does not necessarily satisfy causal consistency. For each step up the hierarchy, you gain a stronger consistency guarantee, but you also pay a higher price in latency and availability.

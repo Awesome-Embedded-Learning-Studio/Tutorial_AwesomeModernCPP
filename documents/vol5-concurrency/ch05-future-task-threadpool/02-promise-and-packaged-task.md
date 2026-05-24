@@ -429,21 +429,20 @@ int main()
 
 我们用一张伪代码图来表示这个流程：
 
-```text
-调用者线程                    任务队列                  工作线程
-    |                           |                        |
-    |-- submit(func, args) ---->|                        |
-    |   (创建 packaged_task)    |                        |
-    |   (获取 future)           |                        |
-    |   (打包入队列)            |                        |
-    |<-- 返回 future            |                        |
-    |                           |--- 取出 task --------->|
-    |                           |                        |-- task()
-    |                           |                        |   (调用 func)
-    |                           |                        |   (promise.set_value)
-    |                           |                        |
-    |-- future.get() <--------- |                  共享状态就绪
-    |   (拿到结果或异常)
+```mermaid
+sequenceDiagram
+    participant 调用者线程
+    participant 任务队列
+    participant 工作线程
+
+    调用者线程->>任务队列: submit(func, args)<br/>(创建 packaged_task)
+    Note right of 调用者线程: 获取 future
+    任务队列-->>调用者线程: 返回 future
+    任务队列->>工作线程: 取出 task
+    工作线程->>工作线程: task() — 调用 func
+    Note right of 工作线程: promise.set_value
+    Note over 调用者线程,工作线程: 共享状态就绪
+    调用者线程->>调用者线程: future.get()<br/>(拿到结果或异常)
 ```
 
 这个模式的核心优势在于**解耦**：调用者不需要知道任务在哪个线程上执行、什么时候执行；工作线程不需要知道任务的来源和返回值去向。两者通过共享状态（由 packaged_task 内部的 promise 和返回给调用者的 future 共同持有）进行通信，所有同步细节都被封装在 `std::promise`/`std::future` 的实现里了。

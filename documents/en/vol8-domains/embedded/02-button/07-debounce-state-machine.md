@@ -59,29 +59,37 @@ Don't let the 7 states intimidate you. The core flow only has 4 states: `Idle �
 
 ### State Transition Diagram
 
-```text
-                        ┌──────────────────────────────────────────────────┐
-                        │                                                  │
-                        ▼                                                  │
-┌──────────┐  按下   ┌──────────────┐  稳定   ┌─────────┐  释放   ┌────────────────┐
-│  Idle    │───────→│DebouncingPress│───────→│ Pressed │───────→│DebouncingRelease│
-│ (松开中) │←───────│  (消抖中)     │        │(按住中) │←───────│   (消抖中)      │
-└──────────┘  反弹   └──────────────┘        └─────────┘  反弹   └────────────────┘
-     ↑                                                       │
-     │                  确认释放                              │ 稳定
-     └───────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    state "Core Path" as Core {
+        direction LR
+        Idle: Idle (Released)
+        DebouncingPress: DebouncingPress (Debouncing)
+        Pressed: Pressed (Held)
+        DebouncingRelease: DebouncingRelease (Debouncing)
 
-启动路径（上电时按钮已按住）：
-┌──────────┐         ┌──────────────┐         ┌───────────────────────┐
-│ BootSync │──按下──→│ BootPressed  │──释放──→│ BootReleaseDebouncing │
-│ (初始同步)│        │ (启动锁定中) │         │   (启动释放消抖)       │
-└──────────┘         └──────────────┘         └───────────────────────┘
-                                                      │ 稳定
-                                                      ▼
-                                                 ┌──────────┐
-                                                 │  Idle    │
-                                                 │ (解锁，无事件)│
-                                                 └──────────┘
+        [*] --> Idle
+        Idle --> DebouncingPress : Press detected
+        DebouncingPress --> Idle : Signal bounce
+        DebouncingPress --> Pressed : Stable confirmed
+        Pressed --> DebouncingRelease : Release detected
+        DebouncingRelease --> Pressed : Signal bounce
+        DebouncingRelease --> Idle : Release confirmed\n(Trigger Released event)
+    }
+
+    state "Boot Path (button held at power-on)" as Boot {
+        direction LR
+        BootSync: BootSync (Initial sync)
+        BootPressed: BootPressed (Boot locked)
+        BootReleaseDebouncing: BootReleaseDebouncing (Boot release debounce)
+
+        BootSync --> BootPressed : Press detected\n(set boot_locked)
+        BootSync --> Idle : Release detected
+        BootPressed --> BootReleaseDebouncing : Release detected
+        BootReleaseDebouncing --> Idle : Stable confirmed\n(Unlock, no event)
+    }
+
+    [*] --> BootSync
 ```
 
 ---

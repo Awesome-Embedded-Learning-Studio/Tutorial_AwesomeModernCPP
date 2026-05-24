@@ -209,11 +209,13 @@ In our `-fno-exceptions -fno-rtti` compilation environment, `std::variant` is a 
 
 The memory layout of `std::variant<Pressed, Released>`:
 
-```text
-┌──────────┬──────────┐
-│ tag (1B) │ payload  │
-│ 0 或 1   │ (空)     │
-└──────────┴──────────┘
+```mermaid
+graph LR
+    subgraph "std::variant&lt;Pressed, Released&gt; Memory Layout"
+        TAG["tag (1B)<br/>0 = Pressed<br/>1 = Released"]
+        PAYLOAD["payload<br/>(empty struct, no extra space)"]
+    end
+    TAG --- PAYLOAD
 ```
 
 Since both `Pressed` and `Released` are empty structs (`sizeof = 1`), `variant` only needs a single tag byte to identify which type it currently holds. With alignment, `sizeof(ButtonEvent)` is typically 2 bytes.

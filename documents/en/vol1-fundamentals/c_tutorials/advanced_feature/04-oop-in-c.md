@@ -374,15 +374,15 @@ Circle("Moon", r=2.00)
 
 Through the unified `shape_area()` and `shape_draw()` interfaces, each call routes to the correct concrete implementation—this is runtime polymorphism, and it is **exactly the same** as the underlying mechanism of C++ virtual functions. The memory layout comparison looks like this:
 
-```text
-vtable 方案：每个对象只有 1 个 vptr（8 字节）
-┌──────────────────┐
-│ vtable ─────────────→ kCircleVtable（全局共享）
-│ name             │     ┌──────────────────┐
-│ radius           │     │ circle_area      │
-└──────────────────┘     │ circle_perimeter │
-                         │ circle_draw      │
-                         └──────────────────┘
+```mermaid
+graph LR
+    subgraph "Circle object (each object has only 1 vptr)"
+        Obj["vtable<br/>name<br/>radius"]
+    end
+    subgraph "kCircleVtable (globally shared)"
+        VT["circle_area<br/>circle_perimeter<br/>circle_draw"]
+    end
+    Obj -->|vptr| VT
 ```
 
 ## Step 5 — Interfaces via Function Pointer Tables

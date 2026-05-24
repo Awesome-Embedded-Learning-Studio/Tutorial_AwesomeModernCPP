@@ -77,6 +77,8 @@ class FrontmatterValidator:
             'with_warnings': 0
         }
 
+    _yaml_warning_printed = False
+
     def parse_frontmatter(self, content: str) -> Tuple[Dict, bool]:
         """Parse YAML frontmatter from markdown content."""
         match = re.match(r'^---\s*\n(.*?)\n---\s*\n(.*)', content, re.DOTALL)
@@ -88,9 +90,18 @@ class FrontmatterValidator:
             frontmatter = yaml.safe_load(match.group(1))
             return frontmatter if frontmatter else {}, True
         except ImportError:
-            print("Warning: PyYAML not installed, skipping YAML validation")
+            if not self._yaml_warning_printed:
+                self._yaml_warning_printed = True
+                venv_python = Path(__file__).parent.parent / '.venv' / 'bin' / 'python'
+                print(
+                    "Warning: PyYAML not installed — YAML frontmatter validation skipped.\n"
+                    "  Install it with:\n"
+                    f"    {venv_python} -m pip install pyyaml\n"
+                    "  Or if no venv exists yet:\n"
+                    "    python -m venv .venv && .venv/bin/pip install pyyaml"
+                )
             return {}, True
-        except yaml.YAMLError as e:
+        except Exception as e:
             return {}, False
 
     def validate_field_types(self, frontmatter: Dict, filepath: Path):

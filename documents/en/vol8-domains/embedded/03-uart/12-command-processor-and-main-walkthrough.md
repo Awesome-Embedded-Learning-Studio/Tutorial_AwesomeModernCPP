@@ -131,24 +131,19 @@ int main() {
 
 The first half of `main()` is initialization, executed in a strict order:
 
-```text
-HAL_Init()                          ← HAL 库初始化（SysTick 等）
-  ↓
-ClockConfig::instance().setup...    ← 系统时钟配置（64 MHz HSI）
-  ↓
-LED<Port::C, PIN_13> led            ← LED 对象构造（零开销）
-  ↓
-Button<Port::A, PIN_0> button       ← Button 对象构造（零开销）
-  ↓
-Logger::driver().set_gpio_init(...) ← 注册 GPIO 初始化回调
-  ↓
-Logger::driver().init(UartConfig)   ← 使能时钟 → GPIO → HAL init
-  ↓
-Logger::driver().enable_interrupt() ← NVIC 使能 USART1 中断
-  ↓
-send_string("UART Logger Ready!")   ← 阻塞式发送欢迎信息
-  ↓
-uart_start_receive()                ← 启动中断接收流水线
+```mermaid
+graph TD
+    A["HAL_Init()<br/>HAL library init (SysTick, etc.)"]
+    B["ClockConfig::instance().setup...<br/>System clock config (64 MHz HSI)"]
+    C["LED&lt;Port::C, PIN_13&gt; led<br/>LED object construction (zero overhead)"]
+    D["Button&lt;Port::A, PIN_0&gt; button<br/>Button object construction (zero overhead)"]
+    E["Logger::driver().set_gpio_init(...)<br/>Register GPIO init callback"]
+    F["Logger::driver().init(UartConfig)<br/>Enable clock → GPIO → HAL init"]
+    G["Logger::driver().enable_interrupt()<br/>NVIC enable USART1 interrupt"]
+    H["send_string(\"UART Logger Ready!\")<br/>Blocking send welcome message"]
+    I["uart_start_receive()<br/>Start interrupt receive pipeline"]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
 
 The order of every step cannot be swapped. Calling HAL functions before configuring the clock will cause a hard fault. If GPIO is not configured, USART signals will not reach the pins. If interrupts are not enabled before starting reception, arriving bytes will not trigger the ISR. Placing `send_string` before `uart_start_receive` is intentional—we first send a welcome message to confirm the transmit path is working, then start receiving.
@@ -247,20 +242,32 @@ In a bare-metal environment, dynamic memory allocation (`new`/`malloc`) can lead
 
 Drawing all the data flows together, the architecture of the entire system looks like this:
 
-```text
-┌─────────┐   TX (PA9)   ┌────────────┐   USB   ┌─────┐
-│         │─────────────→│ USB-TTL    │───────→│  PC  │
-│  STM32  │              │ 适配器     │        │终端  │
-│         │←─────────────│            │←───────│     │
-└─────────┘   RX (PA10)  └────────────┘   USB   └─────┘
-     │
-     │ 按钮事件 → send_string("Button pressed!")
-     │ 命令响应 → send_string("OK: LED ON")
-     │
-     │ 中断接收 → rx_ring → 行解析 → handle_command → led.on()
-     │
-     ├── PC13 (LED)
-     └── PA0  (Button)
+```mermaid
+graph LR
+    subgraph STM32["STM32"]
+        TX["TX (PA9)"]
+        RX["RX (PA10)"]
+        LED["PC13 (LED)"]
+        BTN["PA0 (Button)"]
+    end
+
+    subgraph ADAPTER["USB-TTL Adapter"]
+        TTL_TX["TTL TX"]
+        TTL_RX["TTL RX"]
+    end
+
+    subgraph PC["PC Terminal"]
+        PC_TX["USB TX"]
+        PC_RX["USB RX"]
+    end
+
+    TX -->|"Button events / Command responses"| TTL_RX
+    TTL_RX -->|"USB"| PC_RX
+    PC_TX -->|"USB"| TTL_TX
+    TTL_TX -->|"Command input"| RX
+
+    BTN -.->|"poll_events()"| TX
+    RX -.->|"rx_ring → Line parsing<br/>→ handle_command"| LED
 ```
 
 Chip → PC direction: Button events and command responses are sent out via `send_string()`. These calls use blocking transmission (`HAL_UART_Transmit`) because the send volume is small (a few dozen bytes), the blocking time is controllable (less than one millisecond), and there is no impact on system responsiveness.

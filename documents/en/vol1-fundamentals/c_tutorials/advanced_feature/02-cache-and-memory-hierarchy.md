@@ -62,21 +62,17 @@ You can build an intuition using a rough time scale: if a register access takes 
 
 The core design philosophy behind this pyramid structure is called the **Principle of Locality**. Locality comes in two forms: **Temporal locality** means that if a piece of data was just accessed, it is very likely to be accessed again in the near future; **Spatial locality** means that if a piece of data is accessed, data at nearby addresses is also likely to be accessed. All Cache design decisions—cache line size, prefetching policies, replacement policies—revolve entirely around these two types of locality. We can use a simple diagram to visualize this pyramid:
 
-```text
-         ┌─────────────┐
-         │   寄存器     │  ~1 周期    | 容量: ~数百字节
-         ├─────────────┤
-         │  L1 Cache   │  ~3-4 周期  | 容量: 32-64 KB
-         ├─────────────┤
-         │  L2 Cache   │  ~10-14 周期| 容量: 256 KB-1 MB
-         ├─────────────┤
-         │  L3 Cache   │  ~30-50 周期| 容量: 数 MB-数十 MB
-         ├─────────────┤
-         │   主存 DRAM  │  ~100-300 周期 | 容量: GB 级
-         ├─────────────┤
-         │   SSD/HDD   │  ~微秒/毫秒 | 容量: TB 级
-         └─────────────┘
-    越往上越快、越小、越贵；越往下越慢、越大、越便宜
+```mermaid
+graph TD
+    subgraph "Faster, smaller, more expensive toward top; slower, larger, cheaper toward bottom"
+        Reg["<b>Registers</b><br/>~1 cycle | Capacity: ~hundreds of bytes"]
+        L1["<b>L1 Cache</b><br/>~3-4 cycles | Capacity: 32-64 KB"]
+        L2["<b>L2 Cache</b><br/>~10-14 cycles | Capacity: 256 KB-1 MB"]
+        L3["<b>L3 Cache</b><br/>~30-50 cycles | Capacity: several MB-tens of MB"]
+        DRAM["<b>Main Memory DRAM</b><br/>~100-300 cycles | Capacity: GB level"]
+        Disk["<b>SSD/HDD</b><br/>~microseconds/milliseconds | Capacity: TB level"]
+    end
+    Reg ~~~ L1 ~~~ L2 ~~~ L3 ~~~ DRAM ~~~ Disk
 ```
 
 On Linux, you can use the `lscpu` command to check your machine's Cache configuration. The `L1d cache`, `L2 cache`, and `L3 cache` lines in the output reflect your CPU's actual setup. Let us break this down layer by layer.
@@ -301,14 +297,23 @@ typedef struct {
 
 Let us compare the differences in memory layout between the two:
 
-```text
-AoS 布局：每个元素的 x,y,z,r,g,b 紧挨在一起
-|x0 y0 z0 r0 g0 b0| x1 y1 z1 r1 g1 b1| x2 y2 z2 r2 g2 b2| ...
-└─── 24 字节 ───┘
+```mermaid
+graph LR
+    subgraph "AoS layout: each element's x,y,z,r,g,b are contiguous (24 bytes)"
+        A0["x0 y0 z0 r0 g0 b0"]
+        A1["x1 y1 z1 r1 g1 b1"]
+        A2["x2 y2 z2 r2 g2 b2"]
+        A0 --> A1 --> A2
+    end
+```
 
-SoA 布局：所有 x 连续，所有 y 连续，以此类推
-|x0|x1|x2|x3|x4|...|y0|y1|y2|y3|y4|...|z0|z1|z2|...
-└── 连续的 x ──┘   └── 连续的 y ──┘   └── 连续的 z ──┘
+```mermaid
+graph LR
+    subgraph "SoA layout: all x are contiguous, all y are contiguous, etc."
+        SX["Contiguous x<br/>x0 x1 x2 x3 x4 ..."]
+        SY["Contiguous y<br/>y0 y1 y2 y3 y4 ..."]
+        SZ["Contiguous z<br/>z0 z1 z2 z3 z4 ..."]
+    end
 ```
 
 If your hot path only processes the coordinates `x`, `y`, and `z`, without touching the colors `r`, `g`, and `b`, the advantage of SoA becomes very obvious. Traversing `x[0]`, `x[1]`, `x[2]`, and so on means the data is completely contiguous in memory, and the Cache hit rate approaches 100%. With AoS, accessing each `x` incidentally pulls the `y`, `z`, `r`, `g`, and `b` from the same struct into the Cache (because they are on the same cache line), but we do not need the color data yet, so that space is wasted.

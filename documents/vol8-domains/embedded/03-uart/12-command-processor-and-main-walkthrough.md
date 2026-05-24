@@ -130,24 +130,19 @@ int main() {
 
 `main()` 的前半部分是初始化，按严格的顺序执行：
 
-```text
-HAL_Init()                          ← HAL 库初始化（SysTick 等）
-  ↓
-ClockConfig::instance().setup...    ← 系统时钟配置（64 MHz HSI）
-  ↓
-LED<Port::C, PIN_13> led            ← LED 对象构造（零开销）
-  ↓
-Button<Port::A, PIN_0> button       ← Button 对象构造（零开销）
-  ↓
-Logger::driver().set_gpio_init(...) ← 注册 GPIO 初始化回调
-  ↓
-Logger::driver().init(UartConfig)   ← 使能时钟 → GPIO → HAL init
-  ↓
-Logger::driver().enable_interrupt() ← NVIC 使能 USART1 中断
-  ↓
-send_string("UART Logger Ready!")   ← 阻塞式发送欢迎信息
-  ↓
-uart_start_receive()                ← 启动中断接收流水线
+```mermaid
+graph TD
+    A["HAL_Init()\nHAL 库初始化（SysTick 等）"]
+    B["ClockConfig::instance().setup...\n系统时钟配置（64 MHz HSI）"]
+    C["LED&lt;Port::C, PIN_13&gt; led\nLED 对象构造（零开销）"]
+    D["Button&lt;Port::A, PIN_0&gt; button\nButton 对象构造（零开销）"]
+    E["Logger::driver().set_gpio_init(...)\n注册 GPIO 初始化回调"]
+    F["Logger::driver().init(UartConfig)\n使能时钟 → GPIO → HAL init"]
+    G["Logger::driver().enable_interrupt()\nNVIC 使能 USART1 中断"]
+    H["send_string(\"UART Logger Ready!\")\n阻塞式发送欢迎信息"]
+    I["uart_start_receive()\n启动中断接收流水线"]
+
+    A --> B --> C --> D --> E --> F --> G --> H --> I
 ```
 
 每一步的顺序都不能调换。时钟没配就调 HAL 函数会 hard fault。GPIO 没配好 USART 信号到不了引脚。中断没使能就启动接收的话，字节到了也不会触发 ISR。`send_string` 放在 `uart_start_receive` 之前是故意的——先发欢迎信息确认发送链路正常，再启动接收。
@@ -246,20 +241,32 @@ static void handle_command(std::string_view cmd,
 
 把所有数据流画在一起，整个系统的架构是这样的：
 
-```text
-┌─────────┐   TX (PA9)   ┌────────────┐   USB   ┌─────┐
-│         │─────────────→│ USB-TTL    │───────→│  PC  │
-│  STM32  │              │ 适配器     │        │终端  │
-│         │←─────────────│            │←───────│     │
-└─────────┘   RX (PA10)  └────────────┘   USB   └─────┘
-     │
-     │ 按钮事件 → send_string("Button pressed!")
-     │ 命令响应 → send_string("OK: LED ON")
-     │
-     │ 中断接收 → rx_ring → 行解析 → handle_command → led.on()
-     │
-     ├── PC13 (LED)
-     └── PA0  (Button)
+```mermaid
+graph LR
+    subgraph STM32["STM32"]
+        TX["TX (PA9)"]
+        RX["RX (PA10)"]
+        LED["PC13 (LED)"]
+        BTN["PA0 (Button)"]
+    end
+
+    subgraph ADAPTER["USB-TTL 适配器"]
+        TTL_TX["TTL TX"]
+        TTL_RX["TTL RX"]
+    end
+
+    subgraph PC["PC 终端"]
+        PC_TX["USB TX"]
+        PC_RX["USB RX"]
+    end
+
+    TX -->|"按钮事件 / 命令响应"| TTL_RX
+    TTL_RX -->|"USB"| PC_RX
+    PC_TX -->|"USB"| TTL_TX
+    TTL_TX -->|"命令输入"| RX
+
+    BTN -.->|"poll_events()"| TX
+    RX -.->|"rx_ring → 行解析\n→ handle_command"| LED
 ```
 
 芯片 → PC 方向：按钮事件和命令响应通过 `send_string()` 发出。这些调用使用阻塞式发送（`HAL_UART_Transmit`），因为发送量小（几十字节），阻塞时间可控（不到 1 毫秒），对系统响应没有影响。

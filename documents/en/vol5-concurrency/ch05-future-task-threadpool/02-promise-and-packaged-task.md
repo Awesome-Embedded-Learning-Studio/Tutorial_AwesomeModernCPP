@@ -439,21 +439,20 @@ The entire flow is as follows: the caller submits a task (a callable object + ar
 
 Let's use a pseudocode diagram to illustrate this flow:
 
-```text
-调用者线程                    任务队列                  工作线程
-    |                           |                        |
-    |-- submit(func, args) ---->|                        |
-    |   (创建 packaged_task)    |                        |
-    |   (获取 future)           |                        |
-    |   (打包入队列)            |                        |
-    |<-- 返回 future            |                        |
-    |                           |--- 取出 task --------->|
-    |                           |                        |-- task()
-    |                           |                        |   (调用 func)
-    |                           |                        |   (promise.set_value)
-    |                           |                        |
-    |-- future.get() <--------- |                  共享状态就绪
-    |   (拿到结果或异常)
+```mermaid
+sequenceDiagram
+    participant Caller as Caller Thread
+    participant Queue as Task Queue
+    participant Worker as Worker Thread
+
+    Caller->>Queue: submit(func, args)<br/>(create packaged_task)
+    Note right of Caller: Get future
+    Queue-->>Caller: Return future
+    Queue->>Worker: Dequeue task
+    Worker->>Worker: task() — call func
+    Note right of Worker: promise.set_value
+    Note over Caller,Worker: Shared state ready
+    Caller->>Caller: future.get()<br/>(get result or exception)
 ```
 
 The core advantage of this pattern lies in **decoupling**: the caller does not need to know which thread the task executes on or when it executes; the worker thread does not need to know the source of the task or where the return value goes. The two communicate through a shared state (jointly held by the promise inside the packaged_task and the future returned to the caller), and all synchronization details are encapsulated within the implementation of `std::promise`/`std::future`.

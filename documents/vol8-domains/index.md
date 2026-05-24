@@ -14,13 +14,14 @@ tags:
 
 ## 概述
 
-本卷覆盖现代 C++ 在各领域的实际应用，包含五个子领域：
+本卷覆盖现代 C++ 在各领域的实际应用，包含六个子领域：
 
 - **嵌入式开发**：资源约束、零开销抽象、外设编程、RTOS、STM32 实战
 - **网络编程**：Socket、HTTP、异步 I/O、WebSocket、RPC
 - **GUI 与图形**：图形基础、最小 GUI 框架、ImGui、2D/3D 渲染
 - **数据存储**：序列化、文件格式、SQLite、键值存储
 - **算法与数据结构**：复杂度分析、经典算法、高级数据结构
+- **C++ 深度专题**：横跨多领域的语言机制深度探讨（指针语义、弱引用设计等）
 
 预计 80-100 篇文章。
 
@@ -32,4 +33,5 @@ tags:
   <ChapterLink href="gui-graphics/">GUI 与图形 — 规划中</ChapterLink>
   <ChapterLink href="data-storage/">数据存储 — 规划中</ChapterLink>
   <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
+  <ChapterLink href="cpp-deep-dives/">C++ 深度专题</ChapterLink>
 </ChapterNav>

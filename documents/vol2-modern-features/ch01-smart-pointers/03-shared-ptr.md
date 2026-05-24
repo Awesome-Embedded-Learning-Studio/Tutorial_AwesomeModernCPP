@@ -86,17 +86,20 @@ Disconnected from 192.168.1.1:8080
 
 我们用一个简化的示意图来理解：
 
-```text
-shared_ptr 对象 (栈上)
-┌─────────────────────┐
-│ T* ptr ─────────────┼──→ T 对象
-│ ControlBlock* cb ───┼──→ ControlBlock (堆上)
-└─────────────────────┘     ┌──────────────────────┐
-                            │ strong_count: 2      │
-                            │ weak_count: 0        │
-                            │ deleter (可选)       │
-                            │ allocator (可选)     │
-                            └──────────────────────┘
+```mermaid
+graph LR
+    subgraph SP["shared_ptr 对象 (栈上)"]
+        ptr["T* ptr"]
+        cb["ControlBlock* cb"]
+    end
+    ptr --> T["T 对象 (堆上)"]
+    cb --> CB
+    subgraph CB["ControlBlock (堆上)"]
+        sc["strong_count: 2"]
+        wc["weak_count: 0"]
+        del["deleter (可选)"]
+        alloc["allocator (可选)"]
+    end
 ```
 
 所以一个 `shared_ptr` 对象本身的大小是 `2 * sizeof(void*)`——两个指针。在 64 位系统上是 16 字节，比 `unique_ptr`（8 字节）大一倍。控制块本身的大小取决于实现（GNU libstdc++ 在 x86_64 上约为 32 字节）。

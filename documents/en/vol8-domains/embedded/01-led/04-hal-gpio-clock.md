@@ -43,35 +43,29 @@ To understand clock enabling, simply knowing to "flip a switch" is not enough. W
 
 Below is a simplified clock tree under our project's configuration. Note that this is the **configuration we actually use**, not the complete clock tree in the STM32 reference manual that gives you a headache at first glance. We will only look at the parts relevant to us:
 
-```text
-                            ┌──────────────┐
-                            │  HSI 8MHz    │
-                            │ (内部RC振荡器) │
-                            └──────┬───────┘
-                                   │
-                                /2 分频
-                                   │
-                              4MHz ──→ PLL ×16 ──→ 64MHz
-                                              │
-                                         SYSCLK
-                                         64MHz
-                                              │
-                    ┌─────────────────────────┤
-                    │                         │
-                AHB /1                    AHB /1
-               HCLK = 64MHz             HCLK = 64MHz
-                    │                         │
-         ┌──────────┤                  ┌──────┤
-         │          │                  │      │
-     APB1 /2    APB2 /1            DMA   Flash
-     32MHz      64MHz             控制器  接口
-         │          │
-    ┌────┤     ┌────┴────┐
-    │    │     │         │
-  TIM2-4  USART1     GPIOA-E
-  USART2-3 SPI1      ADC1-2
-  I2C1-2   TIM1
-  SPI2-3   ...
+```mermaid
+graph TD
+    HSI["HSI 8MHz<br/>(Internal RC Oscillator)"]
+    DIV["/2 Divider<br/>4MHz"]
+    PLL["PLL x16<br/>64MHz"]
+    SYSCLK["SYSCLK<br/>64MHz"]
+    AHB1["AHB /1<br/>HCLK = 64MHz"]
+    APB1["APB1 /2<br/>32MHz"]
+    APB2["APB2 /1<br/>64MHz"]
+    DMA["DMA Controller"]
+    Flash["Flash Interface"]
+    APB1_PERIPH["TIM2-4, USART2-3<br/>I2C1-2, SPI2-3"]
+    APB2_PERIPH["USART1, SPI1<br/>TIM1, ..."]
+    GPIO["GPIOA-E"]
+    ADC["ADC1-2"]
+
+    HSI --> DIV --> PLL --> SYSCLK --> AHB1
+    AHB1 --> APB1 --> APB1_PERIPH
+    AHB1 --> APB2 --> APB2_PERIPH
+    APB2 --> GPIO
+    APB2 --> ADC
+    AHB1 --> DMA
+    AHB1 --> Flash
 ```
 
 Let us examine this tree layer by layer.

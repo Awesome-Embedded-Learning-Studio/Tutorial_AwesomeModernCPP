@@ -58,18 +58,20 @@ The **handle_connection coroutine** is an independent coroutine corresponding to
 
 The data flow looks roughly like this:
 
-```text
-客户端连接 → epoll 通知 listen_fd 可读
-→ accept_loop 协程恢复，accept 拿到 client_fd
-→ 启动 handle_connection(client_fd) 协程
-→ handle_connection 执行 co_await async_read(client_fd)
-→ async_read 发现没数据，把 client_fd 注册到 epoll，协程挂起
-→ 客户端发送数据 → epoll 通知 client_fd 可读
-→ EventLoop 恢复 handle_connection 协程
-→ async_read 读取数据，返回字节数
-→ handle_connection 执行 co_await async_write(client_fd)
-→ 数据写回客户端
-→ 回到循环开头，继续等下一次读
+```mermaid
+flowchart TD
+    A["Client connects"] --> B["epoll notifies listen_fd readable"]
+    B --> C["accept_loop coroutine resumes<br/>accept gets client_fd"]
+    C --> D["Start handle_connection(client_fd) coroutine"]
+    D --> E["handle_connection executes<br/>co_await async_read(client_fd)"]
+    E --> F["async_read finds no data<br/>registers client_fd with epoll, coroutine suspends"]
+    F --> G["Client sends data"]
+    G --> H["epoll notifies client_fd readable"]
+    H --> I["EventLoop resumes handle_connection coroutine"]
+    I --> J["async_read reads data, returns byte count"]
+    J --> K["handle_connection executes<br/>co_await async_write(client_fd)"]
+    K --> L["Data written back to client"]
+    L --> E
 ```
 
 The entire process completes within a single thread, but handles multiple clients concurrently—because each client has its own coroutine, and coroutines yield execution when waiting for I/O without blocking anyone.

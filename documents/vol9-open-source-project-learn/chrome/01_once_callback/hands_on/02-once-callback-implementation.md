@@ -328,8 +328,9 @@ public:
 
 串联后的新回调需要持有原回调和后续回调的**所有权**——否则原回调可能在外部被提前消费掉，管道就断了。而 `OnceCallback` 是 move-only 的，这意味着 `then()` 必须消费 `*this`（原回调）和 `next`（后续回调），把两者的所有权转移到一个新的 lambda 闭包里。整个所有权链条是这样的：
 
-```text
-新回调 → move_only_function → lambda 闭包 → [原回调 + 后续回调]
+```mermaid
+graph LR
+    A["新回调"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
 实现思路的骨架大概是这样：

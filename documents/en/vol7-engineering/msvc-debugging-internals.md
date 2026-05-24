@@ -80,25 +80,14 @@ When the debugging task ends, the debugger provides two graceful exit methods. T
 
 To help blog readers understand, you can envision an architecture diagram like this:
 
-```text
-
-[ 开发者 (User) ]
-       | 交互 (F5, F10, 查看变量)
-       v
-[ Visual Studio IDE (UI层) ]
-       | 发送指令
-       v
-[ 调试引擎 (Debug Engine) ] <----读取----> [ PDB 符号文件 ]
-       | 跨进程通讯 (RPC)
-       v
-[ msvsmon.exe (调试监视器) ]
-       | 调用 Win32 Debug API
-       v
-[ Windows Kernel (操作系统内核) ]
-       | 控制 / 捕获异常
-       v
-[ 目标进程 (App.exe) ]
-
+```mermaid
+flowchart TD
+    A["Developer (User)"] -->|"Interact (F5, F10, view variables)"| B["Visual Studio IDE (UI Layer)"]
+    B -->|"Send commands"| C["Debug Engine"]
+    C <-->|"Read"| D["PDB Symbol File"]
+    C -->|"Cross-process communication (RPC)"| E["msvsmon.exe (Debug Monitor)"]
+    E -->|"Call Win32 Debug API"| F["Windows Kernel (OS Kernel)"]
+    F -->|"Control / Capture exceptions"| G["Target Process (App.exe)"]
 ```
 
 ---

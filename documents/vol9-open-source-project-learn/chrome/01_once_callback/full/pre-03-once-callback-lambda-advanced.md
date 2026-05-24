@@ -129,8 +129,9 @@ cont = std::forward<Next>(next)
 
 把这两件捕获放在一起看，`then()` 创建的新 lambda 持有了原回调和后续回调的**完整所有权**。这个 lambda 又被存入一个新的 `OnceCallback` 的 `std::move_only_function` 里。整个所有权链条是这样的：
 
-```text
-新 OnceCallback -> move_only_function -> lambda 闭包 -> [原 OnceCallback + 后续回调]
+```mermaid
+graph LR
+    A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原 OnceCallback + 后续回调"]
 ```
 
 每一层都通过移动语义传递所有权，没有任何共享或拷贝。这就是 OnceCallback 的 move-only 语义在 `then()` 中的完整体现——所有权从外到内层层传递，没有破绽。

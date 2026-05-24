@@ -51,18 +51,20 @@ sudo apt install netcat-openbsd wrk apache2-utils
 
 数据流大概是这样的：
 
-```text
-客户端连接 → epoll 通知 listen_fd 可读
-→ accept_loop 协程恢复，accept 拿到 client_fd
-→ 启动 handle_connection(client_fd) 协程
-→ handle_connection 执行 co_await async_read(client_fd)
-→ async_read 发现没数据，把 client_fd 注册到 epoll，协程挂起
-→ 客户端发送数据 → epoll 通知 client_fd 可读
-→ EventLoop 恢复 handle_connection 协程
-→ async_read 读取数据，返回字节数
-→ handle_connection 执行 co_await async_write(client_fd)
-→ 数据写回客户端
-→ 回到循环开头，继续等下一次读
+```mermaid
+flowchart TD
+    A["客户端连接"] --> B["epoll 通知 listen_fd 可读"]
+    B --> C["accept_loop 协程恢复<br/>accept 拿到 client_fd"]
+    C --> D["启动 handle_connection(client_fd) 协程"]
+    D --> E["handle_connection 执行<br/>co_await async_read(client_fd)"]
+    E --> F["async_read 发现没数据<br/>把 client_fd 注册到 epoll，协程挂起"]
+    F --> G["客户端发送数据"]
+    G --> H["epoll 通知 client_fd 可读"]
+    H --> I["EventLoop 恢复 handle_connection 协程"]
+    I --> J["async_read 读取数据，返回字节数"]
+    J --> K["handle_connection 执行<br/>co_await async_write(client_fd)"]
+    K --> L["数据写回客户端"]
+    L --> E
 ```
 
 整个流程在单线程内完成，但多客户端并发处理——因为每个客户端有自己的协程，协程在等待 I/O 时挂起让出执行权，不阻塞任何人。

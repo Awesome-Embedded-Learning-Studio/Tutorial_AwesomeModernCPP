@@ -9,6 +9,7 @@ import RefLink from './components/RefLink.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 import ReferenceItem from './components/ReferenceItem.vue'
 import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
+import { setupMermaid } from './mermaid-client'
 import './custom.css'
 
 export default {
@@ -17,6 +18,9 @@ export default {
     return h(DefaultTheme.Layout, null, {
       'home-features-before': () => h(HomeTipBanner)
     })
+  },
+  setup() {
+    setupMermaid()
   },
   enhanceApp({ app }) {
     app.component('ChapterNav', ChapterNav)

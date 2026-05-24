@@ -330,8 +330,9 @@ It sounds simple, but `then()` is the most ingeniously designed of the four feat
 
 The new chained callback needs to hold the **ownership** of both the original callback and the subsequent callback—otherwise, the original callback might be consumed prematurely on the outside, breaking the pipeline. Since `OnceCallback` is move-only, this means `then()` must consume `*this` (the original callback) and `next` (the subsequent callback), transferring both of their ownerships into a new lambda closure. The entire ownership chain looks like this:
 
-```text
-新回调 → move_only_function → lambda 闭包 → [原回调 + 后续回调]
+```mermaid
+graph LR
+    A["New callback"] --> B["move_only_function"] --> C["Lambda closure"] --> D["Original callback + Next callback"]
 ```
 
 The skeleton of the implementation approach looks roughly like this:

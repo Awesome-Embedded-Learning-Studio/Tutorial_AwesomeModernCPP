@@ -2,6 +2,7 @@ import type { DefaultTheme } from 'vitepress'
 import { navZh, navEn } from './nav'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
+import { mermaidPlugin } from '../plugins/mermaid-plugin'
 
 export const sharedBase = {
   base: '/Tutorial_AwesomeModernCPP/',
@@ -36,6 +37,7 @@ export const sharedBase = {
     config(md) {
       cppTemplateEscapePlugin(md)
       md.use(kbdPlugin)
+      md.use(mermaidPlugin)
     },
   },
 }

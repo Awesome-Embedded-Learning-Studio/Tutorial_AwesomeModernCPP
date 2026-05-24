@@ -162,19 +162,18 @@ f = nullptr;  // 清空 f，析构之前持有的可调用对象
 
 `std::move_only_function` (like `std::function`) internally implements **Small Buffer Optimization** (SBO). The idea is simple: the object reserves a fixed-size internal buffer (typically a few pointers in size). If the callable is small enough, it is stored directly in the buffer, avoiding heap allocation; if it is too large, memory is allocated on the heap to store it.
 
-```text
-┌──────────────────────────────────┐
-│ std::move_only_function          │
-│ ┌──────────────────────────────┐ │
-│ │ 函数指针/虚表指针            │ │  ← 用于类型擦除的调用分派
-│ ├──────────────────────────────┤ │
-│ │ SBO 缓冲区（通常 16-32 字节）│ │  ← 小对象直接存这里
-│ └──────────────────────────────┘ │
-│ 或                               │
-│ ┌──────────────────────────────┐ │
-│ │ 堆指针（指向动态分配的对象） │ │  ← 大对象存在堆上
-│ └──────────────────────────────┘ │
-└──────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph outer["std::move_only_function"]
+        direction TB
+        subgraph sbo_path["SBO path: small objects stored inline"]
+            vtable["Function pointer / vtable pointer<br/><i>For type-erased call dispatch</i>"]
+            sbo_buf["SBO buffer (typically 16-32 bytes)<br/><i>Small objects stored directly here</i>"]
+        end
+        subgraph heap_path["Heap path: large objects dynamically allocated"]
+            heap_ptr["Heap pointer (points to dynamically allocated object)<br/><i>Large objects stored on the heap</i>"]
+        end
+    end
 ```
 
 The SBO threshold is implementation-defined—typically around two to three pointers in size (16–24 bytes). A lambda capturing a small number of parameters (such as `[x = 42]` or `[&ref]`) usually fits within the SBO and does not trigger heap allocation. However, if a lambda captures a large amount of data (such as a `std::string` plus a few `int`s), exceeding the SBO threshold, construction will allocate on the heap.

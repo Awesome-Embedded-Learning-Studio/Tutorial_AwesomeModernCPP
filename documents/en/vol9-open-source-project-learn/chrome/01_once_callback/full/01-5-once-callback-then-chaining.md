@@ -72,8 +72,9 @@ The newly chained callback needs to hold **ownership** of both the original and 
 
 The entire ownership chain looks like this:
 
-```text
-新 OnceCallback → move_only_function → lambda 闭包 → [原回调 + 后续回调]
+```mermaid
+graph LR
+    A["New OnceCallback"] --> B["move_only_function"] --> C["Lambda closure"] --> D["Original callback + Next callback"]
 ```
 
 Each layer transfers ownership via move semantics, without any sharing or copying. This is the complete embodiment of move-only semantics in `then()`.

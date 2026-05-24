@@ -208,11 +208,13 @@ struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
 
 `std::variant<Pressed, Released>` 的内存布局：
 
-```text
-┌──────────┬──────────┐
-│ tag (1B) │ payload  │
-│ 0 或 1   │ (空)     │
-└──────────┴──────────┘
+```mermaid
+graph LR
+    subgraph "std::variant&lt;Pressed, Released&gt; 内存布局"
+        TAG["tag (1B)\n0 = Pressed\n1 = Released"]
+        PAYLOAD["payload\n(空结构体，无额外空间)"]
+    end
+    TAG --- PAYLOAD
 ```
 
 由于 `Pressed` 和 `Released` 都是空结构体（`sizeof = 1`），`variant` 只需要一个 tag 字节来标识当前持有哪个类型。加上对齐，`sizeof(ButtonEvent)` 通常是 2 字节。

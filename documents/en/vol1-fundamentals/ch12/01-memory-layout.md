@@ -40,25 +40,27 @@ Understanding memory layout essentially comes down to two things: **where data l
 
 When a C++ program runs, the operating system allocates a block of virtual address space for it. This space is not a single homogeneous region; rather, it is divided into several segments, each with its own purpose and management method. For our purposes, the four most important regions are:
 
-```text
-高地址
-┌─────────────────────────┐
-│       栈 (Stack)         │  ← 局部变量、函数调用帧
-│         ↓↓↓↓↓           │     向低地址增长
-├─────────────────────────┤
-│                          │  ← 未使用空间
-│                          │
-├─────────────────────────┤
-│       堆 (Heap)          │  ← new/malloc 动态分配
-│         ↑↑↑↑↑           │     向高地址增长
-├─────────────────────────┤
-│   BSS 段（未初始化数据）  │  ← 未初始化的全局/static 变量
-├─────────────────────────┤
-│   数据段（已初始化数据）  │  ← 已初始化的全局/static 变量
-├─────────────────────────┤
-│   代码段 (Text)          │  ← 机器指令、只读常量
-└─────────────────────────┘
-低地址
+```mermaid
+graph TD
+    subgraph "High Address"
+        Stack["<b>Stack</b><br/>Local variables, function call frames<br/>↓ grows toward low addresses"]
+    end
+    subgraph " "
+        Free["<b>Free Space</b>"]
+    end
+    subgraph " "
+        Heap["<b>Heap</b><br/>new/malloc dynamic allocation<br/>↑ grows toward high addresses"]
+    end
+    subgraph " "
+        BSS["<b>BSS Segment</b> (uninitialized data)<br/>Uninitialized global/static variables"]
+    end
+    subgraph " "
+        Data["<b>Data Segment</b> (initialized data)<br/>Initialized global/static variables"]
+    end
+    subgraph "Low Address"
+        Text["<b>Text Segment</b><br/>Machine instructions, read-only constants"]
+    end
+    Stack ~~~ Free ~~~ Heap ~~~ BSS ~~~ Data ~~~ Text
 ```
 
 The text segment stores compiled machine instructions and some read-only data (such as string literals `"hello"`). This region is typically read-only, and attempting to modify it will directly trigger a segmentation fault. The data segment stores initialized global and `static` variables, whose values are determined at program startup. The BSS segment is part of the data segment, specifically holding uninitialized global and `static` variables—these are automatically initialized to zero, so the executable file doesn't need to store their initial values, only their size. The heap and stack are regions used dynamically at runtime; the former is managed manually by the programmer, while the latter is managed automatically by the compiler.

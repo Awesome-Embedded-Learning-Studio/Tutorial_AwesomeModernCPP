@@ -18,7 +18,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 403/403 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-98%25-green.svg) 403/411 docs translated
 <!-- COVERAGE_END -->
 
 ## 这是什么项目

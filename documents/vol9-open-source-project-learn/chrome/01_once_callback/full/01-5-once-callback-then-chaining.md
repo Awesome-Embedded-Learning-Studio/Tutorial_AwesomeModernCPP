@@ -70,8 +70,9 @@ int result = std::move(pipeline).run(3, 4);  // result == 14
 
 整个所有权链条是这样的：
 
-```text
-新 OnceCallback → move_only_function → lambda 闭包 → [原回调 + 后续回调]
+```mermaid
+graph LR
+    A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
 每一层都通过移动语义传递所有权，没有任何共享或拷贝。这就是 move-only 语义在 `then()` 中的完整体现。

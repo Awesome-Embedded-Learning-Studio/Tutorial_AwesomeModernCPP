@@ -781,6 +781,29 @@
 }
 
 /* ================================================================
+   Mermaid Diagrams
+   ================================================================ */
+
+.mermaid-diagram {
+  margin: 1rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-error {
+  padding: 12px;
+  border: 1px solid var(--vp-c-danger-2);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.85em;
+}
+
+/* ================================================================
    Content Page Enhancements
    ================================================================ */
 

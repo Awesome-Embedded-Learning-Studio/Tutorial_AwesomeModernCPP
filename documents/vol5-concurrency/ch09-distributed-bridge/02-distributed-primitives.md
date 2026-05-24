@@ -75,14 +75,11 @@ related:
 
 很好，现在我们把四个模型放在一起看，它们构成了一个从强到弱的层级：
 
-```text
-线性一致性 (Linearizability)
-    ↓ 满足线性一致 → 必然满足以下所有
-顺序一致性 (Sequential Consistency)
-    ↓ 满足顺序一致 → 必然满足以下所有
-因果一致性 (Causal Consistency)
-    ↓ 满足因果一致 → 必然满足以下所有
-最终一致性 (Eventual Consistency)
+```mermaid
+flowchart TD
+    A["线性一致性<br/>(Linearizability)"] -->|"满足线性一致 → 必然满足以下所有"| B["顺序一致性<br/>(Sequential Consistency)"]
+    B -->|"满足顺序一致 → 必然满足以下所有"| C["因果一致性<br/>(Causal Consistency)"]
+    C -->|"满足因果一致 → 必然满足以下所有"| D["最终一致性<br/>(Eventual Consistency)"]
 ```
 
 层级关系意味着：满足线性一致性的系统一定也满足顺序一致性、因果一致性和最终一致性。反过来，满足最终一致性的系统不一定满足因果一致性。每往上一层，你获得更强的一致性保证，但也付出更高的延迟和可用性代价。

@@ -134,8 +134,9 @@ cont = std::forward<Next>(next)
 
 Looking at these two captures together, the new lambda created by `then()` holds **complete ownership** of both the original callback and the subsequent callback. This lambda is then stored in the `std::move_only_function` of a new `OnceCallback`. The entire ownership chain looks like this:
 
-```text
-新 OnceCallback -> move_only_function -> lambda 闭包 -> [原 OnceCallback + 后续回调]
+```mermaid
+graph LR
+    A["New OnceCallback"] --> B["move_only_function"] --> C["Lambda closure"] --> D["Original OnceCallback + Next callback"]
 ```
 
 Each layer passes ownership via move semantics, without any sharing or copying. This is the complete embodiment of OnceCallback's move-only semantics in `then()`—ownership transfers layer by layer from outside to inside, leaving no gaps.

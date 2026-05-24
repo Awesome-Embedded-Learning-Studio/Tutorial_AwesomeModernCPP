@@ -3,8 +3,15 @@ import { navZh, navEn } from './nav'
 import { buildSidebar } from './sidebar'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
+import { mermaidPlugin } from '../plugins/mermaid-plugin'
 
 export default defineConfig({
+  vite: {
+    ssr: {
+      external: ['mermaid'],
+    },
+  },
+
   srcDir: '../documents',
 
   title: '现代 C++ 教程',
@@ -59,6 +66,7 @@ export default defineConfig({
     config(md) {
       cppTemplateEscapePlugin(md)
       md.use(kbdPlugin)
+      md.use(mermaidPlugin)
     },
   },
 
