@@ -61,7 +61,7 @@ RECOMMENDED_FM_FIELDS = {'description', 'tags'}
 SKIP_FILENAMES = {'index.md', 'tags.md', 'README.md'}
 SKIP_DIR_PARTS = {'images', 'generated'}
 
-IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'}
+IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.drawio'}
 MAX_IMAGE_SIZE_MB = 2.0
 
 
