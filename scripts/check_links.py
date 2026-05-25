@@ -23,7 +23,7 @@ class LinkChecker:
     ]
 
     # Image extensions to check against filesystem
-    IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico'}
+    IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.ico', '.drawio'}
 
     # Files to skip from checking
     SKIP_FILES = {'tags.md'}
