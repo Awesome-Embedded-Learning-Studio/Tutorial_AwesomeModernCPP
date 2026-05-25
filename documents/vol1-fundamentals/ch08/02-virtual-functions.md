@@ -161,22 +161,13 @@ error: 'void Circle::draw()' marked 'override', but does not override any base c
 
 拿我们的图形类层次来说，编译器大致生成了三张 vtable：
 
-```mermaid
-graph LR
-    ShapeVT["Shape 的 vtable<br/>&Shape::draw"]
-    CircleVT["Circle 的 vtable<br/>&Circle::draw"]
-    RectVT["Rectangle 的 vtable<br/>&Rectangle::draw"]
-```
+![图形类层次的 vtable 布局](./02-virtual-functions-vtable.drawio)
 
 而每个包含虚函数的对象，在内存布局中都会多出一个隐藏的成员——**虚表指针**（vptr），指向该对象所属类的 vtable。
 
 当你写下 `shapes[i]->draw()` 时，编译器生成的代码大致做了这几步：先通过对象找到 `vptr`，定位到对应的 vtable，然后从表中取出 `draw()` 对应的函数指针，最后通过这个指针发起间接调用：
 
-```mermaid
-graph LR
-    A["shapes[1]<br/>(Shape*)"] --> B["Circle 对象<br/>[ vptr ]"]
-    B --> C["Circle 的 vtable<br/>[ &Circle::draw ]"]
-```
+![虚函数调用过程示意](./02-virtual-functions-call.drawio)
 
 这就是虚函数调用比普通函数调用多出来的全部开销——**一次额外的间接跳转**。在 PC 上，这个开销几乎可以忽略不计。但在资源紧张的嵌入式环境里需要认真对待：每个含虚函数的类多一张 vtable（占用 Flash），每个对象多一个 `vptr`（通常 4 或 8 字节，占用 RAM），每次虚函数调用多一次间接跳转（可能影响流水线和分支预测）。好在绝大多数场景下，这些开销和"解耦带来的架构收益"相比微不足道。
 

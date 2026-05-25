@@ -1,0 +1,116 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="STM32F103 Clock Tree" id="stm32-clock-tree">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="STM32F103C8T6 时钟树简图（64MHz 配置）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="20" width="400" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- HSI -->
+        <mxCell id="hsi" value="&lt;b&gt;HSI&lt;/b&gt;&lt;br&gt;8 MHz&lt;br&gt;（内部 RC 振荡器）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="80" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- DIV /2 -->
+        <mxCell id="div" value="÷2 分频&lt;br&gt;4 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFF3E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="250" y="80" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- PLL x16 -->
+        <mxCell id="pll" value="&lt;b&gt;PLL&lt;/b&gt;&lt;br&gt;×16 倍频&lt;br&gt;64 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2;fillColor=#FFEBEE;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- SYSCLK -->
+        <mxCell id="sysclk" value="&lt;b&gt;SYSCLK&lt;/b&gt;&lt;br&gt;64 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#4A148C;strokeWidth=2;fillColor=#F3E5F5;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="180" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- AHB -->
+        <mxCell id="ahb" value="&lt;b&gt;AHB ÷1&lt;/b&gt;&lt;br&gt;HCLK = 64 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1B5E20;strokeWidth=2;fillColor=#E8F5E9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="265" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- APB1 -->
+        <mxCell id="apb1" value="&lt;b&gt;APB1 ÷2&lt;/b&gt;&lt;br&gt;PCLK1 = 32 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#0D47A1;strokeWidth=2;fillColor=#BBDEFB;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="370" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- APB2 -->
+        <mxCell id="apb2" value="&lt;b&gt;APB2 ÷1&lt;/b&gt;&lt;br&gt;PCLK2 = 64 MHz" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#BF360C;strokeWidth=2;fillColor=#FFCCBC;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="370" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- DMA -->
+        <mxCell id="dma" value="DMA 控制器" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#555;strokeWidth=1;fillColor=#F5F5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="50" y="265" width="110" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Flash -->
+        <mxCell id="flash" value="Flash 接口" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#555;strokeWidth=1;fillColor=#F5F5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="190" y="265" width="110" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- APB1 peripherals -->
+        <mxCell id="apb1p" value="TIM2-4, USART2-3&lt;br&gt;I2C1-2, SPI2-3" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#0D47A1;strokeWidth=1;fillColor=#E3F2FD;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="450" width="180" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- GPIO -->
+        <mxCell id="gpio" value="&lt;b&gt;GPIOA-E&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#BF360C;strokeWidth=2;fillColor=#FFCCBC;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="450" width="90" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ADC -->
+        <mxCell id="adc" value="ADC1-2" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#BF360C;strokeWidth=1;fillColor=#FFCCBC;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="630" y="450" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- APB2 peripherals label -->
+        <mxCell id="apb2p" value="USART1, SPI1, TIM1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#BF360C;strokeWidth=1;fillColor=#FFCCBC;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="500" width="180" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="e1" style="endArrow=classic;html=1;rounded=0;strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="hsi" target="div">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="endArrow=classic;html=1;rounded=0;strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="div" target="pll">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="endArrow=classic;html=1;rounded=0;strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="pll" target="sysclk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="endArrow=classic;html=1;rounded=0;strokeColor=#333;strokeWidth=2;" edge="1" parent="1" source="sysclk" target="ahb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="endArrow=classic;html=1;rounded=0;strokeColor=#0D47A1;strokeWidth=2;" edge="1" parent="1" source="ahb" target="apb1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="endArrow=classic;html=1;rounded=0;strokeColor=#BF360C;strokeWidth=2;" edge="1" parent="1" source="ahb" target="apb2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="endArrow=classic;html=1;rounded=0;strokeColor=#555;strokeWidth=1;" edge="1" parent="1" source="ahb" target="dma">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="endArrow=classic;html=1;rounded=0;strokeColor=#555;strokeWidth=1;" edge="1" parent="1" source="ahb" target="flash">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="endArrow=classic;html=1;rounded=0;strokeColor=#0D47A1;strokeWidth=1;" edge="1" parent="1" source="apb1" target="apb1p">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="endArrow=classic;html=1;rounded=0;strokeColor=#BF360C;strokeWidth=1;" edge="1" parent="1" source="apb2" target="gpio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="endArrow=classic;html=1;rounded=0;strokeColor=#BF360C;strokeWidth=1;" edge="1" parent="1" source="apb2" target="adc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

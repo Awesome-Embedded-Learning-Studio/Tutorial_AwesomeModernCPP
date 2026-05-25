@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Main Execution Flow" id="main-flow">
+    <mxGraphModel dx="800" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="a" value="HAL_Init()&lt;br&gt;HAL 库初始化（SysTick 等）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E8EAF6;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="30" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="b" value="ClockConfig::instance().setup...&lt;br&gt;系统时钟配置（64 MHz HSI）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E3F2FD;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="100" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="c" value="LED&lt;Port::C, PIN_13&gt; led&lt;br&gt;LED 对象构造（零开销）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E8F5E9;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="170" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="d" value="Button&lt;Port::A, PIN_0&gt; button&lt;br&gt;Button 对象构造（零开销）" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E8F5E9;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="240" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="e" value="Logger::driver().set_gpio_init(...)&lt;br&gt;注册 GPIO 初始化回调" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#FFF3E0;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="310" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="f" value="Logger::driver().init(UartConfig)&lt;br&gt;使能时钟 → GPIO → HAL init" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#FFF3E0;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="380" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="g" value="Logger::driver().enable_interrupt()&lt;br&gt;NVIC 使能 USART1 中断" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#FCE4EC;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="450" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="h" value="send_string(\"UART Logger Ready!\")&lt;br&gt;阻塞式发送欢迎信息" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#F3E5F5;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="520" width="280" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="i" value="uart_start_receive()&lt;br&gt;启动中断接收流水线" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2;fillColor=#FFCDD2;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="590" width="280" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="e1" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="a" target="b"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="b" target="c"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="c" target="d"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="d" target="e"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e5" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="e" target="f"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e6" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="f" target="g"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e7" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="g" target="h"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e8" style="endArrow=classic;html=1;strokeColor=#333;strokeWidth=1;" edge="1" parent="1" source="h" target="i"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

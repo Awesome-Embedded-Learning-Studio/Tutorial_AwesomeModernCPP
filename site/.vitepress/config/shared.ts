@@ -13,6 +13,7 @@ export const sharedBase = {
     build: {
       chunkSizeWarningLimit: 5000,
     },
+    assetsInclude: ['**/*.drawio'],
   },
 
   vue: {

@@ -14,6 +14,7 @@
     "coverage:update": "python3 scripts/coverage.py --update"
   },
   "devDependencies": {
+    "@dhlx/vitepress-plugin-drawio": "^0.0.10",
     "@types/node": "^25.6.2",
     "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^10.9.6",

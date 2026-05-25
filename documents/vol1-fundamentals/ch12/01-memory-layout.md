@@ -36,28 +36,7 @@ cpp_standard: [11, 14, 17, 20]
 
 一个 C++ 程序运行时，操作系统会为它分配一块虚拟地址空间。这块空间并不是一整块 homogeneous 的区域，而是被划分成了若干个段（segment），每个段有各自的用途和管理方式。对于我们来说，最核心的是以下四个区域：
 
-```mermaid
-graph TD
-    subgraph "高地址"
-        Stack["<b>栈 (Stack)</b><br/>局部变量、函数调用帧<br/>↓ 向低地址增长"]
-    end
-    subgraph " "
-        Free["<b>未使用空间</b>"]
-    end
-    subgraph " "
-        Heap["<b>堆 (Heap)</b><br/>new/malloc 动态分配<br/>↑ 向高地址增长"]
-    end
-    subgraph " "
-        BSS["<b>BSS 段</b>（未初始化数据）<br/>未初始化的全局/static 变量"]
-    end
-    subgraph " "
-        Data["<b>数据段</b>（已初始化数据）<br/>已初始化的全局/static 变量"]
-    end
-    subgraph "低地址"
-        Text["<b>代码段 (Text)</b><br/>机器指令、只读常量"]
-    end
-    Stack ~~~ Free ~~~ Heap ~~~ BSS ~~~ Data ~~~ Text
-```
+![进程虚拟地址空间布局](./01-memory-layout.drawio)
 
 代码段（Text segment）存放编译后的机器指令和一些只读数据（比如字符串字面量 `"hello"`），这个区域通常是只读的，尝试修改会直接触发段错误。数据段（Data segment）存放已初始化的全局变量和 `static` 变量，它们的值在程序启动时就已经确定。BSS 段是数据段的一部分，专门放未初始化的全局和 `static` 变量——这些变量会被自动初始化为零，所以可执行文件里不需要存储它们的初始值，只记录大小就够了。堆和栈则是运行时动态使用的区域，前者由程序员手动管理，后者由编译器自动管理。
 

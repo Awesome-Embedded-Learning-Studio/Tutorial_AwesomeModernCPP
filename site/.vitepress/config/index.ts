@@ -1,11 +1,12 @@
 import { defineConfig } from 'vitepress'
+import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navZh, navEn } from './nav'
 import { buildSidebar } from './sidebar'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
 
-export default defineConfig({
+export default withDrawio(defineConfig({
   vite: {
     ssr: {
       external: ['mermaid'],
@@ -92,4 +93,10 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP' },
     ],
   },
+}), {
+  width: '100%',
+  height: '600px',
+  darkMode: 'auto',
+  resize: true,
+  zoom: true,
 })

@@ -372,16 +372,7 @@ Circle("Moon", r=2.00)
 
 通过统一的 `shape_area()`、`shape_draw()` 接口调用，每次都走到了正确的具体实现——这就是运行时多态，和 C++ 虚函数的底层机制**完全一样**。内存布局对比如下：
 
-```mermaid
-graph LR
-    subgraph "Circle 对象（每个对象只有 1 个 vptr）"
-        Obj["vtable<br/>name<br/>radius"]
-    end
-    subgraph "kCircleVtable（全局共享）"
-        VT["circle_area<br/>circle_perimeter<br/>circle_draw"]
-    end
-    Obj -->|vptr| VT
-```
+![C 语言虚表内存布局](./04-oop-in-c-vtable.drawio)
 
 ## 第五步——用函数指针表实现接口
 

@@ -1,0 +1,63 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="AoS Layout" id="aos-layout">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="AoS 布局：每个元素的 x,y,z,r,g,b 紧挨在一起（24 字节）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="30" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Vertex 0 -->
+        <mxCell id="v0x" value="x₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v0y" value="y₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v0z" value="z₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="180" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v0r" value="r₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="230" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v0g" value="g₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v0b" value="b₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="330" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Vertex 1 -->
+        <mxCell id="v1x" value="x₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="380" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v1y" value="y₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v1z" value="z₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v1r" value="r₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="530" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v1g" value="g₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="580" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v1b" value="b₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="630" y="80" width="50" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend_g" value="坐标数据（热路径）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="145" width="130" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_r" value="颜色数据（冷路径）" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=11;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="370" y="145" width="130" height="28" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

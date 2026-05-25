@@ -12,6 +12,9 @@ importers:
         specifier: ^7.2.0
         version: 7.2.0
     devDependencies:
+      '@dhlx/vitepress-plugin-drawio':
+        specifier: ^0.0.10
+        version: 0.0.10
       '@types/node':
         specifier: ^25.6.2
         version: 25.6.2
@@ -128,6 +131,9 @@ packages:
 
   '@braintree/sanitize-url@6.0.4':
     resolution: {integrity: sha512-s3jaWicZd0pkP0jf5ysyHUI/RE7MHos6qlToFcGWXVp+ykHOy77OUMrfbgJ9it2C5bow7OIQwYYaHjk9XlBQ2A==}
+
+  '@dhlx/vitepress-plugin-drawio@0.0.10':
+    resolution: {integrity: sha512-xoPA4BMDW8yerhmU7ic1EhKXT8YRcmpHEYLnA525GPaX9dVEzN0hdSHDhUxhUpdNlgu4rMX8Xb05oZoDE404OQ==}
 
   '@docsearch/css@3.8.2':
     resolution: {integrity: sha512-y05ayQFyUmCXze79+56v/4HpycYF3uFqB78pLPrSV5ZKAlDuIAAJNhaRi8tTdRNXh05yxX/TyNnzD6LwSM89vQ==}
@@ -1640,6 +1646,12 @@ snapshots:
       '@babel/helper-validator-identifier': 7.28.5
 
   '@braintree/sanitize-url@6.0.4': {}
+
+  '@dhlx/vitepress-plugin-drawio@0.0.10':
+    optionalDependencies:
+      vue: 3.5.34
+    transitivePeerDependencies:
+      - typescript
 
   '@docsearch/css@3.8.2': {}
 

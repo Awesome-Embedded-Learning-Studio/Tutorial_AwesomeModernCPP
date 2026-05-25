@@ -1,0 +1,40 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="VTable Structure" id="vtable-structure">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Shape vtable -->
+        <mxCell id="s1" value="Shape 的 vtable" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#E3F2FD;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="[0] &amp;Shape::draw()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#BBDEFB;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="200" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Circle vtable -->
+        <mxCell id="c1" value="Circle 的 vtable" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="60" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="[0] &amp;Circle::draw()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="280" y="110" width="200" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Rectangle vtable -->
+        <mxCell id="r1" value="Rectangle 的 vtable" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2;fillColor=#FFEBEE;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="520" y="60" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="[0] &amp;Rectangle::draw()" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="110" width="200" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title" value="三个类的 vtable（虚函数表）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="15" width="360" height="35" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

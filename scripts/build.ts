@@ -148,10 +148,11 @@ function generateVolumeConfig(vol: Volume, lang: 'zh' | 'en', absSiteDir: string
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
+import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, ${lang === 'en' ? 'sharedEnThemeConfig' : 'sharedThemeConfig'} } from '${relShared}'
 import { volumeSidebar } from '${relSidebar}'
 
-export default defineConfig({
+export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
@@ -163,6 +164,12 @@ export default defineConfig({
     ...${lang === 'en' ? 'sharedEnThemeConfig' : 'sharedThemeConfig'}(),
     sidebar: { '${prefix}': volumeSidebar('${vol.srcDir}', '${prefix}') },
   },
+}), {
+  width: '100%',
+  height: '600px',
+  darkMode: 'auto',
+  resize: true,
+  zoom: true,
 })
 `
 }
@@ -176,11 +183,12 @@ function generateRootConfig(absSiteDir: string, absSrcDir: string): string {
   const relSidebar = relative(vpDir, join(MAIN_VP, 'config', 'sidebar')).replace(/\\/g, '/')
 
   return `import { defineConfig } from 'vitepress'
+import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, sharedThemeConfig, sharedEnThemeConfig } from '${relShared}'
 import { navZh, navEn } from '${relNav}'
 import { buildSidebar } from '${relSidebar}'
 
-export default defineConfig({
+export default withDrawio(defineConfig({
   ...sharedBase,
   srcDir: '${relSrc.replace(/\\/g, '/')}',
   outDir: '${relOut.replace(/\\/g, '/')}',
@@ -199,6 +207,12 @@ export default defineConfig({
     footer: { message: '基于 VitePress 构建', copyright: 'Copyright 2025-2026 Charliechen' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP' }],
   },
+}), {
+  width: '100%',
+  height: '600px',
+  darkMode: 'auto',
+  resize: true,
+  zoom: true,
 })
 `
 }

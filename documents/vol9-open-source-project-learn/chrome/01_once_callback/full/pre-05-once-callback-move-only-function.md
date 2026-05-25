@@ -160,19 +160,7 @@ f = nullptr;  // 清空 f，析构之前持有的可调用对象
 
 `std::move_only_function`（和 `std::function` 一样）内部实现了**小对象优化**（Small Buffer Optimization，SBO）。思路很简单：对象内部预留一块固定大小的缓冲区（通常是几个指针大小），如果可调用对象足够小，就把它直接存到缓冲区里，避免堆分配；如果太大，就在堆上分配内存来存储。
 
-```mermaid
-graph TD
-    subgraph outer["std::move_only_function"]
-        direction TB
-        subgraph sbo_path["SBO 路径：小对象直接内联存储"]
-            vtable["函数指针 / 虚表指针<br/><i>用于类型擦除的调用分派</i>"]
-            sbo_buf["SBO 缓冲区（通常 16-32 字节）<br/><i>小对象直接存这里</i>"]
-        end
-        subgraph heap_path["堆路径：大对象动态分配"]
-            heap_ptr["堆指针（指向动态分配的对象）<br/><i>大对象存在堆上</i>"]
-        end
-    end
-```
+![SBO 小对象优化内部结构](./pre-05-sbo-structure.drawio)
 
 SBO 的阈值是实现定义的——通常在 2-3 个指针大小（16-24 字节）左右。捕获少量参数的 lambda（比如 `[x = 42]` 或 `[&ref]`）通常能放进 SBO，不会触发堆分配。但如果 lambda 捕获了大量数据（比如一个 `std::string` + 几个 `int`），超过了 SBO 阈值，构造时就会在堆上分配。
 
