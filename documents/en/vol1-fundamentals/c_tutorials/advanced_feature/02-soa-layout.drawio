@@ -1,0 +1,66 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="SoA Layout" id="soa-layout">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="SoA 布局：所有 x 连续，所有 y 连续，以此类推" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="20" width="460" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- x array -->
+        <mxCell id="xl" value="x[]" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="70" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="x0" value="x₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="70" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="x1" value="x₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="180" y="70" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="x2" value="x₂" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="230" y="70" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="xd" value="x₃ x₄ ..." style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=12;align=center;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="70" width="100" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- y array -->
+        <mxCell id="yl" value="y[]" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="115" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="y0" value="y₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="115" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="y1" value="y₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="180" y="115" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="y2" value="y₂" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="230" y="115" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="yd" value="y₃ y₄ ..." style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=12;align=center;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="115" width="100" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- z array -->
+        <mxCell id="zl" value="z[]" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="160" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="z0" value="z₀" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="130" y="160" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="z1" value="z₁" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="180" y="160" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="z2" value="z₂" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="230" y="160" width="50" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="zd" value="z₃ z₄ ..." style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=12;align=center;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="160" width="100" height="35" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

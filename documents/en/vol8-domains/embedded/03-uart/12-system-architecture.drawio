@@ -1,0 +1,101 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="STM32 UART Architecture" id="stm32-uart-arch">
+    <mxGraphModel dx="1100" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- STM32 box -->
+        <mxCell id="stm_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#E8F5E9;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="50" width="240" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="stm_title" value="STM32" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=16;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="110" y="55" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="tx" value="TX (PA9)" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#BBDEFB;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="rx" value="RX (PA10)" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=1;fillColor=#FFCC80;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="170" y="90" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="led" value="PC13 (LED)" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=1;fillColor=#FFCDD2;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="170" width="100" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="btn" value="PA0 (Button)" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#6A1B9A;strokeWidth=1;fillColor=#E1BEE7;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="170" y="170" width="100" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- USB-TTL adapter -->
+        <mxCell id="ttl_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#F57F17;strokeWidth=2;fillColor=#FFF9C4;" vertex="1" parent="1">
+          <mxGeometry x="350" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ttl_title" value="USB-TTL 适配器" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;fontStyle=1;fontColor=#F57F17;" vertex="1" parent="1">
+          <mxGeometry x="360" y="55" width="140" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="ttl_tx" value="TTL TX" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#F57F17;strokeWidth=1;fillColor=#FFF9C4;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="360" y="90" width="60" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="ttl_rx" value="TTL RX" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#F57F17;strokeWidth=1;fillColor=#FFF9C4;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="440" y="90" width="60" height="35" />
+        </mxCell>
+
+        <!-- PC -->
+        <mxCell id="pc_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=2;fillColor=#F5F5F5;" vertex="1" parent="1">
+          <mxGeometry x="580" y="50" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="pc_title" value="PC 终端" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="605" y="55" width="100" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="pc_tx" value="USB TX" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E0E0E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="590" y="90" width="60" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="pc_rx" value="USB RX" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#333;strokeWidth=1;fillColor=#E0E0E0;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="665" y="90" width="55" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Data flow arrows -->
+        <mxCell id="a1" value="按钮事件/命令响应" style="endArrow=classic;html=1;strokeColor=#1565C0;strokeWidth=2;fontColor=#1565C0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="160" y="107" as="sourcePoint" />
+            <mxPoint x="350" y="107" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a2" value="USB" style="endArrow=classic;html=1;strokeColor=#1565C0;strokeWidth=2;fontColor=#1565C0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="510" y="107" as="sourcePoint" />
+            <mxPoint x="580" y="107" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a3" value="命令输入" style="endArrow=classic;html=1;strokeColor=#E65100;strokeWidth=2;fontColor=#E65100;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="130" as="sourcePoint" />
+            <mxPoint x="270" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a4" value="" style="endArrow=classic;html=1;strokeColor=#E65100;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="130" as="sourcePoint" />
+            <mxPoint x="510" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Dashed: button -> TX -->
+        <mxCell id="a5" value="poll_events()" style="endArrow=classic;html=1;dashed=1;strokeColor=#6A1B9A;strokeWidth=1;fontColor=#6A1B9A;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="170" y="195" as="sourcePoint" />
+            <mxPoint x="110" y="125" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Dashed: RX -> LED -->
+        <mxCell id="a6" value="rx_ring → 行解析 → handle_command" style="endArrow=classic;html=1;dashed=1;strokeColor=#C62828;strokeWidth=1;fontColor=#C62828;fontSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="220" y="125" as="sourcePoint" />
+            <mxPoint x="130" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,56 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Memory Hierarchy" id="memory-hierarchy">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="内存层次结构金字塔" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="300" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Registers -->
+        <mxCell id="reg" value="&lt;b&gt;寄存器&lt;/b&gt;&lt;br&gt;~1 周期 | ~数百字节" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#B71C1C;strokeWidth=2;fillColor=#FFCDD2;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="300" y="70" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- L1 -->
+        <mxCell id="l1" value="&lt;b&gt;L1 Cache&lt;/b&gt;&lt;br&gt;~3-4 周期 | 32-64 KB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#C62828;strokeWidth=2;fillColor=#EF9A9A;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="270" y="135" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- L2 -->
+        <mxCell id="l2" value="&lt;b&gt;L2 Cache&lt;/b&gt;&lt;br&gt;~10-14 周期 | 256 KB - 1 MB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#E65100;strokeWidth=2;fillColor=#FFCC80;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="230" y="200" width="320" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- L3 -->
+        <mxCell id="l3" value="&lt;b&gt;L3 Cache&lt;/b&gt;&lt;br&gt;~30-50 周期 | 数 MB - 数十 MB" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#F9A825;strokeWidth=2;fillColor=#FFF59D;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="190" y="265" width="400" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- DRAM -->
+        <mxCell id="dram" value="&lt;b&gt;主存 DRAM&lt;/b&gt;&lt;br&gt;~100-300 周期 | GB 级" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#A5D6A7;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="150" y="330" width="480" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Disk -->
+        <mxCell id="disk" value="&lt;b&gt;SSD / HDD&lt;/b&gt;&lt;br&gt;~微秒 / 毫秒 | TB 级" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#90CAF9;fontSize=14;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="110" y="395" width="560" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Left annotation: faster/smaller -->
+        <mxCell id="left_label" value="快&lt;br&gt;↑&lt;br&gt;小&lt;br&gt;↑&lt;br&gt;贵" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#B71C1C;rotation=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="130" width="50" height="250" as="geometry" />
+        </mxCell>
+
+        <!-- Right annotation: slower/larger -->
+        <mxCell id="right_label" value="慢&lt;br&gt;↓&lt;br&gt;大&lt;br&gt;↓&lt;br&gt;便宜" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="700" y="130" width="50" height="250" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

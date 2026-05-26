@@ -1,0 +1,60 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="C OOP Memory Layout" id="oop-in-c-vtable">
+    <mxGraphModel dx="1000" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Circle 对象与全局 vtable 的内存布局" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="30" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Circle object -->
+        <mxCell id="obj_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="200" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="obj_title" value="Circle 对象（每个对象 1 个 vptr）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+          <mxGeometry x="90" y="85" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="vptr" value="&lt;b&gt;vptr&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#C8E6C9;fontSize=13;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="90" y="115" width="180" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="name" value="name" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#E8F5E9;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="143" width="180" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="radius" value="radius" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#2E7D32;strokeWidth=1;fillColor=#E8F5E9;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="171" width="180" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- vtable -->
+        <mxCell id="vt_box" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=2;fillColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="440" y="80" width="250" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="vt_title" value="kCircleVtable（全局共享）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;fontSize=13;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="460" y="85" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="fn1" value="circle_area" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#E3F2FD;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="115" width="230" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="fn2" value="circle_perimeter" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#E3F2FD;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="143" width="230" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="fn3" value="circle_draw" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#1565C0;strokeWidth=1;fillColor=#E3F2FD;fontSize=13;align=left;verticalAlign=middle;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="450" y="171" width="230" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow -->
+        <mxCell id="arrow" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#FF6F00;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="270" y="129" as="sourcePoint" />
+            <mxPoint x="440" y="129" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow_label" value="vptr 指向" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#FF6F00;" vertex="1" parent="1">
+          <mxGeometry x="320" y="110" width="70" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
