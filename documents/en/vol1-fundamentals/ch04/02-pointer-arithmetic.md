@@ -1,5 +1,5 @@
 ---
-title: Pointer arithmetic and arrays
+title: Pointer Arithmetic and Arrays
 description: Master pointer arithmetic, the relationship between pointers and arrays,
   and pointer operations on C-style strings.
 chapter: 4
@@ -20,12 +20,18 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch04/02-pointer-arithmetic.md
+  source_hash: 4dfbfc7aa5bee26e36ad834ce4463043100ce547b3d6bf025478bb5bc2897eb2
+  translated_at: '2026-05-26T10:48:07.579657+00:00'
+  engine: anthropic
+  token_count: 2582
 ---
 # Pointer Arithmetic and Arrays
 
-If you already understand that "a pointer is an address," then we need to face a deeper truth—in C++, pointers and arrays are, **at their most fundamental level**, practically two sides of the same coin. (We strongly advise against conflating the concepts of pointers and arrays, as doing so will only lead to flawed engineering logic.)
+If you already understand that "a pointer is an address," then we need to face a deeper truth—in C++, pointers and arrays are, **at their very core**, practically two sides of the same coin. (The author strongly advises against conflating the concepts of pointers and arrays, as doing so will only cause harm in engineering logic.)
 
-In this chapter, we tie together pointer arithmetic, array-to-pointer decay, and pointer operations on C-style strings. If you previously felt that arrays and pointers were "related somehow but you couldn't quite articulate how," today we untangle this knot once and for all.
+In this chapter, we will connect pointer arithmetic, array-to-pointer decay, and pointer operations on C-style strings. If you previously felt that arrays and pointers were "somehow related but hard to articulate," today we will untangle this knot once and for all.
 
 > **Learning Objectives**
 > After completing this chapter, you will be able to:
@@ -37,7 +43,7 @@ In this chapter, we tie together pointer arithmetic, array-to-pointer decay, and
 
 ## Environment Setup
 
-We run all the following experiments in this environment:
+We will conduct all of the following experiments in this environment:
 
 - Platform: Linux x86\_64 (WSL2 is also fine)
 - Compiler: GCC 13+ or Clang 17+
@@ -73,15 +79,15 @@ arr[0] 的地址: 0x7ffd3a2b1c00
 *p:          10
 ```
 
-All three addresses are identical. This brings us to a crucial concept in C++—**array-to-pointer decay**. When you write the name `arr`, the compiler in most contexts does not treat it as "the entire array," but rather as "a pointer to the first element of the array," which is `&arr[0]`.
+All three addresses are identical. This brings us to a crucial concept in C++—**array-to-pointer decay**. When you write the name `arr`, the compiler does not treat it as "the entire array" in most contexts; instead, it treats it as "a pointer to the first element of the array," which is `&arr[0]`.
 
-So the statement "an array name is a pointer" is strictly incorrect. The type of `arr` is `int[5]`, which is a complete array type containing five `int`s, occupying 20 bytes. But once you use it in a context that requires a pointer (such as assigning it to `int*`, passing it to a function, or doing arithmetic), the compiler automatically decays it into `int*`. This decay process is irreversible—once decayed, it cannot be undone, and you lose the array length information.
+So the statement "an array name is a pointer" is strictly incorrect. The type of `arr` is `int[5]`, which is a complete array type containing five `int`s, occupying 20 bytes. But once you use it in a context that requires a pointer (such as assigning it to `int*`, passing it to a function, or doing arithmetic), the compiler automatically decays it to `int*`. This decay process is irreversible—once decayed, it cannot be undone, and you lose the array length information.
 
-> We said "most contexts," so when does it *not* decay? Only in three situations: `sizeof(arr)` returns the size of the entire array, `&arr` yields a "pointer to the array" (the type is `int(*)[5]`, not `int*`), and when initializing a character array with a string literal. Aside from these, the array name always decays.
+> We said "most contexts," so when does it *not* decay? Only in three situations: `sizeof(arr)` returns the size of the entire array, `&arr` yields a "pointer to the array" (the type is `int(*)[5]`, not `int*`), and when initializing a character array with a string literal. Apart from these, the array name always decays.
 
 ## Pointer Addition and Subtraction—Stepping by Elements, Not Bytes
 
-One of the most powerful capabilities of pointers is arithmetic. But the rules here differ from our usual understanding—adding 1 to a pointer does not move it by 1 byte, but by **the size of the pointed-to type**.
+One of the most powerful capabilities of pointers is arithmetic. However, the rules here differ from our usual understanding—adding 1 to a pointer does not move it by 1 byte, but by **the size of the pointed-to type**.
 
 ### The Actual Effect of Pointer Addition
 
@@ -151,7 +157,7 @@ The result of `p2 - p1` is 3, because there are three elements between `arr[1]` 
 
 ## Traversing Arrays with Pointers
 
-Since `arr + i` is exactly equal to `&arr[i]`, we can completely traverse the array by walking from beginning to end with a pointer, without needing subscripts:
+Since `arr + i` is equivalent to `&arr[i]`, we can completely traverse the array by walking from beginning to end with a pointer, without needing subscripts:
 
 ```cpp
 #include <iostream>
@@ -195,9 +201,9 @@ range-for: 10 20 30 40 50
 
 The results of all three approaches are exactly the same. So the question is—which one should we use?
 
-Honestly, in daily development, **prefer range-for**. It is the most concise, the least error-prone, and after compiler optimization, its performance is completely identical to pointer traversal. The advantage of pointer traversal lies in scenarios requiring finer control—for example, when you only need to traverse a portion of the array (starting from an element that meets certain conditions), or when you need to manipulate multiple positions simultaneously. But if you just need to go through the entire array, range-for is the best choice.
+To be honest, in daily development, **prefer range-for**. It is the most concise, the least error-prone, and after compiler optimization, its performance is completely identical to pointer traversal. The advantage of pointer traversal lies in scenarios requiring finer control—for example, when you only need to traverse a portion of the array (starting from an element that meets certain conditions), or when you need to manipulate multiple positions simultaneously. But if you just need to go through the entire array, range-for is the best choice.
 
-> There is a very common pitfall here: the "past-the-end pointer" `arr + 5` is legal, and you can use it for comparison, but you **must absolutely never dereference it**. `*(arr + 5)` is undefined behavior because the location it points to is already outside the bounds of the array. The C++ standard only allows you to compute this address, not to read from or write to the content it points to. This follows the same logic as the `end()` iterator in the standard library containers—it marks the "next position after the last element" and is not a valid element itself.
+> Here is a very common pitfall: the "past-the-end pointer" `arr + 5` is legal, and you can use it for comparison, but you **must absolutely never dereference it**. `*(arr + 5)` is undefined behavior because the location it points to is already outside the bounds of the array. The C++ standard only allows you to compute this address, not to read from or write to the content it points to. This follows the same logic as the `end()` iterator in the standard library containers—it marks the "next position after the last element" and is not a valid element itself.
 
 ## Pointers and C-Style Strings
 
@@ -234,7 +240,7 @@ Output:
 长度: 5
 ```
 
-Now let's rewrite this length calculation using pure pointer operations, meaning without using any subscripts:
+Now let's rewrite this length calculation using a pure pointer approach, meaning we don't use any subscripts:
 
 ```cpp
 const char* str_len_demo(const char* s)
@@ -248,15 +254,15 @@ const char* str_len_demo(const char* s)
 }
 ```
 
-This pattern is ubiquitous in the implementations of the C standard library. Functions like `strlen`, `strcpy`, and `strchr` all use similar pointer traversal under the hood—starting from the beginning and walking character by character until hitting a `'\0'`. `s - start` leverages the pointer subtraction we discussed earlier to directly obtain how many elements were spanned in between.
+This pattern is ubiquitous in the C standard library implementations. Functions like `strlen`, `strcpy`, and `strchr` all use similar pointer traversal under the hood—starting from the beginning and walking character by character until hitting a `'\0'`. `s - start` leverages the pointer subtraction we discussed earlier to directly obtain how many elements were spanned in between.
 
 > Here is another classic pitfall: `const char* s = "hello";` makes `s` point to a string literal. String literals are stored in the read-only data segment of the program, and **you must absolutely never modify the content through this pointer**. `s[0] = 'H';` leads to undefined behavior—on most systems, it will directly trigger a segmentation fault. If you need a modifiable string, please use a character array like `char s[] = "hello";`, which copies the content to an array on the stack, making modifications safe.
 
 ## The Essence of the Subscript Operator
 
-Now we have enough groundwork to uncover another truth: **the `[]` operator is essentially syntactic sugar for pointer arithmetic**.
+Now we have enough groundwork to reveal another truth: **the `[]` operator is essentially syntactic sugar for pointer arithmetic**.
 
-When the compiler sees `arr[n]`, what it actually does is `*(arr + n)`. It first adds the offset `n` to the pointer `arr`, and then dereferences it. Because the array name decays to a pointer in an expression, the entire process is purely a pointer operation. This also explains why the array length is lost after being passed to a function—the function receives only a pointer, and `sizeof` can only retrieve the size of the pointer itself, not the original array size.
+When the compiler sees `arr[n]`, what it actually does is `*(arr + n)`. It first adds the offset `n` to the pointer `arr`, and then dereferences it. Because the array name decays to a pointer in an expression, the entire process is purely a pointer operation. This also explains why the array length is lost after being passed to a function—the function receives only a pointer, and `sizeof` only yields the size of the pointer itself, not the original array size.
 
 Since `arr[n]` is just `*(arr + n)`, and addition is commutative, then `n[arr]` is also `*(n + arr)`—completely equivalent. Yes, the syntax `5[arr]` is legal and has the exact same effect as `arr[5]`.
 
@@ -267,11 +273,11 @@ std::cout << arr[3] << "\n";  // 40
 std::cout << 3[arr] << "\n";  // 也是 40——但这纯粹是 trivia，别在实际代码里这么写
 ```
 
-We mention this trivia not to encourage showing off in your code, but to deepen your understanding: **subscripts are never magic; they are just pointer addition followed by dereferencing**. When you truly understand this, many previously puzzling phenomena suddenly make sense—such as why `sizeof` is incorrect after passing an array as an argument, or why negative subscripts are legal in certain scenarios (`p[-1]` is just `*(p - 1)`, as long as you ensure that `p - 1` points to valid memory).
+We mention this trivia not to encourage showing off in your code, but to deepen your understanding: **subscripts are never magic; they are just pointer addition plus dereferencing**. Once you truly understand this, many previously puzzling phenomena make perfect sense—such as why `sizeof` is incorrect after passing an array as a parameter, or why negative subscripts are legal in certain scenarios (`p[-1]` is just `*(p - 1)`, as long as you ensure that `p - 1` points to valid memory).
 
 ## Multidimensional Arrays and Pointers—Just a Taste
 
-Multidimensional arrays are the most headache-inducing part of the relationship between pointers and arrays. Let's provide a simple example, just touching the surface without going into depth:
+Multidimensional arrays are the most headache-inducing part of the pointer and array relationship. Let's provide a simple example, just touching the surface without going into depth:
 
 ```cpp
 int matrix[3][4] = {
@@ -285,7 +291,7 @@ int (*row_ptr)[4] = matrix;  // 指向"含4个int的数组"的指针
 std::cout << row_ptr[1][2] << "\n";  // 7
 ```
 
-The type of `matrix` is `int[3][4]`, which decays into a pointer to the first row, with the type `int(*)[4]`—"a pointer to an array of four `int`s." Note that the parentheses around `(*row_ptr)` are mandatory, because `[]` has higher precedence than `*`. `int* row_ptr[4]` declares "an array of four `int*`s," which is a completely different thing.
+The type of `matrix` is `int[3][4]`, which decays into a pointer to the first row, with the type `int(*)[4]`—"a pointer to an array of four `int`s." Note that the parentheses around `(*row_ptr)` are mandatory, because `[]` has higher precedence than `*`, and `int* row_ptr[4]` declares "an array of four `int*`s," which is a completely different thing.
 
 The pointer relationships in multidimensional arrays are indeed a bit convoluted. If you feel a bit dizzy right now, that's okay—in actual projects, scenarios where you directly manipulate multidimensional arrays with raw pointers are not that common. Later, when we learn about `std::array` and `std::span`, there will be safer ways to handle such problems.
 
@@ -393,10 +399,10 @@ This program strings together all the core knowledge points of this chapter: poi
 
 Let's review the core points of this chapter:
 
-- An array name **decays** into a pointer to its first element in most expressions, losing its length information once decayed
+- An array name **decays** to a pointer to its first element in most expressions, losing its length information after decay
 - Pointer addition and subtraction step by **the size of the pointed-to type**; `p + 1` actually moves `sizeof(*p)` bytes
 - Two pointers pointing to the same array can be **subtracted**, and the result is the number of elements between them
-- The `[]` operator is essentially syntactic sugar for `*(p + n)`, which also explains why `sizeof` fails after an array is passed as a parameter
+- The `[]` operator is essentially syntactic sugar for `*(p + n)`, which also explains why `sizeof` fails after passing an array as a parameter
 - A C-style string is a `char` array terminated by `'\0'`, and traversing with a pointer until `'\0'` marks the end of the string
 - For daily array traversal, prefer range-for; use pointer traversal for scenarios requiring fine-grained control
 
@@ -419,7 +425,7 @@ Verification method: compare whether the results of `my_strlen("hello world")` a
 
 ### Exercise 2: Reverse an Array with Two Pointers
 
-We already demonstrated reversing an array with two pointers in the hands-on code above. Now try encapsulating it into a function `void reverse_array(int* begin, int* end)`, where `end` is the past-the-end pointer. Note: the function does not need to know the array length internally; it can complete the reversal relying solely on the two pointers.
+We already demonstrated the two-pointer reversal in the hands-on code above. Now try to encapsulate it into a function `void reverse_array(int* begin, int* end)`, where `end` is the past-the-end pointer. Note: the function does not need to know the array length internally; it can complete the reversal relying solely on the two pointers.
 
 ### Exercise 3: Implement String Comparison with Pointers
 

@@ -1,6 +1,7 @@
 ---
 title: std::array
-description: Fixed-size contiguous container, zero-overhead wrapper for C-style arrays
+description: A fixed-size contiguous container providing zero-overhead wrapping of
+  C-style arrays.
 chapter: 99
 order: 4
 tags:
@@ -14,6 +15,12 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/containers/04-array.md
+  source_hash: 4d9a4b63b706cc72d94549659bc269a63eb2f1d0b0dc7c4a4451591ae7e71aa9
+  translated_at: '2026-05-26T10:13:36.889961+00:00'
+  engine: anthropic
+  token_count: 420
 ---
 # std::array (C++11)
 
@@ -35,10 +42,10 @@ A fixed-size array that does not decay to a pointer. It delivers the performance
 | Last element | `reference back()` | Access the last element |
 | Underlying pointer | `T* data() noexcept` | Direct access to the underlying array pointer |
 | Fill | `void fill(const T& value)` | Fill all elements with a specified value |
-| Size | `constexpr size_type size() noexcept` | Return the number of elements (compile-time constant) |
-| Empty check | `constexpr bool empty() noexcept` | Check if the array is empty (true when N==0) |
-| Swap | `void swap(array& other)` | Swap the contents of two arrays |
-| Begin iterator | `iterator begin() noexcept` | Return an iterator to the beginning |
+| Size | `constexpr size_type size() noexcept` | Returns the number of elements (compile-time constant) |
+| Empty check | `constexpr bool empty() noexcept` | Checks if the array is empty (true when N==0) |
+| Swap | `void swap(array& other)` | Swaps the contents of two arrays |
+| Begin iterator | `iterator begin() noexcept` | Returns an iterator to the beginning |
 
 ## Minimal Example
 
@@ -56,12 +63,12 @@ int main() {
 }
 ```
 
-## Embedded Applicability: High
+## Embedded Suitability: High
 
 - A zero-overhead abstraction that compiles down to the exact same code as a C-style array, introducing no heap allocation.
 - `size()` is a compile-time constant, making it usable in template metaprogramming and static assertions.
 - Supports `constexpr`, making it ideal for building lookup tables at compile time.
-- The built-in bounds checking of `at()` simplifies debugging, and it can be removed in Release builds.
+- The built-in bounds checking of `at()` simplifies debugging, and can be removed in Release builds.
 
 ## Compiler Support
 
@@ -71,7 +78,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: std::array In Depth](../../vol3-standard-library/01-array.md)
+- [Tutorial: std::array in Detail](../../vol3-standard-library/01-array.md)
 - [cppreference: std::array](https://en.cppreference.com/w/cpp/container/array)
 
 ---

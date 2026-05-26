@@ -1,7 +1,7 @@
 ---
 title: std::unique_ptr
-description: Smart pointer with exclusive ownership, zero-overhead automatic resource
-  release
+description: A smart pointer with exclusive ownership, releasing resources automatically
+  with zero overhead.
 chapter: 99
 order: 1
 tags:
@@ -14,11 +14,17 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/cpp-reference/memory/01-unique-ptr.md
+  source_hash: 7fe4ab2885f8549ff78763d8cf4284d65bfef9fe9592628ccaebe2d210402900
+  translated_at: '2026-05-26T10:17:15.894143+00:00'
+  engine: anthropic
+  token_count: 506
 ---
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -31,7 +37,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-A smart pointer that manages the lifetime of a dynamic object through exclusive ownership semantics. It automatically destroys the object when it goes out of scope, and its size is identical to that of a raw pointer.
+A smart pointer that manages the lifetime of dynamic objects through exclusive ownership semantics, automatically destroying the object when it leaves scope, and having the exact same size as a raw pointer.
 
 ## Header
 
@@ -47,7 +53,7 @@ A smart pointer that manages the lifetime of a dynamic object through exclusive 
 | Release ownership | `pointer release() noexcept` | Relinquishes ownership and returns the raw pointer |
 | Reset pointer | `void reset(pointer p = pointer())` | Destroys the current object and takes ownership of a new pointer |
 | Get raw pointer | `pointer get() const noexcept` | Returns the managed raw pointer |
-| Check if empty | `explicit operator bool() const noexcept` | Checks whether an object is held |
+| Check if empty | `explicit operator bool() const noexcept` | Determines whether an object is held |
 | Dereference | `T& operator*() const` | Accesses the managed object |
 | Member access | `T* operator->() const` | Accesses members via pointer |
 | Array subscript | `T& operator[](size_t i) const` | (Array specialization) Accesses array elements |
@@ -68,8 +74,8 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: Compiles to the same size as a raw pointer, with no additional memory footprint
-- Deterministic destruction: Releases memory immediately when the scope ends, meeting embedded requirements for real-time performance and deterministic memory
+- Zero-overhead abstraction: compiles to the same size as a raw pointer, with no additional memory footprint
+- Deterministic destruction: releases immediately when the scope ends, meeting embedded requirements for real-time performance and deterministic memory
 - Perfectly supports the pImpl idiom, hiding implementation details and shortening compilation dependency chains
 - Introduces no control block, avoiding the thread safety and memory fragmentation overhead of `shared_ptr`
 
@@ -85,4 +91,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

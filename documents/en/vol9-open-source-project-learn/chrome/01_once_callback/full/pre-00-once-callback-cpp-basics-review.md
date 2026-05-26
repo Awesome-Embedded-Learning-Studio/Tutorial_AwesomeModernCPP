@@ -1,8 +1,9 @@
 ---
-title: 'OnceCallback Prerequisites Quick Reference: Review of C++11/14/17 Core Features'
-description: A quick review of all the C++ fundamentals required for the OnceCallback
-  series—move semantics, perfect forwarding, variadic templates, smart pointers, atomics,
-  lambdas, type traits, and more—preparing for deeper learning ahead.
+title: 'OnceCallback Prerequisites at a Glance: A Review of Core C++11/14/17 Features'
+description: A quick review of all the fundamental C++ features required for the OnceCallback
+  series—move semantics, perfect forwarding, variadic templates, smart pointers, atomic
+  operations, lambda expressions, type traits, and more—preparing us for the deep
+  dive ahead.
 chapter: 0
 order: 0
 tags:
@@ -24,28 +25,34 @@ prerequisites:
 related:
 - OnceCallback 前置知识（一）：函数类型与模板偏特化
 - OnceCallback 前置知识（三）：Lambda 高级特性
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-00-once-callback-cpp-basics-review.md
+  source_hash: 36ab223da7e08fe1f83ab09fe810ea3204c6f75675fbb239a06b2e33b445b543
+  translated_at: '2026-05-26T12:26:53.872398+00:00'
+  engine: anthropic
+  token_count: 2747
 ---
-# OnceCallback Prerequisite Cheat Sheet: A Review of Core C++11/14/17 Features
+# OnceCallback Prerequisite Quick Reference: Core C++11/14/17 Features Review
 
 ## Introduction
 
-Let's be honest—this article isn't meant to teach you from scratch. If you're completely unfamiliar with concepts like move semantics and smart pointers, we recommend going back to Volume 2 and working through the relevant chapters before returning here. The role of this article is a **cheat sheet**: we pull out all the C++ features that the OnceCallback series will use repeatedly, and for each feature, we cover only three things—"what it is", "how to use it", and "where it appears in OnceCallback". The goal is to prevent you from getting stuck on a syntax detail when reading the upcoming articles.
+Let's be honest—this article isn't meant to teach you from scratch. If you're completely unfamiliar with concepts like move semantics and smart pointers, we recommend going back to Volume 2 and working through the relevant chapters before returning here. The role of this article is a **quick reference manual**: we pull out all the C++ features that the OnceCallback series will use repeatedly, and for each feature, we cover exactly three things—"what it is", "how to use it", and "where it appears in OnceCallback". The goal is to prevent you from getting stuck on a syntax detail when reading the upcoming articles.
 
 > **Learning Objectives**
 >
-> - Quickly review all the fundamental C++11/14/17 features required for the OnceCallback series
-> - Understand the specific application of each feature within the OnceCallback design
-> - Establish the knowledge baseline needed for subsequent deep dives
+> - Quickly review all the C++11/14/17 fundamental features required for the OnceCallback series
+> - Understand where each feature is specifically applied in the OnceCallback design
+> - Establish the knowledge baseline needed for deeper learning ahead
 
 ---
 
 ## Move Semantics and std::move
 
-Move semantics are the foundation of the entire OnceCallback—it is a move-only type, and its core design relies entirely on move semantics. Let's quickly run through the core concepts.
+Move semantics are the foundation of the entire OnceCallback—it is a move-only type, and its core design relies entirely on move semantics. Let's quickly go through the core concepts.
 
-### Rvalue References and Move Constructors
+### Rvalue References and Move Construction
 
-C++11 introduced rvalue references `T&&`, which can bind to temporary objects (rvalues). The semantics of a move constructor `T(T&& other)` are to "steal" resources from `other` rather than making a copy. After the theft, `other` enters a "valid but unspecified" state—typically emptied out.
+C++11 introduced rvalue references `T&&`, which can bind to temporary objects (rvalues). The semantics of a move constructor `T(T&& other)` are to "steal" resources from `other` rather than making a copy. After stealing, `other` enters a "valid but unspecified" state—typically emptied out.
 
 ```cpp
 // 一个最简单的移动语义示例
@@ -70,19 +77,19 @@ Buffer b = std::move(a); // b 偷走了 a 的资源，a 变空
 
 ### The Essence of std::move
 
-`std::move` doesn't actually move anything—it is simply a `static_cast<T&&>` that unconditionally casts the passed object to an rvalue reference. The ones that actually perform the "move" are the move constructor or move assignment operator. The role of `std::move` is to tell the compiler, "I agree to treat this object as an rvalue; you may steal resources from it."
+`std::move` doesn't actually move anything—it is simply a `static_cast<T&&>` that unconditionally casts the passed object to an rvalue reference. What actually performs the "move" is the move constructor or move assignment operator. The role of `std::move` is to tell the compiler, "I agree to treat this object as an rvalue; you may steal resources from it."
 
 ### Application in OnceCallback
 
-The way OnceCallback is invoked is `std::move(cb).run(args...)`—`std::move` converts `cb` into an rvalue, and `run()` detects this as an rvalue invocation via deducing this (a C++23 feature covered in a dedicated article later), executes the callback, and marks the state of `cb` as "consumed". Any subsequent access to `cb` is illegal. The entire design philosophy is: **enforcing the "invalid-after-single-invocation" semantics through the type system**.
+OnceCallback is invoked as `std::move(cb).run(args...)`—`std::move` converts `cb` to an rvalue, and `run()` uses deducing this (a C++23 feature covered in a dedicated article later) to detect that this is an rvalue invocation, executes the callback, and marks `cb`'s state as "consumed." Any subsequent access to `cb` is illegal. The entire design philosophy is: **enforcing the "invoke-once-then-invalidate" semantics through the type system**.
 
-OnceCallback also deletes its copy constructor and copy assignment operator (`= delete`), keeping only move operations. This means that at any given time, a OnceCallback object has only one owner—you cannot copy it; you can only transfer ownership via `std::move`.
+OnceCallback also deletes its copy constructor and copy assignment operator (`= delete`), keeping only move operations. This means a OnceCallback object has exactly one owner at any given time—you can't copy it, you can only transfer ownership via `std::move`.
 
 ---
 
 ## Perfect Forwarding and std::forward
 
-Perfect forwarding solves this problem: you write a function template that accepts parameters and passes them on to another function exactly as they are. "Exactly as they are" means preserving the value category (lvalue or rvalue) and const qualification of the parameters.
+Perfect forwarding solves this problem: you write a function template that accepts parameters and passes them verbatim to another function. "Verbatim" means preserving the value category (lvalue or rvalue) and const qualification of the parameters.
 
 ### Forwarding References and Deduction Rules
 
@@ -107,17 +114,17 @@ wrapper(x);    // arg 是左值引用，forward 返回左值引用
 wrapper(10);   // arg 是右值引用，forward 返回右值引用
 ```
 
-If you don't use `std::forward` and pass `arg` directly, then `arg` inside the function is always an lvalue (because named variables are lvalues), and the rvalue information is lost.
+If you don't use `std::forward` and pass `arg` directly, then `arg` is always an lvalue inside the function (because named variables are lvalues), and the rvalue information is lost.
 
 ### Application in OnceCallback
 
-Perfect forwarding appears many times in OnceCallback. The `bind_once` function template uses it to preserve the value category of the bound parameters—`std::forward<BoundArgs>(args)...` ensures that passed rvalues remain rvalues, and passed lvalues remain lvalues. The deducing this implementation of the `run()` method also uses `std::forward<Self>(self)` to perfectly forward the value category of `self` to the internal `impl_run`.
+Perfect forwarding appears many times in OnceCallback. The `bind_once` function template uses it to preserve the value category of bound parameters—`std::forward<BoundArgs>(args)...` ensures that passed rvalues remain rvalues, and passed lvalues remain lvalues. The deducing this implementation of the `run()` method also uses `std::forward<Self>(self)` to perfectly forward the value category of `self` to the internal `impl_run`.
 
 ---
 
 ## Variadic Templates and Parameter Pack Expansion
 
-Variadic templates allow you to write functions or classes that accept an arbitrary number of arguments of arbitrary types. The template signature of OnceCallback, `OnceCallback<R(Args...)>`, uses a parameter pack.
+Variadic templates allow you to write functions or classes that accept any number of arguments of any type. The template signature of OnceCallback, `OnceCallback<R(Args...)>`, uses a parameter pack.
 
 ### Basic Syntax
 
@@ -133,15 +140,15 @@ void print_all(Types... args) {
 
 ### Expansion Locations
 
-Parameter packs can be expanded in multiple locations: function parameter lists, template parameter lists, initializer lists, capture lists (starting from C++20), and more. The most critical expansion location in OnceCallback is the lambda's capture list—a feature introduced only in C++20, which we will cover in a dedicated article later.
+Parameter packs can be expanded in multiple places: function parameter lists, template parameter lists, initializer lists, capture lists (since C++20), and more. The most critical expansion location in OnceCallback is the lambda capture list—a feature introduced only in C++20, which we cover in a dedicated article later.
 
 ### Application in OnceCallback
 
-The `Args...` of `OnceCallback<R(Args...)>` is a parameter pack that appears repeatedly throughout the class's implementation—the parameter types of the constructor, the parameter types of `run()`, and the signature of the internal `func_` all come from this pack. The `BoundArgs...` of `bind_once` is another parameter pack, expanded into the lambda's capture list and the call arguments of `std::invoke`.
+`OnceCallback<R(Args...)>`'s `Args...` is a parameter pack that appears repeatedly throughout the class's implementation—the parameter types of the constructor, the parameter types of `run()`, and the signature of the internal `func_` all come from this pack. `bind_once`'s `BoundArgs...` is another parameter pack, expanded into the lambda's capture list and the call arguments of `std::invoke`.
 
 ---
 
-## Smart Pointer Cheat Sheet
+## Smart Pointer Quick Reference
 
 OnceCallback internally uses two types of smart pointers; let's quickly go over their respective roles.
 
@@ -156,7 +163,7 @@ auto p3 = std::move(p);    // OK：移动转移所有权
 // 此后 p 为 nullptr
 ```
 
-In OnceCallback, the significance of `unique_ptr` doesn't lie in us using it directly, but rather that OnceCallback must support lambdas that capture move-only objects—if a lambda captures a `unique_ptr`, then the `std::move_only_function` containing this lambda (OnceCallback's internal storage) must also be move-only. This is something `std::function` cannot achieve, and it is one of the reasons we chose `std::move_only_function`.
+In OnceCallback, the significance of `unique_ptr` isn't that we use it directly, but rather that OnceCallback must support lambdas that capture move-only objects—if a lambda captures a `unique_ptr`, then the `std::move_only_function` containing this lambda (OnceCallback's internal storage) must also be move-only. This is something `std::function` cannot achieve, and it is one of the reasons we chose `std::move_only_function`.
 
 ### std::shared_ptr: Shared Ownership
 
@@ -168,7 +175,7 @@ auto p2 = p1;   // OK：拷贝，引用计数 +1
 // p1 和 p2 都指向同一个 int
 ```
 
-In OnceCallback, `shared_ptr` is used to manage the cancellation token `CancelableToken`. The token needs to be shared between the OnceCallback object and an external controller—the external controller calls `invalidate()` to invalidate the token, and OnceCallback checks the token's state via its own held `shared_ptr` copy before executing the callback. The reference counting of `shared_ptr` guarantees that as long as someone holds the token, the underlying `Flag` object will not be destroyed.
+In OnceCallback, `shared_ptr` is used to manage the cancellation token `CancelableToken`. The token needs to be shared between the OnceCallback object and an external controller—the external controller calls `invalidate()` to invalidate the token, and OnceCallback checks the token's state via its own held `shared_ptr` copy before executing the callback. The reference counting of `shared_ptr` guarantees that as long as someone still holds the token, the underlying `Flag` object will not be destroyed.
 
 ---
 
@@ -178,7 +185,7 @@ The internal implementation of the cancellation token uses `std::atomic<bool>` a
 
 ### Atomic Operations
 
-`std::atomic<T>` provides atomic access to variables of type `T`—reads and writes cannot be interrupted by other threads' operations. The basic operations are `load()` (read) and `store()` (write), which can specify a memory order.
+`std::atomic<T>` provides atomic access to `T` type variables—reads and writes cannot be interrupted by other threads' operations. The basic operations are `load()` (read) and `store()` (write), which can specify a memory order.
 
 ```cpp
 std::atomic<bool> flag{true};
@@ -194,7 +201,7 @@ if (flag.load(std::memory_order_acquire)) {
 
 ### acquire/release Semantics
 
-`memory_order_release` and `memory_order_acquire` are a pair of matching memory orders. Simply put: a `release` store guarantees that all writes prior to the store are visible to other threads; a `acquire` load guarantees that all reads after the load can see the writes preceding the release store. In OnceCallback's cancellation token, `invalidate()` uses a `release` store to set `valid` to `false`, and `is_valid()` uses a `acquire` load to read `valid`—this guarantees that if `is_valid()` returns `true`, all states related to the token are visible to the current thread.
+`memory_order_release` and `memory_order_acquire` are a paired set of memory orders. Simply put: an `release` store guarantees that all writes before the store are visible to other threads; an `acquire` load guarantees that all reads after the load can see the writes preceding the release store. In OnceCallback's cancellation token, `invalidate()` uses an `release` store to set `valid` to `false`, and `is_valid()` uses an `acquire` load to read `valid`—this guarantees that if `is_valid()` returns `true`, all state related to the token is visible to the current thread.
 
 ---
 
@@ -238,9 +245,9 @@ auto f2 = [&x]() { return x; };
 auto f3 = [p = std::make_unique<int>(42)]() { return *p; };
 ```
 
-The `operator()` of the closure class generated by a lambda is `const` by default—this means you cannot modify value-captured variables inside the lambda unless you add the `mutable` keyword. In the `bind_once` and `then()` implementations of OnceCallback, the lambda must be declared as `mutable` because it needs to call `std::move(self).run()` internally to modify the state of `self`. We will expand on this detail in the article on advanced lambda features.
+The `operator()` of the closure class generated by a lambda is `const` by default—this means you cannot modify value-captured variables inside the lambda unless you add the `mutable` keyword. In OnceCallback's `bind_once` and `then()` implementations, the lambda must be declared as `mutable` because it internally needs to call `std::move(self).run()` to modify `self`'s state. We will expand on this detail in the article on advanced lambda features.
 
-Generic lambdas (starting from C++14) allow parameters to use `auto`:
+Generic lambdas (since C++14) allow parameters to use `auto`:
 
 ```cpp
 auto generic = [](auto x, auto y) { return x + y; };
@@ -253,7 +260,7 @@ The lambda inside `bind_once` uses `(auto&&... call_args)` to accept runtime arg
 
 ## Type Traits
 
-Type traits are tools for querying and manipulating type information at compile time. OnceCallback uses a few key traits; let's quickly go through them.
+Type traits are tools for querying and manipulating type information at compile time. OnceCallback uses several key traits; let's quickly go through them.
 
 ```cpp
 #include <type_traits>
@@ -276,7 +283,7 @@ static_assert(std::is_void_v<void>);            // 通过
 static_assert(!std::is_void_v<int>);            // 通过
 ```
 
-In OnceCallback, `std::decay_t` and `std::is_same_v` are used in the `not_the_same_t` concept—it checks "whether the decayed template parameter is the same type as `OnceCallback` itself", used to prevent the template constructor from hijacking calls to the move constructor. `std::is_lvalue_reference_v` is used in the deducing this implementation of `run()`—it detects whether the caller passed an lvalue, and if so, triggers a `static_assert` error. `std::is_void_v` is used in `impl_run()` and `then()` to distinguish between void and non-void return types in compile-time branches.
+In OnceCallback, `std::decay_t` and `std::is_same_v` are used in the `not_the_same_t` concept—it checks "whether the template parameter, after decay, is the same type as `OnceCallback` itself," used to prevent the template constructor from hijacking calls to the move constructor. `std::is_lvalue_reference_v` is used in the deducing this implementation of `run()`—it detects whether the caller passed an lvalue, and if so, triggers a `static_assert` error. `std::is_void_v` is used in `impl_run()` and `then()` to distinguish compile-time branches between void and non-void return types.
 
 ---
 
@@ -298,15 +305,15 @@ R do_something() {
 }
 ```
 
-Without `if constexpr` and using a regular `if`, both branches would be compiled. At this point, the `return result` in the void branch would directly cause an error—void is not a type that can be assigned. `if constexpr` guarantees that the void case only generates the code for `return;`, and the non-void case only generates the code for `return result;`.
+Without `if constexpr`, using a regular `if` means both branches would be compiled. In this case, the `return result` in the void branch would directly cause an error—void is not a type that can be assigned. `if constexpr` guarantees that the void case only generates the `return;` code, and the non-void case only generates the `return result;` code.
 
-In OnceCallback, `if constexpr (std::is_void_v<ReturnType>)` appears in two places: the callback execution logic of `impl_run()`, and the chaining composition logic of `then()`. Both places deal with the same issue—void return types cannot be assigned and returned in the usual way.
+In OnceCallback, `if constexpr (std::is_void_v<ReturnType>)` appears in two places: the callback execution logic of `impl_run()`, and the chained composition logic of `then()`. Both places deal with the same issue—void return types cannot be assigned and returned in the usual way.
 
 ---
 
 ## decltype(auto)
 
-`decltype(auto)` is the return type deduction method introduced in C++14. The difference between it and `auto` lies in the handling of references: `auto` discards references and top-level const, while `decltype(auto)` preserves them.
+`decltype(auto)` is the return type deduction method introduced in C++14. The difference between it and `auto` lies in how references are handled: `auto` drops references and top-level const, while `decltype(auto)` preserves them.
 
 ```cpp
 int x = 10;
@@ -316,13 +323,13 @@ auto f1() { return ref; }           // 返回 int（丢掉了引用）
 decltype(auto) f2() { return ref; } // 返回 int&（保留了引用）
 ```
 
-In OnceCallback, the lambdas in `bind_once` and `then()` use `-> decltype(auto)` as a trailing return type. The purpose of this is to perfectly forward the callable object's return value—if the called function returns `int&&`, `decltype(auto)` will also return `int&&`, without losing the value category information.
+In OnceCallback, the lambdas in `bind_once` and `then()` use `-> decltype(auto)` as a trailing return type. The purpose of this is to perfectly forward the callable object's return value—if the called function returns `int&&`, `decltype(auto)` will also return `int&&`, without losing value category information.
 
 ---
 
 ## [[nodiscard]] Attribute
 
-`[[nodiscard]]` is the attribute standardized in C++17, telling the compiler "the return value of this function should not be ignored". If the caller writes `cb.is_cancelled();` but doesn't use the return value, the compiler will issue a warning.
+`[[nodiscard]]` is an attribute standardized in C++17 that tells the compiler "the return value of this function should not be ignored." If the caller writes `cb.is_cancelled();` without using the return value, the compiler will issue a warning.
 
 ```cpp
 [[nodiscard]] bool is_cancelled() const noexcept;
@@ -330,13 +337,13 @@ In OnceCallback, the lambdas in `bind_once` and `then()` use `-> decltype(auto)`
 [[nodiscard]] bool is_null() const noexcept;
 ```
 
-All three query methods of OnceCallback are annotated with `[[nodiscard]]`. The reason is simple—calling these methods is meant to get the return value for a check, and calls that ignore the return value are most likely typos (for example, writing `if (!cb.is_cancelled())` as `cb.is_cancelled();`). The `explicit` of `explicit operator bool()` serves a similar purpose—preventing unintended behavior caused by implicit conversions to `bool`.
+All three query methods of OnceCallback are annotated with `[[nodiscard]]`. The reason is simple—calling these methods is specifically to get the return value for a check, and calls that ignore the return value are most likely typos (for example, writing `if (!cb.is_cancelled())` instead of `cb.is_cancelled();`). The `explicit` of `explicit operator bool()` serves a similar purpose—preventing unintended behavior caused by implicit conversion to `bool`.
 
 ---
 
 ## Ref-qualified Member Functions
 
-C++11 allows non-static member functions to be ref-qualified, annotated with `&` or `&&` after the function's parameter list. `&` means it can only be called on an lvalue, and `&&` means it can only be called on an rvalue.
+C++11 allows non-static member functions to be ref-qualified, using `&` or `&&` annotated after the function's parameter list. `&` means it can only be called through an lvalue, and `&&` means it can only be called through an rvalue.
 
 ```cpp
 class Widget {
@@ -350,15 +357,15 @@ public:
 };
 ```
 
-In OnceCallback, the `then()` method is declared as `auto then(Next&& next) &&`—the trailing `&&` means `then()` can only be called on an rvalue (via `std::move(cb).then(next)` or on a temporary object with `.then(next)`). This is another way to express consumption semantics—unlike `run()` which uses deducing this to differentiate between lvalues and rvalues to provide different error messages, `then()` doesn't need to distinguish between them, making the ref-qualifier approach more concise.
+In OnceCallback, the `then()` method is declared as `auto then(Next&& next) &&`—the trailing `&&` means `then()` can only be called through an rvalue (via `std::move(cb).then(next)` or on a temporary object). This is another way to express consume semantics—unlike `run()` which uses deducing this to differentiate between lvalues and rvalues to provide different error messages, `then()` doesn't need to distinguish between them, making the ref-qualifier approach more concise.
 
 ---
 
 ## Summary
 
-In this article, we quickly ran through all the fundamental C++ features that the OnceCallback series will use. For each feature, we clarified three points: what it is, how to use it, and where it will appear in OnceCallback. If you feel unfamiliar with any feature, we recommend going back to the corresponding chapter in the earlier volumes for a systematic study—upcoming articles will not re-explain these basic syntax elements.
+In this article, we quickly went through all the fundamental C++ features that the OnceCallback series will use. For each feature, we clarified three points: what it is, how to use it, and where it will appear in OnceCallback. If you feel unfamiliar with any feature, we recommend going back to the corresponding chapter in the earlier volumes for a systematic study—upcoming articles will not re-explain these basic syntax elements.
 
-Next, we are going to dive deep. The first stop is "Function Types and Template Partial Specialization"—this is the key to understanding the peculiar syntax of `OnceCallback<R(Args...)>`, and it is the entry point for building our entire template skeleton.
+Next, we are entering the deep-dive section. The first stop is "Function Types and Template Partial Specialization"—this is the key to understanding the peculiar syntax of `OnceCallback<R(Args...)>`, and it is the entry point for building our entire template skeleton.
 
 ## References
 

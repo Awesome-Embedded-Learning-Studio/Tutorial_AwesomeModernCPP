@@ -1,6 +1,6 @@
 ---
-title: File and directory operations
-description: exists, copy, move, remove, permission and space query
+title: File and Directory Operations
+description: exists, copy, move, remove, permission and space queries
 chapter: 9
 order: 2
 tags:
@@ -16,12 +16,18 @@ prerequisites:
 - 'Chapter 9: path 操作'
 related:
 - 目录遍历与搜索
+translation:
+  source: documents/vol2-modern-features/ch09-filesystem/02-filesystem-ops.md
+  source_hash: 4c4bf535b1461d4894271c9c1a332b3888c53edf90bd80a79ece569f303f954e
+  translated_at: '2026-05-26T11:33:50.845819+00:00'
+  engine: anthropic
+  token_count: 3323
 ---
 # File and Directory Operations
 
-In the previous article, we learned how to use `std::filesystem::path` to handle path syntax—constructing, decomposing, modifying, and comparing paths, all as pure computations without touching the disk. In this article, we get down to business: using the `<filesystem>` library to directly manipulate the file system—checking if files exist, creating directories, copying files, deleting files, and querying permissions and disk space.
+In the previous article, we learned how to use `std::filesystem::path` to handle path syntax—constructing, decomposing, modifying, and comparing paths, all as pure computations without touching the disk. In this article, we get down to business: using the `std::filesystem` library to directly manipulate the file system—checking if files exist, creating directories, copying files, deleting files, and querying permissions and disk space.
 
-As with the previous article, our environment is C++17, with GCC 13+ / Clang 15+ / MSVC 2022. The header file is `<filesystem>`, and the namespace is `namespace fs = std::filesystem;`.
+As with the previous article, our environment is C++17, with GCC 13+ / Clang 15+ / MSVC 2022. The header file is `<filesystem>`, and the namespace is `std::filesystem`.
 
 > **Learning Objectives**
 >
@@ -29,16 +35,16 @@ As with the previous article, our environment is C++17, with GCC 13+ / Clang 15+
 > - [ ] Use `exists`, `is_regular_file`, and `is_directory` to check file status
 > - [ ] Master the use of `create_directory` and `create_directories`
 > - [ ] Safely perform file copy and delete operations
-> - [ ] Understand metadata queries like `permissions`, `space`, and `last_write_time`
+> - [ ] Understand metadata queries such as `file_size`, `last_write_time`, and `status`
 > - [ ] Write a practical log rotation tool
 
-## File Status Queries: Does It Exist? What Type Is It?
+## File Status Queries: Does it exist? What type is it?
 
-The first step in file system operations is usually to "see what's actually at this path." `<filesystem>` provides a set of query functions to answer this question.
+The first step in file system operations is usually to "see what's actually at this path." `std::filesystem` provides a set of query functions to answer this question.
 
 ### exists: Does the path exist?
 
-`fs::exists(p)` checks whether a given path exists on the file system. It can accept a `path` object, or a `directory_entry` (which we will cover in the next article). It returns `bool`:
+`exists` checks whether a given path exists on the file system. It can accept a `path` object or a `std::string_view` (which we will cover in the next article). It returns `bool`:
 
 ```cpp
 #include <filesystem>
@@ -57,7 +63,7 @@ int main() {
 }
 ```
 
-⚠️ `exists()` throws an exception in certain situations (such as insufficient permissions preventing access to the parent directory). If you don't want exceptions to propagate, use the overload that does not accept a `std::error_code`, or wrap it in a try-catch block. A better approach is to use the overload that accepts a `std::error_code`:
+⚠️ `exists` throws an exception in certain situations (such as insufficient permissions preventing access to the parent directory). If you don't want exceptions to propagate, use the overload that does not accept an `error_code`, or wrap it in a try-catch block. A better approach is to use the overload that accepts an `error_code`:
 
 ```cpp
 std::error_code ec;
@@ -69,7 +75,7 @@ if (ec) {
 
 ### is_regular_file / is_directory / is_symlink: Type checking
 
-Once we know a path exists, the next step is to determine its type. `fs::is_regular_file(p)` checks if it is a regular file, `fs::is_directory(p)` checks if it is a directory, and `fs::is_symlink(p)` checks if it is a symbolic link. There are also more granular type checks like `is_block_file`, `is_character_file`, `is_fifo`, `is_socket`, and `is_other`, which are occasionally used in Linux system programming.
+Once we know a path exists, the next step is to determine its type. `is_regular_file` checks if it is a regular file, `is_directory` checks if it is a directory, and `is_symlink` checks if it is a symbolic link. There are also more granular type checks like `is_block_file`, `is_character_file`, `is_fifo`, `is_socket`, and `is_other`, which are occasionally used in Linux system programming.
 
 ```cpp
 fs::path p = "/usr/local/bin";
@@ -83,7 +89,7 @@ if (fs::is_directory(p)) {
 }
 ```
 
-⚠️ If the path does not exist, these functions return `false`—they do not throw exceptions. So you don't need to call `exists()` before checking the type; just check the type directly. However, note that if the underlying `status()` call itself fails (e.g., due to permission issues), it will throw a `filesystem_error` exception.
+⚠️ If the path does not exist, these functions return `false`—they do not throw exceptions. So you don't need to call `exists` first before checking the type; just check directly. However, note that if the underlying `status` call itself fails (e.g., due to permission issues), it will throw a `filesystem_error` exception.
 
 ### file_size / last_write_time / status: Metadata queries
 
@@ -139,11 +145,11 @@ int main() {
 }
 ```
 
-⚠️ Before C++20, converting `last_write_time` into a human-readable format was a bit cumbersome (as shown above), because the clock used by `file_time_type` is not necessarily `system_clock`. C++20 provides a more concise approach via `std::chrono::clock_cast`, but in C++17, we can only use the approximate method shown above. In real projects, using `std::ctime` for simple display is sufficient, though the precision might not be perfectly accurate.
+⚠️ Converting `last_write_time` into a readable format before C++20 is a bit cumbersome (as shown above), because the clock used by `file_time_type` is not necessarily `std::chrono::system_clock`. C++20 provides a more concise approach via `std::chrono::clock_cast`, but in C++17, we can only use the approximate method shown above. In real projects, using `std::ctime` for simple display is sufficient, though the precision might not be completely accurate.
 
 ## Creating Directories
 
-`fs::create_directory(p)` creates a directory—provided that the parent directory already exists. If the parent directory does not exist, the call will fail:
+`create_directory` creates a single directory—provided that the parent directory already exists. If the parent directory does not exist, the call will fail:
 
 ```cpp
 fs::path dir = "/tmp/myapp_config";
@@ -156,7 +162,7 @@ if (!fs::exists(dir)) {
 }
 ```
 
-If you need to create a multi-level directory (e.g., `/tmp/a/b/c`, where neither `/tmp/a` nor `/tmp/a/b` exist), use `fs::create_directories(p)`. It automatically creates all missing intermediate directories in the path, similar to `mkdir -p`:
+If you need to create a multi-level directory (for example, `a/b/c`, where neither `a/b` nor `a` exists), use `create_directories`. It automatically creates all missing intermediate directories in the path, similar to `mkdir -p`:
 
 ```cpp
 fs::path deep_dir = "/tmp/myapp/data/cache/tmp";
@@ -164,13 +170,13 @@ fs::create_directories(deep_dir);  // 自动创建所有中间目录
 std::cout << "创建完成\n";
 ```
 
-`create_directories` is one of the file system operations I use the most. Ensuring that configuration, log, and cache directories exist at program startup is a very common requirement. With `create_directories`, one line of code gets it done, without needing to manually check whether each level exists.
+`create_directories` is one of the file system operations I use the most. Ensuring that configuration, log, and cache directories exist at program startup is a very common requirement. With `create_directories`, one line of code gets it done, without manually checking whether each level exists.
 
-⚠️ `create_directory` returns `false` when the directory already exists, but does not report an error. The same applies to `create_directories`—if all directories exist, it also returns `false`. Therefore, you should not use the return value to determine "whether an error occurred," but rather use the `std::error_code` version.
+⚠️ `create_directory` returns `false` when the directory already exists, but it does not report an error. The same applies to `create_directories`—if all directories already exist, it also returns `false`. Therefore, you should not use the return value to determine "whether an error occurred," but rather use the `error_code` version.
 
 ## Copying Files and Directories
 
-`fs::copy(from, to)` is a versatile copy function. Its behavior depends on the type of `from` and whether `copy_options` is specified:
+`copy` is a versatile copy function. Its behavior depends on the type of the `from` path and whether `copy_options` are specified:
 
 ```cpp
 // 默认行为：
@@ -192,11 +198,11 @@ if (ec) {
 
 `copy_options` is a bitmask type used to finely control copy behavior. Common options include:
 
-`fs::copy_options::overwrite_existing`—Overwrite the target file if it already exists. By default, if the target exists, `copy` will fail (or skip, depending on the specific operation).
+`copy_options::overwrite_existing`—If the target file already exists, overwrite it. By default, if the target already exists, `copy` will fail (or skip, depending on the specific operation).
 
-`fs::copy_options::recursive`—Recursively copy directory contents. If `from` is a directory, it recursively copies all files and subdirectories within it.
+`copy_options::recursive`—Recursively copy directory contents. If `from` is a directory, it will recursively copy all files and subdirectories within it.
 
-`fs::copy_options::copy_symlinks`—Copy the symbolic link itself (rather than following the link and copying the target file).
+`copy_options::copy_symlinks`—Copy the symbolic link itself (rather than following the link to copy the target file).
 
 ```cpp
 // 递归复制整个目录
@@ -205,7 +211,7 @@ fs::copy("/tmp/source_dir", "/tmp/dest_dir",
          fs::copy_options::overwrite_existing);
 ```
 
-`fs::copy_file(from, to, options)` is a function specifically designed for copying files. The difference between it and `copy` is that `copy_file` only handles regular files and provides finer-grained control. ⚠️ Note: `copy_file` **provides no atomicity guarantees**—if the copy fails midway (e.g., due to insufficient disk space or a power outage), the target file might be left in a partially written state. If atomicity is required, you should use the "copy to temporary file + atomic rename" pattern.
+`copy_file` is a function specifically for copying files. The difference between it and `copy` is that `copy_file` only handles regular files and provides finer-grained control. ⚠️ Note: `copy_file` **does not provide atomicity guarantees**—if the copy fails midway (e.g., due to insufficient disk space or a power outage), the target file might be in a partially written state. If atomicity is required, you should use the "copy to a temporary file + atomic rename" pattern.
 
 ```cpp
 // 安全的文件复制（原子性保证）
@@ -224,7 +230,7 @@ if (ec) {
 
 ## Deleting and Renaming
 
-`fs::remove(p)` deletes a file or an empty directory. If the path does not exist, it returns `false` (no error). If the path is a symbolic link, it deletes the link itself rather than the target. If the path is a non-empty directory, the deletion fails:
+`remove` deletes a file or an empty directory. If the path does not exist, it returns `false` (no error). If the path is a symbolic link, it deletes the link itself rather than the target. If the path is a non-empty directory, the deletion fails:
 
 ```cpp
 fs::path temp = "/tmp/temp_file.txt";
@@ -236,7 +242,7 @@ if (removed) {
 }
 ```
 
-`fs::remove_all(p)` recursively deletes a directory and all of its contents (files, subdirectories, symbolic links). It returns the number of deleted files. This is a "nuclear-level" operation—always confirm the path is correct before calling it:
+`remove_all` recursively deletes a directory and all its contents (files, subdirectories, symbolic links). It returns the number of deleted files. This is a "nuclear-level" operation—always confirm the path is correct before calling it:
 
 ```cpp
 fs::path temp_dir = "/tmp/my_temp_dir";
@@ -244,9 +250,9 @@ auto count = fs::remove_all(temp_dir);
 std::cout << "删除了 " << count << " 个文件/目录\n";
 ```
 
-⚠️ `remove_all` is an irreversible operation. Once, while debugging, I accidentally wrote the wrong path (missing a directory level) and almost wiped out the entire project directory. Fortunately, it was running in a test environment at the time, so no actual damage was done. Since then, I always print and confirm the path before calling `remove_all`. I recommend you develop this habit as well.
+⚠️ `remove_all` is an irreversible operation. I once accidentally wrote the wrong path while debugging (missing a directory level) and almost wiped out the entire project directory. Fortunately, I was running in a test environment at the time, so no actual damage was done. Since then, I always print and confirm the path before calling `remove_all`. I recommend you build this habit too.
 
-`fs::rename(old_path, new_path)` renames or moves a file/directory. In most implementations, renaming on the same file system is an atomic operation (it only modifies the directory entry without moving data). ⚠️ Note: Renaming across file systems typically **fails** (throwing an exception or returning an error) rather than automatically performing a copy + delete. To move across file systems, you should explicitly use `copy` + `remove`:
+`rename` renames or moves a file/directory. In most implementations, renaming on the same file system is an atomic operation (it only modifies the directory entry, without moving data). ⚠️ Note: Renaming across file systems typically **fails** (throwing an exception or returning an error), rather than automatically performing a copy + delete. To move across file systems, you should explicitly use `copy` + `remove`:
 
 ```cpp
 std::error_code ec;
@@ -260,7 +266,7 @@ if (ec) {
 
 ### permissions: Modifying file permissions
 
-`fs::permissions(p, prms)` modifies a file's permission bits, similar to `chmod`. Permissions are represented using the `fs::perms` enumeration:
+`permissions` modifies a file's permission bits, similar to `chmod`. Permissions are represented by the `perms` enum:
 
 ```cpp
 fs::path script = "/tmp/my_script.sh";
@@ -277,11 +283,11 @@ fs::permissions(script,
     fs::perm_options::add);    // 添加（不影响其他位）
 ```
 
-The third parameter, `perm_options`, can be `replace` (replace all permissions, the default behavior), `add` (add the specified permission bits), or `remove` (remove the specified permission bits). This is more convenient than replacing all permissions when you only need to modify one or two permission bits.
+The third parameter, `perm_options`, can be `perm_options::replace` (replace all permissions, the default behavior), `perm_options::add` (add the specified permission bits), or `perm_options::remove` (remove the specified permission bits). This is more convenient than replacing all permissions when you only need to modify one or two permission bits.
 
 ### space: Querying disk space
 
-`fs::space(p)` returns a `space_info` structure containing the disk's capacity, used space, and available space:
+`space` returns a `space_info` struct containing the disk's capacity, used space, and available space:
 
 ```cpp
 auto info = fs::space("/tmp");
@@ -295,11 +301,11 @@ if (info.capacity > 0) {
 }
 ```
 
-Note the difference between `available` and `free`: `free` is the remaining space on the disk (including the portion only available to root), while `available` is the space actually available to the current user. On Linux, this difference comes from reserved blocks (ext4 reserves 5% for root by default).
+Note the difference between `available` and `free`: `free` is the remaining space on the disk (including the portion only usable by root), while `available` is the space actually available to the current user. On Linux, the difference between these two values comes from reserved blocks (ext4 reserves 5% for root by default).
 
 ## Handling Temporary Files
 
-C++ does not provide a standard API for "creating temporary files" directly (C++23's `std::filesystem::temp_directory_path()` only tells you where the temporary directory is). However, in C++17, we can combine existing tools to handle temporary files safely:
+C++ does not provide a standard API for "creating temporary files" directly (C++23's `temp_directory_path` only tells you where the temporary directory is). However, in C++17, we can combine existing tools to safely handle temporary files:
 
 ```cpp
 #include <filesystem>
@@ -354,9 +360,9 @@ bool safe_write_file(const fs::path& target, const std::string& data) {
 }
 ```
 
-This "write to temporary file + atomic rename" pattern is crucial in scenarios that require data integrity—if the program crashes or the power goes out during the write, the target file will either be the old complete version or the new complete version, never a corrupted "half-written" state. Many databases, configuration file managers, and package managers use this pattern.
+This "write to temporary file + atomic rename" pattern is crucial in scenarios that require data integrity guarantees—if the program crashes or the power goes out during the write, the target file will either be the old complete version or the new complete version, and will never end up in a corrupted "half-written" state. Many databases, configuration file managers, and package managers use this pattern.
 
-## Hands-on: Log Rotation Tool
+## Practical Example: Log Rotation Tool
 
 Let's combine all the operations we learned in this article to write a practical log rotation tool. The core logic of log rotation is: when a log file exceeds a certain size, rename it to a backup file (with a sequence number), and then create a new empty log file. At the same time, we limit the number of backups, deleting old backups that exceed the limit.
 
@@ -429,7 +435,7 @@ int main() {
 }
 ```
 
-After running, the file status under `/tmp/` will look like this:
+After running, the file status under `./logs` will look like this:
 
 ```text
 app.log         ← 新的空日志文件
@@ -439,13 +445,13 @@ app.2.log       ← 上上次的日志
 app.5.log       ← 最老的备份
 ```
 
-This rotation tool uses all the core operations we learned in this article: `exists`, `file_size`, `rename`, and `remove`. The "atomic rename" guarantees that no log data is lost during rotation—even if the program crashes during the rename process, the worst-case scenario is that a particular backup file did not finish renaming, and the next rotation will handle it automatically.
+This rotation tool uses all the core operations we learned in this article: `exists`, `file_size`, `rename`, and `remove`. The "atomic rename" ensures that no log data is lost during rotation—even if the program crashes during the rename process, the worst-case scenario is that a particular backup file did not finish renaming, and the next rotation will handle it automatically.
 
 ## Two Modes of Error Handling
 
-Throughout this article, I have been using two ways to handle errors: throwing exceptions and using `std::error_code`. Let's summarize the best practices for error handling in `<filesystem>`.
+Throughout this article, I have been using two ways to handle errors: throwing exceptions and using `error_code`. Let's summarize the best practices for error handling in `std::filesystem`.
 
-Most `fs::xxx()` functions have two overloaded versions: one that throws a `fs::filesystem_error` exception on error, and another that accepts a `std::error_code&` parameter and returns an error code through it on failure. Which one to choose depends on your scenario:
+Most `std::filesystem` functions have two overloaded versions: one that throws a `filesystem_error` exception on error, and another that accepts an `error_code` parameter and returns the error code through it on failure. Which one to choose depends on your scenario:
 
 ```cpp
 // 模式一：抛异常（适合"不应该失败"的操作）
@@ -463,9 +469,9 @@ My personal preference is: for initialization operations at program startup (lik
 
 ## Summary
 
-In this article, we covered the core file operations of the `<filesystem>` library. File status queries (`exists`, `is_regular_file`, `is_directory`) and metadata queries (`file_size`, `last_write_time`, `status`) let us understand "what is actually on the file system." `create_directory` and `create_directories` handle directory creation, with the latter automatically creating intermediate directories, which is very convenient. `copy` / `copy_file` provide flexible file copying, `remove` / `remove_all` provide file deletion, and `rename` provides atomic renaming. `permissions` and `space` handle permission and disk space queries, respectively. `temp_directory_path` and the "write to temporary file + atomic rename" pattern are key techniques for ensuring data integrity.
+In this article, we covered the core file operations of the `std::filesystem` library. File status queries (`exists`, `is_regular_file`, `is_directory`) and metadata queries (`file_size`, `last_write_time`, `status`) let us understand "what is actually on the file system." `create_directory` and `create_directories` handle directory creation, with the latter automatically creating intermediate directories, which is very convenient. `copy` / `copy_file` provide flexible file copying, `remove` / `remove_all` handle file deletion, and `rename` provides atomic renaming. `permissions` and `space` handle permission and disk space queries, respectively. `temp_directory_path` and the "write to temporary file + atomic rename" pattern are key techniques for ensuring data integrity.
 
-In the next article, we will discuss directory traversal—`directory_iterator` and `recursive_directory_iterator`, and how to efficiently search for files in a file system.
+In the next article, we will discuss directory traversal—`directory_iterator` and `recursive_directory_iterator`—and how to efficiently search for files in a file system.
 
 ## Reference Resources
 

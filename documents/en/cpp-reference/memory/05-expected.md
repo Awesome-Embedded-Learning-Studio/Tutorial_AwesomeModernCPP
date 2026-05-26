@@ -1,21 +1,28 @@
 ---
-title: "std::expected"
-description: "Type-safe wrapper holding either a expected value or an error, replacing exceptions and dual-return patterns"
+title: std::expected
+description: A type-safe wrapper holding either a normal value or error information,
+  replacing exceptions and dual-return-value patterns
 chapter: 99
 order: 5
 tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - expected
+- host
+- cpp-modern
+- intermediate
+- expected
 difficulty: intermediate
-cpp_standard: [23]
+cpp_standard:
+- 23
+translation:
+  source: documents/cpp-reference/memory/05-expected.md
+  source_hash: 445e0cacc91a4636be0b4f70b6fc5b25b3a02e2deae1173b09406670529226c7
+  translated_at: '2026-05-26T10:18:10.339930+00:00'
+  engine: anthropic
+  token_count: 634
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -28,7 +35,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-Holds either the desired value `T` or an unexpected error `E` — a type-safe, zero-overhead error propagation mechanism that replaces exceptions and `std::pair<T, Error>` patterns.
+Either holds an expected normal value `T`, or an unexpected error `E`—a type-safe, zero-overhead error propagation mechanism that replaces exceptions and the `std::pair<T, Error>` pattern.
 
 ## Header
 
@@ -37,20 +44,20 @@ Holds either the desired value `T` or an unexpected error `E` — a type-safe, z
 ## Core API Quick Reference
 
 | Operation | Signature | Description |
-|-----------|-----------|-------------|
-| Construct (success) | `expected(T value)` | Wrap a normal value |
-| Construct (error) | `expected(unexpect_t, E err)` | Wrap an error (`std::unexpected{err}`) |
-| Check success | `bool has_value() const noexcept` | Whether it holds a normal value |
-| Implicit bool | `explicit operator bool() const noexcept` | Same as has_value |
-| Get value | `T& value()` | Get reference to value (throws on error) |
-| Get error | `const E& error() const` | Get reference to error |
-| Dereference | `T& operator*()` | Get value (unchecked, UB if error) |
-| Chain transform | `auto transform(F&& f)` | If value, apply f and wrap result |
-| Chain and_then | `auto and_then(F&& f)` | If value, call f and return its expected result |
-| Error branch | `auto or_else(F&& f)` | If error, call f to handle it |
-| Error transform | `auto transform_error(F&& f)` | If error, apply f to the error |
-| Create success | `std::expected<T, E>(value)` | Factory: construct success directly |
-| Create error | `std::unexpected{err}` | Factory: construct unexpected for implicit conversion to expected |
+|------|------|------|
+| Construct (success value) | `expected(T value)` | Wraps a normal value |
+| Construct (error) | `expected(unexpect_t, E err)` | Wraps an error (`std::unexpected{err}`) |
+| Check for success | `bool has_value() const noexcept` | Whether it holds a normal value |
+| Implicit bool conversion | `explicit operator bool() const noexcept` | Same as has_value |
+| Get value | `T& value()` | Gets a reference to the normal value (throws on failure) |
+| Get error | `const E& error() const` | Gets a reference to the error |
+| Dereference | `T& operator*()` | Gets the normal value (unchecked, undefined behavior if error) |
+| Chained transform | `auto transform(F&& f)` | If it has a value, applies f to the value and wraps the result |
+| Chained error handling | `auto and_then(F&& f)` | If it has a value, calls f and returns its expected result |
+| Error branch | `auto or_else(F&& f)` | If it has an error, calls f to handle the error |
+| Error transform | `auto transform_error(F&& f)` | If it has an error, applies f to the error |
+| Create success value | `std::expected<T, E>(value)` | Factory: directly constructs a success |
+| Create error value | `std::unexpected{err}` | Factory: constructs unexpected for implicit conversion to expected |
 
 ## Minimal Example
 
@@ -72,7 +79,7 @@ int main() {
     auto r2 = divide(10, 0);
     if (!r2) std::cout << r2.error() << "\n"; // division by zero
 
-    // Chained call
+    // 链式调用
     auto r3 = divide(20, 4).transform([](int v) { return v * 2; });
     std::cout << *r3 << "\n"; // 10
 }
@@ -80,10 +87,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: size equals `sizeof(T) + sizeof(E)` plus a discriminator flag, no heap allocation
-- Replaces exception handling, suitable for embedded environments with exceptions disabled (`-fno-exceptions`)
-- More type-safe than error code + output parameter patterns, forcing callers to handle errors
-- Chain operations (transform/and_then) compose complex workflows while keeping code linear and readable
+- Zero-overhead abstraction: size equals `sizeof(T) + sizeof(E)` plus a discriminant flag, no heap allocation
+- Replaces exception handling mechanisms, suitable for embedded environments with exceptions disabled (`-fno-exceptions`)
+- More type-safe than the error code + output parameter pattern, forcing the caller to handle errors
+- Chained operations (transform/and_then) can compose complex business flows while keeping the code linearly readable
 
 ## Compiler Support
 
@@ -93,8 +100,9 @@ int main() {
 
 ## See Also
 
+- [Tutorial: std::expected Error Handling](../../vol2-modern-features/ch10-error-handling/03-expected-error.md)
 - [cppreference: std::expected](https://en.cppreference.com/w/cpp/utility/expected)
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

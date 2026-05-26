@@ -1,7 +1,6 @@
 ---
-title: Designated initializer
-description: Detailed Explanation of Modern C++ Designated Initializers and Embedded
-  Applications
+title: designated initializer
+description: A Detailed Guide to Modern C++ Designated Initializers and Embedded Applications
 chapter: 11
 order: 6
 tags:
@@ -16,12 +15,18 @@ prerequisites:
 cpp_standard:
 - 20
 platform: host
+translation:
+  source: documents/vol4-advanced/vol2-modern-cpp17/06-designated-initializers.md
+  source_hash: ca599e190c8d7c1554ecd34fcb3c3316cbc301c74ec52b75609537dbcacc9fd6
+  translated_at: '2026-05-26T11:39:42.384508+00:00'
+  engine: anthropic
+  token_count: 4251
 ---
-# Modern C++ for Embedded Development — Designated Initializers
+# Modern C++ for Embedded Development—Designated Initializers
 
 ## Introduction
 
-Have you ever been frustrated by obscure struct initializations like this when writing embedded code?
+Have you ever been driven crazy by obscure struct initializations like this when writing embedded code?
 
 ```cpp
 // 传统初始化——必须记住声明顺序
@@ -36,7 +41,7 @@ UART_Config uart_cfg = {
 };
 ```
 
-The biggest problem with this code is that we must remember the declaration order of the struct members. If the struct definition changes (for example, inserting a new member in the middle), all initialization code might break. What's worse, the compiler won't flag this as an error, and it will only manifest as strange behavior at runtime.
+The biggest problem with this line of code is that we must remember the declaration order of the struct members. Once the struct definition changes (for example, inserting a new member in the middle), all initialization code might break. What's worse, the compiler won't flag this as an error—the weird behavior only shows up at runtime.
 
 Designated initializers, introduced in C99 and officially adopted into the C++20 standard, exist to solve this problem. They allow us to initialize members by name, making our code clearer, safer, and easier to maintain.
 
@@ -45,8 +50,8 @@ Designated initializers, introduced in C99 and officially adopted into the C++20
 However, using designated initializers in embedded development requires us to understand their mechanics and limitations because:
 
 1. The syntax differs slightly from C (C++ uses `{.field = value}`)
-2. They can only be used with aggregate types, not classes with constructors
-3. We must clearly understand the default behavior of partial initialization
+2. They only work with aggregate types, not classes with constructors
+3. We need a clear understanding of the default behavior for partial initialization
 4. Compiler support levels vary
 
 Let's walk through the correct way to use this feature step by step.
@@ -55,7 +60,7 @@ Let's walk through the correct way to use this feature step by step.
 
 ## Basic Syntax
 
-### Simplest Designated Initialization
+### The Simplest Designated Initialization
 
 C++20 designated initializers use the `.field = value` syntax inside braces:
 
@@ -101,9 +106,9 @@ UART_Config cfg = {
 };
 ```
 
-The good news is that C++20 adopted the same syntax as C99, which enables better code interoperability between the two languages.
+The good news is that C++20 adopted the same syntax as C99, which makes code between the two languages much more interoperable.
 
-**Note**: Prior to C++20, certain compilers (like GCC and Clang) supported designated initializers as an extension, but their behavior might differ slightly from the C++20 standard.
+**Note**: Before C++20, certain compilers (like GCC and Clang) supported designated initializers as an extension, but their behavior might differ slightly from the C++20 standard.
 
 ------
 
@@ -479,8 +484,8 @@ Message create_sensor_message(uint8_t id, uint16_t seq, const uint8_t* data, uin
 
 When using designated initializers, unspecified members follow these rules:
 
-1. If a default member initializer is present, it uses that default value
-2. Otherwise, for aggregate types, value initialization (zero initialization) is performed
+1. If a default member initializer is present, use that default value
+2. Otherwise, for aggregate types, perform value initialization (zero initialization)
 
 ```cpp
 struct Config {
@@ -595,7 +600,7 @@ struct Config {
 
 If we need to support both constructors and designated initializers, we can consider the following approaches:
 
-### Approach 1: Use Static Factory Methods
+### Approach 1: Use a Static Factory Method
 
 ```cpp
 struct Config {
@@ -666,7 +671,7 @@ struct Device {
 Device dev{.control_reg = 0x10, .base_address = 0x40000000, .status_reg = 0x14};
 ```
 
-Although the syntax allows out-of-order initialization, from a code readability perspective, we recommend keeping the same order as the struct declaration.
+Although the syntax allows out-of-order initialization, for code readability, we recommend keeping the same order as the struct declaration.
 
 ### Pitfall 2: Impact of Member Reordering
 
@@ -683,7 +688,7 @@ Config cfg{.b = 2, .a = 1, .c = 3};
 // 指定初始化器只影响初始化的书写，不影响内存布局
 ```
 
-### Pitfall 3: Bit Field Members
+### Pitfall 3: Bit-Field Members
 
 ```cpp
 struct Flags {
@@ -728,7 +733,7 @@ Config cfg{.baudrate = 115200};
 // data_bits使用默认成员初始化器8
 ```
 
-Values explicitly specified by designated initializers override default member initializers.
+Values explicitly specified by designated initializers will override default member initializers.
 
 ### Limitation 1: Cannot Be Used with Non-Aggregate Types
 
@@ -755,7 +760,7 @@ struct Config {
 
 ### Limitation 3: Skipping Member Initialization on Certain Compilers
 
-Although the C++20 standard allows partial initialization, in practice, certain compilers might have additional restrictions or warnings.
+Although the C++20 standard allows partial initialization, in practice, some compilers may have additional restrictions or warnings.
 
 ### Limitation 4: Interaction with Base Classes
 
@@ -781,7 +786,7 @@ Derived d{{.x = 1}, .y = 2};  // 可能的语法，但取决于编译器支持
 C++20 officially brought designated initializers into the standard, with key features including:
 
 1. **Standardized syntax**: `.field = value` became standard syntax
-2. **Updated aggregate definition**: The definition of aggregate types was relaxed
+2. **Updated aggregate definition**: The definition of an aggregate type was relaxed
 3. **Interaction with templates**: Designated initializers can be used within templates
 
 ### Usage in Templates
@@ -858,8 +863,8 @@ Designated initializers provide a concise and safe initialization method in mode
 |------|----------|------------|
 | Order-dependent | Yes | No |
 | Code readability | Poor (requires checking definition) | Good (self-explanatory) |
-| Maintainability | Poor (must update when struct changes) | Good (unaffected by struct changes) |
-| Partial initialization | Supported (in order) | Supported (by name) |
+| Maintainability | Poor (requires updates when struct changes) | Good (unaffected by struct changes) |
+| Partial initialization | Supported (positional) | Supported (by name) |
 
 **Practical Recommendations**:
 
@@ -872,7 +877,7 @@ Designated initializers provide a concise and safe initialization method in mode
 2. **Use with caution**:
    - Initialization requiring validation logic (consider factory functions)
    - Complex initialization order dependencies
-   - Projects needing to support older compilers
+   - Projects that need to support older compilers
 
 3. **Embedded-specific focus**:
    - Understand the default behavior of partial initialization
@@ -885,4 +890,4 @@ Designated initializers provide a concise and safe initialization method in mode
    - They generate the same machine code as traditional aggregate initialization
    - We can safely use them in performance-critical code
 
-Designated initializers bring C++ configuration code closer to a declarative programming style. Combined with `constexpr`, we can accomplish a great deal of configuration work at compile time, making them an essential tool for modern C++ embedded development. Paired with features we've covered earlier like `auto`, structured bindings, and attributes, we can write embedded C++ code that is both efficient and easy to maintain.
+Designated initializers bring C++ configuration code closer to a declarative programming style. Combined with `constexpr`, we can accomplish a great deal of configuration work at compile time, making them an essential tool for modern C++ embedded development. Along with features we've covered earlier like `auto`, structured bindings, and attributes, we can write embedded C++ code that is both efficient and easy to maintain.

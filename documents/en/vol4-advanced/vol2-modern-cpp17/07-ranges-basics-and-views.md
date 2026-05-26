@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Ranges library basics
+description: Ranges Library Basics
 difficulty: intermediate
 order: 7
 platform: host
@@ -16,25 +16,31 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: C++20 Ranges Library Basics and Views
+title: C++20 Range Library Basics and Views
+translation:
+  source: documents/vol4-advanced/vol2-modern-cpp17/07-ranges-basics-and-views.md
+  source_hash: f8bc594ee9cbcf6b907f60feb2f458d2d3412646523f21596a4f50246d4a1cbb
+  translated_at: '2026-05-26T11:40:13.208481+00:00'
+  engine: anthropic
+  token_count: 2581
 ---
 # Modern Embedded C++ Tutorial — C++20 Ranges Library Basics and Views
 
 ## Introduction
 
-Every time we process array or container data, I always feel like something is missing. If we use STL algorithms, those `std::transform` and `std::copy_if` calls are an absolute pain to write — iterator begin, iterator end, temporary container, and finally pasting it back. After this whole routine, the code logic gets completely fragmented, and reading it feels like chewing on dry toast.
+Every time we process arrays or container data, I always feel like something is missing. If we use STL algorithms, those `std::transform` and `std::copy_if` calls are an absolute pain to write — iterator begin, iterator end, temporary container, and finally pasting it back. After all that, the code logic gets fragmented, and it reads like chewing on dry toast.
 
-Then C++20 brought the Ranges library, like installing a "data processing pipeline" in your code. More importantly, it introduces the concept of a "view" — **lazy evaluation, zero-overhead copy** — which is practically tailor-made for embedded development.
+Then C++20 brought the Ranges library, like installing a "data processing pipeline" in your code. More importantly, it introduced the concept of a "view" — **lazy evaluation, zero-overhead copying** — which is practically tailor-made for embedded development.
 
-> To sum it up in one sentence: **Ranges let us compose operations like Unix pipes, and views let us process data without producing extra copies, making our code both elegant and efficient.**
+> To sum it up in one sentence: **Ranges let us compose operations like Unix pipes, and views let us process data without extra copies — both elegant and efficient.**
 
 Our goal right now is to understand two things: what a Range is, what a View is, and why they are so useful in embedded scenarios.
 
 ------
 
-## Starting with the Pain Point: How Annoying Traditional STL Algorithms Are
+## Starting from the Pain Point: How Annoying Traditional STL Algorithms Are
 
-Let's look at how we used to process data. Suppose we read a set of data from a sensor, need to filter out anomalous values, and then multiply the rest by a calibration factor:
+Let's look at how we used to process data. Suppose we read a set of data from a sensor, need to filter out anomalous values, and then multiply the rest by a coefficient:
 
 ```cpp
 #include <vector>
@@ -85,7 +91,7 @@ int native_arr[] = {100, 200, 300};
 
 ```
 
-All of these are Ranges. Previously, when writing algorithms, we had to use `.begin()` and `.end()`, but now we can throw the entire container directly into an algorithm:
+These are all Ranges. Previously, we had to use `.begin()` and `.end()` when writing algorithms, but now we can throw the entire container directly into the algorithm:
 
 ```cpp
 #include <ranges>
@@ -104,7 +110,7 @@ But this is just surface-level syntactic sugar; the real power lies in a whole n
 First, we need to distinguish between two concepts: **Range** and **View**.
 
 - **Range**: Anything that can be iterated over, including `std::vector`, `std::array`, and native arrays
-- **View**: A special kind of Range that does not own data, but merely provides "a certain perspective on existing data," and features **lazy evaluation**
+- **View**: A special kind of Range that does not own data, but merely provides "a certain perspective on existing data," and performs **lazy evaluation**
 
 The concept of a view is so important that we will dedicate an entire section to it.
 
@@ -116,7 +122,7 @@ The essence of a view can be summarized in four words: **lazy, non-owning, compo
 
 ### Lazy Views
 
-Views are "lazy" — defining them doesn't compute anything; computation only happens when you actually iterate over them:
+Views are "lazy" — nothing is computed when you define them; computation only happens when you actually iterate over them:
 
 ```cpp
 #include <ranges>
@@ -162,7 +168,7 @@ void demo_view_ownership() {
 
 ### O(1) Copy
 
-The copy cost of a view is constant-time — it only stores a few pointers/iterators and does not copy the underlying data:
+The copy cost of a view is constant-level — it only stores a few pointers/iterators and does not copy the underlying data:
 
 ```cpp
 void demo_view_copy() {
@@ -176,7 +182,7 @@ void demo_view_copy() {
 
 ```
 
-This is extremely important for embedded systems — we can pass views around everywhere without worrying about the overhead of data copying.
+This is extremely important for embedded development — we can pass views around everywhere without worrying about the overhead of data copying.
 
 ------
 
@@ -292,7 +298,7 @@ void split_example() {
 
 ```
 
-This is especially handy when parsing NMEA sentences (GPS data format):
+It's especially handy when parsing NMEA sentences (GPS data format):
 
 ```cpp
 void parse_nmea(std::string_view line) {
@@ -426,20 +432,20 @@ Notice the beauty of this code:
 
 Views are powerful, but they are not a silver bullet. Here is a simple decision tree:
 
-**Use a View when:**
+**When to use a View:**
 
-- You only need to read data, not modify it
-- You need to compose multiple operations
-- You want zero-overhead copying
+- Read-only data, no modification needed
+- Need to compose multiple operations
+- Want zero-overhead copying
 - The data source has a sufficiently long lifetime
-- You only need a single traversal
+- One-time iteration
 
-**Use a Container when:**
+**When to use a Container:**
 
-- You need to modify the data
-- You need to traverse the same result multiple times
+- Need to modify data
+- Need to iterate over the same result multiple times
 - The data source might be destroyed
-- You need ownership of the data
+- Need to own the data
 
 ```cpp
 // 场景1：用视图——一次性转换输出
@@ -514,7 +520,7 @@ auto filtered_vec = filtered | std::ranges::to<std::vector<int>>();
 
 ### Pitfall 3: View Types
 
-The type of a view is a complex product of template instantiation; don't try to write it manually, use `auto`:
+The type of a view is a complex template instantiation product; don't try to write it manually, use `auto`:
 
 ```cpp
 // ❌ 别尝试写这个类型
@@ -535,11 +541,11 @@ C++20 Ranges are new, and some older compilers might have incomplete support. GC
 
 Views are the core concept of the C++20 Ranges library:
 
-- **Lazy evaluation**: No computation upon definition, only upon iteration
+- **Lazy evaluation**: No computation at definition time, only at iteration time
 - **Non-owning data**: Merely a "lens" over the underlying data
-- **O(1) copy**: Passing views around everywhere incurs no overhead
-- **Composable**: Chaining multiple operations using the pipe operator
+- **O(1) copy**: Passing views around everywhere has zero overhead
+- **Composable**: Chaining multiple operations with the pipe operator
 
-For embedded development, views allow us to write elegant data processing code while maintaining zero-overhead runtime performance. We no longer have to choose between "elegant code" and "efficient code" — we can have both.
+For embedded development, views let us write elegant data processing code while maintaining zero-overhead runtime performance. We no longer have to choose between "elegant code" and "efficient code" — we can have both.
 
 In the next chapter, we will dive into the usage of the pipe operator `|`, along with more practical Ranges techniques. By then, you will see how the philosophy of Unix pipes is perfectly realized in C++.

@@ -1,6 +1,6 @@
 ---
-title: 'std::optional: Elegantly expressing ''possibly no value'''
-description: Use optional instead of special values and raw pointers to safely express
+title: 'std::optional: Elegantly Expressing "Possibly No Value'
+description: Use `optional` instead of special values and raw pointers to safely express
   optional semantics.
 chapter: 4
 order: 4
@@ -20,24 +20,30 @@ prerequisites:
 - 'Chapter 4: std::variant'
 related:
 - 错误处理的现代方式
+translation:
+  source: documents/vol2-modern-features/ch04-type-safety/04-optional.md
+  source_hash: fe490675dabaaabd0a7c1c6190f92fbacce31d9cda001a374e1daeab2cdddf21
+  translated_at: '2026-05-26T11:28:33.448671+00:00'
+  engine: anthropic
+  token_count: 2839
 ---
 # std::optional: Elegantly Expressing "Maybe No Value"
 
 ## Introduction
 
-We have written far too much code like this: a function returns `-1` to mean "not found", returns `nullptr` to mean "an error occurred", or returns an empty string to mean "the configuration item does not exist". These conventions feel perfectly natural when we write them, but three months later, looking back makes us break out in a cold sweat—does `-1` mean "not found" or "actually returned -1"? Is `nullptr` an "optional empty value" or "an error"? Every function that returns a special value is laying a trap for our future selves.
+I have written far too much code like this: a function returns `-1` to mean "not found," returns `nullptr` to mean "an error occurred," or returns an empty string to mean "the configuration item does not exist." These conventions feel perfectly natural when we write them, but looking back three months later sends a chill down the spine—does `-1` mean "not found" or "actually returned -1"? Is `nullptr` an "optional empty value" or "an error"? Every function that returns a special value is laying a trap for our future selves.
 
-`std::optional` (introduced in C++17) exists to solve the problem of "how to safely express that there might be no value." It encodes the "has a value or does not" information directly into the type system—both the compiler and the caller can see from the function signature that "this return value might be empty," without relying on comments or documentation to convey this.
+`std::optional` (introduced in C++17) exists to solve the problem of "how to safely express that a value might be absent." It encodes the "has a value or does not have a value" information directly into the type system—both the compiler and the caller can see from the function signature that "this return value might be empty," without relying on comments or documentation to convey this.
 
 ## Step 1 — Traditional Approaches to "Maybe No Value"
 
-Before `optional` came along, C++ programmers primarily relied on the following approaches to express "maybe no value":
+Before `std::optional` appeared, C++ programmers mainly relied on the following approaches to express "maybe no value":
 
-**Special values (sentinel values)**: Use a specific value to mean "invalid." `-1` indicates a failed search, `UINT_MAX` indicates an invalid index, and an empty string indicates an unconfigured setting. The problem is that the "special value" differs for every function, forcing the caller to remember these conventions. Furthermore, some types simply do not have a suitable special value—for instance, `-1.0` of a `double` could perfectly well be a legitimate return value.
+**Special values (sentinel values)**: Use a specific value to represent "invalid." `-1` indicates a failed search, `UINT_MAX` indicates an invalid index, and an empty string indicates an unconfigured item. The problem is that the "special value" differs for every function, forcing the caller to remember these conventions. Furthermore, some types simply lack a suitable special value—for example, `-1.0` of a `double` could perfectly well be a legitimate return value.
 
-**Raw pointers**: Return `nullptr` to mean "no value." This is very common in lookup functions. The problem is that pointer semantics are too broad. `T*` can mean "an optional value that might be empty," "a non-owning observer pointer," or "a pointer to a dynamically allocated object." The caller cannot distinguish these semantics from the type alone. What is even more dangerous is that dereferencing a null pointer is UB, which will not give you any friendly error messages.
+**Raw pointers**: Return `nullptr` to mean "no value." This is common in lookup functions. The problem is that pointer semantics are too broad. `T*` can mean "an optional value that might be null," "a non-owning observer pointer," or "a pointer to a dynamically allocated object." The caller cannot distinguish these semantics from the type alone. Even more dangerously, dereferencing a null pointer is UB, which gives no friendly error提示.
 
-**std::pair<T, bool>**: The second element indicates whether the value is valid. This is slightly better than the previous two approaches, but it is very verbose to use—you have to check `.second` every time, and the value of `first` when `second == false` is undefined (default construction might not even be valid).
+**std::pair<T, bool>**: The second element indicates whether the value is valid. This is slightly better than the previous two approaches, but it is very verbose to use—we have to check `.second` every time, and the value of `first` when `second == false` is undefined (default construction might not even be valid).
 
 ```cpp
 // 三种传统方案对比
@@ -70,7 +76,7 @@ These three approaches share a common flaw: **the type signature does not expres
 
 ## Step 2 — Core Semantics and API of optional
 
-`std::optional<T>` represents "either holding a value of type `T`, or holding nothing at all." It is a value type (not a pointer), and the held object is stored directly within the internal storage of `optional`—there is no dynamic memory allocation.
+`std::optional` represents "either holding a value of type `T`, or holding nothing at all." It is a value type (not a pointer), and the held object is stored directly within the internal storage of `std::optional`—there is no dynamic memory allocation.
 
 ### Construction
 
@@ -109,11 +115,11 @@ if (name) {
 }
 ```
 
-⚠️ Regarding the choice between `operator*` and `value()`, our advice is: in code paths where you have **already checked** `has_value()`, using `*opt` is sufficient—it offers better performance and clearer semantics. In situations where you have **not checked**, `value()` is safer—it throws an exception instead of resulting in UB. However, neither approach is as elegant as `value_or()`, since the latter directly handles the "what to do when empty" question.
+⚠️ Regarding the choice between `operator*` and `value()`, my recommendation is: in code paths where you have **already checked** `has_value()`, using `*opt` is sufficient—it offers better performance and clearer semantics. When you have **not checked**, `value()` is safer—it throws an exception rather than resulting in UB. However, neither approach is as elegant as `value_or()`, since the latter directly handles the "what to do when empty" question.
 
 ### The Magic of value_or
 
-`value_or()` is one of the most practical APIs of `optional`. It accepts a default value parameter; if `optional` has a value, it returns the held value, otherwise it returns the default value:
+`value_or()` is one of the most practical APIs of `optional`. It accepts a default value parameter: if `optional` has a value, it returns the held value; otherwise, it returns the default value:
 
 ```cpp
 std::optional<std::string> get_config(const std::string& key);
@@ -129,7 +135,7 @@ The `transform` above is a C++23 feature, which we will cover in detail later.
 
 ## Step 3 — Memory Layout of optional
 
-The internal storage of `optional<T>` typically consists of two parts: an aligned buffer for storing the `T`, plus a `bool` flag indicating whether a value is present. This means that `sizeof(std::optional<T>)` is usually larger than `sizeof(T)`.
+The internal storage of `optional<T>` typically consists of two parts: an aligned buffer for storing `T`, plus a `bool` flag indicating whether a value is present. This means `sizeof(std::optional<T>)` is generally larger than `sizeof(T)`.
 
 ```cpp
 #include <optional>
@@ -142,17 +148,17 @@ std::cout << "sizeof(string):           " << sizeof(std::string) << "\n";    // 
 std::cout << "sizeof(optional<string>): " << sizeof(std::optional<std::string>) << "\n"; // 典型：40
 ```
 
-The actual `sizeof` result depends on the standard library implementation and the platform's alignment requirements. But the core fact is: `optional<T>` is roughly larger than `T` by the size of an aligned `bool`. Due to alignment requirements, the increase can sometimes be more than expected. This is not a design flaw in `optional`—it stores the value of `T` directly on the stack without involving heap allocation, so this extra overhead is reasonable.
+The actual `sizeof` result depends on the standard library implementation and the platform's alignment requirements. But the core fact is: `optional<T>` is roughly larger than `T` by the size of an aligned `bool`. Due to alignment requirements, the increase is sometimes more than expected. This is not a design flaw in `optional`—it stores the `T` value directly on the stack without involving heap allocation, so this extra overhead is reasonable.
 
-The object held by `optional` and the "has value" flag reside inside the same object, without involving any dynamic memory allocation. Upon destruction, if `optional` holds a value, the destructor of `T` is automatically called. All of this is automatic and requires no manual management.
+The object held by `optional` and the "has value" flag reside inside the same object, without any dynamic memory allocation. Upon destruction, if `optional` holds a value, the destructor of `T` is automatically called. All of this is automatic and requires no manual management.
 
 ## Step 4 — Differences Between optional and Pointers
 
 Both `optional<T>` and `T*` can express "maybe no value," but their semantics are fundamentally different.
 
-`optional<T>` has value semantics—it holds (or intends to hold) a complete `T` object. Copying `optional` copies the value of `T` (if a value is present), and destroying `optional` destroys `T`. It expresses "there is a `T` here, or temporarily there is not."
+`optional<T>` has value semantics—it holds (or intends to hold) a complete `T` object. Copying `optional` copies the `T` value (if present), and destroying `optional` destroys the `T`. It expresses "there is a `T` here, or temporarily there is not."
 
-`T*` has reference semantics—it points to some external `T` object (or is null). Copying a pointer only copies the address, not the object itself. It expresses "there is a `T` somewhere, and I might be pointing to it."
+`T*` has reference semantics—it points to some external `T` object (or is null). Copying a pointer only copies the address, not the object itself. It expresses "there is a `T` somewhere, and I might point to it."
 
 ```cpp
 std::optional<int> opt = 42;
@@ -166,11 +172,11 @@ int* ptr2 = &raw;               // 假设 raw 是某个 int 变量
 std::optional<int> opt3 = *ptr2;  // 拷贝 ptr2 指向的值——与 ptr2 无关
 ```
 
-Our general principle is: **if you need to express "a value might or might not exist," use `optional`; if you need to express "a nullable reference to an external object," use a pointer**. Do not use `optional` to simulate pointers, and do not use pointers to simulate `optional`—their responsibilities are different.
+My general principle is: **if you need to express "a value might or might not exist," use `optional`; if you need to express "a nullable reference to an external object," use a pointer**. Do not use `optional` to simulate pointers, and do not use pointers to simulate `optional`—their responsibilities are different.
 
 ## Step 5 — optional as a Return Value
 
-The most common use case for `optional` is as a function return value. Its semantics are extremely clear: the function might return a valid value, or it might return "no value." The caller must handle the "no value" case at the type system level.
+The most common use of `optional` is as a function return value. Its semantics are very clear: the function might return a valid value, or it might return "no value." The caller must handle the "no value" case at the type system level.
 
 ### Lookup Operations
 
@@ -197,7 +203,7 @@ if (idx) {
 }
 ```
 
-Compared to the previous version using `-1` as a sentinel value, the advantage of `optional` is that the caller **cannot forget** to check the return value. If you directly write `data[*find_index(data, 42)]` without checking `has_value()`, dereferencing in the empty case is UB, but at least the design intent of the API is clear—the type signature has already told you "this value might be empty."
+Compared to the previous version using `-1` as a sentinel value, the advantage of `optional` is that the caller **cannot forget** to check the return value. If you directly write `data[*find_index(data, 42)]` without checking `has_value()`, dereferencing in the empty case is UB, but at least the API's design intent is clear—the type signature has already told you "this value might be empty."
 
 ### Factory Functions
 
@@ -228,7 +234,7 @@ if (conn) {
 
 ## Step 6 — optional as a Parameter
 
-`optional` can also be used as a function parameter to indicate that "this parameter is optional." This is more flexible than function overloading or default parameters, because the caller can decide at runtime whether to provide a value:
+`optional` can also be used as a function parameter to indicate "this parameter is optional." This is more flexible than function overloading or default parameters, because the caller can decide at runtime whether to provide a value:
 
 ```cpp
 void print_greeting(const std::string& name,
@@ -245,9 +251,9 @@ print_greeting("Alice");                    // Hello, Alice!
 print_greeting("Bob", std::string("Dr."));  // Hello, Dr. Bob!
 ```
 
-However, we should point out one thing: do not overuse `optional` parameters. If a parameter needs to be provided in most cases, using a default value might be more appropriate than `optional`. `optional` parameters are best suited for scenarios where "sometimes it is present, sometimes it is not, and the meanings of the two cases are completely different."
+However, I should point out one thing: do not overuse `optional` parameters. If a parameter needs to be provided in most cases, using a default value might be more appropriate than `optional`. `optional` parameters are best suited for scenarios where "sometimes it is present, sometimes it is not, and the meaning of the two cases is completely different."
 
-## Step 7 — A Preview of C++23 Monadic Operations
+## Step 7 — Preview of C++23 Monadic Operations
 
 C++23 introduces three monadic operations for `std::optional`: `and_then`, `transform`, and `or_else`. These operations borrow concepts from functional programming, making the chained processing of `optional` much more elegant.
 
@@ -280,7 +286,7 @@ auto result2 = get_input().transform([](const std::string& s) -> int {
 
 ### and_then: Chaining Operations That Might Fail
 
-`and_then` accepts a function that returns an `optional`. If the current `optional` has a value, it calls this function and returns its result; otherwise, it directly returns an empty `optional`. This is more suitable than `transform` for scenarios where "the result of the previous step is the input for the next step, and each step might fail."
+`and_then` accepts a function that returns an `optional`. If the current `optional` has a value, it calls this function and returns its result; otherwise, it directly returns an empty `optional`. This is more suitable than `transform` for scenarios where "the result of the previous step is the input to the next step, and each step might fail."
 
 ```cpp
 std::optional<User> find_user(int id);
@@ -306,7 +312,7 @@ find_user(42)
 
 ### or_else: Handling the Empty Case
 
-`or_else` accepts a function that is called when `optional` is empty. It is typically used for logging or providing fallback alternatives:
+`or_else` accepts a function that is called when `optional` is empty. It is typically used for logging or providing an alternative:
 
 ```cpp
 auto email = find_user(42)
@@ -321,7 +327,7 @@ Combining these three operations allows us to write very fluent chained code, av
 
 ## Practical Application — Lazy Initialization
 
-`optional` can also be used to implement lazy initialization: postponing the construction of an object until it is actually needed. This is very useful in scenarios where object construction is expensive, but whether it is needed cannot be determined at compile time:
+`optional` can also be used to implement lazy initialization: deferring the construction of an object until it is actually needed. This is very useful when object construction is expensive, but whether it is needed cannot be determined at compile time:
 
 ```cpp
 class ExpensiveResource {
@@ -394,17 +400,17 @@ void print_temperature(TemperatureSensor& sensor)
 }
 ```
 
-The value of `optional` in this scenario is that it encodes "read failure" as part of the return type. The caller cannot forget to handle the "read failure" case—because you must check `has_value()` before accessing the temperature value. This is much safer than returning a `0.0f` and relying on the caller to "remember that 0.0 might indicate failure."
+The value of `optional` in this scenario is that it encodes "read failure" as part of the return type. The caller cannot forget to handle the "read failure" case—because we must check `has_value()` before accessing the temperature value. This is much safer than returning a `0.0f` and relying on the caller to "remember that 0.0 might indicate failure."
 
 ## Summary
 
 `std::optional` is the standard way in C++17 to express "maybe no value." It is safer than sentinel values (no confusion with legitimate values), has clearer semantics than raw pointers (value semantics vs. reference semantics), and is more elegant than `std::pair<T, bool>` (the API is specifically designed for this purpose).
 
-The core API of `optional` is very concise: `has_value()` for checking, `operator*` for dereferencing, and `value_or()` for providing a default value. It does not involve dynamic memory allocation; the object is stored directly inside `optional`. C++23's `transform`, `and_then`, and `or_else` provide even more elegant syntax for chained processing.
+The core API of `optional` is very concise: `has_value()` for checking, `operator*` for dereferencing, and `value_or()` for providing a default value. It involves no dynamic memory allocation, and objects are stored directly inside `optional`. C++23's `transform`, `and_then`, and `or_else` provide more elegant syntax for chained processing.
 
-The key principle when using `optional` is: use it to express the semantics of "missing a value," not "an error occurred." If you need to pass error information (error codes, error descriptions), please use `std::expected` (C++23) or a custom `Result` type. `optional` is only responsible for "whether there is a value," not "why there is no value."
+The key principle for using `optional` is: use it to express the "absence of a value" semantics, not "an error occurred" semantics. If we need to pass error information (error codes, error descriptions), please use `std::expected` (C++23) or a custom `Result` type. `optional` is only responsible for "whether there is a value," not "why there is no value."
 
-The `std::any` we will discuss next belongs to the same family as `optional`—"can hold some kind of value or hold nothing at all"—but `any` is more powerful and comes with a greater cost.
+In the next article, we will discuss `std::any`, which belongs to the same family as `optional`—"can hold some kind of value or hold nothing at all"—but `any` is more powerful and comes with a greater cost.
 
 ## Reference Resources
 

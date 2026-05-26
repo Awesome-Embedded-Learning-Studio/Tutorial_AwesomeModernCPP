@@ -1,8 +1,8 @@
 ---
-title: Cache Mechanism and Memory Hierarchy
-description: Starting from the memory hierarchy, break down the working mechanisms
-  of cache lines, mapping policies, and the MESI coherence protocol, and culminate
-  in cache-friendly programming practices and C++ cache line alignment tools.
+title: Cache Mechanisms and Memory Hierarchy
+description: Starting from the memory hierarchy, we break down how cache lines, mapping
+  policies, and the MESI coherence protocol work, and then apply this to cache-friendly
+  programming practices and C++ cache-line alignment tools.
 chapter: 1
 order: 102
 tags:
@@ -21,14 +21,20 @@ prerequisites:
 - 数据类型基础：整数与内存
 - 指针与数组
 - 结构体与内存布局
+translation:
+  source: documents/vol1-fundamentals/c_tutorials/advanced_feature/02-cache-and-memory-hierarchy.md
+  source_hash: 6a17113b8ac463363799b614f28c3b4dec9e4258c8f52e1432b0eb451088d377
+  translated_at: '2026-05-26T10:35:25.311574+00:00'
+  engine: anthropic
+  token_count: 3048
 ---
 # Cache Mechanisms and the Memory Hierarchy
 
-If your program is running slow and you have already pushed the time complexity to its theoretical limit at the algorithm level, the bottleneck probably is not the CPU failing to keep up with the math. Instead, it is likely sitting idle waiting for data to arrive from memory. The gap between modern CPU compute speed and main memory access speed spans several orders of magnitude. Without building a few bridges across this chasm, even the most powerful execution units can only wait helplessly. These "bridges" are the star of today's discussion: Cache.
+If your program is running slow and you have already pushed the time complexity to its absolute limit at the algorithm level, the bottleneck is likely not the CPU's computational power, but rather the CPU waiting for data to be fetched from memory. There is an orders-of-magnitude gap between the computation speed of modern CPUs and the access speed of main memory—without building a few bridges across this chasm, even the most powerful arithmetic logic units can only sit idle. These "bridges" are the star of today's discussion: Cache.
 
-Honestly, many application-layer developers will go their entire careers without touching Cache. But if you work in high-performance computing, game engines, embedded real-time systems, or database kernels, optimizing without understanding how Cache works is essentially flying blind. The author first grasped the tangible impact of Cache during a matrix traversal benchmark. Traversing the exact same two-dimensional array took nearly three times longer column-by-column compared to row-by-row. At the time, it was completely baffling. It turned out that neither the compiler nor the algorithm was to blame—it was purely Cache working behind the scenes.
+Honestly, many application-layer developers will never touch Cache in their entire careers. But if you work in high-performance computing, game engines, embedded real-time systems, or database kernels, optimizing without understanding how Cache works is essentially flying blind. The author first grasped the tangible impact of Cache during a matrix traversal performance test—traversing the exact same two-dimensional array took nearly three times longer column-by-column compared to row-by-row. It was baffling at the time. Later, it became clear that this was neither the compiler's fault nor an algorithmic issue; it was purely Cache working behind the scenes.
 
-Languages like Python and Java abstract memory management away entirely, leaving programmers with almost no opportunity to perceive Cache—the virtual machine or interpreter handles that concern for you. C is different. It exposes the bare metal of memory directly to you. How you lay out data, how you traverse it, and how you align it are entirely your decisions. Building on C, C++ provides a few standardized tools (like `alignas` and `hardware_destructive_interference_size`) that let us work with Cache in a portable way. In this article, we will tear Cache apart from top to bottom: starting from the memory hierarchy, moving to cache lines, mapping policies, and coherence protocols, and finally landing on how to write code that makes Cache "comfortable," along with the C++ tools that help us do it.
+Languages like Python and Java completely abstract away memory management, leaving programmers with virtually no opportunity to perceive the existence of Cache—virtual machines and interpreters handle that concern for you. C is different; it exposes the bare metal of memory directly to you. How you lay out data, how you traverse it, and how you align it are entirely your decisions. Building on C, C++ provides a few standardized tools (like `alignas` and `hardware_destructive_interference_size`) that allow us to work with Cache in a portable way. In this article, we will tear Cache apart from top to bottom: starting from the memory hierarchy, moving to cache lines, mapping policies, and coherency protocols, and finally landing on how to write code that makes Cache "comfortable," along with the C++ tools that help us do so.
 
 > **Learning Objectives**
 >
@@ -36,7 +42,7 @@ Languages like Python and Java abstract memory management away entirely, leaving
 >
 > - [ ] Understand the design motivation and characteristics of each level in the memory hierarchy
 > - [ ] Explain the working principles of Cache Lines, mapping policies, and replacement policies
-> - [ ] Understand the basic state transitions of the MESI coherence protocol
+> - [ ] Understand the basic state transitions of the MESI coherency protocol
 > - [ ] Write cache-friendly C code and verify its effectiveness
 > - [ ] Use `alignas` and `hardware_destructive_interference_size` in C++ for cache line alignment
 
@@ -52,38 +58,27 @@ All code examples in this article can be compiled and run on a standard x86-64 p
 依赖：无
 ```
 
-## Step One — Understanding Storage from the CPU's Perspective
+## Step 1 — Understanding Storage from the CPU's Perspective
 
-Let us first look at the entire storage system from the CPU's point of view. Inside the CPU, there is a set of registers running at the same frequency as the CPU, accessible in a single clock cycle. However, registers are expensive. x86-64 only has 16 general-purpose registers, capable of storing a very limited amount of data.
+Let's first look at the entire storage system from the CPU's point of view. Inside the CPU, there is a set of registers running at the same frequency as the CPU, accessible in a single clock cycle. However, registers are expensive; x86-64 only has 16 general-purpose registers, capable of storing a very limited amount of data.
 
-Moving outward, we find the L1 Cache, usually split into an instruction cache (L1I) and a data cache (L1D), ranging from 32KB to 64KB in size, with an access latency of about three to four clock cycles. Further out is the L2 Cache, typically 256KB to 1MB, with a latency of around 10 to 14 cycles. Beyond that is the L3 Cache, ranging from a few megabytes to tens of megabytes (or even over 100MB on servers), with a latency of 30 to 50 cycles. L3 is usually shared among all cores, while L1 and L2 are private to each core. Outside of that lies main memory (DRAM), with a latency of roughly 100 to 300 cycles. If the data resides on a storage drive (SSD or HDD), the latency jumps to the microsecond or even millisecond range.
+Moving outward, we find the L1 Cache, typically split into an instruction cache (L1I) and a data cache (L1D), ranging from 32KB to 64KB in size, with an access latency of about 3 to 4 clock cycles. Further out is the L2 Cache, usually 256KB to 1MB, with a latency of around 10 to 14 cycles. Beyond that is the L3 Cache, ranging from a few megabytes to tens of megabytes (or even over 100MB on servers), with a latency of 30 to 50 cycles. L3 is typically shared among all cores, while L1 and L2 are private to each core. Further out still is main memory (DRAM), with a latency of roughly 100 to 300 cycles. If the data resides on a disk (SSD or HDD), the latency jumps to the microsecond or even millisecond range.
 
-You can build an intuition using a rough time scale: if a register access takes one second, then L1 is about three seconds, L2 is 10 seconds, L3 is 30 seconds, main memory is three minutes, an SSD is about two days, and an HDD is about half a year. The gaps between levels are exponential—which is why even a 1% improvement in the cache hit rate can yield substantial performance gains.
+You can build an intuition using a rough time scale: if a register access takes 1 second, then L1 is about 3 seconds, L2 is 10 seconds, L3 is 30 seconds, main memory is 3 minutes, an SSD is about 2 days, and an HDD is about half a year. The gaps between levels are exponential—this is why even a 1% improvement in the cache hit rate can yield substantial performance gains.
 
-The core design philosophy behind this pyramid structure is called the **Principle of Locality**. Locality comes in two forms: **Temporal locality** means that if a piece of data was just accessed, it is very likely to be accessed again in the near future; **Spatial locality** means that if a piece of data is accessed, data at nearby addresses is also likely to be accessed. All Cache design decisions—cache line size, prefetching policies, replacement policies—revolve entirely around these two types of locality. We can use a simple diagram to visualize this pyramid:
+The core design philosophy behind this pyramid structure is called the **Principle of Locality**. Locality comes in two forms: **Temporal locality** means that if a piece of data has just been accessed, it is very likely to be accessed again in the near future; **Spatial locality** means that if a piece of data is accessed, data at nearby addresses is also very likely to be accessed. All Cache design decisions—cache line size, prefetching policies, replacement policies—revolve entirely around these two types of locality. We can use a simple diagram to intuitively grasp this pyramid:
 
-```mermaid
-graph TD
-    subgraph "Faster, smaller, more expensive toward top; slower, larger, cheaper toward bottom"
-        Reg["<b>Registers</b><br/>~1 cycle | Capacity: ~hundreds of bytes"]
-        L1["<b>L1 Cache</b><br/>~3-4 cycles | Capacity: 32-64 KB"]
-        L2["<b>L2 Cache</b><br/>~10-14 cycles | Capacity: 256 KB-1 MB"]
-        L3["<b>L3 Cache</b><br/>~30-50 cycles | Capacity: several MB-tens of MB"]
-        DRAM["<b>Main Memory DRAM</b><br/>~100-300 cycles | Capacity: GB level"]
-        Disk["<b>SSD/HDD</b><br/>~microseconds/milliseconds | Capacity: TB level"]
-    end
-    Reg ~~~ L1 ~~~ L2 ~~~ L3 ~~~ DRAM ~~~ Disk
-```
+![Memory hierarchy pyramid diagram](./02-memory-hierarchy.drawio)
 
-On Linux, you can use the `lscpu` command to check your machine's Cache configuration. The `L1d cache`, `L2 cache`, and `L3 cache` lines in the output reflect your CPU's actual setup. Let us break this down layer by layer.
+On Linux, you can use the `lscpu` command to check your machine's Cache configuration. The `L1d cache`, `L2 cache`, and `L3 cache` lines in the output reflect your CPU's actual setup. Next, we will break it down level by level.
 
-## Step Two — Understanding the Cache Line as the Minimum Transfer Unit
+## Step 2 — Understanding the Cache Line as the Minimum Transfer Unit
 
-We now know that data is not exchanged between the Cache and main memory byte by byte, but rather transferred in units called **Cache Lines**. On x86, a cache line is typically 64 bytes. ARM also has 32-byte cache lines (though modern ARM64 has largely standardized on 64 bytes as well). This means that even if you only read a single `int` (4 bytes), the Cache controller will pull the entire 64-byte cache line containing that `int` from main memory.
+Now we know that data is not exchanged between the Cache and main memory byte by byte, but rather transferred in units called **Cache Lines**. On x86, a cache line is typically 64 bytes, while on ARM it can be 32 bytes (though modern ARM64 has largely standardized on 64 bytes as well). This means that even if you only read a single `int` (4 bytes), the Cache controller will pull the entire cache line (64 bytes) containing that `int` from main memory.
 
-The motivation for this design is intuitive—since we have spatial locality, we might as well fetch more data at once, just in case the next data we need is adjacent. Most programs do exhibit fairly good spatial locality in their access patterns, so this strategy pays off statistically.
+The motivation for this design is quite intuitive—since we have spatial locality, we might as well fetch a bit more at once, just in case the next data you access is adjacent. Most programs' access patterns do exhibit fairly good spatial locality, so this strategy pays off statistically.
 
-We can write a simple C program to intuitively feel the presence of cache lines. This program traverses the same array using different strides and observes the timing changes:
+We can write a simple C program to intuitively feel the existence of cache lines. This program traverses the same array with different strides and observes the timing changes:
 
 ```c
 #include <stdio.h>
@@ -118,7 +113,7 @@ int main(void)
 }
 ```
 
-After compiling and running it, you will see an interesting phenomenon:
+After compiling and running, you will see an interesting phenomenon:
 
 ```text
 $ gcc -O2 -std=c11 stride_test.c -o stride_test && ./stride_test
@@ -137,22 +132,22 @@ stride= 2048  time=222.890 ms
 stride= 4096  time=223.456 ms
 ```
 
-As the stride increases from one to 16 (16 ints = 64 bytes, exactly one cache line), the execution time barely changes. This is because whether you access elements one by one or skip a few, once a cache line is loaded, all the data inside it is already in the Cache. However, once the stride exceeds 16 (crossing the cache line boundary), every access triggers a new Cache Line load, and the time increases noticeably. This small experiment perfectly demonstrates the effect of the cache line as the minimum transfer unit.
+As the stride increases from 1 to 16 (16 ints = 64 bytes, exactly one cache line), the execution time barely changes—because whether you access elements one by one or skip a few, once a cache line is loaded, all the data inside it is already in the Cache. However, once the stride exceeds 16 (crossing the cache line boundary), every access triggers a new Cache Line load, and the time increases noticeably. This small experiment perfectly demonstrates the effect of the cache line acting as the minimum transfer unit.
 
 > **Pitfall Warning**
-> When doing stride experiments, make sure to add the `-O2` compiler flag. With `-O0`, the overhead of the loop itself will mask the differences caused by the Cache; `-O3`, on the other hand, can sometimes be so aggressive that it optimizes the entire loop into a constant expression, meaning you measure nothing at all. If you find that all strides take the same amount of time, the compiler likely optimized your loop away. You can try decorating `sum` with `volatile` or inserting a compiler barrier (`__asm__ volatile("" ::: "memory")`) inside the loop body.
+> When conducting stride experiments, make sure to add the `-O2` compiler flag. With `-O0`, the overhead of the loop itself will mask the differences caused by the Cache; meanwhile, `-O3` can sometimes be aggressive enough to optimize the entire loop into a constant expression, meaning you won't be able to measure anything at all. If you find that the execution time is the same for all strides, the compiler has likely consumed your loop entirely. You can try decorating `sum` with `volatile` or inserting a compiler barrier (`__asm__ volatile("" ::: "memory")`) inside the loop body.
 
-## Step Three — Figuring Out Where a Cache Line is Placed
+## Step 3 — Figuring Out Where a Cache Line is Placed
 
-We now know that data is transferred in cache lines, but where in the Cache is it placed after being fetched? This involves mapping policies.
+Now we know that data is transferred in cache lines, but where in the Cache is it placed after being fetched? This involves mapping policies.
 
-The most intuitive approach is **Direct Mapped**: each cache line from main memory can only be placed in one fixed location in the Cache, determined by the address modulo operation. It is like seats in a classroom—each student ID corresponds to a fixed seat. The advantage is fast lookup, determining presence in O(1) time; the disadvantage is that if two frequently accessed cache lines happen to map to the same location, they will constantly kick each other out, causing what is known as "thrashing."
+The most intuitive approach is **Direct Mapped**: each cache line from main memory can only be placed in one fixed location in the Cache, determined by the address modulo operation. This is like seats in a classroom—each student ID corresponds to a fixed seat. The advantage is fast lookup; you can determine in O(1) whether the data is present. The downside is that if two frequently accessed cache lines happen to map to the same location, they will constantly kick each other out, causing a phenomenon known as "thrashing."
 
-The other extreme is **Fully Associative**: any cache line can be placed in any location in the Cache. Lookup requires simultaneously comparing the tags of all Cache Lines, which is very expensive in hardware, so it is only used in very small caches (like the TLB).
+The opposite extreme is **Fully Associative**: any cache line can be placed in any location within the Cache. Lookup requires simultaneously comparing the tags of all Cache Lines, which is very expensive in hardware, so it is only used in very small caches (like the TLB).
 
-In practice, a compromise is used—**Set Associative**. The Cache is divided into several sets, each containing N cache lines (N is the "way," or N-way set associative). A main memory cache line can only be placed in its corresponding set, but there are N positions to choose from within that set. Modern CPUs typically use 4-way or 8-way set associative L1 caches, and L3 might be 12-way or even 16-way. Set associativity strikes a good balance between hardware complexity and the risk of thrashing.
+In practice, a compromise is used—**Set Associative**. The Cache is divided into several sets, each containing N cache lines (N is the "way," or N-way set associative). A main memory cache line can only be placed in its corresponding set, but there are N positions to choose from within that set. Modern CPUs typically use 4-way or 8-way set associative for L1, and L3 might be 12-way or even 16-way. Set associativity strikes a good balance between hardware complexity and the risk of thrashing.
 
-What happens when a set is full? This is where the **replacement policy** comes in. The most common replacement policy is LRU (Least Recently Used), which evicts the line that has not been accessed for the longest time. In reality, however, the hardware cost of implementing precise LRU is too high, so many CPUs use approximation algorithms like Pseudo-LRU. For us programmers, knowing that "recently used data will stay in the Cache" is enough; we do not need to dive deep into the hardware approximation details.
+What happens when a set is full? This requires a **replacement policy**. The most common replacement policy is LRU (Least Recently Used), which evicts the line that hasn't been accessed for the longest time. In reality, however, the cost of implementing precise LRU in hardware is too high, so many CPUs use approximate algorithms like Pseudo-LRU. For us programmers, knowing that "recently used data will stay in the Cache" is sufficient; we don't need to dive deep into the hardware's approximation details.
 
 You can use the `getconf` command on Linux to quickly confirm your CPU's cache line size:
 
@@ -163,36 +158,36 @@ $ getconf LEVEL1_DCACHE_LINESIZE
 64
 ```
 
-If you see 64, that is the standard 64-byte cache line. If you see 128, your CPU might be using larger cache lines (some server chips do this), and the alignment parameters later on will need to be adjusted accordingly.
+If you see 64, that's the standard 64-byte cache line. If you see 128, your CPU might be using larger cache lines (some server chips do this), and the alignment parameters later on will need to be adjusted accordingly.
 
 > **Pitfall Warning**
-> If you find that the performance of a loop traversing an array is inexplicably poor, and the array size happens to be a power of two, it is very likely address conflict thrashing caused by direct mapping. A simple fix is to allocate a little extra padding for the array to break that "exact modulo collision" pattern. This type of problem is very stealthy in high-performance code because, from a code perspective, everything looks perfectly fine.
+> If you find that a loop traversing an array has inexplicably poor performance, and the array size happens to be a power of two, it is very likely address conflict thrashing caused by direct mapping. A simple fix is to allocate a little extra padding for the array to break that "exact modulo conflict" pattern. This type of problem is extremely stealthy in high-performance code because, from a code perspective, everything looks perfectly fine.
 
-## Step Four — Understanding How Multiple Cores Keep Data Consistent
+## Step 4 — Understanding How Multi-Core Systems Maintain Data Coherency
 
-Things are still quite simple with a single core—data is either in the Cache or it is not. But in a multi-core system, each core has its own L1 and L2. If core A modifies a cache line in its own Cache, and core B's Cache still holds the old data for the same address, would it not be a mess?
+Things are still quite simple for a single core—data is either in the Cache or it isn't. But in multi-core systems, each core has its own L1 and L2. If core A modifies a cache line in its own Cache, and core B's Cache still holds the old data for the same address, wouldn't things get messy?
 
-This is the problem that **Cache Coherence Protocols** solve. The most widely used protocol on x86 is MESI (ARM uses a variant called MOESI). MESI gets its name from the four states of a cache line:
+This is the problem that **Cache Coherency Protocols** solve. The most widely used protocol on x86 is the MESI protocol (ARM uses a variant called MOESI). MESI gets its name from the four states of a cache line:
 
 - **M (Modified)**: This data has been modified and differs from main memory. Currently, only this one core holds the latest version.
-- **E (Exclusive)**: This data is consistent with main memory, and only the current core holds a copy. If you want to modify it, you do not need to notify anyone.
-- **S (Shared)**: This data is consistent with main memory, but multiple cores might hold copies. It can only be read, not written directly.
+- **E (Exclusive)**: This data is consistent with main memory, and only the current core holds a copy. If you want to modify it, you don't need to notify anyone else.
+- **S (Shared)**: This data is consistent with main memory, but multiple cores might hold copies. It can only be read, not directly written to.
 - **I (Invalid)**: This cache line is invalid, effectively empty.
 
-Let us walk through a specific example. Suppose core A and core B both read data from the same address. At this point, the cache lines in both cores are in the S state. Now core A wants to write to this address—it needs to first issue an "invalidate" broadcast, telling the other cores: "If you hold data for this address, invalidate it immediately." Core B receives the notification and changes its copy to the I state, while core A's copy transitions to the M state. Core A can then safely modify the data. If core B later wants to read this address, it finds itself in the I state, triggering a Cache Miss. It then fetches the latest data from core A via the bus (while writing it back to main memory), and the states on both sides transition to S or E depending on the situation.
+Let's walk through a specific example. Suppose core A and core B both read data from the same address. At this point, the cache lines in both cores are in the S state. Now core A wants to write to this address—it needs to first issue an "invalidate" broadcast, telling the other cores: "If you hold data for this address, invalidate it immediately." Core B receives the notification and changes its copy to the I state, while core A's copy transitions to the M state. Core A can then safely modify the data. If core B later wants to read this address, it finds itself in the I state, triggering a Cache Miss. It then fetches the latest data from core A via the bus (while writing it back to main memory), and the states on both sides transition to S or E depending on the circumstances.
 
-This mechanism ensures that all cores always see consistent data, but it has a side effect—**False Sharing**. If two cores are each modifying different variables on the same cache line (for example, two ints right next to each other in a struct), they are logically independent. However, at the hardware level, they are contending for the same cache line, and the MESI protocol will continuously trigger invalidations and synchronizations, causing performance to plummet. This is a very classic problem in multi-threaded programming, and we will see how to use cache line alignment to avoid it later.
+This mechanism ensures that all cores always see consistent data, but it has a side effect—**False Sharing**. If two cores are each modifying different variables on the same cache line (for example, two adjacent ints in a struct), they are logically independent, but at the hardware level, they are contending for the same cache line. The MESI protocol will continuously trigger invalidations and synchronizations, causing performance to plummet. This is a very classic problem in multi-threaded programming, and later we will see how to use cache line alignment to avoid it.
 
 > **Pitfall Warning**
-> False sharing will never expose itself in single-threaded testing; it only manifests as performance degradation under high multi-threaded concurrency. Furthermore, the degree of degradation is proportional to the number of threads—the more threads, the more frequent the invalidation broadcasts on the bus. The standard way to investigate this type of problem is to use the `perf` tool to observe cache miss events (`perf stat -e cache-misses,cache-references`). If the cache miss count of the multi-threaded version spikes abnormally, false sharing is most likely the culprit.
+> False sharing will never be exposed in single-threaded testing; it only manifests as performance degradation under high multi-threaded concurrency. Furthermore, the degree of degradation is proportional to the number of threads—the more threads, the more frequent the invalidation broadcasts on the bus. The standard method for investigating such issues is to use the `perf` tool to observe cache miss events (`perf stat -e cache-misses,cache-references`). If the cache misses in the multi-threaded version spike abnormally, false sharing is most likely the culprit.
 
-## Step Five — Writing Code That Makes Cache "Comfortable"
+## Step 5 — Writing Code That Makes Cache "Comfortable"
 
-Enough theory; let us get practical. The core of cache-friendly programming comes down to one sentence: **make data access patterns align as closely as possible with how Cache works**, which means maximizing spatial locality and temporal locality.
+Enough theory; let's get practical. The core of cache-friendly programming boils down to one sentence: **make data access patterns align as closely as possible with how Cache works**, which means maximizing spatial and temporal locality.
 
 ### Row-Major vs. Column-Major Traversal
 
-The most classic example is traversing a two-dimensional array. In C, two-dimensional arrays are stored in **row-major** order, meaning `matrix[0][0]`, `matrix[0][1]`, `matrix[0][2]`, and so on are contiguous in memory. If we traverse by row, the access order matches the memory layout, maximizing Cache's spatial locality. If we traverse by column, each access skips an entire row, most likely requiring a new cache line load every time.
+The most classic example is traversing a two-dimensional array. In C, two-dimensional arrays are stored in **row-major** order, meaning `matrix[0][0]`, `matrix[0][1]`, `matrix[0][2]`... are contiguous in memory. If we traverse by row, the access order matches the memory layout, maximizing Cache's spatial locality. If we traverse by column, each access skips an entire row, most likely requiring a new cache line load every time.
 
 ```c
 #define kRows 1024
@@ -234,7 +229,7 @@ sum_by_cols: 1048576, time=5.678 ms
 按行遍历比按列遍历快约 4.6 倍
 ```
 
-`sum_by_rows` is typically three to six times faster than `sum_by_cols` (depending on the matrix size and Cache capacity). The principle is simple: when traversing by row, after loading a single cache line, we can continuously process 16 ints (64 bytes / 4 bytes). When traversing by column, only 4 bytes of each cache line are used before it gets evicted.
+`sum_by_rows` is typically 3 to 6 times faster than `sum_by_cols` (depending on the matrix size and Cache capacity). The principle is simple: when traversing by row, after loading one cache line, you can continuously process 16 ints (64 bytes / 4 bytes). When traversing by column, only 4 bytes of each cache line are used before it gets evicted.
 
 ### Struct Layout — Put Hot Data First
 
@@ -263,13 +258,13 @@ typedef struct {
 } ParticleBadLayout;
 ```
 
-We can use `sizeof` to verify the difference in layout. In `Particle`, the `x`, `y`, and `z` fields are adjacent, totaling 12 bytes, and are contiguous within the cache line. In `ParticleBadLayout`, however, `y` and `z` are separated by `name` and `id`. If you traverse an array of particles and only read the coordinates, loading `x` and then skipping 64 bytes of `name` to reach `y` will most likely require loading a new cache line—this is the cost of mixing hot and cold data.
+We can use `sizeof` to verify the difference in layout. In `Particle`, the `x`, `y`, and `z` fields are adjacent, totaling 12 bytes, making them contiguous within a cache line. In `ParticleBadLayout`, however, `y` and `z` are separated by `name` and `id`. If you traverse an array of particles and only read the coordinates, loading `x` and then skipping 64 bytes of `name` to get to `y` will most likely require loading a new cache line—this is the cost of mixing hot and cold data.
 
-If `x`, `y`, and `z` are in the same cache line (they only take up 12 bytes total, easily fitting into a 64-byte cache line), a single Cache load fetches them all at once. If they are scattered throughout the struct, accessing `z` might require loading a new cache line every time. This idea of separating hot and cold data is extremely common in high-performance code. The ECS (Entity Component System) architecture in game engines is essentially doing exactly this—pulling frequently accessed position and velocity data into contiguous storage, and tossing rarely used things like names and model IDs into another array.
+If `x`, `y`, and `z` are in the same cache line (they only take up 12 bytes total, easily fitting into a 64-byte cache line), a single Cache load fetches them all at once. If they are scattered throughout the struct, accessing `z` might require loading a new cache line every time. This idea of separating hot and cold data is extremely common in high-performance code. The ECS (Entity Component System) architecture in game engines is essentially doing exactly this—pulling frequently accessed position and velocity data into contiguous storage, while tossing rarely used things like names and model IDs into another array.
 
-### Data-Oriented Design — SoA vs AoS
+### Data-Oriented Design — SoA vs. AoS
 
-Extending the logic above, if we have a group of objects of the same type, there are two ways to organize them: AoS (Array of Structures) and SoA (Structure of Arrays).
+Taking the previous logic a step further, if we have a group of objects of the same type, there are two ways to organize them: AoS (Array of Structures) and SoA (Structure of Arrays).
 
 AoS is the most common way we usually write things—an array of structs, where each element is a complete struct:
 
@@ -295,32 +290,17 @@ typedef struct {
 } VertexSoA;
 ```
 
-Let us compare the differences in memory layout between the two:
+Let's compare the differences in memory layout between the two:
 
-```mermaid
-graph LR
-    subgraph "AoS layout: each element's x,y,z,r,g,b are contiguous (24 bytes)"
-        A0["x0 y0 z0 r0 g0 b0"]
-        A1["x1 y1 z1 r1 g1 b1"]
-        A2["x2 y2 z2 r2 g2 b2"]
-        A0 --> A1 --> A2
-    end
-```
+![AoS memory layout](./02-aos-layout.drawio)
 
-```mermaid
-graph LR
-    subgraph "SoA layout: all x are contiguous, all y are contiguous, etc."
-        SX["Contiguous x<br/>x0 x1 x2 x3 x4 ..."]
-        SY["Contiguous y<br/>y0 y1 y2 y3 y4 ..."]
-        SZ["Contiguous z<br/>z0 z1 z2 z3 z4 ..."]
-    end
-```
+![SoA memory layout](./02-soa-layout.drawio)
 
-If your hot path only processes the coordinates `x`, `y`, and `z`, without touching the colors `r`, `g`, and `b`, the advantage of SoA becomes very obvious. Traversing `x[0]`, `x[1]`, `x[2]`, and so on means the data is completely contiguous in memory, and the Cache hit rate approaches 100%. With AoS, accessing each `x` incidentally pulls the `y`, `z`, `r`, `g`, and `b` from the same struct into the Cache (because they are on the same cache line), but we do not need the color data yet, so that space is wasted.
+If your hot path only processes the coordinates `x`, `y`, and `z`, without touching the colors `r`, `g`, and `b`, the advantage of SoA becomes very obvious—as you continuously traverse `x[0]`, `x[1]`, `x[2]`..., the data is completely contiguous in memory, and the Cache hit rate approaches 100%. In the AoS case, accessing each `x` also pulls `y`, `z`, `r`, `g`, and `b` from the same struct into the Cache (because they are on the same cache line), but we don't need the color data at the moment, so that space is wasted.
 
 Of course, SoA is not a silver bullet. If your access pattern requires all fields simultaneously, AoS actually has better spatial locality. Which one to choose depends entirely on your access pattern—there is no silver bullet, only trade-offs.
 
-## C++ Connections — From C Understanding to C++ Tools
+## C++ Integration — From C Understanding to C++ Tools
 
 Everything we discussed earlier—cache lines, locality, false sharing—is happening at the hardware level and is language-agnostic. However, C++ provides us with some tools at the standard level to better cooperate with Cache, which C lacks.
 
@@ -340,13 +320,13 @@ PaddedCounter counter_a;
 PaddedCounter counter_b;
 ```
 
-After doing this, `counter_a` and `counter_b` will not share a cache line, even if they are close to each other in memory. Thread A modifying `counter_a` will not cause thread B's cache line to be invalidated—this is the standard solution to the false sharing problem we discussed in the MESI section.
+After doing this, `counter_a` and `counter_b` will not share a cache line, even if they are adjacent in memory. Thread A modifying `counter_a` will not cause thread B's cache line to be invalidated—this is the standard solution to the false sharing problem we discussed in the MESI section.
 
 In C, we can only hardcode `__attribute__((aligned(64)))` (GCC/Clang) or `__declspec(align(64))` (MSVC), with no portable way to obtain this value. C++17's constant at least theoretically provides portability—although in practice, mainstream compilers return 64 on all supported platforms.
 
 ### `alignas` and Cache Line Alignment
 
-C++11 introduced the `alignas` keyword, allowing us to specify alignment requirements for variables or types. Combined with the cache line size, we can manually ensure that certain critical data structures do not straddle cache lines:
+C++11 introduced the `alignas` keyword, allowing us to specify alignment requirements for variables or types. Combined with the cache line size, we can manually ensure that certain critical data structures do not span cache lines:
 
 ```cpp
 // C++ 风格的缓存行对齐
@@ -359,23 +339,23 @@ static_assert(sizeof(CacheLineAligned) == 64,
               "Should be exactly one cache line");
 ```
 
-This `static_assert` is quite useful—if someone later adds too many fields to the struct causing it to exceed 64 bytes, the compiler will throw an error at compile time. Compared to discovering performance degradation at runtime, a compile-time check is vastly superior.
+This `static_assert` is quite useful—if someone adds too many fields to the struct later, causing it to exceed 64 bytes, the compiler will throw an error at compile time. A compile-time check is far better than discovering performance degradation at runtime.
 
 ### The Impact of Data Structure Layout on Cache
 
-Containers in the C++ standard library are also designed with Cache in mind. The data in `std::vector` is stored contiguously, making traversal extremely cache-friendly. Each node in `std::list` is independently allocated and might be scattered throughout memory, making traversing it a nightmare for Cache. This is why in many modern C++ coding guidelines, `std::vector` is the default container, and `std::list` is almost never recommended—not because list's time complexity is poor (insertion and deletion are indeed O(1)), but because its cache hit rate is terrible, and the constant factor is absurdly large. `std::deque` is a compromise—it stores data in fixed-size chunks, which is much better than list but still a step behind vector. If you are working in a performance-sensitive scenario, the primary consideration for container selection is often not time complexity, but the impact of the memory layout on Cache.
+Containers in the C++ standard library also take Cache into account in their design. The data in `std::vector` is stored contiguously, making it extremely cache-friendly during traversal. Each node in `std::list` is independently allocated and might be scattered throughout memory, making traversing it a nightmare for Cache. This is why in many modern C++ coding standards, `std::vector` is the default container, while `std::list` is almost never recommended—not because list's time complexity is poor (insertion and deletion are indeed O(1)), but because its cache hit rate is terrible, and the constant factor is absurdly large. `std::deque` is a compromise—it stores data in fixed-size blocks, which is significantly better than list, but still a step behind vector. If you are working in performance-sensitive scenarios, the primary consideration for container selection is often not time complexity, but the impact of the memory layout on Cache.
 
 ## Exercises
 
-1. **Stride Experiment Verification**: Modify the stride test code from this article by changing the array size to 4MB (which fits neatly into most CPUs' L3 cache). Observe the timing curve as the stride increases from one to 32. Think about it: why does the execution time start to level off after the stride exceeds 16?
+1. **Stride experiment verification**: Modify the stride test code from this article to change the array size to 4MB (which fits neatly into most CPUs' L3). Observe the timing curve as the stride increases from 1 to 32. Question: Why does the execution time start to plateau again after the stride exceeds 16?
 
-2. **False Sharing Reproduction**: Write a multi-threaded program (using pthreads or C++ `<thread>`) that creates two threads, each incrementing a different field in a shared struct 100 million times. First, run it without alignment. Then, use `alignas(64)` to align the two fields to different cache lines and run it again. Compare the execution times.
+2. **False sharing reproduction**: Write a multi-threaded program (using pthreads or C++ `<thread>`) that creates two threads, each incrementing a different field in a shared struct one hundred million times. First, run it without alignment, then run it again after using `alignas(64)` to align the two fields to different cache lines. Compare the execution times.
 
-3. **Matrix Transposition Optimization**: Implement a square matrix transposition function. First, write a naive double-loop version, then try blocking—divide the matrix into 32x32 small blocks and perform the transposition within each block. Compare the performance of the two versions on a large matrix (2048x2048).
+3. **Matrix transpose optimization**: Implement a square matrix transpose function. First, write a naive double-loop version, then try blocking—divide the matrix into 32x32 small blocks and perform the transpose within each block. Compare the performance differences of the two versions on a large matrix (2048x2048).
 
-4. **AoS vs SoA Benchmark**: Define a particle struct containing `float x, y, z, r, g, b`, and create 100,000 particles. Implement "normalize all particle coordinates to a unit sphere" using both AoS and SoA layouts, and compare the execution times.
+4. **AoS vs. SoA benchmark**: Define a particle struct containing `float x, y, z, r, g, b`, and create one hundred thousand particles. Implement "normalize all particle coordinates to a unit sphere" using both AoS and SoA layouts, and compare the execution times.
 
-5. **Cache-Friendly Linked List**: Following the design philosophy of the Linux kernel's `list_head`, implement an intrusive doubly linked list where the node data domain and the list pointer domain are stored separately. This ensures that traversing the list pointers does not require loading the entire node data, improving the cache hit rate.
+5. **Cache-friendly linked list**: Following the design philosophy of the Linux kernel's `list_head`, implement an intrusive doubly linked list where the node data domain and the linked list pointer domain are stored separately. This ensures that traversing the list pointers does not require loading the entire node data, improving the cache hit rate.
 
 ## References
 

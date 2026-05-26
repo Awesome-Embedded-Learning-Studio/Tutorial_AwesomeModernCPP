@@ -1,7 +1,7 @@
 ---
-title: C++ Features Reference Card
+title: C++ Feature Cheat Sheet
 description: A quick-reference index of all major features from C++98 to C++23, organized
-  in a dual-view layout by standard version and functional category
+  in a dual-view layout by standard version and functional category.
 chapter: 99
 order: 1
 tags:
@@ -9,14 +9,20 @@ tags:
 - cpp-modern
 - 入门
 difficulty: beginner
+translation:
+  source: documents/cpp-reference/index.md
+  source_hash: 1044acd5e53e8df5277803815af2c663d8d0ce9c171ea964ed42c5975d330019
+  translated_at: '2026-05-26T10:23:53.568439+00:00'
+  engine: anthropic
+  token_count: 4252
 ---
 <!-- markdownlint-disable MD051 -->
 
 # C++ Feature Reference Card
 
-A structured quick-reference index covering all major features from C++98 through C++23. Features with existing reference cards are clickable links leading to core API signatures, minimal compilable examples, embedded systems applicability, and compiler support details. Features without reference cards are listed as plain text and will be gradually added in future batches.
+A structured quick-reference index covering all major features from C++98 through C++23. Features with existing reference cards are clickable links leading to core API signatures, minimal compilable examples, embedded systems applicability, and compiler support information. Features without reference cards are listed as plain text, to be gradually added in future batches.
 
-> Need a quick syntax check for a feature? Look here. Want to learn systematically? Check out the corresponding tutorial chapter.
+> Need to quickly look up the syntax for a feature? Come here. Want to learn it systematically? Check out the tutorial articles in the corresponding volume.
 
 ## Quick Navigation
 
@@ -27,25 +33,27 @@ A structured quick-reference index covering all major features from C++98 throug
 [Memory Management](#内存管理) | [Containers & Views](#容器与视图) | [Concurrency](#并发) | [Core Language Features](#核心语言特性) | [Templates & Metaprogramming](#模板与元编程)
 
 ::: info Legend
-- **Applicability**: High = strongly recommended for embedded, Medium = use case dependent, Low = rarely needed
+
+- **Applicability**: High = strongly recommended for embedded, Medium = use case by case, Low = usually unnecessary
 - Blue links = reference card available, plain text = reference card pending
-- "Language feature" in the header file column indicates a core language mechanism that requires no `#include`
+- Header column marked "Language feature" indicates a core language mechanism that requires no `#include`
+
 :::
 
 ## By Standard Version
 
 ### C++98/03
 
-C++98 (ISO/IEC 14882:1998) is the first ISO-standardized version, establishing the three pillars of STL containers/algorithms/iterators, exception handling, namespaces, and templates—mechanisms that remain the daily foundation of C++ programming today. C++03 is a defect report release that only clarified details like value initialization semantics, with no major new features.
+C++98 (ISO/IEC 14882:1998) is the first ISO-standardized version, establishing the three pillars of STL containers/algorithms/iterators, exception handling, namespaces, and templates—mechanisms that remain the daily infrastructure of C++ programming today. C++03 is a defect report release that only clarified details like value initialization semantics, with no major new features.
 
 | Feature | Header | Summary | Applicability |
 |---------|--------|---------|---------------|
 | STL containers (vector, list, deque, map, set...) | `<vector>` etc. | Sequential/associative/unordered container family | **High** |
-| STL algorithms (sort, find, transform...) | `<algorithm>` | Sorting, searching, transforming, and other generic algorithms | **High** |
+| STL algorithms (sort, find, transform...) | `<algorithm>` | Sorting/searching/transformation and other generic algorithms | **High** |
 | STL iterators | `<iterator>` | Unified traversal interface | **High** |
 | std::string | `<string>` | Variable-length string | **High** |
 | iostream | `<iostream>` | Type-safe I/O streams | **Medium** |
-| RAII (construct/destruct/copy semantics) | Language feature | RAII (Resource Acquisition Is Initialization) | **High** |
+| RAII (construction/destruction/copy semantics) | Language feature | RAII (Resource Acquisition Is Initialization) | **High** |
 | Exception handling (try/catch/throw) | Language feature | Structured error handling | **Medium** |
 | Namespaces (namespace) | Language feature | Preventing name collisions | **High** |
 | Class templates / function templates | Language feature | Foundation of generic programming | **High** |
@@ -63,11 +71,11 @@ C++11 is the starting point of modern C++, bringing revolutionary features like 
 | [std::unique_ptr](memory/01-unique-ptr.md) | `<memory>` | Unique pointer | **High** |
 | [std::shared_ptr](memory/02-shared-ptr.md) | `<memory>` | Shared pointer | **Medium** |
 | std::weak_ptr | `<memory>` | Breaking shared_ptr cyclic references | **Medium** |
-| [lambda expression](core-language/02-lambda.md) | Language feature | Anonymous function objects | **High** |
+| [lambda expression](core-language/02-lambda.md) | Language feature | Anonymous function object | **High** |
 | [auto](core-language/03-auto-decltype.md) | Language feature | Automatic type deduction | **High** |
 | [decltype](core-language/03-auto-decltype.md) | Language feature | Expression type query | **High** |
 | [constexpr](core-language/01-constexpr.md) | Language feature | Compile-time constants and functions | **High** |
-| [Range-for](core-language/07-range-for.md) | Language feature | Container traversal syntactic sugar | **High** |
+| [Range-based for (range-for)](core-language/07-range-for.md) | Language feature | Container traversal syntactic sugar | **High** |
 | Move semantics (rvalue reference) | Language feature | Resource transfer instead of copying | **High** |
 | [std::move / std::forward](core-language/08-move-forward.md) | `<utility>` | Move and perfect forwarding utilities | **High** |
 | [nullptr](core-language/04-nullptr.md) | Language feature | Type-safe null pointer constant | **High** |
@@ -75,7 +83,7 @@ C++11 is the starting point of modern C++, bringing revolutionary features like 
 | [override / final](core-language/06-override-final.md) | Language feature | Explicit virtual function annotations | **High** |
 | static_assert | Language feature | Compile-time assertion | **High** |
 | [Variadic templates](templates/02-variadic-templates.md) | Language feature | Arbitrary number of template parameters | **High** |
-| [std::initializer_list](containers/05-initializer-list.md) | `<initializer_list>` | Uniform initialization list | **High** |
+| [std::initializer_list](containers/05-initializer-list.md) | `<initializer_list>` | Unified initializer list | **High** |
 | [std::array](containers/04-array.md) | `<array>` | Compile-time fixed-size array | **High** |
 | std::tuple | `<tuple>` | Heterogeneous fixed-size container | **Medium** |
 | std::unordered_map / set | `<unordered_map>` | Hash table containers | **Medium** |
@@ -123,7 +131,7 @@ C++17 introduces high-frequency features like structured bindings, if constexpr,
 | [Fold expressions](templates/03-fold-expressions.md) | Language feature | Parameter pack expansion operations | **High** |
 | CTAD | Language feature | Class template argument deduction | **High** |
 | Guaranteed copy elision | Language feature | Mandatory elimination of temporary object copies | **High** |
-| std::invoke | `<functional>` | Unified call interface | **Medium** |
+| std::invoke | `<functional>` | Unified invocation interface | **Medium** |
 | std::apply | `<tuple>` | Tuple expansion as function arguments | **Medium** |
 | [Inline variables](core-language/14-inline-variables.md) | Language feature | Defining global variables in headers | **Medium** |
 | std::byte | `<cstddef>` | Standalone byte type | **Medium** |
@@ -134,7 +142,7 @@ C++17 introduces high-frequency features like structured bindings, if constexpr,
 
 ### C++20
 
-C++20 is the largest update since C++11: four major features—Concepts, Ranges, Coroutines, and Modules—fundamentally change template programming, data pipelines, asynchronous flows, and code organization. At the same time, std::format, std::span, and three-way comparison significantly improve the daily development experience. Higher compiler support is required (GCC 10+ / Clang 10+).
+C++20 is the largest update since C++11: four major features—Concepts, Ranges, Coroutines, and Modules—fundamentally change template programming, data pipelines, asynchronous flows, and code organization. At the same time, features like std::format, std::span, and three-way comparison significantly improve the daily development experience. Higher compiler support is required (GCC 10+ / Clang 10+).
 
 | Feature | Header | Summary | Applicability |
 |---------|--------|---------|---------------|
@@ -146,7 +154,7 @@ C++20 is the largest update since C++11: four major features—Concepts, Ranges,
 | [Three-way comparison (<=>)](core-language/12-spaceship-operator.md) | `<compare>` | Unified comparison operator | **High** |
 | [Coroutines](core-language/16-coroutines.md) | `<coroutine>` | Stackless coroutines | **High** |
 | [Modules](core-language/17-modules.md) | Language feature | Compilation units replacing headers | **High** |
-| consteval | Language feature | Forced compile-time evaluation | **Medium** |
+| consteval | Language feature | Immediate function | **Medium** |
 | constinit | Language feature | Compile-time static variable initialization | **Medium** |
 | std::source_location | `<source_location>` | Compile-time source code location information | **Medium** |
 | Designated initializer | Language feature | Aggregate initialization by member name | **Medium** |
@@ -154,12 +162,12 @@ C++20 is the largest update since C++11: four major features—Concepts, Ranges,
 | std::latch / barrier | `<latch>` | Thread synchronization primitives | **Medium** |
 | std::stop_token | `<stop_token>` | Cooperative thread cancellation | **Medium** |
 | std::erase / erase_if | `<vector>` etc. | Unified interface for container element removal | **Medium** |
-| std::is_constant_evaluated | `<type_traits>` | Detecting compile-time evaluation context | **Medium** |
+| std::is_constant_evaluated | `<type_traits>` | Detect compile-time evaluation context | **Medium** |
 | Range-for initializer statements | Language feature | Range-for with initializer | **Low** |
 
 ### C++23
 
-C++23 polishes and fills gaps in C++20: practical library components like std::expected, std::print, std::generator, and std::flat_map fill critical voids, while language improvements like deducing this streamline member function syntax. Compiler support for some features is still in progress (GCC 14+ / Clang 18+).
+C++23 polishes and fills gaps in C++20: practical library components like std::expected, std::print, std::generator, and std::flat_map fill critical voids, while language improvements like deducing this streamline member function syntax. Compiler support for some features is still progressing (GCC 14+ / Clang 18+).
 
 | Feature | Header | Summary | Applicability |
 |---------|--------|---------|---------------|
@@ -169,15 +177,15 @@ C++23 polishes and fills gaps in C++20: practical library components like std::e
 | [std::flat_map / flat_set](containers/08-flat-map.md) | `<flat_map>` | Sorted containers based on contiguous storage | **Medium** |
 | std::mdspan | `<mdspan>` | Non-owning multidimensional array view | **Medium** |
 | std::stacktrace | `<stacktrace>` | Backtrace capture and printing | **Medium** |
-| [Deducing this](core-language/18-deducing-this.md) | Language feature | Explicit object parameter deduction | **Medium** |
+| [deducing this](core-language/18-deducing-this.md) | Language feature | Explicit object parameter deduction | **Medium** |
 | std::to_underlying | `<utility>` | Enum to underlying type conversion | **Medium** |
-| std::out_ptr / inout_ptr | `<memory>` | Smart pointer and C pointer interop | **Medium** |
+| std::out_ptr / inout_ptr | `<memory>` | Smart pointer and C pointer interoperation | **Medium** |
 | Optional monadic operations | `<optional>` | and_then / or_else / transform | **Medium** |
-| New Ranges adapters | `<ranges>` | zip / chunk / slide / enumerate etc. | **Medium** |
+| New Ranges adaptors | `<ranges>` | zip / chunk / slide / enumerate etc. | **Medium** |
 | if consteval | Language feature | Compile-time evaluation conditional check | **Low** |
 | std::unreachable | `<utility>` | Mark unreachable code | **Low** |
 | Multidimensional subscript operator | Language feature | operator[] accepting multiple arguments | **Low** |
-| std::is_scoped_enum | `<type_traits>` | Detect scoped enum types | **Low** |
+| std::is_scoped_enum | `<type_traits>` | Detect scoped enumeration types | **Low** |
 
 ## By Functional Category
 
@@ -194,7 +202,7 @@ Smart pointers, optional values, error handling, and other memory and resource m
 | [std::optional](memory/03-optional.md) | C++17 | `<optional>` | Optional value wrapper | **High** |
 | std::pmr memory resources | C++17 | `<memory_resource>` | Polymorphic allocator memory resources | **Medium** |
 | [std::expected](memory/05-expected.md) | C++23 | `<expected>` | Error handling wrapper type | **Medium** |
-| std::out_ptr / inout_ptr | C++23 | `<memory>` | Smart pointer and C pointer interop | **Medium** |
+| std::out_ptr / inout_ptr | C++23 | `<memory>` | Smart pointer and C pointer interoperation | **Medium** |
 | Optional monadic operations | C++23 | `<optional>` | and_then / or_else / transform | **Medium** |
 
 ::: details Pending Reference Cards
@@ -208,7 +216,7 @@ Standard containers, views, strings, formatting, algorithms, and other data orga
 | Feature | Version | Header | Summary | Applicability |
 |---------|---------|--------|---------|---------------|
 | STL containers (vector, list, deque, map, set...) | C++98 | `<vector>` etc. | Sequential/associative/unordered container family | **High** |
-| STL algorithms | C++98 | `<algorithm>` | Sorting, searching, transforming, and other generic algorithms | **High** |
+| STL algorithms | C++98 | `<algorithm>` | Sorting/searching/transformation and other generic algorithms | **High** |
 | std::string | C++98 | `<string>` | Variable-length string | **High** |
 | [std::array](containers/04-array.md) | C++11 | `<array>` | Compile-time fixed-size array | **High** |
 | std::tuple | C++11 | `<tuple>` | Heterogeneous fixed-size container | **Medium** |
@@ -226,10 +234,10 @@ Standard containers, views, strings, formatting, algorithms, and other data orga
 | [std::generator](containers/09-generator.md) | C++23 | `<generator>` | Coroutine synchronous generator | **Medium** |
 | [std::print / println](containers/10-print.md) | C++23 | `<print>` | Formatted output to stdout | **High** |
 | std::mdspan | C++23 | `<mdspan>` | Non-owning multidimensional array view | **Medium** |
-| New Ranges adapters | C++23 | `<ranges>` | zip / chunk / slide / enumerate etc. | **Medium** |
+| New Ranges adaptors | C++23 | `<ranges>` | zip / chunk / slide / enumerate etc. | **Medium** |
 
 ::: details Pending Reference Cards
-The following features do not have reference cards yet: STL containers, STL algorithms, std::string, std::tuple, std::unordered_map/set, std::function, std::any, Ranges, std::erase/erase_if, std::mdspan, new Ranges adapters
+The following features do not have reference cards yet: STL containers, STL algorithms, std::string, std::tuple, std::unordered_map/set, std::function, std::any, Ranges, std::erase/erase_if, std::mdspan, new Ranges adaptors
 
 ### Concurrency
 
@@ -255,20 +263,20 @@ The following features do not have reference cards yet: std::condition_variable,
 
 ### Core Language Features
 
-Keywords, syntactic sugar, type systems, compile-time mechanisms, and other core language features. See [Core Language Reference Card](core-language/index.md).
+Keywords, syntactic sugar, type system, compile-time mechanisms, and other core language features. See [Core Language Reference Card](core-language/index.md).
 
 | Feature | Version | Header | Summary | Applicability |
 |---------|---------|--------|---------|---------------|
-| RAII (construct/destruct/copy) | C++98 | Language feature | RAII (Resource Acquisition Is Initialization) | **High** |
+| RAII (construction/destruction/copy) | C++98 | Language feature | RAII (Resource Acquisition Is Initialization) | **High** |
 | Exception handling | C++98 | Language feature | Structured error handling | **Medium** |
 | Namespaces | C++98 | Language feature | Preventing name collisions | **High** |
 | Operator overloading | C++98 | Language feature | Custom type operation behavior | **Medium** |
 | iostream | C++98 | `<iostream>` | Type-safe I/O streams | **Medium** |
-| [lambda expression](core-language/02-lambda.md) | C++11 | Language feature | Anonymous function objects | **High** |
+| [lambda expression](core-language/02-lambda.md) | C++11 | Language feature | Anonymous function object | **High** |
 | [auto](core-language/03-auto-decltype.md) | C++11 | Language feature | Automatic type deduction | **High** |
 | [decltype](core-language/03-auto-decltype.md) | C++11 | Language feature | Expression type query | **High** |
 | [constexpr](core-language/01-constexpr.md) | C++11 | Language feature | Compile-time constants and functions | **High** |
-| [Range-for](core-language/07-range-for.md) | C++11 | Language feature | Container traversal syntactic sugar | **High** |
+| [Range-based for](core-language/07-range-for.md) | C++11 | Language feature | Container traversal syntactic sugar | **High** |
 | Move semantics (rvalue reference) | C++11 | Language feature | Resource transfer instead of copying | **High** |
 | [std::move / std::forward](core-language/08-move-forward.md) | C++11 | `<utility>` | Move and perfect forwarding utilities | **High** |
 | [nullptr](core-language/04-nullptr.md) | C++11 | Language feature | Type-safe null pointer | **High** |
@@ -294,11 +302,11 @@ Keywords, syntactic sugar, type systems, compile-time mechanisms, and other core
 | [Three-way comparison (<=>)](core-language/12-spaceship-operator.md) | C++20 | `<compare>` | Unified comparison operator | **High** |
 | [Coroutines](core-language/16-coroutines.md) | C++20 | `<coroutine>` | Stackless coroutines | **High** |
 | [Modules](core-language/17-modules.md) | C++20 | Language feature | Replacing headers | **High** |
-| consteval | C++20 | Language feature | Forced compile-time evaluation | **Medium** |
+| consteval | C++20 | Language feature | Immediate function | **Medium** |
 | constinit | C++20 | Language feature | Compile-time static initialization | **Medium** |
 | std::source_location | C++20 | `<source_location>` | Compile-time source code location | **Medium** |
 | Designated initializer | C++20 | Language feature | Aggregate initialization by member name | **Medium** |
-| [Deducing this](core-language/18-deducing-this.md) | C++23 | Language feature | Explicit object parameter deduction | **Medium** |
+| [deducing this](core-language/18-deducing-this.md) | C++23 | Language feature | Explicit object parameter deduction | **Medium** |
 | std::to_underlying | C++23 | `<utility>` | Enum to underlying type conversion | **Medium** |
 | std::unreachable | C++23 | `<utility>` | Mark unreachable code | **Low** |
 | if consteval | C++23 | Language feature | Compile-time evaluation conditional check | **Low** |
@@ -316,14 +324,14 @@ Templates, constraints, type traits, compile-time computation, and other generic
 |---------|---------|--------|---------|---------------|
 | Class templates / function templates | C++98 | Language feature | Foundation of generic programming | **High** |
 | [Variadic templates](templates/02-variadic-templates.md) | C++11 | Language feature | Arbitrary number of template parameters | **High** |
-| [std::initializer_list](containers/05-initializer-list.md) | C++11 | `<initializer_list>` | Uniform initialization list | **High** |
+| [std::initializer_list](containers/05-initializer-list.md) | C++11 | `<initializer_list>` | Unified initializer list | **High** |
 | std::integer_sequence | C++14 | `<utility>` | Compile-time integer sequence | **Medium** |
 | [Fold expressions](templates/03-fold-expressions.md) | C++17 | Language feature | Parameter pack expansion operations | **High** |
-| std::invoke | C++17 | `<functional>` | Unified call interface | **Medium** |
+| std::invoke | C++17 | `<functional>` | Unified invocation interface | **Medium** |
 | std::apply | C++17 | `<tuple>` | Tuple expansion as function arguments | **Medium** |
 | [Concepts](templates/01-concepts.md) | C++20 | `<concepts>` | Compile-time template parameter constraints | **High** |
-| std::is_constant_evaluated | C++20 | `<type_traits>` | Detecting compile-time context | **Medium** |
-| std::is_scoped_enum | C++23 | `<type_traits>` | Detecting scoped enumerations | **Low** |
+| std::is_constant_evaluated | C++20 | `<type_traits>` | Detect compile-time context | **Medium** |
+| std::is_scoped_enum | C++23 | `<type_traits>` | Detect scoped enumeration | **Low** |
 
 ::: details Pending Reference Cards
 The following features do not have reference cards yet: std::integer_sequence, std::invoke, std::apply, std::is_constant_evaluated, std::is_scoped_enum

@@ -15,12 +15,18 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/01-constexpr.md
+  source_hash: 8d89ae16e8442155ce90a0552fa89a8d6af42aa44d37fdf4f0637340af1e8f97
+  translated_at: '2026-05-26T10:14:54.825670+00:00'
+  engine: anthropic
+  token_count: 370
 ---
 # constexpr (C++11)
 
 ## In a Nutshell
 
-Tells the compiler "this value or function can be evaluated at compile time," shifting runtime computations to the compile phase and achieving zero-overhead complex logic.
+Tells the compiler "this value or function *can* be evaluated at compile time," allowing us to shift runtime computations to compile time and achieve zero-overhead complex logic.
 
 ## Header
 
@@ -31,7 +37,7 @@ None (language keyword)
 | Operation | Signature | Description |
 |------|------|------|
 | Compile-time variable | `constexpr T var = expr;` | Requires `expr` to be a constant expression; the variable is implicitly `const` |
-| Compile-time function | `constexpr T func(params);` | If arguments are constants, it evaluates at compile time; otherwise, it degrades to a normal function |
+| Compile-time function | `constexpr T func(params);` | If arguments are constants, it is evaluated at compile time; otherwise, it degrades to a normal function |
 | Compile-time construction | `constexpr T::T(params);` | Allows constructing literal type objects in constant expressions |
 | Compile-time destruction | `constexpr T::~T();` | (C++20) Allows destroying objects in constant expressions |
 | Feature test macro | `__cpp_constexpr` | Detects the current compiler's level of constexpr support |

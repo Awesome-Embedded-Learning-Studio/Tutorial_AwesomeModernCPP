@@ -1,6 +1,6 @@
 ---
-title: Abnormal foundation
-description: Master try/catch/throw syntax and the standard exception hierarchy
+title: Exception Basics
+description: Master the try/catch/throw syntax and the standard exception hierarchy
 chapter: 10
 order: 1
 difficulty: intermediate
@@ -18,16 +18,22 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch10/01-try-catch.md
+  source_hash: 49b53d2c5cd3ad7f7671f4b8c41df0e56a968c5cf578d1e5bd50e71bf605301c
+  translated_at: '2026-05-26T10:56:56.745372+00:00'
+  engine: anthropic
+  token_count: 2822
 ---
 # Exception Basics
 
-So far, we have essentially relied on two approaches for handling errors: either using return values to indicate failure (such as a function returning `false` or an error code), or calling `abort` to crash the program outright. These two approaches barely suffice in small programs, but once the project scales up, their problems become apparent—return value error codes are easily ignored by callers, and `assert` gets stripped out entirely by the compiler in Release builds. What makes things even more troublesome is that if an error occurs deep within a nested call chain, you have to propagate the error code outward layer by layer. Every intermediate layer must check and handle it, and the code quickly turns into a giant `if` Christmas tree. (I've seen this thing so many times, it literally makes me want to throw up...)
+So far, we have handled errors in basically two ways: either using return values to indicate failure (such as a function returning `-1` or `nullptr`), or directly calling `assert` to crash the program. These two approaches barely suffice in small programs, but once the project scales up, the problems become apparent—return value error codes are easily ignored by callers, and `assert` gets stripped out entirely by the compiler in Release builds. What's more troublesome is that if an error occurs deep in a nested call chain, you have to propagate the error code outward layer by layer. Every intermediate layer must check and handle it, and the code quickly turns into a giant `if (error)` Christmas tree. (Having seen this thing so many times, it honestly makes me want to throw up...)
 
-C++'s exception mechanism was born to solve this problem. It provides a **structured error propagation channel**—a function can directly throw an exception to report that "something went wrong," and any capable caller along the call chain can catch and handle it. The intermediate functions neither need to know about it nor pass it along. In this chapter, we start with the most basic `throw`/`try`/`catch` syntax, clarify the hierarchy of standard exception classes, and finally write a complete practical example to tie all the knowledge points together.
+C++'s exception mechanism was born to solve this problem. It provides a **structured error propagation channel**—a function can directly throw an exception to report "something went wrong," and any capable caller along the call chain can catch and handle it. The intermediate functions don't need to know about it or pass it through. In this chapter, we start with the basic `try`/`catch`/`throw` syntax, clarify the hierarchy of standard exception classes, and finally write a complete practical example to tie all the concepts together.
 
 ## Ignition — the throw, try, catch trio
 
-The core operations of the exception mechanism involve only three keywords. `throw` is responsible for throwing an exception—the expression that follows it is an exception object, which can be of any copyable type. `try` marks a code region where "something might go wrong." `catch` is responsible for catching and handling exceptions thrown within the `try` region. Let's look at a minimal example first:
+The core operations of the exception mechanism involve only three keywords. `throw` is responsible for throwing an exception—the expression following it is an exception object, which can be any copyable type. `try` marks a code region where "something might go wrong." `catch` is responsible for catching and handling exceptions thrown within the `try` region. Let's look at a minimal example first:
 
 ```cpp
 #include <iostream>
@@ -45,7 +51,7 @@ int main()
 }
 ```
 
-The output is `Division by zero`. `throw` creates a `std::runtime_error` object and throws it. The program immediately interrupts execution after `throw` within the `try` block and jumps to the matching `catch` block. `e.what()` returns the string passed in during construction. You might ask: why use `std::runtime_error` instead of directly throwing an `int`, `string`, or `const char*`? Technically, you could—C++ allows throwing any type—but in practical engineering, using standard exception classes or custom exception classes is a better approach. Exception objects can carry rich error information, and you can leverage the inheritance hierarchy for hierarchical catching.
+The output is `Caught: Something went wrong`. `throw` creates a `std::runtime_error` object and throws it. The program immediately interrupts execution after `throw` in the `try` block and jumps to the matching `catch` block. `e.what()` returns the string passed in during construction. You might ask: why use `std::runtime_error` instead of directly throwing `throw 42` or `throw "oops"`? Technically, you could—C++ allows throwing any type—but in practical engineering, using standard exception classes or custom exception classes is a better approach. Exception objects can carry rich error information, and you can leverage the inheritance hierarchy for hierarchical catching.
 
 ### Stack unwinding — what happens when an exception flies by
 
@@ -100,15 +106,15 @@ Output:
   Caught: boom from inner
 ```
 
-`c`, `b`, and `a` are destructed in reverse order of their construction—this is stack unwinding. The entire process requires us to write no manual cleanup code; the language mechanism guarantees everything.
+`t3`, `t2`, and `t1` are destructed in reverse order of their construction—this is stack unwinding. The entire process requires us to write no manual cleanup code; the language mechanism guarantees everything.
 
-> **Pitfall warning**: During stack unwinding, if a destructor itself throws an exception (a new exception is generated while handling an existing one), the program will directly call `std::terminate` and abort, with no chance of recovery. Therefore, destructors must **absolutely not** throw exceptions. Starting with C++11, all destructors are implicitly marked as `noexcept`, but if you explicitly write `noexcept(false)`, the compiler won't stop you, and it will blow up at runtime. Make sure to keep this in mind.
+> **Pitfall warning**: During stack unwinding, if a destructor itself throws an exception (a new exception is generated while handling an existing one), the program will directly call `std::terminate` and terminate, with no chance of recovery. Therefore, destructors must **absolutely not** throw exceptions. Starting with C++11, all destructors are implicitly marked as `noexcept`, but if you explicitly write `~MyClass() { throw ...; }` yourself, the compiler won't stop you, and it will blow up at runtime. Make sure to keep this in mind.
 
 ## Standard exception hierarchy — the exception family
 
 The C++ standard library defines an exception class hierarchy rooted at `std::exception`. Understanding this hierarchy has two benefits: first, you can choose the most appropriate standard exception class to express error semantics, and second, you can use a base class reference to catch an entire family of exceptions.
 
-`std::exception` is the base class for all standard exceptions, defining the virtual function `what()` that returns a `const char*` description. Its direct derived classes split into two major branches. `std::logic_error` represents "logical errors in the program"—theoretically detectable before the program runs, such as passing an invalid argument; its subclasses include `std::invalid_argument` (illegal argument), `std::out_of_range` (index out of bounds), and `std::domain_error` (domain error, which practically no one uses). `std::runtime_error` represents "problems that only surface at runtime"—they only appear after the program starts running, such as a file not existing or a network timeout; its subclasses include `std::overflow_error` and `std::underflow_error` (arithmetic overflow). Additionally, `std::bad_alloc` inherits directly from `std::exception` and is thrown when `new` fails to allocate memory.
+`std::exception` is the base class of all standard exceptions, defining the virtual function `what()` that returns a `const char*` description. Its direct derived classes split into two major branches. `std::logic_error` represents "logical errors in the program"—theoretically detectable before the program runs, such as passing an invalid argument; its subclasses include `std::invalid_argument` (invalid argument), `std::out_of_range` (out-of-range subscript), and `std::domain_error` (domain error, which practically no one uses). `std::runtime_error` represents "problems exposed only at runtime"—they only appear after the program starts running, such as a file not existing or a network timeout; its subclasses include `std::overflow_error` and `std::underflow_error` (arithmetic overflow). Additionally, `std::bad_alloc` inherits directly from `std::exception` and is thrown when `new` fails to allocate memory.
 
 Leveraging this inheritance hierarchy, we can perform **hierarchical catching**:
 
@@ -142,13 +148,13 @@ Output:
 Out of range: vector::_M_range_check: __n (which is 10) >= this->size() (which is 3)
 ```
 
-The matching rule for `catch` blocks is top-to-bottom: the first type-matching `catch` is executed, and the rest are skipped.
+The matching rule for `catch` blocks is top-to-bottom: the first `catch` with a matching type gets executed, and the rest are skipped.
 
-> **Pitfall warning**: The order of `catch` blocks is very important. Always put the most specific exception types first and the most generic ones last. If you put `std::exception&` first, all standard exceptions will be intercepted by it, and the subsequent `catch` blocks will all become dead code. What's worse, the compiler won't issue any warnings for this mistake—it only exposes itself at runtime.
+> **Pitfall warning**: The order of `catch` is very important. Always put the most specific exception types first and the most generic ones last. If you put `catch (const std::exception&)` first, all standard exceptions will be intercepted by it, and the subsequent `catch` blocks will all become dead code. What's worse, the compiler won't issue any warning for this mistake—it only exposes itself at runtime.
 
 ## Throw by value, catch by const reference
 
-A widely recognized best practice in the C++ community: **throw by value, catch by const reference**. Throwing by value is because the value of the `throw` expression is copied (or moved) into a special storage area managed by the compiler. Even if the original object is destructed during stack unwinding, the exception object itself remains valid. Catching by `const` reference avoids **object slicing**—if you catch `std::exception` by value and you actually threw a `std::runtime_error`, the derived class portion will be sliced off, and `what()` will call the base class version instead of the derived class version.
+A widely recognized best practice in the C++ community: **throw by value, catch by const reference**. Throwing by value is because the value of the `throw` expression gets copied (or moved) into a special storage area managed by the compiler. Even if the original object is destructed during stack unwinding, the exception object itself remains valid. Catching by `const` reference avoids **object slicing**—if you catch `std::exception` by value and you actually threw a `std::runtime_error`, the derived class portion gets sliced off, and `what()` calls the base class version instead of the derived class version.
 
 ```cpp
 // 错误：按值捕获会切片
@@ -162,11 +168,11 @@ catch (const std::exception& e) {    // 多态完整保留
 }
 ```
 
-> **Pitfall warning**: The `const char*` pointer returned by `what()` points to a string stored inside the exception object. Once the exception object is destroyed, this pointer becomes dangling. So using `what()` inside the `catch` block is safe, but if you save the return value and use it outside the `catch` block—good luck. The correct approach is to copy the contents into a `std::string` inside the `catch` block.
+> **Pitfall warning**: The `const char*` pointer returned by `what()` points to a string stored inside the exception object. Once the exception object is destroyed, this pointer dangles. So using `e.what()` inside the `catch` block is safe, but if you save the return value and use it outside the `catch` block—good luck. The correct approach is to copy the contents into a `std::string` inside the `catch` block.
 
 ## Multiple catch blocks and rethrowing
 
-A single `try` block can be followed by multiple `catch` blocks to handle different types of exceptions separately. Additionally, sometimes after a `catch` block catches an exception, it realizes it can't handle it, or it needs to do some cleanup work and then continue throwing it outward. This is where **rethrowing** comes in—just write a bare `throw` (without any expression):
+A single `try` block can be followed by multiple `catch` blocks to handle different types of exceptions separately. Additionally, sometimes after a `catch` block catches an exception, it finds it can't handle it, or it needs to do some cleanup work and then continue throwing it outward. This is where **rethrowing** comes in—just write a bare `throw;` (without any expression):
 
 ```cpp
 #include <cstdio>
@@ -207,7 +213,7 @@ Output:
 Caught: Runtime failure
 ```
 
-`throw;` and `throw e;` are fundamentally different—the former rethrows the **original exception object**, preserving the complete dynamic type information; the latter copies a new exception object whose static type is that of the `e` parameter, and the derived class information will be sliced off. So unless you genuinely want to change the type of the exception, always use `throw;`. `catch (...)` means "catch any type of exception." It is occasionally used at destructor boundaries or library boundaries, but don't abuse it in everyday code—swallowing exceptions without doing any handling is the root cause of debugging nightmares.
+There is a fundamental difference between `throw;` and `throw e;`—the former rethrows the **original exception object**, preserving the complete dynamic type information; the latter copies a new exception object whose static type is that of the `catch` parameter, and the derived class information gets sliced off. So unless you genuinely want to change the type of the exception, always use `throw;`. `catch (...)` means "catch any type of exception." It is occasionally used at destructor boundaries or library boundaries, but don't abuse it in everyday code—swallowing exceptions without doing any handling is the root cause of debugging nightmares.
 
 ## noexcept — promising not to throw
 
@@ -220,11 +226,11 @@ int safe_computation(int a, int b) noexcept
 }
 ```
 
-If a function marked `noexcept` actually throws an exception internally, the program immediately calls `std::terminate`—with no stack unwinding and no chance for `catch`, it dies instantly. So `noexcept` shouldn't be added casually; you need to be certain that this function truly won't throw, or that it internally uses `try`/`catch` to swallow all possible exceptions. `noexcept` can also accept a boolean parameter—`noexcept(true)` is equivalent to `noexcept`, and `noexcept(false)` is equivalent to omitting it. The standard library's `std::vector` uses the `noexcept` trait of the element type to determine its own exception specification.
+If a function marked `noexcept` actually throws an exception internally, the program immediately calls `std::terminate`—with no stack unwinding, no chance for any `catch`, just instant death. So don't just add `noexcept` casually; you need to be certain that this function truly won't throw, or that it internally uses `try-catch` to swallow all possible exceptions. `noexcept` can also accept a boolean parameter—`noexcept(true)` is equivalent to `noexcept`, and `noexcept(false)` is equivalent to not adding it at all. The standard library's `std::swap` uses the `noexcept` trait of the element type to determine its own exception specification.
 
 ## Practical example — exceptions.cpp
 
-Now let's integrate the previous knowledge points into a complete program, implementing safe integer division and a file content parser.
+Now let's integrate the concepts we've covered into a complete program, implementing safe integer division and a file content parser.
 
 ```cpp
 // exceptions.cpp
@@ -353,26 +359,26 @@ Verify the output:
   Unknown exception
 ```
 
-Let's verify it section by section. Safe division part: `safe_divide(10, 3)` normally yields `3`; when `safe_divide(10, 0)` throws an exception, `Error:` has already been output before the `throw`, so the error message will follow this prefix; `safe_divide(10, -1)` yields `-10`. File parsing part: the third line of the test file, `abc`, cannot be parsed by `std::stoi`. The `catch` block in `parse_file` prints the line number context and then rethrows with `throw;`, which the main function catches—note that `parse_file("data.txt")` was not called because the exception interrupted the parsing loop at line three. The `catch (...)` part demonstrates a fallback catch for non-standard exception types. The `what()` message content of `std::bad_alloc` varies depending on the compiler and standard library version (for example, libstdc++ might output `std::bad_alloc` or `bad allocation`).
+Let's verify it section by section. For the safe division part: `10 / 3` normally yields `3`; when `7 / 0` throws an exception before `safe_divide`, `std::cout` has already output `7 / 0 =`, so the error message follows this prefix; `-20 / 4` yields `-5`. For the file parsing part: the third line of the test file, `"not_a_number"`, cannot be parsed by `std::stoi`. The `catch` block in `parse_int_file` prints the line number context and then rethrows with `throw;`, which the main function catches—note that `print_results` is not called because the exception interrupts the parsing loop at line three. The `catch(...)` section demonstrates a catch-all for non-standard exception types. The content of the `what()` message for `stoi` varies depending on the compiler and standard library version (for example, libstdc++ might output `stoi` or `stoi: no conversion`).
 
-> **Pitfall warning**: `std::stoi` throws `std::invalid_argument` (unable to convert) or `std::out_of_range` (value exceeds the `int` range) when parsing fails. Both exceptions inherit from `std::logic_error`. If you need to distinguish between these two cases in a `catch` block, you should use two separate `catch` blocks to handle them individually, rather than uniformly swallowing them with `std::logic_error`—the latter loses the specific type information of the error and increases debugging difficulty.
+> **Pitfall warning**: `std::stoi` throws `std::invalid_argument` (unable to convert) or `std::out_of_range` (value out of `int` range) when parsing fails. Both exceptions inherit from `std::logic_error`. If you need to distinguish between these two cases in a `catch` block, you should use two separate `catch` blocks to handle them individually, rather than uniformly swallowing them with `catch (const std::exception&)`—the latter loses the specific type information of the error and increases debugging difficulty.
 
 ## Practice time
 
 ### Exercise 1: Safe array access
 
-Write a function `safe_at` that throws `std::out_of_range` when the index is out of bounds, with the error message including the requested index and the actual size of the vector. Test both normal access and out-of-bounds access scenarios in `main`.
+Write a function `int safe_get(const std::vector<int>& v, std::size_t index)` that throws `std::out_of_range` when `index` is out of bounds. The error message should include the requested index and the actual size of the vector. Test both normal access and out-of-bounds access scenarios in `main`.
 
 ### Exercise 2: String-to-number parser
 
-Write a function `parse_numbers` that parses a comma-separated string (such as `"1,2,3"`) into a `std::vector<int>`. Requirements: report invalid number formats with `std::invalid_argument`, and report empty input with `std::runtime_error`. At the call site, use `try`/`catch` to handle both exceptions separately and provide user-friendly prompts.
+Write a function `std::vector<double> parse_doubles(const std::string& input)` that parses a comma-separated string (such as `"1.5,2.7,3.14"`) into a `double` vector. Requirements: report invalid number formats with `std::invalid_argument`, and report empty input with `std::runtime_error`. At the call site, use `try`/`catch` to handle the two exceptions separately and provide user-friendly messages.
 
-### Exercise 3: noexcept operator
+### Exercise 3: The noexcept operator
 
-Write two functions: `safe_compute` that performs simple calculations, and `risky_compute` that throws `std::invalid_argument` when the input is negative. Then, in `main`, use the `noexcept` and `static_assert` compile-time operators to check their `noexcept` status and print the results.
+Write two functions: `void safe_calc(int x) noexcept` performs a simple calculation, and `void risky_calc(int x)` throws `std::invalid_argument` when `x` is negative. Then, in `main`, use the `noexcept(safe_calc)` and `noexcept(risky_calc)` compile-time operators to check their `noexcept` status and print the results.
 
 ## Summary
 
-In this chapter, we built the basic framework of C++ exception handling from scratch. `throw` is responsible for throwing exception objects, `try` marks the monitored region, and `catch` catches and handles exceptions—this trio forms the syntactic core of the exception mechanism. Stack unwinding guarantees that all local objects are correctly destructed when an exception flies by, and the inheritance hierarchy of standard exception classes allows us to use base class references for polymorphic catching. "Throw by value, catch by const reference" is the key convention to avoid object slicing, `throw;` is used to rethrow the original exception, and `noexcept` is used to mark functions that don't throw exceptions—it serves as both an optimization hint for the compiler and a contractual promise to the caller.
+In this chapter, we built the basic framework of C++ exception handling from scratch. `throw` is responsible for throwing exception objects, `try` marks the monitored region, and `catch` catches and handles exceptions—this trio forms the syntactic core of the exception mechanism. Stack unwinding ensures that all local objects are correctly destructed when an exception flies by, and the inheritance hierarchy of standard exception classes allows us to perform polymorphic catching using base class references. "Throw by value, catch by const reference" is the key convention for avoiding object slicing, `throw;` is used to rethrow the original exception, and `noexcept` is used to mark functions that don't throw exceptions—it serves as both an optimization hint for the compiler and a contractual promise to the caller.
 
 However, knowing how to throw and how to catch is only the first step. A more important question is: when an exception flies by, what about the resources that were already allocated, the files that were opened, and the mutexes that were locked beforehand? In the next article, we will discuss this topic—exception safety. We will learn about the four levels of exception safety, see how RAII guarantees no resource leaks when exceptions occur, and learn how to use the copy-and-swap idiom to give operations transaction-level strong safety guarantees.

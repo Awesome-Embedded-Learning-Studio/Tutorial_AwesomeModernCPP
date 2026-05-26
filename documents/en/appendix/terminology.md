@@ -1,15 +1,20 @@
 ---
 title: Glossary
-description: Standard Chinese-English Technical Terminology Translation Reference
-  Table for the Project
+description: Standard translation reference table for technical terms in this project
 tags:
 - 基础
 chapter: 99
 order: 0
+translation:
+  source: documents/appendix/terminology.md
+  source_hash: 196eb84369e66ed9a72950957ad430ac6dd024a4dbc092a4775a829165660d31
+  translated_at: '2026-05-26T10:09:25.855956+00:00'
+  engine: anthropic
+  token_count: 1617
 ---
 # Glossary
 
-This document compiles the core terms used throughout the project tutorials, grouped by domain, with Chinese and English translations. Its purpose is to ensure consistent terminology across all articles, preventing the same concept from being translated differently in different places.
+This document compiles the core terms used throughout the project tutorials, grouped by domain, with Chinese and English translations. The goal is to ensure consistent terminology across all articles, preventing the same concept from being translated differently in different places.
 
 ## C++ Language Features
 

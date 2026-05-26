@@ -1,6 +1,6 @@
 ---
-title: ARM Architecture and Architecture Fundamentals
-description: Starting from the von Neumann and Harvard architectures, deconstruct
+title: ARM Architecture and Fundamentals
+description: Starting from the von Neumann and Harvard architectures, we break down
   the ARM Cortex-M instruction set, register file, exception vector table, and processor
   modes to build a low-level hardware mental model.
 chapter: 1
@@ -23,23 +23,29 @@ prerequisites:
 - C 语言基础：数据类型与内存
 - 指针与内存地址
 - 基本的嵌入式开发概念
+translation:
+  source: documents/vol1-fundamentals/c_tutorials/advanced_feature/01-arm-architecture-fundamentals.md
+  source_hash: a4cd205e6a3a57b38b85964c73510a5200040c058e79d583799863a28fefc3b3
+  translated_at: '2026-05-26T10:34:55.004711+00:00'
+  engine: anthropic
+  token_count: 3519
 ---
 # ARM Architecture and Fundamentals
 
-Honestly, if you have only ever written C/C++ on a PC, you have probably never cared about how a processor actually turns a line of code into electrical signals. The x86 ecosystem is so abstracted that the compiler and operating system shield you from almost all low-level details. But once you step into the embedded world, especially when facing ARM Cortex-M series MCUs, this knowledge is no longer a nice-to-have—it is a prerequisite for writing correct code. We have seen too many people jump straight into STM32 without even being able to explain what processor modes or exception vector tables are, leaving them staring blankly at registers when a HardFault hits.
+Honestly, if you have only ever written C/C++ on a PC, you have probably never cared about how a processor actually turns a line of code into electrical signals. The x86 ecosystem is so abstract that the compiler and operating system shield you from almost all low-level details. But once you step into the embedded world, especially when facing ARM Cortex-M series MCUs, this knowledge is no longer a nice-to-have—it is a prerequisite for writing correct code. We have seen too many people jump straight into STM32 development without even being able to explain what processor modes or the exception vector table are, leaving them staring blankly at registers when a HardFault hits.
 
-Developers in other languages like Python or Java basically never need to care about this—the virtual machine or interpreter abstracts away the hardware completely. But C/C++ is different. Their design philosophy is "close to the metal," and there is only a thin layer of abstraction between the machine code the compiler generates and your source code. Since ARM is the absolute mainstream in embedded systems today, understanding its architecture means understanding exactly what happens on the chip for every line of C code you write. The connection to C++ is even stronger—object layout, cache-friendly design, and exception handling overhead are all topics directly tied to ARM's hardware characteristics.
+Developers in other languages like Python or Java basically never need to care about this—the virtual machine or interpreter abstracts away the hardware completely. But C/C++ is different. Their design philosophy is "close to the metal," with only a thin layer of abstraction between the machine code the compiler generates and your source code. Since the ARM architecture is the absolute mainstream in embedded systems today, understanding its architecture means understanding what actually happens on the chip for every line of C code you write. The connection to C++ is even stronger—object layout, cache-friendly design, and exception handling overhead are all topics directly tied to ARM's hardware characteristics.
 
-In this tutorial, we will tear down an ARM processor from an architectural perspective, making sense of its memory architecture, instruction set, register file, exception mechanism, and processor modes. The goal is not to turn you into an assembly programmer, but to give you a clear mental model of what happens at the hardware level when you write C/C++—so that when you use ``volatile`` to qualify a register, you know why; and when you debug a HardFault caused by a stack overflow, you can pinpoint the issue quickly.
+In this tutorial, we will tear down the ARM processor from an architectural perspective, making sense of its memory architecture, instruction set, register file, exception mechanism, and processor modes. The goal is not to turn you into an assembly programmer, but to give you a clear mental model of what happens at the hardware level when you write C/C++. When you use ``volatile`` to qualify a register, you will know why. When you debug a HardFault caused by a stack overflow, you will be able to pinpoint the issue quickly.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Distinguish between Von Neumann, Harvard, and Modified Harvard architectures
-> - [ ] Explain the differences and use cases for ARM, Thumb, and Thumb-2 instruction sets
-> - [ ] Describe the roles of R0-R15 registers and the AAPCS calling convention
-> - [ ] Describe the Cortex-M exception vector table structure and stacking/unstacking mechanisms
+> - [ ] Distinguish between von Neumann architecture, Harvard architecture, and modified Harvard architecture
+> - [ ] Explain the differences and use cases of the ARM, Thumb, and Thumb-2 instruction sets
+> - [ ] Describe the roles of the R0-R15 registers and the AAPCS calling convention
+> - [ ] Describe the structure of the Cortex-M exception vector table and its stacking/unstacking mechanism
 > - [ ] Understand the division between Thread/Handler modes and privilege levels
 
 ## Environment Setup
@@ -61,44 +67,44 @@ The first thing we need to discuss is the processor's memory architecture—how 
 
 ### Von Neumann Architecture — One Bus to Rule Them All
 
-The core characteristic of the Von Neumann architecture is that instructions and data share a single bus and a single memory space. The CPU accesses memory through one set of address buses, regardless of whether you are reading code or data—it all goes down the same path. You can think of it as a single-lane road where instructions and data line up and take turns; they cannot travel side by side. The advantage is hardware simplicity—you only need one bus and one memory, which keeps costs down. The early 8051 MCU and the core philosophy of most general-purpose computers stem from this.
+The core characteristic of the von Neumann architecture is that instructions and data share a single bus and a single memory space. The CPU accesses memory through one set of address buses, regardless of whether you are reading code or data—it all goes down the same path. You can think of it as a single-lane road where instructions and data line up and take turns; they cannot travel side by side. The advantage is hardware simplicity—you only need one bus and one memory, which keeps costs down. The core philosophy of the early 8051 MCU and most general-purpose computers stems from this.
 
-The problem is also obvious: because instructions and data squeeze onto the same bus, the CPU cannot fetch instructions and read/write data simultaneously. In practice, this means limited performance—want to execute an addition and write the result back to memory at the same time? Sorry, the bus is busy fetching the next instruction, so you have to wait in line. This is the so-called "Von Neumann bottleneck."
+The problem is also obvious: because instructions and data are squeezed onto the same bus, the CPU cannot fetch instructions and read/write data simultaneously. In practice, this means performance is limited. Want to execute an addition and write the result back to memory at the same time? Sorry, the bus is busy fetching the next instruction, so you have to wait in line. This is the so-called "von Neumann bottleneck."
 
 ### Harvard Architecture — Two Buses, Each Minding Its Own Business
 
 The Harvard architecture takes a different approach: instructions and data each have their own bus and their own memory space. It is like turning the single-lane road into a dual-lane highway—instruction fetching and data read/write can happen simultaneously, theoretically doubling throughput. Most DSP chips and many modern microcontrollers use a pure Harvard architecture or a variant of it.
 
-But the pure Harvard architecture is not a silver bullet either. If your program needs self-modifying code (rare in embedded), or if you want to use a block of memory as both code and data space, the hardware is not flexible enough—you would need to design an extra mechanism to allow the two buses to access each other's memory spaces.
+But the pure Harvard architecture is not a silver bullet either. If your program needs self-modifying code (rare in embedded systems), or if you want to use a block of memory as both code and data space, the hardware is not flexible enough—you have to design an extra mechanism to allow the two buses to access each other's memory spaces.
 
 ### Modified Harvard Architecture — ARM's Practical Choice
 
-Real-world ARM Cortex-M3/M4 processors rarely go to extremes, instead adopting what is called the **Modified Harvard Architecture**. You can understand it this way: from a software perspective, the address space is unified (like Von Neumann), but from a hardware perspective, instruction fetching and data access can happen in parallel (like Harvard).
+In reality, ARM Cortex-M3/M4 rarely goes to extremes, adopting what is called the **Modified Harvard Architecture**. You can understand it this way: from a software perspective, the address space is unified (like von Neumann), but from a hardware perspective, instruction fetching and data access can happen in parallel (like Harvard).
 
-Specifically, Cortex-M3/M4 has three AHB-Lite buses: the I-Code bus is dedicated to fetching instructions from the Code region (``0x00000000``–``0x1FFFFFFF``, where Flash is mapped), the D-Code bus handles data access in the Code region (like loading constants from Flash), and the System bus handles access to the SRAM and peripheral regions. I-Code and D-Code can work in parallel, so code in Flash and constant data in Flash can be accessed simultaneously, significantly improving execution efficiency.
+Specifically, Cortex-M3/M4 has three AHB-Lite buses: the I-Code bus is dedicated to fetching instructions from the Code region (``0x00000000``–``0x1FFFFFFF``, where Flash is mapped), the D-Code bus handles data access in the Code region (such as loading constants from Flash), and the System bus handles access to the SRAM and peripheral regions. I-Code and D-Code can work in parallel, so code in Flash and constant data in Flash can be accessed simultaneously, significantly improving execution efficiency.
 
-If you look at the STM32F407 memory map, you will find that the 512MB space from address ``0x00000000`` to ``0x1FFFFFFF`` is marked as the Code region, while ``0x20000000`` onward is the SRAM region. ARM officially recommends that during bus arbitration, D-Code has higher priority than I-Code—because if a data access is blocked, the processor cannot proceed, whereas instruction prefetching can afford to wait a bit.
+If you look at the memory map of the STM32F407, you will find that the 512MB space from address ``0x00000000`` to ``0x1FFFFFFF`` is marked as the Code region, while ``0x20000000`` onward is the SRAM region. ARM officially recommends that during bus arbitration, D-Code has higher priority than I-Code—because if a data access is blocked, the processor cannot proceed, whereas instruction prefetching can afford to wait a bit.
 
-> ⚠️ **Watch Out**
-> Although Cortex-M has multiple buses, they are not truly "fully parallel"—if I-Code and D-Code access Flash simultaneously, they still have to go through Flash controller arbitration. On the STM32F1, Flash is only 16 bits wide with no cache, so the parallel bus advantage is significantly diminished; on the STM32F4, with its 128-bit wide Flash interface and Adaptive Real-Time (ART) Accelerator, the difference is very noticeable. Do not forget to check this metric when selecting a chip.
+> ⚠️ **Pitfall Warning**
+> Although Cortex-M has multiple buses, they are not truly "fully parallel"—if I-Code and D-Code access Flash simultaneously, they still have to go through Flash controller arbitration. On the STM32F1, Flash is only 16 bits wide and has no cache, so the advantage of bus parallelism is greatly diminished. On the STM32F4, however, there is a 128-bit wide Flash interface and an Adaptive Real-Time (ART) Accelerator, making the difference very obvious. Do not forget to check this metric when selecting a chip.
 
 ## Step 2 — Understanding How ARM Instructions Are Encoded
 
-With the memory architecture clear, let us look at the ARM instruction set. This directly impacts the size and execution efficiency of your generated code, which is especially critical on resource-constrained MCUs.
+With the memory architecture out of the way, let us look at the ARM instruction set. This directly affects the size and execution efficiency of your generated code, which is especially critical on resource-constrained MCUs.
 
 ### ARM Instruction Set (32-bit) — Expressive but Bulky
 
-ARM's original instruction set (A32) uses fixed-length 32-bit encoding, with each instruction taking 4 bytes. The encoding space is ample enough to express rich operations—advanced features like conditional execution, inline barrel shifter shifts, and multi-register transfers (``LDM/STM``). The benefit of 32-bit instructions is high expressiveness; a single instruction can do a lot, raising the performance ceiling. The downside is equally obvious—large code size, an overhead that cannot be ignored on small MCUs with only a few dozen KB of Flash.
+ARM's original instruction set (A32) uses fixed-length 32-bit encoding, with each instruction taking up four bytes. The encoding space is ample enough to express rich operations—advanced features like conditional execution, inline barrel shifter shifts, and multi-register transfers (``LDM/STM``). The benefit of 32-bit instructions is high expressiveness; a single instruction can do a lot, leading to a high performance ceiling. The trade-off is also obvious—code size is large, and on small MCUs with only a few dozen KB of Flash, this overhead cannot be ignored.
 
 ### Thumb Instruction Set (16-bit) — Compact but Limited
 
-To solve the code density problem, ARM introduced the Thumb instruction set (T16) in the ARMv4T architecture, compressing most commonly used instructions into 16-bit encodings. The trade-off is the loss of some advanced features—in Thumb state, most instructions no longer support conditional execution, and barrel shifter usage is restricted. But in exchange, code size typically shrinks by about 30%, which is a lifesaver for applications tight on Flash.
+To solve the code density problem, ARM introduced the Thumb instruction set (T16) in the ARMv4T architecture, compressing most commonly used instructions into 16-bit encodings. The trade-off is the loss of some advanced features—most instructions in Thumb state no longer support conditional execution, and the use of the barrel shifter is restricted. In exchange, code size is typically reduced by about 30%, which is a lifesaver for applications with tight Flash space.
 
 ### Thumb-2 — The Default Choice for Cortex-M
 
-Cortex-M3/M4 uses the **Thumb-2 instruction set**, a mixed-encoding scheme where 16-bit and 32-bit instructions are interleaved. The compiler automatically selects the most appropriate encoding width for each instruction—simple operations use 16 bits, while complex operations (like loading large immediates, division, etc.) use 32 bits. This way, you get functional completeness close to the pure ARM instruction set while maintaining code density close to pure Thumb.
+Cortex-M3/M4 uses the **Thumb-2 instruction set**, a mixed-encoding scheme where 16-bit and 32-bit instructions are interleaved. The compiler automatically selects the most appropriate encoding width for each instruction based on its needs—simple operations use 16 bits, while complex operations (like loading large immediates, division, etc.) use 32 bits. This way, you get functional completeness close to the pure ARM instruction set while maintaining code density close to pure Thumb.
 
-One point is particularly worth noting: **Cortex-M series processors only support the Thumb instruction set** and do not support the traditional 32-bit ARM instruction set. So all code you write on Cortex-M, whether compiled from C or hand-written in assembly, must be Thumb-encoded. The compiler defaults to Thumb mode, so you do not need to worry about it in most cases—but if you are writing inline assembly or a custom startup file, you must remember this, otherwise you will be rewarded with a beautiful Undefined Instruction exception.
+One point is particularly worth noting: **Cortex-M series processors only support the Thumb instruction set** and do not support the traditional 32-bit ARM instruction set. So all code you write on Cortex-M, whether compiled from C or hand-written in assembly, must be Thumb-encoded. The compiler defaults to Thumb mode, so you do not need to worry about it in most cases—but if you are writing inline assembly or a custom startup file, you must remember this, otherwise you will be rewarded with a very beautiful Undefined Instruction exception.
 
 ```c
 /// @brief 一个简单的 Thumb 函数示例
@@ -118,28 +124,28 @@ uint32_t read_msp(void)
 }
 ```
 
-> ⚠️ **Watch Out**
+> ⚠️ **Pitfall Warning**
 > If you accidentally remove ``-mthumb`` in your linker script or compiler flags (or erroneously add ``-marm``), linking on Cortex-M will fail outright—because the Cortex-M instruction decoder simply does not understand 32-bit ARM encoding. When you encounter a ``Undefined Instruction`` exception, first check whether your compiler flags include ``-mthumb``.
 
-## Step 3 — Meeting the Processor's "Workbench": The Register File
+## Step 3 — Getting to Know the Processor's "Workbench": The Register File
 
-If the instruction set is the processor's "language," then registers are its "workbench"—when the CPU performs calculations, data is first moved into registers, operations happen between registers, and finally the results are written back to memory. Understanding the division of labor among registers is the foundation for understanding how ARM operates.
+If the instruction set is the processor's "language," then registers are its "workbench." When the CPU performs calculations, data is first moved into registers, operations happen between registers, and finally the results are written back to memory. Understanding the division of labor among registers is the foundation for understanding how ARM operates.
 
 ### General-Purpose Registers R0-R15
 
 The ARMv7-M architecture defines sixteen 32-bit general-purpose registers, numbered R0 to R15. They each have specific roles, and not all registers can be used freely.
 
-**R0-R3** are argument and return value registers. Per the AAPCS (ARM Architecture Procedure Call Standard) convention, the first four arguments of a function call are passed through R0-R3, and the return value is also placed in R0 (for 64-bit return values, R0 and R1 are used together). You can think of them as the "express lane" for function calls—if a C function has no more than four arguments, the call process does not need to touch the stack at all, making it very fast. But if you write a function with five arguments, the fifth one must be pushed to the stack, adding an extra memory access.
+**R0-R3** are argument and return value registers. According to the AAPCS (ARM Architecture Procedure Call Standard) convention, the first four arguments of a function call are passed through R0-R3, and the return value is also placed in R0 (for 64-bit return values, R0 and R1 are used together). You can think of them as the "express lane" for function calls—if a C function has no more than four arguments, the call process does not need to touch the stack at all, making it very fast. But if you write a function with five arguments, the fifth one has to be pushed to the stack, adding an extra memory access.
 
 **R4-R11** are callee-saved registers. A function can freely use R4-R11, but it must restore their original values before returning—meaning the caller can safely assume these registers will not be clobbered after a function call. The compiler typically allocates these registers to local variables, especially high-frequency data like loop counters and frequently accessed pointers whose lifetimes span across function calls. If you see a bunch of ``PUSH {R4-R7, LR}`` instructions at the beginning of a function while debugging, that is the compiler saving the callee-saved registers it plans to use.
 
-**R12 (IP)** is the intra-procedure-call scratch register. The name is long but the purpose is simple—the linker uses it as a temporary holding area when handling long jumps (where the target address exceeds the encoding range of the branch instruction). You rarely touch it directly when writing C code.
+**R12 (IP)** is the intra-procedure-call scratch register. The name is long but the purpose is simple—the linker uses it as a temporary holding register when handling long jumps (where the target address exceeds the encoding range of the branch instruction). You rarely touch it directly when writing C code.
 
-**R13 (SP)** is the stack pointer, pointing to the top of the current stack. ARM has two stack pointers—the Main Stack Pointer (MSP) and the Process Stack Pointer (PSP)—selected via the CONTROL register. Bare-metal applications typically use only the MSP; if an RTOS is running, interrupt handling uses the MSP while threads use the PSP, achieving isolation between the interrupt stack and thread stacks. This design is quite elegant—even if a thread overflows its stack, it will not corrupt the stack space used by interrupt handling.
+**R13 (SP)** is the stack pointer, pointing to the top of the current stack. ARM has two stack pointers—the Main Stack Pointer (MSP) and the Process Stack Pointer (PSP)—and the CONTROL register selects which one is currently in use. Bare-metal applications typically only use the MSP. If you are running an RTOS, interrupt handling uses the MSP while threads use the PSP, achieving isolation between the interrupt stack and thread stacks. This design is quite elegant—even if a thread overflows its stack, it will not corrupt the stack space used by interrupt handling.
 
-**R14 (LR)** is the link register, holding the return address of a function call. When a ``BL`` (Branch with Link) instruction is executed, the return address is automatically stored in LR. The beauty of this is that for leaf functions (functions that do not call other functions), there is no need to push the return address to the stack at all—it is already saved in LR, saving one memory write. But if your function calls another function, the value in LR will be overwritten, so the compiler pushes LR to the stack at the start of the function.
+**R14 (LR)** is the link register, which saves the return address of a function call. When a ``BL`` (Branch with Link) instruction is executed, the return address is automatically stored in LR. The beauty of this is that for leaf functions (functions that do not call other functions), there is no need to push the return address to the stack at all—it is already saved in LR, saving one memory write. But if your function calls another function, the value in LR will be overwritten, so the compiler pushes LR to the stack at the beginning of the function.
 
-**R15 (PC)** is the program counter, pointing to the currently executing instruction. Reading PC on ARM typically yields the current instruction address plus 4 (due to pipeline prefetching), and writing to PC is equivalent to performing a jump.
+**R15 (PC)** is the program counter, pointing to the currently executing instruction. On ARM, reading the PC typically yields the current instruction's address plus four (due to pipeline prefetching), and writing to the PC is equivalent to performing a jump.
 
 ```c
 /// @brief 演示 AAPCS 调用约定对寄存器使用的影响
@@ -182,16 +188,16 @@ slow_path:
 
 You can see that ``slow_path`` has an extra ``ldr`` instruction—this is the cost of pushing the fifth argument to the stack.
 
-> ⚠️ **Watch Out**
-> Do not try to "save parameters" by stuffing a bunch of unrelated variables into a struct and passing a pointer—the struct pointer itself takes up a register slot, and indirect access through a pointer adds a layer of dereference overhead. A reasonable design is to keep hot-path function parameters to no more than four basic types of ``int``/``float`` size, and only consider passing a struct pointer for anything beyond that.
+> ⚠️ **Pitfall Warning**
+> Do not try to "save parameters" by stuffing a bunch of unrelated variables into a struct and passing a pointer—the struct pointer itself takes up a register slot, and indirect access through a pointer adds an extra layer of dereferencing overhead. A reasonable design is to keep hot-path functions to no more than four basic-type parameters of ``int``/``float`` size, and only consider passing a struct pointer for anything beyond that.
 
 ### Program Status Registers — The xPSR Triplets
 
-The ARM processor's status information is saved in program status registers. On Cortex-M, this is split into three sub-registers, collectively called xPSR.
+The ARM processor's status information is saved in program status registers. On Cortex-M, this is split into three sub-registers, collectively known as xPSR.
 
 **APSR (Application PSR)** holds the result flags of arithmetic and logic operations: N (Negative), Z (Zero), C (Carry), V (oVerflow), and Q (saturation flag). The first four are the familiar condition code flags; ``if (a > b)`` in C code compiles down to checks against these flags.
 
-**EPSR (Execution PSR)** contains the Thumb state bit (T-bit) and the interruptible-continuable instruction bit. The T-bit on Cortex-M is always 1 (because only Thumb is supported), so you basically never need to manipulate it manually.
+**EPSR (Execution PSR)** contains the Thumb state bit (T-bit) and the interruptible-continuable instruction bit. The T-bit on Cortex-M is always 1 (because it only supports Thumb), so you basically never need to manipulate it manually.
 
 **IPSR (Interrupt PSR)** holds the exception number of the currently executing exception. In Thread mode, IPSR is 0; if an interrupt is being handled, IPSR is the number of that interrupt. This is particularly useful when debugging HardFaults—reading IPSR lets you confirm which exception context you are in.
 
@@ -214,28 +220,28 @@ ARM processors run in different "modes," each with different privilege levels an
 
 ### Cortex-M's Simplified Model: Thread and Handler
 
-Cortex-M drastically simplifies the traditional ARM's seven processor modes, keeping only two: **Thread mode** (for executing normal application code) and **Handler mode** (for executing interrupt service routines and exception handling code). Each mode is further divided into privileged and unprivileged levels.
+Cortex-M drastically simplifies the traditional ARM's seven processor modes, keeping only two modes: **Thread mode** (for executing normal application code) and **Handler mode** (for executing interrupt service routines and exception handling code). Each mode is further divided into privileged and unprivileged levels.
 
-After power-on reset, the processor defaults to Thread mode + privileged level. If you do not actively drop privileges (by writing to the CONTROL register), your entire program runs in privileged state—this is common in bare-metal development, but it also means your code can "legally" do anything, including writing to the wrong register and causing peripheral misbehavior. In scenarios running an RTOS, the RTOS typically drops privileges to unprivileged level when creating user threads, so that even if a thread goes astray, it will not directly manipulate critical hardware registers.
+After power-on reset, the processor defaults to Thread mode + privileged level. If you do not actively drop privileges (by writing to the CONTROL register), your entire program runs in privileged mode—this is very common in bare-metal development, but it also means your code can "legally" do anything, including writing to the wrong register and causing peripheral misbehavior. In scenarios running an RTOS, the OS typically drops privileges to unprivileged level when creating user threads, so even if a thread goes astray, it will not directly manipulate critical hardware registers.
 
 Handler mode is always privileged—interrupt handling code needs full hardware access, which is a hard requirement. When an exception or interrupt occurs, the processor automatically switches from Thread mode to Handler mode, and switches back automatically when handling is complete.
 
-> ⚠️ **Watch Out**
-> If you accidentally drop to unprivileged level in Thread mode, you cannot elevate back on your own—only the Handler mode triggered by an exception/interrupt can manipulate the CONTROL register to elevate privileges. So if you plan to use unprivileged mode, make sure to trigger a system call via the SVC (Supervisor Call) instruction to perform privileged operations, rather than directly manipulating hardware registers in unprivileged mode.
+> ⚠️ **Pitfall Warning**
+> If you accidentally drop to unprivileged level in Thread mode, you cannot climb back up—only the Handler mode triggered by an exception/interrupt can manipulate the CONTROL register to elevate privileges. So if you plan to use unprivileged mode, make sure to use an SVC (Supervisor Call) instruction to trigger a system call for operations that require privileges, rather than directly manipulating hardware registers in unprivileged mode.
 
 ## Step 5 — Walking Through the Full Interrupt Handling Process via the Exception Vector Table
 
 By now we have the foundational knowledge of processor modes and registers. Let us tie them together and see exactly what the ARM processor does when an exception or interrupt occurs.
 
-### Exceptions Are More Than Just Interrupts
+### Exceptions Are Not Just Interrupts
 
-In ARM terminology, "Exception" is a broader concept than "Interrupt." Interrupts are just one type of exception; others include: Reset, NMI (Non-Maskable Interrupt), HardFault, Memory Management Fault, Bus Fault, Usage Fault, SVCall, PendSV, SysTick, and more. They all share the same handling mechanism, just with different priorities.
+In ARM terminology, "Exception" is a broader concept than "Interrupt." Interrupts are just one type of exception; others include Reset, NMI (Non-Maskable Interrupt), HardFault, Memory Management Fault, Bus Fault, Usage Fault, SVCall, PendSV, and SysTick. They all share the same handling mechanism, just with different priorities.
 
 ### Vector Table — The "Phone Book" of Exception Handling
 
 When an exception occurs, the processor needs to know where the corresponding handler function is located. ARM's solution is the **Vector Table**—an array of function pointers stored in memory, where each exception type corresponds to one entry.
 
-On Cortex-M, the vector table starts at address ``0x00000000`` by default (which can be relocated via the VTOR register). The first entry is not a function pointer, but the initial value of the Main Stack Pointer (MSP)—this is a clever design where the processor automatically loads this value into SP on reset, requiring no extra initialization code. Starting from the second entry, the Reset Handler, NMI Handler, HardFault Handler, and so on are placed in sequence.
+On Cortex-M, the vector table starts at address ``0x00000000`` by default (this can be relocated via the VTOR register). The first entry is not a function pointer, but the value of the initial stack pointer (MSP)—this is a clever design where the processor automatically loads this value into SP on reset, requiring no extra initialization code. Starting from the second entry, the Reset Handler, NMI Handler, HardFault Handler, and so on are placed in sequence.
 
 ```c
 /// @brief Cortex-M 向量表结构示意
@@ -260,17 +266,17 @@ typedef struct {
 
 ### Exception Stacking — The "Scene" Automatically Saved by the Processor
 
-When an exception occurs, the Cortex-M processor automatically saves the values of eight registers on the current stack: R0, R1, R2, R3, R12, LR, PC, and xPSR. This operation is called "Stacking," and it is done entirely in hardware without you needing to write any context-saving code. When exception handling is complete and the return instruction is executed, the processor automatically restores these eight registers from the stack ("Unstacking").
+When an exception occurs, the Cortex-M processor automatically saves the values of eight registers on the current stack: R0, R1, R2, R3, R12, LR, PC, and xPSR. This operation is called "Stacking," and it is done entirely in hardware without you needing to write any context-saving code. When the exception handling is complete and the return instruction is executed, the processor automatically restores these eight registers from the stack ("Unstacking").
 
-This design means your interrupt service routine is just a normal C function—you do not need to add special qualifiers like ``__irq`` (that was the approach in the ARM7TDMI era), and the compiler does not need to generate special prologue and epilogue code. Compared to the ARM7TDMI era where you had to write your own register save/restore code, the Cortex-M approach is incredibly clean.
+This design means your interrupt service routine is just a normal C function. You do not need to add special qualifiers like ``__irq`` (that was the approach in the ARM7TDMI era), and the compiler does not need to generate special prologue and epilogue code. Compared to the ARM7TDMI era where you had to write your own register save/restore code, the Cortex-M approach is incredibly clean.
 
-But there is an easy pitfall here: if your stack space is insufficient (for example, if the stack allocated for a particular interrupt is too small), the stacking operation will trigger another exception—and handling that exception also requires stacking—resulting in a cascading stack overflow that ultimately triggers a HardFault. Therefore, reasonable stack size planning is crucial in Cortex-M development. We generally recommend reserving at least 512 bytes for the main stack, and if running an RTOS, each thread stack also needs at least 256 bytes.
+But there is an easy pitfall here: if your stack space is insufficient (for example, if the stack allocated for a particular interrupt is too small), the stacking operation will trigger another exception—and that exception handling also needs to stack—resulting in a chain reaction of stack overflows that ultimately triggers a HardFault. Therefore, reasonable stack size planning is crucial in Cortex-M development. We generally recommend reserving at least 512 bytes for the main stack, and if running an RTOS, each thread stack also needs at least 256 bytes.
 
 ### Interrupt Priority — Who Goes First
 
-ARM Cortex-M supports configurable interrupt priorities. Each interrupt source has a priority register where a smaller value means a higher priority. Cortex-M3 supports up to 256 priority levels (8-bit width), but in actual implementations, most chips only use the upper 4 bits—meaning the number of priority levels you can actually use might only be 16 (this is the case for STM32F1/F4).
+ARM Cortex-M supports configurable interrupt priorities. Each interrupt source has a priority register where a smaller value means a higher priority. Cortex-M3 supports up to 256 priority levels (8-bit width), but in most actual implementations, only the upper 4 bits are used—meaning the number of priority levels you actually have available might only be 16 (this is the case for STM32F1/F4).
 
-Priority grouping splits the 8-bit priority register into two parts: the upper bits are the "Preemption Priority," and the lower bits are the "Sub-priority." A higher preemption priority interrupt can preempt a lower preemption priority interrupt that is currently being handled (nested interrupts), while the sub-priority only determines which of two interrupts with the same preemption priority gets handled first. CMSIS provides ``NVIC_SetPriorityGrouping()`` and ``NVIC_SetPriority()`` to configure these. If you are just starting out, using the default 4-bit preemption + 0-bit sub-priority grouping is fine; wait until you need fine-grained control before diving into this.
+Priority grouping splits the 8-bit priority register into two parts: the upper bits are the "Preemption Priority," and the lower bits are the "Sub-priority." A higher preemption priority interrupt can preempt a lower preemption priority interrupt that is currently being handled (nested interrupts), while the sub-priority only determines which of two interrupts with the same preemption priority gets handled first. CMSIS provides ``NVIC_SetPriorityGrouping()`` and ``NVIC_SetPriority()`` to configure these. If you are just starting out, using the default 4-bit preemption + 0-bit sub-priority grouping is fine; you can fiddle with it later when you need fine-grained control.
 
 ## Step 6 — Connecting This Knowledge to Writing C Code
 
@@ -278,11 +284,11 @@ At this point, we have gone through the core concepts of ARM architecture. You m
 
 ### Calling Conventions and Function Design
 
-As mentioned earlier, AAPCS dictates that the first four arguments are passed through R0-R3. The direct impact on C function design is: if you can control the function signature, try to keep the argument count to four or fewer, and avoid passing large structs. A common practice is to trim the parameters of frequently called hot-path functions to four or fewer, giving the compiler maximum room for optimization.
+As mentioned earlier, AAPCS dictates that the first four arguments are passed through R0-R3. The direct impact on C function design is that if you can control the function signature, try to keep the argument count to four or fewer, and avoid passing large structs. A common practice is to trim the parameters of frequently called hot-path functions to four or fewer, giving the compiler maximum room for optimization.
 
 ### volatile and Register Access
 
-The ``volatile`` keyword is almost omnipresent in embedded programming—every hardware register mapping pointer needs to be qualified with ``volatile``. The reason is that compiler optimizations assume memory values will not "change on their own," but hardware register values can be modified at any time by external events (DMA transfer complete, peripheral state changes). ``volatile`` tells the compiler, "Always actually read this address, do not cache the value."
+The ``volatile`` keyword is almost everywhere in embedded programming—every hardware register mapping pointer needs ``volatile``. The reason is that compiler optimizations assume memory values will not "change on their own," but hardware register values can be modified at any time by external events (DMA transfer completion, peripheral state changes). ``volatile`` tells the compiler, "Always actually read this address; do not cache the value."
 
 ```c
 /// @brief 典型的寄存器映射访问模式
@@ -298,7 +304,7 @@ void set_gpio_pin(int pin)
 
 ### Stack Usage and Memory Layout Awareness
 
-Once you understand ARM's stacking mechanism and dual-stack design, you have a solid basis for planning memory usage. In bare-metal applications, you need to ensure the linker script allocates enough space for the stack; in RTOS applications, you need to allocate a reasonable stack size for each thread. Rule of thumb: simple threads without floating-point operations start at 256 bytes, while threads with floating-point operations or deep call chains need 512-1024 bytes. If you enable the Cortex-M4 FPU, exception stacking will additionally save 16 floating-point registers (S0-S15) plus FPSCR—an extra 68-byte overhead that cannot be ignored.
+Once you understand ARM's stacking mechanism and dual-stack design, you have a solid basis for planning memory usage. In bare-metal applications, you need to ensure the linker script allocates enough space for the stack. In RTOS applications, you need to allocate a reasonable stack size for each thread. Rule of thumb: start at 256 bytes for simple threads without floating-point operations, and 512-1024 bytes for threads with floating-point operations or deep function call chains. If you enable the Cortex-M4's FPU, exception stacking will also save 16 additional floating-point registers (S0-S15) plus FPSCR—an extra 68-byte overhead that cannot be ignored.
 
 ## C++ Connections
 
@@ -306,7 +312,7 @@ If you are coming from the C++ part of this tutorial, the relationship between t
 
 ### Cache-Friendly Design and Data Locality
 
-ARM processors (especially the Cortex-A series) have multi-level caches. Understanding the size and working mechanism of cache lines (typically 32 or 64 bytes) directly impacts C++ data structure design. Tightly packing frequently accessed fields at the beginning of a struct, putting cold data at the end, or using ``alignas`` to control alignment can all significantly improve performance—you only need to build awareness of this during the C tutorial phase; subsequent C++ chapters will dive deeper.
+ARM processors (especially the Cortex-A series) have multi-level caches. Understanding the size and working mechanism of cache lines (typically 32 or 64 bytes) directly impacts C++ data structure design. Tightly packing frequently accessed fields at the beginning of a struct, putting cold data at the end, or using ``alignas`` to control alignment can all significantly improve performance. At the C tutorial stage, you only need to build awareness of this; subsequent C++ chapters will dive deeper.
 
 ```cpp
 // 不太友好的布局：热数据和冷数据交替排列
@@ -331,11 +337,11 @@ struct GoodSensorData {
 
 ### C++ Object Memory Layout and the ABI
 
-The memory layout of C++ objects on the ARM platform follows the AAPCS ABI specification: ordinary member variables are arranged in declaration order, the virtual function table pointer (vptr) is placed at the beginning of the object, and there may be multiple vptrs in the case of multiple inheritance. These layout details are crucial during serialization, network transmission, and interaction with C code. If you write an object-oriented driver framework in C++ on Cortex-M, understanding the position and size of the vptr helps you precisely calculate how many bytes a driver object actually occupies.
+The memory layout of C++ objects on the ARM platform follows the ABI specification of AAPCS: ordinary member variables are arranged in declaration order, the virtual function table pointer (vptr) is placed at the beginning of the object, and there may be multiple vptrs in the case of multiple inheritance. These layout details are crucial during serialization, network transmission, and interaction with C code. If you write an object-oriented driver framework in C++ on Cortex-M, understanding the position and size of the vptr helps you precisely calculate how many bytes a driver object actually occupies.
 
 ### Exception Handling Overhead
 
-On embedded ARM platforms, the runtime overhead of the C++ exception handling mechanism (try/catch/throw) needs serious consideration. Exception handling tables and unwinding information significantly increase binary size, and the stack unwinding process during exception throwing involves extensive memory operations. On Cortex-M where both Flash and RAM are tight, many teams choose to add ``-fno-exceptions`` at compile time to completely disable C++ exceptions, using error codes instead to handle errors. This is not "not C++ enough," but rather a reasonable trade-off given the resources.
+On embedded ARM platforms, the runtime overhead of the C++ exception handling mechanism (try/catch/throw) needs serious consideration. Exception handling tables and unwinding information significantly increase binary size, and the stack unwinding process during exception throwing involves numerous memory operations. On Cortex-M where both Flash and RAM are tight, many teams choose to add ``-fno-exceptions`` at compile time to completely disable C++ exceptions, using error codes instead to handle errors. This is not "not C++ enough"; it is a reasonable trade-off given the resources.
 
 ### constexpr and Compile-Time Computation
 
@@ -343,7 +349,7 @@ Many operations that would require lookup tables at runtime (CRC calculation, bi
 
 ## Exercises
 
-We leave the following exercises for you to work through on your own—hands-on research, writing code, and verifying on hardware is the true learning path.
+We leave the following exercises for you to work through on your own—hands-on research, coding, and on-board verification is the true path to learning.
 
 ```c
 /// @brief 练习 1：读取 IPSR 寄存器

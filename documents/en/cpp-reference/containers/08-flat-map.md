@@ -1,33 +1,30 @@
 ---
-title: "std::flat_map"
-description: "Cache-friendly ordered associative container based on contiguous storage, alternative to std::map"
+title: std::flat_map
+description: A sorted associative container based on contiguous storage, a cache-friendly
+  alternative to `std::map`
 chapter: 99
 order: 8
 tags:
-  - host
-  - cpp-modern
-  - beginner
+- host
+- cpp-modern
+- beginner
 difficulty: beginner
-cpp_standard: [23]
+cpp_standard:
+- 23
+translation:
+  source: documents/cpp-reference/containers/08-flat-map.md
+  source_hash: bbb5226ff887c9e3581041bf5e974bb22024ac2dae49d89c8973eaff10604140
+  translated_at: '2026-05-26T10:14:35.567727+00:00'
+  engine: anthropic
+  token_count: 498
 ---
-
 <!--
-Reference Card Template
-Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
-
-Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
-3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+. `std::flat_map` (C++23)
 -->
 
-# std::flat_map (C++23)
+## One-Liner
 
-## In a Nutshell
-
-An ordered map backed by a contiguous array instead of a red-black tree -- faster lookups (cache-friendly), more compact memory, but O(n) insertion and deletion.
+An ordered map that replaces the red-black tree with a contiguous array — faster lookups (cache-friendly) and more compact memory, but O(n) insertion/deletion.
 
 ## Header
 
@@ -39,14 +36,14 @@ An ordered map backed by a contiguous array instead of a red-black tree -- faste
 |-----------|-----------|-------------|
 | Access element | `V& operator[](const K& key)` | Access by key; inserts a default value if not present |
 | Find | `iterator find(const K& key)` | Returns an iterator to the element |
-| Insert | `pair` `<iterator, bool>` `insert(const value_type&)` | Insert a key-value pair |
-| Erase | `size_t erase(const K& key)` | Remove element by key |
+| Insert | `pair<iterator, bool> insert(const value_type&)` | Inserts a key-value pair |
+| Erase | `size_t erase(const K& key)` | Erases an element by key |
 | Element count | `size_t size() const` | Returns the number of elements |
-| Check empty | `bool empty() const` | Checks whether the container is empty |
+| Check if empty | `bool empty() const` | Checks whether the container is empty |
 | Clear | `void clear()` | Removes all elements |
 | Iterate | `iterator begin()` / `end()` | Traverse in key order |
-| Lower/upper bound | `iterator lower_bound(const K&)` | Ordered boundary lookup |
-| Contains | `bool contains(const K& key) const` | (Since C++20) Check whether a key exists |
+| Lower/upper bound | `iterator lower_bound(const K&)` | Find ordered boundaries |
+| Contains | `bool contains(const K& key) const` | (Available since C++20) Checks if a key exists |
 
 ## Minimal Example
 
@@ -64,7 +61,7 @@ int main() {
     for (const auto& [k, v] : m) {
         std::cout << k << ": " << v << "\n";
     }
-    // 1: one  2: two  3: three  (sorted by key)
+    // 1: one  2: two  3: three  (按键序排列)
 
     std::cout << std::boolalpha << m.contains(2) << "\n"; // true
 }
@@ -72,10 +69,10 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- Contiguous storage is CPU cache-friendly; lookup performance for small datasets far exceeds `std::map`
-- No per-node allocator overhead, less memory fragmentation -- suitable for embedded environments with limited heap space
-- Insertion/deletion is O(n); not suitable for large datasets with frequent modifications
-- Compiler support is still evolving (GCC 15+, Clang 20+, MSVC 19.51+); evaluate your toolchain before production use
+- Contiguous storage is CPU cache-friendly; lookup performance on small datasets far exceeds `std::map`
+- No node allocator overhead and less memory fragmentation, making it suitable for embedded environments with limited heap space
+- O(n) insertion/deletion makes it unsuitable for large, frequently modified datasets
+- Compiler support is still ongoing (GCC 15+, Clang 20+, MSVC 19.51+); evaluate your toolchain before using in production
 
 ## Compiler Support
 
@@ -89,4 +86,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

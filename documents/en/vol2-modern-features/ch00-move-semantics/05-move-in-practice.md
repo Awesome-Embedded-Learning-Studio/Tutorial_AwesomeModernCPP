@@ -1,7 +1,6 @@
 ---
 title: 'Move Semantics in Practice: From STL to Custom Types'
-description: Practical applications and performance comparison of move semantics in
-  the standard library and custom types
+description: 移动语义在标准库和自定义类型中的实际应用与性能对比
 chapter: 0
 order: 5
 tags:
@@ -21,16 +20,22 @@ prerequisites:
 - 'Chapter 0: RVO 与 NRVO'
 related:
 - 完美转发
+translation:
+  source: documents/vol2-modern-features/ch00-move-semantics/05-move-in-practice.md
+  source_hash: 67b03b192397fcccb49a2ff1a51a34528037856d00b95231857e91e36f53720a
+  translated_at: '2026-05-26T11:19:49.630252+00:00'
+  engine: anthropic
+  token_count: 5735
 ---
 # Move Semantics in Practice: From STL to Custom Types
 
-In the previous four articles, we thoroughly covered the theoretical foundations of move semantics: value categories, rvalue references, move construction and move assignment, RVO/NRVO, and perfect forwarding. Now it is time to put theory into practice. We will look at the actual performance differences move semantics can bring to real code, and how to correctly use them in STL containers and custom types. This article includes plenty of code and real benchmark data, so we recommend you type along and experience the difference between copying and moving firsthand.
+In the previous four articles, we thoroughly covered the theoretical foundations of move semantics: value categories, rvalue references, move construction and move assignment, RVO/NRVO, and perfect forwarding. Now it is time to put theory into practice. Let us look at how much of a real-world performance difference move semantics can make, and how to use it correctly with STL containers and custom types. This article includes a fair amount of code and real benchmark data, so we recommend following along and typing it out yourself to experience the difference between copying and moving firsthand.
 
 ## Move Semantics in STL Containers — Ubiquitous Benefits
 
 Standard library containers are among the biggest beneficiaries of move semantics. Since C++11, all standard library containers have implemented move constructors and move assignment operators, meaning that transferring between containers no longer requires element-by-element copying.
 
-First, let us look at `std::vector`'s `push_back`. It has two overloads: one accepting an lvalue reference (copy), and one accepting an rvalue reference (move). When you pass an lvalue, the copy version is called; when you pass an rvalue, the move version is called.
+First, let us look at the `push_back` of `std::vector`. It has two overloads: one accepting an lvalue reference (copy), and one accepting an rvalue reference (move). When you pass an lvalue, the copy version is called; when you pass an rvalue, the move version is called.
 
 ```cpp
 #include <iostream>
@@ -126,13 +131,13 @@ Output:
   [Gamma] 析构，数据量: 10000
 ```
 
-The effects of the three approaches are clear at a glance. `push_back(lvalue)` triggers a copy — all 10,000 `int`s in `src` are fully duplicated. `push_back(std::move(lvalue))` triggers a move — only the internal pointer of `src` is transferred, and `src`'s `size` becomes zero. `emplace_back` even saves the move — it constructs the `vector` object directly in place within the target vector's storage.
+The effects of the three approaches are clear at a glance. `v3` triggers a copy — the 10,000 `int`s in `src` are fully duplicated. `v4` triggers a move — only the internal pointer of `src` is transferred, and `src`'s `vector` becomes empty. `v5` skips even the move — the `vector` object is constructed directly in place.
 
-The performance ranking of the three approaches is: `emplace_back` > `push_back(std::move())` > `push_back(lvalue)`. In daily coding, if you have an existing object to put into a container, use `push_back(std::move())` to move it in; if you have constructor arguments, use `emplace_back` to construct it directly in place.
+The performance ranking of the three approaches is: `emplace_back` > `push_back(std::move(...))` > `push_back(lvalue)`. In daily coding, if you have an existing object to put into a container, use `push_back(std::move(...))` to move it in; if you have constructor arguments, use `emplace_back` to construct it directly in place.
 
 ## The swap Idiom — A Classic Application of Move Semantics
 
-`std::swap` was reimplemented based on move semantics after C++11. The core logic is to exchange the contents of two objects through three moves:
+`std::swap` was reimplemented in C++11 as a version based on move semantics. The core logic is to exchange the contents of two objects through three moves:
 
 ```cpp
 // std::swap 的简化实现（C++11 之后）
@@ -147,9 +152,9 @@ void swap(T& a, T& b) noexcept(
 }
 ```
 
-Three move operations complete the exchange of two objects. For classes that manage resources indirectly through pointers (holding memory from `new`, file descriptors, etc.), each move is just a pointer transfer, so the entire cost of swap is O(1) — regardless of the size of the managed resources. But note the prerequisite: this conclusion relies on "resources being held indirectly." If your object stores data directly inside itself like `std::array` (without an indirection layer), then moving and copying are equivalent — swap remains O(n). In contrast, C++03's swap for types with indirectly held resources required one copy construction plus two copy assignments, at a cost of O(n).
+Three move operations complete the exchange of two objects. For classes that manage resources indirectly through pointers (holding memory from `new`, file descriptors, etc.), each move is just a pointer transfer, so the cost of the entire swap is O(1) — regardless of the size of the managed resources. But note the prerequisite: this conclusion relies on "resources being held indirectly." If your object stores data directly inside itself like `std::array` (with no indirection layer), then moving and copying are equivalent — swap remains O(n). In contrast, C++03's swap for types with indirectly held resources required one copy construction plus two copy assignments, at a cost of O(n).
 
-In sorting algorithms, swap is one of the most frequent operations. `std::sort` internally calls swap extensively to adjust element positions, and efficient move operations can reduce the cost of each element adjustment during sorting from O(n) to O(1). It is worth specifically noting that `noexcept` has no direct impact on `std::sort` itself — sort internally uses move construction and move assignment directly, and does not care whether the move operations are `noexcept` (as long as the type satisfies the move-constructible and move-assignable requirements). Where `noexcept` truly comes into play is during `std::vector` reallocation: when a vector needs to move old elements to new memory, it uses `std::move_if_noexcept` to select a strategy — if the move operation is `noexcept`, it uses move; otherwise, it falls back to copy to guarantee strong exception safety. We use the following verification program to prove this point:
+In sorting algorithms, swap is one of the most frequent operations. `std::sort` internally calls swap extensively to adjust element positions, and efficient move operations can reduce the cost of each element adjustment during sorting from O(n) to O(1). It is worth specifically noting that `noexcept` has no direct impact on `std::sort` itself — sort internally uses `std::move` and placement `new`, and does not care whether the move operation is `noexcept` (as long as the type satisfies the move-constructible and move-assignable requirements). Where `noexcept` truly comes into play is during `std::vector` reallocation: when a vector needs to move old elements to new memory, it uses `std::move_if_noexcept` to select a strategy — if the move operation is `noexcept`, it uses move; otherwise, it falls back to copy to guarantee strong exception safety. We use the following verification program to prove this point:
 
 ```cpp
 // noexcept_sort_vs_realloc_verify.cpp -- 验证 noexcept 对 sort 和 vector 扩容的影响
@@ -243,7 +248,7 @@ noexcept 扩容:  拷贝=0 移动=255
 非noexcept扩容: 拷贝=255 移动=0
 ```
 
-The data is very clear. `std::sort` uses moves in both cases (23,516 times), completely ignoring `noexcept`. But `std::vector` reallocation is a completely different story: types with `noexcept` moves use moves during reallocation (255 moves), while types without `noexcept` moves fall back entirely to copies (255 copies). If you frequently `push_back` into a `vector` without reserving capacity in advance, moves without `noexcept` will turn every reallocation into a full copy — this is where `noexcept` truly impacts performance.
+The data is very clear. `std::sort` uses moves in both cases (23,516 times), completely ignoring `noexcept`. But `std::vector` reallocation is a completely different story: `noexcept` types use moves during reallocation (255 moves), while non-`noexcept` types fall back entirely to copies (255 copies). If you frequently `push_back` into a `vector` without reserving space in advance, moves without `noexcept` will turn every reallocation into a full copy — this is where `noexcept` truly impacts performance.
 
 The correct way to write a custom swap requires attention to ADL (Argument-Dependent Lookup). The standard practice is to provide a non-member `swap` function in the class's namespace, and then let users call it via `using std::swap; swap(a, b);`. This way, ADL will preferentially find your custom version, falling back to `std::swap` if not found.
 
@@ -291,11 +296,11 @@ public:
 }  // namespace mylib
 ```
 
-Here we use the copy-and-swap idiom to implement the assignment operator, and `std::swap` to provide efficient swapping. The swap itself only exchanges two pointers and two integers — the cost is negligible.
+Here we use the copy-and-swap idiom to implement the assignment operator, and `std::swap` to provide efficient swapping. `std::swap` itself only exchanges two pointers and two integers — the cost is negligible.
 
 ## Performance Comparison — Copy vs. Move Benchmark
 
-We have covered a lot of theory, but numbers are the most persuasive. Let us do a benchmark comparing the actual time cost of copying versus moving. This time we isolate the construction overhead separately, so you can see exactly how fast a pure move operation is.
+We have discussed a lot of theory, but numbers are the most persuasive. Let us do a benchmark comparing the actual time cost of copying versus moving. This time we isolate the construction overhead separately, so you can see exactly how fast a pure move operation is.
 
 ```cpp
 // move_benchmark.cpp -- 拷贝 vs 移动性能对比（分离构造开销）
@@ -410,13 +415,13 @@ Output on the author's machine (g++ 15.2, -O2, x86_64 WSL2):
 纯移动: -0.8 ms
 ```
 
-This result is much more persuasive than simply reporting a "speedup ratio." Let us look at it line by line: constructing a `Buffer` (allocating 8MB of memory and filling it with data) took about 96ms, which is the base overhead shared by both test groups. After adding a copy, the total time surged to 1,404ms — the pure copy portion accounted for 1,308ms, because it needed to allocate new memory and copy the 8MB of data byte by byte. After adding a move, the total time was 94.8ms — even slightly less than pure construction by less than 1ms (measurement noise), indicating that the overhead of the move operation itself is virtually unmeasurable at this data scale.
+This result is much more persuasive than simply reporting a "speedup ratio." Let us look at it line by line: constructing a `vector<int>` (allocating 8MB of memory and filling it with data) took about 96ms, which is the common baseline overhead for both test groups. After adding a copy, the total time soared to 1,404ms — the pure copy portion accounted for 1,308ms, because it needed to allocate new memory and copy the 8MB of data byte by byte. After adding a move, the total time was 94.8ms — even slightly less than pure construction by less than 1ms (measurement noise), indicating that the overhead of the move operation itself is virtually unmeasurable at this data scale.
 
-> 💡 **Note on measurement noise**: You might see the "pure move" time show a negative value (such as -0.8 ms), which is completely normal. High-precision timers capture minute differences in system scheduling, cache state, and so on, causing the total time of "construct + move" to occasionally be slightly less than the construction time alone. This precisely demonstrates that the overhead of the move operation is extremely small, having been drowned out by measurement noise.
+> 💡 **Note on measurement noise**: You might see the "pure move" time show a negative value (such as -0.8 ms). This is completely normal. High-precision timers capture minute differences in system scheduling, cache state, and so on, causing the total time of "construction + move" to occasionally be slightly less than the construction time alone. This precisely demonstrates that the overhead of the move operation is extremely small, having been drowned out by measurement noise.
 
-What does the move operation actually do? It simply copies three pointer-sized fields inside `Buffer` (the pointer to the heap buffer, size, and capacity), and then nullifies the source object's pointers. The entire operation is only a few CPU instructions (at the nanosecond level), completely negligible compared to the 96ms construction time. This is why isolating the construction is important — if we did not isolate it, the "move time" you would see is actually 95ms of construction plus a few nanoseconds of moving, compared to 285ms of construction plus copying, yielding only a 3x speedup ratio that severely underestimates the true advantage of moving.
+What does the move operation do? It simply copies three pointer-sized fields inside the `vector` (the pointer to the heap buffer, the size, and the capacity), and then nullifies the source object's pointers. The entire operation is only a few CPU instructions (at the nanosecond level), completely negligible compared to the 96ms construction time. This is why isolating the construction is important — if we did not isolate it, the "move time" you would see is actually 95ms of construction plus a few nanoseconds of moving, compared to 285ms of construction plus copying, yielding only a 3x speedup ratio that severely underestimates the true advantage of moving.
 
-> ⚠️ **Pitfall warning**: Do not expect performance improvements on types that lack move semantics. "Moving" and "copying" are equivalent for `std::array` — because `std::array`'s data is stored directly inside the object, there are no pointers to transfer. Move semantics only provides real benefits for types that manage indirect resources (dynamic memory, file handles, etc.).
+> ⚠️ **Pitfall warning**: Do not expect performance improvements on types without move semantics. "Moving" and "copying" are equivalent for `std::array` — because `std::array`'s data is stored directly inside the object, there are no pointers to transfer. Move semantics only provides real benefits for types that manage indirect resources (dynamic memory, file handles, etc.).
 
 ## Best Practices for Move Semantics in Custom Types
 
@@ -424,7 +429,7 @@ When applying the move semantics knowledge you have learned to your own classes,
 
 For classes that manage dynamic resources (holding memory from `new`, files opened by `fopen`, or similar resource handles), you should implement the complete Rule of Five: custom destructor, copy constructor, move constructor, copy assignment operator, and move assignment operator. In the move constructor and move assignment operator, you must nullify the source object's resource pointers to ensure that the source object's destructor will not release the transferred resources. As long as the move operation is guaranteed not to throw exceptions, you should mark it `noexcept` (in the vast majority of cases, move operations are just pointer copies and will not throw exceptions).
 
-For classes that only hold fundamental types and standard library containers, you can usually use `= default` to let the compiler generate move operations. Standard library components like `std::vector`, `std::string`, and `std::unique_ptr` all have efficient move semantics, and the compiler-generated move constructor will call each member's move constructor in declaration order (for class members) or copy directly (for scalar members). This complies with the C++ standard (see C++17 [class.copy.ctor]).
+For classes that only hold fundamental types and standard library containers, you can usually use `= default` to let the compiler generate move operations. Standard library components like `std::vector`, `std::string`, and `std::unique_ptr` all have efficient move semantics. The compiler-generated move constructor will call each member's move constructor in order of declaration (for class members) or copy directly (for scalar members). This aligns with the C++ standard's specifications (see C++17 [class.copy.ctor]).
 
 ```cpp
 struct UserProfile
@@ -444,7 +449,7 @@ struct UserProfile
 };
 ```
 
-For classes that wrap exclusive resources (file handles, network connections, locks), you should **disable copying and enable moving**. Copying makes no sense — you cannot "duplicate" a TCP connection or a mutex. But moving is reasonable — you can transfer control of a connection from one object to another.
+For classes that wrap exclusive resources (file handles, network connections, locks), you should **disable copying and enable moving**. Copying makes no sense — you cannot "duplicate" a TCP connection or a mutex. But moving is reasonable — you can transfer control of the connection from one object to another.
 
 ```cpp
 class NetworkConnection
@@ -480,7 +485,7 @@ public:
 
 ## Embedded Practical Application — Moving Resource Handles
 
-Although this tutorial series focuses primarily on general C++, move semantics also has very practical application scenarios in embedded development. On resource-constrained embedded systems, avoiding unnecessary copies not only improves performance but is sometimes even a guarantee of functional correctness — for example, the ownership of a DMA buffer must be unique, and peripheral access rights must not be shared.
+Although this tutorial series focuses primarily on general C++, move semantics also has very practical application scenarios in embedded development. On resource-constrained embedded systems, avoiding unnecessary copies not only improves performance but sometimes is even a guarantee of functional correctness — for example, the ownership of a DMA buffer must be unique, and peripheral access rights must not be shared.
 
 Below is a simplified yet realistic DMA buffer management class, demonstrating how move semantics ensures the uniqueness of resource ownership:
 
@@ -596,13 +601,13 @@ Runtime output:
   [DMA] 释放 1024 字节
 ```
 
-Note that only one 1,024-byte buffer is allocated throughout the entire lifecycle — from creation inside `createDmaBuffer`, to `buf1` in `main` (via NRVO or move), to `buf2` (via move construction), there is always only one buffer in circulation. There are no redundant memory allocations, no data copies, and absolutely no scenario where two objects simultaneously operate on the same DMA buffer — because copying was forbidden by `= delete`.
+Note that only one 1,024-byte buffer is allocated throughout the entire lifecycle — from creation inside `createDmaBuffer`, to `buf` in `main` (via NRVO or move), to `target` (via move construction), there is always only one buffer in circulation. There are no redundant memory allocations, no data copies, and absolutely no situation where two objects simultaneously operate on the same DMA buffer — because copying is forbidden by `= delete`.
 
 ## Exercise — Implementing a Move-Supporting Dynamic Array
 
 Reading theory is never as effective as writing code yourself. This exercise requires you to implement a simplified dynamic array class that supports both copy semantics and move semantics. This class does not need to be as complex as `std::vector`, but it must correctly handle resource management.
 
-Requirements are as follows: class name `DynamicArray`, internally using a `new[]`-allocated `int` array to store data. Support `push_back` to add elements, with capacity expansion as needed (you can simply grow by a factor of two). Implement the complete Rule of Five. Mark move operations `noexcept`. Implement `size` and `operator[]`. Write a test snippet to verify copy and move behavior.
+The requirements are as follows: class name `DynamicArray`, internally storing data in a `T*` array allocated with `new[]`. Support `push_back` to add elements, with reallocation as needed (you can simply grow by a factor of two). Implement the complete Rule of Five. Mark move operations as `noexcept`. Implement `size` and `operator[]`. Write a test snippet to verify copy and move behavior.
 
 Below is the reference implementation skeleton:
 
@@ -692,7 +697,7 @@ int main()
 }
 ```
 
-If you get stuck, you can refer to the earlier `Buffer` class implementation — the logic is almost exactly the same. The key points are: `delete[]` in the destructor, transfer pointers and nullify the source object's pointers in the move constructor, allocate new memory and copy data in the copy constructor, and `delete[]` current data before taking over new data in the move assignment operator.
+If you get stuck, you can refer to the earlier `Buffer` class implementation — the logic is almost exactly the same. The key points are: `delete[]` in the destructor, transfer pointers and nullify the source object's pointers in the move constructor, allocate new memory and copy data in the copy constructor, and `delete[]` the current data before taking over the new data in the move assignment operator.
 
 Complete reference implementation:
 
@@ -862,12 +867,12 @@ c (移动构造): 0 1 4 9 16 25 36 49 64 81
 a 重新赋值后: 999
 ```
 
-After copy construction, `arr2` owns an independent copy of the data, and modifying `arr2` does not affect `arr1`. After move construction, `arr3` takes over all of `arr1`'s data, and `arr1` enters an empty state (size=0, capacity=0). Afterwards, `arr1` can regain a valid object through move assignment, proving that a moved-from object is indeed in a "valid but unspecified" state — it can be safely assigned a new value or destructed, but you should not rely on its current value.
+After copy construction, `copied` owns an independent copy of the data, and modifying `copied` does not affect `arr`. After move construction, `moved` takes over all data from `arr`, and `arr` enters an empty state (size=0, capacity=0). Afterwards, `arr` can regain a valid object through move assignment, proving that a moved-from object is indeed in a "valid but unspecified" state — it can be safely assigned a new value or destructed, but you should not rely on its current value.
 
 ## Summary
 
-In this article, we pushed move semantics from theory into practice. STL containers (particularly `std::vector`'s `push_back`, `emplace_back`, and reallocation) are the most direct beneficiaries of move semantics. The `swap` idiom leverages three move operations to achieve O(1) swapping, serving as the core of sorting, data structure reorganization, and other scenarios. Performance tests show that for types managing large blocks of dynamic memory, the overhead of the move operation itself is virtually zero — copying requires byte-by-byte duplication of all data, while moving only transfers pointers. Additionally, we verified an important detail: the `noexcept` qualifier has no effect on `std::sort`, but is crucial for `std::vector` reallocation — moves without `noexcept` cause reallocation to fall back to copying.
+In this article, we pushed move semantics from theory into practice. STL containers (especially `std::vector`'s `push_back`, `std::sort`, and reallocation) are the most direct beneficiaries of move semantics. The `swap` idiom leverages three move operations to achieve O(1) swapping, serving as the core of sorting, data structure reorganization, and other scenarios. Performance tests show that for types managing large blocks of dynamic memory, the overhead of the move operation itself is virtually zero — copying requires byte-by-byte replication of all data, while moving only transfers pointers. Additionally, we verified an important detail: the `noexcept` qualifier has no effect on `std::sort`, but is crucial for `std::vector` reallocation — moves without `noexcept` cause reallocation to fall back to copying.
 
-In custom types, the key is to identify what resources your class manages: exclusive resources (file handles, peripherals, DMA buffers) should forbid copying and allow moving; shared resources can be managed with smart pointers; simple value types are fine letting the compiler auto-generate everything. Remember to mark move operations `noexcept` — this is not just a promise, but a critical condition for `std::vector` to choose moving over copying during reallocation. The `DynamicArray` in the exercise covers all the points of the Rule of Five — if you can complete it independently, it shows you have truly mastered the core mechanisms of move semantics.
+In custom types, the key is to identify what resources your class manages: exclusive resources (file handles, peripherals, DMA buffers) should forbid copying and allow moving; shared resources can be managed with smart pointers; simple value types are fine letting the compiler auto-generate everything. Remember to mark move operations as `noexcept` — this is not just a promise, but a critical condition for `std::vector` to choose moving over copying during reallocation. The `DynamicArray` in the exercise covers all the points of the Rule of Five — if you can complete it independently, it shows you have truly mastered the core mechanisms of move semantics.
 
-With this, the chapter on move semantics is fully concluded. From the binding rules of rvalue references to the implementation of move constructors, from compiler optimizations like RVO/NRVO to the type deduction chain of perfect forwarding, and finally to real-world performance comparisons and best practices — we hope this content ensures that next time you encounter `std::move`, you no longer just "copy-paste it to use," but clearly know what it is doing and why it does it that way.
+With this, the chapter on move semantics is fully covered. From the binding rules of rvalue references to the implementation of move constructors, from compiler optimizations like RVO/NRVO to the type deduction chain of perfect forwarding, and finally to real-world performance comparisons and best practices — we hope this content helps you, when you encounter `std::move` in the future, to no longer just "copy and paste it," but to clearly know what it is doing and why it does it that way.

@@ -4,9 +4,9 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master C language file operations and core standard library tools, including
-  file reading and writing, formatted I/O, and command-line argument handling, and
-  compare them with C++ stream libraries and modern standard library tools.
+description: Master C file operations and core standard library utilities, including
+  file reading and writing, formatted I/O, and command-line argument handling, while
+  comparing them with C++ stream libraries and modern standard library tools.
 difficulty: beginner
 order: 20
 platform: host
@@ -22,12 +22,18 @@ tags:
 - 入门
 - 基础
 title: File I/O and Standard Library Overview
+translation:
+  source: documents/vol1-fundamentals/c_tutorials/16-file-io-and-stdlib.md
+  source_hash: 88bc8438892bedfa8ab275295bdd523964722ec4274747e9050119318ef21109
+  translated_at: '2026-05-26T10:33:51.727153+00:00'
+  engine: anthropic
+  token_count: 1857
 ---
 # File I/O and Standard Library Overview
 
-So far, every program we have written shares a common limitation—data lives entirely in memory and vanishes once the program ends. Real-world programs do not work this way: configurations are read from files, logs are written to files, and data is passed between programs. This is where file I/O comes in.
+So far, every program we have written shares a common limitation—all data lives in memory and vanishes the moment the program ends. Real-world programs do not work this way: configurations are read from files, logs are written to files, and data is passed between programs. This is where file I/O comes in.
 
-C's file operations are built on a concise yet powerful API—`fopen` to open, `fread`/`fwrite` to read and write, `fclose` to close, plus the `printf`/`scanf` family for formatted I/O. These functions have survived from the 1970s to this day. But they also carry the rough edges characteristic of that era—lack of type safety, error handling via global variables, and compilers turning a blind eye when format strings and arguments mismatch. C++ later repackaged this system with stream libraries, `std::filesystem`, and `std::format`, but understanding C's raw API remains foundational.
+C's file operations are built on a simple but powerful API—`fopen` to open, `fread`/`fwrite` to read and write, `fclose` to close, plus the `printf`/`scanf` family for formatted I/O. These functions have survived from the 1970s to today. But they also carry the rough edges of that era—type unsafe, error handling relies on global variables, and compilers look the other way when format strings and arguments mismatch. C++ later repackaged this system with stream libraries, `std::filesystem`, and `std::format`, but understanding C's raw API remains foundational.
 
 > **Learning Objectives**
 >
@@ -38,7 +44,7 @@ C's file operations are built on a concise yet powerful API—`fopen` to open, `
 > - [ ] Use errno/perror/strerror for error handling
 > - [ ] Write programs that accept command-line arguments
 > - [ ] Understand core standard library utilities
-> - [ ] Understand how C++'s stream libraries, std::filesystem, and std::format improve upon C's approach
+> - [ ] Understand how C++'s stream library, std::filesystem, and std::format improve upon C's approach
 
 ## Environment Setup
 
@@ -69,11 +75,11 @@ int main(void) {
 }
 ```
 
-> ⚠️ **Pitfall Warning**: **Always check if fopen returns NULL**. A missing file, insufficient permissions, or an incorrect path will cause the open to fail. If you use a NULL pointer without checking, the program will crash immediately—without any meaningful error message.
+> ⚠️ **Pitfall Warning**: **Always check if fopen returns NULL**. A missing file, insufficient permissions, or an incorrect path will cause the open to fail. If you use the NULL pointer directly without checking, the program will crash immediately—without any meaningful error message.
 
 Mode string quick reference:
 
-| Mode | Read | Write | When File Does Not Exist | When File Already Exists |
+| Mode | Read | Write | When file does not exist | When file already exists |
 |------|------|-------|--------------------------|--------------------------|
 | `"r"`  | Yes | No | Fails | Reads from the beginning |
 | `"w"`  | No | Yes | Creates a new file | **Clears existing content** |
@@ -158,7 +164,7 @@ int year, month, day;
 int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
 ```
 
-> ⚠️ **Pitfall Warning**: `scanf`'s `%s` does not check buffer sizes. The safe approach is to use `%Ns` to specify the maximum length, or switch to the `fgets` + `sscanf` combination.
+> ⚠️ **Pitfall Warning**: `scanf`'s `%s` does not check buffer size. The safe approach is to use `%Ns` to specify the maximum length, or switch to the `fgets` + `sscanf` combination.
 
 ### Common Format Specifiers
 
@@ -174,13 +180,13 @@ int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
 
 On Windows, text mode automatically converts `\n` to `\r\n`, while binary mode does not perform this conversion. On Linux/macOS, there is almost no difference between the two. When handling binary data (images, struct dumps, protocol frames), always use `"rb"`/`"wb"`.
 
-> ⚠️ **Pitfall Warning**: If you read a binary file in text mode on Windows, the read will terminate prematurely when it encounters a `0x1A` byte—because `0x1A` is treated as EOF in Windows text mode. This is a classic cross-platform trap.
+> ⚠️ **Pitfall Warning**: If you read a binary file in text mode on Windows, the read will terminate early when it encounters a `0x1A` byte—because `0x1A` is treated as EOF in Windows text mode. This is a classic cross-platform trap.
 
 ## Step Four — Error Handling with errno
 
-`errno` (`<errno.h>`) is a global error code variable. When a function executes successfully, it **does not** clear `errno`; it is only set when an error occurs. The correct approach is to check the return value first to confirm an error, and then read `errno`.
+`errno` (`<errno.h>`) is a global error code variable. When a function executes successfully, it **does not** clear `errno`; it is only set when an error occurs. The correct approach is to first check the return value to confirm an error, and then read `errno`.
 
-`perror` concatenates your provided string with the system error message and prints it:
+`perror` concatenates the string you pass in with the system error message and prints it:
 
 ```c
 FILE* fp = fopen("nonexistent.txt", "r");
@@ -210,17 +216,17 @@ int main(int argc, char* argv[]) {
 
 ### `<stdlib.h>`: General Utilities
 
-`atoi` is simple but lacks error detection, while `strtol` is safer (it can detect overflow and partial parsing). `qsort` performs quicksort, and `bsearch` performs binary search, both comparing via function pointers. The random quality of `rand`/`srand` pseudo-random numbers is relatively poor—good enough for basic use, but do not rely on them for security-related tasks.
+`atoi` is simple but lacks error detection, while `strtol` is safer (it can detect overflow and partial parsing). `qsort` performs quicksort, and `bsearch` performs binary search, both comparing via function pointers. The random quality of `rand`/`srand` pseudo-random numbers is fairly poor—good enough for basic use, but do not rely on them for security-related tasks.
 
 ### `<math.h>`: Math Functions
 
-Trigonometric functions (sin/cos/tan), exponential and logarithmic functions (pow/sqrt/log/exp), rounding (ceil/floor/round), and absolute value (fabs). All have three versions: float (f suffix), double, and long double (l suffix).
+Trigonometric functions (sin/cos/tan), exponentials and logarithms (pow/sqrt/log/exp), rounding (ceil/floor/round), and absolute values (fabs). All have three versions: float (f suffix), double, and long double (l suffix).
 
 > ⚠️ **Pitfall Warning**: Linking the math library on GCC/Linux requires the `-lm` option. If you forget to add this option, the compiler will report errors like `undefined reference to 'sin'`—the code itself is fine, it is just missing a linker option.
 
 ### `<ctype.h>`: Character Classification
 
-`isalpha`/`isdigit`/`isspace`/`isalnum`/`isupper`/`islower` determine character categories, and `tolower`/`toupper` handle case conversion. The argument must be explicitly cast to `unsigned char` first; otherwise, negative values from a signed char will lead to undefined behavior.
+`isalpha`/`isdigit`/`isspace`/`isalnum`/`isupper`/`islower` determine character categories, and `tolower`/`toupper` convert between uppercase and lowercase. The argument must be explicitly cast to `unsigned char` first, otherwise negative values from a signed char will lead to undefined behavior.
 
 ### `<assert.h>`: Assertion Macro
 
@@ -236,13 +242,13 @@ Defining `NDEBUG` completely removes all asserts. Use this to catch programming 
 
 ## C++ Connections
 
-### Stream Libraries (iostream/fstream/sstream)
+### Stream Library (iostream/fstream/sstream)
 
 The C++ stream library achieves **type safety** through operator overloading—passing the wrong type directly causes a compilation failure. Destructors automatically close files (RAII). `std::getline` directly returns `std::string`, eliminating the risk of buffer overflows.
 
 ### std::filesystem (C++17)
 
-Cross-platform directory traversal, file attribute queries, and path operations—no more need to write `#ifdef _WIN32`.
+Cross-platform directory traversal, file attribute queries, and path manipulation—no more need to write `#ifdef _WIN32`.
 
 ### std::format (C++20)
 
@@ -254,7 +260,7 @@ std::string s = std::format("{} is {} years old", name, age);
 
 ### std::span (C++17)
 
-`std::span<const int>` binds a pointer and a length together, solving the long-standing problem of arrays decaying and losing their length information.
+`std::span<const int>` bundles a pointer and a length together, solving the old problem of arrays decaying and losing their length information.
 
 ### `<system_error>`
 

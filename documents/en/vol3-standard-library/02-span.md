@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: C++20 array view
+description: C++20 Array View
 difficulty: intermediate
 order: 2
 platform: host
@@ -16,18 +16,24 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: std::span array view
+title: std::span Array View
+translation:
+  source: documents/vol3-standard-library/02-span.md
+  source_hash: 8894624edd7ee1cf4674210cb203bb69517deb95bfef2ceab3847e230b4e109f
+  translated_at: '2026-05-26T11:37:07.215778+00:00'
+  engine: anthropic
+  token_count: 1265
 ---
 # Embedded C++ Tutorial: std::span—A Lightweight, Non-owning Array View
 
-Think of `std::span` as a "transparent conveyor belt" in C++: it doesn't own the cargo on top (memory), but calmly and efficiently tells you "how many elements are here and where they start." In embedded development, we often need to pass a chunk of memory to a function—without copying it, and without losing type or boundary information. `std::span` was born for exactly this scenario.
+Think of `std::span` as a "transparent conveyor belt" in C++: it doesn't own the cargo on it (memory), but calmly and efficiently tells you "how many elements are here and where they start." In embedded systems, we often need to pass a chunk of memory to a function—without copying it, and without losing type or boundary information. `std::span` was born for exactly this scenario.
 
 Or rather, it wasn't until C++20 that a standard view container finally appeared.
 
-- `std::span<T>` is a **non-owning** view: it is not responsible for memory deallocation.
+- `std::span<T>` is a **non-owning** view: it is not responsible for freeing memory.
 - It is typically a pointer plus a length (very lightweight, cheap to copy).
-- Using `std::span<const T>` as a function parameter elegantly accepts multiple sources like `T[]`, `std::array`, `std::vector`, and raw pointers with a length.
-- **Key warning**: Do not let a `span` outlive the underlying data — a dangling pointer will still bite you.
+- Using `std::span<const T>` as a function parameter elegantly accepts `T[]`, `std::array`, `std::vector`, raw pointer plus length, and more.
+- **Key caveat**: Do not let a `span` outlive the underlying data—a dangling pointer will still bite you.
 
 ------
 
@@ -40,7 +46,7 @@ void process_buffer(uint8_t* buf, size_t n);
 
 ```
 
-This approach is indeed flexible, but it has a downside: the reader has to remember the type of `buf`, whether the length unit is "number of elements" or "number of bytes", and whether the function modifies the data... There are simply too many places for things to go wrong. `std::span` makes these semantics explicit: the type and value (length) are in the same object, improving both readability and safety.
+This approach is indeed flexible, but it has a downside: the reader has to simultaneously remember the type of `buf`, whether the length unit is "number of elements" or "number of bytes", and whether the function modifies the data... There are simply too many places for things to go wrong. `std::span` makes these semantics explicit: the type and value (length) are bundled in the same object, improving both readability and safety.
 
 ------
 
@@ -90,7 +96,7 @@ std::span<int> s_dyn(arr, 4);        // 任意长度，运行时记录
 
 ```
 
-A static `Extent` can enable extra compile-time checks or optimizations in certain scenarios, but in embedded development, a dynamic extent is more common (since buffer lengths are often determined at runtime).
+A static `Extent` can enable extra compile-time checks or optimizations in certain scenarios, but in embedded systems, a dynamic extent is more common (since buffer lengths are often determined at runtime).
 
 ------
 
@@ -114,7 +120,7 @@ Note: `operator[]` does not perform bounds checking; if you need boundary checks
 
 ------
 
-## Advanced Example: Subspan and Byte Operations
+## Advanced Example: subspan and Byte Operations
 
 ```cpp
 #include <span>
@@ -135,15 +141,15 @@ void recv_packet(std::span<uint8_t> buffer) {
 
 ```
 
-This pattern of slicing an overall buffer into header/payload is especially well-suited for embedded protocol parsing—it is concise and safe (as long as you ensure the incoming `buffer` is valid).
+This pattern of slicing an overall buffer into header/payload is especially well-suited for embedded protocol parsing—concise and safe (as long as you ensure the incoming `buffer` is valid).
 
 ------
 
 ## Best Practices for Function Parameters
 
-Designing an API to accept `std::span` has several benefits:
+Designing an API to accept `std::span` offers several benefits:
 
-- The caller can pass an array, `std::array`, `std::vector`, or a raw pointer with a length;
+- The caller can pass an array, `std::array`, `std::vector`, or a raw pointer plus length;
 - The function signature clearly expresses "this is a view (possibly read-only)";
 - The function doesn't need template generics to support various containers.
 
@@ -155,13 +161,13 @@ void mutate(std::span<int> data);         // 明确：会修改数据
 
 ```
 
-This is more intuitive than writing `template<class Container> void process(const Container& c)`, and it avoids unnecessary compile-time bloat.
+This is more intuitive than writing `template<class Container> void process(const Container& c)`, and it avoids unnecessary compilation bloat.
 
 ------
 
 ## Common Pitfalls
 
-1. **Dangling views**: The most common mistake. Do not bind a `std::span` to the `data()` of a local `std::vector` and return it to the caller:
+1. **Dangling views**: The most common mistake. Do not bind a `std::span` to a local `std::vector`'s `data()` and return it to the caller:
 
    ```cpp
    std::span<int> bad() {
@@ -171,13 +177,13 @@ This is more intuitive than writing `template<class Container> void process(cons
 
    ```
 
-1. **Assuming ownership**: A span does not hold memory, and it will not destruct or release it. If you need ownership, use `std::vector`, `unique_ptr`, etc.
+1. **Assuming ownership**: A span does not hold memory, and it will not destruct or free it. If you need ownership, use `std::vector`, `unique_ptr`, etc.
 
 1. **Improper byte views**: `std::as_bytes` returns a `span<const std::byte>` for read-only byte access; use `as_writable_bytes` only when the underlying data is writable.
 
-1. **Out-of-bounds access**: `operator[]` does not check boundaries. Perform explicit checks when necessary, or use debug assertions.
+1. **Out-of-bounds access**: `operator[]` does not check boundaries. Perform explicit checks or use debug assertions when necessary.
 
-1. **Not a null-terminated string**: A `std::span<char>` is not a `C` string and does not guarantee termination with `'\0'`. For string handling, use `std::string_view` or process it with an explicit length.
+1. **Not a null-terminated string**: A `std::span<char>` is not a `C` string and does not guarantee termination with `'\0'`. For string handling, use `std::string_view` or process with an explicit length.
 
 ------
 
@@ -185,15 +191,15 @@ This is more intuitive than writing `template<class Container> void process(cons
 
 - `std::string_view` is designed specifically for character sequences (read-only view) and carries string semantics (commonly used for text).
 - `std::span<char>`/`std::span<std::byte>` are generic for any element type, including writable scenarios.
-  When dealing with binary protocols/buffers, `std::span` is more appropriate; when handling immutable text, `string_view` is more semantic.
+  When handling binary protocols/buffers, `std::span` is more appropriate; when dealing with immutable text, `string_view` is more semantic.
 
 ------
 
-## Quick Embedded Scenario Examples
+## Quick Embedded Scenarios
 
 - A DMA callback places data into a fixed buffer, and the callback passes a `std::span` to the processing function without copying.
 - Data is read from Flash into a buffer, and then `std::span` is used to slice and parse the header and blocks.
-- When passing small chunks of data in an interrupt or real-time path, the copy overhead of `span` is extremely low.
+- Passing small chunks of data in an interrupt or real-time path, where the copy overhead of a `span` is extremely low.
 
 ------
 
@@ -205,6 +211,17 @@ This is more intuitive than writing `template<class Container> void process(cons
 4. Explicitly state in your public API documentation: **a span does not manage lifetimes**.
 
 ------
+
+## Run Online
+
+Experience std::span online by constructing views from different container types and performing subspan slicing operations:
+
+<OnlineCompilerDemo
+  title="std::span Array View"
+  source-path="code/examples/vol34567/02_span.cpp"
+  description="Experience constructing std::span views from different containers, subspan slicing, and other operations"
+  allow-run
+/>
 
 ## Quick API Reference
 

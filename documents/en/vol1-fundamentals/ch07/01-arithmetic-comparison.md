@@ -1,7 +1,7 @@
 ---
-title: Arithmetic and comparison operators
-description: Master the overloading methods for arithmetic and comparison operators
-  to implement a complete Fraction class.
+title: Arithmetic and Comparison Operators
+description: Master the overloading of arithmetic and comparison operators, and implement
+  a complete Fraction class.
 chapter: 7
 order: 1
 difficulty: intermediate
@@ -19,18 +19,24 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch07/01-arithmetic-comparison.md
+  source_hash: 48ba042cd34e32efcbc149222afb65868db83b92a05809dec71b2c0fae19eccf
+  translated_at: '2026-05-26T10:52:26.131357+00:00'
+  engine: anthropic
+  token_count: 2930
 ---
 # Arithmetic and Comparison Operators
 
-So far, we could only manipulate our custom types through member functions — to add two objects, we had to write `a.add(b)`; to check equality, we had to write `a.equals(b)`. Frankly, this style is fine for business logic, but once we deal with types that have "natural arithmetic semantics" like mathematical operations, physical quantities, or dates, a screen full of `.add()` and `.compare()` becomes really painful to read. We want our code to read like the math itself: `a + b`, `x == y`, `p1 < p2`.
+So far, our custom types could only be manipulated through member functions — to add two objects, we had to write `a.add(b)`; to check for equality, we had to write `a.equals(b)`. Frankly, this style is fine for business logic, but once we deal with types that have "natural arithmetic semantics" like mathematical operations, physical quantities, or dates, a screen full of `.add()` and `.compare()` becomes painful to read. We want our code to read like the math itself: `a + b`, `x == y`, `p1 < p2`.
 
-Operator overloading is the capability C++ provides to let custom types directly use `+`, `-`, `==`, `<`, making the code natural to read and pleasant to write. In this chapter, we focus on arithmetic and comparison operators, walking through the entire process with a complete `Fraction` (fraction) class.
+Operator overloading is the capability C++ provides to make this happen — it lets custom types directly use operators like `+`, `-`, `==`, and `<`, making the code natural to read and pleasant to write. In this chapter, we focus on arithmetic and comparison operators, walking through the entire process with a complete `Fraction` (fraction) class.
 
-> **Warning**: Operator overloading is powerful, but never abuse it. Only overload an operator when its meaning is "obvious at a glance" — for example, `a + b` for addition or `a == b` for equality. If you plan to use `+` to mean "delete an element from a container," you're better off writing a `remove()` function. Otherwise, the person maintaining your code might give you a friendly call in the middle of the night (guaranteed).
+> **Warning**: Operator overloading is powerful, but never abuse it. Only overload an operator when its meaning is "obvious at a glance" — for example, `a + b` for addition or `a == b` for equality. If you plan to use `+` to mean "delete an element from a container," you're better off writing a plain `remove()` function. Otherwise, the person maintaining your code might give you a friendly call in the middle of the night (guaranteed).
 
 ## Why Overload Operators
 
-Before diving into the implementation, let's clarify our motivation. There is only one core reason — readability. Suppose we have a 2D vector class. Putting the two styles side by side makes the difference obvious:
+Before we start implementing, let's clarify our motivation. There is only one core reason — readability. Suppose we have a 2D vector class. Putting the two styles side by side makes the difference obvious:
 
 ```cpp
 // 函数调用风格
@@ -44,19 +50,19 @@ auto v4 = v1 * 2.0f;
 
 The second style looks almost identical to a mathematical formula. When reading the code, we don't need to do extra "translation" in our heads. The gap becomes even more obvious with complex expressions — `a + b * c - d / e` versus `a.add(b.scale(c)).subtract(d.divide(e))`. The former is clear at a glance, while the latter is easy to get lost in.
 
-However, operator overloading is a feature that requires restraint. We follow one guideline: **only overload an operator when it feels "natural" for that operation**. Using `+` for vector addition is natural, and using `<` for date comparison is natural. But if you overload `<<` on a logger class to "send logs to a remote server," the semantics have gone off the rails.
+However, operator overloading is a feature that requires restraint. We follow one guideline: **only overload an operator when it feels "natural" for it to work that way**. Using `+` for vector addition is natural; using `<` for date comparison is natural. But if you overload `<<` on a logging class to "send logs to a remote server," the semantics have gone off the rails.
 
 ## Member or Non-Member — A Far-Reaching Choice
 
-Operators can be overloaded in two ways: **member functions** and **non-member functions**. This choice affects not only syntax but also the behavior of implicit type conversions.
+Operators can be overloaded in two ways: as **member functions** or as **non-member functions**. This choice affects not just the syntax, but also the behavior of implicit type conversions.
 
-For a member function, the left-hand operand **must** be an object of the current class. If you implement `operator+` as a member function, `Fraction(1, 2) + 3` works (`3` can be implicitly converted to `Fraction` via the constructor), but `3 + Fraction(1, 2)` does not — the compiler won't look for `operator+` on `int`. Non-member functions don't have this limitation; the left and right operands are symmetric, and the compiler attempts implicit conversions on both sides, so both `3 + f` and `f + 3` work correctly. Assignment operators (`=`, `+=`, `-=`, `[]`, `()`, etc.), on the other hand, must be member functions — the language mandates that certain operators can only be overloaded as members, and since the left-hand side of an assignment is the object being modified, placing it in a member function is the most natural semantic choice.
+For a member function, the left-hand operand **must** be an object of the current class. If you implement `operator+` as a member function, then `Fraction(1, 2) + 3` works (because `3` can be implicitly converted to `Fraction` via the constructor), but `3 + Fraction(1, 2)` does not — the compiler will not look for a `operator+` on `int`. Non-member functions don't have this limitation; the two operands are symmetric, and the compiler attempts implicit conversions on both sides, so both `3 + f` and `f + 3` work correctly. Assignment-like operators (`=`, `+=`, `-=`, `[]`, `()`, etc.), on the other hand, must be member functions — the language mandates that certain operators can only be overloaded as members, and since the left-hand side of an assignment is the object being modified, placing it in a member function is the most natural semantic fit.
 
-This leads to a widely adopted implementation pattern: first implement compound assignment operators (like `+=`) as member functions, then implement binary operators (like `+`) as non-member functions based on them. The binary operator logic fully reuses the compound assignment code without duplicating the addition details, and the non-member position guarantees symmetry of the left and right operands. We will strictly follow this pattern in our `Fraction` class.
+This leads to a widely adopted implementation pattern: first implement the compound assignment operators (like `+=`) as member functions, then implement the binary operators (like `+`) as non-member functions based on them. The binary operator's logic fully reuses the compound assignment code, avoiding duplicated addition details, and the non-member position guarantees symmetry of the left and right operands. We will strictly follow this pattern in our `Fraction` class.
 
 ## Building Arithmetic Operations Starting from `operator+=`
 
-Enough theory — let's get to work. We start the `Fraction` class with the compound assignment operators:
+Enough theory — let's get our hands dirty. We'll start the `Fraction` class with the compound assignment operators:
 
 ```cpp
 class Fraction {
@@ -110,11 +116,11 @@ private:
 };
 ```
 
-There are two key points here. First, the return type of `operator+=` is `Fraction&`, and it returns a reference to `*this` — this is the foundation for chaining, allowing `a += b += c` to work correctly. Second, we reduce the fraction after every operation (`normalize()`) to ensure it is always in simplest form with a positive denominator. This is an internal invariant of the fraction class; maintaining it properly makes subsequent comparison operations simpler — two reduced fractions are equal if and only if their numerators and denominators are identical, without needing to find a common denominator.
+There are two key points here. First, the return type of `operator+=` is `Fraction&`, and it returns a reference to `*this` — this is the foundation for chaining, allowing `a += b += c` to work correctly. Second, we reduce the fraction (via `normalize()`) after every operation, ensuring the fraction is always in simplest form with a positive denominator. This is an internal invariant of the fraction class. Maintaining it makes subsequent comparison operations simpler — two reduced fractions are equal if and only if their numerators and denominators are identical, without needing to find a common denominator.
 
-> **Warning**: `operator+=` must return a reference to `*this` (`Fraction&`), not a value. If you write `Fraction operator+=(...)`, even though it compiles, `a += b` returns a temporary object rather than `a` itself, so a chained assignment like `(a += b) = c` won't modify `a` — this is completely inconsistent with the behavior of built-in types. `operator-=`, `operator*=`, and `operator/=` must all follow the same rule.
+> **Warning**: `operator+=` must return a reference to `*this` (`Fraction&`), not return by value. If you write it as `Fraction operator+=(...)`, even though it compiles, `a += b` returns a temporary object rather than `a` itself, so a chained assignment like `(a += b) = c` will not modify `a` — this is completely inconsistent with the behavior of built-in types. `operator-=`, `operator*=`, and `operator/=` must all follow the same rule.
 
-Once we have `+=`, the implementation of `+` is very concise:
+Once we have `+=`, the implementation of `+` becomes very concise:
 
 ```cpp
 // 非成员函数：通过 += 来实现 +
@@ -125,7 +131,7 @@ Fraction operator+(Fraction lhs, const Fraction& rhs)
 }
 ```
 
-Note that `lhs` is **passed by value**. It is already a copy of the caller's argument, so calling `+=` directly on `lhs` modifies this copy rather than the original object. When the function ends, returning this copy is exactly the addition result. This reuses the logic of `+=` while avoiding the creation of extra temporary objects.
+Note that `lhs` is **passed by value**. It is already a copy of the caller's argument, so calling `+=` directly on `lhs` modifies this copy rather than the original object. When the function ends, returning this copy is exactly the result of the addition — it reuses the logic of `+=` while avoiding the creation of an extra temporary object.
 
 > **Warning**: Binary arithmetic operators (`+`, `-`, `*`, `/`) must return a **new object (by value)**, not a reference. The result of `a + b` is a new value that has no relation to `a` or `b` — if you return a reference to a local variable, that's a classic dangling reference, which will likely yield garbage values or crash when used.
 
@@ -151,11 +157,11 @@ Fraction& operator/=(const Fraction& rhs)
 }
 ```
 
-Then we derive the binary operations: `Fraction operator-(Fraction lhs, const Fraction& rhs)` internally calls `lhs -= rhs; return lhs;`, and multiplication and division follow the same logic, so we won't repeat them here.
+Then we derive the binary operations: `Fraction operator-(Fraction lhs, const Fraction& rhs)` calls `lhs -= rhs; return lhs;` internally, and multiplication and division follow the same logic, so we won't repeat them here.
 
 ## Comparison Operators — From `==` to the Full Set of Six
 
-Because we already ensured in `normalize()` that fractions are always in simplest form, equality comparison is very simple — identical numerators and denominators mean equality:
+Because we already ensured in `normalize()` that fractions are always in simplest form, the equality comparison is very straightforward — identical numerators and denominators mean equality:
 
 ```cpp
 bool operator==(const Fraction& lhs, const Fraction& rhs)
@@ -170,7 +176,7 @@ bool operator!=(const Fraction& lhs, const Fraction& rhs)
 }
 ```
 
-> **Warning**: `operator!=` **must** be implemented based on `operator==`, written as `!(lhs == rhs)`, rather than writing a separate comparison logic. If you implement `==` and `!=` independently, sooner or later you'll modify one and forget to sync the other, causing `a == b` and `!(a != b)` to give contradictory results. This isn't just a logic bug — it will also break containers and algorithms that rely on comparison operations (like `std::set` and `std::find`).
+> **Warning**: `operator!=` **must** be implemented based on `operator==`, written as `!(lhs == rhs)`, rather than writing a separate set of comparison logic. If you implement `==` and `!=` independently, sooner or later you will modify one and forget to synchronize the other, causing `a == b` and `!(a != b)` to yield contradictory results. This isn't just a logic bug — it will also break containers and algorithms that rely on comparison operations (like `std::set` and `std::find`).
 
 Relational comparisons follow the same idea. Mathematically, `a/b < c/d` is equivalent to `a*d < c*b` (assuming denominators are positive, which `normalize()` already guarantees). Then `>`, `<=`, and `>=` are all derived based on `<`:
 
@@ -186,13 +192,13 @@ bool operator>=(const Fraction& lhs, const Fraction& rhs) { return !(lhs < rhs);
 
 We only actually wrote the logic for `<`; the other three are all implemented based on `<` — this is the same principle as `!=` being based on `==`: a single source of truth, meaning we only need to change one place when modifying.
 
-## Symmetry and Implicit Conversion — Making `3 + f` Work
+## Symmetry and Implicit Conversion — Making `3 + f` Work Too
 
-We've been saying "non-member functions guarantee symmetry," so now let's look at the concrete effect. The constructor of `Fraction` has two `int` parameters, both with default values, so `Fraction f = 3;` creates a `Fraction(3, 1)`. When `operator+` is a non-member function, the compiler, upon encountering `3 + Fraction(1, 2)`, will try to implicitly convert `3` to `Fraction(3, 1)` and then call `operator+` — everything works fine. But if `operator+` is a member function, `3.operator+(Fraction(1,2))` is completely invalid — `int` has no `operator+` that accepts a `Fraction` parameter.
+We've been saying "non-member functions guarantee symmetry," so now let's look at the concrete effect. The constructor of `Fraction` has two `int` parameters with default values, so `Fraction f = 3;` creates a `Fraction(3, 1)`. When `operator+` is a non-member function, the compiler will attempt to implicitly convert `3` to `Fraction(3, 1)` when it encounters `3 + Fraction(1, 2)`, and then call `operator+` — everything works fine. But if `operator+` is a member function, `3.operator+(Fraction(1,2))` is completely invalid — `int` has no `operator+` that accepts a `Fraction` parameter.
 
-Because we exposed data access through `num()` and `den()`, the non-member functions work without needing `friend`. If your class doesn't conveniently expose getters, you can use a `friend` function to access private members.
+Because we expose data access through `num()` and `den()`, the non-member functions work without needing `friend`. If your class doesn't conveniently expose getters, you can use a `friend` function to access private members.
 
-> **Warning**: If you decide to add `explicit` to the constructor to prohibit implicit conversions (which is a good practice in itself), `3 + Fraction(1, 2)` will fail to compile. You'll need to provide additional overloads accepting `int`: `Fraction operator+(int lhs, const Fraction& rhs)`. For mathematical types, omitting `explicit` is a common trade-off — sacrificing a bit of safety for more natural expressions.
+> **Warning**: If you decide to add `explicit` to the constructor to prohibit implicit conversion (which is a good practice in itself), then `3 + Fraction(1, 2)` will fail to compile. You'll need to provide additional overloads that accept `int`: `Fraction operator+(int lhs, const Fraction& rhs)`. For mathematical types, omitting `explicit` is a common trade-off — sacrificing a bit of safety for more natural expressions.
 
 ## In Practice: The Complete fraction.cpp
 
@@ -345,11 +351,11 @@ a += b -> a = 5/6
 -3/4 = -3/4
 ```
 
-All operation results are correct. `a + b` yields `5/6` (after finding a common denominator, `3/6 + 2/6`), division `1/2 / 1/3` yields `3/2`, and mixed operations like `2 * 1/3` also work normally — `2` is implicitly converted to `Fraction(2, 1)` and participates in the multiplication. Reduction is automatically performed after every arithmetic step, thanks to `normalize()`.
+All operation results are correct. `a + b` yields `5/6` (after finding a common denominator: `3/6 + 2/6`), division `1/2 / 1/3` yields `3/2`, and the mixed operation `2 * 1/3` also works normally — `2` is implicitly converted to `Fraction(2, 1)` and participates in the multiplication. Reduction is automatically performed at every arithmetic step, thanks to `normalize()`.
 
 ## The Dawn of C++20 — The Three-Way Comparison Operator `<=>`
 
-Before wrapping up, we have to mention the three-way comparison operator (spaceship operator) `<=>` introduced in C++20. If the compiler supports C++20, we only need to implement one `operator<=>`, and the compiler can automatically generate all six comparison operators:
+Before we finish, we have to mention the three-way comparison operator (spaceship operator) `<=>` introduced in C++20. If the compiler supports C++20, we only need to implement one `operator<=>`, and the compiler can automatically generate all six comparison operators:
 
 ```cpp
 // C++20：一行搞定所有比较
@@ -357,6 +363,17 @@ auto operator<=>(const Fraction&, const Fraction&) = default;
 ```
 
 If the class's member variables themselves support three-way comparison (`int` certainly does), simply writing `= default` does the job. This saves the effort of hand-writing six comparison functions and completely eliminates bugs like "modifying `<` but forgetting to update `<=`." However, since our tutorial currently uses C++17 as the baseline, hand-writing comparison operators remains an essential skill to master.
+
+## Run Online
+
+Run the Fraction class online to observe the effects of operator overloading:
+
+<OnlineCompilerDemo
+  title="Operator Overloading: Fraction Class"
+  source-path="code/examples/vol1/13_fraction_operators.cpp"
+  description="Run online and observe the overloading behavior of arithmetic and comparison operators. Try modifying the fraction values."
+  allow-run
+/>
 
 ## Exercises
 
@@ -366,10 +383,10 @@ The complete code above already provides the implementations for `operator-=` an
 
 **Exercise 2: Implement Comparison Operators for a Date Class**
 
-Create a `Date` class with three fields: `year`, `month`, and `day`. Implement all six comparison operators. Hint: you can first implement `operator<` (comparing year, month, and day in order), then derive the other five from it. Think about this: if two `Date` objects have different years but the same month, how should the comparison logic be written?
+Create a `Date` class with three fields: `year`, `month`, and `day`, and implement all six comparison operators. Hint: you can first implement `operator<` (comparing year, month, and day in order), then derive the other five from it. Think about this: if two `Date` objects have different years but the same month, how should the comparison logic be written?
 
 ## Summary
 
-In this chapter, we walked the complete path from theory to implementation, focusing on the core practices of operator overloading. Compound assignment operators (`+=`, `-=`, `*=`, `/=`) are implemented as member functions, modifying the object in place and returning a reference to `*this`. Binary arithmetic operators (`+`, `-`, `*`, `/`) are implemented as non-member functions, passing the left-hand operand by value, reusing the compound assignment implementation, and returning a new object by value. For comparison operators, `!=` is implemented based on `==`, and `>`, `<=`, and `>=` are derived based on `<`, ensuring a single source of truth. Non-member functions guarantee symmetry of the left and right operands, allowing both `3 + f` and `f + 3` to work correctly.
+In this chapter, we walked the complete path from theory to implementation, centered on the core practices of operator overloading. Compound assignment operators (`+=`, `-=`, `*=`, `/=`) are implemented as member functions, modifying the object in place and returning a reference to `*this`; binary arithmetic operators (`+`, `-`, `*`, `/`) are implemented as non-member functions, passing the left operand by value, reusing the compound assignment for implementation, and returning the new object by value; for comparison operators, `!=` is implemented based on `==`, and `>`, `<=`, and `>=` are implemented based on `<`, ensuring a single source of truth. Non-member functions guarantee symmetry of the left and right operands, allowing both `3 + f` and `f + 3` to work correctly.
 
-In the next chapter, we continue our operator overloading journey, looking at how to overload stream operators (`<<`, `>>`) and the subscript operator (`[]`) — the former lets custom types interact with `std::cout`, and the latter is the standard interface for custom containers.
+In the next chapter, we continue our operator overloading journey, looking at how to overload stream operators (`<<`, `>>`) and subscript operators (`[]`) — the former enables custom types to interact with `std::cout`, and the latter is the standard interface for custom containers.

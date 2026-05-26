@@ -15,16 +15,22 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/03-auto-decltype.md
+  source_hash: 75554e72bb849a782dce5de0a3a97f52d930df7ea621293962e910b358a46882
+  translated_at: '2026-05-26T10:15:05.751748+00:00'
+  engine: anthropic
+  token_count: 387
 ---
 # auto (C++11)
 
-## One-Liner
+## In a nutshell
 
-We use `auto` to declare variables or function return types, letting the compiler deduce the concrete type from the initialization expression, saving us from writing out lengthy or complex types manually.
+We use `auto` to declare variables or function return types, letting the compiler deduce the concrete type from the initialization expression, saving us the trouble of writing out lengthy or complex types by hand.
 
 ## Header
 
-None required (language keyword)
+None needed (language keyword)
 
 ## Core API Quick Reference
 
@@ -33,10 +39,10 @@ None required (language keyword)
 | Variable type deduction | `auto x = init;` | Deduces the type of `x` based on the initialization expression |
 | Deduction with modifiers | `const auto& x = init;` | Deduces the base type and attaches `const` or reference qualifiers |
 | Trailing return type | `auto f() -> int;` | Used with a trailing return type to declare a function |
-| Return type deduction | `auto f() { return expr; }` | Since C++14, deduces the return type from the return statement |
-| decltype(auto) | `decltype(auto) f() { return expr; }` | Since C++14, preserves the value category of the expression (reference/top-level const)|
-| Concept-constrained deduction | `Concept auto x = init;` | Since C++20, deduces the type and checks whether it satisfies concept constraints |
-| Functional-style cast | `auto(expr)` | Since C++23, equivalent to `static_cast<auto>(expr)` |
+| Return type deduction | `auto f() { return expr; }` | Starting in C++14, deduces the return type from the return statement |
+| decltype(auto) | `decltype(auto) f() { return expr; }` | Starting in C++14, preserves the value category of the expression (reference/top-level const)|
+| Concept-constrained deduction | `Concept auto x = init;` | Starting in C++20, deduces the type and checks whether it satisfies concept constraints |
+| Functional-style cast | `auto(expr)` | Starting in C++23, equivalent to `static_cast<auto>(expr)` |
 
 ## Minimal Example
 

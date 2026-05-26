@@ -5,8 +5,9 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Learn how to evaluate the performance and size overhead of programs by
-  benchmarking and comparing the performance of C and C++ in embedded environments.
+description: Learn how to evaluate program performance and size overhead, comparing
+  the real-world behavior of C and C++ in embedded environments through practical
+  measurements.
 difficulty: beginner
 order: 6
 platform: host
@@ -17,13 +18,19 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Performance and size evaluation
+title: Performance and Size Evaluation
+translation:
+  source: documents/vol6-performance/06-evaluating-performance-and-size.md
+  source_hash: e0c7c926bb19d9145d52aa873a8898f75304e0013cf87c51bd3a9f2420d48a13
+  translated_at: '2026-05-26T11:53:45.141390+00:00'
+  engine: anthropic
+  token_count: 6916
 ---
-# Modern Embedded C++ Tutorial — Does C++ Always Bloat Your Code?
+# Modern Embedded C++ Tutorial — Does C++ Always Cause Code Bloat?
 
-When it comes to performance evaluation and program size, I believe most developers have a good feel for the former, but might find the latter slightly unfamiliar — especially those working on host applications. In an era where storage seems increasingly cheap, few people care about the release package size of desktop applications anymore. In embedded systems, however, where every byte of Flash is as precious as gold, we absolutely need to consider program size.
+When it comes to performance evaluation and program size, I believe most developers have a good feel for the former but might find the latter slightly unfamiliar — especially those working on host applications. In an era where storage seems increasingly cheap, few people care about the release package size of desktop applications anymore. In embedded systems, however, where every byte of Flash is as precious as gold, we still need to consider program size.
 
-This brings up a question. You know this is the *Modern Embedded C++ Tutorial* (though I sometimes accidentally call it the *Embedded Modern C++ Tutorial*), but this is an age-old, endlessly debated topic: **Does C++ always bloat your code?**
+This raises a question. You know this is the *Modern Embedded C++ Tutorial* (though I sometimes accidentally write *Embedded Modern C++ Tutorial*), but this is an age-old yet endlessly controversial topic: **Does C++ always cause code bloat?**
 
 ## Before We Begin: Sharpen Your Tools First
 
@@ -49,9 +56,9 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 ```
 
-If you see a version number, congratulations! If you see "command not found", you probably need to download the toolchain from the official ARM website. I use Arch Linux, so I just install it via `pacman` or `yay`.
+If you see a version number, congratulations! If you see "command not found", you might need to download the toolchain from the ARM website. I use Arch Linux, so I simply install it via pacman or yay.
 
-> By the way, the correct package name is `gcc-arm-none-eabi`. Otherwise, you'll be missing standard dependencies. Try installing `arm-none-eabi-gcc` first, and if the demo fails to build, install the standard EABI package.
+> By the way, the correct package name is `gcc-arm-none-eabi`. Otherwise, you'll be missing standard dependencies. Try installing `arm-none-eabi-gcc` first, and if the demo doesn't build, install the standard EABI package.
 
 ```bash
 
@@ -149,7 +156,7 @@ void example_c(void) {
 
 ```
 
-This is my C programming style. Of course, some folks don't seem to like using structs. Personally, I still recommend using structs, but don't pass them by value which triggers a copy; instead, pass a pointer to the object.
+This is my C programming style. Of course, some folks don't seem to like structs. Personally, I still recommend using structs, but don't pass them by value to trigger copies — pass a pointer to the object instead.
 
 #### C++ Version — OOP
 
@@ -235,20 +242,20 @@ void example_cpp() {
 
 A classic use case in C++ is adopting the OOP (Object-Oriented Programming) paradigm.
 
-Of course, some people might argue — who told you C++ is an OOP language? It's also a generic programming language. Fair point, I have no objection. My own GPIO library is written using templates, but here, we will stick to OOP for now.
+Of course, some might argue — who told you C++ is an OOP language? It's also a generic programming language. Fair point, I have no objection. My own GPIO library is written using templates, but here, we will stick with OOP for now.
 
 ### Battle Analysis: Is There Really a Big Difference?
 
-Let's reserve judgment and look at the differences first!
+Let's hold off on judgments and look at the differences first!
 
-Let's save the C code above as `demo.c`, and use the following complete compilation command:
+Let's save the C code above as demo.c, and use the following complete compilation command:
 
 ```bash
 arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Os -c demo.c -o demo_c.o
 
 ```
 
-Huh? You say you just click a single button in your IDE? Alright, let's talk about what this command actually does.
+Huh? You say you just click a single button in your IDE? Alright, let's break down what this command actually does.
 
 ------
 
@@ -260,7 +267,7 @@ Specifies the **ARM bare-metal cross-compiler**:
 - ``none``: No operating system (bare-metal)
 - ``eabi``: Embedded ABI
 
-The generated code **cannot run on Linux / Windows**, but is meant for MCU Flash.
+The generated code **cannot run on Linux / Windows**; it is meant for MCU Flash.
 
 ------
 
@@ -270,9 +277,9 @@ Specifies the **target CPU core model**:
 
 - Generates **instructions specific to Cortex-M4**
 - Enables M4-specific features (like DSP instructions)
-- Ensures the instruction set exactly matches the actual MCU
+- Ensures the instruction set perfectly matches the actual MCU
 
-Of course, if you want to try testing on an M1, that works too — just change it to `cortex-m1` and give it a try.
+Of course, if you want to try testing on an M1, that works too — just swap it to `cortex-m1` and give it a try.
 
 ------
 
@@ -284,7 +291,7 @@ Forces the use of the **Thumb instruction set**:
 - Instructions are more compact, yielding higher code density
 - It is the "default working mode" for the M series
 
-For Cortex-M, this is a **mandatory option, not an optimization**.
+For Cortex-M, this is a **mandatory requirement, not an optimization option**.
 
 ------
 
@@ -325,18 +332,18 @@ Avoids using the default ``demo.o``, which is especially clear when doing **mult
 
 ### Let's Look at the Results
 
-| Implementation | text (Code Segment) | data | bss  | Total    |
-| -------------- | ------------------- | ---- | ---- | -------- |
-| C version      | 96 bytes            | 0    | 0    | 96       |
-| C++ version    | 24 bytes            | 0    | 0    | 24       |
-| Difference     | **-72 bytes**       | 0    | 0    | **-72**  |
+| Implementation | text (Code Segment) | data | bss  | Total   |
+| -------------- | ------------------- | ---- | ---- | ------- |
+| C version      | 96 bytes            | 0    | 0    | 96      |
+| C++ version    | 24 bytes            | 0    | 0    | 24      |
+| Difference     | **-72 bytes**       | 0    | 0    | **-72** |
 
 **Surprised? Unexpected?**
 
 The C++ version is actually **72 bytes smaller**, a 75% reduction in code size! This reduction comes with:
 
 - ✅ Better encapsulation (private members can't be accidentally modified)
-- ✅ Automatic initialization (no forgetting to call `init`)
+- ✅ Automatic initialization (no forgetting to call init)
 - ✅ Type safety (no passing the wrong pointer)
 - ✅ More intuitive syntax (``led = true`` feels much better than ``gpio_write(&led, true)``)
 
@@ -346,7 +353,7 @@ The C++ version is actually **72 bytes smaller**, a 75% reduction in code size! 
 
 If you don't believe it, let's look at the assembly code generated by the compiler (this is the compiler's "X-ray vision"):
 
-**C version `example_c` (96 bytes, containing multiple function calls):**
+**C version example_c (96 bytes, including multiple function calls):**
 
 ```asm
 example_c:
@@ -365,7 +372,7 @@ example_c:
 
 ```
 
-**C++ version `example_cpp` (only 24 bytes, fully inlined):**
+**C++ version example_cpp (only 24 bytes, fully inlined):**
 
 ```asm
 example_cpp:
@@ -383,7 +390,7 @@ example_cpp:
 
 **See that? The C++ version is more concise and efficient!**
 
-The compiler inlined all of the C++ class methods, eliminating function call overhead and directly generating optimized register operations. The C version, due to function separation, requires extra stack operations and function jumps.
+The compiler inlined all of the C++ class methods, eliminating function call overhead and generating optimally direct register operations. The C version, due to function separation, requires extra stack operations and function jumps.
 
 **Conclusion**: C++'s encapsulation is a "zero-overhead abstraction" — not just zero overhead, but in many cases, even more efficient! This isn't a marketing slogan; it's real!
 
@@ -393,7 +400,7 @@ The compiler inlined all of the C++ class methods, eliminating function call ove
 
 ### Task Overview
 
-The ring buffer is the "Swiss Army knife" of embedded systems. When UART data floods in like a torrent, you need a place to temporarily store it. This is where the ring buffer comes in — a head-to-tail connected data container that never wastes space.
+The ring buffer is the "Swiss Army knife" of embedded systems. When UART data rushes in like a flood, you need a place to temporarily store it. This is where the ring buffer comes in — a head-to-tail connected data container that never wastes space.
 
 Imagine a sushi conveyor belt. Plates go around in a circle. You put plates down (write), and others take plates (read). As long as the belt isn't full, it keeps spinning.
 
@@ -482,9 +489,9 @@ void example_c_rb(void) {
 
 ```
 
-#### C++ Version — Generic
+#### C++ Version — Let's Go Generic
 
-Alright, here we write it using generics — generics have a known issue with code bloat.
+Alright, here we use generics — generics have a known issue with code bloat.
 
 ```cpp
 // ring_buffer.hpp
@@ -591,28 +598,28 @@ void example_cpp_rb() {
 
 Let's look at the results:
 
-| Implementation | text (Code Segment) | data | bss  | Total    |
-| -------------- | ------------------- | ---- | ---- | -------- |
-| C version      | 218 bytes           | 0    | 0    | 218      |
-| C++ version    | 150 bytes           | 0    | 0    | 150      |
-| Difference     | **-68 bytes**       | 0    | 0    | **-68**  |
+| Implementation | text (Code Segment) | data | bss  | Total   |
+| -------------- | ------------------- | ---- | ---- | ------- |
+| C version      | 218 bytes           | 0    | 0    | 218     |
+| C++ version    | 150 bytes           | 0    | 0    | 150     |
+| Difference     | **-68 bytes**       | 0    | 0    | **-68** |
 
 **Surprised? Unexpected?**
 
 The C++ version is actually **68 bytes smaller**, a 31% reduction in code size! And this is while implementing full ring buffer functionality. This reduction comes with:
 
 - ✅ Better encapsulation (internal indices can't be modified externally)
-- ✅ Automatic constructor initialization (no forgetting to call `init`)
+- ✅ Automatic constructor initialization (no forgetting to call init)
 - ✅ Type safety (no passing the wrong pointer)
 - ✅ More intuitive method calls (``rb.put(data)`` feels much better than ``rb_put(&rb, data)``)
 
-**Key finding**: Through inline optimization, C++ eliminates function call overhead, and the compiler can better optimize class methods. The C version requires multiple independent functions (``rb_init``, ``rb_put``, ``rb_get``, ``rb_available``, ``rb_free_space``, ``rb_clear``), while the C++ version intelligently inlines these operations to be more compact.
+**Key finding**: C++ eliminates function call overhead through inline optimization, and the compiler can better optimize class methods. The C version requires multiple independent functions (``rb_init``, ``rb_put``, ``rb_get``, ``rb_available``, ``rb_free_space``, ``rb_clear``), while the C++ version intelligently inlines these operations to be more compact.
 
 ### The Truth at the Assembly Level
 
 If you don't believe it, let's look at the assembly code generated by the compiler:
 
-**C version `example_c_rb` (relying on multiple functions):**
+**C version example_c_rb (relying on multiple functions):**
 
 ```asm
 example_c_rb:
@@ -632,7 +639,7 @@ example_c_rb:
 
 ```
 
-**C++ version `example_cpp_rb` (fully inlined):**
+**C++ version example_cpp_rb (fully inlined):**
 
 ```asm
 example_cpp_rb:
@@ -662,14 +669,14 @@ The compiler inlined all methods together, reducing stack operations, function j
 
 ### Task Overview
 
-Button debounce is a "required course" for embedded engineers. Mechanical buttons generate bounce when pressed and released (like a spring vibrating back and forth). If not handled, a single button press might be registered as dozens of events.
+Button debounce is a "required course" for embedded engineers. Mechanical buttons produce bounce when pressed and released (like a spring vibrating back and forth). If left unhandled, a single button press might be registered as dozens of presses.
 
 We want to implement a state machine to:
 
 - Detect button press
 - Detect button release
-- Detect long press (holding for more than one second)
-- Debounce (ignore bounces within 50ms)
+- Detect long press (holding for more than 1 second)
+- Debounce (ignore bounce within 50ms)
 
 ### C Version: Classic State Machine
 
@@ -973,21 +980,21 @@ public:
 
 ### Battle Analysis: The Cost of std::function
 
-| Implementation          | text (Code Segment) | data | bss  | Total     |
-| ----------------------- | ------------------- | ---- | ---- | --------- |
-| C version               | 172 bytes           | 0    | 0    | 172       |
-| C++ version (std::function) | 306 bytes       | 0    | 0    | 306       |
-| Difference              | **+134 bytes**      | 0    | 0    | **+134**  |
+| Implementation          | text (Code Segment) | data | bss  | Total    |
+| ----------------------- | ------------------- | ---- | ---- | -------- |
+| C version               | 172 bytes           | 0    | 0    | 172      |
+| C++ version (std::function) | 306 bytes       | 0    | 0    | 306      |
+| Difference              | **+134 bytes**      | 0    | 0    | **+134** |
 
-**This time the difference is obvious!** The C++ version increased the code size by **78%**. The cost of these 134 bytes comes from:
+**This time the difference is obvious!** The C++ version increased the code size by **78%**, and the cost of these 134 bytes comes from:
 
 - The type erasure mechanism of ``std::function`` (requires a vtable)
-- Extra overhead from lambda captures
+- Overhead of lambda captures
 - Runtime support code for dynamic polymorphism
 
-So, what I want to tell you here is that not all abstractions in C++ are zero-overhead. **Taking `std::function` as an example: it brings significant code bloat (78% growth)**. Furthermore: **lambda captures have hidden costs, because each lambda requires extra storage and management code. Those familiar with lambdas should know this — it generates a struct with a ``operator()`` call that stores every captured object**:
+So, what I want to tell you here is that not all abstractions in C++ are zero-overhead. **Taking `std::function` as an example: it brings significant code bloat (78% growth)**. Furthermore: **lambda captures have hidden costs, because each lambda requires additional storage and management code. Those familiar with lambdas should know this — it generates a struct with a ``operator()`` call that stores every captured object**:
 
-The alternative here is very simple:
+The alternative here is also very simple:
 
 ```cpp
 // 方案1：函数指针（接近C的开销）
@@ -1015,43 +1022,43 @@ Let's review:
 
 **Case One: GPIO Operation Encapsulation**
 
-In the GPIO operation scenario, C++ class encapsulation showed a surprising advantage. The C version required 96 bytes to implement multiple functions like `gpio_init`, `gpio_write`, and `gpio_toggle`, while the C++ version compressed the entire operation sequence to just 24 bytes through compiler inline optimization, reducing code size by 75%. This huge difference comes from the compiler's ability to completely inline C++ member function calls, eliminating function call overhead and stack frame management.
+In the GPIO operation scenario, C++ class encapsulation showed a surprising advantage. The C version required 96 bytes to implement multiple functions like gpio_init, gpio_write, and gpio_toggle, while the C++ version compressed the entire operation sequence to just 24 bytes through compiler inline optimization, reducing code size by 75%. This massive difference comes from the compiler's ability to fully inline C++ member function calls, eliminating function call overhead and stack frame management.
 
 **Case Two: Ring Buffer Implementation**
 
-The ring buffer implementation further validated C++'s advantages. The C version needed to implement six independent functions — `rb_init`, `rb_put`, `rb_get`, `rb_available`, `rb_free_space`, and `rb_clear` — totaling 218 bytes. The C++ version, through class encapsulation and method inlining, reduced the code size to 150 bytes, saving 31% of space. The key is that the compiler can see the complete call chain and thus perform more aggressive optimizations.
+The ring buffer implementation further validated C++'s advantages. The C version needed to implement six independent functions — rb_init, rb_put, rb_get, rb_available, rb_free_space, and rb_clear — totaling 218 bytes. The C++ version reduced the code size to 150 bytes through class encapsulation and method inlining, saving 31% of space. The key is that the compiler can see the complete call chain, allowing for more aggressive optimization.
 
 **Case Three: A Warning About std::function**
 
-Not all C++ features are suitable for embedded development. When using `std::function` to implement callbacks, the code bloated from the C version's 172 bytes to 306 bytes, an increase of 78%. This is because `std::function` requires a type erasure mechanism, vtable support, and management code for lambda captures. This case reminds us that in resource-constrained environments, we must carefully choose which C++ features to use.
+Not all C++ features are suitable for embedded development. When using std::function to implement callbacks, the code bloated from the C version's 172 bytes to 306 bytes, an increase of 78%. This is because std::function requires a type erasure mechanism, vtable support, and management code for lambda captures. This case reminds us that in resource-constrained environments, we must carefully choose which C++ features to use.
 
-| Feature                  | Code Growth     | Recommendation                                        |
-| ------------------------ | --------------- | ----------------------------------------------------- |
-| Class encapsulation (basic) | -75% to -31%  | Highly recommended (actually smaller in practice)     |
-| Class encapsulation (with templates) | +4%      | Highly recommended (nearly zero overhead)             |
-| Virtual functions        | +20-40%         | Use with caution (consider CRTP as an alternative)    |
-| Exception handling       | +50-100%        | Disable (`-fno-exceptions`)                           |
-| RTTI                     | +30-50%         | Disable (`-fno-rtti`)                                 |
-| std::function            | +78%            | Use with caution (replace with function pointers or templates) |
-| Templates (generic containers) | +4%        | Highly recommended (compile-time optimization)        |
+| Feature                  | Code Growth    | Recommendation                                        |
+| ------------------------ | -------------- | ----------------------------------------------------- |
+| Class encapsulation (basic) | -75% to -31% | Highly recommended (actually smaller in practice)     |
+| Class encapsulation (with templates) | +4%     | Highly recommended (nearly zero overhead)             |
+| Virtual functions        | +20-40%        | Use with caution (consider CRTP as an alternative)    |
+| Exception handling       | +50-100%       | Disable (`-fno-exceptions`)                           |
+| RTTI                     | +30-50%        | Disable (`-fno-rtti`)                                 |
+| std::function            | +78%           | Use with caution (replace with function pointers or templates) |
+| Templates (generic containers) | +4%     | Highly recommended (compile-time optimization)        |
 
 ### Performance Comparison Table
 
 Based on assembly-level cycle count analysis:
 
-| Category                 | C Implementation | C++ Implementation | Difference  |
-| ------------------------ | ---------------- | ------------------ | ----------- |
-| Single GPIO operation    | 8-10 cycles      | 8-10 cycles        | 0%          |
-| Buffer read/write        | 12-15 cycles     | 12-15 cycles       | 0%          |
+| Category                  | C Implementation | C++ Implementation | Difference |
+| ------------------------- | ---------------- | ------------------ | ---------- |
+| Single GPIO operation     | 8-10 cycles      | 8-10 cycles        | 0%         |
+| Buffer read/write         | 12-15 cycles     | 12-15 cycles       | 0%         |
 | Complete inlined operation | Requires function calls | Fully inlined | C++ is faster |
 
-**Key finding**: With optimizations enabled, C++'s zero-overhead abstraction is not a marketing slogan, but a verifiable fact. The assembly code generated by the compiler shows that C++ class methods and C functions are identical at the single-operation level, and in complex operation scenarios, C++ is even faster due to inline optimization.
+**Key finding**: With optimizations enabled, C++'s zero-overhead abstraction is not a marketing slogan, but a verifiable fact. The assembly code generated by the compiler shows that C++ class methods and C functions are completely identical at the single-operation level, and in complex operation scenarios, C++ is even faster due to inline optimization.
 
 ------
 
 ## Best Practices: How to Elegantly Use C++ in Embedded Systems
 
-### 1. Compiler Flags (Slimming Configuration)
+### 1. Compiler Flags (Diet Configuration)
 
 The golden compiler configuration for embedded C++ development is as follows:
 
@@ -1086,19 +1093,19 @@ The following features have been verified through testing and perform excellentl
 
 **Classes and Objects (Highly Recommended)**
 
-Class encapsulation is a core strength of C++, capable of abstracting hardware resources into objects. Tests show that simple class encapsulation not only doesn't increase code size, but actually reduces it due to compiler optimizations. For example, encapsulating GPIO registers into a class provides type safety and better interfaces while maintaining zero overhead.
+Class encapsulation is a core strength of C++, capable of abstracting hardware resources into objects. Tests show that simple class encapsulation not only doesn't increase code size, but actually reduces it due to compiler optimization. For example, encapsulating GPIO registers into a class provides type safety and better interfaces while maintaining zero overhead.
 
 **Constructors and Destructors (Highly Recommended)**
 
-Constructors provide automatic initialization, and destructors enable the RAII pattern, which is C++'s most powerful resource management mechanism. In embedded systems, destructors can automatically disable peripherals and release resources, preventing resource leaks. Compilers can usually fully inline simple constructors.
+Constructors provide automatic initialization, and destructors implement the RAII pattern, which is C++'s most powerful resource management mechanism. In embedded systems, destructors can automatically disable peripherals and release resources, preventing resource leaks. Compilers can usually fully inline simple constructors.
 
 **Templates (Highly Recommended)**
 
-Templates provide compile-time code generation with absolutely zero runtime overhead. The ring buffer test showed that the template version increased code size by only 4%, while providing type safety and size parameterization. Compared to C macros, templates are safer and easier to debug.
+Templates provide compile-time code generation with absolutely zero runtime overhead. The ring buffer test showed that the template version only increased code size by 4%, while providing type safety and size parameterization. Compared to C macros, templates are safer and easier to debug.
 
 **constexpr (Highly Recommended)**
 
-`constexpr` functions are evaluated at compile time, and the results are embedded directly into the code. They can be used for calculating configuration parameters, lookup table generation, and other scenarios, with completely zero runtime overhead.
+constexpr functions are evaluated at compile time, and the results are embedded directly into the code. They can be used for calculating configuration parameters, generating lookup tables, and other scenarios, with completely zero runtime overhead.
 
 **References and Inline Functions (Highly Recommended)**
 
@@ -1106,7 +1113,7 @@ References avoid unnecessary copies, and inline functions eliminate function cal
 
 **Operator Overloading (Moderately Recommended)**
 
-Operator overloading can make code more intuitive, for example, using ``gpio = true`` instead of ``gpio_write(&gpio, 1)``. As long as it's not abused, operator overloading introduces no extra overhead.
+Operator overloading can make code more intuitive, such as using ``gpio = true`` instead of ``gpio_write(&gpio, 1)``. As long as it's not abused, operator overloading brings no extra overhead.
 
 ### 3. C++ Features to Use with Caution
 
@@ -1118,31 +1125,31 @@ Virtual functions introduce a vtable, adding a 4-byte pointer overhead to each o
 
 **std::function (Use with Caution)**
 
-Tests show that `std::function` causes 78% code bloat. If you need a callback mechanism, prioritize function pointers (same overhead as C) or template callbacks (zero overhead). Only consider `std::function` when you need lambdas that capture state.
+Tests show that std::function causes 78% code bloat. If you need a callback mechanism, prioritize function pointers (same overhead as C) or template callbacks (zero overhead). Only consider std::function when you need lambdas that capture state.
 
 **Dynamic Memory Allocation (Use with Caution)**
 
-`new` and `delete` can lead to memory fragmentation in embedded systems. We recommend using placement new with a static memory pool, or using stack-allocated objects. If dynamic memory is absolutely necessary, consider a custom allocator.
+new and delete can lead to memory fragmentation in embedded systems. We recommend using placement new with a static memory pool, or using stack-allocated objects. If you must use dynamic memory, consider a custom allocator.
 
 **STL Containers (Use with Caution)**
 
-Standard library containers like `std::vector` and `std::map` can have large implementations. We recommend testing the code size first, or using container libraries specifically optimized for embedded systems (like EASTL). For simple scenarios, hand-writing fixed-size containers might be more appropriate.
+Standard library containers like std::vector and std::map can have large implementations. We recommend testing the code size first, or using container libraries specifically optimized for embedded systems (like EASTL). For simple scenarios, hand-writing fixed-size containers might be more appropriate.
 
-### 4. C++ Features to Prohibit
+### 4. Prohibited C++ Features
 
 The following features should be completely avoided in embedded systems:
 
 **Exception Handling (Prohibited)**
 
-The exception handling mechanism bloats code by 50-100% and introduces unpredictable execution paths. Embedded systems require deterministic behavior; use error codes or assertions instead of exceptions. Always add the `-fno-exceptions` compiler flag.
+The exception handling mechanism increases code size by 50-100% and introduces unpredictable execution paths. Embedded systems require deterministic behavior; use error codes or assertions instead of exceptions. Make sure to add the `-fno-exceptions` compiler flag.
 
 **RTTI (Prohibited)**
 
-Run-time type information increases code by 30-50% and is rarely needed in embedded systems. Disable it with `-fno-rtti`. If type identification is needed, you can manually implement a simple type tag system.
+Run-time type information increases code size by 30-50% and is rarely needed in embedded systems. Disable it with `-fno-rtti`. If you need type identification, you can manually implement a simple type tag system.
 
 **iostream Library (Prohibited)**
 
-`std::cout` and `std::cin` pull in huge amounts of code (tens of KB), far beyond what an embedded system can tolerate. Use traditional `printf`/`scanf` or specialized embedded logging libraries instead.
+std::cout and std::cin introduce massive amounts of code (tens of KB), far beyond what embedded systems can handle. Use traditional printf/scanf or specialized embedded logging libraries instead.
 
 **Multiple Inheritance (Prohibited)**
 
@@ -1156,7 +1163,7 @@ Multiple inheritance increases complexity and code size, and can lead to the dia
 
 **Extremely Resource-Constrained Environments**
 
-When the target hardware has less than 8KB of Flash and less than 1KB of RAM, C is the safer choice. Such systems are usually simple sensor nodes or controllers that don't need complex abstractions.
+When the target hardware has less than 8KB of Flash and less than 1KB of RAM, C is the safer choice. These systems are usually simple sensor nodes or controllers that don't need complex abstractions.
 
 **Team Skillset Limitations**
 
@@ -1164,7 +1171,7 @@ If team members are unfamiliar with C++, or if the project timeline is tight, fo
 
 **Pure C Codebase Integration**
 
-When you need to integrate a large amount of existing C code, using C avoids the hassle of mixed-language programming. Although C++ can call C code, in some cases, a pure C project is simpler.
+When you need to integrate a large amount of existing C code, using C avoids the hassle of mixed-language programming. Although C++ can call C code, pure C projects are sometimes simpler in certain situations.
 
 **Insufficient Toolchain Support**
 
@@ -1172,9 +1179,9 @@ Some older or specialized compilers have incomplete C++ support and might genera
 
 ### Scenarios for Choosing C++
 
-**Moderately to Well-Resourced Systems**
+**Moderately to Highly Resourced Systems**
 
-When Flash is greater than 16KB and RAM is greater than 2KB, C++'s advantages start to shine. Such systems have enough space to accommodate C++'s abstraction mechanisms while benefiting from encapsulation and type safety.
+When Flash is greater than 16KB and RAM is greater than 2KB, C++'s advantages start to shine. These systems have enough space to accommodate C++'s abstraction mechanisms while benefiting from encapsulation and type safety.
 
 **Complex State Management**
 
@@ -1182,7 +1189,7 @@ When implementing complex logic like state machines, protocol stacks, or sensor 
 
 **When Code Reuse is Needed**
 
-When you have multiple similar modules (like multiple UARTs, multiple timers), C++ templates are safer and easier to debug than C macros. Templates provide compile-time type checking and parameterization.
+When you have multiple similar modules (like multiple UARTs or multiple timers), C++ templates are safer and easier to debug than C macros. Templates provide compile-time type checking and parameterization.
 
 **Modern Development Practices**
 
@@ -1194,11 +1201,11 @@ Many successful embedded projects adopt a layered, mixed strategy:
 
 **Low-Level Driver Layer: Use C**
 
-Low-level drivers that directly manipulate registers are written in C, ensuring stability and portability. This code is usually not complex, and C is sufficient.
+Low-level drivers that directly manipulate registers are written in C to ensure stability and portability. This code is usually not complex, and C is sufficient.
 
 **Middle Abstraction Layer: Use C++**
 
-Wrap low-level drivers into C++ classes to provide object-oriented interfaces. For example, wrapping a UART driver into a `SerialPort` class provides a safer, more user-friendly API.
+Wrap low-level drivers into C++ classes to provide object-oriented interfaces. For example, wrapping a UART driver into a SerialPort class provides a safer, more user-friendly API.
 
 **Application Logic Layer: Use C++**
 
@@ -1206,9 +1213,23 @@ Business logic, state machines, and data processing are implemented in C++, leve
 
 **Module Interfaces: Use extern "C"**
 
-Interfaces between modules use `extern "C"` declarations, ensuring that C and C++ modules can seamlessly collaborate. This approach maintains flexibility while avoiding name mangling issues.
+Interfaces between modules use `extern "C"` declarations to ensure that C and C++ modules can seamlessly work together. This approach maintains flexibility while avoiding name mangling issues.
 
 ------
+
+## Run Online
+
+Compare the differences in code behavior and sizeof between C and C++ GPIO encapsulation and ring buffers online:
+
+<OnlineCompilerDemo
+  title="性能与体积评估"
+  source-path="code/examples/vol34567/13_perf_eval.cpp"
+  description="对比 C 与 C++ 的 GPIO 封装和环形缓冲区实现，观察 sizeof 差异"
+  allow-run
+  allow-x86-asm
+  arm-source-path="code/examples/compiler_explorer/perf_eval_arm.cpp"
+  allow-arm-asm
+/>
 
 ## Exercise Time: Give It a Try
 
@@ -1217,14 +1238,14 @@ Interfaces between modules use `extern "C"` declarations, ensuring that C and C+
 Implement the three examples above on your development board and measure:
 
 1. Flash usage (using ``arm-none-eabi-size``)
-2. RAM usage (check the `.bss` and `.data` sections)
+2. RAM usage (check the .bss and .data sections)
 3. Execution time (using the DWT cycle counter)
 
 ### Exercise 2: Optimization Challenge
 
 Try optimizing the ring buffer:
 
-1. When `Size` is a power of two, replace modulo with bitwise operations (``% Size`` → ``& (Size-1)``)
+1. When Size is a power of two, replace modulo with bitwise operations (``% Size`` → ``& (Size-1)``)
 2. Implement a zero-copy ``peek()`` operation
 3. Add an interrupt-safe version (by disabling interrupts or using atomic operations)
 
@@ -1232,7 +1253,7 @@ Try optimizing the ring buffer:
 
 Choose C or C++ for the following scenarios:
 
-1. Simple UART driver (send and receive only) → **Your choice?**
+1. Simple UART driver (only send/receive) → **Your choice?**
 2. Sensor fusion algorithm (Kalman filter) → **Your choice?**
 3. 1ms real-time control loop → **Your choice?**
 4. OTA firmware upgrade module → **Your choice?**

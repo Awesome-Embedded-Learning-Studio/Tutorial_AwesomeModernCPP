@@ -1,18 +1,20 @@
 # Advanced Topics
 
-This section collects advanced articles on C, covering underlying architecture, performance optimization, and programming paradigms. After completing the 20 foundational articles in the main course, you can pick and choose based on your interests.
+This section collects advanced articles on C, covering low-level architecture, performance optimization, programming paradigms, and more. After completing the 20 foundational articles in the main course, we can pick and choose based on our interests.
 
 ## Chapter Contents
 
-- [ARM Architecture and Fundamentals](01-arm-architecture-fundamentals.md)
-- [Cache Mechanisms and Memory Hierarchy](02-cache-and-memory-hierarchy.md)
-- [C Traps and Common Pitfalls](03-c-traps-and-pitfalls.md)
-- [Implementing OOP in C](04-oop-in-c.md)
-- [Handmade Dynamic Array — Building a Container from Scratch](05-handmade-dynamic-array.md)
-- [Handmade Singly Linked List — Pointers and Memory in Practice](06-handmade-linked-list.md)
-- [Embedded C Programming Patterns](07-embedded-c-patterns.md)
-- [Reusable C Code Design](08-reusable-c-code.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-arm-architecture-fundamentals">ARM Architecture and Fundamentals</ChapterLink>
+  <ChapterLink href="02-cache-and-memory-hierarchy">Cache Mechanisms and Memory Hierarchy</ChapterLink>
+  <ChapterLink href="03-c-traps-and-pitfalls">C Traps and Common Pitfalls</ChapterLink>
+  <ChapterLink href="04-oop-in-c">Object-Oriented Programming in C</ChapterLink>
+  <ChapterLink href="05-handmade-dynamic-array">Building a Dynamic Array from Scratch</ChapterLink>
+  <ChapterLink href="06-handmade-linked-list">Building a Singly Linked List: Pointers and Memory in Practice</ChapterLink>
+  <ChapterLink href="07-embedded-c-patterns">Embedded C Programming Patterns</ChapterLink>
+  <ChapterLink href="08-reusable-c-code">Designing Reusable C Code</ChapterLink>
+</ChapterNav>
 
 ::: info Reading Suggestions
-There are no strict prerequisites among the advanced topics, so you can read them as needed. Each article's `prerequisites` field indicates the recommended prerequisite knowledge.
+There are no strict prerequisites among the advanced topics, so we can read them as needed. Each article's `prerequisites` field indicates the recommended prerequisite knowledge.
 :::

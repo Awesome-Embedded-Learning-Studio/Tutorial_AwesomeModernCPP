@@ -11,7 +11,7 @@ tags:
   - memory_order
   - intermediate
 cpp_standard: [17, 20]
-reading_time_minutes: 50
+reading_time_minutes: 16
 prerequisites:
   - "卷五 ch03: 原子操作与内存模型"
   - "Lab 0: Thread Lifecycle Lab"
@@ -45,7 +45,7 @@ Lab 1 全程在用 mutex 和 condition_variable——加锁、等待、唤醒，
 
 ```bash
 sudo cpupower frequency-set -g performance
-```cpp
+```
 
 ## 最终接口
 
@@ -178,7 +178,7 @@ TEST_CASE("Milestone 1: StopFlag signals stop",
     flag.request_stop();
     REQUIRE(flag.is_stop_requested());
 }
-```cpp
+```
 
 ## Milestone 2: SPSC 环形缓冲区基础
 
@@ -196,7 +196,7 @@ SPSC 是最简单的无锁数据结构——只有一个生产者、一个消费
 
 伪代码：
 
-```
+```cpp
 
 bool try_push(T item) {
     size_t tail = tail_.load(seq_cst);
@@ -220,7 +220,7 @@ optional<T> try_pop() {
     return item;
 }
 
-```cpp
+```
 
 踩坑预警：索引溢出。如果 `head_` 和 `tail_` 持续递增，最终会溢出 `size_t`。在 64 位系统上这不是实际问题（2^64 次操作需要几十亿年），但如果你把类型改成了 `uint32_t` 就要小心了——溢出后 `tail - head` 的计算结果会出错。
 
@@ -324,7 +324,7 @@ TEST_CASE("Milestone 3: acquire-release SPSC correctness",
         }
     }
 }
-```cpp
+```
 
 ## Milestone 4: cache line padding 与 false sharing 消除
 
@@ -340,7 +340,7 @@ ch00-03 讲过 false sharing：两个原子变量如果恰好在同一个 cache 
 
 解决方案是在 `head_` 和 `tail_` 之间插入 padding，强制它们位于不同的 cache line。C++11 提供了 `alignas` 说明符：
 
-```
+```cpp
 
 alignas(64) atomic<size_t> head_{0};
 // 64 字节对齐，确保 head_ 独占一个 cache line
@@ -351,7 +351,7 @@ char padding_[64 - sizeof(atomic<size_t>)];
 alignas(64) atomic<size_t> tail_{0};
 // tail_ 也独占一个 cache line
 
-```cpp
+```
 
 更简洁的做法是直接用 `alignas(64)` 放在类成员声明上，编译器会自动插入 padding。在实际测试中，你应该看到 false sharing 消除后吞吐量的提升——尤其在 ARM 架构上差异会非常明显。
 

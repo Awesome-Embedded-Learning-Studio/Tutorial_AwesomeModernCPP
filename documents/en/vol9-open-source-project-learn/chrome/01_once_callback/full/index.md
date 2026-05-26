@@ -1,33 +1,37 @@
 # Complete Beginner Tutorial
 
-This directory contains a complete beginner tutorial for the OnceCallback component, consisting of 13 articles that cover the full learning path from reviewing basic C++ features to component implementation and testing.
+This directory contains a complete beginner tutorial for the OnceCallback component, consisting of 13 articles that cover the full learning path from a C++ fundamentals review to component implementation and testing.
 
 ## Prerequisites
 
 First, master the core C++ features required by OnceCallback:
 
-1. [OnceCallback Prerequisites Quick Reference: C++11/14/17 Core Features Review](pre-00-once-callback-cpp-basics-review.md)
-2. [OnceCallback Prerequisites (Part 1): Function Types and Template Partial Specialization](pre-01-once-callback-function-type-and-specialization.md)
-3. [OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention](pre-02-once-callback-invoke-and-callable.md)
-4. [OnceCallback Prerequisites (Part 3): Advanced Lambda Features](pre-03-once-callback-lambda-advanced.md)
-5. [OnceCallback Prerequisites (Part 4): Concepts and requires Constraints](pre-04-once-callback-concepts-and-requires.md)
-6. [OnceCallback Prerequisites (Part 5): std::move_only_function (C++23)](pre-05-once-callback-move-only-function.md)
-7. [OnceCallback Prerequisites (Part 6): Deducing this (C++23)](pre-06-once-callback-deducing-this.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="pre-00-once-callback-cpp-basics-review">OnceCallback Prerequisites Quick Reference: C++11/14/17 Core Features Review</ChapterLink>
+  <ChapterLink href="pre-01-once-callback-function-type-and-specialization">OnceCallback Prerequisites (Part 1): Function Types and Template Partial Specialization</ChapterLink>
+  <ChapterLink href="pre-02-once-callback-invoke-and-callable">OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention</ChapterLink>
+  <ChapterLink href="pre-03-once-callback-lambda-advanced">OnceCallback Prerequisites (Part 3): Advanced Lambda Features</ChapterLink>
+  <ChapterLink href="pre-04-once-callback-concepts-and-requires">OnceCallback Prerequisites (Part 4): Concepts and requires Constraints</ChapterLink>
+  <ChapterLink href="pre-05-once-callback-move-only-function">OnceCallback Prerequisites (Part 5): std::move_only_function (C++23)</ChapterLink>
+  <ChapterLink href="pre-06-once-callback-deducing-this">OnceCallback Prerequisites (Part 6): Deducing this (C++23)</ChapterLink>
+</ChapterNav>
 
 ## Hands-on Practice
 
-After learning the prerequisites, we start implementing OnceCallback:
+After completing the prerequisites, we start implementing OnceCallback:
 
-1. [OnceCallback in Practice (Part 1): Motivation and API Design](01-1-once-callback-motivation-and-api-design.md)
-2. [OnceCallback in Practice (Part 2): Building the Core Skeleton](01-2-once-callback-core-skeleton.md)
-3. [OnceCallback in Practice (Part 3): Implementing bind_once](01-3-once-callback-bind-once.md)
-4. [OnceCallback in Practice (Part 4): Cancellation Token Design](01-4-once-callback-cancellation-token.md)
-5. [OnceCallback in Practice (Part 5): then Chaining Composition](01-5-once-callback-then-chaining.md)
-6. [OnceCallback in Practice (Part 6): Testing and Performance Comparison](01-6-once-callback-testing-and-perf.md)
+<ChapterNav variant="sub">
+  <ChapterLink href="01-1-once-callback-motivation-and-api-design">OnceCallback in Practice (Part 1): Motivation and API Design</ChapterLink>
+  <ChapterLink href="01-2-once-callback-core-skeleton">OnceCallback in Practice (Part 2): Building the Core Skeleton</ChapterLink>
+  <ChapterLink href="01-3-once-callback-bind-once">OnceCallback in Practice (Part 3): Implementing bind_once</ChapterLink>
+  <ChapterLink href="01-4-once-callback-cancellation-token">OnceCallback in Practice (Part 4): Cancellation Token Design</ChapterLink>
+  <ChapterLink href="01-5-once-callback-then-chaining">OnceCallback in Practice (Part 5): then Chaining Composition</ChapterLink>
+  <ChapterLink href="01-6-once-callback-testing-and-perf">OnceCallback in Practice (Part 6): Testing and Performance Comparison</ChapterLink>
+</ChapterNav>
 
-## Accompanying Code
+## Companion Code
 
-The standalone C++ example code from the prerequisites section has been extracted into compilable minimal projects, located at:
+The standalone C++ example code from the prerequisite chapters has been extracted into compilable minimal projects, located at:
 
 ```
 code/volumn_codes/vol9/full_tutorial_codes/chrome_design/
@@ -47,7 +51,7 @@ code/volumn_codes/vol9/full_tutorial_codes/chrome_design/
 | `10_move_only_function.cpp` | std::move_only_function construction/move/null check/SBO | pre-05 | C++23 |
 | `11_deducing_this.cpp` | deducing this deduction rules, lvalue interception | pre-06 | C++23 |
 
-Build instructions:
+How to build:
 
 ```bash
 cd code/volumn_codes/vol9/full_tutorial_codes/chrome_design

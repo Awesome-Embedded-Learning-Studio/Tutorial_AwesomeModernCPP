@@ -9,16 +9,22 @@ difficulty: intermediate
 platform: host
 chapter: 10
 order: 8
+translation:
+  source: documents/vol4-advanced/01-coroutine-basics.md
+  source_hash: 1bed23f1e5078d644337bb60c12da6bf7a788ff3ad0d185ebbbc7eb3c1d1b1b0
+  translated_at: '2026-05-26T11:39:03.210388+00:00'
+  engine: anthropic
+  token_count: 5509
 ---
-# Understanding the Revolutionary Feature of C++20 — Coroutine Support 1
+# Understanding the Revolutionary Feature of C++20 — Coroutine Support Part 1
 
 ## What Are Coroutines?
 
-First, to introduce coroutines, we must mention the runtime stack of a function: when a function is called, the runtime allocates a **stack frame** for it. The stack frame stores parameters, return addresses, and local variables declared within the function — this is the function's runtime environment.
+First, to introduce coroutines, we must mention the runtime stack of a function: when a function is called, the runtime allocates a **stack frame** for it. This stack frame stores the parameters, return address, and local variables declared in the function — this is the function's runtime environment.
 
-The core idea of a coroutine is: **a function can suspend in the middle of its execution, yielding control; when conditions are met, it can resume and continue executing from exactly where it left off.** This allows us to implement lightweight cooperative scheduling in user space: different tasks switch in an orderly, program-controlled manner, rather than relying on the preemptive scheduling of OS threads.
+The core idea of a coroutine is: **a function can suspend in the middle of its execution, yielding control; when conditions are met, it can resume and continue executing from where it left off.** This allows us to implement lightweight cooperative scheduling in user space: different tasks switch in an orderly, program-controlled manner, rather than relying on the preemptive scheduling of OS threads.
 
-Of course, we should clarify — based on implementation approaches, there are two categories of coroutines: **stackful coroutines** switch the entire execution stack; whereas **C++20 coroutines belong to the "stackless" paradigm** — the compiler packages the local variables and state that need to be preserved at the suspension point into a **coroutine frame**. Upon suspension, this coroutine frame is saved and control is returned; upon resumption, the state is restored from the frame and execution continues. Because there is no need to switch OS stacks, and there is typically no need to frequently enter kernel mode, this approach is obviously far superior to process/thread switching in extreme concurrency scenarios.
+Of course, we should clarify that, based on their implementation, there are two approaches to coroutines: **stackful coroutines** switch the entire execution stack; whereas **C++20 coroutines belong to the "stackless" paradigm** — the compiler packages the local variables and state that need to be preserved at the suspension point into a **coroutine frame**. Upon suspension, this coroutine frame is saved and control is returned; upon resumption, the state is restored from the frame and execution continues. Because there is no need to switch OS stacks, and usually no need to frequently enter kernel mode, this approach is obviously far superior to process/thread switching in extreme concurrency scenarios.
 
 We typically use coroutines for three main reasons:
 
@@ -30,19 +36,19 @@ We typically use coroutines for three main reasons:
 
 Since this is a C++ blog, we inevitably need to discuss C++'s coroutine support. Unfortunately, I must emphasize that the C++20 coroutine interface is quite difficult to write. I've browsed various forums and read other developers' introductions to C++20 coroutines, and I have to admit — if we don't understand coroutines themselves, this set of interfaces is truly hard to grasp (I struggled with it for quite a while myself). Therefore, I highly recommend that while reading this blog, you practice the code and add some logging. This will help you understand what C++ coroutines are actually doing.
 
-To elaborate on the above, I've decided to reorganize `cppreference`'s introduction to coroutines.
+To elaborate on the above, I've decided to reorganize the introduction to coroutines.
 
-> I know some of you haven't read about what coroutines are in C++ yet. You can check out `cppreference`'s explanation of this interface first. I personally closed the page halfway through my first read and went to write other things — it's really quite hard to understand! 👉[协程 (C++20) - cppreference.cn - C++参考手册](https://cppreference.cn/w/cpp/language/coroutines)
+> I know some of you haven't read about what coroutines are in C++ yet. You can check out the explanation of this interface on your own. I personally closed the page halfway through my first read and went to write other things — it's really quite hard to understand! 👉[协程 (C++20) - cppreference.cn - C++参考手册](https://cppreference.cn/w/cpp/language/coroutines)
 
-After organizing everything, here is what we need to understand. Keep these notes handy. Or, if you don't want to read through them, you can skip to the next section and look at the examples — a quick glance will give you a general idea of how to use C++20 coroutines.
+After organizing everything, here is what we need to understand. You might want to keep these as notes. Or, if you don't want to read through it, you can skip to the next section and look at the examples — a quick glance will give you a general idea of how to use C++20 coroutines.
 
 - There are three extended keywords provided by the compiler that we need to know first:
 
-  - `co_await`: This keyword is used to suspend the coroutine until we **call a resumption mechanism to put it back down!** It's worth noting that our `co_await` must be followed by an expression. This expression is typically **an object that supports certain C++ coroutine interface conventions** (at least that's how I use it currently; there are many tricky C++ coroutine techniques out there that are truly baffling to read, so I'll just put it this way for the sake of beginner understanding). In plain English, the thing being awaited must implement functions with the given signatures — if it doesn't, the compiler will tell you the interface is missing!
+  - `co_await`: This keyword is used to suspend the coroutine until we **call a resumption mechanism to put it back down!** It's worth noting that our `co_await` must be followed by an expression. This expression is typically **an object that supports certain C++ coroutine interface conventions** (at least that's how I use it; there are many tricky C++ coroutine techniques out there that are genuinely confusing to read, so I'll just put it this way for the sake of beginner understanding). In plain English, the thing being awaited must implement functions with the given signatures — if it doesn't, the compiler will tell you the interface is missing!
   - `co_yield`: Used to pause execution and yield a value. What does this mean? When placed inside our coroutine function, it yields the value of the expression modified by `co_yield`. This value needs to be returned through an interface. Don't worry about the specifics yet; we'll cover that later.
   - `co_return`: Used to finish execution and return a value. At this point, when we write a `co_return`, the coroutine function ends and prepares to destroy our coroutine struct.
 
-- Another part is a struct that a coroutine function needs to return (the **coroutine return type**). This struct is used to provide scheduling information to the coroutine framework. In practice, modern C++ uses interfaces to indicate whether coroutine support is available, so what we need to do is declare an object type that **must embed `promise_type` — note that it must be exactly this name, it cannot be changed!**
+- Another part is a struct that a coroutine function needs to return (the **coroutine return type**). This struct is used to provide scheduling information to the coroutine framework. In practice, modern C++ uses interfaces to determine whether coroutines are supported, so what we need to do is declare an object type that **must embed `promise_type` — note that it must be exactly this name, it cannot be changed!**
 
   > ```cpp
   > // coroutine中
@@ -60,29 +66,29 @@ After organizing everything, here is what we need to understand. Keep these note
 
   The next step is to declare and implement the interfaces that must exist within this `promise_type`. Here is what we need to implement:
 
-  | Interface (Function)                          | Purpose                                                         | Return Type Requirement                                                 |
-  | --------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-  | **1. `get_return_object()`**                  | **Get return object**: The first function executed when a coroutine function is called. It is responsible for creating and returning the **return object** (such as your `Generator`) that the caller (the outside world) uses to interact with the coroutine. | Must return the coroutine function's return type (or something convertible to it). |
-  | **2. `initial_suspend()`**                    | **Initial suspend point**: Determines whether the coroutine **executes immediately** or **suspends** upon creation. | Must return an **Awaitable** object (such as `std::suspend_always` or `std::suspend_never`). |
-  | **3. `final_suspend()`**                      | **Final suspend point**: Determines whether the coroutine is **destroyed immediately** or **suspends** after finishing execution (`co_return` or end of function body). | Must return an **Awaitable** object. |
-  | **4. `return_void()` or `return_value(V)`**   | **Return value handling**: Used to handle the coroutine's **final value** or **final state**. | If the coroutine function returns `void` (e.g., `Generator` often does this), you must provide `return_void()`. If the coroutine uses `co_return V;` to return a value, you must provide `return_value(V)`. These two are **mutually exclusive**. |
-  | **5. `unhandled_exception()`**                | **Exception handling**: Called when an **uncaught exception** occurs inside the coroutine. | Must return `void`. |
+  | Interface (Function)                         | Purpose                                                         | Return Type Requirement                                                 |
+  | ------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+  | **1. `get_return_object()`**                | **Get return object**: The first function executed when a coroutine function is called. It is responsible for creating and returning the **return object** (such as your `Generator`) that the caller (the outside world) uses to interact with the coroutine. | Must return the coroutine function's return type (or something convertible to it). |
+  | **2. `initial_suspend()`**                  | **Initial suspend point**: Determines whether the coroutine **executes immediately** or **suspends** upon creation. | Must return an **Awaitable** object (such as `std::suspend_always` or `std::suspend_never`). |
+  | **3. `final_suspend()`**                    | **Final suspend point**: Determines whether the coroutine is **destroyed immediately** or **suspends** after finishing execution (`co_return` or end of function body). | Must return an **Awaitable** object. |
+  | **4. `return_void()` or `return_value(V)`** | **Return value handling**: Used to handle the coroutine's **final value** or **final state**. | If the coroutine function returns `void` (for example, `Generator` often does this), you must provide `return_void()`. If the coroutine uses `co_return V;` to return a value, you must provide `return_value(V)`. These two are **mutually exclusive**. |
+  | **5. `unhandled_exception()`**              | **Exception handling**: Called when an **uncaught exception** occurs inside the coroutine. | Must return `void`. |
 
-  Of course, it's also worth mentioning that if your coroutine function uses the `co_yield` keyword, you need to implement an additional function:
+  Of course, it's also worth mentioning that if your coroutine function uses the `co_yield` keyword, you need to implement one additional function:
 
-  | Interface (Function)           | Purpose                                                         | Return Type Requirement                                                 |
-  | ------------------------------ | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+  | Interface (Function)                | Purpose                                                         | Return Type Requirement                                                 |
+  | -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
   | **`yield_value(T value)`** | **Yield value**: Called when the coroutine executes `co_yield T;`. It is responsible for storing the yielded value and suspending the coroutine. | Must return an **Awaitable** object (typically `std::suspend_always`). |
 
 - Of course, there is another part we need to pay attention to. As you can see, we sometimes require returning `std::suspend_always` or `std::suspend_never`. Although this expresses whether we want to suspend the coroutine or not, this interface is not necessarily coupled with `promise_type` — it is actually independent of our `promise_type`. It also needs to satisfy an interface type, or rather, `std::suspend_always` and `std::suspend_never` describe behaviors that guide our scheduler — we can implement our own class satisfying the corresponding interface (`trait`) to tell the scheduler how to work — whether to suspend or not. Generally speaking, the interfaces that need to be satisfied are those of `Awaitable trait`, or more simply put, once you implement these three functions, the scheduler will know what you want to do:
 
-  | Interface (Function)        | Purpose           | Explanation                                                         |
-  | --------------------------- | ----------------- | ------------------------------------------------------------------- |
-  | **`await_ready()`**        | **Ready to proceed** | **Determines whether suspension is needed**. If it returns `true`, it means "already ready, no need to wait," and the coroutine will **continue executing**, skipping `await_suspend`. If it returns `false`, it means "not yet ready, need to wait," and the coroutine will call `await_suspend()` to perform the suspension. |
-  | **`await_suspend(H)`** | **Perform suspension**   | **Executes the logic for suspending the coroutine**. Called when `await_ready()` returns `false`. The parameter `H` is the handle of the current coroutine (`std::coroutine_handle<P>`). Inside this function, you can save the handle, place it in a task queue, and yield control. |
-  | **`await_resume()`**   | **Resume execution**   | **Handles the return value after resumption**. When the coroutine is woken up (`resume`), this is the first function executed. It is responsible for returning the value the coroutine needs to use after resumption (if needed). |
+  | Interface (Function)            | Purpose           | Explanation                                                         |
+  | ---------------------- | -------------- | ------------------------------------------------------------ |
+  | **`await_ready()`**    | **Ready check** | **Determines whether suspension is needed**. If it returns `true`, it means "already ready, no need to wait," and the coroutine will **continue executing**, skipping `await_suspend`. If it returns `false`, it means "not yet ready, need to wait," and the coroutine will call `await_suspend()` to perform the suspension. |
+  | **`await_suspend(H)`** | **Perform suspension**   | **Executes the logic for suspending the coroutine**. Called when `await_ready()` returns `false`. The parameter `H` is the handle of the current coroutine (`std::coroutine_handle<P>`). Inside this function, you can save the handle, place it into a task queue, and yield control. |
+  | **`await_resume()`**   | **Resume execution**   | **Handles the return value after resumption**. When the coroutine is awakened (`resume`), this is the first function executed. It is responsible for returning the value the coroutine needs to use after resumption (if needed). |
 
-Our subsequent exercises and explanations actually revolve closely around three compiler-extended keywords, six necessary coroutine frame **object interfaces** (five if you don't use `co_yield`, excluding `yield_value`), and three **interface functions** of the `Awaitable` objects returned by some coroutine frame object interfaces that guide the corresponding behaviors.
+Our subsequent exercises and explanations actually revolve closely around three compiler extended keywords, six necessary coroutine frame **object interfaces** (five if you don't use `co_yield`, excluding `yield_value`), and three **interface functions** of the `Awaitable` object returned by some of the coroutine frame object interfaces that guide the corresponding behavior.
 
 ## That Was Too Dry, Let's Look at an Example
 
@@ -113,7 +119,7 @@ int main() {
 
 ```
 
-> `dump_time` is a function I use to print execution events. Here is its definition, which we'll also use later when printing.
+> `dump_time` is a function I use to print execution events. Here is its definition, which we will also use later when printing.
 >
 > ```cpp
 > void dump_time() {
@@ -131,7 +137,7 @@ int main() {
 > }
 > ```
 
-The next step is to define our coroutine return type. Note that the notes above already explained that our coroutine return type must have the embedded specified type `promise_type`. Here is the type (note that this type must be public, as the scheduler will directly access these interface functions). Let's first look at what we need to write to make the function support running on a coroutine:
+The next step is to define our coroutine return type. Note that the notes above already explained that our coroutine return type must have an embedded type named `promise_type`. Here is the type (note that this type must be public, as the scheduler will directly access these interface functions). Let's first look at what we need to write to make the function support running on a coroutine:
 
 ```cpp
 template<typename T>
@@ -171,7 +177,7 @@ struct MyTask { // MyTask的名称是随意的
 
 ```
 
-Below, I implement this struct — since what's stored is an `int` as the result, the code is naturally written this way. It's worth noting that much of the code here is just printing logs.
+Below, I implement this struct — it essentially stores an `int` as the result, so naturally the code is written this way. It's worth noting that much of the code here is just printing logs.
 
 ```cpp
 struct Task {
@@ -339,9 +345,9 @@ Comparing against your notes, you can easily figure out what happened in our cod
 
 ## Exercise 2: Using Coroutines to Write a Generator
 
-The generator here mostly illustrates the coroutine asynchronously preparing results. When we need them, we request the expected content from the struct saved by the coroutine — it looks as if the coroutine conjured up what we wanted, which is how the generator gets its name.
+The generator here mostly illustrates the coroutine's asynchronous preparation of results. When we need them, we request the expected content from the struct saved by the coroutine — it looks as if the coroutine conjured up what we wanted, which is how the generator gets its name.
 
-Next, let's write our own generator to loop through and output every integer within a specified range. The signature convention is as follows:
+Below, let's write our own generator to loop through and output every integer within a specified lower and upper bound. The signature convention is as follows:
 
 ```cpp
 Generator<int> iterate_value(int start, int end) {
@@ -365,9 +371,9 @@ int main() {
 If you're really stuck, listen to my thought process:
 
 1. First, the problem here features the classic `for(int queried_value : iterate_value(1, 10))` style of code. Combined with STL conventions, any such `iteratable-for-loop` requires the iterated object to provide two interfaces: `begin` and `end`. Since this is a coroutine function, what's actually returned, as you can see from the interface, is `Generator<int>`, meaning the generator itself must satisfy the two iterable interfaces: `begin` and `end`.
-2. The next question — when does the object become iterable? The answer is — when the coroutine suspends, the generator becomes iterable. Making the generator iterable when the coroutine suspends is too hard, so how about we think in reverse — can it work if the coroutine suspends when the generator calls `begin()`? This makes subsequent iteration easy too! When we iterate to the next item, we just suspend the coroutine to produce new content. When our coroutine finishes running, the generator naturally becomes non-iterable. At that point, it serves as `end()` — how about that?
-3. The returned value obviously needs to be handled. At this point, what we get is the generator, not the value we care about — the iterator's `operator*` can clearly do the heavy lifting here. When we dereference it, we return the value we care about from the iterator — this is the very reason the iterator abstraction exists, right?
-4. The lifecycle issue — should the coroutine be destroyed immediately upon `co_return`? Obviously not, because the value our generator cares about is still stored in the coroutine return type's handle. So let's think in reverse again — when the generator reaches the end of its lifecycle, our coroutine has obviously finished running as well. Having the generator destroy our coroutine is clearly the correct decision.
+2. The next question — when does the object become iterable? The answer is — when the coroutine suspends, the generator becomes iterable. Making the generator iterable when the coroutine suspends is too hard, so what if we think in reverse — can it work if the coroutine suspends when the generator calls `begin()`? This makes subsequent iteration easy too! When we iterate to the next item, we just suspend the coroutine to produce new content. When our coroutine finishes running, the generator naturally becomes non-iterable. At that point, it serves as `end()` — how about that?
+3. The returned value obviously needs to be handled. At this point, what we have is the generator, not the value we care about — the iterator's `operator*` can clearly do the heavy lifting here. When we dereference it, we return the value we care about from the iterator — this is the very reason the iterator abstraction exists, right?
+4. The lifecycle issue — should the coroutine be destroyed immediately upon `co_return`? Obviously not, because the values our generator cares about are still stored in the coroutine return type's handle. So let's think in reverse again — when the generator reaches the end of its lifecycle, our coroutine has obviously finished running as well. Having the generator destroy our coroutine is clearly the correct decision.
 
 There's nothing novel about the code; I've placed it in the appendix.
 
@@ -375,7 +381,7 @@ There's nothing novel about the code; I've placed it in the appendix.
 
 > Main reference: [协程 (C++20) - cppreference.cn - C++参考手册](https://cppreference.cn/w/cpp/language/coroutines)
 >
-> I've watched these video tutorials, but you can judge the quality for yourself. I'm simply honestly listing what I watched.
+> I've watched these video tutorials, but you can judge their quality for yourself. I'm simply honestly listing what I watched.
 >
 > - [C++20 协程，99% 的程序员都没完全搞懂！你要做那 1% 吗？ 这可能是全网C++协程讲的最好的视频_bilibili](https://www.bilibili.com/video/BV1Cz9NYFE8E/)
 > - [C++20协程教程_bilibili](https://www.bilibili.com/video/BV1JN411y7Bx)

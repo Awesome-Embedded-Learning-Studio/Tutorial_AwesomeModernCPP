@@ -1,6 +1,6 @@
 ---
-title: 'Part 23: C Language Button Polling — My First Time Using a Button to Control
-  an LED'
+title: 'Part篇 23: Polling Buttons in C — Your First Time Controlling an LED with a
+  Button'
 description: ''
 tags:
 - cpp-modern
@@ -10,31 +10,37 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 16
 order: 5
+translation:
+  source: documents/vol8-domains/embedded/02-button/05-c-polling-button.md
+  source_hash: e0b865c83a896f18c013c16013f418aecdd2aa531cc5438c68a323a299953b9c
+  translated_at: '2026-05-26T12:12:14.955131+00:00'
+  engine: anthropic
+  token_count: 1844
 ---
-# Part 23: Polling a Button in C — Making a Button Control an LED for the First Time
+# Part 23: C Language Button Polling — Making a Button Control an LED for the First Time
 
-In the previous four articles, we covered everything from circuit principles to the HAL library's GPIO input APIs. Now it is time to bring all that knowledge together and write a program that actually runs.
+In the previous four articles, we covered everything from circuit principles to the HAL library's GPIO input APIs. Now it is time to tie all that knowledge together and write a program that actually runs.
 
-The goal of this article is straightforward: **write a complete button-controlled LED program in pure C, flash it to the board, and see firsthand how severe mechanical bounce really is.** We add no debounce, use no clever tricks—just the most basic "read pin → write pin" approach. Only by seeing the problem first can we understand why we need to solve it later.
+The goal of this article is straightforward: **write a complete button-controlled LED program in pure C, flash it to the board, and see firsthand just how severe mechanical bounce really is.** We add no debounce, use no clever tricks—just the most basic "read pin → write pin" approach. Only by seeing the problem first will we understand why we need to solve it later.
 
 ---
 
 ## 1. The Complete C Code
 
-Let's not worry about debouncing or state machines for now—our goal today is to wire up the circuit, write the code correctly, and make the LED follow the button. We get things moving first, and optimize later.
+Let's not worry about debouncing or state machines for now—our goal today is simply to wire up the circuit, write the code correctly, and make the LED follow the button. We get things moving first, and optimize later.
 
 ### Hardware Wiring Recap
 
-| Pin  | Function      | Connection                                        |
-|------|---------------|---------------------------------------------------|
-| PA0  | Button input  | One end to GND, the other end to PA0              |
-| PC13 | LED output    | Onboard LED (active low)                          |
+| Pin  | Function     | Connection                                       |
+|------|--------------|--------------------------------------------------|
+| PA0  | Button input | One end to GND, the other end to PA0             |
+| PC13 | LED output   | Onboard LED (active low)                         |
 
-PA0 is configured in **pull-up input** mode. When the button is not pressed, a pull-up resistor holds PA0 at a high logic level; when the button is pressed, PA0 is shorted directly to GND, and we read a low logic level.
+PA0 is configured in **pull-up input** mode. When the button is not pressed, a pull-up resistor holds PA0 high; when the button is pressed, PA0 is shorted directly to GND, and we read a low level.
 
 ### Complete Code
 
-Below is a complete, compilable, and flashable `main.c`. Every line is commented so you know exactly what each step does.
+Below is a complete, compilable, and flashable `main.c`. Every line is commented so that you know exactly what each step does.
 
 ```c
 #include "stm32f1xx_hal.h"
@@ -137,13 +143,13 @@ int main(void)
 }
 ```
 
-The code structure is very clear, focusing on three things: **initialize the clock, configure the pins, and repeatedly read the button state in the main loop**. There is no debouncing logic whatsoever—just the most straightforward polling.
+The code structure is very clear, focusing on three things: **initialize the clock, configure the pins, and repeatedly read the button state in the main loop.** There is no debouncing logic whatsoever—just the most straightforward polling.
 
-> If you are still not entirely familiar with parameters like `HAL_GPIO_ReadPin` and `GPIO_PULLUP`, go back and check out the API detailed explanation in [Part 04](./04-hal-gpio-input.md), where every parameter is explained.
+> If you are still not entirely familiar with parameters like `HAL_GPIO_ReadPin` and `GPIO_PULLUP`, go back and review the API details in [Part 04](./04-hal-gpio-input.md), where every parameter is explained.
 
 ---
 
-## 2. Flashing and Running: Looks Normal... Right?
+## 2. Flashing and Running: It Looks Normal... Or Does It?
 
 Compile and flash the code to the board. Press and hold the button—the LED turns on. Release the button—the LED turns off. Looks like everything is working fine?
 
@@ -185,7 +191,7 @@ This is the direct manifestation of mechanical bounce at the software level. To 
 
 ## 3. Why Does It Trigger Multiple Times?
 
-Do you remember the bounce waveform diagram from [Part 03](./03-button-hardware-and-bounce.md)? The moment the button is pressed or released, the contacts do not cleanly transition "from 0 to 1" or "from 1 to 0." Instead, they bounce back and forth between high and low logic levels for approximately **5 to 20 milliseconds**.
+Do you remember the bounce waveform diagram from [Part 03](./03-button-hardware-and-bounce.md)? The moment the button is pressed or released, the contacts do not cleanly transition "from 0 to 1" or "from 1 to 0." Instead, they bounce back and forth between high and low levels for approximately **5 to 20 milliseconds**.
 
 The problem lies right in this time difference.
 
@@ -212,15 +218,15 @@ Among these 7,000 samples, every "false transition" generated by the bounce—ev
                    持续 5~20ms      持续 5~20ms
 ```
 
-The MCU's sampling speed is simply too fast—fast enough to read the pin thousands of times within a few milliseconds of bounce. **There is nothing wrong with our code; the problem lies in the physical characteristics of the button itself.** Therefore, debouncing is not a "nice-to-have" feature—it is an absolute necessity for button inputs.
+The MCU's sampling speed is simply too fast—fast enough to read the pin thousands of times within a few milliseconds of bounce. **There is nothing wrong with our code; the problem lies in the physical characteristics of the button itself.** Therefore, debouncing is not a "nice-to-have" but an absolute necessity for button inputs.
 
 ---
 
 ## 4. The Simplest Debounce Attempt: HAL_Delay
 
-Since the problem is that "sampling is too fast, and false transitions during the bounce period are captured multiple times," the most direct approach is: **after detecting a press, wait a little while and read again, confirming the logic level has stabilized before deciding if it is a real press.**
+Since the problem is that "sampling is too fast and false transitions during the bounce period are captured multiple times," the most direct approach is: **after detecting a press, wait a while and read again, confirming the level has stabilized before deciding if it is a real press.**
 
-The simplest way to implement "wait a little while" is `HAL_Delay`:
+The simplest way to "wait a while" is `HAL_Delay`:
 
 ```c
 /* 带 HAL_Delay 消抖的版本 */
@@ -247,7 +253,7 @@ while (1)
 
 The logic is clear:
 
-1. First read a low logic level → it might be bounce, or it might be a real press, so don't rush.
+1. First read a low level → it might be bounce, or it might be a real press, so don't rush.
 2. Wait 20 milliseconds → the bounce has long since ended.
 3. Read again → if it is still low, it is a real press; if it has returned to high, then the previous reading was just bounce.
 
@@ -261,17 +267,17 @@ The essence of `HAL_Delay` is making the CPU spin empty in a `while` loop, repea
 
 If your project only has one button and one LED, blocking for 20ms might not be a big deal. But imagine these scenarios:
 
-- You also need to read a temperature sensor in the main loop, and the sampling interval requires 1ms precision.
+- You also need to read a temperature sensor in the main loop, and the sampling interval must be precise to 1ms.
 - You are receiving data over a serial port, and the buffer might overflow during these 20ms.
 - You have an OLED screen refreshing at 60fps, and a 20ms stutter will cause screen tearing.
 
 In a slightly more complex project, **blocking debounce is a ticking time bomb.** It makes the entire system's response unpredictable.
 
-> ⚠️ **Warning**: In a production project, never use blocking debounce in the main loop. It looks simple and effective, but as features increase, it will become the biggest source of instability in the system.
+> ⚠️ **Warning**: In production projects, never use blocking debounce in the main loop. It looks simple and effective, but as features increase, it will become the biggest source of instability in the system.
 
 ### So, What Do We Do?
 
-The idea is simple: **don't block the CPU; record the time instead.** Every time a logic level change is detected, instead of waiting, we note the current moment. The next time the loop reads a change, we check "how long has passed since the last change." Only if it has been more than 20ms do we consider the logic level to have truly stabilized.
+The idea is simple: **don't block the CPU; record the time instead.** Each time a level change is detected, instead of waiting, we note the current moment. The next time the loop reads a change, we check "how long has passed since the last change." Only if it has been more than 20ms do we consider the level to be truly stable.
 
 This is the idea behind **non-blocking debounce**—it requires using the SysTick timer or a hardware timer, and we will save the detailed implementation for the next article.
 

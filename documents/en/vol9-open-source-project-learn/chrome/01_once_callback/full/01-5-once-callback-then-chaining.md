@@ -1,8 +1,8 @@
 ---
-title: 'OnceCallback in Practice (Part 5): Chaining with then'
-description: Line-by-line breakdown of the ownership chain design of then() — from
-  pipeline thinking to void/non-void branch handling, understanding the most exquisite
-  ownership management in OnceCallback
+title: 'OnceCallback in Practice (Part 5): Chaining with `then`'
+description: A line-by-line breakdown of the ownership chain design in `then()` —
+  from pipeline thinking to `void`/non-`void` branch handling, understanding the most
+  elegant ownership management in `OnceCallback`.
 chapter: 1
 order: 5
 tags:
@@ -23,12 +23,18 @@ prerequisites:
 - OnceCallback 前置知识（三）：Lambda 高级特性
 related:
 - OnceCallback 实战（六）：测试与性能对比
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-5-once-callback-then-chaining.md
+  source_hash: f5dd3bfba9d0e474bf30a0bb13f7b8a1d98951a7bef96793ec9db952dd6d2034
+  translated_at: '2026-05-26T12:25:30.907930+00:00'
+  engine: anthropic
+  token_count: 1629
 ---
-# OnceCallback in Practice (Part 5): Chaining with then
+# OnceCallback in Practice (Part 5): Chaining with `then`
 
 ## Introduction
 
-`then()` allows us to compose two callbacks into a pipeline—where the output of the first callback becomes the input of the second. It sounds simple, but it features the most sophisticated ownership design of the four OnceCallback capabilities. Because OnceCallback is move-only, `then()` must transfer the original callback's ownership entirely into the new callback, without any sharing or leaking.
+`then()` allows us to compose two callbacks into a pipeline — the output of the first callback becomes the input of the second. It sounds simple, but it has the most intricate ownership design of the four `OnceCallback` features. Because `OnceCallback` is move-only, `then()` must transfer the original callback's ownership entirely into the new callback, without any sharing or leaking.
 
 In this article, we start from a pipeline mindset and break down the `then()` implementation line by line, focusing on the ownership chain and the handling of void and non-void branches.
 
@@ -41,7 +47,7 @@ In this article, we start from a pipeline mindset and break down the `then()` im
 
 ---
 
-## Pipeline Thinking: The Semantics of then()
+## Pipeline Thinking: The Semantics of `then()`
 
 If you have used Unix pipes, the semantics of `then()` are quite intuitive:
 
@@ -50,7 +56,7 @@ If you have used Unix pipes, the semantics of `then()` are quite intuitive:
 echo "hello" | tr 'h' 'H' | wc -c
 ```
 
-`then()` does exactly the same thing—the output of callback A is the input of callback B. Expressed in code:
+`then()` does the exact same thing — the output of callback A is the input of callback B. Expressed in code:
 
 ```cpp
 auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
@@ -62,26 +68,26 @@ auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
 int result = std::move(pipeline).run(3, 4);  // result == 14
 ```
 
-`then()` chains two independent callbacks into a new callback. When we invoke the new callback, it automatically executes the entire A → B flow.
+`then()` chains two independent callbacks into a new callback. When we invoke the new callback, the entire A → B flow executes automatically.
 
 ---
 
-## Ownership Is the Core Challenge of then()
+## Ownership Is the Core Challenge of `then()`
 
-The newly chained callback needs to hold **ownership** of both the original and the subsequent callbacks—otherwise, the original callback might be consumed prematurely elsewhere, breaking the pipeline. Since OnceCallback is move-only, `then()` must consume `*this` (the original callback) and `next` (the subsequent callback), transferring both ownerships into a new lambda closure.
+The new chained callback must hold **ownership** of both the original and the subsequent callbacks — otherwise, the original callback might be consumed prematurely elsewhere, breaking the pipeline. Since `OnceCallback` is move-only, `then()` must consume `*this` (the original callback) and `next` (the subsequent callback), transferring both ownerships into a new lambda closure.
 
 The entire ownership chain looks like this:
 
 ```mermaid
 graph LR
-    A["New OnceCallback"] --> B["move_only_function"] --> C["Lambda closure"] --> D["Original callback + Next callback"]
+    A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
 Each layer transfers ownership via move semantics, without any sharing or copying. This is the complete embodiment of move-only semantics in `then()`.
 
 ---
 
-## Line-by-Line Breakdown of the Complete then() Implementation
+## Line-by-Line Breakdown of the Complete `then()` Implementation
 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
@@ -117,19 +123,19 @@ auto OnceCallback<ReturnType(FuncArgs...)>::then(Next&& next) && {
 auto then(Next&& next) &&
 ```
 
-The trailing `&&` makes this an rvalue-qualified member function—it can only be called on an `std::move(cb).then(next)` or a temporary object `.then(next)`. If the caller writes `cb.then(next)` (an lvalue call), the compiler directly reports "no matching overloaded function." This is another way to express consume semantics—unlike `run()` which uses deducing this, `then()` does not need to distinguish between lvalues and rvalues to provide different error messages; using a ref-qualifier is more concise.
+The trailing `&&` makes this an rvalue-qualified member function — it can only be called on an `std::move(cb).then(next)` or a temporary object `.then(next)`. If the caller writes `cb.then(next)` (an lvalue call), the compiler directly reports "no matching overloaded function." This is another way to express consume semantics — unlike `run()` which uses deducing this, `then()` does not need to distinguish between lvalues and rvalues to provide different error messages; using a ref-qualifier is more concise.
 
-### std::decay_t\<Next\>: Decaying to Remove References
+### `std::decay_t<Next>`: Decaying to Remove References
 
 ```cpp
 using NextType = std::decay_t<Next>;
 ```
 
-`Next` might be an `SomeLambda&&` (rvalue reference) or an `SomeLambda&` (lvalue reference). `std::decay_t` strips the reference to get the bare lambda type. We then use `NextType` for type queries.
+`Next` might be `SomeLambda&&` (an rvalue reference) or `SomeLambda&` (an lvalue reference). `std::decay_t` strips the reference to get the bare lambda type. We then use `NextType` for type queries.
 
-### The Two Branches of if constexpr
+### The Two Branches of `if constexpr`
 
-The core difference in `then()` lies in whether the original callback's return type is void.
+The core difference in `then()` is whether the original callback's return type is void.
 
 **Non-void branch**: The original callback returns a value, and this value needs to be passed to the subsequent callback.
 
@@ -139,7 +145,7 @@ using NextRet = std::invoke_result_t<NextType, ReturnType>;
 
 `std::invoke_result_t<NextType, ReturnType>` deduces at compile time "what type is returned when a value of type `ReturnType` is passed to a callable of type `NextType`." This becomes the return type of the new callback.
 
-The execution flow inside the lambda: first, invoke the original callback to get the intermediate result `mid`, then pass `mid` to the subsequent callback.
+The execution flow inside the lambda: first invoke the original callback to get the intermediate result `mid`, then pass `mid` to the subsequent callback.
 
 ```cpp
 auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
@@ -154,7 +160,7 @@ using NextRet = std::invoke_result_t<NextType>;
 
 `std::invoke_result_t<NextType>` deduces "what type is returned when invoking `NextType` with no arguments."
 
-The execution flow inside the lambda: first, execute the original callback (without capturing a return value), then execute the subsequent callback (without passing arguments).
+The execution flow inside the lambda: first execute the original callback (without capturing the return value), then execute the subsequent callback (without passing arguments).
 
 ```cpp
 std::move(self).run(std::forward<FuncArgs>(args)...);
@@ -167,9 +173,9 @@ return std::invoke(std::move(cont));
 [self = std::move(*this), cont = std::forward<Next>(next)]
 ```
 
-`self = std::move(*this)` is the key to the entire ownership chain—it moves **all contents** of the current OnceCallback object (`func_`, `status_`, `token_`) into the lambda's closure object. After the move, the current object enters a "moved-from" state—`func_` and `token_` have already been moved away.
+`self = std::move(*this)` is the key to the entire ownership chain — it moves **all contents** of the current `OnceCallback` object (`func_`, `status_`, `token_`) into the lambda's closure object. After the move, the current object enters a "moved-from" state — `func_` and `token_` have already been moved away.
 
-`cont = std::forward<Next>(next)` also moves the subsequent callback into the lambda closure. `std::forward` preserves the value category of `next`—rvalues are moved, lvalues are copied.
+`cont = std::forward<Next>(next)` also moves the subsequent callback into the lambda closure. `std::forward` preserves the value category of `next` — rvalues are moved, lvalues are copied.
 
 This lambda is then passed to a new `OnceCallback<NextRet(FuncArgs...)>` constructor and stored in the new callback's `std::move_only_function`. The type-erasure capability of `move_only_function` ensures that no matter the actual type of the lambda, it can be stored uniformly.
 
@@ -177,7 +183,7 @@ This lambda is then passed to a new `OnceCallback<NextRet(FuncArgs...)>` constru
 
 ## Multi-Level Pipelines
 
-`then()` can be called in a chain to form multi-level pipelines:
+`then()` can be called in a chain to form a multi-level pipeline:
 
 ```cpp
 using namespace tamcpp::chrome;
@@ -193,33 +199,33 @@ std::string result = std::move(pipeline).run(5);
 // 5 * 2 = 10, 10 + 10 = 20, to_string(20) = "20"
 ```
 
-Each `then()` call creates a new OnceCallback, internally capturing the callback from the previous step in a nested manner. When the outermost `run()` is invoked, the execution process unfolds recursively: the outermost callback is `run()` → its lambda executes → the lambda internally calls `std::move(self).run()` on the previous level → which calls the level above that → all the way down to the base level.
+Each `then()` creates a new `OnceCallback`, internally capturing the callback from the previous step in a nested fashion. When the outermost `run()` is invoked, the execution process unfolds recursively: the outermost callback is `run()` → its lambda executes → the lambda internally calls `std::move(self).run()` on the previous level → then calls on the level above that → all the way down to the base level.
 
-Performance-wise, each level of `then()` adds one level of `std::move_only_function` indirection. For pipelines of two to three levels, this is completely acceptable. If the pipeline depth exceeds ten levels, we might need to consider a flattened pipeline structure to avoid excessive nesting—but that falls outside the scope of our current discussion.
+Performance-wise, each level of `then()` adds one level of `std::move_only_function` indirection. This is completely acceptable for pipelines of two to three levels. If the pipeline depth exceeds ten levels, we might need to consider a flattened pipeline structure to avoid excessive nesting — but that is beyond the scope of our current discussion.
 
 ---
 
 ## Common Pitfalls
 
-### mutable Cannot Be Omitted
+### `mutable` Cannot Be Omitted
 
-Inside the lambda, we need to call `std::move(self).run()`—this operation modifies the state of `self` (changing status from kValid to kConsumed). If the lambda is const (without `mutable`), `self` becomes a const reference inside, and we cannot call state-modifying operations on a const object, causing a direct compilation failure.
+Inside the lambda, we need to call `std::move(self).run()` — this operation modifies the state of `self` (changing status from kValid to kConsumed). If the lambda is const (without `mutable`), `self` becomes a const reference inside, and we cannot call state-modifying operations on a const object, causing a direct compilation failure.
 
-### The State After self = std::move(*this)
+### The State After `self = std::move(*this)`
 
-After the move, the current OnceCallback object's `func_` and `token_` have both been moved away—they are in a "moved-from" state. `status_` is not explicitly set to kEmpty, but retains its original value. However, because `func_` has already been moved away, the current object is practically unusable—any operations on it are undefined behavior. The `&&` qualification on `then()` guarantees that the caller cannot continue using the original object after calling `then()`.
+After the move, both `func_` and `token_` of the current `OnceCallback` object have been moved away — they are in a "moved-from" state. `status_` is not explicitly set to kEmpty, but retains its original value. However, because `func_` has already been moved away, the current object is effectively unusable — any operations on it are undefined behavior (UB). The `&&` qualification on `then()` guarantees that the caller cannot continue using the original object after calling `then()`.
 
-### Why Use std::invoke Instead of Direct Invocation
+### Why Use `std::invoke` Instead of Direct Invocation
 
-`cont` is a normal callable object (usually a lambda), so direct `cont(mid)` invocation would also work. But `std::invoke` is defensive programming—if someone passes a member function pointer as the subsequent callback, direct call syntax would fail, whereas `std::invoke` would not. Uniformly using `std::invoke` ensures correct behavior regardless of what callable object is passed in.
+`cont` is a normal callable object (usually a lambda), so direct `cont(mid)` would also work. But `std::invoke` is defensive programming — if someone passes a member function pointer as the subsequent callback, direct call syntax would fail, whereas `std::invoke` would not. Uniformly using `std::invoke` ensures correct behavior regardless of what callable object is passed in.
 
 ---
 
 ## Summary
 
-In this article, we broke down the complete implementation of `then()`. Its core challenge is ownership management—by using `self = std::move(*this)` to move the entire original callback into the lambda closure, we establish a complete ownership chain. `if constexpr` handles the different semantics of void and non-void return types—void callbacks pass no arguments to the subsequent callback, while non-void callbacks pass the intermediate result. `then()` uses `&&` qualification to express consume semantics (more concise than `run()`'s deducing this, since we don't need custom error messages), and the `mutable` keyword cannot be omitted (because the internal logic needs to modify the state of `self`).
+In this article, we broke down the complete implementation of `then()`. Its core challenge is ownership management — by using `self = std::move(*this)` to move the entire original callback into the lambda closure, we establish a complete ownership chain. `if constexpr` handles the different semantics of void and non-void return types — void callbacks pass no arguments to the subsequent callback, while non-void callbacks pass the intermediate result. `then()` uses `&&` qualification to express consume semantics (more concise than deducing this in `run()`, since we do not need custom error messages), and the `mutable` keyword cannot be omitted (because the internal logic needs to modify the state of `self`).
 
-The next article is the final one in this series—we will use systematic test cases to verify the entire implementation and compare the performance differences with the original Chromium version.
+The next article is the final one in this series — we will use systematic test cases to verify the entire implementation and compare the performance differences with the original Chromium version.
 
 ## References
 

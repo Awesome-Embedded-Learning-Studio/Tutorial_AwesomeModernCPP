@@ -19,7 +19,7 @@ cpp_standard:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/index.md
   source_hash: 190ec91565500db58f035ee3e208fc9c61677e0bc2085b53e7197bfadf733160
-  translated_at: '2026-05-20T04:33:58.146902+00:00'
+  translated_at: '2026-05-26T11:05:28.516082+00:00'
   engine: anthropic
   token_count: 288
 ---

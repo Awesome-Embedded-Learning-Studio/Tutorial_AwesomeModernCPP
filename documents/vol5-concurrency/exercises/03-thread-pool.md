@@ -9,7 +9,7 @@ tags:
   - cpp-modern
   - advanced
 cpp_standard: [17, 20]
-reading_time_minutes: 70
+reading_time_minutes: 16
 prerequisites:
   - "卷五 ch05: future、任务与线程池"
   - "Lab 0: Thread Lifecycle Lab"
@@ -243,7 +243,7 @@ TEST_CASE("Milestone 2: multiple futures collected",
     // 0+1+4+9+...+361 = 2470
     REQUIRE(sum == 2470);
 }
-```cpp
+```
 
 ## Milestone 3: 异常传播与 move-only 参数
 
@@ -263,14 +263,14 @@ move-only 参数的支持更直接——`std::packaged_task` 本身就是 move-o
 
 对于 move-only 参数，用 lambda 初始化捕获来传递：
 
-```
+```cpp
 
 auto ptr = make_unique<Data>(42);
 auto f = pool.submit(`[p = move(ptr)]()` {
     return p->compute();
 });
 
-```cpp
+```
 
 踩坑预警：不要在 `submit` 的参数中使用 `std::ref` 来传递 move-only 类型——`std::ref` 不转移所有权，它只是创建一个引用包装器，引用的对象可能在 worker 执行时已经被销毁了。
 
@@ -411,7 +411,7 @@ TEST_CASE("Milestone 4: destructor calls shutdown",
 
     REQUIRE(counter.load() == 20);
 }
-```cpp
+```
 
 ## Milestone 5: 可选容量与背压策略
 
@@ -433,7 +433,7 @@ TEST_CASE("Milestone 4: destructor calls shutdown",
 
 背压策略可以作为构造函数参数传入，或者通过模板策略参数实现。为了简单起见，本 Lab 建议用枚举：
 
-```
+```cpp
 
 enum class BackpressurePolicy {
     kBlock,
@@ -441,7 +441,7 @@ enum class BackpressurePolicy {
     kCallerRuns
 };
 
-```cpp
+```
 
 ### 验证
 

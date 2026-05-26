@@ -16,17 +16,23 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Circular buffer implementation
+title: Circular Buffer Implementation
+translation:
+  source: documents/vol3-standard-library/03-circular-buffer.md
+  source_hash: 244238468099658b6070bdd00700e98ca2c24f4e869ccb425b756eb1ff99b464
+  translated_at: '2026-05-26T11:37:34.986895+00:00'
+  engine: anthropic
+  token_count: 980
 ---
 # Embedded C++ Tutorial — Circular Buffer
 
-In the embedded world, one class of problems pops up again and again: **a data source continuously produces data, a consumer processes it slowly, and we want to avoid `malloc` in between.** Enter an ancient yet timeless data structure — the **circular buffer (also known as a ring buffer)**.
+In the embedded world, one type of problem pops up again and again: **a data source continuously produces data, a consumer processes it slowly, and we want to avoid `malloc` in between.** Enter an ancient yet timeless data structure — the **circular buffer (also known as a ring buffer)**.
 
 Think of it as a warehouse with a fixed size; once full, it starts over from the beginning. No resizing, no fragmentation, no "new failed" errors. It is perfectly suited for MCUs, drivers, interrupts, DMA, UARTs, audio streams, and more.
 
 ------
 
-## Why Do Embedded Systems Love Circular Buffers So Much?
+## Why Does Embedded Love Circular Buffers So Much?
 
 In the PC world, we can freely `new` and `std::vector::push_back`. But in embedded systems, these operations sound dangerous:
 
@@ -34,7 +40,7 @@ In the PC world, we can freely `new` and `std::vector::push_back`. But in embedd
 - We cannot call `malloc` in an interrupt context
 - Real-time systems cannot tolerate unpredictable latency
 
-The characteristics of a circular buffer, however, make it practically tailor-made for embedded systems:
+The characteristics of a circular buffer, however, make it practically tailor-made for embedded:
 
 - **Fixed size, determined at compile time or initialization**
 - **O(1) enqueue / dequeue**
@@ -44,7 +50,7 @@ The characteristics of a circular buffer, however, make it practically tailor-ma
 
 To sum it up in one sentence:
 
-> **It isn't clever, but it is reliable.**
+> **It's not clever, but it's reliable.**
 
 ------
 
@@ -81,9 +87,9 @@ There are three common approaches:
 
 1. **Waste one element (most common)**
 2. Maintain an additional `count`
-3. Use an additional `full` flag bit
+3. Use an additional `full` flag
 
-In embedded systems, **approach 1 is the most popular**: it is simple, unambiguous, and logically clear. The rules are:
+In embedded development, **approach 1 is the most popular**: simple, unambiguous, and logically clear. The rules are:
 
 - Buffer size is `N`
 - It can actually store a maximum of `N - 1` elements
@@ -148,7 +154,7 @@ bool RingBuffer<T, Capacity>::push(const T& value)
 
 ```
 
-There is no black magic here:
+There is no dark magic here:
 
 - First, check if it is full
 - Write the data
@@ -210,7 +216,7 @@ std::size_t RingBuffer<T, Capacity>::size() const
 
 ```
 
-The `size()` pattern is very common in embedded systems,
+The `size()` pattern is very common in embedded development,
 avoiding complex branching without using an additional counter.
 
 ------
@@ -275,8 +281,8 @@ Then you will need:
 
 ## Comparing with std::queue / std::vector
 
-| Approach        | Dynamic Allocation? | Deterministic? | Embedded-Friendly? |
-| --------------- | ------------------- | -------------- | ------------------ |
-| std::vector     | Yes                 | No             | ❌                  |
-| std::queue      | Depends on the underlying container | No             | ❌                  |
-| Circular Buffer | No                  | Yes            | ✅                  |
+| Approach       | Dynamic Allocation | Deterministic | Embedded-Friendly |
+| -------------- | ------------------ | ------------- | ----------------- |
+| std::vector    | Yes                | No            | ❌                 |
+| std::queue     | Depends on underlying container | No | ❌                 |
+| Circular Buffer | No                | Yes           | ✅                 |

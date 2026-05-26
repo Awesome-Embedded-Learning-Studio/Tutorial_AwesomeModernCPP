@@ -1,5 +1,5 @@
 ---
-title: How to quickly use C++ modules in VS2026 — A complete getting started guide
+title: How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
 description: ''
 tags:
 - cpp-modern
@@ -9,27 +9,33 @@ difficulty: intermediate
 platform: host
 chapter: 1
 order: 7
+translation:
+  source: documents/vol7-engineering/cpp-modules-on-vs2026.md
+  source_hash: fe090fdfeeb8298a2e0fd0faad68e8f211d7e66f61112dcb6b652589a4382a16
+  translated_at: '2026-05-26T11:53:17.162756+00:00'
+  engine: anthropic
+  token_count: 617
 ---
 # How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
 
-## Preface
+## Introduction
 
-Modern C++ introduced a truly breakthrough feature: modules. Although they have been around for a while (this feature debuted in C++20), VS currently has decent module support in some demo cases. I also plan to gradually start introducing modules into my toy projects to simplify dependency management.
+Modern C++ introduced a truly breakthrough feature: modules. Although they have been around for a while (this feature debuted in C++20), VS's support for modules in some demo cases is currently decent. I also plan to gradually start introducing modules into my toy projects to simplify dependency management.
 
 ------
 
 ## Why Use Modules
 
-C++ modules (C++20) are a compilation unit mechanism designed to replace traditional header files. Previously, if a source file changed, it had to be completely recompiled. However, module incremental compilation analyzes changes down to the binary ABI level. MSVC modules (yes, they are not fully interoperable with other compiler vendors) cache compilation artifacts through the Module Binary Interface/BMI. Furthermore, this new export mechanism is much more robust. Later, we will introduce two keywords to show you how module import and export work.
+C++ modules (C++20) are a compilation unit mechanism designed to replace traditional header files. Previously, if a source file changed, it had to be completely recompiled. However, incremental compilation for modules is analyzed down to the binary ABI level. MSVC modules (yes, they are not fully interoperable with other compiler vendors) cache compilation artifacts through the Module Binary Interface / BMI. Moreover, this new export mechanism is much more robust. Later, we will introduce two keywords to show you how module import and export work.
 
 ------
 
 ## Prerequisites
 
-VS2022 is no longer easy to obtain (at least, it is not straightforward to get), which is why I am using VS2026. To use modules smoothly in VS2026, please confirm the following:
+VS2022 is no longer available for download (at least, it's not easy to get), which is why I am using VS2026. To successfully use modules in VS2026, please confirm the following:
 
-1. **Visual Studio 2026 (or newer) is installed**, including the "Desktop development with C++" workload. VS2026 ships with MSVC Build Tools v14.50 (IDE 18.0), bringing further improvements to module and language compatibility. So there is essentially no burden now — we do not need to manually enable any experimental features, as this has long been mainstreamed.
-2. **C++ standard setting**: The project or command line uses `/std:c++20`, or more conservatively, `/std:c++latest` (VS2026's MSVC provides more complete module support). But don't worry, **VS2026 defaults to the options above, so you don't need to change anything. If you are concerned, just take a quick look.**
+1. **Visual Studio 2026 (or newer) is installed**, including the "Desktop development with C++" workload. VS2026 ships with MSVC Build Tools v14.50 (IDE 18.0), bringing further improvements to module and language compatibility. So we can say there is no burden now—no need to manually enable any experimental features, as it has long been officially supported.
+2. **C++ standard setting**: The project or command line uses `/std:c++20`, or more conservatively, `/std:c++latest` (VS2026's MSVC provides more complete support for modules). But don't worry, **VS2026 defaults to the options above, so you don't need to change anything. If you're concerned, just take a quick look.**
 
 ------
 
@@ -72,12 +78,12 @@ int main()
 
 ## Using Modules in the Visual Studio IDE (VS2026) — Steps
 
-Visual Studio delegates most module build details to MSBuild/IDE, so we usually just need to add the files to the project:
+Visual Studio has handed off most of the module build details to MSBuild/IDE, so we usually just need to add the files to the project:
 
 1. **Create a new project**: `Console App (C++)` (select the Desktop development with C++ workload).
 2. **Add module files to the project**: Right-click the project → Add → Existing Item → add `math.ixx` and `main.cpp`.
 3. **Confirm language settings**: Right-click the project → Properties → C/C++ → Language → set `C++ Language Standard` to `ISO C++20` or above (selecting `Preview` is also fine). Additionally, under Properties → C/C++ → Language, set the option to build C++23 standard library modules to Yes.
-4. **Build and run**: The IDE automatically scans module sources, generates BMIs, and correctly sets the compilation and linking order. We usually do not need to manually specify `.obj`. If module dependencies are complex (cross-project), we can use project references or configure Module References in Project Properties.
+4. **Build and run**: The IDE will automatically scan module sources, generate BMIs, and correctly set the compilation and linking order. We usually don't need to manually specify `.obj`. If module dependencies are complex (cross-project), we can use project references or configure Module References in Project Properties.
 
 ------
 

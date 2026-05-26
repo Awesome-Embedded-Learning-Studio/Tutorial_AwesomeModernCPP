@@ -1,7 +1,7 @@
 ---
-title: 'std::expected<T, E>: Type-safe error propagation'
-description: C++23's expected type and monadic operations, implementing elegant error
-  propagation chains
+title: 'std::expected<T, E>: Type-Safe Error Propagation'
+description: C++23's `expected` type and monadic operations, implementing elegant
+  error propagation chains
 chapter: 10
 order: 3
 tags:
@@ -20,14 +20,20 @@ prerequisites:
 - 'Chapter 10: optional 用于错误处理'
 related:
 - 错误处理模式总结
+translation:
+  source: documents/vol2-modern-features/ch10-error-handling/03-expected-error.md
+  source_hash: c04dde9a1bfd0eef6a7f6b0342bac5785f3b88aad62a942ec1e7b94974f0716c
+  translated_at: '2026-05-26T11:35:56.762113+00:00'
+  engine: anthropic
+  token_count: 3399
 ---
 # std::expected<T, E>: Type-Safe Error Propagation
 
-In the previous article, we discussed `std::optional` for error handling and pointed out its limitation—it cannot carry error information. When you need to know *why* something failed, `std::optional` falls short. `std::expected`, introduced in C++23, fills this gap: it tells you both whether a value exists and why it doesn't.
+In the previous article, we discussed how `std::optional` handles errors and pointed out its limitation—it cannot carry error information. When you need to know *why* something failed, `std::optional` falls short. `std::expected`, introduced in C++23, fills this gap: it tells you both whether a value exists and *why* it doesn't.
 
 If you have experience with Rust, the design philosophy behind `std::expected` is identical to Rust's `Result`—it holds a value `T` on success and an error `E` on failure. The difference is that C++ lacks compiler-enforced `match` checks and the `?` operator, so we rely on monadic operations and coding discipline to bridge the gap.
 
-A quick note: `std::expected` is a C++23 feature. If you are currently using C++17 or C++20, we provide a usable simplified implementation later in this article. In embedded scenarios, since there is no RTTI dependency, `std::expected` works perfectly fine.
+A quick note: `std::expected` is a C++23 feature. If you are currently using C++17 or C++20, this article provides a workable simplified implementation. In embedded scenarios, since there is no RTTI dependency, `std::expected` works perfectly fine.
 
 ------
 
@@ -77,7 +83,7 @@ int main() {
 }
 ```
 
-`std::unexpected` is a helper template used specifically to construct the error branch of `std::expected`. Its role is similar to `std::nullopt` for `std::optional`—it explicitly expresses "this is an error."
+`std::unexpected` is a helper template specifically used to construct the error branch of `std::expected`. Its role is similar to `std::nullopt` for `std::optional`—it explicitly expresses "this is an error."
 
 ------
 
@@ -171,7 +177,7 @@ If `parse_int` returns an error, the subsequent `validate_range` and `to_hex_str
 
 ### transform: Transforming the Value
 
-The difference between `transform` and `and_then` is that the provided function returns a plain value instead of an `std::expected`. `transform` automatically wraps the return value in a new `std::expected`:
+The difference between `transform` and `and_then` is that the provided function returns a plain value instead of an `std::expected`. `transform` automatically wraps the return value into a new `std::expected`:
 
 ```cpp
 auto result = parse_int("42")
@@ -180,7 +186,7 @@ auto result = parse_int("42")
 // result 的类型是 std::expected<std::string, ParseError>
 ```
 
-Here, the first `transform` turns an `int` into an `int` (doubling it), and the second turns an `int` into a `std::string`. If any step fails, subsequent `transform` calls will not execute.
+Here, the first `transform` turns `int` into `int` (doubling it), and the second turns `int` into `std::string`. If any step fails, subsequent `transform` calls will not execute.
 
 `transform` is suited for operations that "cannot fail themselves." If an operation might fail, use `and_then`; if it is guaranteed to succeed, use `transform`.
 
@@ -208,7 +214,7 @@ int main() {
 }
 ```
 
-The function inside `or_else` must return the same type of `std::expected`. This means you can perform error recovery within `or_else`—if the fallback operation succeeds, the subsequent parts of the chain will continue down the success path.
+The function in `or_else` must return the same type of `std::expected`. This means you can perform error recovery inside `or_else`—if the fallback operation succeeds, the subsequent parts of the chain will continue down the success path.
 
 ### transform_error: Transforming the Error Type
 
@@ -312,20 +318,20 @@ We have put together a comparison table to help you make choices in real-world s
 
 | Scenario | Recommended Approach | Reason |
 |------|---------|------|
-| Lookup/cache, failure has no specific reason | `std::optional` | Concise, no error information needed |
+| Lookup/caching, failure has no specific reason | `std::optional` | Concise, no error information needed |
 | Parsing/IO, need to know the reason for failure | `std::expected` | Carries error information |
 | Multi-step operation chains, need error propagation | `std::expected` | Monadic operations support chaining |
 | Unrecoverable critical errors | Exceptions | Forced interruption, automatic RAII cleanup |
 | Constructor failure | Exceptions | Constructors have no return value |
-| Embedded (no exception support) | `std::expected` or enums | No RTTI dependency |
+| Embedded (no exception support) | `std::expected` or enum class | No RTTI dependency |
 
-A practical rule of thumb: **if the caller needs to do different things based on the error type (retry, degrade, report), use `std::expected`; if you only need to know "success or failure," use `std::optional`; if it is a severe program-logic error (impossible to recover from), use exceptions.**
+A practical rule of thumb: **If the caller needs to do different things based on the error type (retry, degrade, report), use `std::expected`; if you only need to know "success or failure," use `std::optional`; if it is a severe program-logic error (impossible to recover from), use exceptions.**
 
 ------
 
 ## Simplified Implementation for C++17 Environments
 
-If your project is still on C++17, don't worry—you can implement a fully functional, simplified version of `std::expected`. The following implementation covers the core features and can be dropped directly into your project:
+If your project is still on C++17, don't worry—you can implement a fully functional simplified version of `std::expected`. The following implementation covers the core features and can be dropped directly into your project:
 
 ```cpp
 #include <utility>
@@ -426,7 +432,7 @@ public:
 };
 ```
 
-This implementation omits some details (fine-grained control of copy/move semantics, `std::unexpect_t` support, etc.), but the core semantics are completely correct and suitable for production-environment error handling.
+This implementation omits some details (fine-grained control of copy/move semantics, `std::unexpect_t` support, etc.), but the core semantics are completely correct and suitable for error handling in production environments.
 
 ------
 
@@ -517,7 +523,7 @@ int main() {
 }
 ```
 
-This example demonstrates the advantage of `std::expected` in multi-layer operations: each step returns an `std::expected`, and if any step fails, it automatically passes through, ultimately handled uniformly at the end of the chain. The error information carries sufficient context—the `message` field tells you exactly what went wrong.
+This example demonstrates the advantage of `std::expected` in multi-layer operations: each step returns an `std::expected`, and any failure automatically passes through, ultimately handled uniformly at the end of the chain. The error information carries sufficient context—the `message` field tells you exactly what went wrong.
 
 ------
 

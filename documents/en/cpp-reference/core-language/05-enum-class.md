@@ -1,7 +1,7 @@
 ---
 title: enum class
-description: Scoped enumerations, preventing enumeration values from polluting the
-  outer namespace and prohibiting implicit type conversions.
+description: Scoped enumerations prevent enumeration values from polluting the outer
+  namespace and prohibit implicit type conversions.
 chapter: 99
 order: 5
 tags:
@@ -15,12 +15,18 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/05-enum-class.md
+  source_hash: fc1119531ee51121638ceba0fcafcd0029e2186344f648dcdbd1cb70e7cdd12e
+  translated_at: '2026-05-26T10:15:36.831894+00:00'
+  engine: anthropic
+  token_count: 394
 ---
 # enum class (C++11)
 
 ## In a Nutshell
 
-A scoped enumeration type that resolves the issues of traditional `enum` polluting the global namespace and implicitly converting to integers.
+A scoped enumeration type that solves the problems of traditional `enum` polluting the global namespace and implicitly converting to integers.
 
 ## Header
 
@@ -33,9 +39,9 @@ None required (language keyword)
 | Declaration | `enum class Name { A, B, C };` | Basic scoped enumeration, default underlying type is `int` |
 | Specify underlying type | `enum class Name : uint8_t { A, B };` | Fixed underlying type, saves memory |
 | Access enumerator | `Name::A` | Must be accessed via the scope operator |
-| Convert to integer | `static_cast<int>(Name::A)` | Requires explicit cast, no implicit conversion |
+| Convert to integer | `static_cast<int>(Name::A)` | Requires explicit conversion, no implicit conversion |
 | Opaque declaration | `enum class Name : uint8_t;` | Forward declaration, requires specifying the underlying type |
-| using enum | `using enum Name;` | (C++20) Introduces enumerators into the current scope |
+| using enum | `using enum Name;` | (C++20) Imports enumerators into the current scope |
 
 ## Minimal Example
 
@@ -61,7 +67,7 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Specifying the underlying type (e.g., ``uint8_t``, ``uint32_t``) allows precise control over memory footprint, ideal for protocol parsing and register mapping
+- Specifying the underlying type (such as `uint8_t` or `uint32_t`) allows precise control over memory footprint, making it ideal for protocol parsing and register mapping
 - Zero runtime overhead, fully resolved at compile time
 - Eliminates naming conflicts, suitable for modular development in large embedded projects
 - Explicit type conversions prevent accidental integer comparisons, improving code safety

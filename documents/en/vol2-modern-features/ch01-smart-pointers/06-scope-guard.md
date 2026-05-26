@@ -20,16 +20,22 @@ prerequisites:
 - 'Chapter 1: RAII 深入理解'
 related:
 - 自定义删除器
+translation:
+  source: documents/vol2-modern-features/ch01-smart-pointers/06-scope-guard.md
+  source_hash: fdd9356cbea5eeef1159ffbffa52cbe4a4198314acc109f20c00fa3d90ba994a
+  translated_at: '2026-05-26T11:23:30.606044+00:00'
+  engine: anthropic
+  token_count: 2908
 ---
 # scope_guard and defer: A General-Purpose Scope Guard
 
-In previous chapters, we discussed smart pointers—they manage the "lifecycle of resources" (memory, file handles, sockets, etc.). But in real-world engineering, there is another category of scenarios: you need to perform an action when a scope exits, but that action isn't necessarily "releasing a resource." It might be restoring a global state, committing or rolling back a transaction, logging a message, or notifying a monitoring component. This "execute on exit" need is more universal and flexible than resource management, and smart pointers designed specifically for resource management don't cover these scenarios well.
+In previous chapters, we discussed smart pointers — they manage the "lifecycle of a resource" (memory, file handles, sockets, etc.). But in real-world engineering, there is another class of scenarios: you need to perform an action when a scope exits, but that action isn't necessarily "releasing a resource." It might be restoring a global state, committing or rolling back a transaction, logging a message, or notifying a monitoring component. This "execute on exit" need is more universal and flexible than resource management, and smart pointers — designed specifically for resources — don't cover these scenarios well.
 
-A scope guard is a general-purpose tool designed for exactly this need. Its core idea is extremely simple: **bind a callable to the destructor of a stack object—when the scope exits, it is automatically invoked**. That's it. Plain and simple, but incredibly useful.
+The scope guard is a general-purpose tool designed for exactly this need. Its core idea is extremely simple: **bind a callable to the destructor of a stack object — when the scope exits, it is automatically invoked**. That's it. Plain and simple, but incredibly useful.
 
 ## The Motivation for scope_guard: Beyond Resources to State Rollback
 
-Let's look at a real-world scenario. Suppose you are writing a configuration modification function that needs to temporarily change the system's operating mode, restoring the original mode when the operation completes. If the function has only one return point, manual restoration is fine. But if the function has multiple return paths, or if calls in the middle might throw exceptions, manual restoration becomes very fragile.
+Let's look at a real-world scenario. Suppose you are writing a configuration modification function that needs to temporarily change the system's operating mode and restore the original mode when the operation is complete. If the function has only one return point, manual restoration is fine. But if the function has multiple return paths, or if an exception might be thrown in the middle, manual restoration becomes very fragile.
 
 ```cpp
 // 没有 scope_guard 时的脆弱写法
@@ -53,7 +59,7 @@ void update_config(Config& cfg) {
 }
 ```
 
-Every time you modify this function—adding a new return path, introducing a call that might throw—you have to check whether any "restoration points" were missed. As the function grows more complex, the probability of missing one approaches 100%.
+Every time you modify this function — adding a new return path, introducing a call that might throw — you have to check whether you missed any "restoration points." As the function grows more complex, the probability of missing one approaches 100%.
 
 Using a scope guard makes things much simpler:
 
@@ -73,11 +79,11 @@ void update_config_guarded(Config& cfg) {
 }  // 正常退出也自动恢复
 ```
 
-`restore_mode` is a RAII object—its destructor invokes the lambda when the scope exits. Whether it's a `return`, exception propagation, or the function simply reaching its end, the restoration action is executed. You write the restoration code once, and never have to worry about missing it again.
+`restore_mode` is a RAII (Resource Acquisition Is Initialization) object — its destructor invokes that lambda when the scope exits. Whether it's a `return`, exception propagation, or the function simply reaching its end, the restoration action is executed. You write the restoration code once, and never have to worry about missing it again.
 
 ## Implementing a General-Purpose ScopeGuard Class
 
-The core implementation of a scope guard is very concise—a template class wrapping a callable and an active flag. We'll start with the most basic version and refine it step by step.
+The core implementation of a scope guard is very concise — a template class wrapping a callable and an active flag. We'll start with the most basic version and refine it step by step.
 
 First, the core implementation:
 
@@ -129,15 +135,15 @@ ScopeGuard<F> make_scope_guard(F&& func) noexcept {
 }
 ```
 
-This implementation has a few notable design decisions. The destructor wraps the `func_()` call in a `try-catch(...)` block and calls `std::terminate()` in the catch block. In the C++ standard, if a destructor throws an exception during stack unwinding, the program directly calls `std::terminate()` —after all, the runtime cannot handle two exceptions simultaneously. Although a function marked `noexcept` throwing an exception also leads to `terminate()` (which compilers will remind you about via a `-Wterminate` warning), an explicit try-catch gives us a chance to add logging or cleanup in the future. If you're unsure about the behavior of noexcept exception handling, you can run the relevant tests in this chapter's verification code (`06-scope-guard-verification.cpp`) to observe exactly when terminate is triggered.
+This implementation has a few notable design decisions. The destructor wraps the `func_()` call in a `try-catch(...)` block and invokes `std::terminate()` in the catch block. In the C++ standard, if a destructor throws an exception during stack unwinding, the program directly calls `std::terminate()` — after all, the runtime cannot handle two exceptions simultaneously. Although a function marked `noexcept` that throws also leads to `terminate()` (which compilers will remind you about via a `-Wterminate` warning), an explicit try-catch gives us a chance to add logging or cleanup in the future. If you're unsure about the behavior of noexcept exception handling, you can run the relevant tests in this chapter's verification code (`06-scope-guard-verification.cpp`) to observe exactly when terminate is triggered.
 
-The `dismiss()` method allows you to cancel the guard on the success path. This is extremely useful in "rollback only on failure" scenarios—we'll see a more elegant `scope_fail` implementation later.
+The `dismiss()` method allows you to cancel the guard on the success path. This is extremely useful in "rollback only on failure" scenarios — we'll see a more elegant `scope_fail` implementation later.
 
 ## The defer Pattern: Go-Style Deferred Execution
 
 The Go language has a `defer` keyword that defers a function call until the current function returns. This feature is widely popular in the Go community because it makes "placing cleanup code right after acquisition code" a natural coding style.
 
-Although C++ doesn't have a language-level `defer`, we can achieve a very similar experience using a macro combined with `ScopeGuard`:
+Although C++ doesn't have a language-level `defer`, we can achieve a very similar experience using a macro + `ScopeGuard`:
 
 ```cpp
 // 辅助宏：自动生成唯一变量名
@@ -156,7 +162,7 @@ Although C++ doesn't have a language-level `defer`, we can achieve a very simila
         make_scope_guard([&]() noexcept { code; })
 ```
 
-The usage is very intuitive—put a block of code after `DEFER`, and that code executes when the current scope exits:
+The usage is very intuitive — `defer` is followed by a block of code, which executes when the current scope exits:
 
 ```cpp
 void process_with_defer() {
@@ -175,13 +181,13 @@ void process_with_defer() {
 }
 ```
 
-The advantage of the `DEFER` macro is that it keeps the cleanup code right next to the acquisition code—readers don't need to jump to the end of the function to see "when this resource will be released." This locality greatly improves code readability and maintainability.
+The advantage of the `DEFER` macro is that it places the cleanup code right next to the acquisition code — readers don't need to jump to the end of the function to see "when this resource will be released." This locality greatly improves code readability and maintainability.
 
-⚠️ The lambda in the `DEFER` macro captures `[&]` (by reference), meaning it references local variables from the enclosing scope. If those variables have already left the scope by the time `DEFER` executes, a dangling reference will occur. In practice, however, `DEFER` and the variables it captures are usually in the same scope, so this problem rarely arises—but you need to be aware of the risk. If you genuinely need to use a guard object across scopes, consider capturing by value (`[=]`) or ensuring the guard object's lifetime doesn't exceed the captured variables.
+⚠️ The `DEFER` macro's lambda captures `[&]` (by reference), meaning it references local variables from the outer scope. If those variables have already left the scope by the time `DEFER` executes, you'll get a dangling reference. In practice, however, `DEFER` and the variables it captures are usually in the same scope, so this issue rarely arises — but you need to be aware of the risk. If you truly need to use a guard object across scopes, consider capturing by value (`[=]`) or ensuring the guard object's lifetime doesn't exceed that of the captured variables.
 
 ## scope_success and scope_fail: Distinguishing Success and Failure Paths
 
-Sometimes you only want to execute an action when a function "returns normally" (e.g., committing a transaction), or only when it "exits via exception" (e.g., rolling back a transaction). C++17 provides `std::uncaught_exceptions()` to detect whether the code is currently in the process of propagating an exception—it returns the number of exceptions currently being propagated but not yet caught. Based on this information, we can implement `scope_success` and `scope_fail`.
+Sometimes you only want to execute an action when a function "returns normally" (e.g., committing a transaction), or only when it "exits via exception" (e.g., rolling back a transaction). C++17 provides `std::uncaught_exceptions()` to detect whether we are currently in the middle of exception propagation — it returns the number of exceptions currently propagating but not yet caught. Based on this information, we can implement `scope_success` and `scope_fail`.
 
 ```cpp
 template <typename F>
@@ -253,13 +259,13 @@ private:
 };
 ```
 
-The principle is: record the current `uncaught_exceptions()` count at construction, and compare it at destruction—if the count hasn't changed, no new exception was thrown (`scope_success`); if the count increased, a new exception is being propagated (`scope_fail`).
+The principle is: record the current `uncaught_exceptions()` count at construction, and compare it at destruction — if the count hasn't changed, no new exception was thrown (`scope_success`); if the count increased, a new exception is propagating (`scope_fail`).
 
-⚠️ Note the use of `std::uncaught_exceptions()` (plural) rather than the legacy `std::uncaught_exception()` (singular). The latter behaves incorrectly in nested try-catch scenarios—it can only tell you "whether there is an exception," not "whether there is a **new** exception." `uncaught_exceptions()` returns a precise count and can correctly detect nested scenarios. The legacy `uncaught_exception()` was deprecated in C++17.
+⚠️ Note the use of `std::uncaught_exceptions()` (plural) rather than the legacy `std::uncaught_exception()` (singular). The latter behaves incorrectly in nested try-catch scenarios — it can only tell you "whether there is an exception," not "whether there is a **new** exception." `uncaught_exceptions()` returns a precise count and can correctly detect nested scenarios. The legacy `uncaught_exception()` was deprecated in C++17.
 
 ## State Rollback Example: Transaction Processing
 
-The most classic application scenario for `scope_success` and `scope_fail` is transaction processing—commit on success, rollback on failure:
+The most classic use case for `scope_success` and `scope_fail` is transaction processing — commit on success, rollback on failure:
 
 ```cpp
 #include <iostream>
@@ -319,7 +325,7 @@ ROLLBACK
 
 ## Exception Safety and scope_guard
 
-The relationship between scope_guard and exception safety is very close. In C++, there are three levels of exception safety (basic guarantee, strong guarantee, and no-throw guarantee), and scope_guard is an important tool for achieving the strong guarantee.
+The relationship between scope guards and exception safety is very close. In C++, there are three levels of exception safety (basic guarantee, strong guarantee, and no-throw guarantee), and the scope guard is an important tool for achieving the strong guarantee.
 
 Consider an operation that "modifies A, then modifies B." If A is modified successfully but B fails, we need to roll back A to guarantee strong exception safety:
 
@@ -341,19 +347,19 @@ void update_both(SubsystemA& a, SubsystemB& b, const Config& cfg) {
 }
 ```
 
-This "act first, rollback on failure" pattern is very common in database operations, file system operations, and network protocol implementations. scope_guard makes this pattern natural and error-resistant.
+This "act first, rollback on failure" pattern is extremely common in database operations, file system operations, and network protocol implementations. The scope guard makes this pattern natural and error-resistant.
 
 ## Standardization Progress: std::scope_exit and Boost.Scope
 
-The scope_guard pattern has caught the attention of the C++ standard committee. Library Fundamentals TS v3 (ISO/IEC TS 19568:2024) defines three scope guard class templates: `std::experimental::scope_exit` (execute on scope exit), `std::experimental::scope_success` (execute only on normal exit), and `std::experimental::scope_fail` (execute only on exception exit). Their behavior is essentially consistent with what we implemented above, but the standardized version provides stricter exception safety guarantees and more complete interface constraints—for example, the constructor of `scope_exit` is `noexcept`, and throwing during construction is not allowed (otherwise `terminate()` is called directly).
+The scope guard pattern has caught the attention of the C++ standard committee. Library Fundamentals TS v3 (ISO/IEC TS 19568:2024) defines three scope guard class templates: `std::experimental::scope_exit` (execute on scope exit), `std::experimental::scope_success` (execute only on normal exit), and `std::experimental::scope_fail` (execute only on exception exit). Their behavior is essentially consistent with what we implemented above, but the standardized version provides stricter exception safety guarantees and more complete interface constraints — for example, the constructor of `scope_exit` is `noexcept`, and throwing during construction is not allowed (otherwise `terminate()` is called directly).
 
-The Boost library also provides Boost.Scope, which implements similar components. If you don't want to implement scope_guard yourself, you can directly use Boost.Scope or the header-only scope-lite library (written by Martin Moene, providing an interface compatible with the standard proposal and supporting compilers from C++98 onward).
+The Boost library also provides Boost.Scope, which implements similar components. If you don't want to implement a scope guard yourself, you can directly use Boost.Scope or the header-only scope-lite library (written by Martin Moene, providing an interface compatible with the standard proposal and supporting compilers as far back as C++98).
 
-In real projects, my usual approach is: if the project already depends on Boost, use Boost.Scope; if you don't want to introduce a Boost dependency, use a lightweight custom implementation (like the `ScopeGuard` we wrote today). In terms of feature completeness, our basic implementation is about 40 lines of code and already covers the core functionality—you can run `06-scope-guard-verification.cpp` to see its actual behavior in scenarios like multiple return paths, exception handling, and transaction patterns.
+In real projects, my usual approach is: if the project already depends on Boost, use Boost.Scope; if I don't want to introduce a Boost dependency, use a lightweight custom implementation (like the `ScopeGuard` we wrote today). In terms of feature completeness, our basic implementation is about 40 lines of code and already covers the core functionality — you can run `06-scope-guard-verification.cpp` to see how it performs in scenarios like multiple return paths, exception handling, and transaction patterns.
 
 ## Verification Code
 
-We have written complete verification tests for this chapter, which you can use to verify the various behaviors of scope_guard:
+We've written complete verification tests for this chapter that you can use to validate the various behaviors of scope guards:
 
 ```bash
 # 编译（使用 g++）
@@ -367,26 +373,26 @@ g++ -std=c++17 -Wall -Wextra -O2 \
 
 The verification code includes the following test cases:
 
-1. **Basic ScopeGuard** — Verifies execution on scope exit
-2. **dismiss() functionality** — Verifies canceling the guard
-3. **Multiple return paths** — Verifies cleanup on both early return and normal exit
-4. **ScopeFail (execute on exception)** — Verifies triggering on exception exit
-5. **ScopeFail (no execute without exception)** — Verifies no triggering on normal exit
-6. **ScopeSuccess (execute on normal exit)** — Verifies triggering on normal exit
-7. **ScopeSuccess (no execute on exception)** — Verifies no triggering on exception exit
-8. **Transaction pattern** — Verifies an actual transaction processing scenario
-9. **DEFER macro simulation** — Verifies resource release order
-10. **std::uncaught_exceptions() behavior** — Verifies the exception detection mechanism
+1. **Basic ScopeGuard** — validates execution on scope exit
+2. **dismiss() functionality** — validates canceling the guard
+3. **Multiple return paths** — validates cleanup on both early return and normal exit
+4. **ScopeFail (execute on exception)** — validates triggering on exception exit
+5. **ScopeFail (no execute without exception)** — validates no triggering on normal exit
+6. **ScopeSuccess (execute on normal exit)** — validates triggering on normal exit
+7. **ScopeSuccess (no execute on exception)** — validates no triggering on exception exit
+8. **Transaction pattern** — validates a real transaction processing scenario
+9. **DEFER macro simulation** — validates resource release order
+10. **std::uncaught_exceptions() behavior** — validates the exception detection mechanism
 
 These tests cover all the key scenarios we discussed. You can run them directly to observe the output, or modify the code to test edge cases.
 
 ## Summary
 
-scope_guard is a generalization of the RAII idea—it doesn't just manage resource acquisition and release, but manages any action that needs to execute when a scope exits. By wrapping an action in the destructor of a stack object, scope_guard guarantees that no matter how control flow leaves the scope (normal return, early return, exception propagation), the action will be executed.
+The scope guard is a generalization of the RAII (Resource Acquisition Is Initialization) idea — it doesn't just manage resource acquisition and release, but manages any action that needs to execute when a scope exits. By wrapping an action in the destructor of a stack object, the scope guard guarantees that no matter how control flow leaves the scope (normal return, early return, exception propagation), the action will be executed.
 
-Today we implemented three guard variants: `ScopeGuard` (always execute), `ScopeSuccess` (execute only on normal exit), and `ScopeFail` (execute only on exception exit), along with the `DEFER` macro to provide Go-style deferred execution syntax. These tools can simplify code and improve reliability in scenarios like transaction processing, state rollback, and resource cleanup—you can run the verification code to see how they perform in real-world scenarios.
+Today we implemented three guard variants: `ScopeGuard` (always execute), `ScopeSuccess` (execute only on normal exit), and `ScopeFail` (execute only on exception exit), along with the `DEFER` macro to provide Go-style deferred execution syntax. These tools can simplify code and improve reliability in scenarios like transaction processing, state rollback, and resource cleanup — you can run the verification code to see how they perform in real-world scenarios.
 
-This brings us to the end of this chapter. From RAII to smart pointers (`unique_ptr`, `shared_ptr`, `weak_ptr`), from custom deleters to intrusive reference counting, to the general-purpose scope_guard—we have fully covered the core toolkit for modern C++ resource management. Mastering these tools gives you the foundation to write safe, efficient, and maintainable C++ code.
+This brings us to the end of this chapter. From RAII to smart pointers (`unique_ptr`, `shared_ptr`, `weak_ptr`), from custom deleters to intrusive reference counting, to the general-purpose scope guard — we have fully covered the core toolkit for modern C++ resource management. Mastering these tools gives you the foundation for writing safe, efficient, and maintainable C++ code.
 
 ## References
 

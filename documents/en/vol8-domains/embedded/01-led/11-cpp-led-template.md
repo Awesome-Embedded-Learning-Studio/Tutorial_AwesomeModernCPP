@@ -1,5 +1,5 @@
 ---
-title: 'Part 16: Fourth Refactoring — LED Template, From General-Purpose GPIO to Dedicated
+title: 'Part 16: Fourth Refactoring — LED Template, From Generic GPIO to Dedicated
   Abstraction'
 description: ''
 tags:
@@ -10,12 +10,18 @@ difficulty: beginner
 platform: stm32f1
 chapter: 15
 order: 11
+translation:
+  source: documents/vol8-domains/embedded/01-led/11-cpp-led-template.md
+  source_hash: 9915cc35c5ee69b992b1824124e63a5a09b4cc744a9f0d3562a1f780a16107f0
+  translated_at: '2026-05-26T12:09:11.400230+00:00'
+  engine: anthropic
+  token_count: 4388
 ---
-# Part 16: Fourth Refactoring — The LED Template, From General-Purpose GPIO to Domain-Specific Abstraction
+# Part 16: Fourth Refactoring — The LED Template, From Generic GPIO to Domain-Specific Abstraction
 
 ## Preface: When Generic Isn't Good Enough
 
-In the previous part, we accomplished something to be proud of — the GPIO template. `gpio::GPIO<PORT, PIN>` is now a truly general-purpose GPIO abstraction: you can use it on any port and any pin, set the mode, read and write levels, and toggle states. All operations are completed through a type-safe interface, with the compiler handling everything behind the scenes.
+In the previous article, we accomplished something to be proud of — the GPIO template. `gpio::GPIO<PORT, PIN>` is now a truly generic GPIO abstraction: you can use it on any port and any pin, set modes, read and write levels, and toggle states. All operations are completed through a type-safe interface, with the compiler handling everything behind the scenes.
 
 But generic doesn't mean easy to use.
 
@@ -30,19 +36,19 @@ led.set_gpio_pin_state(gpio::GPIO<GpioPort::C, GPIO_PIN_13>::State::UnSet);  // 
 led.set_gpio_pin_state(gpio::GPIO<GpioPort::C, GPIO_PIN_13>::State::Set);    // 熄灭
 ```
 
-This code has four problems. First, the `setup()` call requires manually passing in the mode, pull-up/pull-down, and speed — but an LED's mode is always push-pull, no pull-up/pull-down, and low speed. These three things are immutable facts for an LED and shouldn't be the caller's concern. Second, the semantics of `set_gpio_pin_state()` are "set GPIO level," not "turn on LED" or "turn off LED" — you have to know that PC13 is active-low, so turning it on requires passing `UnSet`, and turning it off requires passing `Set`. This cognitive burden shouldn't exist at all. Third, referencing an enum requires writing the lengthy `gpio::GPIO<GpioPort::C, GPIO_PIN_13>::Mode::OutputPP` every time, which is verbose and error-prone. Fourth, if you have a second LED on a different pin, you have to copy an almost identical set of code.
+This code has four problems. First, the `setup()` call requires manually passing in the mode, pull-up/pull-down, and speed — but an LED's mode is always push-pull, no pull-up/pull-down, and low speed. These three facts are constant for LEDs and shouldn't be the caller's concern. Second, the semantics of `set_gpio_pin_state()` are "set GPIO level," not "turn on LED" or "turn off LED" — you have to know that PC13 is active-low, so turning it on requires passing `UnSet`, and turning it off requires passing `Set`. This cognitive burden shouldn't exist at all. Third, referencing enumerations requires writing the lengthy `gpio::GPIO<GpioPort::C, GPIO_PIN_13>::Mode::OutputPP` every time, which is verbose and error-prone. Fourth, if you have a second LED on a different pin, you have to copy an almost identical set of code.
 
-The root cause of these problems is that the GPIO template is "generic" — it doesn't know it's driving an LED. It doesn't know what mode an LED should be configured with, doesn't know whether the LED is active-high or active-low, and certainly doesn't know what "on" and "off" mean.
+The root cause of these problems is that the GPIO template is "generic." It doesn't know it's driving an LED. It doesn't know what mode an LED should be configured with, doesn't know whether the LED is active-high or active-low, and certainly doesn't know what "on" and "off" mean.
 
-In this part, we will build a domain-specific template class for LEDs on top of the GPIO template. It encapsulates LED-specific hardware knowledge like "push-pull, active-low, low speed," exposing only three semantically clear interfaces: `on()`, `off()`, and `toggle()`. The user only needs to tell the template "which port and which pin the LED is on," and everything else — clock enabling, mode configuration, level logic — is fully automated.
+In this article, we will build a domain-specific template class for LEDs on top of the GPIO template. It encapsulates LED-specific hardware knowledge like "push-pull output, active-low, low speed," exposing only three semantically clear interfaces: `on()`, `off()`, and `toggle()`. The user only needs to tell the template "which port and which pin the LED is on," and everything else — clock enabling, mode configuration, level logic — is fully automated.
 
-This is also the fourth and final refactoring of our entire LED series. From the original C macro approach, to a bare C++ class, to the GPIO template, and now to today's LED template — each refactoring hands off more hardware knowledge to the compiler, letting users write less and safer code.
+This is also the fourth and final refactoring of our entire LED series. From the original C macro approach, to bare C++ classes, to the GPIO template, and now to the LED template — each refactoring hands off more hardware knowledge to the compiler, letting users write less, safer code.
 
 ---
 
-## The Complete Design of the LED Template
+## Complete Design of the LED Template
 
-Let's look at the complete `led.hpp` first, which is only 30 lines in total:
+First, let's look at the complete `led.hpp`, which is only 30 lines in total:
 
 ```cpp
 #pragma once
@@ -77,7 +83,7 @@ class LED : public gpio::GPIO<PORT, PIN> {
 } // namespace device
 ```
 
-Thirty lines of code, but every line is worth careful scrutiny. Let's break it down section by section.
+Thirty lines of code, but every line is worth careful examination. Let's break it down section by section.
 
 ### Three Template Parameters: Port, Pin, and Active Level
 
@@ -85,7 +91,7 @@ Thirty lines of code, but every line is worth careful scrutiny. Let's break it d
 template <gpio::GpioPort PORT, uint16_t PIN, ActiveLevel LEVEL = ActiveLevel::Low>
 ```
 
-The first two parameters, `PORT` and `PIN`, are passed directly to the base class `GPIO<PORT, PIN>`. We discussed this in detail in the previous part on the GPIO template — they determine the specific port address and pin number at compile time, allowing the compiler to generate code tailored to specific hardware.
+The first two parameters, `PORT` and `PIN`, are passed directly to the base class `GPIO<PORT, PIN>`. We discussed this in detail in the previous article on the GPIO template — they determine the specific port address and pin number at compile time, allowing the compiler to generate code targeted at specific hardware.
 
 The focus here is the third parameter: `ActiveLevel LEVEL`.
 
@@ -97,7 +103,7 @@ enum class ActiveLevel { Low, High };
 
 It has only two values: `Low` means active-low (the LED turns on at a low level), and `High` means active-high (the LED turns on at a high level). This concept corresponds to the actual hardware circuit — the PC13 LED on the Blue Pill board is connected to GND, so the LED conducts and lights up when the MCU outputs a low level, and turns off when it outputs a high level. If you soldered an LED connected to VCC yourself, it would be active-high and active-low for turning off.
 
-The default value of `LEVEL` is `ActiveLevel::Low`, because the Blue Pill's on-board LED is active-low. Default template parameters are an elegant feature in C++: when the default value satisfies most use cases, the user doesn't need to explicitly provide this parameter. So for standard Blue Pill usage, you only need to write:
+The default value of `LEVEL` is `ActiveLevel::Low`, because the Blue Pill's onboard LED is active-low. Default template parameters are an elegant feature in C++: when the default value satisfies most use cases, the user doesn't need to explicitly provide this parameter. So for standard Blue Pill usage, you only need to write:
 
 ```cpp
 device::LED<device::gpio::GpioPort::C, GPIO_PIN_13> led;
@@ -118,11 +124,11 @@ class LED : public gpio::GPIO<PORT, PIN> {
     using Base = gpio::GPIO<PORT, PIN>;
 ```
 
-LED inherits from the GPIO template. When LED is instantiated as `LED<GpioPort::C, GPIO_PIN_13>`, the base class becomes `GPIO<GpioPort::C, GPIO_PIN_13>` — a complete GPIO template instance specific to pin 13 of GPIOC. This means LED automatically possesses all the capabilities of the base class: `setup()`, `set_gpio_pin_state()`, `toggle_pin_state()`, `native_port()`, and the internal `GPIOClock` clock enabling logic.
+LED inherits from the GPIO template. When LED is instantiated as `LED<GpioPort::C, GPIO_PIN_13>`, the base class becomes `GPIO<GpioPort::C, GPIO_PIN_13>` — a complete GPIO template instance specifically for pin 13 of GPIOC. This means LED automatically has all the capabilities of the base class: `setup()`, `set_gpio_pin_state()`, `toggle_pin_state()`, `native_port()`, and the internal `GPIOClock` clock enabling logic.
 
-There is a subtle template instantiation mechanism worth noting here. The `PORT` and `PIN` in `gpio::GPIO<PORT, PIN>` are not concrete values, but the LED template's own template parameters. When the compiler sees `LED<GpioPort::C, GPIO_PIN_13>`, it replaces `PORT` with `GpioPort::C` and `PIN` with `GPIO_PIN_13`, and then instantiates the base class `GPIO<GpioPort::C, GPIO_PIN_13>`. This is a two-stage instantiation process: the LED's template parameters are determined first, and then the base class template is instantiated accordingly.
+There is a subtle template instantiation mechanism worth noting here. The `PORT` and `PIN` in `gpio::GPIO<PORT, PIN>` are not concrete values, but the LED template's own template parameters. When the compiler sees `LED<GpioPort::C, GPIO_PIN_13>`, it replaces `PORT` with `GpioPort::C` and `PIN` with `GPIO_PIN_13`, then instantiates the base class `GPIO<GpioPort::C, GPIO_PIN_13>`. This is a two-stage instantiation process: the LED's template parameters are determined first, and then the base class template is instantiated accordingly.
 
-`using Base = gpio::GPIO<PORT, PIN>` is a type alias. It doesn't define a new type; it simply gives a shorter name to an existing type. After this, all occurrences of `Base::` in the code are equivalent to `gpio::GPIO<PORT, PIN>::`. In template programming, the full name of a base class is often very long, making type aliases almost a necessity — otherwise, `Base::Mode::OutputPP` would have to be written as `gpio::GPIO<PORT, PIN>::Mode::OutputPP`, which is both verbose and error-prone during maintenance.
+`using Base = gpio::GPIO<PORT, PIN>` is a type alias. It doesn't define a new type; it simply gives a shorter name to an existing type. After this, all uses of `Base::` in the code are equivalent to `gpio::GPIO<PORT, PIN>::`. In template programming, the full name of a base class is often very long, making type aliases almost a necessity — otherwise, `Base::Mode::OutputPP` would have to be written as `gpio::GPIO<PORT, PIN>::Mode::OutputPP`, which is both verbose and error-prone during maintenance.
 
 This is a widely used convention in C++ template code. You will see similar patterns in any serious template library: `using Base = ...` or `typedef ... Base`, all aimed at simplifying references to base class members.
 
@@ -138,13 +144,13 @@ These three lines are the core of the entire "zero configuration" design.
 
 The LED's constructor directly calls the base class's `setup()` method, passing in three fixed parameters:
 
-- **`Mode::OutputPP`**: Push-pull output mode. Push-pull is the standard configuration for driving LEDs — it can actively output high and low levels with strong driving capability, suitable for driving LEDs directly. In contrast, open-drain mode can only pull the level low and requires an external pull-up resistor to output a high level, so it is generally not used for LED driving.
-- **`PullPush::NoPull`**: No pull-up or pull-down. The internal pull-up and pull-down resistors of the GPIO are meaningless for push-pull output mode — push-pull can drive the level by itself without external assistance. Additionally, the PC13 pin on the STM32F103 does not support internal pull-up/pull-down anyway, so specifying `NoPull` here also reflects the hardware reality.
-- **`Speed::Low`**: Low speed mode. The GPIO output speed determines the rise and fall times of the pin's level changes. The faster the speed, the steeper the signal edges and the better the high-frequency performance, but it also generates more electromagnetic interference (EMI) and power consumption. The LED blinking frequency is only a few Hertz, so there is absolutely no speed requirement. Choosing low speed is the most reasonable option — it reduces power consumption and minimizes unnecessary signal noise.
+- **`Mode::OutputPP`**: Push-pull output mode. Push-pull is the standard configuration for driving LEDs — it can actively output high and low levels with strong drive capability, suitable for driving LEDs directly. In contrast, open-drain mode can only pull the level low and requires an external pull-up resistor to output a high level, so it is generally not used for LED driving.
+- **`PullPush::NoPull`**: No pull-up or pull-down. The GPIO's internal pull-up and pull-down resistors are meaningless for push-pull output mode — push-pull can drive the level by itself without external help. Additionally, the PC13 pin on the STM32F103 doesn't support internal pull-up/pull-down anyway, so specifying `NoPull` here also reflects the hardware reality.
+- **`Speed::Low`**: Low speed mode. The GPIO output speed determines the rise and fall times of the pin's level changes. The faster the speed, the steeper the signal edges and the better the high-frequency performance, but it also generates more electromagnetic interference (EMI) and power consumption. LED blinking frequency is only a few hertz, so there is no speed requirement at all. Choosing low speed is the most reasonable option — it reduces power consumption and minimizes unnecessary signal noise.
 
 These three things are almost invariant for any LED — push-pull, no pull-up/pull-down, low speed. Hardcoding them in the LED's constructor means that anyone using the LED template never needs to worry about these three parameters. The moment an LED object is created, the constructor automatically completes the configuration. This is what "zero configuration" means.
 
-What's even more elegant is that `setup()` internally calls `GPIOClock::enable_target_clock()`, which uses `if constexpr` to determine at compile time which port's clock should be enabled. So the entire initialization chain is: LED construction -> `setup(OutputPP, NoPull, Low)` -> `GPIOClock::enable_target_clock()` -> `__HAL_RCC_GPIOC_CLK_ENABLE()` -> `HAL_GPIO_Init()`. From clock enabling to pin configuration, it's done in one smooth flow.
+What's even better is that `setup()` internally calls `GPIOClock::enable_target_clock()`, which uses `if constexpr` to determine at compile time which port's clock should be enabled. So the entire initialization chain is: LED construction -> `setup(OutputPP, NoPull, Low)` -> `GPIOClock::enable_target_clock()` -> `__HAL_RCC_GPIOC_CLK_ENABLE()` -> `HAL_GPIO_Init()`. From clock enabling to pin configuration, it's done in one smooth flow.
 
 The user only needs to declare a variable:
 
@@ -174,7 +180,7 @@ Let's break it down step by step.
 
 `LEVEL` is a template parameter whose specific value is already determined at compile time — either `ActiveLevel::Low` or `ActiveLevel::High`. Therefore, `LEVEL == ActiveLevel::Low` is a compile-time constant expression, and for any given template instantiation, its result has only two possibilities: `true` or `false`.
 
-During optimization (even at the `-O0` level), the compiler can directly select the corresponding branch based on the result of this constant expression, generating machine code without any conditional logic. There is no runtime if-else overhead.
+When optimizing (even at the `-O0` level), the compiler can directly select the corresponding branch based on the result of this constant expression, generating machine code without any conditional logic. There is no runtime if-else overhead.
 
 For the Blue Pill's PC13 LED (`LEVEL = ActiveLevel::Low`):
 
@@ -222,7 +228,7 @@ void off() const {
 
 This is the power of template parameters — one piece of source code, two hardware configurations, and the compiler automatically generates the correct level operations with zero runtime overhead. `on()` means "turn on," and `off()` means "turn off," regardless of how your LED circuit is wired. Semantic correctness is guaranteed by the template, and the user doesn't need to care about the underlying level logic.
 
-Another detail worth noting: both methods are declared as `const`. This is because they only call the base class's `set_gpio_pin_state()`, and `set_gpio_pin_state()` itself is also `const` — it simply calls `HAL_GPIO_WritePin()` to write to a register and doesn't modify any member variables. In C++, methods that don't modify the logical state of an object should be declared as `const`. This is good programming practice and also allows these methods to be called on `const LED&` references.
+Another detail worth noting: both methods are declared as `const`. This is because they only call the base class's `set_gpio_pin_state()`, and `set_gpio_pin_state()` itself is also `const` — it simply calls `HAL_GPIO_WritePin()` to write to a register without modifying any member variables. In C++, methods that don't modify the object's logical state should be declared as `const`. This is good programming practice and also allows these methods to be called on `const LED&` references.
 
 ### toggle(): Delegating to the Base Class Toggle
 
@@ -232,7 +238,7 @@ void toggle() const { Base::toggle_pin_state(); }
 
 The implementation of `toggle()` is the simplest — it directly delegates to the base class's `toggle_pin_state()`.
 
-Why doesn't it need to care about `ActiveLevel`? Because the toggle operation is unconditional: regardless of whether the pin is currently outputting a high or low level, `toggle()` will flip it to the opposite state. If the LED is currently on (low level), after toggling it becomes off (high level), and vice versa. The toggle itself doesn't care "which level represents on"; it only cares about "becoming the opposite of the current state."
+Why doesn't it need to care about `ActiveLevel`? Because the toggle operation is unconditional: regardless of whether the current pin output is high or low, `toggle()` will change it to the opposite state. If the LED is currently on (low level), after toggling it becomes off (high level), and vice versa. The toggle itself doesn't care "which level represents on," it only cares about "becoming the opposite of the current state."
 
 So the behavior of `toggle()` is consistent for both active-low and active-high LEDs — it toggles the current state. The underlying `HAL_GPIO_TogglePin()` call reads the corresponding bit in the Output Data Register (ODR), inverts it, and writes it back.
 
@@ -268,7 +274,7 @@ Let's go through it line by line.
 
 **Line 1: `#include "device/led.hpp"`**
 
-Includes the LED template. `led.hpp` already internally includes `#include "gpio/gpio.hpp"`, so there's no need to include the GPIO header separately. The LED template is the only entry point the user needs to care about; it encapsulates all dependencies on the GPIO template. This is good module design — each layer exposes only the necessary interfaces, and internal implementation details don't leak to the upper layer.
+Includes the LED template. `led.hpp` already includes `#include "gpio/gpio.hpp"` internally, so there's no need to include the GPIO header separately. The LED template is the only entry point the user needs to care about; it encapsulates all dependencies on the GPIO template. This is good module design — each layer only exposes the necessary interfaces, and internal implementation details don't leak to the upper layer.
 
 **Line 2: `#include "system/clock.h"`**
 
@@ -276,17 +282,17 @@ Includes the clock configuration. `clock.h` defines the `ClockConfig` class, whi
 
 **Lines 3 to 5: `extern "C" { #include "stm32f1xx_hal.h" }`**
 
-HAL headers must be wrapped in `extern "C"`. This is because `stm32f1xx_hal.h` is a pure C header file, and the function declarations inside use C language name mangling rules. The C++ compiler uses C++ name mangling rules by default, and the two are incompatible. Without `extern "C"`, the linker won't find the definitions of the HAL functions and will report "undefined reference" errors.
+HAL headers must be wrapped with `extern "C"`. This is because `stm32f1xx_hal.h` is a pure C header file, and the function declarations inside use C language name mangling rules. The C++ compiler uses C++ name mangling rules by default, and the two are incompatible. Without `extern "C"`, the linker won't find the definitions of HAL functions and will report "undefined reference" errors.
 
 `extern "C"` tells the C++ compiler: all declarations within the braces use C linkage specification, so don't apply C++-style name mangling to the function names. This is the standard approach for calling C libraries in C++ projects and is extremely common in embedded development.
 
 **Line 7: `HAL_Init()`**
 
-Initializes the HAL library. This function does a few important things: configures the Flash prefetch buffer, configures the SysTick timer for a 1ms interrupt period, and initializes HAL's internal state machine. All subsequent HAL functions (including `HAL_Delay()`, `HAL_GPIO_Init()`, etc.) depend on this initialization.
+Initializes the HAL library. This function does several important things: configures the Flash prefetch buffer, configures the SysTick timer for a 1ms interrupt period, and initializes HAL's internal state machine. All subsequent HAL functions (including `HAL_Delay()`, `HAL_GPIO_Init()`, etc.) depend on this initialization.
 
 **Line 8: `clock::ClockConfig::instance().setup_system_clock()`**
 
-Obtains the clock configuration instance through the singleton pattern, then configures the system clock. This line involves the combined use of two design patterns — a CRTP singleton and hardware initialization encapsulation. We will discuss this design in detail in the next section.
+Obtains the clock configuration instance through the singleton pattern, then configures the system clock. This line involves the combined use of two design patterns — a CRTP singleton and hardware initialization encapsulation. We'll discuss this design in the next section.
 
 **Line 10: `device::LED<device::gpio::GpioPort::C, GPIO_PIN_13> led`**
 
@@ -298,7 +304,7 @@ This single line does everything. Let me list the complete chain of operations i
 4. The constructor calls `Base::setup(OutputPP, NoPull, Low)`
 5. `setup()` internally calls `GPIOClock::enable_target_clock()`
 6. In `GPIOClock::enable_target_clock()`, `if constexpr (PORT == GpioPort::C)` matches successfully, calling `__HAL_RCC_GPIOC_CLK_ENABLE()`
-7. `setup()` constructs the `GPIO_InitTypeDef` struct, filling in Pin=GPIO_PIN_13, Mode=OutputPP, Pull=NoPull, Speed=Low
+7. `setup()` constructs a `GPIO_InitTypeDef` struct, filling in Pin=GPIO_PIN_13, Mode=OutputPP, Pull=NoPull, Speed=Low
 8. Calls `HAL_GPIO_Init(GPIOC, &init_types)` to complete the pin configuration
 
 From over 30 lines of code in the C macro version, down to this single declaration. This is the power of abstraction.
@@ -328,7 +334,7 @@ Then call `led2.on()` and `led2.off()` in the loop. No need to copy any header o
 
 ## The CRTP Singleton: Clock Configuration Design
 
-In `main.cpp`, there is a line of code that uses a pattern we haven't discussed in detail yet:
+In `main.cpp`, there's a line of code that uses a pattern we haven't discussed in detail yet:
 
 ```cpp
 clock::ClockConfig::instance().setup_system_clock();
@@ -362,7 +368,7 @@ template <typename SingletonClass> class SimpleSingleton {
 } // namespace base
 ```
 
-The second is `system/clock.h`, where `ClockConfig` inherits from this base class to gain singleton capabilities:
+The second is `system/clock.h`, where `ClockConfig` gains singleton capability by inheriting from this base class:
 
 ```cpp
 #pragma once
@@ -383,9 +389,9 @@ class ClockConfig : public base::SimpleSingleton<ClockConfig> {
 
 CRTP stands for Curiously Recurring Template Pattern. The name sounds strange, but the principle isn't complicated: the derived class `ClockConfig` passes itself as a template argument to the base class `SimpleSingleton<ClockConfig>`. This way, the `instance()` method in the base class returns `ClockConfig&`, rather than some generic base class reference.
 
-The advantage of this approach is that it doesn't require virtual functions. Traditional singleton patterns often use virtual functions to provide a polymorphic `instance()` method, but virtual functions require a virtual function table (vtable), which is unnecessary overhead in an embedded environment. CRTP determines the specific derived class type at compile time through templates, completely eliminating runtime polymorphic overhead.
+The advantage of this approach is that it doesn't require virtual functions. Traditional singleton patterns often use virtual functions to provide a polymorphic `instance()` method, but virtual functions require a virtual function table (vtable), which is unnecessary overhead in embedded environments. CRTP determines the specific derived class type at compile time through templates, completely eliminating runtime polymorphic overhead.
 
-The implementation of the `instance()` method leverages a guarantee from C++11: a `static` local variable inside a function is initialized the first time execution reaches that declaration, and the initialization is thread-safe. Therefore, `static SingletonClass _instance` will only be constructed once. Even if multiple threads call `instance()` simultaneously, the compiler guarantees that only one thread executes the constructor while the others wait. In bare-metal embedded environments this isn't very important (there's usually only one thread), but in more complex systems this is a valuable guarantee.
+The implementation of the `instance()` method leverages a guarantee from C++11: a `static` local variable inside a function is initialized the first time execution reaches that declaration, and the initialization is thread-safe. So `static SingletonClass _instance` will only be constructed once. Even if multiple threads call `instance()` simultaneously, the compiler guarantees that only one thread executes the constructor while the others wait. In bare-metal embedded environments this isn't very important (there's usually only one thread), but in more complex systems this is a valuable guarantee.
 
 The `private` part of the base class deletes the copy constructor, move constructor, copy assignment operator, and move assignment operator. These four `= delete` declarations ensure the singleton cannot be accidentally copied or moved — if you write `auto copy = ClockConfig::instance()`, the compiler will directly report an error. The word "Shell" in the comment "Never Shell A Single Instance Copyable And Movable" should be a typo for "Share," but the intent is clear: a singleton should never be copied.
 
@@ -399,19 +405,19 @@ clock::ClockConfig config2;
 config2.setup_system_clock();  // 又配置一次——可能中断正在使用时钟的外设
 ```
 
-Although calling `setup_system_clock()` repeatedly doesn't necessarily cause an immediate hardware fault (HAL functions typically reconfigure the registers), it is a design flaw — allowing multiple instances implies that "each instance can have a different configuration," whereas the clock configuration should be physically globally unique. The singleton pattern prevents this kind of misuse at the type system level.
+Although calling `setup_system_clock()` repeatedly doesn't necessarily cause an immediate hardware fault (HAL functions typically reconfigure the registers), it's a design flaw — allowing multiple instances implies that "each instance can have a different configuration," whereas the clock configuration should be physically globally unique. The singleton pattern prevents this kind of misuse at the type system level.
 
 The `clock_freq()` method is annotated with the `[[nodiscard("You should accept the clock frequency, it's what you request!")]]` attribute. This is a feature introduced in C++17 that tells the compiler: this return value should not be ignored. If you write `config.clock_freq()` without capturing the return value, the compiler will issue a warning. In embedded development, querying the clock frequency is usually for subsequent calculations (such as baud rate or timer period), so ignoring the return value is almost certainly a bug.
 
-The CRTP singleton isn't the focus of this part — it will be explored in detail in later chapters. But you need to understand its role in `main.cpp`: it provides a globally unique, thread-safe, non-copyable entry point for clock configuration. `ClockConfig::instance()` returns a reference to the sole instance, and `.setup_system_clock()` calls the configuration method on that instance. The entire expression chains together, completing clock initialization in a single line of code.
+The CRTP singleton isn't the focus of this article — it will be covered in detail in later chapters. But you need to understand its role in `main.cpp`: providing a globally unique, thread-safe, non-copyable entry point for clock configuration. `ClockConfig::instance()` returns a reference to the sole instance, and `.setup_system_clock()` calls the configuration method on that instance. The entire expression chains the calls together, completing clock initialization in a single line of code.
 
 ---
 
 ## A Pitfall Regarding Construction Timing
 
-Before we move on to the comparison, there is a pitfall directly related to how the LED template is used that is worth discussing specifically.
+Before we continue with the comparison, there's a pitfall directly related to how the LED template is used that's worth discussing specifically.
 
-> ⚠️ **Warning:** The LED template's constructor configures the GPIO immediately when the object is created. This means that if you declare an LED object in the global scope, its construction will occur before `main()` (during the C++ static initialization phase), at which point HAL may not yet be initialized. Therefore, LED objects must be declared after `HAL_Init()` and clock configuration — that is, inside the `main()` function. This order must not be disrupted; otherwise, although the GPIO configuration won't report an error, register writes will be silently ignored by the hardware when the clock is not enabled.
+> ⚠️ **Warning**: The LED template's constructor configures the GPIO immediately when the object is created. This means that if you declare an LED object in the global scope, its construction will occur before `main()` (during the C++ static initialization phase), at which point HAL may not yet be initialized. Therefore, LED objects must be declared after `HAL_Init()` and clock configuration — that is, inside the `main()` function. This order must not be disrupted; otherwise, although the GPIO configuration won't report errors, register writes will be silently ignored by the hardware when the clock is not enabled.
 
 So LED objects must be declared after `HAL_Init()` and clock configuration — that is, inside the `main()` function. This is exactly what we do in our `main.cpp`: first `HAL_Init()`, then `clock::ClockConfig::instance().setup_system_clock()`, and only then do we declare `device::LED<...> led`. This order must not be disrupted.
 
@@ -419,9 +425,9 @@ So LED objects must be declared after `HAL_Init()` and clock configuration — t
 
 ## Final Comparison with the C Macro Approach
 
-From the first part to this one, we've gone through four refactorings. Now it's time for a thorough comparison.
+From the first article to this one, we've gone through four refactorings. Now it's time for a thorough comparison.
 
-### The Complete Code of the C Macro Approach
+### Complete Code for the C Macro Approach
 
 A typical C macro LED driver is divided into a header file and a source file.
 
@@ -493,11 +499,11 @@ int main(void) {
 }
 ```
 
-About 40 lines of driver code plus 15 lines for the main function. It looks fairly tidy. But the problem is — each LED requires its own separate pair of header and source files.
+About 40 lines of driver code plus 15 lines for the main function. It looks fairly clean. But the problem is — each LED requires its own separate pair of header and source files.
 
-### The Complete Code of the C++ Template Approach
+### Complete Code for the C++ Template Approach
 
-**device/led.hpp (LED template, ~30 lines):**
+**device/led.hpp (LED template, approximately 30 lines):**
 
 ```cpp
 #pragma once
@@ -552,7 +558,7 @@ int main() {
 
 ### Item-by-Item Comparison
 
-The `main` functions in both approaches are similarly concise, both just a dozen or so lines. The difference doesn't seem significant. But the real difference lies in extensibility — when you need to add a second LED to your project.
+The `main` functions in both approaches are similarly concise, both just over a dozen lines. The difference doesn't seem significant. But the real difference lies in extensibility — when you need to add a second LED to your project.
 
 **Adding a second LED with the C approach (e.g., PA0):**
 
@@ -574,9 +580,9 @@ This is the true value of template metaprogramming in embedded systems — it's 
 
 ### Comparison of Build Artifacts
 
-A frequently asked question is: will the C++ template approach produce a larger code size?
+A frequently asked question is: will the C++ template approach produce larger code?
 
-The answer is no. Because all parameters of the LED template are constants at compile time, the compiler can perform complete inlining optimization. The machine code ultimately generated by `led.on()` is exactly the same as directly calling `HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET)`. There is no virtual function table, no runtime polymorphism, and no additional function call overhead. This is what we call "zero-overhead abstraction" — what you pay is compile time (template instantiation requires the compiler to do more work), and what you get back is zero runtime performance loss.
+The answer is no. Because all parameters of the LED template are constants at compile time, the compiler can perform complete inline optimization. The machine code ultimately generated by `led.on()` is exactly the same as directly calling `HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET)`. There is no virtual function table, no runtime polymorphism, and no extra function call overhead. This is what we call "zero-overhead abstraction" — what you pay is compile time (template instantiation requires the compiler to do more work), and what you get back is zero runtime performance loss.
 
 If you use `arm-none-eabi-objdump -d` to disassemble the final firmware, you'll find that the machine code generated by the C++ template approach and the C macro approach is almost identical at the instruction level. The cost of abstraction is completely shifted to compile time.
 
@@ -584,10 +590,10 @@ If you use `arm-none-eabi-objdump -d` to disassemble the final firmware, you'll 
 
 ## Wrapping Up
 
-The LED template is complete. From the original C macro approach, to bare C++ class encapsulation, to the general-purpose GPIO template, and now to the domain-specific LED template — four refactorings, each step transforming more hardware knowledge from "things the developer needs to remember" into "things the compiler handles automatically."
+The LED template is complete. From the original C macro approach, to bare C++ class encapsulation, to the generic GPIO template, and now to the domain-specific LED template — four refactorings, each step transforming more hardware knowledge from "things developers need to remember" into "things the compiler handles automatically."
 
-Looking back at the evolution of these four steps: in the first step, the C macro approach centralized hardware parameters in the header file's macro definitions — centralized but still text substitution, without type safety. In the second step, C++ class encapsulation turned macro definitions into member functions, adding scope and type checking, but it could only handle specific ports and pins. In the third step, the GPIO template parameterized the port and pin, achieving a general-purpose GPIO abstraction, but users still needed to know how to configure an LED. In the fourth step, the LED template built a domain-specific abstraction on top of the GPIO template, encapsulating all LED-specific hardware knowledge — push-pull, active-low, low speed — in 30 lines of code.
+Looking back at the evolution of these four steps: in the first step, the C macro approach centralized hardware parameters in the header file's macro definitions — centralized but still text substitution, with no type safety. In the second step, C++ class encapsulation turned macro definitions into member functions, adding scope and type checking, but it could only handle specific ports and pins. In the third step, the GPIO template parameterized the port and pin, achieving a generic GPIO abstraction, but users still needed to know how to configure an LED. In the fourth step, the LED template built a domain-specific abstraction on top of the GPIO template, encapsulating all LED hardware knowledge — push-pull output, active-low, low speed — in 30 lines of code.
 
-The final result is that the user only needs to write one line of declaration to get a fully configured LED object. The semantics of `on()`, `off()`, and `toggle()` are clear and unambiguous, with no need to care about the underlying level logic. Template parameters determine everything at compile time, with absolutely no additional runtime overhead. The cost of adding a new LED is one line of code, not a pair of files.
+The final result is: users only need to write one line of declaration to get a fully configured LED object. The semantics of `on()`, `off()`, and `toggle()` are clear and unambiguous, with no need to care about the underlying level logic. Template parameters determine everything at compile time, with absolutely no extra runtime overhead. The cost of adding a new LED is one line of code, not a pair of files.
 
-In the next part, we will wrap up the C++23 and modern C++ features involved in this LED series, systematically reviewing the specific applications of `constexpr`, `if constexpr`, `enum class`, `[[nodiscard]]`, `extern "C"`, and other features in embedded scenarios. We will also use actual comparisons of build artifacts to prove that these abstractions are indeed zero-overhead. We don't just want to write elegant code — we want to prove that it is just as efficient as hand-written register operations.
+In the next article, we will wrap up the C++23 and modern C++ features involved in this LED series, systematically reviewing the specific applications of `constexpr`, `if constexpr`, `enum class`, `[[nodiscard]]`, `extern "C"`, and other features in embedded scenarios. We'll also use actual comparisons of build artifacts to prove that these abstractions are indeed zero-overhead. We don't just want to write elegant code — we want to prove it's just as efficient as hand-written register operations.

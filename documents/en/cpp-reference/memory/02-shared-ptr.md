@@ -13,6 +13,12 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/cpp-reference/memory/02-shared-ptr.md
+  source_hash: 6cec67a026ce1ebd9297fcf8392b64779e8384676f1fd13bacb0b6c140263115
+  translated_at: '2026-05-26T10:17:21.281251+00:00'
+  engine: anthropic
+  token_count: 492
 ---
 <!--
 Reference Card Template
@@ -30,7 +36,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-Multiple smart pointers can jointly own the same object; the object is automatically released only when the last owner is destroyed or reset.
+Multiple smart pointers can jointly own the same object. The object is automatically released only when the last owner is destroyed or reset.
 
 ## Header
 
@@ -40,15 +46,15 @@ Multiple smart pointers can jointly own the same object; the object is automatic
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Construction | `shared_ptr()` | Constructs a null pointer (default) |
-| Construction (factory) | `template<class T, class... Args> shared_ptr<T> make_shared(Args&&... args)` | Allocates and constructs an object (C++11) |
-| Reset | `void reset()` | Releases ownership of the currently managed object |
-| Get raw pointer | `T* get() const noexcept` | Returns the stored pointer |
-| Dereference | `T& operator*() const noexcept` | Dereferences the stored pointer |
+| Construction | `shared_ptr()` | Construct a null pointer (default) |
+| Construction (factory) | `template<class T, class... Args> shared_ptr<T> make_shared(Args&&... args)` | Allocate and construct an object (C++11) |
+| Reset | `void reset()` | Release ownership of the currently managed object |
+| Get raw pointer | `T* get() const noexcept` | Return the stored pointer |
+| Dereference | `T& operator*() const noexcept` | Dereference the stored pointer |
 | Arrow operator | `T* operator->() const noexcept` | Access members through the pointer |
-| Reference count | `long use_count() const noexcept` | Returns the number of shared_ptrs sharing the object |
-| Boolean conversion | `explicit operator bool() const noexcept` | Checks if it manages a non-null object |
-| Swap | `void swap(shared_ptr& r) noexcept` | Swaps the managed objects of two shared_ptrs |
+| Reference count | `long use_count() const noexcept` | Return the number of shared_ptrs sharing the object |
+| Boolean conversion | `explicit operator bool() const noexcept` | Check if it manages a non-null object |
+| Swap | `void swap(shared_ptr& r) noexcept` | Swap the objects managed by two shared_ptrs |
 
 ## Minimal Example
 
@@ -68,14 +74,14 @@ int main() {
 ## Embedded Applicability: Medium
 
 - Internally maintains a control block and atomic reference count, incurring extra memory and CPU overhead
-- Copy operations are inherently thread-safe, making it suitable for sharing resources across tasks
+- Copy operations are inherently thread-safe, making it suitable for sharing resources across multiple tasks
 - Use with caution on MCUs with extremely limited RAM and Flash; prefer unique_ptr
 
 ## Compiler Support
 
 | GCC | Clang | MSVC |
 |-----|-------|------|
-| TBD | TBD | TBD |
+| TBA | TBA | TBA |
 
 ## See Also
 

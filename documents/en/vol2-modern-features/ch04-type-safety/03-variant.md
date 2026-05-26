@@ -1,7 +1,7 @@
 ---
-title: 'std::variant: A type-safe union'
-description: Replace union with variant, combined with visit to achieve type-safe
-  polymorphism.
+title: 'std::variant: A Type-Safe Union'
+description: Replacing `union` with `variant`, combined with `visit` to achieve type-safe
+  polymorphism
 chapter: 4
 order: 3
 tags:
@@ -21,12 +21,18 @@ prerequisites:
 related:
 - std::optional
 - 错误处理的现代方式
+translation:
+  source: documents/vol2-modern-features/ch04-type-safety/03-variant.md
+  source_hash: e0e6da66d9e52036bc0b120363c90d0ca098ae09434f9c330dd9baa77d4d52b1
+  translated_at: '2026-05-26T11:28:09.977892+00:00'
+  engine: anthropic
+  token_count: 2858
 ---
 # std::variant: A Type-Safe Union
 
 ## Introduction
 
-`std::variant` (introduced in C++17) is the modern replacement for `union`. The core problem it solves is how to guarantee type safety under the constraint of "holding exactly one of several types at any given time." Unlike a bare `union`, `variant` knows which type it currently holds, checks types when you access the value, and correctly manages the lifetime of the held object. In this chapter, we start with the pain points of `union` and work through the mechanisms and usage of `variant` step by step.
+`std::variant` (introduced in C++17) is the modern replacement for `union`. The core problem it solves is how to guarantee type safety under the constraint of "holding exactly one of several types at any given time." Unlike a bare `union`, `variant` knows which type it currently holds, checks this when you access the value, and correctly manages the lifetime of the held object. In this chapter, we start from the pain points of `union` and work through the mechanisms and usage of `variant` step by step.
 
 ## Step 1 — The Fatal Flaws of union
 
@@ -45,9 +51,9 @@ d.i = 42;
 std::cout << d.f << "\n";  // UB（未定义行为）：把 int 的位模式当 float 读
 ```
 
-The problem with this code is that `union` itself **does not track** which member is currently active. The programmer must maintain a separate "tag" to track the active member. If you forget to update the tag, or if the tag gets out of sync with the actual state, you trigger undefined behavior (UB).
+The problem with this code is that `union` itself **does not track** which member is currently active. The programmer must manually maintain a "tag" to keep track of the active member. If you forget to update the tag, or if the tag gets out of sync with the actual state, you trigger undefined behavior (UB).
 
-Even worse, `union` **does not support types with non-trivial constructors or destructors**. For example, `std::string` cannot be placed directly inside a `union` — you must manually call placement new to construct it and manually call the destructor to destroy it. This kind of manual management is both tedious and error-prone.
+Even worse, `union` **does not support types with non-trivial constructors or destructors**. For example, `std::string` cannot be placed directly inside a `union`—you must manually call placement new to construct it and manually invoke the destructor to destroy it. This manual management is both tedious and error-prone.
 
 ```cpp
 union BadUnion {
@@ -62,7 +68,7 @@ new (&u.s) std::string("hello");  // placement new
 u.s.~basic_string();
 ```
 
-Frankly, every time we write code like this, it feels like walking a tightrope — missing any single step leads to a memory leak or worse. The arrival of `std::variant` makes all of this completely unnecessary to manage by hand.
+Frankly, every time we write code like this, it feels like walking a tightrope—missing any single step leads to a memory leak or worse. The advent of `std::variant` makes all of this completely unnecessary to manage by hand.
 
 ## Step 2 — Basic Usage of variant
 
@@ -90,7 +96,7 @@ int main()
 }
 ```
 
-On each assignment, `variant` automatically destroys the old value and constructs the new one. You don't need to manage any lifetimes manually — all of this is handled automatically by `variant`'s internal mechanisms.
+On each assignment, `variant` automatically destroys the old value and constructs the new one. You don't need to manage any lifetimes manually—this is all handled automatically by `variant`'s internal mechanisms.
 
 ### Accessing Values
 
@@ -118,7 +124,7 @@ Our recommended approach is: if you only need to check the type, use `std::holds
 
 ## Step 3 — std::visit and the Visitor Pattern
 
-`std::visit` is the core access mechanism for `variant`. It accepts a callable (visitor) and one or more `variant` objects, dispatching the call based on the type currently held by the `variant`. This is safer than `switch-case` because the compiler checks whether you have handled all alternative types.
+`std::visit` is the core access mechanism for `variant`. It accepts a callable (the visitor) and one or more `variant` objects, dispatching the call based on the type currently held by the `variant`. This is safer than `switch-case` because the compiler checks whether you have handled all alternative types.
 
 ### Simple visit with a lambda
 
@@ -130,11 +136,11 @@ std::visit([](auto&& arg) {
 }, v);
 ```
 
-Here, `auto&&` is a forwarding reference, and `visit` instantiates this lambda based on the type currently held by `v`. When you only need to perform the same operation on all types, this approach is very concise.
+Here, `auto&&` is a forwarding reference, and `visit` instantiates this lambda based on the type currently held by `v`. When you need to perform the same operation on all types, this approach is very concise.
 
-### Overload sets: handling different types
+### Overload sets: Handling different types
 
-A more common scenario is that different types require different handling logic. In this case, we need an "overload set" — a callable object with a corresponding overload for each alternative type. There is a classic trick in C++17 to achieve this:
+A more common scenario is that different types require different handling logic. In this case, we need an "overload set"—a callable object with a corresponding overload for each alternative type. There is a classic trick in C++17 to achieve this:
 
 ```cpp
 // 重载集合工具（C++17 惯用法）
@@ -148,7 +154,7 @@ template <class... Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
 ```
 
-This `Overloaded` "inherits" all the `operator()` from multiple lambdas together, forming a callable object with overloads for multiple types. In use:
+This `Overloaded` "inherits" the `operator()` of multiple lambdas together, forming a callable object with overloads for multiple types. In use:
 
 ```cpp
 std::variant<int, double, std::string> v = 3.14;
@@ -160,11 +166,11 @@ std::visit(Overloaded{
 }, v);
 ```
 
-The compiler checks whether your `Overloaded` covers all alternative types of the `variant`. If you miss handling for a certain type, the compiler will error directly — this is the embodiment of compile-time type safety. In C++20, you don't even need to write `Overloaded` by hand — the standard library directly supports the visit pattern with multiple lambdas (though the formal support mechanism is still evolving).
+The compiler checks whether your `Overloaded` covers all alternative types of the `variant`. If you miss handling a certain type, the compiler will error out directly—this is the embodiment of compile-time type safety. In C++20, you don't even need to write `Overloaded` by hand—the standard library directly supports the visit pattern with multiple lambdas (though the formal support mechanism is still evolving).
 
 ### visit with return values
 
-A visitor in `visit` can also return values. The return types of all lambdas must be compatible (convertible to a common type):
+The visitor in `visit` can also return values. The return types of all lambdas must be compatible (convertible to a common type):
 
 ```cpp
 std::variant<int, double, std::string> v = 42;
@@ -180,7 +186,7 @@ std::cout << "type is: " << type_name << "\n";  // "type is: int"
 
 ## Step 4 — variant as a Replacement for Runtime Polymorphism
 
-An important use case for `variant` is replacing polymorphism implemented with virtual functions (known as a "closed hierarchy" or "visit-based polymorphism"). Traditional virtual function polymorphism requires heap allocation, virtual function table pointers, and reference semantics — whereas `variant` can store values directly on the stack with no virtual function call overhead.
+An important use case for `variant` is replacing polymorphism implemented with virtual functions (known as a "closed hierarchy" or "visit-based polymorphism"). Traditional virtual function polymorphism requires heap allocation, virtual table pointers, and reference semantics—whereas `variant` can store values directly on the stack with no virtual function call overhead.
 
 ```cpp
 #include <variant>
@@ -250,11 +256,11 @@ for (const auto& s : shapes) {
 }
 ```
 
-The advantage of the `variant` approach lies in: value semantics (no need for `new`/`delete`), contiguous memory (stored directly in the `vector`, cache-friendly), and compile-time type checking (all branches of `visit` are determined at compile time). But it comes with a cost: every time you add a new shape, you must modify the `variant` definition of the `Shape` — which is inflexible in certain scenarios. If your type hierarchy is "open" (third parties can extend it with new types), virtual functions remain the better choice.
+The advantages of the `variant` approach are: value semantics (no need for `new`/`delete`), contiguous memory (stored directly in the `vector`, which is cache-friendly), and compile-time type checking (all branches of the `visit` are determined at compile time). But it also has a cost: every time you add a new shape, you must modify the `variant` definition of the `Shape`—which is inflexible in certain scenarios. If your type hierarchy is "open" (third parties can extend it with new types), virtual functions remain the better choice.
 
 ## Step 5 — Exception Safety and valueless_by_exception
 
-`variant` has a rather special state called `valueless_by_exception`. When `variant` is in the process of switching types (e.g., during assignment or `emplace`), the constructor of the new type throws an exception, and the old value has already been destroyed, the `variant` enters this "valueless" state.
+`variant` has a rather special state called `valueless_by_exception`. When `variant` is in the process of switching types (for example, during assignment or `emplace`), if the constructor of the new type throws an exception and the old value has already been destroyed, the `variant` enters this "valueless" state.
 
 ```cpp
 struct ThrowingType {
@@ -270,13 +276,13 @@ try {
 }
 ```
 
-In this state, `std::visit` throws `std::bad_variant_access`, and `std::get` also throws an exception. So if `variant` in your code might encounter this situation, it's best to check before accessing.
+In this state, `std::visit` throws `std::bad_variant_access`, and `std::get` also throws an exception. So if your code has `variant` that might encounter this situation, it's best to check before accessing.
 
 ⚠️ In practice, `valueless_by_exception` rarely appears during normal use. It is only triggered in the specific scenario where "constructing a new value throws an exception." If the constructors of all your alternative types are `noexcept` (or you don't use exceptions), you don't need to worry about this state at all.
 
 ## Practical Application — Message Type System
 
-One of the most suitable scenarios for `variant` is a messaging system. In event-driven architectures, messages in a message queue can have multiple types, each with a different payload. `variant` + `visit` can handle this pattern very elegantly:
+One of the most suitable scenarios for `variant` is a message passing system. In event-driven architectures, messages in a queue can have multiple types, each with a different payload. `variant` + `visit` can handle this pattern very elegantly:
 
 ```cpp
 #include <variant>
@@ -353,13 +359,13 @@ private:
 };
 ```
 
-The benefit of this code is: if you add a new message type (e.g., `FileTransfer`), the compiler will error directly at the `visit` call site in `Overloaded` — you must add a corresponding overload in `handle`. This ability to have "the compiler find all the places you need to modify when adding a new type" is one of the biggest advantages of `variant` over `switch-case` or virtual functions.
+The beauty of this code is: if you add a new message type (such as `FileTransfer`), the compiler will error out directly at the `visit` call in `Overloaded`—you must add a corresponding overload in `handle`. This ability to have the compiler find all the places you need to modify when adding a new type is one of the biggest advantages of `variant` over `switch-case` or virtual functions.
 
 ## Practical Application — Configuration Values and AST Nodes
 
 ### Configuration Values
 
-Configuration systems often need to store values of different types: integers, floating-point numbers, strings, and booleans. `variant` is a natural fit:
+Configuration systems often need to store different types of values: integers, floats, strings, and booleans. `variant` is a natural fit:
 
 ```cpp
 using ConfigValue = std::variant<int, double, std::string, bool>;
@@ -397,7 +403,7 @@ ConfigValue parse_value(const std::string& s)
 
 ### AST Nodes
 
-In the frontend of a compiler or interpreter, the node types of an abstract syntax tree (AST) are also naturally suited to representation with `variant`:
+In the frontend of a compiler or interpreter, the node types of an abstract syntax tree (AST) are also naturally suited to be represented by `variant`:
 
 ```cpp
 struct NumberLiteral { double value; };
@@ -424,11 +430,11 @@ struct UnaryExpr {
 };
 ```
 
-⚠️ Note that we use `std::unique_ptr<BinaryExpr>` here instead of a direct `BinaryExpr`, because `variant` cannot directly contain incomplete types. Recursive data structures must break the circular dependency through pointers (or `std::unique_ptr`).
+⚠️ Note that we use `std::unique_ptr<BinaryExpr>` here instead of a direct `BinaryExpr`, because `variant` cannot directly contain incomplete types. Recursive data structures must use pointers (or `std::unique_ptr`) to break the circular dependency.
 
 ## Memory Layout and Performance Considerations
 
-The size of `variant` equals the size of the largest alternative type plus a small metadata field (used to record the index of the currently held type). This means that even if you currently only hold a `int`, the `variant<int, std::string>` is still at least as large as `sizeof(std::string) + sizeof(size_t)`.
+The size of `variant` equals the size of the largest alternative type plus a small metadata field (used to record the index of the currently held type). This means that even if you are currently only holding a `int`, the `variant<int, std::string>` is still at least as large as `sizeof(std::string) + sizeof(size_t)`.
 
 ```cpp
 std::cout << "sizeof(variant<int, double, string>): "
@@ -438,7 +444,7 @@ std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
 // 典型输出：32
 ```
 
-This size is completely acceptable for most applications. But in memory-constrained embedded scenarios, you may need to evaluate whether it's worth using `variant` to replace a hand-written `union` + `enum` tag scheme. The type safety benefits brought by `variant` usually far outweigh the overhead of a few bytes of memory.
+This size is completely acceptable for most applications. However, in extremely memory-constrained embedded scenarios, you may need to evaluate whether it's worth using `variant` to replace a hand-written `union` + `enum` tag scheme. The type safety benefits brought by `variant` usually far outweigh the overhead of a few bytes of memory.
 
 ## Summary
 
@@ -446,9 +452,9 @@ This size is completely acceptable for most applications. But in memory-constrai
 
 `std::visit` is the core access mechanism for `variant`, and combined with the `Overloaded` idiom, it enables type-safe pattern matching. When your type set is finite and known (message types, configuration values, AST nodes, etc.), `variant` is more efficient and safer than virtual functions. But if the type set is open (third parties can extend it), virtual functions remain the more appropriate choice.
 
-`valueless_by_exception` is a state you need to be aware of but usually don't need to worry about — it only occurs in the extreme scenario where constructing a new value throws an exception. Simply knowing this state exists is enough; there's no need to be overly defensive about it in actual code.
+`valueless_by_exception` is a state you need to be aware of but usually don't need to worry about—it only occurs in the extreme scenario where constructing a new value throws an exception. Simply knowing this state exists is enough; there's no need to be overly defensive about it in practical code.
 
-The `std::optional` we discuss next can be seen as a special case of `variant` — when your "type set" has only two possibilities ("has a value" and "does not have a value"), `optional` is the more concise choice.
+The `std::optional` we will discuss next can be seen as a special case of `variant`—when your "type set" has only two possibilities ("has a value" and "does not have a value"), `optional` is the more concise choice.
 
 ## References
 

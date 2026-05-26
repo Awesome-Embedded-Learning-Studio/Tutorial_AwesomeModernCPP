@@ -1,8 +1,9 @@
 ---
 title: 'C++98 Object-Oriented: In-Depth Analysis of Classes and Objects'
 description: The leap from C structs to C++ classes — access control, constructors
-  and destructors, initializer lists, the this pointer, static members, const member
-  functions, friends, explicit, and mutable, explaining every detail clearly.
+  and destructors, initializer lists, the `this` pointer, static members, `const`
+  member functions, friends, `explicit`, and `mutable`, with every detail explained
+  clearly.
 chapter: 0
 order: 3
 tags:
@@ -25,12 +26,18 @@ cpp_standard:
 - 17
 - 20
 platform: host
+translation:
+  source: documents/vol1-fundamentals/03C-cpp98-classes-and-objects.md
+  source_hash: ed0e10cad5efdbf091e7c670cecf162d0668ffd209d509afda2389ee8612d7fb
+  translated_at: '2026-05-26T10:25:00.500060+00:00'
+  engine: anthropic
+  token_count: 4139
 ---
 # C++98 Object-Oriented Programming: A Deep Dive into Classes and Objects
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
 
-Classes and objects are core concepts in C++ object-oriented programming, but in embedded contexts, they are often misunderstood as "heavy," "slow," or "overly fancy." In reality, classes do not equal complexity, and OOP does not mean you must use inheritance and polymorphism. **In resource-constrained embedded systems with clear business logic, the core value of a class comes down to one thing: binding "state" with "the code that operates on that state."**
+Classes and objects are the core concepts of C++ object-oriented programming, but in embedded contexts, they are often misunderstood as "heavy," "slow," or "overly fancy." In reality, classes do not equal complexity, and OOP does not mean you must use inheritance and polymorphism. **In resource-constrained embedded systems with clear business logic, the core value of a class comes down to one thing: binding "state" with "the code that operates on that state."**
 
 In other words, the primary value of a class is not abstraction, but **constraint**.
 
@@ -40,7 +47,7 @@ In this chapter, we will start from C structs and gradually transition to C++ cl
 
 ### 1.1 Limitations of C Structs
 
-In C, we use structs to organize data, and then use standalone functions to operate on that data. For example, LED control code in C style might look like this:
+In C, we use structs to organize data, and then use standalone functions to operate on that data. For example, LED control code in C style might look something like this:
 
 ```c
 // C 风格：数据和操作分离
@@ -66,7 +73,7 @@ void led_off(struct LED* led) {
 }
 ```
 
-This code works, but it has a structural problem: the association between the `led_init`, `led_on`, and `led_off` functions and the `struct LED` struct is **maintained entirely by naming conventions**. There is no syntactic mechanism to prevent you from writing an absurd call like `led_on(&uart_config)`—the compiler will not raise an error, because `led_on` accepts a `struct LED*`, and you might accidentally pass in a pointer to the wrong struct.
+This code works, but it has a structural problem: the association between the `led_init`, `led_on`, and `led_off` functions and the `struct LED` struct is **maintained entirely by naming conventions**. There is no syntactic mechanism to prevent you from writing an absurd call like `led_on(&uart_config)`—the compiler will not raise an error, because `led_on` accepts a `struct LED*`, and you might happen to pass in a pointer to the wrong struct.
 
 ### 1.2 The C++ class: Binding Data and Operations Together
 
@@ -104,7 +111,7 @@ public:
 };
 ```
 
-Now, when using it, you can only operate on it through the public interface of the `LED` class:
+Now when using it, you can only operate on it through the `LED` class's public interface:
 
 ```cpp
 LED led(5);    // 构造时指定引脚号
@@ -128,7 +135,7 @@ LED led(5);
 led.on();          // OK，on() 是 public 的
 ```
 
-`private` is not meant to "prevent hackers," but rather to **syntactically tell users what they shouldn't touch**. You can of course bypass it through various means (such as pointer casting, macros, etc.), but that falls into the realm of undefined behavior (UB). For most engineering code, `private` itself serves as a strong form of self-documentation—it lets anyone reading the code distinguish at a glance between "interface" and "implementation details."
+`private` is not meant to "stop hackers," but rather to **syntactically tell users: these are things you shouldn't touch**. You can of course bypass it through various means (like pointer casting, macros, etc.), but that falls into the realm of undefined behavior (UB). For most engineering code, `private` itself serves as a powerful form of self-documentation—it lets anyone reading the code tell at a glance what is the "interface" and what are "implementation details."
 
 `public` members are visible to all code, forming the class's external interface. `protected` members are visible to the class itself and its derived classes—we will discuss this in detail when we cover inheritance.
 
@@ -181,11 +188,11 @@ uart.send(data, sizeof(data));
 // 离开作用域时...
 ```
 
-The core value of constructors lies in the fact that **they eliminate the possibility of "forgetting to initialize."** In C, you might forget to call `uart_init()`, and then use an uninitialized struct to send data—with disastrous consequences. In C++, object creation and initialization are bound together; it is impossible to have an object that "has been created but not initialized."
+The core value of constructors lies in the fact that **they eliminate the possibility of "forgetting to initialize."** In C, you might forget to call `uart_init()`, and then try to send data with an uninitialized struct—the consequences would be disastrous. In C++, object creation and initialization are bound together; it is impossible to have an object that "has been created but not initialized."
 
 ### 2.2 Destructors: Cleaning Up at the End of an Object's Lifetime
 
-A destructor is the "partner" of a constructor, and it is automatically called when an object is destroyed. The name of a destructor is `~` followed by the class name, it takes no parameters, and has no return type:
+A destructor is the "partner" of a constructor; it is automatically called when an object is destroyed. The name of a destructor is `~` followed by the class name, it takes no parameters, and it has no return type:
 
 ```cpp
 class UARTPort {
@@ -211,7 +218,7 @@ The timing of an object's destruction depends on its storage duration. Local obj
 
 ### 2.3 Default Constructors
 
-If you do not define any constructors for a class, the compiler will automatically generate a **default constructor**—a parameterless constructor that does nothing. However, as soon as you define any constructor (even one with parameters), the compiler no longer automatically generates a default constructor.
+If you do not define any constructors for a class, the compiler will automatically generate a **default constructor**—a parameterless constructor that does nothing. However, as soon as you define any constructor (even one with parameters), the compiler will no longer automatically generate a default constructor.
 
 ```cpp
 class Sensor {
@@ -273,9 +280,9 @@ public:
 };
 ```
 
-The core advantage of initializer lists lies in **performance and semantic correctness**. For basic types like `int`, the performance difference between the two approaches is negligible. But for complex class-type members, using an initializer list avoids a default construction followed by an assignment—constructing directly with the target value eliminates the intermediate step.
+The core advantage of initializer lists lies in **performance and semantic correctness**. For basic types like `int`, the performance difference between the two approaches is negligible. But for complex class-type members, using an initializer list avoids a default construction followed by an assignment—the object is constructed directly with the target value, eliminating the intermediate step.
 
-More importantly, **`const` members and reference members can only be initialized through an initializer list**, because by the time the constructor body executes, they have already been default constructed—and `const` objects cannot be reassigned, nor can references be rebound. So if you have members of these two types, the initializer list is not a "recommendation," but the **only valid choice**.
+More importantly, **`const` members and reference members can only be initialized through an initializer list**, because by the time the constructor body executes, they have already been default constructed—and a `const` object cannot be reassigned, nor can a reference be rebound. So if you have members of these two types, the initializer list is not a "recommendation," but the **only legal option**.
 
 ### 3.2 Embedded Applications of Initializer Lists
 
@@ -296,27 +303,27 @@ public:
 };
 ```
 
-There is one detail to note about initialization order: **the initialization order of member variables depends on their declaration order in the class definition, not the order in which they appear in the initializer list**. If you write `: b(a), a(10)` in the initializer list, the compiler will initialize `a` first (because it is declared first), and then initialize `b`—so `b(a)` will indeed get the correct value of `a`. But if your declaration order has `b` before `a`, then when `b(a)` is initialized, `a` has not been initialized yet, and the value read will be undefined. Most compilers will issue a warning when the initializer list order does not match the declaration order, but it is best to cultivate the habit of keeping them consistent.
+There is one detail to note about initialization order: **the initialization order of member variables depends on their declaration order in the class definition, not the order in which they appear in the initializer list**. If you write `: b(a), a(10)` in your initializer list, the compiler will initialize `a` first (because it is declared first), then initialize `b`—so `b(a)` will indeed get the correct value of `a`. But if your declaration order has `b` before `a`, then when `b(a)` is initialized, `a` has not been initialized yet, and the value read will be undefined. Most compilers will issue a warning when the initializer list order does not match the declaration order, but it is best to develop the habit of keeping them consistent.
 
 ## 4. The this Pointer
 
 ### 4.1 What is this
 
-Every non-static member function has a hidden parameter at the底层 level—a pointer to the object on which the function is called. This pointer is `this`. In other words, when you write:
+Every non-static member function has a hidden parameter at the底层 level—a pointer to the object on which the function was called. This pointer is `this`. In other words, when you write:
 
 ```cpp
 led.on();
 ```
 
-The compiler actually translates it into a call similar to this (pseudocode):
+The compiler actually translates it into a call something like this (pseudocode):
 
 ```cpp
 LED::on(&led);  // 把 led 的地址作为 this 指针传入
 ```
 
-Inside a member function, `this` points to the current object. You can access member variables and member functions through `this`. In most cases, you do not need to explicitly write out `this`—the compiler will automatically resolve "bare" member names as `this->成员名`. But in certain scenarios, explicitly using `this` is necessary or helpful.
+Inside a member function, `this` points to the current object. You can access member variables and member functions through `this`. In most cases, you do not need to explicitly write out `this`—the compiler will automatically resolve "bare" member names as `this->成员名`. But in certain scenarios, explicitly using `this` is either necessary or helpful.
 
-The most common case is when **parameter names clash with member variable names**:
+The most common case is when **parameter names conflict with member variable names**:
 
 ```cpp
 class Sensor {
@@ -334,7 +341,7 @@ public:
 
 ### 4.2 Chained Method Calls
 
-Another common application of the `this` pointer is implementing chained calls. The approach is simple: a member function returns a reference to `*this`, allowing the caller to consecutively call multiple methods in a single line of code.
+Another common application of the `this` pointer is implementing chained calls. The approach is simple: a member function returns a reference to `*this`, so the caller can consecutively call multiple methods in a single line of code.
 
 ```cpp
 class StringBuilder {
@@ -382,7 +389,7 @@ Compared to the C approach, the underlying principle of chained calls is actuall
 
 ### 5.1 Static Member Variables
 
-Static member variables belong to the **class itself**, rather than to any specific object. This means that no matter how many instances of the class you create, there is only one copy of a static member variable in memory.
+Static member variables belong to **the class itself**, rather than to any specific object. This means that no matter how many instances of the class you create, there is only one copy of a static member variable in memory.
 
 This is very practical in embedded development. For example, if you want to track how many instances of a peripheral driver are currently in use:
 
@@ -410,11 +417,11 @@ public:
 int UARTPort::active_count = 0;
 ```
 
-Note a detail that is easy to trip over: **static member variables must be defined and initialized outside the class** (C++17 introduced the ability to initialize `inline static` members directly inside the class, but C++98 does not support this). If you only declare `static int active_count;` inside the class but forget to write `int UARTPort::active_count = 0;` in the `.cpp` file, the linker will report an "undefined reference" error, and this error is often hard to track down—because compilation succeeds, and only linking fails.
+Note an easy-to-miss detail: **static member variables must be defined and initialized outside the class** (C++17 introduced the ability to initialize `inline static` members directly inside the class, but C++98 does not support this). If you only declare `static int active_count;` inside the class but forget to write `int UARTPort::active_count = 0;` in the `.cpp` file, the linker will report an "undefined reference" error, and this error is often hard to track down—because compilation succeeds, and only the linking step fails.
 
 ### 5.2 Static Member Functions
 
-Static member functions also belong to the class itself, rather than to any specific object. Therefore, static member functions **have no `this` pointer**, which also means they cannot access non-static member variables or non-static member functions—because these require `this` to locate a specific object instance.
+Static member functions also belong to the class itself, rather than to any specific object. Therefore, static member functions **have no `this` pointer**, which also means they cannot access non-static member variables or non-static member functions—because those require `this` to locate a specific object instance.
 
 ```cpp
 class UARTPort {
@@ -435,7 +442,7 @@ public:
 };
 ```
 
-When calling a static member function, we use the `类名::函数名()` approach, without needing to create an object first:
+When calling a static member function, use the `类名::函数名()` approach without needing to create an object first:
 
 ```cpp
 UARTPort::init_hal();
@@ -444,13 +451,13 @@ if (UARTPort::is_hal_ready()) {
 }
 ```
 
-This pattern of "check if hardware is ready first, then create an instance" is very common in embedded development, and static member functions happen to provide exactly this calling capability—"related to the class, but not requiring an instance."
+This pattern of "check if hardware is ready first, then create an instance" is very common in embedded development, and static member functions provide exactly this "class-related but instance-independent" calling capability.
 
 ## 6. const Member Functions
 
 ### 6.1 Semantics of const Member Functions
 
-A `const` member function is a very strong semantic commitment provided by C++: **this function will not modify the state of the object**. It is declared by adding the `const` keyword after the function's parameter list:
+A `const` member function is a very strong semantic commitment provided by C++: **this function will not modify the object's state**. The declaration is done by adding the `const` keyword after the function's parameter list:
 
 ```cpp
 class LED {
@@ -531,17 +538,17 @@ This example demonstrates a very practical design pattern: providing a non-`cons
 
 ### 6.3 A Practical Rule of Thumb
 
-There is a widely recognized programming guideline in C++: **all member functions that do not modify the object's state should be declared as `const`**. This is not mandatory, but if you don't do it, others using your class will encounter various frustrations like "this is clearly a read operation, so why won't the compiler allow it?"—because someone might hold your object through a `const` reference (such as when passing it as a function parameter), at which point only `const` member functions can be called.
+There is a widely recognized programming guideline in C++: **all member functions that do not modify the object's state should be declared as `const`**. This is not mandatory, but if you don't do it, others using your class will encounter various frustrations like "this is clearly a read operation, so why won't the compiler let me?"—because someone might hold your object via a `const` reference (such as when passing it as a function parameter), at which point only `const` member functions can be called.
 
-If, when designing a class, a member function "looks like it should just be reading data," but you forget to add `const`, your users will find that they cannot call this "obviously read-only" function when they pass the object to a function accepting a `const` reference. This kind of error is particularly insidious, because the cause is not at the call site, but at the class definition—and the error message is often just "discards qualifiers," which a beginner would have no idea how to interpret.
+If, when designing a class, a member function "looks like it should just be reading data," but you forget to add `const`, your users will find that they cannot call this "clearly read-only" function when they pass the object to a function accepting a `const` reference. This kind of error is particularly insidious, because the cause is not at the call site but at the class definition—and the error message is often just "discards qualifiers," which a beginner would see and have no idea what it means.
 
-My recommendation is: **make it a habit—after writing each member function, ask yourself "does this function need to modify the object?" If the answer is no, add `const` immediately.**
+My recommendation is: **develop a habit—after writing each member function, ask yourself "does this function need to modify the object?" If the answer is no, immediately add `const`.**
 
 ## 7. Friends (friend)
 
 ### 7.1 What Are Friends
 
-A friend (friend) is a mechanism provided by C++ that allows you to actively **break encapsulation boundaries**—letting an external function or external class access the `private` and `protected` members of the current class.
+A friend (friend) is a mechanism provided by C++ that allows you to actively **break encapsulation boundaries**—letting an external function or external class access the current class's `private` and `protected` members.
 
 ```cpp
 class SensorData {
@@ -566,9 +573,9 @@ void serialize(const SensorData& data, uint8_t* buffer) {
 
 ### 7.2 The Danger of Friends
 
-The existence of friends is not inherently evil, but it is almost always a **red flag**. A friend means you are proactively exposing the internal implementation details of your class to external code. From a design perspective, this breaks encapsulation—and encapsulation is one of the core values of a class.
+The existence of friends is not inherently evil, but it is almost always a **danger signal**. A friend means you are proactively exposing the internal implementation details of your class to external code. From a design perspective, this breaks encapsulation—and encapsulation is one of the core values of classes.
 
-Most scenarios that seem to require friends can actually be avoided through better design. For example, the serialization example above could entirely be implemented by providing a `const` public access interface, without needing to expose the entire internal array:
+Most scenarios that seem to require friends can actually be avoided through better design. For example, the serialization example above could entirely be achieved by providing a `const` public access interface, without needing to expose the entire internal array:
 
 ```cpp
 class SensorData {
@@ -587,9 +594,9 @@ void serialize(const SensorData& data, uint8_t* buffer) {
 }
 ```
 
-This design is clearly safer—`SensorData` only exposes a read-only pointer and a size, and external code cannot modify the internal data. The friend version, on the other hand, exposes the entire `raw_values` array to the `serialize` function; if `serialize`'s implementation has a bug, it could write out of bounds.
+This design is clearly safer—`SensorData` only exposes a read-only pointer and a size, and external code cannot modify the internal data. The friend version, on the other hand, exposes the entire `raw_values` array to the `serialize` function, and if `serialize`'s implementation has a bug, it could write out of bounds.
 
-So my recommendation is: **if a class needs a lot of friends to work, it probably shouldn't have been designed as a class in the first place**. Friends should be a last resort, not a常规手段. When your first instinct is "just add a friend," stop and think: is there an alternative that doesn't break encapsulation?
+So my recommendation is: **if a class needs a lot of friends to work, it probably shouldn't have been designed as a class in the first place**. Friends should be a last resort, not a regular practice. When your first instinct is "just add a friend," stop and think: is there an alternative that doesn't break encapsulation?
 
 ## 8. The explicit Keyword
 
@@ -636,13 +643,13 @@ set_active(SafePWMChannel(3));         // OK：显式构造
 set_active((SafePWMChannel)3);         // OK：显式转换（C 风格，不推荐）
 ```
 
-My recommendation is: **all single-parameter constructors should have `explicit`, unless you very explicitly need implicit conversion**. This is a nearly zero-cost defensive measure that can avoid a large number of bugs caused by implicit conversions. Moreover, `explicit` only affects implicit calls to the constructor—explicit calls are completely unaffected, so it does not restrict any functionality you genuinely need.
+My recommendation is: **all single-parameter constructors should have `explicit`, unless you very explicitly need implicit conversion**. This is a nearly zero-cost defensive measure that can avoid a large number of bugs caused by implicit conversions. Furthermore, `explicit` only affects implicit calls to the constructor—explicit calls are completely unaffected, so it does not restrict any functionality you genuinely need.
 
 ## 9. The mutable Keyword
 
 ### 9.1 The Role of mutable
 
-The `mutable` keyword allows you to modify member variables marked as `mutable` inside a `const` member function. This might sound like it violates the `const` promise, but in reality there are perfectly reasonable use cases.
+The `mutable` keyword allows you to modify member variables marked as `mutable` inside a `const` member function. This might sound like it violates the `const` promise, but in reality there are perfectly reasonable use cases for it.
 
 We already saw a caching example earlier when discussing `const` member functions. Here is a more complete version:
 
@@ -679,18 +686,29 @@ private:
 };
 ```
 
-In this example, the `read()` function is declared as `const`, because its external promise is "it will not change the sensor's logical state"—from the user's perspective, the sensor has not undergone any change before and after calling `read()`. Internally, however, `read()` does indeed modify the cache and counter—these belong to **implementation details**, not part of the logical state.
+In this example, the `read()` function is declared as `const`, because its external promise is "it will not change the sensor's logical state"—from the user's perspective, the sensor has not undergone any change before and after calling `read()`. Internally, however, `read()` does indeed modify the cache and the counter—these are **implementation details**, not part of the logical state.
 
 ### 9.2 When to Use mutable
 
-The scenarios where `mutable` is applicable are very clear: **member variables that belong to implementation details and do not affect the object's logical state**. Typical scenarios include caches, lazy evaluation, debug counters, mutexes, and so on.
+The scenarios where `mutable` is appropriate are very clear: **member variables that belong to implementation details and do not affect the object's logical state**. Typical scenarios include caches, lazy evaluation, debug counters, mutexes, and so on.
 
-But `mutable` can also be easily abused. If you find yourself frequently modifying `mutable` members inside `const` functions, and these modifications affect the object's "observable behavior," there is a high probability that your `const` design is problematic—either the function shouldn't be `const`, or those members shouldn't be `mutable`.
+But `mutable` can also be easily abused. If you find yourself frequently modifying `mutable` members inside `const` functions, and these modifications affect the object's "observable behavior," there is a high probability that your `const` design is flawed—either the function should not be `const`, or those members should not be `mutable`.
 
 A simple criterion for judgment is: **if you remove the `mutable` marker and the related modification code, is the function's external behavior exactly the same?** If the answer is "yes," then `mutable` is reasonable; if "no," then the design needs to be re-examined.
 
+## Run Online
+
+Run the comprehensive class basics example online to observe constructors, destructors, the this pointer, and static members:
+
+<OnlineCompilerDemo
+  title="C++98 Classes and Objects: Constructors, Destructors, this, static, mutable"
+  source-path="code/examples/vol1/16_cpp98_classes_objects.cpp"
+  description="Run online and observe StringBuilder chained calls, Sensor lifecycle, and static member counting."
+  allow-run
+/>
+
 ## Summary
 
-In this chapter, we took a deep dive into the core mechanisms of C++ classes and objects. Starting from C structs, we saw how `class` uses access control to bind data and operations together; constructors and destructors guarantee that objects are "initialized on acquisition" and "cleaned up on departure"; member initializer lists provide a dual guarantee of performance and semantic correctness; the `this` pointer explains why member functions can "know" which object they are operating on; static members provide class-level shared state; `const` member functions establish a strong "read-only" contract; and friends, `explicit`, and `mutable` are three "precision control" tools, each with its own applicable scenarios and boundaries of use.
+In this chapter, we took a deep dive into the core mechanisms of C++ classes and objects. Starting from C structs, we saw how `class` binds data and operations together through access control; constructors and destructors guarantee that objects are "initialized on acquisition" and "cleaned up on departure"; member initializer lists provide a dual guarantee of performance and semantic correctness; the `this` pointer explains why member functions can "know" which object they are operating on; static members provide class-level shared state; `const` member functions establish a strong "read-only" contract; and friends, `explicit`, and `mutable` are three "precision control" tools, each with its own applicable scenarios and boundaries of use.
 
-In the next chapter, we will extend the concept of a single class to type hierarchies—exploring how C++ uses inheritance and polymorphism to organize relationships between multiple classes.
+In the next chapter, we will extend the concept of a single class into a type hierarchy—looking at how C++ organizes relationships between multiple classes through inheritance and polymorphism.

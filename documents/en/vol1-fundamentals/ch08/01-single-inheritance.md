@@ -1,7 +1,7 @@
 ---
-title: Single inheritance
-description: Master the syntax of single inheritance, the order of construction and
-  destruction, and understand the object slicing problem and its solutions.
+title: Single Inheritance
+description: Master single inheritance syntax, construction and destruction order,
+  understand the object slicing problem and its solutions
 chapter: 8
 order: 1
 difficulty: intermediate
@@ -19,16 +19,22 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch08/01-single-inheritance.md
+  source_hash: af1757a4f91327266e08b3bd82efa316e84fd6f01df69a378a0b64dea7d22e17
+  translated_at: '2026-05-26T10:53:43.053340+00:00'
+  engine: anthropic
+  token_count: 2307
 ---
 # Single Inheritance
 
-So far, all the classes we have written are "standalone" — a class encapsulates its own data, provides its own interface, and has no familial relationship with any other class. But real-world entities do not exist in isolation: a student (Student) is a person (Person), a car (Car) is a type of vehicle (Vehicle). This "is-a" relationship is the core semantic that inheritance aims to express.
+So far, all the classes we have written are "standalone" — a class encapsulates its own data, provides its own interface, and has no relationship with other classes. But real-world entities do not exist in isolation: a student is a person, a car is a vehicle. This "is-a" relationship is the core semantic that inheritance aims to express.
 
-Inheritance allows us to derive a new class from an existing one. The new class automatically acquires the members and capabilities of the base class, and then adds its own unique features on top of that. To put it plainly, inheritance does not merely solve the problem of "writing fewer lines of code" — although it certainly achieves that — but rather **how to establish clear hierarchical relationships between types**. Once the hierarchy is established, subsequent polymorphism and interface abstraction have a solid foundation to build upon.
+Inheritance allows us to derive a new class from an existing one. The new class automatically acquires the members and capabilities of the base class, and then adds its own unique features on top. To put it plainly, inheritance does not merely solve the problem of "writing fewer lines of code" — although it certainly achieves that — but rather **how to establish clear hierarchical relationships between types**. Once the hierarchy is in place, subsequent polymorphism and interface abstraction have a solid foundation to build upon.
 
-## Basic Syntax of Inheritance
+## Basic Inheritance Syntax
 
-Let's first look at the simplest form of inheritance:
+Let's look at the simplest form of inheritance:
 
 ```cpp
 class Person {
@@ -56,17 +62,17 @@ public:
 };
 ```
 
-`class Student : public Person` does three things: it declares that `Student` is a class derived from `Person`; it uses the `public` inheritance mode, meaning the `public` members of the base class remain `public` in the derived class; and it ensures that the memory layout of a `Student` object contains a complete `Person` subobject.
+`class Student : public Person` does three things: it declares `Student` as a class derived from `Person`; it uses the `public` inheritance mode, meaning the `public` members of the base class remain `public` in the derived class; and it ensures that the memory layout of a `Student` object contains a complete `Person` subobject.
 
-To put it bluntly, "inheritance" means that a `Student` object hides a `Person` inside it. A `Student` has all the member variables of a `Person`, and also has all the public member functions of a `Person` — you can call `.name()` and `.age()` on a `Student` object just as if they were originally defined in `Student`.
+To put it bluntly, "inheritance" means that a `Student` object has a `Person` hidden inside it. A `Student` has all the member variables of `Person`, and also has all the public member functions of `Person` — you can call `.name()` and `.age()` on a `Student` object just as if they were originally defined in `Student`.
 
-But there is one detail to pay special attention to: `name_` and `age_` are private members of `Person`. Although they exist within the `Student` object, the member functions of `Student` **cannot access them directly**. Private is private, and inheritance does not change this. What a derived class can directly use are the public and protected members of the base class; private members can only be manipulated indirectly through the public interface provided by the base class. This is also why the `Student` constructor writes `: Person(name, age)` — the derived class's constructor must pass parameters to the base class's constructor via the initializer list, letting the base class complete the initialization of the base class portion.
+But there is one detail to pay special attention to: `name_` and `age_` are private members of `Person`. Even though they exist within a `Student` object, the member functions of `Student` **cannot access them directly**. Private is private, and inheritance does not change this. What a derived class can directly use are the public and protected members of the base class; private members can only be manipulated indirectly through the public interface provided by the base class. This is also why the `Student` constructor writes `: Person(name, age)` — the derived class's constructor must pass parameters to the base class's constructor via the initializer list, letting the base class handle the initialization of the base class portion.
 
-> **Pitfall Warning**: If you forget to call the base class constructor in the derived class's constructor, the compiler will try to call the base class's default constructor (the one with no parameters). If the base class does not have a default constructor — for example, if `Person` only has a `Person(const std::string&, int)` but no `Person()` — compilation will fail directly. The error messages can sometimes be quite convoluted, and beginners easily get stuck here. So remember this rule: **when a base class lacks a default constructor, the derived class must explicitly call one of the base class's constructors in the initializer list**.
+> **Pitfall Warning**: If you forget to call the base class constructor in the derived class's constructor, the compiler will try to call the base class's default (no-argument) constructor. If the base class does not have a default constructor — for example, if `Person` only has a `Person(const std::string&, int)` but no `Person()` — compilation will fail directly. The error messages can sometimes be quite convoluted, and beginners easily get stuck here. So remember this rule: **when a base class lacks a default constructor, the derived class must explicitly call one of the base class's constructors in the initializer list**.
 
 ## Order of Construction and Destruction
 
-Understanding the execution order of construction and destruction is a required course for grasping the inheritance mechanism. We use an example with print statements to observe this in practice:
+Understanding the execution order of construction and destruction is a required course for grasping the inheritance mechanism. Let's use an example with print statements to observe this in practice:
 
 ```cpp
 #include <iostream>
@@ -93,7 +99,7 @@ Derived::~Derived()
 Base::~Base()
 ```
 
-During construction, we go from the base class to the derived class — lay the foundation before building the floors, because the derived class's construction might depend on the base class members already being in a valid state. During destruction, it goes in reverse — tear down the upper floors before the foundation, because the derived class's destructor might need to access base class members to complete resource cleanup. If the base class were destroyed first, the derived class's destructor would be accessing an already-invalid object. Remember this rule in one sentence: **construction goes from inside out, destruction goes from outside in**. No matter how deep the inheritance hierarchy is, this rule remains the same.
+During construction, it goes from the base class to the derived class — lay the foundation before building the house, because the derived class's construction might depend on the base class members already being in a valid state. During destruction, it goes in reverse — tear down the upper floors before the foundation, because the derived class's destructor might need to access base class members to complete resource cleanup. If the base class were destroyed first, the derived class's destructor would be accessing an already-invalid object. Remember this rule in one sentence: **construction goes from inside out, destruction goes from outside in**. No matter how deep the inheritance hierarchy is, this rule remains the same.
 
 ## Using Base Class Members
 
@@ -116,13 +122,13 @@ public:
 };
 ```
 
-What is noteworthy here is the `Person::introduce()` call. The derived class defines a function with the same name as one in the base class; this is called **hiding** — it is not overriding, but rather the derived class's `introduce()` obscures the base class's `introduce()`. Calling `introduce()` directly on a `Student` object executes `Student`'s own version. To reuse the base class's implementation, we must use `Person::introduce()` to explicitly specify the scope.
+What is worth noting here is the `Person::introduce()` call. The derived class defines a function with the same name as one in the base class; this is called **hiding** — it is not overriding, but rather the derived class's `introduce()` obscures the base class's `introduce()`. Calling `introduce()` directly on a `Student` object executes `Student`'s own version. To reuse the base class's implementation, we must use `Person::introduce()` to explicitly specify the scope.
 
-> **Pitfall Warning**: Name hiding is a rather subtle trap in C++ inheritance. If you define a function called `foo` in the derived class, then all functions named `foo` in the base class (regardless of whether the parameter lists match) will be hidden. This is not overloading — overloading occurs within the same scope, whereas inheritance spans two scopes. If you want to preserve the base class's overload set, you can write `using Person::introduce;` in the derived class to pull all overloaded versions from the base class into the derived class's scope.
+> **Pitfall Warning**: Same-name function hiding is a rather subtle trap in C++ inheritance. If you define a function called `foo` in the derived class, then all functions named `foo` in the base class (regardless of whether the parameter lists are the same) will be hidden. This is not overloading — overloading occurs within the same scope, whereas inheritance spans two scopes. If you want to preserve the base class's overload set, you can write `using Person::introduce;` in the derived class to pull all overloaded versions from the base class into the derived class's scope.
 
 ## Object Slicing — The Easiest Pitfall in Inheritance
 
-Having covered the basic usage, let's face a problem that truly gives beginners a headache: **Object Slicing**.
+Having covered the basic usage, let's face a problem that truly gives beginners a headache: **object slicing**.
 
 ```cpp
 void print_person(Person p)   // 按值传递！
@@ -151,7 +157,7 @@ References and pointers are merely aliases or addresses pointing to the original
 
 ## Protected Members — An Access Level Born for Inheritance
 
-`protected` is an access level between `public` and `private`: code outside the class cannot access `protected` members, but member functions of derived classes can. It is designed specifically for inheritance scenarios — allowing derived classes to "see" these members while maintaining encapsulation against the outside world.
+`protected` is an access level between `public` and `private`: code outside the class cannot access `protected` members, but member functions of derived classes can. It is designed specifically for inheritance scenarios — allowing derived classes to "see" these members while maintaining encapsulation from the outside world.
 
 ```cpp
 class Vehicle {
@@ -182,11 +188,11 @@ public:
 };
 ```
 
-So when should you use `protected`? My advice is: **default to `private`, and only switch to `protected` when you explicitly know that a derived class needs direct access to a certain member**. Overusing `protected` breaks encapsulation — you expose internal implementation details to all derived classes, and once you want to modify these details in the future, the blast radius becomes hard to control. A good practice is to encapsulate the operations that need to be exposed to derived classes into `protected` member functions, rather than directly exposing data members.
+So when should you use `protected`? My advice is: **default to `private`, and only switch to `protected` when you explicitly know that a derived class needs direct access to a certain member**. Overusing `protected` breaks encapsulation — you expose internal implementation details to all derived classes, and once you want to modify these details in the future, the blast radius becomes hard to control. A good practice is to encapsulate the operations that need to be exposed to derived classes as `protected` member functions, rather than directly exposing data members.
 
-## Hands-on: The Vehicle Hierarchy
+## Practical Example: Vehicle Hierarchy
 
-Now let's tie the concepts we've covered together. This program demonstrates a `Vehicle` base class and two derived classes, `Car` and `Truck`, covering construction/destruction order, member access, and a comparison of object slicing.
+Now let's tie together the concepts we have covered. This program demonstrates a `Vehicle` base class and two derived classes, `Car` and `Truck`, covering construction/destruction order, member access, and a comparison of object slicing.
 
 ```cpp
 // inheritance.cpp
@@ -329,13 +335,13 @@ Verify the output:
   [Vehicle] destroyed: Toyota
 ```
 
-Let's break it down section by section: when constructing `Car`, `[Vehicle]` happens before `[Car]` — the base class is constructed first. You might notice that even when passing by reference, the output only shows "Toyota at 120 km/h" without "5 seats" appearing — this is because `describe()` is not a virtual function, so the compiler binds to `Vehicle::describe()` based on the static type of the reference, `Vehicle&`, even though the actual object is a `Car`. However, there is a key difference between pass-by-reference and pass-by-value: with pass-by-value, there is an extra construction and destruction of a temporary `Vehicle` copy (concrete evidence of slicing), whereas pass-by-reference has no such process — the object is intact, it's just that the function call isn't "polymorphic" yet. To achieve "pass by reference and invoke the derived class version," we need virtual functions, which is the topic of the next chapter. As for destruction, when `Truck` leaves the block scope, `[Truck]` is destructed before `[Vehicle]`, and `Car` is destructed when `main` ends — the destruction order is always the reverse of the construction order.
+Let's break it down section by section: when constructing `Car`, `[Vehicle]` happens before `[Car]` — the base class is constructed first. You might notice that when passing by reference, the output only shows "Toyota at 120 km/h" without "5 seats" appearing — this is because `describe()` is not a virtual function, so the compiler binds to `Vehicle::describe()` based on the static type of the reference, `Vehicle&`, even though the actual object is a `Car`. However, there is a key difference between pass-by-reference and pass-by-value: with pass-by-value, there is an extra construction and destruction of a temporary `Vehicle` copy (concrete evidence of slicing), whereas pass-by-reference has no such process — the object is intact, but the function call simply isn't "polymorphic" yet. To achieve "pass by reference and invoke the derived class version," we need virtual functions, which is the topic of the next chapter. As for destruction, when `Truck` leaves the block scope, `[Truck]` is destructed before `[Vehicle]`, and `Car` is destructed at the end of `main` — the destruction order is always the reverse of the construction order.
 
 ## Exercises
 
 ### Exercise 1: Design an Animal Hierarchy
 
-Create an `Animal` base class containing two members: `name_` (private) and `sound_` (protected). Provide a `name()` public interface and a `speak()` method. Then derive `Dog` and `Cat`, setting their respective sounds in their constructors. Require `Dog` to additionally include a `breed_` breed field and provide a `describe()` method, and verify the construction and destruction order.
+Create an `Animal` base class containing two members: `name_` (private) and `sound_` (protected). Provide a `name()` public interface and a `speak()` method. Then derive `Dog` and `Cat`, setting their respective sounds in the constructors. Require `Dog` to additionally contain a `breed_` breed field and provide a `describe()` method. Verify the construction and destruction order.
 
 ### Exercise 2: Fix the Object Slicing Bug
 
@@ -359,4 +365,4 @@ In this chapter, we dove deep into the core mechanism of single inheritance. Inh
 
 Object slicing is the easiest pitfall in inheritance: any value-type conversion from a derived class to a base class will lose the parts unique to the derived class. There is only one solution — use references or pointers.
 
-The inheritance we have discussed so far is still static: which version of a function to call is determined at compile time. In the next chapter, we will introduce virtual functions, allowing the target of a function call to be determined at runtime — that is the domain of polymorphism.
+The inheritance we have covered so far is still static: which version of a function to call is determined at compile time. In the next chapter, we will introduce virtual functions, allowing the target of a function call to be determined at runtime — that is the domain of polymorphism.

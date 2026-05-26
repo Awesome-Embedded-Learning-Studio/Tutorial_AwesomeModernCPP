@@ -1,7 +1,7 @@
 ---
 title: std::array
-description: Master the usage of std::array and its comparison with C arrays, and
-  learn to use fixed-size containers in modern C++.
+description: Master the usage of `std::array` and its comparison with C arrays, and
+  learn to use modern C++ fixed-size containers.
 chapter: 5
 order: 2
 difficulty: beginner
@@ -20,14 +20,20 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch05/02-std-array.md
+  source_hash: 545220a4a4d1a6b8a36c01d69acea9a47e510d8ac78a0292841871419cdbab1d
+  translated_at: '2026-05-26T10:49:44.911884+00:00'
+  engine: anthropic
+  token_count: 2056
 ---
 # std::array
 
-Do C-style arrays get the job done? Absolutely, and we covered this in the previous section—in fact, we've been using them since our very first day of learning C. (If you're not familiar with C, the repository also includes a detailed C tutorial!)
+Can C-style arrays get the job done? Of course they can—we covered this in the previous section. In fact, we've been using them since day one of learning C. (If you're not familiar with C, the repository also includes a detailed C tutorial!)
 
-However, C arrays are notoriously easy to shoot yourself in the foot with: they decay into pointers when passed to functions, lose their length information, cannot be directly assigned, cannot be returned from functions, and have no bounds checking. These issues can't be avoided simply by "being careful when writing code"—they are inherent design flaws of C arrays.
+However, C arrays are notoriously easy to shoot yourself in the foot with: they decay into pointers when passed to functions, lose their length information, cannot be directly assigned, cannot be used as function return values, and lack bounds checking. These issues cannot be avoided simply by "being careful when writing code"—they are inherent design flaws of C arrays.
 
-`std::array` was created to solve these problems. It allocates memory on the stack, making it just as compact and efficient as a C array, but it provides true value semantics—it can be copied, assigned, passed as arguments, and returned, and it always knows its own size. Let's look at why, starting with C++11, we should prefer `std::array` for fixed-size arrays.
+`std::array` was born to solve these problems. It allocates memory on the stack, making it just as compact and efficient as a C array, but it boasts true value semantics—it can be copied, assigned, passed as arguments, and returned, and it always knows its own size. Next, let's look at why, starting with C++11, `std::array` should be the preferred choice for fixed-size arrays.
 
 > **Learning Objectives**
 > After completing this chapter, you will be able to:
@@ -45,7 +51,7 @@ However, C arrays are notoriously easy to shoot yourself in the foot with: they 
 
 ## std::array Basics
 
-`std::array` is defined in the `<array>` header and requires two template parameters: the element type and the fixed size. The size must be a compile-time constant—just like a C array, `std::array` does not grow dynamically; it is simply a contiguous block of memory with a fixed size.
+`std::array` is defined in the `<array>` header and requires two template parameters: the element type and a fixed size. The size must be a compile-time constant—just like C arrays, `std::array` does not grow dynamically; it is simply a contiguous block of memory with a fixed size.
 
 ```cpp
 #include <array>
@@ -69,9 +75,9 @@ int main()
 最大大小: 5
 ```
 
-Functions like `size()`, `max_size()`, and `empty()` might seem redundant for a fixed-size `std::array`. Their purpose lies in providing a unified interface—ensuring that `std::array` and `std::vector` share the same access methods, so generic code doesn't need to care whether the underlying container is fixed-size or dynamic.
+Functions like `size()`, `max_size()`, and `empty()` might seem a bit redundant for a fixed-size `std::array`. Their purpose lies in providing a unified interface—ensuring that `std::array` and `std::vector` share the same access methods, so generic code doesn't need to care whether the underlying container is fixed-size or dynamic.
 
-> `std::array<int, 0>` is legal, in which case `empty()` returns `true`. But honestly, a zero-size `std::array` rarely appears in real code. If you need a container that "might be empty," use `std::vector`.
+> `std::array<int, 0>` is legal, in which case `empty()` returns `true`. But honestly, a zero-size `std::array` rarely appears in real code. If you need a "possibly empty" container, use `std::vector` instead.
 
 ## Accessing Elements
 
@@ -105,15 +111,15 @@ back       = 50
 data()[3]  = 40
 ```
 
-The difference between `[]` and `at()` is crucial: `arr[10]` on this five-element array is undefined behavior (UB)—it might read garbage, crash, or seemingly work fine while silently corrupting data. In contrast, `arr.at(10)` throws a `std::out_of_range` exception, giving you a chance to handle the error gracefully.
+The difference between `[]` and `at()` is crucial: `arr[10]` on this five-element array is undefined behavior (UB)—it might read garbage, crash, or seemingly work fine while silently corrupting data. On the other hand, `arr.at(10)` throws an `std::out_of_range` exception, giving you a chance to handle the error gracefully.
 
-> A quick side note: during development, we recommend using `at()` for indexes that might go out of bounds. In release builds, you can switch back to `[]` to avoid exception overhead—though modern compilers impose virtually zero overhead for `at()` in non-out-of-bounds cases. Alternatively, use `[]` consistently and rely on AddressSanitizer to catch out-of-bounds bugs.
+> A quick side note: during development, we recommend using `at()` for indices that might be out of bounds. In release builds, you can switch back to `[]` to avoid exception overhead—though modern compilers impose virtually zero overhead for `at()` in non-out-of-bounds cases. Alternatively, use `[]` consistently and rely on AddressSanitizer to catch out-of-bounds bugs.
 
-`data()` returns a raw pointer to the underlying element storage, which can be passed directly when interacting with C library functions that accept `int*` parameters.
+`data()` returns a raw pointer to the underlying element storage, which can be passed directly to C library functions that accept `int*` parameters.
 
 ## Value Semantics—The Killer Advantage of std::array
 
-After covering all those basics, here is where `std::array` truly leaves C arrays behind: it has **value semantics**. You can work with it just like an `int` or `std::string`—copying, assigning, passing as arguments, and returning all work flawlessly.
+After covering all those basics, here is where `std::array` truly leaves C arrays behind: it has **value semantics**. You can work with it just like an `int` or `std::string`—copying, assigning, passing as arguments, and returning all work perfectly.
 
 ```cpp
 #include <array>
@@ -160,11 +166,11 @@ arr2[0] = 99
 函数内大小: 5
 ```
 
-Every line above is something a C array cannot do. C arrays cannot be directly assigned (`a = b` won't even compile), cannot be returned from functions, and decay into pointers when passed as function arguments, losing their length. `std::array` can do all of this because it is a class that encapsulates an internal C array and provides a copy constructor and copy assignment operator. The compiler knows how to copy this object and knows its size—fundamentally eliminating the array decay problem.
+Every single line above is something a C array cannot do. C arrays cannot be directly assigned (`a = b` won't even compile), cannot be used as function return values, and decay into pointers when passed as function arguments, losing their length. `std::array` can do all of this because it is a class that encapsulates an internal C array and provides a copy constructor and a copy assignment operator. The compiler knows how to copy this object and knows its size—fundamentally eliminating the array decay problem.
 
 > Passing an `std::array` by value copies the entire array contents. If the array is large (e.g., `std::array<int, 10000>`), you should use a `const` reference: `void process(const std::array<int, 10000>& arr)`. For small arrays, the overhead of passing by value is negligible.
 
-## C Array vs std::array: A Head-to-Head Comparison
+## C Array vs std::array: Head-to-Head Comparison
 
 Let's do a direct comparison of C arrays and `std::array` across common operations:
 
@@ -182,11 +188,11 @@ Let's do a direct comparison of C arrays and `std::array` across common operatio
 
 The last row is key: **`std::array` and C arrays are completely equivalent in memory layout and runtime performance**. All the extra capabilities—`size()`, `at()`, `data()`, and value semantics—are zero-overhead abstractions at compile time. There is no additional memory allocation or function call overhead at runtime.
 
-> If you're curious, try adding `-O2` when compiling a traversal program that uses a C array and `std::array` respectively, and compare the assembly output—the generated instructions are almost identical. Zero-overhead abstraction is not just an empty phrase.
+> If you're interested, you can add `-O2` to compile a traversal program using a C array and `std::array` respectively, and compare the assembly output—the generated instructions are almost identical. Zero-overhead abstraction is not just empty talk.
 
 ## Filling, Swapping, and Traversing
 
-`std::array` also provides several practical operations, and when combined with STL algorithms, it becomes even more powerful:
+`std::array` also provides several practical operations, which become even more powerful when combined with STL algorithms:
 
 ```cpp
 #include <algorithm>
@@ -302,12 +308,12 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 
 The improvements are comprehensive: the parameter for `print_stats` is `const std::array<int, 5>&`, making the type and size clear at a glance; all STL algorithms are used directly—sorting, searching, reversing, and finding min/max values are all one-liners; and you will never encounter the problem of array decay losing length information.
 
-> If you see C-style signatures like `void func(int arr[], int n)` in your code, we recommend changing them to `void func(const std::array<int, N>& arr)` (fixed size) or `void func(std::span<int> arr)` (runtime-determined size). Both approaches preserve length information and are much safer than manually passing `n`.
+> If you see C-style signatures like `void func(int arr[], int n)` in your code, we suggest changing them to `void func(const std::array<int, N>& arr)` (fixed size) or `void func(std::span<int> arr)` (size determined at runtime). Both approaches preserve length information and are much safer than manually passing `n`.
 
 ## Summary
 
-- `std::array<T, N>` allocates on the stack and is just as compact as a C array, but without the array decay problem
-- Use `[]` (no checking) or `at()` (throws on out-of-bounds) to access elements, and use `data()` when interacting with C APIs
+- `std::array<T, N>` allocates on the stack, making it just as compact as a C array, but without the array decay problem
+- Use `[]` (no checking) or `at()` (throws exception on out-of-bounds) to access elements, and use `data()` when interacting with C APIs
 - It has true value semantics—it can be copied, assigned, passed as arguments, and returned, which is its biggest advantage over C arrays
 - `fill()`, `swap()`, and iterator interfaces allow it to work seamlessly with STL algorithms
 - Zero-overhead abstraction—runtime performance is completely equivalent to C arrays
@@ -319,7 +325,7 @@ The improvements are comprehensive: the parameter for `print_stats` is `const st
 | Reading without initializing | Element values are undefined for an uninitialized local `std::array` | Use `std::array<int, N> arr = {};` or `arr.fill(0)` |
 | `arr[arr.size()]` out of bounds | Index range is `[0, size())` | Use `arr.at()` for bounds checking |
 | Passing large arrays by value | Copies the entire array contents | Pass using a `const` reference |
-| Trying to change size dynamically | `std::array` size is fixed at compile time | Use `std::vector` if you need dynamic sizing |
+| Trying to change size dynamically | `std::array` size is fixed at compile time | Use `std::vector` if you need a dynamic size |
 
 ## Exercises
 
@@ -333,7 +339,7 @@ Create a `std::array<int, 8>` to store a set of grades, use `std::sort` to sort 
 
 ### Exercise 3: Check if an Element Exists
 
-Write a `bool contains(const std::array<int, 5>& arr, int value)` that uses `std::find` to determine whether an array contains a specified value. Test both existing and non-existing values in `main`.
+Write a `bool contains(const std::array<int, 5>& arr, int value)` that uses `std::find` to determine whether the array contains a specified value. Test both existing and non-existing values in `main`.
 
 ---
 

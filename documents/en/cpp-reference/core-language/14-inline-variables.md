@@ -1,20 +1,29 @@
 ---
-title: "Inline Variables"
-description: "Define global variables in headers without violating ODR; the compiler guarantees a single instance"
+title: Inline Variable
+description: Defining global variables in a header file without violating the ODR
+  (one definition rule), with the compiler guaranteeing a single instance
 chapter: 99
 order: 14
 tags:
-  - host
-  - cpp-modern
-  - beginner
+- host
+- cpp-modern
+- beginner
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+cpp_standard:
+- 17
+- 20
+- 23
+translation:
+  source: documents/cpp-reference/core-language/14-inline-variables.md
+  source_hash: 0ea7b67e0dde71306439802b1916ff0d7a5310c37f59ee4b2fda966cb6ca843c
+  translated_at: '2026-05-26T10:16:18.167467+00:00'
+  engine: anthropic
+  token_count: 422
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -27,7 +36,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-Use `inline` to qualify namespace-scope variables, allowing global variable definitions in headers without producing multiple-definition link errors -- the compiler guarantees a single instance across the entire program.
+Use `inline` to modify namespace-scope variables, allowing us to define global variables in headers without causing multiple definition linker errors—the compiler guarantees a single instance across the entire program.
 
 ## Header
 
@@ -37,10 +46,10 @@ None (language feature)
 
 | Syntax | Description |
 |--------|-------------|
-| `inline T var = val;` | Inline variable definition at namespace scope |
-| `inline constexpr T var = val;` | `constexpr` variables are implicitly `inline`; no need to repeat the qualifier |
-| `inline static T var = val;` | Static member variable inside a class; can be initialized inline since C++17 |
-| `inline thread_local T var = val;` | Combined with thread-local storage |
+| `inline` | Inline variable definition at namespace scope |
+| `inline constexpr` | `constexpr` variables are implicitly `inline`, no need for redundant annotations |
+| `inline static` | In-class static member variables, directly initializable inside the class since C++17 |
+| `inline thread_local` | Used with thread-local storage |
 
 ## Minimal Example
 
@@ -53,8 +62,8 @@ None (language feature)
 inline const std::string kVersion = "1.0.0";
 inline int kMaxRetries = 3;
 
-// Multiple translation units include this header;
-// the linker guarantees only one instance of kVersion and kMaxRetries
+// 多个翻译单元 include 此头文件，
+// 链接时保证只有一个 kVersion 和 kMaxRetries 实例
 ```
 
 ```cpp
@@ -70,10 +79,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Ideal companion for header-only libraries, replacing the extern global variable pattern
-- `constexpr` variables are implicitly `inline`, so compile-time constant tables commonly used in embedded code benefit naturally
+- An ideal companion for header-only libraries, replacing the `extern` global variable pattern
+- `constexpr` variables are implicitly `inline`, so compile-time constant tables commonly used in embedded systems naturally benefit
 - Eliminates the boilerplate of "declare in header + define in source file"
-- Zero runtime overhead; only affects symbol merging at link time
+- Zero runtime overhead, only affects symbol merging during the linking phase
 
 ## Compiler Support
 
@@ -87,4 +96,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

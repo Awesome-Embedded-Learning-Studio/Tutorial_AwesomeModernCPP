@@ -1,6 +1,6 @@
 ---
-title: 'In-depth Understanding of C/C++ Compilation and Linking (Bonus): Can a dynamic
-  library be executed like an executable file?'
+title: 'Deep Dive into C/C++ Compilation and Linking (Bonus): Can a Shared Library
+  Be Executed Like an Executable?'
 description: ''
 tags:
 - cpp-modern
@@ -10,13 +10,18 @@ difficulty: intermediate
 platform: host
 chapter: 13
 order: 10
+translation:
+  source: documents/compilation/10-dynamic-lib-as-executable.md
+  source_hash: f2314fe9d950e03f2cf309ca8e5a8a878c8cb3f598e71d53cbcde9fa28c12e57
+  translated_at: '2026-05-26T10:12:20.758953+00:00'
+  engine: anthropic
+  token_count: 2823
 ---
-# Deep Dive into C/C++ Compilation and Linking (Bonus): Can We Execute a Shared Library Like an Executable?
+# Deep Dive into C/C++ Compilation and Linking (Bonus): Can a Shared Library Be Executed Like an Executable?
 
-I know some of you might laugh instinctively at this topic and think I'm talking nonsense. To be honest, when I first encountered this idea, I dismissed it with a laugh too, thinking it was absurd. But the truth is, a shared library **can actually be executed just like an executable.**
+I know some of you might laugh instinctively at this topic and think I'm talking nonsense. To be honest, when I first encountered this idea, I dismissed it with a laugh too, thinking it was absurd. But the truth is, a shared library **can indeed be executed just like an executable.**
 
-Someone might just toss a Segmentation Fault at me and tell me I'm full of it. You can navigate to the `/lib` directory yourself, pick a library you like—for instance, I've got my eye on `libcurl` and `libcrypt`—and we can try executing them directly.
-
+Some people might just throw a Segmentation Fault at me and tell me I'm talking nonsense. You can navigate to the `/lib` directory yourself, pick a library you like, and try to execute it directly. For example, I've got my eye on `libcurl` and `libcrypt`. Let's try executing them directly.
 
 ```cpp
 
@@ -31,12 +36,11 @@ Segmentation fault         (core dumped) /lib/libcrypt.so.2.0.0
 
 Our first thought is—why? Why does this happen? The answer is simple. In later blog posts, I will emphasize that, generally speaking, files ending in `.so` are shared libraries (or dynamic libraries; as I've mentioned before, in modern operating systems, we no longer need to strictly distinguish between shared libraries and dynamic libraries).
 
-> [Deep Dive into C/C++ Compilation and Linking 2: Introduction to Dynamic and Static Libraries - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/154828385)
+> [Deep Dive into C/C++ Compilation and Linking Part 2: Introduction to Dynamic and Static Libraries - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/154828385)
 
-Obviously, when we directly input the absolute path of a file, the operating system's bash attempts to treat it as a standalone program. However, this contradicts our definition of a shared library: a **dynamically shared component** containing a collection of functions and data. Since shared libraries aren't designed with a standard main entry point (the `$\text{main}$` function) like regular programs, the execution flow will likely jump to an invalid memory address when run directly. When the operating system detects this **illegal memory access** (attempting to access a memory region the program has no rights to), it triggers a **segmentation fault**. I imagine many of you reading this are now absolutely convinced that the claim in this blog post—shared libraries **can be executed like executables**—is completely wrong.
+Obviously, when we directly input the absolute path of a file, the operating system's shell attempts to treat it as a standalone executable. However, this contradicts our definition of a shared library: a **dynamically shared component** containing a collection of functions and data. Since a shared library isn't designed with a standard main entry point (`$\text{main}$` function) like a regular program, the execution flow will likely jump to an invalid memory address when run directly. When the operating system detects this **illegal memory access** (attempting to access a memory region the program has no rights to), it triggers a **segmentation fault**. I imagine many of you reading this are now fully convinced that the claim in this blog post—shared libraries **can be executed like executables**—is completely wrong.
 
 However, that's not the case. Let's try executing the C library again:
-
 
 ```cpp
 
@@ -54,14 +58,13 @@ For bug reporting instructions, please see:
 
 ```
 
-Huh? That's not what we expected at all. This time, not only did the C library not segfault, but it actually printed a highly recognizable string and exited gracefully! Pretty mysterious, right? Don't worry, I'll walk you through this step by step to figure out exactly what happened.
+Huh? This isn't what we expected at all. Not only did the C library not segfault this time, but it actually printed a highly recognizable string and exited gracefully! Pretty mysterious, right? Don't worry, I'll walk you through step by step to figure out exactly what happened here.
 
-## So, What's Really Going On?
+## So, What Exactly Is Going On?
 
-It's quite simple. Let's start here—since this involves the start of program execution, those familiar with the ELF (Executable and Linkable Format) will quickly point out that the secret might be hidden in the address pointed to by the ELF Header. It's easy to guess that the Entry Point in libc's ELF Header must be **different** from that of a typical component-oriented library like `libcurl`. So, the tool we need to inspect the ELF header information is the renowned ``readelf`` tool.
+It's quite simple. Let's start here—since this involves the start of program execution, those familiar with the ELF (Executable and Linkable Format) will quickly point out that the secret might be hidden in the address pointed to by the ELF Header. It's easy to guess that the Entry Point in libc's ELF Header must be **different** from that of a typical component-oriented library like `libcurl`. To check the ELF header information, we turn to the famous ``readelf`` tool.
 
-We need to emphasize a basic fact about the ELF format—all ELF files (both executables and shared libraries) have an "entry point," which is where the CPU begins executing instructions. In other words, it provides the CPU's execution flow (the value of EIP or RIP on x86-64) with a definitive initial value.
-
+We need to emphasize a basic fact about the ELF format—all ELF files (executables and shared libraries) have an "entry point," which is where the CPU begins executing instructions. In other words, it provides the CPU's execution flow (the value of EIP or RIP on x86-64) with an exact initial value.
 
 ```cpp
 
@@ -93,7 +96,6 @@ Aha! Isn't the truth plain to see now? If we try to treat ``/lib/libcurl.so`` as
 
 This is exactly the same in nature as doing this:
 
-
 ```cpp
 
 #include <stdio.h>
@@ -108,7 +110,6 @@ int main() {
 
 Compile and execute it, and we get exactly this:
 
-
 ```cpp
 
 [charliechen@Charliechen runaable_dynamic_library]$ gcc dump.c -o dump
@@ -119,7 +120,6 @@ Segmentation fault         (core dumped) ./dump
 ```
 
 So what about our libc library?
-
 
 ```cpp
 
@@ -147,10 +147,9 @@ ELF Header:
 
 ```
 
-Huh? It really is different. Don't rush; just seeing a ``0x27830`` doesn't tell us much. The next step is to bring out our `objdump` trick to see the details:
+Huh? It really is different. Don't worry, just seeing a ``0x27830`` doesn't tell us much. The next step is to bring out our `objdump` trick to see the details:
 
-> Some of you might ask, why not use `nm`? Well, for shared libraries, `nm` exposes the addresses of exported symbols. Generally, you can't figure out what the Entry Point actually corresponds to. But don't worry, we have another trick up our sleeves: using `objdump` to look at the disassembly.
-
+> Some of you might ask me why we don't use `nm`. Well, for shared libraries, `nm` exposes the addresses of exported symbols. Generally, you can't figure out what the Entry Point actually corresponds to. But don't worry, we have another trick up our sleeves: using `objdump` to look at the disassembly.
 
 ```cpp
 
@@ -186,10 +185,9 @@ No need to rush. Let's put on our thinking caps. Starting from `0x27834`, the co
 
 - Don't rush, we still need to place the string address in `rsi`, which is the second argument. Notice that the instruction is ``lea`` (Load Effective Address), which adds the offset to the address of the current instruction. So we can't just look for `0x18d85a` directly; we have to add the offset of the current instruction.
 
-  As a quick refresher, how did `objdump` calculate `1b50a0`? First, the base address of the current instruction is at: ``0x2783f``, and the instruction length itself is ``48 8d 35 5a d8 18 00``, totaling 7 bytes. So the next instruction is at ``0x2783f + 7 = 0x27846``. Adding the given offset address, we get—`0x27846 + 0x18d85a = 0x1b50a0`. OK, we can be confident that `objdump` isn't lying to us (though, to be fair, it probably wouldn't!).
+  As a refresher, how did `objdump` calculate `1b50a0`? First, the base address of the current instruction is at: ``0x2783f``, and the instruction length itself is ``48 8d 35 5a d8 18 00``, totaling 7 bytes. So the next instruction is at ``0x2783f + 7 = 0x27846``. Adding the given offset address, we get `0x27846 + 0x18d85a = 0x1b50a0`. OK, we are now convinced that `objdump` isn't lying to us (though it obviously wouldn't!).
 
 Want to verify if that's really what's stored there?
-
 
 ```cpp
 
@@ -233,10 +231,9 @@ That's enough! The subsequent analysis clearly shows that `0` is placed into `ed
 
 ## Can We Actually Do This?
 
-Come on! Of course we can! I'll walk you through doing it right now! It will be a bit tricky, though, because we can't rely on the libc library right now. The initialization of a shared library differs from that of our executable programs—for instance, it won't automatically initialize the C Runtime, and there's no way to actively link against the C library (I previously tried specifying a dynamic linker, but it was useless, and the code crashed during a stack function jump. I was a bit powerless and couldn't get it working after a long time), and so on.
+Come on! Of course we can! Now I'll walk you through doing it ourselves! It will be a bit tricky, though, because we can't rely on the libc library right now. The initialization of a shared library differs from that of our executable programs—for instance, it won't actively initialize the C Runtime, and there's no way to actively link the C library (I previously tried specifying a dynamic linker, but it didn't work, and the code crashed during a stack function jump. I was pretty powerless after spending ages on it without success), and so on.
 
-So, let's put something together:
-
+So, let's put together our code:
 
 ```cpp
 
@@ -310,7 +307,6 @@ Interested readers can follow my previous analysis to walk through the process a
 
 So the question arises: can our other executable programs use this code just like a regular library? Yes, they can. Let's move the visible `add` symbol into a header file: `cclib.h`
 
-
 ```cpp
 
 #pragma once
@@ -320,7 +316,6 @@ int add(int a, int b);
 ```
 
 And in `main.c`, we do things just like we normally would in library programming:
-
 
 ```cpp
 
@@ -336,7 +331,6 @@ int main() {
 ```
 
 No sweat!
-
 
 ```cpp
 

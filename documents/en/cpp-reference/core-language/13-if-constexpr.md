@@ -1,21 +1,30 @@
 ---
-title: "if constexpr"
-description: "Compile-time conditional branching that selectively compiles code paths based on template parameters"
+title: if constexpr
+description: Compile-time conditional branching that selectively compiles code paths
+  based on template parameters.
 chapter: 99
 order: 13
 tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - if_constexpr
+- host
+- cpp-modern
+- intermediate
+- if_constexpr
 difficulty: intermediate
-cpp_standard: [17, 20, 23]
+cpp_standard:
+- 17
+- 20
+- 23
+translation:
+  source: documents/cpp-reference/core-language/13-if-constexpr.md
+  source_hash: b9d65858e0b0e11f0c5703f6edda87e6d191cf5cb61b1f3ecf4f69cb48b28ce5
+  translated_at: '2026-05-26T10:16:40.695003+00:00'
+  engine: anthropic
+  token_count: 483
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -28,7 +37,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-Selectively compile a branch at compile time based on a constant condition inside templates. Discarded branches need not even pass syntax checking -- a powerful tool for compile-time polymorphism.
+Selectively compiles a branch within a template based on a compile-time condition. Discarded branches do not even need to pass syntax checking — a powerful tool for compile-time polymorphism.
 
 ## Header
 
@@ -36,13 +45,13 @@ None (language feature)
 
 ## Core API Quick Reference
 
-| Syntax | Description |
-|--------|-------------|
-| `if constexpr (cond) { ... }` | If `cond` is `true`, compile the then-branch |
-| `if constexpr (cond) { ... } else { ... }` | Compile one of two branches |
+| Syntax Form | Description |
+|-------------|-------------|
+| `if constexpr (cond) { ... }` | If `cond` is `true`, compiles the then branch |
+| `if constexpr (cond) { ... } else { ... }` | Compiles one of two branches |
 | `if constexpr (cond1) { ... } else if constexpr (cond2) { ... } else { ... }` | Multi-branch chain |
-| `if constexpr` with type traits | `if constexpr (std::integral` `<T>` `)` -- type characteristic check |
-| `if constexpr` with `requires` | (C++20) Prefer concept-based overloads instead |
+| `if constexpr` with concepts | `if constexpr (std::integral\<T\>)` type traits check |
+| `if constexpr` with `requires` | (C++20) Concepts-based overloading is preferred instead |
 
 ## Minimal Example
 
@@ -71,10 +80,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero runtime overhead: conditions are evaluated at compile time; unsatisfied branches generate no code at all
-- Replaces SFINAE and tag dispatch, dramatically improving template metaprogramming readability
+- Zero runtime overhead: the condition is evaluated at compile time, and unmet branches generate no code at all
+- Replaces SFINAE and tag dispatch, significantly improving the readability of template metaprogramming
 - Ideal for selecting different code paths based on compile-time constants such as hardware platform or peripheral type
-- Available since C++17; supported by GCC 7+ and ARM Clang 6+
+- Available since C++17, supported by GCC 7+ and ARM Clang 6+
 
 ## Compiler Support
 
@@ -88,4 +97,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

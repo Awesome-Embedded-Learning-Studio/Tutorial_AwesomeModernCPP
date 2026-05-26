@@ -1,12 +1,18 @@
 ---
-title: UART serial communication
-description: 'Building an STM32 UART Driver in Modern C++: From Hardware Protocols
-  to Interrupt-Driven Reception'
+title: UART Serial Communication
+description: From hardware protocols to interrupt-driven reception, building an STM32
+  UART driver with modern C++
 platform: stm32f1
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
+translation:
+  source: documents/vol8-domains/embedded/03-uart/index.md
+  source_hash: 855c7e4c0109778256938f8a7397ae0d19ae5d7c428dbb30df4db307ba4cdf21
+  translated_at: '2026-05-26T12:18:34.583967+00:00'
+  engine: anthropic
+  token_count: 309
 ---
 # UART Serial Communication
 
@@ -18,7 +24,7 @@ tags:
 
 ## Phase 2: Hardware Fundamentals
 
-- [Part 32: UART Protocol in Detail](02-uart-protocol-basics.md) — How to synchronize without a clock line
+- [Part 32: UART Protocol In Depth](02-uart-protocol-basics.md) — How to synchronize without a clock line
 - [Part 33: STM32 USART Peripheral](03-stm32-usart-peripheral.md) — The serial engine inside the chip
 
 ## Phase 3: HAL + Blocking I/O
@@ -30,7 +36,7 @@ tags:
 
 - [Part 36: Interrupt Fundamentals and NVIC](06-interrupt-fundamentals-and-nvic.md) — Letting hardware proactively notify the CPU
 - [Part 37: Lock-Free Ring Buffer](07-circular-buffer-lock-free-spsc.md) — A safe channel between the ISR and the main loop
-- [Part 38: UART IRQ Handling and Callbacks](08-uart-irq-handler-and-callback.md) — The complete puzzle of interrupt reception
+- [Part 38: UART IRQ Handling and Callbacks](08-uart-irq-handler-and-callback.md) — The complete puzzle of interrupt-driven reception
 
 ## Phase 5: C++ Abstractions
 

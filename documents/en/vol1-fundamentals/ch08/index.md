@@ -1,11 +1,17 @@
 ---
 title: Inheritance and Polymorphism
-description: Deep understanding of inheritance hierarchies, virtual functions, abstract
-  classes, and polymorphism mechanisms
+description: Deep dive into inheritance hierarchies, virtual functions, abstract classes,
+  and polymorphism mechanisms
+translation:
+  source: documents/vol1-fundamentals/ch08/index.md
+  source_hash: 812a748a58b9c673b05ba5200274962534a335ced16d353b3f5344588b8ba6bf
+  translated_at: '2026-05-26T10:54:28.031673+00:00'
+  engine: anthropic
+  token_count: 142
 ---
 # Inheritance and Polymorphism
 
-The power of object-oriented programming lies in "manipulating different types of objects through a uniform interface," and the core mechanism that makes this possible is inheritance and polymorphism. In this chapter, we start with single inheritance, clarify what a virtual function table really is, explore how pure virtual functions and abstract classes design interfaces, and then examine the complexity of multiple inheritance and virtual inheritance. Finally, we tie these OOP design concepts together through a hands-on case study.
+The power of object-oriented programming lies in "manipulating different types of objects through a uniform interface," and the core mechanism that makes this possible is inheritance and polymorphism. In this chapter, we start with single inheritance, clarify what the virtual function table really is, explore how pure virtual functions and abstract classes design interfaces, and then examine the complexity of multiple inheritance and virtual inheritance. Finally, we tie these OOP design concepts together through a hands-on case study.
 
 ## Chapter Contents
 

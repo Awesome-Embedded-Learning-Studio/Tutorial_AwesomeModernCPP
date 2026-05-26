@@ -1,7 +1,7 @@
 ---
-title: Function basics
-description: Master the definition, declaration, parameter passing, and return values
-  of C++ functions, and understand scope and lifetime.
+title: Function Basics
+description: Master C++ function definition, declaration, parameter passing, and return
+  values, and understand scope and lifetime.
 chapter: 3
 order: 1
 difficulty: beginner
@@ -20,18 +20,24 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch03/01-function-basics.md
+  source_hash: 2900f0ca3e5ff4ce6e303da4140691fc7a48305d31bbf5ca17d86336a544b28c
+  translated_at: '2026-05-26T10:45:59.629535+00:00'
+  engine: anthropic
+  token_count: 2137
 ---
 # Function Basics
 
-Kids, I've actually seen someone write a ten-thousand-line program with just `main()` one function from start to finish, with all the code tangled together like spaghetti. Obviously, this person doesn't really understand functions (beginners excepted).
+Kids, I've seen it before—someone writes a ten-thousand-line program with just `main()` single function from top to bottom, with all the code piled together like spaghetti. Obviously, this person doesn't really understand functions (beginners excluded).
 
-What's it like to read that? Variables are everywhere, logic is hopelessly tangled, and changing one feature means reading the entire file for fear of pulling one thread and unraveling the whole thing. Frankly, forget about showing this kind of code to others—even after a week, you won't understand it yourself. The joke goes that only God can read it (though maybe after another week, even God won't be able to).
+What's it like to read this? Variables are everywhere, logic is tangled up, and changing one feature means reading the entire file for fear of pulling one thread and unraveling the whole thing. Frankly, forget about showing this code to anyone else—even after a week, you won't understand it yourself. The joke goes that only God can read it (though maybe after another week, even God won't be able to).
 
-Functions are the core tool for solving this problem. They let us wrap a piece of code that accomplishes a specific task into a named unit. When we need it, we simply call it by name without worrying about the internal implementation details. In this chapter, starting from the most basic concepts, we will thoroughly nail down the fundamentals of functions: definition styles, parameter passing, return values, and scope.
+Functions are the core tool for solving this problem. They let us wrap a piece of code that accomplishes a specific task into a named unit. When we need it, we simply call the name without worrying about the internal implementation details. In this chapter, starting from the most basic concepts, we will thoroughly nail down the fundamentals: function definition styles, parameter passing, return values, and scope.
 
 ## Step One — Function Declaration and Definition
 
-Before writing a function, we need to understand two concepts: **declaration** and **definition**. A declaration tells the compiler "a function like this exists," providing only the function name, return type, and parameter list without the function body. A definition provides the complete implementation.
+Before writing a function, we need to understand two concepts: **declaration** and **definition**. A declaration tells the compiler "a function like this exists"—it only provides the function name, return type, and parameter list, without a function body. A definition provides the complete implementation.
 
 ```cpp
 // 声明（也叫函数原型/prototype）
@@ -44,9 +50,9 @@ int add(int a, int b)
 }
 ```
 
-The semicolon at the end of the declaration replaces the function body. When the compiler sees the declaration, it knows that `add` is a function that takes two `int` parameters and returns a `int`. As for how it's implemented internally, the compiler doesn't care for now—as long as it can find the actual definition at link time.
+The semicolon at the end of the declaration takes the place of the function body. When the compiler sees the declaration, it knows that `add` is a function that takes two `int` parameters and returns a `int`. As for how it's implemented internally, the compiler doesn't care for now—as long as it can find the actual definition at link time.
 
-So why distinguish between the two? Because the C++ compiler processes code line by line from top to bottom. If `main()` calls `add()`, but `add`'s definition is written after `main`, the compiler won't know what `add` is when processing `main`, and it will throw an error directly. The solution is to put a declaration at the top of the file so the compiler knows about the function in advance:
+So why distinguish between the two? Because the C++ compiler processes code line by line, top to bottom. If `main()` calls `add()`, but `add`'s definition is written after `main`, the compiler won't know what `add` is when processing `main`, and it will throw an error directly. The solution is to put a declaration at the top of the file so the compiler knows about the function in advance:
 
 ```cpp
 #include <iostream>
@@ -74,10 +80,10 @@ int multiply(int a, int b)
 }
 ```
 
-And what do we call it when a bunch of these declarations are grouped together? That's exactly what a header file is! This "declare first, define later" pattern is crucial in real-world projects—as we'll see when we get to header files, declarations are usually placed in `.h` files to be shared across multiple source files, while definitions go in `.cpp` files. For now, just remember one principle: **the compiler must see a function's declaration (or definition) before the function is used**.
+And what do we call it when a bunch of these declarations are grouped together? That's exactly what a header file is! This "declare first, define later" pattern is crucial in real projects—as we'll see when we get to header files, declarations are usually placed in `.h` files to be shared across multiple source files, while definitions go in `.cpp` files. For now, just remember one principle: **the compiler must see a function's declaration (or definition) before the function is used**.
 
 > ⚠️ **Pitfall Warning**
-> Forgetting to write a declaration and placing the function definition after the call site is one of the most common compilation errors beginners encounter. The error message is usually `error: use of undeclared identifier 'xxx'`. When you see this, your first reaction should be to check the function definition's location—either move the definition above the call site, or add a declaration at the top of the file.
+> Forgetting to write a declaration and placing the function definition after the call site is one of the most common compilation errors beginners encounter. The error message is usually `error: use of undeclared identifier 'xxx'`. When we see this, our first reaction should be to check the function definition's location—either move the definition above the call site, or add a declaration at the top of the file.
 
 ## Step Two — Return Types and the return Statement
 
@@ -93,9 +99,9 @@ int max(int a, int b)
 }
 ```
 
-A function can have multiple `return` statements, but only one will execute per call—once `return` executes, all subsequent code is skipped. For the `max` function above, both paths guarantee that a value will be `return`, so there's no problem.
+A function can have multiple `return` statements, but each call will only execute one of them—once `return` executes, all subsequent code is skipped. For the `max` function above, both paths guarantee that a `return` will happen, so there's no problem.
 
-If a function doesn't need to return any value, we write the return type as `void`. A `void` function can omit the `return` statement, and it will automatically return when the function body finishes executing; alternatively, we can write a bare `return;` to exit early:
+If a function doesn't need to return any value, we write the return type as `void`. A `void` function can omit the `return` statement, and it will automatically return when the function body finishes executing; we can also write a bare `return;` to exit early:
 
 ```cpp
 void print_greeting(const std::string& name)
@@ -107,7 +113,7 @@ void print_greeting(const std::string& name)
 }
 ```
 
-C++14 introduced a very practical feature: **return type deduction**. By writing `auto` in place of the return type, the compiler automatically deduces the return type based on the `return` statement:
+C++14 introduced a very practical feature: **return type deduction**. By writing `auto` in the function's return type position, the compiler automatically deduces the return type based on the `return` statement:
 
 ```cpp
 auto add(int a, int b)
@@ -119,11 +125,11 @@ auto add(int a, int b)
 This is especially convenient for functions where the return type is verbose to write or in template code. But there's a limitation: all `return` statements must return the same type. If one path returns a `int` and another returns a `double`, the compiler will report an error.
 
 > ⚠️ **Pitfall Warning**
-> Forgetting to write a `return` in a non-`void` function is a classic bug. The compiler might give a warning but won't necessarily error—if the control flow reaches the end of the function without encountering a `return`, the behavior is **undefined behavior (UB)**. The function might return a garbage value, or the program might crash outright, entirely depending on luck. So, make it a habit: every execution path of a non-`void` function must have a `return`.
+> Forgetting to write a `return` in a non-`void` function is a classic bug. The compiler might give a warning but won't necessarily error—if control flow reaches the end of the function without encountering a `return`, the behavior is **undefined behavior**. The function might return a garbage value, or the program might crash outright—it's entirely up to luck. So, we must build a good habit: every execution path in a non-`void` function must have a `return`.
 
 ## Step Three — Parameters and Arguments
 
-Functions receive data from the outside through **parameters**. Variables declared in the function signature are called formal parameters (parameters), and the actual values passed in during the call are called actual arguments (arguments):
+Functions receive externally passed data through **parameters**. Variables declared in the function signature are called formal parameters (parameters), and the actual values passed in during the call are called actual arguments (arguments):
 
 ```cpp
 //          形参
@@ -144,7 +150,7 @@ int main()
 
 A function can have any number of parameters, or none at all. When there are no parameters, we leave the parentheses empty (in C++, empty parentheses and `void` are equivalent: `int foo()` and `int foo(void)` mean the same thing).
 
-In multi-parameter functions, arguments and parameters correspond **by position** one-to-one—the first argument goes to the first parameter, the second to the second, and so on. C++ doesn't support named parameter calls like Python, so the parameter order must line up correctly:
+In a multi-parameter function, arguments and parameters correspond **by position** one-to-one—the first argument goes to the first parameter, the second to the second, and so on. C++ doesn't support named parameter calls like Python, so the parameter order must line up correctly:
 
 ```cpp
 void print_info(const std::string& name, int age, double height)
@@ -161,11 +167,11 @@ int main()
 }
 ```
 
-The type of an argument needs to match the parameter type, or be implicitly convertible. For example, if the parameter is `double`, passing a `int` is valid (implicit conversion will occur), but doing the reverse might lose precision. By default, parameters are **passed by value**—inside the function, we get a copy of the argument, and modifying the copy doesn't affect the original data. We'll discuss pass-by-reference and pass-by-pointer in detail in the next chapter.
+The argument types need to match the parameter types, or be implicitly convertible. For example, if the parameter is `double`, passing a `int` is valid (an implicit conversion will occur), but the reverse might lose precision. By default, parameters are **passed by value**—the function internally receives a copy of the argument, and modifying the copy doesn't affect the original data. We'll discuss pass-by-reference and pass-by-pointer in detail in the next chapter.
 
 ## Step Four — Local Scope and Lifetime
 
-Variables declared inside a function body are called **local variables**, and their scope is limited to the inside of that function. In other words, from the opening `{` to the closing `}`, the variable is visible; outside this range, the variable no longer exists:
+Variables declared inside a function body are called **local variables**, and their scope is limited to the inside of that function. In other words, from the point of `{` to the closing `}`, the variable is visible; outside this range, the variable no longer exists:
 
 ```cpp
 int compute(int x)
@@ -182,7 +188,7 @@ int main()
 }
 ```
 
-Local variables are stored on the **stack**. When a function is called, the system allocates space on the stack for its local variables; when the function returns, this space is reclaimed and the variables are immediately destroyed. This process is automatic, and we don't need to manage it manually.
+Local variables are stored on the **stack**. When a function is called, the system allocates space on the stack for its local variables; when the function returns, this space is reclaimed and the variables are immediately destroyed. This process is automatic—we don't need to manage it manually.
 
 Different functions can use variables with the same name without interfering with each other, because each has its own independent scope:
 
@@ -200,10 +206,10 @@ void func_b()
 }
 ```
 
-Even different code blocks within the same function can have variables with the same name, where the inner block **shadows** the outer block's variable—however, in actual development, we don't recommend doing this because it hurts readability.
+Even different code blocks within the same function can have variables with the same name, where the inner block **shadows** the outer block's variable—though in actual development, we don't recommend doing this because it hurts readability.
 
 > ⚠️ **Pitfall Warning**
-> Returning a **reference** or **pointer** to a local variable is a serious error, and the compiler might not always catch it for you. Local variables are destroyed when the function returns, so the memory the reference or pointer points to is already invalid—this is the classic "dangling reference" problem:
+> Returning a **reference** or **pointer** to a local variable is a serious error, and the compiler might not always catch it for you. Local variables are destroyed after the function returns, so the memory the reference or pointer points to is already invalid—this is the classic "dangling reference" problem:
 >
 > ```cpp
 > int& dangerous()
@@ -213,9 +219,9 @@ Even different code blocks within the same function can have variables with the 
 > }   // local 在这里被销毁，引用指向的内存已无效
 > ```
 >
-> The program might run perfectly fine while you're debugging, but suddenly crash when you switch to a Release build or when the data volume increases. This kind of intermittent bug is much harder to track down than a consistent crash. The rule is simple: **never return a reference or pointer to a local variable**. Returning by value is safe—it makes a copy for the caller.
+> The program might run perfectly fine while you're debugging, but suddenly crash when you switch to a Release build or when the data volume increases. This kind of intermittent bug is harder to track down than a consistent crash. The rule is simple: **never return a reference or pointer to a local variable**. Returning by value is safe—it copies the data to the caller.
 
-## Step Five — A Glimpse of Function Overloading
+## Step Five — A First Glimpse of Function Overloading
 
 C++ allows us to define multiple functions with the same name, as long as their parameter lists differ (different number of parameters, or different parameter types). This is called **function overloading**:
 
@@ -231,9 +237,9 @@ double add(double a, double b)
 }
 ```
 
-The compiler automatically selects the best-matching version based on the types of the arguments passed at the call site—`add(3, 4)` calls the `int` version, and `add(3.5, 2.1)` calls the `double` version. This greatly helps code readability and consistency, so callers don't need to memorize a bunch of different names like `add_int` and `add_double`.
+The compiler automatically selects the best-matching version based on the types of arguments passed in at the call site—`add(3, 4)` calls the `int` version, and `add(3.5, 2.1)` calls the `double` version. This greatly helps code readability and consistency, as callers don't need to remember a bunch of different names like `add_int` and `add_double`.
 
-There are quite a few details to the full rules of function overloading, such as overload resolution priorities and ambiguity handling, which we'll dive into in later chapters. For now, just knowing that this exists is enough.
+There are quite a few details to the full rules of function overloading, such as overload resolution priority and ambiguity handling, which we'll dive into in later chapters. For now, just knowing that this exists is enough.
 
 ## Hands-On Practice — functions.cpp
 
@@ -337,9 +343,20 @@ max(42, 17) = 42
 10 是偶数
 ```
 
-In this program, `factorial` is a **recursive function**—it calls itself within its own function body. The recursive idea is to break `n!` down into `n * (n-1)!`, until `n <= 1` directly returns 1 as the base case. Recursion is a powerful programming technique, but it comes with a cost—each recursive call allocates new space for local variables on the stack. Think about it: if we call ourselves like crazy, meaning "the recursion goes too deep," we'll cause a stack overflow! So in actual engineering work, unless a loop is really hard to write and we can be absolutely certain the nesting depth won't be too deep, we might consider recursion. Otherwise, it's strictly forbidden. At least when I started working, I would definitely get scolded for pulling stunts like that. We'll discuss the choice between recursion and iteration more deeply in later chapters.
+In this program, `factorial` is a **recursive function**—it calls itself within its own function body. The idea behind recursion is to break `n!` down into `n * (n-1)!`, until `n <= 1` when it directly returns 1 as the base case. Recursion is a powerful programming technique, but it comes with a cost—each recursive call allocates new local variable space on the stack. Think about it: if we call ourselves like crazy, meaning "the recursion goes too deep," we'll cause a stack overflow! So in actual engineering work, unless a loop is really hard to write and we can be absolutely certain the nesting depth won't be too deep, we might consider recursion. Otherwise, it's strictly forbidden. At least when I started working, I'd definitely get scolded for pulling something like that. We'll discuss the choice between recursion and iteration more deeply in later chapters.
 
-One point worth noting is that the parameter type of the `print_result` function is `const std::string&` rather than `std::string`. Here, `&` means pass-by-reference, avoiding the overhead of copying the string; `const` indicates that the function won't modify this string internally. Although we won't formally cover the details of pass-by-reference until the next chapter, this pattern is extremely common in real-world code, so just get used to seeing it for now.
+One point worth noting is that the parameter type of the `print_result` function is `const std::string&` rather than `std::string`. Here, `&` indicates pass-by-reference, avoiding the overhead of copying the string; `const` indicates that the function won't modify the string internally. Although the details of pass-by-reference won't be formally covered until the next chapter, this pattern is extremely common in real code, so it's good to get familiar with the sight of it early.
+
+## Run Online
+
+Run the function basics comprehensive example online to observe function declarations, recursion, and parameter passing:
+
+<OnlineCompilerDemo
+  title="Function Basics Comprehensive Exercise: Declarations, Recursive Factorial, Odd/Even Check"
+  source-path="code/examples/vol1/08_function_basics.cpp"
+  description="Run online and observe the actual behavior of function declarations, definitions, recursion, and various parameter passing methods."
+  allow-run
+/>
 
 ## Try It Yourself
 
@@ -353,9 +370,9 @@ gcd(100, 75) → 25
 gcd(7, 3)    → 1
 ```
 
-### Exercise 2: Primality Test
+### Exercise 2: Prime Number Check
 
-Write a function `bool is_prime(int n)` that determines whether a positive integer `n` is prime. Handle edge cases: numbers less than 2 are not prime, and 2 is prime. Hint: you only need to check whether any number in the range from 2 to `sqrt(n)` evenly divides `n`.
+Write a function `bool is_prime(int n)` that determines whether a positive integer `n` is a prime number. Handle edge cases: numbers less than 2 are not prime, and 2 is prime. Hint: we only need to check whether any number in the range from 2 to `sqrt(n)` can evenly divide `n`.
 
 ```text
 is_prime(2)  → true
@@ -366,7 +383,7 @@ is_prime(1)  → false
 
 ### Exercise 3: Returning Multiple Values with struct
 
-A C++ function can only return one value, but we can bundle multiple values into a `struct` and return that. Define a `struct DivResult` containing a quotient and a remainder, then write a function `divmod` that returns both at the same time:
+A C++ function can only return one value, but we can pack multiple values into a `struct` and return that. Define a `struct DivResult` containing the quotient and remainder, then write a function `divmod` that returns both at the same time:
 
 ```cpp
 struct DivResult {
@@ -384,8 +401,8 @@ divmod(100, 7) → 商: 14, 余: 2
 
 ## Summary
 
-In this chapter, we learned the basic mechanics of C++ functions from scratch. A function declaration tells the compiler "this function exists," while a definition provides the concrete implementation—the compiler must see either a declaration or a definition before using a function. The return type determines the type of value the function produces, and every execution path of a non-`void` function must have a `return` statement. Parameters are passed by position one-to-one, defaulting to value copies. The scope of local variables is confined to the function body, and they are automatically destroyed when the function returns—which is exactly why we must never return a reference or pointer to a local variable.
+In this chapter, we learned the fundamental mechanics of C++ functions from scratch. A function declaration tells the compiler "this function exists," while a definition provides the concrete implementation—the compiler must see either a declaration or a definition before using a function. The return type determines the type of value the function produces, and every execution path in a non-`void` function must have a `return` statement. Parameters are passed by position, one-to-one, and are copied by value by default. Local variables are scoped to the function body and are automatically destroyed when the function returns—which is exactly why we must never return a reference or pointer to a local variable.
 
-Function overloading lets us use the same name to handle different parameter types, and the compiler automatically selects the most appropriate version. Additionally, we had our first encounter with recursion—a programming technique where a function calls itself, demonstrating its basic usage through factorial calculation.
+Function overloading lets us use the same name to handle different parameter types, and the compiler automatically selects the most appropriate version. In addition, we got our first taste of recursion—a programming technique where a function calls itself, demonstrated here with factorial calculation.
 
 These are the bones of functions. Next, we'll dive into the details of parameter passing—the working mechanisms and applicable scenarios of pass-by-value, pass-by-reference, and pass-by-pointer. That's what truly determines a program's performance and correctness.

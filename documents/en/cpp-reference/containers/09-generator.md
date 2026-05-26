@@ -1,17 +1,24 @@
 ---
-title: "std::generator"
-description: "Coroutine-based synchronous generator that lazily produces value sequences with co_yield"
+title: std::generator
+description: Coroutine-based synchronous generator that lazily produces a sequence
+  of values using `co_yield`
 chapter: 99
 order: 9
 tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - coroutine
+- host
+- cpp-modern
+- intermediate
+- coroutine
 difficulty: intermediate
-cpp_standard: [23]
+cpp_standard:
+- 23
+translation:
+  source: documents/cpp-reference/containers/09-generator.md
+  source_hash: 6882f358f85f992952fff1c32e9de115e0935af67e80afad88796ecdc681a1c9
+  translated_at: '2026-05-26T10:15:35.091727+00:00'
+  engine: anthropic
+  token_count: 467
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
@@ -26,9 +33,9 @@ Tag usage rules:
 
 # std::generator (C++23)
 
-## In a Nutshell
+## One-Liner
 
-A coroutine generator that lazily produces value sequences via `co_yield` -- replaces hand-written iterators, zero heap allocation (allocator-customizable), and reduces code by an order of magnitude.
+A coroutine generator that lazily produces a value sequence using `co_yield` — replaces hand-written iterators with zero heap allocation (customizable allocator), reducing code volume by an order of magnitude.
 
 ## Header
 
@@ -39,11 +46,11 @@ A coroutine generator that lazily produces value sequences via `co_yield` -- rep
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
 | Generator type | `template<class T> class generator` | Lazy value sequence, satisfies the `view` concept |
-| Yield value | `co_yield expr;` | Produces a value and suspends |
-| Finish generation | `co_return;` | Ends the generator |
-| Iteration | `generator::iterator` | Input iterator, for use with range-for |
-| Range adaptation | Usable directly in `ranges::` pipelines | Generator is a view, composable |
-| Reference type | `generator<const T&>` | Yield by reference (avoids copies) |
+| Yield value | `co_yield expr;` | Yields a value and suspends |
+| Complete generation | `co_return;` | Ends the generator |
+| Iteration | `generator::iterator` | Input iterator, used for range-for |
+| Range adaptation | Directly usable in `ranges::` pipelines | Generator is a view, composable |
+| Reference type | `generator<const T&>` | Yields by reference (avoids copies) |
 | Allocator | `template<class T, class Alloc> class generator` | Customizable coroutine frame allocator |
 
 ## Minimal Example
@@ -72,11 +79,11 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- Lazy evaluation: computes the next value only when needed, no pre-allocation of the entire sequence's memory
+- Lazy evaluation: computes the next value only when needed, without pre-allocating memory for the entire sequence
 - Coroutine frames can use custom allocators, suitable for static memory pools
-- Replaces hand-written iterators and callback functions, dramatically improving code readability
-- C++23 feature, compiler support is still advancing (GCC 14+, Clang 17+, MSVC 19.34+)
-- Generator lifetime management requires care: accessing yielded values after the generator is destroyed is undefined behavior
+- Replaces hand-written iterators and callback functions, significantly improving code readability
+- C++23 feature; compiler support is still ongoing (GCC 14+, Clang 17+, MSVC 19.34+)
+- Generator lifetime management requires attention: accessing a yielded value after the generator is destroyed is undefined behavior (UB)
 
 ## Compiler Support
 
@@ -90,4 +97,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

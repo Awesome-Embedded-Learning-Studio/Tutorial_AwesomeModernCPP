@@ -9,16 +9,22 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 0
 order: 0
+translation:
+  source: documents/vol8-domains/embedded/core-embedded-cpp-index.md
+  source_hash: a1521c3ab6b42039ed39c35f8917aa800cd0f950e0fac88f013377abee709408
+  translated_at: '2026-05-26T12:23:24.840238+00:00'
+  engine: anthropic
+  token_count: 886
 ---
 # Table of Contents
 
-This is the table of contents for *Modern C++ for Embedded Systems*. Click any item to jump directly to the corresponding chapter.
+This is the table of contents for *Modern C++ Tutorial for Embedded Systems*. Click any item to jump directly to the corresponding chapter.
 
 ## Chapter 0 - Preface and Prerequisites
 
 - [Preface](../../vol1-fundamentals/00-preface.md)
 - [Resource and Real-Time Constraints in Embedded Systems](./01-resource-and-realtime-constraints.md)
-- [A Quick C Language Crash Course](../../vol1-fundamentals/02-c-language-crash-course.md)
+- [Crash Course in C](../../vol1-fundamentals/02-c-language-crash-course.md)
 - [Getting Started with C++98: Namespaces, References, and Scope Resolution](../../vol1-fundamentals/03A-cpp98-namespace-reference.md)
 - [C++98 Function Interfaces: Overloading and Default Arguments](../../vol1-fundamentals/03B-cpp98-function-overload-default-args.md)
 - [C++98 OOP: A Deep Dive into Classes and Objects](../../vol1-fundamentals/03C-cpp98-classes-and-objects.md)
@@ -56,7 +62,7 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 - [Dynamic Allocation Issues](./01-dynamic-allocation-issues.md)
 - [Static Storage and Stack Allocation Strategies](./02-static-and-stack-allocation.md)
 - [Object Pool Pattern](./03-object-pool-pattern.md)
-- [Alternative Strategies When the Heap Is Disabled or Restricted: Using Placement New](./04-placement-new.md)
+- [Alternative Strategies When Disabling or Limiting the Heap: Using Placement New](./04-placement-new.md)
 - [Fixed Pool Allocation](./05-fixed-pool-allocation.md)
 - [array vs Raw Arrays: Did You Know?](./06-array-vs-raw-arrays.md)
 
@@ -75,10 +81,10 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 
 ## Chapter 10 - Concurrency and Atomic Operations
 
-- [atomic](../../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
-- [memory_order](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md)
-- [Lock-Free Data Structure Design](../../../vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md)
-- [mutex and RAII Guards](../../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
+- [atomic](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [memory_order](../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md)
+- [Lock-Free Data Structure Design](../../vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md)
+- [mutex and RAII Guards](../../vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md)
 - [Writing Interrupt-Safe Code](./05-interrupt-safe-coding.md)
 - [Critical Section Protection Techniques](./05-interrupt-safe-coding.md)
 
@@ -91,4 +97,4 @@ This is the table of contents for *Modern C++ for Embedded Systems*. Click any i
 - [Template Basics (C++11-14)](../../vol4-advanced/vol1-basics-cpp11-14/index.md)
 - [Modern Template Techniques (C++17)](../../vol4-advanced/vol2-modern-cpp17/index.md)
 - [Metaprogramming Essentials (C++20-23)](../../vol4-advanced/vol3-metaprogramming-cpp20-23/index.md)
-- [Generic Design Patterns](../../vol4-advanced/vol4-generics-patterns/index.md)
+- [Generic Design Patterns in Practice](../../vol4-advanced/vol4-generics-patterns/index.md)

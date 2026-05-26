@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Exploring C++ Object Memory Layout
+description: Exploring C++ object memory layout
 difficulty: intermediate
 order: 5
 platform: host
@@ -16,21 +16,27 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Object size and plain types
+title: Object Size and Trivial Types
+translation:
+  source: documents/vol3-standard-library/05-object-size-and-trivial-types.md
+  source_hash: f5c43a40fc7f0fc41bb19999da5fe2b0d173054f31d8622cf9a5f81d70468449
+  translated_at: '2026-05-26T11:38:14.483343+00:00'
+  engine: anthropic
+  token_count: 1747
 ---
-# Modern C++ for Embedded Systems Tutorial — Object Size, Memory Alignment, Type "Trivial/Standard-Layout", and Aggregate Initialization
+# Modern C++ for Embedded Systems Tutorial: Object Size, Memory Alignment, Trivial/Standard-Layout Types, and Aggregate Initialization
 
-When writing low-level code, developing embedded systems, or interfacing with C APIs, we often get tripped up by a string of seemingly obscure terms: `sizeof`, `alignof`, `alignas`, `trivial`, `standard-layout`, `trivially_copyable`, aggregate…… These concepts might seem fragmented, but they actually form an interconnected map: they dictate an object's object representation, copy semantics, whether we can safely use `memcpy`, whether it is ABI-compatible with C structs, and initialization flexibility.
+When writing low-level code, building embedded systems, or interfacing with C APIs, we often get tripped up by a string of obscure terms: `alignas`, `alignof`, `sizeof`, aggregates, and more. These concepts might seem fragmented, but they actually form an interconnected map: they dictate an object's memory representation, copy semantics, whether we can safely use `memcpy`, whether a type is ABI-compatible with C structs, and initialization flexibility.
 
 ------
 
-## Starting with "Size" and "Alignment": Why `sizeof` Isn't Always the Sum of Its Members
+## Starting with "Size" and "Alignment": Why `sizeof` Isn't Always the Sum of Members
 
-`sizeof(T)` reports the number of **bytes occupied** by an object in memory (i.e., the full object representation, which must include necessary padding), while `alignof(T)` reports the type's **alignment constraint**—meaning the object's starting address must be a multiple of `alignof(T)`.
+`sizeof` reports the number of bytes an object occupies in memory (i.e., its full object representation, which includes necessary padding), while `alignof` reports the type's **alignment constraint**—meaning the object's starting address must be a multiple of `alignof`.
 
-Imagine a building (the object) where different rooms (members) have different sizes and alignment rules. To fit certain large items correctly into their rooms, gaps (padding) might be needed between floors. To the compiler, these gaps are mandatory.
+Imagine a building (the object) with different rooms (members) of varying sizes and alignment rules. To fit certain large items correctly, we might need gaps between floors (padding). To the compiler, these gaps are mandatory.
 
-Let's look at the most common example:
+Let's look at a common example:
 
 ```cpp
 struct A {
@@ -58,7 +64,7 @@ struct B {
 
 ```
 
-Placing the two `char` members together usually reduces padding:
+Placing the two `uint32_t` members together usually reduces padding:
 
 ```cpp
 struct C {
@@ -70,9 +76,9 @@ struct C {
 
 ```
 
-Therefore, sorting members and grouping widely aligned members (like `double`, `int64_t`, or SIMD vectors) together or placing them at the end of a struct is a common memory compaction strategy. For embedded systems, this can often squeeze considerable space out of unnecessary RAM usage.
+Therefore, reordering members and grouping wide-aligned members (like `uint64_t`, `double`, SIMD vectors, etc.) together or placing them at the end of a struct is a common memory compaction strategy. For embedded systems, this can often squeeze considerable space out of unnecessary RAM usage.
 
-Additionally, a struct's overall alignment is the **largest alignment** among its members. The compiler also adds tail padding at the end of the struct to ensure that `sizeof(T)` is a multiple of `alignof(T)`. This affects the spacing of array elements and how structs are laid out when placed in an array.
+Additionally, a struct's overall alignment is the **largest alignment** among its members. The compiler also adds tail padding at the end of the struct to ensure that `sizeof` is a multiple of `alignof`. This affects the spacing between array elements and how structs are laid out in arrays.
 
 We can use `alignas` to force or change alignment, for example, specifying alignment for a SIMD buffer that requires 16-byte alignment:
 
@@ -83,28 +89,28 @@ struct alignas(16) Vec4 {
 
 ```
 
-We need to be careful with `alignas`: increasing alignment changes the struct's ABI and `sizeof`, and can expose unaligned access issues on certain platforms (if you place an object at an unaligned address on unsupported hardware, it will crash).
+We need to be careful with `alignas`: increasing alignment changes the struct's ABI and `sizeof`, and can expose unaligned access issues on certain platforms (if we place an object at an unaligned address on unsupported hardware, it will crash).
 
 ------
 
-## trivial / trivially_copyable / standard-layout: Why These "Type Properties" Matter
+## trivial / trivially_copyable / standard-layout: Why These "Type Traits" Matter
 
-The C++ standard breaks down a set of type traits to precisely express "how this type's objects behave in memory." This is a design choice starting from C++11 (splitting the historical POD concept into several distinct properties), and it is especially important for embedded and systems programming because it dictates whether we can use `memcpy`, interoperate with C, and what optimization opportunities exist.
+The C++ standard breaks down a set of type characteristics to precisely express "how an object of this type behaves in memory." This design, starting in C++11 (which split the historical POD concept into several distinct properties), is especially important for embedded and systems programming because it dictates whether we can use `memcpy`, interoperate with C, and what optimization opportunities exist.
 
-Let's first put several frequently confused terms into a single picture (using natural language):
+Let's first put a few frequently confused terms into a natural language map:
 
-- **trivial type**: Broadly speaking, this is a type with "trivial" special member functions (the default constructor, copy/move constructors, assignment operators, and destructors are all compiler-generated without custom logic). In other words, construction, copying, and destruction do not execute any runtime code—the object's bit pattern is its object representation, with no hidden actions.
-- **trivially_copyable type**: Objects of this type can be safely copied via byte-by-byte copying (`memcpy`) (after copying, the target object has the same object representation and can be properly destructed, etc.). `trivially_copyable` is the key criterion for whether `memcpy` can be used.
+- **trivial type**: Broadly speaking, a type with "trivial" special member functions (default constructor, copy/move constructors, assignment operators, and destructors are all compiler-generated without custom logic). In other words, construction, copying, and destruction execute no runtime code—the object's bit pattern is its object representation, with no hidden actions.
+- **trivially_copyable type**: Objects of this type can be safely copied via byte-by-byte copying (`memcpy`). After copying, the target object has the same object representation and can be properly destroyed, etc. `is_trivially_copyable` is the key criterion for determining whether `memcpy` can be used.
 - **standard-layout type**: This type has predictable memory layout rules (e.g., non-static data members are arranged in declaration order, providing certain guarantees for C interoperability). It avoids unpredictable memory layouts caused by complex access control, virtual inheritance, or multiple base classes.
 
-A very important fact is that the old concept `POD` (Plain Old Data) was split in C++11 into `trivial` and `standard-layout`; semantically, `POD` is simply "both trivial and standard-layout." Many safety assumptions related to ABI and C interoperability can be checked using `std::is_standard_layout_v<T>` and `std::is_trivially_copyable_v<T>`.
+A crucial fact is that the old concept `POD` (Plain Old Data) was split in C++11 into `is_trivial` and `is_standard_layout`; semantically, `is_pod` is simply "both trivial and standard-layout." Many safety assumptions related to ABI and C interoperability can be checked using `is_trivially_copyable` and `is_standard_layout`.
 
 Why is this information useful? Because it directly affects:
 
-- Whether an object can be read or written as a byte sequence (e.g., saved to flash, or transferred directly from memory via DMA).
-  - **Only types that are `trivially_copyable` can safely use `memcpy` to copy the object representation**.
-- Whether a C++ type can be treated as a C `struct` and passed to an external C interface (e.g., device register mappings, bootloader data structures).
-  - **This typically requires `standard-layout` to guarantee layout compatibility**.
+- Whether we can read/write an object as a byte sequence (e.g., saving it to flash, or transferring it directly from memory via DMA).
+  - **Only types that are `is_trivially_copyable` can safely use `memcpy` to copy the object representation**.
+- Whether we can pass a C++ type as a C `struct` to an external C interface (e.g., device register mappings, bootloader data structures).
+  - **This typically requires `is_standard_layout` to guarantee layout compatibility**.
 - How the type behaves in constant expression and zero-initialization contexts (e.g., static storage duration object initialization and memory images).
 
 Let's look at an example combining these concepts:
@@ -132,7 +138,7 @@ struct T {
 
 ```
 
-Let's emphasize one easily misunderstood point: **trivial ≠ trivially_copyable**. The former emphasizes the "triviality" of special member functions (especially the default constructor), while the latter emphasizes whether byte-by-byte copying is safe. In practice, to determine whether we can `memcpy`, we should use `std::is_trivially_copyable_v<T>`.
+To reiterate an easily misunderstood point: **trivial ≠ trivially_copyable**. The former emphasizes the "triviality" of special members (especially the default constructor), while the latter emphasizes whether byte-by-byte copying is safe. In practice, to determine whether we can `memcpy`, we should use `is_trivially_copyable`.
 
 ------
 
@@ -150,7 +156,7 @@ Point p1 { 1, 2 };    // aggregate initialization, 成员按声明顺序赋值
 
 ```
 
-One benefit of aggregate initialization is that it allows partial initialization (the remaining members will be default-initialized/zero-initialized, depending on the context), and it is commonly used with `constexpr`:
+One benefit of aggregate initialization is that it allows partial initialization (the remaining members will be default-initialized/zero-initialized, depending on the context), and it is commonly used in `constexpr`:
 
 ```cpp
 struct Config {
@@ -163,9 +169,9 @@ constexpr Config default_cfg { 115200, 0, 1 };
 
 ```
 
-### C++20 Designated Initializers: More Readable and Safer
+### C++20 Designated Initializers: More Readable and Robust
 
-The "designated initializer" (`.{member} = value`) long present in C was introduced as an official language feature in C++20. This makes aggregate initialization more readable, insensitive to member order, and easier to maintain (adding new members won't break old code due to ordering issues).
+C's "designated initializers" were officially introduced into C++20 as a formal language feature. This makes aggregate initialization more readable, insensitive to member order, and easier to maintain (adding new members won't break old code due to ordering issues).
 
 Usage example:
 
@@ -181,7 +187,7 @@ S s2 { .a = 1 }; // 只初始化 a，b 和 c 会做默认初始化（对内置�
 
 ```
 
-Designated initializers also support nested structs and array subscript designations (similar to C's `[index] = value`)—this is extremely practical for initializing complex hardware description data structures, register layouts, or long tables. Here is a more hardware-oriented example:
+Designated initializers also support nested structs and array index designations (similar to C's `.name = value` and `[index] = value`)—this is highly practical for initializing complex hardware description data structures, register layouts, or long tables. Here is a more hardware-oriented example:
 
 ```cpp
 struct Header {
@@ -203,19 +209,19 @@ Packet pkt {
 
 This brings several practical benefits:
 
-- Significantly improved readability: seeing `.flags = 0x1` makes the meaning clear, rather than guessing by position.
+- Significantly improved readability: seeing `.baud_rate = 115200` makes the meaning clear, rather than guessing by position.
 - Resilience to extension: Adding new members won't break old code (unless the old code relies on positional order).
-- Better compatibility with C (making it easy to port C-style initialization paradigms to C++).
+- Better compatibility with C (making it easier to port C-style initialization paradigms to C++).
 
-Note: `designated init` only applies to **aggregate types**. For classes with user-defined constructors, we cannot use this syntax.
+Note: designated initializers only apply to **aggregate types**. We cannot use this syntax for classes with user-defined constructors.
 
 ------
 
-## Connecting the Dots: How Embedded/Low-Level Engineers Apply This Knowledge
+## Connecting the Dots: How Embedded and Low-Level Engineers Apply This Knowledge
 
-Now let's string the points above into some practical, actionable principles, written as a continuous narrative to help you avoid pitfalls and write more robust code when doing embedded C++.
+Now let's string the points above into some practical, actionable principles, written as a continuous narrative to help us avoid pitfalls and write more robust code when doing embedded C++.
 
-When defining data structures that interact with C (such as device register layouts, bootloader metadata, serialization formats, or DMA buffers), we usually need to ensure the type is **standard-layout** (to guarantee a predictable memory layout) and ideally **trivially_copyable** (to easily `memcpy` or interpret a block of memory as that struct). When defining them, avoid virtual functions, avoid private non-static data members, and do not write custom constructor/destructor/copy operations. Use `static_assert` for important assertions:
+When defining data structures that interact with C (such as device register layouts, bootloader metadata, serialization formats, or DMA buffers), we usually need to ensure the type is **standard-layout** (to guarantee a predictable memory layout) and ideally **trivially_copyable** (to easily `memcpy` or interpret a block of memory as that struct). When defining them, avoid virtual functions, avoid private non-static data members, and do not write custom constructors/destructors/copy operations. For important assertions, use `static_assert`:
 
 ```cpp
 static_assert(std::is_standard_layout_v<MyRegs>, "MyRegs must be standard-layout for C-ABI compatibility");
@@ -223,9 +229,9 @@ static_assert(std::is_trivially_copyable_v<MyRegs>, "MyRegs must be trivially_co
 
 ```
 
-Memory alignment affects `sizeof` and array layout. If our hardware or DMA requires special alignment (e.g., 16-byte aligned cache lines or SIMD), we should use `alignas` to specify it explicitly, and note that this changes `sizeof` and the ABI. For example, a struct decorated with `alignas(16)` will occupy a multiple of 16 bytes for each element in an array.
+Memory alignment affects `sizeof` and array layout. If our hardware or DMA requires special alignment (e.g., 16-byte aligned cache lines or SIMD), we should use `alignas` to specify it explicitly, noting that this changes `sizeof` and the ABI. For example, a struct decorated with `alignas(16)` will occupy a multiple of 16 bytes for each element in an array.
 
-When writing initialization code, we should prefer brace initialization and C++20 designated initializers. This not only makes the code readable but also reduces bugs introduced by changes in member order. It is particularly safe and intuitive when used on registers or configuration tables. For example:
+When writing initialization code, we should prefer brace initialization and C++20 designated initializers. This not only makes the code readable but also reduces bugs introduced by changes in member order. It is particularly safe and intuitive for registers or configuration tables. For example:
 
 ```cpp
 struct DeviceConfig {
@@ -242,19 +248,31 @@ DeviceConfig cfg {
 
 ```
 
-When we need to save RAM, remember that rearranging fields can significantly reduce struct size, especially in scenarios with large numbers of objects or arrays. Place widely aligned members (`double`, `int32_t/64_t`, SIMD) at the beginning of the struct or close together, and group small-byte members together to avoid interleaving that causes multiple padding instances. Always use `sizeof` and `alignof` to verify our assumptions, and use `static_assert(sizeof(...) == expected)` to encode those assumptions at compile time when necessary.
+When we need to save RAM, remember that rearranging fields can significantly reduce struct size, especially in scenarios with large numbers of objects or arrays. Place wide-aligned members (`uint64_t`, `double`, SIMD) at the beginning of the struct or close together, and group small-byte members together to avoid interleaving that causes multiple padding instances. Always use `sizeof` and `alignof` to verify our assumptions, and use `static_assert` to encode those assumptions at compile time when necessary.
 
-Finally, regarding an object's copy semantics: **only when a type is `trivially_copyable` is it safe to binary-copy it to another object (such as `memcpy(&dst, &src, sizeof T)`)**. Do not perform binary copies on classes containing virtual functions, non-trivial destructors, or special member functions; for these types, use constructor/copy/assignment semantics.
+Finally, regarding an object's copy semantics: **only when a type is `is_trivially_copyable` is it safe to binary-copy it to another object (e.g., via `memcpy`)**. Do not perform binary copies on classes containing virtual functions, non-trivial destructors, or special members; for these types, use constructor/copy/assignment semantics.
 
 ------
+
+## Run Online
+
+Experience memory alignment and padding, type traits checks, and C++20 designated initializers online:
+
+<OnlineCompilerDemo
+  title="Object Size and Trivial Types"
+  source-path="code/examples/vol34567/04_object_size.cpp"
+  description="Observe memory alignment and padding, is_trivially_copyable checks, and C++20 designated initializers"
+  allow-run
+  allow-x86-asm
+/>
 
 ## Summary
 
 - `alignof` determines an object's alignment requirements; `sizeof` reports how many bytes an object actually occupies in memory (including padding).
-- Internal padding within an object comes from alignment rules; arranging member order reasonably can reduce padding and save RAM.
-- `trivial`, `trivially_copyable`, and `standard-layout` are the standard's fine-grained divisions of type properties:
-  - To use `memcpy` or save a binary image, ensure the type is `trivially_copyable`.
-  - To guarantee layout compatibility with C, ensure the type is `standard-layout`.
-  - `POD` is conceptually both `trivial` and `standard-layout`.
+- Internal padding within an object comes from alignment rules; arranging member order thoughtfully can reduce padding and save RAM.
+- `is_trivial`, `is_trivially_copyable`, and `is_standard_layout` are the standard's fine-grained divisions of type characteristics:
+  - To use `memcpy` or save a binary image, ensure `is_trivially_copyable`.
+  - To guarantee layout compatibility with C, ensure `is_standard_layout`.
+  - `is_pod` is conceptually just both `is_trivial` and `is_standard_layout`.
 - Aggregate initialization is very convenient; C++20 designated initializers make initialization safer, more readable, and less dependent on member order.
-- In embedded/low-level scenarios, we should at least use `static_assert` to check these invariants (size, alignment, whether trivially_copyable/standard-layout) at interfaces. Code built this way is both efficient and robust.
+- In embedded and low-level scenarios, we should at least use `static_assert` to check these invariants (size, alignment, whether trivially_copyable/standard-layout) at interface boundaries. Code built this way is both efficient and robust.

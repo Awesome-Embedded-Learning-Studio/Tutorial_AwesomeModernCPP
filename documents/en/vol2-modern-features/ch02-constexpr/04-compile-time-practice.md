@@ -1,6 +1,6 @@
 ---
-title: 'Compile-time Computation in Practice: From Table Lookup to Compile-time Strings'
-description: Comprehensively using constexpr to implement compile-time lookup tables,
+title: 'Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings'
+description: Comprehensively applying constexpr to implement compile-time lookup tables,
   string processing, state machines, and design patterns
 chapter: 2
 order: 4
@@ -24,6 +24,12 @@ prerequisites:
 - 'Chapter 2: constexpr 构造函数与字面类型'
 related:
 - 卷四：模板元编程
+translation:
+  source: documents/vol2-modern-features/ch02-constexpr/04-compile-time-practice.md
+  source_hash: ca03289db5fd374eb1ea647e45e9029081e5f648385c7ec9dfefb8a6a54b874d
+  translated_at: '2026-05-26T11:25:06.826229+00:00'
+  engine: anthropic
+  token_count: 3994
 ---
 # Compile-Time Computation in Practice: From Lookup Tables to Compile-Time Strings
 
@@ -33,13 +39,13 @@ In the previous three chapters, we discussed the basic mechanisms of `constexpr`
 
 This chapter is entirely driven by practical examples. We will use `constexpr` and related techniques to implement compile-time lookup tables (CRC tables, trigonometric tables), compile-time string processing, compile-time state machines, and a few compile-time design patterns. Finally, we will use embedded scenarios to demonstrate the value of these techniques in real-world projects.
 
-## Step One — Compile-Time Lookup Tables
+## Step 1 — Compile-Time Lookup Tables
 
-Lookup tables are one of the oldest and most reliable strategies for performance optimization: trading space for time by precomputing the input-output mappings of complex calculations and storing them as arrays, so that only array indexing is needed at runtime. Traditionally, generating lookup tables either relies on runtime initialization (wasting startup time) or external tools that generate code to be `#include` (adding complexity to the build process). `constexpr` offers a third path: letting the compiler generate the table for you during the compilation phase.
+Lookup tables are one of the oldest and most reliable performance optimization strategies: trading space for time by pre-computing the input-output mappings of complex calculations, storing them as arrays, and requiring only array indexing at runtime. Traditionally, generating lookup tables either relies on runtime initialization (wasting startup time) or external tools that generate code to be `#include` (complicating the build process). `constexpr` offers a third path: letting the compiler generate the table for you during the compilation phase.
 
 ### CRC-32 Lookup Table
 
-CRC checksums are ubiquitous in network protocols, storage systems, and communication links. CRC-32 uses a 256-entry lookup table to accelerate calculations. By generating this table with `constexpr`, we achieve zero initialization overhead at runtime.
+CRC checksums are ubiquitous in network protocols, storage systems, and communication links. CRC-32 uses a 256-entry lookup table to accelerate calculations. By using `constexpr` to generate this table, we achieve zero runtime initialization overhead.
 
 ```cpp
 #include <array>
@@ -80,7 +86,7 @@ constexpr std::uint32_t crc32(const std::uint8_t* data, std::size_t length)
 }
 ```
 
-`kCrc32Table` is fully generated at compile time and written to the read-only data section (`.rodata`) of the object file. You can use `objdump -s -j .rodata` to inspect the generated binary and verify that the table data indeed resides in the read-only section. `static_assert` verifies that the values of several key entries match the standard CRC-32 table, ensuring the generation logic is bug-free. The runtime `crc32` function only performs simple table lookups and XOR operations, making it extremely fast.
+`kCrc32Table` is fully generated at compile time and written to the read-only data section (`.rodata`) of the object file. You can use `objdump -s -j .rodata` to inspect the generated binary and verify that the table data actually resides in the read-only section. `static_assert` verifies that the values of several key entries match the standard CRC-32 table, ensuring the generation logic is bug-free. The runtime `crc32` function only performs simple table lookups and XOR operations, making it extremely fast.
 
 ### Sine Function Lookup Table
 
@@ -130,13 +136,13 @@ constexpr float fast_sin_index(std::size_t index)
 
 Note that the Taylor series expansion here uses five terms (up to x^9/9!), which provides sufficient precision for most embedded applications (the error is typically less than 0.1%). If you need higher precision, you can increase the number of expansion terms or use other approximation methods like Chebyshev polynomials—as long as you write the math as a `constexpr` function, the lookup table can be generated at compile time.
 
-## Step Two — Compile-Time String Processing
+## Step 2 — Compile-Time String Processing
 
-String processing in C++ is typically a runtime task, but in many scenarios, the string contents are already known at compile time—such as command names, protocol fields, and error message IDs. Moving these string operations to compile time reduces the overhead of runtime string comparisons and parsing.
+String processing in C++ is usually a runtime task, but in many scenarios, the string contents are already known at compile time—such as command names, protocol fields, or error message IDs. Moving these string operations to compile time reduces the overhead of runtime string comparisons and parsing.
 
 ### Compile-Time String Hashing
 
-C++ does not allow `switch` statements to use strings directly. A classic workaround is to use compile-time hashing to map strings to integers, and then use the integers in a `switch`.
+C++ does not allow `switch` statements to use strings directly. A classic workaround is to use compile-time hashing to map strings to integers, and then use the integers in `switch` statements.
 
 ```cpp
 #include <cstdint>
@@ -187,13 +193,13 @@ void dispatch_command(const char* cmd)
 }
 ```
 
-One thing to note here: the runtime `fnv1a32` call computes the hash of the string passed in at runtime, while `kHashStart` and others are compile-time constants. The `switch` compares a compile-time constant with a runtime hash value, so the matching logic is correct. Of course, hash collisions are theoretically always possible. `static_assert` can cover collision detection between known commands, but it cannot guard against collisions between unknown inputs. If your application has extremely high correctness requirements (such as in safety-critical systems), you can perform a `strcmp` confirmation after a hash match—this adds a small amount of runtime overhead but completely avoids erroneous behavior caused by collisions.
+One thing to note here: the runtime `fnv1a32` call computes the hash of the string passed in at runtime, whereas `kHashStart` and similar values are compile-time constants. `switch` compares a compile-time constant with a runtime hash value, so the matching logic is correct. Of course, hash collisions are theoretically always possible. `static_assert` can cover collision detection between your known commands, but it cannot guard against collisions between unknown inputs. If your application demands extremely high correctness (such as in safety-critical systems), you can perform a `strcmp` confirmation after a hash match—this adds a small amount of runtime overhead but completely avoids erroneous behavior caused by collisions.
 
-## Step Three — Compile-Time State Machines
+## Step 3 — Compile-Time State Machines
 
 State machines are one of the most commonly used design patterns in embedded development. Traditional state machine implementations usually involve a large `switch-case` structure or an array of function pointers, but they lack compile-time verification—you might miss handling a certain event in a certain state, and the compiler will not tell you.
 
-By defining the state transition table with `constexpr` and using `static_assert` for compile-time validation, we can catch omissions and conflicts during the compilation phase.
+By using `constexpr` to define the state transition table, combined with `static_assert` for compile-time validation, we can catch omissions and conflicts during the compilation phase.
 
 ### Constexpr Definition of the State Machine
 
@@ -263,7 +269,7 @@ static_assert(all_states_have_transitions(kDebounceTable),
               "Some states have no outgoing transitions");
 ```
 
-If someone modifies the transition table in a way that introduces duplicate entries or omits handling for a certain state, `static_assert` will immediately report an error at compile time, providing a clear error message. This kind of "compile-time guarantee" is more reliable than any code review—it can catch errors that are easily missed by the human eye, and forces corrections before the code can even compile.
+If someone modifies the transition table in a way that introduces duplicate entries or omits handling for a certain state, `static_assert` will immediately report an error at compile time, providing a clear error message. This kind of "compile-time guarantee" is more reliable than any code review—it can catch errors that are easily missed by the human eye, and it forces corrections before the code can even compile.
 
 ### Runtime State Machine Engine
 
@@ -292,15 +298,15 @@ private:
 };
 ```
 
-The implementation of this state machine engine is very simple—it iterates through the transition table to find a match. For small state machines with only a few states and events, linear search is perfectly adequate. If the number of states and events is large, you can consider replacing the linear search with a two-dimensional array (indexed by `(state, event)`).
+The implementation of this state machine engine is very simple—it iterates through the transition table to find a match. For small state machines with only a few states and events, linear search is perfectly adequate. If the number of states and events is large, you can consider using a two-dimensional array (indexed by `(state, event)`) to replace the linear search.
 
-## Step Four — Combining Constexpr with Templates
+## Step 4 — Combining Constexpr with Templates
 
-`constexpr` and templates are not competitors; they are complementary tools. Templates handle compile-time dispatch at the type level, while `constexpr` handles compile-time computation at the value level. Combining them enables very powerful compile-time abstractions.
+`constexpr` and templates are not competitors; they are complementary tools. Templates handle compile-time dispatch at the type level, while `constexpr` handles compile-time computation at the value level. Combining them enables extremely powerful compile-time abstractions.
 
 ### Compile-Time Strategy Pattern
 
-The Strategy Pattern is typically dispatched at runtime using virtual functions or function pointers. But if the strategy can be determined at compile time, we can use templates + `constexpr` to completely eliminate dispatch, achieving zero-overhead strategy selection.
+The Strategy Pattern is typically dispatched at runtime using virtual functions or function pointers. But if the strategy can be determined at compile time, we can use templates + `constexpr` to completely eliminate the dispatch overhead, achieving zero-overhead strategy selection.
 
 ```cpp
 // CRC-32 策略
@@ -349,11 +355,11 @@ constexpr auto checksum(const std::uint8_t* data, std::size_t len)
 }
 ```
 
-The compiler determines which strategy to use at compile time based on the template parameters. Modern compilers (GCC/Clang at -O2 and above optimization levels) will directly inline the corresponding calculation code, without any virtual function table or runtime dispatch overhead. You can verify this in the generated assembly code—for a given template parameter, only the code for the corresponding strategy is generated, and the code for other strategies will not appear in the final binary at all. Each strategy's `name` is a compile-time constant, which can be used in `static_assert` or logging systems.
+The compiler determines which strategy to use at compile time based on the template parameters. Modern compilers (GCC/Clang at -O2 and higher optimization levels) will directly inline the corresponding calculation code, without any virtual function table or runtime dispatch overhead. You can verify this in the generated assembly code—for a given template parameter, only the code for the corresponding strategy is generated, and the code for other strategies is completely absent from the final binary. Each strategy's `name` is a compile-time constant, which can be used in `static_assert` or logging systems.
 
 ### Compile-Time Computation Chains
 
-Chaining multiple `constexpr` functions together forms a computation chain, where the output of each stage serves as the input to the next. This approach is very useful in signal processing pipelines and data verification chains. The core idea is to make each stage a pure function (no side effects, deterministic output for a given input), and then use `static_assert` to validate the correctness of the entire chain at compile time.
+Chaining multiple `constexpr` functions together forms a computation chain, where the output of each stage serves as the input to the next. This approach is highly useful in signal processing pipelines and data verification chains. The core idea is to make each stage a pure function (no side effects, deterministic output for a given input), and then use `static_assert` to validate the correctness of the entire chain at compile time.
 
 ```cpp
 constexpr std::uint8_t xor_checksum(const std::uint8_t* data, std::size_t len)
@@ -368,13 +374,13 @@ constexpr std::uint8_t kTestData[] = {0x01, 0x02, 0x03, 0x04};
 static_assert(xor_checksum(kTestData, 4) == 0x04, "XOR checksum mismatch");
 ```
 
-## Step Five — Embedded Practical Applications
+## Step 5 — Embedded Practical Applications
 
-All the previous content applies to general C++; this section specifically covers practical applications of compile-time computation in embedded scenarios.
+All the previous content applies to general C++; this section specifically covers the practical applications of compile-time computation in embedded scenarios.
 
 ### Compile-Time Register Address Calculation
 
-In bare-metal development, peripheral register addresses are typically calculated by adding an offset to a base address. Traditionally, macros are used for this, but they lack type safety. By using `constexpr`, we can achieve both type safety and zero runtime overhead.
+In bare-metal development, peripheral register addresses are typically calculated by adding an offset to a base address. Traditionally, this is done with macros, but it lacks type safety. By using `constexpr`, we can achieve both type safety and zero runtime overhead.
 
 ```cpp
 #include <cstdint>
@@ -415,7 +421,7 @@ All address calculations are completed at compile time. If you accidentally writ
 
 ### Compile-Time Configuration Validation
 
-In embedded projects, the constraint relationships between configuration parameters are often complex and error-prone. By expressing these constraints with `constexpr` + `static_assert`, we can intercept erroneous configurations at compile time.
+In embedded projects, the constraint relationships between configuration parameters are often complex and error-prone. By expressing these constraints using `constexpr` + `static_assert`, we can intercept erroneous configurations at compile time.
 
 ```cpp
 struct ClockConfig {
@@ -499,17 +505,29 @@ static_assert(kDebugUart.is_acceptable(), "Baud rate error too large");
 
 Although compile-time computation is powerful, it is not a silver bullet. Here are a few insights I have summarized from real-world projects.
 
-Compilation time is a factor to watch. A large amount of complex `constexpr` computation (especially deeply nested template + `constexpr` combinations) can significantly increase compilation time. In projects with frequent development iterations, you may need to put "optional compile-time optimizations" in the Release build, while the Debug build uses runtime implementations to speed up iteration.
+Compilation time is a factor to watch. Large amounts of complex `constexpr` computations (especially deeply nested template + `constexpr` combinations) can significantly increase compilation time. In projects with frequent development iterations, you may need to place "optional compile-time optimizations" in the Release build, while the Debug build uses runtime implementations to speed up iteration.
 
-Debugging difficulty also needs to be considered. When a `constexpr` function executes at compile time, you cannot single-step through it with a debugger. If something goes wrong with the compile-time computation, the compiler's error messages can be very cryptic. For particularly complex calculation logic, my recommendation is to first develop and test a runtime version, confirm the logic is correct, and then rewrite it as a `constexpr` version.
+The difficulty of debugging also needs to be considered. When a `constexpr` function executes at compile time, you cannot single-step through it with a debugger. If something goes wrong with the compile-time computation, the compiler's error messages can be extremely cryptic. For particularly complex calculation logic, my recommendation is to first develop and test a runtime version, confirm the logic is correct, and then rewrite it as a `constexpr` version.
 
-The trade-off between lookup table size and the Flash budget should not be ignored either. Table data generated at compile time is usually placed in `.rodata` (Flash). In embedded projects with tight Flash budgets, a 256-entry `uint32_t` table taking up 1KB might not be a big deal; but a 4096-entry `float` table taking up 16KB is not a trivial amount for an MCU with 64KB of Flash. Before deciding what to put into a compile-time lookup table, calculate your Flash budget first.
+The trade-off between lookup table size and the Flash budget also cannot be ignored. Table data generated at compile time is usually placed in `.rodata` (Flash). In embedded projects with tight Flash budgets, a 256-entry `uint32_t` table taking up 1KB might not be a big deal; but a 4096-entry `float` table taking up 16KB is not a trivial amount for an MCU with 64KB of Flash. Before deciding what to put into a compile-time lookup table, calculate your Flash budget first.
+
+## Run Online
+
+Run the compile-time practice examples online to observe the CRC-32 lookup table and compile-time state machine:
+
+<OnlineCompilerDemo
+  title="Compile-Time Practice: CRC-32 Table and Compile-Time State Machine"
+  source-path="code/examples/vol2/07_compile_time_practice.cpp"
+  description="Run online and observe the compile-time generated CRC-32 lookup table and state machine transition table validation."
+  allow-run
+  allow-x86-asm
+/>
 
 ## Summary
 
-In this chapter, we comprehensively applied all the compile-time computation techniques we learned previously from a practical perspective. Lookup table generation (CRC, trigonometric functions, polynomials) demonstrated the power of `constexpr` in data preprocessing; string hashing and compile-time state machines showcased the value of `constexpr` in code structure design; and embedded register address calculation and configuration validation illustrated its ability to provide safety guarantees in real-world engineering.
+In this chapter, we comprehensively applied all the compile-time computation techniques we learned previously from a practical perspective. Lookup table generation (CRC, trigonometric functions, polynomials) demonstrated the power of `constexpr` in data preprocessing; string hashing and compile-time state machines demonstrated the value of `constexpr` in code structure design; and embedded register address calculation and configuration validation showcased its ability to provide safety guarantees in real-world engineering.
 
-The core idea is: **if a computation can be completed at compile time, and its result does not change at runtime, then you should consider moving it to compile time.** This is not about showing off, but about making the runtime code simpler, faster, and safer. The compiler is your colleague—let it do more of the work, so your MCU can do less.
+The core idea is: **if a calculation can be completed at compile time, and its result does not change at runtime, then you should consider moving it to compile time.** This is not about showing off, but about making the runtime code simpler, faster, and safer. The compiler is your colleague—let it do more of the work, so your MCU can do less.
 
 ## Reference Resources
 

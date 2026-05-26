@@ -1,7 +1,7 @@
 ---
 title: Constructor
 description: Master the complete usage of default constructors, parameterized constructors,
-  copy constructors, initializer lists, and delegating constructors
+  copy constructors, initializer lists, and delegating constructors.
 chapter: 6
 order: 2
 difficulty: beginner
@@ -20,178 +20,179 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch06/02-constructors.md
+  source_hash: 1ad8bd59a228c1844fabd052c252a1acf11f2050fd269dc703b6090beea3994e
+  translated_at: '2026-05-26T10:50:53.314174+00:00'
+  engine: anthropic
+  token_count: 2206
 ---
 # Constructors
 
-In the previous chapter, we learned how to define a class—writing member variables, writing member functions, and using `public` and `private` to control access. But we've been sidestepping one question: when an object is created, what is actually inside its member variables? The answer is—if you do nothing, the member variables of a local object hold **garbage values!** They are random leftover data from the previous use of that memory.
+In the previous chapter, we learned how to define a class—writing member variables, writing member functions, and using `public` and `private` to control access. But we've been sidestepping one question: when an object is created, what is inside its member variables? The answer is—if you do nothing, the member variables of a local object hold **garbage values!** They are random leftover data from the previous use of that memory.
 
-Once an object is created, it should be in a **valid, usable, and predictable** state. The constructor is C++'s solution: it executes automatically when the object is created, taking responsibility for bringing member variables to the correct initial state. As long as we write the constructor correctly, the rookie mistake of "forgetting to initialize" becomes impossible.
+Once an object is created, it should be in a **valid, usable, and predictable** state. The constructor is C++'s solution: it executes automatically when the object is created, bringing member variables to the correct initial state. As long as the constructor is written correctly, the rookie mistake of "forgetting to initialize" simply cannot happen.
 
 In this chapter, we will break down every form of the constructor—default constructors, parameterized constructors, copy constructors, member initializer lists, and the delegating constructors introduced in C++11. Each one has its own use cases and hidden pitfalls.
 
-## Default Constructors — Creating Objects Without Arguments
+## Default Construction — Creating Objects Without Arguments
 
 A default constructor takes no arguments. When you write `Point p;`, this is what gets called.
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    Point() : x_(0), y_(0) {}  // 默认构造函数
+    Point() : x(0), y(0) {}  // 默认构造函数
+private:
+    int x, y;
 };
 ```
 
-The `: x_(0), y_(0)` after the parameter list is the member initializer list. We will just get familiar with it for now and dive deeper later. The key takeaway here is the responsibility of the default constructor: the moment the object comes into existence, it is already a valid origin coordinate.
+The `: x(0), y(0)` after the parameter list is the member initializer list. Let's just get familiar with its face for now; we'll cover it in detail later. The key takeaway here is the responsibility of the default constructor: the moment the object comes into existence, it is already a valid origin coordinate.
 
-If you don't write any constructors at all, the compiler will generate a default constructor for you. However, it does not initialize fundamental types like `int` or `float` at all—their values remain garbage. Therefore, when a class contains fundamental type members, we almost always need to write our own default constructor.
+If you don't write any constructors at all, the compiler will generate a default constructor for you. However, it does not initialize fundamental types like `int` or `double` at all—their values remain garbage. Therefore, when a class contains fundamental type members, you almost always need to write your own default constructor.
 
-> **Pitfall Warning**: There is only one rule for compiler-generated default constructors—as soon as you manually write **any** constructor (even one with parameters), the compiler stops generating a default constructor for you. Many people write a `Point(int x, int y)` constructor, only to find that `Point p;` fails to compile, leaving them completely baffled. The reason is right here: because you wrote a parameterized constructor, the compiler assumes, "Since you are managing initialization yourself, you need to write the default constructor yourself too."
+> **Pitfall Warning**: There is only one rule for compiler-generated default constructors—as soon as you write **any** constructor (even one with parameters), the compiler stops generating a default constructor for you. Many people write a `Point(int x, int y)` and then find that `Point p;` fails to compile, leaving them completely baffled. The reason is right here: you wrote a parameterized constructor, so the compiler assumes, "Since you're managing initialization yourself, you need to write the default constructor yourself, too."
 
-The solution is simple—either write a `Point()` yourself, or use the C++11 `= default` syntax to tell the compiler to keep generating it for you:
+The fix is simple—either write a `Point()` yourself, or use C++11's `= default` syntax to tell the compiler to keep generating it for you:
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    Point() = default;                // 让编译器生成
-    Point(int x, int y) : x_(x), y_(y) {}
+    Point() = default;              // 显式要求编译器生成默认构造函数
+    Point(int x, int y) : x(x), y(y) {}
+private:
+    int x, y;
 };
 ```
 
-Note that a default constructor generated by `= default` still will not zero-initialize fundamental types. If you need zero-initialization, you still have to write `Point() : x_(0), y_(0) {}` yourself or use in-class initializers (which we will cover in the next chapter).
+Note that a default constructor generated with `= default` still will not zero-initialize fundamental types. If you need zero-initialization, you still have to write `Point() : x(0), y(0) {}` yourself, or use in-class initializers (which we'll cover in the next chapter).
 
-## Parameterized Constructors — Giving Callers Control Over Initialization
+## Parameterized Construction — Giving the Caller Control Over Initialization
 
 Often, we want an object to come into existence with specific data, rather than a "zero-value" default state. A parameterized constructor accepts arguments to initialize member variables.
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    Point(int x, int y) : x_(x), y_(y) {}
+    Point(int x, int y) : x(x), y(y) {}
+    // ...
 };
 ```
 
-Constructors support overloading, so we can provide both a default constructor and a parameterized constructor, letting the caller choose as needed. However, we now need to discuss an easily overlooked keyword—`explicit`. When a constructor accepts only one argument (or if all other arguments have default values), it acts as an implicit type conversion function. Look at this code:
+Constructors support overloading, so you can provide both a default constructor and a parameterized constructor, letting the caller choose as needed. However, we now need to talk about an easily overlooked keyword—`explicit`. When a constructor takes only one argument (or when all remaining arguments have default values), it acts as an implicit type conversion function. Look at this code:
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    // 没有 explicit，允许隐式转换
-    Point(int x) : x_(x), y_(0) {}
-    int getX() const { return x_; }
+    Point(int x) : x(x), y(0) {}  // 没有写 explicit！
+    int x, y;
 };
 
-void printX(Point p) {
-    // ...
-}
+void printPoint(Point p) { /* ... */ }
 
-printX(42);  // 编译通过！42 隐式转换为 Point(42)
+printPoint(42);  // 编译通过！42 隐式转换为 Point(42)
 ```
 
-In the `printX(42)` call, the function signature expects a `Point`, but we passed an `int`. The compiler helpfully called the constructor to perform an implicit conversion. In a short example, this looks harmless, but in a large project, such implicit conversions create bugs that are hard to track down—you might have simply written the wrong parameter type, and instead of reporting an error, the compiler "tries to help" and ends up doing more harm than good.
+For the `printPoint(42)` call, the function signature expects a `Point`, but you passed an `int`. The compiler helpfully called the constructor to perform an implicit conversion. In a short example, this looks harmless, but in a large project, such implicit conversions create hard-to-track bugs—you might have simply written the wrong parameter type, and instead of reporting an error, the compiler "tries to help" and ends up doing more harm than good.
 
 The `explicit` keyword exists to prohibit this kind of implicit conversion:
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    explicit Point(int x) : x_(x), y_(0) {}  // 禁止隐式转换
+    explicit Point(int x) : x(x), y(0) {}  // 禁止隐式转换
+    int x, y;
 };
 
-printX(42);       // 编译错误！必须写 printX(Point{42});
-printX(Point{42}); // OK
+printPoint(42);       // 编译错误！必须写 printPoint(Point(42))
+printPoint(Point(42)); // OK
 ```
 
-Our recommendation is: **all single-argument constructors should have `explicit`**, unless you have a very clear reason to allow implicit conversion. It is a nearly zero-cost defensive measure.
+My recommendation is: **all single-argument constructors should have `explicit`**, unless you have a very clear reason to need implicit conversion. It is a nearly zero-cost defensive measure.
 
 ## Member Initializer Lists — The Proper Battleground for Initialization
 
-We have been using the member initializer list all along, so now let's formally break it down.
+We've been using member initializer lists all along; now let's formally break them down.
 
-A constructor's initializer list is placed after the parameter list, following a colon, separated by commas, with each member followed by an initial value in parentheses (or braces):
+A constructor's initializer list is placed after the colon following the parameter list, separated by commas, with each member followed by its initial value in parentheses (or curly braces):
 
 ```cpp
 class Sensor {
-    int id_;
-    float threshold_;
-    bool enabled_;
 public:
-    Sensor(int id, float thresh, bool en)
-        : id_(id), threshold_(thresh), enabled_(en) {}
+    Sensor(int id, const char* name, bool active)
+        : id(id), name(name), active(active) {}
+private:
+    int id;
+    const char* name;
+    bool active;
 };
 ```
 
-You might ask: can't I just assign values inside the constructor body? Why do we need a dedicated initializer list?
+You might be wondering: can't I just assign values inside the constructor body? Why bother with a dedicated initializer list?
 
 ```cpp
 // 不推荐：在函数体内赋值
-Sensor(int id, float thresh, bool en) {
-    id_ = id;           // 赋值，不是初始化
-    threshold_ = thresh;
-    enabled_ = en;
+Sensor(int id, const char* name, bool active) {
+    this->id = id;
+    this->name = name;
+    this->active = active;
 }
 ```
 
-For fundamental types like `int` and `float`, both approaches produce the exact same result. The problem arises with `const` members and reference members—these two things **can only** be initialized, not assigned. By the time the constructor body begins executing, all members have already been default-constructed. Trying to assign values to a `const` member or a reference at that point is too late—the compiler will throw an error directly.
+For fundamental types like `int` and `bool`, both approaches produce the exact same result. But the problem arises with `const` members and reference members—these two things **can only** be initialized, not assigned. By the time the constructor body begins executing, all members have already been default-constructed. Trying to assign values then is too late for `const` members and references—the compiler will throw an error directly.
 
 ```cpp
 class Bad {
-    const int max_;
-    int& ref_;
 public:
-    Bad(int m, int& r) {
-        max_ = m;   // 错误！const 成员不能赋值
-        ref_ = r;   // 错误！引用不能重新绑定
+    Bad(int val) {
+        c = val;      // 错误！const 成员不能赋值
+        r = val;      // 错误！引用不能重新绑定
     }
+private:
+    const int c;
+    int& r;
 };
 ```
 
 Even without `const` and reference members, the initializer list is still superior. For class-type members (like `std::string`), assigning inside the function body means default-constructing first and then assigning over it—a two-step operation. The initializer list constructs directly with the target value, getting it right in one step.
 
-> **Pitfall Warning**: The initialization order of members is determined by their **declaration order** in the class definition, and has nothing to do with the order they are written in the initializer list. This is extremely important—if your initializer list writes `y_(x_)`, but `x_` is declared first and `y_` second in the class, the actual execution order is to first initialize `x_` to 10, then initialize `y_` to `x_` (where `x_` is already 10), yielding the correct result. But if the declaration order is reversed—with `y_` before `x_`—then when `y_(x_)` executes, `x_` has not been initialized yet, and the value read is garbage. Most compilers will issue a warning when the two orders are inconsistent, but it is best to develop the habit of keeping the declaration order and the initializer list order consistent, so we don't plant landmines for ourselves.
+> **Pitfall Warning**: The initialization order of members is determined by their **declaration order** in the class definition, and has **nothing to do with** the order they are written in the initializer list. This is extremely important—if your initializer list says `y(x), x(10)`, but `x` is declared first and `y` second in the class, the actual execution order is to first initialize `x` to 10, then initialize `y` to `x` (at which point `x` is already 10), yielding the correct result. But if the declaration order is reversed—with `y` before `x`—then when `y(x)` executes, `x` hasn't been initialized yet, so you read a garbage value. Most compilers will issue a warning when the two orders are inconsistent, but it's best to develop the habit of keeping the declaration order and the initializer list order consistent, so you don't plant landmines for yourself.
 
-## Copy Constructors — Creating New Objects From Existing Ones
+## Copy Construction — Creating New Objects From Existing Ones
 
-A copy constructor creates a new object from an existing object of the same type, with a fixed signature of `T(const T&)`:
+A copy constructor creates a new object from an existing object of the same type, with a fixed signature of `T(const T& other)`:
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    Point(int x, int y) : x_(x), y_(y) {}
-    Point(const Point& other) : x_(other.x_), y_(other.y_) {}
+    Point(const Point& other) : x(other.x), y(other.y) {}
+    // ...
+private:
+    int x, y;
 };
 ```
 
-The copy constructor is invoked in three scenarios: copy initialization (`Point p2 = p1;`), passing arguments by value (the parameter is created via copy construction), and returning by value (the return value is copied via copy construction, though modern compilers usually use RVO to eliminate this copy).
+The copy constructor is invoked in three scenarios: copy initialization (`Point p2 = p1;`), passing arguments by value (the formal parameter is created via copy construction), and returning by value (the return value is copied via copy construction, though modern compilers usually use RVO to eliminate this copy).
 
-If you don't write a copy constructor yourself, the compiler will generate a default version—its behavior is **memberwise copy**, meaning it calls the copy constructor for each member individually (for fundamental types, it just copies the value directly). For a class like `Point` that only contains fundamental types, the default version is perfectly adequate.
+If you don't write a copy constructor yourself, the compiler generates a default version—whose behavior is **memberwise copy**, meaning it calls the copy constructor for each member individually (for fundamental types, it just copies the value directly). For a class like `Point` that only contains fundamental types, the default version is perfectly adequate.
 
-> **Pitfall Warning**: Memberwise copy is disastrous for classes that contain **raw pointers**. Suppose your class has an `int* data_` pointing to dynamically allocated memory. The default copy constructor will only copy the pointer's value (the address), not the content the pointer points to. The result is that two objects' `data_` point to the same block of memory—when one is destroyed and frees the memory, the other is still using it, becoming a dangling pointer. This is the classic "shallow copy" problem. We will dive into how to solve it when we cover RAII and smart pointers later.
+> **Pitfall Warning**: Memberwise copy is disastrous for classes that contain **raw pointers**. Suppose your class has an `int* data` pointing to dynamically allocated memory. The default copy constructor will only copy the pointer's value (the address), not the content the pointer points to. The result is that two objects' `data` pointers point to the same block of memory—when one is destroyed and frees the memory, the other is still using it, becoming a dangling pointer. This is the classic "shallow copy" problem. We'll dive into how to solve it when we cover RAII and smart pointers later.
 
 ```cpp
 class Buffer {
-    int* data_;
-    size_t size_;
 public:
-    Buffer(size_t n) : data_(new int[n]()), size_(n) {}
-    ~Buffer() { delete[] data_; }
-
-    // 默认拷贝构造是浅拷贝——灾难！
-    // 需要自己写深拷贝版本
-    Buffer(const Buffer& other)
-        : data_(new int[other.size_])
-        , size_(other.size_)
-    {
-        std::copy(other.data_, other.data_ + size_, data_);
-    }
+    Buffer(size_t size) : size(size), data(new int[size]) {}
+    // 危险：默认拷贝构造函数会导致浅拷贝！
+    // 两个 Buffer 的 data 指针会指向同一块内存
+    ~Buffer() { delete[] data; }
+private:
+    size_t size;
+    int* data;
 };
 ```
 
-For now, just remember one thing: if your class manages a resource (dynamic memory, file handles, network connections, etc.), you must write your own copy constructor (or simply disable it, which we will cover how to do later).
+For now, just remember one thing: if your class manages a resource (dynamic memory, file handles, network connections, etc.), you must write your own copy constructor (or simply disable it—we'll cover how to do that later).
 
 ## Delegating Constructors — Letting Constructors Help Each Other
 
@@ -199,22 +200,23 @@ C++11 introduced delegating constructors, which allow one constructor to call **
 
 ```cpp
 class Point {
-    int x_, y_;
 public:
-    Point() : Point(0, 0) {          // 委托给参数化构造
+    Point() : Point(0, 0) {              // 委托给参数化构造函数
         std::cout << "委托构造\n";
     }
-    Point(int x, int y) : x_(x), y_(y) {
+    Point(int x, int y) : x(x), y(y) {   // "主"构造函数
         std::cout << "参数化构造\n";
     }
+private:
+    int x, y;
 };
 ```
 
-The initializer list of `Point()` doesn't contain member names, but rather `Point(0, 0)`—calling another constructor. The execution order is: first, the target constructor's initializer list and body execute, then control returns to the delegating constructor's body.
+In the initializer list of `Point()`, we don't write a member name, but rather `Point(0, 0)`—calling another constructor. The execution order is: first, the target constructor's initializer list and body execute, then control returns to the delegating constructor's body.
 
-This feature is especially useful when there are many constructors with overlapping initialization logic—put the core logic in one "primary" constructor, and have the other constructors delegate to it.
+This feature is especially useful when a class has many constructors with overlapping initialization logic—put the core logic in one "primary" constructor, and have the others delegate to it.
 
-However, delegating constructors have one hard rule: **once a delegation appears in the initializer list, you cannot initialize any members**. Writing something like `Point() : Point(0, 0), x_(42)` is illegal—either delegate entirely, or initialize everything yourself; you cannot mix the two.
+However, delegating constructors have one hard rule: **once a delegation appears in the initializer list, you cannot initialize any members**. Writing something like `Point() : Point(0, 0), x(42) {}` is illegal—you must either delegate entirely or initialize entirely yourself; you cannot mix the two.
 
 ## Hands-On Practice — constructors.cpp
 
@@ -224,50 +226,57 @@ Let's integrate all the constructor types covered in this chapter into a single 
 #include <iostream>
 
 class Point {
-    int x_, y_;
 public:
-    // 默认构造
+    // 默认构造函数
     Point() : Point(0, 0) {
         std::cout << "委托构造\n";
     }
 
-    // 参数化构造
-    Point(int x, int y) : x_(x), y_(y) {
+    // 参数化构造函数
+    Point(int x, int y) : x(x), y(y) {
         std::cout << "参数化构造\n";
     }
 
-    // 拷贝构造
-    Point(const Point& other) : x_(other.x_), y_(other.y_) {
+    // 拷贝构造函数
+    Point(const Point& other) : x(other.x), y(other.y) {
         std::cout << "拷贝构造\n";
     }
 
     void print() const {
-        std::cout << "(" << x_ << ", " << y_ << ")\n";
+        std::cout << "(" << x << ", " << y << ")\n";
     }
+
+private:
+    int x, y;
 };
 
-Point makeOrigin() {
-    Point p(0, 0);
-    return p;  // 可能触发拷贝构造（取决于 RVO）
+void byValue(Point p) {
+    p.print();
+}
+
+Point byReturnValue() {
+    Point p(3, 4);
+    return p;
 }
 
 int main() {
     std::cout << "--- 默认构造 ---\n";
-    Point p1;          // 委托构造 -> 参数化构造
+    Point p1;
+    p1.print();
 
     std::cout << "\n--- 参数化构造 ---\n";
-    Point p2(3, 4);    // 参数化构造
+    Point p2(1, 2);
+    p2.print();
 
     std::cout << "\n--- 拷贝构造 ---\n";
-    Point p3 = p2;     // 拷贝构造
-
-    std::cout << "\n--- 函数返回 ---\n";
-    Point p4 = makeOrigin();  // 参数化构造（RVO 省掉了拷贝）
-
-    std::cout << "\n--- 打印结果 ---\n";
-    p1.print();
-    p2.print();
+    Point p3 = p2;       // 拷贝初始化
     p3.print();
+
+    std::cout << "\n--- 按值传参 ---\n";
+    byValue(p2);         // 实参到形参的拷贝
+
+    std::cout << "\n--- 按值返回 ---\n";
+    Point p4 = byReturnValue();  // 可能被 RVO 优化掉
     p4.print();
 
     return 0;
@@ -282,21 +291,23 @@ Expected output:
 --- 默认构造 ---
 参数化构造
 委托构造
+(0, 0)
 
 --- 参数化构造 ---
 参数化构造
+(1, 2)
 
 --- 拷贝构造 ---
 拷贝构造
+(1, 2)
 
---- 函数返回 ---
+--- 按值传参 ---
+拷贝构造
+(1, 2)
+
+--- 按值返回 ---
 参数化构造
-
---- 打印结果 ---
-(0, 0)
 (3, 4)
-(3, 4)
-(0, 0)
 ```
 
 Let's verify: the delegating constructor `Point()` first calls `Point(0, 0)` (outputting "参数化构造" first), then executes its own body (outputting "委托构造"). The copy constructor is correctly triggered in both scenarios.
@@ -305,14 +316,14 @@ Let's verify: the delegating constructor `Point()` first calls `Point(0, 0)` (ou
 
 ### Exercise 1: Implement a Date Class
 
-Write a `Date` class containing three members: `year_`, `month_`, and `day_`. It should provide a default constructor (initializing to 2000/1/1), a parameterized constructor (accepting year, month, and day, with basic validity checks—month 1-12, day 1-31), and a `print()` method. Verification: construct several date objects, including one with an invalid date (such as month 13), and observe whether the validation logic takes effect.
+Write a `Date` class containing three members: `year`, `month`, and `day`. Provide a default constructor (initializing to 2000/1/1), a parameterized constructor (accepting year, month, and day, with basic validity checks—month 1-12, day 1-31), and a `print()` method. Verification: construct several date objects, including one with an invalid date (such as month 13), and observe whether the validation logic takes effect.
 
 ### Exercise 2: Implement a Vector3D Class
 
-Write a `Vector3D` class containing three `double` members: `x_`, `y_`, and `z_`. Use a delegating constructor so that the default constructor delegates to the parameterized constructor. Then implement a copy constructor and a `magnitude()` method that returns the vector's magnitude. Verification: create a default vector, a custom vector, and a copied vector, and print their values and magnitudes.
+Write a `Vector3D` class containing three `double` members: `x`, `y`, and `z`. Use a delegating constructor so that the default constructor delegates to the parameterized constructor, then implement a copy constructor and a `magnitude()` method that returns the vector's magnitude. Verification: create a default vector, a custom vector, and a copied vector, and print their values and magnitudes.
 
 ## Summary
 
-Constructors are the starting point of an object's lifecycle, ensuring that an object is in a valid state the moment it is born. Default constructors are used for creating objects without arguments, but note—once you write any constructor, the default constructor is no longer automatically generated. Parameterized constructors initialize objects with specific data, and `explicit` prevents implicit conversions by single-argument constructors. The member initializer list is the proper way to initialize; it is the only option for `const` and reference members, and the initialization order follows the declaration order, not the written order. Copy constructors create new objects from existing ones, performing memberwise copy by default—which is a hidden bomb for classes containing pointers. C++11's delegating constructors allow constructors to reuse each other's logic, reducing code duplication.
+Constructors are the starting point of an object's lifecycle, ensuring that an object is in a valid state the moment it is born. Default constructors are used for creating objects without arguments, but note—once you write any constructor, a default constructor is no longer automatically generated. Parameterized constructors initialize objects with specific data, and `explicit` prevents implicit conversions by single-argument constructors. The member initializer list is the proper way to initialize; it is the only option for `const` and reference members, and the initialization order follows the declaration order, not the written order. Copy constructors create new objects from existing ones, performing memberwise copy by default—which is a hidden bomb for classes containing pointers. C++11's delegating constructors allow constructors to reuse each other, reducing code duplication.
 
 In the next chapter, we will cover destructors—constructors bring objects into the world, and destructors are responsible for safely sending them off. Together, the two form the core philosophy of C++ resource management: RAII.

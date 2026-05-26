@@ -1,6 +1,6 @@
 ---
 title: std::exchange
-description: Replace the old value with the new value and return the old value
+description: Replace the old value with the new value and return the old value.
 chapter: 99
 order: 10
 tags:
@@ -13,6 +13,12 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/10-exchange.md
+  source_hash: c1890f25c39410033bdf66e6f5889ea5dcab2f49d5f97f439abc16121093325e
+  translated_at: '2026-05-26T10:16:00.541504+00:00'
+  engine: anthropic
+  token_count: 306
 ---
 # std::exchange (C++14)
 
@@ -24,7 +30,7 @@ Assigns a new value to a variable while retrieving its old value, eliminating th
 
 `#include <utility>`
 
-## Core API Quick Reference
+## Quick API Reference
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
@@ -52,8 +58,8 @@ int main() {
 ## Embedded Applicability: Medium
 
 - It is a pure inline function with no extra heap allocation or system call overhead.
-- It relies on move semantics; when used with custom types, we must verify the actual overhead of move construction or assignment.
-- It is very concise for implementing move constructors and state machine transitions, making it suitable for resource-rich scenarios.
+- It relies on move semantics; when used with custom types, we need to verify the actual overhead of move construction or assignment.
+- It is very concise when implementing move constructors and state machine transitions, making it suitable for resource-rich scenarios.
 - Starting with C++20, it supports `constexpr` and can be used at compile time.
 
 ## Compiler Support

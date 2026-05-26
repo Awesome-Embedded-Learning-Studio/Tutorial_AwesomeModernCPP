@@ -1,6 +1,6 @@
 ---
-title: Fundamentals of user-defined literals
-description: Raw/cooked forms of operator"" and standard library literals
+title: User-Defined Literal Basics
+description: Raw/cooked forms of `operator""` and standard library literals
 chapter: 11
 order: 1
 tags:
@@ -19,18 +19,24 @@ prerequisites:
 - 'Chapter 2: constexpr 基础'
 related:
 - UDL 实战
+translation:
+  source: documents/vol2-modern-features/ch11-user-defined-literals/01-udl-basics.md
+  source_hash: bf1662276299ecf1114d8fe0dac06e8ab11838f4108d20922adf6d969692ab9b
+  translated_at: '2026-05-26T11:36:34.727568+00:00'
+  engine: anthropic
+  token_count: 2330
 ---
 # User-Defined Literal Basics
 
-When writing embedded code, we often run into frustrating scenarios: is the 1000 in `timeout = 1000` in milliseconds or microseconds? Is `baud = 9600` really 9600 or 115200? Is `buffer_size = 1024` in bytes or words? These "magic numbers" are not only hard to understand but also error-prone—worse yet, conversions between different units rely entirely on manual calculation, leaving ample room for mistakes.
+When writing embedded code, we often run into frustrating scenarios: does the 1000 in `delay(1000)` represent milliseconds or microseconds? Is `9600` or `115200` the correct baud rate? Does `1024` refer to bytes or words? These "magic numbers" are not only hard to read but also error-prone. Even worse, conversions between different units rely entirely on manual calculation, leaving plenty of room for mistakes.
 
-**User-defined literals (UDL)**, introduced in C++11, exist to solve this problem. They allow us to define our own literal suffixes, such as `1000_ms`, `9600_baud`, and `1024_bytes`, making code more intuitive and safer. All conversions happen at compile time, resulting in zero runtime overhead.
+**User-defined literals (UDL)**, introduced in C++11, exist to solve this problem. They allow us to define custom literal suffixes, such as `1000_ms`, `9600_baud`, and `1024_bytes`, making code more intuitive and safer. All conversions happen at compile time, resulting in zero runtime overhead.
 
 ------
 
-## Four Forms of operator""
+## The Four Forms of operator""
 
-User-defined literals are defined via the `operator""` suffix operator. Depending on the parameter type, there are several main definition forms, corresponding to integer literals, floating-point literals, string literals, and character literals:
+We define user-defined literals through the `operator""` suffix operator. Depending on the parameter type, there are several main definition forms, corresponding to integer literals, floating-point literals, string literals, and character literals:
 
 ```cpp
 // 整数字面量（cooked 形式）
@@ -46,9 +52,9 @@ ReturnType operator""_suffix(const char* str, size_t length);
 ReturnType operator""_suffix(char c);
 ```
 
-There are two pairs of concepts to distinguish here: **cooked** and **raw**. Cooked literals are those that the compiler has already parsed and converted—for integers and floating-point numbers, the compiler parses them into numeric types before passing them to `operator""`. Raw literals receive the original character sequence, with no parsing by the compiler. String literals only support the raw form, while integer literals support both cooked (`unsigned long long`) and raw (`const char*`) forms.
+There are two pairs of concepts to distinguish here: **cooked** and **raw**. Cooked literals are those that the compiler has already parsed and converted. For integer and floating-point types, the compiler parses them into numeric types before passing them to `operator""`. Raw literals receive the original character sequence without any parsing by the compiler. String literals only support the raw form, while integer literals support both the cooked (`unsigned long long`) and raw (`const char*`) forms.
 
-Let's start with the simplest example:
+Let's start with a simple example:
 
 ```cpp
 #include <cstdint>
@@ -70,11 +76,11 @@ void example() {
 }
 ```
 
-`1000_ms` is parsed by the compiler, calling `operator""_ms`, which returns a `Milliseconds` object. The function signature `void delay(Milliseconds)` only accepts parameters with units—bare integers won't compile, and the compiler will directly report an error. This is where type safety comes from.
+`1000_ms` is parsed by the compiler, which calls `operator""_ms`, returning a `Milliseconds` object. The function signature `explicit Milliseconds(uint32_t ms)` only accepts parameters with units—bare integers won't compile, and the compiler will directly report an error. This is where type safety comes from.
 
 ### Integer and Floating-Point Overloads
 
-We can define separate overloads for integers and floating-point numbers, allowing the same suffix to behave differently in different contexts:
+We can define separate overloads for integer and floating-point types, allowing the same suffix to behave differently in different contexts:
 
 ```cpp
 struct Frequency {
@@ -126,11 +132,11 @@ void example() {
 }
 ```
 
-In embedded systems, this can be used to implement efficient event IDs, message type identifiers, and more—strings are converted to integers at compile time, with zero runtime overhead.
+In embedded development, we can use this to implement efficient event IDs, message type identifiers, and more—strings are converted to integers at compile time, achieving zero runtime overhead.
 
 ### Raw Integer Literals
 
-Integer literals also have a raw form that receives a `const char*`, letting us handle formats not natively supported by the compiler:
+Integer literals also have a raw form that accepts a `const char*`, allowing us to handle formats not natively supported by the compiler:
 
 ```cpp
 #include <cstdint>
@@ -154,13 +160,13 @@ void example() {
 }
 ```
 
-This raw form was especially useful before C++14—since binary literals like `0b1010` were only introduced in C++14. Although the standard supports them now, the raw form can still be used to implement custom base conversions.
+This raw form was especially useful before C++14, since binary literals (`0b...`) were only introduced in C++14. Although the standard now supports them, the raw form can still be used to implement custom base conversions.
 
 ------
 
 ## Standard Library Literals
 
-C++14 introduced a batch of commonly used literal suffixes into the standard library. To use them, we need to bring in the corresponding namespaces via `using namespace`. These suffixes don't have an underscore prefix—because they reside within `std::` namespaces, they are reserved for the standard library.
+C++14 introduced a batch of commonly used literal suffixes into the standard library. To use them, we need to bring the corresponding namespaces into scope with `using namespace`. These suffixes do not have an underscore prefix—because they reside within the `std::` namespace, they are reserved for the standard library.
 
 ### chrono Literals (C++14)
 
@@ -225,13 +231,13 @@ void example() {
 
 ## Naming Rules
 
-Regarding UDL suffix naming, the C++ standard has clear rules:
+Regarding the naming of UDL suffixes, the C++ standard has clear rules:
 
-**Suffixes not starting with `_` are reserved for the standard library**. So suffixes like `s`, `ms`, and `i` that don't require an underscore can only be defined by the standard library. User-defined suffixes **must start with `_`**, such as `_ms`, `_us`, `_hz`.
+**Suffixes not starting with an underscore are reserved for the standard library**. Therefore, suffixes without underscores like `s`, `ms`, and `i` can only be defined by the standard library. User-defined suffixes **must start with an underscore (`_`)**, such as `_ms`, `_us`, `_hz`.
 
 Additionally, identifiers starting with `__` (double underscore) or containing `__` are reserved for the implementation (compiler) and must not be used.
 
-The recommended naming style is to use `_` followed by a short but clear suffix: `_ms`, `_us`, `_hz`, `_baud`, `_bytes`, `_kb`, `_mv`, `_percent`. When defining them in header files, always place them inside a namespace to avoid polluting the global namespace:
+The recommended naming style is an underscore followed by a short but clear suffix: `_ms`, `_us`, `_hz`, `_baud`, `_bytes`, `_kb`, `_mv`, `_percent`. When defining them in header files, always place them inside a namespace to avoid polluting the global namespace:
 
 ```cpp
 namespace mylib::literals {
@@ -247,9 +253,9 @@ auto t = 500_ms;
 
 ------
 
-## Compile-Time vs Runtime
+## Compile-Time vs. Runtime
 
-UDL combined with `constexpr` enables pure compile-time unit conversion, which is one of its most powerful features. Always mark literal operators as `constexpr`—this way, `1000_ms` gets optimized into a constant by the compiler, with zero runtime overhead:
+UDLs combined with `constexpr` enable pure compile-time unit conversion, which is one of their most powerful features. Always mark literal operators as `constexpr` so that `1000_ms` is optimized into a constant by the compiler, with zero runtime overhead:
 
 ```cpp
 constexpr Milliseconds operator""_ms(unsigned long long v) {
@@ -261,7 +267,7 @@ constexpr auto startup_delay = 100_ms;
 // 生成的代码等价于直接写 Milliseconds{100}
 ```
 
-Without the `constexpr` marker, the literal operator becomes a regular function call—although the overhead is minimal after inlining, we lose the ability to perform compile-time computation and can't use it in `static_assert` or template parameters.
+If we don't mark it `constexpr`, the literal operator becomes a normal function call. Although the overhead is minimal after inlining, we lose the ability to perform compile-time calculations and can no longer use it in `static_assert` or as template arguments.
 
 C++20 introduced `consteval`, which forces the literal operator to execute only at compile time:
 
@@ -281,11 +287,11 @@ constexpr auto t1 = 100_ms;   // OK，编译期执行
 
 ### Suffix Naming Conflicts
 
-If we define a `_ms` suffix in a header file, and another library defines a similarly named `_ms` with a different implementation, ambiguity will arise at link time. The solution is to use a unique prefix for suffixes, or always use fully qualified namespace specifiers.
+If we define a `_ms` suffix in a header file, and another library defines a similarly named `_ms` with a different implementation, we will encounter ambiguity at link time. The solution is to use a unique prefix for suffixes, or always use fully qualified namespace specifiers.
 
 ### Floating-Point Precision
 
-Floating-point UDLs can have precision issues. `0.1` in floating-point arithmetic may not equal exactly `0.1`. The solution is to use integers for representation—for example, storing millivolts instead of volts:
+Floating-point UDLs can have precision issues. `0.1f` might not equal `0.1` in floating-point arithmetic. The solution is to use integers for representation—for example, storing millivolts instead of volts:
 
 ```cpp
 struct Voltage {
@@ -309,17 +315,17 @@ auto x = 100_km / 2 * 3;  // (100_km / 2) * 3 = 150_km
 auto y = 100_km / (2 * 3); // 100_km / 6 ≈ 16.67_km
 ```
 
-Literal operators have the same precedence as regular operators, associating from left to right. When writing complex expressions, be careful to add parentheses.
+Literal operators have the same precedence as normal operators, associating from left to right. We need to be careful to add parentheses when writing complex expressions.
 
 ### Integer Overflow
 
-Unit conversions with large numbers can overflow. If a UDL involves multiplication (such as multiplying by 1,000,000 in `1_s`), we need to consider the upper limit of `unsigned long long` (approximately 1.8 * 10^19) and document the range limitations. Note that integer overflow is **undefined behavior (UB)** in C++, and the compiler may not emit a warning.
+Unit conversions involving large numbers might overflow. If a UDL involves multiplication (such as multiplying by 1,000,000 in `_us`), we need to consider the upper limit of `uint64_t` (approximately 1.8 * 10^19) and document the range limits. Note that integer overflow is **undefined behavior (UB)** in C++, and the compiler might not emit a warning.
 
 ------
 
 ## General Examples
 
-Finally, let's look at a few commonly used literal definitions that we can drop directly into our projects:
+Finally, let's look at a few commonly used literal definitions that we can directly drop into our projects:
 
 ```cpp
 #include <cstdint>

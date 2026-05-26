@@ -1,7 +1,6 @@
 ---
 title: Deep Dive into Lambda Capture Mechanisms
-description: Semantics and pitfalls of value capture, reference capture, and init
-  capture
+description: 'Value capture, reference capture, and init capture: semantics and pitfalls'
 chapter: 3
 order: 2
 tags:
@@ -21,23 +20,29 @@ prerequisites:
 - 'Chapter 3: Lambda 基础'
 related:
 - 泛型 Lambda 与模板 Lambda
+translation:
+  source: documents/vol2-modern-features/ch03-lambda/02-lambda-capture.md
+  source_hash: 238b6901776b29357aea77ccb803a22740c93b27178d477245c5cc602f8b55d1
+  translated_at: '2026-05-26T11:25:54.254751+00:00'
+  engine: anthropic
+  token_count: 3093
 ---
 # A Deep Dive into Lambda Capture Mechanisms
 
 ## Introduction
 
-In the previous chapter, we quickly went over the basic syntax of lambda expressions and briefly mentioned the existence of the capture list. But you might still have a few questions in mind: what exactly does a capture by value copy? Is capture by reference just storing a pointer under the hood? What are the pitfalls of default captures like `[=]` and `[&]`? What makes C++14 init capture so great? In this chapter, we will tear down the capture mechanism from start to finish. We will not just cover "how to use it," but clearly explain "what the compiler does behind the scenes" and "which usages will blow up at runtime."
+In the previous chapter, we quickly went over the basic syntax of lambda expressions and briefly mentioned the existence of the capture list. But you probably still have a few questions in mind: what exactly does a capture by value copy? Is capture by reference just storing a pointer under the hood? What are the pitfalls of default captures like `[=]` and `[&]`? What makes C++14 init capture so great? In this chapter, we will tear down the capture mechanism from start to finish. We will not only cover "how to use it," but more importantly, explain "what the compiler does behind the scenes" and "which usages will blow up at runtime."
 
 > **Learning Objectives**
 >
-> - Understand the underlying semantics of capture by value and capture by reference—what the closure type actually stores
+> - Understand the underlying semantics of capture by value and capture by reference—what exactly the closure type stores
 > - Master the usage and motivation behind C++14 init capture and C++17 `*this` capture
 > - Identify and avoid common capture-related pitfalls (dangling references, lifetime issues)
 > - Understand the size and performance impact of lambda objects
 
 ---
 
-## Capture by Value—Copying into the Closure Object
+## Capture by Value — Copying into the Closure Object
 
 The semantics of capture by value are very straightforward: at the exact moment the lambda is created, the captured variable is copied and stored as a member variable of the closure type. Any subsequent modifications to the external variable will not affect the copy inside the lambda.
 
@@ -69,7 +74,7 @@ struct ClosureType {
 auto is_high = ClosureType{100};  // 构造时复制 threshold
 ```
 
-Notice that `const`—members captured by value are `const` by default inside the `operator()`, and you cannot modify them. If you genuinely need to modify the captured copy inside the lambda, you need to add the `mutable` keyword:
+Notice that `const`—members captured by value are `const` inside the `operator()`, and you cannot modify them. If you genuinely need to modify the captured copy inside the lambda, you need to add the `mutable` keyword:
 
 ```cpp
 int counter = 0;
@@ -87,13 +92,13 @@ std::cout << make_counter() << "\n";  // 2
 std::cout << counter << "\n";         // 0——外部的 counter 没有被碰过
 ```
 
-`mutable` tells the compiler that this lambda's `operator()` is not `const`. Each invocation might modify the internal state of the closure object. This is why every call to `make_counter()` increments the value—the closure object maintains its own independent state.
+The meaning of `mutable` is to tell the compiler: this lambda's `operator()` is not `const`. Each call might modify the internal state of the closure object. This is also why every call to `make_counter()` increments the value—the closure object maintains its own independent state.
 
 ---
 
-## Capture by Reference—Storing the Address of the Original Variable
+## Capture by Reference — Storing the Address of the Original Variable
 
-The semantics of capture by reference are not mysterious either: the compiler stores a pointer to the captured variable (or a reference, which is largely equivalent in terms of underlying implementation) in the closure type. We can verify this using `sizeof`: the size of a closure object using capture by reference equals the size of a pointer (8 bytes on a 64-bit system). Reads and writes to the captured variable inside the lambda are actually operations on the original variable.
+The semantics of capture by reference are not mysterious either: what the compiler stores in the closure type is a pointer to the captured variable (or a reference, which is basically equivalent in terms of underlying implementation). We can verify this through `sizeof`: the size of a closure object using capture by reference equals the size of a pointer (8 bytes on a 64-bit system). Reads and writes to the captured variable inside the lambda are actually operations on the original variable.
 
 ```cpp
 void demo_ref_capture() {
@@ -126,13 +131,13 @@ Here is an interesting detail: `operator()` is `const`, yet we modified the exte
 
 > **Verification**: You can run `code/volumn_codes/vol2/ch03-lambda/test_ref_capture_impl.cpp` to verify the underlying implementation details of capture by reference and the `const` semantics.
 
-The biggest advantage of capture by reference is zero-copy—for large objects (like `std::vector` or `std::string`), capture by reference avoids unnecessary copying. But the greatest risk lies right here: **the referenced variable must outlive the lambda**.
+The biggest advantage of capture by reference is zero-copy—for large objects (like `std::vector` or `std::string`), capture by reference avoids unnecessary copies. But the biggest risk lies right here: **the referenced variable must outlive the lambda**.
 
 ---
 
-## Default Captures—The Pitfalls of `[=]` and `[&]`
+## Default Captures — The Pitfalls of `[=]` and `[&]`
 
-When there are many variables to capture, listing them one by one can be tedious. C++ provides two default capture modes: `[=]` means all used external variables are captured by value, and `[&]` means they are all captured by reference.
+When there are many variables to capture, listing them one by one can indeed be annoying. C++ provides two default capture modes: `[=]` means all used external variables are captured by value, and `[&]` means they are all captured by reference.
 
 ```cpp
 void demo_default_capture() {
@@ -166,17 +171,17 @@ void demo_mixed_capture() {
 }
 ```
 
-This sounds convenient, but `[=]` and `[&]` have a few inconspicuous pitfalls. `[=]` default capture by value does not capture the `this` pointer—wait, actually, that's wrong. Before C++20, `[=]` could implicitly capture `this`, which led to a classic problem: you might think you are capturing the value of a member variable by value, but you are actually capturing the `this` pointer. Accessing members via `this->member` inside the lambda still operates on the original object. C++20 fixed this behavior; `[=]` no longer implicitly captures `this`, requiring you to explicitly write `[=, this]` or `[=, *this]`.
+This sounds convenient, but `[=]` and `[&]` have a few less obvious pitfalls. `[=]` default capture by value does not capture the `this` pointer—wait, actually, that's wrong. Before C++20, `[=]` could implicitly capture `this`, which led to a classic problem: you think you are capturing the value of a member variable by value, but you are actually capturing the `this` pointer, and accessing it via `this->member` inside the lambda still operates on the original object's member. C++20 fixed this behavior; `[=]` no longer implicitly captures `this`, and you need to explicitly write `[=, this]` or `[=, *this]`.
 
 > **Verification**: You can run `code/volumn_codes/vol2/ch03-lambda/test_cxx20_default_capture.cpp` to observe the behavioral differences between C++17 and C++20 regarding default capture of `this` (C++20 will emit a warning).
 
-My recommendation is: **try to explicitly list the variable names you want to capture in production code, and avoid using `[=]` and `[&]`.** The benefit of being explicit is that during code review, you can see at a glance which external states the lambda depends on. It also prevents accidentally capturing things that shouldn't be captured. (Capturing everything is risky; unless your code is trivially simple, grabbing unknowns can lead to problems.)
+My recommendation is: **try to explicitly list the variable names you want to capture in production code, and minimize the use of `[=]` and `[&]`**. The benefit of being explicit is that during code review, you can see at a glance which external states the lambda depends on, and it also avoids accidentally capturing things that shouldn't be captured. (Capturing everything is risky; unless your code is trivially simple, grabbing everything blindly can lead to problems.)
 
 ---
 
-## C++14 Init Capture—Lambdas with Their Own State
+## C++14 Init Capture — Lambdas with Their Own State
 
-C++14 introduced init capture, sometimes called generalized lambda capture. The syntax is to write `name = expression` in the capture list, where `name` is a new variable name and `expression` is an initialization expression. This variable belongs entirely to the closure object and has no relation to the outside world:
+C++14 introduced init capture, sometimes called generalized lambda capture. The syntax is to write `name = expression` in the capture list, where `name` is a new variable name and `expression` is the initialization expression. This variable belongs entirely to the closure object and has no relationship with the outside world:
 
 ```cpp
 void demo_init_capture() {
@@ -189,7 +194,7 @@ void demo_init_capture() {
 }
 ```
 
-The most useful scenario for init capture is **move capture**—moving move-only types (like `std::unique_ptr` or `std::thread`) into the closure object:
+The most useful scenario for init capture is **move capture**—moving move-only types (like `std::unique_ptr`, `std::thread`, etc.) into the closure object:
 
 ```cpp
 #include <memory>
@@ -204,7 +209,7 @@ auto make_handler() {
 }
 ```
 
-To achieve the same effect in C++11, you would have to hand-write a functor class and make `unique_ptr` a member variable. C++14 init capture makes this very natural.
+In C++11, to achieve the same effect, you had to hand-write a functor class and make `unique_ptr` a member variable. C++14's init capture makes this very natural.
 
 Another common use case is using init capture to replace a `mutable` counter, which makes the semantics clearer:
 
@@ -221,9 +226,9 @@ The benefit of the second version is that `count` is entirely the lambda's own s
 
 ---
 
-## C++17 `*this` Capture—Capturing the Entire Object by Value
+## C++17 `*this` Capture — Capturing the Entire Object by Value
 
-When writing a lambda inside a member function, if you want to capture the current object, the traditional way is `[this]`. But `[this]` captures a pointer. If the lambda's lifetime exceeds the object itself, you end up with a dangling `this` pointer. C++17 introduced `[*this]`, which captures the entire object by value—storing a copy of the object in the closure type:
+When writing a lambda inside a member function, if you want to capture the current object, the traditional way is `[this]`. But `[this]` captures a pointer; if the lambda's lifetime exceeds the object itself, you end up with a dangling `this` pointer. C++17 introduced `[*this]`, which captures the entire object by value—storing a copy of the object in the closure type:
 
 ```cpp
 #include <iostream>
@@ -270,13 +275,13 @@ void demo_star_this() {
 
 The cost of `[*this]` is copying the entire object. If the object is large (contains `std::vector`, large `std::array`, etc.), this copy overhead might not be trivial. But for small configuration objects and value objects, the safety gained by this copy is well worth it.
 
-⚠️ **Note**: `[*this]` requires the context where the lambda resides to be a member function where `this` can be dereferenced. You cannot use `[*this]` in static member functions or non-member functions.
+⚠️ **Note**: `[*this]` requires the context where the current lambda resides to be a member function where `this` can be dereferenced. You cannot use `[*this]` in static member functions or non-member functions.
 
 ---
 
-## Capture Pitfalls—Dangling References and Lifetimes
+## Capture Pitfalls — Dangling References and Lifetimes
 
-The most common and headache-inducing source of bugs in the capture mechanism is lifetime issues. Let's look at a few classic trap scenarios.
+The most common and most headache-inducing source of bugs in the capture mechanism is lifetime issues. Let's look at a few classic trap scenarios.
 
 ### Returning a Lambda with Capture by Reference
 
@@ -292,7 +297,7 @@ auto bad = make_dangling();
 // bad() 是未定义行为！
 ```
 
-The fix is simple—use capture by value or init capture instead of capture by reference:
+The fix is simple—replace capture by reference with capture by value or init capture:
 
 ```cpp
 auto make_safe() {
@@ -334,7 +339,7 @@ void demo_loop_trap() {
 }
 ```
 
-### The Pitfalls of Capturing `this`
+### The Pitfall of Capturing `this`
 
 ```cpp
 class Device {
@@ -362,7 +367,7 @@ public:
 
 ## Lambda Object Size Analysis
 
-Once you understand how the capture mechanism stores data under the hood, the size of a lambda object is easy to understand—it is simply the sum of the sizes of all captured variables (possibly plus some alignment padding). A standard lambda does not have a vtable pointer; the closure type is a normal class type. We can use `sizeof` to verify this:
+Once we understand how the capture mechanism stores data under the hood, the size of a lambda object is easy to understand—it is simply the sum of the sizes of all captured variables (possibly plus some alignment padding). A standard lambda does not have a vtable pointer; the closure type is a normal class type. We can use `sizeof` to verify this:
 
 ```cpp
 #include <iostream>
@@ -400,15 +405,15 @@ capture_ref:   8 bytes
 capture_both:  16 bytes
 ```
 
-One point worth noting: the size of a lambda with no captures is usually 1 byte, not 0 bytes—C++ does not allow objects of size zero (otherwise, the addresses of elements in an array could not be distinguished). Capture by reference stores a pointer, which takes up 8 bytes on a 64-bit system.
+One point worth noting: the size of a lambda with no captures is usually 1 byte instead of 0 bytes—C++ does not allow objects of size zero (otherwise, the addresses of elements in an array could not be distinguished). Capture by reference stores a pointer, which takes up 8 bytes on a 64-bit system.
 
-> **Verification**: You can run `code/volumn_codes/vol2/ch03-lambda/test_capture_size.cpp` to see the actual sizes of closure objects under various capture methods.
+> **Verification**: You can run `code/volumn_codes/vol2/ch03-lambda/test_capture_size.cpp` to view the actual sizes of closure objects under various capture methods.
 
-When you store a lambda in a `std::function`, the storage space required is more than just that—`std::function` typically has its own SBO buffer (32-64 bytes), plus the management overhead of type erasure. This is why we said in the previous chapter, "prefer using `auto` to store lambdas."
+When you store a lambda in a `std::function`, the storage space required is more than just that—a `std::function` typically has its own SBO buffer (32-64 bytes), plus the management overhead of type erasure. This is also why we said in the previous chapter, "prefer using `auto` to store lambdas."
 
 ---
 
-## Performance Considerations—When to Inline, and When Not
+## Performance Considerations — When to Inline, and When Not
 
 The performance characteristics of a lambda are closely tied to its capture method and storage method.
 
@@ -447,32 +452,43 @@ void benchmark_lambda_styles() {
 }
 ```
 
-With optimizations enabled (-O2/-O3), the `auto` version is typically about 2-3 times faster than the `std::function` version (exact numbers depend on the compiler, optimization level, and lambda complexity). Benchmarks (GCC 13.2.0, -O3) show that when processing 10 million elements, the `auto` version takes about 6-7 milliseconds, while the `std::function` version takes about 14-15 milliseconds. The trend is consistent: **when you don't need runtime polymorphism, passing lambdas using templates or `auto` is the optimal choice.**
+With optimization enabled (-O2/-O3), the `auto` version is typically about 2-3 times faster than the `std::function` version (exact numbers depend on the compiler, optimization level, and lambda complexity). Benchmarks (GCC 13.2.0, -O3) show that when processing 10 million elements, the `auto` version takes about 6-7 milliseconds, while the `std::function` version takes about 14-15 milliseconds. The trend is consistent: **when you don't need runtime polymorphism, passing lambdas via templates or `auto` is the optimal choice.**
 
 > **Verification**: You can run `code/volumn_codes/vol2/ch03-lambda/benchmark_performance.cpp` to reproduce this performance test (requires -O3 optimization at compile time).
 
 ---
 
-## Choosing a Capture Method—A Decision Guide
+## Choosing a Capture Method — A Decision Guide
 
 Let's summarize the choice of capture methods into a few simple rules:
 
-For small, immutable data (`int`, `float`, simple structs), capture by value is the safest default choice. It ensures the lambda does not depend on external state, is thread-safe, and avoids lifetime issues. For large objects (`std::vector`, `std::string`), if the lambda only needs to read and not modify them internally, capture by reference combined with `const` provides a zero-copy solution; if the lambda needs to independently own the object, use init capture `name = std::move(obj)` to move it into the closure. For external variables that need to be modified inside the lambda (accumulators, state updates), capture by reference is the most natural choice, but you must ensure the variable's lifetime is long enough.
+For small, immutable data (`int`, `float`, simple structs), capture by value is the safest default choice. It ensures the lambda does not depend on external state, is thread-safe, and has no lifetime issues. For large objects (`std::vector`, `std::string`), if the lambda only needs to read and not modify them internally, capture by reference combined with `const` is a zero-copy solution; if the lambda needs to independently own the object, use init capture `name = std::move(obj)` to move it into the closure. For external variables that need to be modified inside the lambda (accumulators, state updates), capture by reference is the most natural choice, but you must ensure the variable's lifetime is long enough.
 
-In member functions, if the lambda does not escape the object's lifetime, `[this]` is convenient; if the lambda might outlive the object, use `[*this]` (C++17) or init capture the specific member variables needed. In production code, I strongly recommend explicitly listing the names of captured variables and avoiding `[=]` and `[&]`—explicit code makes code review easier and reduces accidental captures.
+In member functions, if the lambda does not escape the object's lifetime, `[this]` is convenient; if the lambda might outlive the object, use `[*this]` (C++17) or init capture the specific member variables needed. In production code, I strongly recommend explicitly listing the names of the captured variables and avoiding `[=]` and `[&]`—explicit code makes code review easier and reduces accidental captures.
 
 ---
 
+## Run Online
+
+Run the lambda capture mechanism examples online to compare the effects of different capture methods:
+
+<OnlineCompilerDemo
+  title="Lambda Capture Mechanisms: Capture by Value, Capture by Reference, and Closure Size"
+  source-path="code/examples/vol2/09_lambda_capture.cpp"
+  description="Run online and compare the behavioral differences between capture by value, capture by reference, mutable, and init capture."
+  allow-run
+/>
+
 ## Summary
 
-The lambda capture mechanism is key to understanding lambda performance and safety. The core takeaways are:
+The lambda capture mechanism is key to understanding lambda performance and safety. Core takeaways:
 
-- Capture by value copies variables into the closure object, defaulting to `const`, and `mutable` allows modifying the copy inside the closure
-- Capture by reference stores the variable's address/reference, providing zero-copy but requiring guaranteed lifetime
+- Capture by value copies variables into the closure object; it is `const` by default, and `mutable` allows modifying the copy inside the closure
+- Capture by reference stores the variable's address/reference; it is zero-copy but requires guaranteeing the lifetime
 - C++14 init capture allows lambdas to have independent state and supports move capture
 - C++17 `*this` capture copies the entire object by value, solving the dangling pointer problem of `[this]`
 - The size of a lambda object equals the sum of the sizes of all captured variables
-- When runtime polymorphism is not needed, passing lambdas using `auto` or template parameters yields the best performance
+- When runtime polymorphism is not needed, passing lambdas via `auto` or template parameters yields the best performance
 
 ## References
 

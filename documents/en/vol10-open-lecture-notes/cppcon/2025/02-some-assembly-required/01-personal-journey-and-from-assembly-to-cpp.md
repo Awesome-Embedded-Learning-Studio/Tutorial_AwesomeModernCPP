@@ -1,5 +1,5 @@
 ---
-title: My Journey and the Awakening from Assembly to C++
+title: Personal Journey and the Awakening from Assembly to C++
 description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
 conference: cppcon
 conference_year: 2025
@@ -21,33 +21,33 @@ order: 1
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/01-personal-journey-and-from-assembly-to-cpp.md
   source_hash: 1a503bc05d8002d8b75890e9671b2a48e9e3f0e62012479a1d48f4bfcbf2aeb2
-  translated_at: '2026-05-20T04:35:58.394761+00:00'
+  translated_at: '2026-05-26T11:10:14.836964+00:00'
   engine: anthropic
   token_count: 6094
 ---
 # Why C++ Programmers Should Care About Assembly
 
-Many C++ tutorials and instructors will tell you: you don't need to worry about the low-level details when writing C++, the compiler is smarter than you, just use templates, smart pointers, and standard library algorithms, and leave the rest to the optimizer. But in practice, when you're stuck optimizing slow code with no progress to show for it, what you really need to do is look at what your code actually compiles into—that is, the assembly output. In many cases, that template function you assumed was a "zero-overhead abstraction" wasn't inlined by the compiler at all; that lambda expression you thought "should be fast" is being constructed and destroyed repeatedly inside a loop. Assembly doesn't lie; it is exactly what your code becomes.
+Many C++ tutorials and instructors will tell you: when writing C++, you don't need to worry about the low-level details. The compiler is smarter than you. Just use templates, smart pointers, and standard library algorithms, and leave the rest to the optimizer. In practice, however, when you repeatedly optimize slow code without making progress, what you really need to do is look at what your code actually compiles into — that is, the assembly output. In many cases, that template function you assumed was a "zero-overhead abstraction" wasn't inlined by the compiler at all. That lambda you thought "should be fast" is being constructed and destroyed over and over inside a loop. Assembly doesn't lie; it is exactly what your code becomes.
 
-This is tied to the core philosophy of C++. From the day it was born, C++ has pursued one thing: you don't pay for what you don't use<RefLink :id="1" preview="Stroustrup, The C++ Programming Language, 1986, zero-overhead principle" />. But the question is, how do you know whether you're paying a cost? The compiler won't proactively tell you "this abstraction has overhead"—it will just silently generate code. And that code is assembly.
+This is tied to the core philosophy of C++. From the day it was born, C++ has pursued one thing: you don't pay for what you don't use<RefLink :id="1" preview="Stroustrup, The C++ Programming Language, 1986, zero-overhead principle" />. But the question is: how do you know whether you're paying a cost? The compiler won't proactively tell you "this abstraction has overhead." It will silently generate code. And that code is assembly.
 
-The most direct way to understand what code is generated after template expansion isn't to read compiler error messages (though that's important too), but to look at the generated assembly. When you see that a function instantiated from a template is perfectly inlined, loops are unrolled, and registers are allocated sensibly, you truly understand what "zero-overhead abstraction" means. Conversely, when you see a bunch of redundant function calls and memory shuffling, you immediately know where the problem lies.
+The most direct way to understand what code is generated after a template is expanded is not to read compiler error messages (though that's important too), but to look at the generated assembly. When you see that a function instantiated from a template is perfectly inlined, loops are unrolled, and registers are allocated sensibly, you truly understand what "zero-overhead abstraction" means. Conversely, when you see a bunch of unnecessary function calls and memory shuffling, you immediately know where the problem lies.
 
-So don't treat assembly as some mysterious, esoteric thing. It's simply a mirror reflecting what your C++ code actually looks like. You don't need to master it, but you need the ability to grasp its outline and know when something looks off.
+So don't treat assembly as some mysterious, esoteric thing. It's simply a mirror reflecting what your C++ code actually looks like. You don't need to master it, but you need the ability to read its outline and know when something looks off.
 
 ---
 
 # Starting from "Writing Code by Hand": Why We Need to Understand the Low Level
 
-The speaker mentioned the ZX Spectrum<RefLink :id="2" preview="Sinclair Research, ZX Spectrum, 1982, Zilog Z80A" /> and the era of manually typing in code. For many people learning to program, compiling, running, and seeing that line of text in the terminal feels like enough. But a problem quickly becomes apparent: you don't actually know how that line of text got to the screen, or even what the code turned into after compilation. This feeling of a "black box" might not matter when writing high-level abstractions, but once a bug appears—especially a bizarre memory-related bug—you have no idea where to start.
+The speaker mentioned the era of the ZX Spectrum<RefLink :id="2" preview="Sinclair Research, ZX Spectrum, 1982, Zilog Z80A" /> and manually typing in code. For many people learning to program, compiling, running, and seeing that line of text in the terminal feels like enough. But a question quickly arises: you don't actually know how that line of text got to the screen, or even what the code turned into after compilation. This feeling of a "black box" might not matter when writing high-level abstractions, but once a bug appears — especially a weird memory-related one — you're left with nowhere to start.
 
-Learning to program isn't just about learning syntax, frameworks, or APIs. C++ syntax alone is enough to give anyone a headache—rvalue references, perfect forwarding, SFINAE (Substitution Failure Is Not An Error)—just memorizing the names of these concepts, which are rather obscure to beginners, takes time. But the deeper you go, the more you run into an awkward truth: you don't truly understand what the code you write does at the machine level. When someone asks "how does the Hello World string get from the executable file to the CPU," and you can't answer, it means your understanding of the low level isn't solid enough.
+Learning to program isn't just about learning syntax, frameworks, or APIs. C++ syntax alone is enough to give anyone a headache — rvalue references, perfect forwarding, SFINAE. Just memorizing the names of these concepts, which are quite obscure to beginners, takes time. But the deeper you go, the more you run into an awkward truth: you don't truly understand what the code you write does at the machine level. When someone asks "how does the Hello World string get from the executable file to the CPU," and you can't answer, it means your understanding of the low level isn't solid enough.
 
 ## Hands-on: What Does C++ Code Actually Become?
 
-Compiling your C++ code into assembly and reading it line by line is the most direct way to understand "what the code is actually doing."
+Compiling your own C++ code into assembly and reading it line by line is the most direct way to understand "what the code is actually doing."
 
-Experiment environment: Arch Linux WSL, GCC 16.1.1, with the `-S -O0` parameter added to the compile command. `-S` tells the compiler to only generate assembly without proceeding further, and `-O0` disables all optimizations, because with optimizations enabled the assembly gets transformed beyond recognition, making it very difficult for beginners to map it back to the source code.
+Experiment environment: Arch Linux WSL, GCC 16.1.1, with the `-S -O0` parameter added to the compile command. `-S` tells the compiler to only generate assembly and not proceed further, and `-O0` disables all optimizations, because with optimizations enabled the assembly gets transformed beyond recognition, making it very difficult for beginners to map it back to the source code.
 
 Let's write the simplest example:
 
@@ -69,7 +69,7 @@ Compile it:
 g++ -S -O0 -o demo.s demo.cpp
 ```
 
-Then open `demo.s`, and you'll see a huge amount of stuff—don't panic, most of it is auxiliary information added by the compiler. We only care about the core parts. On x86-64, the assembly for the `add` function looks roughly like this:
+Then open `demo.s`, and you'll see a huge amount of stuff. Don't panic — most of it is auxiliary information added by the compiler. We only care about the core parts. On x86-64, the assembly for the `add` function looks roughly like this:
 
 ```asm
 add(int, int):
@@ -100,11 +100,11 @@ main:
     ret
 ```
 
-When you see this assembly for the first time, you'll notice that `return a + b` under `-O0` causes the compiler to dutifully move the parameters from registers to the stack, then read them back from the stack to do the addition. It's not efficient, but this is the raw, unoptimized form—every line is crystal clear, and you can see exactly how the data flows.
+When you see this assembly for the first time, you'll notice that under `-O0`, the compiler dutifully moves the parameters from registers to the stack, then reads them back from the stack to do the addition. It's not efficient, but this is the raw, unoptimized form — every line is crystal clear, and you can see exactly how the data flows.
 
-## An Easy Pitfall to Fall Into
+## An Easy Trap to Fall Into
 
-There's a pitfall here that must be mentioned. At first, I compiled with `-O1`, only to find that the assembly for the `add` function was just two or three lines—the parameters never even hit the stack; the computation was done entirely in registers (those familiar with compiler optimizations probably won't find this surprising—after all, it's an operation that can be handled at the register level, right!). This is because `-O1` already starts doing register allocation optimization—the compiler realized there's no need to store the parameters on the stack and read them back, so it just used the registers directly. So if you want to follow along with the experiments, make sure to use `-O0`, otherwise you'll see a bunch of incomprehensible output.
+There's a trap here that must be mentioned. At first, I compiled with `-O1`, only to find that the assembly for the `add` function was just two or three lines. The parameters never even hit the stack — the computation was done entirely in registers (those familiar with compiler optimizations probably won't find this surprising — after all, it's an operation that can be handled at the register level, right!). This is because even `-O1` already performs register allocation optimization — the compiler realized there was no need to store the parameters on the stack and read them back, so it just used the registers directly. So if you want to follow along with the experiment, make sure to use `-O0`, otherwise you'll see a bunch of incomprehensible output.
 
 ```asm
     .file   "demo.cpp"
@@ -133,55 +133,55 @@ main:
     .section    .note.GNU-stack,"",@progbits
 ```
 
-Another pitfall is that calling conventions differ across platforms. What's shown above is the x86-64 System V ABI<RefLink :id="3" preview="System V Application Binary Interface, AMD64, calling convention" />, where the first two integer arguments are placed in `%edi` and `%esi` respectively, and the return value goes in `%eax`. If you compile with MSVC on Windows, the parameter passing method is different (it uses `%rcx`, `%rdx`<RefLink :id="4" preview="Microsoft, x64 Calling Convention, RCX/RDX/R8/R9" />). So if your results look different, check your platform and compiler first.
+Another trap is that calling conventions differ across platforms. What's shown above is the x86-64 System V ABI<RefLink :id="3" preview="System V Application Binary Interface, AMD64, calling convention" />, where the first two integer arguments are placed in `%edi` and `%esi` respectively, and the return value goes in `%eax`. If you compile with MSVC on Windows, the parameter passing method is different (it uses `%rcx`, `%rdx`<RefLink :id="4" preview="Microsoft, x64 Calling Convention, RCX/RDX/R8/R9" />). So if your results look different, check your platform and compiler first.
 
 ## Why Understanding Assembly Helps You Understand C++
 
-After seeing this assembly, many things that previously seemed mystical become clear. For example, why is the performance difference between passing by value and passing by reference in C++ so large—passing by value means copying data, and if the object is large, the overhead of copying at the assembly level is instruction after instruction of `mov`, laid out right there in front of you. What about passing by reference? You're only passing an address, an 8-byte pointer—no matter how large the object is, you only pass 8 bytes. You might have "known" these principles before, but after seeing the assembly, you truly "understand" them.
+After seeing this assembly, many things that previously seemed mystical become clear. For example, why is the performance difference between passing by value and passing by reference in C++ so large? Passing by value means copying data. If the object is large, the overhead of copying at the assembly level is instruction after instruction of `mov`, laid out right there in front of you. What about passing by reference? You're only passing an address — an 8-byte pointer. No matter how large the object is, you only pass 8 bytes. You might have "known" these principles before, but after seeing the assembly, you truly "understand" them.
 
-Take another example: why can inline functions improve performance? The `call` instruction itself has overhead—you need to save the return address, jump, and then jump back after the function returns. If the compiler expands the function body directly at the call site, all that overhead disappears. In the assembly, you won't see `call` or `ret` at all; the code just executes sequentially.
+Take another example: why can inline functions improve performance? The `call` instruction itself has overhead — you need to save the return address, jump, and then jump back after the function returns. If the compiler expands the function body directly at the call site, all that overhead disappears. In the assembly, you won't see `call` or `ret` at all; the code just executes sequentially.
 
-When you can see the machine instructions corresponding to every line of code, the concept of "performance" is no longer an abstract "fast" or "slow," but concrete—"these few instructions can be eliminated," or "this memory access can be merged."
+When you can see the machine instructions corresponding to every line of code, the concept of "performance" is no longer an abstract "fast" or "slow," but concrete: "these few instructions can be eliminated," or "these memory accesses can be merged."
 
 ## Directions to Dig Deeper
 
-Once you understand this layer, you'll naturally want to know: how does the linker stitch multiple object files together? What actually happens when a shared library is loaded? How does an operating system's system call switch from user mode to kernel mode? These aren't topics from "compiler theory" and "operating systems" textbooks that are irrelevant to business code—they are the foundation. If the foundation isn't solid, everything built on top will wobble.
+Once you understand this layer, you'll naturally want to know: how does the linker stitch multiple object files together? What actually happens when a shared library is loaded? How does an operating system's system call switch from user mode to kernel mode? These aren't topics from "compiler theory" and "operating systems" textbooks that are irrelevant to your application code — they are the foundation. If the foundation isn't solid, everything built on top will wobble.
 
 If you've also had a vague sense about the low level, I suggest starting with "looking at assembly." You don't need to learn it deeply, and you don't need to be able to write assembly by hand. As long as you can "look at C++ code and roughly guess what the assembly looks like," your programming intuition will level up.
 
-## What Exactly Is Assembly—Starting from the Birth of Compiler Explorer
+## What Exactly Is Assembly — Starting from the Birth of Compiler Explorer
 
-Before figuring out "where to dig deeper," there's a basic question worth answering: what exactly do we mean when we keep saying "assembly"?
+Before diving into "digging deeper," there's a basic question worth answering: what exactly do we mean when we keep saying "assembly"?
 
-The speaker was writing C++ at a company where the boss was very conservative and didn't allow using any new C++ features. How conservative, exactly? They were debating whether they could use range-based for loops to replace the most primitive `for (int i = 0; i < sizeof(array); ...)` syntax. They had recently been burned by another programming language where the two approaches were indeed not equivalent, so the boss was especially sensitive to "syntactic sugar." They ran a benchmark, the results were ambiguous, and the boss slammed the table: don't touch it.
+The speaker was writing C++ at a company where the boss was very conservative and didn't allow any new C++ features. How conservative, exactly? They were debating whether they could use range-based for loops to replace the most primitive `for (int i = 0; i < sizeof(array); ...)` syntax. They had recently been burned by another programming language where the two approaches were indeed not equivalent, so the boss was particularly sensitive to "syntactic sugar." They ran a benchmark, and the results were ambiguous. The boss slammed the table: don't touch it.
 
-The speaker didn't give up. He casually wrote a shell script that toggled compiler flags back and forth in the terminal, keeping the assembly output continuously refreshing. Then he felt it was too messy, so he used regular expressions to do some substitution and formatting, and piped it through `c++filt` to demangle the symbol names that had been mangled beyond recognition. Once he was done, he realized he could edit C++ code on the left in Vim and see the corresponding assembly output in real time on the right.
+The speaker didn't give up. He casually wrote a shell script that toggled compiler flags in the terminal, causing the assembly output to continuously refresh. Then he felt it was too messy, so he used regular expressions to do some replacement and formatting, and piped it through `c++filt` to demangle the symbol names that had been mangled beyond recognition. After finishing, he realized he could edit C++ code on the left in Vim and see the corresponding assembly output in real time on the right.
 
-This tool was the prototype of what later became the famous Compiler Explorer<RefLink :id="13" preview="Matt Godbolt, Compiler Explorer (godbolt.org), 2012" /> (godbolt.org). This story reveals a key insight: **even though we've been pursuing higher abstractions in C++, assembly remains super important to this language and to us.** Many developers feel that once they use C++17, `std::optional`, and `std::variant`, they no longer need to look at assembly—the compiler is smarter than they are, so the code it generates must be fine. But once they actually start looking at assembly, they discover that while the compiler is indeed smart, what it does often isn't what they assumed.
+This tool was the prototype of what later became the famous Compiler Explorer<RefLink :id="13" preview="Matt Godbolt, Compiler Explorer (godbolt.org), 2012" /> (godbolt.org). This story reveals a key insight: **even though we've been pursuing higher abstractions in C++, assembly remains super important to this language and to us.** Many developers feel that once they use C++17, `std::optional`, and `std::variant`, they no longer need to look at assembly — the compiler is smarter than they are, and the code it generates must be fine. But once they actually start looking at assembly, they discover that while the compiler is indeed smart, what it does often isn't what they assumed.
 
-So what exactly is "assembly"? The word "assembly" in the dictionary has several layers of meaning: it's a set of parts working together; it's the act or process of assembling a set of parts; it's a group of people gathered in one place for a purpose; it's a legislative body with ominous political connotations; in military terms, it's a drum signal calling troops to gather. And finally, the meaning we actually care about—it's the shortened form of assembly language.
+So what exactly is "assembly"? The dictionary meaning of "assembly" has several layers: it's a set of parts working together; it's the act or process of assembling a set of parts; it's a group of people gathered in one place for a purpose; it's a legislative body with ominous political connotations; in military terms, it's a drum signal calling troops to gather. And finally, the meaning we actually care about — it's the shortened form of assembly language.
 
-In other words, when we keep saying "look at assembly," strictly speaking, we've been using the wrong term. We should say "look at assembly language." This might sound like a boring word game, but think about it and it actually makes sense. "Assembly" itself is an action, a process—putting parts together. "Assembly language" is the thing with concrete syntax, an instruction set, and opcodes. What the compiler does is indeed "assembly"—assembling the various parts of C++ (variables, functions, template instantiations) into the final machine code. And what we look at is that "assembly language," the blueprint produced during the assembly process.
+In other words, when we keep saying "look at assembly," strictly speaking, we've been using the wrong term. We should say "look at assembly language." This might sound like a boring word game, but think about it — it actually makes sense. "Assembly" itself is an action, a process — putting parts together. "Assembly language" is the thing with concrete syntax, an instruction set, and opcodes. What the compiler does is indeed "assembly" — assembling the various parts of C++ (variables, functions, template instantiations) into the final machine code. And what we look at is that "assembly language" — the blueprint produced during the assembly process.
 
-Once you understand this distinction, it becomes clear: what we're looking at is assembly language, the human-readable form of instructions that the CPU can understand, not some abstract "assembly process." And the reason assembly language is important to C++ programmers is that C++ abstractions do have a cost (which is somewhat contradictory—we might be pursuing abstractions with no cost, but that's the goal, not the actual result...), and this cost is completely invisible unless you look at it through assembly language.
+Once you understand this distinction, it becomes clear: what we're looking at is assembly language, the human-readable form of instructions that the CPU can understand, not some abstract "assembly process." And the reason assembly language is important to C++ programmers is that C++ abstractions have a cost (which is somewhat contradictory — we might be pursuing abstractions without cost, but that's the goal, not the actual result...), and this cost is completely invisible unless you look at it through assembly language.
 
-Take the simplest example: using an `std::function` in a function on a hot path, because you figure "the compiler will optimize it anyway." The result is a performance drop. Fire up Compiler Explorer and look at the assembly—the `std::function` call involves a virtual function dispatch, a heap allocation check, and a bunch of indirect jumps from type erasure. If you had used a template parameter instead, the compiler would have inlined it directly, with no function call at all. You'd never know what happened if you didn't look at the assembly language. A benchmark can tell you "it got slower," but only assembly language can tell you "why it got slower."
+Take the simplest example: a function on a hot path uses a `std::function` because you figure "the compiler will optimize it anyway." The result is a performance drop. Fire up Compiler Explorer and look at the assembly — the `std::function` call involves a virtual function dispatch, a heap allocation check, and a bunch of indirect jumps from type erasure. If you use a template parameter instead, the compiler inlines it directly — there isn't even a function call. You'd never know what happened if you didn't look at the assembly language. A benchmark can tell you "it got slower," but only assembly language can tell you "why it got slower."
 
 ---
 
 # From Assembly to C: A Forced Paradigm Jump
 
-The talk mentioned a very representative experience: someone, without having studied any computer science, wrote a program entirely in assembly that included reference counting and even invented mark-sweep<RefLink :id="11" preview="John McCarthy, Recursive Functions of Symbolic Expressions, 1960" /> on their own. This isn't about some profound theory—it's a real person making real mistakes, discovering problems, and then "inventing" something that had already been invented. This process helps us understand where the concepts we later encounter in C++ actually came from.
+The talk mentioned a very representative experience: someone, without any computer science education, wrote a program entirely in assembly that included reference counting and even invented mark-sweep<RefLink :id="11" preview="John McCarthy, Recursive Functions of Symbolic Expressions, 1960" /> on their own. This isn't about some profound theory — it's a real person genuinely stumbling into problems, discovering them, and then "inventing" something that had already been invented. This process helps us understand where the concepts we later encounter in C++ actually came from.
 
 ## That "Monster" Written in Pure Assembly
 
-Imagine this scenario: a person studying physics who knows nothing about computer science wants to write a fully windowed chat program. Not the kind where you type text and press Enter in a command line, but one with a windowed interface, communicating over TCP, able to pause and then send messages, formatting complex strings, and even supporting direct file transfers between clients. And it had a built-in scripting language of his own invention, inspired by BASIC, which supported dynamic allocation.
+Imagine this scenario: a person studying physics who knows nothing about computer science wants to write a fully windowed chat program. Not the kind where you type text and press Enter in a command line — one with a windowed interface, communicating over TCP, able to pause and send messages, formatting complex strings, and even supporting direct file transfers between clients. And it had a built-in scripting language of his own invention, inspired by BASIC, that supported dynamic allocation.
 
-Many beginners' impression of assembly is writing interrupt handlers, writing startup code—maybe a few dozen or a few hundred lines at most. But this program was page after page of assembly code, all posted on GitHub, with tag names so absurd they made you lose all sense of meaning. The most classic one was called `WombleLoopJedi`—completely incomprehensible, but you could feel that the person writing the code had entered some kind of transcendent state.
+Many beginners' impression of assembly is writing interrupt handlers or startup code — a few dozen or a few hundred lines at most. But this program was page after page of assembly code, all posted on GitHub, with tag names so absurd they made you lose all sense of meaning. The most classic one was called `WombleLoopJedi` — you had no idea what it meant, but you could feel that the person writing the code had entered some kind of transcendent state.
 
-The most interesting part is what came next: he added dynamic allocation to the scripting language, then thought "reference counting is a good idea" and implemented it. Then he discovered the circular reference problem. Then he came up with a complete line of thinking—find the things that are no longer referenced and manually delete them. Years later, he was talking about this with a friend, and his friend said, "Oh, so you invented mark-sweep garbage collection."
+The most interesting part is what came next: he added dynamic allocation to the scripting language, then thought "reference counting is a good idea" and implemented it. Then he discovered the circular reference problem. So he came up with a complete line of reasoning — find the things that are no longer referenced and manually delete them. Years later, he mentioned this to a friend, and his friend said, "Oh, so you invented mark-sweep garbage collection."
 
-This is pure thinking without the constraints of textbooks. He didn't know it was called mark-sweep, but starting from the problem, he step by step deduced the correct solution. Mark-sweep wasn't an algorithm someone pulled out of thin air—it's the natural deduction for solving the specific problem of "reference counting can't handle circular references."
+This is pure thinking without the constraints of textbooks. He didn't know it was called mark-sweep, but starting from the problem, he step by step deduced the correct solution. Mark-sweep wasn't an algorithm someone pulled out of thin air — it's the natural deduction for solving the specific problem of "reference counting can't handle circular references."
 
 We can use a simplified pseudocode to reconstruct this thought process, which is much clearer than just explaining the concept:
 
@@ -211,7 +211,7 @@ void release(Object* obj) {
 // 它们永远不会被释放 —— 这就是循环引用
 ```
 
-Since the reference count can never reach zero, let's change the angle—instead of starting from "how many things reference me," start from "can anything still reach me?" If it can be reached, it's alive; if it can't be reached, it's dead, and the dead ones get deleted. This is the core idea of mark-sweep: mark is for tagging what can be reached, and sweep is for cleaning up what can't be reached.
+Since the reference count can never reach zero, let's switch perspectives — instead of starting from "how many things reference me," start from "can anything still reach me?" If it can be reached, it's alive; if it can't be reached, it's dead. Delete the dead ones. This is the core idea of mark-sweep: mark is for tagging what can be reached, and sweep is for cleaning up what can't be reached.
 
 ```cpp
 // 第二阶段：他"发明"的 mark-sweep（概念还原）
@@ -264,19 +264,19 @@ void garbage_collect() {
 }
 ```
 
-Logically, it's really not complicated. Garbage collection might seem like dark magic, but when you reduce it to this scenario—a person writing a scripting language who needs to manage memory, finds reference counting insufficient, and so changes his approach—it becomes very natural. The key isn't how clever the algorithm is, but whether you can get to this point starting from an actual problem.
+The logic really isn't complicated. Garbage collection might look like black magic, but when you还原 it to this scenario — a person writing a scripting language who needs to manage memory, finds that reference counting isn't enough, and so switches to a different approach — it becomes very natural. The key isn't how elegant the algorithm is, but whether you can get there starting from a real problem.
 
 ## From Assembly to C: A Forced Turning Point
 
-This person had been writing everything in assembly, and assembly had been his companion all along. Until one day, he wanted to run a multi-user dungeon—that is, a MUD<RefLink :id="12" preview="Trubshaw & Bartle, MUD (Multi-User Dungeon), 1978" />.
+This person had been writing everything in assembly, and assembly had been his companion all along. Until one day, he wanted to run a multi-user dungeon — a MUD<RefLink :id="12" preview="Trubshaw & Bartle, MUD (Multi-User Dungeon), 1978" />.
 
-A MUD is a pure-text multiplayer online RPG with no graphical interface—everything is described in text. When you log in, you see things like "You stand at a crossroads. To the north is a castle, to the east is a forest." Type "go north" to go north, type "attack goblin" to fight a goblin. You can team up with friends, fight monsters, cast spells—it's essentially an online multiplayer text version of Dungeons & Dragons.
+A MUD is a purely text-based multiplayer online RPG with no graphical interface. Everything is described in text. When you log in, you see things like "You stand at a crossroads. To the north is a castle, to the east is a forest." Type "go north" to go north, type "attack goblin" to fight a goblin. You can team up with friends, fight monsters, and cast spells. It's essentially an online multiplayer text version of Dungeons & Dragons.
 
-The problem was, he couldn't write an entire MUD from scratch by himself. It was too big, even for someone who could write thousands of pages of assembly. So he found some source code circulating online, with a permissive license, ready to use. There's an important historical context to note here: there was no GitHub back then, nor any similar platform. The way people shared code was by passing around tarballs—those `.tar.gz` compressed archives, usually on IRC, transferring files directly from person to person. You'd shout in an IRC channel "does anyone have the MUD source code," and someone would send you a compressed file via DCC, and you'd start tinkering with it. No version control, no issue tracker, no pull requests—just raw code files.
+The problem was, he couldn't write an entire MUD from scratch by himself. It was too big — even for someone who could write thousands of pages of assembly. So he found some source code circulating online, with a permissive license, ready to use. There's an important historical context to note here: there was no GitHub, or anything like it, back then. The way people shared code was by passing around tarballs — `.tar.gz` compressed archives, usually on IRC, directly from person to person. You'd shout in an IRC channel, "Does anyone have the MUD source code?", and someone would send you a compressed file via DCC. You'd get the archive and start tinkering. No version control, no issue tracker, no pull requests — just raw code files.
 
-And those MUD source codes were written in a programming language called C. This was the turning point. A person who had written thousands of pages of assembly was now facing C source code. He had to learn C, otherwise he couldn't modify that MUD. This wasn't the motivation of "I want to learn a new language"—it was the motivation of "I must understand this code to do what I want to do."
+And those MUD source codes were written in a programming language called C. This was the turning point. A person who had written thousands of pages of assembly was now facing C source code. He had to learn C, otherwise he couldn't modify that MUD. This wasn't the motivation of "I want to learn a new language" — it was the motivation of "I must understand this code to do what I want to do."
 
-Jumping from assembly to C might not seem like a big deal today, but at the time, it was actually a huge paradigm shift. In assembly, you manipulate registers, memory addresses, and interrupts; in C, you start using abstract concepts like variables, functions, and structs. For someone who had only used assembly, the idea that "the compiler handles the stack frame for you" was something that required adjustment. But on the flip side, precisely because he came from assembly, his intuitive understanding of how C code runs at the low level might have been better than many people with formal CS degrees—because he knew exactly what kind of machine instructions those C statements would ultimately become.
+Jumping from assembly to C might not seem like a big deal today, but at the time, it was actually a huge paradigm jump. In assembly, you manipulate registers, memory addresses, and interrupts. In C, you start using abstract concepts like variables, functions, and structs. For someone who had only used assembly, the idea that "the compiler handles the stack frame for you" was something that required adjustment. But on the flip side, precisely because he came from assembly, his intuitive understanding of how C code runs at the low level might have been better than many people with formal CS degrees — because he knew exactly what kind of machine instructions those C statements would ultimately become.
 
 Sometimes what drives us forward isn't a systematic study plan, but a project you really want to build that your current toolchain simply can't handle.
 
@@ -284,19 +284,19 @@ Sometimes what drives us forward isn't a systematic study plan, but a project yo
 
 # From Assembly to C++: Why We Need High-Level Languages
 
-The speaker mentioned that at age 15, he wrote programs in pure assembly and submitted them to magazines for money. From this background, we can understand one thing: why C++ was designed the way it is, and why it has so many "seemingly redundant" layers of abstraction.
+The speaker mentioned writing programs in pure assembly at age 15 to submit to magazines for money. From this background, we can understand one thing: why the C++ language is designed the way it is, and why it has so many "seemingly redundant" layers of abstraction.
 
-If you look back from the perspective of assembly, many design decisions aren't "deliberately obscure"—they were "forced into existence."
+If you look back from the perspective of assembly, many design decisions aren't "deliberately obscure" — they were "forced into existence."
 
-## The Real Experience of Programming in Assembly
+## The Real Experience of Assembly Programming
 
-Writing a program that "reads two numbers from standard input and adds them" takes nearly 50 lines in x86 assembly, and you have to manage stack alignment yourself, set up system call numbers yourself, and handle buffers yourself. The speaker said the programs he wrote at age 15 were printed in tiny text across 20 dense pages in magazines. Get one punctuation mark wrong, and the program blows up—then you have to find that error in 20 pages of print.
+Writing a program that "reads two numbers from standard input and adds them" takes nearly 50 lines in x86 assembly. You have to manage stack alignment yourself, set up system call numbers yourself, and handle buffers yourself. The speaker said the programs he wrote at 15 were published in magazines as 20 densely packed pages of small print. Type one punctuation mark wrong, and the program blows up. Then you have to find that error across 20 pages of printed text.
 
 Once you understand many of C++'s mechanisms, your mindset completely changes. It's no longer "yet another piece of syntax to memorize," but "look at how much trouble this thing saves me."
 
 ## The Same Logic: How Much Difference Between Assembly and C++?
 
-Let's look at a particularly simple example—calling a function, passing a parameter, getting a return value. This operation is practically nothing in C++, but a lot happens at the assembly level.
+Let's look at a particularly simple example — calling a function, passing a parameter, and getting a return value. This operation is trivial in C++, but a lot happens at the assembly level.
 
 ```cpp
 // simple_call.cpp
@@ -311,13 +311,13 @@ int main() {
 }
 ```
 
-Compile it and look at the assembly output (I'll discuss my environment later):
+Compile it and look at the assembly output (I'll describe my environment later):
 
 ```bash
 g++ -O0 -S simple_call.cpp -o simple_call.s
 ```
 
-`-O0` disables all optimizations, because with optimizations enabled the compiler will fold the entire thing into a constant, and we won't be able to see the function call process. Open `simple_call.s`, and you'll see something like this (I've excerpted the key parts, AT&T syntax):
+`-O0` disables all optimizations, because with optimizations enabled the compiler will fold the entire thing into a constant, and we won't be able to see the function call process. Open `simple_call.s`, and you'll see something like this (I've extracted the key parts, AT&T syntax):
 
 ```asm
 add(int, int):
@@ -344,11 +344,11 @@ main:
     ret
 ```
 
-For just one `add(3, 4)`, at the assembly level you need to worry about: how the stack frame is set up, which register the parameter is passed through (the x86-64 System V calling convention uses rdi/rsi/rdx/rcx/r8/r9 for the first six integer arguments), where the return value is placed, and how the stack is restored after the call. In C++, writing one line of code handles all of this—the compiler does it all for you.
+For just one `add(3, 4)`, at the assembly level you need to worry about: how the stack frame is set up, which register the parameter is passed through (the x86-64 System V calling convention uses rdi/rsi/rdx/rcx/r8/r9 for the first six integer arguments), where the return value is placed, and how the stack is restored after the call. In C++, writing one line of code handles all of this — the compiler does it all for you.
 
 ## Going Further: When the Parameter Isn't a Simple Integer
 
-The example above is too simple, so let's try passing a string. This involves pointers, memory layout, and related concepts.
+The example above is too simple, so let's try passing a string. This involves pointers and memory layout.
 
 ```cpp
 // string_call.cpp
@@ -376,53 +376,53 @@ int main() {
 }
 ```
 
-This C++ code looks very straightforward. But to write this logic in assembly by hand, you'd have to calculate the address offsets of `src` and `dst` yourself, handle the loop counter yourself, determine character ranges yourself, and append the terminator yourself. And the most fatal part—if you miscalculate an offset, the program won't tell you "you have an array out-of-bounds error." It will either silently corrupt other data or simply crash with a segfault.
+This C++ code looks straightforward. But to write this logic in assembly by hand, you'd have to calculate the address offsets of `src` and `dst` yourself, handle the loop counter yourself, determine character ranges yourself, and append the null terminator yourself. And the most fatal part — if you miscalculate an offset, the program won't tell you "you have an array out-of-bounds error." It will either silently corrupt other data or simply crash with a segfault.
 
-So looking at these designs in C++ again, you get a moment of sudden clarity:
+So looking at these C++ designs again, you get a moment of sudden clarity:
 
-**References** — why do they exist? Because passing pointers is too error-prone: null pointers, dangling pointers, miscalculated offsets. A reference, semantically, is "this thing definitely points to a valid object," and the compiler helps you hold that baseline.
+**Why do references exist?** Because passing pointers is too error-prone — null pointers, dangling pointers, miscalculated offsets. Semantically, a reference means "this thing definitely points to a valid object," and the compiler helps you hold that baseline.
 
-**`std::string`** — why does it exist? Because bare character arrays with manual length management are the breeding ground for the kind of disaster described above. You don't have to use `std::string`, but then you have to guarantee yourself that every single place correctly handles length, terminators, copying, and destruction.
+**Why does `std::string` exist?** Because raw character arrays with manual length management are a breeding ground for the kind of disaster described above. You don't have to use `std::string`, but then you have to guarantee that every single place correctly handles length, null terminators, copying, and destruction.
 
-**`std::string_view`** — why was this added in C++17? Because sometimes you just want to read a string without copying it, but passing a `const std::string&` to a `const char*` triggers implicit construction of a `std::string` temporary object. `string_view` is a lightweight "look but don't touch" view—under the hood it's just a pointer plus a length, but its semantics are much clearer than a bare `const char*` + `size_t`.
+**Why was `std::string_view` added in C++17?** Because sometimes you just want to read a string without copying it, but passing a `const std::string&` to a `const char*` triggers implicit construction of a `std::string` temporary object. `string_view` is a lightweight "look but don't touch" view — under the hood it's just a pointer plus a length, but its semantics are much clearer than a raw `const char*` + `size_t`.
 
-If you've never written assembly and never been tormented by pointers and memory layout, you might think these are "unnecessary." But if you have been tormented, you think "thank goodness someone figured this out for me."
+If you've never written assembly or been tortured by pointers and memory layout, you might think these things are "unnecessary." But if you have been tortured by them, you think "thank goodness someone figured this out for us."
 
 ## Environment Notes
 
 The environment for running these examples is as follows, for easy reproduction:
 
 - Environment: Arch Linux WSL, GCC 16.1.1
-- Assembly syntax: GCC's default AT&T syntax (the one where operand order is reversed from Intel syntax, `%rax` instead of `rax`, `movq 源, 目的` instead of `mov 目的, 源`)
+- Assembly syntax: GCC's default AT&T syntax (the one where operand order is reversed compared to Intel syntax, `%rax` instead of `rax`, `movq 源, 目的` instead of `mov 目的, 源`)
 - If you want to see Intel syntax, just add the `-masm=intel` parameter: `g++ -O0 -S -masm=intel simple_call.cpp`
 
 ## Why Someone Would Write an IRC Client
 
 The speaker mentioned that he later switched to an Archimedes computer<RefLink :id="8" preview="Acorn Computers, Archimedes, ARM2, 1987" />, with an ARM processor, and there was no ready-made IRC<RefLink :id="9" preview="Jarkko Oikarinen, Internet Relay Chat, 1988" /> client, so he wrote one himself.
 
-This mindset of "I need a tool, there's no ready-made one available, so I'll build one myself" is very common in practical programming learning. Because when you really need to "build something," you encounter problems that tutorials won't tell you about: `std::getline` behaving inconsistently in certain terminals; `std::ofstream` handling newlines differently on different platforms; using `std::string` to store Chinese characters, where `length()` returns the number of bytes, not the number of characters. If you're just following a tutorial typing "Hello World," you'll never run into these things. But when you really want to write "something that works," they all pop up. The 15-year-old who wrote the IRC client in the talk was the same way. He didn't learn all the network programming knowledge first and then start coding—he thought "I want to get on IRC, but I don't have a client, so I'll write one." Knowledge doesn't come from textbooks—it grows from the desire of "I want to do this thing."
+This mindset of "I need a tool, there's no ready-made one available, so I'll build one myself" is very common in practical programming learning. Because only when you really need to "build something" do you encounter problems that tutorials won't tell you about: `std::getline` behaving inconsistently in certain terminals; `std::ofstream` handling newlines differently across platforms; using `std::string` to store Chinese characters, where `length()` returns the number of bytes, not characters. If you're just following a tutorial typing "Hello World," you'll never run into these things. But when you really want to write "something that works," they all pop up. The 15-year-old who wrote the IRC client in the talk was the same way. He didn't learn all the network programming knowledge first and then start coding. He thought, "I want to get on IRC, but I don't have a client, so I'll write one." Knowledge doesn't come from textbooks — it grows from the desire to "do this thing."
 
 ## From "Hand-Writing Everything" to "Leveraging Abstractions"
 
 C++ is essentially a language that "lets you choose which level to work at."
 
-Want to control memory manually? Go ahead—pointers, `new`/`delete`, placement new, and memory alignment attributes are all wide open for you. Want the compiler to manage it for you? Go ahead—smart pointers, RAII (Resource Acquisition Is Initialization), containers, `std::string`, no need to worry about deallocation. Want to compute some things at compile time? Go ahead—`constexpr`, templates, and concepts let you shift runtime overhead to compile time. Want to write generic code? Go ahead—templates let you write one piece of code to handle various types, and concepts let you check type constraints at compile time.
+Want to control memory manually? Go ahead — pointers, `new`/`delete`, placement new, and memory alignment attributes are all wide open to you. Want the compiler to manage it for you? Go ahead — smart pointers, RAII, containers, `std::string`, no need to worry about deallocation. Want to compute things at compile time? Go ahead — `constexpr`, templates, and concepts let you shift runtime overhead to compile time. Want to write generic code? Go ahead — templates let you write one piece of code for various types, and concepts let you check type constraints at compile time.
 
-These levels don't replace each other—they can be mixed. In the same program, you can use raw pointers at the low level for high-performance memory operations, and use `std::vector` and `std::string` at the higher level for safe data management. This kind of flexibility was unimaginable in the pure assembly era—back then there was only one level: "do everything yourself."
+These levels don't replace each other; they can be mixed. In the same program, you can use raw pointers for high-performance memory operations at the low level, and `std::vector` and `std::string` for safe data management at the high level. This kind of flexibility was unimaginable in the pure assembly era — back then there was only one level: "do everything yourself."
 
-This explains C++'s design philosophy—"you don't pay for what you don't use." Because the origin of this language was a group of people who had been tortured enough by assembly and wanted a language that "could control the low level without having to hand-write every low-level detail." It didn't fall from the sky—it was forced into existence by need<RefLink :id="1" preview="Stroustrup, The C++ Programming Language, 1986, zero-overhead principle" />. Once you connect this historical thread with the language design, many designs that previously seemed "baffling" suddenly make perfect sense.
+This explains C++'s design philosophy — "you don't pay for what you don't use." Because the origin of this language was a group of people who had been tortured enough by assembly and wanted a language that "could control the low level without hand-writing every low-level detail." It didn't fall from the sky — it was forced into existence by need<RefLink :id="1" preview="Stroustrup, The C++ Programming Language, 1986, zero-overhead principle" />. Once you connect this historical thread with the language design, many previously "baffling" designs suddenly make perfect sense.
 
 ---
 
 # From "Assembly Is the Only Solution" to "The Compiler Can Actually Do Work"
 
-The talk mentioned the experience of "every time you switch computers, it's a different OS and a different architecture." After the MUD was banned by the admin and he was forced to switch machines, what did that mean in that era? It meant that the assembly code you wrote by hand couldn't run a single line on a completely different CPU. The reason for writing the MUD in C instead of assembly was very pragmatic—rewriting assembly every time you switched machines was simply not feasible. Although C compilers on different machines in that era might themselves behave differently, C was still vastly better than assembly, because the benefits were too great. In his words, "rewriting it in assembly was simply not feasible"—this isn't some profound software engineering theory, it's the instinctive choice after being beaten down by reality.
+The talk mentioned the experience of "every time you switch computers, it's a different OS and a different architecture." After the MUD was banned by the admin and he was forced to switch machines, what did that mean in that era? It meant that your hand-written assembly code couldn't run a single line on a completely different CPU. The reason for writing the MUD in C instead of assembly was very pragmatic — rewriting assembly every time you switched machines was simply not feasible. Although C compilers on different machines in that era might themselves behave differently, C was still vastly superior to assembly because the benefits were too great. In his words, "rewriting it in assembly was simply not feasible" — this isn't some profound software engineering theory, it's the instinctive choice after being beaten down by reality.
 
 ## Hands-on Verification: How Much Difference in Cross-Platform Cost Between Assembly and C for the Same Logic?
 
 Let's write a minimal example to feel this difference. Suppose we want to implement a feature: reverse data in a block of memory byte by byte. This operation is actually quite common in game development, for example when handling cross-platform little-endian/big-endian data.
 
-First, using a pure assembly approach (taking x86_64 as an example, with GCC inline assembly):
+First, using the pure assembly approach (taking x86_64 as an example, with GCC inline assembly):
 
 ```cpp
 // reverse_asm.cpp
@@ -476,7 +476,7 @@ int main() {
 }
 ```
 
-The inline assembly above has a classic register conflict error—`rdx` is used simultaneously as a pointer and temporary storage, which is the most typical pitfall of hand-written assembly. Even if you fix this bug, this code can only compile in an x86_64 + System V ABI environment. Want to run it on ARM? Sorry, the instruction set is completely different, the register names are different, the calling convention is different—it's like starting from scratch.
+The inline assembly above has a classic register conflict error — `rdx` is used simultaneously as a pointer and temporary storage. This is the most typical pitfall in hand-written assembly. Even if you fix this bug, this code can only compile in an x86_64 + System V ABI environment. Want to run it on ARM? Sorry, the instruction set is completely different, the register names are different, and the calling convention is different — it's like starting from scratch.
 
 Now let's write the same logic in pure C++:
 
@@ -522,11 +522,11 @@ int main() {
 }
 ```
 
-This C++ code looks too simple—what's there to compare? But that's exactly the key point—the reason to choose C over assembly isn't that C can write more complex algorithms, but that for this kind of "simple logic," when switching platforms, the C version only needs to be recompiled, while the assembly version needs to be rewritten. When a project has hundreds of such "simple logic" pieces, this gap is the fundamental difference between "portable" and "not portable."
+This C++ code looks too simple — what's there to compare? But that's exactly the key point — choosing C over assembly isn't because C can write more complex algorithms, but because for this kind of "simple logic," when switching platforms, the C version only needs to be recompiled, while the assembly version needs to be rewritten. When a project has hundreds of these "simple logics," this gap is the fundamental difference between "portable" and "not portable."
 
-## In the 90s, Compilers Weren't Good Enough, So You Had to Write Assembly by Hand—But It's 2026 Now
+## In the 90s, Compilers Weren't Good Enough, So You Had to Write Assembly by Hand — But It's 2026 Now
 
-The talk mentioned a crucial piece of historical context: in the 90s and early 2000s, compilers weren't smart enough, and CPUs had many special instructions for games (like the PS2's VU instructions, the Dreamcast's SH4 extensions) that compilers had no idea how to generate, so you had to write assembly by hand. This logic still holds today, just in different forms. For example, writing NEON instructions on ARM for SIMD acceleration, or writing GPU kernels with CUDA, is essentially "the compiler (still) can't automatically generate optimal code for you, so you have to specify it manually." The difference is that these scenarios are far fewer today than back then, and compilers are improving rapidly.
+The talk mentioned a crucial piece of historical context: in the 90s and early 2000s, compilers weren't smart enough. CPUs had many special instructions for games (like the PS2's VU instructions, or the Dreamcast's SH4 extensions), and compilers had no idea how to generate these instructions, so you had to write assembly by hand. This logic still holds today, just in different forms. For example, writing NEON instructions on ARM for SIMD acceleration, or writing GPU kernels with CUDA, is essentially "the compiler (still) can't automatically generate optimal code for you, so you have to specify it manually." The difference is that these scenarios are far fewer today than back then, and compilers are improving rapidly.
 
 Let's look at a comparison experiment: the same matrix multiplication, run with both a pure C++ loop and hand-written AVX2 inline assembly:
 
@@ -615,7 +615,7 @@ int main() {
 }
 ```
 
-On an x86_64 machine (GCC 16.1, `-O3 -mavx2 -mfma`), the results are roughly: the scalar version takes about 15ms, the manual AVX2/FMA version takes about 3ms, with a speedup of about 5x. But here's the key: if the scalar version is also compiled with `-O3 -mavx2 -mfma`, GCC's auto-vectorization can optimize it to about 4ms. That is, after all that effort writing AVX2/FMA intrinsics by hand, it's only about 25% faster than what the compiler generated automatically.
+On an x86_64 machine (GCC 16.1, `-O3 -mavx2 -mfma`), the results are roughly: the scalar version around 15ms, the manual AVX2/FMA version around 3ms, with a speedup of about 5x. But here's the key: if the scalar version is also compiled with `-O3 -mavx2 -mfma`, GCC's auto-vectorization can optimize it to about 4ms. In other words, after all that effort writing AVX2/FMA intrinsics by hand, it was only about 25% faster than what the compiler generated automatically.
 
 ::: details Actual verification results (Arch Linux WSL, GCC 16.1.1, -O3 -mavx2 -mfma)
 In the verification environment, because GCC 16.1's auto-vectorization capability is already very strong, the scalar version was automatically optimized by the compiler to near the level of manual AVX2/FMA, with an actual speedup of only about 1.16x:
@@ -627,16 +627,16 @@ speedup: 1.16x
 max_diff: 0.000000e+00
 ```
 
-This actually further reinforces the article's core thesis: modern compilers' auto-vectorization is getting stronger and stronger, and the benefits of hand-writing SIMD are shrinking. Specific numbers vary by hardware and compiler version, but the trend is consistent.
+This further reinforces the article's core argument: modern compilers' auto-vectorization is getting stronger and stronger, and the benefits of hand-writing SIMD are shrinking. Specific numbers vary by hardware and compiler version, but the trend is consistent.
 
 Verification code: `code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/02-00-matmul-test.cpp`
 :::
 
-This is the difference between 2026 and the 90s. In the 90s, compilers had no idea what SIMD was, and hand-written assembly might be 10x faster; today, compilers are already quite smart, the benefits of hand-writing are shrinking, but the costs (readability, maintainability, portability) remain just as large.
+This is the difference between 2026 and the 90s. In the 90s, compilers had no idea what SIMD was, and hand-written assembly might be 10x faster. Today, compilers are already quite smart, the benefits of hand-writing are shrinking, but the costs (readability, maintainability, portability) remain just as high.
 
 ## The Tools Change, But the Pattern of "Being Driven to Learn by Reality" Never Does
 
-Returning to the talk's core thread: from assembly to C, from C to C++, none of these steps happened because "the new language is cooler," but because "the old approach couldn't hold up under new constraints." C was chosen because of the need for cross-platform portability. C++ was embraced because it turned out C could do far more than just serve as a "fancy macro assembler." From this historical thread, we can arrive at a simple realization: **the choice of tool depends on what the current biggest pain point is**. The pain point was "having to rewrite everything every time you switch machines," so C was chosen. Later, the pain point became "wanting to do more complex things but C was too cumbersome to express them in," so C++ was embraced. The tools change, but the pattern of "being driven to learn by reality" never does.
+Returning to the talk's core thread: from assembly to C, from C to C++, none of these steps happened because "the new language is cooler," but because "the old approach couldn't hold up under new constraints." C was chosen because of the need for cross-platform portability. C++ was embraced because it turned out C could do far more than just serve as a "fancy macro assembler." From this historical thread, we can draw a simple realization: **the choice of tool depends on what the current biggest pain point is.** The pain point was "having to rewrite everything every time you switch machines," so C was chosen. Later, the pain point became "wanting to do more complex things but C was too cumbersome to express them in," so C++ was embraced. The tools change, but the pattern of "being driven to learn by reality" never does.
 
 <ReferenceCard title="References">
   <ReferenceItem

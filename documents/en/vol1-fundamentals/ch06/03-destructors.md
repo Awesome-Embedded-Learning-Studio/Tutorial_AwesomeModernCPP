@@ -1,7 +1,8 @@
 ---
-title: Destructors and resource management
-description: Understanding the timing of destructor calls, an initial introduction
-  to the design concepts of the RAII principle and the Rule of Three
+title: Destructors and Resource Management
+description: Understand when destructors are called, and get an initial grasp of the
+  RAII (Resource Acquisition Is Initialization) principle and the design rationale
+  behind the Rule of Three.
 chapter: 6
 order: 3
 difficulty: beginner
@@ -20,12 +21,18 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch06/03-destructors.md
+  source_hash: b49081fc86cec87f7a867bc01e176a02572893dbadf30e468bb2f7e4b3ad28db
+  translated_at: '2026-05-26T10:50:48.605245+00:00'
+  engine: anthropic
+  token_count: 2399
 ---
 # Destructors and Resource Management
 
-Constructors bring an object into a valid state—allocating memory, opening files, initializing hardware. But all these resources share a common problem: they must be returned at some point. `malloc` without `free`, `fopen` without `fclose`, locking a mutex without unlocking—the program slowly leaks resources, eventually exhausting system quotas or falling into a dead lock.
+Constructors bring an object into a valid state—allocating memory, opening files, initializing hardware. But all these resources share a common problem: they must be returned at some point. Memory allocated but not freed, files opened but not closed, mutexes locked but not unlocked—the program slowly leaks resources, eventually exhausting system quotas or falling into a dead lock.
 
-C++ solves this problem with the destructor. Constructors and destructors form a perfect symmetry: one executes automatically when an object is born, and the other executes automatically when it dies. This pattern of "acquire at construction, release at destruction" has a famous name—RAII (Resource Acquisition Is Initialization)—and it is the cornerstone of C++ resource management.
+C++ solves this problem with the destructor. Constructors and destructors form a perfect symmetry: one executes automatically when an object is born, and the other executes automatically when it dies. This pattern of "acquire on construction, release on destruction" has a famous name—RAII (Resource Acquisition Is Initialization), and it is the cornerstone of C++ resource management.
 
 In this chapter, we break down destructors from start to finish—the syntax, invocation timing, the core idea of RAII, and a classic design guideline you cannot avoid: the Rule of Three.
 
@@ -60,11 +67,11 @@ public:
 };
 ```
 
-A destructor cannot accept parameters, so it cannot be overloaded; it also has no return value. These restrictions are easy to understand—the destructor is called automatically by the runtime, and the caller does not need to pass anything.
+A destructor cannot accept parameters, cannot be overloaded, and has no return value. These restrictions are easy to understand—the runtime calls the destructor automatically, so the caller does not need to pass anything.
 
-If you do not define a destructor, the compiler generates a default version that destructs non-static members in reverse order of their declaration. Classes containing only fundamental types do not need a hand-written destructor, but if a class manages external resources—dynamic memory, file handles, network connections—you must write your own destructor to release them. (This is normal, because the compiler does not know how you want to destruct your resources.)
+If you do not define a destructor, the compiler generates a default version that destructs non-static members in reverse order of their declaration. Classes containing only fundamental types do not need a hand-written destructor. However, if a class manages external resources—dynamic memory, file handles, network connections—you must write your own destructor to release them. (This is completely normal, because the compiler does not know how you want to destruct your resources.)
 
-## When Is a Destructor Called
+## When Destructors Are Called
 
 Understanding the invocation timing is a prerequisite for using RAII correctly. **Stack objects** are automatically destructed when they leave scope, whether through a normal return, an early `return`, or exception stack unwinding:
 
@@ -75,7 +82,7 @@ void process() {
 }   // writer 在这里析构，文件自动关闭
 ```
 
-**Heap objects** are destructed only when explicitly `delete`—this is one of the main sources of resource leaks in C++:
+**Heap objects** are only destructed when explicitly `delete`d—this is one of the main sources of memory leaks in C++:
 
 ```cpp
 void leaky() {
@@ -85,9 +92,9 @@ void leaky() {
 }
 ```
 
-> **Pitfall warning**: Forgetting to `delete` an object that was `new` means the destructor will never execute. Even if you remember to `delete` on the normal path, as long as an exception is thrown in between, the `delete` will be skipped. Modern C++ strongly recommends using smart pointers or stack objects instead of raw `new`/`delete`.
+> **Pitfall Warning**: If you forget to `delete` a `new`ed object, its destructor will never execute. Even if you remember to `delete` on the normal path, an exception thrown in the middle will cause the `delete` to be skipped. Modern C++ strongly recommends using smart pointers or stack objects instead of raw `new`/`delete`.
 
-The destruction of **member objects** occurs after the containing class's destructor body finishes executing, in the exact reverse order of construction. We write a small program to verify this:
+**Member objects** are destructed after the containing class's destructor body finishes executing, in the exact reverse order of construction. We write a small program to verify this:
 
 ```cpp
 #include <iostream>
@@ -125,7 +132,7 @@ int main() {
 }
 ```
 
-Runtime output:
+Running output:
 
 ```text
 === begin ===
@@ -142,13 +149,13 @@ Runtime output:
 === end ===
 ```
 
-Construction is `local -> member_a -> member_b -> Container body`, and destruction is strictly reversed—"last constructed, first destructed" ensures resources are released in the correct hierarchy.
+Construction is `A -> B -> Container`, and destruction is strictly reversed—"last constructed, first destructed" ensures resources are released at the correct layer.
 
 ## RAII—The Core Idea of C++ Resource Management
 
-RAII stands for Resource Acquisition Is Initialization, and its core idea can be summed up in one sentence: **bind the resource's lifetime to the object's lifetime**. Acquire the resource at construction, release it at destruction. Because the destructor is guaranteed to be called when the object leaves scope (even if an exception occurs), the resource is guaranteed to be correctly released.
+RAII stands for Resource Acquisition Is Initialization, and its core idea boils down to one sentence: **bind the resource's lifetime to the object's lifetime**. Acquire the resource on construction, release it on destruction. Because the destructor is guaranteed to be called when the object leaves scope (even if an exception occurs), the resource is guaranteed to be correctly released.
 
-Let us look at a practical example—a `ScopedTimer` for measuring the execution time of a code block:
+Let's look at a practical example—a `Timer` for measuring code block execution time:
 
 ```cpp
 #include <chrono>
@@ -185,15 +192,15 @@ void heavy_computation() {
 }  // timer 在这里析构，自动打印耗时
 ```
 
-You do not need to remember to "stop the timer" at the end of the function—the destructor does it for you automatically. Multiple `return` paths, exceptions—on every path, the timer will be correctly destroyed. This is the power of RAII: **it makes "not leaking" the default behavior, rather than a "remember to do it" maintained by discipline**.
+You do not need to remember to "stop the timer" at the end of the function—the destructor does it for you automatically. Multiple `return` paths, exceptions—on every path, the timer is correctly destroyed. This is the power of RAII: **it makes "not leaking" the default behavior, rather than a "remember to do it" maintained by discipline**.
 
-> **Pitfall warning**: The prerequisite for RAII is that the object must live on the stack (or be a global/static object), not a heap object created via raw `new`. If you `new` an RAII object but forget to `delete`, the destructor still will not be called—RAII cannot save you. Modern C++ recommends: **keep objects on the stack whenever possible**, and if you must use the heap, use smart pointers.
+> **Pitfall Warning**: The prerequisite for RAII is that the object must live on the stack (or be a global/static object), not a heap object created via raw `new`. If you `new` an RAII object but forget to `delete` it, the destructor still will not be called—RAII cannot save you. Modern C++'s advice is: **keep objects on the stack whenever possible**, and if you must use the heap, use smart pointers.
 
 ## Rule of Three—A Design Warning Signal
 
 The Rule of Three is a classic design guideline: **if your class needs to customize any one of the following three, you almost certainly need to customize the other two as well**—the destructor, the copy constructor, and the copy assignment operator.
 
-These three functions collectively determine "how an object is copied" and "how it is destroyed." Writing a destructor usually means the class manages a resource that requires manual release, but the compiler-generated copy operations only perform a shallow copy—after the pointer member is copied, both objects point to the same resource, leading to a double free upon destruction.
+These three functions collectively determine "how an object is copied" and "how it is destroyed." Writing a destructor usually means the class manages a resource that requires manual release, but the compiler-generated copy operations only perform a shallow copy—after the pointer member is copied, both objects point to the same resource, leading to a double free on destruction.
 
 ```cpp
 class NaiveBuffer {
@@ -212,7 +219,7 @@ void bug_demo() {
 }
 ```
 
-One way to fix this is to simply forbid copying:
+One way to fix this is to directly forbid copying:
 
 ```cpp
 class SafeBuffer {
@@ -226,11 +233,11 @@ public:
 };
 ```
 
-Here we are just previewing the concept. Once we cover move semantics, the Rule of Three will expand into the Rule of Five. For now, you only need to remember: **once you hand-write a destructor, stop and think—can your class be safely copied? If not, delete the copy operations**.
+Here, we are just previewing the concept. Once we cover move semantics, the Rule of Three will expand into the Rule of Five. For now, you only need to remember: **once you hand-write a destructor, stop and think—can your class be safely copied? If not, delete the copy operations**.
 
 ## Virtual Destructors—The Hidden Trap of Polymorphism
 
-If a class will be inherited, and users manipulate derived class objects through a base class pointer, then the base class's destructor must be `virtual`. Otherwise, when `delete` the base class pointer, the derived class's destructor will be completely skipped.
+If a class will be inherited, and users manipulate derived class objects through a base class pointer, then the base class's destructor must be `virtual`. Otherwise, when `delete`ing the base class pointer, the derived class's destructor will be completely skipped.
 
 ```cpp
 class Base {
@@ -251,7 +258,7 @@ void leak_demo() {
 }
 ```
 
-The output is only `~Base`—the 400 bytes of memory pointed to by `resource_` silently leak. The fix is simply to add `virtual` in front of the base class destructor:
+The output is only `~Base()`—the 400 bytes of memory pointed to by `Derived` silently leak. The fix is simply to add `virtual` in front of the base class destructor:
 
 ```cpp
 class Base {
@@ -260,11 +267,11 @@ public:
 };
 ```
 
-> **Pitfall warning**: The condition for applying this rule is that the class will be used as a polymorphic base class. A safe rule of thumb is: **as long as your class has `virtual` functions, the destructor should be `virtual`**. Conversely, a class without `virtual` functions does not need a virtual destructor—adding one instead incurs the overhead of a virtual function table pointer for every object. This topic will be explored in depth in the next chapter on inheritance and polymorphism.
+> **Pitfall Warning**: The condition for applying this rule is that the class will be used as a polymorphic base class. A safe rule of thumb is: **as long as your class has `virtual` functions, its destructor should be `virtual` too**. Conversely, a class without `virtual` functions does not need a virtual destructor—adding one unnecessarily increases the overhead of a virtual function table pointer for every object. This topic will be explored in depth in the next chapter on inheritance and polymorphism.
 
 ## Hands-on: Destructors in Action
 
-Now let us write a complete piece of code, chaining `ScopedTimer` and `FileWriter` together to demonstrate the practical effect of RAII:
+Now let's write a complete piece of code, chaining `Timer` and `FileGuard` together to demonstrate the practical effect of RAII:
 
 ```cpp
 // destructor.cpp
@@ -361,7 +368,7 @@ Output:
 [total] finished: 4789 us
 ```
 
-The inner `ScopedTimer` and `FileWriter` are destructed first, and the outer `total` is destructed last. You can verify the file contents:
+The inner `FileGuard` and `Timer` are destructed first, and the outer `Timer` is destructed last. You can verify the file contents:
 
 ```bash
 cat raii_demo.txt
@@ -373,12 +380,12 @@ The content is correct, and we did not hand-write `fclose`—the destructor comp
 
 ## Exercises
 
-**Exercise 1: Scoped Log Timer**. Write a `ScopedLogger` class that records a timestamp upon construction (format `HH:MM:SS`) and prints "elapsed X seconds" upon destruction. Hint: use `std::time` and `std::localtime` from `<ctime>`.
+**Exercise 1: Scoped Log Timer**. Write a `ScopedTimer` class that records a timestamp on construction (format `[%Y-%m-%d %H:%M:%S]`) and prints "elapsed X seconds" on destruction. Hint: use `std::chrono`'s `steady_clock` and `duration_cast`.
 
-**Exercise 2: Simple File Handle**. Implement a `FileHandle` class that opens a file upon construction and automatically closes it upon destruction. Provide a `read_line()` method (returning `std::string`) and a `is_valid()` method. Think about this from the perspective of the Rule of Three: does this class need to disable copying? Why?
+**Exercise 2: Simple File Handle**. Implement a `FileHandle` class that opens a file on construction and automatically closes it on destruction. Provide a `get()` method (returning `FILE*`) and a `write()` method. Think about this from the Rule of Three perspective: does this class need to disable copying? Why?
 
 ## Summary
 
-In this chapter, we covered the syntax, invocation timing, and core role of destructors in resource management. Destructors are automatically called when an object leaves scope or is `delete`. RAII binds resource acquisition and release to the object's lifetime, making "not leaking" the default behavior. The Rule of Three reminds us to re-examine copy semantics when hand-writing a destructor. Virtual destructors are a hard requirement in polymorphic scenarios.
+In this chapter, we focused on destructors, covering the syntax, invocation timing, and their core role in resource management. Destructors are automatically called when an object leaves scope or is `delete`d. RAII binds resource acquisition and release to the object's lifetime, making "not leaking" the default behavior. The Rule of Three reminds us to re-examine copy semantics when hand-writing a destructor. Virtual destructors are a hard requirement in polymorphic scenarios.
 
 In the next article, we will look at another important mechanism of classes—static members.

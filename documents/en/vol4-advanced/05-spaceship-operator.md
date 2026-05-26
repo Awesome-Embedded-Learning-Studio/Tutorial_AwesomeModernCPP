@@ -1,7 +1,7 @@
 ---
-title: Three-way comparison operator (C++20 Spaceship Operator)
-description: 'Detailed Explanation of C++20 Three-Way Comparison Operator: Simplifying
-  Comparison Logic for Custom Types'
+title: Three-Way Comparison Operator (C++20 Spaceship Operator)
+description: 'A detailed guide to the C++20 spaceship operator: simplifying comparison
+  logic for custom types'
 chapter: 11
 order: 5
 tags:
@@ -16,6 +16,12 @@ prerequisites:
 cpp_standard:
 - 20
 platform: host
+translation:
+  source: documents/vol4-advanced/05-spaceship-operator.md
+  source_hash: 309aec88ffa5b2e75764586a11abacfb46df85a90774f10b48f3e9ce25333e28
+  translated_at: '2026-05-26T11:39:30.086533+00:00'
+  engine: anthropic
+  token_count: 7027
 ---
 # Modern C++ for Embedded Systems — Three-Way Comparison Operator
 
@@ -71,10 +77,10 @@ The **three-way comparison operator** introduced in C++20, commonly known as the
 
 In embedded development, this feature is particularly useful:
 
-1. Sorting sensor data by timestamp or priority
+1. Sorting sensor data by time or priority
 2. Comparing firmware version numbers (complex versions with letter suffixes)
 3. Lexicographical comparison of configuration parameters
-4. Task sorting in priority queues
+4. Sorting tasks in a priority queue
 
 ------
 **Warning**: As of 2024, GCC 10+, Clang 10+, and MSVC 2019+ fully support the three-way comparison operator. If we are using an older compiler, we may need to upgrade or use an alternative approach.
@@ -145,7 +151,7 @@ int main() {
 ```
 
 ------
-**Best Practice**: Directly use `<`, `==`, and `>` to evaluate comparison results, rather than calling named methods. This keeps the code more concise and works across all comparison categories.
+**Best Practice**: Use `<`, `==`, and `>` directly to evaluate comparison results, rather than calling named methods. This keeps the code more concise and works with all comparison categories.
 
 ------
 
@@ -236,7 +242,7 @@ C++20 defines three comparison categories to represent different strengths of co
 1. **Equivalence implies equality**: `a == b` if and only if all members of `a` and `b` are equal
 2. **Substitutability**: When `a == b`, `f(a) == f(b)` holds for any function `f`
 
-Applicable scenarios: integers, strings, simple value types
+Use cases: integers, strings, simple value types
 
 ```cpp
 #include <compare>
@@ -270,12 +276,12 @@ static_assert((c <=> a) == std::strong_ordering::greater);
 
 ### partial_ordering: Partial Ordering
 
-`partial_ordering` represents cases where values might be "incomparable":
+`partial_ordering` represents cases where values may be "incomparable":
 
-1. Certain values might not be comparable with each other (e.g., `NaN`)
+1. Some values may not be comparable to each other (e.g., `NaN`)
 2. Equivalence does not imply equality
 
-Applicable scenarios: floating-point numbers (due to `NaN`), ranges with permissible values
+Use cases: floating-point numbers (due to `NaN`), ranges with permissible values
 
 ```cpp
 #include <compare>
@@ -318,7 +324,7 @@ static_assert((a <=> b) == std::partial_ordering::less);
 1. Equivalence does not imply equality (there may be indistinguishable alternative representations)
 2. But all values are comparable (no `unordered` exists)
 
-Applicable scenarios: case-insensitive strings, comparisons ignoring certain fields
+Use cases: case-insensitive strings, comparisons that ignore certain fields
 
 ```cpp
 #include <compare>
@@ -419,18 +425,18 @@ struct ConfigKey {
 
 ```mermaid
 graph TD
-    subgraph strong["strong_ordering (strongest)"]
-        strong_props["Substitutability: a == b means a can fully substitute b<br/>Equivalent means equal<br/>Examples: integers, enums"]
+    subgraph strong["strong_ordering（最强）"]
+        strong_props["替换性：a == b 意味着 a 可以完全替代 b<br/>等价即相等<br/>例子：整数、枚举"]
     end
     subgraph weak["weak_ordering"]
-        weak_props["Substitutability: a == b does not necessarily mean a can substitute b<br/>Equivalent but not equal<br/>Examples: case-insensitive strings"]
+        weak_props["替换性：a == b 不一定能完全替代 b<br/>等价但不相等<br/>例子：大小写不敏感字符串"]
     end
-    subgraph partial["partial_ordering (weakest)"]
-        partial_props["Some values are not comparable<br/>Examples: floating-point (NaN)"]
+    subgraph partial["partial_ordering（最弱）"]
+        partial_props["某些值不可比较<br/>例子：浮点数（NaN）"]
     end
 
-    strong -.->|weakens| weak
-    weak -.->|weakens| partial
+    strong -.->|弱化| weak
+    weak -.->|弱化| partial
 ```
 
 ------
@@ -442,7 +448,7 @@ graph TD
 
 ### Scenario 1: Sensor Data Priority Sorting
 
-In embedded systems, sensor data typically needs to be sorted by priority and timestamp:
+In embedded systems, sensor data often needs to be sorted by priority and timestamp:
 
 ```cpp
 #include <compare>
@@ -589,7 +595,7 @@ void version_comparison() {
 
 ### Scenario 3: Configuration Parameter Comparison (Allowing Partial Equality)
 
-In configuration systems, we might only want to compare certain key fields:
+In configuration systems, we might want to compare only certain key fields:
 
 ```cpp
 #include <compare>
@@ -655,7 +661,7 @@ void config_example() {
 
 ### Scenario 4: Sensor Data with NaN
 
-Some sensors might return invalid data (similar to the NaN concept):
+Some sensors may return invalid data (similar to the NaN concept):
 
 ```cpp
 #include <compare>
@@ -1222,6 +1228,17 @@ keys.insert({"Network", "IP"});
 
 ------
 
+## Run Online
+
+Experience the C++20 three-way comparison operator's default generation, custom version number comparison, and partial_ordering online:
+
+<OnlineCompilerDemo
+  title="C++20 Three-Way Comparison Operator (Spaceship)"
+  source-path="code/examples/vol34567/08_spaceship.cpp"
+  description="Experience default <=> auto-generation, custom version number comparison, and partial_ordering"
+  allow-run
+/>
+
 Looking back, we can see that the three-way comparison operator is an important feature introduced in C++20, drastically simplifying comparison logic for custom types:
 
 **Core Concepts**:
@@ -1236,9 +1253,9 @@ Looking back, we can see that the three-way comparison operator is an important 
 **Choosing a Comparison Category**:
 
 | Category | Characteristics | Use Cases |
-|----------|----------------|-----------|
+|----------|-----------------|-----------|
 | `strong_ordering` | Equivalence implies equality | Integers, enums, simple value types |
-| `weak_ordering` | Equivalent but not equal | Case-insensitive strings, comparisons ignoring partial fields |
-| `partial_ordering` | Potentially incomparable | Floating-point numbers (NaN) |
+| `weak_ordering` | Equivalent but not equal | Case-insensitive strings, comparisons ignoring certain fields |
+| `partial_ordering` | Possibly incomparable | Floating-point numbers (NaN) |
 
-The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with features we've covered earlier like `auto`, structured bindings, and attributes, modern C++ has evolved into a powerful and expressive systems programming language. In embedded development, using these features judiciously makes code clearer and easier to maintain.
+The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with features we've covered earlier like auto, structured bindings, and attributes, modern C++ has evolved into a powerful and expressive systems programming language. In embedded development, using these features judiciously makes code clearer and easier to maintain.

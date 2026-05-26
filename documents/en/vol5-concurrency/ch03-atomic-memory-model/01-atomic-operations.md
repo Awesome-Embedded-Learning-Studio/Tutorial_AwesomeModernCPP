@@ -1,5 +1,5 @@
 ---
-title: atomic operations
+title: atomic operation
 description: 'The complete operation manual for `std::atomic<T>`: load/store, fetch_add,
   compare_exchange, and lock-free determination'
 chapter: 3
@@ -24,26 +24,26 @@ related:
 - 原子操作模式
 translation:
   source: documents/vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md
-  source_hash: e41920c53dc8b4294d149014ca036add1567af8fa53e929b907b0b1b0405b251
-  translated_at: '2026-05-20T04:38:05.224013+00:00'
+  source_hash: 8200dcca123db20ed895454d3808df25e62d210aaeb28392b43a6f796d78106b
+  translated_at: '2026-05-26T11:44:54.314832+00:00'
   engine: anthropic
-  token_count: 4038
+  token_count: 4111
 ---
-# Atomic Operations
+# atomic operation
 
-So far, the synchronization primitives we have discussed—mutex, condition variable, latch, barrier, and semaphore—all follow the same fundamental pattern: "lock, operate, unlock." They are safe and intuitive, but they share a common cost: even if you only want to protect a simple integer increment, you still pay for the full lock → modify → unlock cycle. For an operation as fine-grained as "modifying a single variable," this overhead feels disproportionate.
+So far, the synchronization primitives we have discussed—mutex, condition variable, latch, barrier, semaphore—all follow the same fundamental pattern: lock, operate, then unlock. They are safe and intuitive, but they share a common cost: even if you only want to protect a simple integer increment, you still go through the full lock → modify → unlock cycle. For an operation as fine-grained as "modifying a single variable," this overhead feels disproportionate.
 
-`std::atomic` is designed specifically for these fine-grained scenarios. Rather than relying on locks (at least ideally), it leverages atomic instructions provided directly by the CPU to guarantee indivisible operations. In the previous chapter, we used `std::atomic<int>` to fix a data race when covering concurrency fundamentals, but we only scratched the surface. In this chapter, we will fully break down all `std::atomic<T>` operations—from the most basic `load`/`store`, to the CAS (compare-and-swap) mechanism, and finally to lock-free checks and the specialized `atomic_flag` type. We will discuss memory order in the next chapter; for now, let us focus purely on "what atomic operations can do."
+`std::atomic` is designed for exactly these fine-grained scenarios. It does not rely on locks (at least ideally), but instead uses atomic instructions provided by the CPU to guarantee indivisible operations. In the previous chapter, we already used `std::atomic<int>` to fix a data race when covering concurrency fundamentals, but we only scratched the surface. In this chapter, we will fully break down all operations of `std::atomic<T>`—from the most basic `load`/`store`, to the CAS (compare-and-swap) mechanism, and finally to lock-free checks and the specialized type `atomic_flag`. We will discuss memory order in the next chapter; for now, let us focus purely on "what atomic operations can do."
 
-## Which Types Does std::atomic<T> Support
+## What types does std::atomic<T> support
 
 `std::atomic` is a class template defined in the `<atomic>` header. Not all types can be placed into `std::atomic`—the standard places explicit restrictions on this.
 
-For integer types—`bool`, `char`, `short`, `int`, `long`, `long long`, and their unsigned variants—the standard library provides explicit specializations of `std::atomic` that support a full set of arithmetic and bitwise atomic operations (`fetch_add`, `fetch_sub`, `fetch_and`, `fetch_or`, `fetch_xor`). Pointer types are similarly specialized, supporting `fetch_add` and `fetch_sub` for atomically advancing pointers.
+For integral types—`bool`, `char`, `short`, `int`, `long`, `long long`, and their unsigned variants—the standard library provides explicit specializations of `std::atomic` that support a full set of arithmetic and bitwise atomic operations (`fetch_add`, `fetch_sub`, `fetch_and`, `fetch_or`, `fetch_xor`). Pointer types are similarly specialized, supporting `fetch_add` and `fetch_sub` for atomically advancing pointers.
 
-For custom types `T`, `std::atomic<T>` also exists, provided that `T` satisfies one core requirement: `std::is_trivially_copyable<T>::value` must be true—meaning `T` cannot have user-provided copy constructors/assignment operators (defaulted ones are fine), virtual functions, virtual base classes, and so on. Custom types meeting this condition can use the generic operations `load()`, `store()`, `exchange()`, and `compare_exchange_weak/strong()`, but not arithmetic operations like `fetch_add`—the standard has no obligation to define "addition" semantics for your custom types.
+For custom types `T`, `std::atomic<T>` also exists, provided that `T` satisfies one core condition: `std::is_trivially_copyable<T>::value` must be true—meaning `T` cannot have user-provided copy constructors/assignment operators (defaulted ones are fine), virtual functions, virtual base classes, and so on. Custom types meeting this condition can use the general-purpose operations `load()`, `store()`, `exchange()`, and `compare_exchange_weak/strong()`, but cannot use arithmetic operations like `fetch_add`—the standard has no obligation to define "addition" semantics for your custom types.
 
-Note that these generic operations impose additional requirements on `T`—`load()` requires `T` to be CopyConstructible, `store()` requires `T` to be CopyAssignable, and `exchange()` and `compare_exchange_*` require both. However, since `T` is trivially copyable, these requirements are almost always automatically satisfied. Additionally, the default constructor `std::atomic<T> a;` performs value initialization on `T` prior to C++20 (so `T` must be default-constructible), but starting from C++20 it leaves the value uninitialized—if you use a parameterized constructor like `std::atomic<T> a{T{...}};`, `T` does not need to be default-constructible.
+Note that these general-purpose operations themselves impose additional requirements on `T`: `load()` requires `T` to be CopyConstructible, `store()` requires `T` to be CopyAssignable, and `exchange()` and `compare_exchange_*` require both. However, since `T` is trivially copyable, these requirements are almost always automatically satisfied. Additionally, the default constructor `std::atomic<T> a;` value-initializes `T` prior to C++20 (so `T` must be default-constructible), but starting from C++20 it performs no initialization—if you use a parameterized constructor like `std::atomic<T> a{T{...}};`, `T` does not need to be default-constructible.
 
 ```cpp
 #include <atomic>
@@ -70,9 +70,9 @@ static_assert(std::is_trivially_copyable_v<PacketHeader>);
 std::atomic<PacketHeader> atomic_header{PacketHeader{0, 0}};
 ```
 
-It is worth noting that starting from C++20, the standard explicitly supports `std::atomic<float>` and `std::atomic<double>`, and provides `fetch_add` and `fetch_sub` for floating-point specializations. Prior to C++20, however, floating-point atomic variables could only be `load`, `store`, `exchange`, and `compare_exchange`—direct atomic addition and subtraction were not available. We will discuss the caveats of floating-point atomic operations in detail later.
+It is worth noting that starting from C++20, the standard explicitly supports `std::atomic<float>` and `std::atomic<double>`, and provides `fetch_add` and `fetch_sub` for floating-point specializations. Before C++20, however, floating-point atomic variables could only `load`, `store`, `exchange`, and `compare_exchange`—they could not perform atomic addition or subtraction directly. We will discuss the caveats of floating-point atomic operations in detail later.
 
-## load() and store(): The Foundation of Atomic Read-Write
+## load() and store(): the foundation of atomic reads and writes
 
 `load()` and `store()` are the most fundamental pair of atomic operations. All atomic reads and writes ultimately boil down to these two operations (plus an optional memory order parameter). When no memory order is specified, all atomic operations default to `memory_order_seq_cst`—the strongest ordering guarantee. We will dive into the specific meanings of memory order in the next chapter; for now, just remember: the default parameter is safe, though not necessarily the fastest.
 
@@ -101,13 +101,13 @@ int main()
 }
 ```
 
-Do not rush to use the convenient syntax. `int z = value;` looks like an ordinary variable copy, but behind the scenes it performs an atomic load. Mixing implicit conversions in a complex expression can sometimes obscure the code's intent—is this a normal assignment or an atomic read? In team collaboration, we prefer explicitly calling `load()` and `store()`. Even though it requires a few more keystrokes, it makes it immediately obvious that we are operating on an atomic variable.
+Do not rush to use the convenient shorthand. `int z = value;` looks like an ordinary variable copy, but behind the scenes it performs an atomic load. Mixing implicit conversions in a complex expression can sometimes obscure the code's intent—is this a regular assignment or an atomic read? In team collaborations, we prefer explicitly calling `load()` and `store()`. Even though it requires a few more keystrokes, it makes it immediately obvious that we are operating on an atomic variable.
 
-## fetch_add, fetch_sub, and Bitwise Operations: Atomic Arithmetic
+## fetch_add, fetch_sub, and bitwise operations: atomic arithmetic
 
-For integer and pointer types, `std::atomic` provides a family of fetch operations. They execute the entire "read current value → compute → write back new value" Read-Modify-Write (RMW) sequence, and guarantee that this sequence is atomic—no intermediate state can be observed by other threads.
+For integral and pointer types, `std::atomic` provides a family of fetch operations. They execute the entire read-modify-write (RMW) sequence of "read current value → perform operation → write back new value," and guarantee that this sequence is atomic—no intermediate state can be observed by other threads.
 
-The return value of the fetch family of operations is the **old value prior to modification**, not the new value. This is a highly pragmatic design choice: returning the old value allows you to accomplish both "reading the current state" and "modifying the state" in one step, which is extremely convenient when implementing lock-free algorithms.
+The return value of the fetch family of operations is the **old value before modification**, not the new value. This is a highly pragmatic design choice: returning the old value means you can accomplish both "reading the current state" and "modifying the state" in one step, which is extremely convenient when implementing lock-free algorithms.
 
 ```cpp
 #include <atomic>
@@ -145,11 +145,11 @@ int old_val = x++;       // x 变成 12，old_val = 11（后置返回旧值）
 x += 5;                  // x 变成 17
 ```
 
-We want to emphasize a detail that is easily confused: `x++` (post-increment) and `x.fetch_add(1)` do not behave exactly the same. `x++` returns the value **before** the increment, which is indeed consistent with `fetch_add(1)`. However, `++x` (pre-increment) returns the value **after** the increment, which is equivalent to `x.fetch_add(1) + 1`. In scenarios where the return value is not needed (such as a pure increment counter), it does not matter which one you use; but if you use the return value in an expression, this distinction is critical.
+We want to emphasize a subtle detail that is easy to confuse: `x++` (post-increment) and `x.fetch_add(1)` do not behave identically. `x++` returns the value **before** the increment, which is indeed consistent with `fetch_add(1)`. However, `++x` (pre-increment) returns the value **after** the increment, which is equivalent to `x.fetch_add(1) + 1`. In scenarios where the return value is not needed (such as a pure increment counter), it does not matter which one you use; but if you use the return value in an expression, this distinction is critical.
 
-## Caveats of Floating-Point Atomic Operations
+## Caveats of floating-point atomic operations
 
-This is a problem many people encounter the first time they use `std::atomic<float>`. Starting from C++20, floating-point specializations do provide `fetch_add` and `fetch_sub`, but there are two layers of特殊性 to be aware of when using them.
+This is a problem many people encounter the first time they use `std::atomic<float>`. Starting from C++20, the floating-point specializations do indeed provide `fetch_add` and `fetch_sub`, but there are two layers of特殊性 to be aware of when using them.
 
 At the hardware level, the vast majority of CPU architectures do not provide atomic floating-point addition instructions. x86 has `LOCK XADD` for integer atomic addition, but floating-point addition goes through the FPU/SSE/AVX execution units, which are not designed for atomic operations in the first place. Therefore, on most platforms, `atomic<float>::fetch_add` internally degrades into a CAS loop—there is no hardware-level atomic floating-point addition.
 
@@ -178,7 +178,7 @@ float atomic_fetch_add(float delta)
 
 We will see this pattern again shortly in the CAS section—it is the cornerstone of lock-free programming.
 
-## compare_exchange_weak and compare_exchange_strong: The CAS Mechanism
+## compare_exchange_weak and compare_exchange_strong: the CAS mechanism
 
 Compare-And-Swap (CAS) is the most important primitive among atomic operations, bar none. Almost all lock-free data structure implementations are built on top of CAS. C++ provides two variants: `compare_exchange_weak` and `compare_exchange_strong`, and the difference between them is subtle but critical.
 
@@ -196,7 +196,7 @@ bool compare_exchange_strong(T& expected, T desired,
 
 The execution logic is as follows: atomically compare the current value with `expected`. If they are equal, replace the current value with `desired` and return `true`; if they are not equal, load the current value into `expected` and return `false`. Note that on failure, `expected` is overwritten—this is an easily overlooked detail. If you need to use the original `expected` value afterward, remember to back it up in advance.
 
-The difference lies in "spurious failure": `compare_exchange_weak` may return `false` even when the current value equals `expected`. This is not a bug, but rather a hardware-level limitation. On architectures like ARM and PowerPC that implement CAS using LL/SC (Load-Linked/Store-Conditional) primitives, the SC instruction can fail for various reasons—another processor touched the same cache line, an interrupt occurred, or even a pure scheduling event. x86 uses the hardware `CMPXCHG` instruction and does not have this issue, so on x86, `weak` and `strong` generate identical code.
+The difference lies in "spurious failure": `compare_exchange_weak` may return `false` even when the current value equals `expected`. This is not a bug, but a hardware-level limitation. On architectures like ARM and PowerPC that implement CAS using LL/SC (Load-Linked/Store-Conditional) primitives, the SC instruction can fail for various reasons—another processor touched the same cache line, an interrupt occurred, or even a pure scheduling event. x86 uses the hardware `CMPXCHG` instruction and does not have this issue, so on x86, `weak` and `strong` generate identical code.
 
 ```cpp
 #include <atomic>
@@ -221,9 +221,9 @@ int main()
 }
 ```
 
-When should you use `weak`, and when should you use `strong`? The rule is simple: if your CAS is already wrapped in a loop, use `weak`—a spurious failure just means one extra iteration, but `weak` saves the internal retry loop on LL/SC architectures, making it faster overall. If you are doing a one-shot CAS (not in a loop), use `strong`—otherwise, a single spurious failure could send your logic down the wrong branch.
+When should you use `weak`, and when should you use `strong`? The rule is simple: if your CAS is already wrapped in a loop, use `weak`—a spurious failure just means one extra iteration, but `weak` saves the internal retry loop on LL/SC architectures, making it faster overall. If it is a one-shot CAS (not in a loop), use `strong`—otherwise, a single spurious failure could send your logic down the wrong branch.
 
-### Implementing a Lock-Free Stack Push with CAS
+### Implementing a lock-free stack push with CAS
 
 Let us look at a classic CAS application scenario—the push operation of a lock-free stack. This example nicely demonstrates the usage of `compare_exchange_weak` in a loop:
 
@@ -254,11 +254,11 @@ void push(int value)
 }
 ```
 
-The logic of this code is: first read the current `head`, point the new node's `next` to it, and then attempt to swap `head` to the new node via a single CAS. If another thread has already pushed a node (changing `head`) while we were preparing the new node, the CAS will fail, `old_head` will be updated to the latest `head`, and we reset `new_node->next` and try again. This process repeats until the CAS succeeds.
+The logic of this code is: first read the current `head`, point the new node's `next` to it, then attempt to swap `head` with the new node via a single CAS. If another thread has already pushed a node (changing `head`) while we were preparing the new node, the CAS will fail, `old_head` will be updated to the latest `head`, and we reset `new_node->next` and try again. This process repeats until the CAS succeeds.
 
 You may have noticed that `compare_exchange_weak` here accepts two memory order parameters: `success` and `failure`. On success, we use `memory_order_release` (because we just wrote a new node and need to ensure other threads can see the complete data); on failure, we use `memory_order_relaxed` (since we failed, no synchronization guarantees are needed—we are simply retrying).
 
-## exchange(): Atomic Swap
+## exchange(): atomic swap
 
 `exchange()` is a relatively simple but highly practical operation: it atomically writes in a new value while taking out the old value. It is a combination of `load` and `store`, but guarantees that these two steps are indivisible.
 
@@ -309,9 +309,9 @@ Note that this example could actually be written more precisely with CAS (`excha
 
 ## is_lock_free and is_always_lock_free
 
-Up to this point we have been saying "atomic operations do not rely on locks," but the truth is not always so. Whether `std::atomic<T>` is truly lock-free depends on two factors: the size of type `T` and the hardware capabilities of the target platform. If the hardware lacks atomic instructions of the corresponding width (for example, atomic operations on 64-bit integers on a 32-bit ARM), the compiler will fall back to using internal locks—making operations on `std::atomic` not truly lock-free.
+Up to this point we have been saying "atomic operations do not rely on locks," but the truth is not always so. Whether `std::atomic<T>` is truly lock-free depends on two factors: the size of type `T` and the hardware capabilities of the target platform. If the hardware lacks atomic instructions of the corresponding width (for example, atomic operations on 64-bit integers on a 32-bit ARM), the compiler will fall back to using internal locks—at this point, operations on `std::atomic` are not truly lock-free.
 
-The standard library provides two interfaces to query this. `is_lock_free()` is a runtime query that returns `true` to indicate that operations on the current object are lock-free. `is_always_lock_free` is a compile-time constant (`static constexpr`) that returns `true` to indicate that atomic operations of this type are lock-free for **all** instances on the platform. If you need to make a static assertion at compile time, use `is_always_lock_free`; if you need to make a branch decision at runtime, use `is_lock_free()`.
+The standard library provides two interfaces to query this. `is_lock_free()` is a runtime query that returns `true` indicating that operations on the current object are lock-free. `is_always_lock_free` is a compile-time constant (`static constexpr`) that returns `true` indicating that atomic operations of this type are lock-free for **all** instances on that platform. If you need to make a static assertion at compile time, use `is_always_lock_free`; if you need to make a runtime branch decision, use `is_lock_free()`.
 
 ```cpp
 #include <atomic>
@@ -337,15 +337,15 @@ int main()
 }
 ```
 
-In real-world projects, `is_always_lock_free` is more valuable than `is_lock_free()`. The reason is: if your code path has branches that depend on the return value of `is_lock_free()`, it means the same code might take different paths on different running instances—this is a nightmare for testing and debugging. In contrast, `static_assert` + `is_always_lock_free` can expose the problem at compile time: either the platform fully supports lock-free operations, or the code fails to compile—there is no gray area.
+In real-world projects, `is_always_lock_free` is more valuable than `is_lock_free()`. The reason is: if your code path has branches depending on the return value of `is_lock_free()`, it means the same code might take different paths on different running instances—this is a nightmare for testing and debugging. In contrast, `static_assert` + `is_always_lock_free` can expose the problem at compile time: either the platform fully supports lock-free operations, or the code fails to compile—there is no gray area.
 
 In embedded scenarios, this is especially important. On 32-bit ARM Cortex-M, `std::atomic<int>` is almost always lock-free (the hardware has the `LDREX`/`STREX` instruction pair), but `std::atomic<int64_t>` may not be on Cortex-M0/M3. If you use atomic operations in an ISR, you must confirm that they are lock-free—an ISR cannot block, and lock-based atomic operations will block.
 
-## atomic_flag: The Standard-Guaranteed Lock-Free Primitive
+## atomic_flag: the standard-guaranteed lock-free primitive
 
 Whether `std::atomic<T>` is lock-free depends on the platform, but `std::atomic_flag` is an exception—the standard guarantees that `std::atomic_flag` is **always lock-free**. On all platforms, with all compilers, without exception. This makes `atomic_flag` the most reliable cornerstone for building low-level synchronization primitives (such as spinlocks).
 
-`atomic_flag` has only two states: set (true) and clear (false). It provides three core operations: `test_and_set()` atomically sets the flag to true and returns the previous value; `clear()` atomically sets the flag to false; and C++20 adds `test()` to atomically read the current value without modifying it.
+`atomic_flag` has only two states: set (true) and clear (false). It provides three core operations: `test_and_set()` atomically sets the flag to true and returns the previous value; `clear()` atomically sets the flag to false; and C++20 adds `test()` for atomically reading the current value without modifying it.
 
 ```cpp
 #include <atomic>
@@ -372,9 +372,9 @@ int main()
 }
 ```
 
-### Implementing a Spinlock with atomic_flag
+### Implementing a spinlock with atomic_flag
 
-The most classic application of `atomic_flag` is the spinlock. The principle of a spinlock is simple: when acquiring the lock, continuously attempt `test_and_set`; if it returns false (previously in the clear state), it means you successfully acquired the lock; if it returns true (previously in the set state), it means the lock is held by someone else, so you spin again. When releasing the lock, call `clear`.
+The most classic application of `atomic_flag` is the spinlock. The principle of a spinlock is simple: when acquiring the lock, continuously attempt `test_and_set`; if it returns false (previously in the clear state), it means we successfully acquired the lock; if it returns true (previously in the set state), it means the lock is held by someone else, so we spin again. When releasing the lock, call `clear`.
 
 ```cpp
 #include <atomic>
@@ -430,15 +430,15 @@ int main()
 }
 ```
 
-The drawback of a spinlock is obvious: while the lock is held, other threads are spinning idly, wasting CPU time. Therefore, spinlocks are only suitable for scenarios with very short critical sections—ideally, the lock should be held for such a short time that "another thread has not even had time to be scheduled away before it is released." If the critical section is relatively long, using `std::mutex` (an OS-level blocking lock) is more appropriate.
+The drawback of a spinlock is obvious: while the lock is held, other threads are spinning idly, wasting CPU time. Therefore, spinlocks are only suitable for scenarios with very short critical sections—ideally, the lock should be held for such a short time that "another thread has not even had a chance to be scheduled away before it is released." If the critical section is relatively long, using `std::mutex` (an OS-level blocking lock) is more appropriate.
 
-C++20 also adds `wait()` and `notify_one()`/`notify_all()` operations for `atomic_flag`, allowing spinlocks to evolve into more efficient "wait locks"—instead of spinning idly on acquisition failure, the thread is suspended and woken up when the lock is released. Under the hood, this uses `futex` on Linux and `WaitOnAddress` on Windows, saving far more CPU than pure spinning.
+C++20 also adds `wait()` and `notify_one()`/`notify_all()` operations for `atomic_flag`, allowing the spinlock to evolve into a more efficient "wait lock"—instead of spinning idly on acquisition failure, the thread is suspended and woken up when the lock is released. Under the hood, it uses `futex` on Linux and `WaitOnAddress` on Windows, saving far more CPU than pure spinning.
 
-## Common Misconceptions
+## Common misconceptions
 
 Before we wrap up, let us quickly go over a few easy-to-fall-into traps.
 
-The first misconception: assuming atomic variables can solve all race conditions. Atomic operations guarantee the atomicity of a **single access**, but they do not guarantee atomicity **across multiple atomic operations**. For example:
+The first misconception: assuming that atomic variables can solve all race conditions. Atomic operations guarantee the atomicity of a **single access**, but they do not guarantee atomicity **across multiple atomic operations**. For example:
 
 ```cpp
 std::atomic<int> x{0};
@@ -453,21 +453,33 @@ int a = y.load();
 int b = x.load();
 ```
 
-Even though the individual `load`/`store` of `x` and `y` are each atomic, thread 2 might still see `a == 2` but `b == 0`—because there is no synchronization relationship between the two `store` operations or between the two `load` operations. This is not something atomic operations can solve; it requires memory order constraints. We will explore this topic in detail in the next chapter.
+Even though the individual `load`/`store` operations of `x` and `y` are each atomic, thread 2 might still see `a == 2` but `b == 0`—because there is no synchronization relationship between the two `store` operations or between the two `load` operations. This is not something atomic operations can solve; it requires memory order constraints. We will explore this topic in detail in the next chapter.
 
-The second misconception: believing that `volatile` is equivalent to `std::atomic`. The semantics of `volatile` are "do not optimize away accesses to this variable"—every read and write will truly access memory without caching. However, `volatile` **does not guarantee atomicity, nor does it guarantee memory order**. A `++counter` on a `volatile int counter;` is still a three-step read-modify-write operation and can still result in a data race. The original design intent of `volatile` was for hardware register mapping and signal handlers, not for multithreading.
+The second misconception: believing that `volatile` is equivalent to `std::atomic`. The semantics of `volatile` are "do not optimize away accesses to this variable"—every read and write will truly access memory without caching. But `volatile` **does not guarantee atomicity, nor does it guarantee memory order**. A `++counter` on `volatile int counter;` is still a three-step read-modify-write operation and will still result in a data race. The original design intent of `volatile` was for hardware register mapping and signal handlers, not for multithreading.
 
 The third misconception: using `std::atomic` on a non-trivially-copyable type like `std::atomic<std::string>`. The standard does not allow this—the compiler will report an error directly. `std::string` has a user-defined copy constructor (involving heap memory allocation internally) and does not satisfy the trivially copyable requirement. If you need to share a string atomically, you can use `std::atomic<std::shared_ptr<std::string>>` (supported starting from C++20) or protect it with a mutex.
 
+## Run online
+
+Experience atomic load/store, fetch_add, compare_exchange, and atomic_flag spinlock primitives online:
+
+<OnlineCompilerDemo
+  title="atomic 操作"
+  source-path="code/examples/vol34567/11_atomic.cpp"
+  description="体验 atomic load/store、fetch_add、compare_exchange_strong 和 atomic_flag"
+  allow-run
+  allow-x86-asm
+/>
+
 ## Exercises
 
-### Exercise 1: Lock-Free Counter
+### Exercise 1: Lock-free counter
 
-Implement a multithread-safe counter using `std::atomic<int>`. Launch eight threads, each incrementing the counter 100,000 times, and the final result should be 800,000. Test both implementations—using `fetch_add` and a `compare_exchange_weak` loop—and compare their correctness and performance differences.
+Implement a multithread-safe counter using `std::atomic<int>`. Launch eight threads, each incrementing the counter 100,000 times, and the final result should be 800,000. Test both implementations using `fetch_add` and a `compare_exchange_weak` loop, and compare their correctness and performance differences.
 
-Hint: The approach to implementing `fetch_add` with `compare_exchange_weak` is—read the current value, compute the new value, attempt to replace it with CAS, and retry on failure.
+Hint: The approach to implementing `fetch_add` with `compare_exchange_weak` is—read the current value, calculate the new value, attempt to replace it with CAS, and retry on failure.
 
-### Exercise 2: Lock-Free Maximum Value Tracker
+### Exercise 2: Lock-free maximum value tracker
 
 Implement a thread-safe maximum value tracker: multiple threads continuously write random values, and the tracker always records the maximum value among all written values. You must use `compare_exchange_strong` (not `fetch_add`) to implement this.
 
@@ -498,9 +510,9 @@ private:
 };
 ```
 
-After completing the `update` function above, test it with multiple threads: create eight threads, each generating 100,000 random values and calling `update`, and finally verify that the value returned by `get()` is indeed the maximum among all values generated by the threads.
+After completing the `update` function above, test it with multiple threads: create eight threads, each generating 100,000 random values and calling `update`, then verify that the value returned by `get()` is indeed the maximum among all values generated by the threads.
 
-> 💡 The complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/volumn_codes/vol5/ch03-atomic-memory-model/`.
+> 💡 Complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/volumn_codes/vol5/ch03-atomic-memory-model/`.
 
 ## References
 

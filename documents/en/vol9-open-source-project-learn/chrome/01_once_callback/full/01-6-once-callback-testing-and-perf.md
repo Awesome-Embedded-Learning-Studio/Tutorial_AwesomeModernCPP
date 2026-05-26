@@ -1,8 +1,8 @@
 ---
 title: 'OnceCallback in Practice (Part 6): Testing and Performance Comparison'
-description: Systematically design six categories of test cases to verify all core
-  behaviors of OnceCallback, and compare performance differences with the original
-  Chromium version and standard library solutions.
+description: We systematically design six categories of test cases to verify all core
+  behaviors of `OnceCallback`, and compare the performance differences against the
+  original Chromium implementation and standard library alternatives.
 chapter: 1
 order: 6
 tags:
@@ -23,18 +23,24 @@ prerequisites:
 - OnceCallback 实战（五）：then 链式组合
 related:
 - OnceCallback 前置知识（五）：std::move_only_function
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-6-once-callback-testing-and-perf.md
+  source_hash: 46dfe09ed16416d6337d24255d3d4c5cf2359d9636d20273d62e69749c7039b1
+  translated_at: '2026-05-26T12:26:21.506854+00:00'
+  engine: anthropic
+  token_count: 1889
 ---
 # OnceCallback in Practice (Part 6): Testing and Performance Comparison
 
 ## Introduction
 
-At this point, the four core features of OnceCallback—the core skeleton, `bind_once`, cancellation tokens, and `then()` chaining—are fully implemented. In this article, we do two things: first, we systematically outline our testing strategy to ensure the implementation is correct under various boundary conditions; second, we analyze the performance differences between our implementation, the original Chromium version, and standard library approaches, clarifying what we sacrificed and what we gained.
+At this point, the four core features of OnceCallback—the core skeleton, `bind_once`, cancellation token, and `then()` chaining—are fully implemented. In this article, we do two things: first, we systematically outline our testing strategy to ensure the implementation is correct under various boundary conditions; second, we analyze the performance differences between our implementation, the original Chromium version, and standard library approaches, clarifying what we sacrificed and what we gained.
 
 > **Learning Objectives**
 >
 > - Master the method of organizing test cases by invariants
 > - Understand the design intent and key assertions of the six test categories
-> - Clearly understand the performance trade-offs between our OnceCallback and the original Chromium version
+> - Be clear on the performance trade-offs between our OnceCallback and the original Chromium version
 
 ---
 
@@ -55,7 +61,7 @@ add_test(NAME test_once_callback COMMAND test_once_callback)
 
 Catch2's `REQUIRE` macro is stronger than `assert()` because it reports the specific failing expression, file, and line number, and continues executing subsequent checks within the same `TEST_CASE`. `REQUIRE_THROWS_AS` is specifically used to verify exception types.
 
-Running the tests: under the `build/` directory, run `cmake --build . && ctest`.
+Running the tests: in the `build/` directory, run `cmake --build . && ctest`.
 
 ---
 
@@ -104,7 +110,7 @@ TEST_CASE("move semantics: source becomes null", "[once_callback]") {
 
 The move-only capture test verifies that OnceCallback truly supports move-only callables—if the underlying implementation used `std::function` instead of `std::move_only_function`, this code would fail to compile. The move semantics test verifies that after a move construction, the source object transitions to the kEmpty state.
 
-There is a concept that is easy to confuse—move operations transfer ownership but do not trigger consumption. Only `run()` consumes the callback. `OnceCallback cb2 = std::move(cb1)` merely transfers ownership, and the callback remains active until `cb2.run()`.
+There is an easily confused concept here—move operations transfer ownership but do not trigger consumption. Only `run()` consumes the callback. `OnceCallback cb2 = std::move(cb1)` merely transfers ownership, and the callback remains active until `cb2.run()`.
 
 ### Category C: Single-Invocation Constraint
 
@@ -130,7 +136,7 @@ TEST_CASE("bind_once with member function", "[bind_once]") {
 }
 ```
 
-Covers partial argument binding for regular lambdas and member function binding. The lifetime trap of member function binding was discussed in previous articles—`&calc` is a raw pointer, and the safety responsibility lies with the caller.
+Covers partial argument binding for regular lambdas and member function binding. The lifetime trap of member function binding was discussed in previous articles—`&calc` is a raw pointer, so the caller is responsible for safety.
 
 ### Category E: Cancellation Mechanism
 
@@ -218,7 +224,7 @@ std::cout << "sizeof(OnceCallback<void()>): "
 
 On GCC, typical values are `std::function` at about 32 bytes, `std::move_only_function` at about 32 bytes, and our `OnceCallback` at about 56-64 bytes. Chromium's is only 8 bytes.
 
-The root cause of this difference lies in the storage strategy. Chromium puts all state in a heap-allocated `BindState`, and the callback object holds only a single pointer. We use SBO with `std::move_only_function` to inline small objects directly, avoiding heap allocation at the cost of increased object size.
+The root cause of this difference lies in the storage strategy. Chromium puts all state in a heap-allocated `BindState`, and the callback object holds only a single pointer. We use SBO with `std::move_only_function` to inline small objects directly, avoiding heap allocation but increasing the object size.
 
 ### Allocation Behavior
 
@@ -239,7 +245,7 @@ The invocation overhead is the same for both approaches—one indirect function 
 | Move cost | Copy 32+ bytes | Copy 1 pointer |
 | Implementation code size | ~200 lines | ~2000+ lines |
 
-We sacrificed object compactness and extreme move performance in exchange for implementation simplicity—there is no need to manually write reference counting, function pointer tables, or `TRIVIAL_ABI` annotations. Zero heap allocation for small lambdas is actually an advantage in certain low-frequency scenarios. For educational purposes and most practical scenarios, this trade-off is worthwhile.
+We sacrificed object compactness and extreme move performance in exchange for implementation simplicity—there is no need to manually write reference counting, function pointer tables, or `TRIVIAL_ABI` annotations. Zero heap allocation for small lambdas can actually be an advantage in certain low-frequency scenarios. For teaching purposes and most practical scenarios, this trade-off is worthwhile.
 
 ---
 
@@ -247,7 +253,7 @@ We sacrificed object compactness and extreme move performance in exchange for im
 
 In this article, we did two things. On the testing side, we designed 11 Catch2 test cases around six invariants (basic invocation, move semantics, single invocation, argument binding, cancellation mechanism, and chaining composition), covering all core behaviors of OnceCallback. On the performance side, we compared the differences with Chromium's OnceCallback in terms of object size, allocation behavior, and invocation overhead—our implementation trades compactness for simplicity.
 
-At this point, the design, implementation, and verification of the OnceCallback component are fully complete. Across 13 articles, from prerequisite knowledge to hands-on practice, we covered the complete knowledge chain from C++11 move semantics to C++23 deducing this. We hope this series helps you understand "how to design an industrial-grade component with modern C++"—it is not just about writing code, but more importantly, understanding the reasoning behind every design decision.
+With this, the design, implementation, and verification of the OnceCallback component are fully complete. Across 13 articles, from prerequisite knowledge to hands-on practice, we covered the complete knowledge chain from C++11 move semantics to C++23 deducing this. We hope this series helps you understand "how to design an industrial-grade component with modern C++"—it is not just about writing code, but more importantly, understanding the reasoning behind every design decision.
 
 ## References
 

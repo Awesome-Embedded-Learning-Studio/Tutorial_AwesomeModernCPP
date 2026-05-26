@@ -16,26 +16,32 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Type-safe register access
+title: Type-Safe Register Access
+translation:
+  source: documents/vol3-standard-library/02-type-safe-register-access.md
+  source_hash: ee7289ceef37902b9cdc6d8479414487f7cdf0f30acb7c738bf4937d04ab1834
+  translated_at: '2026-05-26T11:37:19.392812+00:00'
+  engine: anthropic
+  token_count: 1105
 ---
 # Embedded C++ Tutorial — Type-Safe Register Access
 
-When writing register operations, our common appetizer is a one-line tragedy like this:
+When writing register operations, our typical appetizer is a one-line tragedy like this:
 
 ```cpp
 *(volatile uint32_t*)0x40001000 |= (1 << 3);
 
 ```
 
-Its advantage is being short and concise; the downside is that you won't understand it tomorrow, the compiler understands it but isn't fully satisfied, and you might also step on a landmine of undefined behavior (UB).
+Its advantage is that it is short and concise; the disadvantage is that you won't understand it tomorrow, the compiler understands it but isn't fully satisfied, and you might also step on a landmine of undefined behavior (UB).
 
-We use **compile-time constants + templates + strongly-typed enums** to encapsulate register addresses, bit fields, and operations; meanwhile, we use **constexpr mask / static_assert** to catch errors at compile time. We must preserve `volatile` (telling the compiler not to optimize away hardware accesses) and use memory barriers when necessary to guarantee visibility and ordering.
+We use **compile-time constants + templates + strongly-typed enumerations** to encapsulate register addresses, bit fields, and operations. At the same time, we use **constexpr mask / static_assert** to catch errors at compile time. We must retain `volatile` (to tell the compiler not to optimize away hardware accesses) and use memory barriers when necessary to guarantee visibility and ordering.
 
 ------
 
 ## A Concise Type-Safe Register Wrapper
 
-Below is a small yet complete implementation template that can both read and write registers, safely read and write fields, and support user-defined strongly-typed enum types.
+Below is a small yet complete implementation template. It can read and write registers, safely read and write fields, and support user-defined strongly-typed enumeration types.
 
 ```cpp
 // reg.hpp
@@ -125,7 +131,7 @@ struct reg_field {
 
 ```
 
-> Note: The `compiler_barrier()` in `mmio_reg` above uses `asm volatile("" ::: "memory")`, which is the lightest compiler barrier; on ARM Cortex-M, if you need to ensure bus ordering or cache coherency, you should use `__DSB()` / `__ISB()` or equivalent functions provided by the platform SDK at critical locations.
+> Note: The `compiler_barrier()` in `mmio_reg` above uses `asm volatile("" ::: "memory")`, which is the lightest compiler barrier. On ARM Cortex-M, if you need to ensure bus ordering or cache coherency, you should use `__DSB()` / `__ISB()` or equivalent functions provided by the platform SDK at critical locations.
 
 ------
 
@@ -134,8 +140,8 @@ struct reg_field {
 Suppose we have a 32-bit UART control register `UART_CR` at address `0x40001000`, defined as:
 
 - `EN` bit 0 (enable),
-- `MODE` bits 1–2 (2-bit mode),
-- `BAUDDIV` bits 8–15 (8-bit baud rate divider).
+- `MODE` bits 1~2 (2-bit mode),
+- `BAUDDIV` bits 8~15 (8-bit baud rate divider).
 
 ```cpp
 // uart_regs.hpp
@@ -168,14 +174,14 @@ void uart_init() {
 
 ```
 
-The advantages are immediately visible: field positions, widths, and valid values are all encoded in the type system, making the code read like documentation rather than magical bit manipulation.
+The advantages are immediately visible: field positions, widths, and valid values are all encoded in the type system. The code reads like documentation rather than magical bit manipulation.
 
 ------
 
 ## Preventing Common Errors
 
-1. **Ensure consistent type widths**: The `uint32_t` of `mmio_reg<uint32_t, ...>` must match the actual width of the hardware register; `static_assert` can help you catch errors at compile time.
+1. **Ensure consistent type widths**: The `uint32_t` of `mmio_reg<uint32_t, ...>` must match the actual width of the hardware register. `static_assert` can help you catch errors at compile time.
 2. **Avoid raw `|=`/`&=` on the same register, which can cause read-modify-write timing issues**: If a register is specifically designed as "write-1-to-clear" or "write-1-to-set", use explicitly wrapped `set_bits()` / `clear_bits()` or dedicated functions to prevent misuse.
-3. **Consider concurrency and interrupts**: Read-modify-write operations may not be atomic in interrupt or multi-core environments. For register modifications that must be atomic, disable interrupts in a critical section or use hardware-provided atomic accesses.
+3. **Consider concurrency and interrupts**: Read-modify-write operations may not be atomic in an interrupt or multi-core environment. For register modifications that must be atomic, disable interrupts in a critical section or use hardware-provided atomic accesses.
 4. **Memory barriers**: After initializing a peripheral or swapping control registers, if you need to guarantee that subsequent reads/writes take effect on the hardware immediately, please use appropriate DSB/ISB or `atomic_thread_fence`.
 5. **Don't pass registers around like global variables**: Try to keep register wrappers as `constexpr` types/aliases to facilitate static auditing and automatic documentation generation.

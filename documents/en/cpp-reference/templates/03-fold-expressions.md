@@ -1,7 +1,7 @@
 ---
 title: Fold expression
-description: Fold the parameter pack over a binary operator, replacing recursive template
-  expansion
+description: Reduce a parameter pack using a binary operator, replacing recursive
+  template expansion.
 chapter: 99
 order: 3
 tags:
@@ -13,10 +13,16 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/templates/03-fold-expressions.md
+  source_hash: 6e8c6f034c15f79952f1d9a25a17b0f8d97b8246d3acc31849f2175092cae6f9
+  translated_at: '2026-05-26T10:18:24.646199+00:00'
+  engine: anthropic
+  token_count: 406
 ---
 # Fold Expressions (C++17)
 
-## One-Liner
+## In a Nutshell
 
 Folds a parameter pack from a variadic template into a single expression using a specified operator, eliminating the need to manually write recursive base cases.
 
@@ -62,10 +68,10 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- Compile-time pure computations (such as condition checks in `static_assert`) have zero runtime overhead, making them highly suitable
+- Compile-time pure computations (such as condition checks in `constexpr`) have zero runtime overhead, making them highly suitable
 - Replacing recursive template instantiation can reduce compile-time memory usage and compilation time
 - Avoid using complex fold expressions in frequently called hot paths to prevent code bloat from increasing Flash usage
-- When using comma folds to expand multiple statements, we must confirm that the overhead of each statement is within an acceptable range
+- When using comma folds to expand multiple statements, we need to confirm that the overhead of each statement is within an acceptable range
 
 ## Compiler Support
 

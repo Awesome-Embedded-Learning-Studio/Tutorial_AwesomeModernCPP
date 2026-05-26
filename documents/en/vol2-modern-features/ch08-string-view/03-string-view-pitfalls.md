@@ -1,7 +1,7 @@
 ---
 title: string_view Pitfalls and Best Practices
 description: Dangling references, null termination, implicit conversions — common
-  pitfalls of string_view and how to avoid them
+  `string_view` pitfalls and how to avoid them
 chapter: 8
 order: 3
 tags:
@@ -17,12 +17,18 @@ prerequisites:
 - 'Chapter 8: string_view 内部原理'
 related:
 - string_view 性能分析
+translation:
+  source: documents/vol2-modern-features/ch08-string-view/03-string-view-pitfalls.md
+  source_hash: 91abf9c98e9a83f341bdef81fa58c673b53baceaa4eaf265c8f3520ecefb3202
+  translated_at: '2026-05-26T11:34:08.082388+00:00'
+  engine: anthropic
+  token_count: 2550
 ---
 # string_view Pitfalls and Best Practices
 
-In the previous two articles, we covered the internal mechanics and performance benefits of `string_view`. It seems like a perfect tool—lightweight, fast, and zero-allocation. But we need to offer a reality check: `string_view` is one of the easiest C++ features to use when accidentally introducing undefined behavior (UB). The reason is simple: it does not own the underlying data. The moment you forget this, dangling references, wild pointers, garbled output, and even security vulnerabilities are waiting for you.
+In the previous two articles, we covered the internal mechanics and performance benefits of `string_view`. It seems like a perfect tool—lightweight, fast, and zero-allocation. But we need to pour some cold water on things here: `string_view` is one of the easiest C++ features to use when writing code that leads to undefined behavior (UB). The reason is simple: it doesn't own the data. The moment you forget this, dangling references, wild pointers, garbled output, and even security vulnerabilities might be waiting for you.
 
-In this article, we focus specifically on the pitfalls of `string_view`. We will compile the traps we have fallen into, seen others fall into, and those that static analysis tools can help you catch, followed by a best practices cheat sheet.
+In this article, we focus specifically on the pitfalls of `string_view`. We will catalog the traps we have fallen into ourselves, seen others fall into, and those that static analysis tools can help you catch. Finally, we provide a best practices cheat sheet.
 
 > **Learning Objectives**
 >
@@ -34,7 +40,7 @@ In this article, we focus specifically on the pitfalls of `string_view`. We will
 
 ## Pitfall 1: Dangling References—The Number One Killer
 
-`string_view` does not own the underlying data, nor does it extend the lifetime of any object. This is its most fundamental characteristic and the root cause of the vast majority of bugs. Dangling references occur in more scenarios than you might think.
+`string_view` does not own the underlying data, nor does it extend the lifetime of any object. This is its most fundamental characteristic, and the root cause of the vast majority of bugs. Dangling references occur in more scenarios than you might think.
 
 ### Returning a view pointing to a temporary string
 
@@ -53,19 +59,19 @@ int main() {
 }
 ```
 
-When the `get_name` function ends, the local variable `s` is destroyed, and its internal character buffer is freed. However, `string_view` still naively points to that memory. This is a typical use-after-free and constitutes undefined behavior (UB)—it might coincidentally work, output garbled text, run fine in debug builds but crash in release builds. The most terrifying outcome is "coincidentally working," because it means the bug will lie dormant for a long time before surfacing.
+When the `get_name` function ends, the local variable `s` is destroyed, and its internal character buffer is freed. But `string_view` still foolishly points to that memory. This is a typical use-after-free, which is undefined behavior (UB)—it might happen to work, might output garbled text, might run fine in debug builds but crash in release. The most terrifying outcome is "happening to work," because it means the bug will lie dormant for a long time before surfacing.
 
 ### Implicit temporary objects are more insidious
 
-In the previous example, you at least explicitly created a local `string`, making it relatively easy to track down. More insidious are temporary objects created implicitly by the compiler:
+In the previous example, at least you actively created a local `string`, making it relatively easy to track down. More insidious are the temporary objects created for you by the compiler:
 
 ```cpp
 std::string_view sv = std::string("temp");  // UB！临时 string 立刻析构
 ```
 
-This line of code looks like it is assigning a value to `string_view`, but in reality, `std::string("temp")` is a temporary object that is destroyed as soon as the statement ends. From the moment `sv` is born, it points to freed memory.
+This line of code looks like it's assigning a value to `string_view`, but in reality `std::string("temp")` is a temporary object that gets destroyed at the end of this statement. From the moment `sv` is born, it points to freed memory.
 
-Here is a slightly more indirect version:
+Let's look at a slightly more indirect version:
 
 ```cpp
 std::string_view trim(std::string_view input) {
@@ -81,9 +87,9 @@ auto result = trim(std::string("  hello"));  // UB！
 // 临时 string 在 trim 返回后销毁，result 悬空
 ```
 
-The problem with this example lies in the call site: the `trim` function's own logic is perfectly correct—it accepts a `string_view` parameter and returns a `string_view`, which is completely fine. The issue is at the call site: a temporary `std::string` is passed in. If the caller passed a string literal (`trim("  hello")`), it would be safe because the lifetime of a literal spans the entire program. But if a temporary `std::string` is passed, the returned `string_view` is left dangling.
+The problem with this example lies in the fact that the logic of the `trim` function itself is perfectly correct—it takes a `string_view` parameter and returns a `string_view`, which is completely fine. The problem is on the calling side: a temporary `std::string` is passed in. If the caller passed a string literal (`trim("  hello")`), it would be safe, because the lifetime of a literal is the entire program. But if a temporary `std::string` is passed in, the returned `string_view` is left dangling.
 
-⚠️ A hallmark of this type of bug is that it might work fine in debug builds (because the debugger's memory padding patterns might coincidentally allow the dangling view to read the correct data), only to suddenly crash in release builds. We once spent an entire afternoon tracking down such a bug, only to find it was a three-line utility function where the caller passed a temporary `std::string`.
+⚠️ A hallmark of this type of bug is that it might work correctly in debug builds (because the debugger's memory fill patterns might coincidentally allow the dangling view to still read the correct data), but suddenly crashes in release builds. We once spent an entire afternoon tracking down such a bug, only to find it was a three-line utility function where the caller passed in a temporary `std::string`.
 
 ### Indirect reference chains
 
@@ -109,7 +115,7 @@ private:
 };
 ```
 
-The problem with this `Config` class is that the value type of `entries_` is `std::string_view`. Calling `set_value("host", "localhost")` is safe (because of the literal), but if you write this:
+The problem with this `Config` class is that the value type of `entries_` is `std::string_view`. Calling `set_value("host", "localhost")` is safe (it's a literal), but if you write it like this:
 
 ```cpp
 Config cfg;
@@ -120,7 +126,7 @@ Config cfg;
 auto v = cfg.get_value("host");  // UB！
 ```
 
-What makes this bug so insidious is that the interface of `set_value` looks perfectly normal, and the caller's code looks perfectly normal too, but the combination causes a failure. The root cause is that `string_view` is stored in a container that needs to hold data long-term, but the underlying data is destroyed before the container.
+What makes this bug so insidious is that the interface of `set_value` looks perfectly normal, and the caller's code also looks perfectly normal, but when combined, things go wrong. The root cause is that `string_view` is stored in a container that needs to hold data long-term, but the underlying data is destroyed before the container.
 
 ## Pitfall 2: Null Termination Issues
 
@@ -140,7 +146,7 @@ std::printf("Value: %s\n", sv.data());  // 未定义行为！
 // 但这是一个不应该依赖的行为
 ```
 
-An even more dangerous scenario: when the buffer following what `string_view` points to is not `\0`, but other data:
+An even more dangerous scenario: when the buffer pointed to by `string_view` is not immediately followed by `\0`, but by other data:
 
 ```cpp
 char buf[] = "helloworld";
@@ -148,11 +154,11 @@ std::string_view sv(buf, 5);  // "hello"，buf[5] = 'w'，不是 '\0'
 std::printf("%s\n", sv.data());  // 输出 "helloworld" 而不是 "hello"
 ```
 
-`printf` will keep reading until it encounters `\0`, so it outputs the entire `buf` instead of just the first 5 characters of `sv`. This is still a "good case"—if there is no `\0` in the memory following `buf`, `printf` will read out of bounds, potentially crashing or leaking sensitive information from memory.
+`printf` will keep reading until it encounters `\0`, so it outputs the entire `buf` instead of just the first five characters of `sv`. This is still considered a "good case"—if there is no `\0` in the memory following `buf`, `printf` will read out of bounds, potentially crashing or leaking sensitive information from memory.
 
 ### The correct approach when NUL termination is required
 
-If your function internally needs to call a C API (`printf`, `fopen`, system calls, etc.) and the data source is a `string_view`, the safest approach is to explicitly construct a `std::string`:
+If your function internally needs to call a C API (`printf`, `fopen`, system calls, etc.), and the data source is a `string_view`, the safest approach is to explicitly construct a `std::string`:
 
 ```cpp
 void safe_c_api_call(std::string_view sv) {
@@ -162,7 +168,7 @@ void safe_c_api_call(std::string_view sv) {
 }
 ```
 
-This introduces a copy, but it is the correct price to pay. If you are using `string_view` for performance, then "conceding" to do a copy where NUL termination is truly needed is far better than writing UB.
+This introduces a copy, but it is the correct price to pay. If you are using `string_view` for performance, then "conceding" to do a copy where NUL termination is truly needed is far better than writing a UB.
 
 ### Safety of the std::string constructor
 
@@ -191,7 +197,7 @@ process(std::string("temp"));  // 临时 string 构造 view → 传参期间安�
 // 但如果 process 内部把这个 view 存到了某个地方...
 ```
 
-The "convenience" of implicit conversion lulls you into a false sense of security. During code review, it can be very hard to notice that a temporary `string` was passed to a `string_view` parameter—because it is syntactically perfectly legal and the compiler won't warn you.
+The "convenience" of implicit conversion lowers your guard. During code review, you might find it hard to notice that a temporary `string` was passed to a `string_view` parameter—because it is syntactically completely legal, and the compiler won't warn you.
 
 ### string_view to string: Must be explicit
 
@@ -209,11 +215,11 @@ need_string(sv);  // 编译错误！string_view 不能隐式转为 string
 need_string(std::string(sv));  // 必须显式
 ```
 
-This design is intentional—the conversion from `string_view` to `string` involves heap allocation and character copying, and the compiler doesn't want to perform such an expensive operation without your knowledge.
+This design is intentional—converting from `string_view` to `string` involves heap allocation and character copying, and the compiler doesn't want to perform such a heavy operation without your knowledge.
 
 ## Pitfall 4: Functions Returning string_view
 
-A function returning `string_view` is not inherently a problem—provided the data pointed to by the returned view lives long enough. Here is a safe pattern:
+A function returning a `string_view` is not a problem in itself—provided that the data pointed to by the returned view lives long enough. Here are safe patterns:
 
 ```cpp
 // 安全：返回指向参数的子视图
@@ -240,7 +246,7 @@ std::string_view get_error_message(int code) {
 }
 ```
 
-An unsafe pattern:
+Unsafe patterns:
 
 ```cpp
 // 不安全：返回指向局部变量的视图
@@ -250,11 +256,11 @@ std::string_view format_name(const char* first, const char* last) {
 }
 ```
 
-A useful rule of thumb is: if a function returns a `string_view`, it must be an observer of some "longer-lived" data. It either points to the parameter's data (valid during the call), points to static storage (valid forever), or points to a member variable (valid during the object's lifetime). If you find a function that creates a new `std::string` internally and then returns its view—that is a bug one hundred percent of the time.
+A useful rule of thumb is: if a function returns a `string_view`, it must be an observer of some data that "lives longer." It either points to the parameter's data (valid during the call), points to static storage (valid forever), or points to a member variable (valid during the object's lifetime). If you find a function that internally creates a new `std::string` and then returns its view—that is a bug one hundred percent of the time.
 
 ## Pitfall 5: Storing string_view as a Member Variable
 
-Using `string_view` as a class member variable requires extreme caution. A class's lifetime is typically much longer than a function's, but the data pointed to by the `string_view` might be long gone.
+Using a `string_view` as a class member variable is something that requires extreme caution. The lifetime of a class is usually much longer than a function, and the data pointed to by the `string_view` might be long gone.
 
 ```cpp
 // 反面教材
@@ -285,7 +291,7 @@ Parser p;
 p.parse();  // UB！
 ```
 
-A better approach is to have the class own the data itself:
+A better approach is to have the class hold the data itself:
 
 ```cpp
 class SafeParser {
@@ -311,22 +317,22 @@ Although this introduces an extra copy, it eliminates an entire category of life
 
 ## Best Practices Cheat Sheet
 
-We have compiled all the pitfalls and their corresponding workarounds into a table:
+We have organized all the pitfalls and their corresponding avoidance methods into a table:
 
 | Scenario | Risk | Recommended Practice |
 |----------|------|----------------------|
-| Function parameters (read-only) | Low | Pass `string_view` by value |
+| Function parameters (read-only use) | Low | Pass `string_view` by value |
 | Function return values | High | Do not return a view pointing to local/temporary data |
-| Class member variables | High | Use `std::string` to own data, use `string_view` only for short-term observation |
+| Class member variables | High | Use `std::string` to hold data, use `string_view` only for short-term observation |
 | Container keys (`unordered_map`) | High | Ensure the underlying string outlives the container, or use `std::string` as the key |
 | Calling C APIs | High | Explicitly construct a `std::string`, use `c_str()` |
 | Storing `string_view` in a container | High | Only store views pointing to static data, or use `std::string` |
-| Async/deferred execution | High | Ensure data lives long enough before capturing `string_view` into a lambda |
+| Asynchronous/deferred execution | High | Before capturing `string_view` into a lambda, ensure the data lives long enough |
 | Signal/callback registration | High | A `string_view` in a callback might be executed later; use `std::string` instead |
 
 There is only one core principle: **`string_view` should only be used for short-term, synchronous, read-only access scenarios.** If the data needs to "live longer than the current function call," use `std::string`.
 
-Here are a few more lessons learned from our actual project experience. First, during code review, focus closely on all `string_view` member variables—if there are any, ask: "When will the data it points to be freed?" Second, for all functions accepting a `string_view` parameter, explicitly document in the API that "the parameter must be valid for the duration of the function call." Third, if your project has AddressSanitizer (ASan) enabled, make sure to run your tests under ASan—it can precisely catch use-after-free issues with `string_view`, making it 100 times faster than tracking them down manually. Enabling it is simple: add `-fsanitize=address -fno-omit-frame-pointer` at compile time and `-fsanitize=address` at link time.
+Let us add a few more lessons learned from our experience in actual projects. First, during code review, focus closely on all `string_view` member variables—if there are any, ask the question, "When will the data it points to be freed?" Second, for all functions that accept a `string_view` parameter, explicitly document in the comments that "the parameter must be valid for the duration of the function call." Third, if your project has AddressSanitizer (ASan) enabled, make sure to run your tests under ASan—it can precisely catch use-after-free issues with `string_view`, making it 100 times faster than tracking them down yourself. Enabling it is simple: add `-fsanitize=address -fno-omit-frame-pointer` at compile time, and `-fsanitize=address` at link time.
 
 ```bash
 # 开启 ASan 编译
@@ -337,14 +343,14 @@ g++ -std=c++17 -O0 -g -fsanitize=address -fno-omit-frame-pointer main.cpp
 
 ## Looking Ahead: C++26 std::zstring_view (Proposal P3655)
 
-The C++ community is also aware of `string_view`'s shortcomings regarding NUL termination. Proposal P3655 suggests introducing `std::zstring_view` (also known as `std::cstring_view`), with the goal of providing a `string_view` variant that guarantees NUL termination. This proposal is currently targeting the C++26 standard and has not been officially released yet.
+The C++ community has also recognized the shortcomings of `string_view` regarding NUL termination. Proposal P3655 suggests introducing `std::zstring_view` (also known as `std::cstring_view`), with the goal of providing a `string_view` variant that guarantees NUL termination. This proposal is currently targeting the C++26 standard and has not been officially released yet.
 
-The design philosophy of `zstring_view` is to add a NUL termination guarantee on top of `string_view`, making it safe to pass to C APIs. It remains non-owning, so lifetime issues still exist, but it at least solves half of the pain points related to NUL termination.
+The design philosophy of `zstring_view` is to add a NUL termination guarantee on top of `string_view`, making it safe to pass to C APIs. It is still non-owning, so lifetime issues remain, but it at least solves half of the pain points related to NUL termination.
 
-Before `zstring_view` officially enters the standard, if you need similar functionality, you can wrap your own lightweight `zstring_view` class—the core idea is to inherit from (or compose with) `string_view`, check for NUL termination at construction time, and have the `data()` method return a pointer that is guaranteed to be NUL-terminated. But honestly, in most projects, directly using `std::string(sv).c_str()` is sufficient.
+Before `zstring_view` officially enters the standard, if you need similar functionality, you can wrap your own lightweight `zstring_view` class—the core idea is to inherit from (or compose with) `string_view`, check for NUL termination upon construction, and have the `data()` method return a pointer that is guaranteed to be NUL-terminated. But honestly, in most projects, directly using `std::string(sv).c_str()` is sufficient.
 
 ## Summary
 
-`string_view` is a double-edged sword. Its performance benefits are real and significant, but its lifetime risks are equally real and severe. Our guiding principle for using it is: feel free to use `string_view` for function parameters (read-only, short-term use), use it cautiously for return values (ensure the pointed-to data lives long enough), strictly avoid storing it as member variables or in containers (unless you are absolutely certain about the data's lifetime), and remember to explicitly convert to a NUL-terminated `std::string` when calling C APIs.
+`string_view` is a double-edged sword. Its performance benefits are real and significant, but its lifetime risks are equally real and severe. Our summarized usage principle is: feel free to use `string_view` for function parameters (read-only, short-term use), use it cautiously for function return values (ensure the pointed-to data lives long enough), strictly avoid it for member variables and container storage (unless you are absolutely certain about the data's lifetime), and remember to explicitly convert to a NUL-terminated `std::string` when calling C APIs.
 
-The key to using `string_view` well is not memorizing a bunch of rules, but building an intuition: every time you write `string_view`, your brain should automatically ask one question—"Is the data it points to still alive?"
+The key to using `string_view` well is not memorizing a bunch of rules, but building an intuition: every time you write `string_view`, your brain should automatically ask yourself one question—"Is the data it points to still alive?"

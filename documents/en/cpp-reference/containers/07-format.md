@@ -1,20 +1,28 @@
 ---
-title: "std::format"
-description: "Type-safe, extensible formatting library replacing printf and stringstream"
+title: std::format
+description: A type-safe, extensible formatting output library, replacing `printf`
+  and `stringstream`
 chapter: 99
 order: 7
 tags:
-  - host
-  - cpp-modern
-  - beginner
+- host
+- cpp-modern
+- beginner
 difficulty: beginner
-cpp_standard: [20, 23]
+cpp_standard:
+- 20
+- 23
+translation:
+  source: documents/cpp-reference/containers/07-format.md
+  source_hash: 1228d5185a8712960df28fba1fa0eeac096e06a52a98d667b3d0eb06cbc9a3f2
+  translated_at: '2026-05-26T10:14:17.459174+00:00'
+  engine: anthropic
+  token_count: 509
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -27,7 +35,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-A type-safe replacement for `printf` -- format strings with `{}` placeholders, compile-time argument count checking, and support for custom type formatting.
+A type-safe `printf` replacement—format strings with `{}` placeholders, compile-time argument count checking, and support for custom type formatting.
 
 ## Header
 
@@ -38,12 +46,12 @@ A type-safe replacement for `printf` -- format strings with `{}` placeholders, c
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
 | Format string | `string format(fmt, args...)` | Returns the formatted string |
-| Format to output | `void vformat_to(out_it, fmt, args)` | Output to an iterator |
-| Format to buffer | `size_t formatted_size(fmt, args...)` | Pre-compute output length |
-| Format to stdout | (C++23) `void print(fmt, args...)` | Direct output to standard output |
-| Positional arguments | `"{0} {1} {0}"` | Reference arguments by index |
-| Width/precision | `"{:>10.2f}"` | Right-align, width 10, precision 2 |
-| Custom formatting | `template<> struct formatter` `<T>` | Specialize `std::formatter` to support custom types |
+| Format to output | `void vformat_to(out_it, fmt, args)` | Outputs to an iterator |
+| Format to buffer | `size_t formatted_size(fmt, args...)` | Pre-calculates the output length |
+| Format to stdout | (C++23) `void print(fmt, args...)` | Outputs directly to standard output |
+| Positional arguments | `"{0} {1} {0}"` | References arguments by index |
+| Width/precision | `"{:>10.2f}"` | Right-aligned, width 10, precision 2 |
+| Custom formatting | `template<> struct formatter<T>` | Specialize `std::formatter` to support custom types |
 
 ## Minimal Example
 
@@ -62,7 +70,7 @@ int main() {
     std::cout << std::format("v{}. pi={:.2f}", version, pi) << "\n";
     // v2. pi=3.14
 
-    // Positional arguments
+    // 位置参数
     std::cout << std::format("{0} + {0} = {1}", 3, 6) << "\n";
     // 3 + 3 = 6
 }
@@ -70,11 +78,11 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- Replaces `printf`, eliminating the risk of runtime crashes from format-string/argument type mismatches
+- Replaces `printf`, eliminating the risk of runtime crashes from mismatches between format strings and argument types
 - Replaces `std::stringstream`, avoiding heap allocation overhead
-- Compile-time argument count checking; full compile-time format specifier validation requires C++23's `std::is_constant_evaluated`
-- Flash overhead may be significant (formatting engine code size); evaluate for extremely resource-constrained devices
-- The [{fmt}](https://github.com/fmtlib/fmt) library can serve as a C++11-compatible fallback
+- Compile-time argument count checking, but full compile-time validation of format specifiers requires C++23's `std::is_constant_evaluated`
+- Flash overhead can be significant (formatting engine code size), requiring evaluation on severely resource-constrained devices
+- The [{fmt}](https://github.com/fmtlib/fmt) library can be used as a backfill for C++11 and later
 
 ## Compiler Support
 
@@ -88,4 +96,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

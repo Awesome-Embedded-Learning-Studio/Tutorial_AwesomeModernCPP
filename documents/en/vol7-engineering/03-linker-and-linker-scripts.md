@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: In-depth explanation of how linkers work, how to write linker scripts,
-  and how to implement startup code
+description: An in-depth explanation of how the linker works, how to write linker
+  scripts, and how to implement startup code.
 difficulty: beginner
 order: 3
 platform: host
@@ -18,13 +18,19 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Linker and linker scripts
+title: Linker and Linker Scripts
+translation:
+  source: documents/vol7-engineering/03-linker-and-linker-scripts.md
+  source_hash: 3a0f3c55d4b17b8aeee508a5737d73e2eb6e33bad0be591bb17391b397311b90
+  translated_at: '2026-05-26T11:52:54.303665+00:00'
+  engine: anthropic
+  token_count: 2123
 ---
 # Linker and Linker Scripts: From Principles to Practice
 
 ## Introduction
 
-If you have read the author's "Deep Dive into C/C++ Compilation Principles" blog series, you likely already have a basic understanding of the linker. To briefly recap: the compiler is responsible for converting source code into object files, while the linker is the final step in the build process, combining these object files into the final executable program.
+If you have read my "Deep Dive into C/C++ Compilation Principles" blog series, you likely already have a basic understanding of the linker. To briefly recap: the compiler is responsible for converting source code into object files, while the linker is the final step in the build process, combining these object files into the final executable program.
 
 > Related reading:
 >
@@ -45,7 +51,7 @@ The linker's job may seem mysterious, but it can actually be summarized into the
 
 **(1) Symbol Resolution**
 
-When you call a function defined in another file, the compiler only knows the function's name, not its actual address. The linker's responsibility is to find the actual definition of this function and establish the connection:
+When you call a function defined in another file, the compiler only knows the function's name, not its actual address. The linker's job is to find the actual definition of this function and establish the connection:
 
 ```cpp
 // file1.cpp
@@ -141,7 +147,7 @@ Understanding the role of different sections is crucial for writing linker scrip
 
 ## 3. Hands-on: Writing a Complete Linker Script
 
-Now that we have covered the theory, let's write a practically usable linker script. This example targets ARM Cortex-M microcontrollers, but the principles apply to all embedded platforms.
+Now that we've covered the theory, let's write a practically usable linker script. This example targets ARM Cortex-M microcontrollers, but the principles apply to all embedded platforms.
 
 ### 3.1 Minimal Usable Linker Script
 
@@ -222,8 +228,8 @@ The key points of this script:
 1. **Interrupt vector table** (`.isr_vector`) must be placed at the very beginning of FLASH, because the processor reads it from a fixed address after reset
 2. **Code section** (`.text`) follows immediately after, containing all executable code and read-only constants
 3. **Dual addresses of the `.data` section**:
-   - `AT(ADDR(.text) + SIZEOF(.text))` specifies the load memory address (LMA), i.e., the location of data in FLASH
-   - `> RAM` specifies the virtual memory address (VMA), i.e., where the data should be in RAM at runtime
+   - `AT(ADDR(.text) + SIZEOF(.text))` specifies the load address (LMA), i.e., the location of data in FLASH
+   - `> RAM` specifies the virtual address (VMA), i.e., where the data should be in RAM at runtime
    - The startup code needs to copy data from the LMA to the VMA
 4. **Symbol export**: Symbols like `_sdata`, `_edata`, `_sbss`, and `_ebss` will be used by the startup code
 
@@ -237,7 +243,7 @@ With the linker script, the program's memory layout is determined. But this is n
 
 After the processor resets, it jumps to `Reset_Handler` to execute. This is the first piece of code in the entire program, and its responsibilities are:
 
-1. **Disable interrupts** (optional, depending on the platform)
+1. **Disable interrupts** (optional, depends on the platform)
 2. **Copy the `.data` section**: Copy initialized data from FLASH to RAM
 3. **Zero the `.bss` section**: Zero out the uninitialized data area
 4. **Call C++ global constructors** (if using C++)
@@ -356,20 +362,20 @@ Ensure the linker script correctly handles C++-related sections:
 
 If these sections are incorrectly discarded, constructors will not be called, or exception handling will fail.
 
-### 5.3 Optimization Recommendations
+### 5.3 Optimization Suggestions
 
 The golden rule of embedded C++ development: **if you don't need an advanced feature, don't use it**.
 
 - **Disable exceptions**: Use the `-fno-exceptions` compiler flag (exception handling significantly increases code size)
 - **Disable RTTI**: Use the `-fno-rtti` compiler flag (runtime type information is rarely used)
 - **Avoid dynamic memory allocation**: Embedded systems typically lack a complete heap manager
-- **Put constants in FLASH**: Use `const` and `constexpr` to ensure data goes into the `.rodata` section
+- **Put constants in FLASH**: Use `const` and `constexpr` to place data in the `.rodata` section
 
 ------
 
 ## 6. Linking Optimization Tips and Best Practices
 
-Having mastered the basics, let's look at how to further optimize the linking process, reduce code size, and improve startup speed.
+Now that we've mastered the basics, let's look at how to further optimize the linking process, reduce code size, and improve startup speed.
 
 ### 6.1 Function-Level Linking Optimization
 

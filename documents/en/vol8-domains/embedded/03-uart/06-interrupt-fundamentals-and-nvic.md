@@ -10,8 +10,14 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 17
 order: 6
+translation:
+  source: documents/vol8-domains/embedded/03-uart/06-interrupt-fundamentals-and-nvic.md
+  source_hash: 827336d06a96eee8d7a8570ae26c012033296a4a714f004bf117b51af745d373
+  translated_at: '2026-05-26T12:16:34.042121+00:00'
+  engine: anthropic
+  token_count: 1323
 ---
-# Part 36: Interrupt Basics and NVIC — Letting Hardware Notify the CPU Proactively
+# Part 36: Interrupt Basics and NVIC — Letting Hardware Notify the CPU Actively
 
 > In the previous part, we discovered the fatal flaw of blocking receives. In this part, we start building a solution: first, we need to understand how the Cortex-M3 interrupt mechanism works.
 
@@ -21,13 +27,13 @@ order: 6
 
 In the final part of the button tutorial (Part 30), we briefly introduced EXTI (External Interrupt). That article covered the scenario of "pin level changes triggering an interrupt." Now we need to elevate our understanding of interrupts—because interrupt-driven UART reception is much more complex than EXTI button detection, involving data passing between the ISR and the main loop, buffer management, callback chains, and more.
 
-First, let's review the fundamental differences between the two programming paradigms.
+Let's first review the fundamental differences between the two programming paradigms.
 
 **Polling**: The CPU actively checks the peripheral status. "Is there data? No. Is there data? No. Is there data? Yes!" The CPU is busy-waiting—although we can fill the waiting time with other tasks (like our button state machine), the checking itself consumes CPU time.
 
-**Interrupts**: The peripheral proactively sends a signal when it needs the CPU's attention. "I have data, please handle it." Before the signal arrives, the CPU can focus on other tasks. When the signal arrives, the hardware automatically pauses the current task, jumps to a preset handler function, and returns when processing is complete.
+**Interrupts**: The peripheral actively sends a signal when it needs the CPU's attention. "I have data, please process it." The CPU can focus on other tasks until the signal arrives. When the signal comes, the hardware automatically pauses the current task, jumps to a preset handler function, and returns when processing is complete.
 
-An analogy: polling is like checking your mailbox every five minutes—you have to make the trip regardless of whether there is any mail. Interrupts are like the mail carrier ringing your doorbell—you can peacefully do other things at home when there is no mail, and the doorbell will ring when the mail arrives.
+An analogy: polling is like checking your mailbox every five minutes—you have to make the trip regardless of whether there's any mail. Interrupts are like the mail carrier ringing your doorbell—you can peacefully do other things at home when there's no mail, and the doorbell will ring when it arrives.
 
 ---
 
@@ -41,25 +47,25 @@ The NVIC is the interrupt controller built into the Cortex-M3 core, responsible 
 
 Key features of the NVIC:
 
-- **Nesting**: Higher-priority interrupts can preempt lower-priority interrupts. If a USART1 interrupt is being processed, a higher-priority interrupt (such as SysTick) can preempt it. After the higher-priority interrupt finishes, execution returns to continue processing the USART1 interrupt.
-- **Vectoring**: Each interrupt source has its own entry function (the interrupt service routine, ISR). When an interrupt triggers, the hardware automatically jumps to the corresponding ISR without the software needing to determine "which interrupt source triggered."
-- **Automatic context save/restore**: When an interrupt triggers, the CPU automatically pushes the current register state (r0-r3, r12, LR, PC, xPSR) onto the stack. When the ISR returns, they are automatically popped. You do not need to write code to manually save and restore registers.
+- **Nesting**: Higher-priority interrupts can preempt lower-priority interrupts. If a USART1 interrupt is being processed, a higher-priority interrupt (such as SysTick) can preempt it. After the higher-priority interrupt is handled, execution returns to continue processing the USART1 interrupt.
+- **Vectoring**: Each interrupt source has its own entry function (the interrupt service routine, ISR). When an interrupt is triggered, the hardware automatically jumps to the corresponding ISR without the software needing to determine "which interrupt source triggered."
+- **Automatic context save/restore**: When an interrupt is triggered, the CPU automatically pushes the current register state (r0-r3, r12, LR, PC, xPSR) onto the stack. When the ISR returns, they are automatically popped. You do not need to write manual register save/restore code.
 
 ### Vector Table
 
-The vector table is an array of function pointers stored at the beginning of Flash (default address 0x00000000). Each interrupt source occupies a fixed position in the table—the Nth entry in the table corresponds to the ISR address of the Nth interrupt source. When interrupt number N triggers, the CPU reads the address from the Nth entry in the table and jumps there to execute.
+The vector table is an array of function pointers stored at the beginning of Flash (default address 0x00000000). Each interrupt source occupies a fixed position in the table—the Nth entry in the table corresponds to the ISR address of the Nth interrupt source. When interrupt number N is triggered, the CPU reads the address from the Nth entry in the table and jumps there to execute.
 
-The interrupt number for USART1 is `USART1_IRQn` (value 37). The 37th position in the vector table stores the address of the `USART1_IRQHandler` function. This function name is not arbitrary—it must strictly correspond to the position in the vector table. The linker places it in the correct position based on the function name.
+The interrupt number for USART1 is `USART1_IRQn` (value 37). The 37th position in the vector table stores the address of the `USART1_IRQHandler` function. This function name is not arbitrary—it must strictly correspond to its position in the vector table. The linker places it in the correct position based on the function name.
 
 ---
 
 ## How USART1 Interrupts Work
 
-Now let's apply the general interrupt mechanism to the specific USART1 scenario.
+Now let's apply the general interrupt mechanism to the specific scenario of USART1.
 
 ### Trigger Condition: The RXNE Flag
 
-In the previous part, we covered the RXNE (Read Data Register Not Empty) flag in the SR register. When the USART1 receive shift register shifts a complete byte into the RDR, RXNE is automatically set to 1. This is the interrupt trigger condition.
+In the previous part, we discussed the RXNE (Read Data Register Not Empty) flag in the SR register. When the USART1 receive shift register shifts a complete byte into the RDR, RXNE is automatically set to 1. This is the interrupt trigger condition.
 
 However, RXNE being set to 1 does not mean the interrupt will trigger. Two additional conditions must also be met simultaneously:
 
@@ -79,10 +85,10 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData,
 This function does three things internally:
 
 1. Stores the `pData` pointer and `Size` in the `huart` structure (HAL uses these internally to track reception progress)
-2. Sets the RXNEIE bit (enables the receive interrupt)
+2. Sets the RXNEIE bit (enabling the receive interrupt)
 3. Returns `HAL_OK`
 
-Note: this function does not block. It simply "sets up the reception conditions" and returns immediately. The actual reception happens after the interrupt triggers—when a new byte arrives, the ISR is automatically called, the HAL code inside the ISR stores the byte into the buffer pointed to by `pData`, decrements the remaining count, and calls the `HAL_UART_RxCpltCallback()` callback once `Size` bytes have been received.
+Note: this function does not block. It simply "sets up the reception conditions" and returns immediately. The actual reception happens after the interrupt is triggered—when a new byte arrives, the ISR is automatically called, the HAL code inside the ISR stores the byte into the buffer pointed to by `pData`, decrements the remaining count, and calls the `HAL_UART_RxCpltCallback()` callback once `Size` bytes have been received.
 
 ### Single-Byte Reception Strategy
 
@@ -100,7 +106,7 @@ void restart_receive() {
 
 `HAL_UART_Receive_IT(&huart, &rx_byte, 1)` means: "Please set up an interrupt to receive 1 byte. Notify me when 1 byte has been received."
 
-After receiving one byte, HAL calls `HAL_UART_RxCpltCallback()`. In the callback, we store this one byte into a ring buffer, then immediately call `restart_receive()` to set up another single-byte reception. This cycle repeats, achieving a continuous, byte-loss-free reception stream:
+After receiving one byte, HAL calls `HAL_UART_RxCpltCallback()`. In the callback, we store this single byte into a ring buffer, then immediately call `restart_receive()` to set up another single-byte reception. This cycle repeats, achieving a continuous, byte-loss-free reception stream:
 
 ```text
 restart_receive()
@@ -114,13 +120,13 @@ restart_receive()
       → （循环）
 ```
 
-Why not "receive N bytes at once"? Because UART is a byte-stream protocol—you don't know when the sender will finish or how many bytes it will send. If you set "receive 10 bytes at once," and the sender stops after 3 bytes, your reception gets stuck. The single-byte strategy is the most flexible—process one byte as soon as it arrives, avoiding any "waiting to fill up" issues.
+Why not "receive N bytes at once"? Because UART is a byte-stream protocol—you don't know when the sender will finish or how many bytes it will send. If you set "receive 10 bytes at once," and the sender stops after 3 bytes, your reception gets stuck. The single-byte strategy is the most flexible—process each byte as it arrives, avoiding any "waiting to fill up" issues.
 
 ---
 
 ## extern "C" ISR Bridging
 
-Our project is a C++ project, but ISR function names (like `USART1_IRQHandler`) must be defined with C linkage. The reason is that the vector table stores C symbol names—the linker populates the vector table based on the undecorated function name. If the C++ compiler performs name mangling on `USART1_IRQHandler`, the linker won't be able to find the correct function.
+Our project is a C++ project, but ISR function names (like `USART1_IRQHandler`) must be defined with C linkage. The reason is that the vector table stores C symbol names—the linker populates the vector table based on the undecorated function name. If the C++ compiler applies name mangling to `USART1_IRQHandler`, the linker won't be able to find the correct function.
 
 Therefore, the ISR definition must be placed inside an `extern "C"` block:
 
@@ -144,7 +150,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
 
 `extern "C"` ensures that these two functions appear under their original names in the symbol table, allowing the linker to correctly place them into the vector table. The code inside the functions is still C++—you can call C++ functions, use C++ types, and access members in C++ namespaces. `extern "C"` only affects linking rules, not compilation rules.
 
-This "C linkage + C++ implementation" pattern is very common in embedded C++ projects. Any function that needs to be called by a C interface (ISRs, callbacks, system calls like `_write()`) requires an `extern "C"` wrapper.
+This "C linkage + C++ implementation" pattern is very common in embedded C++ projects. Any function that needs to be called from a C interface (ISRs, callbacks, system calls like `_write()`) requires an `extern "C"` wrapper.
 
 ---
 
@@ -165,7 +171,7 @@ void enable_interrupt() {
 
 The two parameters of `HAL_NVIC_SetPriority(USART1_IRQn, 0, 0)` are the preempt priority and the subpriority. Setting them to (0, 0) means the highest priority—the USART1 interrupt can preempt any other interrupt (except non-maskable exceptions like NMI).
 
-In simple projects (with only USART interrupts and SysTick), setting the priority to the highest is fine. In complex projects, if multiple interrupt sources compete for CPU time, you need to carefully plan priorities. The general principle is: the interrupt with the highest real-time requirements gets the highest priority. UART reception (where delayed handling can cause data loss) usually has a higher priority than LED control (where a few milliseconds of delay is imperceptible to the human eye).
+In simple projects (with only USART interrupts and SysTick), setting the priority to the highest is fine. In complex projects, if multiple interrupt sources compete for CPU time, you need to carefully plan priorities. The general principle is: the interrupt with the highest real-time requirements gets the highest priority. UART reception (where delayed processing can cause data loss) usually has a higher priority than LED control (where a few milliseconds of delay is imperceptible to the human eye).
 
 ---
 
@@ -183,6 +189,6 @@ Our ISR implementation follows the "short ISR" principle: `USART1_IRQHandler` de
 
 ## Summary
 
-In this part, we built the theoretical foundation for interrupt-driven reception: the Cortex-M3's NVIC and vector table mechanisms, the trigger conditions for the USART1 RXNE interrupt, how `HAL_UART_Receive_IT()` works, the single-byte reception strategy, the `extern "C"` bridging pattern, and the principle that ISRs must be as short as possible.
+In this part, we built the theoretical foundation for interrupt-driven reception: the Cortex-M3's NVIC and vector table mechanism, the trigger conditions for the USART1 RXNE interrupt, how `HAL_UART_Receive_IT()` works, the single-byte reception strategy, the `extern "C"` bridging pattern, and the principle that ISRs must be as short as possible.
 
 But one critical piece of the puzzle remains unsolved: how do we pass the bytes received by the ISR to the main loop? Using a global variable directly? Using an array? In the next part, we will design a data structure specifically optimized for ISR-to-main communication—a lock-free ring buffer.

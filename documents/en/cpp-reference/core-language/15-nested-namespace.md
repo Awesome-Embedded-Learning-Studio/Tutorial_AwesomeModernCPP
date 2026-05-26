@@ -1,20 +1,28 @@
 ---
-title: "Nested Namespaces"
-description: "Use A::B::C syntax to replace deeply nested namespace braces"
+title: Nested namespaces
+description: Replace multi-level nested namespace braces with the `A::B::C` syntax
 chapter: 99
 order: 15
 tags:
-  - host
-  - cpp-modern
-  - beginner
+- host
+- cpp-modern
+- beginner
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+cpp_standard:
+- 17
+- 20
+- 23
+translation:
+  source: documents/cpp-reference/core-language/15-nested-namespace.md
+  source_hash: 3aed83f966e3c5c860686def8273b68c5b7f869cf9ce1c50370a45fff65dae07
+  translated_at: '2026-05-26T10:16:40.516631+00:00'
+  engine: anthropic
+  token_count: 417
 ---
-
 <!--
 Reference Card Template
 Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
 
 Tag usage rules:
 1. Must include exactly 1 platform tag (reference cards uniformly use host)
@@ -27,7 +35,7 @@ Tag usage rules:
 
 ## In a Nutshell
 
-Replace three levels of nested braces with a single `namespace A::B::C { ... }` line -- pure syntactic sugar, but it dramatically reduces indentation depth.
+Use `namespace A::B::C { ... }` on a single line to replace three levels of nested braces—pure syntactic sugar, but it drastically reduces indentation levels.
 
 ## Header
 
@@ -36,7 +44,7 @@ None (language feature)
 ## Core API Quick Reference
 
 | Syntax | Equivalent |
-|--------|-----------|
+|--------|------------|
 | `namespace A::B { ... }` | `namespace A { namespace B { ... } }` |
 | `namespace A::B::C { ... }` | `namespace A { namespace B { namespace C { ... } } }` |
 | `namespace A::inline B { ... }` | `namespace A { inline namespace B { ... } }` (C++20) |
@@ -47,12 +55,12 @@ None (language feature)
 // Standard: C++17
 #include <iostream>
 
-// Nested namespace definition
+// 嵌套命名空间定义
 namespace hardware::spi {
     void init() { std::cout << "SPI init\n"; }
 }
 
-// Equivalent C++11 style (identical effect)
+// 等价的 C++11 写法（效果完全相同）
 namespace hardware {
     namespace i2c {
         void init() { std::cout << "I2C init\n"; }
@@ -67,10 +75,10 @@ int main() {
 
 ## Embedded Applicability: Low
 
-- Pure syntactic sugar that does not affect generated code; however, embedded projects typically do not have deep namespace hierarchies
-- Helpful for organizing large libraries and drivers, reducing nesting indentation
-- Embedded code often uses flat namespaces (e.g., `bsp::`, `hal::`) where a single level suffices
-- Universally supported by C++17 compilers with no compatibility concerns
+- Pure syntactic sugar with no effect on generated code, but embedded projects typically do not use deep namespace hierarchies
+- Helpful for code organization in large libraries and drivers, reducing indentation nesting
+- Embedded code often uses flatter namespaces (such as `bsp::`, `hal::`), where a single level is sufficient
+- Universally supported by C++17 compilers, with no compatibility concerns
 
 ## Compiler Support
 
@@ -84,4 +92,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/) under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

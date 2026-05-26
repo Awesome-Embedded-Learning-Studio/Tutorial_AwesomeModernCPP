@@ -1,5 +1,5 @@
 ---
-title: decltype and return type deduction
+title: '`decltype` and Return Type Deduction'
 description: Deduction rules of decltype, decltype(auto), and trailing return types
 chapter: 6
 order: 2
@@ -18,22 +18,28 @@ prerequisites:
 - 'Chapter 6: auto 推导深入'
 related:
 - 类模板参数推导
+translation:
+  source: documents/vol2-modern-features/ch06-auto-decltype/02-decltype.md
+  source_hash: be7eeddab838be9d499d2ac473ce1cef7d492c4fee4fe29707b50d63deb973b2
+  translated_at: '2026-05-26T11:30:21.203988+00:00'
+  engine: anthropic
+  token_count: 1905
 ---
 # decltype and Return Type Deduction
 
 In the previous chapter, we covered the deduction rules of `auto` in detail—specifically, how it discards references and top-level `const` by default. But sometimes we need to preserve the exact type of an expression, including references and `const`. This is where `decltype` comes in.
 
-The biggest difference between `auto` and `decltype` is this: `auto` deduces the type for a "new variable" based on an initializing expression (discarding references and `const`), whereas `decltype` "queries" the type of an existing expression (returning it exactly as-is). This distinction might seem simple, but it has many subtle implications in practice.
+The biggest difference between `auto` and `decltype` is this: `auto` deduces the type of a "new variable" based on an initializing expression (discarding references and `const`), whereas `decltype` "queries" the type of an existing expression (returning it exactly as-is). This distinction seems simple, but it has many subtle implications in practice.
 
 > In a nutshell: **decltype queries the exact type of an expression (preserving references and const), while decltype(auto) combines the conciseness of auto with the precision of decltype.**
 
 ------
 
-## decltype Deduction Rules
+## Deduction Rules of decltype
 
 ### decltype(variable) vs decltype((variable))
 
-The rules for `decltype` seem straightforward, but there is a very common pitfall: whether or not you add parentheses.
+The rules of `decltype` seem straightforward, but there is a very common pitfall: whether or not you add parentheses.
 
 For an unparenthesized variable name, `decltype` returns the type as declared:
 
@@ -52,9 +58,9 @@ int x = 42;
 decltype((x)) c = x;       // int&（不是 int！）
 ```
 
-The root of this difference lies in the C++ type system: `(x)` is not just a name, it is an expression. Since `(x)` evaluates to an lvalue, `decltype((x))` returns `T&`. An unparenthesized `x` is simply a variable name, so `decltype` directly looks up its declared type.
+The root of this difference lies in the C++ type system: `(x)` is not just a name, it is an expression, and evaluating `(x)` as an expression yields an lvalue, so `decltype((x))` returns `T&`. The unparenthesized `x` is simply a variable name, and `decltype` directly looks up its declared type.
 
-This "double-parentheses" rule is the most famous trap of `decltype` and a classic interview question. I stumbled over this when I first learned C++—I never expected that adding a pair of parentheses would change the type from `int` to `int&`.
+This "double-parentheses" rule is the most famous trap of `decltype`, and a classic interview question. I stumbled over this myself when first learning it—I never expected that adding a pair of parentheses would change the type from `int` to `int&`.
 
 ### decltype Deduction for Function Calls
 
@@ -74,11 +80,11 @@ decltype(get_ref()) a = get_ref();  // int&
 decltype(get_val()) b = get_val();  // int
 ```
 
-This stands in stark contrast to `auto`. For the return value of the exact same function, `auto` discards the reference and deduces `int`, while `decltype` preserves the reference and deduces `int&`.
+This stands in stark contrast to `auto`. For the return value of the exact same function, `auto` discards the reference and yields `int`, while `decltype` preserves the reference and yields `int&`.
 
 ### decltype Deduction for Expressions
 
-For general expressions, `decltype` determines the type based on the expression's value category. If the expression is an lvalue, the result is a reference; if it is an rvalue, the result is a non-reference type:
+For general expressions, `decltype` determines the type based on the expression's value category. If the expression is an lvalue, the result is a reference; if the expression is an rvalue, the result is a non-reference type:
 
 ```cpp
 int x = 42;
@@ -104,7 +110,7 @@ auto a = (x);            // int（auto 丢弃引用）
 decltype(auto) b = (x);  // int&（decltype 保留引用）
 ```
 
-Notice the parentheses in the `return` statement—because `decltype` returns a reference for parenthesized expressions, `decltype(auto)` deduces `int&`. If you don't want a reference, don't use parentheses:
+Notice the parentheses in the `return` statement—because `decltype` returns a reference for parenthesized expressions, `decltype(auto)` deduces `int&`. If you don't want a reference, simply omit the parentheses:
 
 ```cpp
 decltype(auto) c = x;    // int（不加括号，decltype(x) 是 int）
@@ -130,7 +136,7 @@ private:
 };
 ```
 
-If we used `auto` instead of `decltype(auto)`, the return type of `get` would become `int` (a copy), and we would no longer be able to modify the container's contents through `get`.
+If we used `auto` instead of `decltype(auto)`, the return type of `get` would become `T` (a copy), and we would no longer be able to modify the container's contents through `get`.
 
 ### ⚠️ The Danger of Dangling References
 
@@ -148,9 +154,9 @@ decltype(auto) safe_get_value() {
 }
 ```
 
-The parentheses in `return (x);` cause `decltype` to treat `x` as an lvalue expression, deducing `int&`. After the function returns, `x` is destroyed, leaving the reference dangling. This is a highly subtle bug; compilers usually emit a warning, but not all compilers can detect it in every scenario.
+The parentheses in `return (x)` cause `decltype(auto)` to treat `x` as an lvalue expression, deducing `int&`. After the function returns, `x` is destroyed, leaving the reference dangling. This is a highly subtle bug; compilers will usually issue a warning, but not all compilers can detect it in every scenario.
 
-My advice: when using `decltype(auto)` in a function return type, carefully examine your `return` statements—if you are returning a reference to a local variable (whether intentionally or not), it will lead to undefined behavior (UB). If you are just returning a value, using `auto` is safer.
+My advice: when using `decltype(auto)` in a function return type, carefully examine the `return` statement—if you are returning a reference to a local variable (whether intentionally or not), it will lead to undefined behavior (UB). If you are simply returning a value, using `auto` is safer.
 
 ------
 
@@ -167,7 +173,7 @@ auto add(T t, U u) -> decltype(t + u) {
 }
 ```
 
-Why can't we put the return type at the front? Because at the position of the function signature, the parameters `a` and `b` haven't been declared yet, so the compiler doesn't know their types. Trailing return types defer the declaration of the return type until after the parameter list, allowing us to use the parameters in the return type.
+Why can't we put the return type up front? Because at the position of the function signature, the parameters `a` and `b` haven't been declared yet, so the compiler doesn't know their types. Trailing return types defer the declaration of the return type until after the parameter list, allowing us to use the parameters in the return type.
 
 ### The C++14 Simplification
 
@@ -185,7 +191,7 @@ However, if you need to precisely preserve reference semantics (for example, whe
 
 ### Lambda Return Types in C++11
 
-In C++11, if a lambda's return type couldn't be automatically deduced, you had to explicitly specify a trailing return type:
+In C++11, if a lambda's return type couldn't be automatically deduced, you needed to explicitly specify a trailing return type:
 
 ```cpp
 auto get_size = [](const std::vector<int>& v) -> std::size_t {
@@ -197,11 +203,11 @@ After C++14, a lambda's return type can almost always be deduced automatically, 
 
 ------
 
-## decltype in Templates
+## Using decltype in Templates
 
 ### Perfectly Forwarding Return Values
 
-The most common use of `decltype` in templates is implementing perfect forwarding of return values—making a wrapper function return the exact same type (including references) as the wrapped function:
+The most common use of `decltype` in templates is to implement perfect forwarding of return values—making a wrapper function return the exact same type (including references) as the wrapped function:
 
 ```cpp
 template<typename Callable, typename... Args>
@@ -210,7 +216,7 @@ decltype(auto) perfect_forward(Callable&& f, Args&&... args) {
 }
 ```
 
-This `wrapper` function precisely forwards the call result of `func`. If `func` returns `int&`, `wrapper` also returns `int&`; if `func` returns `int`, `wrapper` also returns `int` (after C++14, `auto` supports deducing `int` here).
+This `wrapper` function precisely forwards the call result of `func`. If `func` returns `int`, `wrapper` also returns `int`; if `func` returns `int&`, `wrapper` also returns `int&` (after C++14, `decltype(auto)` supports deducing `auto&`).
 
 ### decltype in Type Traits
 
@@ -245,7 +251,7 @@ The trick here is SFINAE (Substitution Failure Is Not An Error): if `T` has a `s
 
 ### The Purpose of std::declval
 
-`std::declval` is a utility function that can only be used in an unevaluated context. It returns an rvalue reference to `T` without requiring `T` to have a default constructor. This allows you to construct "hypothetical" objects in unevaluated contexts like `decltype`, `sizeof`, `noexcept`, and `static_assert` to probe type information:
+`std::declval` is a utility function that can only be used in an unevaluated context. It returns an rvalue reference of type `T&&` without requiring `T` to have a default constructor. This allows you to construct "hypothetical" objects in unevaluated contexts like `decltype`, `sizeof`, `static_assert`, and `noexcept` to probe type information:
 
 ```cpp
 #include <utility>
@@ -260,7 +266,7 @@ template<typename T, typename U>
 using add_result_t = decltype(std::declval<T>() + std::declval<U>());
 ```
 
-⚠️ Note: `std::declval` can only be used in unevaluated contexts (such as `decltype`, `sizeof`, `noexcept`, and `static_assert`). If you call it in runtime code, it will trigger a compilation error because it has a declaration but no definition.
+⚠️ Note: `std::declval` can only be used in unevaluated contexts (such as `decltype`, `sizeof`, `static_assert`, `noexcept`). If you call it in runtime code, it will trigger a compilation error because it has a declaration but no definition.
 
 ------
 
@@ -276,9 +282,9 @@ using value_t = decltype(global_data)::value_type;  // int
 using iter_t  = decltype(global_data)::iterator;    // std::vector<int>::iterator
 ```
 
-The benefit of this approach is that when the type of `container` changes from `std::vector<int>` to `std::map<int, int>`, all type aliases obtained via `decltype` will update automatically.
+The benefit of this approach is that when the type of `c` changes from `std::vector<int>` to `std::list<int>`, all type aliases obtained via `decltype` will update automatically.
 
-### Using decltype in constexpr
+### Using It in constexpr
 
 C++11's `decltype` can be used in a `constexpr` context right away, because it is a purely compile-time operation:
 
@@ -308,11 +314,11 @@ void process_range(Range&& r) {
 
 The core value of `decltype` lies in "precisely preserving the type of an expression" without discarding references and `const`. Its deduction rules can be summarized in three points: for an unparenthesized variable name, it returns the declared type; for a parenthesized variable name or an lvalue expression, it returns an lvalue reference; for an rvalue expression, it returns a non-reference type.
 
-`decltype(auto)` is a convenience introduced in C++14 that allows function return type deduction to preserve reference semantics, but we must watch out for the dangling reference trap of `decltype(auto)`. Trailing return types were the only way to handle return types dependent on parameters in C++11, but after C++14, they are replaced by `auto` and `decltype(auto)` in most scenarios.
+`decltype(auto)` is a convenience introduced in C++14 that allows function return type deduction to preserve reference semantics, but we must watch out for the dangling reference trap of `decltype(auto)`. Trailing return types were the only way to handle return types dependent on parameters in C++11, but after C++14, most scenarios are replaced by `auto` and `decltype(auto)`.
 
 In templates and metaprogramming, `decltype` combined with `std::declval` is a foundational tool for building type traits and SFINAE constraints. Once you understand these concepts, you will feel much more confident when reading and writing generic code.
 
-## References
+## Reference Resources
 
 - [cppreference: decltype specifier](https://en.cppreference.com/w/cpp/language/decltype)
 - [Effective Modern C++ - Scott Meyers, Item 3](https://www.oreilly.com/library/view/effective-modern-c/9781491908419/)

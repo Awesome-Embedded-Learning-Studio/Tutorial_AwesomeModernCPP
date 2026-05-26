@@ -1,6 +1,6 @@
 ---
-title: 'In-depth Understanding of C/C++ Compilation Technology — Dynamic Library A4:
-  Link-time Missing Symbol Behavior and Runtime Dynamic Loading'
+title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A4: Link-Time
+  Missing Symbol Behavior and Runtime Dynamic Loading'
 description: ''
 tags:
 - cpp-modern
@@ -10,30 +10,36 @@ difficulty: intermediate
 platform: host
 chapter: 13
 order: 7
+translation:
+  source: documents/compilation/07-symbol-missing-and-runtime-loading.md
+  source_hash: a30854cfdd900e38145a6bed8b1d3fa1f5b121cf632188a2b7b3e96493279296
+  translated_at: '2026-05-26T10:11:23.701087+00:00'
+  engine: anthropic
+  token_count: 1418
 ---
-# Deep Dive into C/C++ Compilation Technology — Dynamic Libraries A4: Link-Time Missing Symbol Behavior and Runtime Dynamic Loading
+# Deep Dive into C/C++ Compilation Technology — Dynamic Libraries Part 4: Missing Symbol Behavior at Link Time and Runtime Dynamic Loading
 
 This blog post is particularly important. Here, we plan to discuss how different platforms (Windows and GNU/Linux) behave when our executable or other dependent libraries have undefined symbols, as well as the crucial topic of runtime dynamic loading programming.
 
-## Platform Differences in Link-Time Missing Symbol Behavior
+## Platform Differences in Missing Symbol Behavior at Link Time
 
-This is quite interesting. We are discussing the tolerance levels of different platforms for undefined symbols during the linking process. On Windows, when generating a dynamic library, undefined symbols are strictly prohibited. If any undefined symbol exists, our toolchain will complain that it cannot find the symbol.
+This is quite interesting. We are discussing the tolerance levels of different platforms for undefined symbols during linking. On Windows, when generating a dynamic library, we already require that no undefined symbols exist. Once an undefined symbol is encountered, our toolchain will complain that it cannot find the symbol.
 
-On Linux, however, this is not the case. In fact, Linux's strategy is more permissive. By default, we allow symbols to be undefined until the program is loaded, at which point the loader checks all dependencies to ensure all essential symbols are correctly resolved. Only then does it confirm whether our program truly has a critical issue.
+On Linux, things are different. In fact, Linux's strategy is more lenient. By default, we allow undefined symbols until the process is launched, at which point the loader checks all dependencies to ensure all essential symbols are correctly resolved. Only then does it confirm whether our program truly has a critical issue.
 
-Of course, if we want this strict checking, there is a way: simply pass the ``-Wl,-no-undefined`` option when compiling relocatable files to instruct the subsequent linker's error reporting behavior.
+Of course, if we want this strict checking, there is a way: pass the ``-Wl,-no-undefined`` option when compiling relocatable files to instruct the subsequent linker's error-reporting behavior.
 
 ## What Is Runtime Dynamic Loading?
 
 Officially speaking, runtime dynamic loading refers to a program loading a shared library (shared object / dynamic library / DLL) **at runtime** on demand, looking up the required symbols (functions, variables), and then calling them. The author believes that **this is a key implementation mechanism for plugin systems.** This is because:
 
 - We can dynamically load plugins, loading different functional modules (internationalization, rendering backends, drivers, etc.) at runtime based on configuration.
-- The above feature allows us to load only the dependencies we need, saving some space.
+- This feature allows us to load dependencies on demand, saving some space.
 - It also supports hot-swapping/extending at runtime. At the very least, we can extend functionality without recompiling the main program.
 
-## Many Benefits, But Any Drawbacks?
+## Lots of Benefits, But Any Drawbacks?
 
-There certainly are. We need to be much more careful with our error handling. After all, we will encounter a series of troublesome issues like symbol mismatches and loading failures. It is also recommended to create a unified management class to handle these exported symbols—there is a good reason for this. The beauty of plugins is that they can be installed and uninstalled at any time; after unloading, we must absolutely not continue to call their functions or access their static resources. The author suggests creating a function wrapper object with an expiration mechanism, similar to `QPointer`, to access them.
+There certainly are. We need to be much more careful with our error handling. After all, we will encounter a series of troublesome issues like mismatched symbols or failed loading. It is also recommended to create a unified management class to handle these exported symbols—there is a good reason for this. The beauty of plugins is that they can be installed and uninstalled at any time. After unloading, we must absolutely not continue to call their functions or access their static resources. The author suggests creating a function wrapper object with an expiration mechanism, similar to `QPointer`, to access them.
 
 ## Some System-Level APIs
 
@@ -43,11 +49,11 @@ Here we enumerate a few system-level APIs:
   - ``flag`` Commonly used: ``RTLD_LAZY`` (lazy symbol resolution), ``RTLD_NOW`` (immediately resolve all required symbols), ``RTLD_LOCAL`` (local symbols), ``RTLD_GLOBAL`` (symbols can be resolved by subsequently loaded libraries)
 - ``void *dlsym(void *handle, const char *symbol);`` returns a pointer to a function/variable
 - ``int dlclose(void *handle);`` unloads
-- ``char *dlerror(void);`` gets an error description (non-thread-safe implementations might return a static string)
+- ``char *dlerror(void);`` gets an error description (implementations that are not thread-safe might return a static string)
 
 Windows equivalents:
 
-- ``HMODULE LoadLibrary(LPCSTR lpFileName);`` There is also an EX version. The author recommends checking Microsoft's MSDN documentation for details: [LoadLibraryExW function (libloaderapi.h) - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)
+- ``HMODULE LoadLibrary(LPCSTR lpFileName);`` There is also an EX version, but the author recommends heading over to Microsoft's MSDN documentation for the details: [LoadLibraryExW function (libloaderapi.h) - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)
 - ``FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName);``
 - ``BOOL FreeLibrary(HMODULE hModule);``
 - ``DWORD GetLastError(void);`` + ``FormatMessage`` to get a readable string
@@ -257,14 +263,14 @@ PluginAPI* create_plugin_api(void) {
 
 ```
 
-The main program only needs to use ``dlsym(h, "create_plugin_api")`` to get ``PluginAPI*``, and it can seamlessly call plugin functions without worrying about C++ name mangling.
+The main program only needs to obtain ``PluginAPI*`` via ``dlsym(h, "create_plugin_api")`` to seamlessly call plugin functions, without worrying about C++ name mangling.
 
-## Problems the Author Has Encountered, and Accumulated Troubleshooting Methods
+## Issues the Author Has Encountered and Accumulated Troubleshooting Methods
 
-#### **Why can't ``dlsym`` find my C++ function?**
+#### **Why can't ``dlsym`` find my function in C++?**
 
-When the author was hand-crafting a PDF viewer and preparing to build a plugin system, they got burned by this. As discussed in previous blog posts, C++ compilers mangle symbol names (name mangling). The natural solution is to export a C-style interface using ``extern "C"``, or to use the approach mentioned above.
+When the author was hand-rolling a PDF viewer and preparing to build a plugin system, they got burned by this. As discussed in previous blog posts, C++ compilers perform name mangling on symbol names. The natural solution is to export a C-style interface using ``extern "C"``, or to use the approach mentioned above.
 
 #### **How to troubleshoot a failed ``GetProcAddress`` on Windows?**
 
-Check the exported names (using ``dumpbin /EXPORTS`` or ``nm``), verify that the calling convention matches (``__stdcall`` changes the exported name), and check whether C++ name mangling is being used. The author recommends ``__declspec(dllexport)`` + ``extern "C"``.
+Check the exported names (using ``dumpbin /EXPORTS`` or ``nm``), check if the calling convention matches (``__stdcall`` changes the exported name), or check if C++ name mangling is being used. We recommend using ``__declspec(dllexport)`` + ``extern "C"``.

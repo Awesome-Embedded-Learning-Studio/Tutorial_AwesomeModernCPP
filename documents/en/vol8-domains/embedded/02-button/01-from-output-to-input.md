@@ -9,6 +9,12 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 16
 order: 1
+translation:
+  source: documents/vol8-domains/embedded/02-button/01-from-output-to-input.md
+  source_hash: 03b7c2f10cb4887ce6c0fdaa24de8f6bcc02127b033270480bd2ddc102ff1764
+  translated_at: '2026-05-26T12:10:20.197367+00:00'
+  engine: anthropic
+  token_count: 1416
 ---
 # Part 19: From Output to Input — Why Buttons Are Harder Than LEDs
 
@@ -18,9 +24,9 @@ order: 1
 
 ## From "Speaking" to "Listening"
 
-The LED tutorial taught us one thing: how to make the chip "speak." We used GPIO output to drive the PC13 pin, controlling the LED on and off. Throughout this process, the chip held all the initiative — the code decided when to pull high and when to pull low, the pin faithfully executed the commands, and the LED obediently turned on or off. This is a one-way street: CPU → GPIO → Physical World.
+The LED tutorial taught us one thing: how to make the chip "speak." We used GPIO output to drive the PC13 pin, controlling the LED on and off. Throughout this process, the chip held all the initiative—the code decided when to pull high and when to pull low, the pin faithfully executed the commands, and the LED obediently turned on or off. This is a one-way street: CPU → GPIO → Physical world.
 
-Buttons do the exact opposite. Buttons are the physical world "speaking" to the chip — the user presses the button, the voltage on the pin changes, and the CPU needs to "listen" to this change and respond. It sounds like simply swapping output for input, but once you actually try it, you will find things are far from that simple.
+Buttons do the exact opposite. A button is the physical world "speaking" to the chip—the user presses the button, the voltage on the pin changes, and the CPU needs to "listen" to this change and respond. It sounds like simply swapping output for input, but once you actually try it, you will find things are far from that simple.
 
 Why? Because in the LED tutorial, we controlled an ideal digital world. `HAL_GPIO_WritePin()` write a high level, and the pin is high. One is one, zero is zero, clean and decisive. But buttons face real signals from the physical world, and the physical world is never as "clean" as the digital world.
 
@@ -30,31 +36,31 @@ Why? Because in the LED tutorial, we controlled an ideal digital world. `HAL_GPI
 
 ### Challenge 1: Reading Instead of Writing
 
-In the LED tutorial, our GPIO operated in output mode. The core operation of output mode is "write" — write a value to `ODR` (Output Data Register), and the pin level changes accordingly. The chip is the master of the signal.
+In the LED tutorial, our GPIO operated in output mode. The core operation of output mode is "write"—write a value to the `ODR` (Output Data Register), and the pin level changes accordingly. The chip is the master of the signal.
 
-Buttons require GPIO to operate in input mode. The core operation of input mode is "read" — read a value from `IDR` (Input Data Register), which reflects the actual current voltage on the pin. The chip is an observer of the signal.
+Buttons require GPIO to operate in input mode. The core operation of input mode is "read"—read a value from the `IDR` (Input Data Register), which reflects the actual voltage currently on the pin. The chip is an observer of the signal.
 
 This role reversal sounds trivial, but it means you need to understand a whole new set of things: What does the internal GPIO circuit look like in input mode? What is the difference between a pull-up resistor and a pull-down resistor? Why is floating input unreliable? What role does a Schmitt trigger play in the input path? We glossed over these in the LED tutorial, but now we must break them down in detail, because if you get the input configuration wrong, you will not even be able to read the button state correctly.
 
 ### Challenge 2: Noise from the Physical World
 
-This is the most unexpected part of the button tutorial, and the easiest place to fall into a trap.
+This is the most unexpected part of the button tutorial, and the easiest pitfall to fall into.
 
-You might think a button is just an ideal switch — pressed means low level, released means high level, a clean switch between 0 and 1. But reality is harsh: at the moment a mechanical switch's contacts close and open, due to the elasticity of the metal, it produces 5 to 20 milliseconds of level oscillation. On an oscilloscope, what you expect to be a clean falling edge turns out to be a rapid series of high-low-high-low jumps.
+You might think a button is just an ideal switch—pressed means low level, released means high level, a clean switch between 0 and 1. But reality is harsh: at the moment a mechanical switch's contacts close and open, due to the elasticity of the metal, it produces voltage oscillations lasting 5 to 20 milliseconds. On an oscilloscope, what you expect to be a clean falling edge turns out to be a rapid series of high-low-high-low transitions.
 
-If your code does not handle this at all and simply reads the pin state in the main loop, a single normal button press might be misread by the CPU as three or four, or even seven or eight, "press-release" cycles. The LED does not light up, or the LED flickers wildly — not because the hardware is broken, but because your code was fooled by the noise of the physical world.
+If your code does not handle this at all and simply reads the pin state in the main loop, a single normal button press might be misread by the CPU as three or four, or even seven or eight, "press-release" cycles. The LED does not turn on, or the LED flickers wildly—not because the hardware is broken, but because your code was fooled by the noise of the physical world.
 
-The LED tutorial never encountered this problem. Because an LED is an output device, the signal is generated by the chip, 0 is 0, and 1 is 1. A button is an input device, the signal comes from the physical world, and the physical world is never perfect. Debounce — filtering out these mechanical bounces at the software level — is a required course in the button tutorial that cannot be skipped.
+We never encountered this problem in the LED tutorial. Because an LED is an output device, the signal is generated by the chip—0 is 0, 1 is 1. A button is an input device, the signal comes from the physical world, and the physical world is never perfect. Debounce—filtering out these mechanical bounces at the software level—is a required course that cannot be bypassed in the button tutorial.
 
 ### Challenge 3: Timing Management
 
-In the LED tutorial, we heavily used `HAL_Delay()` to control the blinking interval. `HAL_Delay(500)` simply busy-waits for 500 milliseconds; the CPU does nothing, just looping to count ticks. This is fine in the LED scenario — blinking is the only task anyway, so waiting is acceptable.
+In the LED tutorial, we heavily used `HAL_Delay()` to control the blinking interval. `HAL_Delay(500)` is simply a dead wait of 500 milliseconds—the CPU does nothing, just looping to count ticks. This is fine in the LED scenario—blinking is the only task anyway, so waiting is acceptable.
 
 But buttons are different. Button debouncing takes time (usually 20ms). If you use `HAL_Delay()` to block and wait during this period, the entire system stops. If your project has not just a button, but also an LED to blink, sensors to read, and communication protocols to handle, then blocking for 20ms means all other tasks are paused. This is unacceptable in a real-time system.
 
-The solution is non-blocking debouncing: use `HAL_GetTick()` to get the current timestamp, remember when the state change occurred, and check on the next loop iteration "has enough time passed" to confirm the state. This approach does not block the CPU, and the main loop can continue doing other things. But it introduces a new programming paradigm — the state machine. You need to use state variables to record "what stage we are currently in" and "what the next stage is," rather than simply delaying and waiting.
+The solution is non-blocking debouncing: use `HAL_GetTick()` to get the current timestamp, remember when the state change occurred, and check on the next loop iteration "has enough time passed" to confirm the state. This approach does not block the CPU, and the main loop can continue doing other things. But it introduces a new programming paradigm—the state machine. You need to use state variables to record "what stage we are currently in" and "what the next stage is," rather than simply delaying and waiting.
 
-These three challenges stacked on top of each other make button control look several times more complex than LEDs. But do not worry — we have 12 articles to tackle them one by one.
+These three challenges stacked on top of each other make button control look several times more complex than LEDs. But do not worry—we have 12 articles to tackle them one by one.
 
 ---
 
@@ -97,13 +103,13 @@ int main() {
 }
 ```
 
-If you completed the LED tutorial, the first half should look very familiar: `HAL_Init()`, system clock configuration, `LED<GpioPort::C, GPIO_PIN_13>` template instantiation — these are exactly the same as in the LED tutorial.
+If you completed the LED tutorial, the first half should look very familiar: `HAL_Init()`, system clock configuration, `LED<GpioPort::C, GPIO_PIN_13>` template instantiation—these are exactly the same as in the LED tutorial.
 
-What is new is the second half. `Button<GpioPort::A, GPIO_PIN_0>` declares a button object, locking configurations like Port A, Pin 0, pull-up mode, and active-low into the type system at compile time. `poll_events()` is the core method of this button object — it maintains a 7-state state machine internally, samples the pin level once each time it is called, and determines whether a valid press or release event occurred based on the current state and timestamp.
+What is new is the second half. `Button<GpioPort::A, GPIO_PIN_0>` declares a button object, locking configurations like Port A, Pin 0, pull-up mode, and active-low into the type system at compile time. `poll_events()` is the core method of this button object—it internally maintains a 7-state state machine, samples the pin level once per call, and determines whether a valid press or release event has occurred based on the current state and timestamp.
 
-If a state change is confirmed, `poll_events()` notifies you through a callback function. The callback parameter `ButtonEvent` is a `std::variant<Pressed, Released>` — this is a C++17 type-safe union, where `Pressed` means "the button was pressed" and `Released` means "the button was released." We use `std::visit` with a generic lambda to handle these two events: press turns the LED on, otherwise it turns off.
+If a state change is confirmed, `poll_events()` notifies you through a callback function. The callback parameter `ButtonEvent` is a `std::variant<Pressed, Released>`—this is a C++17 type-safe union, where `Pressed` means "button was pressed" and `Released` means "button was released." We use `std::visit` with a generic lambda to handle these two events: if pressed, turn the LED on; otherwise, turn it off.
 
-Do not be intimidated by these new terms — `std::variant`, `std::visit`, generic lambda, `if constexpr` — each one will be broken down in later articles until there is nothing left to dissect. For now, you just need to know that this code accomplishes three things: button debouncing, state machine management, and event dispatch, all with compile-time zero-overhead abstraction. The resulting machine code is no different from a version where you hand-wrote C to directly read the pin and manually debounce.
+Do not be intimidated by these new terms—`std::variant`, `std::visit`, generic lambda, `if constexpr`—each one will be broken down in detail in later articles. For now, you just need to know that this code accomplishes three things: button debouncing, state machine management, and event dispatch, all with compile-time zero-overhead abstraction. The resulting machine code is no different from a version where you hand-wrote C to directly read the pin and manually debounce.
 
 ---
 
@@ -113,23 +119,23 @@ The button tutorial consists of 12 parts, divided into four stages. Each stage s
 
 ### Stage 1: Hardware Fundamentals (Parts 02-03)
 
-First, let us get the hardware straight. Part 02 covers the internal circuitry of GPIO input mode — what are the differences between pull-up, pull-down, and floating input modes, why the Schmitt trigger exists, and how the `IDR` register works. We mostly skipped this in the LED tutorial because output mode does not require a deep understanding of the input path. But now it is different; the input path is our main battlefield.
+Let's get the hardware straight first. Part 02 covers the internal circuitry of GPIO input mode—what are the differences between pull-up, pull-down, and floating input modes, why the Schmitt trigger exists, and how the `IDR` register works. We mostly skipped this in the LED tutorial because output mode did not require a deep understanding of the input path. But now it is different; the input path is our main battlefield.
 
-Part 03 applies the GPIO input knowledge to button circuits. We will draw the button wiring diagram, calculate the current through the pull-up resistor, and most importantly — explain in detail the physical principles of mechanical bouncing and the oscilloscope waveforms. Only by understanding what bouncing is all about can you truly understand the design motivation behind all the debouncing algorithms that follow.
+Part 03 applies the GPIO input knowledge to a button circuit. We will draw the button wiring diagram, calculate the current through the pull-up resistor, and most importantly—explain in detail the physical principles of mechanical bouncing and the oscilloscope waveforms. Only by understanding what bouncing is all about can you truly understand the design motivation behind all the debouncing algorithms that follow.
 
 ### Stage 2: HAL + C in Practice (Parts 04-06)
 
-With the hardware clear, next up are the HAL API and C language implementation. Part 04 breaks down how `HAL_GPIO_ReadPin()` works and the initialization process for input mode. Part 05 writes a simplest button polling program in pure C — it runs, but triggers multiple times due to bouncing. Part 06 introduces a non-blocking debouncing algorithm, using `HAL_GetTick()` for time management to eliminate the bouncing problem.
+With the hardware clear, next up are the HAL API and C language implementation. Part 04 breaks down how `HAL_GPIO_ReadPin()` works and the initialization process for input mode. Part 05 writes a simplest button polling program in pure C—it runs, but triggers multiple times due to bouncing. Part 06 introduces a non-blocking debouncing algorithm, using `HAL_GetTick()` for time management to eliminate the bouncing problem.
 
-The value of these three parts lies in getting your hands "dirty" — solving the problem in the most direct way first, experiencing firsthand the limitations of C-style code and the evolution of the debouncing algorithm. With this practical experience, when we refactor in C++ later, you will feel "this really should be refactored this way," rather than "why make it so complicated."
+The value of these three parts is letting you "get your hands dirty"—solving the problem in the most direct way first, experiencing firsthand the limitations of C-style code and the evolution of the debouncing algorithm. With this practical experience, when we refactor in C++ later, you will feel "this really should be refactored this way," rather than "why make it so complicated."
 
 ### Stage 3: State Machine Debouncing (Part 07)
 
-Part 07 is the core article of this series. We reimplement the debouncing logic using a 7-state state machine. This state machine is not over-engineered — each of the 7 states has a clear reason to exist, including a special "startup lock" mechanism to handle edge cases like "the button is already held down when the system powers up." This article will walk through the implementation of the `poll_events()` method in `button.hpp` line by line.
+Part 07 is the core of this series. We reimplement the debouncing logic using a 7-state state machine. This state machine is not over-engineered—each of the 7 states has a clear reason to exist, including a special "startup lock" mechanism to handle edge cases like "the button is already held down when the system powers up." This part will provide a line-by-line walkthrough of the `poll_events()` method implementation in `button.hpp`.
 
 ### Stage 4: C++ Refactoring (Parts 08-12)
 
-The final 5 parts are the main event of the C++ refactoring. Part 08 uses `enum class` to redefine button-related enumeration types. Part 09 introduces `std::variant` and `std::visit` to build a type-safe event system. Part 10 designs the Button template class, encoding the port, pin, pull-up/pull-down, and active level polarity entirely into compile-time types. Part 11 uses C++20 concepts to constrain the callback function type, ensuring the callback signature passed to `poll_events()` is correct. Part 12 introduces EXTI (External Interrupt) as an alternative approach for button detection, complete with a summary of common pitfalls and exercises.
+The final 5 parts are the main event of the C++ refactoring. Part 08 uses `enum class` to redefine button-related enumeration types. Part 09 introduces `std::variant` and `std::visit` to build a type-safe event system. Part 10 designs a Button template class, encoding the port, pin, pull-up/pull-down, and active level polarity entirely into compile-time types. Part 11 uses C++20 concepts to constrain the callback function type, ensuring the callback signature passed to `poll_events()` is correct. Part 12 introduces EXTI (External Interrupt) as an alternative approach for button detection, complete with a summary of common pitfalls and exercises.
 
 ---
 
@@ -137,9 +143,9 @@ The final 5 parts are the main event of the C++ refactoring. Part 08 uses `enum 
 
 On the hardware side, you still need the same Blue Pill + ST-Link setup from the LED tutorial, plus an additional button switch. Specifically:
 
-- **STM32F103C8T6 Blue Pill development board** — the same board as in the LED tutorial
-- **ST-Link V2 debug probe** — for flashing and debugging, same as in the LED tutorial
-- **One button switch** — any ordinary tactile switch will do, 2-pin or 4-pin, they cost a few cents on Taobao
+- **STM32F103C8T6 Blue Pill development board** — the same board used in the LED tutorial
+- **ST-Link V2 debug probe** — for flashing and debugging, same as the LED tutorial
+- **One button switch** — any standard tactile switch will do, 2-pin or 4-pin, they cost a few cents on Taobao
 
 The wiring scheme is very simple:
 
@@ -148,18 +154,18 @@ The wiring scheme is very simple:
 按钮另一端 → GND 排针孔
 ```
 
-Just these two wires. No resistor is needed — the STM32 has an internal pull-up resistor, and we will enable it in software. The onboard LED on PC13 remains the same as in the LED tutorial, requiring no additional wiring.
+Just these two wires. No resistor needed—the STM32 has an internal pull-up resistor, and we will enable it in software. The onboard LED on PC13 remains the same as in the LED tutorial, requiring no additional wiring.
 
-Why choose PA0? Two reasons. First, PA0 is easy to find on the Blue Pill's pin header, making wiring convenient. Second, in the STM32F103's EXTI (External Interrupt Controller), PA0 corresponds to EXTI0, and EXTI0 has its own independent interrupt vector, `EXTI0_IRQn`. This means when we cover interrupt-driven buttons in Part 12, we do not need to deal with interrupt vector sharing. If you chose PA5, then EXTI5 and EXTI9 would share an interrupt vector, adding an extra step to the configuration. Let us use the simplest PA0 first, and get the principles clear before anything else.
+Why choose PA0? Two reasons. First, PA0 is easy to find on the Blue Pill's pin header, making wiring convenient. Second, in the STM32F103's EXTI (External Interrupt) controller, PA0 corresponds to EXTI0, and EXTI0 has its own independent interrupt vector, `EXTI0_IRQn`. This means when we cover interrupt-driven buttons in Part 12, we do not need to deal with interrupt vector sharing. If you chose PA5, EXTI5 and EXTI9 would share an interrupt vector, adding an extra step to the configuration. Let's start with the simplest PA0 and get the principles clear first.
 
-> ⚠️ If you do not have a button switch on hand, you can also simulate it with a single Dupont wire — plug one end into PA0 and briefly touch the other end to GND then release it, the effect is the same as a button. You just will not have the spring return, so the feel is different, but it is enough for learning.
+> ⚠️ If you do not have a button switch on hand, you can also simulate it with a single Dupont wire—plug one end into PA0 and briefly touch the other end to GND then release it, the effect is the same as a button. You just will not have the spring return, so the feel is different, but it is sufficient for learning.
 
 ---
 
 ## Where to Go Next
 
-The preparations are done, the challenges are laid out, and the final result has been shown. Starting from the next part, we are going to dive headfirst into the internal circuitry of GPIO input mode.
+The preparations are done, the challenges are laid out, and the final result has been previewed. Starting from the next part, we are going to dive headfirst into the internal circuitry of GPIO input mode.
 
 The next part covers the signal path of GPIO in input mode: what circuit components the voltage signal on the pin passes through, how pull-up and pull-down resistors are connected inside the chip, why the Schmitt trigger is an indispensable part of the input path, and how each bit in the `IDR` register corresponds to the physical pins. Once you understand these, configuring GPIO input mode will no longer be "copying parameters from sample code," but rather "I know what this parameter does in the circuit."
 
-Ready? Let us go.
+Ready? Let's go.

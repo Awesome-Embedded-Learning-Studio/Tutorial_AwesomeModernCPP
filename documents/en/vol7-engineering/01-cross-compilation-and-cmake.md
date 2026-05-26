@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Introduces the basic concepts of cross-compilation, toolchains, and configuration
-  methods for multi-target builds using CMake.
+description: Introduces the fundamental concepts of cross-compilation, toolchains,
+  and how to configure multi-target builds using CMake.
 difficulty: beginner
 order: 1
 platform: host
@@ -18,43 +18,49 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: A Simple Guide to Cross-Compilation and CMake
+title: A Brief Guide to Cross-Compiling and CMake
+translation:
+  source: documents/vol7-engineering/01-cross-compilation-and-cmake.md
+  source_hash: 96f3692b2eef6e172c5a1da5be83edc62dcc598517a8ea4e090d86942419b3b1
+  translated_at: '2026-05-26T11:50:30.076667+00:00'
+  engine: anthropic
+  token_count: 2604
 ---
 # Modern Embedded C++ Tutorial: Cross-Compilation Basics and CMake Multi-Target Builds
 
 ## Introduction
 
-In the embedded development field, we often face an interesting challenge: the development environment and the target runtime environment are usually completely different hardware platforms. You might write code on a powerful x86_64 workstation, but the final program needs to run on an ARM-based MCU (Microcontroller Unit) or a RISC-V processor. This is exactly why cross-compilation exists.
+In the field of embedded development, we often face an interesting challenge: the development environment and the target runtime environment are usually completely different hardware platforms. You might write code on a powerful x86_64 workstation, but the final program needs to run on an ARM-based MCU (Microcontroller Unit) or a RISC-V processor. This is exactly why cross-compilation exists.
 
-This article will dive into the fundamental concepts of cross-compilation and detail how to use CMake, a modern build system, to manage multi-target platform build workflows. Whether you are a newcomer to embedded development or a seasoned developer looking to optimize your existing build process, this article will provide you with practical knowledge and techniques.
+This article will dive into the fundamental concepts of cross-compilation and detail how to use CMake, a modern build system, to manage the build process for multiple target platforms. Whether you are a newcomer to embedded development or a seasoned developer looking to optimize your existing build process, this article will provide you with practical knowledge and techniques.
 
 ## Part 1: Cross-Compilation Basics
 
 #### What is Cross-Compilation
 
-Cross-compilation refers to **the process of compiling on one platform (the Host Platform) to generate an executable program that runs on another platform (the Target Platform)**. This contrasts with native compilation, where the compiled program runs on the same platform that built it.
+Cross-compilation refers to **the process of compiling on one platform (the host platform) to generate an executable program that runs on another platform (the target platform)**. This contrasts with native compilation, where the compiled program runs on the same platform that built it.
 
 A simple example: when you compile a C++ program on your Ubuntu x86_64 laptop, and that program will run on a Raspberry Pi's ARM processor, you are cross-compiling.
 
 #### Why We Need Cross-Compilation
 
-This question is actually a no-brainer—would you dare to deploy a complete toolchain on your microcontroller? An MCU (Microcontroller Unit) with only a few megabytes of Flash and a few dozen kilobytes of RAM obviously cannot run the GCC compiler.
+This isn't really a question—let me ask you instead: would you dare to deploy a full compiler toolchain on your microcontroller? An MCU (Microcontroller Unit) with only a few megabytes of Flash and a few dozen kilobytes of RAM obviously cannot run the GCC compiler.
 
-Furthermore, even if the target device could theoretically compile code, compiling on resource-constrained hardware would be incredibly slow. In contrast, compiling on a powerful development machine significantly shortens the development cycle and improves work efficiency. Desktop development environments also typically have a more complete tool ecosystem, including IDEs, debuggers, and profilers, which can significantly enhance the development experience.
+Furthermore, even if the target device could theoretically compile code, doing so on resource-constrained hardware would be incredibly slow. In contrast, compiling on a powerful development machine significantly shortens the development cycle and improves work efficiency. Desktop development environments also typically have a more complete ecosystem of development tools, including IDEs, debuggers, and profilers, which can significantly enhance the development experience.
 
 #### Cross-Compilation Toolchain
 
-A cross-compilation toolchain is a set of tools specifically designed for cross-compilation, typically including:
+A cross-compilation toolchain is a set of tools specifically designed for cross-compilation, usually including:
 
-- **Cross Compiler**: The core of the toolchain. For example, `arm-none-eabi-gcc` is used for bare-metal ARM development, and `aarch64-linux-gnu-gcc` is used for ARM64 Linux systems. The compiler is responsible for translating source code into the target platform's machine code.
+- **Cross Compiler**: This is the core of the toolchain. For example, `arm-none-eabi-gcc` is used for bare-metal ARM development, and `aarch64-linux-gnu-gcc` is used for ARM64 Linux systems. The compiler is responsible for translating source code into the target platform's machine code.
 
 - **Cross Assembler**: Converts assembly language code into the target platform's machine code, usually used in conjunction with the compiler.
 
 - **Cross Linker**: Links multiple object files (`.o` files) generated by the compiler into the final executable or library files, handling symbol resolution and address relocation.
 
-- **Standard Libraries**: C/C++ standard libraries compiled for the target platform, including `libc`, `libstdc++`, and so on. These libraries must be compiled specifically for the target architecture.
+- **Standard Libraries**: C/C++ standard libraries compiled for the target platform, including libc, libstdc++, and so on. These libraries must be compiled for the target architecture.
 
-- **Auxiliary Tools**: Tools such as `objcopy` (converts object file formats), `size` (views program size), and `nm` (views the symbol table).
+- **Auxiliary Tools**: Tools such as `objdump` (for viewing object files), `objcopy` (for converting object file formats), `size` (for viewing program size), and `nm` (for viewing symbol tables).
 
 ##### Target Triplet
 
@@ -66,22 +72,22 @@ In cross-compilation, we use a "target triplet" to precisely describe the target
 
 ```
 
-Let's look at a few practical examples:
+Let's look at a few real-world examples:
 
 - `arm-none-eabi`: ARM architecture, no vendor, no operating system (bare-metal), EABI (Embedded Application Binary Interface)
 - `aarch64-linux-gnu`: ARM64 architecture, Linux operating system, GNU toolchain
 - `x86_64-w64-mingw32`: x86_64 architecture, Windows operating system, MinGW toolchain
-- `riscv64-unknown-elf`: RISC-V 64-bit architecture, unknown vendor, ELF format
+- `riscv64-unknown-elf`: RISC-V 64-bit architecture, unknown vendor, ELF (Executable and Linkable Format) format
 
 Understanding the target triplet is crucial for selecting the correct toolchain and configuring the build system. Different triplets imply different instruction sets, calling conventions, binary formats, and runtime environments.
 
 #### Challenges of Cross-Compilation
 
-Although cross-compilation is powerful, it brings several challenges:
+Although powerful, cross-compilation brings several challenges:
 
 **Dependency management**: When a program depends on third-party libraries, you need to ensure these libraries are also compiled for the target platform. You cannot link a library compiled for x86 into an ARM program.
 
-**System call differences**: Different operating systems have different system call interfaces, which need to be properly handled in the code.
+**System call differences**: Different operating systems have different system call interfaces, which need to be handled properly in the code.
 
 **Endianness issues**: Different architectures might use different byte orders (big-endian or little-endian), requiring special attention when handling network protocols or file formats.
 
@@ -105,7 +111,7 @@ For embedded development, CMake offers the following advantages:
 
 **Modular design**: CMake's module system makes it easy to manage multiple components and dependencies in complex projects.
 
-**Modern features**: Supports target-oriented build configurations, making dependency relationships clearer and configurations more intuitive.
+**Modern features**: Supports target-oriented build configurations, making dependencies clearer and configuration more intuitive.
 
 **Broad IDE support**: Mainstream IDEs such as CLion, Visual Studio Code, and Qt Creator all have excellent CMake support.
 
@@ -127,17 +133,17 @@ Before diving into cross-compilation configuration, let's quickly review a few c
 
 ### 3.1 The Role of the Toolchain File
 
-The Toolchain file is the core of CMake cross-compilation. It is a CMake script file that describes all the information required for cross-compilation, including compiler paths, target system information, and compiler flags.
+The Toolchain file is the core of CMake cross-compilation. It is a CMake script file that describes all the information needed for cross-compilation, including compiler paths, target system information, and compiler flags.
 
 Benefits of using a Toolchain file:
 
 - **Reusability**: Configure once, share across multiple projects
-- **Version control**: Toolchain files can be checked into version control to ensure the team uses the same configuration
-- **Clear separation**: Separates platform-specific configurations from project logic
+- **Version control**: Toolchain files can be placed under version control to ensure the team uses the same configuration
+- **Clear separation**: Separates platform-specific configuration from project logic
 
 ### Writing a Toolchain File
 
-Let's start with an ARM Cortex-M Toolchain file example:
+Let's start with an example Toolchain file for ARM Cortex-M:
 
 ```cmake
 
@@ -176,15 +182,15 @@ Let's break down the various parts of this file in detail:
 
 **CMAKE_SYSTEM_PROCESSOR**: Specifies the target processor architecture, such as `arm`, `aarch64`, or `riscv64`.
 
-**Compiler settings**: Explicitly specifies the cross-compiler to use. CMake will use these compilers instead of the system defaults.
+**Compiler settings**: Explicitly specifies the cross-compilers to use. CMake will use these compilers instead of the system defaults.
 
 **Compiler flags**:
 
 - `-mcpu=cortex-m4`: Specifies the target CPU model
-- `-mthumb`: Uses the Thumb instruction set (higher code density)
+- `-mthumb`: Uses the Thumb instruction set (for higher code density)
 - `-mfloat-abi=hard`: Uses the hardware floating-point ABI
 - `-mfpu=fpv4-sp-d16`: Specifies the floating-point unit type
-- `-fno-exceptions`: Disables C++ exceptions (common in embedded)
+- `-fno-exceptions`: Disables C++ exceptions (common in embedded development)
 - `-fno-rtti`: Disables Run-Time Type Information (RTTI)
 
 **CMAKE_FIND_ROOT_PATH_MODE series**: Controls CMake's search behavior when looking for libraries, header files, and other resources, preventing the accidental use of host platform libraries.
@@ -226,7 +232,7 @@ set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
 
 ```
 
-This example introduces the concept of `CMAKE_SYSROOT`. A sysroot is a directory that contains a copy of the target system's root filesystem, including library files, header files, and so on. This is crucial for target platforms with a complete operating system.
+This example introduces the concept of `CMAKE_SYSROOT`. A sysroot is a directory that contains a copy of the target system's root filesystem, including library files, header files, and so on. This is very important for target platforms with a full operating system.
 
 ### Using the Toolchain File
 
@@ -368,7 +374,7 @@ endif()
 
 ### Using Generator Expressions
 
-CMake generator expressions provide a more flexible approach to conditional configuration:
+CMake generator expressions provide a more flexible way to handle conditional configuration:
 
 ```cmake
 
@@ -392,7 +398,7 @@ target_link_libraries(app PRIVATE
 
 ```
 
-### Platform Abstraction Layer (HAL) Design
+### Hardware Abstraction Layer (HAL) Design
 
 In multi-target projects, a good hardware abstraction layer design is crucial:
 

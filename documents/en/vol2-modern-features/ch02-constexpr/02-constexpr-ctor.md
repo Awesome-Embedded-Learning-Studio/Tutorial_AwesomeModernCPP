@@ -1,7 +1,7 @@
 ---
-title: constexpr constructors and literal types
-description: Enabling custom types to participate in compile-time computation, understanding
-  the design constraints and evolution of literal types
+title: constexpr Constructors and Literal Types
+description: Enable custom types to participate in compile-time computation, and understand
+  the design constraints and evolution of literal types.
 chapter: 2
 order: 2
 tags:
@@ -22,20 +22,26 @@ prerequisites:
 related:
 - consteval 与 constinit
 - 编译期计算实战
+translation:
+  source: documents/vol2-modern-features/ch02-constexpr/02-constexpr-ctor.md
+  source_hash: 97cb765acbf13256e61fbd2ecc91e7f1416e0063e069b767944b3b9ecaf0be84
+  translated_at: '2026-05-26T11:24:09.530139+00:00'
+  engine: anthropic
+  token_count: 3119
 ---
 # constexpr Constructors and Literal Types
 
 ## Introduction
 
-In the previous chapter, we discussed `constexpr` variables and `constexpr` functions, but all the examples were limited to scalar types—integers, floating-point numbers, and pointers, which are "primitive" types. You might ask: can we use custom classes at compile time too? For example, constructing a complex number object at compile time, or calculating a date at compile time, and then using it directly at runtime?
+In the previous chapter, we discussed `constexpr` variables and `constexpr` functions, but all the examples were limited to scalar types—primitives like integers, floating-point numbers, and pointers. You might ask: can we use custom classes at compile time too? For example, constructing a complex number object at compile time, or calculating a date at compile time and using it directly at runtime?
 
-The answer is yes, but with a prerequisite: your type must be a "literal type." This concept sounds a bit academic, but it is essentially a checklist of constraints that allows the compiler to understand and manipulate a type at compile time. In this chapter, we will clarify what literal types are, how to add `constexpr` constructors to custom types, and how these restrictions were gradually relaxed after C++14.
+The answer is yes, but with one prerequisite: your type must be a "literal type." This concept sounds a bit academic, but it is essentially a checklist of constraints that allows the compiler to understand and manipulate a type at compile time. In this chapter, we will clarify what literal types are, how to add `constexpr` constructors to custom types, and how these restrictions were gradually relaxed after C++14.
 
 ## Step 1 — What is a Literal Type
 
-The name "literal type" is indeed a bit confusing. It is not the same thing as a "literal" (like `42`, `"hello"`). A literal type refers to a type that satisfies specific constraints—the compiler can fully construct, manipulate, and destroy objects of this type at compile time.
+The name "literal type" can indeed be confusing. It is not the same thing as a "literal" (like `42` or `"hello"`). A literal type refers to a type that satisfies specific constraints—the compiler can fully construct, manipulate, and destroy objects of this type at compile time.
 
-Specifically, for a type to be a literal type, it must meet the following conditions: scalar types (arithmetic types, pointers, references, enumerations) are naturally literal types and require no extra effort; for class types, it needs to have a `constexpr` constructor (at least one, which can be a copy or move constructor), all non-static data members must themselves be literal types or arrays of literal types, and its destructor must either be trivial or, after C++20, `constexpr`.
+Specifically, for a type to be a literal type, it must meet the following conditions: scalar types (arithmetic types, pointers, references, and enumerations) are naturally literal types and require no extra effort; for class types, it needs a `constexpr` constructor (at least one, which can be a copy or move constructor), all non-static data members must themselves be literal types or arrays of literal types, and its destructor must either be trivial or, after C++20, `constexpr`.
 
 In plainer terms: the compiler needs to fully understand the memory layout and initial values of this type at compile time, without requiring runtime dynamic allocation, virtual function table lookups, or complex destruction logic.
 
@@ -64,7 +70,7 @@ struct NotLiteral {
 };
 ```
 
-The issue with `std::string` is that it manages dynamic memory. Before C++20, `constexpr` functions were not allowed to use `new`/`delete`, so any type requiring dynamic allocation could not be used at compile time. C++20 relaxed this restriction—allowing `new`/`delete` in `constexpr` functions, but with a hard constraint: all memory allocated at compile time must be freed before the compile-time evaluation ends (it cannot leak into runtime). This means you can do complex string operations at compile time, but you cannot return a `std::string` pointing to compile-time allocated memory into runtime (unless that memory has already been freed or transferred to persistent storage).
+The issue with `std::string` is that it manages dynamic memory. Before C++20, `constexpr` functions were not allowed to use `new`/`delete`, so any type requiring dynamic allocation could not be used at compile time. C++20 relaxed this restriction—allowing `new`/`delete` in `constexpr` functions—but with a hard constraint: all memory allocated at compile time must be freed before the compile-time evaluation ends (it cannot leak into runtime). This means you can perform complex string operations at compile time, but you cannot return a `std::string` pointing to compile-time allocated memory into runtime (unless that memory has already been freed or transferred to persistent storage).
 
 In practice, GCC 15.2.1 and Clang 13+ fully support `constexpr` operations on `std::string`, including construction, concatenation, and substring extraction. You can build strings, validate formats, and generate lookup tables at compile time, as long as all dynamic memory is properly managed during compilation.
 
@@ -132,9 +138,9 @@ static_assert(kDec42.bcd == 0x42, "BCD of 42 should be 0x42");
 static_assert(kDec42.to_decimal() == 42, "Round-trip conversion should work");
 ```
 
-This code implements decimal-to-BCD encoding conversion inside the constructor. The entire calculation completes at compile time, and the `bcd` member of `kDec42` is directly written as `0x42`. This pattern is particularly useful in embedded development—you can convert human-readable decimal values into hardware-required BCD encoding at compile time, and use the pre-calculated values directly at runtime without any conversion instructions.
+This code implements a decimal-to-BCD encoding conversion inside the constructor. The entire calculation completes at compile time, and the `bcd` member of `kDec42` is directly written as `0x42`. This pattern is particularly useful in embedded development—you can convert human-readable decimal values into hardware-required BCD encoding at compile time, and use the pre-calculated values directly at runtime without any conversion instructions.
 
-Let's verify this: under GCC 15.2.1 (`-std=c++20 -O2`), the assembly code for accessing `kDec42.bcd` is just a single `mov` instruction loading a constant from the .rodata section, whereas runtime BCD calculation requires multiple division, shift, and loop instructions. The compile-time version truly achieves zero runtime overhead.
+Let's verify this: under GCC 15.2.1 (`-std=c++20 -O2`), the assembly code for accessing `kDec42.bcd` is just a single `mov` instruction loading a constant from the .rodata section, whereas computing BCD at runtime requires multiple division, shift, and loop instructions. The compile-time version truly achieves zero runtime overhead.
 
 ## Step 3 — constexpr Member Functions
 
@@ -142,7 +148,7 @@ Not only can constructors be `constexpr`, but ordinary member functions can be a
 
 ### A Compile-Time Complex Number Class
 
-Let's write a complex number class that can be used at compile time. This example is quite practical because complex number operations are ubiquitous in signal processing.
+Let's write a complex number class that can be used at compile time. This example is quite practical, as complex number operations are ubiquitous in signal processing.
 
 ```cpp
 struct Complex {
@@ -201,13 +207,13 @@ constexpr Complex kTwiddle = compute_twiddle_factor<8>(1);
 static_assert(kTwiddle.magnitude_squared() > 0.99f, "Twiddle factor should be on unit circle");
 ```
 
-This `Complex` class is entirely a literal type. Its constructor is `constexpr`, and all operators and member functions are too. You can perform complex number operations at compile time, generate FFT twiddle factor tables—all these calculation results will be optimized by the compiler into constants, directly embedded into the code or placed in the .rodata read-only data section (depending on the optimization level and usage).
+This `Complex` class is entirely a literal type. Its constructor is `constexpr`, and so are all its operators and member functions. You can perform complex number calculations at compile time, generate FFT twiddle factor tables—all these calculation results will be optimized by the compiler into constants, directly embedded into the code or placed in the .rodata read-only data section (depending on the optimization level and usage).
 
-For example, under GCC 15.2.1 (`-std=c++20 -O2`), `kI_Squared` will be placed in the .rodata section as a constant, and accessing it is just a single memory load instruction. The `kTwiddleFactors` array will be fully compiled into the binary, and runtime access incurs no computational overhead. If these values are inlined at their point of use, even the load instruction might be optimized away, becoming an immediate value.
+For example, under GCC 15.2.1 (`-std=c++20 -O2`), `kI_Squared` will be placed in the .rodata section as a constant, and accessing it is just a single memory load instruction. The `kTwiddleFactors` array will be fully compiled into the binary, and runtime access incurs no calculation overhead. If these values are inlined at their point of use, even the load instruction might be optimized away, becoming an immediate value.
 
 ### Compile-Time Date Calculation
 
-Another practical scenario is dates. Many protocols and time-related logic need to validate the legitimacy of dates. We can move this validation to compile time.
+Another practical scenario is dates. Many protocols and time-related logic require validating the legitimacy of a date. We can move this validation to compile time.
 
 ```cpp
 struct Date {
@@ -261,11 +267,11 @@ static_assert(kLeapDay.is_valid(), "2024-02-29 is valid (2024 is a leap year)");
 // static_assert(Date{2023, 2, 29}.is_valid());  // 编译错误！
 ```
 
-A key point here: the `constexpr` constructor itself will not report an error just because of "logically unreasonable" values. You need to proactively trigger a compile-time error in the constructor (for example, using `throw`, where an exception in a `constexpr` context is a compilation error), or use `static_assert` combined with `is_valid()` for checking.
+There is a key point here: the `constexpr` constructor itself will not throw an error just because of "logically unreasonable" values. You need to proactively trigger a compile-time error in the constructor (for example, using `throw`, since in a `constexpr` context an exception is a compilation error), or use `static_assert` combined with `is_valid()` to perform the check.
 
 ### Compile-Time String Length
 
-Having member functions return values available at compile time is also an important application of `constexpr`. For instance, a simple compile-time string wrapper class.
+Having a member function return a compile-time usable value is also an important application of `constexpr`. For instance, a simple compile-time string wrapper class.
 
 ```cpp
 #include <cstddef>
@@ -313,9 +319,9 @@ This `ConstString` is essentially a simplified version of the `conststr` class f
 
 As mentioned earlier, C++14 significantly relaxed the restrictions on `constexpr` constructors and member functions. Specifically for class types, the impact of these changes is:
 
-In C++11, the function body of a `constexpr` constructor had to be empty—all initialization work could only be done through member initializer lists, and loops, conditional statements, or local variables were not allowed. This meant that if your construction logic was even slightly complex (such as needing to iterate over an array or set different values based on conditions), you had to find ways to work around the limitations using ternary operators and recursive functions.
+In C++11, the function body of a `constexpr` constructor had to be empty—all initialization work could only be done through the member initializer list, and loops, conditional statements, or local variables were not allowed. This meant that if your construction logic was even slightly complex (such as needing to iterate over an array or set different values based on conditions), you had to find ways to work around the limitations using the ternary operator and recursive functions.
 
-After C++14, you can write any statement permitted by `constexpr` inside constructors. Local variables, `for` loops, and `if-else` are all fine. This made many previously impossible compile-time classes a reality.
+After C++14, you can write any statement permitted by `constexpr` inside the constructor. Local variables, `for` loops, and `if-else` are all fine. This made many previously impossible compile-time classes a reality.
 
 ```cpp
 // C++11 风格：构造函数体必须为空
@@ -349,7 +355,7 @@ static_assert(kObj.sum == 46);  // 10+11+12+13=46
 
 ## Step 5 — constexpr Destructors (C++20 Preview)
 
-Before C++20, literal types required the destructor to be trivial. This meant you could not do any cleanup work in the destructor. This restriction was removed in C++20—you can now write `constexpr` destructors.
+Before C++20, literal types required the destructor to be trivial. This meant you could not perform any cleanup work in the destructor. This restriction was lifted in C++20—you can now write `constexpr` destructors.
 
 ```cpp
 // C++20 才支持
@@ -371,9 +377,9 @@ struct Resource {
 };
 ```
 
-This feature is fully supported by mainstream compilers in C++20. GCC 10+, Clang 10+, and MSVC 19.28+ all support `constexpr` destructors. For most embedded scenarios, the main significance of `constexpr` destructors is that they allow standard containers like `std::vector` and `std::string` to participate more fully in compile-time computation—you can construct containers, manipulate elements, and then destroy them, all at compile time.
+This feature is fully supported by mainstream compilers in C++20. GCC 10+, Clang 10+, and MSVC 19.28+ all support `constexpr` destructors. For most embedded scenarios, the main significance of `constexpr` destructors is that they allow standard containers like `std::vector` and `std::string` to participate more fully in compile-time computation—you can construct containers at compile time, manipulate elements, and then destroy them at compile time.
 
-It is worth mentioning in passing the further relaxation of `constexpr` in C++23: `constexpr` functions no longer require their return type and parameter types to be literal types (P2448R2), and non-literal-type local variables, `goto` statements, and labels are also allowed. This means that starting from C++23, there are very few restrictions on defining `constexpr` functions. Of course, to actually call (evaluate) these functions at compile time, they are still subject to the rules of constant expression evaluation—you simply have more freedom in writing the function body.
+It is worth mentioning in passing the further relaxation of `constexpr` in C++23: `constexpr` functions no longer require their return type and parameter types to be literal types (P2448R2), and non-literal-type local variables, `goto` statements, and labels are also allowed. This means that starting from C++23, there are very few restrictions on defining `constexpr` functions. Of course, to actually call (evaluate) these functions at compile time, they are still subject to the rules of constant expression evaluation—you simply have more freedom when writing the function body.
 
 ## Practical Application: Compile-Time Configuration in Embedded Systems
 

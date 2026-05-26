@@ -1,7 +1,7 @@
 ---
-title: Generic lambda
-description: Allow Lambda expression parameters to use the auto placeholder, with
-  the compiler automatically deducing the type.
+title: Generic Lambda
+description: Allows lambda expression parameters to use the `auto` placeholder, with
+  the compiler automatically performing type deduction.
 chapter: 99
 order: 9
 tags:
@@ -14,24 +14,30 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/09-generic-lambda.md
+  source_hash: 725b3b370ef68b22088d8557c658b5cff4775a13f1dfa0d1c93c2e6719956625
+  translated_at: '2026-05-26T10:16:06.394850+00:00'
+  engine: anthropic
+  token_count: 360
 ---
 # Generic Lambda (C++14)
 
-## In a Nutshell
+## One-Liner
 
-Allows lambda expression parameters to support `auto`, eliminating the hassle of writing multiple overloads for different types. It is equivalent to generating a templated `operator()`.
+Allows lambda expression parameters to use `auto`, eliminating the need to write multiple overloads for different types, effectively generating a templated `operator()`.
 
 ## Header
 
 None (language feature)
 
-## Quick API Reference
+## Core API Quick Reference
 
 | Operation | Signature | Description |
 |------|------|------|
-| Generic parameter | `[captures](auto a, auto b) { ... }` | Declares parameters using `auto`, generating a template `operator()` based on deduced types |
-| Forwarding reference parameter | `[captures](auto&&... ts) { ... }` | Combines with `auto&&` to perfectly forward parameter packs |
-| Explicit template parameters (C++20) | `[captures]<class T>(T a) { ... }` | Explicitly declares template parameters using angle brackets after square brackets, supporting constraints |
+| Generic parameter | `[captures](auto a, auto b) { ... }` | Uses `auto` to declare parameters, generating a template `operator()` based on deduced types |
+| Forwarding reference parameter | `[captures](auto&&... ts) { ... }` | Combines with `auto&&` to perfectly forward the parameter pack |
+| Explicit template parameters (C++20) | `[captures]<class T>(T a) { ... }` | Explicitly declares template parameters using angle brackets after the square brackets, supporting constraints |
 | Captureless conversion to function pointer | `using F = ret(*)(params); operator F() const;` | A captureless generic lambda can implicitly convert to a function pointer (constexpr since C++17) |
 
 ## Minimal Example

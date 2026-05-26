@@ -1,7 +1,7 @@
 ---
-title: 'Error Handling Patterns Summary: Selection Guide and Best Practices'
-description: Comprehensive comparison of all error handling solutions, providing a
-  scenario-based selection guide.
+title: 'Error Handling Patterns Summary: A Selection Guide and Best Practices'
+description: A comprehensive comparison of all error handling approaches, providing
+  scenario-based selection guidelines.
 chapter: 10
 order: 4
 tags:
@@ -24,22 +24,28 @@ prerequisites:
 - 'Chapter 10: std::expected'
 related:
 - RAII 深入理解
+translation:
+  source: documents/vol2-modern-features/ch10-error-handling/04-error-patterns.md
+  source_hash: aae379f59aac125a1c2944b75ff76e575a081758ec0299b6a74ed718a12cff68
+  translated_at: '2026-05-26T11:36:02.080864+00:00'
+  engine: anthropic
+  token_count: 2747
 ---
 # Error Handling Patterns Summary: A Selection Guide and Best Practices
 
-Building on the previous three articles, we discussed the pros and cons of error codes, exceptions, `optional`, and `variant`. This article serves as the conclusion to our error handling topic—we will put all approaches together for a comprehensive comparison, provide a practical selection guide, and share best practices learned from real-world pitfalls.
+Building on the previous three articles, we discussed the pros and cons of error codes, exceptions, `optional`, and `expected`. This article wraps up our entire error handling topic — we will put all approaches together for a comprehensive comparison, provide a practical selection guide, and share best practices learned from real-world pitfalls.
 
-Additionally, this article covers topics we didn't explore earlier: combinator patterns commonly used in functional error handling, macro-assisted error propagation techniques, and error conversion strategies at the C API boundary.
+Additionally, this article covers topics we didn't explore earlier: combinator patterns commonly used in functional error handling, macro-assisted error propagation techniques, and error conversion strategies at C API boundaries.
 
 ------
 
 ## Comprehensive Comparison
 
-Let's start by putting the key metrics of all approaches side by side. This table is important—consider bookmarking it:
+Let's put the key metrics of all approaches side by side. This table is important — consider bookmarking it:
 
 | Metric | Enum/Error Code | Exception | optional | variant | expected |
 |--------|-----------------|-----------|----------|---------|----------|
-| **Carries error info** | Enum value | Rich (exception object) | None | Limited (which type is held) | Rich (custom E) |
+| **Error information** | Enum value | Rich (exception object) | None | Limited (which type is held) | Rich (custom E) |
 | **Ignorability** | Easy to ignore | Cannot be ignored | Can be ignored | Can be ignored | Can be ignored |
 | **Happy path overhead** | Zero | Zero | Negligible | Small | Small |
 | **Failure path overhead** | Zero | Heavy | Zero | Zero | Zero |
@@ -49,65 +55,65 @@ Let's start by putting the key metrics of all approaches side by side. This tabl
 | **Requires RTTI** | No | Yes | No | No | No |
 | **C++ standard requirement** | C++98 | C++98 | C++17 | C++17 | C++23 |
 
-The "ignorability" metric in the table deserves a closer look. C++ lacks Rust's `#[must_use]` compiler-enforced checks (although C++17 introduced `[[nodiscard]]`, the standard library doesn't apply this attribute to `optional` or `expected`). Therefore, in C++, whether using error codes or `expected`, callers might simply not check the return value—this gap must be filled by code reviews and static analysis tools.
+The "ignorability" metric in the table deserves extra mention. C++ lacks a Rust-like `#[must_use]` compiler-enforced check (although C++17 has `[[nodiscard]]`, the standard library doesn't apply this attribute to `optional` / `expected`). So in C++, whether using error codes or `expected`, callers might skip checking the return value — we need to rely on code reviews and static analysis tools to fill this gap.
 
 ------
 
 ## Selection Guide
 
-Based on real-world project experience, we've summarized a decision flow to help you choose the right approach for your specific scenario.
+Based on real project experience, we've summarized a decision flow to help you choose the right approach for your specific scenario.
 
 ### Decision Tree
 
 **Step 1: Is the error "recoverable"?**
 
-If the error indicates a serious logic bug in the program (such as null pointer dereference, array out-of-bounds), or if the system is in an unrecoverable state (out of memory, stack overflow), you should use `assert` or terminate the program directly. Such errors should not be handled by any "return value" approach, because the caller simply cannot make a reasonable recovery attempt.
+If the error indicates a serious logic bug (like null pointer dereference, array out-of-bounds), or the system is in an unrecoverable state (out of memory, stack overflow), we should use `assert` or terminate the program directly. Such errors should not be handled with any "return value" approach, because the caller simply cannot make a reasonable recovery action.
 
 **Step 2: Are you running in an environment that allows exceptions?**
 
-If the environment allows exceptions (host applications, servers) and the error frequency is very low ("exceptions" are, by definition, "abnormal situations"), exceptions are the best choice—clean code, automatic RAII cleanup, and no forgotten error handling. Embedded environments or performance-sensitive hot paths typically disable exceptions, in which case move to step three.
+If the environment allows exceptions (host applications, servers), and the error frequency is very low ("exceptions" are, after all, "exceptional situations"), exceptions are the best choice — clean code, automatic RAII cleanup, and no forgotten error handling. Embedded environments or performance-sensitive hot paths typically disable exceptions, in which case move to step three.
 
 **Step 3: Does the caller need to know the reason for failure?**
 
-If not—for example, a lookup operation only cares about "found or not", or a cache only cares about "hit or miss"—use `optional`. It's simple, lightweight, and semantically clear.
+If not — for example, a lookup operation only cares about "found or not", a cache only cares about "hit or miss" — use `optional`. Simple, lightweight, and clear semantics.
 
-If yes—for example, file operations need to distinguish between "file not found" and "permission denied", or network requests need to distinguish between "timeout" and "connection refused"—use `expected`.
+If yes — for example, file operations need to distinguish "file not found" from "permission denied", network requests need to distinguish "timeout" from "connection refused" — use `expected`.
 
 **Step 4: Does your compiler support C++23?**
 
-If yes, use `expected` directly and enjoy native monadic operations. If you're still on C++17, use a simplified, self-implemented version of `expected`, or use an enum + struct approach.
+If yes, use `std::expected<T, E>` directly and enjoy native monadic operations. If you're still on C++17, use a simplified self-implemented `expected`, or use an enum + struct approach.
 
 ### Scenario-Based Recommendations
 
-We've organized a recommendation list based on common scenarios:
+We've put together a recommended list organized by common scenarios:
 
 | Scenario | Recommended Approach | Rationale |
 |----------|---------------------|-----------|
-| Lookup/Search | `optional` | Only care about presence, no reason needed |
+| Lookup/search | `optional` | Only care about presence, no reason needed |
 | Cache hit | `optional` | Same as above |
 | User input validation | `expected` | Need to tell the user what went wrong |
 | Config file parsing | `expected` | Need to distinguish "file not found" from "format error" |
-| Network IO | `expected` | Need to distinguish timeout, refusal, DNS failure, etc. |
-| File IO | `expected` | Need to distinguish not found, permissions, disk full, etc. |
+| Network IO | `expected` | Need to distinguish timeout, refused, DNS failure, etc. |
+| File IO | `expected` | Need to distinguish not found, permission, disk full, etc. |
 | Database query | `expected` | Need to distinguish connection failure, syntax error, no results, etc. |
 | Constructor failure | Exception | Constructors have no return value |
-| Unrecoverable errors | `assert` / Terminate | Should not attempt recovery |
-| High-frequency interrupts/signal handling | Error codes | Extremely low overhead, deterministic execution time |
-| Crossing C/C++ boundaries | Error codes | C doesn't understand C++ types |
+| Unrecoverable errors | `assert` / terminate | Should not attempt recovery |
+| High-frequency interrupt/signal handling | Error code | Extremely low overhead, deterministic execution time |
+| Crossing C/C++ boundaries | Error code | C doesn't understand C++ types |
 
 ------
 
 ## Performance Comparison
 
-Performance is a concern for many. We provide a simplified analysis to help you make decisions in performance-sensitive scenarios.
+Performance is a concern for many. We'll provide a simplified analysis to help you make decisions in performance-sensitive scenarios.
 
-Compared to raw error codes, the extra overhead of `expected` mainly comes from two aspects: first, type construction—`expected` needs to store a flag bit (success/failure) and the storage space for `T` or `E`; second, move/copy operations—the error object might be moved multiple times during error propagation.
+Compared to bare error codes, the extra overhead of `expected` mainly comes from two aspects: first, type construction — `expected<T, E>` needs to store a flag (success/failure) and the storage space for `T` or `E`; second, move/copy — during error propagation, the error object might be moved multiple times.
 
-At the `-O2` optimization level, most of this overhead is inlined and optimized away by the compiler. The optimized assembly code of a function returning `expected<T, E>` is virtually indistinguishable from a function returning an `enum` error code—because the compiler can optimize the flag bit into one register and the error enum value into another.
+At the `-O2` optimization level, most of this overhead gets inlined and optimized away by the compiler. The optimized assembly of a function returning `expected<int, EnumError>` is virtually indistinguishable from one returning an `int` error code — because the compiler can optimize the flag into one register and the error enum value into another.
 
-The scenario with a real performance difference is something like `expected<std::string, std::string>`—where both the value type and error type might involve heap allocation. In this case, every propagation step moves the contents of a `std::string`. If your operation chain is long (say, more than five steps), we recommend using lightweight error types (enums, small structs, `std::string_view`).
+The scenario with a real performance difference is things like `expected<std::string, std::string>` — where both the value type and error type might involve heap allocation. In this case, each propagation step moves the contents of `std::string`. If your operation chain is long (say, more than five steps), we recommend using lightweight error types (enums, small structs, `std::string_view`).
 
-The performance model for exceptions is completely different. On the "happy path," exception overhead is near zero (modern compilers use the "zero-cost exception handling" model). But when an exception is thrown, the overhead of stack unwinding is massive—it requires traversing stack frames, searching for catch blocks, and destroying local objects. This means exceptions are not suitable for "failures expected to occur frequently"—if 10% of your HTTP service requests time out, using exceptions to handle timeouts is a terrible choice.
+The performance model for exceptions is completely different. On the "happy path," exception overhead is near zero (modern compilers use the "zero-cost exception handling" model). But when throwing an exception, the overhead of stack unwinding is massive — it needs to walk the stack frames, locate catch blocks, and destroy local objects. This means exceptions are not suitable for "failures expected to occur frequently" — if 10% of your HTTP service requests time out, using exceptions to handle timeouts is a poor choice.
 
 ------
 
@@ -165,9 +171,9 @@ std::expected<Config, ConfigError> load_config(const std::string& path) {
 }
 ```
 
-The macro version is much cleaner, and the semantics are clear—`TRY` simply means "try this step, bail out if it fails." Note, however, that this macro uses GCC/Clang's statement expression syntax, so MSVC requires a different implementation.
+The macro version is much cleaner, with clear semantics — `TRY` means "try this step, bail out if it fails." But note that this macro uses GCC/Clang's statement expression syntax, so MSVC requires a different implementation.
 
-For compilers that don't support statement expressions, you can use a slightly more verbose but portable version:
+For compilers that don't support statement expressions, we can use a slightly more verbose but portable version:
 
 ```cpp
 // 可移植版本：需要调用方声明变量
@@ -222,7 +228,7 @@ auto result = retry(
 
 ### Error Aggregation
 
-Sometimes you want to collect all errors and report them together, rather than returning on the first failure. Form validation is a great example—a user submits a form, and multiple fields might have issues simultaneously. Telling the user about everything at once is much better than fixing them one by one:
+Sometimes we want to collect all errors and report them together, rather than returning on the first failure. For example, form validation — a user submits a form, and multiple fields might have issues simultaneously. Telling the user about everything at once is much better than fixing them one by one:
 
 ```cpp
 #include <vector>
@@ -279,7 +285,7 @@ int main() {
 
 ## Boundary Handling with C APIs
 
-In embedded development, we frequently interact with C APIs. C APIs typically use integer error codes, while our C++ code uses `expected`. We perform a one-time conversion at the boundary, then use C++ style exclusively internally:
+In embedded development, we frequently need to interact with C APIs. C APIs typically use integer error codes, while our C++ code uses `expected`. We do a one-time conversion at the boundary, then use C++ style exclusively internally:
 
 ```cpp
 // 假设 C API 长这样
@@ -325,25 +331,25 @@ std::expected<void, HalError> send_command(const uint8_t* cmd, int len) {
 }
 ```
 
-The key principle is: **perform a one-time conversion at the C/C++ boundary, and use C++ style exclusively internally**. This maintains compatibility with the C ecosystem while keeping the C++ code clean and clear.
+The key principle is: **do a one-time conversion at the C/C++ boundary, use C++ style exclusively internally**. This maintains compatibility with the C ecosystem while keeping the C++ code clean.
 
 ------
 
 ## Best Practices
 
-Finally, here are some best practices we've summarized from real-world projects. Every single one was learned the hard way.
+Finally, here are some best practices we've summarized from real projects — every single one learned the hard way.
 
 ### 1. Choose One Approach and Stay Consistent
 
-Mixing multiple error handling styles is the biggest root cause of code chaos. If the team decides to use `expected`, use `expected` everywhere; if the decision is error codes, use error codes everywhere. Don't have one function return `expected`, another throw an exception, and yet another use output parameters—callers would have to check the documentation every time just to know how to handle errors.
+Mixing multiple error handling styles is the biggest source of code confusion. If the team decides to use `expected`, use `expected` everywhere; if the decision is error codes, use error codes everywhere. Don't have one function return `optional`, another throw an exception, and yet another use output parameters — the caller has to check the documentation every time to know how to handle errors.
 
 ### 2. Keep Error Types Lightweight
 
-The `E` in `expected<T, E>` should be as lightweight as possible—enums, small structs, or `std::string_view`. Avoid using `std::string` or structs containing heap-allocated members as error types, because the error object might be copied or moved multiple times during propagation. If your error type needs to carry complex information, consider using an error code paired with an error message lookup table.
+The `E` in `expected<T, E>` should be as lightweight as possible — enums, small structs, or `std::string_view`. Avoid using `std::string` or structs with heap-allocated members as error types, because during error propagation, the error object might be copied or moved multiple times. If your error type needs to carry complex information, consider using an error code plus an error message lookup table.
 
 ### 3. Use [[nodiscard]] to Enforce Return Value Checks
 
-Although the standard library doesn't apply `[[nodiscard]]` to `optional` and `expected`, you can add it to your own custom return types:
+Although the standard library doesn't add `[[nodiscard]]` to `optional` and `expected`, you can add it to your own return types:
 
 ```cpp
 struct [[nodiscard]] Result {
@@ -357,11 +363,11 @@ This way, if the caller ignores the return value, the compiler will issue a warn
 
 ### 4. Don't Store Exceptions in expected's E
 
-`expected<T, std::exception_ptr>` looks tempting—it avoids the overhead of exceptions while retaining their rich information. In reality, it makes `expected` clumsy, and you need to rethrow the exception at the final handling point just to extract the information. A better approach is to define a lightweight error type.
+`std::expected<T, std::exception_ptr>` looks tempting — it avoids exception overhead while preserving the rich information of exceptions. But in practice, it makes `expected` cumbersome, and you need to rethrow the exception at the final handling point to extract the information. A better approach is to define a lightweight error type.
 
-### 5. Layer Your Error Handling
+### 5. Error Handling Should Have Layers
 
-Low-level functions should use simple error types (enums), intermediate layers should enrich error information during propagation (adding context), and the top level should handle final logging and user prompts. This keeps the low level generic while giving the top level sufficiently rich information:
+Low-level functions use simple error types (enums), the middle layer enriches error information during propagation (adding context), and the top layer does the final logging and user notification. This keeps the low level generic while giving the top level sufficiently rich information:
 
 ```cpp
 // 底层：简单的枚举
@@ -379,23 +385,23 @@ std::expected<Config, AppError> load_config(const std::string& path) {
 
 ### 6. Use Error Codes for Performance-Sensitive Hot Paths
 
-In scenarios like high-frequency interrupt handling, signal handling, and real-time sampling, the construction and move overhead of `expected` (though small) might still be unacceptable. In these scenarios, use the simplest error codes and global error states to push performance to the absolute limit.
+In scenarios like high-frequency interrupt handling, signal handling, and real-time sampling, the construction and move overhead of `expected` (though small) might still be unacceptable. In these scenarios, use the simplest error codes and global error states to squeeze out every last bit of performance.
 
 ### 7. Use Assertions for Impossible Situations
 
-`assert` is for checking program logic invariants—if an assertion fails, it means the code has a bug. Don't use `assert` to check external inputs (user input, file contents, network data), because external inputs "might fail," they aren't "impossible." Use `expected` / error codes for the former, and `assert` for the latter.
+`assert` is for checking program logic invariants — if an assertion fails, it means the code has a bug. Don't use `assert` to check external inputs (user input, file contents, network data), because external inputs "might fail" — they aren't "impossible." Use `expected` / error codes for the former, and `assert` for the latter.
 
 ------
 
 ## Summary
 
-There is no silver bullet for error handling. Error codes are simple and brute-force, exceptions are elegant but heavy, `optional` is lightweight but carries no information, and `expected` is currently the most balanced approach but requires C++23 (or a custom implementation). When choosing an approach, consider environmental constraints (can exceptions be used?), performance requirements (are there hot paths?), and team preferences (is the style consistent?).
+There is no silver bullet for error handling. Error codes are simple and brute-force, exceptions are elegant but heavy, `optional` is lightweight but carries no information, and `expected` is currently the most balanced approach but requires C++23 (or a custom implementation). When choosing an approach, we need to consider environment constraints (can we use exceptions?), performance requirements (are there hot paths?), and team preferences (is the style consistent?).
 
-Our recommended strategy is: **default to `expected`, use `optional` for lookup/cache scenarios, use exceptions/termination for constructors and unrecoverable errors, and perform a one-time conversion at C API boundaries**. You can fit multiple tools in your toolbox, but you need to know when to use which.
+Our recommended strategy is: **default to `expected`, use `optional` for lookup/cache scenarios, use exceptions/termination for constructors and unrecoverable errors, and do a one-time conversion at C API boundaries**. The toolbox can hold many tools, but we need to know when to use which.
 
-With this, ch10 Error Handling is fully covered. In the next article, we'll move on to ch11 and discuss user-defined literals—an interesting mechanism that makes code more intuitive and safer.
+With this, ch10 Error Handling is fully covered. In the next article, we'll move on to ch11 and discuss user-defined literals — an interesting mechanism that makes code more intuitive and safer.
 
-## Reference Resources
+## References
 
 - [cppreference: Error handling](https://en.cppreference.com/w/cpp/error)
 - [C++ Core Guidelines: Error handling](https://isocpp.org/wiki/faq/exceptions)

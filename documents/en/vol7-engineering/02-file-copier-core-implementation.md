@@ -1,5 +1,5 @@
 ---
-title: 'Modern C++ Engineering Practice — Writing a File Copier from Scratch (Part
+title: 'Modern C++ Engineering Practice — Building a File Copier from Scratch (Part
   2): Core Implementation and Practical Testing'
 description: ''
 tags:
@@ -10,6 +10,12 @@ difficulty: intermediate
 platform: host
 chapter: 1
 order: 5
+translation:
+  source: documents/vol7-engineering/02-file-copier-core-implementation.md
+  source_hash: 2e4038d2cbfd49892ef1339018cc4d27dea99647c2d393ea9c4801790ea436eb
+  translated_at: '2026-05-26T11:52:53.233433+00:00'
+  engine: anthropic
+  token_count: 2795
 ---
 # Modern C++ Engineering Practice — Building a File Copier from Scratch (Part 2): Core Implementation and Practical Testing
 
@@ -17,11 +23,11 @@ order: 5
 
 In the previous article, we set up the framework, opened the files, and prepared the buffer. All that remains is the most critical read-write loop. In this article, we will finish implementing the core logic and write a test program to try it out. Honestly, writing code without testing it is like cooking without tasting — it just doesn't feel right.
 
-## Core Read-Write Loop: Simple but Not Simplistic
+## The Core Read-Write Loop: Simple but Not Simplistic
 
-### Design of the Main Loop
+### Designing the Main Loop
 
-The core of file copying is a loop: read a chunk, write a chunk, until everything is read. It sounds simple, but there are quite a few details. Let's look at the overall structure first:
+The core of file copying is a loop: read a chunk, write a chunk, repeat until done. It sounds simple, but the details are quite involved. Let's look at the overall structure first:
 
 ```cpp
 while (in) {
@@ -53,13 +59,13 @@ std::streamsize read_bytes = in.gcount();
 
 ```
 
-The `read` method attempts to read a specified number of bytes, but it might not fill the buffer. For example, if only 1KB is left in the file and you ask it to read 8KB, it can only read 1KB. Therefore, we immediately call `gcount()` to get the actual number of bytes read.
+The `read` method attempts to read a specified number of bytes, but it might not fill the buffer. For example, if only 1KB remains in the file and you ask it to read 8KB, it can only read 1KB. Therefore, we immediately call `gcount()` to get the actual number of bytes read.
 
-There is a minor detail regarding type conversion here: `buffer.size()` returns a `size_t`, while `read` expects a `std::streamsize` (usually `long long`). Although implicit conversion works fine in most cases, an explicit cast avoids compiler warnings and makes the code's intent clearer.
+There is a minor type conversion detail here: `buffer.size()` returns a `size_t`, while `read` expects a `std::streamsize` (usually `long long`). Although implicit conversion works fine in most cases, an explicit conversion avoids compiler warnings and makes the code's intent clearer.
 
-The `read_bytes <= 0` check is a safety measure. Under normal circumstances, if the stream state goes bad, `while (in)` will exit the loop, but an extra layer of checking never hurts. End-of-file handling works like this: the final `read` might read 0 bytes and set the EOF flag, then `gcount()` returns 0, and we `break` it.
+The `read_bytes <= 0` check is a safety measure. Under normal circumstances, if the stream state goes bad, `while (in)` will exit the loop, but an extra layer of checking never hurts. Handling the end of the file works like this: the final `read` might read 0 bytes and set the EOF flag, then `gcount()` returns 0, and we simply `break` it.
 
-### Write and Error Checking
+### Writing and Error Checking
 
 ```cpp
 out.write(buffer.data(), read_bytes);
@@ -70,9 +76,9 @@ if (!out) {
 
 ```
 
-We write the actual number of bytes read, `read_bytes`, rather than `buffer.size()`. This is crucial; otherwise, the last chunk of data will have extra garbage bytes written.
+We write using the actual number of bytes read, `read_bytes`, rather than `buffer.size()`. This is crucial; otherwise, the last chunk of data would have extra garbage bytes written.
 
-We check the stream state immediately after each write. If a write failure is detected, we return right away. Reasons for write failure could include a full disk, insufficient permissions, or a device error. Detecting it early and stopping early prevents further writes from causing more issues.
+We check the stream state immediately after each write. If a write failure is detected, we return right away. Reasons for write failure could include a full disk, insufficient permissions, or a device error. Catching it early and stopping promptly prevents further writes from causing more issues.
 
 ### Progress Tracking
 
@@ -81,13 +87,13 @@ copied += static_cast<std::uintmax_t>(read_bytes);
 
 ```
 
-For every successfully written chunk, we accumulate the byte count into `copied`. This value will be used later to calculate the progress percentage and speed. The type conversion is again to match `std::uintmax_t`. Although `read_bytes` will never be negative, the compiler doesn't know that, and an explicit cast gives it peace of mind.
+For every successfully written chunk, we accumulate the byte count into `copied`. This value will be used later to calculate the progress percentage and speed. The type conversion is again to match `std::uintmax_t`. Although `read_bytes` will never be negative, the compiler doesn't know that, and an explicit conversion puts it at ease.
 
-## Progress Bar: Making the Wait Less Agonizing
+## The Progress Bar: Making the Wait Less Agonizing
 
-### Design of the `ProgressBar` Class
+### Designing the `ProgressBar` Class
 
-The progress bar is encapsulated in its own class with a single responsibility, making it easy to maintain:
+We encapsulate the progress bar into its own class. Single responsibility makes it easy to maintain:
 
 ```cpp
 class ProgressBar {
@@ -103,11 +109,11 @@ private:
 
 ```
 
-`width` is the character width of the progress bar, defaulting to 20 characters. Too narrow is not intuitive, too wide takes up too much space, and 20 is a good compromise. The `update` method takes the number of bytes copied, total bytes, and current speed, and is responsible for drawing the progress bar on the terminal.
+`width` is the character width of the progress bar, defaulting to 20 characters. Too narrow isn't intuitive, too wide takes up too much space, and 20 is a good compromise. The `update` method takes the number of bytes copied, total bytes, and current speed, and is responsible for drawing the progress bar in the terminal.
 
-Note that `update` is a `const` method because it only displays information and does not modify the object's state. This kind of const correctness is very important in large projects and can prevent many accidental modifications.
+Note that `update` is a `const` method because it only displays information and doesn't modify the object's state. This kind of const correctness is very important in large projects and can prevent many accidental modifications.
 
-### Drawing Logic of the Progress Bar
+### The Drawing Logic
 
 ```cpp
 void update(std::uintmax_t copied, std::uintmax_t total,
@@ -129,9 +135,9 @@ void update(std::uintmax_t copied, std::uintmax_t total,
 
 ```
 
-First, we calculate the completion ratio `fraction`, then multiply it by the width to determine how many characters should be filled. We handle the division-by-zero case here — an empty file is simply treated as 100% complete.
+First, we calculate the completion ratio `fraction`, then multiply it by the width to determine how many characters to fill. We handle the division-by-zero case here — an empty file is simply treated as 100% complete.
 
-The progress bar style is `[=====>     ]`, using `=` for the completed portion, `>` for the current position, and spaces for the uncompleted portion. Three separate loops draw these three parts — simple and direct. Although we could use `std::string` concatenation and output it all at once, direct output is actually more efficient for scenarios with frequent updates.
+The progress bar style is `[=====>     ]`, using `=` for the completed portion, `>` for the current position, and spaces for the remaining portion. Three separate loops draw these three parts — simple and direct. Although we could use `std::string` concatenation and output it all at once, direct output is actually more efficient for scenarios with frequent updates like this.
 
 ### Percentage and Size Display
 
@@ -148,9 +154,9 @@ std::cout << std::fixed << std::setprecision(1) << percent << "% | "
 
 Converting bytes to MB for display is more user-friendly. `std::fixed` and `std::setprecision(1)` make the floating-point number keep one decimal place, displaying `45.3%` instead of `45.283746%`. These I/O manipulators are old friends in C++; although the syntax is a bit verbose, they are very practical.
 
-Speed is also divided by `1024.0 * 1024.0` to convert to MB/s. Note that we use 1024 here instead of 1000, because "mega" in computing is binary: 1MB = 1024KB = 1024*1024 bytes. Although there is now the IEC standard using 1000 (MiB vs MB), using 1024 for internal display better aligns with programmer habits.
+Speed is also divided by `1024.0 * 1024.0` to convert to MB/s. Note that we use 1024 here instead of 1000, because "mega" in computing is binary: 1MB = 1024KB = 1024*1024 bytes. Although there is now an IEC standard using 1000 (MiB vs MB), using 1024 for internal displays better aligns with programmer habits.
 
-### ETA Calculation: Remaining Time Estimation
+### ETA Calculation: Estimating Remaining Time
 
 ```cpp
 double eta_seconds = 0.0;
@@ -174,11 +180,11 @@ if (copied >= total) {
 
 ```
 
-ETA (Estimated Time of Arrival) is calculated by dividing the remaining bytes by the current speed. This estimate will fluctuate with speed variations, but overall it gives users a psychological expectation.
+ETA (Estimated Time of Arrival) is simply the remaining bytes divided by the current speed. This estimate will fluctuate with speed variations, but overall it gives users a psychological expectation.
 
-We check `speed_bytes_per_s > 1e-6` to avoid division-by-zero errors. `1e-6` is a small enough number that basically any non-zero speed will be greater than it.
+We check `speed_bytes_per_s > 1e-6` to avoid division-by-zero errors. `1e-6` is a sufficiently small number; basically, as long as there is any speed, it will be greater than this.
 
-The display format is divided into three cases: over one hour displays "Xh Ym", over one minute displays "Xm Ys", otherwise it only displays seconds. This tiered display is much more intuitive than uniformly using seconds — would you rather see "2h 15m" or "8100s"?
+The display format has three cases: over one hour shows "Xh Ym", over one minute shows "Xm Ys", otherwise it only shows seconds. This tiered display is much more intuitive than uniformly using seconds — would you rather see "2h 15m" or "8100s"?
 
 ### The Magic of the Carriage Return
 
@@ -187,9 +193,9 @@ std::cout << '\r' << std::flush;
 
 ```
 
-At the very end of the `update` method, a carriage return `\r` is output instead of a newline `\n`. The carriage return moves the cursor back to the beginning of the line, so the next output will overwrite this line. This is the secret behind the progress bar's "dynamic update."
+At the very end of the `update` method, we output a carriage return `\r` instead of a newline `\n`. The carriage return moves the cursor back to the beginning of the line, so the next output will overwrite this line. This is the secret behind the progress bar's "dynamic update."
 
-`std::flush` forces the output buffer to flush; otherwise, the output might be cached, and users wouldn't see real-time progress changes.
+`std::flush` forces a flush of the output buffer; otherwise, the output might be cached, and users wouldn't see real-time progress changes.
 
 ## Time and Speed Calculation
 
@@ -209,13 +215,13 @@ if (since_last.count() >= 0.1 || copied == total) {
 
 ```
 
-We don't update the progress bar for every read-write chunk; instead, we update it at intervals of at least 0.1 seconds. Why? Because updating the progress bar itself has overhead, and doing it too frequently will actually slow down the copy speed. Moreover, the human eye can't distinguish such high update frequencies anyway. 0.1 seconds (10 times per second) is already smooth enough.
+We don't update the progress bar for every read/write chunk; instead, we update it at intervals of at least 0.1 seconds. Why? Because updating the progress bar itself has overhead, and doing it too frequently will actually slow down the copy speed. Moreover, the human eye can't distinguish such high update frequencies anyway. 0.1 seconds (10 times per second) is already smooth enough.
 
-`now - last_report` yields a `duration` object, and calling `count()` gives the duration in seconds (a `double`). The type safety of the `chrono` library shines here: different time points and durations have different types, so they can't be mixed up.
+`now - last_report` yields a `duration` object, and calling `count()` gives us the duration in seconds (a `double`). The type safety of the `chrono` library shines here: different time points and durations have distinct types, so they can't be mixed up.
 
-Speed is calculated by dividing the number of bytes copied by the total elapsed time. Note that we check `elapsed.count() > 1e-9`; although theoretically it shouldn't be zero, with floating-point math, defensive programming is always good.
+Speed is calculated by dividing the total bytes copied by the total elapsed time. Note that we check `elapsed.count() > 1e-9`; although theoretically it shouldn't be zero, with floating-point math, defensive programming is always a good idea.
 
-We specially handle the `copied == total` case to ensure the progress bar is updated at least once when copying finishes, displaying 100%.
+We specially handle the `copied == total` case to ensure the progress bar is updated exactly once when copying finishes, displaying 100%.
 
 ## Wrapping Up
 
@@ -228,7 +234,7 @@ in.close();
 
 ```
 
-After writing all data, we explicitly call `flush()` to ensure the buffer contents are written to disk. Although `close()` will automatically flush, an explicit call is safer, and if the flush fails, we can detect it in time.
+After writing all the data, we explicitly call `flush()` to ensure the buffer contents are written to disk. Although `close()` will automatically flush, an explicit call is safer, and if the flush fails, we can catch it immediately.
 
 `close()` isn't strictly necessary because the destructor will automatically close the file. However, explicitly closing makes the code's intent clearer and can release the file handle earlier, which is important on some operating systems.
 
@@ -252,15 +258,15 @@ if (dst_size != total_size) {
 
 ```
 
-We update the progress bar one last time using the average speed, then output a newline. This way, the progress bar remains on the screen, and users can see the final statistics.
+We update the progress bar one last time using the average speed, then output a newline. This way, the progress bar stays on the screen, and users can see the final statistics.
 
-The verification phase is quite simple: we just check whether the destination file's size matches the source file's. This isn't foolproof (theoretically, data could be corrupted but retain the same size), but it's sufficient for most error scenarios. If you have higher requirements, you could calculate an MD5 or SHA-256 checksum, but that would significantly increase the time.
+The verification phase is quite simple: we just check whether the destination file's size matches the source file's. This isn't foolproof (theoretically, data could be corrupted but retain the same size), but it's sufficient for most error scenarios. If you need higher assurance, you could calculate an MD5 or SHA-256 checksum, but that would significantly increase the time.
 
-## Practical Usage
+## Putting It to the Test
 
 ### Writing the `main` Function
 
-We need a simple test program to call this copier:
+We need a simple test program to call our copier:
 
 ```cpp
 // --- File: main.cpp ---
@@ -290,7 +296,7 @@ int main(int argc, char* argv[]) {
 
 It's that simple. We check the number of command-line arguments, create a `FileCopier` object, call the `copy` method, and determine the exit code based on the return value. Standard Unix program style: return 0 for success, non-zero for failure.
 
-### Compilation Command
+### Compilation Commands
 
 Assuming your file structure looks like this:
 
@@ -311,14 +317,14 @@ g++ -std=c++17 -O2 -Wall -Wextra main.cpp fcopy.cpp -o fcopy
 
 Let's explain a few compiler flags: `-std=c++17` specifies the C++17 standard (because we use `filesystem`), -O2 enables optimization, -Wall -Wextra turn on warnings (to help you spot potential issues), and -o specifies the output file name.
 
-If you are using an older GCC version (before 9.0), you might need to link `stdc++fs` additionally:
+If you are using an older GCC version (before 9.0), you might need to link `stdc++fs` explicitly:
 
 ```bash
 g++ -std=c++17 -O2 -Wall -Wextra main.cpp fcopy.cpp -o fcopy -lstdc++fs
 
 ```
 
-Clang users just need to replace `g++` with `clang++`; everything else is the same.
+Clang users just need to swap `g++` for `clang++`; everything else is the same.
 
 ### Basic Testing
 
@@ -329,14 +335,14 @@ Let's test copying a small file first:
 
 ```
 
-You should see the progress bar flash by (the file is too small), and then display "Copy succeeded!". Use `ls -lh` to compare the sizes, or the `diff` command to verify the contents are identical:
+You should see the progress bar flash by (the file is too small), followed by "Copy succeeded!". Use `ls -lh` to compare the sizes, or the `diff` command to verify the contents are identical:
 
 ```bash
 diff /etc/hosts hosts_backup
 
 ```
 
-No output means they are exactly the same — perfect.
+No output means they are exactly the same. Perfect.
 
 ### Testing with a Large File
 
@@ -347,14 +353,14 @@ dd if=/dev/urandom of=test_1gb.dat bs=1M count=1024
 
 ```
 
-This creates a 1GB file of random data. Then copy it:
+This creates a 1GB file of random data. Then, copy it:
 
 ```bash
 ./fcopy test_1gb.dat test_1gb_copy.dat
 
 ```
 
-Now you can see the progress bar slowly advancing, the speed display, and the ETA countdown. The whole experience feels just like a download manager. After copying is complete, verify it:
+Now you can see the progress bar slowly advancing, the speed display, and the ETA countdown. The whole experience feels just like a download manager. After copying, verify it:
 
 ```bash
 md5sum test_1gb.dat test_1gb_copy.dat
@@ -375,7 +381,7 @@ touch empty.txt
 
 ```
 
-It should be handled normally, with the progress bar directly showing 100%.
+It should handle this normally, with the progress bar jumping straight to 100%.
 
 **Non-existent source file:**
 
@@ -386,7 +392,7 @@ It should be handled normally, with the progress bar directly showing 100%.
 
 It should output "Source file does not exist" and return a failure.
 
-**Destination without write permission:**
+**Destination without write permissions:**
 
 ```bash
 ./fcopy /etc/hosts /root/cannot_write.txt
@@ -395,11 +401,11 @@ It should output "Source file does not exist" and return a failure.
 
 It should output "Failed to open destination file for writing" (assuming you are not root).
 
-**Insufficient disk space:** This is a bit hard to simulate, but if you actually encounter it, the write phase will fail and return an error.
+**Insufficient disk space:** This is a bit hard to simulate, but if you actually run into it, the write phase will fail and return an error.
 
 ### Performance Testing
 
-Want to know how this copier performs? You can compare it with the system's `cp` command:
+Want to know how this copier performs? We can compare it with the system's `cp` command:
 
 ```bash
 time ./fcopy test_1gb.dat copy1.dat
@@ -407,7 +413,7 @@ time cp test_1gb.dat copy2.dat
 
 ```
 
-On my machine, the speeds of the two are similar, both around 1-2GB/s (depending on disk performance). This shows that our implementation has decent efficiency with no obvious performance penalty.
+On my machine, the speeds of the two are about the same, both around 1–2GB/s (depending on disk performance). This shows that our implementation has decent efficiency with no obvious performance penalty.
 
 If you want to optimize, you can try increasing `chunk_size`:
 
@@ -416,7 +422,7 @@ FileCopier copier(1024 * 1024);  // 1MB chunk
 
 ```
 
-In certain scenarios, larger chunks can reduce the number of system calls and improve performance. But bigger isn't always better; too large puts pressure on memory, and if interrupted midway, the already-written data will be rather "coarse."
+In certain scenarios, larger chunks can reduce the number of system calls and improve performance. But bigger isn't always better — too large and you put pressure on memory, and if the process is interrupted midway, the already-written data will be rather "coarse."
 
 ### A Complete Test Script
 
@@ -480,26 +486,26 @@ echo -e "\n=== All tests completed ==="
 
 Save it as `test_fcopy.sh`, add execute permissions: `chmod +x test_fcopy.sh`, and then run it: `./test_fcopy.sh`. Within a few seconds, you'll know if all features are working properly.
 
-## Potential Areas for Improvement
+## Possible Areas for Improvement
 
-Although this copier is already quite practical, if you want to continue optimizing, you could consider:
+Although this copier is already quite practical, if we wanted to continue optimizing, we could consider:
 
-**Multithreading:** You could have one thread reading and another writing, passing buffers via a queue, which could theoretically improve performance. But be mindful of synchronization overhead — it won't always be faster.
+**Multithreading:** We could have one thread reading and another writing, passing buffers via a queue. Theoretically, this could improve performance. But we need to watch out for synchronization overhead — it won't always be faster.
 
-**Memory mapping:** Use `mmap` (or the Windows equivalent API) to map the file into memory, letting the operating system optimize the reads and writes. However, this can be problematic for extremely large files, and its cross-platform compatibility isn't as good as `fstream`.
+**Memory mapping:** We could use `mmap` (or the Windows equivalent API) to map the file into memory and let the operating system optimize the reads and writes. However, this might have issues with extremely large files, and its cross-platform compatibility isn't as good as `fstream`.
 
 **Checksums:** Calculate MD5/SHA-256 to ensure data integrity. This can be done concurrently with reading and writing without adding much time.
 
-**Resumable copying:** Record the copied position so that if interrupted, it can resume from the breakpoint. This is very useful for extremely large files, but the implementation is more complex.
+**Resumable copying:** Record the copied position so that if interrupted, copying can resume from the breakpoint. This is very useful for超大files, but the implementation is more complex.
 
 **Batch copying:** Support copying multiple files at once, or an entire directory tree. This would require recursively traversing directories and creating the corresponding directory structure.
 
-But for a teaching example, our current implementation is already sufficient. It is concise, robust, and reasonably performant, with a small codebase, making it perfect for understanding file I/O and modern C++ features.
+But for an educational example, our current implementation is more than enough. It is concise, robust, reasonably performant, and doesn't have a huge amount of code — perfectly suited for understanding file I/O and modern C++ features.
 
 ## Summary
 
-Over these two articles, we went from requirements analysis to interface design, from core implementation to test verification, completely building a file copier. Although it's only a little over two hundred lines of code, it's small but complete: error handling, progress feedback, performance optimization, and edge cases — we considered everything we needed to.
+Over these two articles, we went from requirements analysis to interface design, from core implementation to test verification, completely building a file copier from scratch. Although it's only a little over two hundred lines of code, it's small but complete: error handling, progress feedback, performance optimization, and edge cases — we considered everything we needed to.
 
-More importantly, we utilized quite a few modern C++ features: `std::filesystem` to simplify path operations, `std::chrono` for precise time measurement, `std::vector` to manage the buffer, RAII to automatically release resources, and exception handling for elegant error reporting. These features make writing C++ no longer so "hardcore," elevating both code readability and safety to a new level.
+More importantly, we put quite a few modern C++ features to use: `std::filesystem` to simplify path operations, `std::chrono` for precise time measurement, `std::vector` to manage the buffer, RAII to automatically release resources, and exception handling for elegant error reporting. These features make writing C++ less "hardcore," elevating both code readability and safety to a new level.
 
-Next time you encounter a similar file operation requirement, you'll know how to approach it. Remember: think through the requirements first, design the interface, choose the right tools, implement it step by step, and finally, test it thoroughly. That's how engineering thinking develops — not by pursuing flashy techniques, but by solidly executing every step of the process.
+Next time you encounter a similar file operation requirement, you'll know where to start. Remember: think through the requirements first, design the interface, pick the right tools, implement step by step, and finally, test thoroughly. That's how an engineering mindset is formed — not by pursuing flashy techniques, but by solidly executing every step of the process.

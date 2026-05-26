@@ -1,8 +1,8 @@
 ---
 title: 'OnceCallback Prerequisites (Part 6): Deducing this (C++23)'
-description: Deeply understanding how C++23 explicit object parameters (deducing this)
-  elegantly intercept lvalue calls at compile time in OnceCallback::run(), replacing
-  Chromium's double-overload hack
+description: A deep dive into how C++23 explicit object parameters (deducing this)
+  allow `OnceCallback::run()` to elegantly intercept lvalue calls at compile time,
+  replacing Chromium's double-overload hack.
 chapter: 0
 order: 6
 tags:
@@ -20,6 +20,12 @@ prerequisites:
 related:
 - OnceCallback 实战（二）：核心骨架搭建
 - OnceCallback 前置知识（四）：Concepts 与 requires 约束
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-06-once-callback-deducing-this.md
+  source_hash: d12fb3db3d69c7e5d8d830b169ac971f50fde46b1eb5255baed897fdfe1dbe18
+  translated_at: '2026-05-26T12:28:53.615588+00:00'
+  engine: anthropic
+  token_count: 1664
 ---
 # Prerequisite Knowledge for OnceCallback (Part 6): Deducing this (C++23)
 
@@ -37,7 +43,7 @@ If you have never seen the ``this Self&& self`` syntax—don't panic, this artic
 > **Learning Objectives**
 >
 > - Understand the syntax and deduction rules of deducing this
-> - Master how ``run()`` uses it to implement compile-time lvalue/rvalue interception
+> - Grasp how ``run()`` uses it to implement compile-time lvalue/rvalue interception
 > - Understand the role of lazy instantiation in ``static_assert``
 > - Compare the applicable scenarios of deducing this and traditional ref-qualifiers
 
@@ -74,13 +80,13 @@ R Run() const& {
 }
 ```
 
-Why use ``!sizeof(*this)`` instead of directly writing ``false``? Because prior to C++23, ``static_assert(false, "...")`` in a template would trigger the assertion in all code paths—even if the function was never called. C++23 relaxed this restriction. ``!sizeof(*this)`` leverages the characteristic that ``sizeof`` can only be evaluated on a complete type—it is a dependent expression that is only evaluated during template instantiation, thereby achieving the effect of "only triggering when actually called".
+Why use ``!sizeof(*this)`` instead of simply writing ``false``? Because prior to C++23, ``static_assert(false, "...")`` in a template would trigger the assertion in all code paths—even if the function was never called. C++23 relaxed this restriction. ``!sizeof(*this)`` leverages the characteristic that ``sizeof`` can only be evaluated on a complete type—it is a dependent expression that is only evaluated during template instantiation, thereby achieving the effect of "only triggering when actually called".
 
-It works, but it is certainly not elegant—it requires two overloaded functions to handle the same thing, and the ``!sizeof`` hack has poor readability.
+It works, but it is indeed inelegant—it requires two overloaded functions to handle the same thing, and the ``!sizeof`` hack has poor readability.
 
 ---
 
-## Syntax and Deduction Rules of Deducing this
+## Syntax and Deduction Rules of deducing this
 
 C++23's deducing this allows us to explicitly write ``this`` as the first parameter of a member function, and use a template parameter to deduce its type and value category.
 
@@ -94,7 +100,7 @@ struct MyStruct {
 };
 ```
 
-``this auto&& self`` is the declaration of the explicit object parameter. The keyword ``this`` appearing before the type tells the compiler, "this is not a normal parameter, but an explicit object parameter." ``auto&&`` is a deduction placeholder—the compiler will deduce the concrete type of ``self`` based on the value category of the object at the call site.
+``this auto&& self`` is the declaration of the explicit object parameter. The keyword ``this`` appears before the type, telling the compiler "this is not a normal parameter, but an explicit object parameter". ``auto&&`` is the deduction placeholder—the compiler will deduce the concrete type of ``self`` based on the value category of the object at the call site.
 
 ### Deduction Rules
 
@@ -155,47 +161,47 @@ When the caller writes ``std::move(cb).run(args)``, ``std::move(cb)`` is an rval
 
 ### Forwarding to `impl_run`
 
-``std::forward<Self>(self)`` decides whether to return an lvalue reference or an rvalue reference based on the type of ``Self``. Since ``static_assert`` has already ruled out the lvalue case, the ``Self`` that reaches this point must be a non-reference type (rvalue), so ``std::forward<Self>(self)`` returns an rvalue reference—ensuring that ``impl_run`` is called on an rvalue.
+``std::forward<Self>(self)`` decides whether to return an lvalue reference or an rvalue reference based on the type of ``Self``. Since ``static_assert`` has already ruled out the lvalue case, the ``Self`` that reaches this point must be a non-reference type (an rvalue), so ``std::forward<Self>(self)`` returns an rvalue reference—ensuring that ``impl_run`` is called on an rvalue.
 
 ### Lazy Instantiation
 
-There is an interesting detail here—the condition of ``static_assert`` depends on the template parameter ``Self``, so it is only evaluated during template instantiation. This means:
+There is a fascinating detail here—the condition of ``static_assert`` depends on the template parameter ``Self``, so it is only evaluated upon template instantiation. This means:
 
 - If ``run()`` is never called, ``static_assert`` will not trigger—regardless of whether the ``OnceCallback`` object itself is an lvalue or an rvalue
 - Only at a specific call site, when the compiler needs to instantiate this template, will the concrete type of ``Self`` be determined, and ``static_assert`` will be evaluated
 
-This is called "lazy instantiation," a fundamental characteristic of C++ templates. Function templates are only instantiated when used—if not used, they are not instantiated, and no checks are performed. This is why Chromium had to use ``!sizeof(*this)`` instead of directly writing ``false``—prior to C++23, ``static_assert(false)`` did not depend on a template parameter and would trigger at template definition time, rather than waiting until instantiation.
+This is called "lazy instantiation", a fundamental characteristic of C++ templates. Function templates are only instantiated when used—if not used, they are not instantiated, and no checks are performed. This is why Chromium had to use ``!sizeof(*this)`` instead of simply writing ``false``—prior to C++23, ``static_assert(false)`` does not depend on a template parameter, so it would trigger at template definition time rather than waiting for instantiation.
 
 ---
 
-## Comparison with Traditional Ref-Qualifiers
+## Comparison with Traditional ref-qualifiers
 
-OnceCallback has two methods that express the "can only be called through an rvalue" semantic—``run()`` uses deducing this, while ``then()`` uses the traditional ref-qualifier ``&&``. Why not unify them under one approach?
+OnceCallback has two methods that express the "can only be called through an rvalue" semantic—``run()`` uses deducing this, while ``then()`` uses the traditional ref-qualifier ``&&``. Why not unify the approach?
 
-### `then()` Uses a Ref-Qualifier
+### `then()` Uses a ref-qualifier
 
 ```cpp
 template<typename Next>
 auto then(Next&& next) && -> OnceCallback<...>;
 ```
 
-The requirement for ``then()`` is simple—it only accepts rvalues, rejects lvalues, and does not need to distinguish between them to provide different error messages. If the caller writes ``cb.then(next)`` (lvalue call), the compiler directly reports "no matching overloaded function." Although the error message is not as instructive as with deducing this, it is sufficient. The ref-qualifier is also more concise to write—a single ``&&`` does the job.
+The requirement for ``then()`` is simple—it only accepts rvalues, rejects lvalues, and does not need to distinguish between them to provide different error messages. If the caller writes ``cb.then(next)`` (an lvalue call), the compiler directly reports "no matching overloaded function". Although this error message is not as instructive as the one from deducing this, it is sufficient. The ref-qualifier is also more concise to write—a single ``&&`` does the job.
 
-### `run()` Uses Deducing this
+### `run()` Uses deducing this
 
-The requirement for ``run()`` is more refined—it not only needs to reject lvalue calls, but also needs to provide an **instructive error message** telling the caller, "you should use ``std::move(cb).run(...)`` instead of ``cb.run(...)``." Deducing this makes this requirement natural—``static_assert`` can output our custom error message, rather than the compiler's default "no matching function."
+The requirement for ``run()`` is more refined—it not only needs to reject lvalue calls, but also needs to provide an **instructive error message** telling the caller "you should use ``std::move(cb).run(...)`` instead of ``cb.run(...)``". Deducing this makes this requirement natural—``static_assert`` can output our custom error message, rather than the compiler's default "no matching function".
 
 ### Selection Strategy
 
-To summarize: if you only need the constraint of "accept rvalues only," using the ``&&`` qualifier is more concise. If you also need to provide a custom error message for lvalue calls, using deducing this paired with ``static_assert`` is more appropriate.
+To summarize: if you only need the constraint of "accept rvalues only", using the ``&&`` qualifier is more concise. If you also need to provide a custom error message for lvalue calls, using deducing this paired with ``static_assert`` is more appropriate.
 
 ---
 
 ## Pitfall Warnings
 
-### Explicit Object Parameters Cannot Coexist with cv-Qualifiers or Ref-Qualifiers
+### Explicit Object Parameters Cannot Coexist with cv-qualifiers or ref-qualifiers
 
-A member function with an explicit object parameter cannot simultaneously be declared as ``const``, ``volatile``, or with a ref-qualifier (``&``/``&&``). This is because the explicit object parameter has already taken over the deduction of the object's type and value category—making ``const`` and ``&&`` qualifiers redundant or even contradictory.
+A member function with an explicit object parameter cannot simultaneously be declared as ``const``, ``volatile``, or have a ref-qualifier (``&``/``&&``). This is because the explicit object parameter has already taken over the deduction of the object's type and value category—making ``const`` and ``&&`` qualifiers redundant or even contradictory.
 
 ```cpp
 struct Bad {
@@ -216,11 +222,11 @@ Deducing this is a C++23 feature. GCC 14+, Clang 18+, and MSVC 19.34+ support th
 
 ## Summary
 
-In this article, we thoroughly understood the ins and outs of deducing this. It allows ``run()`` to achieve compile-time lvalue/rvalue interception with a single function template—by judging whether the caller passed an lvalue or an rvalue based on the deduced type of ``Self``, paired with ``static_assert`` to provide an instructive error message. Compared to Chromium's two overloads + ``!sizeof`` hack, the deducing this approach is more concise and better aligns with C++'s design philosophy. Meanwhile, ``then()`` does not need a custom error message, so using the traditional ``&&`` qualifier is more concise.
+In this article, we thoroughly understood the ins and outs of deducing this. It allows ``run()`` to achieve compile-time lvalue/rvalue interception with a single function template—by checking the deduced type of ``Self`` to determine whether the caller passed an lvalue or an rvalue, paired with ``static_assert`` to provide an instructive error message. Compared to Chromium's two overloads + ``!sizeof`` hack, the deducing this approach is more concise and better aligns with C++'s design philosophy. Meanwhile, since ``then()`` does not need a custom error message, using the traditional ``&&`` qualifier is more concise.
 
 At this point, all prerequisite knowledge has been covered. In the next article, we will officially enter the practical implementation phase of OnceCallback—starting from a motivation analysis to design our target API.
 
-## References
+## Reference Resources
 
 - [P0847R7 - Deducing this Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html)
 - [C++23's Deducing this (Microsoft C++ Blog)](https://devblogs.microsoft.com/cppblog/cpp23-deducing-this/)

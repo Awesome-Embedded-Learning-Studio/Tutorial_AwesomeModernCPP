@@ -5,9 +5,9 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: From a single class to a type hierarchy — inheritance expresses the "is-a"
-  relationship, virtual functions implement runtime polymorphism, abstract classes
-  define capability contracts, and virtual destructors ensure safe release
+description: From a single class to a type hierarchy — inheritance expresses "is-a"
+  relationships, virtual functions implement runtime polymorphism, abstract classes
+  define capability contracts, and virtual destructors ensure safe release.
 difficulty: beginner
 order: 3
 platform: host
@@ -23,21 +23,27 @@ tags:
 - beginner
 - 入门
 - 基础
-title: 'C++98 Object-Oriented: Inheritance and Polymorphism'
+title: 'C++98 Object-Oriented Programming: Inheritance and Polymorphism'
+translation:
+  source: documents/vol1-fundamentals/03D-cpp98-inheritance-polymorphism.md
+  source_hash: e06a45e70a25a16b2267f86191270722d475098ee6fa6d1299c9bf6fd961073a
+  translated_at: '2026-05-26T10:25:13.541293+00:00'
+  engine: anthropic
+  token_count: 2898
 ---
 # C++98 Object-Oriented Programming: Inheritance and Polymorphism
 
 > The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
 
-In the previous chapter, we explored the core mechanisms of classes and objects. Now, we expand our focus from "a single class" to "relationships between classes"—how C++ uses inheritance to express "is-a" semantics, and how it uses polymorphism to achieve "same interface, different behavior."
+In the previous chapter, we explored the core mechanisms of classes and objects. Now, we expand our focus from a "single class" to "relationships between classes"—how C++ uses inheritance to express "is-a" semantics, and how it uses polymorphism to achieve "same interface, different behavior."
 
-Inheritance and polymorphism are **the two most easily abused and misunderstood** features in object-oriented programming. When beginners think of inheritance, "code reuse" and "writing less code" often come to mind. However, in engineering practice, the real problem inheritance solves is not writing a few lines less, but **expressing semantic relationships between types**. Polymorphism goes a step further by allowing you to manipulate objects of different types through a unified interface, with the specific behavior determined at runtime.
+Inheritance and polymorphism are **the two most easily abused and misunderstood** features in object-oriented programming. When beginners think of inheritance, "code reuse" and "writing less code" often come to mind. However, in engineering practice, the real problem inheritance solves is not saving a few lines of code, but **expressing semantic relationships between types**. Polymorphism takes this a step further by allowing you to manipulate objects of different types through a unified interface, with the actual behavior determined at runtime.
 
 ## 1. Inheritance
 
 ### 1.1 The Essence of Inheritance: Expressing "Is-a" Relationships
 
-The core of inheritance is to express a very specific relationship: **a derived class is-a base class**. For example, a temperature sensor "is a sensor," and UART "is a communication interface." Inheritance is only natural when this semantic holds true.
+The core of inheritance is to express a very specific relationship: **a derived class is-a base class**. For example, a temperature sensor "is a sensor," and UART "is a communication interface." Only when this semantic holds true is inheritance natural.
 
 I want to emphasize something: especially in critical design scenarios—**using correct semantics is always better than taking shortcuts! Using correct semantics is always better than taking shortcuts! Using correct semantics is always better than taking shortcuts!** You don't want to leave a mess for your future self and your colleagues to clean up overtime.
 
@@ -123,7 +129,7 @@ In this design, `SensorBase` is responsible for defining "the capabilities and s
 
 ### 1.2 Construction and Destruction Order
 
-When creating a derived class object, the construction order is **from base to derived**—the base class subobject is constructed first, followed by the derived class's own members. The destruction order is exactly the reverse—**from derived to base**. This order makes perfect sense: the derived class constructor might depend on the base class members being in a valid state, and during destruction, the derived class must clean up its own resources before the base class can be safely destructed.
+When creating a derived class object, the construction order is **from base to derived**—the base class subobject is constructed first, followed by the derived class's own members. The destruction order is exactly the reverse—**from derived to base**. This order makes perfect sense: the derived class constructor might depend on the base class members being in a valid state, and during destruction, the derived class must clean up its own resources before it is safe to destruct the base class.
 
 ```cpp
 class Base {
@@ -150,7 +156,7 @@ public:
 // Base destroyed
 ```
 
-In the derived class constructor, you need to specify which base class constructor to call via the initializer list. If you don't specify, the compiler will call the base class's default constructor. If the base class lacks a default constructor—for example, if it only defines a parameterized constructor—you must explicitly call it in the derived class's initializer list:
+In the derived class constructor, you need to specify which base class constructor to call via the initializer list. If you don't specify one, the compiler will call the base class's default constructor. If the base class lacks a default constructor—for instance, if it only defines a parameterized constructor—you must explicitly call it in the derived class's initializer list:
 
 ```cpp
 class TemperatureSensor : public SensorBase {
@@ -166,11 +172,11 @@ public:
 
 The inheritance method itself also has access control distinctions, but this topic often causes confusion. C++ supports three inheritance modes:
 
-- **Public inheritance (`public`)**: The `public` members of the base class remain `public` in the derived class, and `protected` members remain `protected`. This is the most commonly used inheritance mode, maintaining the "is-a" semantics.
-- **Protected inheritance (`protected`)**: Both the `public` and `protected` members of the base class become `protected` in the derived class.
-- **Private inheritance (`private`)**: Both the `public` and `protected` members of the base class become `private` in the derived class.
+- **Public inheritance (`public`)**: `public` members of the base class remain `public` in the derived class, and `protected` members remain `protected`. This is the most commonly used inheritance mode, maintaining the "is-a" semantics.
+- **Protected inheritance (`protected`)**: Both `public` and `protected` members of the base class become `protected` in the derived class.
+- **Private inheritance (`private`)**: Both `public` and `protected` members of the base class become `private` in the derived class.
 
-In embedded engineering, in the vast majority of cases, you should only use **public inheritance**. The reason is simple: only public inheritance maintains the "is-a" semantics, ensuring that using derived class objects through a base class interface is safe and intuitive. `protected` inheritance and `private` inheritance are more of language-level tricks with very limited use cases.
+In embedded engineering, in the vast majority of cases, you should only use **public inheritance**. The reason is simple: only public inheritance maintains the "is-a" semantics and ensures that using derived class objects through a base class interface is safe and intuitive. `protected` inheritance and `private` inheritance are more of language-level tricks with very limited use cases.
 
 ### 1.4 Object Slicing
 
@@ -196,7 +202,7 @@ SensorBase* ptr = &temp;  // OK：指针，不会切片
 
 ### 1.5 Multiple Inheritance and Diamond Inheritance
 
-Multiple inheritance allows a class to inherit from multiple base classes simultaneously. In some scenarios, this is quite natural—for example, a device having both "readable" and "writable" capabilities:
+Multiple inheritance allows a class to inherit from multiple base classes simultaneously. In some scenarios, this is quite natural—for example, a device that has both "readable" and "writable" capabilities:
 
 ```cpp
 class Readable {
@@ -224,7 +230,7 @@ public:
 };
 ```
 
-This kind of "interface inheritance" style of multiple inheritance is relatively safe. The real trouble with multiple inheritance lies in **diamond inheritance**—when two base classes themselves inherit from a common base class:
+This kind of "interface inheritance" style of multiple inheritance is relatively safe. But the real trouble with multiple inheritance lies in **diamond inheritance**—when two base classes themselves inherit from a common base class:
 
 ```cpp
 class Base {
@@ -265,11 +271,11 @@ A relatively safe consensus is: **use multiple inheritance only for "interface i
 
 ### 2.1 What Is Polymorphism
 
-If inheritance answers "what are you," then polymorphism answers "how do you behave right now." Polymorphism allows you to manipulate a derived class object through a base class pointer or reference, and call into the derived class's implementation at runtime.
+If inheritance answers the question "what are you," then polymorphism answers "how do you behave right now." Polymorphism allows you to manipulate a derived class object through a base class pointer or reference, and invoke the derived class's implementation at runtime.
 
 The core of this capability lies in **virtual functions**. When a member function is declared as `virtual`, it means: **which specific implementation to call cannot be determined until runtime, rather than being statically bound at compile time**. This is the fundamental reason why polymorphism works.
 
-Let's look at a most basic example first:
+Let's look at a most basic example:
 
 ```cpp
 class Animal {
@@ -309,13 +315,13 @@ make_sound(&dog);  // 输出 "Woof!"
 make_sound(&cat);  // 输出 "Meow!"
 ```
 
-Although this example is simple, it already demonstrates the core value of polymorphism: the `make_sound` function completely doesn't know, nor does it need to know, what the specific subtype of `Animal` is. It only needs to know that "this thing can `speak()`." This ability of **the caller not depending on concrete types, but only on abstract interfaces**, is the cornerstone of large-scale system architecture.
+Although this example is simple, it already demonstrates the core value of polymorphism: the `make_sound` function completely doesn't know, nor does it need to know, what the specific subtype of `Animal` is. It only needs to know that "this thing can `speak()`." This ability to **have the caller depend only on the abstract interface, not on the concrete type**, is the cornerstone of large-scale system architecture.
 
 ### 2.2 The Underlying Mechanism of Virtual Functions: The vtable
 
-Understanding the underlying mechanism of polymorphism helps us make correct engineering judgments in embedded scenarios. Here, we provide a brief introduction.
+Understanding the underlying mechanism of polymorphism helps us make correct engineering decisions in embedded scenarios. Here, we provide a brief introduction.
 
-When you declare a virtual function in a class (or inherit one), the compiler generates a **virtual table (vtable)** for that class. This table is an array of function pointers, where each entry corresponds to a virtual function and stores the address of the actual implementation for that class.
+When you declare a virtual function in a class (or inherit one), the compiler generates a **virtual table (vtable)** for that class. This table is an array of function pointers, where each entry corresponds to a virtual function and stores the address of the actual implementation of that virtual function for the class.
 
 At the same time, every object containing virtual functions has an additional hidden pointer in its memory layout—the **vptr**—which points to the vtable of the object's class.
 
@@ -323,8 +329,8 @@ When calling `animal->speak()`, the code generated by the compiler roughly does 
 
 1. Uses the `animal` pointer to find the starting memory address of the object
 2. Retrieves the `vptr` from the object to find the corresponding vtable
-3. Looks up the entry corresponding to `speak()` in the vtable
-4. Initiates an indirect call through the function pointer
+3. Looks up the entry for `speak()` in the vtable
+4. Makes an indirect call through the function pointer
 
 This is why a virtual function call has one more level of indirection than a normal function call—it needs to look up the actual function to call via the vtable at runtime. **This "indirect jump" is the entire runtime overhead of polymorphism.**
 
@@ -427,13 +433,13 @@ send_command(uart, cmd, sizeof(cmd));  // 通过 UART 发送
 send_command(spi, cmd, sizeof(cmd));   // 通过 SPI 发送
 ```
 
-This design is particularly common in the driver layer. UART, SPI, and I2C look completely different, but at the "send data" and "receive data" level, they can share an abstract interface. The upper-layer protocol processing logic depends only on the interface, not on any specific hardware, which greatly improves code portability and testability.
+This design is particularly common in the driver layer. UART, SPI, and I2C look completely different, but at the "send data" and "receive data" level, they can share a common abstract interface. The upper-layer protocol processing logic depends only on the interface, not on any specific hardware, which greatly improves code portability and testability.
 
 ### 2.4 Virtual Destructors
 
-Virtual destructors are an extremely easily overlooked, yet extremely critical detail in polymorphism.
+Virtual destructors are an extremely easily overlooked, yet critically fatal detail in polymorphism.
 
-**As long as you intend to manage the lifecycle of a derived class object through a base class pointer, the base class's destructor must be virtual.** Otherwise, when `delete` the base class pointer, only the base class's destructor will be called, and the resources held in the derived class will be completely unreleased.
+**As long as you intend to manage the lifecycle of a derived class object through a base class pointer, the base class's destructor must be virtual.** Otherwise, when `delete`ing the base class pointer, only the base class's destructor will be called, and the resources held by the derived class will be completely unreleased.
 
 ```cpp
 class BadBase {
@@ -488,22 +494,22 @@ delete ptr;
 // 内存正确释放
 ```
 
-A simple but almost ironclad rule of thumb is: **as long as a class has any virtual functions, you must also declare its destructor as virtual**. This costs nothing, but it prevents a class of problems that manifest in embedded systems as "inexplicable memory leaks" or "peripheral state anomalies," and are extremely difficult to track down.
+A simple but almost ironclad rule of thumb is: **as long as a class has any virtual functions, you must also declare its destructor as virtual**. This costs nothing, but it can prevent a class of problems that manifest in embedded systems as "inexplicable memory leaks" or "peripheral state anomalies"—issues that are extremely difficult to track down.
 
 ### 2.5 When to Use Polymorphism in Embedded Systems
 
-In actual embedded engineering, the most valuable application scenarios for polymorphism often appear in "driver abstraction" and "protocol decoupling." However, not all scenarios are suitable for polymorphism.
+In actual embedded engineering, the most valuable use cases for polymorphism often appear in "driver abstraction" and "protocol decoupling." However, not all scenarios are suitable for polymorphism.
 
-**Scenarios suitable for polymorphism**: The system needs to support multiple hardware variants (such as a sensor driver compatible with both UART and SPI communication); or when porting across different platforms, platform-specific code needs to be isolated into concrete implementation classes; or when you want to extend system behavior by adding new derived classes without modifying existing code.
+**Scenarios suitable for polymorphism**: The system needs to support multiple hardware variants (such as a sensor driver compatible with both UART and SPI communication); or when porting across different platforms, you need to isolate platform-specific code into concrete implementation classes; or when you want to extend system behavior by adding new derived classes without modifying existing code.
 
-**Scenarios not suitable for polymorphism**: The system has only one fixed, unchanging hardware configuration; the number of objects is very large (every object needs an extra vptr, which might be unaffordable on an MCU with only a few KB of RAM); or there are extreme real-time requirements (although the indirect jump of a virtual function call has overhead, the critical issue is non-determinism—you cannot determine the target address of the call at compile time, which is unacceptable for some hard real-time systems).
+**Scenarios not suitable for polymorphism**: The system has only one fixed, unchanging hardware configuration; the number of objects is very large (every object needs an extra vptr, which may be unaffordable on an MCU with only a few KB of RAM); or there are extreme real-time requirements (although the indirect jump of a virtual function call has overhead, the critical issue is non-determinism—you cannot determine the target address of the call at compile time, which is unacceptable for some hard real-time systems).
 
-My recommendation is: in embedded development, **start without polymorphism, until you clearly feel the need to "use a unified interface to manipulate different implementations."** Do not introduce polymorphism just to make "the code look more OOP"—this is typical over-engineering.
+My advice is: in embedded development, **start without using polymorphism, until you clearly feel the need to "use a unified interface to manipulate different implementations."** Don't introduce polymorphism just to make the code "look more OOP"—this is typical over-engineering.
 
 ## Summary
 
-In this chapter, we learned about inheritance and polymorphism—the two most core mechanisms of the C++ object-oriented system. Inheritance is used to express "is-a" semantic relationships, with public inheritance being the overwhelmingly preferred choice. Polymorphism achieves runtime behavior dispatch through virtual functions, allowing us to manipulate different derived class objects through a unified base class interface. Virtual destructors are the safety baseline when using polymorphism, and forgetting them leads to resource leaks.
+In this chapter, we learned about inheritance and polymorphism—the two most core mechanisms of C++'s object-oriented system. Inheritance is used to express "is-a" semantic relationships, with public inheritance being the overwhelmingly preferred choice. Polymorphism achieves runtime behavior dispatch through virtual functions, allowing us to manipulate different derived class objects through a unified base class interface. Virtual destructors are the safety baseline when using polymorphism, and forgetting them leads to resource leaks.
 
 Inheritance and polymorphism are powerful tools, but they also introduce more complex object relationships, harder-to-trace call paths, and additional runtime overhead. In embedded development, the criterion for deciding whether to use them is very simple: **do the benefits of decoupling clearly outweigh the introduced complexity and overhead?**
 
-In the next chapter, we will learn about operator overloading—the ability to let custom types participate in expression calculations just like built-in types.
+In the next chapter, we will learn about operator overloading—the ability to let custom types participate in expression evaluation just like built-in types.

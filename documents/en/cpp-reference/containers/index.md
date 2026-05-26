@@ -1,12 +1,18 @@
 ---
-title: Container and View
-description: Reference cards for containers, views, type-safe unions, etc.
+title: Containers and Views
+description: Reference cards for containers, views, type-safe unions, and more
 chapter: 99
 order: 2
 tags:
 - host
 - cpp-modern
 - 容器
+translation:
+  source: documents/cpp-reference/containers/index.md
+  source_hash: 14198b810d8b59e876b14146ab31d6f64ff1c3eaeff617ae2801a73d45d5e217
+  translated_at: '2026-05-26T10:14:55.863134+00:00'
+  engine: anthropic
+  token_count: 197
 ---
 # Containers and Views Cheat Sheet
 

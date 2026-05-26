@@ -1,7 +1,7 @@
 ---
-title: optional is used for error handling
-description: Use std::optional to represent 'operations that may fail', replacing
-  error codes and exceptions.
+title: Using `optional` for Error Handling
+description: Using `std::optional` to represent 'operations that may fail', replacing
+  error codes and exceptions
 chapter: 10
 order: 2
 tags:
@@ -21,10 +21,16 @@ prerequisites:
 - 'Chapter 4: std::optional'
 related:
 - std::expected
+translation:
+  source: documents/vol2-modern-features/ch10-error-handling/02-optional-error.md
+  source_hash: 1325123438c62de6c965f5f9c5487f0f3fa5b5fc6a0d4c00bde5939f355bcca1
+  translated_at: '2026-05-26T11:34:52.460207+00:00'
+  engine: anthropic
+  token_count: 2717
 ---
 # Using optional for Error Handling
 
-In the previous article, we traced the evolution of C++ error handling, and finally mentioned that `std::optional` can be used to express "operations that might fail." In this article, we take a deep dive into whether `optional` is actually good for error handling, how to use it, and when you shouldn't.
+In the previous article, we traced the evolution of C++ error handling, and finally mentioned that `std::optional` can be used to express "operations that might fail." In this article, we take a closer look at whether `optional` is actually good for error handling, how to use it, and when you shouldn't.
 
 Let's start with the conclusion: `std::optional` is a precise scalpel, not a Swiss Army knife. It works wonderfully in specific scenarios, but if you use it as a general-purpose error handling tool, you'll find yourself constantly guessing "why did it return nullopt?"
 
@@ -53,7 +59,7 @@ std::optional<int> parse_int(const std::string& s) {
 }
 ```
 
-The biggest advantage of this approach is that **the semantics live in the type**. The function signature `std::optional<int>` already tells the caller "this function might not return a value." You don't need to check the documentation or remember conventions—the type itself is the documentation. After receiving the return value, the caller's first natural step is to check whether a value exists:
+The biggest advantage of this approach is that **the semantics live in the type**. The function signature `std::optional<int>` already tells the caller "this function might not return a value." You don't need to check the documentation or remember conventions—the type itself is the documentation. After getting the return value, the caller's first natural step is to check whether a value exists:
 
 ```cpp
 auto result = parse_int("42");
@@ -72,7 +78,7 @@ The scenarios where `optional` shines all share one common trait: **failure is a
 
 ### Scenario 1: Lookup Operations
 
-Lookup is the most classic optional scenario. Searching for an element in a container and not finding it isn't an "error"—it's simply "not found." This distinction is important. You don't need to tell the caller "why it wasn't found," because there is only one reason: it doesn't exist.
+Lookup is the most classic optional scenario. Finding an element in a container—failing to find it isn't an "error," it's just "not found"—and this distinction is important. You don't need to tell the caller "why it wasn't found," because there is only one reason: it doesn't exist.
 
 ```cpp
 #include <unordered_map>
@@ -117,7 +123,7 @@ auto missing = registry.find(99);
 
 ### Scenario 2: Parsing Operations
 
-Parsing information from external input (configuration files, user input, network data) is bound to fail from time to time. If the caller only needs to know "did the parsing succeed?", `optional` is sufficient:
+Parsing information from external input (configuration files, user input, network data) means failure is par for the course. If the caller only needs to know "did the parsing succeed?", `optional` is sufficient:
 
 ```cpp
 #include <optional>
@@ -218,19 +224,19 @@ if (!cfg) {
 }
 ```
 
-In this case, you should use `std::expected<Config, ConfigError>` or a return struct that carries error information.
+This situation should use `std::expected<Config, ConfigError>` or a return struct that carries error information.
 
 ### Needing an Error Propagation Chain
 
-When you need to chain multiple potentially failing operations together and want to know at the end of the chain which step failed, `optional` makes debugging very painful. Every failed step simply becomes `nullopt`, so by the end, you only know "something failed somewhere," but you don't know where.
+When you need to chain multiple operations that might fail, and you need to know at the end of the chain which step failed, `optional` makes debugging very painful. Every failed step simply becomes `nullopt`, so by the end, you only know "something failed somewhere," but you don't know where.
 
 ------
 
 ## C++23 Monadic Operations
 
-C++23 added three monadic member functions to `std::optional`: `and_then`, `transform`, and `or_else`. These three operations make chaining `optional` operations much more elegant.
+C++23 added three monadic member functions to `std::optional`: `and_then`, `transform`, and `or_else`. These three operations make chained processing with `optional` much more elegant.
 
-### and_then: Chaining Potentially Failing Operations
+### and_then: Chaining Operations That Might Fail
 
 `and_then` takes a function that accepts the value inside the `optional` and returns a new `optional`. If the original `optional` is empty, it directly returns empty without calling the function:
 
@@ -311,7 +317,7 @@ auto upper_name = fetch_from_cache(1)
 // upper_name 的类型是 std::optional<std::string>
 ```
 
-To put it simply: `and_then` is for "the next step might fail" operations (the function returns an `optional`), while `transform` is for "the next step is guaranteed to succeed" transformations (the function returns a plain value).
+To distinguish them in one sentence: use `and_then` for "the next step might fail" operations (the function returns an `optional`), and use `transform` for "the next step is guaranteed to succeed" transformations (the function returns a plain value).
 
 ### or_else: Providing a Fallback
 
@@ -333,11 +339,11 @@ auto result = fetch_from_cache(user_id)
 
 ## Comparison with Rust's Option
 
-Those of you who have used Rust might feel that C++'s `optional` is a bit "underpowered." That's true, mainly in two aspects:
+Those who have used Rust might feel that C++'s `optional` is a bit "underpowered." This is indeed true, mainly in two aspects:
 
-Rust's `Option<T>` has compiler-enforced `#[must_use]` checks—if you ignore an `Option` return value, the compiler will issue a warning. C++'s `std::optional` doesn't have this guarantee. Although you can use `[[nodiscard]]` to annotate return types, the standard library doesn't do this.
+Rust's `Option<T>` has compiler `#[must_use]` checks—if you ignore an `Option` return value, the compiler will issue a warning. C++'s `std::optional` doesn't have this guarantee. Although you can use `[[nodiscard]]` to annotate return types, the standard library doesn't do this.
 
-Rust's `Option<T>` has a powerful `?` operator for error propagation. Writing `let val = might_fail()?;` inside a function means that if the `might_fail` returns `None`, the function immediately returns `None`. C++ lacks such elegant syntax; you need to check manually, or use macros to simulate it (like the `TRY` macro mentioned earlier).
+Rust's `Option<T>` has a powerful `?` operator for error propagation. Writing `let val = might_fail()?;` inside a function means that if `might_fail` returns `None`, the function immediately returns `None`. C++ lacks such elegant syntax; you need to check manually, or use macros to simulate it (like the `TRY` macro mentioned earlier).
 
 However, C++23's monadic operations have largely closed this gap—while chained calls aren't as concise as the `?` operator, they are already quite usable.
 
@@ -436,17 +442,17 @@ int main() {
 }
 ```
 
-This example showcases the typical usage of `optional`: using `optional` when looking up fields to indicate "might not exist," using `optional` when parsing numbers to indicate "might fail," and using `value_or` to provide default values. The code is clear, and both the happy path and failure paths are obvious at a glance.
+This example showcases the typical usage of `optional`: using `optional` to indicate "might not exist" when looking up fields, using `optional` to indicate "might fail" when parsing numbers, and using `value_or` to provide default values. The code is clean, and the happy path and failure paths are clear at a glance.
 
 ------
 
 ## Summary
 
-The positioning of `std::optional` in the realm of error handling is very clear: it is suited for simple scenarios where "failure doesn't need a reason"—lookups, parsing, caching, and default values. If your scenario requires distinguishing between error types, needs an error propagation chain, or requires diagnosing issues at the end of the chain, it's time to switch to `expected` or other heavier-weight solutions.
+The positioning of `std::optional` in the realm of error handling is very clear: it is suited for simple scenarios where "failure doesn't need a reason"—lookups, parsing, caching, and default values. If a scenario requires distinguishing between error types, needs an error propagation chain, or requires diagnosing issues at the end of the chain, it's time to switch to `expected` or other heavier-weight solutions.
 
-C++23's monadic operations (`and_then`, `transform`, and `or_else`) make chaining `optional` operations elegant, greatly reducing nested `if/else` code. If your project is still on C++17, writing a few helper functions by hand can achieve a similar effect.
+C++23's monadic operations (`and_then`, `transform`, `or_else`) make chained processing with `optional` elegant, greatly reducing nested `if/else` code. If your project is still on C++17, writing a few helper functions by hand can achieve a similar effect.
 
-In the next article, we'll look at `std::expected<T, E>`—and see how it handles cases when you need "a value + error information."
+In the next article, we'll look at `std::expected<T, E>`—and see how it handles things when you need "a value + error information."
 
 ## References
 

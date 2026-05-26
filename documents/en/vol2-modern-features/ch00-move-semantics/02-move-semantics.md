@@ -1,6 +1,6 @@
 ---
-title: Move constructor and move assignment
-description: Master the core mechanism of move semantics to achieve zero-copy resource
+title: Move Construction and Move Assignment
+description: Master the core mechanisms of move semantics to achieve zero-copy resource
   transfer.
 chapter: 0
 order: 2
@@ -21,16 +21,22 @@ prerequisites:
 related:
 - RVO 与 NRVO
 - 完美转发
+translation:
+  source: documents/vol2-modern-features/ch00-move-semantics/02-move-semantics.md
+  source_hash: 0933784ba3b9b1bd4521968854d905fc5447666febaddcd74e7649b9883690da
+  translated_at: '2026-05-26T11:17:13.018460+00:00'
+  engine: anthropic
+  token_count: 4414
 ---
 # Move Construction and Move Assignment
 
-In the previous article, we laid the groundwork for value categories and rvalue references. Now it is time to get to the real work—teaching our classes to truly "move" instead of "copy." To be honest, I made quite a few mistakes the first time I wrote a move constructor by hand: forgetting to null out the source object's pointer, forgetting to handle self-assignment, and being unclear on when to add `noexcept`... This article shares all the pitfalls I stumbled into, hoping to save you some headaches.
+In the previous article, we laid the groundwork for value categories and rvalue references. Now it is time to get to the real work—teaching our classes to truly "move" instead of "copy." To be honest, I made quite a few mistakes the first time I wrote a move constructor by hand: forgetting to null out the source object's pointer, forgetting to handle self-assignment, and being unclear about when to add `noexcept`... This article shares all the pitfalls I stumbled into, hoping to save you some headaches.
 
-We will start with a simple but realistic scenario: implementing our own dynamic buffer class, and using it to step-by-step understand move construction, move assignment, and the so-called "Rule of Five."
+We will start with a simple but realistic scenario: implementing our own dynamic buffer class, and then use it to step through move construction, move assignment, and the so-called "Rule of Five."
 
 ## Why We Need Move Semantics—Starting with the Cost of Copying
 
-Suppose you are writing a text processing tool that needs to frequently pass large blocks of text data between functions. Let us first look at a very basic dynamic buffer implementation:
+Suppose you are writing a text processing tool that needs to pass large chunks of text data between functions frequently. Let us look at a most basic dynamic buffer implementation:
 
 ```cpp
 class Buffer {
@@ -107,9 +113,9 @@ int main()
 }
 ```
 
-What happens when we call `processBuffer`? The parameter `buf` is passed by value, so the compiler calls `DynamicBuffer`'s copy constructor to create `buf`—this means allocating 1MB of new memory, and then copying the data from `data` over byte by byte. When the function returns, the return statement triggers another copy constructor to create the temporary. Add in the destruction of `buf` when the function ends—the entire process results in **two 1MB memory allocations, two 1MB memory copies, and one 1MB memory deallocation**. Yet all we actually need is to transfer the data from `data`'s `m_data` into the caller's buffer. (I imagine veteran C++ developers are already blushing seeing code written this way, and I bet you cannot help but cringe either.)
+What happens when we call `process_buffer(large)`? The parameter `buf` is passed by value, so the compiler calls `Buffer`'s copy constructor to create `buf`—which means allocating 1MB of new memory, and then copying the data from `large` byte by byte. When the function returns, `return buf;` triggers another copy constructor to create `result`. Add in the destruction of `buf` at the end of the function—the entire process performs **two 1MB memory allocations, two 1MB memory copies, and one 1MB memory deallocation**. Yet all we really need is to transfer the data from `large` inside `main` into `result`. (I imagine veteran C++ programmers are already seeing red reading this code, and I am sure you cannot help but cringe either.)
 
-This is the fundamental problem with copy semantics: when you no longer need the source object, the copy constructor still faithfully duplicates every byte, and then the source object dutifully frees the original memory block when it destructs. Resources are allocated and then freed, data is copied and then discarded—pure waste.
+This is the fundamental problem with copy semantics: when you no longer need the source object, the copy constructor still faithfully duplicates every byte, and then the source object dutifully frees that original block of memory when it destructs. Resources are allocated and then freed, data is copied and then discarded—pure waste.
 
 ## Move Constructor—Transferring Resource Ownership
 
@@ -137,9 +143,9 @@ public:
 };
 ```
 
-Let us look at this move constructor line by line. The `&&` in the signature `DynamicBuffer(DynamicBuffer&& other) noexcept` indicates that this is a move constructor—it only accepts rvalue arguments. Inside the function body, we do three things: directly copy the three members of `other` into `this` (three pointer/integer assignments, extremely cheap), and then null out `other`'s pointer. This last step is crucial—if we do not null out `other.m_data`, `other`'s destructor will free the memory we just transferred, leaving `this` holding a dangling pointer that will inevitably crash on access.
+Let us look at this move constructor line by line. The ``&&`` in the signature ``Buffer(Buffer&& other)`` indicates that this is a move constructor—it only accepts rvalue arguments. Inside the function body, we do three things: directly copy the three members of ``other`` into ``this`` (three pointer/integer assignments, extremely cheap), and then null out ``other``'s pointer. This last step is crucial—if we do not null out ``other.data_``, ``delete[] other.data_`` will free the memory that was just transferred when ``other`` destructs, leaving ``this`` holding a dangling pointer that will inevitably crash on access.
 
-Now let us use `std::move` to trigger the move constructor:
+Now let us use ``std::move`` to trigger the move constructor:
 
 ```cpp
 Buffer large(1024 * 1024);
@@ -150,11 +156,11 @@ Buffer moved_to = std::move(large);  // 调用移动构造函数
 // moved_to 持有了原来那 1MB 的内存
 ```
 
-What happens during this entire process? Three pointer/integer assignments—that is it. No `new`, no `memcpy`, no `delete`. An O(n) copy operation has become an O(1) pointer transfer. For a 1MB buffer, this is the difference between "allocate 1MB of memory and copy 1MB of data" and "assign three registers."
+What happens during this entire process? Three pointer/integer assignments—that is it. No ``new``, no ``memcpy``, no ``delete``. An O(n) copy operation has become an O(1) pointer transfer. For a 1MB buffer, this is the difference between "allocate 1MB of memory and copy 1MB of data" and "assign three registers."
 
 ## Move Assignment Operator—One Extra Step Compared to Move Construction
 
-The move assignment operator is slightly more complex than the move constructor because the target object of the assignment might already hold resources—we must first release the old resources before taking over the new ones.
+The move assignment operator is slightly more complex than the move constructor, because the target object of the assignment might already hold resources—we must release the old resources before taking over the new ones.
 
 ```cpp
 class Buffer {
@@ -182,7 +188,7 @@ class Buffer {
 };
 ```
 
-Note the first step, `delete[] m_data;`—this is the key difference between move assignment and move construction. During move construction, the target object is not yet initialized, so there are no old resources to release; during move assignment, the target object already exists, and if we do not release the old resources first, we get a memory leak. The self-assignment check `if (this != &other)` is also necessary—although code like `buf = std::move(buf)` almost never appears in normal development, generic implementations of standard library components (like `std::sort`) might produce equivalent operations, so adding this safeguard is the responsible thing to do.
+Note the first step, ``delete[] data_``—this is the key difference between move assignment and move construction. During move construction, the target object is not yet initialized, so there are no old resources to release; during move assignment, the target object already exists, and if we do not release the old resources first, we will get a memory leak. The self-assignment check for ``if (this != &other)`` is also necessary—although code like ``x = std::move(x)`` almost never appears in normal development, generic implementations of standard library components (like ``std::swap``) might produce equivalent operations, so adding this safeguard is the responsible thing to do.
 
 Let us look at the effect of move assignment in actual code:
 
@@ -199,13 +205,13 @@ a = std::move(b);  // 移动赋值
 // b.data_ 变为 nullptr
 ```
 
-> ⚠️ **Pitfall Warning**: After being moved from, the source object is in a "valid but unspecified" state. This means you can safely assign a new value to it or let it destruct, but you should not read its value—for example, `src.size()` might return 0, or it might return the original value, depending on the specific implementation. My advice is: let the source object leave scope immediately after moving, or assign it a clear new value. Never let a "moved-from" object wander around in your code.
+> ⚠️ **Pitfall Warning**: After being moved from, the source object is in a "valid but unspecified" state. This means you can safely assign a new value to it or let it destruct, but you should not read its value—for example, ``moved_from.size()`` might return 0, or it might return the original value, depending on the specific implementation. My advice is: let the source object leave scope immediately after moving, or assign it a clear new value. Never let a "moved-from" object wander around in your code.
 
-## noexcept—The Safety Guarantee for Move Operations
+## noexcept—The Safety Promise of Move Operations
 
-You might have noticed that both move operations are marked with `noexcept`. This is not optional decoration—it has real performance implications.
+You might have noticed that both move operations are marked with ``noexcept``. This is not an optional decoration—it has real performance implications.
 
-The reason lies in the expansion behavior of `std::vector`. When a `std::vector` needs to grow its capacity, it must transfer existing elements to a new memory block. If the elements' move constructor is `noexcept`, `std::vector` will confidently use move semantics; if the move constructor might throw exceptions, `std::vector` will fall back to using the copy constructor—because if an exception is thrown during a move, the half-moved state is very difficult to recover from, but if an exception is thrown during a copy, the original data remains intact.
+The reason lies in the expansion behavior of ``std::vector``. When ``vector`` needs to grow its capacity, it must transfer existing elements to a new memory block. If the elements' move constructor is ``noexcept``, ``vector`` will confidently use move semantics; if the move constructor might throw exceptions, ``vector`` will fall back to using the copy constructor—because if an exception is thrown during a move, the half-moved state is very difficult to recover from, but if an exception is thrown during a copy, the original data remains intact.
 
 ```cpp
 // vector 内部逻辑的简化版本
@@ -216,7 +222,7 @@ if constexpr (std::is_nothrow_move_constructible_v<T>) {
 }
 ```
 
-You can use `std::is_nothrow_move_constructible` to verify whether your class truly satisfies `noexcept` move operations:
+You can use ``static_assert`` to verify whether your class truly satisfies a ``noexcept`` move:
 
 ```cpp
 static_assert(std::is_nothrow_move_constructible_v<Buffer>,
@@ -225,7 +231,7 @@ static_assert(std::is_nothrow_move_assignable_v<Buffer>,
               "Buffer should be nothrow move assignable");
 ```
 
-This is not just theory on paper—we can write an experiment to verify the actual behavior of `std::vector`. We prepare two `DynamicBuffer` classes with identical structure, the only difference being whether the move constructor has `noexcept`, and then we let a `std::vector` expand. The results are very clear:
+This is not just theory on paper—we can write an experiment to verify the actual behavior of ``vector``. Prepare two ``Buffer`` classes with identical structure, where the only difference is whether the move constructor has ``noexcept``, and then let ``vector`` expand. The results are very clear:
 
 ```text
 === noexcept 移动 + vector 扩容 ===
@@ -237,13 +243,13 @@ This is not just theory on paper—we can write an experiment to verify the actu
   [Throwing版] 拷贝构造    <-- vector 退回拷贝，确保异常安全
 ```
 
-Compiled and run under GCC 15 and `-O2`, the behavior perfectly matches expectations.
+Compiled and run under GCC 15 and ``-std=c++17 -O2``, the behavior matches expectations perfectly. The complete code is available in ``noexcept_vector_realloc.cpp``.
 
 ## Rule of Five
 
 C++ has a classic "Rule of Three": if your class needs a custom destructor, copy constructor, or copy assignment operator, it probably needs all three. C++11 added the move constructor and move assignment operator, turning it into the "Rule of Five."
 
-If you only declare a destructor but do not declare any move operations, the compiler **will not** automatically generate a move constructor and move assignment operator. So what does it do? It falls back to using copy operations. This often confuses beginners: they clearly used `std::move`, but the copy constructor is still actually being called. `std::move` itself does not move anything—it is simply a type cast from an lvalue reference to an rvalue reference. What ultimately decides whether to call the move constructor or the copy constructor is the class definition. If the class does not have a move constructor, the rvalue reference will perfectly match the copy constructor that takes a `const&`.
+If you only declare a destructor but do not declare any move operations, the compiler **will not** automatically generate a move constructor and move assignment operator. So what does it do instead? It falls back to using copy operations. This often confuses beginners: they clearly used ``std::move``, but the copy constructor is still actually being called. ``std::move`` itself does not move anything—it is simply a type cast from an ``static_cast`` to an rvalue reference. What ultimately decides whether to call the move constructor or the copy constructor is the class definition. If the class does not have a move constructor, the rvalue reference will perfectly match the ``const T&`` copy constructor.
 
 ```cpp
 class OnlyDestructor {
@@ -262,7 +268,7 @@ OnlyDestructor b = std::move(a);  // 退化为拷贝构造！
                                     // 隐式拷贝构造做浅拷贝 -> 双重 delete
 ```
 
-The consequence here is more severe than just "inefficiency"—because the implicitly generated copy constructor performs a shallow copy (copying pointers member by member), `a` and `b`'s `m_data` will point to the same memory block. When both destruct, `delete[] m_data` is called twice, directly triggering a double free. We can use a type trait to verify this behavior:
+The consequence here is more severe than just "inefficiency"—because the implicitly generated copy constructor performs a shallow copy (copying pointers member by member), the ``data_`` of ``a`` and ``b`` will point to the same memory block. When both destruct, ``delete[]`` is called twice, directly triggering a double free. We can use a type trait to verify this behavior:
 
 ```cpp
 static_assert(!std::is_trivially_move_constructible_v<OnlyDestructor>,
@@ -271,9 +277,9 @@ static_assert(std::is_move_constructible_v<OnlyDestructor>,
               "但 is_move_constructible 为 true——退回到拷贝构造");
 ```
 
-Seems contradictory? Not really. `std::is_move_constructible` being true is because the compiler can use the copy constructor to "satisfy" the demand for move construction (an rvalue can bind to `const&`), but this does not mean a true move constructor exists to perform the pointer transfer.
+Seems contradictory? It is not. ``is_move_constructible`` being true is because the compiler can use the copy constructor to "satisfy" the demand for a move constructor (an rvalue can bind to ``const T&``), but this does not mean a real move constructor exists to perform the pointer transfer. The complete verification code is in ``rule_of_five_fallback.cpp``.
 
-For classes that manage resources, the safest approach is to **either fully customize all five special member functions, or make them all `= default`**. If you use smart pointers to manage resources, you can typically use `= default` to let the compiler generate the correct versions—this is exactly the approach recommended by modern C++. But for classes like ours that manually manage raw pointers, we must dutifully write all five:
+For classes that manage resources, the safest approach is to **either fully customize all five special member functions, or set them all to = default**. If you use smart pointers to manage resources, you can usually use ``= default`` to let the compiler generate the correct versions—this is exactly what modern C++ recommends. But for our class that manually manages raw pointers, we must dutifully write all five:
 
 ```cpp
 class Buffer {
@@ -348,7 +354,7 @@ public:
 
 It looks a bit long, but the logic is repetitive—copy operations perform deep copies, and move operations perform pointer transfers plus nulling out the source object.
 
-## Copy-and-Swap Idiom—Reducing Code Duplication
+## Copy-and-Swap Idiom—Reducing Duplicate Code
 
 If you feel that writing four assignment operators (copy assignment + move assignment) is too verbose, there is a classic idiom that can help you simplify. The core idea is: **let copy assignment and move assignment share a single implementation**, leveraging the semantics of pass-by-value to automatically choose between copying or moving.
 
@@ -407,13 +413,13 @@ public:
 };
 ```
 
-Here, `operator=` receives the parameter by value—if you pass in an lvalue, `other` is created via the copy constructor; if you pass in an rvalue (like `std::move(buf)`), `other` is created via the move constructor. Then `swap` exchanges the contents of `*this` and `other`, and when the function ends, `other` destructs, automatically releasing the old resources.
+Here, ``operator=(Buffer other)`` receives the parameter by value—if you pass in an lvalue, ``other`` is created via the copy constructor; if you pass in an rvalue (like ``std::move(x)``), ``other`` is created via the move constructor. Then, ``swap`` swaps the contents of ``this`` and ``other``, and when the function ends, ``other`` destructs, automatically releasing the old resources.
 
-The advantage of this idiom is less code, exception safety, and automatic handling of self-assignment. The downside is an extra swap operation (three pointer swaps), which might have a minor impact in extreme performance scenarios. However, in the vast majority of cases, this overhead is completely negligible—comparing the assembly with GCC 15 under `-O2` reveals that the move assignment path of copy-and-swap adds about three register move instructions (the cost of the swap) compared to a standalone move assignment operator, but there are no extra function calls or memory operations. For classes managing dynamic memory, the overhead of `new`/`delete` far outweighs these three register instructions, so the extra cost of copy-and-swap is practically immeasurable in real-world use.
+The advantage of this idiom is less code, exception safety, and automatic handling of self-assignment. The disadvantage is an extra swap operation (three pointer swaps), which might have a minor impact in extreme performance scenarios. However, in the vast majority of cases, this overhead is completely negligible—comparing the assembly with GCC 15 under ``-O2`` reveals that the move assignment path of copy-and-swap adds about three register move instructions (i.e., the cost of the swap) compared to a standalone move assignment operator, but there are no additional function calls or memory operations. For classes managing dynamic memory, the overhead of ``new``/``delete`` far outweighs these three register instructions, so the extra cost of copy-and-swap is practically immeasurable in real-world use.
 
 ## Practical Example—Moving File Handles
 
-Beyond dynamic memory, move semantics are equally powerful for classes managing other types of resources. File handles are a typical example—operating systems limit the number of open handles for the same file, and if you accidentally copy an object holding a file handle, it can lead to handle leaks or duplicate closes.
+Beyond dynamic memory, move semantics are equally powerful for classes managing other resources. File handles are a typical example—operating systems limit the number of open handles for the same file, and if you accidentally copy an object holding a file handle, it could lead to handle leaks or duplicate closes.
 
 ```cpp
 #include <cstdio>
@@ -491,7 +497,7 @@ int main()
 }
 ```
 
-This example demonstrates a common design pattern: **non-copyable but movable**. A file handle physically exists as only one instance and should not be "copied" into a second one—copying would cause both objects to try to close the same file. But moving is reasonable: `openFile` creates the file handle, then transfers ownership to the caller, and the temporary object inside the function no longer holds any resources.
+This example demonstrates a common design pattern: **non-copyable but movable**. A file handle physically exists as only one instance and should not be "copied" into a second one—copying would cause both objects to try to close the same file. But moving is reasonable: ``open_log`` creates the file handle, then transfers ownership to the caller, and the temporary object inside the function no longer holds any resources.
 
 When you run this program, you will see:
 
@@ -499,7 +505,7 @@ When you run this program, you will see:
   关闭文件: app.log
 ```
 
-Note that there is only one "Closing file" output—even though both `file` and `movedFile` go through destruction, `file`'s `m_fd` was set to `-1` after being moved, so the `m_fd >= 0` check in its destructor fails, preventing a duplicate close.
+Note that there is only one "close file" output—even though both ``log`` and ``moved_log`` go through destruction, ``file_`` of ``log`` was nulled out after being moved, so the ``if (file_)`` check in its destructor fails, preventing a duplicate close.
 
 ## Hands-On Experiment—move_semantics_demo.cpp
 
@@ -679,12 +685,24 @@ Expected output:
   [Buffer] 释放 2048 字节
 ```
 
-The contrast in the output between "Move constructor (pointer transfer)" and "Copy constructor X bytes" is clear at a glance—copying requires memory allocation plus data duplication, while moving is just three pointer assignments. Step 5's vector operations are even more noteworthy: passing an lvalue with `push_back` triggers a copy, passing an rvalue with `std::move` triggers a move, and `emplace_back` constructs in-place directly in the vector's memory, saving even the move. The performance differences between these three operations become very obvious with large data volumes.
+The contrast between "move constructor (pointer transfer)" and "copy constructor X bytes" in the output is clear at a glance—copying requires memory allocation plus data duplication, while moving is just three pointer assignments. Step 5's vector operations are even more noteworthy: passing in an lvalue with ``push_back`` triggers a copy, passing in an rvalue with ``std::move`` triggers a move, and ``emplace_back`` constructs directly in-place in the vector's memory, saving even the move. The performance differences among these three operations become very obvious with large data volumes.
 
-Notice that there is no "Freeing 0 bytes" output during destruction—those are the objects that have been moved from, their `m_data` is `nullptr`, and the `m_data != nullptr` check in the destructor skips the `delete[]`. The three elements in the vector each destruct independently—the first is a copy of `buf1` (1024 bytes), the second was moved from `buf2` (1024 bytes), and the third was constructed in-place by `emplace_back` (512 bytes).
+Notice that there is no "free 0 bytes" output during destruction—those are the objects that have been moved from, their ``data_`` is ``nullptr``, and the ``if (data_)`` check in the destructor skips the ``delete[]``. The three elements in the vector each destruct independently—the first is a copy of ``c`` (1024 bytes), the second was moved from ``c`` (1024 bytes), and the third was constructed in-place by ``emplace_back`` (512 bytes).
+
+## Run Online
+
+Run the Buffer move semantics example online to compare the resource overhead of copying versus moving:
+
+<OnlineCompilerDemo
+  title="Move Construction and Move Assignment: Buffer Resource Transfer"
+  source-path="code/examples/vol2/02_move_semantics.cpp"
+  description="Run online and compare Buffer's copy constructor vs. move constructor, as well as behavioral differences in a vector."
+  allow-run
+  allow-x86-asm
+/>
 
 ## Summary
 
-In this article, we thoroughly broke down move constructors and move assignment operators from start to finish. The core of move operations is **resource ownership transfer**—do not copy data, just steal the pointer, and then null out the source object. Move assignment has one extra step compared to move construction: you must first release the old resources held by the target object. All move operations should be marked `noexcept`, as this directly impacts the behavior of containers like `std::vector` during expansion. If your class manages resources, remember the Rule of Five: destructor, copy constructor, move constructor, copy assignment, and move assignment—either write all five, or make them all `= default`.
+In this article, we broke down move constructors and move assignment operators from start to finish. The core of move operations is **resource ownership transfer**—do not copy data, just steal the pointer, and then null out the source object. Move assignment has one extra step compared to move construction: you must first release the old resources held by the target object. All move operations should be marked ``noexcept``, as this directly impacts the behavior of containers like ``std::vector`` when expanding. If your class manages resources, remember the Rule of Five: destructor, copy constructor, move constructor, copy assignment, and move assignment—either write all five, or set them all to ``= default``.
 
 In the next article, we will look at another major thing the compiler does for us behind the scenes—return value optimization (RVO and NRVO), which can reduce the cost of returning large objects from functions to exactly zero.

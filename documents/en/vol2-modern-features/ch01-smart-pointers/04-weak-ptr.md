@@ -1,7 +1,7 @@
 ---
-title: 'weak_ptr and circular references: breaking the ownership deadlock'
-description: Master the weak reference mechanism of weak_ptr to solve the circular
-  reference problem of shared_ptr
+title: 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
+description: Master the weak reference mechanism of weak pointers to resolve circular
+  reference issues with shared pointers.
 chapter: 1
 order: 4
 tags:
@@ -21,12 +21,18 @@ prerequisites:
 - 'Chapter 1: shared_ptr 详解'
 related:
 - 自定义删除器
+translation:
+  source: documents/vol2-modern-features/ch01-smart-pointers/04-weak-ptr.md
+  source_hash: b570b6f9d18d1acbe9d8452c742b9d9721b0b2761be98f56787ccf17dce7a745
+  translated_at: '2026-05-26T11:22:02.906939+00:00'
+  engine: anthropic
+  token_count: 2899
 ---
 # weak pointer and Circular References: Breaking the Ownership Deadlock
 
-In the previous article, we discussed `shared_ptr`—shared ownership implemented via reference counting. `shared_ptr` seems wonderful: as long as the last holder goes out of scope, the object is automatically destroyed. But in reality, this "automatic destruction" has a fatal enemy: **circular references**. When two objects hold each other's `shared_ptr`, their reference counts never reach zero—two "managers" each assume the other still holds the key, and neither dares to close the door. The result is a memory leak.
+In the previous article, we discussed `shared_ptr`—shared ownership implemented via reference counting. `shared_ptr` seems wonderful: as long as the last holder goes away, the object is automatically destroyed. But in reality, this "automatic destruction" has a fatal enemy: **circular references**. When two objects hold each other's `shared_ptr`, their reference counts never reach zero—two "managers" each assume the other still holds the key, and neither dares to close up, resulting in a memory leak.
 
-`std::weak_ptr` was born to solve this problem. It is an observer pointer that "does not participate in reference counting"—you can use it to check whether an object is still alive, and if it is, temporarily obtain a `shared_ptr` to access it. However, it does not extend the object's lifetime itself.
+`std::weak_ptr` was born to solve this problem. It is an observer pointer that "does not participate in reference counting"—you can use it to check whether an object is still alive, and if it is, temporarily obtain a `shared_ptr` to access it, but it does not extend the object's lifetime on its own.
 
 ## Demonstrating the Circular Reference Problem
 
@@ -65,9 +71,9 @@ void circular_reference_bug() {
 }
 ```
 
-If you run this code, you will find that the destructor output for `~Node()` **never appears**—neither `Node("A") 析构` nor `~Node("B") 析构` gets printed. The two nodes hold each other's `shared_ptr`, forming a "deadlock ring," and neither gets released. This is a memory leak caused by circular references.
+If you run this code, you will find that the destructor output for `~Node()` **never appears**—neither `Node("A") 析构` nor `~Node("B") 析构` gets printed. The two nodes hold each other's `shared_ptr`, forming a "deadlock ring," and neither gets released. This is a memory leak caused by a circular reference.
 
-This problem is not rare in real-world engineering. In the Observer pattern, the Subject holds the observers' `shared_ptr`, and the observers also hold the Subject's `shared_ptr`; in tree structures, parent nodes hold their children's `shared_ptr`, and child nodes also hold their parent's `shared_ptr`; in graph structures, any two adjacent nodes might reference each other. As long as a ring is formed, the `shared_ptr` reference counting mechanism breaks down.
+This problem is not rare in real-world engineering. In the Observer pattern, a Subject holds the observers' `shared_ptr`, and the observers also hold the Subject's `shared_ptr`; in tree structures, parent nodes hold their children's `shared_ptr`, and child nodes also hold their parent's `shared_ptr`; in graph structures, any two adjacent nodes might reference each other. As long as a ring is formed, the reference counting mechanism of `shared_ptr` breaks down.
 
 ## weak pointer API: lock(), expired(), use_count()
 
@@ -75,7 +81,7 @@ This problem is not rare in real-world engineering. In the Observer pattern, the
 
 `weak_ptr` provides three core APIs:
 
-`lock()` is the most important method. It attempts to obtain a `shared_ptr` pointing to the object. If the object still exists (strong reference count > 0), it returns a valid `shared_ptr`; if the object has already been destroyed (strong reference count = 0), it returns an empty `shared_ptr` (i.e., `nullptr`). `lock()` is thread-safe—in a multithreaded environment, multiple threads can call `lock()` simultaneously, and the standard guarantees that the returned `shared_ptr` either points to a valid object or is empty, avoiding the dangling scenario of "obtaining a pointer but the object has already been deleted." See `test_weak_ptr_atomicity.cpp` for verification code.
+`lock()` is the most important method. It attempts to obtain a `shared_ptr` pointing to the object. If the object still exists (strong reference count > 0), it returns a valid `shared_ptr`; if the object has already been destroyed (strong reference count = 0), it returns an empty `shared_ptr` (i.e., `nullptr`). `lock()` is thread-safe—in a multithreaded environment, multiple threads can call `lock()` simultaneously, and the standard guarantees that the returned `shared_ptr` either points to a valid object or is empty, avoiding the dangling scenario where "a pointer is obtained but the object has already been deleted." See `test_weak_ptr_atomicity.cpp` for verification code.
 
 `expired()` returns a bool value indicating whether the object has already been destroyed (i.e., whether the strong reference count is 0). However, in practice, we generally recommend using `lock()` directly rather than checking `expired()` first and then calling `lock()`—because in a multithreaded environment, between the moment `expired()` returns `false` and the call to `lock()`, the object might have already been destroyed by another thread, leading to a race condition. `lock()` atomically completes both the "check if the object exists" and "increment the reference count" operations, avoiding this problem. See the race condition test in `test_weak_ptr_atomicity.cpp` for verification code.
 
@@ -113,7 +119,7 @@ void weak_ptr_api_demo() {
 }
 ```
 
-⚠️ `weak_ptr` cannot be dereferenced directly—you cannot write `*weak` or `weak->member`. You must first obtain a `shared_ptr` via `lock()`, and then access the object through `shared_ptr`. This design is intentional: `weak_ptr` is a reference that "does not guarantee the object still exists," so direct access is too dangerous. The atomic check in `lock()` guarantees that the `shared_ptr` you obtain either points to a living object or is empty—there will be no dangling pointer problem where "you obtain a pointer but the object has already been deleted."
+⚠️ `weak_ptr` cannot be dereferenced directly—you cannot write `*weak` or `weak->member`. You must first obtain a `shared_ptr` via `lock()`, and then access the object through `shared_ptr`. This design is intentional: `weak_ptr` is a reference that "does not guarantee the object still exists," so direct access is too dangerous. The atomic check in `lock()` guarantees that the `shared_ptr` you obtain either points to a living object or is empty—there is no dangling pointer problem where "a pointer is obtained but the object has already been deleted."
 
 ## How weak pointer Breaks the Cycle
 
@@ -161,13 +167,13 @@ Node(B) 构造
 
 The key lies in the line `b->prev = a`—`weak_ptr` does not increase the strong reference count of `a`. Therefore, when the local variable `a` goes out of scope, the strong reference count of `a` drops directly from 1 to 0, triggering the destructor. The design philosophy of `weak_ptr` can be summed up in one sentence: **"I know you exist, but I will not stop you from leaving."**
 
-This pattern can be generalized to any data structure with "parent-child" or "upstream-downstream" relationships: use `shared_ptr` for the strong reference direction (holding ownership), and use `weak_ptr` for the weak reference direction (observing only, not holding ownership). As long as there is no ring consisting entirely of strong references in the graph, reference counting can work properly.
+This pattern can be generalized to any data structure with "parent-child" or "upstream-downstream" relationships: use `shared_ptr` for the strong reference direction (holding ownership), and `weak_ptr` for the weak reference direction (observing only, not holding ownership). As long as there is no ring consisting entirely of strong references in the graph, reference counting can work normally.
 
 ## weak pointer in the Observer Pattern
 
-The Observer pattern is one of the most important application scenarios for `weak_ptr`. In this pattern, the Subject maintains a list of observers and notifies all observers when the state changes. If the observer list stores `shared_ptr<Observer>`, then as long as the Subject is alive, none of the observers will be destroyed—even if the outside world no longer needs these observers. What's worse, if the observers in turn also hold a `shared_ptr` to the Subject, a circular reference is formed.
+The Observer pattern is one of the most important application scenarios for `weak_ptr`. In this pattern, a Subject maintains a list of observers and notifies all observers when the state changes. If the observer list stores `shared_ptr<Observer>`, then as long as the Subject is alive, none of the observers will be destroyed—even if the outside world no longer needs these observers. What's worse, if the observers in turn also hold a `shared_ptr` to the Subject, a circular reference is formed.
 
-The correct approach is: the Subject uses `weak_ptr` to reference the observers (not extending the observers' lifetimes), and the observers can choose to use either `shared_ptr` or `weak_ptr` to reference the Subject.
+The correct approach is: the Subject uses `weak_ptr` to reference the observers (not extending the observers' lifetimes), and the observers can choose to reference the Subject with `shared_ptr` or `weak_ptr`.
 
 ```cpp
 #include <memory>
@@ -260,7 +266,7 @@ Listener(L2) 创建
 ~Listener(L1) 销毁
 ```
 
-This pattern is very common in real-world engineering. GUI frameworks (Qt's signal-slot mechanism under certain configurations), game engine event systems, and network library callback mechanisms all face similar problems—an event source should not prevent the destruction of an event consumer. `weak_ptr` exactly provides this "loosely coupled" observation semantics.
+This pattern is very common in real-world engineering. GUI frameworks (Qt's signal-slot mechanism under certain configurations), game engine event systems, and network library callback mechanisms all face similar problems—an event source should not prevent the destruction of an event consumer. `weak_ptr` provides exactly this "loosely coupled" observation semantics.
 
 ## weak pointer in Cache Implementations
 
@@ -364,13 +370,13 @@ This cache design is very natural: the cache itself does not hold a strong refer
 
 ## Common Misuse: Overusing weak pointer
 
-Although `weak_ptr` is a powerful tool for solving circular references, overusing it actually increases code complexity and the probability of errors. I have seen some codebases that replace almost all pointers with `weak_ptr`, terrified of circular references—this is actually overcorrecting.
+Although `weak_ptr` is a powerful tool for solving circular references, overusing it actually increases code complexity and the probability of errors. I have seen some codebases replace almost all pointers with `weak_ptr`, terrified of circular references—this is actually overcorrecting.
 
-First is the performance issue. Every time you access an object through a `weak_ptr`, you need to call `lock()`, which involves atomic operations (checking and incrementing the reference count). Frequently calling `lock()` on a hot path brings measurable performance overhead. According to benchmarks from `test_weak_ptr_performance.cpp`, accessing via `weak_ptr::lock()` is about 10 to 15 times slower than directly accessing a `shared_ptr` (under -O2 optimization, 10 million iterations: direct access takes about 5ms, lock() access takes about 62ms). Although this absolute time difference might not seem large in practical applications, if it is frequently called in performance-sensitive code paths, the overhead accumulates.
+First is the performance issue. Every time you access an object through a `weak_ptr`, you need to call `lock()`, which involves atomic operations (checking and incrementing the reference count). Frequently calling `lock()` on a hot path brings measurable performance overhead. According to benchmarks from `test_weak_ptr_performance.cpp`, accessing through a `weak_ptr::lock()` is about 10 to 15 times slower than directly accessing a `shared_ptr` (under -O2 optimization, 10 million iterations: direct access takes about 5ms, lock() access takes about 62ms). Although this absolute time difference might not seem large in practical applications, if it is frequently called on performance-sensitive code paths, the overhead accumulates.
 
-Second is semantic ambiguity. If your code is full of `weak_ptr` everywhere, readers will have a hard time determining which objects have true ownership relationships. Ownership relationships should be clarified as much as possible during the design phase, rather than using `weak_ptr` to dodge ownership design.
+Second is semantic ambiguity. If your code is full of `weak_ptr` everywhere, it is hard for readers to determine which objects have true ownership relationships. Ownership relationships should be clarified as much as possible during the design phase, rather than using `weak_ptr` to dodge ownership design.
 
-My recommendation is: in most cases, use `unique_ptr` to express exclusive ownership, and use raw pointers or references to express non-owning access. Only use `weak_ptr` to break cycles when you genuinely need shared ownership and there is a risk of circular references. `weak_ptr` is a precise tool, not a "sprinkle everywhere" panacea.
+My recommendation is: in most cases, use `unique_ptr` to express exclusive ownership, and use raw pointers or references for non-owning access. Only use `weak_ptr` to break cycles when you genuinely need shared ownership and there is a risk of circular references. `weak_ptr` is a precise tool, not a "sprinkle everywhere" panacea.
 
 Another common mistake is trying to use `weak_ptr` to "observe" stack objects or objects managed by `unique_ptr`—this is impossible, because `weak_ptr` can only be used in conjunction with `shared_ptr`. If you want to observe the lifetime of a non-shared object, you need to use other mechanisms (such as callback functions, a manual implementation of the Observer pattern, or changing the object to be managed by `shared_ptr`).
 
@@ -382,7 +388,7 @@ In practical applications, `weak_ptr` is mainly used in three scenarios: breakin
 
 But remember, `weak_ptr` is not a panacea. Overusing it makes code harder to understand and maintain. Good design should prioritize clarifying ownership relationships, introducing `weak_ptr` only when necessary.
 
-In the next article, we will discuss custom deleters and intrusive reference counts—exploring in depth how to make smart pointers manage resources that "weren't created with new."
+In the next article, we will discuss custom deleters and intrusive reference counting—exploring in depth how to make smart pointers manage resources that "weren't created with new."
 
 ## Reference Resources
 

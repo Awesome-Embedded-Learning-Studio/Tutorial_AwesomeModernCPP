@@ -1,8 +1,8 @@
 ---
-title: Bitwise operations and evaluation order
-description: Dive deep into the four major bitwise operations, shift caveats, operator
-  precedence traps, evaluation order and sequence points, and understand the essence
-  of undefined behavior.
+title: Bitwise Operations and Evaluation Order
+description: A deep dive into the four fundamental bitwise operations, shift caveats,
+  operator precedence traps, evaluation order and sequence points, and understanding
+  the essence of undefined behavior (UB).
 chapter: 1
 order: 5
 tags:
@@ -17,10 +17,16 @@ cpp_standard:
 - 11
 prerequisites:
 - 运算符基础：让数据动起来
+translation:
+  source: documents/vol1-fundamentals/c_tutorials/03B-bitwise-and-evaluation.md
+  source_hash: 6726ef3c1f82b2cbaf86581adaf486e306cd216c72c990d97b1c43ae813ee9a3
+  translated_at: '2026-05-26T10:28:02.590715+00:00'
+  engine: anthropic
+  token_count: 1969
 ---
 # Bitwise Operations and Evaluation Order
 
-In the previous chapter, we covered common operators like arithmetic, relational, and logical ones. Now we tackle two tougher topics: bitwise operations and evaluation order. Bitwise operations are rarely used in general application-level programming, but if you plan to work with embedded systems or low-level system programming, they become your daily tools—configuring hardware registers, parsing bit fields in communication protocols, and implementing flag sets all rely on them. Evaluation order and sequence points are the keys to understanding "why some code produces different results on different compilers."
+In the previous chapter, we covered common operators like arithmetic, relational, and logical ones. Now let's tackle two tougher topics: bitwise operations and evaluation order. Bitwise operations are rarely used in general application-level programming, but if you plan to work with embedded systems or low-level system programming, they become your daily tools—configuring hardware registers, parsing bit fields in communication protocols, and implementing flag sets all rely on them. Evaluation order and sequence points are the keys to understanding "why some code produces different results on different compilers."
 
 Admittedly, these two topics can feel a bit confusing at first. But don't worry, we'll take it one step at a time, starting with the more intuitive bitwise operations.
 
@@ -28,7 +34,7 @@ Admittedly, these two topics can feel a bit confusing at first. But don't worry,
 > After completing this chapter, you will be able to:
 >
 > - [ ] Master the four classic bitwise operations: set, clear, toggle, and check
-> - [ ] Understand the details and pitfalls of left shift and right shift
+> - [ ] Understand the details and pitfalls of left and right shifts
 > - [ ] Remember the most counterintuitive operator precedence rules that are easy to get wrong
 > - [ ] Understand evaluation order and sequence points to avoid writing code with undefined behavior
 
@@ -44,7 +50,7 @@ We will run all the following experiments in this environment:
 
 ### What is a "Bit"
 
-When we discussed data types in the previous chapter, we mentioned that a variable's value is stored in memory as 0s and 1s. A `uint8_t` has 8 binary bits, and a `uint32_t` has 32 binary bits. Bitwise operations manipulate these binary bits directly—you no longer treat data as a "number," but as a "row of switches."
+When we discussed data types in the previous chapter, we mentioned that a variable's value is stored in memory as 0s and 1s. A `uint8_t` has 8 binary bits, and a `uint32_t` has 32 binary bits. Bitwise operations manipulate these binary bits directly—you no longer treat data as "numbers," but as "a row of switches."
 
 C provides six bitwise operators:
 
@@ -52,12 +58,12 @@ C provides six bitwise operators:
 |----------|---------|-------------------|
 | `&` | Bitwise AND | 1 only if both are 1 |
 | `\|` | Bitwise OR | 1 if either is 1 |
-| `^` | Bitwise XOR | 1 if different, 0 if the same |
+| `^` | Bitwise XOR | 1 if different, 0 if same |
 | `~` | Bitwise NOT | 0 becomes 1, 1 becomes 0 |
 | `<<` | Left shift | All bits shift left, low bits filled with 0 |
 | `>>` | Right shift | All bits shift right, high bits filled with 0 (for unsigned types) |
 
-We'll use an 8-bit unsigned number for demonstration, as it's more intuitive:
+We'll use 8-bit unsigned numbers for demonstration, as they are more intuitive:
 
 ```text
   0b11001100  (204)
@@ -197,15 +203,15 @@ This matches our expectations perfectly. If you find the `(1 << n)` syntax unint
 ```
 
 > ⚠️ **Pitfall Warning**
-> Every parameter and the overall expression in the macro definitions are enclosed in parentheses. This isn't redundant. Without parentheses, `CLEAR_BIT(x | y, 3)` would expand to `x | y &= ~(1 << 3)`. Since `&=` has lower precedence than `|`, the meaning changes completely. Parentheses in macros are the cheapest insurance.
+> Every parameter and the overall expression in the macro definitions are wrapped in parentheses. This isn't redundant. Without parentheses, `CLEAR_BIT(x | y, 3)` would expand to `x | y &= ~(1 << 3)`. Since `&=` has lower precedence than `|`, the meaning changes completely. Parentheses in macros are the cheapest insurance.
 
 ## Step 3 — Shift Caveats
 
-### Left Shift and Right Shift Behavior
+### Behavior of Left and Right Shifts
 
-Left shifting `<<` has well-defined behavior on unsigned types—low bits are filled with 0, and high bits are discarded. Right shifting `>>` is also well-defined for unsigned types (high bits are filled with 0).
+Left shifting `<<` on unsigned numbers has well-defined behavior—low bits are filled with 0, and high bits are discarded. Right shifting `>>` on unsigned numbers is also well-defined (high bits are filled with 0).
 
-However, right-shifting signed numbers is **implementation-defined**—the compiler can choose arithmetic right shift (high bits filled with the sign bit, preserving negative values) or logical right shift (high bits filled with 0). Most platforms use arithmetic right shift, but this is not guaranteed by the standard:
+However, right shifting signed numbers is **implementation-defined**—the compiler can choose arithmetic right shift (high bits filled with the sign bit, preserving negative values) or logical right shift (high bits filled with 0). Most platforms use arithmetic right shift, but this is not guaranteed by the standard:
 
 ```c
 int8_t x = -4;         // 二进制：11111100
@@ -215,11 +221,11 @@ int8_t y = x >> 1;     // 可能是 -2（算术右移，高位补 1）
 ```
 
 > ⚠️ **Pitfall Warning**
-> If the shift amount is negative, or equal to or greater than the bit width of the type (e.g., shifting a `int32_t` by 32 bits), the behavior is **undefined**. Intuitively, you might think the result of `1 << 32` is 0, but the standard dictates this is UB—in practice, you might get 1 (because the CPU only takes the low 5 bits of the shift amount, turning 32 into 0).
+> If the shift amount is negative, or equal to/exceeds the bit width of the type (e.g., shifting a `int32_t` by 32 bits), the behavior is **undefined**. Intuitively, you might think the result of `1 << 32` is 0, but the standard dictates this is UB—in practice, you might get 1 (because the CPU only takes the low 5 bits of the shift amount, turning 32 into 0).
 
 ### Bitwise Operator Precedence Traps
 
-This is the most common pitfall for bitwise operation beginners—**the precedence of all bitwise operators is lower than that of relational operators**. In other words, `&`, `|`, and `^` all have lower precedence than `==`, `!=`, `<`, and `>`.
+This is the easiest pitfall for bitwise operation beginners—**the precedence of all bitwise operators is lower than that of relational operators**. In other words, `&`, `|`, and `^` all have lower precedence than `==`, `!=`, `<`, and `>`.
 
 ```c
 if (flags & 0x0F == 0) { }    // 实际解析为 flags & (0x0F == 0)
@@ -229,14 +235,14 @@ if ((flags & 0x0F) == 0) { }  // 这才是你想要的意思
 
 The problem with the first approach is that `==` first combines with `0x0F` and `0` (because `==` has higher precedence than `&`), resulting in 0 (since `0x0F != 0`), and then `flags & 0` is always false.
 
-The core principle: **Whenever bitwise operations and comparisons are mixed, you must use parentheses**. Parentheses don't slow down your code, but they protect you from these precedence traps.
+The core principle: **whenever bitwise and comparison operations are mixed, you must use parentheses**. Parentheses don't slow down your code, but they protect you from these precedence traps.
 
 A practical precedence mnemonic, from highest to lowest:
 
 1. Parentheses `()` > Subscript `[]` > Member access `.` `->`
 2. Unary operators (`!` `~` `++` `--` `*` `&` `sizeof`)
 3. Arithmetic (`*` `/` `%` > `+` `-`)
-4. Shift (`<<` `>>`)
+4. Shifts (`<<` `>>`)
 5. Relational (`<` `>` `<=` `>=` > `==` `!=`)
 6. Bitwise (`&` > `^` > `|`)
 7. Logical (`&&` > `||`)
@@ -244,26 +250,26 @@ A practical precedence mnemonic, from highest to lowest:
 
 ## Step 4 — Evaluation Order and Sequence Points
 
-This is one of the most confusing concepts in C. We need to understand two separate things: **precedence** and **evaluation order**. These two are independent—precedence determines how operators bind to their operands, while evaluation order determines when the operands are calculated.
+This is one of the most confusing concepts in C. We need to understand two separate things: **precedence** and **evaluation order**. These two are independent—precedence determines how operators bind their operands, while evaluation order determines when the operands are calculated.
 
 ### Evaluation Order Is Unspecified
 
-In most expressions, the order in which operands are evaluated is up to the compiler. For example, in `f() + g()`, the standard does not specify whether `f` or `g` is called first—the compiler can choose any order. If neither function has side effects (doesn't modify global variables or read/write files), the order doesn't matter; but if there are side effects, the results may vary by compiler.
+In most expressions, the order in which operands are evaluated is up to the compiler. For example, in `f() + g()`, the standard does not specify whether `f` or `g` is called first—the compiler can choose any order. If neither function has side effects (doesn't modify global variables, doesn't read or write files), the order doesn't matter; but if there are side effects, the results may vary by compiler.
 
 ### Sequence Points — Safe Boundaries for Side Effects
 
-A **sequence point** is a specific point in program execution where all previous operations have been completed, and subsequent operations have not yet begun. Sequence points in C include:
+A **sequence point** is a specific point in program execution where all previous operations are complete, and subsequent operations have not yet begun. Sequence points in C include:
 
-- After the evaluation of the left operand of `&&` (this is the principle behind short-circuit evaluation)
-- After the evaluation of the left operand of `||`
-- After the evaluation of the first operand of `?:`
-- After the evaluation of the left operand of the comma operator
+- After evaluating the left operand of `&&` (this is the principle behind short-circuit evaluation)
+- After evaluating the left operand of `||`
+- After evaluating the first operand of `?:`
+- After evaluating the left operand of the comma operator
 - At the end of a full expression (the semicolon at the end of a statement)
-- After all actual arguments have been evaluated but before the function body starts executing, during a function call
+- After all arguments have been evaluated but before the function body begins executing, during a function call
 
-### Undefined Behavior: No Sequence Point Between Two Modifications
+### Undefined Behavior: Two Modifications Without a Sequence Point
 
-If, between two sequence points, the same variable is modified twice, or is modified and read at the same time (and the read is not used to compute the new value), that is **undefined behavior**:
+If, between two sequence points, the same variable is modified twice, or is modified and read simultaneously (and the read is not used to compute the new value), that is **undefined behavior**:
 
 ```c
 int i = 3;
@@ -284,13 +290,13 @@ If you want to deeply understand the concept of UB, think of it as a traffic rul
 
 ## C++ Connection
 
-C++ does a few useful things regarding bitwise operations. In `<bitset>`, `std::bitset<N>` allows direct access to individual bits using the `[]` operator, and it provides operations with clear semantics like `test()`, `set()`, `reset()`, and `flip()`—which are safer and more readable than hand-written bitwise operations. In C++, you should prefer using `std::bitset`, unless you truly need extreme performance or direct hardware manipulation.
+C++ does a few useful things regarding bitwise operations. In `<bitset>`, `std::bitset<N>` can use the `[]` operator to access individual bits directly, and it provides semantically clear operations like `test()`, `set()`, `reset()`, and `flip()`—which are safer and more readable than hand-written bitwise operations. In C++, you should prefer using `std::bitset`, unless you truly need extreme performance or direct hardware manipulation.
 
 Regarding evaluation order, C++17 strengthened the rules—a function expression is guaranteed to be evaluated before its arguments, making it more deterministic than C's "unspecified" behavior. Additionally, if a `constexpr` function triggers UB during compile-time evaluation, the compiler will directly report an error—acting as a free UB detector.
 
 ## Summary
 
-The four classic bitwise operations—set (`|=` + `<<`), clear (`&=` + `~` + `<<`), toggle (`^=` + `<<`), and check (`&` + `<<`)—are essential skills for embedded development. The biggest trap in operator precedence is that bitwise operators have lower precedence than relational operators; when mixing bitwise operations and comparisons, you must use parentheses. The core principle of evaluation order and sequence points is: never modify the same variable multiple times within a single expression—that is undefined behavior.
+The four classic bitwise operations—set (`|=` + `<<`), clear (`&=` + `~` + `<<`), toggle (`^=` + `<<`), and check (`&` + `<<`)—are essential skills for embedded development. The biggest trap in operator precedence is that bitwise operators have lower precedence than relational operators; when mixing bitwise and comparison operations, you must use parentheses. The core principle of evaluation order and sequence points is: never modify the same variable multiple times within a single expression—that is undefined behavior.
 
 At this point, we have covered all aspects of C language operators. Next, we will learn about control flow—how to make a program execute different code based on conditions, and how to repeat a block of code.
 

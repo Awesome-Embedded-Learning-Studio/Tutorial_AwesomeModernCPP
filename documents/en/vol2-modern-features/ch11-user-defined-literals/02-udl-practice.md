@@ -1,6 +1,6 @@
 ---
 title: 'UDL in Practice: A Type-Safe Unit System'
-description: Implement a type-safe physical unit system using user-defined literals
+description: Implementing a type-safe physical unit system using user-defined literals
 chapter: 11
 order: 2
 tags:
@@ -20,16 +20,22 @@ prerequisites:
 - 'Chapter 4: 强类型 typedef'
 related:
 - constexpr 基础
+translation:
+  source: documents/vol2-modern-features/ch11-user-defined-literals/02-udl-practice.md
+  source_hash: 9f70dc7cce796962a7a9bb3f7072a9d1e86793ef6dcbb9c6d15f3371aca82da2
+  translated_at: '2026-05-26T11:36:20.077610+00:00'
+  engine: anthropic
+  token_count: 3063
 ---
 # UDL in Practice: A Type-Safe Unit System
 
 In the previous article, we covered the basic syntax of user-defined literals — `operator""` forms, standard library literals, and naming rules. Now, we will put that knowledge to use and build a truly practical **type-safe unit system**.
 
-Our goal is to make `100_m + 500_m` return a length, `100_m / 2_s` return a speed, and `100_m + 50_s` trigger a compile-time error. All conversions happen at compile time, with zero runtime overhead.
+Our goal is to make `100_m + 500_m` return a length, `100_m / 2_s` return a velocity, and `100_m + 50_s` trigger a compile-time error. All conversions happen at compile time, with zero runtime overhead.
 
 ------
 
-## Step 1: The Length Unit System
+## Step 1: Length Unit System
 
 Let's start with the simplest case: length units. We use a template to define a generic "value with a unit," and then define literals for different length units:
 
@@ -150,9 +156,9 @@ void test_length() {
 
 ------
 
-## Step 2: Time and Speed Units
+## Step 2: Time and Velocity Units
 
-The length system can work independently, but the real beauty of physical calculations lies in combining different units. Dividing length by time yields speed — we need `Quantity` to support this cross-unit operation:
+The length system can work independently, but the real beauty of physical calculations lies in combining different units. Dividing length by time yields velocity — we need `Quantity` to support this cross-unit operation:
 
 ```cpp
 /// 速度标签
@@ -224,7 +230,7 @@ void test_physics() {
 }
 ```
 
-The beauty of this code is that the compiler handles the unit checking for you — you cannot accidentally use milliseconds as seconds, nor can you add a speed to a distance.
+The beauty of this code is that the compiler handles the unit checking for you — you cannot accidentally treat milliseconds as seconds, nor can you add a velocity to a distance.
 
 ------
 
@@ -341,7 +347,7 @@ void test_string_literals() {
 }
 ```
 
-String hash literals are particularly useful in embedded scenarios — you can replace runtime string comparisons with compile-time generated integers, saving Flash (no need to store the strings) and improving performance (integer comparison vs. string comparison).
+String hash literals are particularly useful in embedded scenarios — you can replace runtime string comparisons with compile-time generated integers, which saves Flash (no need to store the strings) and improves performance (integer comparison vs. string comparison).
 
 ------
 
@@ -456,7 +462,7 @@ As an exercise for this article, try implementing a complete length unit system 
 
 1. Define `_m`, `_km`, and `_mi` (miles) literals, using meters as the base unit
 2. Support addition, subtraction, and scalar multiplication
-3. Support dividing length by time to get speed
+3. Support dividing length by time to get velocity
 4. Use `static_assert` to verify the correctness of compile-time calculations
 
 Reference framework:
@@ -501,7 +507,7 @@ This exercise will help you solidify the combined use of templates, operator ove
 
 ## Summary
 
-In this article, we put the basic knowledge of UDLs into practice. Through the combination of the `Quantity<T, UnitTag>` template, operator overloading, and literal operators, we built a type-safe physical unit system: lengths can be added to lengths, dividing length by time yields speed, but lengths and times cannot be directly added — all these checks happen at compile time, with zero runtime overhead.
+In this article, we put the foundational knowledge of UDLs into practice. Through the combination of the `Quantity<T, UnitTag>` template, operator overloading, and literal operators, we built a type-safe physical unit system: lengths can be added to lengths, dividing length by time yields velocity, but lengths and times cannot be directly added — all of these checks happen at compile time, with zero runtime overhead.
 
 In embedded scenarios, UDLs are particularly well-suited for frequency/baud rate literals (`72_MHz`, `115200_Hz`), memory size literals (`4_KiB`, `512_KiB`), and register address literals. These literals significantly improve the readability of bare-metal code, and when combined with `static_assert`, they can catch resource allocation errors at compile time.
 

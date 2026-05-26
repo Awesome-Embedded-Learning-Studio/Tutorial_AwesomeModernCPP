@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Introduction to the resource constraints of Flash, RAM, CPU, etc., and
-  real-time requirements in embedded systems
+description: Introduces the resource constraints of embedded systems—such as Flash,
+  RAM, and CPU—along with real-time requirements.
 difficulty: beginner
 order: 1
 platform: stm32f1
@@ -17,21 +17,27 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: Embedded resources and real-time constraints
+title: Resources and Real-Time Constraints in Embedded Systems
+translation:
+  source: documents/vol8-domains/embedded/01-resource-and-realtime-constraints.md
+  source_hash: 5a292bda5a45a4c180240381379f3a89495651476a96e01b29856cce67b4dcc0
+  translated_at: '2026-05-26T12:09:35.449598+00:00'
+  engine: anthropic
+  token_count: 1514
 ---
 # Embedded Resource and Real-Time Constraints
 
-## 1. Introduction: Why We Can't Just "Write Whatever" in Embedded
+## 1. Introduction: Why We Can't Just "Write Whatever" in Embedded Systems
 
-In PC or server development, we are used to a "default" premise: if memory is insufficient, we can add more; if compute power is lacking, we can scale up; if system scheduling gets messy, the OS has our back. The goal of a program often just needs to satisfy "functional correctness + acceptable average performance."
+In PC or server development, we are used to a default assumption: if memory is insufficient, we can add more; if computing power is lacking, we can scale up; if system scheduling gets messy, the OS has our back. The goal of a program often just needs to satisfy "functional correctness + acceptable average performance."
 
-But embedded systems do not live in this world. In an embedded environment, resources are strictly quantified: Flash might be only a few dozen KB, RAM only a few KB, and the CPU clock frequency only a few dozen MHz, yet the system bears responsibilities like real-time control, device safety, and industrial or consumer-grade reliability. Here, a program is not enough just because it "runs." It must also:
+But embedded systems do not live in this world. In embedded environments, resources are strictly quantified: Flash might be only a few dozen KB, RAM only a few KB, and the CPU clock speed only a few tens of MHz, yet the system bears responsibilities like real-time control, device safety, and industrial or consumer-grade reliability. Here, a program is not enough just because it "runs." It must also:
 
 - Complete tasks within a specified time
 - Behave correctly even in the worst-case scenario
 - Maintain long-term stable operation under limited resources
 
-The essence of embedded engineering is pursuing deterministic system behavior in a resource-constrained world. Of course, this conflicts somewhat with C++'s tendency to hide things under the hood, but using most C++ features properly can indeed drive significant performance improvements.
+The essence of embedded engineering is pursuing deterministic system behavior in a resource-constrained world. Of course, this conflicts somewhat with C++'s tendency to hide things under the hood, but properly leveraging most C++ features can indeed drive significant performance improvements.
 
 ## 2. Flash / ROM Constraints: Code Is Not "Free"
 
@@ -43,17 +49,17 @@ In embedded systems, program storage space is first and foremost strictly limite
 - STM32F4 series: 512KB ~ 2MB Flash
 - Low-end MCUs: even as little as 16KB
 
-Compared to PC programs whose executables easily reach tens of MB, this capacity difference is a chasm of orders of magnitude.
+Compared to PC programs whose executables routinely reach tens of MB, this capacity difference is a chasm of orders of magnitude.
 
 ### 2.2 How Flash Constraints Affect Software Design
 
-In such an environment, "what code to write" is itself an engineering decision. Code size directly determines whether the system is deployable, and feature redundancy means real storage waste. Introducing a library is no longer a question of "is it easy to use," but "**can it even fit**" (yes, the author has truly seen a binary explode in size just by pulling in `printf`). Therefore, embedded engineers must master some common compiler flags:
+In such an environment, "what code to write" is in itself an engineering decision. Code size directly determines whether the system is deployable, and feature redundancy means real storage waste. Introducing a library is no longer a question of "is it easy to use," but "**can it even fit**" (yes, the author has genuinely seen a binary explosively balloon in size just by pulling in `printf`). Therefore, embedded engineers must master some common compiler flags:
 
 - Compiler flags (like `-Os` for optimizing code size)
 - Function and section-level garbage collection (`-ffunction-sections`, `-fdata-sections` combined with `--gc-sections`)
-- Precise control over linking behavior
+- Precise control over linker behavior
 
-Don't rush this; we have a dedicated chapter later to dive into it properly.
+Don't rush this; we have a dedicated chapter later to dive into these properly.
 
 ## 3. RAM Constraints: Memory Is Not "Use It and Forget It"
 
@@ -61,16 +67,16 @@ If Flash constraints limit "how much functionality we can write," then RAM const
 
 ### 3.1 The Order-of-Magnitude Reality of RAM
 
-In embedded systems, RAM is often only: 2KB / 8KB / 20KB / 64KB. In such an environment, we can genuinely trigger a stack overflow, send the SP pointer flying, and if our memory management algorithm is poorly designed, our real-time system might crash after hours or days because heap fragmentation leaves the system unable to find a suitable buffer for allocation behavior.
+In embedded systems, RAM is often only: 2KB / 8KB / 20KB / 64KB. In such an environment, we can genuinely trigger a stack overflow, send the SP pointer flying off into the weeds, and if our memory management algorithm is poorly designed, our real-time system might crash after hours or days because heap fragmentation leaves the system unable to find a suitable buffer for allocation behavior.
 
 ### 3.2 Stack Risks
 
 Stack space is primarily consumed by: function call depth, interrupt nesting, and local variables. In embedded systems, the following behaviors are often strictly limited or even prohibited.
 
-- You are definitely not allowed to use recursion—we all know the essence of recursion is calling itself, and accidentally stacking the stack too deep will directly crash the system (after all, we have no way to predict exactly how many iterations will occur; no matter how well you calculate, other tasks and user stacks won't care).
-- Do not declare large local arrays either—for the same reason: stacking the stack too deep will directly crash the system.
+- You are definitely not allowed to use recursion — we all know the essence of recursion is calling itself, and accidentally stacking the stack too deep will crash the system directly (after all, we have no way to predict exactly how many iterations will occur; no matter how well you calculate, other tasks and user stacks won't care about your limits).
+- Do not declare large local arrays either — for the same reason, stacking the stack too deep will crash the system directly.
 
-A single unpredictable stack growth can directly corrupt the system.
+A single unpredictable stack growth can directly destroy the system.
 
 If you really need a large array, do it this way:
 
@@ -120,21 +126,21 @@ void* mempool_alloc(void) {
 
 In embedded systems, memory management serves determinism first, not convenience.
 
-## 4. CPU Constraints: Compute Power Is Precisely Budgeted
+## 4. CPU Constraints: Computing Power Is Precisely Budgeted
 
 In the PC/server world, we are used to treating the CPU as an "almost inexhaustible" resource:
-Algorithm is a bit slow? Add a cache. Too many branches? Leave it to out-of-order execution. Floating-point math too heavy? Hardware has your back. The CPU is more like a backdrop—as long as it's not too slow, it's fine. But in embedded, the question is not "is it fast or slow," **the CPU is a resource that needs to be precisely measured and precisely budgeted**. Of course, with modern chips, if resources aren't very tight, there's no need to go to such lengths, but the cost is right there, and your boss will definitely demand that you squeeze every last drop out of it, right?
+Algorithm is a bit slow? Add a cache. Too many branches? Leave it to out-of-order execution. Floating-point math too heavy? Hardware has your back. The CPU is more like a backdrop — as long as it's not too slow, it's fine. But in embedded systems, the question is not "is it fast or slow," **the CPU is a resource that needs to be precisely measured and precisely budgeted**. Of course, with modern chips, if resources aren't very tight, there's no need to go to such extremes, but the cost is right there, and your boss will surely demand that you squeeze every last drop out of it, right?
 
 ------
 
-### 4.1 Compute Characteristics of MCUs
+### 4.1 Computing Power Characteristics of MCUs
 
-The compute characteristics of a typical MCU and a desktop CPU exist in almost two different worlds:
+The computing power characteristics of a typical MCU and a desktop CPU exist in almost two different worlds:
 
-- Limited clock frequency (tens to hundreds of MHz)
-- No out-of-order execution, basically strict in-order pipeline
+- Limited clock speeds (tens to hundreds of MHz)
+- No out-of-order execution, basically strict in-order pipelines
 - Weak branch prediction capabilities, or none at all
-- Extremely small Cache, or no Cache at all
+- Extremely small caches, or no cache at all
 
 The conclusion is straightforward: on an MCU, code behavior **can almost be directly mapped to the instruction stream**. Every `if` `if` you write, every loop, every function call, ultimately turns into real, tangible instructions executed in order.
 
@@ -154,12 +160,12 @@ For example:
 
 So embedded engineers do things that might seem "counterintuitive" to desktop programmers:
 
-- Analyze **Worst-Case Execution Time (WCET)**
+- Analyze **worst-case execution time (WCET)**
 - Avoid unpredictable loop counts
 - Control the number of branches to reduce uncertainty in execution paths
 - When necessary, look at the disassembly and manually estimate cycle counts
 
-The following example looks like only a minor refactor, but it is of great significance on an MCU:
+The following example looks like just a minor refactoring, but it is of great significance on an MCU:
 
 ```c
 // 优化前：条件判断在循环内
@@ -173,7 +179,7 @@ for (int i = 0; i < n; i++) {
 
 ```
 
-The problem is not a logic error, but rather: **every single iteration of the loop must go through a branch check**. On a CPU without branch prediction, this is a stable and considerable performance loss. The fix is also quite simple:
+The problem is not a logic error, but rather: **every single iteration of the loop has to go through a branch check**. On a CPU without branch prediction, this is a stable and noticeable performance penalty. The fix is also quite simple:
 
 ```c
 // 优化后：减少分支预测失败
@@ -189,7 +195,7 @@ if (condition) {
 
 ```
 
-The optimization is not about being "smarter," but rather: **replacing one uncertain branch with one deterministic execution path**. In embedded, this kind of "seemingly verbose" writing style is often the truly safe and analyzable code in engineering practice.
+The optimization point is not about "being smarter," but rather: **trading one uncertain branch for a deterministic execution path**. In embedded systems, this kind of "seemingly verbose" code is often what is truly safe and analyzable from an engineering perspective.
 
 ------
 
@@ -212,7 +218,7 @@ The following seemingly "harmless" software behaviors all directly translate int
 - Peripherals left permanently enabled
 - The system being frequently and meaninglessly woken up
 
-Even if the CPU is "doing nothing," as long as it is still executing instructions and the clock is still running, power consumption continues. In other words: **"the CPU is busy" is itself a state of energy consumption.
+Even if the CPU is "doing nothing," as long as it is still executing instructions and the clock is still running, power consumption continues. In other words: **"the CPU is busy" is in itself a state of energy consumption.**
 
 ------
 
@@ -247,17 +253,17 @@ void main_loop(void) {
 
 ```
 
-The sophistication lies not in complex logic, but in explicitly telling the system: **don't force it when there's nothing to do, let the hardware save power for you**. In embedded, code that is written "smarter" is often more power-efficient than code that is written "faster."
+The sophistication lies not in complex logic, but in explicitly telling the system: **don't push through when there's nothing to do, let the hardware save power for you**. In embedded systems, "smarter" code is often more power-efficient than "faster" code.
 
 ------
 
-## 6. Boot Time Constraints: From Power-On to Usable
+## 6. Startup Time Constraints: From Power-On to Usable
 
-In many embedded scenarios, "boot complete" is not a vague concept, but a **hard requirement written into the specs**: the system must enter a usable state within a limited time.
+In many embedded scenarios, "startup complete" is not a vague concept, but a **hard requirement written into the specs**: the system must enter a usable state within a limited time.
 
 ------
 
-### 6.1 Why Boot Time Matters
+### 6.1 Why Startup Time Matters
 
 These scenarios are particularly sensitive:
 
@@ -265,13 +271,13 @@ These scenarios are particularly sensitive:
 - Automotive electronics (cannot "take its time thinking")
 - Consumer electronics (user experience)
 
-You cannot just "show a loading spinner" like on a PC; the system must become usable in a specified time, in a predictable manner.
+You cannot just "show a loading spinner" like on a PC; the system must become usable in a specified time and in a predictable manner.
 
 ------
 
-### 6.2 The Cost of the Boot Chain
+### 6.2 The Cost of the Startup Chain
 
-A typical boot chain:
+A typical startup chain:
 
 1. Power-on reset
 2. BootROM execution
@@ -279,7 +285,7 @@ A typical boot chain:
 4. Peripheral and memory initialization
 5. Entering main control logic
 
-Every step in the chain consumes boot time. The principle is: **only do what must be done, and defer complex or non-critical initialization as much as possible**.
+Every step in the chain consumes startup time. The principle is: **only do what must be done, and defer complex or non-critical initialization as much as possible**.
 
 ```c
 // 只初始化必要的外设，延迟初始化其他
@@ -295,7 +301,7 @@ void system_init(void) {
 
 ```
 
-This kind of "restrained" initialization approach is often the key to meeting boot time targets.
+This kind of "restrained" initialization approach is often the key to meeting startup time targets.
 
 ------
 
@@ -307,7 +313,7 @@ Beginners often equate "real-time" with "faster," but real-time systems are actu
 
 > **Whether time constraints can be met.**
 
-- Hard Real-Time: once a deadline is missed, the system is considered failed.
+- Hard Real-Time: if a deadline is missed, the system is considered failed.
 - Soft Real-Time: occasional deadline misses are allowed, but they must be controllable.
 
 Whether a system is real-time depends on whether it can still complete tasks on time **in the worst-case scenario**.
@@ -316,12 +322,12 @@ Whether a system is real-time depends on whether it can still complete tasks on 
 
 ### 7.2 Determinism
 
-Determinism means that given the same inputs and states, the program's execution path, time consumption, and results are all **predictable**. Looking back at the constraints discussed earlier, you will find they all point to the same goal:
+Determinism means that given the same inputs and states, the program's execution path, time consumption, and results are all **predictable**. Looking back at the constraints discussed earlier, you will find that they all point to the same goal:
 
 - Flash constraints limit the scale of functionality
 - RAM strategies avoid runtime uncertainty
 - CPU constraints force analyzable execution paths
-- Power and boot constraints limit the system behavior model
+- Power and startup constraints limit the system behavior model
 
 The true value of an embedded system lies not in "how fast it runs," but in:
 
@@ -350,4 +356,4 @@ void scheduler_run(void) {
 
 ```
 
-It is neither complex nor flashy, but its behavior is **analyzable, derivable, and verifiable**—and these are exactly the traits that embedded values most.
+It is neither complex nor flashy, but its behavior is **analyzable, derivable, and verifiable** — and these are exactly the traits that embedded systems value most.

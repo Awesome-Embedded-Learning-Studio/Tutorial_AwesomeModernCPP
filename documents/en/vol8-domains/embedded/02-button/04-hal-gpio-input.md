@@ -1,5 +1,5 @@
 ---
-title: 'Part 22: HAL GPIO Input API - How to read button status using code'
+title: 'Part 22: HAL GPIO Input API — How to Read Button State in Code'
 description: ''
 tags:
 - cpp-modern
@@ -9,6 +9,12 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 16
 order: 4
+translation:
+  source: documents/vol8-domains/embedded/02-button/04-hal-gpio-input.md
+  source_hash: d9beddcba6146789438c19cb77e80a3a009af89874ed226ff9c3adb560384f48
+  translated_at: '2026-05-26T12:11:07.797286+00:00'
+  engine: anthropic
+  token_count: 1531
 ---
 # Part 22: HAL GPIO Input API — How to Read Button State in Code
 
@@ -63,9 +69,9 @@ init.Speed = GPIO_SPEED_FREQ_LOW;  // 输入模式下 Speed 无意义，但需�
 HAL_GPIO_Init(GPIOA, &init);
 ```
 
-Three things are worth noting:
+There are three noteworthy points here:
 
-**First, `Mode` changes from `GPIO_MODE_OUTPUT_PP` to `GPIO_MODE_INPUT`.** This corresponds to the `MODE[1:0] = 00` (input mode) and `CNF[1:0] = 10` (pull-up/pull-down input) fields in the CRL register.
+**First, `Mode` changes from `GPIO_MODE_OUTPUT_PP` to `GPIO_MODE_INPUT`.** This corresponds to `MODE[1:0] = 00` (input mode) and `CNF[1:0] = 10` (pull-up/pull-down input) in the CRL register.
 
 **Second, `Pull` changes from `GPIO_NOPULL` to `GPIO_PULLUP`.** This enables the internal pull-up resistor and writes a 1 to the corresponding bit in the ODR to select the pull-up direction (the detail mentioned in the previous article about "ODR controlling pull-up/pull-down direction in input mode").
 
@@ -79,9 +85,9 @@ Just like with output, we must enable the corresponding clock before using any G
 __HAL_RCC_GPIOA_CLK_ENABLE();
 ```
 
-If you forget this step, the `HAL_GPIO_Init()` call won't throw an error (it doesn't know whether you enabled the clock or not), but the written configuration won't take effect—the pin will remain in its reset state (floating input), and the read value will be indeterminate. This is one of the most common pitfalls for beginners.
+If you forget this step, the `HAL_GPIO_Init()` call won't throw an error (it doesn't know whether you've enabled the clock or not), but the written configuration won't take effect—the pin will remain in its reset state (floating input), and the read value will be indeterminate. This is one of the most common pitfalls for beginners.
 
-In the LED tutorial, we used `if constexpr` to automatically select the clock enable macro at compile time. The Button template class in this button tutorial will reuse the same mechanism. But if you are writing in C, remember to call it manually.
+In the LED tutorial, we used `if constexpr` to automatically select the clock enable macro at compile time. The Button template class in this button tutorial will reuse the same mechanism. But if you're writing in C, remember to call it manually.
 
 ---
 
@@ -118,9 +124,9 @@ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
 }
 ```
 
-The core is a single bit operation: `GPIOx->IDR & GPIO_Pin`. `IDR` is a 16-bit read-only register where each bit corresponds to a pin. The value of `GPIO_PIN_0` is `0x0001`, so `IDR & 0x0001` simply extracts the value of bit 0. If it is not 0, the pin is high; otherwise, it is low.
+The core is a single bit operation: `GPIOx->IDR & GPIO_Pin`. `IDR` is a 16-bit read-only register where each bit corresponds to a pin. The value of `GPIO_PIN_0` is `0x0001`, so `IDR & 0x0001` simply extracts the value of bit 0. If it's not zero, the pin is high; otherwise, it's low.
 
-This takes only a few clock cycles (LDR + AND + CMP, roughly 2-4 cycles after compiler optimization). A 72MHz CPU means reading a pin state takes only a few tens of nanoseconds.
+This takes just a few clock cycles (LDR + AND + CMP, roughly 2-4 cycles after compiler optimization). A 72MHz CPU means reading a pin state takes only a few tens of nanoseconds.
 
 ### Comparison with WritePin
 
@@ -151,15 +157,15 @@ There are a few design decisions here that need explaining.
 
 ### Why Return a State Enum Instead of bool
 
-You could argue that returning a `bool` is simpler—`true` for high, `false` for low. But we chose to return the `State` enum (`State::Set` and `State::UnSet`) to maintain symmetry with the output side's `set_gpio_pin_state(State)`. This way, input and output use the same set of types, keeping the code style consistent.
+You could argue that returning a `bool` is simpler—`true` is high, `false` is low. But we chose to return the `State` enum (`State::Set` and `State::UnSet`) to maintain symmetry with the output side's `set_gpio_pin_state(State)`. This way, input and output use the same set of types, keeping the code style consistent.
 
-Furthermore, the `State` enum is less prone to misuse than `bool`. If you are operating on multiple pins, the meaning of `bool`'s `true`/`false` can be confusing in different contexts—does `true` mean pressed or released? It depends on whether you are using pull-up or pull-down. But `State::Set` always means the pin is high, and `State::UnSet` always means it is low, with no ambiguity.
+Furthermore, the `State` enum is less prone to misuse than `bool`. If you're working with multiple pins, the meaning of `bool`'s `true`/`false` might get confused in different contexts—does `true` mean pressed or released? It depends on whether you're using pull-up or pull-down. But `State::Set` always means the pin is high, and `State::UnSet` always means it's low, with no ambiguity.
 
 ### Why Add [[nodiscard]]
 
 `[[nodiscard]]` tells the compiler that the return value of this function should not be ignored. If you write `button.read_pin_state();` without using the return value, the compiler will issue a warning.
 
-The sole purpose of reading a pin state is to get the return value. If you call `read_pin_state()` and don't use the result, the call is one hundred percent a mistake—most likely, you forgot to write an assignment statement. In embedded development, if such a low-level error isn't caught, it could lead to the button state not being detected, causing abnormal system behavior that is difficult to debug.
+The sole purpose of reading a pin state is to get the return value. If you call `read_pin_state()` and don't use the result, the call is one hundred percent a mistake—most likely a forgotten assignment statement. In embedded development, if such a low-level error isn't caught, it could lead to the button state not being detected, causing abnormal system behavior that is difficult to debug.
 
 ### Zero Overhead of static_cast
 
@@ -167,7 +173,7 @@ The sole purpose of reading a pin state is to get the return value. If you call 
 
 ### const Member Function
 
-`read_pin_state()` is declared as `const`—it doesn't modify any of the object's member variables. This is the standard C++ way to express a "read-only operation". For comparison, `set_gpio_pin_state()` is also declared as `const`—this is because our GPIO template class has no member variables to modify; all "state" exists in the hardware registers, not in the C++ object.
+`read_pin_state()` is declared as `const`—it doesn't modify any of the object's member variables. This is the standard C++ way to express a "read-only operation." In contrast, `set_gpio_pin_state()` is also declared as `const`—this is because our GPIO template class has no member variables to modify; all "state" exists in the hardware registers, not in the C++ object.
 
 ---
 
@@ -215,9 +221,9 @@ int main(void) {
 }
 ```
 
-This code does four things: (1) enables the GPIOA and GPIOC clocks, (2) configures PA0 as a pull-up input, (3) configures PC13 as a push-pull output, and (4) reads PA0 and controls PC13 in the main loop.
+This code does four things: (1) enables the GPIOA and GPIOC clocks, (2) configures PA0 as pull-up input, (3) configures PC13 as push-pull output, and (4) reads PA0 and controls PC13 in the main loop.
 
-⚠️ Note: this code **has no debounce**. If you quickly press the button, the LED might flash several times. In the next article, we will see a full demonstration of this problem and its solution.
+⚠️ Note: this code **does not debounce**. If you quickly press the button, the LED might blink several times. In the next article, we will see a full demonstration of this problem and its solution.
 
 If you flash this code to the board, the LED turns on when you hold the button and turns off when you release it. The most basic input-output interaction is now realized.
 
@@ -227,8 +233,8 @@ If you flash this code to the board, the LED turns on when you hold the button a
 
 This article broke down two HAL APIs: the input mode configuration of `HAL_GPIO_Init()` and the underlying implementation of `HAL_GPIO_ReadPin()`. The key takeaways are:
 
-1. Input initialization only requires the `GPIO_MODE_INPUT` + `GPIO_PULLUP` parameters
-2. Under the hood, `HAL_GPIO_ReadPin()` simply reads the `IDR` register in one clock cycle
+1. Input initialization only requires two parameters: `GPIO_MODE_INPUT` + `GPIO_PULLUP`
+2. `HAL_GPIO_ReadPin()` simply reads the `IDR` register underneath, taking one clock cycle
 3. Our `read_pin_state()` wrapper adds `[[nodiscard]]` and `const`, returning a type-safe `State` enum
 
-In the next article, we will expand this minimal code into a complete C polling program—and then see with our own eyes what happens without debounce.
+In the next article, we'll expand this minimal code into a complete C polling program—and see firsthand what happens without debouncing.

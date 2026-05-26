@@ -1,8 +1,8 @@
 ---
-title: Implementing a dynamic array from scratch — building a container from zero
+title: Hand-Rolling a Dynamic Array — Implementing a Container from Scratch
 description: Design and implement a type-safe dynamic array library from scratch,
   understand memory resizing strategies, error handling patterns, and API design principles,
-  and pave the way to understanding std::vector.
+  and pave the way to understanding `std::vector`.
 chapter: 1
 order: 105
 tags:
@@ -24,12 +24,18 @@ prerequisites:
 - 动态内存管理：malloc/free/realloc 的正确使用
 - 结构体、联合体与内存对齐
 - C 语言陷阱与常见错误
+translation:
+  source: documents/vol1-fundamentals/c_tutorials/advanced_feature/05-handmade-dynamic-array.md
+  source_hash: 6084d869ef9de53c27f62e52bddc1968e6ca3d8af3b9a94ddc37d81961b38ab0
+  translated_at: '2026-05-26T10:38:22.846585+00:00'
+  engine: anthropic
+  token_count: 3971
 ---
 # Building a Dynamic Array from Scratch — Implementing a Container from Zero
 
-One of the most painful things about writing C programs is that array sizes must be determined at compile time. If you want to store 10 items, you declare `int arr[10]`; later, when requirements change to 100, you have to go back, modify the code, and recompile. What's worse, in many cases you have no idea how many items will arrive at runtime — how many records a user enters, how many packets the network receives, how many samples a sensor collects — these can only be determined at runtime.
+One of the most painful things about writing C programs is that array sizes must be determined at compile time. If you want to store 10 items, you declare `int arr[10]`; later, when requirements change to 100, you have to go back, modify the code, and recompile. What's worse, in many cases you have no idea at all how many items will arrive at runtime — how many records a user enters, how many packets the network receives, how many samples a sensor collects — these can only be determined at runtime.
 
-`malloc` does solve the uncertain size problem, but it only handles allocation, not growth — once it's full and you want to keep adding, you have to manually `realloc`, manage capacity yourself, and handle errors on your own. `malloc` and `realloc` calls scattered throughout your codebase quickly turn into a maintenance nightmare. In Python you can casually write `lst.append(x)`, and in C++ you have `std::vector::push_back` — they both grow automatically. But the C standard library has no such thing, so we must build it ourselves.
+`malloc` does solve the uncertain-size problem, but it only handles allocation, not growth — once it's full and you want to keep adding, you have to manually `realloc`, manage capacity yourself, and handle errors on your own. `malloc` and `realloc` calls scattered throughout your codebase quickly turn into a maintenance nightmare. In Python you can casually write `lst.append(x)`, and in C++ you have `std::vector::push_back` — they both grow automatically. But the C standard library has no such thing, so we have to build it ourselves.
 
 Today we'll build a complete dynamic array library from scratch. Along the way, we'll clarify data structure design, memory growth and shrinkage strategies, and error handling patterns. Finally, we'll compare our work against C++'s `std::vector` to see how the standard library handles these same problems.
 
@@ -44,35 +50,35 @@ Today we'll build a complete dynamic array library from scratch. Along the way, 
 
 ## Environment Notes
 
-All code examples in this article are compiled and run in a standard C environment. When compiling, we recommend always including `-Wall -Wextra` — dynamic array implementation involves extensive pointer arithmetic and `memcpy`/`memmove` calls, and compiler warnings can help you catch many potential issues.
+All code examples in this article compile and run in a standard C environment. When compiling, we recommend always including `-Wall -Wextra` — dynamic array implementation involves extensive pointer arithmetic and `malloc`/`realloc` calls, and compiler warnings can help you catch many potential issues.
 
 ```text
-gcc -std=c11 -Wall -Wextra -g dynamic_array.c -o dynamic_array
+gcc -Wall -Wextra -std=c11 -o dynarray dynarray.c
 ```
 
-## Step One — Understanding What a Dynamic Array Actually Is
+## Step 1 — Figure Out What a Dynamic Array Actually Is
 
-From a physical storage perspective, a dynamic array is still a contiguous block of memory, no different from a plain array. The key difference is that a dynamic array separates "used space" from "reserved space" and uses a pointer for indirect access, so it can swap in a larger block when needed. You can think of it as a warehouse that can automatically "move to a bigger building" — when the shelves are full, you swap to a warehouse with more shelves, move all the old goods over, and to the outside world the address changed but the interface for storing and retrieving goods remains the same.
+From a physical storage perspective, a dynamic array is essentially still a contiguous block of memory, no different from a plain array. The key difference is that a dynamic array separates "used space" from "reserved space" and uses a pointer to access this memory indirectly, so it can swap for a larger block when needed. You can think of it as a warehouse that can automatically "move to a bigger building" — when the shelves are full, you switch to a warehouse with more shelves, move all the old goods over, and to the outside world the address changed but the interface for storing and retrieving goods remains the same.
 
 Let's start with the simplest prototype:
 
 ```c
 typedef struct {
     void *data;
-    size_t size;
+    int size;
 } DynArray;
 ```
 
-`data` points to contiguous memory allocated on the heap, and `size` records the current element count. But you'll notice a fatal problem: we're using `void *`, so we don't know how large each element is. For an `int` array the stride is 4 bytes, for `double` it's 8 bytes, and for a custom struct it could be dozens of bytes. Without element size information, we can't locate the Nth element at all.
+`data` points to contiguous memory allocated on the heap, and `size` records the current number of elements. But you'll notice a fatal problem: we're using `void *`, so we don't know how large each element is. For an `int` array the stride is 4 bytes, for `double` it's 8 bytes, and for a custom struct it could be dozens of bytes. Without element size information, we simply cannot locate the Nth element.
 
 So we need to add `elem_size` and `capacity`:
 
 ```c
 typedef struct {
-    void *data;      // 指向堆上连续内存的指针
-    size_t size;     // 当前元素个数
-    size_t capacity; // 总共能容纳的元素个数
-    size_t elem_size;// 每个元素的字节大小
+    void *data;      // 指向堆内存的指针
+    int size;        // 当前元素个数
+    int capacity;    // 总容量（最多能放多少个元素）
+    int elem_size;   // 每个元素的字节大小
 } DynArray;
 ```
 
@@ -81,11 +87,11 @@ The four fields each have their own role: `data` manages "where it exists", `siz
 > ⚠️ **Pitfall Warning**
 > `size` is "how many valid elements actually exist", `capacity` is "how many elements this memory block can hold at most", they are not the same thing. If you use `capacity` instead of `size` as the upper bound when iterating, you'll read uninitialized garbage data.
 
-The internal data layout of `std::vector` is almost identical to ours, except that the template parameter `T` replaces the `void *` + `elem_size` combination, and type safety is guaranteed at compile time. `sizeof(std::vector<int>)` is 24 bytes on most implementations — three 8-byte fields (pointer + size + capacity), and `elem_size` doesn't need to be stored after template instantiation.
+The internal data layout of `std::vector` is almost identical to ours, except that the template parameter `T` replaces the `void *` + `elem_size` combination, and type safety is guaranteed at compile time. `std::vector<int>` is 24 bytes in most implementations — three 8-byte fields (pointer + size + capacity), and `elem_size` doesn't need to be stored after template instantiation.
 
-## Step Two — Establishing an Error Handling System
+## Step 2 — Establish an Error Handling System
 
-Before writing functional code, let's solve an engineering problem: what do we do when a function fails? The laziest approach is to `abort()` on error — this is common in teaching code, but it's an absolute disaster in real engineering. You can't just kill the entire server process because a single `malloc` failed, right?
+Before writing functional code, let's solve an engineering problem: what do we do when a function fails? The laziest approach is to `abort()` on error — this is common in teaching code, but it's an absolute disaster in real engineering. You can't just kill the entire server process because a single `malloc` failed, can you?
 
 We use an enum to establish a clear error code system:
 
@@ -95,38 +101,38 @@ typedef enum {
     DYN_ERR_ALLOC,
     DYN_ERR_OUT_OF_RANGE,
     DYN_ERR_NULL_PTR,
-    DYN_ERR_INVALID_SIZE,
+    DYN_ERR_INVALID_SIZE
 } DynResult;
 ```
 
-Every function returns `DynResult`, and the caller can check whether the operation succeeded and why it failed. We can pair this with a helper macro to output friendly error messages:
+Every function returns a `DynResult`, and the caller can check whether the operation succeeded and why it failed. We can pair this with a helper macro to output friendly error messages:
 
 ```c
-#define DYN_CHECK(expr) do {                         \
-    DynResult _err = (expr);                         \
-    if (_err != DYN_OK) {                            \
-        fprintf(stderr, "Error %d at %s:%d\n",       \
-                _err, __FILE__, __LINE__);           \
-        return _err;                                 \
-    }                                                \
-} while (0)
+#define DYN_CHECK(expr) do { \
+    DynResult _r = (expr);   \
+    if (_r != DYN_OK) {      \
+        fprintf(stderr, "Error %d at %s:%d\n", _r, __FILE__, __LINE__); \
+        return _r;           \
+    }                        \
+} while(0)
 ```
 
-Separating error message display from error code generation is an even better approach — callers might want to write errors to a log file instead of printing to the terminal, or they might want to clean up resources after an error. Enum return codes give the caller complete control.
+Separating error message display from error code generation is an even better approach — the caller might want to write errors to a log file instead of printing to the terminal, or might want to clean up resources after an error. Enum return codes give the caller complete control.
 
-## Step Three — Implementing Creation and Destruction
+## Step 3 — Implement Creation and Destruction
 
 ### Creation — Factory Function
 
 In object-oriented languages this is called a constructor; in C we call it a factory function — it "produces" an initialized object and returns it to the caller.
 
 ```c
-DynResult dyn_create(DynArray *arr, size_t elem_size, size_t init_capacity) {
-    if (arr == NULL || elem_size == 0) return DYN_ERR_NULL_PTR;
-    if (init_capacity < 8) init_capacity = 8; // 最小容量保底
+DynResult dynarray_create(DynArray *arr, int elem_size, int init_capacity) {
+    if (!arr || elem_size <= 0) return DYN_ERR_NULL_PTR;
 
-    arr->data = malloc(init_capacity * elem_size);
-    if (arr->data == NULL) return DYN_ERR_ALLOC;
+    if (init_capacity < 8) init_capacity = 8;  // 最小容量保底
+
+    arr->data = malloc((size_t)init_capacity * elem_size);
+    if (!arr->data) return DYN_ERR_ALLOC;
 
     arr->size = 0;
     arr->capacity = init_capacity;
@@ -135,16 +141,16 @@ DynResult dyn_create(DynArray *arr, size_t elem_size, size_t init_capacity) {
 }
 ```
 
-After allocating the struct's memory, you must immediately check the `malloc` return value — accessing `arr->data` without checking will cause an immediate segfault. We set a minimum capacity of 8 as a rule of thumb; too small leads to frequent growth, too large wastes memory.
+After allocating the struct memory, you must immediately check the `malloc` return value — accessing `arr->data` without checking will cause an immediate segfault. We set a minimum capacity of 8 as a rule of thumb; too small leads to frequent growth, too large wastes memory.
 
 > ⚠️ **Pitfall Warning**
-> Note the presence of the error check. This is a very classic resource leak scenario: the struct allocation succeeded, but the data area allocation failed. If you simply `return` without `free`ing, that struct memory is leaked forever. This situation of "partially allocating resources but failing in subsequent steps" is one of the most error-prone aspects of C memory management.
+> Note the existence of the error path. This is a very classic resource leak scenario: the struct allocation succeeded, but the data area allocation failed. If you simply `return` without `free`ing, that struct memory is leaked forever. This situation of "partially allocating resources but subsequent steps failing" is the most error-prone part of C memory management.
 
 Usage:
 
 ```c
 DynArray arr;
-DYN_CHECK(dyn_create(&arr, sizeof(int), 4));
+DYN_CHECK(dynarray_create(&arr, sizeof(int), 4));
 ```
 
 Use `sizeof(int)` instead of hardcoding `4` — the size of `int` may differ across platforms, and `sizeof` is calculated at compile time with no runtime overhead.
@@ -152,36 +158,36 @@ Use `sizeof(int)` instead of hardcoding `4` — the size of `int` may differ acr
 ### Destruction — Release Order Must Not Be Reversed
 
 ```c
-DynResult dyn_destroy(DynArray *arr) {
-    if (arr == NULL) return DYN_ERR_NULL_PTR;
+void dynarray_destroy(DynArray *arr) {
+    if (!arr) return;
     free(arr->data);
     arr->data = NULL;
     arr->size = 0;
     arr->capacity = 0;
-    return DYN_OK;
 }
 ```
 
-The release order must not be reversed — if you `free(arr)` first, accessing `arr->data` is a use-after-free. Another issue is that after `free`, the `arr->data` pointer itself doesn't become `NULL`; it still points to that freed memory. C function parameters are passed by value, so we can only rely on the caller to manually set it to NULL:
+The release order must not be reversed — if you `free(arr)` first, accessing `arr->data` is a use-after-free. Another issue is that after `free(arr->data)`, the `arr->data` pointer itself doesn't become `NULL`; it still points to that freed memory. C function parameters are pass-by-value, so we can only rely on the caller to manually set it to NULL:
 
 ```c
-dyn_destroy(&arr);
-// arr.data 现在是 NULL，安全
+dynarray_destroy(&arr);
+// arr.data 已经被函数内部置为 NULL
 ```
 
 C++'s RAII mechanism solidifies this create/destroy pairing at the language level — the destructor is automatically called when the object leaves scope, so memory absolutely cannot leak. In our C version, every step of resource management relies on human discipline.
 
-## Step Four — Nailing Down Capacity Management
+## Step 4 — Get Capacity Management Right
 
 ### Growth — The 2x Strategy
 
-When `size == capacity` the array is full, and inserting another element requires growth. The question is: how much to grow? If you add 1 each time, inserting N elements consecutively requires N `realloc` calls, and the total copy volume is 1 + 2 + ... + N = O(N²), which is completely unacceptable. Doubling — doubling the capacity whenever it's full — requires only about log₂(N) growth operations, with a total copy volume of ≈ 2N = O(N), amortized to O(1) per insertion. It's like moving houses — instead of buying one more box each time, you double the house area each time — the move itself is exhausting, but averaged over each day, you barely notice.
+When `size == capacity` the array is full, and inserting another element requires growth. The question is: how much to grow? If you add 1 each time, inserting N elements consecutively requires N `realloc` calls, and the total copy volume is 1 + 2 + ... + N = O(N²), which is completely unacceptable. Doubling — doubling the capacity each time it fills — requires only about log₂(N) growths, with a total copy volume of ≈ 2N = O(N), amortized to O(1) per insertion. It's like moving houses — instead of buying one more box each time, you double the house area each time — the move itself is exhausting, but averaged over each day, you barely feel it.
 
 ```c
-static DynResult dyn_grow(DynArray *arr) {
-    size_t new_cap = arr->capacity * 2;
-    void *new_data = realloc(arr->data, new_cap * arr->elem_size);
-    if (new_data == NULL) return DYN_ERR_ALLOC;
+static DynResult dynarray_grow(DynArray *arr) {
+    int new_cap = arr->capacity * 2;
+    void *new_data = realloc(arr->data, (size_t)new_cap * arr->elem_size);
+    if (!new_data) return DYN_ERR_ALLOC;
+
     arr->data = new_data;
     arr->capacity = new_cap;
     return DYN_OK;
@@ -191,24 +197,28 @@ static DynResult dyn_grow(DynArray *arr) {
 `realloc` tries to expand in place at the original location; if that's not possible, it finds a larger block on the heap and copies the old data over. In either case, the returned pointer points to valid memory and the old data is intact.
 
 > ⚠️ **Pitfall Warning**
-> `realloc` may return a different address! You must use the return value to update the pointer. If you write `realloc(arr->data, new_size)` without receiving the return value, you lose the new address after the "move", and the memory pointed to by the old address has already been freed — a double disaster.
+> `realloc` may return a different address! You must use the return value to update the pointer. If you write `realloc(arr->data, new_size)` without receiving the return value, you lose the new address after the move, and the memory pointed to by the old address has already been freed — a double disaster.
 
 ### Shrinkage — Avoiding Thrashing
 
-If an array once grew to 10,000 elements and later shrank to only 10, the memory for 9,990 elements is wasted. But shrinkage timing is much trickier than growth — consider an array oscillating between 100 and 50: shrinking at 50, then immediately needing to insert again, growing back to 100 — this back-and-forth is the classic "thrashing" problem. Our strategy is to shrink to half capacity but keep a minimum capacity of 8, called explicitly by the user:
+If an array once grew to 10,000 elements and later shrank to only 10, the memory for 9,990 elements is wasted for nothing. But shrinkage timing is much trickier than growth — consider an array oscillating between 100 and 50: shrinking at 50, then immediately needing to insert again, growing back to 100 — this back-and-forth is the classic "thrashing" problem. Our strategy is to shrink to `size * 2` but keep a minimum capacity of 8, called explicitly by the user:
 
 ```c
-DynResult dyn_shrink_to_fit(DynArray *arr) {
-    if (arr == NULL) return DYN_ERR_NULL_PTR;
+DynResult dynarray_shrink_to_fit(DynArray *arr) {
+    if (!arr) return DYN_ERR_NULL_PTR;
     if (arr->size == 0) {
         free(arr->data);
         arr->data = NULL;
         arr->capacity = 0;
         return DYN_OK;
     }
-    size_t new_cap = arr->size < 8 ? 8 : arr->size;
-    void *new_data = realloc(arr->data, new_cap * arr->elem_size);
-    if (new_data == NULL) return DYN_ERR_ALLOC;
+
+    int new_cap = arr->size < 8 ? 8 : arr->size * 2;
+    if (new_cap >= arr->capacity) return DYN_OK;  // 不需要缩
+
+    void *new_data = realloc(arr->data, (size_t)new_cap * arr->elem_size);
+    if (!new_data) return DYN_ERR_ALLOC;
+
     arr->data = new_data;
     arr->capacity = new_cap;
     return DYN_OK;
@@ -217,42 +227,45 @@ DynResult dyn_shrink_to_fit(DynArray *arr) {
 
 `shrink_to_fit` is typically only called when you're "certain there won't be significant further growth", such as after data loading is complete. The C++ standard doesn't mandate that `std::vector`'s growth factor must be 2x — MSVC uses 1.5x, while libstdc++ and libc++ use 2x. 1.5x has higher memory utilization, but slightly more growth operations.
 
-## Step Five — Implementing Element Access
+## Step 5 — Implement Element Access
 
 We provide two access methods: a fast version without bounds checking (similar to `operator[]`) and a safe version with bounds checking (similar to `at()`).
 
 ```c
-void *dyn_at_unsafe(DynArray *arr, size_t index) {
+void *dynarray_at(DynArray *arr, int index) {
+    if (!arr || index < 0 || index >= arr->size) return NULL;
     return (char *)arr->data + index * arr->elem_size;
 }
 
-DynResult dyn_at(DynArray *arr, size_t index, void *out) {
-    if (arr == NULL || out == NULL) return DYN_ERR_NULL_PTR;
-    if (index >= arr->size) return DYN_ERR_OUT_OF_RANGE;
-    memcpy(out, (char *)arr->data + index * arr->elem_size, arr->elem_size);
-    return DYN_OK;
+void *dynarray_unchecked(DynArray *arr, int index) {
+    return (char *)arr->data + index * arr->elem_size;
 }
 ```
 
-The safe version returns by copying to a caller-provided buffer, because C has no concept of references and the data area is `void *`, so the function can't directly return a correctly typed value. This is indeed much more cumbersome than C++'s `T& at(size_t)`, but that's the cost of generic programming in C.
+The safe version returns a copy into the caller's buffer, because C has no concept of references and the data area is `void *`, so the function can't directly return a value of the correct type. This is indeed much more cumbersome than C++'s `T& at(size_t)`, but that's the cost of generic programming in C.
 
 ```c
 int val;
-DYN_CHECK(dyn_at(&arr, 3, &val));
-printf("arr[3] = %d\n", val);
+void *ptr = dynarray_at(&arr, 3);
+if (ptr) {
+    memcpy(&val, ptr, sizeof(int));
+    printf("arr[3] = %d\n", val);
+}
 ```
 
-## Step Six — Implementing Insertion and Deletion
+## Step 6 — Implement Insertion and Deletion
 
 ### push_back — Append to the End
 
 ```c
-DynResult dyn_push_back(DynArray *arr, const void *elem) {
-    if (arr == NULL || elem == NULL) return DYN_ERR_NULL_PTR;
+DynResult dynarray_push_back(DynArray *arr, const void *elem) {
+    if (!arr || !elem) return DYN_ERR_NULL_PTR;
+
     if (arr->size == arr->capacity) {
-        DynResult err = dyn_grow(arr);
-        if (err != DYN_OK) return err;
+        DynResult r = dynarray_grow(arr);
+        if (r != DYN_OK) return r;
     }
+
     void *dest = (char *)arr->data + arr->size * arr->elem_size;
     memcpy(dest, elem, arr->elem_size);
     arr->size++;
@@ -260,71 +273,79 @@ DynResult dyn_push_back(DynArray *arr, const void *elem) {
 }
 ```
 
-The destination of `memcpy` is `data + size * elem_size` — skipping all existing elements to reach the first empty slot. Thanks to the 2x growth strategy, the total time for N consecutive `push_back` calls is O(N), amortized O(1).
+The destination of `memcpy` is `(char *)arr->data + arr->size * arr->elem_size` — skipping all existing elements to arrive at the first empty slot. Thanks to the 2x growth strategy, the total time for N consecutive `push_back` calls is O(N), amortized O(1).
 
 Let's verify the growth behavior:
 
 ```c
 DynArray arr;
-DYN_CHECK(dyn_create(&arr, sizeof(int), 4));
+dynarray_create(&arr, sizeof(int), 4);
 
 for (int i = 0; i < 20; i++) {
-    DYN_CHECK(dyn_push_back(&arr, &i));
+    dynarray_push_back(&arr, &i);
 }
 
-printf("size: %zu, capacity: %zu\n", arr.size, arr.capacity);
+printf("size=%d, capacity=%d\n", arr.size, arr.capacity);
 ```
 
 ```text
-size: 20, capacity: 32
+size=20, capacity=32
 ```
 
-The initial capacity of 4 was raised to the minimum of 8, and after inserting 20 elements it underwent two growth operations: 8 -> 16 -> 32.
+The initial capacity of 4 is raised to the minimum of 8, and after inserting 20 elements it undergoes two growths: 8 -> 16 -> 32.
 
 ### pop_back — Remove from the End
 
 ```c
-DynResult dyn_pop_back(DynArray *arr) {
-    if (arr == NULL) return DYN_ERR_NULL_PTR;
+DynResult dynarray_pop_back(DynArray *arr) {
+    if (!arr) return DYN_ERR_NULL_PTR;
     if (arr->size == 0) return DYN_ERR_OUT_OF_RANGE;
     arr->size--;
     return DYN_OK;
 }
 ```
 
-The "deleted" element is still lying in memory; it will be overwritten on the next `push_back`.
+The "deleted" element still lies in memory, and will be overwritten on the next `push_back`.
 
 > ⚠️ **Pitfall Warning**
-> We don't trigger shrinkage after `pop_back` — if you `pop_back` and immediately `push_back` again, the shrinkage was done for nothing. Shrinkage should be explicitly invoked by the caller via `shrink_to_fit`. `std::vector::pop_back` follows the same design.
+> We don't trigger shrinkage after `pop_back` — if you `push_back` again right after `pop_back`, the shrinkage was done for nothing. Shrinkage should be explicitly called by the user via `shrink_to_fit`. `std::vector::pop_back` follows the same design.
 
 ### insert and erase — Middle Insertion and Deletion
 
-`insert` needs to shift all elements after the insertion point back by one position, while `erase` shifts them forward by one to overwrite the deleted element. Both must use `memmove` instead of `memcpy` — because the source and destination memory regions overlap, and `memcpy`'s behavior in overlapping situations is undefined.
+`insert` needs to shift all elements after the insertion point back by one position, while `erase` shifts them forward by one to overwrite the deleted element. Both must use `memmove` instead of `memcpy` — because the source and destination memory regions overlap, `memcpy`'s behavior in overlapping situations is undefined.
 
 ```c
-DynResult dyn_insert(DynArray *arr, size_t index, const void *elem) {
-    if (arr == NULL || elem == NULL) return DYN_ERR_NULL_PTR;
-    if (index > arr->size) return DYN_ERR_OUT_OF_RANGE;
+DynResult dynarray_insert(DynArray *arr, int index, const void *elem) {
+    if (!arr || !elem) return DYN_ERR_NULL_PTR;
+    if (index < 0 || index > arr->size) return DYN_ERR_OUT_OF_RANGE;
+
     if (arr->size == arr->capacity) {
-        DynResult err = dyn_grow(arr);
-        if (err != DYN_OK) return err;
+        DynResult r = dynarray_grow(arr);
+        if (r != DYN_OK) return r;
     }
-    void *dest = (char *)arr->data + (index + 1) * arr->elem_size;
-    void *src  = (char *)arr->data + index * arr->elem_size;
-    size_t count = (arr->size - index) * arr->elem_size;
-    memmove(dest, src, count);
-    memcpy((char *)arr->data + index * arr->elem_size, elem, arr->elem_size);
+
+    // 把 index 之后的元素后移一位
+    void *src = (char *)arr->data + index * arr->elem_size;
+    void *dst = (char *)arr->data + (index + 1) * arr->elem_size;
+    size_t move_size = (arr->size - index) * arr->elem_size;
+    memmove(dst, src, move_size);
+
+    // 在 index 位置写入新元素
+    memcpy(src, elem, arr->elem_size);
     arr->size++;
     return DYN_OK;
 }
 
-DynResult dyn_erase(DynArray *arr, size_t index) {
-    if (arr == NULL) return DYN_ERR_NULL_PTR;
-    if (index >= arr->size) return DYN_ERR_OUT_OF_RANGE;
-    void *dest = (char *)arr->data + index * arr->elem_size;
-    void *src  = (char *)arr->data + (index + 1) * arr->elem_size;
-    size_t count = (arr->size - index - 1) * arr->elem_size;
-    memmove(dest, src, count);
+DynResult dynarray_erase(DynArray *arr, int index) {
+    if (!arr) return DYN_ERR_NULL_PTR;
+    if (index < 0 || index >= arr->size) return DYN_ERR_OUT_OF_RANGE;
+
+    // 把 index 之后的元素前移一位
+    void *dst = (char *)arr->data + index * arr->elem_size;
+    void *src = (char *)arr->data + (index + 1) * arr->elem_size;
+    size_t move_size = (arr->size - index - 1) * arr->elem_size;
+    memmove(dst, src, move_size);
+
     arr->size--;
     return DYN_OK;
 }
@@ -334,43 +355,45 @@ Verifying insert and erase:
 
 ```c
 int val = 99;
-DYN_CHECK(dyn_insert(&arr, 2, &val));  // 在下标 2 处插入 99
-DYN_CHECK(dyn_erase(&arr, 0));         // 删除下标 0 处的元素
+dynarray_insert(&arr, 2, &val);  // 在下标 2 处插入 99
+dynarray_erase(&arr, 5);         // 删除下标 5 的元素
 ```
 
 ```text
-插入后: [0, 1, 99, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-删除后: [1, 99, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+insert OK: size=21, capacity=32
+erase OK: size=20, capacity=32
 ```
 
 `std::vector::insert` has had an rvalue reference overload since C++11, accepting move semantics to avoid deep copies. Our C version can only do a shallow copy via `memcpy` — if elements contain dynamically allocated memory (such as strings pointing to `malloc`-allocated buffers), shallow copies will lead to double free crashes. This is a fundamental limitation of generic programming in C.
 
-## Step Seven — Implementing Traversal and Search
+## Step 7 — Implement Traversal and Search
 
 ### Traversal — The Callback Function Pattern
 
-Internally the container is `void *`, so it doesn't know the element type. "How to process each element" must be told to the container by the caller through a callback function — a form of "inversion of control":
+The container's interior is `void *`, so it doesn't know the element type. Therefore, "how to process each element" needs to be told to the container by the caller via a callback function — a form of "inversion of control":
 
 ```c
-typedef void (*DynForEachFn)(void *elem, void *user_data);
+typedef void (*DynArrayVisitor)(void *elem, void *context);
 
-DynResult dyn_for_each(DynArray *arr, DynForEachFn fn, void *user_data) {
-    if (arr == NULL || fn == NULL) return DYN_ERR_NULL_PTR;
-    for (size_t i = 0; i < arr->size; i++) {
+void dynarray_foreach(DynArray *arr, DynArrayVisitor visitor, void *context) {
+    if (!arr || !visitor) return;
+    for (int i = 0; i < arr->size; i++) {
         void *elem = (char *)arr->data + i * arr->elem_size;
-        fn(elem, user_data);
+        visitor(elem, context);
     }
-    return DYN_OK;
 }
 ```
 
 ```c
-void print_int(void *elem, void *user_data) {
-    (void)user_data;
-    printf("%d ", *(int *)elem);
+void print_int(void *elem, void *ctx) {
+    (void)ctx;
+    int val;
+    memcpy(&val, elem, sizeof(int));
+    printf("%d ", val);
 }
 
-dyn_for_each(&arr, print_int, NULL);
+// 使用
+dynarray_foreach(&arr, print_int, NULL);
 printf("\n");
 ```
 
@@ -378,48 +401,45 @@ printf("\n");
 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 ```
 
-The callback function pattern is used extensively in the C standard library — the comparison function in `qsort`, `bsearch`, and others all follow this pattern.
+The callback function pattern is used extensively in the C standard library — `qsort`'s comparison function and `bsearch` both follow this pattern.
 
 ### Search — Linear Search
 
 "Comparing for equality" also needs to be provided by the caller:
 
 ```c
-typedef bool (*DynEqualFn)(const void *elem, const void *target);
+typedef bool (*DynArrayEqual)(const void *elem, const void *target);
 
-DynResult dyn_find(DynArray *arr, const void *target, DynEqualFn eq, size_t *out_index) {
-    if (arr == NULL || target == NULL || out_index == NULL) return DYN_ERR_NULL_PTR;
-    for (size_t i = 0; i < arr->size; i++) {
+int dynarray_find(DynArray *arr, const void *target, DynArrayEqual equal) {
+    if (!arr || !target || !equal) return -1;
+    for (int i = 0; i < arr->size; i++) {
         void *elem = (char *)arr->data + i * arr->elem_size;
-        if (eq(elem, target)) {
-            *out_index = i;
-            return DYN_OK;
-        }
+        if (equal(elem, target)) return i;
     }
-    return DYN_ERR_OUT_OF_RANGE;
+    return -1;
 }
 ```
 
 Time complexity is O(N). If you need faster lookups, you can sort first and then use binary search. C++'s `std::find` uses iterators paired with lambda expressions, which is far more elegant to write than callback functions; C++20's Ranges turn traversal, filtering, and transformation into chained calls.
 
-## C++ Comparison: Design Trade-offs in std::vector
+## C++ Comparison: std::vector's Design Trade-offs
 
 At this point we've hand-rolled a complete dynamic array library. Looking back and systematically comparing with `std::vector`, understanding these design trade-offs is far more important than memorizing APIs.
 
-Using `void *` for generic programming brought us three problems: no type checking, needing to manually pass `elem_size`, and requiring casts inside callback functions. `std::vector` solves all three perfectly with templates — the compiler determines the type `T` at instantiation time, all type checks are completed at compile time, and `elem_size` is automatically calculated. `std::vector`'s destructor automatically frees the internal array whether the function returns normally or exits due to an exception — this is the core idea of RAII: binding resource lifetime to object lifetime. C++11's move semantics make `std::vector` move operations O(1) pointer swaps, whereas in C we can only `memcpy` the entire block of data.
+Using `void *` for generic programming brought us three problems: no type checking, needing to manually pass `elem_size`, and requiring casts inside callback functions. `std::vector` solves all three perfectly with templates — the compiler determines the type `T` at instantiation time, all type checks are completed at compile time, and `elem_size` is automatically calculated. `std::vector`'s destructor automatically frees the internal array, whether the function returns normally or exits due to an exception — this is the core idea of RAII: binding resource lifetime to object lifetime. C++11's move semantics make `std::vector` moves an O(1) pointer swap, whereas in C we can only `memcpy` the entire data block.
 
-There are two easily confused functions: `reserve` only changes `capacity` without changing `size`, pre-allocating memory without creating new elements; `resize` changes `size`, with extra positions value-initialized and excess elements destroyed. Our C version only implemented `reserve`; `resize` is left as an exercise. Additionally, `std::vector<bool>` uses bit-packing optimization (each element only takes 1 bit), but the trade-off is that you can't take the address of individual elements. C++17's `std::span` provides a non-owning view over contiguous memory and is an extremely important composition tool.
+There are two easily confused functions: `reserve` only changes `capacity` without changing `size`, pre-allocating memory without creating new elements; `resize` changes `size`, with extra positions value-initialized and excess elements destroyed. Our C version only implements `reserve`, leaving `resize` as an exercise. Additionally, `std::vector<bool>` uses bit-packing optimization (each element only takes 1 bit), but the trade-off is that you can't take the address of individual elements. C++17's `std::span` provides a non-owning view over contiguous memory and is an extremely important composition tool.
 
 ## Exercises
 
-The following exercises only provide function signatures and requirement descriptions. The implementation is left blank.
+The following exercises only provide function signatures and requirement descriptions, with the implementation left blank.
 
 ### Exercise 1: Implement resize
 
 `reserve` only changes capacity without changing size, while `resize` needs to change size. When the new size is greater than the old size, the extra positions should be filled with default values.
 
 ```c
-DynResult dyn_resize(DynArray *arr, size_t new_size, const void *default_val);
+DynResult dynarray_resize(DynArray *arr, int new_size, const void *default_val);
 ```
 
 ### Exercise 2: Implement filter
@@ -427,7 +447,9 @@ DynResult dyn_resize(DynArray *arr, size_t new_size, const void *default_val);
 Given a dynamic array and a filter predicate, return a newly created dynamic array containing only the elements that satisfy the condition.
 
 ```c
-DynResult dyn_filter(DynArray *src, bool (*pred)(const void *, void *), void *user_data, DynArray *out);
+DynResult dynarray_filter(DynArray *src, DynArray *dst,
+                          bool (*predicate)(const void *elem, void *ctx),
+                          void *ctx);
 ```
 
 ### Exercise 3: Implement map transformation
@@ -435,7 +457,9 @@ DynResult dyn_filter(DynArray *src, bool (*pred)(const void *, void *), void *us
 Given a dynamic array and a transformation function, apply the transformation function to each element and store the results in a new array to return.
 
 ```c
-DynResult dyn_map(DynArray *src, void (*transform)(void *, const void *, void *), void *user_data, DynArray *out);
+DynResult dynarray_map(DynArray *src, DynArray *dst,
+                       void (*transform)(void *dst_elem, const void *src_elem, void *ctx),
+                       void *ctx);
 ```
 
 ### Exercise 4: Implement concatenation
@@ -443,10 +467,10 @@ DynResult dyn_map(DynArray *src, void (*transform)(void *, const void *, void *)
 Concatenate two dynamic arrays of the same type into a new dynamic array.
 
 ```c
-DynResult dyn_concat(const DynArray *a, const DynArray *b, DynArray *out);
+DynResult dynarray_concat(DynArray *a, DynArray *b, DynArray *out);
 ```
 
-> **Difficulty Self-Assessment**: If you find the exercises difficult, please review the design思路 of the corresponding sections. Especially for resize — it's essentially a combination of reserve + memset/memcpy. Once you figure out which positions need filling and what values to fill them with, the code will naturally follow.
+> **Difficulty Self-Assessment**: If you find the exercises difficult, please review the design思路 of the corresponding sections. Especially for resize — it's essentially a combination of reserve + memset/memcpy. Once you think through which positions need filling and what values to fill them with, the code will naturally follow.
 
 ## References
 

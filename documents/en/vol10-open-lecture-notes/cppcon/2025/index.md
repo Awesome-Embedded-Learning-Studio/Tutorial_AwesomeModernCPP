@@ -6,7 +6,7 @@ conference_year: 2025
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/index.md
   source_hash: e7fbc18b1b49f2a6e8bcac8eb5d2fb89ad9b7fa8a02ae8137c84d69e784f355c
-  translated_at: '2026-05-20T04:39:12.110079+00:00'
+  translated_at: '2026-05-26T11:16:09.315842+00:00'
   engine: anthropic
   token_count: 234
 ---
@@ -41,5 +41,5 @@ A collection of notes from CppCon 2025 talks.
 />
 
 <ChapterNav variant="sub">
-  <ChapterLink href="02-some-assembly-required/">C++: Exploring Low-Level Assembly</ChapterLink>
+  <ChapterLink href="02-some-assembly-required/">C++: Exploring the Underlying Assembly</ChapterLink>
 </ChapterNav>

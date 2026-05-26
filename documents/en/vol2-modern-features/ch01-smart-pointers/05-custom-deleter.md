@@ -1,5 +1,5 @@
 ---
-title: Custom deleters and intrusive reference counting
+title: Custom Deleters and Intrusive Reference Counting
 description: Wrapping C APIs, managing special resources, and implementing intrusive
   smart pointers
 chapter: 1
@@ -23,16 +23,22 @@ prerequisites:
 - 'Chapter 1: shared_ptr 详解'
 related:
 - scope_guard 与 defer
+translation:
+  source: documents/vol2-modern-features/ch01-smart-pointers/05-custom-deleter.md
+  source_hash: 733849f0fc5636e2b6d5b12d1bc892c4a3f51411b9f01a03a82d62e3306af5d3
+  translated_at: '2026-05-26T11:22:13.521371+00:00'
+  engine: anthropic
+  token_count: 3983
 ---
 # Custom Deleters and Intrusive Reference Counting
 
-So far, the smart pointers we have discussed all manage "objects created with new" — calling `delete` upon destruction, which happens naturally. But the real world is far more complex. The resources you need to manage might be a `FILE*` returned by `fopen` (which needs to be closed with `fclose`), memory allocated by `malloc` (which needs to be freed with `free`), a POSIX file descriptor `int fd` (which needs to be closed with `close`), an SDL window, an OpenGL texture, a CUDA stream — each resource has its own release function. If a smart pointer could only `delete`, it would be far too limited.
+So far, the smart pointers we have discussed all manage "objects created with `new`" — calling `delete` upon destruction, which happens naturally. But the real world is far more complex. The resources you need to manage might be a `FILE*` returned by `fopen` (which requires `fclose` to release), memory allocated by `malloc` (which requires `free` to release), a POSIX file descriptor `int fd` (which requires `close` to release), an SDL window, an OpenGL texture, or a CUDA stream — each resource has its own release function. If a smart pointer could only `delete`, it would be far too limited.
 
-A custom deleter is the key mechanism that enables smart pointers to adapt to various "non-standard" resources. Intrusive reference counting, on the other hand, is an important alternative to `shared_ptr` in performance-sensitive and memory-constrained scenarios. We discuss these two topics together today because they both revolve around the same core problem: **how to make C++ smart pointers manage resources that "weren't created with new"**.
+A custom deleter is the key mechanism that enables smart pointers to adapt to various "non-standard" resources. Intrusive reference counting, on the other hand, is an important alternative to `shared_ptr` in performance-sensitive and memory-constrained scenarios. We discuss these two topics together today because they both revolve around the same core problem: **how to make C++ smart pointers manage resources that "weren't created with `new`"**.
 
 ## Three Forms of Deleters
 
-A custom deleter is essentially a "callable object" — invoked when the smart pointer is destroyed, responsible for releasing the resource. It can be a function pointer, a lambda expression, or a function object (functor). Each of these three forms has its own characteristics, and we will walk through them one by one, starting with the simplest.
+A custom deleter is essentially a "callable object" — invoked when the smart pointer is destroyed, responsible for releasing the resource. It can be a function pointer, a lambda expression, or a function object (functor). Each form has its own characteristics, and we will walk through them one by one, starting with the simplest.
 
 ### Function Pointers: The Most Intuitive Approach
 
@@ -80,11 +86,11 @@ std::cout << sizeof(std::unique_ptr<FILE, void(*)(FILE*)>) << "\n";       // 16
 std::cout << sizeof(std::unique_ptr<FILE, decltype(&std::fclose)>) << "\n"; // 16
 ```
 
-> **Note**: The above values were tested on the x86_64-linux-gnu platform (g++ 15.2.1). Implementations may vary slightly across different platforms and compilers. For the full verification code, see `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`.
+> **Note**: The values above were tested on the x86_64-linux-gnu platform (g++ 15.2.1). Implementations may vary slightly across different platforms and compilers. For the full verification code, see `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`.
 
 ### Lambdas: Flexible and Modern
 
-Lambdas are the most commonly used deleter form in modern C++. A stateless lambda can be converted to a function pointer, so it has the same memory overhead as a function pointer. However, a lambda with captures becomes a stateful deleter, increasing the size of `unique_ptr`.
+Lambdas are the most commonly used deleter form in modern C++. A stateless lambda can be converted to a function pointer, so it has the same memory overhead as a function pointer. However, a capturing lambda becomes a stateful deleter, increasing the size of `unique_ptr`.
 
 ```cpp
 // 无捕获 lambda —— 等价于函数指针
@@ -119,7 +125,7 @@ void captured_lambda_example() {
 
 ### Function Objects: The Most Efficient Approach
 
-Function objects (functors) are the best choice for stateless deleters — they have neither the storage overhead of function pointers nor the reusability and naming challenges of lambdas. The key lies in EBO (Empty Base Optimization): if a class has no data members (an empty class), the compiler can optimize its size to zero. `unique_ptr` typically implements EBO by inheriting from the deleter type, so an empty deleter does not increase the size of `unique_ptr`.
+Function objects (functors) are the best choice for stateless deleters — they have neither the storage overhead of function pointers, nor are they harder to reuse and name compared to lambdas. The key lies in EBO (Empty Base Optimization): if a class has no data members (an empty class), the compiler can optimize its size to zero. `unique_ptr` typically implements EBO by inheriting from the deleter type, so an empty deleter does not increase the size of `unique_ptr`.
 
 ```cpp
 struct FreeDeleter {
@@ -150,7 +156,7 @@ void functor_example() {
 
 ## Zero Overhead of Stateless Deleters: EBO Explained
 
-"Zero overhead" is not just an empty phrase — EBO (Empty Base Optimization) is an optimization technique in C++ compilers: when an empty class (no data members, no virtual functions) is used as a base class, the compiler can optimize its size to zero bytes, requiring no additional memory space. A typical implementation of `unique_ptr` stores the deleter as a base class (through inheritance), so when the deleter is an empty class, the entire `unique_ptr` contains only a raw pointer.
+"Zero overhead" is not just an empty phrase — EBO (Empty Base Optimization) is an optimization technique in C++ compilers: when an empty class (no data members, no virtual functions) is used as a base class, the compiler can optimize its size to zero bytes without requiring extra memory space. A typical implementation of `unique_ptr` stores the deleter as a base class (via inheritance), so when the deleter is an empty class, the entire `unique_ptr` contains only a raw pointer.
 
 Let's verify this (on the x86_64-linux-gnu platform, g++ 15.2.1):
 
@@ -195,7 +201,7 @@ For the full verification code, see `code/volumn_codes/vol2/ch01-smart-pointers/
 
 The data is clear: empty deleters (including the default deleter and empty function objects) do not increase the size of `unique_ptr`. Only stateful deleters (such as lambdas that capture variables, function objects with data members, or function pointers) increase the size.
 
-This is also why the author recommends using function objects over function pointers in performance-sensitive scenarios — function objects can achieve zero overhead through EBO, whereas function pointers always require additional storage space.
+This is also why the author recommends using function objects over function pointers in performance-sensitive scenarios — function objects can achieve zero overhead through EBO, whereas function pointers always require extra storage space.
 
 ## FILE* Management and C API Wrapping in Practice
 
@@ -336,11 +342,11 @@ void resource_demo() {
 }
 ```
 
-The flexibility of this "runtime polymorphism" is an advantage of `shared_ptr` deleters, but it comes with a cost: the deleter is stored in the control block (an extra heap allocation), and each destruction requires invoking the deleter through a function pointer. According to benchmarks (g++ 15.2.1, -O2, 100,000 iterations), the creation and destruction of `shared_ptr` is about 30-50% slower than `unique_ptr`, with the main overhead coming from the memory allocation of the control block. For the full test code, see `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-benchmark.cpp`.
+This "runtime polymorphism" flexibility is an advantage of `shared_ptr` deleters, but it comes with a cost: the deleter is stored in the control block (an extra heap allocation), and each destruction requires invoking the deleter through a function pointer. According to benchmarks (g++ 15.2.1, -O2, 100,000 iterations), creating and destroying `shared_ptr` is about 30-50% slower than `unique_ptr`, with the main overhead coming from the memory allocation of the control block. For the full test code, see `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-benchmark.cpp`.
 
 ## Principles of Intrusive Reference Counting
 
-Custom deleters solve the problem of "non-standard release," but the overhead of `shared_ptr` itself (control block, atomic operations, extra heap allocation) remains significant in performance-sensitive or memory-constrained scenarios. Intrusive reference counting provides an alternative: **embedding the reference count inside the object itself, rather than allocating a control block externally**.
+Custom deleters solve the problem of "non-standard release," but the overhead of `shared_ptr` itself (control block, atomic operations, extra heap allocation) remains significant in performance-sensitive or memory-constrained scenarios. Intrusive reference counting provides an alternative: **embedding the reference count inside the object itself, rather than allocating a separate control block externally**.
 
 The core idea of the intrusive approach is very simple: the object itself knows "how many people hold me." The reference count exists as a member variable of the object, rather than being allocated in a separate control block. This means no extra heap allocation is needed (eliminating the memory and management overhead of the control block), and access to the reference count is local (in the same cache line as the object's other members).
 
@@ -363,7 +369,7 @@ private:
 };
 ```
 
-Any object that needs to be managed with shared ownership simply inherits from `RefCounted` to gain reference counting capabilities:
+Any object that needs to be shared-managed simply inherits from `RefCounted` to gain reference counting capabilities:
 
 ```cpp
 class SharedBuffer : public RefCounted {
@@ -382,7 +388,7 @@ private:
 
 ## intrusive_ptr Implementation and Use Cases
 
-With the reference counting base class in place, we still need a smart pointer to automatically manage the calls to `add_ref` and `release`. This is where `intrusive_ptr` comes in:
+With the reference-counted base class in place, we also need a smart pointer to automatically manage the calls to `add_ref` and `release`. This is where `intrusive_ptr` comes in:
 
 ```cpp
 template <typename T>
@@ -458,11 +464,11 @@ void intrusive_demo() {
 
 The core difference between the intrusive approach and `shared_ptr` lies in this: the control block of `shared_ptr` is allocated on the heap outside the object (requiring an extra `new`), whereas the intrusive approach places the counter directly inside the object. This means there is only one memory allocation (the object itself), and accessing the reference count does not require jumping to another memory location (which is more cache-friendly).
 
-The intrusive approach also has some limitations: the object must inherit from a reference counting base class (intrusiveness), it is not convenient for managing objects of existing types (such as standard library types), and the thread safety of the reference count is up to you to decide. However, it is precisely this "you decide" flexibility that makes the intrusive approach very attractive in embedded systems — in a single-threaded scenario, you can use a plain `int` counter; in a multi-threaded scenario, you need to switch the counter to `std::atomic<int>`, which introduces the overhead of atomic operations. For a complete multi-threaded implementation example, see `code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp`.
+The intrusive approach also has some limitations: the object must inherit from a reference-counted base class (intrusiveness), it is not convenient for managing objects of existing types (such as standard library types), and you must decide on the thread safety of the reference count yourself. However, it is precisely this "you decide" flexibility that makes the intrusive approach very attractive in embedded systems — in a single-threaded scenario, you can use a plain `size_t` counter; in a multi-threaded scenario, you need to switch the counter to `std::atomic<size_t>`, which introduces atomic operation overhead. For a complete multi-threaded implementation example, see `code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp`.
 
 ## Embedded in Practice: Hardware Handle Management
 
-In embedded systems, resources are typically not "objects created with new," but rather hardware handles — DMA channels, SPI buses, GPIO pins, and so on. "Releasing" these handles does not mean calling `delete`, but rather calling specific HAL functions. Custom deleters + `unique_ptr` (or the intrusive approach) are ideal tools for managing this type of resource.
+In embedded systems, resources are typically not "objects created with `new`," but rather hardware handles — DMA channels, SPI buses, GPIO pins, and so on. "Releasing" these handles does not mean calling `delete`, but rather calling specific HAL functions. Custom deleters + `unique_ptr` (or the intrusive approach) are ideal tools for managing this type of resource.
 
 ```cpp
 // DMA 缓冲区管理——使用 unique_ptr + 自定义删除器
@@ -516,15 +522,15 @@ void peripheral_sharing() {
 }
 ```
 
-This pattern is very common in embedded driver development. `unique_ptr` + a stateless deleter is suitable for "exclusive use" scenarios (where only one module holds the resource at a time), while intrusive reference counting is suitable for "shared use" scenarios (where multiple modules hold the resource simultaneously). Both are lighter and more suitable for resource-constrained environments than `shared_ptr`.
+This pattern is very common in embedded driver development. `unique_ptr` + a stateless deleter is suitable for "exclusive use" scenarios (only one module holds it at a time), while intrusive reference counting is suitable for "shared use" scenarios (multiple modules hold it simultaneously). Both are lighter and more suitable for resource-constrained environments than `shared_ptr`.
 
 ## Summary
 
-Custom deleters enable smart pointers to break through the limitation of "only managing new/delete," adapting to any type of resource release method. The three deleter forms — function pointers, lambdas, and function objects — each have their pros and cons: function objects can achieve zero overhead through EBO, making them the top choice for performance-sensitive scenarios; lambdas are convenient to write, but you must be mindful of the size increase caused by captures; function pointers are the most intuitive but double the size of `unique_ptr`.
+Custom deleters enable smart pointers to break through the limitation of "only managing `new`/`delete`," adapting to any type of resource release method. The three deleter forms — function pointers, lambdas, and function objects — each have their pros and cons: function objects can achieve zero overhead through EBO, making them the top choice for performance-sensitive scenarios; lambdas are convenient to write, but you must watch out for the size increase caused by captures; function pointers are the most intuitive, but they double the size of `unique_ptr`.
 
 Intrusive reference counting is an effective alternative to `shared_ptr` in performance-sensitive and memory-constrained scenarios. By embedding the reference count inside the object, it eliminates the heap allocation of the control block and the extra indirection. The trade-off is that you need to modify the object type (intrusiveness), but in performance-sensitive fields like embedded systems and game engines, this trade-off is usually worth it.
 
-In the next article, we will discuss scope_guard — a more general RAII variant that can manage not only resources but also any operation that needs to execute when a scope exits.
+In the next article, we will discuss scope_guard — a more general RAII variant that can manage not only resources, but also any operation that needs to execute when a scope exits.
 
 ## Reference Resources
 
@@ -533,12 +539,12 @@ In the next article, we will discuss scope_guard — a more general RAII variant
 - [Boost intrusive_ptr documentation](https://www.boost.org/doc/libs/1_40_0/libs/smart_ptr/intrusive_ptr.html)
 - [C++ Core Guidelines: R.20-24](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rr-smart)
 - [P0468R0: An Intrusive Smart Pointer Proposal](https://www.open-std.org/jc1/sc22/wg21/docs/papers/2016/p0468r0.html)
-In the next article, we will discuss scope_guard — a more general RAII variant that can manage not only resources but also any operation that needs to execute when a scope exits.
+In the next article, we will discuss scope_guard — a more general RAII variant that can manage not only resources, but also any operation that needs to execute when a scope exits.
 - [P0468R0: An Intrusive Smart Pointer Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0468r0.html)
 
 ## Verification Code
 
-The technical assertions made in this article have all been verified through the following code (on the x86_64-linux-gnu platform, g++ 15.2.1):
+The technical assertions made in this article have all been verified using the following code (on the x86_64-linux-gnu platform, g++ 15.2.1):
 
 1. **Deleter sizeof verification**: `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`
    - Verifies the memory footprint when using function pointers, lambdas, and function objects as deleters
@@ -550,7 +556,7 @@ The technical assertions made in this article have all been verified through the
 
 3. **Complete intrusive reference counting implementation**: `code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp`
    - Complete `intrusive_ptr` implementation
-   - Single-threaded and multi-threaded versions of the reference counting base class
+   - Single-threaded and multi-threaded versions of the reference-counted base class
    - Comparison demonstration with `shared_ptr`
 
 How to compile and run:

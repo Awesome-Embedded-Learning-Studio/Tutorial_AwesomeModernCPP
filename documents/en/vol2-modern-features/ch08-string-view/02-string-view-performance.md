@@ -1,6 +1,7 @@
 ---
-title: string_view performance analysis
-description: Benchmarking the performance gains of replacing const string& with string_view
+title: string_view Performance Analysis
+description: Benchmarking the performance gains of replacing `const string&` with
+  `string_view`
 chapter: 8
 order: 2
 tags:
@@ -16,10 +17,16 @@ prerequisites:
 - 'Chapter 8: string_view 内部原理'
 related:
 - string_view 陷阱与最佳实践
+translation:
+  source: documents/vol2-modern-features/ch08-string-view/02-string-view-performance.md
+  source_hash: dffc79d7347e41fa3ceba4c56fa407ef7ab1586dcde7b1f120428f1a1c4f3d77
+  translated_at: '2026-05-26T11:32:34.907268+00:00'
+  engine: anthropic
+  token_count: 2920
 ---
 # string_view Performance Analysis
 
-In the previous article, we dove into the internals of `string_view`, learning that it is a non-owning view consisting of a pointer and a length. In this article, we let the data speak—exactly how much faster is `string_view` than `const std::string&`? In which scenarios do the benefits peak? Are there cases where it is actually slower?
+In the previous article, we dove into the internals of `string_view` and learned that it is a non-owning view consisting of a pointer and a length. In this article, we let the data speak—how much faster is `string_view` compared to `const std::string&`? In which scenarios does it yield the greatest benefits? Are there cases where it is actually slower?
 
 To write this article, the author ran quite a few benchmarks. To be honest, some results aligned with intuition (`substr` is indeed much faster), while others were surprising (under certain ABIs, passing `string_view` by value is not always faster than `const string&`). Let's examine them one by one.
 
@@ -32,11 +39,11 @@ To write this article, the author ran quite a few benchmarks. To be honest, some
 
 ## Environment Setup
 
-The environment for all benchmarks today is as follows: Linux 6.x (x86_64), GCC 13.2, compiler flag `-std=c++17 -O2 -march=native`. The test machine is a standard x86 development board. All time measurements use `std::chrono::high_resolution_clock`, and each test case loops enough times to minimize error.
+The environment for all benchmarks today is as follows: Linux 6.x (x86_64), GCC 13.2, compiler flag `-std=c++17 -O2 -march=native`. The test machine is a standard x86 development board. All time measurements use `std::chrono::high_resolution_clock`, and each test case is looped enough times to minimize error.
 
 ## substr: The World of Difference Between O(1) and O(n)
 
-The most intuitive demonstration of `string_view`'s performance advantage is the `substr` operation. We analyzed this from a theoretical perspective in the previous article: `string_view::substr` is just a pointer offset and length truncation, whereas `std::string::substr` requires heap allocation plus character copying. Now let's verify this with data.
+The most intuitive demonstration of `string_view`'s performance advantage is the `substr` operation. We analyzed this from a theoretical perspective in the previous article: `string_view::substr` only involves a pointer offset and length truncation, whereas `std::string::substr` requires heap allocation plus character copying. Now let's verify this with data.
 
 First, we write a simple benchmarking framework:
 
@@ -116,17 +123,17 @@ std::string::substr:   38.7 ms (sink=5000000)
 string_view::substr:    0.4 ms (sink=5000000)
 ```
 
-A gap of nearly 100 times. The reason is simple: `std::string::substr` performed 100,000 heap allocations and character copies (50 bytes each time), while `string_view::substr` only performed 100,000 pointer additions and length adjustments. This gap becomes even more pronounced in scenarios with longer strings and more frequent calls.
+A difference of nearly 100 times. The reason is simple: `std::string::substr` performed 100,000 heap allocations and character copies (50 bytes each time), while `string_view::substr` only performed 100,000 pointer additions and length adjustments. This gap becomes even more pronounced when strings are longer and calls are more frequent.
 
-Of course, this test is an intentionally constructed extreme scenario. In real projects, if you only occasionally perform a `substr` operation, you might not even notice the difference. However, if you are writing a parser that frequently splits, extracts, and skips parts of an input string, the advantage of `string_view` becomes very prominent.
+Of course, this test is an intentionally constructed extreme scenario. In real projects, if you only occasionally perform a `substr` operation, you might not notice this difference at all. However, if you are writing a parser that frequently splits, extracts, and skips parts of an input string, the advantage of `string_view` becomes very prominent.
 
 ## Function Parameters: string_view vs const string&
 
 This is the scenario everyone cares about most: how much faster is it to change a function parameter from `const std::string&` to `std::string_view`?
 
-Let's analyze this from a theoretical perspective first. When the function signature is `const std::string&`, if the caller passes in a `const char*` (such as a string literal or a string returned by a C API), the compiler needs to implicitly construct a temporary `std::string` first, and then pass a reference to it. This temporary construction involves a `strlen` to calculate the length, plus potential heap allocation. After the function returns, the temporary object is destructed, and the heap memory is freed.
+Let's analyze this from a theoretical perspective first. When the function signature is `const std::string&`, if the caller passes in a `const char*` (such as a string literal or a string returned by a C API), the compiler needs to implicitly construct a temporary `std::string` and then pass a reference to it. This temporary construction involves a `strlen` to calculate the length, plus potential heap allocation. After the function returns, the temporary object is destructed, and the heap memory is freed.
 
-When the function signature is `std::string_view`, regardless of whether a `std::string`, `const char*`, or string literal is passed in, it only constructs a 16-byte view object. When constructing from a `const char*`, a `strlen` (an O(n) traversal) is still needed, but no heap allocation is required. When constructing from a `std::string`, not even a `strlen` is needed—it directly takes the `data()` and `size()`.
+When the function signature is `std::string_view`, regardless of whether a `std::string`, `const char*`, or string literal is passed in, it only constructs a 16-byte view object. When constructing from a `const char*`, a `strlen` (O(n) traversal) is still needed, but no heap allocation is required. When constructing from a `std::string`, not even a `strlen` is needed—it directly takes the `data()` and `size()`.
 
 Let's write a benchmark to verify this. Test scenario: a function receives a string parameter and performs simple processing (counting character occurrences), using both signatures, and then calling it with `std::string` and `const char*` respectively.
 
@@ -237,7 +244,7 @@ bool is_http_method_sv(std::string_view method) {
 }
 ```
 
-The comparison operator between `string_view` and a string literal (`==`) constructs a lightweight `string_view` temporary object (16 bytes, no heap allocation), and then compares character by character. When `const std::string&` is compared with a string literal, the literal is implicitly converted to a temporary `std::string` (which may involve heap allocation; although some compilers optimize away this conversion, the standard does not guarantee it).
+The comparison operator (`==`) between `string_view` and a string literal constructs a lightweight `string_view` temporary object (16 bytes, no heap allocation) and then compares character by character. When `const std::string&` is compared with a string literal, the literal is implicitly converted to a temporary `std::string` (which may involve heap allocation; although some compilers optimize away this conversion, the standard does not guarantee it).
 
 Another common source of "temporary strings" is function return values. Consider this pattern:
 
@@ -291,7 +298,7 @@ int lookup_sv(std::string_view key) {
 }
 ```
 
-Strictly speaking, C++17's `std::unordered_map` does not yet support heterogeneous lookup (this was added in C++20 via the `std::unordered_map::find(K)` overload), so the `const char*` in `old_map.find(key)` will still be implicitly constructed as a `std::string`. However, in C++20, you can enable the `is_transparent` feature for `unordered_map`, allowing the lookup to completely skip temporary construction. `string_view` is a crucial piece of the puzzle in this scenario.
+Strictly speaking, C++17's `std::unordered_map` does not yet support heterogeneous lookup (this is the `std::unordered_map::find(K)` overload added in C++20), so the `const char*` in `old_map.find(key)` will still be implicitly constructed as a `std::string`. However, in C++20, you can enable the `is_transparent` feature for `unordered_map`, allowing lookups to completely skip temporary construction. `string_view` is a crucial piece of the puzzle in this scenario.
 
 ## Embedded in Practice: Command Parsing and Protocol Handling
 
@@ -362,7 +369,7 @@ Of course, this JSON parser is toy-level—it doesn't handle complex cases like 
 
 ## Summary
 
-In this article, we used benchmark data to verify the performance advantages of `string_view`. The core conclusions are as follows: the `substr` operation is `string_view`'s biggest performance trump card, and the O(1) vs O(n) gap amplifies to over a hundred times with frequent calls. In the function parameter scenario, `string_view` has a clear advantage for `const char*` callers, but makes little difference for `std::string` callers. Reducing temporary `std::string` construction is another important benefit of `string_view`. In embedded scenarios, the zero-allocation characteristic of `string_view` makes it the preferred solution for string processing in resource-constrained environments.
+In this article, we used benchmark data to verify the performance advantages of `string_view`. The core conclusions are as follows: the `substr` operation is `string_view`'s biggest performance trump card, and the O(1) vs O(n) gap amplifies to over a hundred times with frequent calls. In the function parameter scenario, `string_view` has a clear advantage for `const char*` callers, but shows little difference for `std::string` callers. Reducing temporary `std::string` construction is another important benefit of `string_view`. In embedded scenarios, the zero-allocation characteristic of `string_view` makes it the preferred solution for string processing in resource-constrained environments.
 
 However, performance isn't everything. In the next article, we will discuss the pitfalls of `string_view`—dangling references, null termination, implicit conversions, and other issues. If these problems are ignored, no amount of performance can make up for the cost of a crash.
 

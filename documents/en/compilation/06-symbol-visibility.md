@@ -1,6 +1,6 @@
 ---
-title: 'In-depth Understanding of C/C++ Compilation Technology — Dynamic Libraries
-  A3: Let''s Talk About Symbol Visibility'
+title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A3: A Discussion
+  on Symbol Visibility'
 description: ''
 tags:
 - cpp-modern
@@ -10,20 +10,26 @@ difficulty: intermediate
 platform: host
 chapter: 13
 order: 6
+translation:
+  source: documents/compilation/06-symbol-visibility.md
+  source_hash: 2eba7fe1f3e1e8640236cc462adbe47dbbecbbe87a07fce3185940d10fdeb204
+  translated_at: '2026-05-26T10:10:49.428133+00:00'
+  engine: anthropic
+  token_count: 1004
 ---
 # Deep Dive into C/C++ Compilation Technology — Shared Libraries A3: A Discussion on Symbol Visibility
 
-Some readers might be wondering—what exactly is symbol visibility? Is it the C++ keywords ``public`` or ``private``? It is worth pointing out that it is neither. The former are basic features provided alongside language syntax and compiler checks. Here, the symbol visibility we discuss is more aggressive, referring to visibility at the symbol ABI level.
+Some readers might wonder—what exactly is symbol visibility? Is it the ``public`` or ``private`` keywords in C++? It is worth pointing out that it is not. The former is a basic feature provided alongside language syntax and compiler checks. Here, the symbol visibility we discuss is more aggressive, referring to visibility at the symbol ABI level.
 
 #### Tips: How to View ABI Symbols
 
 > Veterans can skip this section.
 
-Since some readers might be encountering this article for the first time, they might not yet know how to "view the visible symbols contained in a given relocatable file, an executable composed of relocatable files, or a library file." I plan to specifically supplement how to perform this basic operation on the major Windows and Linux platforms.
+Since some readers might be encountering this article for the first time, they might not yet know how to "view the visible symbols contained in a given relocatable file, an executable composed of relocatable files, or a library file." I plan to specifically supplement how to perform this basic operation on major Windows and Linux platforms.
 
 ##### GNU/Linux Platform
 
-It is very simple; we only need to use the `nm` tool. Suppose we have a library file ``libsome_helpers.so`` ready for inspection. Entering the following command will do the trick.
+This is very simple; we only need to use the `nm` tool. Suppose we have a library file ``libsome_helpers.so`` ready to be inspected. Entering the following command will do the trick.
 
 ```cpp
 
@@ -39,7 +45,7 @@ It is very simple; we only need to use the `nm` tool. Suppose we have a library 
 
 ##### Windows Platform
 
-This is straightforward. Suppose I intend to inspect `CCWidget.dll`. To view the exported symbols, we use ``dumpbin /EXPORTS CCWidgets.dll``
+This is straightforward. Suppose I intend to inspect `CCWidget.dll`. To view the exported symbols, we use ``dumpbin /EXPORTS CCWidgets.dll``.
 
 ```cpp
 
@@ -78,17 +84,17 @@ File Type: DLL
 
 ## How Do Mainstream Toolchains Control Symbol Visibility?
 
-Getting back to the point, how do mainstream toolchains control symbol visibility? We will discuss this separately.
+Getting back to the main topic, how do mainstream toolchains control symbol visibility? We will discuss this separately.
 
 #### How to Control Symbol Visibility on GNU/Linux
 
 ##### Method 1: Directly pass -fvisibility to the compiler to control all symbol exports
 
-The first method is the most brute-force approach. Suppose we have a private dependency project and do not want to expose any symbols at all. In this case, we can pass `-fvisibility` to gcc/g++ during compilation. By default, for the GNU C/C++ toolchain, **any symbol without any visibility modifier or specified visibility** is public. That is, ``-fvisibility=default``. If we want to hide them, we need to specify ``-fvisibility=hidden`` in the step that generates the shared library, and all symbols will not be exported. However, I have not used this myself; I have only found that this usage exists.
+The first method is the most brute-force approach. Suppose we have a private dependency project and do not want to expose any symbols at all. In this case, we can pass `-fvisibility` to gcc/g++ during compilation. By default, for the GNU C/C++ toolchain, **any symbol without any visibility modifier or specified visibility is public**. That is, ``-fvisibility=default``. If we want to hide them, we need to specify ``-fvisibility=hidden`` in the step of generating the shared library, and all symbols will not be exported. However, I have not used this myself; I have only found that this usage exists.
 
 ##### Method 2: The most common approach: using ``__attribute__((visibility(< "default" | "hidden" >)))``
 
-I really like specifying it this way. Taking a simple logging library I wrote as a toy project as an example, for all APIs planned to be public at the ABI level, I explicitly specify ``__attribute__((visibility("default")))``. Conversely, for any symbol that should not be used, I apply ``__attribute__((visibility("hidden")))``
+I really like specifying it this way. Taking a simple logging library I wrote as a toy project as an example, for all APIs planned to be public at the ABI level, I forcefully specify ``__attribute__((visibility("default")))``. Conversely, for any symbol that should not be used, I apply ``__attribute__((visibility("hidden")))``.
 
 ```cpp
 
@@ -104,7 +110,7 @@ I really like specifying it this way. Taking a simple logging library I wrote as
 
 ##### Method 3: Modifying a group of aggregated symbols with ``#pragma visibility push/pop``
 
-If you really need to handle visibility modifications for a massive number of symbols on hand, but do not want to add the macros mentioned in my example above to each symbol one by one, you can use compiler preprocessor directives.
+If you really need to handle visibility modifications for a massive number of symbols on hand, but do not want to add the macros mentioned in my example above to each symbol one by one, you can use the compiler's preprocessor directives.
 
 ```cpp
 #pragma visibility push("hidden")
@@ -119,7 +125,7 @@ int api_minus(int a, int b);
 
 #### How Windows MSVC Handles This
 
-Unfortunately, exporting symbols from Windows DLL shared libraries involves a relatively complex decoration mechanism. In other words, symbols planned for export need to be decorated with ``__declspec(dllexport)`` for export. Then, when using these symbols, we also need to mark them with ``__declspec(dllimport)``
+Unfortunately, exporting symbols from Windows DLL shared libraries involves a relatively complex decoration mechanism. That is, for symbols planned for export, they need to be decorated with ``__declspec(dllexport)`` for export. Then, when using these symbols, we also need to mark them with ``__declspec(dllimport)``.
 
 ```cpp
 #ifdef CCLOG_BUILD_SHARED

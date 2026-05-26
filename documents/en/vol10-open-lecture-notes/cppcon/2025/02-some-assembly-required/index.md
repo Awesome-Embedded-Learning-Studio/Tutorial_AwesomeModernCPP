@@ -19,7 +19,7 @@ cpp_standard:
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/index.md
   source_hash: d768191af1e3ce16385ab9e305fbb9bdb53b486c4bac3eedee6559032b20b298
-  translated_at: '2026-05-20T04:39:03.569408+00:00'
+  translated_at: '2026-05-26T11:16:00.848646+00:00'
   engine: anthropic
   token_count: 347
 ---
@@ -39,7 +39,7 @@ translation:
   <ChapterLink href="02-reading-assembly-and-registers-abi">Reading Assembly Across Architectures and Register ABI</ChapterLink>
   <ChapterLink href="03-compiler-explorer-and-ai-assisted">Compiler Explorer and AI Assistance</ChapterLink>
   <ChapterLink href="04-stl-and-generic-programming">The Essence of STL and Generic Programming</ChapterLink>
-  <ChapterLink href="05-boost-beman-and-standardization">Boost, Beman, and the Path to C++ Standardization</ChapterLink>
+  <ChapterLink href="05-boost-beman-and-standardization">Boost, Beman, and the C++ Standardization Path</ChapterLink>
   <ChapterLink href="06-toolchain-and-project-design">Compilers, Toolchains, and Project Design Baselines</ChapterLink>
   <ChapterLink href="07-wg21-standardization-and-assembly-philosophy">WG21 Standardization and Assembly Philosophy</ChapterLink>
 </ChapterNav>

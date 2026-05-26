@@ -17,26 +17,32 @@ tags:
 - intermediate
 - stm32f1
 title: Object Pool Pattern
+translation:
+  source: documents/vol8-domains/embedded/03-object-pool-pattern.md
+  source_hash: 5ba90bc727848fabfbb3137a5b4c15371df735a928e8a72bddf7c2f81e87792f
+  translated_at: '2026-05-26T12:13:24.526475+00:00'
+  engine: anthropic
+  token_count: 1211
 ---
 # Embedded C++ Tutorial: Object Pool Pattern
 
 ## Introduction
 
-Memory allocation is a common necessity that we cannot avoid discussing. Any object whose lifetime we need to manage manually—whether you call it a struct or a variable—requires heap memory allocation. Although there might not be a strict division on an MCU (Microcontroller Unit), we definitely need some persistently allocated objects.
+Memory allocation is a common occurrence, and it is a topic we cannot avoid discussing. Any object whose lifetime we need to manage manually rather than automatically (whether you call it a struct or a variable) requires heap memory allocation. Although there might not be a strict division on an MCU (Microcontroller Unit), we definitely need some persistently allocated objects.
 
-In desktop applications, we typically use `new`/`delete` (which wrap `malloc`/`free` under the hood) for memory allocation. However, on a typical MCU, `new`/`delete` easily lead to memory fragmentation, along with non-deterministic latency and an unacceptable risk of failure on some platforms.
+In desktop applications, we typically use `new`/`delete` (which wrap `malloc`/`free` under the hood) for memory allocation. However, on a typical MCU, `new`/`delete` can easily lead to memory fragmentation, along with non-deterministic latency and an unacceptable risk of failure on some platforms.
 
-These real-time constraints make it difficult for us to freely and frequently use `new`/`delete` or `malloc`/`free` as we would in desktop applications.
+These real-time characteristics make it difficult for us to freely and frequently use `new`/`delete` or `malloc`/`free` the way we do in desktop applications.
 
-Here, the Object Pool pattern serves as a common and practical solution: we allocate a group of objects (or memory blocks) upfront, borrow objects from the pool at runtime, and return them when done. This achieves deterministic memory usage and low-latency allocation/deallocation.
+Here, the Object Pool pattern serves as a common and practical solution: we allocate a group of objects (or memory blocks) upfront, borrow objects from the pool at runtime, and return them when we are done. This achieves deterministic memory usage and low-latency allocation/deallocation.
 
 ------
 
 ## When to Use an Object Pool
 
-An object pool can be viewed as an aggregate of several objects. Because embedded scenarios are fixed, we can generally estimate the object size and quantity (or at least establish an upper bound). This pattern fits best when objects are allocated frequently and require deterministic latency (such as network packet buffers, task objects, or driver contexts). The system cannot tolerate runtime memory fragmentation (e.g., long-running devices, unattended systems).
+An object pool can be viewed as an aggregation of a set of objects. Because embedded scenarios are fixed, our object sizes and quantities are generally predictable (or have an upper bound). Furthermore, object allocation is frequent and requires deterministic latency (such as for network packet buffers, task objects, or driver contexts). The system cannot tolerate runtime memory fragmentation (for long-running devices, unattended systems).
 
-For more complex scenarios—such as when object sizes and maximum concurrency cannot be estimated in advance, or when elastic scaling is required—an object pool might not be appropriate.
+For more complex scenarios, such as when object sizes and maximum concurrency cannot be estimated in advance, or when elastic scaling is required, an object pool might not be appropriate.
 
 ## API Design
 
@@ -60,7 +66,7 @@ We provide a combination of `acquire` (blocking or asserting on exhaustion) and 
 
 ## Core Implementation
 
-Let's first look at a possible implementation—
+Let's first look at a possible implementation —
 
 ```cpp
 #pragma once
@@ -173,7 +179,7 @@ private:
 
 ```
 
-> Note: Reading and writing to interrupts in `ScopedLock` is platform-dependent and needs to be replaced with the target MCU's implementation (such as reading/writing PRIMASK on ARM Cortex-M). If using FreeRTOS, map the `ScopedLock`'s `lock`/`unlock` implementation to `taskENTER_CRITICAL`/`taskEXIT_CRITICAL` or a mutex.
+> Note: The interrupt read/write operations in `CriticalSection` are platform-dependent and need to be replaced with the target MCU's implementation (such as reading/writing PRIMASK on ARM Cortex-M). If using FreeRTOS, map the `CriticalSection`'s `enter`/`exit` implementation to `taskENTER_CRITICAL`/`taskEXIT_CRITICAL` or `portENTER_CRITICAL`/`portEXIT_CRITICAL`.
 
 How do we use it?
 
@@ -203,13 +209,13 @@ void on_receive() {
 
 ```
 
-For allocation in an interrupt context, if we are allocating/freeing inside an ISR, we must use `try_acquire` or implement a lock-free algorithm. Avoid performing complex initialization inside the ISR; instead, simply borrow the object and defer the processing to the task context.
+For allocation in an interrupt context, if we are allocating/freeing inside an ISR, we must use `try_acquire` or implement a lock-free algorithm. We should avoid performing complex initialization in the ISR, and instead try to only borrow the object and defer the processing to the task context.
 
 ------
 
-## Quick Review
+## Quick Recap
 
-The object pool is an extremely practical tool in embedded development: it reduces the unpredictability of runtime memory management to a controllable range while providing efficient allocation and deallocation paths. When implementing one, we need to weigh thread safety, ISR scenarios, object construction costs, and diagnostic capabilities.
+The object pool is an extremely practical tool in embedded development: it reduces the unpredictability of runtime memory management to a controllable range while providing efficient allocation/deallocation paths. When implementing one, we need to weigh thread safety, ISR scenarios, object construction costs, and diagnostic capabilities.
 
 ------
 

@@ -1,6 +1,6 @@
 ---
-title: Interrupt-safe coding
-description: ISR Secure Coding Practices
+title: Writing Interrupt-Safe Code
+description: ISR-safe programming practices
 chapter: 10
 order: 5
 tags:
@@ -17,20 +17,26 @@ cpp_standard:
 - 17
 - 20
 platform: stm32f1
+translation:
+  source: documents/vol8-domains/embedded/05-interrupt-safe-coding.md
+  source_hash: 95dfe114ab4697194a4ae0d40372ef7639ef7929f4c22f03d3414d5525bd98e4
+  translated_at: '2026-05-26T12:23:39.677550+00:00'
+  engine: anthropic
+  token_count: 3481
 ---
-# Modern C++ for Embedded Systems — Writing Interrupt-Safe Code
+# Modern C++ for Embedded Systems—Writing Interrupt-Safe Code
 
 ## Introduction
 
-Have you ever run into this situation: your program runs perfectly fine, but the moment you enable interrupts, it crashes intermittently? Or even more mysteriously, certain variable values inexplicably "jump," single-stepping shows everything is normal, but running at full speed triggers the issue?
+Have you ever run into this situation: your program runs perfectly fine, but the moment you enable interrupts, it crashes intermittently? Or even more strangely, certain variable values inexplicably "jump," single-stepping through the debugger shows everything is normal, but running at full speed triggers the issue?
 
-If you have experienced this, congratulations—you have fallen into a classic pitfall of concurrent programming: **data races between interrupts and the main thread**.
+If you have experienced this, congratulations—you have fallen into the classic trap of concurrent programming: **data races between interrupts and the main thread**.
 
-An interrupt service routine (ISR) is like an unexpected visitor who might barge into your office at any moment. It does not make an appointment, it does not wait, and it comes in whenever it pleases. If you are processing important data (such as updating a linked list node) and are suddenly interrupted, and the ISR also needs to access that same data, the result is pure chaos.
+An interrupt service routine (ISR) is like an unexpected visitor who might barge into your office at any moment. It does not make an appointment, it does not wait, and it comes in whenever it pleases. If you are processing important data (such as updating a linked list node) and are suddenly interrupted, and the ISR also needs to access that same data, the result is utter chaos.
 
-What makes things worse is that these issues are often notoriously hard to reproduce. When you attach a debugger or add print statements, the timing changes, and the bug might "disappear"—only to resurface the day you deliver the product to the customer.
+To make matters worse, these issues are often difficult to reproduce. When you attach a debugger or add print statements, the timing changes, and the bug might "disappear"—until the day the product is delivered to the customer.
 
-> In a nutshell: **Writing interrupt-safe code means ensuring that shared data access between interrupts and the main thread is free from data races.**
+> To sum it up in one sentence: **Writing interrupt-safe code means ensuring that shared data access between interrupts and the main thread is free from data races.**
 
 In this chapter, we will dive deep into how to write safe, efficient code within an ISR, and how to communicate correctly with the main thread.
 
@@ -63,7 +69,7 @@ extern "C" void TIMER_IRQHandler() {
 }
 ```
 
-If the ISR triggers exactly after the main thread reads the value but before it writes it back, the result is: an increment operation gets lost.
+If the ISR triggers exactly after the main thread reads the value but before it writes it back, the result is: an increment operation is lost.
 
 ### Limited Stack Space
 
@@ -75,7 +81,7 @@ An ISR uses its own stack space (or a portion of the main stack), which is typic
 
 ### No Blocking
 
-This is the most critical restriction: **you cannot wait inside an ISR**. Any operation that might cause blocking is strictly forbidden:
+This is the most critical restriction: **You cannot wait inside an ISR**. Any operation that might cause blocking is strictly forbidden:
 
 - `std::mutex::lock()` - might block
 - `new`/`malloc` - might trigger memory allocation, might block
@@ -83,7 +89,7 @@ This is the most critical restriction: **you cannot wait inside an ISR**. Any op
 
 ### Short Execution Time
 
-The longer an ISR takes to execute, the worse the system's responsiveness becomes, and it might even cause other interrupts to be missed. Good practices include:
+The longer an ISR executes, the worse the system's responsiveness becomes, and it might even cause other interrupts to be missed. Good practices include:
 
 - Do only the absolutely necessary processing
 - Leave complex processing to the main thread
@@ -122,7 +128,7 @@ extern "C" void BAD_IRQHandler() {
 }
 ```
 
-> **Key understanding**: The execution environment of an ISR is "constrained." You must assume that any operation that might cause blocking or exceptions is fatal.
+> **Key understanding**: The execution environment of an ISR is "restricted." You must assume that any operation that might cause blocking or exceptions is fatal.
 
 ------
 
@@ -132,7 +138,7 @@ Since we cannot use locks, how do we safely access shared data in an ISR? The an
 
 ### The Basics: Checking is_lock_free()
 
-Before using atomic operations, first confirm that they are implemented in a lock-free manner on your platform:
+Before using atomic operations, we must first confirm that they are implemented in a lock-free manner on our platform:
 
 ```cpp
 std::atomic<int> flag{0};
@@ -150,11 +156,11 @@ extern "C" void init_interrupts() {
 }
 ```
 
-**Why does this matter?** On certain platforms, atomic operations might be implemented using internal locks. If you call such an operation inside an ISR, it could lead to a dead lock.
+**Why is this important?** Atomic operations on certain platforms might be implemented using locks internally. If we call such an operation in an ISR, it could lead to a dead lock.
 
 ### Classic Pattern: ISR Writes, Main Thread Reads
 
-The most common pattern is having the ISR set a flag while the main thread polls and processes it:
+The most common pattern is the ISR setting a flag, and the main thread polling to process it:
 
 ```cpp
 class DataReadyFlag {
@@ -183,8 +189,8 @@ private:
 
 **Choosing the memory order**:
 
-- In the ISR, use `release`: ensures the write to `data` completes before `ready` is set to `true`
-- In the main thread, use `acquire`: ensures that when reading `data`, the complete write is visible
+- Use `release` in the ISR: ensures the write to `data` completes before `ready=true`
+- Use `acquire` in the main thread: ensures we see the complete write when reading `data`
 
 ### Classic Pattern: Atomic Counter
 
@@ -210,7 +216,7 @@ private:
 
 ### Classic Pattern: Synchronizing Multiple Related Variables
 
-When you need to synchronize multiple variables, you need a more careful memory order design:
+When we need to synchronize multiple variables, we need a more careful memory order design:
 
 ```cpp
 class TimestampedValue {
@@ -248,9 +254,9 @@ private:
 
 ## Memory Barriers
 
-Sometimes, using atomic variables alone is not enough, and we need to explicitly control the order of memory accesses. This is where memory barriers come in.
+Sometimes, using atomic variables alone is not enough; we need to explicitly control the order of memory accesses. This is where memory barriers come in.
 
-### What Is a Memory Barrier?
+### What is a Memory Barrier?
 
 A memory barrier is an instruction that forcibly constrains the order of memory operations performed by the CPU and the compiler. It tells the compiler and the CPU: "Memory operations before this barrier must complete before any operations after the barrier can execute."
 
@@ -272,7 +278,7 @@ if (shared_data == 42) {
 }
 ```
 
-### When You Need Explicit Barriers
+### When Explicit Barriers are Needed
 
 In most cases, using atomic operations with memory order parameters is sufficient. However, the following scenarios might require explicit barriers:
 
@@ -333,17 +339,17 @@ COMPILER_BARRIER();
 int y = 2;  // 编译器不会把y的赋值优化到x之前
 ```
 
-However, for most C++ code, using `std::atomic_thread_fence` or atomic operations with memory orders is sufficient.
+But for most C++ code, using `std::atomic_thread_fence` or atomic operations with memory orders is sufficient.
 
 ------
 
 ## Communication Patterns Between Interrupts and the Main Thread
 
-Communication between the ISR and the main thread is a core pattern in embedded systems. Let us look at a few common implementation approaches.
+Communication between the ISR and the main thread is a core pattern in embedded systems. Let us look at a few common implementation methods.
 
 ### Pattern 1: Single-Producer Single-Consumer (SPSC) Queue
 
-This is the most commonly used and most reliable pattern. The ISR acts as the producer, and the main thread acts as the consumer (or vice versa):
+This is the most commonly used and most reliable pattern. The ISR is the producer, and the main thread is the consumer (or vice versa):
 
 ```cpp
 template<typename T, size_t Size>
@@ -408,7 +414,7 @@ void main_loop() {
 **Key design points**:
 
 1. Single-producer single-consumer means no complex synchronization is needed
-2. The ISR cannot block, so if the queue is full, data is dropped (or a larger queue is used)
+2. The ISR cannot block; if the queue is full, drop the data (or use a larger queue)
 3. Correct memory orders ensure data visibility
 
 ### Pattern 2: Double Buffering
@@ -533,7 +539,7 @@ private:
 // 如果在多线程/中断环境使用，需要加原子操作
 ```
 
-A **thread-safe ring buffer** requires more careful design; refer to the accompanying example code for details.
+A **thread-safe ring buffer** requires more careful design; see the accompanying example code for details.
 
 ------
 
@@ -558,7 +564,7 @@ void update() {
 }
 ```
 
-`volatile` merely tells the compiler "do not optimize away accesses to this variable," but it does not guarantee that the operations are atomic.
+`volatile` only tells the compiler "do not optimize away accesses to this variable," but it does not guarantee that the operation is atomic.
 
 ### volatile Does Not Guarantee Memory Ordering
 
@@ -576,7 +582,7 @@ if (flag) {
 }
 ```
 
-`volatile` does not prevent the CPU from reordering memory operations. To guarantee ordering, you must use atomic operations combined with the appropriate memory order.
+`volatile` does not prevent the CPU from reordering memory operations. To guarantee ordering, we must use atomic operations combined with the appropriate memory order.
 
 ### The Correct Use of volatile
 
@@ -613,7 +619,7 @@ int main() {
 }
 ```
 
-**Principle**: If a variable is modified by only one execution context and other contexts only read it, using `volatile` is sufficient. If there are multiple modifiers, you must use `atomic`.
+**Principle**: If a variable is modified by only one execution context and other contexts only read it, using `volatile` is sufficient. If there are multiple modifiers, we must use `atomic`.
 
 ### volatile vs. atomic: A Decision Tree
 
@@ -640,9 +646,9 @@ int main() {
 
 ## Common Pitfalls and Debugging
 
-Even with a solid understanding of the concepts above, it is still easy to stumble in practice. Let us look at a few common issues.
+Even with an understanding of the concepts above, it is still easy to fall into traps in practice. Let us look at a few common issues.
 
-### Pitfall 1: Assuming Single-Byte Assignment Is Atomic
+### Pitfall 1: Assuming Single-Byte Assignment is Atomic
 
 ```cpp
 struct {
@@ -661,9 +667,9 @@ if (shared_state.flags == 0xFF) {
 }
 ```
 
-**The problem**: Although assigning a single byte might be atomic, there is no synchronization guarantee between the two operations of "writing `flags` first, then writing `counter`."
+**The problem**: Although assigning a single byte might be atomic, there is no synchronization guarantee between the two operations of "writing to `flags` first, then writing to `counter`."
 
-**The solution**: Use a single atomic variable as a synchronization point, or wrap the entire struct with an atomic type.
+**The solution**: Use an atomic variable as a synchronization point, or wrap the entire struct with an atomic type.
 
 ### Pitfall 2: Ignoring Compile-Time Optimization
 
@@ -712,9 +718,9 @@ extern "C" void TIM_IRQHandler() {
 - `printf`/`sprintf`
 - Most C standard library functions
 
-### Debugging Techniques
+### Debugging Tips
 
-1. **Use a hardware debugger**: Set up data watchpoints to pause execution when a variable is modified
+1. **Use a hardware debugger**: Set data watchpoints to pause execution when a variable is modified
 
 2. **Static analysis tools**:
 
@@ -723,9 +729,9 @@ extern "C" void TIM_IRQHandler() {
    g++ -fsanitize=thread -g your_code.cpp
    ```
 
-3. **Code review**: Carefully inspect all variables shared between ISRs and the main thread
+3. **Code review**: Carefully inspect all variables shared between the ISR and the main thread
 
-4. **Unit testing**: Simulate interrupt timing and test various edge cases
+4. **Unit testing**: Simulate interrupt timing and test various boundary conditions
 
 ------
 
@@ -742,10 +748,10 @@ Writing interrupt-safe code is a core skill in embedded systems development. Let
 
 **Practical advice**:
 
-- Do the absolute minimum in the ISR: set flags, collect data, and push to a queue
+- Do the minimum amount of work in an ISR: set flags, collect data, and put it in a queue
 - Leave complex processing to the main thread
 - Use static assertions to ensure atomic operations are lock-free
-- Carefully audit all data shared between ISRs and the main thread
+- Carefully review all data shared between the ISR and the main thread
 - Write tests to simulate various interrupt timings
 
 In the next section, we will dive deep into **critical section protection techniques**, learning how to protect critical sections using multiple methods, and how to avoid advanced topics like dead locks and priority inversion.

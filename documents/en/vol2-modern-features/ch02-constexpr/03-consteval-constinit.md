@@ -1,7 +1,7 @@
 ---
 title: 'consteval and constinit: New Tools for Compile-Time Guarantees'
-description: Immediate functions and compile-time initialization in C++20, and the
-  precise distinction and selection strategy from constexpr
+description: C++20 immediate functions and compile-time initialization, precise distinctions
+  from `constexpr`, and selection strategies
 chapter: 2
 order: 3
 tags:
@@ -21,16 +21,22 @@ prerequisites:
 - 'Chapter 2: constexpr 基础'
 related:
 - constexpr 构造函数与字面类型
+translation:
+  source: documents/vol2-modern-features/ch02-constexpr/03-consteval-constinit.md
+  source_hash: 401080169dadf4b663ae4cb31f44826c2c222ed3397aa74b3f1cee528dff5c0e
+  translated_at: '2026-05-26T11:24:41.831090+00:00'
+  engine: anthropic
+  token_count: 2861
 ---
 # consteval and constinit: New Tools for Compile-Time Guarantees
 
 ## Introduction
 
-In the previous two chapters, we discussed `constexpr`—the keyword that "might" be evaluated at compile time. That "might" is both its strength and its weakness. When you declare a `constexpr` function, you express the intent that "this function can be evaluated at compile time," but the compiler does not guarantee it will actually do so.
+In the previous two chapters, we discussed `constexpr`—the keyword that means a function *might* be evaluated at compile time. That "might" is both its strength and its weakness. When you declare a `constexpr` function, you express the intent that "this function can be evaluated at compile time," but the compiler does not guarantee it will actually do so.
 
-It is worth noting that modern compilers (with optimizations enabled) are quite smart—even if you assign the return value to a non-`constexpr` variable, as long as the arguments are constants and the function call is simple enough, the compiler might still evaluate it at compile time. However, in certain complex scenarios, or when compiler optimizations are disabled (such as `-O0`), a `constexpr` function can indeed degrade into a runtime call. This uncertainty is exactly the problem `consteval` aims to solve.
+It is worth noting that modern compilers (with optimizations enabled) are quite smart—even if you assign the return value to a non-`constexpr` variable, as long as the arguments are constants and the function call is simple enough, the compiler may still evaluate it at compile time. However, in certain complex scenarios, or when compiler optimizations are disabled (such as `-O0`), a `constexpr` function can indeed degrade into a runtime call. This uncertainty is exactly the problem `consteval` aims to solve.
 
-This "flexibility" is a good thing most of the time, but in some scenarios you really need a hard guarantee: this function must, absolutely, without exception, execute at compile time. For example, compile-time hashing, compile-time configuration validation—if these things degrade into runtime computations, you might not notice the issue during code review, only discovering it during profiling or when a runtime error occurs. `consteval` exposes such problems at the compilation stage through mandatory compile-time checks.
+This flexibility is a good thing most of the time, but in some scenarios you really need a hard guarantee: this function must, absolutely, unequivocally execute at compile time. For example, compile-time hashing, compile-time configuration validation—if these things degrade into runtime computations, you might not notice the issue during code review, only discovering it during profiling or when a runtime error occurs. `consteval` exposes such problems at the compilation stage through mandatory compile-time checks.
 
 C++20 introduced two new keywords to solve this problem: functions declared with `consteval` (called "immediate functions") must be evaluated at compile time, while `constinit` guarantees that static variables complete their initialization at compile time. They are not replacements for `constexpr`, but rather fine-grained complementary tools.
 
@@ -73,7 +79,7 @@ The difference is clear at a glance: a `constexpr` function "compromises" when f
 
 ### Applicable Scenarios for consteval
 
-`consteval` is best suited for computations where "executing at runtime makes no sense or even introduces risks."
+`consteval` is best suited for computations where "executing at runtime makes no sense or even introduces risk."
 
 The first typical scenario is compile-time ID and hash generation. In protocol processing and command dispatch, we often need to map strings to integer IDs. If the string-to-ID hash calculation executes at runtime, it both wastes CPU cycles and loses the ability to detect collisions at compile time.
 
@@ -124,7 +130,7 @@ constexpr int kBufferSize = validate_buffer_size(1024);  // OK
 // constexpr int kBadSize = validate_buffer_size(1000);  // 编译错误！不是 2 的幂
 ```
 
-The third scenario is compile-time type tags and metadata. When you need to embed compile-time information into the type system (such as peripheral descriptions, protocol field definitions), `consteval` ensures this metadata does not accidentally become a runtime object.
+The third scenario is compile-time type tags and metadata. When you need to embed compile-time information in the type system (such as peripheral descriptions, protocol field definitions), `consteval` ensures these metadata objects do not accidentally become runtime objects.
 
 ```cpp
 struct PeripheralTag {
@@ -169,7 +175,7 @@ consteval int double_square(int x)
 constexpr auto kVal = double_square(3);  // OK，kVal == 18
 ```
 
-C++23 (DR20, P2564R3) further adjusted the propagation rules: if a `consteval` function is called within a `constexpr` function, as long as the call to that `constexpr` function ultimately resides in a constant evaluation context, it no longer triggers an error. This makes the combined use of `consteval` and `constexpr` more flexible.
+C++23 (DR20, P2564R3) further adjusted the propagation rules: if a `consteval` function is called within a `constexpr` function, as long as the call to that `constexpr` function ultimately occurs in a constant evaluation context, it no longer triggers an error. This makes the combination of `consteval` and `constexpr` more flexible.
 
 ### if consteval: Compile-Time/Runtime Dispatch
 
@@ -211,7 +217,7 @@ constexpr auto kCompileTimeHash = compute_hash("test", 4);  // 走编译期路�
 
 ### The Static Initialization Order Fiasco
 
-Before discussing `constinit`, we need to understand the problem it solves. In C++, the initialization of objects with static storage duration (global variables, `static` class member variables, etc.) is divided into two phases:
+Before discussing `constinit`, we need to understand the problem it aims to solve. In C++, the initialization of objects with static storage duration (global variables, `static` class member variables, etc.) is divided into two phases:
 
 The first phase is static initialization, including zero initialization and constant initialization. These occur during the program loading phase, even before the `main` function begins, and their order is well-defined—zero initialization happens before constant initialization.
 
@@ -227,7 +233,7 @@ extern std::vector<int> g_data;
 int g_first_element = g_data[0];  // 可能读到未初始化的 g_data！
 ```
 
-The terrifying aspect of this bug is that it is "luck-dependent"—it works fine under certain link orders but crashes under others, and it only occurs during program startup, making it extremely difficult to debug.
+What makes this bug so terrifying is that it is "luck-dependent"—it works fine under certain link orders but crashes under others, and it only occurs during program startup, making it extremely difficult to debug.
 
 ### Semantics of constinit
 
@@ -250,7 +256,7 @@ constinit int g_value = compute_value();
 
 ### constinit vs constexpr: Subtle but Critical Differences
 
-Both `constinit` and `constexpr` involve compile time, but they focus on different dimensions. A `constexpr` variable requires its value to be determined at compile time and the object itself to be `const`—you cannot modify it. A `constinit` variable also requires its initial value to be determined at compile time, but the object itself can be modified.
+Both `constinit` and `constexpr` involve compile-time, but they focus on different dimensions. A `constexpr` variable requires its value to be determined at compile time and the object itself to be `const`—you cannot modify it. A `constinit` variable also requires its initial value to be determined at compile time, but the object itself can be modified.
 
 ```cpp
 constexpr int kConstVal = 42;        // 编译期值 + 不可修改
@@ -260,7 +266,7 @@ constinit int gMutableVal = 42;      // 编译期初始化 + 可修改
 gMutableVal = 100;                   // OK！运行时可以改值
 ```
 
-This difference might seem small, but it is very useful in practical engineering. For example, a global configuration buffer where you want the initial value to be set at compile time (to avoid SIOF), but its contents need to be updated during program execution. `constinit` perfectly meets this need.
+This difference may seem small, but it is very useful in practical engineering. For example, a global configuration buffer where you want the initial value to be set at compile time (to avoid SIOF), but its contents need to be updated during program execution. `constinit` perfectly meets this need.
 
 It is worth noting that `constinit` cannot be used together with `constexpr`—they are mutually exclusive. A `constexpr` variable implicitly guarantees constant initialization (and `const` semantics), so adding `constinit` is redundant.
 
@@ -277,7 +283,7 @@ thread_local int tl_counter = 42;
 constinit thread_local int tl_fast_counter = 42;
 ```
 
-An ordinary `thread_local` variable needs to check whether it has already been initialized on first access, which typically involves a hidden guard variable and possible atomic operations. With `constinit`, the compiler knows this variable already has a determined initial value at program load time, so it can theoretically optimize away the runtime checks. However, the actual performance improvement depends on the specific compiler implementation—in testing on GCC 15.2 (`-O2`), the optimization margin is limited (about 5%), but it might show more significant improvements with certain compilers or in certain scenarios.
+An ordinary `thread_local` variable needs to check whether it has already been initialized on first access, which typically involves a hidden guard variable and possible atomic operations. With `constinit`, the compiler knows this variable already has a determined initial value at program load time, so it can theoretically optimize away the runtime checks. However, the actual performance improvement depends on the specific compiler implementation—in testing on GCC 15.2 (`-O2`), the optimization margin is limited (about 5%), but it may show more significant improvements with certain compilers or in certain scenarios.
 
 ### constinit in extern Declarations
 
@@ -306,7 +312,7 @@ Now that we understand the semantics of the three keywords, let's make a clear c
 | Mutability | Immutable (implicit `const`) | N/A | Mutable |
 | Problem solved | Flexibility of compile-time computation | Forcing compile-time evaluation | Avoiding SIOF |
 
-To summarize the selection strategy in one sentence: if the value never changes, use a `constexpr` variable; if a function must execute at compile time, use `consteval`; if a global variable needs compile-time initialization but can be modified at runtime, use `constinit`. For functions, default to `constexpr` (it is the most flexible), and only upgrade to `consteval` when you truly need to force compile-time evaluation.
+To summarize the selection strategy in one sentence: if the value never changes, use a `constexpr` variable; if a function must execute at compile time, use `consteval`; if a global variable needs to be initialized at compile time but modified at runtime, use `constinit`. For functions, default to `constexpr` (it is the most flexible), and only upgrade to `consteval` when you truly need to force compile-time evaluation.
 
 ### Common Combination Patterns
 
@@ -342,7 +348,7 @@ constinit int g_first = lookup_value(0);   // 编译期求值
 constinit int g_third = lookup_value(2);   // 编译期求值
 ```
 
-Pattern three is `consteval` for compile-time validation. Using `consteval` on the validation logic ensures it executes at compile time, paired with `throw` to produce a compilation error.
+Pattern three is using `consteval` for compile-time validation. Using `consteval` on the validation logic ensures it executes at compile time, paired with `throw` to produce a compilation error.
 
 ```cpp
 consteval bool check_config(int baud_rate, int data_bits)
@@ -361,7 +367,7 @@ static_assert(check_config(115200, 8), "Invalid UART config");
 
 ### Function Pointers to consteval Functions Cannot Be Used at Runtime
 
-You cannot obtain a function pointer to a `consteval` function at runtime and call it. The address of a `consteval` function can be used at compile time (such as passing it in a `consteval` context), but it cannot "escape" to runtime. Attempting to get the address of a `consteval` function in a non-constant evaluation context will result in a compilation error. This is because `consteval` functions have no runtime entity—they are completely expanded and inlined at compile time.
+You cannot obtain a function pointer to a `consteval` function at runtime and call it. The address of a `consteval` function can be used at compile time (such as passing it in a `consteval` context), but it cannot "escape" to runtime. If you try to obtain the address of a `consteval` function in a non-constant evaluation context, it will cause a compilation error. This is because `consteval` functions have no runtime entity—they are completely expanded and inlined at compile time.
 
 ### constinit Does Not Mean const
 
@@ -369,15 +375,26 @@ This point is easy to confuse. `constinit` only means that the initialization is
 
 ### Interaction Between consteval and Templates
 
-`consteval` can be used with function templates, but note that if a template instantiation fails to meet the requirements of `consteval` (for example, if it internally calls a non-`constexpr` function), the compiler will report an error. This is different from a `constexpr` function template—a `constexpr` template only needs at least one set of arguments that can work at compile time, whereas `consteval` requires all calls to complete at compile time.
+`consteval` can be used with function templates, but note that if a template instantiation cannot satisfy the requirements of `consteval` (for example, if it internally calls a non-`constexpr` function), the compiler will report an error. This is different from a `constexpr` function template—a `constexpr` template only needs at least one set of arguments that can work at compile time, whereas `consteval` requires all calls to complete at compile time.
+
+## Run Online
+
+Run the consteval and constinit examples online to observe C++20 compile-time guarantees:
+
+<OnlineCompilerDemo
+  title="consteval and constinit: C++20 Compile-Time Guarantees"
+  source-path="code/examples/vol2/06_consteval_constinit.cpp"
+  description="Run online and observe consteval forced compile-time hashing and constinit mutable global variables."
+  allow-run
+/>
 
 ## Summary
 
-C++20's `consteval` and `constinit` are precise supplements to the `constexpr` system. `consteval` fills the gap for the "I want to force compile-time evaluation" requirement, while `constinit` solves C++'s long-standing static initialization order problem. The three each have their own roles: `constexpr` provides flexibility, `consteval` provides enforcement, and `constinit` provides initialization safety. Understanding their precise differences and making reasonable choices is key to writing high-quality compile-time computation code.
+C++20's `consteval` and `constinit` are precise supplements to the `constexpr` system. `consteval` fills the gap of "I want to force compile-time evaluation," while `constinit` solves C++'s long-standing static initialization order problem. The three each have their own roles: `constexpr` provides flexibility, `consteval` provides enforcement, and `constinit` provides initialization safety. Understanding their precise differences and making reasonable choices is key to writing high-quality compile-time computation code.
 
 In the next chapter, we will move into practice, comprehensively applying this knowledge to implement compile-time lookup tables, string processing, and state machine design.
 
-## Reference Resources
+## References
 
 - [cppreference: consteval specifier (C++20)](https://en.cppreference.com/w/cpp/language/consteval)
 - [cppreference: constinit specifier (C++20)](https://en.cppreference.com/w/cpp/language/constinit)

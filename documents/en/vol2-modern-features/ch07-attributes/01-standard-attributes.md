@@ -1,6 +1,6 @@
 ---
-title: 'Detailed Explanation of Standard Attributes: Make the Compiler Your Code Reviewer'
-description: Semantics, Usage, and Best Practices of C++11-17 Standard Attributes
+title: 'Standard Attributes Explained: Making the Compiler Your Code Reviewer'
+description: Semantics, usage, and best practices for C++11-17 standard attributes
 chapter: 7
 order: 1
 tags:
@@ -18,10 +18,16 @@ prerequisites:
 - 'Chapter 1: RAII 深入理解'
 related:
 - C++20-23 新属性
+translation:
+  source: documents/vol2-modern-features/ch07-attributes/01-standard-attributes.md
+  source_hash: bc7841e2ffaf30c56978133e2dcf75046f0496bf9da4a83697a68399c163787b
+  translated_at: '2026-05-26T11:31:29.584312+00:00'
+  engine: anthropic
+  token_count: 2431
 ---
-# Standard Attributes Explained: Making the Compiler Your Code Reviewer
+# Standard Attributes in Depth: Making the Compiler Your Code Reviewer
 
-When writing code, we often run into a few frustrating situations: calling a function that returns an error code but forgetting to check it, and the compiler silently lets it pass; having a parameter that goes unused under a certain build configuration, and the compiler floods the screen with unused variable warnings; wanting to mark an API as obsolete but relying solely on documentation or comments to notify callers. The standard attribute syntax `[[...]]`, introduced in C++11 and gradually expanded in subsequent versions, solves these problems—it provides a standardized way to pass extra information to the compiler, letting it perform static checks for us.
+When writing code, we often run into a few frustrating situations: calling a function that returns an error code but forgetting to check it, and the compiler silently lets it pass; having a parameter that is unused under a certain build configuration, and the compiler floods the screen with unused variable warnings; wanting to mark an API as obsolete but having to rely solely on documentation or comments to notify callers. The standard attribute syntax `[[...]]`, introduced in C++11 and gradually expanded in subsequent versions, exists to solve these problems—providing a standardized way to pass extra information to the compiler so it can perform static checks for us.
 
 > In a nutshell: **Attributes are declarative hints to the compiler. They do not change program semantics, but they help the compiler catch errors or generate better code.**
 
@@ -29,11 +35,11 @@ When writing code, we often run into a few frustrating situations: calling a fun
 
 ## Basic Syntax of Attributes
 
-C++ standard attributes use double square brackets `[[...]]`. Multiple attributes can be written together `[[attr1, attr2]]` or separately `[[attr1]] [[attr2]]` with the same effect. Attributes can be placed in many positions—function declarations, variable declarations, class declarations, enumeration declarations, `switch` case statements, and more—depending on the attribute type.
+C++ standard attributes use double square brackets `[[...]]`. Multiple attributes can be written together `[[attr1, attr2]]`, or separately `[[attr1]] [[attr2]]`, with the same effect. Attributes can be placed in many positions—function declarations, variable declarations, class declarations, enumeration declarations, `switch` case statements, and more—depending on the attribute type.
 
-> **Verification**: Compilation tests show that `[[nodiscard, deprecated]]` and `[[nodiscard]] [[deprecated]]` produce identical warnings, and the order of attributes does not affect the result.
+> **Verification**: Compilation tests show that `[[nodiscard, maybe_unused]]` and `[[nodiscard]] [[maybe_unused]]` produce identical warnings, and the order of attributes does not affect the result.
 
-Before standard attributes, each compiler had its own syntax: GCC/Clang used `__attribute__((...))`, and MSVC used `__declspec(...)`. The advantage of standard attributes is portability—all conforming compilers must support them. However, the standard also reserves a namespace prefix mechanism, such as `[[gcc::...]]` or `[[msvc::...]]`, allowing compiler extensions to be expressed using the same unified syntax.
+Before standard attributes, different compilers had their own syntaxes: GCC/Clang used `__attribute__((...))`, and MSVC used `__declspec(...)`. The advantage of standard attributes is portability—all conforming compilers must support them. However, the standard also reserves a namespace prefix mechanism, such as `[[gcc::...]]` or `[[msvc::...]]`, allowing compiler extensions to be expressed using the same unified syntax.
 
 > **Attributes by version**: C++11 introduced `[[noreturn]]` and `[[carries_dependency]]`, C++14 introduced `[[deprecated]]`, and C++17 introduced `[[nodiscard]]`, `[[maybe_unused]]`, and `[[fallthrough]]`. Different attributes were standardized in different versions, so be mindful of your target compiler's support when using them.
 
@@ -74,7 +80,7 @@ if (initialize_hardware() != ErrorCode::Ok) {
 }
 ```
 
-In systems development, hardware initialization, sensor reads, and communication operations can all fail. Ignoring the return value means you might continue running in an already erroneous state, with unpredictable consequences. `[[nodiscard]]` turns "should have checked but forgot" into a compiler warning, rather than a runtime bug that only surfaces after deployment.
+In systems development, hardware initialization, sensor reads, and communication operations can all fail. Ignoring the return value means you might continue running in an already-errored state, with unpredictable consequences. `[[nodiscard]]` turns "should have checked but forgot" into a compiler warning, rather than a runtime bug that only surfaces after deployment.
 
 ### C++20 Enhancement: Custom Messages
 
@@ -113,7 +119,7 @@ It is important to note that `[[nodiscard]]` produces a warning, not an error. C
 static_cast<void>(init_board()); // 同上
 ```
 
-This means team coding standards may need to prohibit this pattern. `[[nodiscard]]` means "please check" rather than "must check"—but it is still vastly better than having nothing at all.
+This means team coding standards may need to prohibit this pattern. `[[nodiscard]]` means "please check," not "you must check"—but it is still vastly better than having nothing at all.
 
 ------
 
@@ -138,11 +144,11 @@ void sensor_task([[maybe_unused]] void* param) {
 }
 ```
 
-Without `[[maybe_unused]]`, the compiler will warn that `timeout_ms` is unused during a bare-metal build. Previous workarounds included writing `(void)timeout_ms;` inside the function body or commenting out the parameter name `/*timeout_ms*/`. `[[maybe_unused]]` is more semantic than `(void)` and less error-prone than commenting out parameter names.
+Without `[[maybe_unused]]`, the compiler will warn that `timeout_ms` is unused during a bare-metal build. The old workaround was to write `(void)timeout_ms;` inside the function body, or to comment out the parameter name `/*timeout_ms*/`. `[[maybe_unused]]` is more semantic than `(void)`, and less error-prone than commenting out parameter names.
 
 ### Unused Members in Structured Bindings
 
-When you only need some members of a structured binding, the other members can be marked `[[maybe_unused]]`. However, a more common approach is to use an underscore `_` as a placeholder for "I don't care about this":
+When you only need some members of a structured binding, the other members can be marked `[[maybe_unused]]`. However, a more common approach is to use an underscore `_` as a "don't care" placeholder:
 
 ```cpp
 std::map<int, std::string> cache;
@@ -157,7 +163,7 @@ for (const auto& [key, value] : cache) {
 
 ### Comparison with Traditional Methods
 
-Previous approaches to suppressing unused warnings each had drawbacks: `(void)x;` is a runtime no-op statement mixed into the code that looks like something was left out; commenting out the parameter name `/*x*/` is easy to forget to update when changing the parameter type; and compiler-specific attributes like `__attribute__((unused))` are not portable. `[[maybe_unused]]` is a standardized, semantically clear solution.
+Previous approaches to suppressing unused warnings each had drawbacks: `(void)x;` is a runtime no-op statement mixed into your code that looks like something was left out; commenting out the parameter name `int foo(int /*x*/)` makes it easy to forget to update the comment when changing the parameter type; compiler-specific attributes like `__attribute__((unused))` are not portable. `[[maybe_unused]]` is a standardized, semantically clear solution.
 
 ------
 
@@ -201,11 +207,11 @@ enum class SensorType {
 };
 ```
 
-This approach of "mark as deprecated first, remove in the next major version" is much friendlier than deleting APIs directly. Callers see the warning at compile time and know they need to migrate.
+This approach of "mark as deprecated first, then remove in the next major version" is much friendlier than deleting an API outright. Callers see the warning at compile time and know they need to migrate.
 
 ### Scope of deprecated
 
-`[[deprecated]]` can be placed on almost any entity: functions, classes, enumerations, enumeration values, variables, template specializations, and namespaces (since C++17). This means you can deprecate an entire class, not just individual functions:
+`[[deprecated]]` can be placed on almost any entity—functions, classes, enumerations, enumeration values, variables, template specializations, and even namespaces (since C++17). This means you can deprecate an entire class, not just individual functions:
 
 ```cpp
 [[deprecated("Use NewSensorManager instead")]]
@@ -214,9 +220,9 @@ class OldSensorManager { /* ... */ };
 
 ------
 
-## [[fallthrough]]: Intentional Switch Fall-Through
+## [[fallthrough]]: Intentional switch Fallthrough
 
-In a `switch` statement, if a `case` does not end with a `break`, execution "falls through" to the next `case`. The compiler warns about this because it might be a forgotten `break`. But sometimes fall-through is intentional—`[[fallthrough]]` tells the compiler "I meant to do this, don't warn."
+In a `switch` statement, if a `case` does not end with `break`, execution "falls through" to the next `case`. Compilers warn about this because it might mean you forgot to write `break`. But sometimes fallthrough is intentional—`[[fallthrough]]` tells the compiler "I did this on purpose, don't warn."
 
 ### Basic Usage
 
@@ -242,11 +248,11 @@ void handle_event(uint8_t event) {
 }
 ```
 
-`[[fallthrough]]` must be placed after the last statement of a `case` and before the next `case` label, and it must be followed by a semicolon. If placed elsewhere, the compiler may ignore it or report an error.
+`[[fallthrough]]` must be placed after the last statement of a `case` and before the next `case` label, and it must be followed by a semicolon. If you place it elsewhere, the compiler may ignore it or report an error.
 
 ### Typical Scenario in State Machines
 
-When implementing state machines where multiple states share some processing logic, fall-through is a natural choice:
+When implementing a state machine where multiple states share certain processing logic, fallthrough is a natural choice:
 
 ```cpp
 enum class State { Idle, Initializing, Running, Paused, Error };
@@ -277,13 +283,13 @@ void handle_state(State current, Event ev) {
 }
 ```
 
-Note the last example: there is no `[[fallthrough]]` between `STATE_C` and `STATE_D`—because there are no statements between them, the compiler does not warn about empty cases.
+Note the last example: there is no `[[fallthrough]]` between `STATE_C` and `STATE_D`—because there are no statements between them, the compiler will not warn about an empty `case`.
 
 ------
 
 ## [[noreturn]]: Functions That Never Return
 
-`[[noreturn]]` marks functions that never return to the caller. Such functions either call `std::abort()` or `std::exit()`, enter an infinite loop, or throw an exception.
+`[[noreturn]]` marks functions that never return to the caller. Such functions either call `std::exit()`, `std::abort()`, enter an infinite loop, or throw an exception.
 
 ```cpp
 [[noreturn]] void fatal_error(const char* msg) {
@@ -307,11 +313,11 @@ void check_critical(bool ok) {
 }
 ```
 
-The value of `[[noreturn]]` to the compiler lies in optimization: the compiler knows no control flow will come back after `fatal_error()`, so it does not need to generate code for the return path. Furthermore, the compiler can use this to suppress "function might not return a value" warnings.
+The value of `[[noreturn]]` to the compiler lies in optimization: the compiler knows that no control flow will come back after `fatal_error()`, so it does not need to generate code for the return path. Furthermore, the compiler can use this to suppress "function might not return a value" warnings.
 
-> **Optimization effect**: Assembly tests confirm that at the `-O2` optimization level, the compiler does optimize away unreachable code following a `[[noreturn]]` function call. However, modern compilers have strong static analysis capabilities, and in some simple scenarios, they can deduce that a function won't return even without the `[[noreturn]]` hint.
+> **Optimization effect**: Assembly tests show that at the `-O2` optimization level, the compiler does indeed optimize away unreachable code after a `[[noreturn]]` function call. However, modern compilers have strong static analysis capabilities, and even without the `[[noreturn]]` hint, they can infer in some simple scenarios that a function will not return.
 
-⚠️ Note: If you add `[[noreturn]]` to a function that actually does return, the behavior is undefined behavior (UB). The compiler might not report an error, but the generated code could behave completely unexpectedly.
+⚠️ Note: if you add `[[noreturn]]` to a function that actually does return, the behavior is undefined behavior (UB). The compiler might not report an error, but the generated code may behave completely unexpectedly.
 
 ------
 
@@ -319,7 +325,7 @@ The value of `[[noreturn]]` to the compiler lies in optimization: the compiler k
 
 This attribute was introduced in C++11 for propagating memory order dependency chains related to `std::memory_order_consume`. It is extremely rarely used in practice—because mainstream compilers (GCC, Clang) promote `memory_order_consume` directly to `memory_order_acquire`, making this attribute practically useless. Unless you are writing lock-free data structures and need precise control over dependency chain propagation, you can safely ignore it.
 
-> **Verification**: Assembly tests confirm that GCC indeed generates identical assembly code for `memory_order_consume` and `memory_order_acquire` (both use `ldar` for loads, with no additional dependency chain handling), which explains why `[[carries_dependency]]` has virtually no effect in practice.
+> **Verification**: Assembly tests confirm that GCC indeed generates identical assembly code for `memory_order_consume` and `memory_order_acquire` (both use `ldar` loads, with no additional dependency chain handling), which explains why `[[carries_dependency]]` has virtually no effect in practice.
 
 ------
 
@@ -357,7 +363,7 @@ FORCE_INLINE void hot_function();
 
 ## Correct Placement of Attributes
 
-Placing attributes in different positions has different meanings. Putting an attribute in the wrong position might cause the compiler to ignore it or apply it to the wrong target:
+Placing attributes in different positions has different meanings. Putting an attribute in the wrong position might cause the compiler to ignore it, or it might apply to the wrong target:
 
 ```cpp
 // 函数属性——放在返回类型之前或声明符之后
@@ -384,15 +390,15 @@ switch (x) {
 }
 ```
 
-If you are unsure where an attribute should go, cppreference is the most reliable reference.
+If you are unsure where an attribute should be placed, cppreference is the most reliable reference.
 
 ------
 
 ## Summary
 
-The standard attributes from C++11 through C++17 provide practical static checking tools for daily development. `[[nodiscard]]` enforces return value checks, `[[maybe_unused]]` suppresses unused warnings, `[[deprecated]]` marks obsolete APIs, `[[fallthrough]]` marks intentional fall-through, and `[[noreturn]]` marks non-returning functions. Each attribute solves a specific engineering problem—not as a flashy trick, but as a way to let the compiler be your code reviewer.
+The standard attributes from C++11 through C++17 provide practical static checking tools for daily development. `[[nodiscard]]` enforces return value checks, `[[maybe_unused]]` suppresses unused warnings, `[[deprecated]]` marks obsolete APIs, `[[fallthrough]]` marks intentional fallthrough, and `[[noreturn]]` marks non-returning functions. Each attribute solves a specific engineering problem—not as a flashy trick, but as a way to make the compiler help with code review.
 
-In team development, we recommend establishing unified standards for using these attributes: which functions must have `[[nodiscard]]` (such as all functions returning error codes), which scenarios suit `[[deprecated]]` (such as during API version migration), and when to use compiler extension attributes. Unified standards are more effective than scattered individual habits.
+In team development, we recommend establishing unified standards for using these attributes: which functions must have `[[nodiscard]]` (such as all functions returning error codes), which scenarios are suitable for `[[deprecated]]` (such as during API version migration), and when to use compiler extension attributes. Unified standards are more effective than scattered individual habits.
 
 In the next chapter, we will look at attributes added in C++20 and C++23—`[[likely]]/[[unlikely]]`, `[[no_unique_address]]`, `[[optimize]]`, and more—which lean more toward performance optimization, representing the "make the compiler generate better code" direction.
 

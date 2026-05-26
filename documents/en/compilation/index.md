@@ -1,12 +1,18 @@
 ---
-title: In-Depth Compilation and Linking
-description: In-depth understanding of C/C++ compilation, linking, static libraries,
-  and dynamic libraries
+title: Deep Dive into Compilation and Linking
+description: Deep dive into C/C++ compilation, linking, static libraries, and shared
+  libraries
 platform: host
 tags:
 - cpp-modern
 - host
 - intermediate
+translation:
+  source: documents/compilation/index.md
+  source_hash: 8567243649b10140511459366b10cd6609c15c3337a68ba82eef33259991b679
+  translated_at: '2026-05-26T10:12:03.658372+00:00'
+  engine: anthropic
+  token_count: 256
 ---
 # Deep Dive into Compilation and Linking
 

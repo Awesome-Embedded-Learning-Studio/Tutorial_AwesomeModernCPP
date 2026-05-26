@@ -1,7 +1,8 @@
 ---
-title: Exception safety
-description: Understand the four levels of exception safety, and master the RAII guard
-  pattern to ensure resources are properly released when exceptions occur.
+title: Exception Safety
+description: Understand the four levels of exception safety, and master the RAII (Resource
+  Acquisition Is Initialization) guard pattern to ensure resources are properly released
+  when exceptions occur.
 chapter: 10
 order: 2
 difficulty: intermediate
@@ -19,18 +20,24 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch10/02-exception-safety.md
+  source_hash: 1dfc4d3b5bc01f52b1156cd043d0fa9637f18c1f658996886dad1ecf315806f8
+  translated_at: '2026-05-26T10:58:04.785896+00:00'
+  engine: anthropic
+  token_count: 2333
 ---
 # Exception Safety
 
 Throwing an exception is easy — `throw std::runtime_error("oops")` a single line is all it takes. But the real headache is this: when an exception flies by, who cleans up the files that were opened, the memory that was allocated, the mutexes that were locked? If no one handles this, the best-case scenario is a memory leak, and the worst-case scenario is completely corrupted program state. Exception safety is about exactly this — not "how to throw exceptions," but "can the program's state still be trusted after an exception occurs?"
 
-Let's establish a major premise first: exception safety is not a binary "safe or unsafe." Instead, it consists of **four levels** ranging from worst to best. Understanding these four levels allows us to consciously choose the safety level we want to achieve when designing functions and classes, and to know what trade-offs that requires.
+Let's establish a key premise first: exception safety isn't a binary "safe or unsafe." Instead, it consists of **four levels** ranging from worst to best. Understanding these four levels allows us to consciously choose the safety level we want to achieve when designing functions and classes, and to know what trade-offs that requires.
 
 ## The Four Levels of Exception Safety
 
 ### No Guarantee
 
-This is the worst-case scenario — if an exception occurs, an object might be left in an inconsistent state, resources might leak, and the program's behavior becomes completely unpredictable. It sounds like no one would intentionally write this kind of code, but in reality, as long as you are using raw `new`/`delete` without any RAII wrappers, you are already at this level:
+This is the worst-case scenario — if an exception occurs, the object might be left in an inconsistent state, resources might leak, and the program's behavior becomes completely unpredictable. It sounds like no one would intentionally write this kind of code, but in reality, as long as you are using raw `new`/`delete` without any RAII wrappers, you are already at this level:
 
 ```cpp
 void no_guarantee() {
@@ -41,27 +48,27 @@ void no_guarantee() {
 }
 ```
 
-This code works perfectly fine on the normal execution path — `data` is allocated, used, and then freed. But once `fill_data` or `process_data` throws an exception, the program flow jumps directly to the nearest `catch` block, and `delete[] data` never executes. What's worse, if `no_guarantee` itself doesn't have a `catch`, the caller won't even know a resource leaked — the exception is silently propagated, leaving behind a chunk of unmanaged heap memory.
+This code works perfectly fine on the normal execution path — `data` is allocated, used, and then freed. But once `fill_data` or `process_data` throws an exception, the program flow jumps directly to the nearest `catch` block, and `delete[] data` never executes. What's worse, if `no_guarantee` itself doesn't have a `catch`, the caller won't even know a resource leaked — the exception propagates silently, leaving behind a chunk of unmanaged heap memory.
 
 ### Basic Guarantee
 
 The basic guarantee promises two things: first, no resources will leak; second, the object remains in a **valid** state — you can call its destructor, assign new values to it, and the program won't crash. However, the exact contents of this state are **indeterminate** — you cannot assume the data is the same as before the call; you only know it is in a "reasonable, usable" state.
 
-All standard library containers provide at least the basic guarantee. For example, if `std::vector::push_back` throws a `std::bad_alloc` during reallocation due to insufficient memory, the vector itself remains in a valid state — you can continue operating on it — but whether the previously inserted elements are still there or what the capacity has become is uncertain.
+All standard library containers provide at least the basic guarantee. For example, if `std::vector::push_back` throws a `std::bad_alloc` during reallocation due to insufficient memory, the vector itself remains in a valid state — you can continue to operate on it — but whether the previously inserted elements are still there or what the capacity has become is uncertain.
 
-The core mechanism for achieving the basic guarantee is RAII: if all resources (memory, file handles, locks) are managed by RAII objects, then when an exception occurs, stack unwinding automatically calls the destructors of all local objects, and resources are guaranteed to be correctly released. We will elaborate on this later.
+The core mechanism for achieving the basic guarantee is RAII: if all resources (memory, file handles, locks) are managed by RAII objects, then when an exception occurs, stack unwinding automatically calls the destructors of all local objects, and resources are guaranteed to be correctly released. We'll elaborate on this shortly.
 
 ### Strong Guarantee
 
-The strong guarantee is stricter than the basic guarantee: an operation either **succeeds completely** or **rolls back completely** — if an exception occurs, the object's state is exactly the same as before the call, as if the operation never happened. This is known as "transactional semantics."
+The strong guarantee is stricter than the basic guarantee: the operation either **succeeds completely** or **rolls back completely** — if an exception occurs, the object's state is exactly the same as before the call, as if the operation never happened. This is known as "transactional semantics."
 
-The typical implementation is the **copy-and-swap idiom**: first make modifications on a copy, and if no exceptions occur during the modification, swap the copy with the original object. Because the swap operation (`std::swap`) itself promises not to throw, the entire operation either succeeds or leaves the original object completely unchanged. We will use a brief example later to demonstrate this idea.
+The typical implementation is the **copy-and-swap idiom**: first modify a copy, and if no exceptions occur during the modification, swap the copy with the original object. Because the swap operation (`std::swap`) itself promises not to throw, the entire operation either succeeds or leaves the original object completely unchanged. We'll use a brief example later to demonstrate this approach.
 
 ### Nothrow Guarantee
 
 This is the highest level: the function promises it will **never** throw an exception. In C++11 and later, we use the `noexcept` keyword to mark such functions. Destructors are implicitly `noexcept` — this is a crucial design decision, because destructors are guaranteed to be called during stack unwinding, and if a destructor itself throws an exception, the program will directly call `std::terminate` and terminate.
 
-Some simple operations are naturally non-throwing: assignment of built-in types, copying of pointers, and the `std::swap` specializations for built-in types and most standard containers. When designing a class, if the destructor, `swap` function, and move assignment operator can be made `noexcept`, it provides great convenience to the caller — many standard library operations (like `std::vector::push_back`) will select more efficient implementation paths based on whether the element type is `noexcept`.
+Some simple operations are naturally non-throwing: assignment of built-in types, copying of pointers, and `std::swap` specializations for built-in types and most standard containers. When designing a class, if the destructor, `swap` functions, and move assignment operators can be made `noexcept`, it provides great convenience to the caller — many standard library operations (such as `std::vector::push_back`) will select more efficient implementation paths based on whether the element type is `noexcept`.
 
 ## RAII and Exception Safety
 
@@ -82,7 +89,7 @@ void unsafe_process() {
 }
 ```
 
-If `do_work` throws an exception, both `buffer` and `temp` leak entirely. You might think about wrapping it with a `try-catch`, but what if there are three or four resources? The code will rapidly bloat into spaghetti. Now let's refactor with RAII:
+If `do_work` throws an exception, both `buffer` and `temp` leak entirely. You might think about wrapping it with `try-catch`, but what if there are three or four resources? The code will rapidly bloat into spaghetti. Now let's refactor with RAII:
 
 ```cpp
 // 安全：RAII 守卫，异常发生时自动清理
@@ -97,13 +104,13 @@ void safe_process() {
 }
 ```
 
-The destructor of `std::unique_ptr` calls `delete[]`, and stack unwinding guarantees that the destructor will definitely execute. No `try-catch` is needed, and no manual cleanup logic is required — this is the power of RAII. In fact, the core idea of RAII can be distilled into a single sentence: **the lifetime of a resource should be bound to the lifetime of an object**. As long as this is achieved, exception safety becomes a natural byproduct.
+The destructor of `std::unique_ptr` will call `delete[]`, and stack unwinding guarantees that the destructor will definitely execute. No `try-catch` needed, no manual cleanup logic required — this is the power of RAII. In fact, the core idea of RAII can be distilled into a single sentence: **the lifetime of a resource should be bound to the lifetime of an object**. As long as we achieve this, exception safety becomes a natural byproduct.
 
-> **Pitfall Warning**: The premise of RAII is that "all resources are managed by RAII objects." If you mix RAII and raw pointers in a function — for example, using `std::unique_ptr` to manage a block of memory while also leaving a raw file handle floating around via `fopen` — that file handle will still leak when an exception occurs. **If you use RAII, go all the way — no half measures**. For file handles, the standard library doesn't provide a direct RAII wrapper (C++ doesn't have `std::file_ptr`), but we can write a simple guard class ourselves — the exercise later will have you do this hands-on.
+> **Pitfall Warning**: The prerequisite for RAII is that "all resources are managed by RAII objects." If you mix RAII and raw pointers in a function — for example, using `std::unique_ptr` to manage a block of memory while also leaving a raw file handle sitting around after `fopen` — that file handle will still leak when an exception occurs. **If you use RAII, go all the way — no half measures**. For file handles, the standard library doesn't provide a direct RAII wrapper (C++ doesn't have `std::file_ptr`), but we can write a simple guard class ourselves — the exercise later will give you a chance to do this.
 
 ## lock_guard: A Concrete RAII Guard
 
-`std::lock_guard<std::mutex>` is the most classic application of RAII in concurrent programming. Its implementation is elegantly simple: the constructor calls `mutex.lock()`, and the destructor calls `mutex.unlock()`. That's it.
+`std::lock_guard<std::mutex>` is the most classic application of RAII in concurrent programming. Its implementation is elegantly simple: call `mutex.lock()` in the constructor, and call `mutex.unlock()` in the destructor. That's it.
 
 ```cpp
 #include <mutex>
@@ -122,7 +129,7 @@ void increment_unsafe() {
 }
 ```
 
-If `do_something()` throws an exception, `unlock()` will not execute, and the mutex will remain locked forever — all threads attempting to acquire this mutex will be permanently blocked. This is the classic dead lock scenario. After refactoring with `lock_guard`:
+If `do_something()` throws an exception, `unlock()` won't execute, and the mutex will remain locked forever — all threads attempting to acquire this mutex will be permanently blocked. This is the classic dead lock scenario. After refactoring with `lock_guard`:
 
 ```cpp
 #include <mutex>
@@ -137,13 +144,13 @@ void increment_safe() {
 
 Regardless of whether `do_something()` throws an exception, and regardless of which `return` statement the function exits from, the destructor of `lock_guard` will be called, and the mutex is guaranteed to be released. This is why we say RAII guards transform "the correctness of resource management" from "don't forget it, programmer" into "guaranteed by the language mechanism" — the former relies on human memory, while the latter relies on the compiler's behavioral specification. The latter is obviously far more reliable.
 
-> **Pitfall Warning**: The lifetime of `lock_guard` is from its declaration to the end of its enclosing scope. If you lock the mutex at the very beginning of a function and only release it at the end, the lock hold time might far exceed what is actually needed — this becomes a serious performance bottleneck in multithreaded programs. If you only need to protect a small section of code, you can use a pair of curly braces to create a sub-scope for precise control over the lifetime of `lock_guard`. A more flexible option is `std::unique_lock`, which allows you to manually `lock()` and `unlock()` while still guaranteeing release upon destruction — but the cost of this flexibility is a heavier object and slightly higher runtime overhead.
+> **Pitfall Warning**: The lifetime of `lock_guard` is from its declaration to the end of its enclosing scope. If you lock the mutex at the very beginning of a function and don't release it until the end, the lock hold time might far exceed what's actually needed — this becomes a serious performance bottleneck in multithreaded programs. If you only need to protect a small section of code, you can use a pair of curly braces to create a sub-scope for precise control over the lifetime of `lock_guard`. A more flexible option is `std::unique_lock`, which allows you to manually `lock()` and `unlock()` while still guaranteeing release upon destruction — but the cost of this flexibility is a heavier object and slightly more runtime overhead.
 
 ## copy-and-swap: The Path to the Strong Guarantee
 
 The basic guarantee tells us "no leaks, valid state," but sometimes we need a stronger promise — "either it succeeds, or nothing happened at all." This is the strong guarantee, and the most common technique to achieve it is copy-and-swap.
 
-The idea is this: instead of modifying the original object directly, we first make a copy and perform modifications on the copy. If something goes wrong during modification (an exception is thrown), the original object is completely unaffected — because we only modified the copy. If the modification completes smoothly, we swap the modified copy with the original object — the swap operation itself is `noexcept` and cannot fail.
+The idea is this: instead of modifying the original object directly, we first make a copy and perform the modifications on the copy. If something goes wrong during the modification (an exception is thrown), the original object is completely unaffected — because we only modified the copy. If the modification completes smoothly, we swap the modified copy with the original object — the swap operation itself is `noexcept` and cannot fail.
 
 ```cpp
 class ConfigManager {
@@ -167,11 +174,11 @@ public:
 
 If an exception is thrown in `validate_and_normalize`, the contents of `entries_` remain completely untouched; if everything goes smoothly, `swap` puts the new data in, hands the old data to `temp`, and then `temp` automatically cleans up during its destruction. The entire process doesn't require any `try-catch`.
 
-copy-and-swap is an idiom well worth mastering, but in resource-constrained embedded scenarios, the memory overhead of making a complete copy might be unacceptable. We are just establishing the concept here; later in Volume 2, when we dive deep into RAII and resource management, we will specifically discuss its various variants and trade-offs.
+copy-and-swap is an idiom well worth mastering, but in resource-constrained embedded scenarios, the memory overhead of making a complete copy might be unacceptable. We're just establishing the concept here for now; later in Volume 2, when we dive deep into RAII and resource management, we'll dedicate time to discussing its various variants and trade-offs.
 
 ## Hands-on: Exception Safety Comparison
 
-Now let's tie together what we've learned and write a complete comparison — the same functionality implemented once with raw pointers (unsafe) and once with RAII (safe), so we can observe the behavioral differences when an exception occurs.
+Now let's tie together what we've learned and write a complete comparison — the same functionality implemented once with raw pointers (unsafe) and once with RAII (safe), so we can see the behavioral difference when an exception occurs.
 
 ```cpp
 // safety.cpp
@@ -259,9 +266,9 @@ Expected output:
   Note: no leak! unique_ptr destructors cleaned up.
 ```
 
-The execution paths of both versions are almost identical — both trigger an exception after resource allocation but before release. The difference is that in the unsafe version, the two blocks of memory (`data` and `temp`) will never be freed, whereas in the safe version, `std::unique_ptr` automatically calls `delete[]` during stack unwinding, resulting in zero leaks. This is the tangible difference RAII makes — the code is even shorter than the raw pointer version because there's no need to manually write `delete`.
+The execution paths of both versions are almost identical — both trigger an exception after resource allocation but before release. The difference is that in the unsafe version, the two blocks of memory (`data` and `temp`) will never be freed, whereas in the safe version, `std::unique_ptr` automatically calls `delete[]` during stack unwinding, resulting in zero leaks. This is the tangible difference that RAII makes — the code is even shorter than the raw pointer version because there's no need to manually write `delete`.
 
-> **Pitfall Warning**: In real projects, memory leaks won't be as "quiet" as in this example — they might slowly eat away at available memory over long periods of runtime, eventually causing system crashes, and the crash location is often completely unrelated to the leak location. Valgrind and AddressSanitizer are powerful tools for detecting such issues. Adding `-fsanitize=address` at compile time enables ASan, which reports leaks the moment they occur — far more efficient than post-mortem debugging. Perhaps in the future, the author will properly introduce these handy little tools!
+> **Pitfall Warning**: In real-world projects, memory leaks won't be as "quiet" as in this example — they might slowly eat away at available memory over long periods of runtime, eventually causing the system to crash, and the crash location is often completely unrelated to the leak location. Valgrind and AddressSanitizer are excellent tools for detecting such issues. Adding `-fsanitize=address` at compile time enables ASan, which reports leaks the moment they occur — far more efficient than post-mortem debugging. Perhaps in the future, the author will dedicate a proper introduction to these handy little tools!
 
 ## Exercises
 
@@ -281,7 +288,7 @@ void process_file(const char* path) {
 }
 ```
 
-Hint: Think about it — if `read_and_process` throws an exception, which resources will leak? Rewrite using RAII principles; `FILE*` can be managed using a custom guard class.
+Hint: Think about it — if `read_and_process` throws an exception, which resources will leak? Rewrite using the RAII approach; `FILE*` can be managed by a custom guard class.
 
 ### Exercise 2: Implement ScopedFile
 
@@ -308,6 +315,6 @@ public:
 
 In this chapter, we focused on the topic of exception safety. The four levels of exception safety form a ladder from weak to strong: no guarantee (nothing is managed), basic guarantee (no leaks, valid state), strong guarantee (either succeed or roll back), and nothrow guarantee (never throws an exception). Among these four levels, RAII is the core mechanism for achieving the basic guarantee — as long as the lifetime of all resources is bound to objects, stack unwinding will handle all the cleanup for you. `std::lock_guard` is the classic application of RAII in concurrent scenarios, while the copy-and-swap idiom provides a path to the strong guarantee.
 
-A practical design principle is: **aim for the basic guarantee by default, pursue the strong guarantee for critical operations, and make destructors and move operations non-throwing**. There's no need to pursue the highest level for every line of code — that's neither realistic nor necessary — but make sure your code at least doesn't leave behind a trail of wreckage when an exception flies by.
+A practical design principle is: **aim for the basic guarantee by default, pursue the strong guarantee for critical operations, and make destructors and move operations non-throwing**. There's no need to pursue the highest level for every line of code — that's neither realistic nor necessary — but we must ensure our code doesn't leave behind a trail of wreckage when an exception flies by.
 
-In the next chapter, we will step outside the exception framework and compare the main error handling mechanisms in C++ from a higher perspective: exceptions, return values/error codes, `std::optional`, and `std::expected`, to see which scenarios each is suited for and how to choose between them in real projects.
+In the next chapter, we'll step outside the exception framework and compare several major error handling approaches in C++ from a higher perspective: exceptions, return values/error codes, `std::optional`, and `std::expected`. We'll look at which scenarios each is suited for, and how to choose between them in real-world projects.

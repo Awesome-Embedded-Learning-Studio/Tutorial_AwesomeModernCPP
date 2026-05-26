@@ -1,7 +1,7 @@
 ---
 title: std::span
-description: Non-owning view of a contiguous sequence, zero-overhead alternative to
-  passing pointer + length
+description: Non-owning view of a contiguous sequence, a zero-overhead alternative
+  to passing a pointer and length
 chapter: 99
 order: 1
 tags:
@@ -12,6 +12,12 @@ difficulty: beginner
 cpp_standard:
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/containers/01-span.md
+  source_hash: f5119d6062487e0a1114f8dd97af01649b46b5634c29dd2d8f4a30f304ad3e1e
+  translated_at: '2026-05-26T10:13:56.498914+00:00'
+  engine: anthropic
+  token_count: 472
 ---
 # std::span (C++20)
 
@@ -26,8 +32,8 @@ A lightweight, non-owning view that safely references a contiguous block of memo
 ## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|------|------|------|
-| Construction | `template<class T, size_t E = dynamic_extent> class span` | Template class supporting static or dynamic extents |
+|-----------|-----------|-------------|
+| Construction | `template<class T, size_t E = dynamic_extent> class span` | A class template supporting static or dynamic extents |
 | Get pointer | `T* data() const` | Access the underlying contiguous storage |
 | Element count | `size_t size() const` | Returns the number of elements |
 | Size in bytes | `size_t size_bytes() const` | Returns the size of the sequence in bytes |
@@ -61,10 +67,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: contains only a pointer and a size (or a compile-time constant extent), with no heap allocation
-- Perfect replacement for raw pointer parameters: unifies interfaces for arrays, `std::array`, and `std::vector`, improving safety
-- `TriviallyCopyable` type (explicitly required since C++23, though mainstream implementations already satisfied this beforehand), safe to use for interrupt and DMA (Direct Memory Access) buffer operations
-- `size_bytes()` and `as_bytes()` greatly simplify hardware register mapping and low-level byte-level data processing
+- Zero-overhead abstraction: Contains only a pointer and a length (or a compile-time constant extent), with no heap allocation.
+- Perfect replacement for raw pointer parameters: Unifies interfaces for arrays, `std::array`, and `std::vector`, improving safety.
+- `TriviallyCopyable` type (explicitly required since C++23, though mainstream implementations already satisfied this beforehand), making it safe for ISR and DMA buffer operations.
+- `size_bytes()` and `as_bytes()` greatly simplify hardware register mapping and low-level byte-level data processing.
 
 ## Compiler Support
 

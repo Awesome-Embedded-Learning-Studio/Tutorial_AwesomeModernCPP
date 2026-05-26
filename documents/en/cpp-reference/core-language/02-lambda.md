@@ -1,6 +1,6 @@
 ---
-title: Lambda expression
-description: Define an anonymous function object in-place, capable of capturing variables
+title: Lambda Expression
+description: Define anonymous function objects inline, capable of capturing variables
   within scope.
 chapter: 99
 order: 2
@@ -15,10 +15,16 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/02-lambda.md
+  source_hash: 3222707510d24648c0c63987fa249d9a279b31d141e152412247211ec786fa2d
+  translated_at: '2026-05-26T10:15:11.927305+00:00'
+  engine: anthropic
+  token_count: 416
 ---
 # Lambda Expressions (C++11)
 
-## In a Nutshell
+## One-Liner
 
 Lambda expressions allow us to define an anonymous function object inline, commonly used to pass short logic as an argument to algorithms or callbacks.
 
@@ -32,13 +38,13 @@ None (language feature)
 |------|------|------|
 | Non-capturing lambda | `[captures](params) { body }` | Basic syntax, generates a closure type |
 | No-parameter lambda | `[captures] { body }` | Shorthand that omits the parameter list |
-| Capture by value | `[x, y]` | Captures variables by copying |
+| Capture by value | `[x, y]` | Copies variables by value |
 | Capture by reference | `[&x, &y]` | Captures variables by reference |
 | Capture all by value | `[=]` | Captures all used automatic variables by value |
 | Capture all by reference | `[&]` | Captures all used automatic variables by reference |
 | Mutable lambda | `[captures](params) mutable { body }` | Allows modifying the copies captured by value |
 | Generic lambda | `[captures](auto a, auto b) { body }` | Uses auto for parameters, templated operator() |
-| Explicit template parameters | `[captures]<typename T>(T a) { body }` | C++20, explicitly specifies a template parameter list |
+| Explicit template parameters | `[captures]<typename T>(T a) { body }` | C++20, explicitly specifies the template parameter list |
 | Static lambda | `[captures](params) static { body }` | C++23, operator() is a static member function |
 
 ## Minimal Example
@@ -61,8 +67,8 @@ int main() {
 
 - Closure types are generated at compile time with no heap allocation overhead and zero extra runtime cost
 - Replaces function pointers and hand-written functors, making callback code more compact and readable
-- Beware of lifetime risks with reference captures in asynchronous or interrupt scenarios; value capture is recommended for embedded callbacks
-- C++14 generic lambdas allow us to write generic sorting or search comparison logic without template overhead
+- Beware of lifetime risks with reference capture in asynchronous or interrupt scenarios; value capture is recommended for embedded callbacks
+- C++14 generic lambdas let us write generic sorting or search comparison logic without template overhead
 
 ## Compiler Support
 

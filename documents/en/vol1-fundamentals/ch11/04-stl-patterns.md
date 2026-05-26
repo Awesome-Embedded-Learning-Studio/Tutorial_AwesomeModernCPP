@@ -19,34 +19,40 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch11/04-stl-patterns.md
+  source_hash: fbccb2de68f9dd8a7ff0c5f75c85dccbed9ed5058b461828659644fb07cae296
+  translated_at: '2026-05-26T10:59:36.576358+00:00'
+  engine: anthropic
+  token_count: 3572
 ---
 # Common STL Patterns
 
 In the previous three chapters, we covered `vector`, associative containers, and the algorithm library, diving deep into each domain. But in real-world code, the questions are rarely "how do I use this container" or "how do I call this algorithm." Instead, they are "which container should I choose," "why is my program so slow," and "did I just hit iterator invalidation again." These are cross-cutting concerns that require a systematic perspective.
 
-In this chapter, we connect the dots from the previous chapters. We start with the most frequent decision: which container to use for a given scenario. Next, we walk through the most common STL pitfalls. Then, we cover essential performance fundamentals. Finally, we tie container selection, algorithm pairing, and pitfall avoidance together in a comprehensive practical example. After this chapter, your understanding of the STL will level up from "knowing how to use it" to "knowing how to use it right."
+In this chapter, we connect the dots from the previous chapters. We start by clarifying the most frequent decision: which container to use in a given scenario. Next, we walk through the most common STL pitfalls. Then, we cover essential performance fundamentals. Finally, we tie container selection, algorithm pairing, and pitfall avoidance together in a comprehensive practical example. After this chapter, your understanding of the STL will level up from "knowing how to use it" to "knowing how to use it right."
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
 > - [ ] Quickly select the appropriate STL container based on actual requirements
-> - [ ] Identify and avoid common pitfalls like iterator invalidation and modifying containers during iteration
+> - [ ] Identify and avoid common pitfalls like iterator invalidation and modifying containers during traversal
 > - [ ] Understand the impact of cache friendliness on container performance
 > - [ ] Proficiently use the erase-remove idiom and C++20's `std::erase`
 > - [ ] Apply the "algorithms over hand-written loops" principle to write clearer code
 
 ## Making the Choice — Container Selection Guide
 
-Many developers feel more conflicted after learning about all the containers: which one should I actually use? In reality, the decision logic is very clear for the vast majority of scenarios. Let's walk through it based on your core needs:
+Many developers feel even more conflicted after learning about all the containers: which one should I actually use? In reality, the decision logic is very clear for the vast majority of scenarios. Let's walk through it based on your core needs:
 
-If your data is sequential, its size will change, and you need random access, `std::vector` is almost always the first choice. Its elements are stored contiguously in memory, allowing CPU cache prefetching to work efficiently. Subscript access is O(1), and amortized O(1) for push/pop at the back. Its only weakness is O(n) insertion and deletion in the middle—but honestly, most programs don't need frequent middle insertions.
+If your data is sequential, its quantity will change, and you need random access, `std::vector` is almost always the first choice. Its elements are stored contiguously in memory, allowing CPU cache prefetching to work efficiently. Subscript access is O(1), and amortized O(1) for push/pop at the back. Its only weakness is O(n) insertion and deletion in the middle—but honestly, most programs don't need frequent middle insertions.
 
-If you need to "look up a value by key" and don't need to iterate in key order, `std::unordered_map` is the most efficient choice, offering average O(1) lookup speed. If you also need ordered iteration by key or range queries, switch to `std::map`.
+If you need to "look up a value by key" and don't need to iterate in key order, `std::unordered_map` is the most efficient choice, offering average O(1) lookup speed. If you also need ordered traversal by key or range queries, switch to `std::map`.
 
-If you need to maintain a "set of unique elements," use `std::set`. If you only need to check "whether something is present" and don't need ordering, `std::unordered_set` is faster.
+If you need to maintain a "set of unique elements," use `std::set`. If you only need to check "whether something exists" and don't need ordering, `std::unordered_set` is faster.
 
-If the number of elements is known at compile time and doesn't need dynamic resizing, use `std::array`—it is a zero-overhead fixed-size array that avoids the dynamic allocation overhead of a vector and is just as efficient as a C array.
+If the number of elements is known at compile time and doesn't need dynamic resizing, use `std::array`—it is a zero-overhead fixed-size array that eliminates the dynamic allocation overhead of a vector, and is just as efficient as a C array.
 
 Let's organize this into a decision table:
 
@@ -54,21 +60,21 @@ Let's organize this into a decision table:
 |----------|----------|------|
 | Sequential storage, random access | `std::vector` | Contiguous memory, cache friendly |
 | Fast key lookup (no ordering needed) | `std::unordered_map` | Average O(1) lookup |
-| Key lookup with ordered iteration | `std::map` | O(log n), red-black tree |
+| Key lookup with ordered traversal | `std::map` | O(log n), red-black tree |
 | Unique element set | `std::set` | Automatic deduplication, ordered |
 | Fixed-size array | `std::array` | Zero overhead, stack allocated |
 
-This table covers 90% of daily decisions. The remaining 10% involves `deque` (double-ended queue, O(1) insertion/deletion at both ends), `list` (doubly linked list, O(1) middle insertion/deletion but terrible cache performance), `multimap` / `multiset` (allowing duplicate keys), and so on. You can look up the documentation when you encounter them.
+This table covers 90% of daily decisions. The remaining 10% involves `deque` (double-ended queue, O(1) insertion/deletion at both ends), `list` (doubly linked list, O(1) middle insertion/deletion but terrible cache performance), `multimap` / `multiset` (allow duplicate keys), and so on. You can look up the documentation when you encounter these.
 
-There is a practical rule of thumb worth remembering: **if you're not sure what to use, just use `vector`**. Bjarne Stroustrup (the creator of C++) and many C++ experts have repeatedly emphasized this point. `vector` performs decently in most scenarios; even when its theoretical complexity isn't optimal, its cache friendliness often makes it win in real-world benchmarks. Only consider other containers when you can clearly articulate "why vector won't work."
+Here is a practical rule of thumb worth remembering: **if you're not sure what to use, use `vector`**. Bjarne Stroustrup (the creator of C++) and many C++ experts have repeatedly emphasized this point. `vector` performs decently in most scenarios. Even when its theoretical complexity isn't optimal, its cache friendliness often makes it win in real-world benchmarks. Only consider other containers when you can clearly articulate "why vector won't work."
 
 ## Pitfall Warnings — Where the STL Most Often Goes Wrong
 
-After using the STL for a while, you'll find that what really gives you a headache isn't "how to call a certain interface," but those traps where "it compiles, even runs fine, but the logic is already wrong." Here we go through the most common pitfalls one by one, each of which I or C++ developers I know have stepped into for real.
+After using the STL for a while, you'll find that the real headaches aren't "how to call a certain interface," but rather those traps where "it compiles, even runs fine, but the logic is already wrong." Here we go through the most common pitfalls one by one, each of which I or C++ developers I know have stepped into for real.
 
 ### Pitfall 1: Iterator Invalidation
 
-We mentioned this issue when discussing `vector`, but it doesn't just affect `vector`, and it doesn't only happen during reallocation. The core rule is this: for `vector` and `string`, any operation that might trigger reallocation (`push_back`, `emplace_back`, `insert`, or reallocation caused by `reserve`) invalidates all iterators, pointers, and references. Even without reallocation, `insert` and `erase` invalidate iterators at and after the affected position. For `deque`, any insertion operation invalidates all iterators. For `map`, `set`, `unordered_map`, and `unordered_set`, `erase` only invalidates the iterator pointing to the erased element—other iterators remain unaffected. This is a very important distinction.
+We mentioned this issue when discussing `vector`, but it doesn't just affect `vector`, and it doesn't only happen during reallocation. The core rule is this: for `vector` and `string`, any operation that might trigger reallocation (`push_back`, `emplace_back`, `insert`, or reallocation caused by `reserve`) invalidates all iterators, pointers, and references. Even without reallocation, `insert` and `erase` invalidate iterators at and after the affected position. For `deque`, any insertion operation invalidates all iterators. For `map`, `set`, `unordered_map`, and `unordered_set`, `erase` only invalidates iterators pointing to the deleted elements, leaving other iterators unaffected—this is a very important distinction.
 
 ```cpp
 std::vector<int> v = {1, 2, 3, 4, 5};
@@ -82,11 +88,11 @@ m.erase(1);               // 删除 key=1 的元素
 // mit 仍然有效——map 的 erase 不影响其他迭代器
 ```
 
-The practical significance of this distinction is that if you need to delete elements while iterating over a `map`, you can do so directly with an iterator. However, deleting elements while iterating over a `vector` requires extra care. Let's look at this more specific scenario next.
+The practical significance of this distinction is that if you need to delete elements while iterating over a `map`, you can do so directly with iterators, but deleting elements while iterating over a `vector` requires extra care. Let's look at this more specific scenario next.
 
-> **Pitfall Warning**: After saving an iterator, treat any operation that might modify the container's structure as "potentially invalidating the iterator." Don't assume "I just push_backed one element, it should be fine"—vector's reallocation strategy is implementation-dependent, and you can't predict which push_back will trigger reallocation. If you truly need to continue using information about a certain position after modifying the container, use an index instead of an iterator, because indexes are logically stable.
+> **Pitfall Warning**: After saving an iterator, treat any operation that might modify the container's structure as "potentially invalidating the iterator." Don't assume "I just push_backed one element, it should be fine"—vector's reallocation strategy is implementation-defined, and you can't predict which push_back will trigger reallocation. If you truly need to continue using information about a certain position after modifying the container, use indices instead of iterators, because indices are logically stable.
 
-### Pitfall 2: Modifying a Container During Iteration
+### Pitfall 2: Modifying a Container During Traversal
 
 This is a very classic failure scenario. First, let's look at an example that "looks fine at first glance but will blow up":
 
@@ -122,15 +128,15 @@ v.erase(it, v.end());
 std::erase_if(v, [](int x) { return x % 2 == 0; });
 ```
 
-For `map` and `set`, the safe way to delete during iteration is slightly different. Because prior to C++11, `erase` returned `void`, the traditional approach was `m.erase(it++)`—copy the iterator, increment it, then pass the copy to erase. Starting from C++11, the `erase` of associative containers also returns the next iterator, so the approach is the same as for vector: `it = m.erase(it)`.
+For `map` and `set`, the safe way to delete during traversal is slightly different. Because prior to C++11, `erase` returned `void`, the traditional approach was `m.erase(it++)`—copy the iterator, increment it, then pass the copy to erase. Starting from C++11, the `erase` of associative containers also returns the next iterator, so the syntax is the same as for vector: `it = m.erase(it)`.
 
-> **Pitfall Warning**: You must absolutely never modify a container's structure (inserting or deleting elements) inside a range-for loop. Range-for uses iterators under the hood, and you cannot capture the return value of `erase` inside a range-for. If the compiler has sanitizers enabled, these bugs are easy to catch; but if not, they might "happen to run"—completely invisible during the debug phase, only to crash under a specific load in production, making debugging extremely painful.
+> **Pitfall Warning**: You must absolutely never modify a container's structure (inserting or deleting elements) inside a range-for loop. Range-for uses iterators under the hood, and you cannot capture the return value of `erase` inside a range-for. If the compiler has sanitizers enabled, these bugs are easily caught; but if not, they might "happen to run"—completely invisible during the debug phase, only to crash under a specific load in production, making debugging extremely painful.
 
 ### Pitfall 3: map's operator[] Silently Inserting Elements
 
-We covered this pitfall in detail when discussing associative containers, but it appears so frequently that we need to emphasize it again from a "pattern" perspective. `map[key]` automatically inserts a default-constructed element when the key doesn't exist. This means two consequences: first, using `operator[]` on a `const map` simply won't compile, because it is a modifying operation; second, if you just want to check whether a key exists and use `operator[]`, the map gets silently modified.
+We covered this pitfall in detail when discussing associative containers, but it appears so frequently that we need to emphasize it again from a "pattern" perspective. `map[key]` automatically inserts a default-constructed element when the key doesn't exist. This means two consequences: first, using `operator[]` on a `const map` simply won't compile, because it is a modifying operation; second, if you just want to check whether a key exists and use `operator[]`, the map will be silently modified.
 
-The most insidious scenario is accidentally triggering `operator[]` during iteration:
+The most insidious scenario is accidentally triggering `operator[]` during traversal:
 
 ```cpp
 std::map<std::string, int> word_count = {{"hello", 2}, {"world", 1}};
@@ -142,21 +148,21 @@ for (const auto& [word, count] : word_count) {
 }
 ```
 
-Of course, the example above is a bit extreme, but a more hidden variant is: you call a function inside the loop body, and that function internally does a `operator[]` access on the map. So the core principle is: **for read-only lookups, always use `find`, `count`, or `contains` (C++20); leave `operator[]` for scenarios where you genuinely need "create on access."**
+Of course, the example above is a bit extreme, but a more hidden variant is: you call a function inside the loop body, and that function internally accesses the map using `operator[]`. So the core principle is: **for read-only lookups, always use `find`, `count`, or `contains` (C++20), and leave `operator[]` for scenarios where you genuinely need "create on access."**
 
-> **Pitfall Warning**: If your value type doesn't have a default constructor (for example, a class that only accepts arguments for construction), then `operator[]` won't even compile when the key is missing—which is actually a good thing, because the compiler blocks the pitfall for you. What's truly dangerous are types like `int` and `string` that can be default-constructed; `operator[]` silently inserts a 0 or an empty string, the logic is wrong, but the program keeps running without a hitch.
+> **Pitfall Warning**: If your value type doesn't have a default constructor (for example, a class that only accepts arguments for construction), then `operator[]` won't even compile when the key is missing—which is actually a good thing, because the compiler blocks the pitfall for you. The truly dangerous types are `int` and `string`, which can be default-constructed. `operator[]` silently inserts a 0 or an empty string; the logic is wrong, but the program keeps running without a hitch.
 
 ## Understanding Performance — Cache, Reservation, and Selection
 
-Now that we've covered the pitfalls, let's talk about performance. Many developers, after learning the time complexities of various containers, think choosing a container is simply choosing between O(1) and O(log n). In reality, modern CPU cache mechanisms often have a greater impact on performance than algorithmic complexity.
+Now that we've covered the pitfalls, let's talk about performance. After learning the time complexities of various containers, many developers think choosing a container is simply choosing between O(1) and O(log n). In reality, the impact of modern CPU caching mechanisms on performance is often greater than algorithmic complexity.
 
 ### Contiguous Memory and Cache Friendliness
 
-CPUs access memory much slower than they execute instructions, so modern CPUs have multi-level caches (L1, L2, L3). When a CPU reads data from a certain address, it loads an entire block of nearby data (usually 64 bytes, i.e., one cache line) into the cache at once. This means that if you are sequentially traversing a contiguous memory data structure, the first access brings a whole block of data into the cache, and subsequent accesses hit the cache directly, making them extremely fast.
+CPUs access memory much slower than they execute instructions, so modern CPUs have multi-level caches (L1, L2, L3). When a CPU reads data from a certain address, it loads an entire block of nearby data (typically 64 bytes, known as a cache line) into the cache at once. This means that if you are sequentially traversing a contiguous memory data structure, the first access pulls an entire block into the cache, and subsequent accesses hit the cache directly, making them extremely fast.
 
-The elements of `std::vector` and `std::array` are tightly packed in memory, resulting in very high cache hit rates during traversal. In contrast, each node of a `std::list` is independently allocated, and the positions of nodes in memory have no pattern whatsoever, meaning almost every access during traversal hits main memory, resulting in extremely low cache hit rates. Even though `list` has O(1) middle insertion and deletion while `vector` is O(n), vector is often faster in actual execution—because the power of CPU cache prefetching compensates for the disadvantage in theoretical complexity.
+The elements of `std::vector` and `std::array` are tightly packed in memory, resulting in very high cache hit rates during traversal. In contrast, each node of a `std::list` is independently allocated, and the positions of nodes in memory have no pattern, meaning almost every access during traversal hits main memory, resulting in extremely low cache hit rates. Even though `list` has O(1) middle insertion and deletion while `vector` is O(n), vector is often faster in actual execution—because the power of CPU cache prefetching compensates for the disadvantage in theoretical complexity.
 
-A classic benchmarking conclusion is that for containers storing small elements like `int` or `double`, a linear search on a `vector` (O(n)) is often faster than node-by-node traversal on a `list` when n is around 1000 or less. This isn't because O(n) is better than O(1), but because the cache advantage of contiguous memory is simply too large.
+A classic benchmarking conclusion is that for containers storing small elements like `int` or `double`, linear search on a `vector` (O(n)) is often faster than node-by-node traversal on a `list` when n is around 1000 or less. This isn't because O(n) is better than O(1), but because the cache advantage of contiguous memory is simply too large.
 
 ### The Importance of reserve
 
@@ -176,9 +182,9 @@ for (int i = 0; i < 10000; ++i) {
 
 A lesser-known but very practical fact is that most standard library implementations use "Small String Optimization" (SSO). When a `std::string`'s length is below a certain threshold (usually 15–22 bytes, depending on the implementation), the string data is stored directly in an internal buffer within the string object, requiring no heap allocation. This means copying, assigning, and destroying short strings are very fast. In real-world development, most strings are short (variable names, configuration items, log messages, etc.), and SSO quietly saves you a massive amount of memory allocation overhead.
 
-## Practical Exercise — Comprehensively Applying STL Patterns
+## Practical Exercise — Comprehensive Application of STL Patterns
 
-Now let's combine all the knowledge points discussed in this chapter—container selection, pitfall avoidance, and performance awareness—into a comprehensive practical program. The scenario is this: we have a batch of sensor readings, and we need to deduplicate them, filter out anomalous values, sort them, compute statistics, and output a final analysis report.
+Now let's combine all the knowledge points discussed in this chapter—container selection, pitfall avoidance, and performance awareness—into a comprehensive practical program. The scenario is this: we have a batch of sensor readings, and we need to deduplicate them, filter out outliers, sort them, compute statistics, and output a final analysis report.
 
 ```cpp
 #include <algorithm>
@@ -396,11 +402,11 @@ After outlier filter: 10
   [temp-01] min=22.5, max=23, avg=22.74, n=5
 ```
 
-Let's break down the design decisions in this program layer by layer. For deduplication, we chose `unordered_set` instead of `set` because we only care about "have we seen this before" and don't need ordered traversal, making O(1) lookup more appropriate than O(log n). Note that we must custom-define `KeyHash` and `KeyEqual` here—because `Key` is a custom struct, and the standard library doesn't have a default hash function for it. If you forget to provide them, the compiler will "kindly remind" you with a barrage of template instantiation errors.
+Let's break down the design decisions in this program layer by layer. For deduplication, we choose `unordered_set` instead of `set` because we only care about "have we seen this before" and don't need ordered traversal, making O(1) lookup more appropriate than O(log n). Note that we must customize `KeyHash` and `KeyEqual` here—because `Key` is a custom struct, and the standard library doesn't have a default hash function for it. If you forget to provide them, the compiler will "gently remind" you with a barrage of template instantiation errors.
 
-The key design in anomalous value filtering is **calculating statistics grouped by sensor**. Different sensors have vastly different units and value ranges (temperature is around 22–23°C, air pressure is around 1013 hPa). If you mix all readings together to calculate the mean and standard deviation, no single value would be considered anomalous. Therefore, `filter_outliers` first groups by `sensor_id`, then independently calculates the mean and standard deviation for each group. This way, 85.0°C in the temperature sensor and 12.0 hPa in the air pressure sensor can be correctly identified as anomalous values.
+The key design for outlier filtering is **computing statistics grouped by sensor**. Different sensors have vastly different units and value ranges (temperature around 22–23°C, pressure around 1013 hPa). If we mix all readings together to calculate the mean and standard deviation, no single value would be considered an outlier. Therefore, `filter_outliers` first groups by `sensor_id`, then independently calculates the mean and standard deviation for each group. This way, 85.0°C in the temperature sensor and 12.0 hPa in the pressure sensor can be correctly identified as outliers.
 
-For grouping, we chose `unordered_map<string, vector<Reading>>`, again because we don't need ordered iteration by key. `reserve(16)` is an empirical pre-allocation—the number of sensors is usually small, and a single allocation avoids subsequent rehashes. For filtering anomalous values, we used `remove_if` + `erase` instead of deleting directly during iteration—this is both safe and clear. The statistics section is done entirely with STL algorithms—`minmax_element` finds the max and min values in a single pass, `accumulate` computes the sum, with no hand-written loops.
+For grouping, we choose `unordered_map<string, vector<Reading>>`, again because we don't need ordered traversal by key. `reserve(16)` is an empirical pre-allocation—the number of sensors is usually small, and a single allocation avoids subsequent rehashes. For filtering outliers, we use `remove_if` + `erase` instead of directly deleting during traversal—this is both safe and clear. The statistics section is entirely done with STL algorithms—`minmax_element` finds the max and min values in a single pass, `accumulate` computes the sum, with no hand-written loops.
 
 ## Try It Yourself — Exercises
 
@@ -408,7 +414,7 @@ For grouping, we chose `unordered_map<string, vector<Reading>>`, again because w
 
 Choose the most appropriate container for the following scenarios and explain your reasoning: (a) storing a game character's inventory item list, with frequent additions and deletions at the end; (b) maintaining a spell checker's dictionary, requiring frequent checks of whether a word exists; (c) storing a student ID-to-name mapping for an entire class, outputting in student ID order; (d) storing data for a 3x3 matrix.
 
-### Exercise 2: Fixing Buggy Code
+### Exercise 2: Fix the Buggy Code
 
 The following code has at least two STL pitfalls. Find and fix them:
 
@@ -429,11 +435,11 @@ Write a benchmark: store 100,000 random integers in both a `std::vector<int>` an
 
 In this chapter, we reorganized the knowledge from the previous three chapters from the perspective of "how to use the STL correctly." Regarding container selection, the core idea is to decide based on requirements: choose `vector` for sequential storage, `unordered_map` for fast lookup, `map` for ordered key-value pairs, `set` for deduplication, and `array` for fixed sizes. If you're unsure, just use `vector`; it's almost always a safe choice.
 
-Regarding pitfall avoidance, the three traps requiring the most vigilance are iterator invalidation (especially after vector reallocation and erase), modifying containers during iteration (use remove-erase instead of hand-written deletion loops), and map's `operator[]` silently inserting elements (use `find` or `contains` for read-only lookups).
+For pitfall avoidance, the three traps requiring the most vigilance are iterator invalidation (especially after vector reallocation and erase), modifying containers during traversal (use remove-erase instead of hand-written deletion loops), and map's `operator[]` silently inserting elements (use `find` or `contains` for read-only lookups).
 
-Regarding performance, the cache friendliness of contiguous memory often makes `vector` run faster in real-world scenarios than `list`, which has a better theoretical complexity. `reserve` is a powerful tool for eliminating reallocation overhead, and it works for both vector and unordered_map.
+Regarding performance, the cache friendliness of contiguous memory often makes `vector` run faster in real-world scenarios than `list`, which has better theoretical complexity. `reserve` is a powerful tool for eliminating reallocation overhead, effective for both vector and unordered_map.
 
-With this, Chapter 11 is fully complete. We started with `vector`, learned about associative containers and the algorithm library, and finally integrated this knowledge into systematic STL usage patterns. In the next chapter, we dive into the C++ memory model—from memory layout to stack and heap allocation, from `new`/`delete` to memory alignment. These are the low-level foundations for writing high-performance C++ code.
+With this, Chapter 11 is fully complete. We started with `vector`, learned about associative containers and the algorithm library, and finally integrated this knowledge into systematic STL usage patterns. In the next chapter, we dive into the C++ memory model—from memory layout to heap and stack allocation, from `new`/`delete` to memory alignment. These are the low-level foundations for writing high-performance C++ code.
 
 ---
 

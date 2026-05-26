@@ -1,21 +1,27 @@
 ---
-title: 'Volume 7: Software Engineering Practice'
+title: 'Part 7: Software Engineering Practices'
 description: CMake, package management, testing, static analysis
 platform: host
 tags:
 - cpp-modern
 - host
 - intermediate
+translation:
+  source: documents/vol7-engineering/index.md
+  source_hash: bb87046a0b4ae80721703db7ed5885aba5f57e078f506853fc942b95e9f24e15
+  translated_at: '2026-05-26T11:53:23.968854+00:00'
+  engine: anthropic
+  token_count: 238
 ---
 # Volume 7: Software Engineering Practices
 
-> Status: Partial content exists (pending rewrite)
+> Status: Partial content available (pending rewrite)
 
 ## Overview
 
 This volume covers C++ software engineering practices.
 
-## Existing Articles (Pending Rewrite to General Content)
+## Existing Articles (Pending Rewrite to Generic Content)
 
 ### Build and Environment
 

@@ -10,7 +10,7 @@ tags:
   - coroutine
   - advanced
 cpp_standard: [20]
-reading_time_minutes: 60
+reading_time_minutes: 9
 prerequisites:
   - "Lab 0: Thread Lifecycle Lab"
   - "Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives"
@@ -273,7 +273,7 @@ TEST_CASE("Milestone 4: metrics track runtime behavior",
 
     runtime.stop();
 }
-```cpp
+```
 
 ## 自查清单
 

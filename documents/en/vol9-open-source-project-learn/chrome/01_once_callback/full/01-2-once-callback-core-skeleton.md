@@ -1,8 +1,8 @@
 ---
 title: 'OnceCallback in Practice (Part 2): Building the Core Skeleton'
-description: Building the OnceCallback Class Skeleton in 5 Steps from Scratch — Template
-  Partial Specialization, Data Members, Constructor Constraints, run() Consumption
-  Semantics, Query Interface
+description: Building the OnceCallback class skeleton in five steps from scratch—template
+  partial specialization, data members, constructor constraints, run() consumption
+  semantics, and query interfaces
 chapter: 1
 order: 2
 tags:
@@ -26,19 +26,25 @@ prerequisites:
 related:
 - OnceCallback 实战（三）：bind_once 实现
 - OnceCallback 实战（四）：取消令牌设计
+translation:
+  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-2-once-callback-core-skeleton.md
+  source_hash: 537925a4f921a63c964f12d365b3e7c0d35a5abf8169998edb58cc011344d1ea
+  translated_at: '2026-05-26T12:25:22.536516+00:00'
+  engine: anthropic
+  token_count: 2293
 ---
 # OnceCallback in Practice (Part 2): Building the Core Skeleton
 
 ## Introduction
 
-In the previous article, we clarified "why we need OnceCallback" and "what the target API should look like." Now we dive into writing the actual code. The task for this article is to build the class skeleton of OnceCallback from scratch—not by writing all the functionality at once, but in five steps, each layering on top of the previous one. Once the skeleton is complete, subsequent `bind_once`, cancellation tokens, and `then()` are all just components added onto this framework.
+In the previous article, we clarified "why we need OnceCallback" and "what the target API should look like." Now we will actually start writing code. The task in this article is to build the class skeleton of OnceCallback from scratch—not by writing all the functionality at once, but in five steps, each adding a layer on top of the previous one. Once the skeleton is complete, subsequent `bind_once`, cancellation tokens, and `then()` are all just components added onto this skeleton.
 
-We have thoroughly covered all the prerequisite knowledge in the previous seven articles. This article is pure hands-on practice—we directly reference the actual source code and translate every design decision into implementation.
+We have already thoroughly covered all the prerequisite knowledge in the previous seven articles. This article is pure hands-on practice—we will directly reference the actual source code and implement every design decision in code.
 
 > **Learning Objectives**
 >
 > - Build the complete class skeleton of `OnceCallback<R(Args...)>` from scratch
-> - Understand the responsibility of each data member and method
+> - Understand the responsibilities of each data member and method
 > - Master the deducing this implementation of `run()` and the consumption logic of `impl_run()`
 
 ---
@@ -73,7 +79,7 @@ When you write `OnceCallback<int(int, int)>`, the compiler matches `int(int, int
 
 ## Step 2: Data Members — Three Core Storages
 
-Now we add data members to the partially specialized class. OnceCallback needs three things to manage its state.
+Now we add data members to the partially specialized class. OnceCallback needs three things to manage its own state.
 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
@@ -93,17 +99,17 @@ private:
 };
 ```
 
-`func_` is the core of type erasure—it uniformly wraps callable objects of various forms (lambdas, function pointers, functors) into a calling interface with a `FuncSig` signature. Regardless of what you pass in, `func_` can invoke it using the same `operator()`.
+`func_` is the core of type erasure—it uniformly wraps various forms of callable objects (lambdas, function pointers, functors) into a calling interface with a `FuncSig` signature. Regardless of what you pass in, `func_` can invoke it using the same `operator()`.
 
-`status_` is a tri-state enum, distinguishing between "never assigned," "ready to call," and "already called." Why can't we rely solely on the null check of `func_`? Because the `operator bool()` of `std::move_only_function` can only distinguish between "null" and "non-null" states, and the state after a move is unspecified—as we detailed in Prerequisite Knowledge (Part 5).
+`status_` is a three-state enum, distinguishing between "never assigned," "ready to call," and "already called." Why can't we rely solely on the null check of `func_`? Because the `operator bool()` of `std::move_only_function` can only distinguish between "null" and "non-null" states, and the post-move state is unspecified—as we detailed in Prerequisite Knowledge (Part 5).
 
-`token_` is an optional cancellation token, used to check whether execution should be canceled before the callback runs. It defaults to a null pointer (cancellation mechanism disabled) and is set via the `set_token()` method. We will dedicate a future article to this topic.
+`token_` is an optional cancellation token, used to check whether execution should be canceled before the callback runs. It defaults to a null pointer (cancellation mechanism disabled) and is set via the `set_token()` method. We will have a dedicated article for this later.
 
 ---
 
 ## Step 3: Constructors and requires Constraints
 
-Next, we add the constructors. The key point here is that the template constructor must use `requires` constraints to prevent it from hijacking the move constructor—we covered this problem in Prerequisite Knowledge (Part 4).
+Next, we add the constructors. The key point here is that the template constructor must use a `requires` constraint to prevent it from hijacking the move constructor—we already covered this problem in Prerequisite Knowledge (Part 4).
 
 ```cpp
 // not_the_same_t concept：F 退化后不是 T
@@ -151,17 +157,17 @@ public:
 
 Let's understand these constructors one by one.
 
-The **template constructor** is the most commonly used—it is called when you write `OnceCallback<int(int)>([](int x) { return x; })`. `Functor` is deduced as the closure type of the lambda, and `requires not_the_same_t` ensures that when the input is a `OnceCallback` itself, the template is excluded (letting the move constructor handle it). `std::move(function)` moves the passed callable object into `func_`, and `status_` is set to `kValid`.
+The **template constructor** is the most commonly used—this is what gets called when you write `OnceCallback<int(int)>([](int x) { return x; })`. `Functor` is deduced as the closure type of the lambda, and `requires not_the_same_t` ensures that when the input is a `OnceCallback` itself, the template is excluded (letting the move constructor handle it). `std::move(function)` moves the passed callable object into `func_`, and `status_` is set to `kValid`.
 
-The **default constructor** creates an empty OnceCallback—`status_` is `kEmpty` (determined by the default value of the member initializer), and both `func_` and `token_` are empty.
+The **default constructor** creates an empty OnceCallback—`status_` is `kEmpty` (determined by the default values of the member initializers), and both `func_` and `token_` are empty.
 
-The **move constructor** steals everything from another OnceCallback—`func_` and `token_` are transferred via `std::move`, and `status_` is copied over as well. The key point is that the source object is set to `kEmpty` after the move—this is something we do explicitly, rather than relying on the post-move state of `std::move_only_function`.
+The **move constructor** steals everything from another OnceCallback—`func_` and `token_` are transferred via `std::move`, and `status_` is copied over as well. The key point is that the source object is set to `kEmpty` after the move—this is something we do explicitly, not relying on the post-move state of `std::move_only_function`.
 
 ---
 
 ## Step 4: The deducing this Implementation of run()
 
-This step is the soul of the entire skeleton. `run()` uses deducing this to intercept lvalue calls at compile time, forwarding rvalue calls to the internal `impl_run()`.
+This step is the soul of the entire skeleton. `run()` uses deducing this to intercept lvalue calls at compile time, and when called via an rvalue, it forwards to the internal `impl_run()`.
 
 ```cpp
 // 声明（在类体内）
@@ -215,17 +221,17 @@ ReturnType OnceCallback<ReturnType(FuncArgs...)>::impl_run(FuncArgs... args) {
 
 There are a few key details worth noting.
 
-First, look at the consumption order—`impl_run` first moves `func_` out as a local variable `functor`, then sets `func_` to null, sets `status_` to kConsumed, and finally executes `functor`. This order is critical: extract the callable object first, mark the state, and then execute. Even if the callable object throws an exception internally, `status_` is already `kConsumed`, so the callback will not be left in an inconsistent state.
+First, look at the consumption order—`impl_run` first moves `func_` out as a local variable `functor`, then sets `func_` to null, sets `status_` to kConsumed, and finally executes `functor`. This order is important: we take the callable object out first, mark the state, and then execute. Even if the callable object throws an exception internally, `status_` is already `kConsumed`, so the callback will not be left in an inconsistent state.
 
-Next, look at `if constexpr`—a void return type cannot be assigned and returned in the常规 way. `if constexpr (std::is_void_v<ReturnType>)` selects the branch at compile time: the void case takes the "invoke but don't assign" path, while the non-void case takes the "invoke and assign to return" path. This is the standard pattern we discussed in the cheat sheet article.
+Next, look at `if constexpr`—a void return type cannot be assigned and returned in the usual way. `if constexpr (std::is_void_v<ReturnType>)` selects the branch at compile time: the void case takes the "call but don't assign" path, while the non-void case takes the "call and assign to return" path. This is the standard pattern we discussed in the cheat sheet article.
 
-Finally, look at the cancellation check—it checks the cancellation token before execution. If canceled, it consumes the callback without executing it. For a void return, it simply `return`; for a non-void return, it throws `std::bad_function_call`. The exception-throwing behavior for non-void might seem aggressive, but the reasoning is solid: the caller expects a return value, but we cannot provide a meaningful one, so throwing an exception is safer than returning an undefined value.
+Finally, look at the cancellation check—we check the cancellation token before execution. If canceled, we consume the callback directly without executing it. For a void return, we simply `return`; for a non-void return, we throw `std::bad_function_call`. The exception-throwing behavior for non-void might seem aggressive, but the reasoning is sound: the caller expects a return value, but we cannot provide a meaningful one, so throwing an exception is safer than returning an undefined value.
 
 ---
 
 ## Step 5: Query Interfaces
 
-Finally, we add a set of query methods so the caller can check the callback's state before execution.
+Finally, we add a set of query methods so that callers can check the callback's state before execution.
 
 ```cpp
 [[nodiscard]] bool is_cancelled() const noexcept {
@@ -251,9 +257,9 @@ void set_token(std::shared_ptr<CancelableToken> token) {
 }
 ```
 
-The logic of `is_cancelled()` is: return true if the state is not kValid (both empty and consumed callbacks count as "canceled"), and also return true if a token exists and the token is invalid. `maybe_valid()` is simply `!is_cancelled()` for now. `is_null()` only checks if it has never been assigned. `operator bool()` combines both the empty and canceled conditions.
+The logic of `is_cancelled()` is: if the state is not kValid, it returns true (both empty and consumed callbacks count as "canceled"), and if there is a token and the token is invalid, it also returns true. `maybe_valid()` is simply `!is_cancelled()` for now. `is_null()` only checks whether it was never assigned. `operator bool()` combines both the empty and canceled conditions.
 
-All query methods are annotated with `[[nodiscard]]`—calling these methods is specifically to get a return value for conditional logic, so ignoring the return value is most likely a typo. The `explicit` keyword prevents implicit conversion to `bool`.
+All query methods are annotated with `[[nodiscard]]`—calling these methods is specifically to get a return value for conditional checks, so calls that ignore the return value are likely typos. The `explicit` keyword prevents implicit conversion to `bool`.
 
 ---
 
@@ -294,13 +300,13 @@ int main() {
 }
 ```
 
-If all four scenarios pass—constructing a callback yields the correct return value, a void callback executes normally, resources are released after a callback capturing `unique_ptr` is consumed, and the source object becomes empty while the target object remains valid after a move—the skeleton is solid.
+If all four scenarios pass—constructing a callback yields the correct return value, a void callback executes normally, resources are released after a callback capturing `unique_ptr` is consumed, and the source object becomes empty while the target object is valid after a move—then the skeleton is solid.
 
 ---
 
 ## Summary
 
-In this article, we built the core skeleton of OnceCallback in five steps. The template partial specialization `OnceCallback<R(Args...)>` decomposes function types through pattern matching. Three data members each have their own duties—`func_` handles type erasure, `status_` manages the tri-state, and `token_` handles the cancellation mechanism. The constructors use `requires not_the_same_t` to protect the move constructor from being hijacked. `run()` uses deducing this to intercept lvalue calls at compile time, and `impl_run()` guarantees the exception safety of consumption semantics through the order of "moving func_ out first, then executing."
+In this article, we built the core skeleton of OnceCallback in five steps. The template partial specialization `OnceCallback<R(Args...)>` decomposes function types through pattern matching. Three data members each have their own duties—`func_` handles type erasure, `status_` manages the three-state logic, and `token_` handles the cancellation mechanism. The constructors use `requires not_the_same_t` to protect the move constructor from being hijacked. `run()` uses deducing this to intercept lvalue calls at compile time, and `impl_run()` guarantees the exception safety of the consumption semantics through the order of "moving func_ out first, then executing."
 
 In the next article, we will add the first component to the skeleton—`bind_once()`, to implement argument binding.
 

@@ -10,7 +10,7 @@ tags:
   - coroutine
   - advanced
 cpp_standard: [20]
-reading_time_minutes: 80
+reading_time_minutes: 18
 prerequisites:
   - "卷五 ch06: 异步 I/O 与协程"
   - "Lab 3: Production-style Thread Pool"

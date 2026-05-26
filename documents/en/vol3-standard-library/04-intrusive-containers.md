@@ -16,27 +16,33 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Intrusive container design
+title: Intrusive Container Design
+translation:
+  source: documents/vol3-standard-library/04-intrusive-containers.md
+  source_hash: 24e237b2960b248f9f2dc4c56c20e8e807a888d72f4844b5541a5197c450bd42
+  translated_at: '2026-05-26T11:37:35.486345+00:00'
+  engine: anthropic
+  token_count: 1424
 ---
 # Modern C++ for Embedded Systems Tutorial — Intrusive Container Design
 
-Do you remember what standard containers do to your data? They copy pointers, allocate nodes, maintain extra memory layouts, and at some point quietly devour your cache locality. Intrusive containers are more straightforward: data objects reach out their own hands to act as list nodes — who's going to pay for extra memory and indirection? Not me.
+Do you remember what standard containers do to your data? They copy pointers, allocate nodes, maintain extra memory layouts, and at some point silently chew up your cache locality. Intrusive containers are more straightforward: data objects stick their own hands out to act as list nodes — who's paying for extra memory and indirection? Not me.
 
 ------
 
-## What Are Intrusive Containers, and Why Are They So Attractive in Embedded Systems?
+## What Are Intrusive Containers, and Why Are They So Great for Embedded
 
-The key point of intrusive containers is that node information (next/prev/...) lives directly inside the user object, rather than allocating a separate node to wrap the object pointer. The advantages are obvious:
+The key point of intrusive containers: node information (next/prev/...) lives directly inside the user object, rather than allocating a separate node to wrap the object pointer. The advantages are obvious:
 
 - Zero extra allocation — no need to malloc/new a wrapper on every push (extremely important).
 - Better cache locality — objects and metadata are together, making traversal faster.
 - Smaller memory footprint and determinism — very friendly for memory-constrained or real-time systems.
 
-The drawbacks are equally straightforward:
+The disadvantages are equally straightforward:
 
-- Objects are coupled to the container interface (intrusion), requiring source code modifications to the object structure.
+- Objects are coupled to the container interface (intrusion), requiring source modifications to the object structure.
 - If an object needs to be in multiple lists simultaneously, it requires multiple "hook" members or multiple inheritance.
-- Improper use can lead to dangling pointers or duplicate insertion issues, requiring more careful lifecycle management.
+- Improper use can lead to dangling pointers or duplicate insertions, requiring more careful lifecycle management.
 
 Applicable scenarios: task schedulers, free-block lists, driver lists, kernel/RTOS data structures, memory pool free-lists, and more.
 
@@ -44,16 +50,16 @@ Applicable scenarios: task schedulers, free-block lists, driver lists, kernel/RT
 
 ## Two Common Implementation Strategies
 
-1. **Base class hook (inheritance)**: Objects inherit a hook base class that contains next/prev. Type-safe and easy to cast.
-2. **Member hook**: Objects contain a hook member (more flexible, allowing multiple hook instances simultaneously), but this requires the `container_of` trick to convert a hook pointer back to an object pointer.
+1. **Base class hook (inheritance)**: Objects inherit a hook base class that contains next/prev. Type-safe, and easy to cast.
+2. **Member hook**: Objects contain a hook member (more flexible, allowing multiple hook instances), but this requires the `container_of` trick to convert a hook pointer back to an object pointer.
 
-Below, we first implement a clean, ready-to-use "base class hook" doubly linked list (suitable for tutorials and embedded systems), and then discuss the concepts and caveats of the member hook approach.
+Below, we first implement a clean, ready-to-use "base class hook" doubly linked list (suitable for tutorials and embedded), and then discuss the ideas and caveats of the member hook approach.
 
 ------
 
 ## Code: A Simple, Type-Safe Intrusive Doubly Linked List (Inheritance-Based)
 
-The goal of the following implementation is to be small and clear, compatible with C++11, and suitable for embedded compilers.
+The goal of the following implementation: small and clear, compatible with C++11, and suitable for embedded compilers.
 
 ```cpp
 // intrusive_list.h
@@ -184,11 +190,11 @@ int main() {
 
 ```
 
-This code can be compiled directly with any C++ compiler supported by embedded targets (as long as it supports basic templates and `nullptr`).
+This code can be compiled directly with any embedded-compatible C++ compiler (as long as it supports basic templates and `nullptr`).
 
 ------
 
-## Member Hooks: When an Object Needs to Appear in Multiple Lists
+## Member Hook: When an Object Needs to Appear in Multiple Lists
 
 The inheritance approach is simple, but if an object needs to belong to multiple lists simultaneously (for example, in both a ready_list and a wait_list), you need multiple hook members or the member hook approach.
 
@@ -216,25 +222,25 @@ struct MyObject {
 
 ```
 
-The member hook is more flexible, but we need to pay special attention when using it: `offsetof` must match the actual member name, and it is strongly recommended to check whether the hook is already linked before insertion (to avoid duplicate insertion).
+The member hook is more flexible, but requires special attention during use: `offsetof` must match the actual member name, and it is strongly recommended to check whether the hook is already linked before insertion (to avoid duplicate insertions).
 
 ------
 
 ## Design Recommendations and Pitfall Guide
 
-1. **Object lifecycles must be explicit**: Nodes in a list must be removed from all lists before being destroyed. Otherwise, dangling pointers will appear, and the consequence is usually a hard-to-locate crash.
-2. **Check state before insertion**: Add a `bool linked` field or assertion to the hook to prevent duplicate insertion. Make good use of `assert` in test code.
+1. **Object lifecycles must be explicit**: Nodes in a list must be removed from all lists before being destroyed. Otherwise, dangling pointers will occur, and the consequence is usually a hard-to-locate crash.
+2. **Check state before insertion**: Add a `bool linked` field or assertion to the hook to prevent duplicate insertions. Make good use of `assert` in test code.
 3. **Prefer member hooks for multi-hook requirements**: If an object switches between multiple containers frequently, member hooks are more flexible.
 4. **Be careful with memory barriers/atomicity in concurrent scenarios**: If you need to manipulate lists in an ISR or on multi-core systems, you must use locks, atomic CAS, or specialized lock-free algorithms (beyond the scope of this article).
 5. **Provide an RAII wrapper**: Consider providing a small `IntrusiveListGuard` or `ScopedUnlink` to ensure objects are safely unregistered when exceptions or early returns occur. Embedded code might not have exceptions, but RAII helps write safer cleanup code.
-6. **Debug information**: During development, printing node states (id/address/prev/next) can quickly pinpoint errors.
-7. **Don't overuse them**: Intrusive containers are not a silver bullet. If you don't care about per-allocation overhead or the object is immutable (third-party library), don't intrude into the object. Standard `std::list`/`vector` are simpler, safer, and easier to maintain.
+6. **Debug information**: During development, printing node states (id/address/prev/next) can quickly help locate errors.
+7. **Don't overuse them**: Intrusive containers are not a silver bullet. If you don't care about per-allocation overhead, or if the object is immutable (third-party library), don't intrude into the object. Standard `std::list`/`vector` are simpler, safer, and easier to maintain.
 
 ------
 
 ## When to Choose Intrusive Containers
 
-In embedded, kernel, and real-time systems, resources and latency are the top priorities. Intrusive data structures are a very natural choice in these scenarios. They are particularly suitable for:
+In embedded, kernel, and real-time systems, resources and latency are the top priorities, making intrusive data structures a very natural choice in these scenarios. They are particularly suitable for:
 
 - Systems that require determinism and avoid heap allocation (bootloaders, RTOS kernels).
 - High-performance free-lists, task queues, timer wheels, and more.
@@ -246,4 +252,4 @@ If you are working on standard application-layer business logic, or if objects c
 
 ## Conclusion
 
-The idea behind intrusive containers is not complicated: let the data take responsibility for its own "positioning." However, this requires you to have a clearer understanding of the object's responsibilities — who inserts it, who removes it, and when it gets removed. Turn those responsibilities into code, and turn that code into conventions. For embedded systems, this is a very pragmatic engineering philosophy: save a byte of memory, gain a bit of determinism.
+The idea behind intrusive containers is not complicated: let the data take responsibility for its own "positioning." However, this requires you to have a clearer understanding of the object's responsibilities — who inserts it, who removes it, and when it gets removed. Turn those responsibilities into code, and turn that code into conventions. For embedded systems, this is a very pragmatic engineering philosophy: save a byte of memory, gain a bit more determinism.

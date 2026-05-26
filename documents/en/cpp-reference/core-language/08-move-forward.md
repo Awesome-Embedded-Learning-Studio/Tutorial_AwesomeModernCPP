@@ -1,7 +1,7 @@
 ---
 title: std::move
-description: Convert an lvalue to an rvalue reference, triggering move semantics to
-  achieve efficient resource transfer.
+description: Converts an lvalue to an rvalue reference, triggering move semantics
+  for efficient resource transfer.
 chapter: 99
 order: 8
 tags:
@@ -15,6 +15,12 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/08-move-forward.md
+  source_hash: e2c1e1a061e0f1aa758ec770163ffeda7d2aa4941ae76a2cf7b44317f7eb0095
+  translated_at: '2026-05-26T10:15:48.724625+00:00'
+  engine: anthropic
+  token_count: 415
 ---
 # std::move (C++11)
 
@@ -30,7 +36,7 @@ Casts an lvalue to an rvalue reference, telling the compiler "this object's reso
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Move conversion (since C++14) | `template<class T> constexpr std::remove_reference_t<T>&& move(T&& t) noexcept;` | Casts object `t` to an rvalue reference (xvalue) |
+| Move conversion (since C++14) | `template<class T> constexpr std::remove_reference_t<T>&& move(T&& t) noexcept;` | Casts an object `t` to an rvalue reference (xvalue) |
 | Perfect forwarding | `template<class T> T&& forward(typename std::remove_reference<T>::type& t) noexcept;` | Preserves value categories in forwarding reference scenarios, must be used with `std::move` |
 | Conditional move | `template<class T> typename std::conditional<...>::type move_if_noexcept(T& t) noexcept;` | Casts to an rvalue if move construction is non-throwing, otherwise returns an lvalue |
 
@@ -54,10 +60,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: `std::move` is essentially `static_cast`, resolved at compile time with no runtime cost
+- Zero-overhead abstraction: `std::move` is essentially a `static_cast` under the hood, resolved at compile time with no runtime cost
 - Avoids deep copies: Significantly reduces RAM usage and CPU overhead when passing large buffers (such as `std::vector<uint8_t>`, `std::string`)
 - Works with custom resource classes: Can transfer raw pointer ownership (requires RAII), replacing manual resource handover
-- Note that a moved-from object is in a "valid but unspecified" state; we cannot read its value, but we can assign to it or destroy it
+- Note that a moved-from object is in a "valid but unspecified" state; we must not read its value, and can only assign to it or destroy it
 
 ## Compiler Support
 

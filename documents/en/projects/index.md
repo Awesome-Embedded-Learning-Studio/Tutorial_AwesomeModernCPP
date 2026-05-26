@@ -1,12 +1,18 @@
 ---
-title: End-to-end practical project
-description: Comprehensive projects such as hand-writing an STL, HTTP server, GUI
-  framework, embedded OS, etc.
+title: End-to-End Hands-On Project
+description: Handwritten STL, HTTP server, GUI framework, embedded OS, and other comprehensive
+  projects
 platform: host
 tags:
 - cpp-modern
 - host
 - intermediate
+translation:
+  source: documents/projects/index.md
+  source_hash: 3a6ccce746db47489eb825a9ddde30ec4ba65e96ff42697b0adc3c93c6be84df
+  translated_at: '2026-05-26T10:20:16.450396+00:00'
+  engine: anthropic
+  token_count: 106
 ---
 # Comprehensive Hands-on Projects
 

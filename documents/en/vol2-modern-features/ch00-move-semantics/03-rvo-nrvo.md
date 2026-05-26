@@ -1,7 +1,7 @@
 ---
 title: 'RVO and NRVO: Compiler Return Value Optimization'
-description: Deep understanding of the return value optimization mechanism, guaranteed
-  copy elision from C++11 to C++17
+description: Deep dive into the return value optimization mechanism, guaranteeing
+  copy elision from C++11 to C++17.
 chapter: 0
 order: 3
 tags:
@@ -20,22 +20,28 @@ prerequisites:
 - 'Chapter 0: 移动构造与移动赋值'
 related:
 - 移动语义实战
+translation:
+  source: documents/vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md
+  source_hash: 8d67d746d9f8272674ab3ce99886ea907654c8affe26a59d7d2dfabc512f452e
+  translated_at: '2026-05-26T11:18:10.686224+00:00'
+  engine: anthropic
+  token_count: 3665
 ---
 # RVO and NRVO: Compiler Return Value Optimization
 
 
-If you come from a C background, especially from programming MCUs, and particularly from devices with tiny RAM, you probably never return large structs from functions. I mean, you would never write ``struct X GetSth(...)``, right (the stack would blow up in an instant). This is because returning a struct by value means constructing it inside the function and then copying it to the caller—for structs that are often hundreds of bytes, this overhead is completely unacceptable in performance-sensitive code. So we invented all sorts of workarounds: passing out pointer parameters, returning static local variables, using `malloc` and letting the caller `free`...
+If you come from a C background, especially from programming MCUs, and particularly from MCUs with tiny RAM, you would never return a large struct from a function. I mean, you would never write ``struct X GetSth(...)``, right? (The stack would blow up in a heartbeat.) This is because returning a struct by value means constructing it inside the function and then copying it to the caller—for structs that are often hundreds of bytes, this overhead is completely unacceptable in performance-sensitive code. So we invented all sorts of workarounds: passing out pointer parameters, returning static local variables, using `malloc` and letting the caller `free`...
 
 With the introduction of copy and move constructors in C++, the cost of returning large objects by value has dropped significantly—but compilers can do even better. They have a "zero-cost" secret weapon:
 
-First is **Return Value Optimization (RVO)**,
-and second is **Named Return Value Optimization (NRVO)**.
+The first is **Return Value Optimization (RVO)**,
+and the second is **Named Return Value Optimization (NRVO)**.
 
 The core idea behind both is simple: since the final object will end up on the caller's stack frame anyway, why construct it inside the function first and then copy/move it over? Why not just construct it directly in the caller's space? This question gives rise to both techniques. That's all there is to it.
 
-## What Exactly Do RVO and NRVO Do
+## What Exactly Do RVO and NRVO Do?
 
-Suppose we have a simple ``Point`` class with a copy constructor that prints a log:
+Suppose we have a simple ``Point`` class with a copy constructor that prints a log message:
 
 ````cpp
 #include <iostream>
@@ -79,7 +85,7 @@ Point make_point_nrvo(double x, double y)
 }
 ````
 
-Without optimization, ``make_point_rvo`` would first construct ``Point(x, y)`` inside the function, then copy (or move) it to the caller's space. ``make_point_nrvo`` does the same: it constructs ``p``, then copies/moves ``p`` to the caller. But with RVO/NRVO, the compiler allocates space directly on the caller's stack frame and makes the internal construction happen right there—**there is no intermediate object at all, so there's nothing to copy or move**.
+Without optimization, ``make_point_rvo`` would first construct ``Point(x, y)`` inside the function, then copy (or move) it to the caller's space. ``make_point_nrvo`` does the same: it constructs ``p``, then copies/moves ``p`` to the caller. But with RVO/NRVO, the compiler allocates space directly on the caller's stack frame and makes the internal construction happen right there—**there is no intermediate object at all, so there is nothing to copy or move**.
 
 Let's verify this:
 
@@ -113,9 +119,9 @@ Output:
   构造 Point(3, 4)
 ````
 
-Each ``Point`` is constructed only once—no copies, no moves. This is RVO/NRVO at work: the compiler "moves" the construction directly into the caller's space.
+Each ``Point`` is constructed only once—no copies, no moves. This is RVO/NRVO at work: the compiler literally "moves" the construction into the caller's space.
 
-## Verifying with Compiler Flags—What Happens When We Disable Copy Elision
+## Verifying with Compiler Flags—What Happens When We Disable Elision?
 
 GCC and Clang provide a compiler flag ``-fno-elide-constructors`` that forcibly disables copy elision. Let's see what happens when we turn it off:
 
@@ -135,17 +141,17 @@ The output becomes (GCC 15, ``-std=c++17``):
   移动 Point(3, 4)
 ````
 
-There is a very important detail to note here: the RVO part **did not change**—even with ``-fno-elide-constructors`` added, ``make_point_rvo`` is still constructed only once, with no move. This is because C++17's copy elision for prvalue returns is a language semantic guarantee, not a compiler optimization that can be toggled off (we'll dive into this in detail later). What's actually affected is NRVO: ``make_point_nrvo`` degrades from "zero-cost" to a move construction.
+There is a very important detail to note here: the RVO part **did not change**—even with ``-fno-elide-constructors`` added, ``make_point_rvo`` is still constructed only once, with no move. This is because C++17 guarantees copy elision for prvalue returns as a language semantic, not as a compiler optimization that can be toggled by a flag (we'll dive into this in detail later). What is actually affected is NRVO: ``make_point_nrvo`` degrades from "zero-cost" to a move construction.
 
-Notice that when NRVO degrades, it uses a move rather than a copy—because after C++11, when the compiler encounters ``return local_var;``, it automatically treats ``local_var`` as an rvalue (implicit move), even though ``local_var`` is an lvalue inside the function. This is a crucial guarantee: even if copy elision doesn't kick in, you at least get the performance of move semantics.
+Notice that when NRVO degrades, it uses a move rather than a copy—because since C++11, when the compiler encounters ``return local_var;``, it automatically treats ``local_var`` as an rvalue (implicit move), even though ``local_var`` is an lvalue inside the function. This is a crucial guarantee: even if copy elision doesn't kick in, you at least get the performance of move semantics.
 
-> (If you want to observe "full degradation"—where even RVO degrades to a move—you can compile in C++14 mode: ``g++ -std=c++14 -fno-elide-constructors``. In C++14, ``-fno-elide-constructors`` applies to both RVO and NRVO, and both functions will incur an extra move operation.)
+> (If you want to observe "full degradation"—where even RVO degrades to a move—you can compile in C++14 mode: ``g++ -std=c++14 -fno-elide-constructors``. Under C++14, ``-fno-elide-constructors`` affects both RVO and NRVO, and both functions will incur an extra move operation.)
 
-## C++17's Guaranteed Elision—From "Allowed" to "Mandatory"
+## C++17 Guaranteed Elision—From "Allowed" to "Mandatory"
 
-Before C++17, both RVO and NRVO were optimizations that compilers **were allowed to perform but not required to**. In other words, the standard said "the compiler may omit this copy/move," but it didn't say "the compiler must omit it." In practice, mainstream compilers almost always did it when optimizations were enabled, but strictly speaking, it wasn't guaranteed.
+Before C++17, both RVO and NRVO were optimizations that compilers were **allowed to perform but not required to**. In other words, the standard said "the compiler may omit this copy/move," but it didn't say "the compiler must omit it." In practice, mainstream compilers would almost always do it with optimizations enabled, but strictly speaking, it wasn't guaranteed.
 
-C++17 changed the rules for one specific case: **when the return value is a prvalue, copy elision becomes guaranteed**. This is not an optional optimization—it is a language semantic guarantee. This means that a statement like ``return Point(x, y);`` in C++17 will **absolutely never** trigger a copy or move constructor.
+C++17 changed the rules for one of these cases: **when the return value is a prvalue, copy elision becomes guaranteed**. This is not an optional optimization—it is a semantic guarantee of the language. This means that a statement like ``return Point(x, y);`` in C++17 will **never** trigger a copy or move constructor.
 
 The underlying principle of this guarantee is C++17's redefinition of prvalue semantics. Before C++17, a prvalue was understood as a "temporary object"—when a function returned ``Point(x, y)``, a temporary ``Point`` object was first created, then copied/moved to the caller's space. After C++17, a prvalue was redefined as a "recipe for initialization"—``Point(x, y)`` is no longer an object, but a set of construction instructions telling the compiler "construct a ``Point`` at this location with these arguments." Since a prvalue is not an object, there is no "copying an object" to speak of, and copy elision is naturally guaranteed.
 
@@ -158,13 +164,13 @@ Point make_point(double x, double y)
 }
 ````
 
-> ⚠️ **Pitfall Warning**: C++17's guaranteed elision only applies to scenarios where the return value is a **prvalue**—that is, directly returning a temporary object like ``return Type(args...);``. Returning a **named local variable** (NRVO) remains an "allowed but not required" optimization; C++17 did not make NRVO guaranteed either. So whether ``p`` in ``return p;`` gets eluted still depends on the compiler's implementation.
+> ⚠️ **Pitfall Warning**: C++17's guaranteed elision only applies to scenarios where the return value is a **prvalue**—that is, directly returning a temporary object like ``return Type(args...);``. Returning a **named local variable** (NRVO) remains an "allowed but not required" optimization; C++17 did not make NRVO guaranteed either. So whether ``p`` in ``return p;`` gets elided still depends on the compiler's implementation.
 
-## When NRVO Fails
+## When Does NRVO Fail?
 
 Although NRVO works most of the time, certain code patterns can cause it to fail. Understanding these patterns is important—because failure means you might degrade from "zero-cost" to "move-cost," which isn't fatal but can become a bottleneck on performance-sensitive hot paths.
 
-The most typical failure scenario is **multiple return branches returning different named objects**. For the compiler to perform NRVO, it needs to pre-allocate memory in the caller's space and then have the named variable inside the function construct directly into that space. But if two different named variables might be returned, the compiler can't place both variables in the same block of memory—they each have their own address.
+The most typical failure scenario is **multiple return branches returning different named objects**. For the compiler to perform NRVO, it needs to pre-allocate memory in the caller's space and then have the named variable inside the function construct directly into that space. But if two different named variables might be returned, the compiler can't place both variables in the same block of space—they each have their own address.
 
 ````cpp
 Point bad_nrvo(bool flag)
@@ -178,7 +184,7 @@ Point bad_nrvo(bool flag)
 }
 ````
 
-In this case, the compiler can't determine whether ``a`` or ``b`` will be returned, so it can't pre-place either one in the caller's space. The result is: ``a`` and ``b`` are constructed normally, and then one of them is moved to the return value based on the condition. You can restore NRVO by modifying the code to use the same named variable, assigning it different values in different branches.
+In this case, the compiler can't determine whether ``a`` or ``b`` will be returned, so it can't pre-place either one in the caller's space. The result is: ``a`` and ``b`` are constructed normally, and then one of them is moved to the return value based on the condition. You can restore NRVO by modifying the code to use a single named variable, assigning it different values in different branches.
 
 ````cpp
 Point good_nrvo(bool flag)
@@ -203,9 +209,9 @@ Point return_param(Point p)
 }
 ````
 
-Here, ``p`` is a function parameter, not a local variable, so NRVO won't apply. The good news is that C++11's implicit move rule still applies—``return p;`` treats ``p`` as an rvalue and invokes the move constructor. So you don't degrade to a copy, just to a move.
+Here, ``p`` is a function parameter, not a local variable, so NRVO won't apply. The good news is that C++11's implicit move rule still applies—``return p;`` treats ``p`` as an rvalue and invokes the move constructor. So you won't degrade to a copy, just to a move.
 
-There's also a scenario that isn't exactly a "failure" but is worth mentioning: **returning a global or static variable**. In this case, there's no NRVO to speak of—global/static variables have fixed storage locations and can't be relocated to the caller's space.
+There is also a scenario that isn't exactly a "failure" but is worth mentioning: **returning a global or static variable**. In this case, there is no NRVO to speak of—global/static variables have fixed storage locations and cannot be relocated to the caller's space.
 
 ````cpp
 Point global_point(1.0, 2.0);
@@ -216,11 +222,11 @@ Point return_global()
 }
 ````
 
-Note that implicit move doesn't even happen here—``global_point`` is not a local variable, so C++11's implicit move rule doesn't apply to it. This is indeed a copy construction. If you want a move, you have to explicitly write ``return std::move(global_point);``.
+Note that not even implicit move happens here—``global_point`` is not a local variable, so C++11's implicit move rule doesn't apply to it. This is indeed a copy construction. If you want a move, you need to explicitly write ``return std::move(global_point);``.
 
-## Seeing RVO's Effects in Assembly
+## Seeing RVO in Action Through Assembly
 
-Understanding the theory is important, but nothing beats looking at assembly to see it firsthand. Let's write two functions and compare the compiled output with and without RVO.
+Understanding the theory is important, but nothing beats looking at assembly to see the proof. Let's write two functions and compare the compiled output with and without RVO.
 
 ````cpp
 // rvo_asm.cpp -- 用 Compiler Explorer 查看汇编
@@ -263,7 +269,7 @@ with_rvo(int):
     ret
 ````
 
-Note a few things: the function works directly on the caller's memory through an implicit ``rdi`` parameter (the address of the space provided by the caller). It broadcasts ``v`` into the 4 lanes of an SSE register using ``pshufd``, then writes 32 bytes per loop iteration (two ``movups`` instructions), looping 1024/32 = 32 times to fill the entire ``data[256]`` (1024 bytes total). There's no ``memcpy`` call, no extra memory copy—construction and return are one and the same.
+Notice a few things: the function works directly on the caller's memory through an implicit ``rdi`` parameter (the address of the space provided by the caller). It broadcasts ``v`` into the 4 lanes of an SSE register using ``pshufd``, then writes 32 bytes per loop iteration (two ``movups`` instructions), looping 1024/32 = 32 times to fill the entire ``data[256]`` (1024 bytes total). There is no ``memcpy`` call, no extra memory copy—construction and return are one and the same.
 
 The assembly for ``without_rvo`` is noticeably different:
 
@@ -287,21 +293,21 @@ without_rvo(Heavy):
     ret
 ````
 
-Here we have ``rep movsq``, where ``ecx`` is calculated as ``1024 / 8 = 128``—a 1024-byte memory copy operation (the size of ``int data[256]`` is exactly 256 * 4 = 1024 bytes). The compiler handles the 8-byte alignment at the beginning and end first, then bulk-copies the middle section with ``rep movsq``. This is the cost of not having RVO/NRVO: for large objects, this 1024-byte copy can become a bottleneck on hot paths.
+Here we have ``rep movsq``, where ``ecx`` is calculated as ``1024 / 8 = 128``—a 1024-byte memory copy operation (the size of ``int data[256]`` is exactly 256 * 4 = 1024 bytes). The compiler handles the 8-byte alignment at the beginning and end, then bulk-copies the middle section with ``rep movsq``. This is the cost of not having RVO/NRVO: for large objects, this 1024-byte copy can become a bottleneck on hot paths.
 
 ## The Relationship Between RVO and Move Semantics
 
 Many people confuse RVO with move semantics, thinking "since we have moves anyway, RVO doesn't matter." In reality, they are optimizations at different levels, and RVO has higher priority.
 
-RVO/NRVO is **elision**—it saves even the move. Move semantics is **degradation**—it downgrades from a deep copy to a shallow pointer transfer. Their relationship can be expressed as a simple priority chain:
+RVO/NRVO is **elision**—even the move is eliminated. Move semantics is **degradation**—from a deep copy down to a shallow pointer transfer. Their relationship can be expressed as a simple priority chain:
 
 ````text
 保证消除（C++17 prvalue） > NRVO（编译器优化）> 隐式移动（C++11）> 拷贝构造
 ````
 
-The compiler tries from left to right—first checking if it can elide, then if it can do NRVO, then falling back to implicit move, and only finally resorting to copy construction. So you don't need to worry that "if RVO fails, performance will collapse"—even if RVO fails, you still have move semantics as a safety net, which is far better than the pure copies of the C++03 era.
+The compiler tries from left to right—first checking if it can elide (RVO), then if it can do NRVO, then falling back to implicit move, and finally resorting to copy construction. So you don't need to worry that "if RVO fails, performance will collapse"—even if RVO fails, you still have move semantics as a safety net, which is far better than the pure copies of the C++03 era.
 
-This also leads to a critically important practical rule: **never write ``return std::move(local_var);``**.
+This leads to a critically important practical rule: **never write ``return std::move(local_var);``**.
 
 ````cpp
 Heavy bad_idea()
@@ -317,7 +323,7 @@ Heavy good_idea()
 }
 ````
 
-``return std::move(h);`` explicitly converts ``h`` to an rvalue reference, which means the compiler must use move construction—you've killed the NRVO opportunity with your own hands. ``return h;`` gives the compiler maximum freedom: it can do NRVO (direct elision) or implicit move (guaranteed by C++11), and either is better than an explicit ``std::move``.
+``return std::move(h);`` explicitly converts ``h`` to an rvalue reference, which means the compiler is forced to use move construction—you've single-handedly killed the opportunity for NRVO. ``return h;``, on the other hand, gives the compiler maximum freedom: it can perform NRVO (direct elision) or implicit move (guaranteed since C++11), and either option is better than an explicit ``std::move``.
 
 ## Practical Example—A String Building Factory
 
@@ -388,9 +394,9 @@ int main()
 }
 ````
 
-These three functions demonstrate different return scenarios. ``format_config_nrvo`` returns a named variable that has gone through a complex construction process; NRVO allows ``result`` to grow directly in the caller's space—saving even a single string move. ``make_config_line`` returns an expression result (a prvalue), so C++17 guarantees elision. ``format_with_default`` has conditional branches, but each branch returns a prvalue, so it can still enjoy guaranteed elision.
+These three functions demonstrate different return scenarios. ``format_config_nrvo`` returns a named variable that has gone through a complex construction process; NRVO allows ``result`` to grow directly in the caller's space—saving even a single string move. ``make_config_line`` returns an expression result (a prvalue), so C++17 guarantees elision. ``format_with_default`` has conditional branches, but each branch returns a prvalue, so it still enjoys guaranteed elision.
 
-## Hands-on Experiment—rvo_demo.cpp
+## Hands-On Experiment—rvo_demo.cpp
 
 Let's write a complete experiment program that runs through RVO, NRVO, failure scenarios, and the misuse of ``std::move``.
 
@@ -557,9 +563,9 @@ Actual output (GCC 15, ``-std=c++17 -O2``):
   [(moved-from)] 析构
 ````
 
-Let's carefully analyze this output. Steps 1 and 2 are the ideal scenarios—both RVO and NRVO take effect, each object is constructed only once, with no copies or moves. In step 3, NRVO fails because the two branches return different named objects; the compiler chose implicit move for ``a`` (``C_a`` becomes a move construction), and ``b`` is destructed normally. Step 4 shows the consequence of ``return std::move(t)``—NRVO is blocked, and an extra move construction occurs. Step 5 is rather interesting: receiving the parameter triggers a move construction (``std::move(param)`` fires), and returning the parameter triggers another implicit move—for a total of two moves. Note the destruction order—``param`` is destructed after ``e``, because ``param`` is declared in the outer scope and its lifetime ends later than ``e``'s scope.
+Let's carefully analyze this output. Steps 1 and 2 are the ideal cases—both RVO and NRVO are in effect, each object is constructed only once, with no copies or moves. In step 3, NRVO fails because the two branches return different named objects; the compiler chose implicit move for ``a`` (``C_a`` became a move construction), and ``b`` was destructed normally. Step 4 demonstrates the consequence of ``return std::move(t)``—NRVO is blocked, and an extra move construction occurs. Step 5 is rather interesting: receiving the parameter triggers a move construction (``std::move(param)`` fires), and returning the parameter triggers another implicit move—for a total of two moves. Note the destruction order—``param`` is destructed after ``e``, because ``param`` is declared in the outer scope and its lifetime ends later than ``e``'s scope.
 
-If you recompile with ``-fno-elide-constructors`` to disable elision, you'll find that step 2 (NRVO) incurs a move construction, but step 1 (RVO) is unaffected—this is the difference between C++17's guaranteed elision and non-guaranteed optimization. Step 1 is guaranteed elision under C++17, and ``-fno-elide-constructors`` has no effect on it (because guaranteed elision is a language semantic, not a compiler optimization toggle). NRVO, however, remains an "allowed but not required" optimization, so it can be disabled by ``-fno-elide-constructors``.
+If you recompile with ``-fno-elide-constructors`` to disable elision, you'll find that step 2 (NRVO) incurs a move construction, but step 1 (RVO) is unaffected—this is the difference between C++17 guaranteed elision and non-guaranteed optimization. Step 1 is guaranteed elision under C++17, and ``-fno-elide-constructors`` has no effect on it (because guaranteed elision is a language semantic, not a compiler optimization toggle). NRVO, however, remains an "allowed but not required" optimization, so it can be disabled by ``-fno-elide-constructors``.
 
 ## Practical Guidelines
 
@@ -567,14 +573,25 @@ To put theory into practice, here are a few simple rules to help you maximize th
 
 First, **return by value; don't use output parameters**. ``std::string build_message()`` is more conducive to RVO/NRVO than ``void build_message(std::string& out)``. The philosophy of modern C++ is "write natural code and let the compiler optimize for you," and returning by value is the most natural approach.
 
-Second, **never write ``return std::move(local);``**. This rule has been emphasized several times because the author has seen too many cases of "no good deed goes unpunished." ``return local;`` gives the compiler the maximum optimization space—it can do NRVO or implicit move. ``return std::move(local);`` forcibly degrades to move construction, which is an anti-optimization.
+Second, **never write ``return std::move(local);``**. This rule has been emphasized several times because the author has seen too many cases of "no good deed goes unpunished." ``return local;`` gives the compiler maximum optimization space—it can perform NRVO or implicit move. ``return std::move(local);`` forces degradation to move construction, which is an anti-optimization.
 
-Third, **keep return paths simple**. If you have multiple return branches, try to have them return the same named variable, or have them all return prvalues. Avoid having different branches return different named objects—this blocks NRVO.
+Third, **keep return paths simple**. If you have multiple return branches, try to have them all return the same named variable, or have them all return prvalues. Avoid having different branches return different named objects—this blocks NRVO.
 
 Fourth, **measure performance-sensitive code**. RVO/NRVO are compiler optimizations, and behavior may vary across different compilers, versions, and optimization levels. If you truly care about the performance of a specific return, write a benchmark to measure it rather than guessing.
 
+## Run Online
+
+Run the RVO/NRVO example online to observe copy elision effects across different return scenarios:
+
+<OnlineCompilerDemo
+  title="RVO/NRVO Comparison: 5 Return Scenarios"
+  source-path="code/examples/vol2/03_rvo_nrvo.cpp"
+  description="Run online and observe the different behaviors of RVO, NRVO, NRVO failure, and std::move blocking optimization."
+  allow-x86-asm
+/>
+
 ## Summary
 
-RVO and NRVO are the free lunch that modern C++ gives us—without sacrificing code readability, the compiler wipes out the overhead of return values. C++17 further elevates prvalue return elision to a language guarantee, letting us return large objects by value with greater peace of mind. Although NRVO isn't guaranteed, mainstream compilers almost always do it when optimizations are enabled. Remember the single most important rule: **when returning a local variable, just write ``return``, don't add ``std::move``**—let the compiler do what it does best.
+RVO and NRVO are the free lunch that modern C++ gives us—without sacrificing code readability, the compiler eliminates the overhead of return values. C++17 further elevates prvalue return elision to a language guarantee, letting us return large objects by value with greater peace of mind. Although NRVO is not guaranteed, mainstream compilers almost always perform it when optimizations are enabled. Remember the single most important rule: **when returning a local variable, just ``return``—don't add ``std::move``**—let the compiler do what it does best.
 
-In the next article, we'll dive into move semantics in practice and see how this theoretical knowledge comes into play with STL containers and custom types.
+In the next article, we'll dive into move semantics in practice and see how this theoretical knowledge comes to life in STL containers and custom types.

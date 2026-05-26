@@ -1,5 +1,5 @@
 ---
-title: 'An In-Depth Introduction to the AVX Instruction Set Family: Domains, Significance,
+title: 'In-Depth Introduction to the AVX Instruction Set Series: Domains, Significance,
   and Basic Usage and Examples of AVX / AVX2'
 description: ''
 tags:
@@ -10,12 +10,18 @@ difficulty: intermediate
 platform: host
 chapter: 2
 order: 3
+translation:
+  source: documents/vol6-performance/avx-avx2-deep-dive.md
+  source_hash: 39da2b3a5a4d6ba1a0e593a1c2fa35355eb91e856ad3d137db96413557586496
+  translated_at: '2026-05-26T11:50:35.783290+00:00'
+  engine: anthropic
+  token_count: 1205
 ---
-# An In-Depth Look at the AVX Instruction Set Family: Domains, Significance, and Basic Usage & Examples of AVX / AVX2
+# An In-Depth Look at the AVX Instruction Set Family: Domains, Significance, and Basic Usage and Examples of AVX / AVX2
 
 ## Preface
 
-As a side note, I don't specialize in this field. The topic came up in a conversation, and I realized how unfamiliar this domain was to me, so I decided to put together some notes to talk it through. Because of this, I can't guarantee that the information I've gathered is 100% accurate. Readers should exercise their own judgment.
+As a side note, I don't specialize in this field. The topic came up in a conversation, and I realized how unfamiliar this domain was to me, so I decided to put together some notes and talk it through. Because of this, I can't guarantee that the information I've gathered is 100% accurate. Readers should exercise their own judgment.
 
 ------
 
@@ -27,21 +33,21 @@ To break through this bottleneck, the concept of **SIMD (Single Instruction, Mul
 
 We naturally have to ask: how exactly does it optimize things? Inside a CPU, **registers** act as the "temporary staging areas" where data must reside before participating in calculations. In the early SSE era, the width of this staging area was 128 bits. If we were processing "single-precision floating-point numbers" (each taking up 32 bits), we could only fit four of them side-by-side for calculation in a single cycle.
 
-AVX technology doubled this staging area's width to **256 bits**. This means a qualitative change occurred in the CPU's hardware channels: it can now吞吐吞吐 and process **eight** single-precision floating-point numbers, or **four** larger, more precise double-precision floating-point numbers in the exact same instant. This doubling of bit width essentially builds a wider highway for data flow, doubling the computational "appetite" of the processor.
+AVX technology doubled this staging area's width to **256 bits**. This means a qualitative change occurred in the CPU's hardware channels: now, in a single instant, it can simultaneously ingest and process **eight** single-precision floating-point numbers, or **four** larger, more precise double-precision floating-point numbers. This doubling of bit width essentially builds a wider highway for data flow, doubling the computational "appetite" of the processor.
 
 In traditional computing instructions, the CPU's operational logic is usually quite "coarse." For example, to perform an A + B operation, the result must forcibly overwrite the original data A. This design is known as the "two-operand" mode, which is somewhat destructive—if you need the original data A later, you must spend extra time backing it up somewhere else before performing the calculation.
 
-AVX introduced the more advanced **VEX encoding**, enabling a "three-operand" mode. It allows programs to issue more fine-grained instructions: "take data A, take data B, and store the result in C." This way, the original data A and B are both perfectly preserved. This evolution eliminates a massive amount of redundant work, reducing the overhead of repeatedly moving and backing up data in memory, making the overall program logic much lighter and more efficient.
+AVX introduced the more advanced **VEX encoding**, enabling a "three-operand" mode. It allows programs to issue more fine-grained instructions: "take data A, take data B, and store the result in C." This way, the original data A and B are both perfectly preserved. This evolution eliminates a massive amount of redundant work, reducing the overhead of repeatedly moving and backing up data in memory, and making the overall program logic much leaner and more efficient.
 
 AVX brings more than just minor speed tweaks; it represents a fundamental evolution in processing logic. It transforms "serial" tasks that originally had to execute one by one into batched "vectorized" tasks. In ideal compute-intensive scenarios (such as scientific model calculations or high-quality rendering), this transformation can yield a manifold leap in CPU work efficiency.
 
-This progress means that when facing massive numerical operations, the CPU can unleash its arithmetic throughput to a tremendous degree. Clock cycles that previously required repetitive spinning can now be completed in one powerful "vectorized strike," achieving a leap in performance without solely relying on increasing the clock frequency.
+This progress means that when facing massive numerical operations, the CPU can unleash its arithmetic throughput to a tremendous degree. Clock cycles that previously required repetitive spinning can now be completed in a single powerful "vectorized strike," achieving a leap in performance without solely relying on increasing the clock frequency.
 
 ### AVX2: A Leap in Integer Operations and Flexibility
 
 **AVX2**, released in 2013, further refined this system. If AVX solved the problem of "computing fast," then AVX2 solved the problem of "computing broadly":
 
-1. **Comprehensive Integer Support**: AVX2 extended the existing 256-bit parallel computing capabilities from floating-point numbers to the **integer** domain. This is crucial for scenarios relying on integer operations, such as data compression, image processing, and database searches.
+1. **Comprehensive Integer Support**: AVX2 extended the existing 256-bit parallel computing capabilities from floating-point numbers into the **integer** domain. This is crucial for scenarios that rely on integer arithmetic, such as data compression, image processing, and database searches.
 2. **Non-Contiguous Data Processing (Gather/Permute)**: In practical applications, data is often scattered across memory. AVX2 introduced "Gather" instructions, allowing the CPU to fetch data in bulk from non-contiguous memory addresses, significantly enhancing the ability to handle complex data structures.
 
 ------
@@ -131,7 +137,7 @@ float dot_product_avx(const float* a, const float* b, size_t n) {
 
 ```
 
-#### Trying It Out: AVX2 Integer Parallel Addition and Gather Example
+#### Try It Out: AVX2 Integer Parallel Addition and Gather Example
 
 ```cpp
 #include <immintrin.h>

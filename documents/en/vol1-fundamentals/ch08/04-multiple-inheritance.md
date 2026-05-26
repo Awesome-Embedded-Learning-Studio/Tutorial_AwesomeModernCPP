@@ -1,8 +1,8 @@
 ---
-title: Multiple inheritance and virtual inheritance
+title: Multiple Inheritance and Virtual Inheritance
 description: Understand the syntax of multiple inheritance, the diamond inheritance
-  problem, and the solution of virtual inheritance, and learn to use multiple inheritance
-  judiciously.
+  problem, and the solution provided by virtual inheritance, and learn to use multiple
+  inheritance judiciously.
 chapter: 8
 order: 4
 difficulty: intermediate
@@ -20,10 +20,16 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch08/04-multiple-inheritance.md
+  source_hash: 312ebd8aee413fd1731f5ebe6aa253b46894cc5d9acb3d5775b524088ddfd9b6
+  translated_at: '2026-05-26T10:54:20.454995+00:00'
+  engine: anthropic
+  token_count: 2111
 ---
 # Multiple Inheritance and Virtual Inheritance
 
-In previous chapters, we focused exclusively on single inheritance—where a class has only one direct base class. This covers the vast majority of object-oriented design needs. However, C++ also allows a class to inherit from multiple base classes simultaneously, known as multiple inheritance. Multiple inheritance is powerful but highly controversial—used well, it enables flexible designs; used poorly, it makes the entire inheritance hierarchy a nightmare to maintain. (For this reason, the author generally prefers composition.)
+In previous chapters, we only discussed single inheritance—where a class has exactly one direct base class. This covers the vast majority of object-oriented design needs. However, C++ also allows a class to inherit from multiple base classes simultaneously, known as multiple inheritance. Multiple inheritance is powerful but highly controversial—used well, it makes designs more flexible; used poorly, it renders the entire inheritance hierarchy difficult to maintain. (For this reason, the author prefers composition.)
 
 In this chapter, we will clarify the syntax of multiple inheritance, the diamond inheritance problem, the virtual inheritance solution, and when to turn to safer alternatives.
 
@@ -47,7 +53,7 @@ All code is compiled and run in the following environment:
 
 ## Step 1 — Basic Syntax and Use Cases of Multiple Inheritance
 
-The syntax for multiple inheritance is straightforward: a class lists multiple base classes in its inheritance list, separated by commas. The derived class object will contain subobjects of all base classes, and it must implement all interfaces from pure virtual base classes.
+The syntax of multiple inheritance is straightforward: a class lists multiple base classes in its inheritance list, separated by commas. The derived class object will contain sub-objects of all base classes, and it must implement all interfaces from pure virtual base classes.
 
 ```cpp
 class Printable {
@@ -88,11 +94,11 @@ public:
 
 After creating an object, we can manipulate it through any base class pointer: `Printable* p = &item; p->print();` or `Serializable* s = &item; s->serialize();`. The construction order follows the declaration order in the inheritance list, and destruction occurs in the exact reverse order.
 
-When two base classes have members with the same name, the compiler reports an ambiguity error. We must use `obj.BaseA::foo()` to explicitly disambiguate. The safest approach to multiple inheritance is **interface inheritance**: all base classes are pure virtual interfaces containing no data members and no concrete implementations. **If you find yourself trying to reuse code implementation through multiple inheritance rather than expressing "has multiple capabilities" semantics, you should probably consider composition instead.**
+When two base classes have members with the same name, the compiler reports an ambiguity error, requiring us to use `obj.BaseA::foo()` for explicit disambiguation. The safest approach to multiple inheritance is **interface inheritance**: all base classes are pure virtual interfaces containing no data members or concrete implementations. **If you find yourself trying to reuse code implementation through multiple inheritance rather than expressing the semantics of "having multiple capabilities," you should probably consider composition instead.**
 
 ## Step 2 — The Diamond Inheritance Problem
 
-The most classic pitfall in multiple inheritance is diamond inheritance—a base class is inherited by two intermediate classes, and a final class inherits from both intermediate classes, forming a diamond shape. Without special handling, the final object will contain **two** copies of the common base class subobject. Let's look at a concrete example:
+The most classic pitfall in multiple inheritance is diamond inheritance—a base class is inherited by two intermediate classes, and a final class inherits from both intermediate classes, forming a diamond shape. Without special handling, the final object will contain **two** copies of the common base class sub-object. Let's look at a concrete example:
 
 ```cpp
 class Device {
@@ -114,7 +120,7 @@ ts.InputDevice::id = 1;
 ts.OutputDevice::id = 2;  // 两份独立的 id，互不影响
 ```
 
-The constructor for `Device` is called twice, and `id` exists as two independent copies. A touchscreen device should have only one ID. Even worse is data inconsistency—in large systems, having "two unsynchronized copies of state within the same logical object" is an extremely difficult bug to track down.
+The constructor of `Device` is called twice, and `id` exists as two independent copies. A touchscreen device should have only one ID. Even worse is data inconsistency—in large systems, having "two unsynchronized copies of state within the same logical object" is an extremely difficult bug to track down.
 
 ## Step 3 — Solving the Diamond Problem with Virtual Inheritance
 
@@ -132,11 +138,11 @@ public:
 };
 ```
 
-Now `Device` is constructed only once, `id` exists as a single copy, and there is no more ambiguity. However, virtual inheritance is never a free lunch—the object layout introduces an additional virtual base class pointer (vbptr), `sizeof(TouchScreen)` grows from 8 bytes to approximately 24 bytes, and accessing virtual base class members requires extra indirect addressing.
+Now `Device` is constructed only once, `id` exists as a single copy, and there is no more ambiguity. However, virtual inheritance is never a free lunch—the object layout introduces an additional virtual base class pointer (vbptr), `sizeof(TouchScreen)` grows from 8 bytes to about 24 bytes, and accessing virtual base class members requires extra indirect addressing.
 
-> **Pitfall Warning #1**: Construction of the virtual base class is the responsibility of the **most-derived class**. Initialization lists for the virtual base class in intermediate class constructors are silently ignored. If you don't know this rule, you might scratch your head for ages while debugging—"I clearly passed the parameters in the intermediate class, why didn't they take effect?"
+> **Pitfall Warning #1**: Construction of the virtual base class is the responsibility of the **most-derived class**. Initialization lists for the virtual base class in intermediate class constructors are silently ignored. If you don't know this rule, you might scratch your head for a long time while debugging—"I clearly passed parameters in the intermediate class, why didn't they take effect?"
 >
-> **Pitfall Warning #2**: Virtual inheritance must appear on **all** intermediate classes that directly inherit the common base class. If only one uses `virtual` and the other does not, the diamond problem remains unsolved, the compiler won't emit an error, and you will still end up with two base class subobjects.
+> **Pitfall Warning #2**: Virtual inheritance must appear on **all** intermediate classes that directly inherit the common base class. If only one uses `virtual` and the other does not, the diamond problem remains unsolved, the compiler won't report an error, and you will still end up with two base class sub-objects.
 >
 > **Pitfall Warning #3**: The object layout of virtual inheritance differs from normal inheritance. Using `reinterpret_cast` or C-style casts on virtual inheritance objects is extremely dangerous. `static_cast` crossing virtual base class boundaries may require `this` pointer offset adjustments. If you need to serialize objects into byte streams, virtual inheritance makes things very tricky.
 
@@ -146,7 +152,7 @@ Given the complexity of multiple inheritance, especially virtual inheritance, we
 
 **Favor composition over inheritance** is one of the most classic principles in object-oriented design. If a class needs multiple capabilities but doesn't require unified manipulation through base class pointers, holding member objects directly is often clearer than inheritance—hold `Printer` and `JsonSerializer` as member variables instead of inheriting from them as base classes. If runtime polymorphism is truly needed, the **interface delegation pattern** is a more controllable choice than multiple inheritance: define an interface class and internally delegate to a concrete implementation via a pointer.
 
-In short, as long as the base classes are all pure virtual interfaces (no data members, no implementations), the complexity of multiple inheritance can be kept within a manageable range. **If your multiple inheritance base classes contain data members or concrete method implementations, stop immediately and re-evaluate your design.**
+In short, as long as all base classes are pure virtual interfaces (no data members, no implementations), the complexity of multiple inheritance can be kept within a manageable range. **If data members or concrete method implementations appear in your multiple inheritance base classes, stop immediately and re-evaluate your design.**
 
 ## Hands-on Verification — multi_inherit.cpp
 
@@ -312,7 +318,7 @@ Design a `LogEntry` class that simultaneously implements three pure virtual inte
 
 ### Exercise 2: Fixing Diamond Inheritance
 
-The following code has a diamond inheritance problem. Please fix it using virtual inheritance, ensuring that `SmartDevice` contains only one `Device` subobject:
+The following code has a diamond inheritance problem. Please fix it using virtual inheritance, ensuring that `SmartDevice` contains only one `Device` sub-object:
 
 ```cpp
 class Device {

@@ -1,5 +1,5 @@
 ---
-title: Parameter passing method
+title: Parameter Passing Methods
 description: Understand the differences between pass-by-value, pass-by-reference,
   and pass-by-const-reference, and learn to choose the correct parameter passing method
   for different scenarios.
@@ -21,12 +21,18 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch03/02-pass-by-value-ref.md
+  source_hash: 026c61b15f4a6894bdc6a13310b7a4573782c1fc5358bc7af2a3cf7185d9839f
+  translated_at: '2026-05-26T10:45:10.622178+00:00'
+  engine: anthropic
+  token_count: 2242
 ---
 # Parameter Passing
 
-How data "enters" a function and how the processed result "comes out" directly determine a program's correctness and performance. You might think "it's just passing a parameter, what's there to discuss?" but it's precisely these seemingly trivial details that create a massive number of bugs and performance issues in real-world projects—copying a large object that shouldn't be copied causes performance to plummet, or accidentally modifying the caller's data through a reference leads to hard-to-trace logic errors.
+How data "enters" a function and how the results "come out" directly determine a program's correctness and performance. You might think "it's just passing parameters, what's there to discuss?" but it's precisely these seemingly trivial details that create massive numbers of bugs and performance issues in real-world projects—copying a large object that shouldn't be copied causes performance to plummet, or accidentally modifying the caller's data through a reference leads to hard-to-trace logic errors.
 
-In this chapter, we will thoroughly understand the three core parameter passing methods in C++: pass by value, pass by reference, and pass by const reference. It's not complicated, but we must nail down the fundamentals.
+In this chapter, we will thoroughly understand the three core parameter passing methods in C++: pass by value, pass by reference, and pass by const reference. It's not complicated, but we need to nail down the fundamentals.
 
 ## Pass by Value — The Function Gets a Copy
 
@@ -57,7 +63,7 @@ Output:
 函数外 value = 5
 ```
 
-`value` is still 5, completely unchanged — `add_ten`'s parameter `x` is a copy of `value`, so we are modifying the copy, leaving the original variable perfectly intact. This isolation is often exactly what we want: modifications inside the function don't leak to the outside.
+`value` is still 5, completely unchanged — the parameter `x` in `add_ten` is a copy of `value`; we modified the copy, leaving the original variable perfectly intact. This isolation is often exactly what we want: modifications inside the function don't leak outward.
 
 But the cost of pass by value is also obvious — every call requires a copy. For basic types like `int` and `double` that are only a few bytes, the copying overhead is negligible. But what if the parameter is a struct containing tens of thousands of elements?
 
@@ -76,11 +82,11 @@ void process(SensorData data)  // 整个结构体被拷贝一份
 
 Every time we call `process`, the compiler has to completely copy roughly 80 KB of data from `SensorData`. Calling this frequently in a loop? That's a disaster of pointless copying.
 
-> **Pitfall Warning**: Pass by value won't cause logic errors, but it can cause performance disasters. When a function receives a large object as a value parameter and is called frequently in a hot loop, a performance issue is almost guaranteed.
+> **Pitfall Warning**: Pass by value won't cause logic errors, but it can cause performance disasters. When a function receives a large object as a value parameter and is called frequently in a hot loop, a performance problem is almost guaranteed.
 
 ## Pass by Reference — Directly Operating on Original Data
 
-The core idea of pass by reference is: no copying, let the function directly access the caller's original variable. Adding `&` after the parameter type declares a reference parameter.
+The core idea of pass by reference is: no copying, just let the function directly access the caller's original variable. Adding `&` after the parameter type declares a reference parameter.
 
 ```cpp
 void add_ten(int& x)
@@ -132,7 +138,7 @@ The swap succeeded. Note that the calling syntax is very natural — no need to 
 
 But pass by reference also brings new constraints and pitfalls.
 
-> **Pitfall Warning**: A non-const reference parameter can only bind to an lvalue — that is, a variable with a name and an address. Literals and temporary values (rvalues) cannot be passed to a non-const reference. For example, `add_ten(5)` will result in a compilation error because `5` is a literal with no memory address for the reference to bind to. Similarly, `swap_values(x, 3)` won't compile — you can't swap a numeric literal somewhere else. If you see a compilation error like `cannot bind non-const lvalue reference to an rvalue`, it's most likely this issue.
+> **Pitfall Warning**: A non-const reference parameter can only bind to an lvalue — that is, a named variable with an address. Literals and temporary values (rvalues) cannot be passed to a non-const reference. For example, `add_ten(5)` will cause a compilation error because `5` is a literal with no memory address for the reference to bind to. Similarly, `swap_values(x, 3)` won't compile — you can't swap a numeric literal somewhere else. If you see a compilation error like `cannot bind non-const lvalue reference to an rvalue`, it's most likely this issue.
 
 ## Pass by Const Reference — The Best of Both Worlds
 
@@ -146,9 +152,9 @@ void print(const std::string& s)
 }
 ```
 
-`const std::string& s` does two things: `&` means it's a reference, so no copy occurs; `const` means it's read-only, so the function cannot modify the original string through `s`. When a caller sees `const`, they know "this function won't touch my data," making the intent very clear.
+`const std::string& s` does two things: `&` means it's a reference, so no copy occurs; `const` means it's read-only, so the function cannot modify the original string through `s`. When a caller sees `const`, they know "this function won't touch my data" — the intent is very clear.
 
-Const reference has another important characteristic: it can bind to an rvalue. A non-const reference cannot bind to a literal, but a const reference can:
+Const reference has another important characteristic: it can bind to rvalues. A non-const reference cannot bind to a literal, but a const reference can:
 
 ```cpp
 void print(const std::string& s);
@@ -168,11 +174,11 @@ void process(const SensorData& data)  // 零拷贝，只读访问
 }
 ```
 
-The copying overhead is gone, and `data` is read-only inside the function, preventing accidental modification of the caller's data. This is the "best of both worlds" we mentioned earlier.
+The copying overhead is gone, and `data` is read-only inside the function, so we won't accidentally modify the caller's data. This is the "best of both worlds" we mentioned earlier.
 
 ## How to Choose — A Decision Guide for Parameter Passing
 
-Each of the three parameter passing methods has its own applicable scenarios. Let's clarify the decision rules. For basic types (`int`, `double`, `float`, pointers, etc., typically no larger than 8 bytes), use pass by value directly. The copying cost for these types is extremely low, pass by value is both safe and simple, and it's more friendly to compiler optimizations. If you see someone write `void foo(const int& x)`, it's probably over-optimization — passing a `int` by reference is not faster than passing the `int` itself, and on some platforms, it's actually slower (since references are essentially implemented as pointers, requiring an extra level of indirection).
+Each of the three parameter passing methods has its own applicable scenarios. Let's lay out the decision rules clearly. For basic types (`int`, `double`, `float`, pointers, etc., typically no more than 8 bytes), use pass by value directly. The copying cost for these types is extremely low; pass by value is both safe and simple, and it's more friendly to compiler optimization. If you see someone write `void foo(const int& x)`, it's probably over-optimization — passing a reference to a `int` is not faster than passing the `int` itself, and on some platforms, it's actually slower (since references are essentially implemented as pointers, requiring an extra level of indirection).
 
 For larger or more complex types (`std::string`, `std::vector`, custom structs, etc.), if the function only reads the data without modifying it, use `const T&`. If the function needs to modify the caller's data (such as `swap`, or filling an output struct), use a non-const reference `T&`.
 
@@ -187,7 +193,7 @@ This rule applies in the vast majority of cases. Once you learn move semantics a
 
 ## Return Values — How to Hand Results Back to the Caller
 
-Function return values also involve choosing a passing method. In most cases, simply returning by value is the right choice:
+Function return values also involve choosing a passing method. In most cases, simply returning by value is the right call:
 
 ```cpp
 std::string greet(const std::string& name)
@@ -196,7 +202,7 @@ std::string greet(const std::string& name)
 }
 ```
 
-You might worry: won't returning a `std::string` cause a copy? In reality, modern C++ compilers perform two key optimizations — RVO (Return Value Optimization) and NRVO (Named Return Value Optimization). Simply put, the compiler constructs the return value directly in the memory space reserved by the caller, eliminating the intermediate copy or move operations. Starting from C++17, RVO is even mandatory in certain situations. So `return "Hello, " + name + "!";` does not produce extra string copies, and there is absolutely no need to worry about performance.
+You might worry: won't returning a `std::string` cause a copy? Actually, modern C++ compilers perform two key optimizations — RVO (Return Value Optimization) and NRVO (Named Return Value Optimization). Simply put, the compiler constructs the return value directly in the memory space reserved by the caller, eliminating the intermediate copy or move operations. Starting from C++17, RVO is even mandatory in certain cases. So `return "Hello, " + name + "!";` won't produce any extra string copies, and there's absolutely no need to worry about performance.
 
 But if you try to return a reference to a local variable, things get dangerous:
 
@@ -208,7 +214,7 @@ const int& get_value()
 }
 ```
 
-> **Pitfall Warning**: This code compiles, but its runtime behavior is undefined behavior (UB). `x` is a local variable inside the function, and once the function returns, `x`'s memory is reclaimed — the reference you returned points to a block of memory that no longer exists. Reading data through this reference might yield garbage values, might yield old values that "happen to still be there," or might cause a segmentation fault directly. The compiler won't report an error (it's syntactically perfectly legal, though it might warn you), so this bug is extremely insidious. The principle is simple: never return a reference or pointer to a local variable. Just return by value, and the compiler will optimize it for you.
+> **Pitfall Warning**: This code compiles, but its runtime behavior is undefined behavior (UB). `x` is a local variable inside the function; after the function returns, `x`'s memory is reclaimed — the reference you returned points to a block of memory that no longer exists. Reading data through this reference might yield garbage values, might yield old values that "happen to still be there," or might cause a segmentation fault directly. The compiler won't report an error (it's syntactically perfectly legal, though it might warn you), so this bug is extremely insidious. The principle is simple: never return a reference or pointer to a local variable. Just return by value, and the compiler will optimize it for you.
 
 ## Output Parameters vs. Return Values
 
@@ -350,19 +356,30 @@ Hello, Charlie! Welcome to Modern C++.
 Hello, World! Welcome to Modern C++.
 ```
 
-Performance data will vary depending on the machine and compiler optimization level, but the trend is consistent: pass by value copies 16 KB each time, while the const reference version avoids the copy and is several times faster. Note that we used `-O2`; even so, the compiler must obey the language semantics — if you tell it to copy, it has to copy.
+Performance numbers will vary depending on the machine and compiler optimization level, but the trend is consistent: pass by value copies 16 KB each time, while the const reference version avoids the copy and is several times faster. Note that we used `-O2`; even so, the compiler must obey the language semantics — if you tell it to copy, it has to copy.
 
 The two calls to `build_greeting` are also worth noting: the first passes an lvalue `name`, and the second passes a temporary object `std::string("World")` — both can be received by `const std::string&`, which is exactly the flexibility of const references.
+
+## Run Online
+
+Run the parameter passing comparison example online to observe the performance difference between pass by value and pass by const reference:
+
+<OnlineCompilerDemo
+  title="Parameter Passing Comparison: Pass by Value vs. Const Reference"
+  source-path="code/examples/vol1/09_passing.cpp"
+  description="Run online and compare the performance difference between pass by value copying a 16KB struct and const reference zero-copy."
+  allow-run
+/>
 
 ## Try It Yourself
 
 ### Exercise 1: Implement swap
 
-Write a `swap_values` function to swap the values of two `double`s, then write an overloaded version to swap two `std::string`s. Use a `main` function to verify the results.
+Write a `swap_values` function to swap two `double` values, then write an overloaded version to swap two `std::string`. Use the `main` function to verify the results.
 
-### Exercise 2: Efficiently Handle Large Structs
+### Exercise 2: Efficiently Process Large Structs
 
-Define a struct `Measurement` that contains an array of at least 1000 `double` elements. Write two functions: one that calculates the average using pass by value, and another that calculates the average using pass by const reference. Time them separately and compare the performance.
+Define a struct `Measurement` that contains an array of at least 1000 `double` elements. Write two functions: one that calculates the average using pass by value, and one that calculates the average using pass by const reference. Time them separately and compare the performance.
 
 ### Exercise 3: Fix the Dangling Reference
 
@@ -387,8 +404,8 @@ Hint: Think about what happens to the local variable `prefix` after the function
 
 ## Summary
 
-In this chapter, we clarified the three core parameter passing methods in C++. Pass by value copies the actual argument, and the function operates on a copy. For basic types, this is simple and safe, but for large objects, it incurs non-negligible performance overhead. Pass by reference lets the function directly access the caller's original variable, offering zero-copy and the ability to modify data, making it suitable for scenarios like `swap` where the actual argument needs to be changed, but a non-const reference cannot bind to an rvalue. Pass by const reference combines zero-copy with read-only safety; `const T&` can bind to both lvalues and rvalues, making it the standard approach for read-only parameters of non-trivial types.
+In this chapter, we clarified the three core parameter passing methods in C++. Pass by value copies the actual argument, and the function operates on a copy. For basic types, this is simple and safe, but for large objects, it incurs non-negligible performance overhead. Pass by reference lets the function directly access the caller's original variable, offering zero-copy and the ability to modify data. It's suitable for scenarios like `swap` where we need to change the actual argument, but a non-const reference cannot bind to rvalues. Pass by const reference combines zero-copy with read-only safety; `const T&` can bind to both lvalues and rvalues, making it the standard approach for read-only parameters of non-trivial types.
 
-For return values, simply return by value. Modern compilers' RVO/NRVO optimizations will eliminate unnecessary copies. Never return a reference to a local variable — that's a classic source of dangling references. When a function needs to output multiple results, prefer returning a struct over using output parameters.
+For return values, just return by value directly. Modern compilers' RVO/NRVO optimizations will eliminate unnecessary copies. Never return a reference to a local variable — that's a classic source of dangling references. When a function needs to output multiple results, prefer returning a struct over using output parameters.
 
-In the next chapter, we will learn about function overloading and default arguments — allowing the same function name to exhibit different behaviors based on the types or number of arguments, which is one of the foundations of C++ polymorphism.
+In the next chapter, we'll learn about function overloading and default arguments — making the same function name behave differently based on argument types or counts, which is one of the foundations of C++ polymorphism.

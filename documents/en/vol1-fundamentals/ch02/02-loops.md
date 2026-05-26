@@ -1,7 +1,7 @@
 ---
-title: Loop statement
-description: Master for, while, and do-while loops and break/continue control, and
-  learn to make programs repeatedly execute tasks.
+title: Loop Statements
+description: Master `for`, `while`, and `do-while` loops along with `break`/`continue`
+  control flow, and learn how to make programs repeat tasks.
 chapter: 2
 order: 2
 difficulty: beginner
@@ -20,14 +20,20 @@ cpp_standard:
 - 14
 - 17
 - 20
+translation:
+  source: documents/vol1-fundamentals/ch02/02-loops.md
+  source_hash: 9447fb008659a8ae3f77a7cfdf5a2a58ac7ac9444e94a7d00a831d6317f50e15
+  translated_at: '2026-05-26T10:44:38.948124+00:00'
+  engine: anthropic
+  token_count: 2080
 ---
 # Loop Statements
 
-Computers excel at tirelessly repeating the same task. In fact, our entire internet world is built on endlessly storing and retrieving data, relentlessly evaluating zeros and ones, and looping through it all!
+Computers excel at tirelessly repeating the same task. One could even say that our internet world is built on endlessly storing and retrieving data, relentlessly evaluating zeros and ones, and looping through it all!
 
-Humans get tired. If we asked you to manually print 100 lines of "Hello", you would tell us CharlieChen114514 is clearly out of their mind. But a computer only needs a single loop instruction to get it done. Loop statements let us tell a program, "repeat this action N times" or "keep doing this until a condition is met"—this is the core structure of almost every meaningful program.
+Humans get tired. If we asked you to manually print 100 lines of "Hello", you would clearly tell us that CharlieChen114514 has lost their mind. But a computer only needs a single loop instruction to get it done. Loop statements let us tell a program, "repeat this action N times" or "keep doing this until a condition is met"—this is the core structure of almost every meaningful program.
 
-In this chapter, we break down C++'s three loop structures inside out, focusing on which scenarios suit each loop, when to use `break` and `continue`, and the common pitfalls lurking in nested loops.
+In this chapter, we will break down C++'s three loop structures inside out, focusing on which scenarios suit each loop, when to use `break` and `continue`, and the common pitfalls lurking in nested loops.
 
 > **Learning Objectives**
 > After completing this chapter, you will be able to:
@@ -47,9 +53,9 @@ while (condition) {
 }
 ```
 
-Each time before entering the loop body, it evaluates `condition` once. If the result is `true`, it executes the code inside the curly braces. After execution, it loops back to evaluate the condition again. If the condition is `false` from the very beginning, the loop body will never execute.
+Before entering the loop body each time, it evaluates the `condition` once. If the result is `true`, it executes the code inside the curly braces. After execution, it loops back to evaluate the condition again. If the condition is `false` from the very beginning, the loop body will never execute.
 
-When do we use `while`? The most typical scenario is "we don't know in advance how many times we need to loop." For example, continuously prompting the user to input numbers for summation until they enter 0:
+When do we use `while`? The most typical scenario is "we don't know in advance how many times we need to loop." For example, continuously prompting the user to input numbers to accumulate a sum until they enter 0:
 
 ```cpp
 #include <iostream>
@@ -85,9 +91,9 @@ Running effect:
 最终结果: 35
 ```
 
-The loop body must contain an operation that changes the condition (here, we re-read `value` each time), otherwise it becomes an infinite loop.
+The loop body must contain an operation that changes the condition (here, we read a new value into `num` each time); otherwise, it becomes an infinite loop.
 
-> ⚠️ **Pitfall Warning**: Infinite loops are the most common trap in `while`. If there is no operation inside the loop body that can make the condition `false`, the program will run forever and never exit. For example, if you forget to write the line `std::cin >> value;`, `value` will never change, and the condition will always be true. When writing a `while` loop, make it a habit to check: "Is there code in the loop body that changes the condition?"
+> ⚠️ **Pitfall Warning**: Infinite loops are the most common pitfall in `while` loops. If there is no operation inside the loop body that can make the condition `false`, the program will run forever and never exit. For example, if we forget to write the line that reads `num`, `num` will never change, and the condition will always be true. When writing `while` loops, make it a habit to check: "Is there code in the loop body that changes the condition?"
 
 ## Step Two — The `do-while` Loop: Do It Once First
 
@@ -114,11 +120,11 @@ do {
 } while (choice != 0);
 ```
 
-> ⚠️ **Pitfall Warning**: Don't forget the semicolon at the end of `do-while`. If you omit it, the compiler will parse the next line of code as the `while` loop's body, leading to very bizarre error messages. This is one of the few places in C++ where a semicolon must follow `}`, which is different from `if`, `while`, and `for`, making it easy to get mixed up.
+> ⚠️ **Pitfall Warning**: Do not forget the semicolon at the end of `do-while`. If you omit it, the compiler will parse the next line of code as the `while` loop body, and the error message can be very bizarre. This is one of the few places in C++ where a semicolon is mandatory after `)`, which is different from `if`, `for`, and `while`, making it easy to confuse.
 
-## Step Three — The `for` Loop: The Go-To Choice When the Count Is Known
+## Step Three — The `for` Loop: The Top Choice When the Count Is Known
 
-When the number of iterations is known, the `for` loop is the clearest choice. It groups the initialization, condition check, and increment operation into a single line, making the loop's range visible at a glance:
+When the number of loop iterations is known, the `for` loop is the clearest choice. It concentrates the initialization, condition check, and increment operations into a single line, making the loop's range visible at a glance:
 
 ```cpp
 for (init; condition; increment) {
@@ -126,7 +132,7 @@ for (init; condition; increment) {
 }
 ```
 
-The execution order is: execute `init` once first, then check `condition`. If true, execute the loop body. After execution, perform `increment`, then loop back to check `condition`, and so on.
+The execution order is: execute the `init` once, then check the `condition`. If true, execute the loop body. After execution, perform the `increment`, then loop back to check the `condition`, and so on.
 
 ```cpp
 for (int i = 1; i <= 10; ++i) {
@@ -135,7 +141,7 @@ for (int i = 1; i <= 10; ++i) {
 // 输出: 1 2 3 4 5 6 7 8 9 10
 ```
 
-Here, the scope of `i` is limited to the inside of the `for` loop—it cannot be accessed outside the loop body. This is a feature supported since C++11.
+Here, the scope of `i` is limited to the inside of the `for` loop—it cannot be accessed once outside the loop body. This is a feature supported since C++11.
 
 `for` also supports manipulating multiple variables simultaneously. Let's demonstrate this with a classic two-pointer reversal:
 
@@ -152,13 +158,13 @@ for (int i = 0, j = n - 1; i < j; ++i, --j) {
 // data 现在是 {5, 4, 3, 2, 1}
 ```
 
-The initialization part declares two variables, `i` and `j`, and the increment part simultaneously performs `++i` and `--j`, approaching from both ends toward the middle and stopping when they meet.
+The initialization part declares two variables, `left` and `right`, and the increment part simultaneously performs `left++` and `right--`, approaching from both ends toward the middle and stopping when they meet.
 
-> ⚠️ **Pitfall Warning**: The off-by-one error is the most classic trap in `for` loops. You intend to loop 10 times, but writing `for (int i = 1; i < 10; ++i)` only runs it 9 times. A practical tip: build a fixed habit—either always start from 0 and use `<` (`for (int i = 0; i < n; ++i)`), or start from 1 and use `<=` (`for (int i = 1; i <= n; ++i)`). Don't mix them; mixing is the breeding ground for off-by-one errors.
+> ⚠️ **Pitfall Warning**: The off-by-one error is the most classic pitfall in `for` loops. The intention might be to loop 10 times, but writing `i < 10` results in only 9 iterations. A practical tip: develop a fixed habit—either always start from 0 and use `<` (`i < n`), or start from 1 and use `<=` (`i <= n`). Do not mix them; mixing is the breeding ground for off-by-one errors.
 
 ## Step Four — `break` and `continue`: The "Emergency Exits" in Loops
 
-`break` immediately breaks out of the current loop without re-evaluating the condition—just like the meaning of break, it breaks our loop! `continue` skips the remaining code of the current iteration and jumps directly to the next iteration.
+`break` immediately exits the current loop without re-evaluating the condition—just like its meaning implies, it breaks our loop! `continue` skips the remaining code of the current iteration and proceeds directly to the next iteration.
 
 ```cpp
 int data[] = {4, 7, 2, 9, 5, 1};
@@ -185,9 +191,9 @@ for (int i = 1; i <= 20; ++i) {
 // 输出: 1 3 5 7 9 11 13 15 17 19
 ```
 
-Note that `break` can only break out of the innermost loop. When nested two levels deep, an inner `break` only breaks out of the inner loop, and the outer loop continues as normal. To break out of multiple loops at once, we usually use a flag variable combined with an outer condition check, or encapsulate the logic into a function and use `return` to exit.
+Note that `break` can only exit the innermost loop. When there are two nested layers, an inner `break` will only exit the inner loop, and the outer loop will continue as normal. To exit multiple layers at once, we usually use a flag variable combined with an outer condition check, or encapsulate the logic into a function and use `return` to exit.
 
-> ⚠️ **Pitfall Warning**: Overusing `break` and `continue` makes the code logic fragmented, forcing readers to mentally jump around to track the execution flow. If a loop body contains more than two or three `break` or `continue` statements, consider whether the loop condition should be written more clearly, or whether part of the logic should be extracted into a separate function. A simple, direct loop condition is always easier to maintain than control flow that jumps around everywhere.
+> ⚠️ **Pitfall Warning**: Overusing `break` and `continue` makes code logic fragmented, forcing readers to mentally jump around to track the execution flow. If a loop body contains more than two or three `break` or `continue` statements, consider whether the loop condition should be written more clearly, or whether part of the logic should be extracted into a separate function. Simple, straightforward loop conditions are always easier to maintain than `break` statements scattered everywhere.
 
 ## Step Five — Nested Loops: Loops Inside Loops
 
@@ -220,13 +226,13 @@ Running result:
 1x9= 9 2x9=18 3x9=27 4x9=36 5x9=45 6x9=54 7x9=63 8x9=72 9x9=81
 ```
 
-The outer loop controls the row number `i`, and the inner loop controls the column number `j`. `j` iterates from 1 to `i`, printing a triangle shape. `std::setw(2)` makes each output item occupy a width of 2 characters, aligning single-digit and double-digit numbers.
+The outer loop controls the row number `i`, and the inner loop controls the column number `j`. `j` iterates from 1 to `i`, printing a triangle shape. `std::setw(2)` makes each output item occupy a width of 2 characters, so single-digit and double-digit numbers align neatly.
 
-The number of executions in a nested loop is the product of the iterations of each level. With N times in the outer loop and M times in the inner loop, the inner loop body executes a total of N * M times. For a double nested loop with N=1000, the inner loop executes one million times—so keep this concept in mind: when dealing with large datasets, the fewer nested levels, the better.
+The number of executions in a nested loop is the product of the iterations of each layer. With N times in the outer loop and M times in the inner loop, the inner loop body executes a total of N * M times. For a double nested loop with N=1000, the inner loop executes one million times—so we must keep this concept in mind: when dealing with large amounts of data, the fewer nested layers, the better.
 
-## Full Practical Example — loops.cpp
+## Complete Practical Exercise — loops.cpp
 
-Let's combine the several loop types we learned into one program: a multiplication table, a number-guessing mini-game (`while` + `break`), and a pyramid pattern print (nested `for`).
+Let's combine the several loop types we learned earlier into a single program: a multiplication table, a number-guessing mini-game (`while` + `break`), and a pyramid pattern print (nested `for`).
 
 ```cpp
 // loops.cpp -- 综合循环练习
@@ -332,15 +338,26 @@ g++ -Wall -Wextra -o loops loops.cpp
 *********
 ```
 
-Let's break down the pyramid logic. For the `row`-th row, we need `kHeight - row` leading spaces to center the asterisks, and then we print `2 * row - 1` asterisks. This `2n-1` pattern is very common in pattern printing. The `while (true)` + `break` in the number-guessing game is also a classic pattern—when the exit condition isn't easy to condense into a single boolean expression, checking inside the loop body and then using `break` is a clear approach.
+Let's break down the pyramid logic. For row `i`, we need `kHeight - i - 1` leading spaces to center the asterisks, and then we print `2 * i + 1` asterisks. This pattern of `2 * i + 1` is very common in pattern printing. The `while (true)` + `break` in the number-guessing game is also a classic pattern—when the exit condition isn't easy to condense into a single boolean expression, judging inside the loop body and then using `break` is a clear approach.
+
+## Run Online
+
+Run the comprehensive loop example online to observe the output of the multiplication table, pyramid pattern, and prime number sieve:
+
+<OnlineCompilerDemo
+  title="循环语句综合演示：乘法表、金字塔、素数"
+  source-path="code/examples/vol1/06_loops.cpp"
+  description="在线运行并观察 for 循环、嵌套循环和 break 的综合运用。试着修改 kHeight 或素数范围。"
+  allow-run
+/>
 
 ## Try It Yourself
 
-Just understanding it isn't enough; you have to write it yourself to truly master it. Here are four exercises, and we recommend completing each one hands-on.
+Just understanding it isn't enough; you have to write it yourself to truly master it. Below are four exercises, and we recommend completing each one hands-on.
 
 ### Exercise 1: Print a Hollow Square
 
-Input a positive integer N, and print an N x N hollow square. For example, when N=5:
+Input a positive integer N and print an N x N hollow square. For example, when N=5:
 
 ```text
 * * * * *
@@ -350,19 +367,19 @@ Input a positive integer N, and print an N x N hollow square. For example, when 
 * * * * *
 ```
 
-Only the first row, last row, first column, and last column print asterisks; the middle is all spaces. Hint: use a nested `for` loop, and have the inner loop check if the current position is on the boundary.
+Only the first row, last row, first column, and last column print asterisks; the middle is all spaces. Hint: use a nested `for` loop, and have the inner loop check whether the current position is on the boundary.
 
 ### Exercise 2: Calculate Factorials
 
-Use a `for` loop to calculate the factorial of N (N!). For example, 5! = 120. Note that factorials grow extremely fast; if you use `int`, 13! will overflow. Try seeing how large `long long` can handle before overflowing.
+Use a `while` loop to calculate the factorial of N (N!). For example, 5! = 120. Note that factorials grow extremely fast; with `int`, 13! will overflow. Try seeing how large `long long` can handle.
 
 ### Exercise 3: Find Prime Numbers
 
-Input a positive integer N, and print all prime numbers between 2 and N. The method to determine if a number is prime: for a number m, check if there is any number between 2 and m-1 that divides m evenly. If not, it is a prime number. Hint: use the outer loop to iterate through candidate numbers, and the inner loop to perform the divisibility check. Use `break` to exit the inner loop early once a factor is found.
+Input a positive integer N and print all prime numbers between 2 and N. The method to determine a prime: for a number m, check if there is any number between 2 and m-1 that can divide m evenly; if not, it is a prime. Hint: use the outer loop to iterate through candidate numbers, use the inner loop to perform the divisibility check, and use `break` to exit the inner loop early once a factor is found.
 
 ### Exercise 4: Print a Diamond
 
-Input an odd number N, and print an N-row diamond pattern. For example, when N=5:
+Input an odd integer N and print an N-row diamond pattern. For example, when N=5:
 
 ```text
   *
@@ -376,10 +393,10 @@ Hint: the upper half is the same as the pyramid, and the lower half is a mirror 
 
 ## Summary
 
-In this chapter, we went through all three of C++'s loop structures completely. `while` suits scenarios where "you don't know the count, keep going while the condition is met," `do-while` guarantees the loop body executes at least once (most commonly used in menu systems), and `for` is clearest when the loop count is known because it groups the initialization, condition, and increment together. `break` is used to urgently break out of a loop, and `continue` is used to skip the current iteration, but don't overuse them—clear loop conditions are always better than control flow that jumps around everywhere. Nested loops can solve two-dimensional problems, but be mindful of the O(N^2) execution growth.
+In this chapter, we went through all three of C++'s loop structures completely. `while` suits scenarios where "we don't know the count, keep going while the condition is met," `do-while` guarantees the loop body executes at least once (most commonly used in menu systems), and `for` is the clearest when the loop count is known because it groups initialization, condition, and increment together. `break` is used to urgently exit a loop, and `continue` is used to skip the current iteration, but do not overuse them—clear loop conditions are always better than control flow jumping around everywhere. Nested loops can solve two-dimensional problems, but we must be mindful of the O(N^2) growth in execution count.
 
-In the next chapter, we will encounter the range-for loop introduced in C++11—a more modern and safer way to traverse containers and arrays. With the foundation from this chapter, you'll find that range-for is a breath of fresh air when we get there.
+In the next chapter, we will encounter the range-for loop introduced in C++11—a more modern and safer way to traverse containers and arrays. With the foundation from this chapter, you will find that range-for is simply a breath of fresh air.
 
 ---
 
-> **Self-Assessment of Difficulty**: If you feel confused about the execution order of nested loops, we suggest grabbing a pen and manually simulating the execution process of the multiplication table on paper—track the values of the outer variable `i` and the inner variable `j` at each step. This will build a very intuitive understanding.
+> **Self-Assessment of Difficulty**: If you feel confused about the execution order of nested loops, we suggest grabbing a pen and manually simulating the execution process of the multiplication table on paper—tracking the values of the outer variable `i` and the inner variable `j` at each step. This builds a very intuitive understanding.

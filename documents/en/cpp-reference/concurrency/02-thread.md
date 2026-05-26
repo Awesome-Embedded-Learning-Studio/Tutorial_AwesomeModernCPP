@@ -1,7 +1,7 @@
 ---
 title: std::thread
-description: A class representing a single execution thread, allowing concurrent execution
-  of multiple functions.
+description: A class representing a single thread of execution, allowing multiple
+  functions to execute concurrently.
 chapter: 99
 order: 2
 tags:
@@ -15,12 +15,18 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/concurrency/02-thread.md
+  source_hash: 2dd45afcbbdffe639639ad953479852b85567f32504f35a63d37b8863dc3cd20
+  translated_at: '2026-05-26T10:12:33.175214+00:00'
+  engine: anthropic
+  token_count: 438
 ---
 # std::thread (C++11)
 
 ## In a Nutshell
 
-The native thread wrapper provided by the C++ standard library. Creating an object immediately launches an underlying OS thread, enabling true multitasking concurrency.
+A native thread wrapper provided by the C++ standard library. Creating an object immediately launches an underlying OS thread, enabling true multitasking concurrency.
 
 ## Header
 
@@ -34,7 +40,7 @@ The native thread wrapper provided by the C++ standard library. Creating an obje
 | Constructor | `template< class Function, class... Args > explicit thread( Function&& f, Args&&... args );` | Constructs and immediately starts the thread |
 | Destructor | `~thread();` | Must be joined or detached before destruction, otherwise calls std::terminate |
 | Assignment | `thread& operator=( thread&& other ) noexcept;` | Move assignment |
-| Joinable | `bool joinable() const noexcept;` | Checks whether the thread is joinable (i.e., associated with an active thread) |
+| Joinable | `bool joinable() const noexcept;` | Checks if the thread is joinable (i.e., associated with an active thread) |
 | Join | `void join();` | Blocks the current thread until the target thread finishes execution |
 | Detach | `void detach();` | Detaches the thread from the thread object, allowing it to run independently in the background |
 | Get ID | `id get_id() const noexcept;` | Returns the thread identifier |
@@ -61,7 +67,7 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero abstraction overhead; `std::thread` maps directly to an underlying OS thread (such as an RTOS task or POSIX pthread)
+- Zero-overhead abstraction; `std::thread` maps directly to an underlying OS thread (such as an RTOS task or POSIX pthread)
 - `hardware_concurrency()` can be used at runtime to probe the number of available cores, dynamically determining the thread pool size
 - Combined with `std::mutex` and `std::atomic`, we can safely protect shared peripheral registers or global buffers
 - Note the OS thread stack overhead (typically a few KB to tens of KB). On MCUs with extremely limited memory, we must precisely control the number of threads and stack sizes

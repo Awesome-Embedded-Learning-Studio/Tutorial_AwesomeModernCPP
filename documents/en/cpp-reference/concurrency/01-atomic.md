@@ -1,7 +1,7 @@
 ---
 title: std::atomic
-description: Lock-free atomic operation types for safe data sharing between multiple
-  threads without data races
+description: Lock-free atomic operation types for safe, data-race-free data sharing
+  between multiple threads.
 chapter: 99
 order: 1
 tags:
@@ -15,18 +15,24 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/concurrency/01-atomic.md
+  source_hash: c64b85388ab6ff5821595b20802a2f1297b71951216c37ec060bb08351cac675
+  translated_at: '2026-05-26T10:12:20.640395+00:00'
+  engine: anthropic
+  token_count: 501
 ---
 # std::atomic (C++11)
 
 ## In a Nutshell
 
-A template class that guarantees read and write operations are indivisible, preventing data races when multiple threads concurrently access the same variable.
+A template class that guarantees indivisible read and write operations, preventing data races when multiple threads concurrently access the same variable.
 
-## Header
+## Header File
 
 `#include <atomic>`
 
-## Core API Cheat Sheet
+## Core API Quick Reference
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
@@ -37,9 +43,9 @@ A template class that guarantees read and write operations are indivisible, prev
 | Load | `T load(memory_order order = memory_order_seq_cst) const noexcept;` | Atomic read |
 | Exchange | `T exchange(T desired, memory_order order = memory_order_seq_cst) noexcept;` | Atomically replaces the old value and returns it |
 | Compare-and-exchange | `bool compare_exchange_weak(T& expected, T desired, ...) noexcept;` | Weak CAS, may spuriously fail |
-| Compare-and-exchange | `bool compare_exchange_strong(T& expected, T desired, ...) noexcept;` | Strong CAS, fails only on a genuine mismatch |
+| Compare-and-exchange | `bool compare_exchange_strong(T& expected, T desired, ...) noexcept;` | Strong CAS, only fails on a genuine mismatch |
 | Atomic add | `T fetch_add(T arg, memory_order order = memory_order_seq_cst) noexcept;` | Atomically adds and returns the old value (integer/pointer) |
-| Lock-free check | `bool is_lock_free() const noexcept;` | Checks if the current type is lock-free |
+| Lock-free check | `bool is_lock_free() const noexcept;` | Checks whether the current type is lock-free |
 
 ## Minimal Example
 
@@ -61,10 +67,10 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Properly aligned integer and pointer types typically map directly to hardware atomic instructions, with zero extra overhead
-- `is_lock_free()` allows runtime confirmation of whether the implementation is truly lock-free, avoiding implicit system calls
-- Replaces bulky mutexes, ideal for lightweight state synchronization between interrupts and the main loop
-- Overly large custom structures may degrade into internally locked implementations, which we must carefully avoid
+- Properly aligned integer and pointer types typically map directly to hardware atomic instructions, with zero overhead.
+- `is_lock_free()` allows runtime confirmation of whether the implementation is truly lock-free, avoiding implicit system calls.
+- Replaces bulky mutexes, making it ideal for lightweight state synchronization between interrupts and the main loop.
+- Overly large custom structures may degrade into internally locked implementations, which we must strictly avoid.
 
 ## Compiler Support
 
@@ -74,7 +80,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: Corresponding Chapter](../../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
+- [Tutorial: Corresponding Chapter](../../vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
 
 ---

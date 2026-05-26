@@ -1,6 +1,6 @@
 ---
 title: nullptr
-description: Type-safe null pointer literal, replacing NULL and 0
+description: Type-safe null pointer literal, replacing `NULL` and `0`
 chapter: 99
 order: 4
 tags:
@@ -14,6 +14,12 @@ cpp_standard:
 - 17
 - 20
 - 23
+translation:
+  source: documents/cpp-reference/core-language/04-nullptr.md
+  source_hash: 7c82ab55e4e0fa53aa7febb6b442da6f96212e7148e77f9c8a010c0063f650df
+  translated_at: '2026-05-26T10:15:37.088681+00:00'
+  engine: anthropic
+  token_count: 312
 ---
 # nullptr (C++11)
 
@@ -30,8 +36,8 @@ No header required (language keyword); the type is defined in `<cstddef>`.
 | Operation | Signature | Description |
 |------|------|------|
 | Null pointer literal | `nullptr` | A prvalue of type `std::nullptr_t` |
-| Implicit conversion | → Any pointer type | Converts to a null pointer value of the corresponding type |
-| Implicit conversion | → Any pointer-to-member type | Converts to a null pointer-to-member value of the corresponding type |
+| Implicit conversion | → any pointer type | Converts to a null pointer value of the corresponding type |
+| Implicit conversion | → any pointer-to-member type | Converts to a null pointer-to-member value of the corresponding type |
 
 ## Minimal Example
 
@@ -51,7 +57,7 @@ int main() {
 ## Embedded Applicability: High
 
 - A zero-overhead abstraction; the compiler directly generates a null pointer value at compile time, producing the same instructions as `0` or `NULL`
-- Avoids overload ambiguity between integers and pointers in register manipulation functions (such as overloads for hardware registers)
+- Avoids overload ambiguity between integers and pointers in register manipulation functions (such as overloads that operate on hardware registers)
 - Behaves correctly in template metaprogramming (such as static assertions and type traits), whereas `NULL` and `0` would fail
 - Fully compatible with C-style low-level hardware manipulation code, allowing for a risk-free, gradual replacement
 

@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Quick review of C language basic syntax, including core concepts such
-  as data types, operators, control flow, pointers, arrays, and structures.
+description: A quick review of fundamental C syntax, covering core concepts such as
+  data types, operators, control flow, pointers, arrays, and structs.
 difficulty: beginner
 order: 2
 platform: host
@@ -17,19 +17,25 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: C Language Quick Review
+title: C严谨的C语言快速复习
+translation:
+  source: documents/vol1-fundamentals/02-c-language-crash-course.md
+  source_hash: 78bfd7c6549bb701b4dcadf7c1f8066d4c634a89a0ec01cdf332192c3144f824
+  translated_at: '2026-05-26T10:23:36.922272+00:00'
+  engine: anthropic
+  token_count: 5758
 ---
 # A Quick C Language Review
 
-> The full repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
+> The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out, and if you like it, give it a Star to encourage the author.
 
-Although it should be noted that C++ can no longer be described as a **simple C superset** today, by design, C++ was required to be as compatible with C as possible. Therefore, we assume everyone has a solid enough grasp of C to write working business logic code for one or more embedded systems. With that in mind, this section serves as a quick, supplementary review of common C language concepts for the sake of completeness.
+Although it should be noted that C++ can no longer be described as a **simple C superset** today, by design, C++ strives to be compatible with C. Therefore, we assume everyone has a solid enough grasp of C to write functional business logic for one or more embedded systems. With that in mind, this section serves as a quick, supplementary overview of common C language concepts for the sake of completeness.
 
 ## 1. Basic Data Types and Type Modifiers
 
-It is worth mentioning that C itself is a **strongly typed** programming language. Clarifying what a variable is has been a standard requirement since the birth of C.
+It is worth mentioning that C is inherently a **strongly typed** programming language. Clarifying what a variable is has been a standard requirement since the birth of C.
 
-> I know some people will bring up `auto`. While `auto` is indeed great for saving time when writing complex types, my stance is not to overuse it.
+> I know some might bring up `auto`. While `auto` is indeed great for saving time when writing complex types, my stance is not to overuse it.
 
 C's type system is the foundation of the entire language. In embedded development, accurately understanding the size and range of data types is especially important because hardware resources are often constrained. We must keep this in mind when writing C++ as well.
 
@@ -46,7 +52,7 @@ long long ll = 100000LL;   // 至少64位（C99标准引入）
 
 ```
 
-In embedded systems, we frequently need precise control over data type sizes. The `stdint.h` header introduced by the C99 standard provides fixed-width integers, which is extremely important for writing portable embedded code. This is particularly true for foundational libraries that might be used on both 32-bit and 64-bit platforms (the author has noticed that 64-bit chips for embedded platforms are slowly starting to appear, so this is genuinely something to care about).
+In embedded systems, we frequently need precise control over data type sizes. The `stdint.h` header introduced by the C99 standard provides fixed-width integers. This is extremely important for writing portable embedded code, especially for foundational libraries that might be used on both 32-bit and 64-bit platforms (I've noticed that 64-bit chips for embedded platforms are slowly emerging, so this is genuinely something to care about).
 
 ```c
 #include <stdint.h>
@@ -60,11 +66,11 @@ uint32_t u32 = 4294967295U;// 精确32位无符号整数
 
 ```
 
-So the question is: when should we use which size? Well, this doesn't need to be overly rigid, but one thing must be noted—**your data range must be sufficient**. Which leads to the next question: **how much can an N-bit value actually hold?** For an **unsigned integer**, N bits can represent **2ⁿ values**, with a range of **0 ~ 2ⁿ − 1**. What about a **signed integer**? The most significant bit is used as the sign bit, and using two's complement representation, the range becomes **−2ⁿ⁻¹ ~ 2ⁿ⁻¹ − 1**. We are all embedded programmers here, so we should all be able to do this binary math.
+So the question is: when do we use which size? Well, this doesn't need to be overly rigid, but one thing must be noted—**your data range must be sufficient**. Which leads to the next question: **how much can an N-bit value actually hold?** For an **unsigned integer**, N bits can represent **2ⁿ values**, with a range of **0 ~ 2ⁿ − 1**. What about a **signed integer**? The most significant bit is used as the sign bit. Using two's complement representation, the range becomes **−2ⁿ⁻¹ ~ 2ⁿ⁻¹ − 1**. We are all embedded programmers, so we should be able to do this binary math in our sleep.
 
 ### 1.2 Floating-Point Types
 
-Floating-point types are used to represent real numbers, but using floating-point arithmetic in embedded systems requires extra caution because many MCUs lack hardware floating-point support, and software emulation introduces significant performance overhead.
+Floating-point types are used to represent real numbers, but we must use them with extreme caution in embedded systems. Many MCUs lack hardware floating-point units, and software emulation introduces significant performance overhead.
 
 ```c
 float f = 3.14f;           // 单精度，通常32位，精度约7位十进制数
@@ -73,15 +79,15 @@ long double ld = 3.14L;    // 扩展精度，至少与double相同
 
 ```
 
-In extremely resource-constrained embedded systems, if floating-point arithmetic is absolutely necessary, prefer `float` over `double` because it consumes less memory and computational resources. `double` can sometimes be too expensive.
+In severely resource-constrained embedded systems, if floating-point math is absolutely necessary, prefer `float` over `double` because it consumes less memory and computational resources. `double` can sometimes be too demanding.
 
 ### 1.3 Type Modifiers
 
-Type modifiers can alter the properties of basic types, and they hold special importance in embedded programming.
+Type modifiers can alter the properties of basic types, giving them special importance in embedded programming.
 
 #### signed and unsigned
 
-The `unsigned` modifier extends the representation range of an integer variable to non-negative values only, which is very useful when dealing with hardware register values and bit masks:
+The `unsigned` modifier extends the representation range of an integer variable to non-negative numbers only. This is highly useful when dealing with hardware register values and bit masks:
 
 ```c
 unsigned int counter = 0;       // 范围：0 到 4294967295（32位系统）
@@ -91,7 +97,7 @@ signed int temperature = -40;   // 范围：-2147483648 到 2147483647
 
 #### const Modifier
 
-The `const` keyword declares a variable as read-only, which serves multiple purposes in embedded development. First, it helps the compiler optimize by placing **constant data in ROM or Flash rather than RAM**, saving precious RAM resources. Second, it provides compile-time safety checks to prevent accidental modification of data that should not change. This is sometimes very important, as it essentially emphasizes that within the current logic, this value is an invariant (of course, C++ provides the even more powerful `constexpr`, which we will discuss when we get to C++).
+The `const` keyword declares a variable as read-only, which serves multiple purposes in embedded development. First, it helps the compiler optimize by placing **constant data in ROM or Flash instead of RAM**, saving precious RAM resources. Second, it provides compile-time safety checks to prevent accidental modification of data that shouldn't change. This is often important, essentially emphasizing that within the current logic, this value is an invariant (of course, C++ provides the much more powerful `constexpr`, which we will discuss when we get to C++).
 
 ```c
 const int MAX_BUFFER_SIZE = 256;           // 常量整数
@@ -99,7 +105,7 @@ const uint8_t lookup_table[] = {0, 1, 4, 9, 16, 25};  // 常量数组，可存�
 
 ```
 
-Using `const` in function parameters clearly indicates that the function will not modify the passed data, which is a good practice when designing APIs:
+Using `const` in function parameters clearly indicates that the function will not modify the passed data. This is a good practice when designing APIs:
 
 ```c
 void process_data(const uint8_t* data, size_t length) {
@@ -110,15 +116,15 @@ void process_data(const uint8_t* data, size_t length) {
 
 #### volatile Modifier
 
-The literal meaning of `volatile` is "changeable." It is an extremely important yet most easily misunderstood keyword in embedded C programming. Its core purpose is not to "disable compiler optimization," but rather to **explicitly tell the compiler: the value of this variable might change outside the current program's control flow**. In embedded systems, such "out-of-control-flow" changes typically come from hardware peripherals, interrupt service routines (ISRs), DMA (Direct Memory Access), or other concurrently executing contexts.
+The literal meaning of `volatile` is "changeable." It is an extremely important yet easily misunderstood keyword in embedded C programming. Its core purpose is not to "disable compiler optimization," but rather to **explicitly tell the compiler: the value of this variable might change outside the current program's control flow**. In embedded systems, these "outside of control flow" changes typically come from hardware peripherals, interrupt service routines (ISRs), DMA (Direct Memory Access), or other concurrently executing contexts.
 
-Because of this, when the compiler encounters an object modified by `volatile`, **it cannot assume the variable remains unchanged between two accesses**. Every read and write of a `volatile` variable is considered an **observable behavior** in the abstract machine model, and must actually occur in memory rather than being cached in a register, merged, or directly eliminated. This does not mean the compiler "cannot optimize at all," but rather that it cannot make a "value stability" assumption about `volatile` objects. Other unrelated code can still be optimized normally.
+Because of this, when the compiler encounters an object modified by `volatile`, **it cannot assume the variable remains unchanged between two accesses**. Every read and write to a `volatile` variable counts as an **observable behavior** in the abstract machine model. These operations must actually occur in memory and cannot be cached in registers, merged, or eliminated outright. This doesn't mean the compiler "can't optimize at all," but rather that it cannot make a "value stability" assumption about the `volatile` object. Other unrelated code can still be optimized normally.
 
-In embedded programming, the most common use case for `volatile` is passing state information between an interrupt and the main loop. For example, an event flag that is set in an interrupt callback and polled in the main loop must be declared as `volatile`. Otherwise, at higher optimization levels, the compiler might assume the variable is never modified in the main loop, causing it to hoist, cache, or even optimize away the read operation, leading to behavior that severely deviates from expectations.
+In embedded programming, the most common use case for `volatile` is passing state information between an interrupt and the main loop. For example, an event flag that is set in an interrupt callback and polled in the main loop must be declared as `volatile`. Otherwise, at higher optimization levels, the compiler might assume the variable is never modified in the main loop, leading it to hoist, cache, or even optimize away the read operation, causing the program's behavior to deviate severely from expectations.
 
-Looking at it from another angle, if an ordinary variable is written to with different values consecutively within the same execution path, but no observable behavior in between depends on it, then without `volatile`, the compiler has every reason to consider these writes "redundant" and eliminate them. Once the variable is declared as `volatile`, these writes all become non-eliminable memory accesses that must occur strictly in order.
+Looking at it from another angle, if a normal variable is written to with different values consecutively within the same execution path, and no observable behavior in between depends on it, then without `volatile`, the compiler has every reason to consider these writes "redundant" and eliminate them. Once the variable is declared as `volatile`, these writes become non-eliminable memory accesses that must strictly occur in order.
 
-It must be particularly emphasized that `volatile` only solves **compiler-level visibility issues**. It does not guarantee atomicity, nor does it provide any thread synchronization or memory order semantics. Compound operations on `volatile` variables (such as incrementing) can still produce race conditions in interrupt or multi-threaded environments. If a program requires atomicity or synchronization guarantees, it must rely on disabling interrupts, locks, atomic instructions, or specialized concurrency primitives. This is why any operating system must encapsulate and provide lock primitives.
+It must be particularly emphasized that `volatile` only solves **compiler-level visibility issues**. It does not guarantee atomicity, nor does it provide any thread synchronization or memory order semantics. Compound operations on `volatile` variables (such as incrementing) can still produce race conditions in interrupt or multi-threaded environments. If a program requires atomicity or synchronization guarantees, it must rely on disabling interrupts, locks, atomic instructions, or specialized concurrency primitives. This is why every operating system wraps and provides lock primitives.
 
 ```c
 volatile uint32_t* const GPIO_IDR = (volatile uint32_t*)0x40020010;  // GPIO输入数据寄存器
@@ -136,7 +142,7 @@ int main(void) {
 
 ```
 
-Additionally, when accessing hardware registers, it is usually necessary to use both `volatile` and `const` together. I believe anyone who has read an SDK knows this.
+Additionally, when accessing hardware registers, we typically need to use both `volatile` and `const` together. I believe anyone who has read an SDK knows this.
 
 ```c
 #define RCC_BASE    0x40023800
@@ -147,7 +153,7 @@ Additionally, when accessing hardware registers, it is usually necessary to use 
 
 ### 2.1 Arithmetic Operators
 
-C provides standard arithmetic operators, but when using them in embedded systems, we need to be mindful of overflow and type promotion:
+C provides standard arithmetic operators, but when using them in embedded systems, we need to watch out for overflow and type promotion:
 
 ```c
 int a = 10, b = 3;
@@ -159,7 +165,7 @@ int remainder = a % b;  // 取模：1
 
 ```
 
-In embedded development, division and modulo operations are usually expensive, especially on MCUs without a hardware divider. In performance-critical code, we should avoid division operations or replace divisions by powers of two with bit shifts:
+In embedded development, division and modulo operations usually incur significant overhead, especially on MCUs without a hardware divider. In performance-critical code, we should avoid division operations or replace divisions by powers of two with bit shifts:
 
 ```c
 uint32_t value = 1024;
@@ -251,7 +257,7 @@ int greater_equal = (a >= b);// 大于等于：0
 
 ```
 
-Logical operators have short-circuit behavior, which can be used for conditional optimization in embedded programming:
+Logical operators feature short-circuit evaluation, which can be used for conditional optimization in embedded programming:
 
 ```c
 // 逻辑与：左侧为假时不评估右侧
@@ -273,7 +279,7 @@ if (!is_ready) {
 
 ### 2.4 Other Important Operators
 
-The **ternary conditional operator** is the only ternary operator in C and can simplify simple if-else statements:
+The **ternary conditional operator** is the only ternary operator in C, and it can simplify simple if-else statements:
 
 ```c
 int max = (a > b) ? a : b;  // 等价于 if (a > b) max = a; else max = b;
@@ -285,7 +291,7 @@ uint8_t clamp(uint8_t value, uint8_t min, uint8_t max) {
 
 ```
 
-The **sizeof operator** returns the byte size of a type or object, is evaluated at compile time, and is commonly used for calculating array sizes:
+The **sizeof operator** returns the byte size of a type or object. It is evaluated at compile time and is commonly used for calculating array sizes:
 
 ```c
 uint32_t array[10];
@@ -329,7 +335,7 @@ if (temperature > TEMP_HIGH_THRESHOLD) {
 
 ```
 
-In embedded systems, for multiple mutually exclusive conditions, using an else-if chain can avoid unnecessary condition checks and improve execution efficiency.
+In embedded systems, using an else-if chain for multiple mutually exclusive conditions avoids unnecessary condition checks and improves execution efficiency.
 
 The **switch statement** is suitable for multi-way branching. Compilers typically optimize it into a jump table, making it more efficient than multiple if-else statements in certain cases:
 
@@ -498,7 +504,7 @@ for (int i = 0; i < data_count; i++) {
 
 ```
 
-Although the **goto statement** is often criticized, in embedded C, it has legitimate use cases in error handling and resource cleanup scenarios:
+Although the **goto statement** is often criticized, it has legitimate use cases in embedded C for error handling and resource cleanup:
 
 ```c
 int initialize_system(void) {
@@ -528,9 +534,9 @@ error_hardware:
 
 ## 4. Functions
 
-Functions, which I remember also being called subroutines, are blocks of code that complete a piece of logic and are meant to be read by humans. From this perspective, the foundation of modular programming in C is the function.
+I remember another term for functions being "subroutines." A function completes a piece of logic and serves as code meant for human reading. From this perspective, the foundation of modular programming in C is the function.
 
-> I've actually met people who believe that function calls waste time and therefore functions shouldn't be written—well, the first part is true, but the second part is wrong. They clearly don't know that modern compilers optimize unnecessary function calls by inlining them directly (i.e., inserting the code snippet at the call site, saving the time consumed by pushing/popping the stack and triggering pipeline flushes). Besides, do you really need to worry about the time taken by a function call?
+> I've actually met people who believe that function calls waste time and therefore we shouldn't write functions. The first part is true, but the second part is wrong. They clearly don't know that modern compilers optimize unnecessary function calls by inlining them (directly inserting the snippet at the call site, saving the time spent pushing and popping the stack, as well as the time consumed by flushing the pipeline). Besides, do you really need to care about the time taken by a function call?
 
 ### 4.1 Function Definition and Declaration
 
@@ -551,7 +557,7 @@ int calculate_checksum(const uint8_t* data, size_t length) {
 
 ### 4.2 Function Parameter Passing
 
-C uses pass-by-value, but the effect of pass-by-reference can be achieved through pointers:
+C uses pass-by-value, but we can achieve the effect of pass-by-reference through pointers:
 
 ```c
 // 值传递：修改不影响原变量
@@ -574,7 +580,7 @@ swap_correct(&x, &y);  // x和y被交换
 
 ```
 
-In embedded development, pointers should be used when passing large structures to avoid expensive copies:
+In embedded development, we should use pointers when passing large structures to avoid expensive copies:
 
 ```c
 typedef struct {
@@ -598,7 +604,7 @@ void process_data_efficient(const SensorData* data) {
 
 ### 4.3 Inline Functions
 
-In modern C++, `inline` no longer means an **inline function**—this is something everyone must be aware of when writing C++. It actually means allowing repeated definitions. Because it eliminates a separate symbol encoding to some extent, thereby avoiding linkage conflicts—C compilers nowadays will proactively optimize on their own anyway. So, if you find that your compiler actually respects this keyword, then use it; otherwise, there is no need to write it.
+In modern C++, `inline` no longer means an **inline function**—this is something everyone must be aware of when writing C++. It actually means "allowed to have duplicate definitions." Because it eliminates a unique symbol encoding to some extent, it avoids linking conflicts. C compilers nowadays also proactively optimize on their own. So, if you find that your compiler actually respects this keyword, go ahead and use it; otherwise, there's no need to write it.
 
 ```c
 // C99标准的内联函数
@@ -612,7 +618,7 @@ static inline uint16_t swap_bytes(uint16_t value) {
 
 ### 4.4 Function Pointers and Callbacks
 
-Function pointers are a basic building block for implementing callbacks. A callback literally means "calling back"—that's exactly what it means. We save the address of a function, and when needed, we **call back** to it, which is equivalent to storing our processing flow!
+Function pointers are a basic building block for implementing callbacks. A callback literally means "calling back"—that's exactly what it means. We save the address of a function, and when needed, we **call back** to it. It's equivalent to storing our processing flow!
 
 ```c
 // 定义函数指针类型
@@ -640,7 +646,7 @@ void handle_button_event(void) {
 
 ```
 
-Function pointers can also be used to implement simple polymorphism. I remember a decent embedded C tutorial that had a good example of C-based polymorphism, but unfortunately, I've forgotten the title of the book (sweatdrop
+Function pointers can also be used to implement simple polymorphism. I remember a decent embedded C tutorial that had a good example of C-based polymorphism, but unfortunately, I've forgotten the title of the book (sweatdrop).
 
 ```c
 typedef int (*MathOperation)(int, int);
@@ -660,7 +666,7 @@ int result = perform_operation(add, 10, 5);  // 15
 
 ## 5. Pointers
 
-Pointers are the most powerful yet error-prone feature of C, and they are especially important in embedded programming. Since this is a quick review, we will just briefly run through C pointers.
+Pointers are C's most powerful yet most error-prone feature, and they are especially important in embedded programming. Since this is a quick review, we will just briefly run through C pointers.
 
 ### 5.1 Pointer Basics
 
@@ -683,7 +689,7 @@ int val = *(p + 2);      // 访问array[3]，val = 4
 
 ### 5.2 Pointers and Arrays
 
-In most cases, an array name decays into a pointer to its first element. But hey, we must note this—**an array is not a pointer**!!!
+In most contexts, an array name decays into a pointer to its first element. But hey, we must note this—**an array is not a pointer**!!!
 
 ```c
 int numbers[10];
@@ -702,7 +708,7 @@ for (int* p = numbers; p < numbers + 10; p++) {
 
 ### 5.3 Multi-level Pointers
 
-This reminds me of a meme—a person pointing at a person pointing at a person.jpg. Yeah, that's exactly what it means. A pointer to a pointer variable that points to a pointer variable that points to a pointer variable that points to a variable. Yeah, it makes your head spin. My advice is: unless absolutely necessary, don't play this game. You are just setting a massive trap for your colleagues.
+This reminds me of a meme—a person pointing at a person pointing at a person.jpg. Yeah, that's exactly what it means. A pointer variable pointing to a pointer variable pointing to a pointer variable pointing to a variable. Yeah, it makes your head spin. My advice is: unless absolutely necessary, don't play this game. You're just setting a massive trap for your colleagues.
 
 ```c
 int value = 42;
@@ -715,11 +721,11 @@ int val2 = **ptr_ptr;    // 42
 
 ```
 
-Multi-level pointers are useful when dynamically allocating two-dimensional arrays, but dynamic memory allocation should be used cautiously in embedded systems.
+Multi-level pointers are useful when dynamically allocating two-dimensional arrays, but we should use dynamic memory allocation cautiously in embedded systems.
 
 ### 5.4 Pointers and const
 
-The combination of const and pointers has multiple meanings:
+The combination of `const` and pointers has several different meanings:
 
 ```c
 int value = 42;
@@ -797,7 +803,7 @@ int cmp = strcmp(str1, str2);        // 比较字符串
 
 ```
 
-In embedded systems, we should prefer safe function versions with length limits:
+In embedded systems, we should prefer safe, length-limited versions of string functions:
 
 ```c
 char buffer[32];
@@ -809,7 +815,7 @@ snprintf(buffer, sizeof(buffer), "Value: %d", value);
 
 ```
 
-Things to note when handling strings:
+Things to keep in mind when handling strings:
 
 - Ensure the destination buffer is large enough
 - Always ensure the string is terminated with `'\0'`
@@ -819,7 +825,7 @@ Things to note when handling strings:
 
 ### 7.1 Structures
 
-Structures allow combining different types of data into a single unit:
+Structures allow us to combine data of different types into a single unit:
 
 ```c
 // 定义结构体
@@ -873,7 +879,7 @@ typedef struct {
 
 ### 7.2 Bit-Fields
 
-Bit-fields allow allocating storage in a structure on a bit-by-bit basis, which is extremely useful when dealing with hardware registers:
+Bit-fields allow us to allocate storage in a structure on a bit-by-bit basis, which is extremely useful when dealing with hardware registers:
 
 ```c
 // 寄存器位域定义
@@ -897,7 +903,7 @@ Note: The implementation of bit-fields depends on the compiler and platform. Use
 
 ### 7.3 Unions
 
-All members of a union share the same block of memory, which is used to save space or for type punning:
+All members of a union share the same block of memory, which is used to save space or perform type punning:
 
 ```c
 // 基本联合体
@@ -969,7 +975,7 @@ typedef enum {
 
 ```
 
-Enumerations in embedded development are commonly used to define states, command codes, and configuration options:
+Enumerations are often used in embedded development to define states, command codes, and configuration options:
 
 ```c
 // 命令定义
@@ -994,7 +1000,7 @@ typedef enum {
 
 ## 8. Preprocessor
 
-The preprocessor processes source code before compilation. It is an important source of flexibility in C and is especially important in embedded development.
+The preprocessor processes source code before compilation. It is a major source of C's flexibility and is especially important in embedded development.
 
 ### 8.1 Macro Definitions
 
@@ -1018,11 +1024,11 @@ The preprocessor processes source code before compilation. It is an important so
 
 ```
 
-Things to note about macros:
+Things to keep in mind with macros:
 
 - Parameters should be enclosed in parentheses to avoid precedence issues
-- Multi-line macros should be wrapped with do-while(0)
-- Macros do not perform type checking, so use them with care
+- Multi-line macros should be wrapped in `do-while(0)`
+- Macros do not perform type checking, so use them carefully
 
 Typical applications in embedded development:
 
@@ -1046,7 +1052,7 @@ Typical applications in embedded development:
 
 ### 8.2 Conditional Compilation
 
-Conditional compilation allows selectively including or excluding code based on conditions. This is a fundamental tool for cross-platform implementation.
+Conditional compilation allows us to selectively include or exclude code based on conditions. This is a fundamental tool for cross-platform implementations.
 
 ```c
 // 基本条件编译
@@ -1108,7 +1114,7 @@ DEBUG_PRINT("Value: %d\n", value);  // 仅在DEBUG定义时输出
 
 ### 8.4 Predefined Macros
 
-Compilers provide some useful predefined macros:
+Compilers provide several useful predefined macros:
 
 ```c
 // 文件和行号
@@ -1198,7 +1204,7 @@ void fast_loop(void) {
 
 C has four scopes: file scope, function scope, block scope, and function prototype scope.
 
-In embedded development, using scope appropriately can avoid naming conflicts and unexpected side effects:
+In embedded development, using scope properly helps avoid naming conflicts and unexpected side effects:
 
 ```c
 // 文件作用域（全局）
@@ -1223,7 +1229,7 @@ void function(void) {
 
 ### 10.1 Dynamic Memory Allocation
 
-Although dynamic memory allocation should be avoided as much as possible in embedded systems (due to memory fragmentation and non-determinism), understanding these functions is still important:
+Although we should generally avoid dynamic memory allocation in embedded systems (due to memory fragmentation and non-determinism), understanding these functions is still important:
 
 ```c
 #include <stdlib.h>
@@ -1248,7 +1254,7 @@ array = NULL;  // 良好的实践
 
 ### 10.2 Memory Layout
 
-Understanding a program's memory layout is crucial for embedded development. We will cover this in a more dedicated section later, so we will just touch on it here.
+Understanding a program's memory layout is crucial for embedded development. We will cover this in a more dedicated section later, so we'll just touch on it here.
 
 ```cpp
 

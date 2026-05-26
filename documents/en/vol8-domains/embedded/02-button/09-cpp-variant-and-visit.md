@@ -10,16 +10,22 @@ difficulty: intermediate
 platform: stm32f1
 chapter: 16
 order: 9
+translation:
+  source: documents/vol8-domains/embedded/02-button/09-cpp-variant-and-visit.md
+  source_hash: 2f20607a3461c1bef610a9bc65e1e753cea59261432d5b95c424bf48b37c7bdd
+  translated_at: '2026-05-26T12:12:30.326573+00:00'
+  engine: anthropic
+  token_count: 1475
 ---
 # Part 27: `std::variant` Events + `std::visit` Dispatch — Type-Safe "What Happened"
 
-> Following up on the previous article: `enum class` achieved type-safe configuration and state. This article introduces the C++17 `std::variant` to express button events—"Pressed" and "Released" are no longer two integers, but two distinct types.
+> Following up on the previous part: `enum class` achieved type-safe configuration and state. This part introduces the C++17 `std::variant` to express button events—"pressed" and "released" are no longer two integers, but two distinct types.
 
 ---
 
 ## How C Expresses Events
 
-A button has only two events: Pressed and Released. C typically uses an `enum` or `#define` to represent them:
+A button has only two events: pressed and released. C typically uses an `enum` or `#define` to represent them:
 
 ```c
 #define EVENT_PRESSED  1
@@ -29,7 +35,7 @@ A button has only two events: Pressed and Released. C typically uses an `enum` o
 enum ButtonEvent { Pressed = 1, Released = 0 };
 ```
 
-We then pass this integer in a callback or as a return value:
+Then we pass this integer in a callback or return value:
 
 ```c
 void handle_event(int event) {
@@ -42,7 +48,7 @@ void handle_event(int event) {
 }
 ```
 
-The problem is obvious: `int` can be any value. If we pass in `42`, the compiler stays completely silent. Even if we use `enum`, C's `enum` is fundamentally an integer, offering no type safety guarantees.
+The problem is obvious: `int` can be any value. If we pass in `42`, the compiler stays silent. Even if we use `enum`, C's `enum` is fundamentally an integer, offering no type safety guarantees.
 
 A deeper problem is that an event can only carry a single integer. If a `Pressed` event later needs to include a timestamp, and a `Released` event needs to include a duration, an integer is no longer sufficient. We would have to add an extra `struct` parameter or use a global variable to pass the additional data.
 
@@ -74,7 +80,7 @@ using ButtonEvent = std::variant<Pressed, Released>;
 } // namespace device
 ```
 
-`Pressed` and `Released` are empty structs—they carry no data and serve purely as type tags. `ButtonEvent` is a `std::variant` that can hold either a `Pressed` or a `Released` at any given time.
+`Pressed` and `Released` are empty structs—they carry no data, serving only as type tags. `ButtonEvent` is a `std::variant` that can hold either a `Pressed` or a `Released` at any given time.
 
 Why use empty structs instead of `enum class`? Two reasons:
 
@@ -84,9 +90,9 @@ Why use empty structs instead of `enum class`? Two reasons:
 struct Pressed { uint32_t timestamp; };
 ```
 
-We simply add a field to the struct, and the way we use `variant` remains completely unchanged. If we had used `enum class`, carrying data would require an additional `struct` wrapper.
+We simply add a field to the struct, and the usage of `variant` remains completely unchanged. If we used `enum class`, carrying data would require an extra `struct` wrapper.
 
-**Second, type dispatch.** `std::visit` can perform compile-time dispatch based on the actual type held in the `variant`—different types take different code paths. Using empty structs as type tags makes this dispatch mechanism very clean.
+**Second, type dispatch.** `std::visit` can perform compile-time dispatch based on the actual type held in the `variant`—different types take different code paths. Empty structs act as type tags, making this dispatch mechanism very clean.
 
 ### Comparison with union
 
@@ -103,7 +109,7 @@ using ButtonEvent = std::variant<Pressed, Released>;
 // variant 内部记录了当前持有的类型
 ```
 
-C's `union` does not record "which member is currently active," so we need to manually maintain a tag variable. If we set the tag to indicate `pressed` but actually read `released`, the result is undefined behavior. `variant` maintains this tag internally and forces us to correctly handle each type through `std::visit`.
+C's `union` does not record "which member is currently active," so we need to manually maintain a tag variable. If we set the tag to indicate `pressed` but actually read `released`, the result is undefined behavior. `variant` maintains this tag internally and forces us to handle each type correctly through `std::visit`.
 
 ---
 
@@ -129,11 +135,11 @@ std::visit(
 
 What does this code do? Let's break it down layer by layer:
 
-1. `std::visit(visitor, event)` — Invokes the `visitor` based on the type held by the `event`.
-2. `[](auto&& e)` — A generic lambda where `auto&&` is a forwarding reference, and the type of `e` is deduced from the actual type held in the `variant`.
-3. `using T = std::decay_t<decltype(e)>` — Extracts the "bare type" of `e` (removing references and const).
-4. `if constexpr (std::is_same_v<T, Pressed>)` — A compile-time check for whether `T` is `Pressed`.
-5. `else if constexpr (std::is_same_v<T, Released>)` — A compile-time check for whether `T` is `Released`.
+1. `std::visit(visitor, event)` — Invokes `visitor` based on the type held by `event`.
+2. `[](auto&& e)` — A generic lambda where `auto&&` is a forwarding reference, and the type of `e` is deduced from the actual type held in `variant`.
+3. `using T = std::decay_t<decltype(e)>` — Extracts the "bare type" of `e` (stripping references and const).
+4. `if constexpr (std::is_same_v<T, Pressed>)` — Compile-time check whether `T` is `Pressed`.
+5. `else if constexpr (std::is_same_v<T, Released>)` — Compile-time check whether `T` is `Released`.
 
 ### Actual Usage in main.cpp
 
@@ -154,11 +160,11 @@ button.poll_events(
     HAL_GetTick());
 ```
 
-Here we use two layers of lambdas. The outer lambda is the callback parameter for `poll_events()`, called each time an event occurs, with the parameter `event` being a `ButtonEvent` (i.e., a `std::variant<Pressed, Released>`). The inner lambda is the visitor for `std::visit`, responsible for handling the specific event types.
+Here we use two layers of lambdas. The outer lambda is the callback parameter for `poll_events()`, called each time an event occurs, with the parameter `event` being a `ButtonEvent` (i.e., `std::variant<Pressed, Released>`). The inner lambda is the visitor for `std::visit`, responsible for handling the specific event types.
 
 ### std::decay_t and decltype
 
-`decltype(e)` returns the declared type of `e`. Since `auto&&` is a forwarding reference, the actual type of `e` might be a reference type like `Pressed&&` or `const Pressed&`. `std::decay_t` strips away references, const, and volatile, yielding the "bare type" `Pressed` or `Released`.
+`decltype(e)` returns the declared type of `e`. Since `auto&&` is a forwarding reference, the actual type of `e` might be a reference type like `Pressed&&` or `const Pressed&`. `std::decay_t` strips references, const, and volatile, yielding the "bare type" `Pressed` or `Released`.
 
 ```cpp
 // 如果 variant 持有 Pressed：
@@ -170,9 +176,9 @@ std::decay_t<Pressed&&> → Pressed
 
 ### The Role of if constexpr
 
-`if constexpr` is a compile-time conditional branch. When `T` is `Pressed`, the code in the `else` branch **is not compiled**—it simply does not exist in the generated machine code. This differs from a runtime `if-else`: with a runtime `if-else`, both branches are compiled and one is selected at execution time; with `if constexpr`, only the matching branch is compiled.
+`if constexpr` is a compile-time conditional branch. When `T` is `Pressed`, the code in the `else` branch **is not compiled**—it simply does not exist in the generated machine code. This differs from a runtime `if-else`: a runtime `if-else` compiles both branches and selects one at execution time, whereas `if constexpr` only compiles the matching branch.
 
-This means if we write operations exclusive to `Released` (such as accessing a specific field of `Released`) inside the `else` branch, there will be no compilation error when `T` is `Pressed`—because that line of code does not exist at all.
+This means if we write operations exclusive to `Released` (like accessing a field of `Released`) inside the `else` branch, there will be no compilation error when `T` is `Pressed`—because that line of code does not exist at all.
 
 ---
 
@@ -189,17 +195,17 @@ struct ButtonEvent {
 struct Pressed : ButtonEvent { void handle() override { /* ... */ } };
 ```
 
-In desktop applications, this is the classic approach. But in an embedded environment, it has several fatal flaws:
+This is a classic approach in desktop applications. But in an embedded environment, it has several fatal flaws:
 
-1. **Virtual function table (vtable)**: Every class with virtual functions has a vtable stored in Flash. Both `Pressed` and `Released` would each need a vtable.
+1. **Virtual function table (vtable)**: Every class with virtual functions has a vtable, stored in Flash. `Pressed` and `Released` each need a vtable.
 2. **Dynamic allocation**: Polymorphism typically requires `new` or `std::make_unique`. We have disabled exceptions in our embedded environment, and we avoid heap allocation whenever possible.
-3. **Runtime dispatch**: Virtual function calls perform an indirect jump via a vtable pointer, resulting in an extra memory access.
+3. **Runtime dispatch**: Virtual function calls perform an indirect jump through a vtable pointer, adding an extra memory access.
 
-`std::variant` + `std::visit` suffers from none of these issues:
+`std::variant` + `std::visit` have none of these issues:
 
-- No vtable is needed—type information is encoded in the `variant`'s own tag.
-- No heap allocation is needed—`variant` stores values directly on the stack.
-- Dispatch is completed at compile time—the compiler sees the `if constexpr` and directly generates the corresponding code.
+- No vtable needed—type information is encoded in the `variant`'s own tag.
+- No heap allocation needed—`variant` stores values directly on the stack.
+- Dispatch is completed at compile time—the compiler sees `if constexpr` and directly generates the corresponding code.
 
 In our `-fno-exceptions -fno-rtti` compilation environment, `std::variant` is a more suitable choice than virtual functions.
 
@@ -211,9 +217,9 @@ The memory layout of `std::variant<Pressed, Released>`:
 
 ```mermaid
 graph LR
-    subgraph "std::variant&lt;Pressed, Released&gt; Memory Layout"
-        TAG["tag (1B)<br/>0 = Pressed<br/>1 = Released"]
-        PAYLOAD["payload<br/>(empty struct, no extra space)"]
+    subgraph "std::variant&lt;Pressed, Released&gt; 内存布局"
+        TAG["tag (1B)\n0 = Pressed\n1 = Released"]
+        PAYLOAD["payload\n(空结构体，无额外空间)"]
     end
     TAG --- PAYLOAD
 ```
@@ -230,19 +236,19 @@ if (event.tag == 0) {
 }
 ```
 
-One comparison, one jump. Exactly the same as hand-written C code using `if-else`. The variant's tag check is simply the conditional judgment of an `if-else`—the compiler optimizes it into the simplest machine code.
+One comparison, one jump. Exactly the same as hand-written C code using `if-else`. The variant's tag check is simply the conditional judgment of `if-else`—the compiler optimizes it into the simplest machine code.
 
 ---
 
 ## Looking Back
 
-This article introduced two C++17 features to build a type-safe event system:
+This part introduced two C++17 features to build a type-safe event system:
 
-- **`std::variant<Pressed, Released>`** — A type-safe union replacing C-style integer event codes.
-- **`std::visit` + generic lambda** — Compile-time type dispatch ensuring all event types are handled.
+- **`std::variant<Pressed, Released>`** — A type-safe union, replacing C-style integer event codes.
+- **`std::visit` + generic lambda** — Compile-time type dispatch, guaranteeing that all event types are handled.
 - **Empty structs as type tags** — Extensible, allowing fields to be added later.
 - **`std::decay_t<decltype(e)>` + `std::is_same_v`** — A tool combination for compile-time type checking.
 
-Compared to the virtual function approach, `variant` + `visit` requires no vtable, no heap allocation, and no RTTI—perfectly suited for our embedded environment.
+Compared to the virtual function approach, `variant` + `visit` require no vtable, no heap allocation, and no RTTI—perfectly suited for our embedded environment.
 
-The next article assembles these pieces into a Button template class.
+The next part assembles these pieces into a Button template class.
