@@ -432,7 +432,7 @@ struct UnaryExpr {
 ```cpp
 std::cout << "sizeof(variant<int, double, string>): "
           << sizeof(std::variant<int, double, std::string>) << "\n";
-// 典型输出：32（64 位平台上，string 占 32 字节，int 和 double 各 8 字节）
+// 典型输出：40（64 位平台上，string 占 32 字节，int 占 4 字节, double 占 8 字节）
 std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
 // 典型输出：32
 ```
