@@ -31,8 +31,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: site/.vitepress/.build-cache
-          key: vitepress-build-${{ hashFiles('documents/**') }}
-          restore-keys: vitepress-build-
+          key: vitepress-build-${{ runner.os }}-${{ hashFiles('documents/**', 'site/.vitepress/config/**', 'site/.vitepress/plugins/**', 'site/.vitepress/public/**', 'site/.vitepress/theme/**', 'scripts/build.ts', 'package.json', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            vitepress-build-${{ runner.os }}-
+            vitepress-build-
 
       - name: Build
         run: pnpm build
