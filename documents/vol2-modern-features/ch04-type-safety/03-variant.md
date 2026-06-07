@@ -437,9 +437,8 @@ std::cout << "sizeof(string): " << sizeof(std::string) << "\n";
 // 典型输出：32
 ```
 
-> 这里稍作补充，int 的大小如何，可以在如下的网址上阅读，简单的说，int 被规定为至少16 bits，也就是2字节大小，其他平台一律4字节。当然这个事情别当八股文背诵。
+> 这里稍作补充，int 的大小如何，可以在这个[网址](https://en.cppreference.com/cpp/language/types)上阅读，简单的说，int 被规定为至少16 bits，也就是2字节大小，其他平台一律4字节。当然这个事情别当八股文背诵。
 > 可以参考 [YukunJ](https://github.com/YukunJ) 老师提供的[案例](https://godbolt.org/z/sbvEMW56G)
-
 
 这个大小对于大多数应用来说完全可接受。但在内存极端受限的嵌入式场景中，你可能需要评估一下是否值得用 `variant` 替代手写的 `union` + `enum` 标签方案。`variant` 带来的类型安全收益通常远大于几个字节的内存开销。
 
