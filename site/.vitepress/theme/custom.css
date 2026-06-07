@@ -764,6 +764,35 @@
   line-height: 1.6;
 }
 
+.contributor-card .card-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  border-radius: 9px;
+  vertical-align: middle;
+}
+
+.contributor-card .card-badge.pr {
+  color: #fff;
+  background-color: #3fb950;
+}
+
+.dark .contributor-card .card-badge.pr {
+  background-color: #238636;
+}
+
+.contributor-card .card-badge.issue {
+  color: #fff;
+  background-color: #58a6ff;
+}
+
+.dark .contributor-card .card-badge.issue {
+  background-color: #1f6feb;
+}
+
 @media (max-width: 639px) {
   .contributor-grid {
     grid-template-columns: 1fr;

@@ -203,6 +203,7 @@ Thanks to everyone who has contributed to this project! See [CONTRIBUTORS.md](./
 |-------------|--------------|
 | [Charliechen](https://github.com/Charliechen114514) | 📝 Content · 🔍 Review · 💡 Examples |
 | [Doll-Attire](https://github.com/Doll-Attire) | 🎨 UI Design · 📝 UX Improvements |
+| [YukunJ](https://github.com/YukunJ) | 🐛 Bug Reports · 💡 Content Fixes |
 <!-- ALL_CONTRIBUTORS_END -->
 
 > Contributions are not limited to code. UI design, illustrations, issue reports, and content suggestions all count. See [CONTRIBUTING.md](./CONTRIBUTING.md).

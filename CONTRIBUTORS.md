@@ -37,6 +37,12 @@
 
 <!-- 在此处添加更多贡献者 -->
 
+### [YukunJ](https://github.com/YukunJ)
+
+**贡献类型**：🐛 💡
+**贡献渠道**：GitHub
+**贡献说明**：修复 shared_ptr 和 variant 章节的文字错误，改进内容准确性
+
 ### [Doll-Attire](https://github.com/Doll-Attire)
 
 **贡献类型**：🎨 📝
