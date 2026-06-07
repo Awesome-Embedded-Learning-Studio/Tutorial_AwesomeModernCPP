@@ -211,6 +211,7 @@ Tutorial_AwesomeModernCPP/
 |--------|---------|
 | [Charliechen](https://github.com/Charliechen114514) | 📝 内容 · 🔍 审阅 · 💡 示例 |
 | [Doll-Attire](https://github.com/Doll-Attire) | 🎨 界面设计 · 📝 体验改进 |
+| [YukunJ](https://github.com/YukunJ) | 🐛 问题反馈 · 💡 内容修复 |
 <!-- ALL_CONTRIBUTORS_END -->
 
 > 贡献方式不限于代码，包括界面设计、插画、问题反馈、内容建议等。详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。

@@ -26,16 +26,23 @@ description: "感谢所有为本项目做出贡献的人"
 部分贡献者出于隐私考虑选择匿名或使用化名，我们对他们同样表示感谢。
 :::
 
+主要维护者如下：
+
 <div class="contributor-grid">
 <a href="https://github.com/Charliechen114514" target="_blank" rel="noopener noreferrer" class="contributor-card">
   <img src="https://github.com/Charliechen114514.png?size=96" alt="Charliechen" class="card-avatar" />
   <div class="card-body">
-    <span class="card-name">Charliechen</span>
+    <span class="card-name">Charliechen <span class="card-badge pr">PR</span></span>
     <p class="card-role">项目维护者 · 主要作者</p>
     <p class="card-types">📝 🔍 💡</p>
     <p class="card-desc">教程主要编写者，资源收集和开发，项目架构设计与基础的日常维护</p>
   </div>
 </a>
+</div>
+
+非常感谢这些朋友的PR，或者是各种形式的支持！你们的帮助正在让这个项目变得更好，走得更远！（深鞠躬90°！）
+
+<div class="contributor-grid">
 <a href="https://github.com/Doll-Attire" target="_blank" rel="noopener noreferrer" class="contributor-card">
   <img src="https://github.com/Doll-Attire.png?size=96" alt="Doll-Attire" class="card-avatar" />
   <div class="card-body">
@@ -43,6 +50,47 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-role">UI 设计指导与意见反馈</p>
     <p class="card-types">🎨 📝</p>
     <p class="card-desc">指导本文档站 UI 设计，提供重要的阅读体验改进意见</p>
+  </div>
+</a>
+<a href="https://github.com/YukunJ" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/YukunJ.png?size=96" alt="YukunJ" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">YukunJ <span class="card-badge pr">PR</span></span>
+    <p class="card-role">内容修复</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">修复 shared_ptr 和 variant 章节的文字错误，改进内容准确性</p>
+  </div>
+</a>
+</div>
+
+这些同志提出的宝贵反馈，同样值得记录，正是你们的反馈让这个项目可以知晓真实的问题，督促我们改进！（继续深鞠躬90°！）
+
+<div class="contributor-grid">
+<a href="https://github.com/Leon19960120" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Leon19960120.png?size=96" alt="Leon19960120" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Leon19960120 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">反馈 404 页面问题与文字显示异常</p>
+  </div>
+</a>
+<a href="https://github.com/REvolution2" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/REvolution2.png?size=96" alt="REvolution2" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">REvolution2 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈与内容建议</p>
+    <p class="card-types">🐛 📝</p>
+    <p class="card-desc">提出 C++ 字符字面量类型相关问题与讨论</p>
+  </div>
+</a>
+<a href="https://github.com/L-Super" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/L-Super.png?size=96" alt="L-Super" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">L-Super <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">报告 expected 示例编译失败问题</p>
   </div>
 </a>
 </div>
