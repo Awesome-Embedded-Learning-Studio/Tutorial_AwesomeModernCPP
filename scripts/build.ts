@@ -94,7 +94,7 @@ function countMdFiles(dir: string): number {
   return count
 }
 
-/** Compute a fast hash of a directory's file mtimes + sizes for change detection */
+/** Compute a stable content hash for change detection across fresh checkouts. */
 function hashDir(dir: string): string {
   const h = createHash('sha256')
   function walk(d: string) {
@@ -104,12 +104,33 @@ function hashDir(dir: string): string {
         if (e.name.startsWith('.')) continue
         const full = join(d, e.name)
         if (e.isDirectory()) { walk(full); continue }
-        const s = statSync(full)
-        h.update(`${relative(dir, full)}:${s.size}:${s.mtimeMs}\n`)
+        h.update(`file:${relative(dir, full)}\n`)
+        h.update(readFileSync(full))
+        h.update('\n')
       }
     } catch { /* ignore */ }
   }
   walk(dir)
+  return h.digest('hex').substring(0, 16)
+}
+
+function hashFile(path: string): string {
+  const h = createHash('sha256')
+  if (!existsSync(path)) return ''
+  h.update(readFileSync(path))
+  return h.digest('hex').substring(0, 16)
+}
+
+function hashBuildInputs(): string {
+  const h = createHash('sha256')
+  for (const [label, value] of [
+    ['site', hashDir(MAIN_VP)],
+    ['package', hashFile(join(PROJECT_ROOT, 'package.json'))],
+    ['lockfile', hashFile(join(PROJECT_ROOT, 'pnpm-lock.yaml'))],
+    ['build-script', hashFile(join(PROJECT_ROOT, 'scripts', 'build.ts'))],
+  ]) {
+    h.update(`${label}:${value}\n`)
+  }
   return h.digest('hex').substring(0, 16)
 }
 
@@ -232,10 +253,11 @@ interface SearchIndexSource {
   lang: 'zh' | 'en' | 'mixed'
 }
 
-function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest): BuildTask {
+function prepareVolume(vol: Volume, lang: 'zh' | 'en', manifest: Manifest, buildInputsHash: string): BuildTask {
   const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
   const id = lang === 'en' ? `${vol.name}-en` : vol.name
-  const cacheKey = existsSync(volDocDir) ? hashDir(volDocDir) : ''
+  const docHash = existsSync(volDocDir) ? hashDir(volDocDir) : ''
+  const cacheKey = `${buildInputsHash}-${docHash}`
   const prev = manifest[id]
   const cached = !FORCE_REBUILD && prev && prev.hash === cacheKey && existsSync(join(CACHE_DIR, 'output', id))
   return { id, vol, lang, cacheKey, cached }
@@ -585,6 +607,7 @@ async function main() {
   mkdirSync(join(BUILD_TMP, 'output'), { recursive: true })
 
   const manifest = readManifest()
+  const buildInputsHash = hashBuildInputs()
 
   // ── Step 1: Build root ──────────────────────────────────
   logStep('Step 1/4: Building root site (index, tags)')
@@ -629,7 +652,7 @@ async function main() {
     for (const lang of ['zh', 'en'] as const) {
       const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
       if (!existsSync(volDocDir)) continue
-      tasks.push(prepareVolume(vol, lang, manifest))
+      tasks.push(prepareVolume(vol, lang, manifest, buildInputsHash))
     }
   }
 
