@@ -361,15 +361,14 @@ std::vector<fs::path> find_by_extension(const fs::path& dir,
         return results;
     }
 
+    std::string lower_ext;
+    std::transform(ext.begin(), ext.end(), std::back_inserter(lower_ext), ::tolower);    
     for (const auto& entry : fs::directory_iterator(dir)) {
         if (entry.is_regular_file()) {
             auto path_ext = entry.path().extension().string();
             // 统一转小写比较，应对 .CPP 和 .cpp
             std::transform(path_ext.begin(), path_ext.end(),
                            path_ext.begin(), ::tolower);
-            std::string lower_ext = ext;
-            std::transform(lower_ext.begin(), lower_ext.end(),
-                           lower_ext.begin(), ::tolower);
             if (path_ext == lower_ext) {
                 results.push_back(entry.path());
             }
@@ -382,7 +381,7 @@ std::vector<fs::path> find_by_extension(const fs::path& dir,
 }
 
 int main() {
-    auto cpp_files = find_by_extension(".", ".md");
+    auto cpp_files = find_by_extension(".", ".cpp");
     for (const auto& f : cpp_files) {
         std::cout << f.filename().string() << "\n";
     }
