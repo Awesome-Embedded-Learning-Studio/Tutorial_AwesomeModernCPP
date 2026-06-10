@@ -108,6 +108,93 @@ documents/vol2-modern-features/     # 卷二目录
 
 详细写作风格请参考 `.claude/writting_style.md`。
 
+## 自定义 Vue 组件
+
+文档站注册了若干自定义 Vue 组件，可在 Markdown 中直接使用。
+
+### 导航组件（全站通用）
+
+`ChapterNav` + `ChapterLink` 用于生成章节导航卡片网格：
+
+```html
+<ChapterNav variant="main">
+  <ChapterLink num="1" href="chapter-01/">第一章标题</ChapterLink>
+  <ChapterLink num="2" href="chapter-02/">第二章标题</ChapterLink>
+</ChapterNav>
+```
+
+| 组件 | Prop | 类型 | 说明 |
+|------|------|------|------|
+| `ChapterNav` | `variant` | `'main'` \| `'sub'` | 布局样式，sub 用于子目录，默认 main |
+| `ChapterLink` | `num` | string \| number | 章节编号（仅 main 变体显示） |
+| `ChapterLink` | `href` | string | 链接路径，**不要**以 `.md` 结尾 |
+
+### 参考文献组件（全站通用）
+
+`ReferenceCard` + `ReferenceItem` + `RefLink` 用于文章末尾的参考文献列表和正文中的可点击引用标记：
+
+正文内引用：
+
+```html
+<RefLink :id="1" preview="Stroustrup, The Design and Evolution of C++, 1994, Ch.15" />
+```
+
+文章末尾参考文献：
+
+```html
+<ReferenceCard title="参考文献">
+  <ReferenceItem
+    :id="1"
+    author="Bjarne Stroustrup"
+    title="The Design and Evolution of C++"
+    publisher="Addison-Wesley"
+    :year="1994"
+    chapter="Chapter 15: Templates"
+    url="https://www.stroustrup.com/dne.html"
+  />
+</ReferenceCard>
+```
+
+| 组件 | Prop | 类型 | 说明 |
+|------|------|------|------|
+| `RefLink` | `id` | number \| string | 引用编号，与 ReferenceItem 的 id 对应 |
+| `RefLink` | `preview` | string | 鼠标悬停时的预览文字 |
+| `ReferenceCard` | `title` | string | 卡片标题，默认"参考文献" |
+| `ReferenceItem` | `id` | number \| string | 引用编号，页内锚点 |
+| `ReferenceItem` | `author` | string | 作者 |
+| `ReferenceItem` | `title` | string | 文献标题（必填） |
+| `ReferenceItem` | `publisher` | string | 出版者 |
+| `ReferenceItem` | `year` | number \| string | 年份 |
+| `ReferenceItem` | `chapter` | string | 章节或备注信息 |
+| `ReferenceItem` | `url` | string | 外部链接 |
+
+### 演讲信息卡片（卷十专用）
+
+`TalkInfoCard` 用于卷十演讲笔记页面的演讲信息展示：
+
+```html
+<TalkInfoCard
+  talkTitle="Concept-based Generic Programming"
+  speaker="Bjarne Stroustrup"
+  conference="cppcon"
+  :year="2025"
+  videoBilibili="https://www.bilibili.com/video/BV1ptCCBKEwW"
+  videoYoutube="https://www.youtube.com/watch?v=VMGB75hsDQo"
+/>
+```
+
+| Prop | 类型 | 说明 |
+|------|------|------|
+| `talkTitle` | string | 演讲标题（必填） |
+| `speaker` | string | 演讲者（必填） |
+| `conference` | string | 会议标识（必填）：`cppcon` \| `cppnow` \| `meetingpp` \| `course` \| `blog` |
+| `year` | number \| string | 年份（必填） |
+| `videoBilibili` | string | Bilibili 视频链接 |
+| `videoYoutube` | string | YouTube 视频链接 |
+| `slidesUrl` | string | 幻灯片链接 |
+
+组件源码位于 `site/.vitepress/theme/components/`。
+
 ## 代码规范
 
 ### C++ 代码风格
@@ -145,6 +232,32 @@ void process_data(std::span<const uint32_t> data) {
 4. 确保代码示例可编译
 5. 本地预览确认渲染正确
 
+## 社区来稿
+
+如果你只是想先投稿一篇文章、笔记、源码阅读或工程经验，可以走更轻量的社区来稿路径。
+
+社区来稿可以先放入：
+
+```text
+documents/community/incoming/
+```
+
+投稿者可以先提交普通 Markdown 文件，不必一开始理解完整卷结构、导航、frontmatter、英文翻译和站点组件。建议至少写清：
+
+- 文章标题和作者署名。
+- 是否原创，或是否已获得授权。
+- 主要参考资料、图片来源和代码来源。
+- 目标读者或适用背景。
+- 是否允许维护者调整标题、格式、放置位置和部分措辞。
+
+社区来稿流转如下：
+
+1. 初步通过基础检查后，文章进入 `documents/community/incoming/`，可在文档站展示，并可被 TAMCPP 周报引用。
+2. 经过社区讨论、语法修订和技术审阅后，文章可移动到 `documents/community/articles/` 长期收录。
+3. 如果文章非常适合主线教程，维护者可进一步整理进对应卷或章节。
+
+社区初刊不代表最终定稿，但上线前仍需满足基本要求：内容可以正常渲染、没有明显技术硬伤、来源和引用清楚、作者同意公开展示。
+
 ## 发布前检查清单
 
 提交 PR 前，请确认：
@@ -180,6 +293,59 @@ pnpm dev
 1. 所有 PR 需要至少一位维护者审核
 2. CI 检查必须通过（markdown lint、链接检查）
 3. 审核通过后，维护者将合并代码
+
+## 社区协作规则
+
+Issue、Discussion 和 PR 分工如下：
+
+- Issue 负责可行动问题：内容错误、构建失败、站点问题、明确的新内容请求。
+- Discussion 负责学习问题、路线讨论、开放式建议。
+- PR 负责具体修改，请说明影响范围、验证方式和是否更新索引。
+- 学习问题优先沉淀到 Discussion 和 QA，避免 Issue 列表变成临时问答区。
+- 内容请求应能回到某个卷级 TODO 或项目路线，不直接变成零散任务。
+
+Issue 和 PR 模板应保持简短，只收集维护者真正需要的信息。
+
+## QA 与知识库规则
+
+QA 不替代正文，只负责解答常见分叉问题和高频误区。
+
+收录外部内容时请遵守：
+
+- 只做摘要、解释和链接，不大段搬运。
+- 不原样搬运原回答，除非原作者明确投稿或授权。
+- 说明这个链接为什么值得读。
+- 回链到对应卷、章节或参考卡。
+- 高质量 Discussion 可以沉淀成 appendix/FAQ 条目。
+
+## 质量、翻译与发布
+
+新增文章前请检查 frontmatter、索引、内部链接、代码块和翻译状态。本地质量命令和 CI workflow 应保持可对应：
+
+- Markdown link check
+- Frontmatter validation
+- English coverage
+- VitePress build
+- Host examples build
+- STM32 examples build
+
+翻译维护规则：
+
+- 正文可以中文先行，关键页面发布前保持英文覆盖。
+- 社区来稿初刊不强制同步英文翻译，稳定收录后再视情况翻译。
+- TODO 文件不强制纳入英文站。
+- 术语表、参考卡和导航页优先保持双语一致。
+- 长篇课程笔记可以低优先级翻译。
+- 翻译后必须跑链接检查。
+
+发布规则：
+
+- patch：修错、链接、站点修复。
+- minor：一个卷或专题明显推进。
+- major：TODO 结构、站点架构或内容体系发生大调整。
+- 发布前检查 link check、VitePress build、example build、coverage update、changelog 和 README 状态表。
+- changelog 应写用户可感知变化，不只是文件数量。
+- milestone 只绑定少量 P0/P1 TODO，不把远期候选塞进近期 milestone。
 
 ## 非代码贡献
 

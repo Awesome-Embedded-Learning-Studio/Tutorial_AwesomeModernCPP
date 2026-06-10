@@ -38,6 +38,7 @@
 - **嵌入式方向**：包含 STM32F1 实战工程、资源约束、外设抽象、交叉编译与链接脚本等内容。
 - **工程化文档站**：基于 VitePress，支持搜索、导航、暗色模式、本地预览与 GitHub Pages 自动部署。
 - **双语与参考卡**：中文主线内容已完成英文翻译覆盖，并提供 C++98 到 C++23 特性参考索引。
+- **社区文章入口**：支持社区来稿初刊、审阅收录和后续主线整合，降低文章投稿门槛。
 
 ## 马上开始
 
@@ -46,6 +47,7 @@
 - [在线文档站](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)
 - [C++ 特性参考卡](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/cpp-reference/)
 - [嵌入式开发专题](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/vol8-domains/embedded/)
+- [社区文章](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/community/)
 
 本地预览文档站：
 
@@ -101,6 +103,7 @@ graph LR
 | [C++ 特性参考卡](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/cpp-reference/) | C++98 到 C++23 核心语言、容器、内存、并发、模板特性速查 | 编写中 |
 | [编译与链接深入](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/compilation/) | 预处理、汇编、静态库、动态库、符号可见性、运行时加载 | 已完成 |
 | [贯穿式实战项目](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/projects/) | 手写 STL、迷你 HTTP 服务器、GUI 框架、嵌入式 OS 等综合项目 | 规划中 |
+| [社区文章](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/community/) | 社区来稿初刊、审阅收录文章与后续主线整合入口 | 建设中 |
 
 </details>
 
@@ -164,6 +167,7 @@ Tutorial_AwesomeModernCPP/
 │   ├── vol8-domains/           # 卷八：领域应用
 │   ├── vol9-open-source-project-learn/  # 卷九：开源项目学习
 │   ├── vol10-open-lecture-notes/        # 卷十：课程与演讲笔记
+│   ├── community/             # 社区来稿、初刊文章与已审阅收录内容
 │   ├── cpp-reference/          # C++ 特性参考卡
 │   ├── compilation/            # 编译与链接深入
 │   └── projects/               # 贯穿式实战项目
@@ -196,7 +200,7 @@ Tutorial_AwesomeModernCPP/
 
 ## 贡献
 
-欢迎修正文档、改进示例、补充章节、校对翻译、提交问题或提出内容建议。请先阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+欢迎修正文档、改进示例、补充章节、校对翻译、提交问题、提出内容建议，或向 [社区文章](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/community/) 投稿。请先阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 快速流程：Fork --> 特性分支 --> 提交 --> Push --> Pull Request
 

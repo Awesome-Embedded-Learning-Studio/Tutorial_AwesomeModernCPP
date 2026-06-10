@@ -39,7 +39,19 @@ CATEGORIES = [
     'team',
 ]
 
-EXCLUDE_DIRS = {'images', 'generated', 'hooks', 'stylesheets', 'javascripts', 'en'}
+# Directories that are intentionally published in Chinese first and should not
+# affect English translation coverage.
+TRANSLATION_EXEMPT_DIRS = {'community'}
+
+EXCLUDE_DIRS = {
+    'images',
+    'generated',
+    'hooks',
+    'stylesheets',
+    'javascripts',
+    'en',
+    *TRANSLATION_EXEMPT_DIRS,
+}
 
 # Friendly labels for display
 LABELS = {

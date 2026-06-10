@@ -1,0 +1,89 @@
+name: "内容提案 / Content Proposal"
+description: "建议新增文章、专题、源码阅读笔记、课程笔记、投稿主题。"
+title: "[内容提案] "
+labels: ["documentation", "enhancement", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这个入口适合讨论“要不要写、写到哪里、写到什么深度”。如果你已经有文章草稿，也可以在这里先说明主题和投稿意向。
+
+  - type: dropdown
+    id: proposal_type
+    attributes:
+      label: "提案类型"
+      multiple: true
+      options:
+        - "新增文章"
+        - "改进现有文章"
+        - "新增代码示例"
+        - "新增源码阅读笔记"
+        - "新增课程/演讲笔记"
+        - "新增 QA/FAQ 条目"
+        - "社区来稿主题讨论"
+        - "其他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: "主题简介"
+      description: "请用几句话说明你想新增或改进什么。"
+      placeholder: "例如：希望新增一篇关于 ... 的文章，帮助读者理解 ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: audience
+    attributes:
+      label: "目标读者"
+      description: "这篇内容适合哪些读者？"
+      placeholder: "例如：C++ 初学者、嵌入式开发者、准备学习并发的人、有工程经验但不熟悉现代 C++ 的读者。"
+
+  - type: textarea
+    id: placement
+    attributes:
+      label: "建议放置位置"
+      description: "如果你知道，可以写对应卷、章节或目录；如果不确定，可以写“不确定”。"
+      placeholder: "例如：卷五并发、卷八嵌入式、卷九源码阅读、社区来稿等。"
+
+  - type: textarea
+    id: outline
+    attributes:
+      label: "建议结构"
+      description: "可以简单列出文章大纲、示例安排或核心问题。"
+      placeholder: |
+        - 背景和动机
+        - 核心概念
+        - 示例代码
+        - 工程注意事项
+        - 参考资料
+
+  - type: textarea
+    id: references
+    attributes:
+      label: "参考资料"
+      description: "可以附标准文档、书籍、演讲、博客、源码、Issue、Discussion 等。"
+      placeholder: "链接或书目信息。"
+
+  - type: dropdown
+    id: submission_plan
+    attributes:
+      label: "你是否计划提交 PR"
+      options:
+        - "是，我准备投稿"
+        - "是，但需要先讨论方向"
+        - "暂时只是建议"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution_notes
+    attributes:
+      label: "投稿说明"
+      description: "如果你准备投稿，请确认以下事项。"
+      options:
+        - label: "我理解维护者可能会调整文章标题、格式、放置位置和部分措辞。"
+        - label: "如果文章引用外部资料，我会尽量提供来源链接。"
+        - label: "如果文章包含图片或代码，我会说明来源或授权情况。"

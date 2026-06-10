@@ -35,4 +35,4 @@ translation:
 - [Compilation and Linking In-Depth](/compilation/) — Compilation, linking, static libraries, and shared libraries
 - [End-to-End Practical Projects](/projects/) — Writing an STL from scratch, an HTTP server, a GUI framework, and more
 - [C++ Quick Reference](/cpp-reference/) — Quick reference for common C++ features
-- [Glossary](/appendix/terminology/) — Chinese-English technical terminology mapping
+- [Glossary](/appendix/terminology) — Chinese-English technical terminology mapping

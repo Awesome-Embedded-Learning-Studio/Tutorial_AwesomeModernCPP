@@ -1,0 +1,77 @@
+name: "站点问题 / Site Problem"
+description: "报告 404、搜索异常、页面显示错误、移动端排版、导航问题。"
+title: "[站点问题] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈站点体验问题。请尽量提供页面链接、复现步骤和截图，这会帮助我们快速定位。
+
+  - type: input
+    id: page
+    attributes:
+      label: "问题页面"
+      description: "请粘贴出现问题的页面链接。"
+      placeholder: "例如：https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: problem_type
+    attributes:
+      label: "问题类型"
+      multiple: true
+      options:
+        - "404 / 链接失效"
+        - "搜索问题"
+        - "页面渲染问题"
+        - "移动端显示问题"
+        - "导航或目录问题"
+        - "多语言页面问题"
+        - "其他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "实际表现"
+      description: "你看到了什么问题？"
+      placeholder: "例如：点击某个链接后进入 404；搜索结果同时出现中英文页面；移动端文字被遮挡。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "期望表现"
+      description: "你认为它应该如何显示或跳转？"
+      placeholder: "例如：应跳转到对应章节；搜索结果应优先显示当前语言页面。"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "复现步骤"
+      description: "如果问题可以稳定复现，请写出操作步骤。"
+      placeholder: |
+        1. 打开 ...
+        2. 点击 ...
+        3. 看到 ...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "环境信息"
+      description: "如果是显示或搜索问题，请填写你使用的设备和浏览器。"
+      value: |
+        - 设备：桌面 / 手机 / 平板
+        - 浏览器：
+        - 操作系统：
+        - 是否使用深色模式：
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "截图"
+      description: "如果方便，请粘贴截图或录屏。"

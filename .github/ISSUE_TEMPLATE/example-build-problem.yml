@@ -1,0 +1,82 @@
+name: "示例代码或构建问题 / Example or Build Problem"
+description: "报告代码示例无法编译、CMake 问题、工具链问题、CI 构建失败。"
+title: "[构建问题] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈代码或构建问题。请提供命令、错误输出和环境信息，方便维护者复现。
+
+  - type: input
+    id: target
+    attributes:
+      label: "相关示例或文件"
+      description: "请粘贴代码示例路径、章节链接或文件路径。"
+      placeholder: "例如：codes_and_assets/examples/... 或 documents/..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: problem_type
+    attributes:
+      label: "问题类型"
+      multiple: true
+      options:
+        - "示例代码无法编译"
+        - "CMake 配置问题"
+        - "工具链或编译器兼容问题"
+        - "CI 构建失败"
+        - "嵌入式示例构建问题"
+        - "其他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: "你执行了什么命令"
+      description: "请贴出触发问题的命令。"
+      placeholder: "例如：pnpm build、cmake --build build、具体编译命令等。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: "错误输出"
+      description: "请粘贴关键错误信息。长日志可以只贴最相关部分。"
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "环境信息"
+      description: "请填写与你的问题相关的环境。"
+      value: |
+        - 操作系统：
+        - 编译器和版本：
+        - CMake 版本：
+        - C++ 标准：
+        - 目标平台：Host / STM32 / ESP32 / 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pr_willingness
+    attributes:
+      label: "你是否愿意提交 PR 修复"
+      options:
+        - "愿意"
+        - "可能可以"
+        - "暂时不方便"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: "补充信息"
+      description: "可以附最小复现、相关截图、链接或你已经尝试过的修复方式。"

@@ -10,9 +10,16 @@
   </a>
 </p>
 
-![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B) ![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
+![C++](https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-blue?logo=c%2B%2B)
+![Release](https://img.shields.io/github/v/release/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
+![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
+![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
 
 ---
+
+<!-- COVERAGE_START -->
+![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 420/420 docs translated
+<!-- COVERAGE_END -->
 
 ## What This Project Is
 
@@ -31,6 +38,7 @@ It is designed for:
 - **Embedded direction**: STM32F1 practice projects, resource constraints, peripheral abstraction, cross-compilation, and linker scripts.
 - **Engineered docs site**: built with VitePress, with search, navigation, dark mode, local preview, and GitHub Pages deployment.
 - **Bilingual content and reference cards**: Chinese-first content now has full English translation coverage, plus a C++98 to C++23 feature reference index.
+- **Community articles hub**: Supports community draft submissions, editorial review and inclusion, and subsequent integration into the main content, lowering the barrier for article contributions.
 
 ## Start Here
 
@@ -39,6 +47,7 @@ The fastest path is to read the online docs:
 - [Online documentation](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/)
 - [C++ feature reference cards](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/cpp-reference/)
 - [Embedded development track](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/embedded/)
+- [Community articles](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/community/)
 
 Run the docs site locally:
 
@@ -94,6 +103,7 @@ graph LR
 | [C++ Feature Reference Cards](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/cpp-reference/) | C++98 to C++23 quick reference for language, containers, memory, concurrency, and templates | In progress |
 | [Compilation & Linking In Depth](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/) | Preprocessing, assembly, static libraries, dynamic libraries, symbol visibility, runtime loading | Completed |
 | [Capstone Projects](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/projects/) | Hand-rolled STL components, mini HTTP server, GUI framework, embedded OS, and other projects | Planned |
+| [Community Articles](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/community/) | Community draft submissions, editorially reviewed articles, and integration into the main content | Under construction |
 
 </details>
 
@@ -126,6 +136,7 @@ flowchart TD
 | `pnpm dev` | Start the VitePress dev server with hot reload |
 | `pnpm build` | Production build with per-volume parallel build and search-index merge |
 | `pnpm build:single` | Run the regular single VitePress build |
+| `pnpm check:links` | Check internal Markdown and component links |
 | `pnpm preview` | Preview the production build |
 | `pnpm hooks:install` / `scripts/setup_precommit.sh` | Install pre-commit checks |
 | `pnpm coverage` | Show English translation coverage |
@@ -156,6 +167,7 @@ Tutorial_AwesomeModernCPP/
 │   ├── vol8-domains/           # Vol.8: Domain Applications
 │   ├── vol9-open-source-project-learn/  # Vol.9: Open Source Project Study
 │   ├── vol10-open-lecture-notes/        # Vol.10: Courses and Talk Notes
+│   ├── community/              # Community submissions, initial publications, and reviewed content
 │   ├── cpp-reference/          # C++ feature reference cards
 │   ├── compilation/            # Compilation & Linking In Depth
 │   └── projects/               # Capstone projects
@@ -188,7 +200,7 @@ See [changelogs/](changelogs/) for full release history.
 
 ## Contributing
 
-Contributions are welcome: documentation fixes, example improvements, new chapters, translation review, issue reports, and content suggestions all help. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
+Contributions are welcome: documentation fixes, example improvements, new chapters, translation review, issue reports, content suggestions, or submissions to [Community Articles](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/community/). Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 
 Quick workflow: Fork --> feature branch --> commit --> push --> pull request
 

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "学习问题 / Ask a Question"
+    url: "https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/discussions"
+    about: "C++ 知识点、学习路线、章节理解、资料推荐等开放式问题，请优先使用 Discussions。"
+  - name: "贡献指南 / Contributing Guide"
+    url: "https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/CONTRIBUTING.md"
+    about: "查看文章规范、代码规范、本地预览和社区协作规则。"

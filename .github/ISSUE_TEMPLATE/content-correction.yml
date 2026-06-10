@@ -1,0 +1,65 @@
+name: "内容勘误 / Content Correction"
+description: "报告错别字、概念错误、术语不准确、代码讲解问题。"
+title: "[内容勘误] "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助改进教程内容。请尽量给出具体页面、原文位置和判断依据，这会让维护者更快处理。
+
+  - type: input
+    id: location
+    attributes:
+      label: "相关页面或文件"
+      description: "请粘贴文档页面链接，或仓库中的文件路径。"
+      placeholder: "例如：https://.../vol1-fundamentals/... 或 documents/vol1-fundamentals/..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: correction_type
+    attributes:
+      label: "问题类型"
+      multiple: true
+      options:
+        - "错别字 / 表达问题"
+        - "概念错误"
+        - "术语不准确"
+        - "代码讲解不准确"
+        - "参考链接或引用问题"
+        - "其他"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_content
+    attributes:
+      label: "当前内容"
+      description: "请贴出有问题的原文、代码片段，或描述具体位置。"
+      placeholder: "例如：某节中写到“...”，但这里可能不准确。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "问题说明"
+      description: "请说明为什么这里不准确，或会造成什么误解。"
+      placeholder: "例如：在 C++ 中该表达式的类型应为 ...，当前说法更接近 C 语言。"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: "建议修改"
+      description: "如果你已经有建议写法，可以贴在这里。"
+      placeholder: "建议改为：..."
+
+  - type: textarea
+    id: references
+    attributes:
+      label: "补充材料"
+      description: "可以附标准文档、cppreference、编译器输出、截图或其他参考资料。"
+      placeholder: "参考链接、截图、编译器输出等。"

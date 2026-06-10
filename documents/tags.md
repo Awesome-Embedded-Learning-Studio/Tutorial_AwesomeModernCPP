@@ -29,5 +29,6 @@ description: "按标签浏览所有教程文章"
 
 - [编译与链接深入](/compilation/) — 编译、链接、静态库、动态库
 - [贯穿式实战项目](/projects/) — 手写 STL、HTTP 服务器、GUI 框架等
+- [社区文章](/community/) — 社区来稿初刊、审阅收录与主线整合入口
 - [C++ 速查](/cpp-reference/) — 常用 C++ 特性快速参考
-- [术语表](/appendix/terminology/) — 中英文技术术语对照
+- [术语表](/appendix/terminology) — 中英文技术术语对照

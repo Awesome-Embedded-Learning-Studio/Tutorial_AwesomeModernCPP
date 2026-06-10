@@ -36,6 +36,7 @@ const VOLUMES: Volume[] = [
   { name: 'compilation', srcDir: 'compilation', urlPrefix: '/compilation' },
   { name: 'cpp-reference', srcDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { name: 'projects', srcDir: 'projects', urlPrefix: '/projects' },
+  { name: 'community', srcDir: 'community', urlPrefix: '/community' },
   { name: 'appendix', srcDir: 'appendix', urlPrefix: '/appendix' },
   { name: 'team', srcDir: 'team', urlPrefix: '/team' },
 ]

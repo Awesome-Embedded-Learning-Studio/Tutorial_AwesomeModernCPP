@@ -115,6 +115,7 @@ export function buildSidebar(): DefaultTheme.Sidebar {
     '/compilation/': volumeSidebar('compilation', '/compilation'),
     '/cpp-reference/': volumeSidebar('cpp-reference', '/cpp-reference'),
     '/projects/': volumeSidebar('projects', '/projects'),
+    '/community/': volumeSidebar('community', '/community'),
     '/appendix/': [
       { text: '附录', link: '/appendix/' },
       { text: '术语表', link: '/appendix/terminology' },

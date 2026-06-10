@@ -60,6 +60,13 @@ VALID_TAGS = {
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
 VALID_CPP_STANDARDS = {'11', '14', '17', '20', '23'}
 
+# Lecture note specific fields (vol10-open-lecture-notes)
+VALID_CONFERENCES = {'cppcon', 'cppnow', 'meetingpp', 'course', 'blog'}
+LECTURE_NOTE_OPTIONAL_FIELDS = {
+    'conference', 'conference_year', 'talk_title', 'speaker',
+    'video_bilibili', 'video_youtube', 'slides_url',
+}
+
 # Required fields for articles
 REQUIRED_FIELDS = {'title', 'chapter', 'order'}
 RECOMMENDED_FIELDS = {'description', 'tags'}
@@ -151,6 +158,40 @@ class FrontmatterValidator:
                             f"Consider adding it to VALID_TAGS if appropriate."
                         )
 
+    def validate_lecture_note_fields(self, frontmatter: Dict, filepath: Path):
+        """Validate lecture note specific fields (vol10-open-lecture-notes)."""
+        parts = filepath.parts
+        is_lecture_note = 'vol10-open-lecture-notes' in parts
+
+        if not is_lecture_note:
+            return
+
+        # Validate conference value if present
+        if 'conference' in frontmatter:
+            conf = frontmatter['conference']
+            if conf not in VALID_CONFERENCES:
+                self.errors.append(
+                    f"{filepath}: Invalid conference: '{conf}'. "
+                    f"Must be one of {VALID_CONFERENCES}"
+                )
+
+        # Validate conference_year is a reasonable year
+        if 'conference_year' in frontmatter:
+            year = frontmatter['conference_year']
+            if not isinstance(year, int) or year < 1990 or year > 2030:
+                self.errors.append(
+                    f"{filepath}: Invalid conference_year: {year}"
+                )
+
+        # Validate video URLs are strings
+        for url_field in ('video_bilibili', 'video_youtube', 'slides_url'):
+            if url_field in frontmatter:
+                val = frontmatter[url_field]
+                if not isinstance(val, str):
+                    self.errors.append(
+                        f"{filepath}: {url_field} must be a string, got {type(val).__name__}"
+                    )
+
     def validate_file(self, filepath: Path) -> bool:
         """Validate a single markdown file."""
         self.stats['total'] += 1
@@ -178,6 +219,9 @@ class FrontmatterValidator:
 
         # Validate field types
         self.validate_field_types(frontmatter, filepath)
+
+        # Validate lecture note specific fields
+        self.validate_lecture_note_fields(frontmatter, filepath)
 
         # Count results
         if any(str(filepath) in e for e in self.errors):
