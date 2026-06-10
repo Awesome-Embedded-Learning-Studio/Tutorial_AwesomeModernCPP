@@ -143,12 +143,26 @@ struct Empty {
 };
 
 struct Container {
-    Empty e;        // sizeof(Empty) == 1，浪费
+    // 在x86-64架构上常见内存布局为
+    // offset   0: e       (1 字节)
+    // offset 1~3: padding (3 字节)
+    // offset 4~7: x       (4 字节)
+    // 因为 int类型大小为4字节所以编译器通常
+    // 会将它放在4的倍数的内存地址
+    Empty e;
+    int x;
+};
+
+struct [[gnu::packed]] PackedContainer {
+    // offset   0: e       (1 字节)
+    // offset 1~4: x       (4 字节)
+    Empty e;        
     int x;
 };
 
 static_assert(sizeof(Empty) == 1);
-static_assert(sizeof(Container) == sizeof(int) + 1);  // 可能有 padding
+static_assert(sizeof(Container) == 8); // 大概率有padding
+static_assert(sizeof(PackedContainer) == sizeof(int) + 1); // 提示编译器不要添加padding
 ```
 
 对于大多数应用来说浪费 1 字节不算什么，但在泛型编程中，策略类（allocator、mutex policy 等）经常是空类。如果多个策略类同时作为成员，每个都占 1 字节，累积起来就不容忽视了。更关键的是，这会让 `sizeof` 的结果不符合预期，影响缓存行对齐等优化。
