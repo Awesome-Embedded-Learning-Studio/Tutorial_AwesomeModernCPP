@@ -322,6 +322,8 @@ QA 不替代正文，只负责解答常见分叉问题和高频误区。
 
 新增文章前请检查 frontmatter、索引、内部链接、代码块和翻译状态。本地质量命令和 CI workflow 应保持可对应：
 
+项目日常维护和网站迭代节奏见 [项目开发 / 网站迭代节奏](documents/community/dev/01-iteration-cadence.md)。
+
 - Markdown link check
 - Frontmatter validation
 - English coverage
