@@ -8,17 +8,17 @@ cpp_standard:
 description: Intrusive container design
 difficulty: intermediate
 order: 4
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
 reading_time_minutes: 9
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: Intrusive Container Design
 translation:
-  source: documents/vol3-standard-library/04-intrusive-containers.md
+  source: documents/vol8-domains/embedded/04-intrusive-containers.md
   source_hash: 24e237b2960b248f9f2dc4c56c20e8e807a888d72f4844b5541a5197c450bd42
   translated_at: '2026-05-26T11:37:35.486345+00:00'
   engine: anthropic

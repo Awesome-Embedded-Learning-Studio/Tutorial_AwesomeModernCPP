@@ -8,13 +8,13 @@ cpp_standard:
 description: 类型安全寄存器封装
 difficulty: intermediate
 order: 2
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 7: 容器与数据结构'
 reading_time_minutes: 7
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: 类型安全的寄存器访问
 ---

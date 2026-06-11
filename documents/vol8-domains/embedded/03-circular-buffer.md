@@ -8,13 +8,13 @@ cpp_standard:
 description: 高效循环缓冲区
 difficulty: intermediate
 order: 3
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
 reading_time_minutes: 6
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: 循环缓冲区实现
 ---

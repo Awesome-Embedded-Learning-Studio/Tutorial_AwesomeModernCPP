@@ -8,17 +8,17 @@ cpp_standard:
 description: Type-safe register wrapper
 difficulty: intermediate
 order: 2
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 7: 容器与数据结构'
 reading_time_minutes: 7
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: Type-Safe Register Access
 translation:
-  source: documents/vol3-standard-library/02-type-safe-register-access.md
+  source: documents/vol8-domains/embedded/02-type-safe-register-access.md
   source_hash: ee7289ceef37902b9cdc6d8479414487f7cdf0f30acb7c738bf4937d04ab1834
   translated_at: '2026-05-26T11:37:19.392812+00:00'
   engine: anthropic

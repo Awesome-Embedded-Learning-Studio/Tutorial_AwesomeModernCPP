@@ -28,8 +28,5 @@ This volume provides a deep dive into the C++ standard library.
   <ChapterLink href="05-object-size-and-trivial-types">Object Size and Trivial Types</ChapterLink>
   <ChapterLink href="01-array">array</ChapterLink>
   <ChapterLink href="02-span">span</ChapterLink>
-  <ChapterLink href="03-circular-buffer">Circular Buffer</ChapterLink>
-  <ChapterLink href="04-intrusive-containers">Intrusive Containers</ChapterLink>
   <ChapterLink href="06-custom-allocators">Custom Allocators</ChapterLink>
-  <ChapterLink href="02-type-safe-register-access">Type-Safe Register Access</ChapterLink>
 </ChapterNav>

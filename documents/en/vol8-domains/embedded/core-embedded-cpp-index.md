@@ -70,14 +70,14 @@ This is the table of contents for *Modern C++ Tutorial for Embedded Systems*. Cl
 
 - [array](../../vol3-standard-library/01-array.md)
 - [span](../../vol3-standard-library/02-span.md)
-- [Circular Buffer](../../vol3-standard-library/03-circular-buffer.md)
-- [Intrusive Container Design](../../vol3-standard-library/04-intrusive-containers.md)
+- [Circular Buffer](./03-circular-buffer.md)
+- [Intrusive Container Design](./04-intrusive-containers.md)
 - [ETL](./05-etl.md)
 - [Custom Allocators](../../vol3-standard-library/06-custom-allocators.md)
 
 ## Chapter 8 - Type Safety and Utility Types
 
-- [Type-Safe Register Access](../../vol3-standard-library/02-type-safe-register-access.md)
+- [Type-Safe Register Access](./02-type-safe-register-access.md)
 
 ## Chapter 10 - Concurrency and Atomic Operations
 
