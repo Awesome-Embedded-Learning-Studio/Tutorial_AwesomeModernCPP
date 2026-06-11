@@ -27,7 +27,7 @@ estimated_effort: epic
 
 - **STM32F1 工程**：`code/stm32f1-tutorials/` 含 LED（C++23 模板）、Button（事件处理）、UART（中断驱动）三个可构建工程。
 - **卷三 allocator 代码**：`code/examples/chapter07/06_custom_allocator/` 含 bump_allocator、stack_allocator 等 7 个文件。
-- **ETL demo**：`code/examples/chapter07/05_etl/` 含 ETL vector 参考实现。
+- **ETL demo**：`code/examples/chapter08/10_etl/` 含 ETL vector 参考实现。
 - **卷五协程代码**：`code/volumn_codes/vol5/ch06-async-io-coroutine/` 含协程 echo server 基础代码。
 
 ### 仅规划入口的资产

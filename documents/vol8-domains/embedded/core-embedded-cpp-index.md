@@ -64,14 +64,14 @@ order: 0
 
 - [array](../../vol3-standard-library/01-array.md)
 - [span](../../vol3-standard-library/02-span.md)
-- [循环缓冲区](../../vol3-standard-library/03-circular-buffer.md)
-- [侵入式容器设计](../../vol3-standard-library/04-intrusive-containers.md)
+- [循环缓冲区](./03-circular-buffer.md)
+- [侵入式容器设计](./04-intrusive-containers.md)
 - [ETL](./05-etl.md)
 - [自定义的分配器](../../vol3-standard-library/06-custom-allocators.md)
 
 ## Chapter 8 - 类型安全与工具类型
 
-- [类型安全的寄存器访问](../../vol3-standard-library/02-type-safe-register-access.md)
+- [类型安全的寄存器访问](./02-type-safe-register-access.md)
 
 ## Chapter 10 - 并发与原子操作
 

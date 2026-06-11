@@ -8,17 +8,17 @@ cpp_standard:
 description: Efficient circular buffer
 difficulty: intermediate
 order: 3
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
 reading_time_minutes: 6
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: Circular Buffer Implementation
 translation:
-  source: documents/vol3-standard-library/03-circular-buffer.md
+  source: documents/vol8-domains/embedded/03-circular-buffer.md
   source_hash: 244238468099658b6070bdd00700e98ca2c24f4e869ccb425b756eb1ff99b464
   translated_at: '2026-05-26T11:37:34.986895+00:00'
   engine: anthropic

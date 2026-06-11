@@ -8,13 +8,13 @@ cpp_standard:
 description: 侵入式容器设计
 difficulty: intermediate
 order: 4
-platform: host
+platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
 reading_time_minutes: 9
 tags:
 - cpp-modern
-- host
+- stm32f1
 - intermediate
 title: 侵入式容器设计
 ---

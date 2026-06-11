@@ -23,8 +23,5 @@ tags:
   <ChapterLink href="05-object-size-and-trivial-types">对象大小与平凡类型</ChapterLink>
   <ChapterLink href="01-array">array</ChapterLink>
   <ChapterLink href="02-span">span</ChapterLink>
-  <ChapterLink href="03-circular-buffer">环形缓冲区</ChapterLink>
-  <ChapterLink href="04-intrusive-containers">侵入式容器</ChapterLink>
   <ChapterLink href="06-custom-allocators">自定义分配器</ChapterLink>
-  <ChapterLink href="02-type-safe-register-access">类型安全寄存器访问</ChapterLink>
 </ChapterNav>

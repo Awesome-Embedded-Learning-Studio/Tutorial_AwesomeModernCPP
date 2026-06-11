@@ -46,5 +46,8 @@ This directory contains a large number of embedded-related articles and an STM32
   <ChapterLink href="05-etl">嵌入式 C++ 教程——ETL</ChapterLink>
   <ChapterLink href="05-interrupt-safe-coding">中断安全的代码编写</ChapterLink>
   <ChapterLink href="06-array-vs-raw-arrays">嵌入式 C++ 教程——std::array vs C 数组</ChapterLink>
+  <ChapterLink href="03-circular-buffer">循环缓冲区</ChapterLink>
+  <ChapterLink href="04-intrusive-containers">侵入式容器设计</ChapterLink>
+  <ChapterLink href="02-type-safe-register-access">类型安全的寄存器访问</ChapterLink>
   <ChapterLink href="core-embedded-cpp-index">目录</ChapterLink>
 </ChapterNav>

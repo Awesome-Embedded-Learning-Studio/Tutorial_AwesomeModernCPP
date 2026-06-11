@@ -34,24 +34,24 @@ estimated_effort: epic
 
 ## Maintenance Asset TODO（已确认决策）
 
-### M1: 迁移 `02-type-safe-register-access.md` 至 vol8 ✅ 已确认
+### M1: 迁移 `02-type-safe-register-access.md` 至 vol8 ✅ 已完成
 
 - **依据**：嵌入式寄存器位操作，与"标准库深入"定位无关。vol8-domains/embedded 是自然归属。
 - **交付物**：文件从 vol3 移至 vol8，更新两侧 index.md、英文翻译、内部链接。
 - **待 vol8 侧确认**：归入 embedded 哪个子章节。
 
-### M2: 迁移 `03-circular-buffer.md` 和 `04-intrusive-containers.md` 至 vol8 ✅ 已确认
+### M2: 迁移 `03-circular-buffer.md` 和 `04-intrusive-containers.md` 至 vol8 ✅ 已完成
 
 - **依据**：手写环形缓冲区和侵入式容器均不属于 C++ 标准库 API。凡是不是标准库的内容都迁移至 vol8，具体归入哪个领域到地方再分析决策。
 - **交付物**：同 M1。同时迁移 `chapter07/03_circular_buffer/` 和 `chapter07/04_intrusive_container/` 代码目录。
 - **待 vol8 侧确认**：归入 embedded 哪个子章节。
 
-### M4: 迁移 ETL 代码至 vol8 ✅ 已确认
+### M4: 迁移 ETL 代码至 vol8 ✅ 已完成
 
 - **依据**：`chapter07/05_etl/`（3 个 .cpp）是嵌入式替代方案库，定位与卷三标准库主线不符。跟随 M2 一起迁移。嵌入式就是嵌入式。
 - **交付物**：迁移代码目录，vol3 正文无需改动（本来就没接入）。
 
-### M3: 更新 index.md 🕐 待触发
+### M3: 更新 index.md ✅ 已完成
 
 - **依据**：迁移完成后 index.md 描述与实际内容差距更大。
 - **决策**：在迁移任务完成时同步更新，不单独提前修改。
@@ -204,8 +204,8 @@ estimated_effort: epic
 
 ## Acceptance
 
-- [ ] M1/M2/M4 迁移完成，vol3 只剩标准库相关文章。
-- [ ] 迁移完成后更新 index.md（M3）。
+- [x] M1/M2/M4 迁移完成，vol3 只剩标准库相关文章。
+- [x] 迁移完成后更新 index.md（M3）。
 - [ ] 新卷三目录从平铺专题改为章节化结构。
 - [ ] 第一部分：至少完成容器选择指南、vector 深入、string 深入、map/set、unordered_map。
 - [ ] 第二部分：至少完成迭代器基础、算法总览（上）。
