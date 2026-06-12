@@ -824,6 +824,18 @@
   height: auto;
 }
 
+/* 节点/边标签：给足内边距与行高，避免 CJK 多行文字被节点框裁剪 */
+.mermaid-diagram .nodeLabel,
+.mermaid-diagram .edgeLabel {
+  padding: 0.15em 0.35em;
+  line-height: 1.45;
+}
+
+/* foreignObject 默认裁剪溢出内容；放开让标签自适应，不遮挡 */
+.mermaid-diagram foreignObject {
+  overflow: visible;
+}
+
 .mermaid-error {
   padding: 12px;
   border: 1px solid var(--vp-c-danger-2);

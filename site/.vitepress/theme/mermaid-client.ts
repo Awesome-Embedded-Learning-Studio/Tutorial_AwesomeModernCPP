@@ -50,6 +50,15 @@ function initMermaid() {
     startOnLoad: false,
     securityLevel: 'loose',
     theme: 'default',
+    flowchart: {
+      htmlLabels: true,
+      nodeSpacing: 50,
+      rankSpacing: 50,
+      padding: 15,
+    },
+    themeVariables: {
+      fontSize: '15px',
+    },
   })
   window.__mermaidInitialized__ = true
 }
