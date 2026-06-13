@@ -106,8 +106,6 @@ documents/vol2-modern-features/     # 卷二目录
 4. **标题层级**：不超过 4 级（`####`）
 5. **篇幅**：每篇文章控制在 1500-3000 字
 
-详细写作风格请参考 `.claude/writting_style.md`。
-
 ## 自定义 Vue 组件
 
 文档站注册了若干自定义 Vue 组件，可在 Markdown 中直接使用。

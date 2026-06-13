@@ -251,7 +251,7 @@ Insert metrics collection points at key paths in the runtime:
 - When a new connection is established: `max_connections_.update(current_connections)`
 - Periodic sampling of queue length (optional)
 
-Write an end-to-end benchmark: start the runtime, submit N tasks, wait for all futures to complete, and report the total time and throughput. Refer to the benchmark methodology in `.claude/chapter-projects-outline.md`.
+Write an end-to-end benchmark: start the runtime, submit N tasks, wait for all futures to complete, and report the total time and throughput. Reuse Lab 2's benchmark methodology — warm up, take the median over multiple rounds, pin CPU affinity, and report the environment and boundaries; don't trust a single run or swings under ~5%.
 
 Finally, run the complete test suite with TSan to confirm there are no data races.
 

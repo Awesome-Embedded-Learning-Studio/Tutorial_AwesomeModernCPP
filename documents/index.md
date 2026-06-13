@@ -6,11 +6,14 @@ description: "系统化的现代 C++ 教程 — 从基础入门到领域实战"
 hero:
   name: "现代 C++ 教程"
   text: "Modern C++ Tutorial"
-  tagline: "一套完整的、系统化的现代 C++ 开发教程与知识库，从基础入门到工业级实战"
+  tagline: "不止于语法速查 —— 从基础到工程实战的一条完整现代 C++ 路径"
   actions:
     - theme: brand
       text: 开始学习
       link: /vol1-fundamentals/
+    - theme: alt
+      text: 查看路线图
+      link: /roadmap/
     - theme: alt
       text: C++ 速查
       link: /cpp-reference/

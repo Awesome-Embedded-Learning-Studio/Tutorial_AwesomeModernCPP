@@ -463,6 +463,51 @@
   color: var(--vp-c-text-2) !important;
 }
 
+/* ── Hero Image Slot: content card (HomeHeroVisual terminal) ──
+   VitePress sizes .image-container as a fixed 320/392px square and gives .image
+   large negative margins — both meant for a small decorative image with a
+   blurred background blob. A real content card needs normal document flow, so
+   neutralize those; otherwise the card overflows up into the hero text (and the
+   nav on narrow screens) and the -48px bottom margin pulls the next section
+   (ProofStrip) up into an overlap. */
+
+.VPHero .image-bg {
+  display: none !important;
+}
+
+.VPHero .image {
+  margin: 24px auto 0 !important;
+}
+
+.VPHero .image-container {
+  width: auto !important;
+  height: auto !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .image {
+    margin: 32px auto 0 !important;
+  }
+}
+
+@media (min-width: 960px) {
+  /* Desktop two-column hero: image column fills remaining width, card centered. */
+  .VPHero .image {
+    flex-grow: 1;
+    margin: 0 !important;
+    min-height: 100%;
+  }
+
+  .VPHero .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+  }
+}
+
 /* ── Feature Card Entrance Animation ────────────────────────── */
 
 @keyframes feature-fade-up {

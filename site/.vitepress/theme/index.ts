@@ -9,6 +9,9 @@ import RefLink from './components/RefLink.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 import ReferenceItem from './components/ReferenceItem.vue'
 import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
+import HomeHeroVisual from './components/HomeHeroVisual.vue'
+import ProofStrip from './components/ProofStrip.vue'
+import HomeRoadmap from './components/HomeRoadmap.vue'
 import { setupMermaid } from './mermaid-client'
 import './custom.css'
 
@@ -16,7 +19,10 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'home-features-before': () => h(HomeTipBanner)
+      'home-hero-image': () => h(HomeHeroVisual),
+      'home-hero-after': () => h(ProofStrip),
+      'home-features-before': () => h(HomeTipBanner),
+      'home-features-after': () => h(HomeRoadmap),
     })
   },
   setup() {

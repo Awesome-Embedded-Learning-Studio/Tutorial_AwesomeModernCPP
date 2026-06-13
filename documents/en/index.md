@@ -6,7 +6,7 @@ description: "A systematic modern C++ tutorial — from fundamentals to domain p
 hero:
   name: "Modern C++ Tutorial"
   text: "现代 C++ 教程"
-  tagline: "A comprehensive, systematic modern C++ development tutorial and knowledge base, from fundamentals to industrial practice"
+  tagline: "More than a syntax cheat-sheet — a complete path from fundamentals to engineering practice."
   actions:
     - theme: brand
       text: Start Learning
@@ -14,6 +14,9 @@ hero:
     - theme: alt
       text: C++ Reference
       link: /en/cpp-reference/
+    - theme: alt
+      text: View Roadmap
+      link: /en/community/dev/
     - theme: alt
       text: GitHub
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP

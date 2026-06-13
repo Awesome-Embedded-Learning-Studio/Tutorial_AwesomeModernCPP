@@ -37,7 +37,7 @@ export const navZh: DefaultTheme.NavItem[] = [
   { text: '参考', link: '/cpp-reference/' },
   { text: '附录', link: '/appendix/' },
   { text: '社区', link: '/community/' },
-  { text: '路线图', link: '/community/dev/' },
+  { text: '路线图', link: '/roadmap/' },
   { text: '贡献者', link: '/team/' },
 ]
 

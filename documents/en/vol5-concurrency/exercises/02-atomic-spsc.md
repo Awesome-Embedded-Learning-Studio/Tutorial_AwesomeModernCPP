@@ -422,11 +422,15 @@ Many people assume that "lock-free" is always faster, but the reality is not tha
 
 ### Implementation Guide
 
-Follow the requirements from the "Concurrent Performance Measurement Methodology" chapter in `.claude/chapter-projects-outline.md`:
+Follow this unified benchmark methodology (shared by all later Labs):
 
-1. Warm-up phase—run 5 rounds first without recording data
-2. Formal collection—at least 10 rounds, take the median
-3. Report format—test environment, parameters, results, conclusions, and boundaries
+1. **Measurement goal** — decide whether you measure throughput (ops/s), latency, or scalability; test one at a time.
+2. **Warm-up** — run 5 rounds without recording, so caches and branch predictors reach steady state.
+3. **Multi-round collection** — at least 10 formal rounds; take the **median** (never a single run or a plain average).
+4. **Pin CPU affinity** — use `taskset` or `pthread_setaffinity_np` to bind threads to fixed cores, avoiding OS migration noise; distinguish physical cores from hyper-threaded logical cores.
+5. **Two data scales** — one dataset fits in L3, one exceeds L3, to expose cache effects.
+6. **Don't let the result be optimized away** — use `benchmark::DoNotOptimize` or write to `volatile` so the computation isn't elided; preallocate memory to avoid allocator-lock interference.
+7. **Report format** — test environment, parameters, results, conclusions, and boundaries (differences under ~5% are usually not significant; focus on order-of-magnitude differences).
 
 Pseudocode:
 

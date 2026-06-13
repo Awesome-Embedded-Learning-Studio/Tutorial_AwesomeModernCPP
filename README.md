@@ -24,22 +24,35 @@
 
 ## 这是什么项目
 
-`Tutorial_AwesomeModernCPP` 是一个持续更新的现代 C++ 学习项目。它不是零散的语法速查，而是把语言基础、标准库、现代特性、工程实践和领域应用放在同一条学习路径里，并为关键概念配套可编译的 CMake 示例。
+<p align="center"><em>一套系统化的现代 C++ 教程——从语法到芯片，把现代 C++ 写进桌面、STM32 嵌入式与工业级开源项目。</em></p>
 
-适合这些读者：
+10 卷、350+ 篇，从 C/C++ 基础一路讲到并发、性能、工程与领域实战；每个关键概念都配可在 CI 中编译验证的 CMake 示例，不是文章里跑不起来的孤立片段。
 
-- 正在系统学习 C/C++，希望少走碎片化资料弯路。
-- 有 C 或嵌入式经验，想把现代 C++ 用到真实工程里。
-- 已经会写 C++，但希望补齐并发、性能、构建、调试、源码研读等工程能力。
+<p align="center">
+  <img src="https://img.shields.io/badge/articles-350%2B-blue" alt="articles">
+  <img src="https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-009688" alt="C++ standard">
+  <img src="https://img.shields.io/badge/embedded-STM32%20F1-FFC107" alt="embedded">
+  <img src="https://img.shields.io/badge/examples-CMake%20%7C%20CI%20verified-3F51B5" alt="examples">
+</p>
+
+**适合谁？** 正在系统学 C/C++ · 有 C 或嵌入式经验 · 已会 C++ 想补齐工程能力
 
 ## 特色亮点
 
-- **10 卷体系**：基础、现代特性、标准库、高级主题、并发、性能、工程、领域应用、开源项目、课程笔记逐层展开。
-- **可编译示例**：示例代码以 CMake 工程组织，可在 CI 中构建验证，不只是文章里的孤立片段。
-- **嵌入式方向**：包含 STM32F1 实战工程、资源约束、外设抽象、交叉编译与链接脚本等内容。
-- **工程化文档站**：基于 VitePress，支持搜索、导航、暗色模式、本地预览与 GitHub Pages 自动部署。
-- **双语与参考卡**：中文主线内容已完成英文翻译覆盖，并提供 C++98 到 C++23 特性参考索引。
-- **社区文章入口**：支持社区来稿初刊、审阅收录和后续主线整合，降低文章投稿门槛。
+<table>
+  <tr>
+    <td width="50%" align="center"><h4>🔧 从语法到芯片</h4>深入 STM32F1 嵌入式——寄存器访问、中断安全、零开销抽象、交叉编译与链接脚本，打通裸机。</td>
+    <td width="50%" align="center"><h4>⚡ 克隆即跑的真示例</h4>代码以 CMake 工程组织、CI 构建验证，不是文章里跑不起来的伪代码片段。</td>
+  </tr>
+  <tr>
+    <td align="center"><h4>📚 一条完整路径</h4>10 卷 350+ 篇，基础→现代特性→标准库→高级→并发→性能→工程→领域，层层递进、不碎片。</td>
+    <td align="center"><h4>🚀 紧跟 C++23</h4>讲解并实践 concepts、协程、ranges 等新特性，不停在 C++11。</td>
+  </tr>
+  <tr>
+    <td align="center"><h4>🔍 读真源码 · 读真会议</h4>卷九研读 Chromium（如 OnceCallback），卷十是 CppCon 等会议演讲的读书笔记。</td>
+    <td align="center"><h4>🌐 工程化 + 双语</h4>VitePress（搜索 / 暗色 / GitHub Pages 自动部署）+ 中文主线 + 英文翻译 + C++98→23 特性参考卡。</td>
+  </tr>
+</table>
 
 ## 马上开始
 
@@ -69,43 +82,13 @@ pnpm preview
 # 访问 http://localhost:4173/Tutorial_AwesomeModernCPP/
 ```
 
-## 内容地图
+## 内容导览
 
-```mermaid
-graph LR
-    V1["卷一 基础入门"] --> V2["卷二 现代特性"]
-    V2 --> V3["卷三 标准库"]
-    V2 --> V4["卷四 高级主题"]
-    V2 --> V5["卷五 并发编程"]
-    V2 --> V6["卷六 性能优化"]
-    V2 --> V7["卷七 工程实践"]
-    V2 --> V8["卷八 领域应用"]
-    V8 --> EMB["嵌入式 / 网络 / GUI / 数据 / 算法"]
-    V2 --> V9["卷九 开源项目学习"]
-    V2 --> V10["卷十 课程与演讲笔记"]
-    V2 --> REF["C++ 参考卡 / 编译链接 / 实战项目"]
-```
+可视化路线图（十卷内容地图 + 按背景选择学习路径）已整合进在线文档站首页的「项目路线图」区：
+
+→ [在线查看可视化路线图](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/#roadmap)
 
 > 📋 各卷内容与进度见 [项目总路线图](todo/000-project-roadmap.md)，版本变更见 [changelogs/](changelogs/)。
-
-## 学习路径
-
-```mermaid
-flowchart TD
-    Start(["你的起点"])
-    NewCPP["C/C++ 零基础"] --> V1["卷一：基础入门"] --> V2["卷二：现代特性"]
-    CEmbedded["有 C 或嵌入式经验"] --> V2 --> Embedded["卷八：嵌入式开发"]
-    CPP["已有 C++ 经验"] --> Pick["按目标选择专题"]
-    Pick --> Concurrency["卷五：并发"]
-    Pick --> Performance["卷六：性能"]
-    Pick --> Engineering["卷七：工程实践"]
-    Pick --> Source["卷九：开源项目学习"]
-    V2 --> Reference["C++ 参考卡随时查"]
-
-    Start --> NewCPP
-    Start --> CEmbedded
-    Start --> CPP
-```
 
 ## 本地开发与质量检查
 
@@ -140,7 +123,7 @@ flowchart TD
 - `scripts/` — 构建、检查、覆盖率与内容工具
 - `todo/`、`changelogs/` — 内容路线图与版本变更记录
 
-> 完整目录与架构说明见 [CLAUDE.md](CLAUDE.md)，站点导航见侧边栏。
+> 完整目录与站点导航见[在线文档站](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/)侧边栏。
 
 **版本历史**
 

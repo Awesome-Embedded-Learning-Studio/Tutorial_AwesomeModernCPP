@@ -244,7 +244,7 @@ TEST_CASE("Milestone 3: channel close propagates through pipeline",
 - 新连接建立时 `max_connections_.update(current_connections)`
 - 队列长度定期采样（可选）
 
-写一个端到端 benchmark：启动 runtime，提交 N 个任务，等待所有 future 完成，报告总耗时和吞吐量。参考 `.claude/chapter-projects-outline.md` 中的 benchmark 方法论。
+写一个端到端 benchmark：启动 runtime，提交 N 个任务，等待所有 future 完成，报告总耗时和吞吐量。沿用 Lab 2 的 benchmark 方法论——热身后多轮取中位数、固定 CPU 亲和性、报告测试环境与边界，别只看单次或 5% 以内的波动。
 
 最后，用 TSan 运行完整的测试套件，确认没有 data race。
 
