@@ -18,10 +18,6 @@
 
 ---
 
-<!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 420/420 docs translated
-<!-- COVERAGE_END -->
-
 ## What This Project Is
 
 `Tutorial_AwesomeModernCPP` is a continuously updated modern C++ learning project. It is not a collection of disconnected syntax notes: it connects language fundamentals, the standard library, modern features, engineering practice, and domain applications into one learning path, with compilable CMake examples for key concepts.
@@ -86,27 +82,7 @@ graph LR
     V2 --> REF["C++ Reference / Compilation / Projects"]
 ```
 
-<details>
-<summary>Volume details and progress</summary>
-
-| Module | Content | Status |
-|--------|---------|--------|
-| [Vol.1: C++ Fundamentals](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol1-fundamentals/) | C crash course, types, control flow, functions, pointers, classes, template basics, memory, and exceptions | Completed |
-| [Vol.2: Modern C++ Features](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol2-modern-features/) | Move semantics, smart pointers, constexpr, lambdas, structured bindings, error handling, filesystem | Completed |
-| [Vol.3: Standard Library In Depth](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol3-standard-library/) | array, span, circular buffers, intrusive containers, custom allocators, type-safe register access | Partially available, pending rewrite |
-| [Vol.4: Advanced Topics](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol4-advanced/) | Templates, CRTP, coroutines, if constexpr, spaceship operator, Modules, C++20/23/26 features | Partially available, pending rewrite |
-| [Vol.5: Concurrency](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol5-concurrency/) | Thread lifecycle, mutexes, condition variables, atomics, lock-free structures, thread pools, coroutine I/O, Actor/Channel | In progress |
-| [Vol.6: Performance](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol6-performance/) | Compiler optimization, performance and size evaluation, AVX/AVX2, assembly reading, benchmarking | Partially available, pending rewrite |
-| [Vol.7: Engineering Practice](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol7-engineering/) | CMake, cross-compilation, compiler options, linker scripts, file I/O, WSL, MSVC debugging | Partially available, pending rewrite |
-| [Vol.8: Domain Applications](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol8-domains/) | Embedded development, networking, GUI and graphics, data storage, algorithms and data structures | Planned, with embedded content already expanded |
-| [Vol.9: Open Source Project Study](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol9-open-source-project-learn/) | Source-code study of real projects such as Chromium OnceCallback | In progress |
-| [Vol.10: Courses and Talk Notes](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/vol10-open-lecture-notes/) | Notes and secondary learning material from CppCon and other courses or conference talks | In progress |
-| [C++ Feature Reference Cards](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/cpp-reference/) | C++98 to C++23 quick reference for language, containers, memory, concurrency, and templates | In progress |
-| [Compilation & Linking In Depth](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/compilation/) | Preprocessing, assembly, static libraries, dynamic libraries, symbol visibility, runtime loading | Completed |
-| [Capstone Projects](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/projects/) | Hand-rolled STL components, mini HTTP server, GUI framework, embedded OS, and other projects | Planned |
-| [Community Articles](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/community/) | Community draft submissions, editorially reviewed articles, and integration into the main content | Under construction |
-
-</details>
+> 📋 For volume content and progress see the [project roadmap](todo/000-project-roadmap.md); for release history see [changelogs/](changelogs/).
 
 ## Learning Paths
 
@@ -142,11 +118,10 @@ flowchart TD
 | `pnpm hooks:install` / `scripts/setup_precommit.sh` | Install pre-commit checks |
 | `pnpm coverage` | Show English translation coverage |
 | `pnpm coverage:update` | Update the English coverage badge in `README.md` |
-| `python3 scripts/validate_frontmatter.py` | Validate article frontmatter |
-| `python3 scripts/check_links.py` | Check internal links |
-| `python3 scripts/check_quality.py documents/` | Run content quality checks |
-| `python3 scripts/build_examples.py --host` | Build host-side CMake examples |
-| `python3 scripts/build_examples.py --stm32` | Build STM32 example projects |
+| `.venv/bin/python scripts/validate_frontmatter.py` | Validate article frontmatter |
+| `.venv/bin/python scripts/check_quality.py documents/` | Run content quality checks |
+| `.venv/bin/python scripts/build_examples.py --host` | Build host-side CMake examples |
+| `.venv/bin/python scripts/build_examples.py --stm32` | Build STM32 example projects |
 
 </details>
 
@@ -155,37 +130,15 @@ flowchart TD
 
 **Project Structure**
 
-```text
-Tutorial_AwesomeModernCPP/
-├── documents/                  # Tutorial Markdown files and bilingual content
-│   ├── vol1-fundamentals/      # Vol.1: C++ Fundamentals
-│   ├── vol2-modern-features/   # Vol.2: Modern C++ Features
-│   ├── vol3-standard-library/  # Vol.3: Standard Library In Depth
-│   ├── vol4-advanced/          # Vol.4: Advanced Topics
-│   ├── vol5-concurrency/       # Vol.5: Concurrent Programming
-│   ├── vol6-performance/       # Vol.6: Performance Optimization
-│   ├── vol7-engineering/       # Vol.7: Engineering Practice
-│   ├── vol8-domains/           # Vol.8: Domain Applications
-│   ├── vol9-open-source-project-learn/  # Vol.9: Open Source Project Study
-│   ├── vol10-open-lecture-notes/        # Vol.10: Courses and Talk Notes
-│   ├── community/              # Community submissions, initial publications, and reviewed content
-│   ├── cpp-reference/          # C++ feature reference cards
-│   ├── compilation/            # Compilation & Linking In Depth
-│   └── projects/               # Capstone projects
-├── code/                       # Code examples, STM32F1 projects, and reusable templates
-├── site/                       # VitePress configuration, theme, and plugins
-├── scripts/                    # Build, check, coverage, and content tooling
-├── todo/                       # Content planning and task records
-└── package.json                # Node.js dependencies and script entry points
-```
+- `documents/` — 10 tutorial volumes (bilingual), plus community / cpp-reference / compilation / projects
+- `code/` — code examples, STM32F1 projects, and reusable templates
+- `site/` — VitePress configuration, theme, and plugins
+- `scripts/` — build, check, coverage, and content tooling
+- `todo/`, `changelogs/` — content roadmap and release history
+
+> See [CLAUDE.md](CLAUDE.md) for full directory and architecture notes; the sidebar maps the site.
 
 **Version History**
-
-| Version | Date | Notes |
-|---------|------|-------|
-| [v0.3.0](changelogs/v0.3.0.md) | 2026-05-20 | Vol.5 Concurrency full rewrite (47 articles), Vol.10 Lecture Notes launched, contributor system |
-| [v0.2.0](changelogs/v0.2.0.md) | 2026-05-04 | Vol.9 Open Source Study initial content, ccache and GCC 14 build |
-| [v0.1.0](changelogs/v0.1.0.md) | 2026-04-29 | Initial public release with Vol.1, Vol.2, compilation/linking, embedded tutorials, and related content |
 
 See [changelogs/](changelogs/) for full release history.
 
@@ -210,14 +163,6 @@ If you have questions, feel free to open an issue at [GitHub Issues](https://git
 ## Contributors
 
 Thanks to everyone who has contributed to this project! See [CONTRIBUTORS.md](./CONTRIBUTORS.md) for details.
-
-<!-- ALL_CONTRIBUTORS_START -->
-| Contributor | Contributions |
-|-------------|--------------|
-| [Charliechen](https://github.com/Charliechen114514) | 📝 Content · 🔍 Review · 💡 Examples |
-| [Doll-Attire](https://github.com/Doll-Attire) | 🎨 UI Design · 📝 UX Improvements |
-| [YukunJ](https://github.com/YukunJ) | 🐛 Bug Reports · 💡 Content Fixes |
-<!-- ALL_CONTRIBUTORS_END -->
 
 > Contributions are not limited to code. UI design, illustrations, issue reports, and content suggestions all count. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 

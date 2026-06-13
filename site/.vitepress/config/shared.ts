@@ -3,6 +3,10 @@ import { navZh, navEn } from './nav'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
+import { getBuildInfo } from './build-info'
+
+// 模块加载时算一次,两个 themeConfig 函数共用;同一构建进程内一致。
+const buildInfo = getBuildInfo()
 
 export const sharedBase = {
   base: '/Tutorial_AwesomeModernCPP/',
@@ -54,7 +58,7 @@ export function sharedThemeConfig(): DefaultTheme.Config {
       text: '在 GitHub 上编辑此页',
     },
     footer: {
-      message: '基于 VitePress 构建',
+      message: `${buildInfo.version} · ${buildInfo.sha} · ${buildInfo.date}`,
       copyright: 'Copyright 2025-2026 Charliechen',
     },
     socialLinks: [
@@ -74,7 +78,7 @@ export function sharedEnThemeConfig(): DefaultTheme.Config {
       text: 'Edit this page on GitHub',
     },
     footer: {
-      message: 'Built with VitePress',
+      message: `${buildInfo.version} · ${buildInfo.sha} · ${buildInfo.date}`,
       copyright: 'Copyright 2025-2026 Charliechen',
     },
     socialLinks: [

@@ -49,9 +49,7 @@ estimated_effort: medium
 | `017-vol8-domains.md` | 卷八领域应用，嵌入式优先 |
 | `018-vol9-open-source-study.md` | 卷九开源项目研读路线 |
 | `019-vol10-lecture-notes.md` | 卷十课程笔记治理 |
-| `020-compilation-and-reference.md` | 编译链接与参考卡维护 |
 | `020-projects.md` | 贯穿式项目路线 |
-| `030-community.md` | 社区协作入口 |
 | `031-qa-knowledge-base.md` | QA 和知识库 |
 
 ## 旧 TODO 合并映射

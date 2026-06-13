@@ -207,7 +207,7 @@ function generateRootConfig(absSiteDir: string, absSrcDir: string): string {
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { sharedBase, sharedThemeConfig, sharedEnThemeConfig } from '${relShared}'
-import { navZh, navEn } from '${relNav}'
+import { navEn } from '${relNav}'
 import { buildSidebar } from '${relSidebar}'
 
 export default withDrawio(defineConfig({
@@ -224,10 +224,8 @@ export default withDrawio(defineConfig({
       themeConfig: { nav: navEn, editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path', text: 'Edit this page on GitHub' } } },
   },
   themeConfig: {
-    nav: navZh, sidebar: buildSidebar(), search: { provider: 'local' },
-    editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path', text: '在 GitHub 上编辑此页' },
-    footer: { message: '基于 VitePress 构建', copyright: 'Copyright 2025-2026 Charliechen' },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP' }],
+    ...sharedThemeConfig(),
+    sidebar: buildSidebar(),
   },
 }), {
   width: '100%',

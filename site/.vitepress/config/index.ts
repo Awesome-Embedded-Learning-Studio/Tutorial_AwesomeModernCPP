@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
-import { navZh, navEn } from './nav'
+import { navEn } from './nav'
 import { buildSidebar } from './sidebar'
+import { sharedThemeConfig } from './shared'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
@@ -101,26 +102,8 @@ export default withDrawio(defineConfig({
   },
 
   themeConfig: {
-    nav: navZh,
+    ...sharedThemeConfig(),
     sidebar: buildSidebar(),
-
-    search: {
-      provider: 'local',
-    },
-
-    editLink: {
-      pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path',
-      text: '在 GitHub 上编辑此页',
-    },
-
-    footer: {
-      message: '基于 VitePress 构建',
-      copyright: 'Copyright 2025-2026 Charliechen',
-    },
-
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP' },
-    ],
   },
 }), {
   width: '100%',

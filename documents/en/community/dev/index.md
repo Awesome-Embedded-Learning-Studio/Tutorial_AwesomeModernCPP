@@ -14,6 +14,13 @@ It does not replace `todo/`, `changelogs/`, or `CONTRIBUTING.md`:
 - `CONTRIBUTING.md` defines contribution, review, and quality rules.
 - `community/dev/` explains how maintainers move the site and content forward.
 
+## Roadmap & Releases
+
+Wondering what's next or what has already shipped? These are the two authoritative sources (hosted at the repository root on GitHub):
+
+- 📋 **[Project Roadmap](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/todo/000-project-roadmap.md)** — overall priorities (P0–P3), per-volume asset/gap assessment, and near-term focus; volume-level detail lives in `todo/010–020` alongside it.
+- 📦 **[Release History](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/changelogs)** — what each released version added or changed.
+
 ## Development Notes
 
 <ChapterNav variant="main">
