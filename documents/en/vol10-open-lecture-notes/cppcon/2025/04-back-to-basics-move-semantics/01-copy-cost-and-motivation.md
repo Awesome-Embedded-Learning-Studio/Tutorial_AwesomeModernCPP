@@ -415,13 +415,13 @@ Good question. SSO means that if a string is short enough (the threshold in libs
 
 But once a string exceeds the SSO threshold, `std::string` falls back to heap allocation, and the advantage of move semantics becomes fully apparent — one pointer swap vs one `malloc` + `memcpy`. Moreover, even for short strings, move semantics allows the compiler to avoid unnecessary copies in more scenarios.
 
-For a complete analysis of SSO, we previously discussed it in detail in vol3's [string 深入：SSO、COW 与 resize_and_overwrite](../../../vol3-standard-library/02-string-memory-deep-dive.md), so we will not expand on it here.
+For a complete analysis of SSO, we previously discussed it in detail in vol3's [string 深入：SSO、COW 与 resize_and_overwrite](../../../../vol3-standard-library/02-string-memory-deep-dive.md), so we will not expand on it here.
 
 ## What We Have Figured Out So Far
 
 Starting from the three deep copies in `swap`, we built a `MyString` class from scratch, saw exactly where the overhead of copying comes from (heap allocation + memory copying), and then used an experiment to prove that move semantics can deliver more than a 4x performance boost. The core intuition is also simple: **the temporary object is going to die anyway, so we might as well steal its resources before it dies**.
 
-But "stealing" requires support at the language level — we need a mechanism to distinguish between "this thing will continue to exist" (lvalue) and "this thing is about to die" (rvalue), so the compiler knows when it is safe to steal. That is the topic of the next article — lvalues, rvalues, and the reference system. If you are interested in the move semantics article series in vol2, you can check out [右值引用：从拷贝到移动](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) first, which has a more systematic explanation.
+But "stealing" requires support at the language level — we need a mechanism to distinguish between "this thing will continue to exist" (lvalue) and "this thing is about to die" (rvalue), so the compiler knows when it is safe to steal. That is the topic of the next article — lvalues, rvalues, and the reference system. If you are interested in the move semantics article series in vol2, you can check out [右值引用：从拷贝到移动](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) first, which has a more systematic explanation.
 
 <ReferenceCard title="参考文献">
   <ReferenceItem

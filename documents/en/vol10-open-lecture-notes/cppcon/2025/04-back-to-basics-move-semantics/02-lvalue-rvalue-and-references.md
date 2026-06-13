@@ -180,7 +180,7 @@ printf("%s\n", name.c_str());  // 安全
 
 Without the const reference's lifetime extension rule, the temporary `std::string` returned by `get_name()` would be destroyed after the statement ends, and `name` would become a dangling reference. But because `const std::string&` binds to this temporary object, the compiler guarantees the temporary lives at least until `name` goes out of scope.
 
-There's a subtle pitfall here, though—only the "first" reference that directly binds to the temporary object extends its lifetime; indirect binding through a reference chain doesn't count. For example, in `const std::string& r2 = name;`, `r2` binds to `name` (an lvalue), which doesn't involve a temporary object, so there's no lifetime extension. But if you have a situation involving multiple levels of indirect binding to a temporary object, you need to be careful. We discuss this in more detail in vol2's [Rvalue References: From Copy to Move](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md).
+There's a subtle pitfall here, though—only the "first" reference that directly binds to the temporary object extends its lifetime; indirect binding through a reference chain doesn't count. For example, in `const std::string& r2 = name;`, `r2` binds to `name` (an lvalue), which doesn't involve a temporary object, so there's no lifetime extension. But if you have a situation involving multiple levels of indirect binding to a temporary object, you need to be careful. We discuss this in more detail in vol2's [Rvalue References: From Copy to Move](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md).
 
 :::warning
 Note: An rvalue reference `T&&` also has the effect of extending a temporary object's lifetime. `std::string&& r = get_name();` will also keep the returned temporary object alive until `r` goes out of scope. This is a commonality between rvalue references and const lvalue references—they can both bind to temporary objects and extend their lifetimes. The difference is that an rvalue reference allows you to modify the temporary object, while a const lvalue reference does not.
@@ -373,7 +373,7 @@ Looking back, the distinction between lvalues and rvalues wasn't invented out of
 
 With this theoretical foundation, in the next article we can move into practice—implementing a move constructor and move assignment operator for MyString, seeing exactly how `std::move` works, and under what conditions copy elision lets us skip moving entirely.
 
-If you want a more systematic explanation of rvalue references, vol2's [Rvalue References: From Copy to Move](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) is excellent supplementary material.
+If you want a more systematic explanation of rvalue references, vol2's [Rvalue References: From Copy to Move](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) is excellent supplementary material.
 
 <ReferenceCard title="References">
   <ReferenceItem

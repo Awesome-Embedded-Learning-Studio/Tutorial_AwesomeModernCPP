@@ -170,7 +170,7 @@ printf("%s\n", name.c_str());  // 安全
 
 如果没有 const 引用的生命周期延长规则，`get_name()` 返回的临时 `std::string` 在语句结束后就会被销毁，`name` 就会变成一个悬垂引用。但因为 `const std::string&` 绑定了这个临时对象，编译器保证临时对象至少活到 `name` 离开作用域的时候。
 
-不过这里有个微妙的坑——只有"第一个"直接绑定到临时对象的引用才能延长它的生命周期，通过引用链间接绑定的不行。比如 `const std::string& r2 = name;` 中 `r2` 绑定到 `name`（一个左值），不涉及临时对象，所以没有生命周期延长的问题。但如果涉及多层间接绑定临时对象的情况，就要小心了。我们在 vol2 的 [右值引用：从拷贝到移动](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) 里有更详细的讨论。
+不过这里有个微妙的坑——只有"第一个"直接绑定到临时对象的引用才能延长它的生命周期，通过引用链间接绑定的不行。比如 `const std::string& r2 = name;` 中 `r2` 绑定到 `name`（一个左值），不涉及临时对象，所以没有生命周期延长的问题。但如果涉及多层间接绑定临时对象的情况，就要小心了。我们在 vol2 的 [右值引用：从拷贝到移动](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) 里有更详细的讨论。
 
 :::warning
 注意：右值引用 `T&&` 同样具有延长临时对象生命周期的效果。`std::string&& r = get_name();` 也会让返回的临时对象活到 `r` 离开作用域。这是右值引用和 const 左值引用的一个共同点——它们都能绑定到临时对象并延长其生命周期。区别在于，右值引用允许你修改这个临时对象，而 const 左值引用不允许。
@@ -363,7 +363,7 @@ void process(MyString&& s)
 
 有了这些理论基础，下一篇我们就可以进入实战了——为 MyString 实现移动构造函数和移动赋值运算符，看看 `std::move` 到底是怎么工作的，以及拷贝消除（copy elision）在什么条件下可以让我们连移动都不需要。
 
-如果你想要一个更系统化的右值引用讲解，vol2 的 [右值引用：从拷贝到移动](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) 是很好的补充材料。
+如果你想要一个更系统化的右值引用讲解，vol2 的 [右值引用：从拷贝到移动](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) 是很好的补充材料。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem

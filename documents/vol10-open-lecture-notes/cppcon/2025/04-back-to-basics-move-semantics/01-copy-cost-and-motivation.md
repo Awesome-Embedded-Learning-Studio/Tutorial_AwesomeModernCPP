@@ -405,13 +405,13 @@ int main()
 
 但一旦字符串超过了 SSO 阈值，`std::string` 就会退回到堆分配，此时移动语义的优势就完全体现出来了——一次指针交换 vs 一次 `malloc` + `memcpy`。而且即使对于短字符串，移动语义也让编译器能在更多场景下省去不必要的拷贝。
 
-关于 SSO 的完整分析，我们之前在 vol3 的 [string 深入：SSO、COW 与 resize_and_overwrite](../../../vol3-standard-library/02-string-memory-deep-dive.md) 中有详细讨论，这里就不展开了。
+关于 SSO 的完整分析，我们之前在 vol3 的 [string 深入：SSO、COW 与 resize_and_overwrite](../../../../vol3-standard-library/02-string-memory-deep-dive.md) 中有详细讨论，这里就不展开了。
 
 ## 到这里搞清楚了什么
 
 我们从 `swap` 的三次深拷贝出发，手搓了 `MyString` 类，看清了拷贝操作的开销来源（堆分配 + 内存复制），然后用实验证明了移动语义能带来超过 4 倍的性能提升。核心直觉也很简单：**临时对象反正要死，不如在它死之前把资源偷走**。
 
-但"偷走"需要语言层面的支持——我们需要一种机制来区分"这个东西会一直存在"（左值）和"这个东西马上就要死了"（右值），这样编译器才知道什么时候可以安全地偷。这就是下一篇的内容——左值、右值与引用体系。如果你对 vol2 的移动语义系列文章感兴趣，可以先去看看 [右值引用：从拷贝到移动](../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md)，那里有更系统化的讲解。
+但"偷走"需要语言层面的支持——我们需要一种机制来区分"这个东西会一直存在"（左值）和"这个东西马上就要死了"（右值），这样编译器才知道什么时候可以安全地偷。这就是下一篇的内容——左值、右值与引用体系。如果你对 vol2 的移动语义系列文章感兴趣，可以先去看看 [右值引用：从拷贝到移动](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md)，那里有更系统化的讲解。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem
