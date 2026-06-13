@@ -15,7 +15,7 @@ difficulty: advanced
 platform: host
 cpp_standard:
 - 23
-reading_time_minutes: 20
+reading_time_minutes: 13
 prerequisites:
 - once_callback 设计指南（一）：动机与接口设计
 - once_callback 设计指南（二）：逐步实现

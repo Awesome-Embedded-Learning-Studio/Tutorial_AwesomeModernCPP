@@ -14,7 +14,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-reading_time_minutes: 15
+reading_time_minutes: 9
 prerequisites:
 - 'Chapter 2: constexpr 基础'
 related:
