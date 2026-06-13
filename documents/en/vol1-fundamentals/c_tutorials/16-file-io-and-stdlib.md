@@ -4,9 +4,9 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master C file operations and core standard library utilities, including
-  file reading and writing, formatted I/O, and command-line argument handling, while
-  comparing them with C++ stream libraries and modern standard library tools.
+description: Master C file operations and core standard library tools, including file
+  I/O, formatted I/O, and command-line argument handling, while comparing them with
+  C++ stream libraries and modern standard library tools.
 difficulty: beginner
 order: 20
 platform: host
@@ -24,21 +24,21 @@ tags:
 title: File I/O and Standard Library Overview
 translation:
   source: documents/vol1-fundamentals/c_tutorials/16-file-io-and-stdlib.md
-  source_hash: 88bc8438892bedfa8ab275295bdd523964722ec4274747e9050119318ef21109
-  translated_at: '2026-05-26T10:33:51.727153+00:00'
+  source_hash: e9a734634f87a00129e5ca66d6817aec7c2976dd5bdea8a4ba8ef4fa7c84c657
+  translated_at: '2026-06-13T11:43:06.371064+00:00'
   engine: anthropic
-  token_count: 1857
+  token_count: 1855
 ---
 # File I/O and Standard Library Overview
 
-So far, every program we have written shares a common limitation—all data lives in memory and vanishes the moment the program ends. Real-world programs do not work this way: configurations are read from files, logs are written to files, and data is passed between programs. This is where file I/O comes in.
+Up to this point, every program we have written shares a common limitation—data resides entirely in memory and vanishes once the program ends. Real-world programs do not work this way: configurations must be read from files, logs written to files, and data transferred between programs. This is where file I/O comes into play.
 
-C's file operations are built on a simple but powerful API—`fopen` to open, `fread`/`fwrite` to read and write, `fclose` to close, plus the `printf`/`scanf` family for formatted I/O. These functions have survived from the 1970s to today. But they also carry the rough edges of that era—type unsafe, error handling relies on global variables, and compilers look the other way when format strings and arguments mismatch. C++ later repackaged this system with stream libraries, `std::filesystem`, and `std::format`, but understanding C's raw API remains foundational.
+C's file operations are built upon a concise yet powerful API—`fopen` to open, `fread`/`fwrite` to read and write, `fclose` to close, plus the `printf`/`scanf` family for formatted input and output. These functions have survived from the 1970s to the present day. However, they also carry the rough edges characteristic of that era—type safety issues, error handling relying on global variables, and compilers turning a blind eye to mismatches between format strings and arguments. C++ later repackaged this system with the stream library, `std::filesystem`, and `std::format`, but understanding C's raw API remains the foundation.
 
 > **Learning Objectives**
 >
 > - After completing this chapter, you will be able to:
-> - [ ] Proficiently use file operation functions like fopen/fclose/fread/fwrite
+> - [ ] Skillfully use file operation functions like fopen/fclose/fread/fwrite
 > - [ ] Understand the difference between text mode and binary mode
 > - [ ] Master formatted I/O with the printf/scanf family
 > - [ ] Use errno/perror/strerror for error handling
@@ -46,80 +46,61 @@ C's file operations are built on a simple but powerful API—`fopen` to open, `f
 > - [ ] Understand core standard library utilities
 > - [ ] Understand how C++'s stream library, std::filesystem, and std::format improve upon C's approach
 
-## Environment Setup
+## Environment
 
-All code in this article has been verified under the following environment:
+All code in this article has been verified in the following environment:
 
 - **Operating System**: Linux (Ubuntu 22.04+) / WSL2 / macOS
-- **Compiler**: GCC 11+ (confirm the version via `gcc --version`)
-- **Compiler flags**: `gcc -Wall -Wextra -std=c11` (enable warnings, specify C11 standard)
+- **Compiler**: GCC 11+ (Confirm version via `gcc --version`)
+- **Compiler Flags**: `-Wall -Wextra -std=c11` (Enable warnings, specify C11 standard)
 - **Verification**: All code can be compiled and run directly
 
-## Step One — Getting Started with File Operations
+## Step 1 — Getting Started with File Operations
 
 ### Opening and Closing Files
 
 ```c
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(void) {
-    FILE* fp = fopen("data.txt", "r");
-    if (fp == NULL) {
-        perror("Failed to open data.txt");
-        return EXIT_FAILURE;
-    }
-    // ... 读写操作 ...
-    fclose(fp);
-    return 0;
+FILE *fp = fopen("log.txt", "w"); // Open for writing
+if (!fp) {
+    // Handle error
 }
+// ... perform operations ...
+fclose(fp);
 ```
 
-> ⚠️ **Pitfall Warning**: **Always check if fopen returns NULL**. A missing file, insufficient permissions, or an incorrect path will cause the open to fail. If you use the NULL pointer directly without checking, the program will crash immediately—without any meaningful error message.
+> ⚠️ **Pitfall Warning**: **Always check if fopen returns NULL**. File not found, insufficient permissions, or incorrect paths will cause the open to fail. If you use a NULL pointer directly without checking, the program will crash immediately—without any meaningful error message.
 
-Mode string quick reference:
+Mode string cheat sheet:
 
-| Mode | Read | Write | When file does not exist | When file already exists |
-|------|------|-------|--------------------------|--------------------------|
-| `"r"`  | Yes | No | Fails | Reads from the beginning |
-| `"w"`  | No | Yes | Creates a new file | **Clears existing content** |
-| `"a"`  | No | Yes | Creates a new file | Appends to the end |
-| `"r+"` | Yes | Yes | Fails | Reads and writes from the beginning |
-| `"w+"` | Yes | Yes | Creates a new file | **Clears, then reads and writes** |
-| `"a+"` | Yes | Yes | Creates a new file | Reads from the beginning, writes append to the end |
+| Mode | Read | Write | If file doesn't exist | If file already exists |
+|------|------|-------|----------------------|-------------------------|
+| `"r"`  | Yes | No | Fails | Reads from start |
+| `"w"`  | No | Yes | Creates new file | **Clears original content** |
+| `"a"`  | No | Yes | Creates new file | Appends to end |
+| `"r+"` | Yes | Yes | Fails | Reads and writes from start |
+| `"w+"` | Yes | Yes | Creates new file | **Clears then reads/writes** |
+| `"a+"` | Yes | Yes | Creates new file | Reads from start, writes append to end |
 
-> ⚠️ **Pitfall Warning**: `"w"` and `"w+"` will **unconditionally clear** the contents of an existing file. If you meant to append content but used the `"w"` mode instead, congratulations—your file content instantly drops to zero, with no confirmation step. Always double-check the mode before using it.
+> ⚠️ **Pitfall Warning**: `"w"` and `"w+"` will **unconditionally clear** the contents of an existing file. If you meant to append content but used the `"w"` mode, congratulations—the file content is instantly zeroed out, and there is no confirmation step. Always confirm the mode is correct before use.
 
 ### Reading and Writing Binary Data
 
 ```c
-typedef struct {
-    uint16_t id;
-    float value;
-    uint32_t timestamp;
-} Record;
-
-// 写入
-size_t written = fwrite(records, sizeof(Record), count, fp);
-
-// 读取
-size_t count = fread(buffer, sizeof(Record), max_count, fp);
+int data[256];
+size_t count = fread(data, sizeof(int), 256, fp); // Read 256 integers
+fwrite(data, sizeof(int), count, fp);             // Write them back
 ```
 
-The return value is the number of **complete blocks** successfully processed, not the number of bytes. If the return value is less than the requested number of blocks, it means either the end of the file was reached or an error occurred.
+The return value is the number of **complete blocks** successfully processed, not the number of bytes. If the return value is less than the requested number of blocks, it indicates either end-of-file or an error.
 
-### Moving the File Position and Getting the Size
+### Moving File Position and Getting Size
 
-`fseek` moves the position pointer, and `ftell` queries the current position. A practical pattern is to get the file size:
+`fseek` moves the position pointer, `ftell` queries the current position. A useful pattern is to get the file size:
 
 ```c
-long get_file_size(FILE* fp) {
-    long original = ftell(fp);
-    fseek(fp, 0, SEEK_END);
-    long size = ftell(fp);
-    fseek(fp, original, SEEK_SET);
-    return size;
-}
+fseek(fp, 0, SEEK_END); // Jump to end
+long size = ftell(fp);  // Get position = size
+fseek(fp, 0, SEEK_SET); // Jump back to start
 ```
 
 ### Don't Use feof as a Loop Condition
@@ -127,44 +108,45 @@ long get_file_size(FILE* fp) {
 `feof` only returns true **after** a read operation has already failed. The correct approach is to check the return value of the read function directly:
 
 ```c
-int ch;
-while ((ch = fgetc(fp)) != EOF) {
-    putchar(ch);
+int c;
+while ((c = fgetc(fp)) != EOF) {
+    putchar(c);
 }
 ```
 
-> ⚠️ **Pitfall Warning**: `fgetc` returns `int`, not `char`. If you use `char` to receive the return value, `EOF` (-1) will be truncated to a valid character value on some platforms, causing the loop to never end. This trap catches a new batch of beginners every year.
+> ⚠️ **Pitfall Warning**: `fgetc` returns `int` rather than `char`. If you use `char` to receive the return value, on some platforms `EOF` (-1) will be truncated to a valid character value, causing the loop to never end. This pitfall catches a batch of newbies every year.
 
-## Step Two — Mastering Formatted I/O
+## Step 2 — Mastering Formatted I/O
 
 ### The printf Family
 
-`printf` outputs to stdout, `fprintf` outputs to a specified file, and `sprintf`/`snprintf` output to a string buffer. The return value is the actual number of characters output.
+`printf` outputs to stdout, `fprintf` outputs to a specified file, `sprintf`/`snprintf` output to a string buffer. The return value is the actual number of characters output.
 
 ```c
+int year = 2025;
+printf("Year: %d\n", year);                     // 10 chars
 char buf[64];
-snprintf(buf, sizeof(buf), "%s:%d", name, age);
+int len = snprintf(buf, sizeof(buf), "%d", year); // Returns 4
 ```
 
 A clever use of `snprintf` is to probe the required buffer size:
 
 ```c
-int needed = snprintf(NULL, 0, "Result: %d items", item_count);
-char* buf = malloc(needed + 1);
-snprintf(buf, needed + 1, "Result: %d items", item_count);
+int needed = snprintf(NULL, 0, "%d %s", 42, "test"); // Returns 8, excluding null terminator
+char *buf = malloc(needed + 1);
+snprintf(buf, needed + 1, "%d %s", 42, "test");
 ```
 
 ### The scanf Family
 
-`scanf` returns the **number of successfully matched fields**. `sscanf` is very convenient for parsing from strings:
+`scanf` returns the **number of fields successfully matched**. `sscanf` is very convenient for parsing from strings:
 
 ```c
-const char* input = "2024-01-15";
-int year, month, day;
-int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
+int x, y;
+sscanf("10:20", "%d:%d", &x, &y); // Returns 2, x=10, y=20
 ```
 
-> ⚠️ **Pitfall Warning**: `scanf`'s `%s` does not check buffer size. The safe approach is to use `%Ns` to specify the maximum length, or switch to the `fgets` + `sscanf` combination.
+> ⚠️ **Pitfall Warning**: `scanf`'s `%s` does not check buffer size. The safe approach is to use `%ms` (GNU extension) to specify the maximum length, or switch to the `fgets` + `sscanf` combination.
 
 ### Common Format Specifiers
 
@@ -174,39 +156,37 @@ int count = sscanf(input, "%d-%d-%d", &year, &month, &day);
 | `%u` | unsigned | `%s` | string |
 | `%x` | hex | `%zu` | size_t |
 | `%ld` | long | `%lld` | long long |
-| `%p` | pointer | `%%` | literal % |
+| `%p` | pointer | `%%` | Literal % |
 
-## Step Three — Understanding Text Mode vs. Binary Mode
+## Step 3 — Understanding Text Mode vs. Binary Mode
 
-On Windows, text mode automatically converts `\n` to `\r\n`, while binary mode does not perform this conversion. On Linux/macOS, there is almost no difference between the two. When handling binary data (images, struct dumps, protocol frames), always use `"rb"`/`"wb"`.
+On Windows, text mode automatically converts `\r\n` to `\n`, while binary mode makes no conversion. On Linux/macOS, there is almost no difference between the two. When handling binary data (images, structure dumps, protocol frames), always use `"rb"`/`"wb"`.
 
-> ⚠️ **Pitfall Warning**: If you read a binary file in text mode on Windows, the read will terminate early when it encounters a `0x1A` byte—because `0x1A` is treated as EOF in Windows text mode. This is a classic cross-platform trap.
+> ⚠️ **Pitfall Warning**: If you read a binary file in text mode on Windows, the read will terminate early when encountering a `0x1A` byte—because `0x1A` (Ctrl+Z) is treated as EOF in Windows text mode. This is a classic cross-platform trap.
 
-## Step Four — Error Handling with errno
+## Step 4 — Error Handling with errno
 
-`errno` (`<errno.h>`) is a global error code variable. When a function executes successfully, it **does not** clear `errno`; it is only set when an error occurs. The correct approach is to first check the return value to confirm an error, and then read `errno`.
+`errno` (in `<errno.h>`) is a global error code variable. Functions do **not** clear `errno` on success; they only set it when an error occurs. The correct practice is to check the return value first to confirm an error, and then read `errno`.
 
-`perror` concatenates the string you pass in with the system error message and prints it:
+`perror` concatenates your passed string with the system error message and outputs it:
 
 ```c
-FILE* fp = fopen("nonexistent.txt", "r");
-if (fp == NULL) {
-    perror("fopen failed");
-    // 输出：fopen failed: No such file or directory
+if (ferror(fp)) {
+    perror("File read failed"); // Prints: File read failed: Error description
 }
 ```
 
-`strerror` returns the string description corresponding to the error code, which is suitable for use in custom error messages.
+`strerror` returns the string description corresponding to the error code, suitable for use in custom error messages.
 
-## Step Five — Handling Command-Line Arguments
+## Step 5 — Handling Command-Line Arguments
 
 ```c
-int main(int argc, char* argv[]) {
-    printf("Program: %s\n", argv[0]);
-    for (int i = 1; i < argc; i++) {
-        printf("  argv[%d] = %s\n", i, argv[i]);
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <file>\n", argv[0]);
+        return 1;
     }
-    return 0;
+    // argv[1] is the first argument
 }
 ```
 
@@ -216,127 +196,76 @@ int main(int argc, char* argv[]) {
 
 ### `<stdlib.h>`: General Utilities
 
-`atoi` is simple but lacks error detection, while `strtol` is safer (it can detect overflow and partial parsing). `qsort` performs quicksort, and `bsearch` performs binary search, both comparing via function pointers. The random quality of `rand`/`srand` pseudo-random numbers is fairly poor—good enough for basic use, but do not rely on them for security-related tasks.
+`atoi` is simple but offers no error detection; `strtol` is safer (can detect overflow and partial parsing). `qsort` for quicksort, `bsearch` for binary search, both using function pointers for comparison. `rand`/`srand` pseudo-random numbers have poor randomness quality; they are sufficient but don't rely on them for security-related tasks.
 
 ### `<math.h>`: Math Functions
 
-Trigonometric functions (sin/cos/tan), exponentials and logarithms (pow/sqrt/log/exp), rounding (ceil/floor/round), and absolute values (fabs). All have three versions: float (f suffix), double, and long double (l suffix).
+Trigonometric functions (sin/cos/tan), exponential/logarithmic (pow/sqrt/log/exp), rounding (ceil/floor/round), absolute value (fabs). All have three versions: float (f suffix), double, and long double (l suffix).
 
-> ⚠️ **Pitfall Warning**: Linking the math library on GCC/Linux requires the `-lm` option. If you forget to add this option, the compiler will report errors like `undefined reference to 'sin'`—the code itself is fine, it is just missing a linker option.
+> ⚠️ **Pitfall Warning**: Linking the math library on GCC/Linux requires the `-lm` option. If you forget to add this option, the compiler will report `undefined reference to 'pow'` or similar errors—the code itself is fine, just missing a link option.
 
 ### `<ctype.h>`: Character Classification
 
-`isalpha`/`isdigit`/`isspace`/`isalnum`/`isupper`/`islower` determine character categories, and `tolower`/`toupper` convert between uppercase and lowercase. The argument must be explicitly cast to `unsigned char` first, otherwise negative values from a signed char will lead to undefined behavior.
+`isdigit`/`isalpha`/`isalnum`/`isxdigit`/`isupper`/`islower` determine character categories; `toupper`/`tolower` convert case. Arguments must be cast to `unsigned char` first, otherwise negative values of signed `char` can lead to undefined behavior.
 
-### `<assert.h>`: Assertion Macro
+### `<assert.h>`: Assert Macro
 
 ```c
-assert(arr != NULL);   // Debug: 条件为假时终止程序
+assert(ptr != NULL); // If false, abort program
 ```
 
-Defining `NDEBUG` completely removes all asserts. Use this to catch programming errors, not to handle runtime errors.
+Defining `NDEBUG` removes all asserts completely. Used to catch programming errors, not to handle runtime errors.
 
 ### `<stddef.h>`: Fundamental Types
 
-`size_t` (object size), `NULL` (null pointer), `offsetof` (struct offset), `ptrdiff_t` (pointer difference). `size_t` is unsigned, so watch out for underflow when iterating in reverse: `for (size_t i = count; i-- > 0; )` is the safe way to write it.
+`sizeof` (object size), `NULL` (null pointer), `offsetof` (structure member offset), `ptrdiff_t` (pointer difference). `size_t` is unsigned; watch out for underflow when iterating in reverse: `for (size_t i = n; i-- > 0;)` is the safe way to write it.
 
-## C++ Connections
+## C++ Bridge
 
 ### Stream Library (iostream/fstream/sstream)
 
-The C++ stream library achieves **type safety** through operator overloading—passing the wrong type directly causes a compilation failure. Destructors automatically close files (RAII). `std::getline` directly returns `std::string`, eliminating the risk of buffer overflows.
+The C++ stream library achieves **type safety** through operator overloading—passing the wrong type results in a compilation failure. Destructors automatically close files (RAII). `std::string` is returned directly by `std::getline`, eliminating buffer overflow risks.
 
 ### std::filesystem (C++17)
 
-Cross-platform directory traversal, file attribute queries, and path manipulation—no more need to write `#ifdef _WIN32`.
+Cross-platform directory traversal, file attribute queries, path manipulation—no more need to write `#ifdef _WIN32`.
 
 ### std::format (C++20)
 
 Combines the concise syntax of printf with type safety:
 
 ```cpp
-std::string s = std::format("{} is {} years old", name, age);
+std::string s = std::format("Year: {}", 2025);
 ```
 
-### std::span (C++17)
+### std::span (C++20)
 
-`std::span<const int>` bundles a pointer and a length together, solving the old problem of arrays decaying and losing their length information.
+`std::span` binds a pointer and a length together, solving the long-standing problem of array decay losing length information.
 
 ### `<system_error>`
 
-`std::error_code` is a value type and thread-safe, making it much safer than the global `errno`.
+`std::error_code` is a value type and thread-safe, much safer than the global `errno`.
 
 ## Summary
 
-The core of file operations is `FILE*` and `fopen`/`fclose`/`fread`/`fwrite`, formatted I/O relies on the `printf`/`scanf` family, and error handling depends on `errno` + `perror`. The standard library provides fundamental tools like numeric conversion, sorting and searching, math functions, character classification, and assertions. C++ delivers a comprehensive type-safe upgrade to these tools with stream libraries, `std::filesystem`, `std::format`, and `std::error_code`.
+The core of file operations lies in `fopen` and `fread`/`fwrite`/`fseek`/`ftell`. Formatted I/O relies on the `printf`/`scanf` family, and error handling depends on `errno` + `perror`. The standard library provides fundamental tools like numeric conversion, sorting/searching, math functions, character classification, and assertions. C++ has comprehensively upgraded these tools for type safety using the stream library, `std::filesystem`, `std::format`, and `std::span`.
 
 ## Exercises
 
 ### Exercise 1: Configuration File Parser
 
-Parse a configuration file in `key=value` format, ignoring `#` comments and blank lines.
+Parse a configuration file in `.ini` format, ignoring `#` comments and empty lines.
 
-```c
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdbool.h>
-
-#define MAX_LINE 256
-#define MAX_KEY 64
-#define MAX_VALUE 128
-
-typedef struct {
-    char key[MAX_KEY];
-    char value[MAX_VALUE];
-} ConfigEntry;
-
-/// @brief 去除字符串首尾的空白字符
-char* trim(char* str);
-
-/// @brief 解析配置文件
-size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries);
-
-/// @brief 在配置项中查找指定 key
-const char* find_config(const ConfigEntry* entries, size_t count, const char* key);
-
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <config_file>\n", argv[0]);
-        return 1;
-    }
-    // TODO: 调用 parse_config 和 find_config
-    return 0;
-}
+```text
+# config.ini
+port=8080
+mode=debug
 ```
 
-Hint: Use `fgets` to read line by line, `strchr` to find the `=` position, and `trim` to strip whitespace.
+Hint: Use `fgets` to read line by line, `strchr` to find the `=` position, and trim whitespace.
 
 ### Exercise 2: File Copy Tool
 
-Specify the source and destination files via command-line arguments, support binary file copying, and display progress.
-
-```c
-#include <stdio.h>
-#include <stdlib.h>
-
-#define kBufferSize 4096
-
-/// @brief 复制文件
-int copy_file(const char* src_path, const char* dst_path)
-{
-    // TODO: 实现
-    // 1. "rb" 打开源文件，"wb" 打开目标文件
-    // 2. 循环 fread/fwrite
-    // 3. 用 fseek/ftell 获取总大小，打印进度
-    // 4. 错误处理：先打开的后关闭
-    return -1;
-}
-
-int main(int argc, char* argv[]) {
-    // TODO: 解析命令行参数，调用 copy_file
-    return 0;
-}
-```
+Specify source and target files via command-line arguments, support binary file copying, and display progress.
 
 Hint: Use `fseek` + `ftell` to get the source file size, and use `\r` to overwrite the same line to implement a progress bar.

@@ -11,7 +11,9 @@
 
 #pragma once
 #include "cancel_token/cancel_token.hpp"
+#include <cstdint>
 #include <functional>
+#include <memory>
 
 namespace tamcpp::chrome {
 
@@ -38,7 +40,7 @@ class OnceCallback<ReturnType(FuncArgs...)> // Specialization of Functional like
     using FuncSig = ReturnType(FuncArgs...);
 
   private:
-    enum class Status {
+    enum class Status : uint8_t {
         kEmpty,   // Null when construction with no lambda or func specified
         kValid,   // validate for usage
         kConsumed // Has been callbacked
@@ -97,8 +99,10 @@ class OnceCallback<ReturnType(FuncArgs...)> // Specialization of Functional like
      * @return false
      */
     [[nodiscard]] bool is_cancelled() const noexcept {
-        if (status_ != Status::kValid) return true;
-        if (token_ && !token_->is_valid()) return true;
+        if (status_ != Status::kValid)
+            return true;
+        if (token_ && !token_->is_valid())
+            return true;
         return false;
     }
     [[nodiscard]] bool maybe_valid() const noexcept { return !is_cancelled(); }

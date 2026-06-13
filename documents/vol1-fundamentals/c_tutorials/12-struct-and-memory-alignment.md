@@ -476,21 +476,21 @@ using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct
 #include <stdint.h>
 #include <stdio.h>
 
-// TODO: 定义 Frame 结构体
+// 练习： 定义 Frame 结构体
 // typedef struct __attribute__((packed)) {
 //     ...
 // } Frame;
 
-// TODO: 实现 print_frame_layout() 函数
+// 练习： 实现 print_frame_layout() 函数
 // 使用 offsetof 打印每个字段的偏移量
 
-// TODO: 实现 create_frame() 函数
+// 练习： 实现 create_frame() 函数
 // 分配内存并填充帧数据（含柔性数组成员）
 
 int main(void) {
     print_frame_layout();
 
-    // TODO: 创建一个测试帧并验证偏移
+    // 练习： 创建一个测试帧并验证偏移
     return 0;
 }
 ```

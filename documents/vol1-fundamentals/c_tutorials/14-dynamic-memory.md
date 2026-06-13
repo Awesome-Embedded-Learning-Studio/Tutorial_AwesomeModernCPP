@@ -246,9 +246,9 @@ void pool_free(MemoryPool* pool, void* block);
 void pool_destroy(MemoryPool* pool);
 
 int main(void) {
-    // TODO: 创建一个 64 字节/块、共 64 块的内存池
-    // TODO: 分配几个块，写入数据，然后释放
-    // TODO: 销毁内存池
+    // 练习： 创建一个 64 字节/块、共 64 块的内存池
+    // 练习： 分配几个块，写入数据，然后释放
+    // 练习： 销毁内存池
     return 0;
 }
 ```
@@ -275,9 +275,9 @@ void mem_report(void);
 #define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
 
 int main(void) {
-    // TODO: 用 TMALLOC 分配几块内存
-    // TODO: 故意只释放其中一部分
-    // TODO: 调用 mem_report() 查看哪些分配没有被释放
+    // 练习： 用 TMALLOC 分配几块内存
+    // 练习： 故意只释放其中一部分
+    // 练习： 调用 mem_report() 查看哪些分配没有被释放
     return 0;
 }
 ```

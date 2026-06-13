@@ -1,7 +1,7 @@
 ---
-title: End-to-End Hands-On Project
-description: Handwritten STL, HTTP server, GUI framework, embedded OS, and other comprehensive
-  projects
+title: Comprehensive Hands-on Project
+description: Synthesize scattered knowledge from various volumes into complete projects—from
+  coroutine servers, mini runtimes, to industrial-grade component analysis.
 platform: host
 tags:
 - cpp-modern
@@ -9,26 +9,31 @@ tags:
 - intermediate
 translation:
   source: documents/projects/index.md
-  source_hash: 3a6ccce746db47489eb825a9ddde30ec4ba65e96ff42697b0adc3c93c6be84df
-  translated_at: '2026-05-26T10:20:16.450396+00:00'
+  source_hash: 42eb53b42495d01aa1fb318f2084582052831d6c383d0cf22598181cb3c8fd75
+  translated_at: '2026-06-13T11:40:38.476774+00:00'
   engine: anthropic
-  token_count: 106
+  token_count: 324
 ---
 # Comprehensive Hands-on Projects
 
-> Status: Planned
+> This section is not merely a pile of new concepts, but an effort to weave together the fragments learned across various volumes—concurrency, coroutines, templates, memory management—into a complete project that runs, tests, and can be delivered. Below, we first list projects that have already been implemented in other volumes and are ready for you to continue, followed by long-term goals still in the planning phase.
 
-## Overview
+## Projects with a Foundation
 
-This section features comprehensive hands-on projects that span the entire tutorial:
+These projects already have tutorials or runnable skeletons in other volumes, providing a path for you to dive deeper:
 
-1. **Hand-rolled STL Components**: vector, string, unique_ptr, optional, function, variant
-2. **Mini HTTP Server**: from TCP to asynchronous coroutines
-3. **Mini GUI Framework**: event loop, widget system, layout engine, rendering backend
-4. **Embedded Operating System**: scheduler, synchronization primitives, memory management, driver framework
-5. **INI Parser** (basic version available)
-6. **Coroutine Echo Server** (basic version available)
+- **Coroutine Echo Server**: In [Volume 5: Coroutine Echo Server](../vol5-concurrency/ch06-async-io-coroutine/05-coroutine-echo-server.md), we built a fully functional echo service from `io_uring` to data transmission. This is the most practical project for understanding coroutine scheduling.
+- **Mini Concurrent Runtime (Capstone)**: [Volume 5: Mini Runtime Capstone](../vol5-concurrency/exercises/06-capstone-mini-runtime.md) combines thread pools, timers, and task queues into a minimal scheduler, serving as a ready-made starting point for the "Mini Concurrent Runtime".
+- **OnceCallback Component Study**: [Volume 9: OnceCallback](../vol9-open-source-project-learn/chrome/01_once_callback/index.md) dissects Chromium's callback mechanism across 16 articles, serving as a paradigm for transitioning from reading source code to designing industrial-grade components yourself.
+- **INI Parser**: As the first complete project for C++ engineering, this is located in a separate repository [Tutorial_cpp_SimpleIniParser](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_cpp_SimpleIniParser)—covering lexical analysis to error handling, it is perfect for following along from start to finish.
 
-## Project Navigation
+## Planned Projects
 
-> Content is being written, stay tuned.
+These have not yet started and are long-term goals, sorted by "readiness of materials":
+
+- **Hand-rolled STL Components**: Implement `vector`, `string`, `unique_ptr`, `optional`, `function`, and `variant` from scratch, complementing the source code reading in Volume 3 (Standard Library).
+- **Mini HTTP Server**: From TCP sockets to coroutine-based asynchrony, building upon Volume 5 (Concurrency) and Volume 8 (Network Programming).
+- **Mini GUI Framework**: Event loops, widget systems, layout engines, and rendering backends.
+- **Embedded Mini OS**: Scheduler, synchronization primitives, memory management, and driver framework, extending the main thread of Volume 8 (Embedded Systems).
+
+> These projects will not be completed overnight; they will be launched gradually as the content in their respective volumes is finalized. If you have a project you would like to see, feel free to propose it in the Discussions.

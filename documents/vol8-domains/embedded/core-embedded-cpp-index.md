@@ -44,7 +44,7 @@ order: 0
 ## Chapter 3 - 内存与对象管理
 
 - [初始化列表](../../vol3-standard-library/01-initializer-lists.md)
-- [空基类优化（EBO）](./04-empty-base-optimization.md)
+- [空基类优化（EBO）](../../vol4-advanced/03-empty-base-optimization.md)
 - [对象大小，平凡类型](../../vol3-standard-library/05-object-size-and-trivial-types.md)
 
 ## Chapter 4 - 编译期计算
@@ -58,7 +58,6 @@ order: 0
 - [对象池模式](./03-object-pool-pattern.md)
 - [禁用 heap 或限制 heap 时的替代策略：放置new（Placement New）的使用](./04-placement-new.md)
 - [固定池分配](./05-fixed-pool-allocation.md)
-- [array vs 一般数组，你们知道嘛？](./06-array-vs-raw-arrays.md)
 
 ## Chapter 7 - 容器与数据结构
 

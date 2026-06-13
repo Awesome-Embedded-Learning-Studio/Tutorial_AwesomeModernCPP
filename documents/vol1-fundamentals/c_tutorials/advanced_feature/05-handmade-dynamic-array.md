@@ -506,7 +506,7 @@ DynamicArrayStatus dynamic_array_resize(
     size_t new_size,
     const void* default_value
 );
-// TODO: 自行实现
+// 练习： 自行实现
 ```
 
 ### 练习 2：实现 filter
@@ -519,7 +519,7 @@ DynamicArray* dynamic_array_filter(
     const DynamicArray* arr,
     int (*pred)(const void* element)
 );
-// TODO: 自行实现
+// 练习： 自行实现
 ```
 
 ### 练习 3：实现 map 变换
@@ -534,7 +534,7 @@ DynamicArray* dynamic_array_map(
     void (*transform)(const void* in, void* out),
     size_t out_element_size
 );
-// TODO: 自行实现
+// 练习： 自行实现
 ```
 
 ### 练习 4：实现拼接
@@ -547,7 +547,7 @@ DynamicArray* dynamic_array_concat(
     const DynamicArray* arr1,
     const DynamicArray* arr2
 );
-// TODO: 自行实现
+// 练习： 自行实现
 ```
 
 > **难度自评**：如果你在实现练习时感到困难，请回顾对应章节的设计思路。特别是 resize——它本质上是 reserve + memset/memcpy 的组合，想清楚哪些位置需要填充、填充什么值，代码自然就出来了。

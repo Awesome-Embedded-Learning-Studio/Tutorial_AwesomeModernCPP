@@ -622,7 +622,7 @@ max_diff: 0.000000e+00
 
 这反而更加印证了文章的核心论点：现代编译器的自动向量化越来越强，手写 SIMD 的收益在缩小。具体数字因硬件和编译器版本而异，但趋势是一致的。
 
-验证代码：`code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/02-00-matmul-test.cpp`
+验证代码：[02-00-matmul-test.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/02-00-matmul-test.cpp)
 :::
 
 这就是 2026 年和 90 年代的区别。在 90 年代，编译器完全不知道 SIMD 是什么，手写汇编可能快 10 倍；在今天，编译器已经相当聪明了，手写的收益越来越小，但代价（可读性、可维护性、可移植性）依然很大。

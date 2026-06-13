@@ -297,7 +297,7 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Usage: %s <config_file>\n", argv[0]);
         return 1;
     }
-    // TODO: 调用 parse_config 和 find_config
+    // 练习： 调用 parse_config 和 find_config
     return 0;
 }
 ```
@@ -317,7 +317,7 @@ int main(int argc, char* argv[]) {
 /// @brief 复制文件
 int copy_file(const char* src_path, const char* dst_path)
 {
-    // TODO: 实现
+    // 练习： 实现
     // 1. "rb" 打开源文件，"wb" 打开目标文件
     // 2. 循环 fread/fwrite
     // 3. 用 fseek/ftell 获取总大小，打印进度
@@ -326,7 +326,7 @@ int copy_file(const char* src_path, const char* dst_path)
 }
 
 int main(int argc, char* argv[]) {
-    // TODO: 解析命令行参数，调用 copy_file
+    // 练习： 解析命令行参数，调用 copy_file
     return 0;
 }
 ```

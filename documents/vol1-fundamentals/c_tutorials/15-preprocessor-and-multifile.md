@@ -194,18 +194,18 @@ gcc -o demo main.c -L. -lmath_utils
 ```c
 // math_utils.h
 #pragma once
-// TODO: 声明 clamp_int 和 count_digits
+// 练习： 声明 clamp_int 和 count_digits
 
 // math_utils.c
 #include "math_utils.h"
-// TODO: 实现 clamp_int（将 value 限制在 [min_val, max_val] 范围内）
-// TODO: 实现 count_digits（计算整数的十进制位数）
+// 练习： 实现 clamp_int（将 value 限制在 [min_val, max_val] 范围内）
+// 练习： 实现 count_digits（计算整数的十进制位数）
 
 // main.c
 #include <stdio.h>
 #include "math_utils.h"
 int main(void) {
-    // TODO: 调用两个函数，验证结果
+    // 练习： 调用两个函数，验证结果
     return 0;
 }
 ```
@@ -219,9 +219,9 @@ int main(void) {
 #pragma once
 
 #ifdef NDEBUG
-// TODO: Release 模式——DEBUG_LOG 展开为空
+// 练习： Release 模式——DEBUG_LOG 展开为空
 #else
-// TODO: Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
+// 练习： Debug 模式——输出 [DEBUG] 文件名:行号: 格式化消息
 // 提示：使用 __FILE__、__LINE__、__VA_ARGS__
 #endif
 ```

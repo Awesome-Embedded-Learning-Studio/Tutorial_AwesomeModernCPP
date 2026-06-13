@@ -355,15 +355,15 @@ using EventHandler = void (*)(int);  // 比 typedef 更直观
 #include <stdio.h>
 #include <stdint.h>
 
-// TODO: 定义一个联合体，包含 float 和 uint32_t
-// TODO: 实现分解函数
+// 练习： 定义一个联合体，包含 float 和 uint32_t
+// 练习： 实现分解函数
 // void print_float_bits(float f) {
 //     // 提取符号位（1位）、指数（8位）、尾数（23位）
 //     // 提示：用位运算 & 和 >>
 // }
 
 int main(void) {
-    // TODO: 测试几个值：0.0f, -3.14f, 1.0f, 42.0f, 0.1f
+    // 练习： 测试几个值：0.0f, -3.14f, 1.0f, 42.0f, 0.1f
     return 0;
 }
 ```
@@ -376,7 +376,7 @@ int main(void) {
 #include <stdio.h>
 #include <stdint.h>
 
-// TODO: 定义 ControlRegister 位域结构体
+// 练习： 定义 ControlRegister 位域结构体
 // 位分配：
 //   bit 0:     enable (1位)
 //   bit 1:     interrupt_enable (1位)
@@ -386,16 +386,16 @@ int main(void) {
 //   bit 31:10  reserved (22位)
 
 typedef union {
-    // TODO: 位域结构体视图
-    // TODO: uint32_t 整体视图
+    // 练习： 位域结构体视图
+    // 练习： uint32_t 整体视图
 } ControlRegister;
 
-// TODO: 实现 void print_register(ControlRegister reg)
-// TODO: 实现 void set_mode(ControlRegister* reg, uint32_t mode)
+// 练习： 实现 void print_register(ControlRegister reg)
+// 练习： 实现 void set_mode(ControlRegister* reg, uint32_t mode)
 
 int main(void) {
     ControlRegister reg = {0};
-    // TODO: 测试各个操作
+    // 练习： 测试各个操作
     return 0;
 }
 ```
@@ -408,16 +408,16 @@ int main(void) {
 #include <stdio.h>
 #include <stdint.h>
 
-// TODO: 定义枚举类型标签
-// TODO: 定义 tagged union 结构体
-// TODO: 实现构造函数 make_int/make_float/make_string
-// TODO: 实现 print_tagged_value 函数
-// TODO: 实现 get_as_int/get_as_float/get_as_string 安全访问函数
+// 练习： 定义枚举类型标签
+// 练习： 定义 tagged union 结构体
+// 练习： 实现构造函数 make_int/make_float/make_string
+// 练习： 实现 print_tagged_value 函数
+// 练习： 实现 get_as_int/get_as_float/get_as_string 安全访问函数
 //       （检查 tag 是否匹配，不匹配则打印错误信息）
 
 int main(void) {
-    // TODO: 创建三种类型的值，打印它们
-    // TODO: 尝试用错误的 tag 访问，验证安全检查
+    // 练习： 创建三种类型的值，打印它们
+    // 练习： 尝试用错误的 tag 访问，验证安全检查
     return 0;
 }
 ```

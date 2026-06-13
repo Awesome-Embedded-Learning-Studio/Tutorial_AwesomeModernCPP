@@ -3,7 +3,7 @@ chapter: 1
 cpp_standard:
 - 11
 description: Master struct definitions, memory alignment and padding rules, flexible
-  array members, and `offsetof` validation
+  array members, and `offsetof` validation.
 difficulty: beginner
 order: 16
 platform: host
@@ -19,490 +19,357 @@ tags:
 title: Structs and Memory Alignment
 translation:
   source: documents/vol1-fundamentals/c_tutorials/12-struct-and-memory-alignment.md
-  source_hash: b0fa66698cfdb3a2581c038aaba68ef7299ab625d4ccbe410a6e5587ad0f7432
-  translated_at: '2026-05-26T10:33:01.215031+00:00'
+  source_hash: 1da76ff6fd68afc58f2076c9eb1028dc79bb5512d8d1c5ebdc53e6d00facaedb
+  translated_at: '2026-06-13T11:41:51.648816+00:00'
   engine: anthropic
-  token_count: 3333
+  token_count: 3331
 ---
 # Structs and Memory Alignment
 
-If you have been writing C up to this point and have only used basic types—`int`, `float`, `char`, and the like—it is probably because you have not yet encountered a scenario where you need to bundle a group of related data together for passing around. Once you start writing more substantial programs, such as a sensor data packet, a configuration table, or a communication protocol frame, you will find that loose variables are simply unmanageable. The struct is C's answer to this: it lets us combine data of different types into a single whole, which we can then pass, store, and operate on as one value.
+If you have been writing C code until now using only basic types—like `int`, `float`, `char`—it is likely because you haven't encountered a scenario where you need to pass a group of related data together. Once you start writing slightly more sophisticated programs, such as a sensor data packet, a configuration table, or a communication protocol frame, you will find that relying on scattered variables is impossible to manage. The struct is the answer C provides: it allows us to knead different types of data into a whole, which can then be passed, stored, and manipulated as a single value.
 
-But structs are far more than just "bundling data." The moment we place a struct in memory, the compiler does something behind the scenes that you might never have considered—memory alignment. It silently slips padding bytes between your fields so that each field lands on an address the processor "likes." If you are unaware of this, there will come a day when you are designing a binary protocol frame, doing a DMA (Direct Memory Access) transfer, or hand-writing serialization code, and those phantom bytes will make you question your sanity.
+But structs are far more than just "bundling data." The moment we put a struct into memory, the compiler does something behind the scenes that you might never have thought of—memory alignment. It secretly inserts padding bytes between your fields so that each field lands on an address the processor "likes." If you are unaware of this, one day when designing binary protocol frames, doing DMA transfers, or writing serialization code by hand, you will likely be driven to the brink of madness by these ghost bytes.
 
-So in this chapter, we will not only learn how to define and use structs, but also thoroughly understand what a struct truly looks like in memory.
+So, in this chapter, we will not only learn how to define and use structs but also thoroughly understand their true appearance in memory.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Proficiently define, initialize, and operate on structs and their pointers
-> - [ ] Understand the principles of memory alignment and the distribution rules for padding bytes
-> - [ ] Use `_Alignas`, `alignof`, and `offsetof` for alignment control and verification
-> - [ ] Master the use of designated initializers and flexible array members
-> - [ ] Understand the evolutionary relationship from C structs to C++ classes
+> - [ ] Proficiently define, initialize, and operate on structs and their pointers.
+> - [ ] Understand the principles of memory alignment and the distribution rules of padding bytes.
+> - [ ] Use `alignas`, `alignof`, and `offsetof` for alignment control and verification.
+> - [ ] Master the use of designated initializers and flexible array members.
+> - [ ] Understand the evolutionary relationship from C structs to C++ classes.
 
 ## Environment Setup
 
-All of our following experiments will be conducted in this environment:
+We will conduct all subsequent experiments in the following environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
+- Platform: Linux x86_64 (WSL2 is acceptable)
 - Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+- Compiler flags: `-std=c2x -Wall -Wextra`
 
-## Step 1 — Mastering Struct Definition and Basic Operations
+## Step 1 — Master Struct Definition and Basic Operations
 
 ### Defining a Struct
 
-In C, we define a struct using the `struct` keyword followed by a pair of curly braces:
+In C, we define a struct using the `struct` keyword followed by a pair of braces:
 
 ```c
-struct SensorReading {
-    uint32_t timestamp;
-    float temperature;
-    float humidity;
-    uint8_t status;
+struct SensorData {
+    int id;
+    float value;
+    char status;
 };
 ```
 
-Note the semicolon at the end—forgetting it is one of the most common compilation errors for beginners, and the error message usually points to the next line, leaving you baffled. `struct SensorReading` is now a type name, but writing `struct SensorReading` every time is indeed a bit verbose, so we usually pair it with `typedef` to simplify:
+Note that semicolon at the end—forgetting it is one of the most common compilation errors for beginners, and the error message usually points to the next line, leaving you confused. `struct SensorData` is now a type name, but writing `struct SensorData` every time is indeed a bit verbose, so we usually pair it with `typedef` to simplify:
 
 ```c
-typedef struct {
-    uint32_t timestamp;
-    float temperature;
-    float humidity;
-    uint8_t status;
-} SensorReading;
+typedef struct SensorData {
+    int id;
+    float value;
+    char status;
+} SensorData;
 ```
 
-This way we can write `SensorReading reading;` directly to declare variables, which is much cleaner. The two approaches are functionally equivalent; the only difference is how the type name is used: the former requires the `struct` prefix, while the latter does not. In real-world projects, the `typedef` approach is far more common, especially in embedded development—if you look at any MCU (Microcontroller Unit) vendor's SDK, it is full of `typedef struct`.
+Now we can write `SensorData` directly to declare variables, which is much cleaner. The two styles are functionally equivalent; the difference lies only in the usage of the type name: the former requires the `struct` prefix, while the latter does not. In actual projects, the `typedef` usage is more prevalent, especially in embedded development—look at any MCU vendor's SDK, and you will see `typedef struct` everywhere.
 
 ### Initialization and Assignment
 
-There are several ways to initialize a struct, and we will start with the most basic. The first is sequential initialization—providing values in the order the fields are defined:
+There are several ways to initialize a struct. Let's start with the most basic. The first is sequential initialization—providing values in the order the fields are defined:
 
 ```c
-SensorReading r1 = {1700000000, 23.5f, 60.0f, 1};
+struct SensorData sensor = {1, 25.4f, 'OK'};
 ```
 
-This works, but its readability is not great—you have to remember which position corresponds to which field, and if the struct definition changes the order, all initialization code must be updated accordingly. C99 gave us a better solution: the **designated initializer**, which allows you to initialize any field by name:
+This approach works, but readability is poor—you must remember which position corresponds to which field. Once the struct definition order is adjusted, all initialization code must be modified. C99 offers a better solution: **designated initializers**, which allow you to initialize arbitrary fields by name:
 
 ```c
-SensorReading r2 = {
-    .timestamp = 1700000000,
-    .temperature = 23.5f,
-    .humidity = 60.0f,
-    .status = 1
-};
-
-// 不需要按定义顺序，也可以只初始化部分字段
-SensorReading r3 = {
-    .humidity = 45.0f,
-    .status = 0
-    // timestamp 和 temperature 自动初始化为 0
+struct SensorData sensor = {
+    .id = 1,
+    .value = 25.4f,
+    .status = 'OK'
 };
 ```
 
-The benefits of designated initializers are obvious: the code is self-documenting, it does not depend on field order, and unspecified fields are automatically zeroed out. Frankly, in modern C code, as long as your compiler supports C99 (which basically all of them do), you should prefer designated initializers.
+The benefits of designated initializers are obvious: the code is self-documenting, independent of field order, and unspecified fields are automatically zeroed. Honestly, in modern C code, as long as your compiler supports C99 (which basically all do), you should prefer designated initializers.
 
-Struct assignment and initialization are two different things. Initialization happens at declaration, while assignment happens after declaration. C allows direct assignment between structs of the same type, which performs a byte-by-byte copy:
+Struct assignment and initialization are two different things. Initialization happens at declaration; assignment happens after declaration. C allows direct assignment between structs of the same type, which is a byte-by-byte copy:
 
 ```c
-SensorReading r4;
-r4 = r2;  // 把 r2 的所有字段复制到 r4
+struct SensorData sensor1 = {1, 25.4f, 'OK'};
+struct SensorData sensor2;
+sensor2 = sensor1; // Shallow copy
 ```
 
-But be careful: struct assignment in C is a **shallow copy**—if the struct contains pointer members, the pointer fields of both structs will point to the same block of memory after assignment. This is a classic pitfall when dealing with structs that contain dynamically allocated memory.
+But be aware: struct assignment in C is a **shallow copy**—if a struct contains pointer members, after assignment, the pointer fields in both structs will point to the same memory block. This is a classic pitfall when handling structs containing dynamically allocated memory.
 
 ### Struct Pointers and the Arrow Operator
 
-When a struct is large, or when we need to modify the caller's struct inside a function, passing a pointer is the only reasonable approach. This is where the difference between `.` and `->` comes in:
+When a struct is large, or we need to modify the caller's struct within a function, passing a pointer is the only reasonable approach. This is where the difference between `.` and `->` comes in:
 
 ```c
-SensorReading reading = {
-    .timestamp = 1700000000,
-    .temperature = 25.0f,
-    .humidity = 50.0f,
-    .status = 1
-};
+struct SensorData sensor;
+struct SensorData *ptr = &sensor;
 
-// 通过变量名直接访问——用点号
-reading.temperature = 26.0f;
-
-// 通过指针访问——用箭头
-SensorReading* ptr = &reading;
-ptr->humidity = 55.0f;
-// 等价于 (*ptr).humidity = 55.0f
+sensor.id = 1;    // Direct member access
+ptr->id = 2;      // Member access via pointer
+(*ptr).id = 3;    // Equivalent to ptr->id
 ```
 
-The `->` operator is simply syntactic sugar for `(*ptr).`, nothing mysterious. But this syntactic sugar is so commonly used that you would almost never write `(*ptr).`—in C, as long as a function parameter includes a struct pointer, you are almost certainly using `->`.
+The `->` operator is just syntactic sugar for `(*ptr).`, nothing mysterious. But this sugar is so commonly used that you will hardly ever write `(*ptr).`—in C, as long as a function parameter involves a struct pointer, you are almost certainly using `->`.
 
-Passing a struct pointer rather than the struct itself as a function parameter not only avoids expensive copy overhead but also allows the function to modify the caller's data. If you do not want the function to modify the data, just add `const`:
+Passing a struct pointer instead of the struct itself in function parameters not only avoids expensive copy overhead but also allows the function to modify the caller's data. If you do not want the function to modify the data, just add `const`:
 
 ```c
-/// @brief 打印传感器读数（只读访问）
-void print_reading(const SensorReading* r) {
-    printf("T=%.1fC H=%.1f%% status=%u\n",
-           r->temperature, r->humidity, r->status);
-}
-
-/// @brief 更新传感器状态（可修改）
-void update_status(SensorReading* r, uint8_t new_status) {
-    r->status = new_status;
+void print_sensor(const struct SensorData *s) {
+    printf("ID: %d\n", s->id);
 }
 ```
 
-This distinction between `const SensorReading*` and `SensorReading*` is inherited in C++ into `const` member functions and reference semantics, forming a more complete "read-only vs. mutable" interface design.
+This distinction between `T*` and `const T*` is inherited in C++ as `const` member functions and reference semantics, forming a more complete "read-only vs. mutable" interface design.
 
 ## Step 2 — Understanding Memory Alignment and Padding Bytes
 
-Next, we are entering the most core and potentially most confusing part of this tutorial. Let us start with a question: how many bytes does the following struct occupy?
+Next, we enter the core and most confusing part of this tutorial. Let's look at a question first: how many bytes does the following struct occupy?
 
 ```c
-typedef struct {
-    uint8_t  a;   // 1 字节
-    uint32_t b;   // 4 字节
-    uint8_t  c;   // 1 字节
-} WeirdLayout;
+struct BadLayout {
+    char a; // 1 byte
+    int b;  // 4 bytes
+    char c; // 1 byte
+};
 ```
 
-Intuitively, 1 + 4 + 1 = 6 bytes, right? But in reality, on most 32-bit and 64-bit platforms, `sizeof(WeirdLayout)` is **12 bytes**. Where did the extra 6 bytes go? The answer is that the compiler inserted them into the struct as **padding bytes**.
+Intuitively, 1 + 4 + 1 = 6 bytes, right? But actually, on most 32-bit and 64-bit platforms, `sizeof(struct BadLayout)` is **12 bytes**. Where did the extra 6 bytes go? The answer is they were inserted into the struct by the compiler as **padding bytes**.
 
-### Why Alignment Is Needed
+### Why Alignment is Needed
 
-When a processor accesses memory, it does not read one byte at a time. Most CPU architectures prefer to access data along 2-, 4-, or 8-byte boundaries—this is what we call **alignment**. An `uint32_t` placed at an address that is a multiple of 4 can be read in a single operation; but if it straddles a 4-byte boundary (for example, placed at address 3), the CPU might need to read twice and stitch the results together, which incurs a performance penalty. Some architectures are even more extreme—they will throw a hardware exception directly (for instance, ARM triggers a fault when accessing unaligned addresses in certain modes).
+When a processor accesses memory, it does not read byte by byte. Most CPU architectures prefer to access data on 2, 4, or 8-byte boundaries—this is called **alignment**. An `int` placed at an address that is a multiple of 4 can be read in one go; but if it straddles a 4-byte boundary (e.g., placed at address 3), the CPU might need to read twice and stitch it together, resulting in a performance hit. Some architectures are even more extreme—throwing a hardware exception directly (for example, ARM accessing unaligned addresses in certain modes triggers a fault).
 
-So, for the sake of performance and correctness, the compiler inserts padding bytes between struct members to ensure that each member lands on its naturally aligned address.
+So, for performance and correctness, the compiler inserts padding bytes between struct members to ensure each member lands on its naturally aligned address.
 
-### Rules for Alignment and Padding
+### Rules of Alignment and Padding
 
-There are essentially only two alignment rules, but understanding them requires a bit of patience. The first rule: **the starting address of each member must be an integer multiple of that member's alignment requirement**. The alignment requirement for `uint8_t` is 1 (any address works), `uint16_t` is 2, `uint32_t` is 4, `double` and `uint64_t` are 8, and so on—the alignment requirement of a basic type usually equals its size. The second rule: **the total size of the struct itself must be an integer multiple of its largest alignment requirement**—this ensures that in an array of structs, every element satisfies the alignment requirement.
+There are actually only two rules for alignment, but understanding them requires a bit of patience. Rule one: **The starting address of each member must be an integer multiple of that member's alignment requirement**. `char` has an alignment requirement of 1 (any address works), `short` is 2, `int` is 4, `double` and `long long` are 8, and so on—the alignment requirement of basic types usually equals their size. Rule two: **The size of the struct itself must be an integer multiple of its largest alignment requirement**—this is to ensure that in an array of structs, every element satisfies the alignment requirement.
 
-Now let us return to the `WeirdLayout` example and map it out byte by byte:
+Now let's return to the `struct BadLayout` example and draw it out byte by byte:
 
 ```text
-偏移  0  1  2  3  4  5  6  7  8  9  10  11
-     [a ][pad pad pad][b         ][c ][pad pad pad]
-      ^              ^           ^
-      |              |           b: 偏移 4（4 的倍数，满足）
-      |              填充 3 字节让 b 对齐到 4
-      a: 偏移 0（1 的倍数，满足）
+Address  0   1   2   3   4   5   6   7   8   9  10  11
+        +---+---+---+---+---+---+---+---+---+---+---+---+
+        | a | X | X | X |   b   |   b   | c | X | X | X |
+        +---+---+---+---+---+---+---+---+---+---+---+---+
 ```
 
-`a` is at offset 0, occupying 1 byte. The alignment requirement of `b` is 4, but the next available offset is 1, which is not a multiple of 4, so the compiler inserts 3 bytes of padding, letting `b` start at offset 4. `c` is at offset 8, with an alignment requirement of 1, so that is fine. Finally, the struct's maximum alignment requirement is 4 (from `uint32_t b`), so the total size must be a multiple of 4—the current size is 9, so it is padded to 12.
+`a` is at offset 0, occupying 1 byte. `b` has an alignment requirement of 4, but the next available offset is 1, which is not a multiple of 4, so the compiler inserts 3 bytes of padding, letting `b` start at offset 4. `c` is at offset 8, alignment requirement 1, no problem. Finally, the struct's maximum alignment requirement is 4 (from `int`), so the total size must be a multiple of 4—currently 9, so it is padded to 12.
 
-This is why data that is only 6 bytes actually occupies 12 bytes—50% of the space is wasted on padding.
+This is why明明 only 6 bytes of data actually occupy 12 bytes—50% of the space is wasted on padding.
 
 ### Reordering Fields to Reduce Padding
 
-The solution to this problem is surprisingly simple: **place fields with larger alignment requirements first, and smaller ones last**. Let us reorder the fields of `WeirdLayout`:
+The solution to this problem is surprisingly simple: **put fields with larger alignment requirements first, and smaller ones last**. Let's rearrange the fields of `struct BadLayout`:
 
 ```c
-typedef struct {
-    uint32_t b;   // 4 字节，偏移 0
-    uint8_t  a;   // 1 字节，偏移 4
-    uint8_t  c;   // 1 字节，偏移 5
-    // 填充 2 字节（偏移 6-7），使总大小为 4 的倍数
-} BetterLayout;
+struct GoodLayout {
+    int b;  // 4 bytes
+    char a; // 1 byte
+    char c; // 1 byte
+};
 ```
 
-Now `sizeof(BetterLayout)` is **8 bytes**—saving one-third compared to the previous 12. `b` is at offset 0 (naturally aligned), `a` and `c` are packed tightly right after it, and only 2 bytes of trailing padding are needed at the end. This technique is extremely useful in real-world engineering, especially on memory-constrained embedded systems—building the habit of ordering fields from largest to smallest alignment requirement is well worth it.
+Now `sizeof(struct GoodLayout)` is **8 bytes**—saving one-third compared to the previous 12. `b` is at offset 0 (naturally aligned), `a` and `c` are packed tightly after it, requiring only 2 bytes of tail padding. This technique is very useful in actual engineering, especially in memory-constrained embedded systems—developing the habit of ordering fields from largest to smallest alignment requirement is worth it.
 
 ### Verifying Offsets with offsetof
 
-The C standard library provides the `offsetof` macro (defined in `<stddef.h>`), which can precisely tell you the offset of a specific field within a struct. We frequently use it when debugging alignment issues or designing binary protocols:
+The C standard library provides the `offsetof` macro (defined in `<stddef.h>`), which can tell you precisely the offset of a field within a struct. We often use it when debugging alignment issues or designing binary protocols:
 
 ```c
 #include <stddef.h>
 #include <stdio.h>
 
-printf("offset of a: %zu\n", offsetof(WeirdLayout, a));  // 0
-printf("offset of b: %zu\n", offsetof(WeirdLayout, b));  // 4
-printf("offset of c: %zu\n", offsetof(WeirdLayout, c));  // 8
-printf("total size: %zu\n", sizeof(WeirdLayout));         // 12
+printf("Offset of a: %zu\n", offsetof(struct GoodLayout, a));
+printf("Offset of b: %zu\n", offsetof(struct GoodLayout, b));
 ```
 
-Make a habit of printing offsets with `offsetof` right after defining a struct, especially when designing communication protocol frames—you will find that some fields' offsets differ from what you expected, and this usually indicates an alignment issue.
+Make it a habit to print offsets with `offsetof` after writing a struct, especially when designing communication protocol frames—you will find that some fields' offsets are different from what you expected, which usually means an alignment problem.
 
-## C11 Alignment Control: _Alignas and alignof
+## C11 Alignment Control: `_Alignas` and `alignof`
 
-In the C99 era, if you needed to manually control alignment, you could only rely on compiler extensions—GCC's `__attribute__((aligned(n)))`, MSVC's `__declspec(align(n))`, and the like. C11 finally standardized this capability, providing the `_Alignas` and `_Alignof` keywords, as well as the more friendly macro aliases `alignas` and `alignof` (defined in `<stdalign.h>`).
+In the C99 era, if you needed manual alignment control, you had to rely on compiler extensions—GCC's `__attribute__ ((aligned))`, MSVC's `__declspec(align(...))`, etc. C11 finally standardized this capability, providing the `_Alignas` and `_Alignof` keywords, as well as the more friendly macro aliases `alignas` and `alignof` (defined in `<stdalign.h>`).
 
-### alignof: Querying Alignment Requirements
+### `alignof`: Querying Alignment Requirements
 
 `alignof` can query the alignment requirement of any type:
 
 ```c
 #include <stdalign.h>
-#include <stdio.h>
 
-printf("alignof(uint8_t)  = %zu\n", alignof(uint8_t));   // 1
-printf("alignof(uint32_t) = %zu\n", alignof(uint32_t));  // 4
-printf("alignof(double)   = %zu\n", alignof(double));    // 通常 8
-printf("alignof(WeirdLayout) = %zu\n", alignof(WeirdLayout)); // 4
+printf("Alignment of int: %zu\n", alignof(int));       // Usually 4
+printf("Alignment of double: %zu\n", alignof(double)); // Usually 8
 ```
 
-A struct's alignment requirement equals the largest alignment requirement among its members. `WeirdLayout` contains `uint32_t`, so the overall alignment requirement is 4.
+A struct's alignment requirement equals the largest alignment requirement among its members. `struct GoodLayout` has an `int`, so the overall alignment requirement is 4.
 
-### alignas: Forcing Alignment
+### `alignas`: Forcing Alignment
 
-`alignas` can be used to force a variable or struct member to be allocated on a specified alignment boundary. This is very useful in embedded development—for example, DMA (Direct Memory Access) transfers typically require the buffer's starting address to be 4-byte or even 32-byte aligned:
+`alignas` can be used to force a variable or struct member to be allocated on a specified alignment boundary. This is very useful in embedded development—for example, DMA transfers often require the buffer start address to be 4-byte or even 32-byte aligned:
 
 ```c
-#include <stdalign.h>
-
-// 强制 DMA 缓冲区 32 字节对齐
-alignas(32) uint8_t dma_buffer[256];
-
-// 在结构体中强制某个字段的对齐
-typedef struct {
-    uint8_t header;
-    alignas(4) uint32_t payload;  // 即使前面有 header，也保证 payload 4 字节对齐
-} AlignedFrame;
+alignas(16) char dma_buffer[256];
 ```
 
-The argument to `alignas` must be a power of two and cannot be less than the type's natural alignment requirement. If you write `alignas(2)` for an `uint32_t`, the compiler will ignore it or report an error—because `uint32_t` itself requires 4-byte alignment, and you cannot reduce it to 2.
+The parameter to `alignas` must be a power of two and cannot be less than the type's natural alignment requirement. If you write `alignas(2)` for an `int`, the compiler will ignore it or error—because `int` itself requires 4-byte alignment, you can't reduce it to 2.
 
-## A Closer Look at Designated Initializers
+## Designated Initializers in Detail
 
-We briefly mentioned designated initializers earlier; now let us take a deeper look at their full capabilities. Designated initializers are a feature introduced in C99 that allows you to use the `.成员名 = 值` syntax to specify which fields to initialize when initializing structs, unions, and arrays.
+We briefly mentioned designated initializers earlier; let's take a deeper look at their full capabilities. Designated initializers are a feature introduced in C99 that allow you to specify which fields to initialize using the `.field_name = value` syntax when initializing structs, unions, and arrays.
 
-In addition to the basic usage shown earlier, there are some noteworthy details. For example, you can mix sequential initialization with designated initializers:
+Beyond the basic usage shown earlier, there are some details worth noting. For example, you can mix sequential initialization and designated initializers:
 
 ```c
-typedef struct {
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
-    uint16_t flags;
-} Point3D;
-
-Point3D p1 = {
-    10, 20,        // x=10, y=20（顺序初始化）
-    .flags = 0xFF  // 指定初始化 flags
-    // z 自动为 0
-};
+struct SensorData s = { .id = 1, .value = 20.0f, .status = 'X' };
 ```
 
 You can also use designated initializers in arrays:
 
 ```c
-// 稀疏初始化——只初始化需要的下标
-uint8_t lookup[256] = {
-    ['A'] = 1,
-    ['B'] = 2,
-    ['C'] = 3,
-    // 其余全部为 0
+int mapping[256] = {
+    [0] = 1,
+    ['A'] = 2,
+    ['Z'] = 26
 };
 ```
 
-This approach is particularly convenient when creating ASCII character mapping tables or command dispatch tables—it is much clearer than hand-writing an initialization list of 256 elements. Unspecified elements are automatically initialized to zero (just like global variables).
+This is particularly handy when creating ASCII character mapping tables or command dispatch tables, much clearer than hand-writing an initialization list of 256 elements. Unspecified elements are automatically initialized to zero (just like global variables).
 
 ## Step 3 — Understanding Flexible Array Members
 
-A flexible array member (FAM) is a feature introduced in C99 that allows an array of unspecified size to be placed at the end of a struct. It sounds a bit odd, but its use cases are highly practical—when you need a struct with "variable-length trailing data," FAM is the cleanest approach.
+Flexible Array Members (FAM) are a feature introduced in C99 that allows placing an array of unspecified size at the end of a struct. It sounds a bit strange, but its purpose is very practical—when you need a struct with a "variable-length tail of data," FAM is the cleanest way to do it.
 
 ```c
-typedef struct {
-    uint16_t length;
-    uint8_t  type;
-    uint8_t  data[];  // 柔性数组成员，不占结构体大小
-} Packet;
-```
-
-`data[]` is an incomplete array type—it does not occupy space within the struct (`sizeof(Packet)` does not include the size of `data`), but it tells the compiler "this struct might be followed by a contiguous block of memory." When using it, we need to manually allocate enough memory to hold the struct itself plus the data:
-
-```c
-#include <stdlib.h>
-#include <string.h>
-
-/// @brief 创建一个指定长度的数据包
-Packet* create_packet(uint8_t type, const uint8_t* payload, uint16_t len) {
-    // 分配：结构体大小 + 数据长度
-    Packet* pkt = malloc(sizeof(Packet) + len);
-    if (pkt == NULL) {
-        return NULL;
-    }
-    pkt->type = type;
-    pkt->length = len;
-    memcpy(pkt->data, payload, len);
-    return pkt;
-}
-
-// 使用
-uint8_t payload[] = {0x01, 0x02, 0x03};
-Packet* pkt = create_packet(0x42, payload, sizeof(payload));
-// 访问 pkt->data[0], pkt->data[1], pkt->data[2]
-free(pkt);
-```
-
-Flexible array members are used extensively in communication protocols, variable-length message handling, and packet parsing. In the early days of C, people used a trick called the "struct hack" to achieve similar functionality—placing an array of length 1 (or 0) at the end of a struct and then allocating extra space. But that was undefined behavior (UB); C99's FAM is the standard approach.
-
-One thing to note: structs containing a flexible array member cannot be passed or copied by value—because `sizeof` does not know how large the trailing data is. You can only operate on them through pointers.
-
-## Arrays of Structs
-
-Combining structs and arrays is a very common way to organize data. A configuration table, a set of sensor readings, or a message queue are essentially all arrays of structs:
-
-```c
-typedef struct {
-    uint8_t  id;
-    uint16_t timeout_ms;
-    uint8_t  retry_count;
-    uint8_t  priority;
-} TaskConfig;
-
-// 初始化一个结构体数组
-TaskConfig config_table[] = {
-    {.id = 1, .timeout_ms = 100, .retry_count = 3, .priority = 2},
-    {.id = 2, .timeout_ms = 200, .retry_count = 5, .priority = 1},
-    {.id = 3, .timeout_ms = 50,  .retry_count = 1, .priority = 3},
+struct Packet {
+    int header;
+    int len;
+    char data[]; // Flexible array member
 };
-
-// 获取数组元素个数
-size_t task_count = sizeof(config_table) / sizeof(config_table[0]);
 ```
 
-Traversing an array of structs is the same as traversing a plain array—you can use subscripts or pointers:
+`data` is an incomplete type array—it occupies no space in the struct (`sizeof(struct Packet)` does not include the size of `data`), but it tells the compiler "this struct may be followed by a contiguous block of memory." When using it, we need to manually allocate enough memory to hold the struct itself plus the data:
 
 ```c
-/// @brief 按优先级查找最高优先级任务的 ID
-uint8_t find_highest_priority(const TaskConfig* tasks, size_t count) {
-    uint8_t max_priority = 0;
-    uint8_t result_id = 0;
+struct Packet *pkt = malloc(sizeof(struct Packet) + 100);
+pkt->len = 100;
+strcpy(pkt->data, "Hello");
+```
 
-    for (size_t i = 0; i < count; i++) {
-        if (tasks[i].priority > max_priority) {
-            max_priority = tasks[i].priority;
-            result_id = tasks[i].id;
-        }
-    }
-    return result_id;
+Flexible array members are widely used in communication protocols, variable-length message handling, and packet parsing. In the early days of C, people used a trick called "struct hack" to achieve similar functionality—placing an array of length 1 (or 0) at the end of the struct and then allocating extra space. But that was undefined behavior; C99's FAM is the standard approach.
+
+One thing to note: structs containing flexible array members cannot be passed or copied by value—because the compiler doesn't know how large the tail data is. You can only operate on them through pointers.
+
+## Struct Arrays
+
+Combining structs and arrays is a very common way to organize data. For example, a configuration table, a set of sensor readings, or a message queue are essentially struct arrays:
+
+```c
+struct SensorData sensors[10];
+```
+
+Iterating over a struct array is the same as a normal array; you can use subscripts or pointers:
+
+```c
+for (int i = 0; i < 10; i++) {
+    sensors[i].value = 0.0f;
 }
 ```
 
-The memory layout of an array of structs is tightly packed—the size of each element is `sizeof(TaskConfig)` (including padding), and the address of the i-th element is `base + i * sizeof(TaskConfig)`. This is also why padding is needed at the end of a struct—if there were no padding, the fields of the second element in the array might be misaligned.
+Struct arrays are laid out tightly in memory—each element's size is `sizeof(struct)` (including padding), and the address of the i-th element is `base_address + i * sizeof(struct)`. This is why padding is needed at the end of a struct—without it, fields in the second element of the array might be misaligned.
 
 ## `__attribute__((packed))`: Removing Padding
 
-In some scenarios, we genuinely need a struct without any padding—the most typical case being binary communication protocols. The data received by an MCU (Microcontroller Unit) over UART/SPI/I2C is a tightly packed byte stream; if the struct has padding, directly casting a pointer to interpret it will yield incorrect values. GCC and Clang provide `__attribute__((packed))` to remove padding:
+There are scenarios where we truly need a struct without any padding—the most typical is binary communication protocols. Data received by an MCU via UART/SPI/I2C is a tightly packed byte stream. If the struct has padding, directly casting a pointer to interpret it will read incorrect values. GCC and Clang provide `__attribute__((packed))` to remove padding:
 
 ```c
-typedef struct __attribute__((packed)) {
-    uint8_t  header;
-    uint16_t length;
-    uint8_t  command;
-    uint32_t parameter;
-} PackedFrame;
-```
-
-With this attribute added, `sizeof(PackedFrame)` is a pure 1 + 2 + 1 + 4 = 8 bytes, with absolutely no padding. But be aware of the cost—accessing unaligned fields on some architectures will cause performance degradation or even a hardware exception. Therefore, `packed` should only be used when you genuinely need a compact layout, not sprinkled everywhere. The ARM Cortex-M series can handle unaligned access in most cases (with a performance penalty), but some older architectures (like the ARM7TDMI) will fault directly.
-
-A safer approach is: **use a packed struct at the communication layer to parse the raw bytes, then immediately convert it to an aligned internal struct for use**. This separates parsing from business logic, allowing each to get what it needs.
-
-## C++ Connections
-
-### Evolution from struct to class
-
-In C, a `struct` can only contain data members—no member functions, no access control, no inheritance. C++ retains the `struct` keyword but gives it almost the same capabilities as a `class`. The only difference lies in the default access specifier: members of a `struct` are `public` by default, while members of a `class` are `private` by default. Beyond that, a C++ `struct` can have constructors, destructors, member functions, inheritance, virtual functions—it can do anything.
-
-```cpp
-// C++ 中的 struct——可以有成员函数
-struct SensorReading {
-    uint32_t timestamp;
-    float temperature;
-    float humidity;
-
-    // 成员函数
-    bool is_overheating() const {
-        return temperature > 85.0f;
-    }
-
-    void print() const {
-        printf("T=%.1fC H=%.1f%%\n", temperature, humidity);
-    }
+struct __attribute__((packed)) ProtocolFrame {
+    char start;
+    int type;
+    short checksum;
 };
 ```
 
-So when you see `struct` in C++ code, do not assume it is the same as a C struct—it is simply a class with public default access.
+With this attribute, `sizeof(struct ProtocolFrame)` is a pure 1 + 4 + 2 = 7 bytes, with absolutely no padding. But be aware of the cost—accessing unaligned fields on some architectures can lead to performance degradation or even hardware exceptions. So `packed` should only be used when you genuinely need a compact layout, not scattered everywhere. ARM Cortex-M series can handle unaligned access in most cases (with a performance penalty), but some older architectures (like ARM7TDMI) will fault directly.
+
+A safer approach is: **use a packed struct at the communication layer to parse raw bytes, then immediately convert it to an aligned internal struct for use**. Separate parsing and business logic to get the best of both worlds.
+
+## C++ Transition
+
+### Evolution from struct to class
+
+In C, `struct` can only contain data members—no member functions, no access control, no inheritance. C++ retains the `struct` keyword but gives it almost the same capabilities as `class`. The only difference lies in default access rights: members of a `struct` default to `public`, while members of a `class` default to `private`. Beyond that, a C++ `struct` can have constructors, destructors, member functions, inheritance, virtual functions—it can do anything.
+
+```cpp
+struct Point {
+    double x, y;
+
+    void print() const; // Member function
+    Point(double x, double y); // Constructor
+};
+```
+
+So when you see `struct` in C++ code, don't assume it's the same as a C struct—it is simply a class with default public access.
 
 ### POD Types and Trivially Copyable
 
-C++ has a specific concept for "simple structs compatible with C": POD (Plain Old Data) types. Simply put, if a struct has no virtual functions, no non-trivial constructors or destructors, and all members are POD types, then it is itself a POD. POD types can be safely copied with `memcpy`, zeroed out with `memset`, and safely binary-serialized and deserialized—because their memory layout is completely consistent with C.
+C++ has a specific concept for "simple structs compatible with C": POD types (Plain Old Data). Simply put, if a struct has no virtual functions, no non-trivial constructor/destructor, and all members are POD types, then it is itself a POD. POD types can be safely copied with `memcpy`, zeroed with `memset`, and safely binary serialized and deserialized—because their memory layout is fully consistent with C.
 
-After C++11, the POD concept was refined into several more precise type traits: `is_trivially_copyable`, `is_standard_layout`, and so on. Understanding these concepts is very important in cross-language interaction (C/C++ mixed programming), binary serialization, and shared memory communication.
+After C++11, the concept of POD was refined into several more precise type traits: `std::is_trivial`, `std::is_standard_layout`, etc. Understanding these concepts is crucial in cross-language interaction (C/C++ mixed programming), binary serialization, and shared memory communication.
 
-### std::aligned_storage
+### `std::aligned_storage`
 
-The C++ standard library provides `std::aligned_storage` (from C++11 onward, replaced by `alignas` in C++23), which is a type trait tool used to manually control the alignment of a block of raw memory. It is used in advanced scenarios such as implementing type-erased containers, memory pools, and placement new:
+The C++ standard library provides `std::aligned_storage` (since C++11, deprecated in C++23 in favor of `std::uninitialized_buffer`), a type trait tool for manually controlling the alignment of a block of raw memory. It is used in advanced scenarios like implementing type-erased containers, memory pools, and placement new:
 
 ```cpp
-#include <type_traits>
-
-// 分配一块 64 字节对齐的原始内存
-alignas(64) std::byte storage[sizeof(MyStruct)];
-
-// 或者使用 std::aligned_storage（C++23 前的做法）
-using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct)>;
+std::aligned_storage<sizeof(Task), alignof(Task)>::type task_buffer;
 ```
 
-These concepts will be discussed in detail in later C++ chapters. For now, you just need to know that the approach to alignment control in C is implemented more systematically and safely in C++.
+These concepts will be discussed in detail in later C++ chapters. For now, just know: the C language approach to alignment control is implemented more systematically and safely in C++.
 
 ## Summary
 
-In this tutorial, we thoroughly broke down structs from "how to use them" to "what they look like in memory." Structs are the most core composite type in C, and understanding their memory layout—especially alignment and padding—is the foundation for writing efficient, correct, and portable code.
+In this tutorial, we thoroughly dissected structs from "how to use them" to "what they look like in memory." Structs are the core composite type in C, and understanding their memory layout—especially alignment and padding—is the foundation for writing efficient, correct, and portable code.
 
 ### Key Takeaways
 
-- [ ] Structs are defined with `typedef struct { ... } Name;`, and we use `->` to access members through a pointer
-- [ ] C99 designated initializers (`.field = value`) are safer and more readable than sequential initialization
-- [ ] The compiler inserts padding bytes between members and at the end of the struct to ensure each member is aligned
-- [ ] Ordering fields from largest to smallest alignment requirement reduces padding and saves memory
-- [ ] The `offsetof` macro can precisely verify the offset of a field
-- [ ] C11's `alignas`/`alignof` provide standardized alignment control capabilities
-- [ ] Flexible array members are used for variable-length trailing data and must be used via pointers and dynamic allocation
-- [ ] `__attribute__((packed))` removes padding for binary protocol parsing, but incurs performance and portability costs
-- [ ] C++'s `struct` is a `class` with default public access; POD types maintain a C-compatible memory layout
+- [ ] Structs are defined with `struct`, and pointers use `->` to access members.
+- [ ] C99 designated initializers `.field = val` are safer and more readable than sequential initialization.
+- [ ] The compiler inserts padding bytes between members and at the end of the struct to ensure alignment.
+- [ ] Ordering fields from largest to smallest alignment requirement can reduce padding and save memory.
+- [ ] The `offsetof` macro can precisely verify the offset of fields.
+- [ ] C11's `alignas`/`alignof` provide standardized alignment control capabilities.
+- [ ] Flexible array members are for variable-length tail data and must be used via pointers and dynamic allocation.
+- [ ] `__attribute__((packed))` removes padding for binary protocol parsing but has performance and portability costs.
+- [ ] C++'s `struct` is a `class` with default public access; POD types maintain a C-compatible memory layout.
 
 ## Exercises
 
-### Exercise: Design a Communication Protocol Frame with Manual Alignment Control
+### Exercise: Design a Manually Aligned Communication Protocol Frame
 
-Please design a binary protocol frame structure for embedded device communication. The requirements are as follows:
+Please design a binary protocol frame structure for embedded device communication. Requirements are as follows:
 
-1. The frame header contains a 1-byte start flag `0xAA`, a 1-byte frame type, a 2-byte payload length, and a 4-byte timestamp
-2. The payload section is variable-length data (use a flexible array member)
-3. The frame footer contains a 2-byte CRC16 checksum
-4. Use `_Alignas` to ensure the timestamp field is 4-byte aligned
-5. Use `__attribute__((packed))` to ensure the frame structure is compact (suitable for directly casting and parsing a byte stream)
-6. Write a function that uses `offsetof` to print the offset of each field to verify the layout
+1. The frame header contains a 1-byte start flag `0xAA`, 1-byte frame type, 2-byte payload length, and 4-byte timestamp.
+2. The payload is variable-length data (use a flexible array member).
+3. The frame tail contains a 2-byte CRC16 checksum.
+4. Use `alignas` to ensure the timestamp field is 4-byte aligned.
+5. Use `__attribute__((packed))` to ensure the frame structure is compact (suitable for direct cast parsing of byte streams).
+6. Write a function using `offsetof` to print the offset of each field to verify the layout.
 
 ```c
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-
-// TODO: 定义 Frame 结构体
-// typedef struct __attribute__((packed)) {
-//     ...
-// } Frame;
-
-// TODO: 实现 print_frame_layout() 函数
-// 使用 offsetof 打印每个字段的偏移量
-
-// TODO: 实现 create_frame() 函数
-// 分配内存并填充帧数据（含柔性数组成员）
-
-int main(void) {
-    print_frame_layout();
-
-    // TODO: 创建一个测试帧并验证偏移
-    return 0;
-}
+// TODO: Implement your protocol frame here
 ```
 
-Hint: Using `alignas` inside a packed struct requires care—packed removes automatic padding, but `alignas` can force the alignment of a specific field. Think about this: in a packed struct, if the offset from the frame header to the timestamp is not a multiple of 4, how would you handle it?
+Hint: Be careful when using `alignas` inside a packed struct—packed removes automatic padding, but `alignas` can force a specific field's alignment. Think about this: in a packed struct, if the offset from the frame header to the timestamp is not a multiple of 4, how would you handle it?
 
 ## References
 

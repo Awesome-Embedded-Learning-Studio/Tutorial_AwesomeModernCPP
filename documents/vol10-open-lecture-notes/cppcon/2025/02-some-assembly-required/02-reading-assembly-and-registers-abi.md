@@ -667,3 +667,8 @@ _Z9make_bigll:
 </ReferenceCard>
 
 ---
+
+## 延伸阅读
+
+- 想看懂不同优化级别（`-O0` / `-O2` / `-O3`）下编译器到底吐出什么汇编，见 [卷七·编译器选项](../../../../vol7-engineering/02-compiler-options.md)。
+- 想深入 SIMD/AVX 如何重塑汇编输出，见 [卷六·AVX/AVX2 深入](../../../../vol6-performance/avx-avx2-deep-dive.md)。

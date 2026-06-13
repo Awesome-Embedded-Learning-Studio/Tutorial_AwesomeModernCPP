@@ -922,31 +922,55 @@ struct Task {
 
 ## 常见的坑
 
-### 坑1：忘记显式定义==
+### 坑1：默认 == 不会反向生成 <=>（生成方向是单向的）
 
-在C++20中，`<=>`不会自动生成`==`运算符，必须显式定义：
+一个流传很广、但已经过时的说法是：「只写 `<=>` 不写 `==` 会编译报错」。这在 C++20 早期草案里一度成立，后来被 **P1185（Consistent defaulted comparisons，作为 C++20 缺陷报告落地）** 修正——`<=>` 和 `==` 的生成关系是**单向**的：
+
+- default `<=>` → 编译器顺手把 `==`、`!=`、`<`、`>`、`<=`、`>=` 全都生成出来。所以只写 `<=>` 完全够用，`==` 是「白送」的。
+- 反过来 default `==` → 只生成 `==` 和 `!=`，不会反向给你 `<=>` 或任何关系运算符。
+
+真正会踩的坑是后者：你以为「我只关心判等，default 一个 `==` 就够了」，结果哪天有人写了一句 `a < b`，编译直接炸——因为 `==` 不带关系运算。
 
 ```cpp
-// ❌ 错误：只有<=>，没有==
-struct Bad {
+#include <compare>
+#include <iostream>
+
+// ✅ 只 default <=>：== 和 < 都自动有了（旧说法里那个「编译错误」其实是错的）
+struct HasSpaceship {
     int value;
-    auto operator<=>(const Bad&) const = default;
-    // 缺少 bool operator==(const Bad&) const = default;
+    auto operator<=>(const HasSpaceship&) const = default;
 };
 
-Bad b1{1}, b2{1};
-// bool eq = (b1 == b2);  // 编译错误！
-
-// ✅ 正确：同时定义<=>和==
-struct Good {
+// ⚠️ 只 default ==：判等没问题，但拿不到 < / <=>
+struct HasEquality {
     int value;
-    auto operator<=>(const Good&) const = default;
-    bool operator==(const Good&) const = default;
+    bool operator==(const HasEquality&) const = default;
 };
 
-Good g1{1}, g2{1};
-bool eq = (g1 == g2);  // OK
+int main() {
+    HasSpaceship a{1}, b{2};
+    std::cout << (a == b) << (a < b) << '\n';   // OK：<=> 把 == 和 < 都生成出来了
+
+    HasEquality c{1}, d{2};
+    std::cout << (c == d) << '\n';              // OK：显式 default 了 ==
+    // std::cout << (c < d) << '\n';            // 编译错误：default == 不反向生成 <=>
+}
 ```
+
+实测（Arch Linux WSL，`-std=c++20`；g++ 16.1.1 与 clang++ 22.1.6 行为一致）：
+
+```text
+$ g++ -std=c++20 gotcha.cpp -o gotcha && ./gotcha
+01
+0
+$ g++ -std=c++20 -DTRY_LT gotcha.cpp
+gotcha.cpp: In function 'int main()':
+gotcha.cpp:23:21: error: no match for 'operator<' (operand types are 'HasEquality' and 'HasEquality')
+   23 |     std::cout << (c < d) << '\n';
+      |                   ~ ^ ~
+```
+
+一句话记法：`<=>` 是「上游」，`==` 是「下游」——上游会顺流送出所有运算符，下游只管自己那一亩三分地。只要你想要任何一种大小比较，就得有 `<=>`；只 default `==` 永远换不来 `<=>`。详见 cppreference「[Default comparisons](https://en.cppreference.com/mwiki/index.php?title=cpp/language/default_comparisons)」一节。
 
 ### 坑2：比较类别不一致
 

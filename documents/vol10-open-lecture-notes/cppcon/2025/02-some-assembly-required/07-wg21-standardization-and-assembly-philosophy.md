@@ -231,7 +231,7 @@ $ arm-none-linux-gnueabihf-gcc -static -march=armv7-a test.c && qemu-arm-static 
 qemu: uncaught target signal 4 (Illegal instruction) - core dumped
 ```
 
-验证代码见仓库：`code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-01-arm32-nv-condition.c`。
+验证代码见仓库：[05-01-arm32-nv-condition.c](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-01-arm32-nv-condition.c)。
 :::
 
 ## 正交性——ARM32 的设计哲学
@@ -249,7 +249,7 @@ qemu: uncaught target signal 4 (Illegal instruction) - core dumped
 我们可以亲手验证一下这个东西<RefLink :id="6" preview="Arm Developer, Condition Codes: Condition Flags and Codes" />。因为 NV 条件码只在 ARMv4 及更早版本中有效，我们需要明确指定架构版本。
 
 ::: details 为什么不能用 ARMv7？
-ARMv7-A 的有效条件码范围仅为 `0b0000`–`0b1110`。编码 `0b1111` 在 ARMv5+ 中被重新分配——它要么被解释为完全不同的指令（利用条件码位来扩展操作码空间），要么产生 UNPREDICTABLE 行为。在 ARMv7 上用 `.word 0xf3a0002a`，**不能保证**结果是"永不执行"。验证代码已放在仓库中（`code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-01-arm32-nv-condition.c`），读者可以自行在 ARMv4 和 ARMv7 目标上对比测试。
+ARMv7-A 的有效条件码范围仅为 `0b0000`–`0b1110`。编码 `0b1111` 在 ARMv5+ 中被重新分配——它要么被解释为完全不同的指令（利用条件码位来扩展操作码空间），要么产生 UNPREDICTABLE 行为。在 ARMv7 上用 `.word 0xf3a0002a`，**不能保证**结果是"永不执行"。验证代码已放在仓库中（[05-01-arm32-nv-condition.c](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-01-arm32-nv-condition.c)），读者可以自行在 ARMv4 和 ARMv7 目标上对比测试。
 :::
 
 环境是 Arch Linux WSL，交叉编译工具链用的 `arm-none-linux-gnueabihf-gcc`（Arm GNU Toolchain 15.2）。注意编译时需要用 `-march=armv4` 来确保 NV 条件码的语义：
@@ -470,7 +470,7 @@ g++ -O3 -march=x86-64-v2 -S /tmp/test.cpp -o /tmp/test.s
 grep pcmpeqb /tmp/test.s   # 无输出 = 没有向量化
 ```
 
-验证代码见仓库：`code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-04-count-char-vec.cpp`。
+验证代码见仓库：[05-04-count-char-vec.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-04-count-char-vec.cpp)。
 :::
 
 真实的 GCC 输出（简化后的核心循环）：
@@ -591,7 +591,7 @@ inline constexpr LogLevel log_error = LogLevel::Error;
 
 int main() {
     g_log_level = LogLevel::Debug;
-    
+
     // 这样调用，带逗号的表达式完全没问题
     log(log_debug, "value is {}", std::max(1, 2));
     log(log_info, "program started");
@@ -660,7 +660,7 @@ pi = 3.14159
 /tmp/test.cpp:7:34: error: call to consteval function 'is_little_endian()' is not a constant expression
 ```
 
-验证代码见仓库：`code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-02-consteval-endian-broken.cpp`（编译失败）和 `05-03-consteval-endian-fixed.cpp`（修正版，编译通过）。读者可以用 `g++ -std=c++20 05-02-consteval-endian-broken.cpp` 自行验证编译失败。
+验证代码见仓库：[05-02-consteval-endian-broken.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-02-consteval-endian-broken.cpp)（编译失败）和 [05-03-consteval-endian-fixed.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/02-some-assembly-required/05-03-consteval-endian-fixed.cpp)（修正版，编译通过）。读者可以用 `g++ -std=c++20 05-02-consteval-endian-broken.cpp` 自行验证编译失败。
 :::
 
 修正后有两种编译期判断字节序的方法：

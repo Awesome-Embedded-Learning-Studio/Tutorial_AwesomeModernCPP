@@ -1,7 +1,7 @@
 ---
-title: Three-Way Comparison Operator (C++20 Spaceship Operator)
-description: 'A detailed guide to the C++20 spaceship operator: simplifying comparison
-  logic for custom types'
+title: Three-way comparison operator (C++20 Spaceship Operator)
+description: 'Detailed Explanation of the C++20 Three-Way Comparison Operator: Simplifying
+  Comparison Logic for Custom Types'
 chapter: 11
 order: 5
 tags:
@@ -18,16 +18,16 @@ cpp_standard:
 platform: host
 translation:
   source: documents/vol4-advanced/05-spaceship-operator.md
-  source_hash: 309aec88ffa5b2e75764586a11abacfb46df85a90774f10b48f3e9ce25333e28
-  translated_at: '2026-05-26T11:39:30.086533+00:00'
+  source_hash: 968dba94e12efb78827b9f24621a35362acdf36dd79af278d44399a7a87cc4f6
+  translated_at: '2026-06-13T11:50:40.195404+00:00'
   engine: anthropic
-  token_count: 7027
+  token_count: 7328
 ---
-# Modern C++ for Embedded Systems — Three-Way Comparison Operator
+# Modern Embedded C++ Development — Three-Way Comparison Operator
 
 ## Introduction
 
-Have you ever struggled with comparison operators when writing embedded code?
+Have you ever found yourself frustrated with comparison operators while writing embedded code?
 
 ```cpp
 class SensorReading {
@@ -69,21 +69,21 @@ public:
 };
 ```
 
-This is a disaster! To implement a fully sortable type, we need to write six comparison operators, and they have complex interdependencies. Worse, if we modify member variables, we must update all these operators in sync.
+This is a disaster! To implement a fully sortable type, you need to write six comparison operators, and they have complex interdependencies. Worse yet, if you modify member variables, you must synchronize all these operators.
 
-The **three-way comparison operator** introduced in C++20, commonly known as the **spaceship operator** (Spaceship Operator `<=>`), was created to solve this problem.
+The **Three-way Comparison Operator** introduced in C++20, commonly known as the **Spaceship Operator** (`<=>`), was designed to solve this problem.
 
-> In a nutshell: **The three-way comparison operator automatically generates all six comparison operators from a single definition, drastically simplifying comparison logic for custom types.**
+> TL;DR: **The three-way comparison operator automatically generates all six comparison operators with a single definition, significantly simplifying comparison logic for custom types.**
 
 In embedded development, this feature is particularly useful:
 
 1. Sorting sensor data by time or priority
-2. Comparing firmware version numbers (complex versions with letter suffixes)
+2. Firmware version comparison (complex versions with alphanumeric suffixes)
 3. Lexicographical comparison of configuration parameters
-4. Sorting tasks in a priority queue
+4. Task sorting in priority queues
 
 ------
-**Warning**: As of 2024, GCC 10+, Clang 10+, and MSVC 2019+ fully support the three-way comparison operator. If we are using an older compiler, we may need to upgrade or use an alternative approach.
+**Warning**: As of 2024, GCC 10+, Clang 10+, and MSVC 2019+ fully support the three-way comparison operator. If your compiler is older, you may need to upgrade or use an alternative solution.
 
 ------
 
@@ -108,7 +108,7 @@ struct Point {
 };
 ```
 
-### Return Type
+### Return Value Type
 
 The return value of the three-way comparison operator is not `bool`, but rather a "comparison category" representing the result:
 
@@ -128,7 +128,7 @@ else { /* a > b */ }
 
 ### Testing Comparison Results
 
-The returned comparison category can be compared against 0, or we can use named methods:
+The returned comparison category can be compared against 0, or you can use named methods:
 
 ```cpp
 #include <compare>
@@ -151,15 +151,15 @@ int main() {
 ```
 
 ------
-**Best Practice**: Use `<`, `==`, and `>` directly to evaluate comparison results, rather than calling named methods. This keeps the code more concise and works with all comparison categories.
+**Best Practice**: Use `<`, `==`, and `>` directly to judge comparison results instead of calling named methods. This keeps code concise and works for all comparison categories.
 
 ------
 
-## Auto-Generating Comparison Functions
+## Automatic Generation of Comparison Functions
 
-### Using =default to Auto-Generate
+### Automatic Generation using =default
 
-The simplest approach is to use `= default` to let the compiler automatically generate all comparison operators:
+The simplest usage is to use `= default` to let the compiler automatically generate all comparison operators:
 
 ```cpp
 #include <compare>
@@ -178,7 +178,7 @@ struct SensorReading {
 };
 ```
 
-Now we can use all comparison operators:
+Now you can use all comparison operators:
 
 ```cpp
 SensorReading s1{1, 100, 1000};
@@ -204,7 +204,7 @@ std::sort(sensors.begin(), sensors.end());
 
 ### Comparison Order
 
-The default-generated `<=>` performs lexicographical comparison in the **order of member declaration**:
+The default generated `<=>` performs lexicographical comparison according to the **member declaration order**:
 
 ```cpp
 struct Version {
@@ -227,22 +227,22 @@ Version v3{1, 3, 0};
 ```
 
 ------
-**Note**: The order of member variables matters! If we want to compare in a specific order, we need to adjust the declaration order of the member variables.
+**Note**: The order of member variables matters! If you wish to compare in a specific order, you need to adjust the declaration order of the member variables.
 
 ------
 
-## Comparison Categories in Detail
+## Deep Dive into Comparison Categories
 
-C++20 defines three comparison categories to represent different strengths of comparison relationships.
+C++20 defines three comparison categories to represent comparison relationships of different strengths.
 
 ### strong_ordering: Strong Ordering
 
-`strong_ordering` represents the strongest comparison relationship, with the following properties:
+`strong_ordering` represents the strongest comparison relationship with the following properties:
 
 1. **Equivalence implies equality**: `a == b` if and only if all members of `a` and `b` are equal
-2. **Substitutability**: When `a == b`, `f(a) == f(b)` holds for any function `f`
+2. **Substitutability**: If `a == b`, then `f(a) == f(b)` holds for any function `f`
 
-Use cases: integers, strings, simple value types
+Use cases: Integers, strings, simple value types
 
 ```cpp
 #include <compare>
@@ -268,20 +268,20 @@ static_assert((c <=> a) == std::strong_ordering::greater);
 `std::strong_ordering` has three possible values:
 
 | Value | Meaning |
-|-------|---------|
+|-----|------|
 | `std::strong_ordering::less` | Less than |
 | `std::strong_ordering::equal` | Equal |
 | `std::strong_ordering::greater` | Greater than |
-| `std::strong_ordering::equivalent` | Equivalent (for strong ordering, identical to equal) |
+| `std::strong_ordering::equivalent` | Equivalent (for strong ordering, equivalent to equal) |
 
 ### partial_ordering: Partial Ordering
 
-`partial_ordering` represents cases where values may be "incomparable":
+`partial_ordering` represents cases where values might be "incomparable":
 
-1. Some values may not be comparable to each other (e.g., `NaN`)
+1. Some values cannot be compared (e.g., `NaN`)
 2. Equivalence does not imply equality
 
-Use cases: floating-point numbers (due to `NaN`), ranges with permissible values
+Use cases: Floating-point numbers (existence of `NaN`), ranges with allowed values
 
 ```cpp
 #include <compare>
@@ -311,7 +311,7 @@ static_assert((a <=> b) == std::partial_ordering::less);
 `std::partial_ordering` has four possible values:
 
 | Value | Meaning |
-|-------|---------|
+|-----|------|
 | `std::partial_ordering::less` | Less than |
 | `std::partial_ordering::equivalent` | Equivalent |
 | `std::partial_ordering::greater` | Greater than |
@@ -319,12 +319,12 @@ static_assert((a <=> b) == std::partial_ordering::less);
 
 ### weak_ordering: Weak Ordering
 
-`weak_ordering` falls between strong ordering and partial ordering:
+`weak_ordering` falls between strong and partial ordering:
 
 1. Equivalence does not imply equality (there may be indistinguishable alternative representations)
-2. But all values are comparable (no `unordered` exists)
+2. But all values are comparable (no `unordered`)
 
-Use cases: case-insensitive strings, comparisons that ignore certain fields
+Use cases: Case-insensitive strings, comparisons ignoring certain fields
 
 ```cpp
 #include <compare>
@@ -373,12 +373,12 @@ static_assert(!(s1 == s2));  // 不相等！
 `std::weak_ordering` has three possible values:
 
 | Value | Meaning |
-|-------|---------|
+|-----|------|
 | `std::weak_ordering::less` | Less than |
 | `std::weak_ordering::equivalent` | Equivalent |
 | `std::weak_ordering::greater` | Greater than |
 
-### Choosing Among the Three Comparison Categories
+### Choosing Between Comparison Categories
 
 ```cpp
 #include <compare>
@@ -440,11 +440,11 @@ graph TD
 ```
 
 ------
-**Important**: When using `= default`, the compiler automatically selects the most appropriate comparison category based on the member types. If all members support `strong_ordering`, the generated result is `strong_ordering`.
+**Important**: When using `= default`, the compiler automatically selects the most appropriate comparison category based on member types. If all members support `strong_ordering`, the generated result is `strong_ordering`.
 
 ------
 
-## Practical Embedded Scenarios
+## Embedded Scenarios in Practice
 
 ### Scenario 1: Sensor Data Priority Sorting
 
@@ -513,9 +513,9 @@ void message_queue_example() {
 }
 ```
 
-### Scenario 2: Firmware Version Number Comparison
+### Scenario 2: Firmware Version Comparison
 
-Firmware version numbers can have complex formats, such as letter suffixes:
+Firmware version numbers may have complex formats, such as alphanumeric suffixes:
 
 ```cpp
 #include <compare>
@@ -595,7 +595,7 @@ void version_comparison() {
 
 ### Scenario 3: Configuration Parameter Comparison (Allowing Partial Equality)
 
-In configuration systems, we might want to compare only certain key fields:
+In configuration systems, we might only want to compare specific key fields:
 
 ```cpp
 #include <compare>
@@ -661,7 +661,7 @@ void config_example() {
 
 ### Scenario 4: Sensor Data with NaN
 
-Some sensors may return invalid data (similar to the NaN concept):
+Some sensors might return invalid data (similar to the NaN concept):
 
 ```cpp
 #include <compare>
@@ -727,7 +727,7 @@ void sensor_with_invalid_values() {
 
 ### Scenario 5: Multi-Level Sensor Alerts
 
-Alert systems need to sort across multiple dimensions:
+Alert systems need sorting across multiple dimensions:
 
 ```cpp
 #include <compare>
@@ -806,11 +806,11 @@ void alarm_system() {
 
 ------
 
-## Custom Three-Way Comparison Implementations
+## Custom Three-Way Comparison Implementation
 
-### Manually Implementing Multi-Field Comparisons
+### Manual Multi-Field Comparison
 
-When the default lexicographical order doesn't meet our needs, we need to implement it manually:
+When the default lexicographical order doesn't meet requirements, manual implementation is needed:
 
 ```cpp
 #include <compare>
@@ -875,7 +875,7 @@ struct Task {
 };
 ```
 
-For C++20, we can implement a simple helper ourselves:
+For C++20, you can implement simple helpers yourself:
 
 ```cpp
 // C++20比较合成助手
@@ -923,41 +923,65 @@ struct Task {
 ```
 
 ------
-**Note**: C++23 provides more powerful comparison synthesis tools, such as `std::compare_three_way` and `std::compare_*_result`. Please refer to the latest standard library documentation when using them.
+**Note**: C++23 offers more powerful comparison synthesis tools, such as `std::compare_three_way` and `std::compare_*_result`. Please refer to the latest standard library documentation when using them.
 
 ------
 
 ## Common Pitfalls
 
-### Pitfall 1: Forgetting to Explicitly Define ==
+### Pitfall 1: Default == Does Not Reverse Generate <=> (Generation is One-Way)
 
-In C++20, `<=>` does not automatically generate the `==` operator; we must define it explicitly:
+A widespread but outdated claim is: "Writing only `<=>` without `==` causes a compilation error." This was briefly true in early C++20 drafts, but was later fixed by **P1185 (Consistent defaulted comparisons, adopted as a C++20 Defect Report)**—the generation relationship between `<=>` and `==` is **one-way**:
+
+- default `<=>` → The compiler conveniently generates `==`, `!=`, `<`, `>`, `<=`, and `>=`. So writing only `<=>` is fully sufficient; `==` comes "free".
+- Conversely, default `==` → Only generates `==` and `!=`, it will not reverse-generate `<=>` or any relational operators.
+
+The real pitfall is the latter: You think "I only care about equality, defaulting a `==` is enough," but then someone writes a `a < b` expression, and the compilation blows up—because `==` doesn't come with relational operators.
 
 ```cpp
-// ❌ 错误：只有<=>，没有==
-struct Bad {
+#include <compare>
+#include <iostream>
+
+// ✅ 只 default <=>：== 和 < 都自动有了（旧说法里那个「编译错误」其实是错的）
+struct HasSpaceship {
     int value;
-    auto operator<=>(const Bad&) const = default;
-    // 缺少 bool operator==(const Bad&) const = default;
+    auto operator<=>(const HasSpaceship&) const = default;
 };
 
-Bad b1{1}, b2{1};
-// bool eq = (b1 == b2);  // 编译错误！
-
-// ✅ 正确：同时定义<=>和==
-struct Good {
+// ⚠️ 只 default ==：判等没问题，但拿不到 < / <=>
+struct HasEquality {
     int value;
-    auto operator<=>(const Good&) const = default;
-    bool operator==(const Good&) const = default;
+    bool operator==(const HasEquality&) const = default;
 };
 
-Good g1{1}, g2{1};
-bool eq = (g1 == g2);  // OK
+int main() {
+    HasSpaceship a{1}, b{2};
+    std::cout << (a == b) << (a < b) << '\n';   // OK：<=> 把 == 和 < 都生成出来了
+
+    HasEquality c{1}, d{2};
+    std::cout << (c == d) << '\n';              // OK：显式 default 了 ==
+    // std::cout << (c < d) << '\n';            // 编译错误：default == 不反向生成 <=>
+}
 ```
+
+Tested (Arch Linux WSL, `-std=c++20`; g++ 16.1.1 and clang++ 22.1.6 behavior consistent):
+
+```text
+$ g++ -std=c++20 gotcha.cpp -o gotcha && ./gotcha
+01
+0
+$ g++ -std=c++20 -DTRY_LT gotcha.cpp
+gotcha.cpp: In function 'int main()':
+gotcha.cpp:23:21: error: no match for 'operator<' (operand types are 'HasEquality' and 'HasEquality')
+   23 |     std::cout << (c < d) << '\n';
+      |                   ~ ^ ~
+```
+
+A one-sentence mnemonic: `<=>` is "upstream", `==` is "downstream"—upstream sends all operators downstream, while downstream only minds its own business. As long as you want any kind of magnitude comparison, you need `<=>`; only defaulting `==` will never get you `<=>`. See cppreference section "[Default comparisons](https://en.cppreference.com/mwiki/index.php?title=cpp/language/default_comparisons)".
 
 ### Pitfall 2: Inconsistent Comparison Categories
 
-When implementing manually, the returned comparison categories must be consistent:
+When implementing manually, ensure the returned comparison categories are consistent:
 
 ```cpp
 // ❌ 错误：混合不同的比较类别
@@ -1003,9 +1027,9 @@ struct BetterCompare {
 };
 ```
 
-### Pitfall 3: Comparisons in Inheritance Hierarchies
+### Pitfall 3: Comparison in Inheritance Hierarchies
 
-Using `= default` in an inheritance hierarchy requires care:
+Using `= default` in inheritance hierarchies requires caution:
 
 ```cpp
 struct Base {
@@ -1035,7 +1059,7 @@ DerivedWithNew d2{1, 2};
 
 ### Pitfall 4: The Floating-Point NaN Problem
 
-`NaN` (Not a Number) in floating-point numbers causes the comparison result to be `unordered`:
+Floating-point `NaN` (Not a Number) causes comparison results to be `unordered`:
 
 ```cpp
 #include <cmath>
@@ -1068,7 +1092,7 @@ struct SafeFloat {
 
 ### Pitfall 5: Compiler Support Issues
 
-The three-way comparison operator requires a relatively recent compiler:
+The three-way comparison operator requires a relatively new compiler:
 
 ```cpp
 // 检查编译器支持
@@ -1089,7 +1113,7 @@ The three-way comparison operator requires a relatively recent compiler:
 #endif
 ```
 
-For projects that need to support older compilers, we can use macros for conditional compilation:
+For projects needing to support older compilers, you can use macros for conditional compilation:
 
 ```cpp
 #if __cpp_spaceship  // 或者 __cplusplus >= 202002L
@@ -1133,7 +1157,7 @@ For projects that need to support older compilers, we can use macros for conditi
 
 ------
 
-## Related C++20 Updates
+## C++20 Related Updates
 
 ### Rewriting Common Comparison Operators
 
@@ -1197,7 +1221,7 @@ void algorithm_example() {
 
 ### Key Types for Associative Containers
 
-The default-generated `<=>` enables a type to be used as a key in associative containers:
+The default generated `<=>` allows types to be used as keys in associative containers:
 
 ```cpp
 #include <map>
@@ -1224,38 +1248,38 @@ keys.insert({"Network", "IP"});
 ```
 
 ------
-**Note**: Before C++20, associative containers used `std::less` (which requires `operator<`). C++20 introduced `std::compare_three_way`, which can use `<=>` for comparisons. However, for compatibility, most implementations still use `operator<`.
+**Note**: Prior to C++20, associative containers used `std::less` (requiring `operator<`). C++20 introduced `std::compare_three_way`, which can use `<=>` for comparison. However, for compatibility, most implementations still use `operator<`.
 
 ------
 
 ## Run Online
 
-Experience the C++20 three-way comparison operator's default generation, custom version number comparison, and partial_ordering online:
+Experience C++20's three-way comparison operator default generation, custom version comparison, and partial_ordering online:
 
 <OnlineCompilerDemo
   title="C++20 Three-Way Comparison Operator (Spaceship)"
   source-path="code/examples/vol34567/08_spaceship.cpp"
-  description="Experience default <=> auto-generation, custom version number comparison, and partial_ordering"
+  description="Experience default <=> generation, custom version comparison, and partial_ordering"
   allow-run
 />
 
-Looking back, we can see that the three-way comparison operator is an important feature introduced in C++20, drastically simplifying comparison logic for custom types:
+Let's look back one more time: The three-way comparison operator is an important feature introduced in C++20 that significantly simplifies comparison logic for custom types:
 
 **Core Concepts**:
 
 | Concept | Description |
-|---------|-------------|
-| `<=>` operator | Three-way comparison operator; a single definition automatically generates all six comparison operators |
-| Comparison categories | `strong_ordering`, `weak_ordering`, `partial_ordering` |
-| `= default` | Lets the compiler automatically generate comparison logic |
-| Comparison order | Defaults to lexicographical comparison in the order of member declaration |
+|-----|------|
+| `<=>` operator | Three-way comparison operator, defines once to auto-generate all six comparison operators |
+| Comparison Categories | `strong_ordering`, `weak_ordering`, `partial_ordering` |
+| `= default` | Let the compiler automatically generate comparison logic |
+| Comparison Order | Default lexicographical comparison by member declaration order |
 
-**Choosing a Comparison Category**:
+**Comparison Category Selection**:
 
 | Category | Characteristics | Use Cases |
-|----------|-----------------|-----------|
+|-----|------|---------|
 | `strong_ordering` | Equivalence implies equality | Integers, enums, simple value types |
-| `weak_ordering` | Equivalent but not equal | Case-insensitive strings, comparisons ignoring certain fields |
+| `weak_ordering` | Equivalence does not imply equality | Case-insensitive strings, comparisons ignoring fields |
 | `partial_ordering` | Possibly incomparable | Floating-point numbers (NaN) |
 
-The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with features we've covered earlier like auto, structured bindings, and attributes, modern C++ has evolved into a powerful and expressive systems programming language. In embedded development, using these features judiciously makes code clearer and easier to maintain.
+The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with previously learned features like auto, structured binding, and attributes, modern C++ has evolved into a powerful and expressive system programming language. In embedded development, rational use of these features can make code clearer and easier to maintain.

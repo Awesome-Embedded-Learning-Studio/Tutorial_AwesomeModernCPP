@@ -1,6 +1,6 @@
 ---
 title: Compilers, Toolchains, and Project Design Baselines
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
 conference: cppcon
 conference_year: 2025
 talk_title: 'C++: Some Assembly Required'
@@ -20,281 +20,250 @@ chapter: 2
 order: 6
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/06-toolchain-and-project-design.md
-  source_hash: 785fd22acb2fbd9570aed5010e48a4ecea572db0cb90cbd1072483bbf7766425
-  translated_at: '2026-05-26T11:15:52.905116+00:00'
+  source_hash: 48cea3f59be3f3407d4ebe4296f2a3d9d0c0984515c0903ff237dd833323c7b4
+  translated_at: '2026-06-13T11:48:31.424972+00:00'
   engine: anthropic
-  token_count: 3237
+  token_count: 3268
 ---
-# The C++ Assembly Project: Compilers, Toolchains, and Those "Non-Standard but Excellent" Libraries
+# The C++ Assembly Project: Compilers, Toolchains, and "Non-Standard but Excellent" Libraries
 
-Many developers' understanding of the C++ ecosystem stops at "the language itself plus the standard library" — write code, compile, run, done. But if we trace the entire engineering workflow, the C++ language itself is just one small piece. To actually assemble a set of components into something that runs, we need far more than just C++ syntax. Today, we want to talk about this "assembly" process and the infrastructure that supports it.
+Many programmers' understanding of the C++ ecosystem stops at "the language itself plus the standard library"—write code, compile, run, done. But if we walk through the entire engineering workflow, we realize that the C++ language itself is just a small piece of the whole project. To actually assemble a set of components into something that runs, we need much more than just C++ syntax. Today, I want to discuss this "assembly" process and the infrastructure that supports it.
 
-## First, a mindset correction: not all great things make it into the standard
+## First, a Correction: Not All Good Things Enter the Standard
 
-Many people harbor a deep-rooted misconception that if a library is good enough and important enough, it "should" be adopted into the standard library. For example, seeing `std::optional` land in C++17<RefLink :id="2" preview="std::optional (C++17)" /> and `std::format` land in C++20<RefLink :id="3" preview="std::format (C++20)" />, they naturally assume this is the ultimate destination for all excellent libraries. But that's simply not how it works.
+Many people have a deep-seated misconception that if a library is good enough and important enough, it "should" be included in the standard library. For example, seeing `std::optional` enter C++17<RefLink :id="2" preview="std::optional (C++17)" /> and `std::format` enter C++20<RefLink :id="3" preview="std::format (C++20)" />, they take it for granted that this is the destination for all excellent libraries. But in reality, that's not how it works at all.
 
-The standardization process has its own logic and thresholds. Some library patterns might not be suitable for the standard at all, or the maintainers may never have intended to submit them — they exist as independent, high-quality libraries, ready to be used directly. The most typical example is Abseil<RefLink :id="4" preview="Google Abseil C++ 库" />, Google's open-source C++ library collection packed with highly practical components like enhanced versions of `absl::StatusOr`, `absl::Span`, and `absl::string_view`. They haven't entered the standard, nor do they need to, but their quality is top-notch, and many production environments rely on them.
+The standardization process has its own logic and thresholds. Some library patterns may simply be unsuitable for the standard, or the maintainers never intended to send them there—they exist as independent, high-quality libraries that you can just use directly. The most typical example is Abseil<RefLink :id="4" preview="Google Abseil C++ Libraries" />. This set of C++ libraries open-sourced by Google contains many very practical components, like enhanced versions of `optional`, `span`, and `string_view`. They haven't entered the standard, nor do they need to, but their quality is extremely high, and they are used in many production environments.
 
-Another point worth noting: it's not only massive projects backed by large corporations that make it into the standard. Small consortia or even individuals can get code into the standard, provided their proposals are solid and well-argued. Of course, alliances formed by GPU vendors and large HPC institutions do have strong pushing power, which is why things like parallel computing and SIMD have advanced so quickly in the standard. But the key point is that the channel is open — it's not a game exclusively for giants.
+Another point worth noting: It's not only massive projects backed by big companies that can enter the standard. Small alliances or even individuals, as long as their proposal quality is solid and the argument is sufficient, can get code into the standard. Of course, alliances formed by GPU vendors and large HPC institutions do have strong push on the standard, so things like parallel computing and SIMD have advanced particularly quickly. But the key is that the channel is open; it's not just for giants.
 
-So the right mindset should be: stop staring at the standard library waiting for "official solutions," and instead actively seek out those mature, high-quality third-party libraries. Although the C++ ecosystem lacks a centralized distribution system like Rust's crates.io, making library discovery a bit more effortful, great libraries do exist.
+So the correct mindset should be: Stop staring at the standard library waiting for "official solutions," and instead actively seek out those mature, high-quality third-party libraries. Although the C++ ecosystem isn't as centralized as Rust's crates.io and finding libraries is indeed a bit harder, the good stuff is out there.
 
-## The real assembly begins only after you finish writing code
+## The Real Assembly Starts After the Code is Written
 
-Alright, let's assume we've selected our components and finished writing the code. What's next? Turning C++ code into an executable requires far more than just C++ itself.
+Okay, let's assume we've selected our components and written the code. What's next? Turning C++ code into an executable file requires much more than just C++.
 
-First, we need a compiler. We're actually incredibly lucky right now to have three major players at our disposal: GCC, Clang, and MSVC, plus EDG<RefLink :id="5" preview="EDG 商业 C++ 前端" /> (mainly used for standard conformance testing and certain commercial scenarios). These compilers are all high quality, and some of them are open-source projects maintained by the community. You might take this for granted, but a look back at history shows just how far we've come.
+First, we need a compiler. We are actually quite lucky now to have three major players: GCC, Clang, and MSVC, plus EDG<RefLink :id="5" preview="EDG C++ Front End" /> (mainly used for standard compliance testing and certain commercial scenarios). These compilers are high quality, and some of them are open-source projects maintained by the community. You might take this for granted, but looking back at history shows how far we've come.
 
-The earliest C++ compiler was essentially Cfront<RefLink :id="6" preview="Cfront: 最早的 C++ 编译器" />, written by Bjarne Stroustrup — a C++-to-C translator that took C++ code, converted it to C code, and then fed that intermediate output to a regular C compiler. C++ originally "parasitized" the C compilation infrastructure.
+The earliest C++ compilers were essentially Cfront<RefLink :id="6" preview="Cfront: The Original C++ Compiler" /> written by Bjarne Stroustrup—a C++ to C translator. It took C++ code, converted it into C code, and then used a normal C compiler to compile that intermediate product. C++ was initially "parasitic" on C's compilation infrastructure.
 
-Today, things are completely different. Both GCC and Clang have mature C++ frontends, and their support for various standard versions keeps improving. My current primary environment is GCC 16.1.1 running on Arch Linux WSL, with Clang 17 used for cross-validation, and occasionally MSVC 19.38 on Windows to ensure cross-platform compatibility. I've stepped on quite a few landmines regarding toolchain versions, which I'll cover in a separate post.
+Now, of course, it's completely different. GCC and Clang both have mature C++ frontends, and support for various standard versions is getting better and better. My current main environment is GCC 16.1.1 on Arch Linux WSL, with Clang 17 for cross-validation, and occasionally MSVC 19.38 on Windows to ensure cross-platform compatibility. I've stepped into quite a few pits with toolchain versions; I'll write a separate post about that later.
 
-But the compiler is only the first step. After compiling individual translation units into object files, we need a linker to stitch them together. Many people have used C++ for years without ever giving the linker a second glance — because in most cases, a single `g++ main.cpp other.cpp` command gets the job done, and the linker works silently in the background, its presence barely felt. That is, until you hit a bizarre ODR (one definition rule) violation causing a link error — the same inline function expanded into different versions in two translation units, and the linker throws a completely incomprehensible symbol conflict. Only then do you realize just how complex and important the linker really is.
+But the compiler is just the first step. After compiling individual translation units into object files, we need a linker to stitch them together. Many people have used C++ for years without giving the linker a second thought—because in most cases, a single `g++` command handles it, and the linker works silently in the background, unnoticed. It's not until you encounter a weird ODR (One Definition Rule) violation causing a linker error—where an inline function expands into different versions in two translation units, and the linker reports an incomprehensible symbol conflict—that you realize how complex and important the linker really is.
 
-The core point here is this: when people complain that "C++ is hard to use," they're often not complaining about the C++ language itself, but about some环节 in this assembly process — maybe the compiler spewed a screenful of incomprehensible template errors, maybe the linker can't find a symbol, or maybe they don't know how to integrate a third-party library correctly. If we break these steps down, each one has corresponding tools and solutions; they're just scattered everywhere, waiting to be assembled by you.
+The core point is: When complaining that "C++ is hard to use," often what you're actually complaining about isn't the C++ language itself, but some part of this assembly process. It might be the compiler spitting out a screen full of unintelligible template errors, or the linker not finding symbols, or not knowing how to integrate third-party libraries correctly. If we break down these steps, each has corresponding tools and solutions; they are just scattered around and need to be assembled yourself.
 
-## A simple example to experience "assembly"
+## A Simple Example to Experience "Assembly"
 
-Here's a tiny example that doesn't involve any complex logic — it simply demonstrates what the compiler and the linker each do during the process of going from "multiple source files" to "one executable."
+Here is a very small example. It doesn't involve any complex logic; it just demonstrates what the compiler and linker are doing respectively in the process of turning "multiple source files" into "one executable file."
 
-First is the header file `math_utils.h`, which just declares a function:
+First is the header file `math_utils.h`, just declaring a function:
 
 ```cpp
 // math_utils.h
-// constexpr 函数隐式 inline（[dcl.constexpr]/1），因此可以放在头文件中
-// 而不会违反 ODR——编译器也可能在编译期直接求值
-constexpr int square(int x) {
-    return x * x;
-}
-
-// 这个函数有定义，放在头文件里，inline 防止 ODR 违规
-inline int add_one(int x) {
-    return x + 1;
-}
+#pragma once
+int add(int a, int b);
 ```
 
-Then there's another header file `format_utils.h`, which depends on the `math_utils.h` above:
+Then is another header file `utils.h`, which depends on the `add` above:
 
 ```cpp
-// format_utils.h
+// utils.h
+#pragma once
 #include "math_utils.h"
-#include <string>
-
-// 把计算结果格式化成字符串
-// 这里故意不用 std::format（C++20），用 to_string 保持简单
-inline std::string describe(int x) {
-    return "value=" + std::to_string(add_one(square(x)));
-}
+void print_add(int a, int b);
 ```
 
 Finally, `main.cpp`:
 
 ```cpp
 // main.cpp
-#include "format_utils.h"
-#include <iostream>
-
+#include "utils.h"
 int main() {
-    int input = 5;
-    std::cout << describe(input) << std::endl;
+    print_add(1, 2);
     return 0;
 }
 ```
 
-This example is almost absurdly simple, but that makes it perfect for demonstrating the step-by-step execution of the compilation process. You can manually control each step with the following commands:
+This example is so simple it's silly, but it's perfect for demonstrating the step-by-step execution of the compilation process. You can manually control every step with the following commands:
 
 ```bash
-# 第一步：只预处理，看编译器看到了什么
+# Step 1: Preprocess (stop after preprocessing)
 g++ -E main.cpp -o main.ii
 
-# 第二步：只编译不链接，生成目标文件
+# Step 2: Compile to assembly (stop after compilation, skip assembly)
+g++ -S main.cpp -o main.s
+
+# Step 3: Assemble to object file
 g++ -c main.cpp -o main.o
+g++ -c utils.cpp -o utils.o
 
-# 第三步：链接（这个例子只有一个 .o，所以链接很简单）
-g++ main.o -o main
-
-# 运行
-./main
-# 输出：value=26
+# Step 4: Link object files to executable
+g++ main.o utils.o -o my_app
 ```
 
-If you use `-E` to inspect the preprocessed `main.ii` file, you'll find that the contents of `math_utils.h` and `format_utils.h` have both been expanded into it. This is why function definitions in header files need `inline` or `constexpr`<RefLink :id="7" preview="constexpr 隐式 inline" /> — otherwise, if two different `.cpp` files both include the same header, the linker will see two copies of the function definition and immediately flag an ODR violation.
+If you use `cat` to look at the preprocessed `main.ii` file, you'll see the contents of `stdio.h` and `math_utils.h` have all been expanded into it. This is why function definitions in header files need `inline` or `constexpr`<RefLink :id="7" preview="constexpr implicitly inline" />—otherwise, if two different `.cpp` files include the same header file, the linker will see two copies of the function definition and report an ODR violation directly.
 
-There's a common misconception about `inline`: many people think it's merely a "hint suggesting the compiler inline the function." But in reality, the true purpose of `inline` in C++ is to allow the same function to be defined in multiple translation units without violating the ODR<RefLink :id="8" preview="inline 关键字与 ODR 豁免" />. Whether the compiler performs inline optimization is entirely up to it, and it has no necessary connection to whether you say `inline` or not.
+A common misconception about `inline` exists: many people think it's just a hint to "suggest the compiler inline." But actually, `inline`'s true role in C++ is to allow the same function to be defined in multiple translation units without violating the ODR<RefLink :id="8" preview="inline keyword and ODR exemption" />. Inline optimization is whatever the compiler wants to do; it has no necessary relationship to whether you say `inline` or not.
 
-## Compiler selection: current practice
+## Compiler Selection: Current Practice
 
-My daily development relies primarily on GCC, supplemented by Clang. The reason is simple: GCC has the best ecosystem on Linux, and I'm familiar with its error messages. Clang's error diagnostics are genuinely friendlier in certain scenarios (especially template-related ones), so when I encounter an error I can't decipher, I switch to Clang and compile again to look at the problem from a different angle.
+Daily development is basically GCC-centric, with Clang as a backup. The reason is simple: GCC has the best ecosystem on Linux, and I'm familiar with its error messages; Clang's error hints are indeed friendlier than GCC in some scenarios (especially templates), so when I encounter an error I don't understand, I switch to Clang to compile again, looking at the problem from another angle.
 
 ```bash
-# 同一份代码，用两个编译器各编一次，对比报错信息
-g++ -std=c++20 -Wall -Wextra main.cpp -o main_gcc
-clang++ -std=c++20 -Wall -Wextra main.cpp -o main_clang
+# Compile with GCC
+g++ main.cpp -o main_gcc -Wall -Wextra
+
+# Compile with Clang
+clang++ main.cpp -o main_clang -Wall -Wextra
 ```
 
-I strongly recommend building this habit. For the same compilation error, GCC might spit out a full screen of template instantiation backtraces, while Clang can sometimes pinpoint the issue more concisely. The reverse is also true — sometimes GCC explains things more clearly. Cross-validating with two compilers saves a lot of time.
+I strongly recommend forming this habit. For the same compilation error, GCC might spit out a screen of template instantiation backtraces, while Clang can sometimes point out the problem in a more concise way. The reverse is also true; sometimes GCC is clearer. Cross-validating with two compilers can save a lot of time.
 
-I use MSVC less often, but if a project needs to be cross-platform, occasionally compiling with MSVC on Windows is absolutely necessary. Different compilers occasionally have subtle differences in their interpretation of the standard, and discovering these early is far better than encountering problems after deployment.
+I use MSVC less, but if the project needs to be cross-platform, compiling with MSVC on Windows occasionally is very necessary. Different compilers occasionally have subtle differences in interpreting the standard; discovering them earlier is better than having problems after going live.
 
 ---
 
-# Editors and Build Systems: From "Good Enough to Write In" to the Pitfalls of Modules
+# Editors and Build Systems: From "Just Works" to the Pitfalls of Modules
 
-## Editors: please help me understand this code
+## Editors: Please Help Me Understand This Code
 
-When it comes to editor choices, many people have taken quite a long detour. When I first started learning C++, I used VS Code with a rudimentary C/C++ extension — code completion would often take forever to pop up, and error messages were always red squiggly lines that didn't speak human. At the time, I even thought, "I guess C++ development is just like this; editors can't help you much." Later, when I saw CLion's code completion, refactoring, and real-time static analysis, it hit me — it wasn't that C++ was incapable, it was that the tool was inadequate.
+Regarding editor selection, many people have indeed taken a long detour. When I started learning C++, I used VS Code with a rudimentary C/C++ plugin. Code completion took forever to pop up, and error messages were always red squiggles that didn't speak human. I even thought "C++ development is just like this; editors can't help you much." Later, seeing CLion's code completion, refactoring, and real-time static analysis, I realized—it's not that C++ is bad, it's that the tools were bad.
 
-But I don't want to start an "editor holy war" here. I just want to say one thing: **never mix spaces and tabs**. I once took over a project where spaces and tabs were interleaved. In the editor, the indentation looked perfectly normal, but once pushed to CI, the formatting was completely garbled, and the error locations didn't match the actual code. Ever since then, I always configure `.clang-format` in my projects, enforcing spaces uniformly and leaving no room for mixing.
+But I don't want to start an "editor war" here. I just want to say one thing: **Never mix spaces and tabs**. I once took over a project where spaces and tabs were mixed. The indentation looked completely normal in the editor, but once pushed to CI, the formatting was all messed up, and error lines didn't match the actual code. Since then, I always configure `.editorconfig` in projects to unify spaces, leaving no room for mixing.
 
-Speaking of the editor ecosystem, we're actually at a very interesting stage right now. Terminal-dwelling Vim/Neovim users can achieve an experience very close to that of an IDE through clangd + LSP, with code completion, go-to-definition, and hover documentation all readily available. But personally, CLion works out of the box, its CMake integration is native-level, and creating a new project with a configured CMakeLists.txt lets you hit run immediately — no need to spend two days configuring an editor. Time should be spent understanding C++, not configuring editors.
+Speaking of the editor ecosystem, we are actually at a very interesting stage now. Terminal Vim/Neovim users can achieve an experience very close to an IDE via clangd + LSP, with code completion, go-to-definition, and hover docs all available. But personally, CLion is ready-to-use with native-level CMake integration. Create a new project, configure `CMakeLists.txt`, click run, and it goes—no need to spend two days configuring the editor. Time should be spent understanding C++, not configuring the editor.
 
-Lately, however, I've been running into a scenario more and more frequently where no editor can help. I'll write a piece of fairly complex logic using several lambda expressions for callback registration. At the time, it feels crystal clear. Three days later, I come back and have absolutely no idea what that code is doing. I even pasted the code into CLion's built-in AI assistant and asked it to explain — after reading the explanation, I was still only half-understanding. What does this tell us? It tells us that tools can help you write code and find bugs, but they can't help you **think**. Code readability ultimately depends on the design of abstraction layers. I've fallen into this trap way too many times.
+However, I've recently encountered a scenario more and more frequently where no editor can help. I write a piece of complex logic using several lambdas for callback registration. It feels very clear when writing it, but three days later, looking back, I have no idea what that code is doing. I even pasted the code to CLion's built-in AI assistant to explain it, and after reading the explanation, I still only half-understood. What does this show? It shows that tools can help you write code and find bugs, but they can't help you **think**. Code readability ultimately relies on the design of abstraction layers; I've stepped in this pit too many times.
 
-## Build systems: thought CMake was the hardest, until I met Modules
+## Build Systems: Thought CMake Was Hard, Until I Touched Modules
 
-If the editor is the "experience of writing code," then the build system is the "experience of getting code to run." And in C++, how should I put it — this experience often makes you want to smash your keyboard.
+If the editor is the "writing experience," then the build system is the "running experience," and in C++, well, this experience often makes you want to smash your keyboard.
 
-I used to think CMake was torturous enough. Things like the `target_link_libraries` parameter passing style, whether to use `PUBLIC` `PRIVATE` or `INTERFACE`, and how to troubleshoot when `find_package` can't find a package — it took me over half a year to become reasonably proficient. But no matter how hard CMake is, it's at least something where "study it and you can get started." The documentation may read like hieroglyphics, but at least it exists.
+I used to think CMake was torture enough. What kind of argument passing, whether to use `target_link_libraries`, `target_include_directories`, or `target_compile_options`, how to troubleshoot when `find_package` can't find a package—it took more than half a year to get proficient. But as hard as CMake is, it's at least something you can "learn and get started with," and although the documentation reads like a heavenly book, at least there is documentation.
 
-Then I tried C++20 Modules. When I first heard about Modules, I was thrilled — finally, no more suffering through the compilation speed issues of header inclusion. Then I actually tried it — first of all, CMake's support for Modules in early versions was extremely rough. You had to manually specify how `.cppm` files were compiled into module interface units and module implementation units, and the module file formats differed between compilers: GCC uses `.gcm`<RefLink :id="9" preview="GCC 模块缓存 .gcm" />, Clang uses `.pcm`<RefLink :id="10" preview="Clang 预编译模块 .pcm" />, and MSVC uses yet another format. Then there's the circular dependency problem. In the traditional header era, you could use forward declarations to break circular dependencies, but in the Modules world, this approach doesn't quite work the same way. I was stuck on this for three days, only to realize that my understanding of "module partitions" was fundamentally wrong.
+Until I tried C++20 Modules. When I first heard about Modules, I was excited, thinking finally I wouldn't have to suffer the slow compilation speed of header inclusion. Then I tried it—first of all, CMake's support for Modules in early versions was very rough. You had to manually specify how `.cpp` files compile into module interface units vs. module implementation units. Module file formats differed between compilers: GCC uses `.gcm`<RefLink :id="9" preview="GCC module cache .gcm" />, Clang uses `.pcm`<RefLink :id="10" preview="Clang precompiled module .pcm" />, and MSVC uses another set. Then you hit circular dependency issues. In the traditional header era, you could use forward declarations to break circular dependencies, but in the Modules world, this approach isn't quite the same. I was stuck on this pit for three days, finally realizing my understanding of "module partitions" was simply wrong.
 
-Here's a minimal working example I cobbled together at the time. The code itself isn't complex, but getting it to work took an entire weekend:
+Here is a minimal runnable example I折腾 out at the time. The example itself isn't complex, but getting it working took a whole weekend:
 
 ```cpp
-// math_utils.cppm (模块接口单元)
-module;
-#include <cmath>  // module 声明之前的 #include 是全局模块片段<RefLink :id="11" preview="C++20 全局模块片段" />，这里放传统头文件
-export module math_utils;  // 声明模块名
+// math.ixx (module interface)
+export module math;
 
-export double compute_sqrt(double x) {
-    return std::sqrt(x);
-}
-
-export namespace stats {
-    double mean(const double* data, size_t count) {
-        double sum = 0.0;
-        for (size_t i = 0; i < count; ++i) {
-            sum += data[i];
-        }
-        return sum / count;
-    }
+export int add(int a, int b) {
+    return a + b;
 }
 ```
 
 ```cpp
-// main.cpp (消费者)
-import math_utils;  // 不是 #include，是 import
-#include <iostream>
+// import math module and use it
+import std;
+import math;
 
 int main() {
-    std::cout << "sqrt(16) = " << compute_sqrt(16.0) << "\n";
-    double data[] = {1.0, 2.0, 3.0, 4.0, 5.0};
-    std::cout << "mean = " << stats::mean(data, 5) << "\n";
+    std::cout << "3 + 5 = " << add(3, 5) << std::endl;
     return 0;
 }
 ```
 
 ```cmake
-# CMakeLists.txt
 cmake_minimum_required(VERSION 3.28)
-project(module_test CXX)
+project(MathModuleExample LANGUAGES CXX)
 
-# 必须显式开启，而且不同编译器行为有差异
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MODULE_EXPERIMENTAL YES "YES" "NO" "NO")
 
-add_executable(module_test main.cpp math_utils.cppm)
-target_compile_features(module_test PRIVATE cxx_std_20)
+add_executable(app
+    main.cpp
+)
+
+# CMake 3.28+ handles module dependencies automatically if configured correctly
+target_sources(app PUBLIC
+    FILE_SET CXX_MODULES FILES math.ixx
+)
 ```
 
-You see, the code itself is actually very intuitive — `export` marks what's publicly visible, `import` replaces `#include`, and conceptually it's much cleaner than headers. But to get these few lines running, you need CMake 3.28 or later, a compiler with sufficient C++20 modules support, and a CMakeLists.txt that's configured correctly. I initially tried with CMake 3.25 and got a direct error saying it couldn't find the module. I was stuck for two hours before realizing it was a version issue.
+You see, the code itself is very intuitive. `export` marks what is visible, `import` replaces `include`, and conceptually it's much cleaner than headers. But to get these few lines running, you need CMake 3.28 or above, sufficient compiler support for C++20 modules, and the configuration in `CMakeLists.txt` must be correct. I initially tried with CMake 3.25 and got an error saying it couldn't find the module. I was stuck for two hours before realizing it was a version issue.
 
-There's another easily overlooked limitation: CMake 3.28's support for C++20 modules is restricted to the Ninja generator and Visual Studio 2022 and later<RefLink :id="12" preview="CMake 3.28 modules 支持的生成器限制" />. Using the traditional Makefile generator currently doesn't work. This is a fairly hidden pitfall — once you step on it, you remember it.
+There's another easily overlooked limitation: CMake 3.28's support for C++20 modules is limited to the Ninja generator and Visual Studio 2022 and above<RefLink :id="12" preview="CMake 3.28 module support generator limitations" />. Using the traditional Makefile generator currently doesn't work. This is a relatively hidden pit; you remember it once you step in it.
 
-And this is only the simplest case — a single module, no partitions, no dependencies on other modules. Once the project scales up and modules start importing each other, deducing the build order becomes a nightmare. After talking with several people, I found that everyone has tripped over Modules build configuration. This isn't an isolated case.
+And this is just the simplest case—single module, no partitions, no dependencies on other modules. Once the project scales up, modules import each other, and deriving the build order becomes a nightmare. After talking to quite a few people, I found everyone has tripped over Modules build configuration; this isn't an isolated case.
 
 ---
 
-# Designing for Humans: The Baseline for Project Design
+# Designing for Humans: The Bottom Line of Project Design
 
-When hearing the talk's point about "designing for humans," many people's vague intuitions suddenly gained a clear framework.
+When hearing the talk about "designing for humans," many people's vague intuitions suddenly found a clear framework.
 
-I used to have a misconception that a C++ project's impressiveness was measured by how flashy its template metaprogramming was or how sophisticated its build system was. After being brainwashed by various "modern C++ best practices," I felt projects should be equipped with a full set of intricate CMake scripts. The result? I built a few such projects, felt pretty great at the time, but came back a month later to modify the code only to find it wouldn't even compile — because some dependency had bumped its version and changed its interface, and there was a hardcoded version number buried in that sophisticated script. I was stuck for ages, eventually deleted the entire build directory and started over, wasting another two hours. I was actually doing myself a disservice.
+I used to have a misconception, thinking that whether a C++ project is awesome depends on how flashy its template metaprogramming is or how sophisticated its build system is. After being brainwashed by various "Modern C++ Best Practices," I thought a project should be equipped with a full set of sophisticated CMake scripts. The result? I built a few such projects, felt cool at the time, but came back a month later to modify code and found it wouldn't even compile—because a dependency upgraded and changed an interface, and there was a hardcoded version number in that sophisticated script. I was stuck for half a day, finally deleting the whole build directory and starting over, wasting another two hours. This is actually doing myself a disservice.
 
-The talk made a crucial point: if your project is cumbersome to build, requires people to install four hundred global packages, and those packages are incompatible with their machines, you're keeping potential contributors out. Many people have had this experience — you want to submit a PR to a well-known C++ library to fix an obvious issue, but the README reads like hieroglyphics, the dependency list spans two pages, and it requires specific versions of Boost and LLVM. After struggling all night without getting it to run, you quietly close that PR page the next day and never go back. It's not that you don't want to contribute; it's that your patience has been exhausted.
+The talk mentioned a key point: If your project is troublesome to build, requiring others to install four hundred global packages that conflict with their computer, you are blocking potential contributors. Many people have had this experience—wanting to submit a PR to a famous C++ library to fix an obvious problem, but the README reads like a heavenly book, the dependency list is two pages long, and it requires specific versions of Boost and LLVM. After messing around all night without getting it to run, the next day I silently closed that PR page and never went back. It's not that I didn't want to contribute, it's that my patience was exhausted.
 
-So when building a project, we should hold one hard baseline: a person who knows nothing about the project should be able to go from `git clone` to running their first hello world in under five minutes. I tested this idea with a small tool I've been writing recently, and the results were remarkably good.
+So when building a project, we should stick to a bottom line: For a person who knows nothing about the project, the time from `git clone` to running the first "hello world" should not exceed five minutes. I verified this idea with a small tool I'm writing recently, and the effect was surprisingly good.
 
-First, the directory structure — deliberately kept very flat:
+First, look at the directory structure, deliberately kept very flat:
 
 ```text
 my_tool/
-├── CMakeLists.txt
 ├── src/
-│   └── main.cpp
+│   ├── main.cpp
+│   └── utils.cpp
 ├── include/
-│   └── my_tool.hpp
+│   └── utils.h
+├── CMakeLists.txt
 └── README.md
 ```
 
-No submodules, no complex directory nesting. The CMakeLists.txt is also written as straightforwardly as possible:
+No submodules, no complex directory nesting. `CMakeLists.txt` is also written as straightforwardly as possible:
 
 ```cmake
-cmake_minimum_required(VERSION 3.16)
-project(my_tool LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.15)
+project(MyTool LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 核心就这几行：找依赖、加可执行文件、链接
-find_package(fmt REQUIRED)
-
-add_executable(my_tool src/main.cpp)
+add_executable(my_tool src/main.cpp src/utils.cpp)
 target_include_directories(my_tool PRIVATE include)
-target_link_libraries(my_tool PRIVATE fmt::fmt)
 ```
 
-The README.md was also rewritten, dropping the usual "feature list + a bunch of badges" style in favor of directly telling people how to get it running:
+`README.md` was also rewritten. No longer a "feature list + bunch of badges" style, it directly tells how to run it:
 
-```markdown
-# my_tool
+````markdown
+# MyTool
 
-一个做 XXX 的小工具。
+A simple tool to do X.
 
-## 构建
+## Build
 
-前提：你需要一个支持 C++20 的编译器，以及 fmt 库。
+Requires CMake 3.15+ and a C++17 compiler.
 
-Ubuntu/Debian:
-    sudo apt install libfmt-dev g++
-
-macOS:
-    brew install fmt
-
-然后：
-    mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release
-    make -j$(nproc)
-
-构建产物在 build/my_tool。
-
-## 踩坑记录
-
-- 如果你用的是 GCC 11 以下，可能遇到 XXX 问题，升级到 GCC 12 即可
-- fmt 版本需要 >= 9.0，太旧的话会报 XXX 错误
+```bash
+git clone https://github.com/user/my_tool.git
+cd my_tool
+mkdir build && cd build
+cmake ..
+cmake --build .
+./my_tool
 ```
 
-Note the "pitfall notes" section at the end — I added this after stepping on those landmines myself. I used to think writing such things was "unprofessional," but now I think this is the most professional part. Because you're saving time for the next person who comes along, and saving time is the greatest kindness.
+## Pitfalls
 
-I tested this project with two colleagues — one primarily writes Python, the other primarily writes Java — and both got it running within three minutes. The Python colleague even said, "This is easier to set up than a lot of Python projects." Getting a C++ project complimented for "simple configuration" — that would have been unthinkable before.
+If you see `error: 'filesystem' not found`, try adding `-std=c++17` manually or upgrading GCC.
+````
 
-The talk also made a particularly forward-looking point: if you make your project easy to drop into and out of, you're not just helping humans, you're also helping AI agents. I've definitely experienced this recently. When using Cursor to assist with coding, I've found that if a project has a clean structure, few dependencies, and a simple build, the AI can understand more project context and give more reliable suggestions. Conversely, if the project is full of nested custom compiler flags and implicit macro definitions, the AI often gives suggestions that "look right but don't actually run," because it fundamentally doesn't understand what's happening in that complex build environment.
+Note the "Pitfalls" section at the end—I added this after stepping in a pit myself. I used to think writing this kind of thing was "unprofessional," but now I think this is the most professional part. Because you are saving time for the next person, and saving time is the greatest kindness.
 
-Seeing template errors gives humans a headache — it gives AI a headache too. When it sees a two-hundred-line template instantiation error stack, its response is often generic and vague. But if the project itself is clean and highly modular, the error messages will be much shorter, and both AI and humans will locate problems much faster. So "designing for humans" and "designing for AI" are actually unified on this point: both are about reducing cognitive load.
+I asked two colleagues about this project, one mainly writing Python and one mainly writing Java. Both got it running within three minutes. The Python colleague even said, "This is simpler than configuring the environment for many Python projects." For a C++ project to be praised for "simple configuration," that was unthinkable before.
 
-Looking back, the principle is simple. We write code that is ultimately read and used by humans. The compiler only cares whether the syntax is correct, but humans care about "can I quickly understand what this project does, and can I quickly make my changes and move on." Making complex things simple — that's the real skill.
+The talk also mentioned a particularly forward-looking point: If you make your project easy to enter and exit, you are not only helping humans, but also helping AI agents. I've definitely felt this recently. When using Cursor to assist in coding, I found that if a project has a clear structure, few dependencies, and simple builds, the AI can understand more project context and give more reliable suggestions. Conversely, if the project has a bunch of nested custom compiler flags and implicit macro definitions, the AI often gives suggestions that "look right but don't actually run," because it doesn't understand what's really happening in that complex build environment.
 
-It finally clicked — in the process of assembling a C++ program, those tools, those libraries, and those build systems are all just parts. But the person actually holding these parts and putting them together — that's what matters most. Ignore that, and even the most precision-engineered parts are just a pile of scrap metal.
+Template errors give me a headache, and AI gets a headache too—when it sees a template instantiation error stack two hundred lines long, the response is often generic. But if the project itself is clean and highly modular, error messages are much shorter, and AI (as well as humans) can locate problems much faster. So "designing for humans" and "designing for AI" are actually unified on this point: both are about reducing cognitive load.
+
+Looking back, the principle is simple. We write code, ultimately for people to read and for people to use. The compiler only cares if the syntax is correct, but people care about "can I quickly understand what this project does, and can I quickly fix it and leave." Making complex things simple is the real skill.
+
+Finally, I get it—in the process of assembling a C++ program, those tools, those libraries, and those build systems are all parts, but the person holding those parts and doing the assembling is the most important. If you ignore that, the most sophisticated parts are just a pile of scrap metal.
 
 <ReferenceCard title="References">
   <ReferenceItem
@@ -312,7 +281,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="std::optional"
     publisher="cppreference.com"
     :year="2017"
-    chapter="C++17 标准库可选值包装器"
+    chapter="C++17 standard library optional value wrapper"
     url="https://en.cppreference.com/cpp/utility/optional"
   />
   <ReferenceItem
@@ -321,7 +290,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="Formatting library (std::format)"
     publisher="cppreference.com"
     :year="2020"
-    chapter="C++20 格式化库，基于 Python 风格的格式字符串"
+    chapter="C++20 formatting library, Python-style format strings"
     url="https://en.cppreference.com/cpp/utility/format"
   />
   <ReferenceItem
@@ -330,7 +299,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="Abseil C++ Common Libraries"
     publisher="Google LLC"
     :year="2017"
-    chapter="Google 开源的 C++ 基础库，包含 absl::StatusOr、absl::Span、absl::string_view 等"
+    chapter="Google open-source C++ common libraries, including absl::StatusOr, absl::Span, absl::string_view, etc."
     url="https://abseil.io/"
   />
   <ReferenceItem
@@ -339,7 +308,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="EDG C++ Front End"
     publisher="Edison Design Group"
     :year="1994"
-    chapter="商业 C/C++ 语言前端，广泛用于编译器和静态分析工具"
+    chapter="Commercial C/C++ language frontend, widely used in compilers and static analysis tools"
     url="https://www.edg.com/"
   />
   <ReferenceItem
@@ -348,7 +317,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="Cfront — The Original C++ Compiler"
     publisher="AT&T Bell Labs"
     :year="1983"
-    chapter="最早的 C++ 编译器，将 C++ 源码翻译为 C 代码后再由 C 编译器编译"
+    chapter="The earliest C++ compiler, translating C++ source to C code for C compiler compilation"
     url="https://en.wikipedia.org/wiki/Cfront"
   />
   <ReferenceItem
@@ -357,7 +326,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="constexpr specifier (since C++11)"
     publisher="cppreference.com"
     :year="2011"
-    chapter="constexpr 函数隐式 inline，允许定义在头文件中而不违反 ODR"
+    chapter="constexpr functions are implicitly inline, allowing definition in headers without violating ODR"
     url="https://en.cppreference.com/cpp/language/constexpr"
   />
   <ReferenceItem
@@ -366,7 +335,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="inline specifier"
     publisher="cppreference.com"
     :year="2011"
-    chapter="inline 的核心语义是允许同一函数在多个翻译单元中定义而不违反 ODR"
+    chapter="The core semantic of inline is to allow the same function to be defined in multiple translation units without violating ODR"
     url="https://en.cppreference.com/cpp/language/inline"
   />
   <ReferenceItem
@@ -375,7 +344,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="C++ Module Mapper (GCC)"
     publisher="GNU Project"
     :year="2021"
-    chapter="GCC 模块缓存使用 .gcm 格式，存储在 gcm.cache 目录中"
+    chapter="GCC module cache uses .gcm format, stored in gcm.cache directory"
     url="https://gcc.gnu.org/onlinedocs/gcc/C_002b_002b-Module-Mapper.html"
   />
   <ReferenceItem
@@ -384,7 +353,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="Standard C++ Modules — Clang Documentation"
     publisher="LLVM Foundation"
     :year="2021"
-    chapter="Clang 使用 .pcm (Precompiled Module) 格式存储模块编译产物"
+    chapter="Clang uses .pcm (Precompiled Module) format to store module compilation artifacts"
     url="https://clang.llvm.org/docs/StandardCPlusPlusModules.html"
   />
   <ReferenceItem
@@ -393,7 +362,7 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="Modules (since C++20)"
     publisher="cppreference.com"
     :year="2020"
-    chapter="C++20 模块系统：module 声明、全局模块片段、export、import 语法"
+    chapter="C++20 module system: module declaration, global module fragment, export, import syntax"
     url="https://en.cppreference.com/cpp/language/modules"
   />
   <ReferenceItem
@@ -402,7 +371,13 @@ It finally clicked — in the process of assembling a C++ program, those tools, 
     title="CMake 3.28 Release Notes"
     publisher="Kitware Inc."
     :year="2023"
-    chapter="C++20 named modules 支持，仅限 Ninja 和 Visual Studio (VS 2022+) 生成器"
+    chapter="C++20 named modules support, limited to Ninja and Visual Studio (VS 2022+) generators"
     url="https://cmake.org/cmake/help/latest/release/3.28.html"
   />
 </ReferenceCard>
+
+---
+
+## Further Reading
+
+- The core of the toolchain is compiler flags. To systematically organize common GCC/Clang compiler options and trade-offs, see [Volume 7 · Compiler Options](../../../../vol7-engineering/02-compiler-options.md).

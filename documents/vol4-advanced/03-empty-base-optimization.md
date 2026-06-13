@@ -1,21 +1,22 @@
 ---
-chapter: 3
+chapter: 11
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
-description: 介绍空基类优化技术
+description: 介绍空基类优化（EBO）与 C++20 [[no_unique_address]]
 difficulty: intermediate
-order: 4
-platform: stm32f1
+order: 6
+platform: host
 prerequisites:
-- 'Chapter 2: 零开支抽象'
+- 'Chapter 2: 零开销抽象'
 reading_time_minutes: 6
 tags:
+- host
 - cpp-modern
 - intermediate
-- stm32f1
+- 零开销抽象
 title: 空基类优化(EBO)
 ---
 # 空基类优化（EBO）：C++ 的瘦身技巧

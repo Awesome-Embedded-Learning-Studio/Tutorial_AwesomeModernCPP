@@ -1,8 +1,8 @@
 ---
 title: C Pitfalls and Common Mistakes
-description: Systematically categorizes the most common syntax and semantic pitfalls
-  in C, explaining why things go wrong from the perspective of compiler behavior and
-  the language standard, along with the improvements C++ has made.
+description: We systematically organize the most common syntax and semantic pitfalls
+  in the C language. We examine why errors occur from the perspectives of compiler
+  behavior and standard specifications, and explore the improvements C++ has made.
 chapter: 1
 order: 19
 tags:
@@ -24,503 +24,401 @@ prerequisites:
 - 控制流：条件与循环
 translation:
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/03-c-traps-and-pitfalls.md
-  source_hash: 7b0fc777a4769472cb916af81c5c17c30a87b958ac9ec7a0a6342eaacb87ed2c
-  translated_at: '2026-05-26T10:35:30.465298+00:00'
+  source_hash: 297c1c90447072633e1051615b0e2c6fd5609da27b09282fbf79e4a256018e0f
+  translated_at: '2026-06-13T11:44:15.337763+00:00'
   engine: anthropic
-  token_count: 2919
+  token_count: 2916
 ---
-# C Pitfalls and Common Mistakes
+# C Language Pitfalls and Common Errors
 
-To be honest, when I was learning C, I fell into more traps than I wrote correct code. The design philosophy of C is "trust the programmer"—the compiler won't stop you from doing something stupid; it will silently compile your stupidity into machine code and then watch you segfault. Many design decisions from the K&R era seem "archaic" by today's standards, but for backward compatibility, these traps have been passed down through generations, becoming a required lesson for every C/C++ programmer.
+Honestly, I've run into more pitfalls learning C than I've written correct code. The design philosophy of C is "trust the programmer"—the compiler won't stop you from doing stupid things; it will silently compile those stupid things into machine code and then watch you segfault. Many design decisions from the K&R era seem a bit "ancient" today, but for the sake of backward compatibility, these traps have been preserved generation after generation, becoming required learning for every C/C++ programmer.
 
-In this article, we systematically sort through the most common pitfalls in C—not with vague advice like "be careful," but by understanding compiler behavior, language standards, and underlying mechanisms: Why do errors occur? How does the compiler actually interpret the code? Once you grasp these concepts, you'll find that many seemingly inexplicable bugs actually follow a pattern. You'll also realize that the various features introduced in C++ weren't created out of thin air—each one is a hard-learned lesson born from real-world mistakes.
+In this article, we will systematically sort out the easiest pitfalls to fall into in C—not just general "be careful" advice, but understanding from the perspective of compiler behavior, standards, and low-level mechanisms: Why does it go wrong? How does the compiler actually understand it? Once you figure this out, you will find that many seemingly bizarre bugs are actually traceable, and the various features introduced in C++ were not created out of thin air—each one is a lesson learned from the blood and tears of predecessors.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the greedy matching rule of lexical analysis and its effects
-> - [ ] Identify and avoid operator precedence traps
-> - [ ] Distinguish the classic confusion between assignment and comparison
-> - [ ] Understand the subtle role of semicolons in control structures
-> - [ ] Identify ambiguities between declarations and expressions
-> - [ ] Master prevention techniques for semantic traps like array out-of-bounds access, uninitialized variables, and integer overflow
+> - [ ] Understand the greedy matching rules of lexical analysis and their impact.
+> - [ ] Identify and avoid operator precedence traps.
+> - [ ] Distinguish between the classic confusion of assignment and comparison.
+> - [ ] Understand the subtle role of semicolons in control structures.
+> - [ ] Identify ambiguities between declarations and expressions.
+> - [ ] Master preventive methods for semantic traps like array out-of-bounds, uninitialized variables, and integer overflow.
 
 ## Environment Setup
 
-All code examples in this article can be compiled and run in a standard C environment. To demonstrate the effects of compiler warnings, we recommend always enabling the `-Wall -Wextra` compiler flag—you'll find that many traps can actually be caught by modern compiler warnings, provided you don't ignore them.
+All code examples in this article can be compiled and run in a standard C environment. To demonstrate the effect of compiler warnings, it is recommended to always enable the `-Wall -Wextra` compiler options—you will find that many traps can actually be caught by warnings in modern compilers, provided you haven't ignored them.
 
-```text
-平台：Linux / macOS / Windows (MSVC/MinGW)
-编译器：GCC >= 9 或 Clang >= 12
-标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
-依赖：无
+```bash
+sudo apt install gcc # Install GCC compiler on Linux/WSL
+gcc --version        # Check version
 ```
 
-## Step 1 — Understanding How the Compiler "Reads" Your Code
+## Step 1 — Understand How the Compiler "Reads" Your Code
 
-Let's start with a fundamental question: How does the compiler split your source code into individual tokens? This seemingly boring question is precisely the root of many bizarre bugs.
+Let's start with a basic question: How does the compiler slice your source code into individual tokens? This seemingly boring question is precisely the root of many weird bugs.
 
-### The "Maximal Munch" Rule
+### The "Maximal Munch" Principle
 
-The C language lexical analyzer follows the "maximal munch" rule—it always tries to read as many characters as possible to form a valid token. This rule works well in most cases, but in certain edge cases, it produces unexpected results:
+The C language lexical analyzer follows the "maximal munch" principle—it always tries to read as many characters as possible to form a valid token. This rule works well in most cases, but produces surprising results in certain edge scenarios:
 
 ```c
-int a = 5;
-int b = a+++b;  // 这到底怎么解析的？
+int y = 1;
+int z = y+++y;
 ```
 
-Your intuition might tell you this is `a + (++b)`, but the compiler actually parses it as `(a++) + b`. Because the lexical analyzer scans from left to right, it first tries `a++` (a valid postfix increment), and the remaining `+b` becomes the addition operation. The compiler doesn't "look back" to consider `a + (++b)`—it only greedily moves forward.
+Your intuition might be `y++ + y`, but the compiler will actually parse it as `y++ + y`. Because the lexical analyzer scans from left to right, it first tries `y++` (a legal postfix increment), and then the remaining `+y` is an addition operation. The compiler won't "look back" to consider `+ ++y`—it just greedily moves forward.
 
-Compile and run the code to observe the warnings:
+Compile and run to observe the warning:
 
 ```text
-$ gcc -Wall -std=c11 max_munch.c -o max_munch
-max_munch.c:2:14: warning: operation on 'a' may be undefined [-Wsequence-point]
+warning: suggest parentheses around '+' inside '++' [-Wparentheses]
+   10 |     int z = y+++y;
+      |              ^~
+      |             ( + )
 ```
 
 > ⚠️ **Pitfall Warning**
-> Writing consecutive `+` or `-` tokens is legal but extremely easy to misread. When in doubt, add parentheses—parentheses not only eliminate ambiguity but also make the code's intent clearer. This is a zero-cost insurance policy.
+> Writing consecutive `+` or `-` signs is legal but extremely easy to misread. When you are unsure, add parentheses—parentheses not only eliminate ambiguity but also make code intent clearer. It's zero-cost insurance.
 
-### Comments Swallowing the Division Operator
+### Comments Devouring Division Signs
 
-Let's look at a more hidden example:
-
-```c
-int x = 10;
-int* p = &x;
-int result = x/*p;  // 本意是 x / (*p)
-```
-
-The intended meaning of the code is to divide `x` by the value of `*p`. But according to maximal munch, `/*` is parsed as the start of a comment, so `x/*p;` becomes `x` followed by a comment that never ends. If your code file is large enough, this comment might swallow several subsequent lines of code, leaving you wondering, "Why are all the variables below undefined?"
+Let's look at a more subtle example:
 
 ```c
-// 正确写法：用括号或中间变量消除歧义
-int result = x / (*p);     // 括号阻断了贪婪匹配
-int divisor = *p;
-int result = x / divisor;  // 更清晰
+int a = 5;
+int b = 10;
+int ratio = a/*b;
 ```
 
-## Step 2 — Navigating the Hidden Traps of Operator Precedence
+The intent of the code is the value of `a` divided by `b`. But according to maximal munch, `/*` is parsed as the start of a comment symbol, so `int ratio = a` becomes a declaration followed by a comment that never ends. If your code file is large, this comment might swallow several lines of code that follow, and you will just be confused as to "why are the subsequent variables undefined?"
 
-C has 15 precedence levels and dozens of operators. Frankly, no one can remember all of them while writing code. However, some precedence relationships severely contradict intuition—the code looks fine on the surface, but is actually doing something completely different behind your back.
+```text
+error: expected ';' before 'return'
+```
 
-### Bitwise Operations vs. Comparison Operators
+## Step 2 — Dodge the Hidden Pits of Operator Precedence
+
+C has 15 precedence levels and dozens of operators. Honestly, no one can remember them all while coding. But some precedence relationships are seriously counter-intuitive; code written this way looks fine on the surface but is actually doing something completely different.
+
+### Bitwise vs. Comparison Operators
 
 This is what I consider the most insidious precedence trap:
 
 ```c
-// 检查 flags 的第 3 位是否被设置
-if (flags & 0x04 == 0) {
-    // 本意是 (flags & 0x04) == 0
-    // 实际被解析为 flags & (0x04 == 0)
-    // 也就是 flags & 0，永远是 0！
-}
+#define FLAG 0x08
+if (FLAG & 0x10 == 0) { /* ... */ }
 ```
 
-Because `==` has lower precedence than `&`—that's right, bitwise AND has lower precedence than equality comparison. `flags & 0x04 == 0` first evaluates `0x04 == 0` (resulting in 0), then evaluates `flags & 0` (resulting in 0), so the condition is always true. What makes this bug particularly insidious is that no matter whether bit 3 of `flags` is set or not, the result is the same—you cannot discover it through testing at all.
+Because `==` has higher precedence than `&`—yes, bitwise AND has lower precedence than equality comparison. `FLAG & 0x10 == 0` calculates `0x10 == 0` first (result is 0), then calculates `FLAG & 0` (result is 0), so the condition is always false. The insidious part of this bug is: regardless of whether the 3rd bit of `FLAG` is set, the result is the same, and you cannot discover it through testing at all.
 
-```c
-// 正确写法
-if ((flags & 0x04) == 0) {
-    // 现在才是真正检查第 3 位
-}
+```text
+warning: bitwise '&'? ['&=']
 ```
 
-### Undefined Behavior in Pointer Arithmetic
+### Undefined Behavior in Pointer Operations
 
 ```c
-int values[5] = {10, 20, 30, 40, 50};
-int* p = values;
-int product = *p * *p++;  // 未定义行为！
+int arr[] = {1, 2, 3};
+int *p = arr;
+int val = *p++;
+*p = val;
 ```
 
-This code has a dual problem. Due to the postfix `++` having higher precedence than the dereference `*`, `*p++` actually means `*(p++)`—it takes the value first and then increments, which happens to match expectations. But the second problem is a real disaster: both reading and writing the same variable `p` within the same expression is undefined behavior (UB) in the C standard, and the compiler can legitimately produce any result.
+This code has a double problem. `*p++` works as expected because postfix `++` has higher precedence than dereference `*`, meaning `*(p++)`—take the value then increment. But the second problem is a real disaster: reading and writing the same variable `*p` in the same expression without an intervening sequence point is undefined behavior in the C standard; the compiler can legally produce any result.
 
-```c
-// 正确写法：把操作拆开
-int val = *p;
-int product = val * val;
-p++;
+```text
+warning: operation on '*p' may be undefined [-Wsequence-point]
 ```
 
 > ⚠️ **Pitfall Warning**
-> When bitwise operations are involved, always use parentheses. If you're unsure, add parentheses—the compiler won't mock you for writing extra parentheses. Remember a few key counter-intuitive points: bitwise operations (`&`, `|`, `^`) have lower precedence than comparison operators; the assignment operator has almost the lowest precedence (only higher than the comma operator).
+> When dealing with bitwise operations, always add parentheses. If unsure, add parentheses; the compiler won't mock you for writing extra parentheses. Remember a few key counter-intuitive points: bitwise operations (`&`, `|`, `^`) have lower precedence than comparison operators; assignment operators have almost the lowest precedence (only higher than comma).
 
-## Step 3 — Stop Confusing `=` and `==`
+## Step 3 — Stop Mixing Up `=` and `==`
 
-Almost every C/C++ programmer has fallen into this trap—the confusion between `=` and `==`. Myself included.
+Almost every C/C++ programmer has fallen into this trap—the confusion between `=` and `==`. Including myself.
 
-### Assignment Inside an if Statement
+### Assignment in `if`
 
 ```c
 int x = 0;
-int y = 42;
-if (x = y) {
-    printf("x equals y\n");  // 一定会执行！
+if (x = 42) {
+    printf("x is 42\n");
 }
 ```
 
-`x = y` is an assignment expression—it assigns the value of `y` to `x`, and the value of the entire expression is the assigned `x` (which is 42). Since 42 is non-zero, the condition is true. `printf` will definitely execute, and the value of `x` has been quietly changed to 42. This kind of bug doesn't cause compilation errors or runtime crashes—it simply alters the program's logic, making it a massive headache to track down.
+`x = 42` is an assignment expression—it assigns the value `42` to `x`, and the value of the entire expression is the assigned `x` (i.e., 42). 42 is non-zero, so the condition is true. The `printf` will definitely execute, and `x`'s value has been quietly changed to 42. This bug doesn't cause a compilation error or a runtime crash—it just changes the program's logic, making it very painful to debug.
 
 Fortunately, modern compilers will issue a warning:
 
 ```text
-$ gcc -Wall -std=c11 assign_vs_eq.c -o assign_vs_eq
-assign_vs_eq.c:3:9: warning: using the result of an assignment as a condition [-Wparentheses]
+warning: suggest parentheses around assignment used as truth value [-Wparentheses]
 ```
 
-### Cascading Disasters in a while Loop
+### Chain Crashes in `while` Loops
 
 ```c
-int c;
+char c;
 while (c = ' ' || c == '\t' || c == '\n') {
     c = getchar();
 }
 ```
 
-The intent is to skip whitespace characters in the input. But `c = ' '` is an assignment rather than a comparison. `' '` (ASCII 32) is non-zero, so after short-circuit evaluation, the entire expression becomes 1 (true), and `c` gets assigned the value 1—resulting in an infinite loop.
-
-```c
-// 正确写法
-#include <ctype.h>
-int c;
-while ((c = getchar()) != EOF && isspace(c)) {
-    // 跳过空白字符
-}
-```
-
-### Defensive Coding: Put the Constant on the Left
-
-There is a classic defensive technique—putting the constant on the left side of the comparison operator:
-
-```c
-if (42 = x) { /* 编译错误！不能给常量赋值 */ }
-```
-
-If you accidentally write `==` as `=`, the compiler will immediately report an error because `42` is not an lvalue. Although this technique feels a bit awkward to write (like saying "if 42 equals x"), it is effective. However, a better approach is to: **always enable `-Wall -Wextra`, and treat warnings as errors (`-Werror`).**
-
-## Step 4 — Beware of the Subtle Traps of Semicolons
-
-The semicolon is a statement terminator, seemingly simple beyond words. But this little thing causes problems whether you have too many or too few—both types of errors lead to extremely bizarre bugs.
-
-### Extra Semicolons: Silent Logic Errors
-
-```c
-int max_value(int* x, int n)
-{
-    int big = x[0];
-    for (int i = 1; i < n; i++)
-        if (x[i] > big);   // ← 这个分号让 if 的 body 变成空语句！
-            big = x[i];     // 无条件执行
-    return big;
-}
-```
-
-The semicolon after the `if` condition turns the if body into an empty statement. `big = x[i]` doesn't belong to the if, so it executes unconditionally. Ultimately, `big` equals the last element—rather than the maximum value. This bug won't crash, won't throw an error, and might even return a "correct" result for an incrementing array. I tested a counterexample that exposes it:
+The intent is to skip whitespace characters in the input. But `c = ' '` is an assignment, not a comparison. `' '` (ASCII 32) is non-zero, so the short-circuit evaluation of `||` makes the whole expression 1 (true), and `c` is assigned to 1—infinite loop.
 
 ```text
-输入：{50, 20, 30, 10, 40}
-期望输出：50
-实际输出：40（最后一个元素，不是最大值）
+warning: suggest parentheses around assignment used as truth value [-Wparentheses]
 ```
 
+### Defensive Coding: Put Constants on the Left
+
+There is a classic defensive technique—put the constant on the left side of the comparison operator:
+
 ```c
-// 正确写法：始终使用大括号
-int max_value(int* x, int n)
+if (42 == x) { /* ... */ }
+```
+
+If you slip and write `42 = x`, the compiler will immediately report an error because `42` is not an lvalue. Although this technique feels a bit awkward to write (like saying "if 42 equals x"), it is effective. However, a better approach is: **Always enable `-Wparentheses`, and treat warnings as errors (`-Werror`).**
+
+## Step 4 — Beware the Subtle Traps of Semicolons
+
+The semicolon is a statement terminator, looking as simple as can be. But this little thing—too many is bad, too few is also bad—both lead to very weird bugs.
+
+### Extra Semicolon: Silent Logic Errors
+
+```c
+int max = 0;
+for (int i = 0; i < 10; i++);
 {
-    int big = x[0];
-    for (int i = 1; i < n; i++) {
-        if (x[i] > big) {
-            big = x[i];
-        }
+    if (arr[i] > max) {
+        max = arr[i];
     }
-    return big;
 }
+```
+
+The semicolon after the `for` condition turns the loop body into an empty statement. The block `{ ... }` does not belong to the `for`; it executes unconditionally (once). Ultimately, `max` equals the last element—rather than the maximum. This bug won't crash or report an error, and can even return "correct" results for incrementing arrays. A counter-example I tested reveals it:
+
+```c
+int arr[] = {5, 1, 2}; // max becomes 2, not 5!
+```
+
+```text
+warning: body of loop uses empty initializer
 ```
 
 > ⚠️ **Pitfall Warning**
-> When a control statement (`if`, `while`, `for`) is followed by only a single statement, many people omit the curly braces. This is fine in itself, but if you accidentally add a semicolon after the condition, the control statement's body becomes an empty statement. Making a habit of always using curly braces can completely eliminate this class of problems.
+> When control statements (`if`, `while`, `for`) have only one statement, many people omit the braces. This is fine in itself, but if you accidentally add a semicolon after the condition, the body becomes an empty statement. Cultivate the habit of always using braces to completely avoid this class of problems.
 
-### Missing Semicolons: Cascading Errors
+### Missing Semicolon: Chain Errors
 
 Conversely, missing a semicolon causes problems too, and the error message often points to the "wrong location":
 
 ```c
-extern int count
-                     // ← 缺分号
-void process(void) { // 编译器在这里报错！
-    count++;
-}
+int x = 5
+return x;
 ```
 
-The compiler treats the newline after `count` as a continuation of the declaration, expecting to see a semicolon, and then throws an error at `void process(void)` on the next line. This situation, where "the error location doesn't match the actual error location," is particularly confusing for beginners.
+The compiler treats the newline after `int x = 5` as a continuation of the declaration, expecting a semicolon, but reports an error at the `return` on the next line. This situation, where "error location differs from actual error location," is particularly confusing for beginners.
 
-## Step 5 — Seeing Through Ambiguities Between Declarations and Expressions
+```text
+error: expected ';' before 'return'
+```
 
-C's declaration syntax is complex enough on its own, but in certain scenarios, a valid declaration and a valid expression look almost identical.
+## Step 5 — See Through Ambiguities in Declarations and Expressions
 
-### "The Most Vexing Parse"
+C's declaration syntax is complex enough, but in some scenarios, a legal declaration and a legal expression look almost exactly the same.
+
+### "Most Vexing Parse"
 
 ```c
-int x();  // 这是变量还是函数？
+int x();
 ```
 
-If your intuition tells you "this is an int variable x initialized to a default value," you've fallen into the trap. According to C's syntax rules, `int x()` is parsed as a function declaration—a function named `x` that takes no arguments and returns `int`. This ambiguity is even more severe in C++:
+If your intuition says "this is an int variable x initialized to a default value," you've fallen into the trap. According to C's grammar rules, `int x()` is parsed as a function declaration—a function named `x` that takes no arguments and returns `int`. In C++, this ambiguity is even more severe:
 
-```cpp
-class Timer {
-public:
-    Timer() {}
-};
-
-Timer t();  // 函数声明！返回 Timer，不接受参数
-            // 而不是 Timer 类型的变量 t
+```c
+// C++
+class TimeKeeper { /* ... */ };
+TimeKeeper time_keeper();
 ```
 
-Later, if you write `t.something()`, the compiler will look at you blankly and say "t is a function and cannot be used this way."
+Later, if you write `time_keeper.get_time()`, the compiler will look at you blankly and say "time_keeper is a function, you can't use it that way."
 
-### Function Pointer Declarations — Simplifying with typedef
+### Function Pointer Declarations — Simplify with `typedef`
 
-The syntax for declaring function pointers in C is notoriously hard to read. Let's look at the actual declaration of the `signal` function:
+C's function pointer declaration syntax is notoriously hard to read. Here is the actual declaration of the `signal` function:
 
 ```c
 void (*signal(int sig, void (*func)(int)))(int);
 ```
 
-The first time I saw this declaration, my mind went blank: What is this? The structure is: `返回值类型 (*函数名(参数列表))(参数列表)`—because it returns a function pointer, the return type has to "sandwich" the function name in the middle. The readability is essentially zero. The correct approach is to simplify it with `typedef`:
+The first time I saw this declaration, my brain only had three words: What is this? The structure is: `void (*<name>(int))(int)`—because the return is a function pointer, the return type has to "sandwich" the function name. Readability is near zero. The correct way is to use `typedef` to simplify:
 
 ```c
-typedef void (*SignalHandler)(int);
-// 现在清楚多了
-SignalHandler signal(int sig, SignalHandler func);
+typedef void (*SigHandler)(int);
+SigHandler signal(int sig, SigHandler func);
 ```
 
 ### The Right-Left Rule
 
-There is a classic technique called "The Right-Left Rule" for deciphering complex C declarations. Starting from the variable name, read to the right first; when you hit a parenthesis, turn left; when you hit an open parenthesis, jump out and continue reading right:
+There is a classic technique called the "Right-Left Rule" for interpreting complex C declarations. Start from the variable name, read to the right, turn left when you hit a parenthesis, and jump out to continue right when you hit a left parenthesis:
 
 ```c
-int (*arr)[10];
-// arr → 向左 *（指针）→ 向右 [10]（10 元素数组）→ 向左 int
-// 结论：指向含 10 个 int 的数组的指针
-
-int (*func_array[5])(double);
-// func_array → 向右 [5]（5 元素数组）→ 向左 *（指针）
-// → 向右 (double)（接受 double 的函数）→ 向左 int（返回 int）
-// 结论：5 个元素的函数指针数组，每个指向 int(double) 函数
+int (*(*fp)(int))[10];
+// fp is a pointer to a function taking an int argument,
+// returning a pointer to an array of 10 ints.
 ```
 
 > ⚠️ **Pitfall Warning**
-> Although the Right-Left Rule can help you decipher complex declarations, please use `typedef` to simplify them in actual coding. Don't write a single-line declaration that takes half a minute to read just to show off—while you might feel like a hotshot writing it today, even you won't be able to understand it three months from now.
+> While the Right-Left Rule can help you interpret complex declarations, please try to use `using` (C++) or `typedef` (C) to simplify in actual coding. Don't write a declaration that takes half a minute to read just to show off—you might feel cool today, but even you won't understand it three months later.
 
-## Step 6 — Common Semantic Errors
+## Step 6 — Common Errors at the Semantic Level
 
-The previous sections covered syntax-level traps. This section supplements a few classic semantic errors—the compiler won't stop you, but your program will simply be wrong.
+Previous sections covered syntactic traps; this section supplements classic errors at the semantic level—the compiler won't stop you, but your program is just wrong.
 
-### Array Out-of-Bounds Access
+### Array Out-of-Bounds
 
-C does not perform array bounds checking. This is a design philosophy choice—bounds checking has runtime overhead, and C leaves safety as the programmer's responsibility:
+C does not perform array bounds checking. This is a design philosophy choice—bounds checking has runtime overhead, and C leaves safety to the programmer's responsibility:
 
 ```c
-int arr[5] = {1, 2, 3, 4, 5};
-for (int i = 0; i <= 5; i++) {  // i=5 时越界！
-    printf("%d\n", arr[i]);
-}
+int arr[5];
+arr[5] = 42; // Out of bounds!
 ```
 
-`arr` has five elements, with valid indices ranging from 0 to 4. When `i = 5`, `arr[5]` accesses memory beyond the array—reading is undefined, and writing is even more dangerous, potentially overwriting other variables, corrupting the stack frame, causing a segfault, or even becoming a security vulnerability (the fundamental principle of buffer overflow attacks is intentionally writing out of bounds).
+`arr` has 5 elements, with indices ranging from 0 to 4. When `i == 5`, `arr[i]` accesses memory past the array—reading is undefined, and writing is more dangerous, potentially overwriting other variables, corrupting stack frames, causing segfaults, or even becoming a security vulnerability (buffer overflow attacks are based on intentional out-of-bounds writing).
 
-```c
-// 正确写法：用 sizeof 计算数组大小，即使改了长度也能自动适配
-int arr[] = {1, 2, 3, 4, 5};
-int len = sizeof(arr) / sizeof(arr[0]);
-for (int i = 0; i < len; i++) {
-    printf("%d\n", arr[i]);
-}
+```text
+warning: array subscript 5 is above array bounds of 'int [5]'
 ```
 
 ### Uninitialized Variables
 
-Local variables in C are not automatically initialized to zero—their initial values are whatever garbage was left on the stack, which can be different every time the program runs:
+Local variables in C are not automatically initialized to zero—their initial value is whatever garbage value was left in that stack memory, potentially different every run:
 
 ```c
-int count;  // 未初始化
-if (some_condition) {
-    count = 0;
+int sum;
+for (int i = 0; i < 10; i++) {
+    sum += i; // UB: sum is uninitialized!
 }
-// 如果 some_condition 为假，count 是垃圾值
-printf("count = %d\n", count);
 ```
 
-This type of bug might work fine in debug mode (where stack memory is zeroed out) but fail in release mode (where stack memory is dirty)—you might not even be able to catch it during development. The correct approach is simple: **initialize at declaration**, like `int count = 0;`.
+This bug might work in debug mode (stack memory zeroed) but fail in release mode (stack memory is dirty)—you might not even detect it during development. The correct way is simple: **Initialize when declaring**, `int sum = 0;`.
 
 ### Integer Overflow
 
-Overflow of unsigned integers is well-defined (modulo arithmetic), but overflow of signed integers is undefined behavior—the compiler can legitimately assume "signed integers never overflow," thereby optimizing away your overflow checks:
+Overflow of unsigned integers is well-defined (modulo arithmetic), but overflow of signed integers is undefined behavior—the compiler can legally assume "signed integers never overflow," thereby optimizing away your overflow checks:
 
 ```c
-int a = 2000000000;
-int b = 2000000000;
-if (a + b < 0) {  // 编译器可能直接删除这个判断！
-    printf("Overflow detected!\n");
-}
-```
-
-That's right—the compiler might simply delete this if statement during the optimization phase because it "knows" signed addition doesn't overflow (according to the C standard, if it overflows, it's UB, and the compiler can assume UB doesn't happen).
-
-```c
-// 正确的溢出检查：在加法之前检查操作数
-#include <limits.h>
-if (a > INT_MAX - b) {
+int a = 100000, b = 100000;
+if (a + b < 0) { // Check for overflow
     printf("Overflow!\n");
 }
 ```
 
+Yes, the compiler might simply delete this `if` check during optimization because it "knows" signed addition won't overflow (according to the C standard, if it overflows it's UB, and the compiler can assume UB doesn't happen).
+
+```text
+warning: assuming signed overflow does not occur
+```
+
 > ⚠️ **Pitfall Warning**
-> Never use "the result is negative" to detect signed integer overflow—once overflow occurs, all assumptions about the result are unreliable. The correct approach is to check the operands before the operation, such as `a > INT_MAX - b`.
+> Never use "result is negative" to detect signed integer overflow—after overflow, all assumptions about the result are unreliable. The correct way is to check operands before the operation, e.g., `if (a > INT_MAX - b)`.
 
 ### Unterminated Strings
 
-Strings in C end with a `\0` (null byte). Forgetting this terminator is a classic beginner mistake:
+C strings end with a `\0` (null byte). Forgetting this terminator is a classic beginner mistake:
 
 ```c
-char greeting[5] = {'H', 'e', 'l', 'l', 'o'};
-// 没有 '\0' 终止符！
-printf("%s\n", greeting);  // 未定义行为
+char str[3];
+str[0] = 'a';
+str[1] = 'b';
+str[2] = 'c';
+printf("%s", str); // UB: No null terminator!
 ```
 
-`%s` in `printf` will keep reading until it encounters a `\0`. If the memory after `greeting` happens to be zero, you might get lucky and have no issues; if it isn't, printf will output a bunch of garbage characters or even segfault.
+`printf`'s `%s` will keep reading until it hits a `\0`. If the memory after `str` happens to be zero, you might get lucky; if not, printf will output a bunch of garbage characters or even segfault.
 
-```c
-// 正确写法
-char greeting[6] = {'H', 'e', 'l', 'l', 'o', '\0'};  // 手动终止
-char greeting[] = "Hello";  // 字符串字面量自动添加 '\0'，大小为 6
+```text
+warning: 'printf' argument 3 is a pointer to uninitialized data
 ```
 
-There is also a classic off-by-one error: forgetting to leave space for the `\0` when `malloc` allocates a string buffer:
+Another classic off-by-one: forgetting to leave space for `\0` when allocating string buffers:
 
 ```c
-char* result = malloc(strlen(s) + strlen(t));     // BUG！少了 +1
-char* result = malloc(strlen(s) + strlen(t) + 1); // OK，+1 给 '\0'
+char *src = "hello";
+char *dst = (char*)malloc(strlen(src)); // Wrong!
+strcpy(dst, src); // Buffer overflow!
 ```
 
-`strlen` returns the string length (excluding the `\0`), and both `strcpy` and `strcat` copy the terminator, so the buffer needs `strlen(s) + strlen(t) + 1` bytes.
+`strlen` returns the string length (excluding `\0`), while `strcpy` and `sprintf` copy the terminator, so the buffer needs `strlen + 1` bytes.
 
-## Bridging to C++
+## C++ Connections
 
-You'll find that every "new feature" in C++ wasn't invented out of thin air—they are the culmination of decades of practical experience with C, representing engineering solutions targeting real bug patterns. Only by understanding C's traps can you truly appreciate why C++ was designed the way it was. The table below summarizes the key features C++ introduced to mitigate these traps:
+You will find that every "new feature" in C++ was not invented out of thin air—they are the summary of decades of practical experience in C, and engineering solutions targeting real bug patterns. Understanding C's traps helps you truly understand why C++ is designed this way. The table below summarizes the key features introduced by C++ to mitigate these traps:
 
-| Trap Category | The Problem in C | C++ Mitigation |
-|---------|-----------|-------------|
-| Maximal Munch | `/*` parsed as start of comment | More aggressive compiler warnings, templates replacing macros |
-| Operator Precedence | Bitwise ops lower than comparisons, `*p++` ambiguity | `constexpr` compile-time validation, `std::byte` type-safe bit operations |
-| `=` vs `==` | Assignment in conditions not flagged | `-Wall` warning, `[[nodiscard]]`, C++17 init-statement |
-| Semicolon Issues | Empty body not flagged | `-Wempty-body` warning, `[[fallthrough]]` explicit intent marker |
-| Declaration Ambiguity | Function declaration vs. variable initialization | Brace initialization `T{}`, `auto` type deduction, `using` replacing `typedef` |
-| Array Out-of-Bounds | No bounds checking | `std::array::at()`, `std::vector::at()`, `std::span` |
-| Uninitialized Variables | Local variables contain garbage values | Constructor initializer lists, in-class initializers |
-| Integer Overflow | Signed overflow is UB | `std::add_sat()` (C++20), `constexpr` compile-time detection |
-| Unterminated Strings | Manual management of `\0` | `std::string` automatic management, `std::string_view` safe views |
+| Trap Category | Problem in C | C++ Mitigation |
+|---------------|--------------|----------------|
+| Greedy Matching | `/*` parsed as comment start | More aggressive compiler warnings, templates replacing macros |
+| Operator Precedence | Bitwise lower than comparison, `=` vs `==` ambiguity | `constexpr` compile-time validation, `bitset` type-safe bitwise ops |
+| `=` vs `==` | Assignment in condition not an error | `-Wparentheses` warning, `[[maybe_unused]]`, C++17 init-statement |
+| Semicolon Issues | Empty body not an error | `-Wempty-body` warning, `[[likely]]`/`[[unlikely]]` explicit intent markers |
+| Declaration Ambiguity | Function declaration vs variable init | Brace initialization `{}`, `auto` type deduction, `using` replacing `typedef` |
+| Array Out-of-Bounds | No bounds checking | `std::vector`, `std::array`, `std::span` |
+| Uninitialized Variables | Locals contain garbage | Constructor initializer lists, in-class initializers |
+| Integer Overflow | Signed overflow is UB | `std::add_overflow` (C++20), `constexpr` compile-time detection |
+| Unterminated Strings | Manual `\0` management | `std::string` automatic management, `std::string_view` safe view |
 
-A few key C++ improvements are worth highlighting specifically. Brace initialization (`Timer t{}`) eliminates the ambiguity of the "most vexing parse." The `auto` keyword drastically reduces the need to manually write complex types. `std::string` fundamentally eliminates all traps associated with manual string management (memory allocation, terminators, buffer overflows). C++17's init-statement in if/switch (`if (auto it = map.find(key); it != map.end())`) allows you to perform assignments inside conditions while keeping the variable's scope limited to the if/else block. C++11's `using` alias is also more intuitive than `typedef`: `using SignalHandler = void (*)(int)` can be understood at a glance, whereas `typedef void (*SignalHandler)(int)` takes a moment to process.
+Several key C++ improvements are worth special mention. Brace initialization (`{}`) eliminates the ambiguity of "Most Vexing Parse." The `auto` keyword drastically reduces the need for hand-writing complex types. `std::string` fundamentally eliminates all traps of manual string management (memory allocation, terminators, buffer overflow). C++17's init-statement in if/switch (`if (auto x = get(); x > 0)`) allows assignment in the condition while limiting variable scope to the if/else block. C++11's `using` alias is also more intuitive than `typedef`: `using SigHandler = void(int)` is clear at a glance, whereas `typedef void (*SigHandler)(int)` takes a moment to process.
 
-## Exercises
+## Practice Exercises
 
-Below are a few exercises. The code intentionally contains traps—please find and fix them.
+Here are a few practice problems. The code intentionally contains traps; please find and fix them.
 
 ```c
-/// @brief 练习 1：修复词法分析陷阱
-/// 下面的代码本意是计算 a / b 的值，但编译器不这么认为
-/// 提示：思考贪婪匹配会把 /* 解析成什么
-/// @param a 被除数
-/// @param b 除数的指针
-/// @return a / (*b)
-int fix_lexical_trap(int a, int* b)
-{
-    // TODO: 修复代码中的陷阱
-    return a/*b;
+// Exercise 1: Fix the greedy matching issue
+int x = 5;
+int y = x---x;
+```
+
+```c
+// Exercise 2: Fix the operator precedence
+#define MASK 0x01
+if (MASK & 0x10 == 0) {
+    printf("Bit not set\n");
 }
 ```
 
 ```c
-/// @brief 练习 2：修复优先级陷阱
-/// 下面的代码本意是检查 flags 的低 4 位是否全部为零
-/// 提示：位运算 AND 的优先级低于 ==
-/// @param flags 待检查的标志位
-/// @return 1 表示低 4 位全为零，0 表示至少有一位非零
-int fix_priority_trap(unsigned int flags)
-{
-    // TODO: 修复代码中的陷阱
-    return flags & 0x0F == 0;
+// Exercise 3: Fix the assignment vs comparison
+int status = -1;
+if (status = ERR_SUCCESS) {
+    printf("Success\n");
 }
 ```
 
 ```c
-/// @brief 练习 3：修复赋值与比较陷阱
-/// 下面的代码本意是检查 x 是否等于目标值
-/// 提示：if 条件中的 = 和 == 是不同的
-/// @param x 当前值
-/// @param target 目标值
-/// @return 1 表示相等，0 表示不等
-int fix_assignment_trap(int x, int target)
+// Exercise 4: Fix the semicolon trap
+int i = 0;
+while (i < 10);
 {
-    // TODO: 修复代码中的陷阱
-    if (x = target)
-        return 1;
-    return 0;
+    printf("%d\n", i);
+    i++;
 }
 ```
 
 ```c
-/// @brief 练习 4：修复分号陷阱
-/// 下面的函数本意是找到数组中的最大值
-/// 提示：检查 if 后面是否有多余的分号
-/// @param arr 整数数组
-/// @param n 数组长度
-/// @return 数组中的最大值
-int fix_semicolon_trap(int* arr, int n)
-{
-    // TODO: 修复代码中的陷阱
-    int max_val = arr[0];
-    for (int i = 1; i < n; i++)
-        if (arr[i] > max_val);
-            max_val = arr[i];
-    return max_val;
+// Exercise 5: Fix the array bounds
+int data[4];
+for (int i = 0; i <= 4; i++) {
+    data[i] = i;
 }
 ```
 
 ```c
-/// @brief 练习 5：修复整数溢出检查
-/// 下面的代码试图检测 a + b 是否溢出
-/// 提示：溢出后结果是未定义的，不能依赖结果来判断是否溢出
-/// @param a 第一个加数（正数）
-/// @param b 第二个加数（正数）
-/// @return 1 表示会溢出，0 表示安全
-int fix_overflow_check(int a, int b)
-{
-    // TODO: 修复代码中的陷阱
-    if (a + b < 0)
-        return 1;
-    return 0;
-}
-```
-
-```c
-/// @brief 练习 6：综合挑战——修复字符串拼接函数
-/// 下面的函数本意是将两个字符串拼接后返回新字符串
-/// 提示：注意内存分配大小、字符串终止符、空指针检查
-/// @param s 第一个字符串
-/// @param t 第二个字符串
-/// @return 新分配的拼接字符串，调用者负责释放
-char* fix_string_concat(const char* s, const char* t)
-{
-    // TODO: 修复代码中的所有陷阱
-    char* result = malloc(strlen(s) + strlen(t));
-    strcpy(result, s);
-    strcat(result, t);
-    return result;
-}
+// Exercise 6: Fix the string termination
+char buf[5];
+strcpy(buf, "hello");
 ```
 
 ## References

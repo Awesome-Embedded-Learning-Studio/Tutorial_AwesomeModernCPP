@@ -399,3 +399,9 @@ macOS:
     url="https://cmake.org/cmake/help/latest/release/3.28.html"
   />
 </ReferenceCard>
+
+---
+
+## 延伸阅读
+
+- 工具链的核心是编译器选项，想系统梳理 GCC/Clang 的常用编译选项与取舍，见 [卷七·编译器选项](../../../../vol7-engineering/02-compiler-options.md)。

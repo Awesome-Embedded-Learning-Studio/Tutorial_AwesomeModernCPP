@@ -41,7 +41,7 @@ Target: x86_64-pc-linux-gnu
 Configured with: /build/gcc/src/gcc/configure --enable-languages=ada,c,c++,d,fortran,go,lto,m2,objc,obj-c++,rust,cobol --enable-bootstrap --prefix=/usr --libdir=/usr/lib --libexecdir=/usr/lib --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://gitlab.archlinux.org/archlinux/packaging/packages/gcc/-/issues --with-build-config=bootstrap-lto --with-linker-hash-style=gnu --with-system-zlib --enable-cet=auto --enable-checking=release --enable-clocale=gnu --enable-default-pie --enable-default-ssp --enable-gnu-indirect-function --enable-gnu-unique-object --enable-libstdcxx-backtrace --enable-link-serialization=1 --enable-linker-build-id --enable-lto --enable-multilib --enable-plugin --enable-shared --enable-threads=posix --disable-libssp --disable-libstdcxx-pch --disable-werror --disable-fixincludes
 Thread model: posix
 Supported LTO compression algorithms: zlib zstd
-gcc version 16.1.1 20260430 (GCC) 
+gcc version 16.1.1 20260430 (GCC)
 
 ❯ uname -a
 Linux Charliechen 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025 x86_64 GNU/Linux
@@ -71,15 +71,15 @@ int main() {
     int big = 30000;
     short small = big;          // 30000 超出了 short 的范围吗？其实没有，short 一般是 -32768~32767
                                 // 但如果是 40000 呢？
-    
+
     short overflow = 40000;     // 编译通过！但值已经错了
-    
+
     double pi = 3.14159;
     int int_pi = pi;            // 小数部分直接丢了
-    
+
     std::cout << "overflow = " << overflow << "\n";  // 输出一个奇怪的负数
     std::cout << "int_pi = " << int_pi << "\n";      // 输出 3
-    
+
     return 0;
 }
 ```
@@ -136,7 +136,7 @@ concept number = std::integral<T> || std::floating_point<T>;
 // 判断 T 是否"比 U 小"（能表示的值更少）
 // 这里用 numeric_limits 的范围来比较
 template<typename T, typename U>
-concept smaller_range = 
+concept smaller_range =
     number<T> && number<U> &&
     (std::numeric_limits<T>::max() < std::numeric_limits<U>::max() ||
      std::numeric_limits<T>::min() > std::numeric_limits<U>::min());
@@ -520,7 +520,7 @@ constexpr T safe_add(T a, T b) {
 }
 ```
 
-验证代码见 `code/volumn_codes/vol10/cppcon/2025/01-concept-based-generic-programming/01-06-overflow-not-caught.cpp`。
+验证代码见 [01-06-overflow-not-caught.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/01-concept-based-generic-programming/01-06-overflow-not-caught.cpp)。
 :::
 
 看最后一个溢出捕获的例子——我们需要注意，`narrow_convert` 只能拦截**类型转换时**的窄化，对于同类型算术运算本身的溢出（如 `unsigned int + unsigned int` 的回绕），它是无能为力的。`common_type_t<unsigned int, unsigned int>` 就是 `unsigned int` 本身，运算结果在赋值给 `Number<unsigned int>` 之前就已经回绕成了一个合法值。要完整防御算术溢出，需要额外的机制（如编译器内置的 overflow 检查函数），这超出了 `narrow_convert` 的职责范围。
@@ -1046,8 +1046,8 @@ int main() {
 输出：
 
 ```text
-前3个: 10 20 30 
-中间3个: 30 40 50 
+前3个: 10 20 30
+中间3个: 30 40 50
 捕获: take_front: n 超过了 span 的大小
 ```
 

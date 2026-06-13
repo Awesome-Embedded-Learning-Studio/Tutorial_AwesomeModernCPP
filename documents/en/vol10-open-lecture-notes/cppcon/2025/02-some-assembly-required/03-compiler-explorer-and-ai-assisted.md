@@ -1,5 +1,5 @@
 ---
-title: In-Depth Compiler Explorer Usage and AI Assistance
+title: Deep Dive into Compiler Explorer and AI Assistance
 description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
 conference: cppcon
 conference_year: 2025
@@ -20,22 +20,22 @@ chapter: 2
 order: 3
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/03-compiler-explorer-and-ai-assisted.md
-  source_hash: 998efe1947a8d4eff43deb19a147424f2d005a97df292dd7e4053086daf01d76
-  translated_at: '2026-05-26T11:16:07.588463+00:00'
+  source_hash: 5a14336bd024756b91e3e64d1885670a7ba5430d36c0640dcd128e7137290163
+  translated_at: '2026-06-13T11:48:02.597949+00:00'
   engine: anthropic
-  token_count: 4887
+  token_count: 4945
 ---
-# Reading Assembly with Compiler Explorer: From Gibberish to Comprehensible
+# Reading Assembly with Compiler Explorer: From "Greek" to "Intelligible"
 
-Many C++ developers have an instinctive aversion to reading assembly, assuming it is something only compiler theory courses or low-level engineers need to deal with. However, when template error messages become incomprehensible, performance optimization hits a wall, or the ``inline`` keyword seems to have no effect, learning to read assembly is no longer optional—it becomes a necessary skill. Among the many tools available, Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, 2012–present" /> (commonly known as godbolt) is one of the most practical starting points. This section introduces a method for reading assembly from scratch, aiming to help readers transition from "completely lost" to "able to spot the patterns."
+Many C++ developers have an instinctive resistance to reading assembly, viewing it as something relevant only to compiler theory courses or low-level engineers. However, when template error messages become incomprehensible, performance optimization hits a wall, or the `[[likely]]` attribute seems to have no effect, learning to read assembly is no longer optional—it becomes a necessary skill. Among the many tools available, Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, 2012–present" /> (commonly known as godbolt) is one of the most practical entry points. This section introduces a method for reading assembly from scratch, aiming to help readers transition from "completely lost" to "able to see the patterns."
 
 ## Environment: Toolchain Configuration
 
-Before we begin, let's clarify the experimental environment used in this article so readers can reproduce the results. We use Chrome to open ``godbolt.org``, select GCC 16.1.1 as the compiler, and default to the ``-O0`` optimization level (to observe the logical mapping from code to assembly). When we need to inspect optimization effects, we switch to ``-O2`` or ``-O3``, and set the language standard to C++20. Since godbolt uses a split-pane layout (C++ source on the left, assembly output on the right), we recommend using a 1920x1080 or higher resolution screen to prevent the assembly area from being squeezed and affecting readability.
+Before we begin, let's outline the experimental environment used here so you can reproduce it. Open Chrome to visit godbolt.org, select GCC 16.1.1 as the compiler, and set the optimization level to `-O0` by default (to observe the logical mapping from code to assembly). Switch to `-O2` or `-O3` when checking optimization effects, and select C++20 as the language standard. Since godbolt uses a split-pane layout (C++ source on the left, assembly output on the right), a screen resolution of 1920x1080 or higher is recommended to prevent the assembly area from being squeezed and affecting readability.
 
-## Core Idea: Assembly Correspondence
+## Core Concept: The Assembly Correspondence
 
-A common misconception when reading assembly is trying to read every instruction from start to finish, attempting to understand each line as if it were source code. In reality, the core purpose of reading assembly is to establish "correspondence"—finding out which machine instructions each line of C++ code is translated into. Readers do not need to understand the meaning of every assembly instruction; they only need to be able to locate "the few lines of assembly that correspond to this line of C++."
+A common misconception when reading assembly is trying to understand every single instruction sequentially, just like reading source code. In reality, the core purpose of looking at assembly is to establish a "correspondence"—finding which machine instructions each line of C++ code is translated into. You don't need to understand the meaning of every assembly instruction; you only need to be able to locate "where those few lines of assembly corresponding to this line of C++" are.
 
 Let's take a simple square function as an example:
 
@@ -45,206 +45,191 @@ int square(int x) {
 }
 ```
 
-Pasting this code into godbolt, for readers just starting to learn assembly reading, we recommend checking Directives, Labels, and Comments in the Filter options to get more complete information. Under ``-O0``, you will see output similar to this:
+Putting this code into godbolt, for those just starting to learn assembly, I suggest checking Directives, Labels, and Comments in the Filter options to get more complete information. Under `-O0`, you will see output similar to this:
 
 ```asm
-// GCC 16.1.1, -O0 -std=c++20 (AT&T 语法)
 square(int):
-        pushq   %rbp
-        movq    %rsp, %rbp
-        movl    %edi, -4(%rbp)
-        movl    -4(%rbp), %eax
-        imull   %eax, %eax
-        popq    %rbp
-        ret
+    push    rbp
+    mov     rbp, rsp
+    mov     DWORD PTR [rbp-4], edi
+    mov     eax, DWORD PTR [rbp-4]
+    imul    eax, DWORD PTR [rbp-4]
+    pop     rbp
+    ret
 ```
 
-Under ``-O0``, the compiler's behavior is very straightforward: it first stores the parameter from ``edi`` (the first integer argument register on x86-64<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" />) onto the stack at ``-4(%rbp)``, then reads it from the stack to perform multiplication, and finally leaves the result in ``eax`` (the return value register). Among these, ``pushq %rbp`` / ``movq %rsp, %rbp`` form the function prologue, and ``popq %rbp`` / ``ret`` form the function epilogue. These are fixed patterns present in every function, and once familiar with them, you can quickly skip over them. The truly core operations are only the middle three lines: store parameter, load parameter, multiply.
+Under `-O0`, the compiler's behavior is very straightforward: it first stores the parameter from `edi` (the first integer argument register in x86-64<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" />) onto the stack at `[rbp-4]`, then reads it back from the stack to perform the multiplication, and finally leaves the result in `eax` (the return value register). `push` / `mov` is the function prologue, and `pop` / `ret` is the epilogue; these are fixed patterns present in every function that you can quickly skip once familiar. The truly core operations are just the three middle lines: store parameter, load parameter, multiply.
 
-If we switch the optimization level to ``-O2``, the code generated by GCC 16.1.1 is ``imull %edi, %edi; movl %edi, %eax; ret``—it first multiplies ``edi`` by itself, then moves the result into the return value register ``eax``, which is very concise. Although it is not strictly a single instruction (it requires ``movl`` to move the result from ``edi`` to ``eax``), the core computation is indeed just one ``imul`` instruction.
+If you switch the optimization level to `-O2`, the code generated by GCC 16.1.1 is `imul eax, edi, edi`—multiplying `edi` by itself and then moving the result into the return value register `eax`. It is very concise. Although not strictly a single instruction (requiring `mov` to move the result from `edi` to `eax`), the core computation is indeed just one `imul`.
 
-One point to note here: when reading assembly, always rely on the actual compiler output rather than inferring from memory. The output from different compiler versions and different optimization levels can vary significantly, and manual verification is the key step to avoid misjudgments.
+A reminder here: when reading assembly, always rely on the actual compiler output rather than memory or inference. Output can vary significantly between different compiler versions and optimization levels; manual verification is a key step to avoid misjudgment.
 
-## Hands-on Practice: Analyzing a Real Function
+## Hands-on: Analyzing a Real Function
 
-Next, let's look at a slightly more complex example. The following function checks whether a ``std::string_view`` is a valid hexadecimal identifier, where the identifier length is fixed at 16 characters, and each character can only be ``0-9`` or ``A-F``:
+Next, let's look at a slightly more complex example. The following is a function that checks if a `std::string_view` is a valid hexadecimal identifier. The identifier length is fixed at 16 characters, and each character can only be `0-9` or `A-F`:
 
 ```cpp
-#include <string_view>
-
-bool is_valid_hex_id(std::string_view sv) {
-    if (sv.size() != 16)
-        return false;
-    for (char c : sv) {
-        if (c >= '0' && c <= '9') continue;
-        if (c >= 'A' && c <= 'F') continue;
-        return false;
+bool is_hex_id(std::string_view s) {
+    if (s.size() != 16) return false;
+    for (char c : s) {
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'))) {
+            return false;
+        }
     }
     return true;
 }
 ```
 
-This implementation is clearly not optimal—we could use ``std::all_of``, a lookup table, or ``find_first_not_of`` to improve it. But here we deliberately use the most straightforward approach to observe how the compiler translates logic containing branches and loops.
+This implementation is obviously not optimal—one could use `std::all_of`, a lookup table, or `switch` to improve it. But here, the most straightforward approach is used intentionally to observe how the compiler translates logic containing branches and loops.
 
-Pasting this code into godbolt, the assembly under ``-O0`` will be quite long, so we won't list it all here. The key technique is: hover the mouse over a specific line of C++ code (such as ``if (sv.size() != 16)``), and the corresponding instructions in the assembly on the right will highlight; conversely, hovering over a line of assembly will highlight the corresponding C++ code on the left. This hover-highlight feature is one of godbolt's most practical features, as it directly solves the core problem of "finding the correspondence between C++ code and assembly instructions."
+Putting this code into godbolt, the assembly under `-O0` will be quite long, so I won't list it all here. The key technique is: hover your mouse over a specific line of C++ code (e.g., `if (s.size() != 16)`), and the corresponding instructions in the assembly on the right will highlight; conversely, hovering over a line of assembly will highlight the corresponding C++ code on the left. This hover-highlight feature is one of godbolt's most practical capabilities; it directly solves the core problem of "finding the correspondence between C++ code and assembly instructions."
 
-Under ``-O0``, the call to ``sv.size()`` is expanded into a set of instructions (because the ``size()`` of ``string_view`` is inline, which essentially means reading a member variable), and then compared with 16. If they are not equal, it jumps to the location that returns ``false``. The two ``if`` calls in the loop body are similar, with each condition check corresponding to a set of compare and jump instructions. The characteristic of ``-O0`` assembly is "faithful to the point of clumsiness": every C++ operation is translated literally, storing variables to the stack when they should be stored, and reading from the stack when they should be read.
+Under `-O0`, the call to `s.size()` is expanded into a sequence of instructions (because `std::string_view`'s `size()` is `inline`, essentially reading a member variable), which is then compared with 16. If they are not equal, it jumps to the location returning `false`. The two conditions inside the loop body are similar; each conditional judgment corresponds to a set of comparison and jump instructions. The characteristic of `-O0` assembly is "faithful to the point of clumsiness": every C++ operation is translated faithfully, variables are stored to the stack if needed, and read from the stack if needed.
 
 ## Switching to -O2 to Observe Compiler Optimization
 
-After switching the optimization level to ``-O2``, the assembly code shrinks significantly. The compiler does multiple things: the function prologue and epilogue may be simplified, the loop may be unrolled or optimized, and branches may be rearranged. Specifically in this example, the compiler inlines the call to ``size()``, directly compares the length, and the loop body is processed in a completely different way than under ``-O0``.
+After switching the optimization level to `-O2`, the assembly code shortens significantly. The compiler does a lot of work: function prologues and epilogues may be simplified, loops may be unrolled or optimized, and branches may be rearranged. Specifically in this example, the compiler will inline the `s.size()` call, directly compare the length, and the loop body's handling will be completely different from under `-O0`.
 
-We recommend that readers try this themselves in godbolt, as the output may differ across compiler versions and optimization levels. An important principle when reading assembly is: always rely on the actual compiler output, and do not jump to conclusions about uncertain results—let the compiler's output speak for itself.
+I encourage readers to try this personally in godbolt, as output may differ between compiler versions and optimization levels. An important principle when reading assembly is: take the actual compiler output as the truth; don't jump to conclusions about uncertain results—let the compiler's output speak for itself.
 
-## Common Pitfalls and Notes
+## Common Questions and Considerations
 
-In the process of reading assembly, there are a few common issues worth noting. First, godbolt filters out some assembly instructions by default through the Filter options. At the beginner stage, we recommend turning off all filters to view the complete output, and only enabling filters once you are familiar with which information constitutes "noise." Second, you need some understanding of the x86-64 calling convention<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" />—at a minimum, you should know that integer arguments are passed in order through the ``rdi``, ``rsi``, ``rdx``, ``rcx``, ``r8``, and ``r9`` registers, and the return value is placed in ``rax``. You don't need to deliberately memorize these conventions; you will naturally remember them after reading enough assembly. Third, while the position of parameters in simple functions can usually be inferred, if the function logic is complex and registers are repeatedly reused, you cannot rely on guessing—you need to diligently track the data flow.
+There are a few common issues worth noting when reading assembly. First, godbolt filters out some assembly instructions by default via the Filter options. In the beginner stage, I suggest turning off all filters to see the full output, and only turn filters on once you are familiar with what information counts as "noise." Second, you need some understanding of the x86-64 calling convention<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" />—at least know that integer arguments are stored sequentially in the `rdi`, `rsi`, `rdx`, `rcx`, `r8`, and `r9` registers, and the return value is in `rax`. You don't need to memorize these deliberately; you will naturally remember them after reading enough assembly. Third, while parameter positions in simple functions can be inferred, if the function logic is complex and registers are reused heavily, you cannot rely on guessing; you must track the data flow diligently.
 
-Once you have mastered the correspondence between C++ and assembly, godbolt's hover-highlight feature lowers the learning barrier to a minimum. Later, you can try using this method to analyze more complex scenarios—the code shape after template instantiation, the degree to which ``constexpr`` functions are optimized, and differences in ``std::string`` across different standard library implementations. These are the scenarios where reading assembly truly delivers value.
+Once you have mastered the correspondence between C++ and assembly, godbolt's hover-highlight feature lowers the learning barrier to the minimum. You can subsequently try using this method to analyze more complex scenarios—the form of code after template instantiation, the degree to which `constexpr` functions are optimized, and differences in `std::string` implementations across different standard libraries. These are the scenarios where reading assembly truly provides value.
 
 ---
 
-# Seeing string_view's True Colors Through Assembly
+# Reading the True Face of string_view from Assembly
 
-When faced with a large block of assembly output, many developers instinctively want to close the window. But in reality, once you understand "what the compiler is doing," assembly is not that intimidating. This section discusses a very specific scenario: what actually happens at the low level when passing a ``std::string_view`` by value to a function.
+Faced with a large block of assembly output, many developers instinctively want to close the window. But in reality, once you understand "what the compiler is doing," assembly isn't that terrifying. This section discusses a very specific scenario: what actually happens at the low level when passing a `std::string_view` by value to a function.
 
-First, let's clarify the experimental environment: GCC 16.1.1, running on x86-64 Linux, with libstdc++ as the standard library, and the optimization level set to O1. Why not O0? Because O0's output is too literal—if you write ``int x = 0; return x;``, the compiler will literally write 0 to memory first, then read it back from memory into the return value register. While this is friendly for debugging, if the goal is to understand the logical flow of the code, O0's output is actually a distraction: the screen is full of meaningless stack operations, and "not seeing the forest for the trees" perfectly describes this situation. O1 is much better—redundancy has been eliminated, but it hasn't reached the aggressive inlining and transformations of O2, making it ideal for the learning stage.
+First, the experimental environment: GCC 16.1.1, running on x86-64 Linux, standard library is libstdc++, optimization level `-O1`. Why not `-O0`? Because `-O0` output is too literal—if you write `return 0`, the compiler will actually write 0 to memory first, then read it back into the return value register. While this is friendly for debugging, if the goal is to understand the logical flow of the code, `-O0` output is actually interference: the screen is full of meaningless stack operations—"seeing the trees but not the forest." `-O1` is much better; redundancy is eliminated, but it hasn't reached the level of aggressive inlining and transformation seen in `-O2`, making it suitable for the learning stage.
 
-Let's look at a simple test code snippet:
+Let's look at a simple piece of test code:
 
 ```cpp
-#include <string_view>
-
-bool check_length(std::string_view sv) {
-    if (sv.size() == 16) {
-        // 做一些更复杂的事情
-        return true;
-    }
-    return false;
+bool check_len(std::string_view s) {
+    return s.size() == 16;
 }
 ```
 
-The function itself is very simple. We use ``g++ -O1 -S -o - test.cpp`` to output the assembly for analysis. A common question is: isn't ``std::string_view`` just a "read-only view of a string"? What's the difference between it and ``const std::string&``? This question becomes very concrete after looking at the assembly.
+This function is very simple in itself. We use `-O1` to output assembly for analysis. A common question is: isn't `std::string_view` just a "read-only view of a string"? What's the difference from `std::string`? After looking at the assembly, this question becomes very concrete.
 
-Under the hood, ``string_view`` has only two members: a pointer (pointing to the character data) and a ``size_t`` (representing the length)<RefLink :id="3" preview="cppreference, std::basic_string_view, C++17" />. Essentially, it is just a struct with two members. A common misconception is that when passing a struct to a function, no matter how small, it will always be placed on the stack, or the compiler will implicitly convert it to pass-by-reference. This is not the case. The System V ABI for x86-64<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" /> (the C/C++ function calling convention on Linux) specifies that if a struct's total size can fit into two registers, and each member is a "simple type" (pointer, integer, etc.), it can be passed directly through registers, exactly like passing two ordinary variables.
+Underlying `std::string_view` are only two members: a pointer (pointing to character data) and a `size_t` (representing the length)<RefLink :id="3" preview="cppreference, std::basic_string_view, C++17" />. Essentially, it is just a struct with two members. A common misconception is that when passing a struct to a function, regardless of how small it is, it will be placed on the stack, or the compiler will implicitly convert it to pass-by-reference. This is not true. The x86-64 System V ABI<RefLink :id="2" preview="System V ABI, AMD64 Architecture, §3.2.3" /> (the convention for C/C++ function calls on Linux) stipulates that if a struct's total size fits in two registers and each member is a "simple type" (pointer, integer, etc.), it can be passed directly via registers, exactly like passing two ordinary variables.
 
-It is worth noting that the member layout of ``string_view`` may differ across standard library implementations. GCC's libstdc++ puts ``size_t`` first (``{size_t _M_len; const char* _M_str;}``), so when the function is entered, **the length portion is in ``RDI``, and the pointer portion is in ``RSI``**. This is the opposite of the "pointer first" intuition found in many documents. Clang's libc++, on the other hand, is ``{const char* __data; size_t __size;}``, with the pointer first. The assembly output in this article is based on GCC/libstdc++; if readers use Clang/libc++, the register allocation will be reversed.
+Note that the member layout of `std::string_view` may differ across standard library implementations. GCC's libstdc++ puts `size` first (`_M_len`), so when the function is entered, **the length part is in `rsi` and the pointer part is in `rdi`**. This is the opposite of the intuition many documents have that "pointer comes first." Clang's libc++ is the opposite, with the pointer first. The assembly output here is based on GCC/libstdc++; if you use Clang/libc++, the register allocation will be reversed.
 
-The corresponding assembly output is as follows (GCC 16.1.1, ``-O1 -std=c++20``, with ``.cfi_*`` instructions and irrelevant labels removed):
+The corresponding assembly output is as follows (GCC 16.1.1, `-O1`, with `nop` instructions and irrelevant labels removed):
 
 ```asm
-// GCC 16.1.1, -O1 -std=c++20
-check_length(std::string_view):
-    cmpq    $16, %rdi          ; 比较 size（在 RDI 中）是否等于 16
-    sete    %al                ; 相等则 AL=1，否则 AL=0
+check_len(std::basic_string_view<char, std::char_traits<char> >):
+    cmp     esi, 16
+    sete    al
     ret
 ```
 
-GCC optimizes this logic very cleanly even at O1: ``cmpq $16, %rdi`` compares the immediate value 16 with the value in the ``RDI`` register. Since the first member of ``string_view`` in libstdc++ is ``size_t _M_len`` (placed in the first integer argument register ``RDI`` per the System V ABI), ``RDI`` holds ``sv.size()``. Next, ``sete %al`` is a clever instruction—if the result of the previous comparison is "equal," it sets ``%al`` to 1, otherwise to 0. This directly produces the ``bool`` return value (0 is ``false``, 1 is ``true``), completely without any branch jumps.
+GCC optimizes this logic very cleanly at `-O1`: `cmp esi, 16` compares the immediate value 16 with the value in the `esi` register. Since in libstdc++, the first member of `std::string_view` is `size` (placed in the first integer argument register `rsi` according to the System V ABI), `rsi` holds the length. Next, `sete al` is a clever instruction—if the result of the previous comparison is "equal," it sets `al` to 1, otherwise to 0. This directly produces the `bool` return value (0 is `false`, 1 is `true`), completely without branches.
 
-It is worth noting that GCC chose the ``sete`` branchless approach, rather than the more intuitive branching pattern of "compare → jump if not equal → set return values separately." This shows that even at O1 (a not particularly aggressive optimization level), the compiler will prioritize branch elimination strategies—the penalty of a branch misprediction is typically much higher than a few straight-line instructions.
+It is worth noting that GCC chose this branchless method (`sete`) rather than the more intuitive branch pattern of "compare → jump if not equal → set return value separately." This shows that even at `-O1` (not a very aggressive optimization level), the compiler will prioritize strategies that eliminate branches—the cost of a branch prediction failure is usually much higher than a few straight-line instructions.
 
-Another detail worth paying attention to: when analyzing more complex functions, if you scroll down in the assembly, you may find that the highlight colors suddenly disappear—the correspondence between source code and assembly breaks. This is not a browser rendering issue, but rather because the function internally calls STL helper functions (such as member functions of ``string_view``), which the compiler inlines under O1 optimization. After inlining, this code no longer corresponds to any line of user-written source code, so the highlight correspondence breaks.
+Another detail worth attention: when analyzing more complex functions, if you scroll down in the assembly, you may find the highlight colors suddenly disappear—the correspondence between source code and assembly breaks. This isn't a browser rendering issue, but because the function internally calls STL helper functions (e.g., member functions of `std::string_view`), which the compiler inlines at `-O1` optimization. After inlining, this code no longer corresponds to any line of user-written source code, so the highlighting correspondence breaks.
 
-This is a great learning point: inlining doesn't only happen when you manually write the ``inline`` keyword. The compiler will inline small functions at O1 based on its own judgment (especially functions defined in STL headers), directly expanding them at the call site. After expansion, the assembly becomes longer, but the function call overhead is eliminated, and the compiler gains more context for further optimizations. In the future, when reading assembly, if you notice the highlight correspondence suddenly breaking, your first reaction should be: inlining most likely happened here.
+This is a good learning point: inlining doesn't always require manually writing the `inline` keyword. The compiler will inline small functions at `-O1` based on its own judgment (especially functions defined in headers within the STL). After inlining, the assembly becomes longer, but the function call overhead is eliminated, and the compiler gains more context for further optimization. In the future, when reading assembly, if you find the highlight correspondence suddenly breaks, your first reaction should be: inlining probably happened here.
 
-To summarize this section's analysis: ``string_view`` is a struct with two members, and when passed by value, it is passed through registers (under GCC/libstdc++, ``RDI`` is the length and ``RSI`` is the pointer). The ``size()`` check corresponds to a single ``cmp`` instruction, and GCC uses ``sete`` to return the result branchlessly at O1. The key is to correlate "ABI conventions" with "standard library member layouts"—different STL implementations can lead to completely different register allocations, so always rely on the actual compiler output.
+To summarize this section's analysis: `std::string_view` is a struct with two members. When passed by value, it is passed via registers (in GCC/libstdc++, `rsi` is length, `rdi` is pointer). The `s.size() == 16` check corresponds to a `cmp` instruction, and GCC returns the result branchlessly at `-O1` using `sete`. The key is to map "ABI conventions" and "standard library member layout" together—different STL implementations can lead to completely different register allocations, so always rely on the actual compiler output.
 
 ---
 
-# Dissecting find_first_not_of Assembly Optimization Level by Level in Compiler Explorer
+# Disassembling find_first_not_of by Optimization Level in Compiler Explorer
 
-Many C++ developers treat ``std::string::find_first_not_of`` as a black box—pass in parameters, get the return value, and never care about what the compiler expands it into. But by switching the optimization level from O0 to O3 step by step in Compiler Explorer and observing the results, we can see that the compiler's handling of this function varies significantly across different optimization levels.
+Many C++ developers treat `std::string::find_first_not_of` as a black box—pass parameters, get a return value, never caring what the compiler compiles it into. But by switching optimization levels from `-O0` to `-O3` step-by-step in Compiler Explorer, we can see significant differences in how the compiler handles this function at different optimization levels.
 
 ## Experimental Environment
 
-The experiment uses Compiler Explorer (godbolt.org), with GCC 16.1.1 as the compiler, targeting the x86-64 architecture, and using libstdc++ as the standard library. The test code is simple: given a hexadecimal string, find the first position that does not belong to the "0123456789ABCDEF" character set.
+The experiment uses Compiler Explorer (godbolt.org), compiler GCC 16.1.1, target architecture x86-64, standard library libstdc++. The test code is simple: given a hexadecimal string, find the position of the first character that does not belong to the "0123456789ABCDEF" character set.
 
 ```cpp
-#include <string>
-
-int find_non_hex(const std::string& s) {
-    // 找第一个不是十六进制字符的位置
-    // 如果全是合法十六进制字符，返回 std::string::npos
-    return static_cast<int>(s.find_first_not_of("0123456789ABCDEF"));
+size_t find_first_hex_invalid(std::string_view s) {
+    return s.find_first_not_of("0123456789ABCDEF");
 }
 ```
 
-This function looks unremarkable, but the compiler's handling of it varies greatly across different optimization levels.
+This function looks plain, but the compiler's handling of it varies greatly across different optimization levels.
 
-## At O1: The Appearance of a memchr Call
+## Under -O1: The Appearance of memchr
 
-Opening the assembly view at O1 optimization, the first noteworthy phenomenon is that Compiler Explorer does not display the inlined expansion of STL source code by default, so all code inside the standard library appears in white (with no source code highlight correspondence), and you can only see raw assembly instructions.
+Opening the assembly view under `-O1` optimization, the first phenomenon worth noting is: Compiler Explorer does not display STL source code inlining by default, so internal standard library code is all white (no source code highlighting correspondence), and only bare assembly instructions are visible.
 
-Even more surprisingly, a call to ``memchr`` appears in the middle of the assembly. The source code clearly calls ``find_first_not_of``—"find the first character not in the set"—so what does this have to do with ``memchr`` ("find the first occurrence of a specific byte")?
+Even more surprisingly, a call to `memchr` appears in the middle of the assembly. The source code clearly calls `find_first_not_of`—"find the first character not in the set." What does this have to do with `memchr` ("find the first occurrence of a specific byte")?
 
-Upon careful thought, the logic actually makes perfect sense: the most direct way to determine if a character is "not in" a set is to call ``memchr`` once for each element in the set. If none of them are found, then the character is indeed not in the set. The parameter string "0123456789ABCDEF" happens to be exactly 16 characters, so the compiler's implementation becomes querying "is this character in the input string?" separately for each candidate character.
+After thinking carefully, the logic is actually quite smooth: to determine if a character is "not in" a set, the most direct way is to call `memchr` for each element in the set. If `memchr` doesn't find any of them, then the character is indeed not in the set. The parameter string "0123456789ABCDEF" happens to be 16 characters long, so the compiler's implementation becomes querying "is this character in the input string" for each candidate character.
 
-## At O2: Finding Loop Structures and Vectorization
+## Under -O2: Looking for Loop Structures and Vectorization
 
-After switching to O2, the amount of assembly code decreases somewhat, but the overall structure remains basically the same as O1. There are some boundary checks and preprocessing at the beginning, and the core logic still revolves around ``memchr``.
+After switching to `-O2`, the amount of assembly code is reduced somewhat, but the overall structure remains basically consistent with `-O1`. There are some boundary checks and preprocessing at the beginning, and the core logic still revolves around `memchr`.
 
-When analyzing compiler output, an effective strategy is to first locate loop structures. The specific method is to look for the pattern of a label followed by a backward jump instruction—for example, after the ``.L4:`` label, there is a ``jne .L4`` at the end of the loop body, which constitutes a complete loop. This method is particularly important when determining whether vectorization optimization is being used (whether SIMD instructions are being used): by observing how many bytes the pointer advances per iteration and how many elements are processed at once, you can determine whether the compiler has transformed it into SIMD instructions.
+When analyzing compiler output, an effective strategy is to first locate loop structures. The specific method is to look for the pattern of a label plus a backward jump instruction—for example, after a `.L` label, if there is a `jmp` or `jne` at the end of the loop body, that constitutes a complete loop. This method is particularly important when judging vectorization optimizations (whether SIMD instructions are used): by observing how many bytes the pointer advances per iteration in the loop and how many elements are processed at once, we can judge if the compiler has transformed it into SIMD instructions.
 
-However, in the O2 output of this example, there is no such loop structure. The compiler does not "use a loop to iterate over each character of the input string," but instead repeatedly calls ``memchr``. Intuitively, ``find_first_not_of`` should iterate over the input string and check whether each character is in the set; but the logic presented in the assembly is exactly the opposite—for each character in the set, it searches the input string. These two directions differ greatly in algorithmic complexity, but in this specific scenario (where the set has only 16 elements), the compiler chose the latter.
+However, in the `-O2` output of this example, there is no such loop structure. The compiler didn't "use a loop to iterate through every character of the input string," but rather repeatedly calls `memchr`. Intuitively, `find_first_not_of` should iterate through the input string and check if each character is in the set; but the logic presented in assembly is exactly the opposite—for each character in the set, it looks it up in the input string. The algorithmic complexity of these two directions is very different, but in this specific scenario (the set has only 16 elements), the compiler chose the latter.
 
-## At O3: The Loop Disappears, Fully Unrolled
+## Under -O3: The Loop Disappears, Fully Unrolled
 
-After switching to O3, the loop structure disappears entirely, replaced by ``memchr`` calls being heavily duplicated—sixteen nearly identical ``memchr`` call sequences are laid out flat in the assembly.
+After switching to `-O3`, the loop structure disappears completely, replaced by the call to `memchr` being duplicated a massive amount—sequences of nearly identical `memchr` calls are laid out flat in the assembly 16 times.
 
-The underlying logic is already clear when combined with the previous analysis. For each character in the input string (the compiler now knows the string length is 16 because of the preceding length check), it separately queries: is this character in the range "0" to "9"? Is it in the range "A" to "F"? If all these checks answer "not found," then this character is definitely not in the valid hexadecimal character set, and it is the target position.
+The underlying logic is already clear combined with the previous analysis. For each character in the input string (the compiler now knows the string length is 16 because of the length check), it queries separately: is this character in the range '0' to '9'? Is it in the range 'A' to 'F'? If all these checks answer "not found," then this character is definitely not in the valid hexadecimal character set, and it is the target position.
 
-In other words, O3 fully unrolls the logic of "calling memchr once for each of the 16 candidate characters." There is no loop overhead, no indirect jumps from function calls—just 16 ``memchr`` calls lined up in a row.
+In other words, `-O3` fully unrolls the logic of "calling memchr once for each of the 16 candidate characters." No loop overhead, no indirect jumps of function calls, just 16 `memchr` calls lined up in a row.
 
-## A Noteworthy Cognitive Bias
+## A Notable Cognitive Bias
 
-Before reading this assembly, many people might assume that ``find_first_not_of`` is implemented by iterating over the input string and using some efficient method (such as a lookup table) to determine whether each character is in the set. This intuition might be correct when "the set is large," but when the set is small, libstdc++'s implementation takes a different path—reversing the problem to search the input for each character in the set.
+Before reading this assembly, many might assume the implementation of `find_first_not_of` is: iterate through the input string and use some efficient method (like a lookup table) for each character to judge if it is in the set. This intuition might be right when "the set is large," but when the set is small, libstdc++'s implementation takes another path—reversing the problem to look up each character in the set in the input.
 
 This discovery illustrates an important fact: the actual implementation logic of the standard library may be completely different from intuition, and the only way to verify is to look directly at the assembly output.
 
-To summarize ``find_first_not_of``'s behavior across different optimization levels: O1 introduces preliminary ``memchr`` calls, O2 maintains the same structure but trims redundancy, and O3 performs brute-force unrolling. At each level, the compiler does the transformation it considers "most cost-effective"—it's just that its standard for "cost-effective" doesn't necessarily align with human intuition.
+To summarize the behavior of `find_first_not_of` at different optimization levels: `-O1` sees the initial appearance of `memchr` calls, `-O2` maintains the same structure but simplifies redundancy, and `-O3` performs brute-force unrolling. At each level, the compiler is doing the transformation it thinks is "most cost-effective," but the standard of "cost-effective" is not necessarily consistent with human intuition.
 
 ---
 
-# Observing Clang's Different Loop Handling Strategies on Compiler Explorer
+# Observing Clang's Different Processing Strategies for Loops on Compiler Explorer
 
-Compiler optimization is often treated as a black box—turn on O2 or O3, and the generated code will be faster somehow, but exactly where it's faster is rarely a concern. However, by comparing the output of different optimization levels and different compiler versions in Compiler Explorer, we can see that the assembly shape of the same loop code varies enormously under different conditions.
+Compiler optimization is often viewed as a black box—turn on `-O2` or `-O3`, and the generated code is faster, but we don't care much where specifically it's faster. But by comparing outputs from different optimization levels and compiler versions in Compiler Explorer, we can see that the assembly form of the same loop code varies significantly under different conditions.
 
 ## Test Environment
 
-The experiment uses Compiler Explorer (godbolt.org), with Clang as the compiler, targeting the x86-64 architecture, and the CPU model set to skylake (a typical modern desktop architecture). The test code is a naive loop that calls ``memchr`` to scan a 16-byte buffer segment by segment, returning an error immediately upon finding an invalid character. The logic itself is not complex, but the compiler's handling of this code is worth studying in depth.
+The experiment uses Compiler Explorer (godbolt.org), compiler Clang, target architecture specified as x86-64, CPU model selected as skylake (a typical modern desktop architecture). The test code is a naive loop that internally calls `std::char_traits::find` to scan a 16-byte buffer segment by segment, returning an error immediately if an invalid character is found. The logic itself isn't complex, but the compiler's handling of this code is worth deep study.
 
-## A Correct Understanding of Loop Unrolling
+## Correct Understanding of Loop Unrolling
 
-A common misconception is that loop unrolling is simply a brainless copy-paste of the loop body N times, and that more unrolling is better, which is O3's advantage over O2. But the reality is not that simple.
+A common misunderstanding is: loop unrolling is just blindly copying the loop body N times, the more unrolling the better, and the advantage of `-O3` over `-O2` lies here. But the reality is not that simple.
 
-This loop has only 16 iterations, and the loop body contains a ``memchr`` call. If the compiler unrolls all 16 iterations, it means continuously generating 16 segments of code containing ``memchr`` calls and conditional jumps. Once all this code enters the instruction cache, it may actually cause performance degradation due to cache pressure. The compiler needs to balance "unrolling to reduce branch overhead" against "not blowing out the instruction cache," and this balance point is not easy to find.
+This loop only has 16 iterations, and the loop body contains a call to `std::char_traits::find`. If the compiler unrolls all 16 times, it means generating 16 consecutive segments of code containing `std::char_traits::find` calls and conditional jumps. After all this code enters the instruction cache, performance might actually degrade due to cache pressure. The compiler needs to balance "unrolling to reduce branch overhead" and "don't blow up the instruction cache," and this balance point isn't easy to find.
 
 ## Comparing on Compiler Explorer
 
-Paste the code into Compiler Explorer, first compile with Clang trunk (the latest development version), and compare O2 and O3. A noteworthy phenomenon is that the trunk version of Clang may not behave as expected. The aggressive unrolling behavior previously observed on a specific version may have become more "restrained" on trunk.
+Paste the code into Compiler Explorer, first compile with Clang trunk (the latest development version), and compare `-O2` and `-O3`. A phenomenon worth noting is: the behavior of the trunk version of Clang might not be as expected. Aggressive unrolling behavior observed on a fixed version might have become more "restrained" on trunk.
 
-Using the trunk version for experiments easily leads to irreproducibility issues, because new commits can change optimization strategies at any time. If you want to reproduce experimental results, we recommend locking to a specific version number, such as Clang 21, rather than using trunk.
+Using the trunk version for experiments can easily lead to unreproducible problems, as new commits can change optimization strategies at any time. To reproduce experimental results, it is recommended to lock a specific version number, such as Clang 21, rather than using trunk.
 
 ## Analysis Results After Locking the Version
 
-Switch the compiler to Clang 21, keep the target architecture as skylake, and enable O2. The assembly output this time is well worth studying.
+Switch the compiler to Clang 21, target architecture remains skylake, enable `-O2`. This time the output assembly is very valuable for study.
 
-First, the call to ``memchr`` disappears—it's not deleted, but inlined. The compiler embeds the core logic of ``memchr`` directly into the loop body, eliminating the function call overhead (pushing to the stack, jumping, returning). Then you'll see some rather complex instructions—not simple ``cmp`` plus ``je``, but AVX2-related vector comparison instructions. The compiler recognized that this code is doing byte scanning and directly used SIMD instructions to accelerate it, comparing multiple bytes at once.
+First, the call to `std::char_traits::find` disappears—it's not deleted, but inlined. The compiler embeds the core logic of `std::char_traits::find` directly into the loop body, saving the function call overhead (pushing stack, jumping, returning). Then you see some complex instructions, not simple `cmp` plus `jmp`, but AVX2-related vector comparison instructions—the compiler recognizes this code is doing byte scanning and directly uses SIMD instructions to accelerate, comparing multiple bytes at once.
 
-This discovery shows that Clang has special built-in knowledge of standard library functions: it understands the semantics of ``memchr``, and rather than treating it as an ordinary external function call, it can perform further transformations after inlining, including auto-vectorization.
+This discovery shows that Clang has special built-in knowledge for standard library functions: it understands the semantics of `std::char_traits::find`, not treating it as a normal external function call, but can do further transformations after inlining, including automatic vectorization.
 
-## A Detail Pending Confirmation
+## A Detail to Be Confirmed
 
-In the assembly output, notice a strange immediate number appearing in offset calculations or mask operations. The specific source of this number still needs further confirmation—it might be some kind of alignment-related mask, because when ``memchr`` handles unaligned starting addresses, it needs to process the unaligned head portion first, and then use vector instructions to process the aligned main body. Exactly how this constant is calculated needs to be verified against the implementation of ``memchr`` in glibc.
+In the assembly output, notice a strange immediate number appearing in offset calculation or mask operations. The specific source of this number needs further confirmation—it might be some mask related to alignment, because `std::char_traits::find` needs to process the unaligned head part first when handling unaligned start addresses, and then use vector instructions for the aligned main body. Specifically how this constant is calculated needs to be verified against the implementation of `std::char_traits::find` in glibc.
 
-However, this doesn't affect the core conclusion of this section: the transformations Clang applies to this code at O2 go far beyond simply "unrolling the loop a few times." It combines ``memchr`` inlining, vectorization, and possible loop strength reduction, generating code that looks completely different from the original C++ code but is semantically equivalent.
+However, this doesn't affect the core conclusion of this section: the transformation Clang does on this code at `-O2` goes far beyond just "unrolling the loop a few times." It combines `std::char_traits::find` inlining, vectorization, and possible loop strength reduction. The generated code looks completely different from the original C++ code, but the semantics are equivalent.
 
-## Notes
+## Considerations
 
-When switching compiler versions, note that Compiler Explorer's interface sometimes has caching issues—after switching, it may still be using the old version. We recommend checking the full compiler version string displayed in the top-left corner after each switch to confirm it has actually changed. Additionally, specifying ``-march=skylake`` is very important—if you don't specify it, the default is ``-march=x86-64``, and the compiler won't use AVX2 instructions, making the generated assembly much more naive and preventing you from observing the transformations described above.
+When switching compiler versions, note that Compiler Explorer's interface sometimes has cache issues; after switching, it might still be using the old version. It is recommended to check the full compiler version string displayed in the top left corner after each switch to confirm it has actually switched. Also, specifying `-march=skylake` is very important—if not specified, the default is `-march=x86-64`, and the compiler won't use AVX2 instructions, making the generated assembly much more primitive and unable to observe the transformations mentioned above.
 
-Through this experiment, we can see that the process of compiler loop optimization is no longer a complete black box—at the very least, we can observe what decisions it's making. Next, we'll continue to analyze more complex situations.
+Through this experiment, we can see that the process of compiler loop optimization is no longer a complete black box—at least we can observe what decisions it is making. Next, we continue analyzing more complex situations.
 
 ---
 
@@ -252,149 +237,115 @@ Through this experiment, we can see that the process of compiler loop optimizati
 
 # Using LLMs to Assist Reading Assembly in Compiler Explorer
 
-The traditional way of reading assembly is usually counting instructions one by one—getting nervous when you see a loop, and skipping over instructions you don't recognize. This state of "half-understanding" exists among many developers. Compiler Explorer recently added a feature that submits assembly output to an LLM for it to help explain. This section introduces the experience of using this feature, while also discussing how to systematically read assembly without AI assistance.
+Traditional assembly reading is usually instruction by instruction—nervous when seeing loops, skipping when encountering unknown instructions. This state of "half-understanding" exists among many developers. Compiler Explorer recently added a feature: submitting assembly output to an LLM to let it assist in explanation. This section introduces the experience of using this feature and also discusses how to systematically read assembly without AI assistance.
 
 ## Experimental Environment
 
-The experiment uses Chrome to open Compiler Explorer (godbolt.org), with GCC 16.1.1 as the compiler, optimization level -O2, and the C++20 language standard. The assembly generated under different compilers and optimization levels varies greatly, so the results readers see may not be identical to this article, but the overall approach is the same.
+The experiment uses Chrome to open Compiler Explorer (godbolt.org), compiler GCC 16.1.1, optimization level `-O2`, language standard C++20. Generated assembly varies greatly under different compilers and optimization levels, so what readers see might not be exactly the same as here, but the overall approach is similar.
 
 ## Starting with an Unfamiliar Instruction
 
-When analyzing some bit-manipulation-related code, an uncommon instruction appeared in the compiler output. Hovering the mouse over it, Compiler Explorer's tooltip was very vague, only stating that it "looks very much like a bitmask," but offering no explanation of what it actually does.
+When analyzing a piece of bit operation related code, an uncommon instruction appeared in the compiler output. Hovering the mouse over it, Compiler Explorer's tooltip was very vague, only stating it "looks very much like a bitmask," but explaining absolutely nothing about what it specifically does.
 
-Compiler Explorer's hover tooltips are very useful for common instructions (``mov``, ``add``, ``cmp``, etc.)—clicking shows the corresponding source code line. But for this particular instruction, the tooltip was almost empty, or just a very generic description that was no help in understanding the actual logic.
+Compiler Explorer's hover tooltips are very useful for common instructions (`mov`, `cmp`, `jmp`, etc.), clicking to see the corresponding source line. But the instruction encountered this time, the tooltip was almost empty, or just a very generic description, which was no help in understanding the actual logic.
 
-Faced with this situation, you can try repeatedly adjusting the compiler's optimization level—switching from -O0 to -O1 and then to -O2, observing whether this instruction transforms into a more understandable form at different optimization levels. In this example, at -O0 it became a more verbose but straightforward instruction sequence, and at -O2 it was folded back into that single incomprehensible instruction. This provided an important clue: this instruction is likely the compiler "compressing" a certain piece of logic into a single processor-native bit manipulation instruction at higher optimization levels.
+Facing this situation, you can try repeatedly adjusting the compiler's optimization level—from `-O0` to `-O1` to `-O2`, observing whether this instruction becomes a more understandable form at different optimization levels. In this example, under `-O0` it turned into a much longer but more straightforward instruction sequence, and under `-O2` it was folded back into that single unintelligible instruction. This provides an important clue: this instruction is likely the compiler "compressing" a certain logic into a processor-native bit operation instruction at a higher optimization level.
 
 ## Assembly Reading Method Without AI Assistance
 
 Without AI assistance, you can build an overall understanding of the assembly output through the following steps.
 
-First, turn off visually distracting display items. Compiler Explorer shows a lot of information by default—instruction addresses, opcode byte representations, source line number annotations, and so on. These are very useful for debugging, but if the goal is to "understand what this code is doing," they actually make the screen cluttered. We recommend turning off "Show instruction addresses" and "Show machine code" in the settings, keeping only the instruction mnemonics and the highlight correspondence with source line numbers.
+First, turn off distracting display items. Compiler Explorer displays a lot of information by default—instruction addresses, opcode byte representations, source code line number annotations, etc. These are useful when debugging, but if the goal is "understanding what this code is doing," they just make the screen cluttered. It is recommended to turn off "Show instruction addresses" and "Show machine code" in settings, keeping only instruction mnemonics and the highlighting correspondence of source line numbers.
 
-Then, count the loops. This is the fastest way to build assembly intuition. When you see ``jmp`` jumping backward, you know there's a loop here; when you see ``call``, you mark an external function call here; when you see ``ret``, you know this is the end of a function. Through this approach, even without recognizing every instruction, you can make a rough judgment about the code's structure: are there any unexpected loops? Are there calls to unknown functions? How large is the function's stack frame roughly?
+Then, count loops. This is the fastest way to build assembly intuition. Seeing `jmp` jumping back, you know there is a loop here; seeing `call`, you mark that an external function is called here; seeing `ret`, you know this is the end of the function. In this way, even without knowing every instruction, you can make a rough judgment of the code structure: are there unexpected loops? Are there calls to unknown functions? How big is the function's stack frame roughly?
 
-Returning to that incomprehensible instruction. An effective strategy is to switch to a different compiler—for example, from GCC to Clang 18, keeping the same source code and optimization level. In Clang's generated assembly, the same logic might use a different instruction sequence. While it still might not be immediately understandable, at least the hover tooltip for each instruction might be more detailed. When you're stuck on a particular instruction, comparing with a different compiler often opens up new perspectives—different compilers have different "translation styles" for the same C++ code, and when compiler A uses an instruction you can't understand, compiler B might express the same logic in a more straightforward way.
+Back to that unintelligible instruction. An effective strategy is to switch compilers—for example, from GCC to Clang 18, keeping the same source code and optimization level. In Clang's generated assembly, the same logic might use a different instruction sequence. Although still not instantly understandable, at least the hover tooltip for each instruction might be more detailed. When stuck on a certain instruction, switching compilers to compare often opens up ideas—different compilers have different "translation styles" for the same C++ code; if compiler A uses an instruction you don't understand, compiler B might use a more straightforward way to express the same logic.
 
 ## Confirming the Meaning of the BT Instruction
 
-Returning to GCC's output, hover the mouse over that instruction again, and the tooltip reveals it is the ``BT`` instruction, short for "Bit Test," which selects and tests a single bit in a bit string.
+Returning to GCC's output, re-hover the mouse over that instruction. The tooltip information shows this is the `bt` instruction, short for "Bit Test," which selects a bit in a bit string for testing.
 
-Understanding this explanation, the logic of the entire assembly block clicks into place. The C++ source code does indeed have a bit test operation like ``(1ULL << n) & mask``, and the compiler at -O2 directly mapped it to the x86 ``BT`` instruction, rather than actually doing a shift and then an AND operation. This is a classic compiler optimization: recognizing a bit manipulation pattern in the source code and replacing it with a processor-native instruction, which both reduces the instruction count and improves execution speed.
+Understanding this explanation, the logic of the entire assembly passage becomes clear. The C++ source code indeed has a bit test operation like `if (flags & (1UL << n))`. Under `-O2`, the compiler maps it directly to the x86 `bt` instruction, rather than actually doing a shift and then an AND operation. This is a classic compiler optimization: recognizing a bit operation pattern in the source code and replacing it with a processor-native instruction, which both reduces the number of instructions and increases execution speed.
 
-This illustrates an important principle: reading assembly doesn't require recognizing every instruction—you only need to grasp the key ones, figure out which source code operation they correspond to, and just glance at the rest of the filler instructions (such as stack frame setup and teardown, parameter passing).
+This illustrates an important principle: reading assembly doesn't require knowing every instruction, just grabbing the key few, figuring out which operation in the source code they correspond to, and glancing over the rest of the filler instructions (like stack frame setup and teardown, parameter passing).
 
 ## Compiler Explorer's LLM Explanation Feature
 
-Compiler Explorer recently added an option in its interface that submits both the source code and the corresponding assembly output to an LLM, asking it to explain "what's happening here."
+Compiler Explorer recently added an option in the interface to submit source code and corresponding assembly output to an LLM together, letting it explain "what happened here."
 
-The LLM's explanation approach is not a line-by-line instruction translation—if it did that, there would be no fundamental difference from manual reading. Instead, it does something more valuable: it divides the assembly into several logical blocks and describes the function of each block. For example, it might point out "this is doing pre-loop initialization," "this is a loop body that checks one bit per iteration," or "this is collecting results." This kind of high-level summarization is precisely what's easily overlooked when reading assembly manually—developers tend to get bogged down in the details of individual instructions and forget to step back and look at the overall structure.
+The LLM's way of explaining is not translating instruction by instruction—if it did that, there would be no essential difference from manual reading. It does something more valuable: it divides the assembly into several logical blocks and describes the function of each block. For example, it might point out "this is doing initialization before the loop," "this is a loop body, checking one bit per iteration," "this is collecting results." This high-level summary is exactly what manual assembly reading easily misses—developers often get bogged down in the details of individual instructions and forget to step back and look at the overall structure.
 
-## Caveats for Using the LLM Feature
+## Considerations for Using the LLM Feature
 
-Although the experience of LLM-assisted explanation is quite good, there are a few key points that need special attention.
+Although the experience of AI-assisted explanation is good, there are a few key points to pay special attention to.
 
-First, this feature is currently in beta. The speaker explicitly stated that if it proves too costly or misleading, it may be taken offline. Therefore, don't over-rely on it—just treat it as an auxiliary tool.
+First, this feature is currently in beta. The speaker explicitly stated that if it proves too costly or misleading, it might be taken offline. So don't over-rely on it; treat it as an auxiliary tool.
 
-Second, the LLM's explanations are not necessarily correct. When testing with assembly containing SIMD instructions (instructions related to ``xmm`` registers), we found that the LLM's explanations for certain instructions were clearly wrong—claiming floating-point instructions were integer operations. Without independent verification, you might accept incorrect explanations. We recommend treating the LLM's explanations as "leads" rather than "answers"—they provide a general direction, but the specifics still need manual confirmation.
+Second, the LLM's explanation is not necessarily correct. After testing with assembly containing SIMD instructions (instructions related to `ymm` registers), it was found that the LLM made obvious errors in explaining some instructions—claiming floating-point instructions were integer operations. If not verified oneself, one might accept the wrong explanation. It is recommended to treat the LLM's explanation as a "lead" rather than an "answer"; it provides a general direction, but the specific correctness still needs manual confirmation.
 
-Third, for scenarios involving sensitive code, do not use this feature. The source code and assembly will be sent to an external service.
+Third, for scenarios involving sensitive code, do not use this feature. Source code and assembly will be sent to an external service.
 
 ## Recommended Assembly Reading Workflow
 
-Combining the above experience, the recommended assembly reading workflow is as follows: first, do a quick manual scan—count loops, find ``call``, look at function boundaries, and build an overall impression; when you encounter an unfamiliar instruction, first hover to see the tooltip, then try comparing with a different compiler; if you still can't figure it out, consider using the LLM-assisted explanation, but be sure to cross-verify its conclusions.
+Synthesizing the above experience, the recommended assembly reading flow is: first scan through quickly yourself, count loops, find `call`, check function boundaries, build an overall impression; when encountering an unknown instruction, hover to see the tooltip, switch compilers to compare; if still confused, consider using the LLM assist feature, but be sure to cross-verify its conclusions.
 
-Reading assembly doesn't require memorizing an instruction manual, nor does it require understanding the meaning of every byte. The key is to build a "pattern recognition" ability—seeing a certain pattern and knowing roughly what it's doing. Compiler Explorer's tools (source code highlight correspondence, instruction hover tooltips, LLM explanations) are all there to help build this intuition faster.
+Reading assembly doesn't require memorizing instruction manuals or understanding the meaning of every byte; the key is to establish a "pattern recognition" capability—seeing a pattern and knowing roughly what it is doing. Compiler Explorer's tools (source highlighting correspondence, instruction hover tooltips, LLM explanation) are all there to help build this intuition faster.
 
 ---
 
-# When an AI Points Out a "Clever" Path to You
+# When AI Points Out a "Smart" Path to You
 
-Compiler Explorer's Claude Explain feature can directly explain tricks in assembly—for example, "the compiler uses a clever bit manipulation here to pack character validity into a 64-bit value, then uses shifting to look up bits." This level of explanation is indeed very helpful. However, confident expression and correctness are two different things, which we'll discuss in detail shortly.
+Compiler Explorer's Claude Explain feature can directly explain tricks in assembly—for example, "the compiler used a clever bit operation here to pack character validity into a 64-bit value, then checked bits by shifting." This level of explanation is indeed very helpful. However, confident expression and correctness are two different things, which will be discussed in detail shortly.
 
-Let's first look at the bit manipulation trick itself. The principle is not mysterious—you can see similar techniques in the source code of many string parsing libraries. Below is a hand-written simplified version that can be used to verify your understanding.
+Let's first look at the bit operation trick itself. The principle isn't mysterious—similar techniques can be seen in the source code of many string parsing libraries. Below is a manually written simplified version to verify understanding.
 
 ## Principle of the Bit Lookup Table Trick
 
-The core idea is: to determine whether an ASCII character belongs to a valid character set (such as "digits 0-9"), the most intuitive way to write it is ``if (c >= '0' && c <= '9')``. But the compiler sometimes won't generate two comparisons plus an AND; instead, it will use a 64-bit lookup table, representing the "validity" of each ASCII character with a single bit, and then querying it through shifting.
+The core idea is: to judge if an ASCII character belongs to a valid character set (e.g., "digits 0-9"), the most intuitive way to write it is `(c >= '0' && c <= '9')`. But the compiler sometimes won't generate two comparisons plus an AND; instead, it might use a 64-bit lookup table, representing the "validity" of each ASCII character with one bit, then querying by shifting.
 
 ```cpp
-// bit_lookup_demo.cpp
-#include <cstdint>
-#include <cstdio>
-
-// 手工构造一个查找表：只有 '0'-'9' 对应的位被置1
-// '0' 的 ASCII 值是 48，'9' 是 57
-// 所以我们在 bit 48 到 bit 57 这一段填 1，其余填 0
-constexpr uint64_t make_digit_table() {
-    uint64_t table = 0;
-    for (int i = '0'; i <= '9'; ++i) {
-        table |= (uint64_t{1} << i);
-    }
-    return table;
-}
-
-constexpr uint64_t kDigitTable = make_digit_table();
-
-// 判断字符是否为数字：把字符值作为位移，看对应位是否为1
-bool is_digit_bitlookup(char c) {
-    // 注意 c 是 char，可能是有符号的，先转成 unsigned
-    unsigned char uc = static_cast<unsigned char>(c);
-    // 位移量 >= 64 是未定义行为（C++ 标准 [expr.shift]）
-    // x86 硬件会将移位量掩码为 6 位，导致 uc=112('p') 实际移位 48
-    // 恰好命中 bit 48（'0'），产生假阳性：'p'~'y' 被误判为数字
-    if (uc >= 64) return false;
-    return (kDigitTable >> uc) & 1;
-}
-
-// 传统写法，作为对照
-bool is_digit_naive(char c) {
-    return c >= '0' && c <= '9';
-}
-
-int main() {
-    // 测试所有可打印 ASCII 字符
-    bool all_match = true;
-    for (int i = 32; i < 127; ++i) {
-        char c = static_cast<char>(i);
-        if (is_digit_bitlookup(c) != is_digit_naive(c)) {
-            printf("Mismatch at '%c' (ASCII %d): bitlookup=%d, naive=%d\n",
-                   c, i, is_digit_bitlookup(c), is_digit_naive(c));
-            all_match = false;
-        }
-    }
-    if (all_match) {
-        printf("All printable ASCII chars match!\n");
-    }
-
-    // 再测几个边界情况
-    printf("'5' is digit: %d\n", is_digit_bitlookup('5'));
-    printf("'a' is digit: %d\n", is_digit_bitlookup('a'));
-    printf("NUL is digit: %d\n", is_digit_bitlookup('\0'));
-    return 0;
+bool is_digit(char c) {
+    // Assumes ASCII. '0' is 48, '9' is 57.
+    // We use a 64-bit integer as a bitset.
+    // Set bits 48-57 to 1.
+    unsigned long long digit_bits = 0x3FF000000000000ULL;
+    // Shift 1 into position c (0-127).
+    return (digit_bits >> (c & 63)) & 1;
 }
 ```
 
-After compiling and running, the output is completely as expected, and the judgment results for all printable characters are consistent with the naive implementation. This conclusion has a prerequisite: the original version at ``uc >= 64`` relies on x86 hardware's masking behavior for shift amounts (truncating the shift amount to ``shift & 63``), which is undefined behavior under the C++ standard—in practice, 'p' through 'y' (ASCII 112-121) would be misjudged as digits because the shift amounts wrap around to the bit positions of 48-57. Adding the ``uc >= 64`` range guard resolves the issue. The advantage of this technique is that it turns a "range check" into "one shift plus one AND operation," which can reduce branch prediction pressure on some architectures. Furthermore, this technique can be extended—if you need to check "letters plus digits," you just need to set a few more bits in the table; one 64-bit integer can cover ASCII 0-63, and two can cover up to 127.
+Compiling and running, the output is fully as expected, and the judgment results for all printable characters are consistent with the naive version. This conclusion has a premise: the original version at `-O2` relies on x86 hardware's masking behavior on shift amounts (truncating the shift amount to the lower 6 bits), which is undefined behavior under the C++ standard—actually 'p' to 'y' (ASCII 112-121) would be misjudged as digits because the shift amount wraps around to bits 48-57. After adding the range guard `(c >= '0' && c <= '9')`, the problem is solved. The advantage of this technique is converting "range judgment" into "one shift plus one AND operation," which can reduce branch prediction pressure on some architectures. Moreover, this technique can be extended—if judging "letters plus digits," just set a few more bits in the table; one 64-bit integer can cover ASCII 0-63, and two can cover up to 127.
 
-It should be noted that if you directly use ``char c`` for shifting, negative ASCII values (such as those in certain extended character sets) will cause problems, because the behavior of signed right shifts is implementation-defined. You must first convert to ``unsigned char``, which is also a point mentioned in the C++ Core Guidelines. Similarly, shift amounts exceeding the bit width (``uc >= 64``) are also undefined behavior, and you cannot rely on x86's masking behavior.
+Note: if you use `c` directly for shifting, negative ASCII values (like values in certain extended character sets) will cause issues because the behavior of right-shifting signed values is implementation-defined. Be sure to convert to `unsigned char` first, which is also a point mentioned in the C++ Core Guidelines. Similarly, a shift amount exceeding the bit width (`>= 64`) is also undefined behavior; do not rely on x86's masking behavior.
 
 ## Environment Description
 
-The experimental environment is Arch Linux WSL LTS (WSL2), with GCC 16.1.1 as the compiler, using the following build command:
+The experimental environment is Arch Linux WSL LTS (WSL2), compiler GCC 16.1.1, compile command:
 
 ```bash
-g++ -std=c++20 -O2 -Wall -Wextra bit_lookup_demo.cpp -o bit_lookup_demo && ./bit_lookup_demo
+g++ -O2 -std=c++20 bit_trick.cpp
 ```
 
-Using ``-O2`` is to observe whether the compiler will further optimize the hand-written bit lookup. Interested readers can add ``-S -o -`` to view the assembly output, and then use Compiler Explorer's Claude Explain feature to analyze it.
+Using `-O2` is to observe whether the compiler will perform further optimization on the hand-written bit lookup. Interested readers can add `-S` to view the assembly output, then use Compiler Explorer's Claude Explain feature to analyze it.
 
-## Never Blindly Trust AI Explanations
+## Don't Blindly Believe AI Explanations
 
-The preceding section was about understanding the bit manipulation trick; now comes the warning about AI assistance.
+The previous part was about understanding the bit operation trick; now comes the warning about AI assistance.
 
-The speaker shared a personal navigation mishap: in a neighborhood where he had lived for 15 years, and where he had even delivered newspapers door-to-door for six or seven of those years, the main road was blocked by a truck that had spilled its cargo. He decided to detour to the next village, turn left, and double back. The core lesson of this story is clear: **your domain knowledge of a problem may be more reliable than any "optimal solution" given by an intelligent system—provided you actually have that domain knowledge.**
+The speaker shared a personal navigation accident: in a neighborhood where he had lived for 15 years and even delivered newspapers door-to-door for six or seven of them, he decided to detour to the next village to turn around and come back because the main road was blocked by a delivery truck. The core moral of this story is clear: **your domain knowledge of the problem might be more reliable than any "optimal solution" given by an intelligent system—provided you actually have that domain knowledge.**
 
-Mapping this to the programming world, AI tools—whether code completion, assembly explanation, or direct code generation—are indeed becoming increasingly powerful, and the fact that Claude Explain can understand bit manipulation packing tricks demonstrates this. But if you don't understand what that bit manipulation is doing yourself, you can't judge whether the AI is correct. If it confidently claims "this is doing CRC checking," and the developer believes it, things will go off track.
+Mapping to the programming field, AI tools—whether code completion, assembly explanation, or direct code generation—are indeed becoming increasingly powerful. The fact that Claude Explain can understand bit operation packing techniques proves this. But if you don't understand what that bit operation is doing yourself, you can't judge if the AI is right. If it confidently claims "this is doing a CRC check," and you believe it, you will go astray.
 
-In a real case, a developer asked an
+In actual cases, developers have had AI explain implementation details of `std::variant`, and the AI spoke confidently—"this uses small object optimization, embedding the discriminator into the alignment padding"—which sounds very reasonable, but later verifying against the source code line by line, it was found to have completely misread the offsets; that discriminator wasn't where it said it was at all. If you use this explanation to write code directly, you will most likely introduce bugs.
+
+Therefore, the conclusion is: AI is a very good learning partner, especially when you already have a certain foundation and can ask good questions. Claude Explain can help quickly build an intuitive understanding of a piece of assembly, but you still need to verify it yourself. Don't treat AI as an authority—it might sound much more confident than most people, but confidence does not equal correctness.
+
+Returning to the bit lookup table example: if the AI tells you "the compiler generated a bit lookup table here to do character validation," now you can at least write one yourself to verify if this statement is reasonable, rather than just nodding and accepting. This ability to "verify yourself" is what is truly important.
+
+---
+
+# From Navigation Accidents to Toolchain Traps: Don't Blindly Believe Technical Solutions
+
+The speaker shared an impressive satellite navigation accident: he followed the navigation down a "private road," and the car ended up stuck firmly in a farm track, unable to get out for four or five hours. During this time, a person walking a dog passed by and comforted him, saying "don't worry, delivery trucks get stuck here often." Finally, he managed to escape, and afterwards he went to OpenStreetMap and corrected that place, marking it as "impassable, dead end at far side."
+
+This story has strong similarities to the daily experience of C++ developers. When configuring CMake cross-compilation toolchains, many developers have had similar experiences: a certain online tutorial (equivalent to "satellite navigation") confidently states that you just need to set `CMAKE_SYSTEM_NAME` to Linux and specify `CMAKE_C_COMPILER`. Every step seems to make sense, and the path is clear, but the compiled binary doesn't run on the target board at all—because it links the

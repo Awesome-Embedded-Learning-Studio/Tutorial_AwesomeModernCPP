@@ -4,10 +4,10 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Gain a deep understanding of C's dynamic memory allocation mechanism,
-  master the proper use of malloc/calloc/realloc/free, learn about common memory errors
-  and debugging methods, and compare the design philosophy of C++ RAII (Resource Acquisition
-  Is Initialization) and smart pointers.
+description: Gain an in-depth understanding of the C language dynamic memory allocation
+  mechanism, master the proper use of `malloc`, `calloc`, `realloc`, and `free`, recognize
+  common memory errors and debugging methods, and compare the design philosophies
+  of C++ RAII and smart pointers.
 difficulty: intermediate
 order: 18
 platform: host
@@ -23,271 +23,224 @@ tags:
 title: Dynamic Memory Management
 translation:
   source: documents/vol1-fundamentals/c_tutorials/14-dynamic-memory.md
-  source_hash: dcc5f3ef7edc08f41942ce7aa7e288f4f78dcb1c44ede990bcf240a17f2a6eed
-  translated_at: '2026-05-26T10:33:34.350052+00:00'
+  source_hash: 3836764443c6a59bf37fa71374e3af7a47c1784857804cc5ad250ad3f0d161f8
+  translated_at: '2026-06-13T11:42:32.736720+00:00'
   engine: anthropic
-  token_count: 1483
+  token_count: 1480
 ---
 # Dynamic Memory Management
 
-In all the programs we have written so far, the sizes of variables were determined at compile time. But the real world does not work that way—we do not know in advance how many characters a user will type, how many records will be collected before running, or whether the data packets sent by a client will differ in size each time. The common thread in these scenarios is: **you cannot determine how much memory is needed before the program runs**.
+All the programs we have written so far have had variable sizes determined at compile time. But the real world doesn't work that way—we don't know how many characters a user will input beforehand, we don't know how many records will be collected before running, and data packets sent by clients might be different every time. The common denominator in these scenarios is: **before the program runs, you cannot determine how much memory is needed.**
 
-C solves this problem through dynamic memory management—requesting a block of memory of a specified size from the system at runtime, and returning it when done. This set of APIs appears to consist of only four functions: `malloc`, `calloc`, `realloc`, and `free`, which takes barely ten minutes to learn. But using them correctly is one thing; keeping your program from crashing is another—memory leaks, dangling pointers, double frees, and out-of-bounds writes can each cause your program to crash for inexplicable reasons.
+C's solution to this problem is dynamic memory management—requesting a block of memory of a specified size from the system while the program is running, and returning it when done. This set of APIs looks like just four functions: `malloc`, `calloc`, `realloc`, `free`, which takes ten minutes to learn. But using them correctly is one thing; keeping them from crashing is another—memory leaks, dangling pointers, double frees, out-of-bounds writes—each one can crash your program inexplicably.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Draw a memory layout diagram of a program, explaining the responsibilities of the text/rodata/data/bss/heap/stack segments
-> - [ ] Correctly use `malloc`/`calloc`/`realloc`/`free` and handle errors
-> - [ ] Identify and avoid five common memory errors
-> - [ ] Use Valgrind and AddressSanitizer to detect memory issues
-> - [ ] Understand how RAII and smart pointers solve the pain points of manual C memory management
+> - [ ] Draw a memory layout diagram and explain the responsibilities of the text/rodata/data/bss/heap/stack sections.
+> - [ ] Correctly use `malloc`/`calloc`/`realloc`/`free` and handle errors.
+> - [ ] Identify and avoid five common memory errors.
+> - [ ] Use Valgrind and AddressSanitizer to detect memory issues.
+> - [ ] Understand how RAII and smart pointers solve the pain points of manual C management.
 
 ## Environment Setup
 
-All of our following experiments will be conducted in this environment:
+We will conduct all subsequent experiments in this environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
+- Platform: Linux x86\_64 (WSL2 is also acceptable)
 - Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+- Compiler flags: `-g -O0 -Wall -Wextra`
 
-## Step 1 — Understand What a Program Looks Like in Memory
+## Step 1 — Figure out what a program looks like in memory
 
-When a loader places an executable file into memory and starts running it, the operating system allocates a block of virtual address space for it. This space is divided into several functionally distinct regions:
+When an executable is loaded into memory by the loader to start running, the operating system allocates a block of virtual address space for it. This space is divided into several functionally distinct areas:
 
 ```text
-高地址
-┌──────────────────┐
-│    内核空间       │  （用户态不可访问）
-├──────────────────┤
-│    栈 (stack)    │  ← 向低地址增长
-│        ↓         │
-│                  │
-│     （空闲）      │
-│                  │
-│        ↑         │
-│    堆 (heap)     │  ← 向高地址增长
-├──────────────────┤
-│  BSS 段 (.bss)   │  未初始化全局/static
-├──────────────────┤
-│  数据段 (.data)   │  已初始化全局/static
-├──────────────────┤
-│  只读段 (.rodata) │  const 全局、字符串字面量
-├──────────────────┤
-│  代码段 (.text)   │  机器指令（只读、可执行）
-└──────────────────┘
-低地址
+High Addresses
+  +------------------+
+  |     Stack        |  grows downward
+  +------------------+
+  |       |          |
+  |       v          |
+  |                  |
+  |       ^          |
+  |       |          |
+  +------------------+
+  |      Heap        |  grows upward
+  +------------------+
+  |      BSS         |  Uninitialized global/static
+  +------------------+
+  |      Data        |  Initialized global/static
+  +------------------+
+  |     Text         |  Machine code
+  +------------------+
+Low Addresses
 ```
 
-The **text segment** (.text) stores the compiled machine instructions and is typically read-only. The **read-only data segment** (.rodata) stores `const` global variables and string literals. The **initialized data segment** (.data) stores global and `static` variables that have non-zero initial values at definition. The **BSS segment** (.bss) stores global and `static` variables that are uninitialized or initialized to zero—the key difference is that `.bss` does not take up space in the executable file; it only records "N bytes need to be zeroed." The **heap** is where dynamic memory allocation takes place; memory requested by `malloc` comes from here. The **stack** is used for function calls, storing local variables and return addresses.
+The **Text Segment** (.text) stores compiled machine instructions and is usually read-only. The **Read-Only Data Segment** (.rodata) stores `const` global variables and string literals. The **Initialized Data Segment** (.data) stores global and `static` variables that have non-zero initial values. The **BSS Segment** (.bss) stores global and `static` variables that are uninitialized or initialized to zero—the key difference is that **BSS** does not take up space in the executable file; it only records "need N bytes zeroed". The **Heap** is where dynamic memory allocation happens; memory applied for via `malloc` comes from here. The **Stack** is used for function calls, storing local variables and return addresses.
 
 ## Step 2 — Master malloc/calloc/realloc/free
 
-Stack management is fully automatic—a stack frame is allocated on function call and automatically reclaimed on return. It is extremely fast (moving a single register), but it has a size limit (8 MB by default on Linux), and the memory is only valid during the current function's execution.
+Stack management is completely automatic—stack frames are allocated when a function is called and automatically reclaimed when it returns. It is extremely fast (moving one register), but has size limitations (8MB by default on Linux), and memory is only valid during the execution of the current function.
 
-Heap management is handed over to the programmer. It is flexible but must be managed manually—forgetting to free causes a memory leak, and freeing twice causes a crash. In real projects, the following scenarios require the heap: the data volume cannot be determined at compile time, the data's lifetime spans function calls, or the data volume is too large for the stack.
+Heap management is handed over to the programmer. It is flexible but must be managed manually—if you forget to free it, it leaks; if you free it twice, it crashes. In actual projects, the following scenarios require the heap: data size cannot be determined at compile time, data lifetime spans function calls, or data is too large for the stack.
 
-## malloc — Give Me a Block of Memory
+## malloc — Give me a block of memory
 
-```c
+```cpp
 void* malloc(size_t size);
 ```
 
-`malloc` takes the number of bytes to allocate and returns a `void*` pointer. A basic example:
+`malloc` accepts the number of bytes to allocate and returns a `void*` pointer. A basic example:
 
-```c
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(void) {
-    int* numbers = malloc(10 * sizeof(*numbers));
-
-    if (numbers == NULL) {
-        fprintf(stderr, "malloc failed\n");
-        return 1;
-    }
-
-    for (int i = 0; i < 10; i++) {
-        numbers[i] = i * i;
-    }
-
-    free(numbers);
-    return 0;
+```cpp
+int* arr = (int*)malloc(10 * sizeof(int));
+if (!arr) {
+    // Handle error
+    perror("malloc failed");
+    exit(EXIT_FAILURE);
 }
 ```
 
-Key points: write `sizeof(*numbers)` instead of `sizeof(int)`, so the allocated size automatically adjusts when you change the pointer type. **Checking for NULL immediately after every malloc is an ironclad rule.** The contents of memory allocated by `malloc` are **uninitialized**—you will read garbage values.
+Key points: Write `sizeof(*arr)` instead of `sizeof(int)`, so the allocation size changes automatically when the pointer type changes. **Checking for NULL immediately after every malloc is an iron rule.** Memory allocated by `malloc` is **uninitialized**—you are reading garbage values.
 
-## calloc — Allocate and Zero Out
+## calloc — Allocate and zero out
 
-```c
-void* calloc(size_t num, size_t size);
+```cpp
+void* calloc(size_t nmemb, size_t size);
 ```
 
-`calloc` allocates memory and **zeros it out entirely**. Use it when you need zero-initialized structures or arrays, as it is safer. `calloc` can also detect parameter multiplication overflow, providing an extra layer of protection compared to `malloc(num * size)`.
+`calloc` allocates memory and **clears it to zero**. Use it when you need zero-initialized structures or arrays—it is safer. `calloc` can also detect parameter multiplication overflow, providing an extra layer of protection compared to `malloc`.
 
-## realloc — Resize (Possibly Relocate)
+## realloc — Expand capacity (might move house)
 
-```c
-void* realloc(void* ptr, size_t new_size);
+```cpp
+void* realloc(void* ptr, size_t size);
 ```
 
-`realloc` is used to resize previously allocated memory. It expands in place or finds a new space and relocates.
+`realloc` is used to adjust the size of allocated memory. It expands in place or finds new space and moves.
 
-⚠️ **The most classic pitfall**: `realloc` may return `NULL` (out of memory), but the original pointer remains valid. If you write `ptr = realloc(ptr, new_size)` directly, once it returns `NULL`, the original `ptr` is lost—a memory leak. The correct approach:
+⚠️ **The classic pitfall**: `realloc` may return `NULL` (out of memory), but the original pointer is still valid. If you write `ptr = realloc(ptr, new_size);` directly, once it returns `NULL`, the original `ptr` is lost—memory leak. The correct way:
 
-```c
-int* temp = realloc(numbers, 20 * sizeof(int));
-if (temp == NULL) {
-    free(numbers);
-    return 1;
+```cpp
+void* new_ptr = realloc(ptr, new_size);
+if (!new_ptr) {
+    // Handle error, ptr is still valid
+    perror("realloc failed");
+} else {
+    ptr = new_ptr;
 }
-numbers = temp;  // 成功了才更新指针
 ```
 
-## free — Borrow and Return
+## free — Return what you borrow
 
-```c
+```cpp
 void free(void* ptr);
 ```
 
-`free` has more caveats than it appears: you can only free a pointer returned by an allocation function; after freeing, the pointer becomes a dangling pointer; **setting the pointer to NULL after free is a good practice**—if it is accidentally used later, it will immediately cause a segmentation fault, which is ten thousand times easier to debug than a use-after-free.
+The precautions for `free` are more than they seem: you can only `free` pointers returned by allocation functions; after freeing, the pointer becomes a dangling pointer; **setting to NULL after free is a good habit**—subsequent misuse will cause an immediate segmentation fault, which is ten thousand times easier to debug than use-after-free.
 
-```c
-free(numbers);
-numbers = NULL;
+```cpp
+free(ptr);
+ptr = NULL;  // Good habit
 ```
 
-## Step 3 — Recognize Five Common Memory Errors
+## Step 3 — Recognize five common memory errors
 
 ### 1. Memory Leak
 
-Memory is allocated but never freed. A more insidious scenario is failing to free old memory before reassigning a pointer ("overwrite leak"), or forgetting to free in an error-handling branch.
+Allocating and forgetting to free. More insidious scenarios are not releasing old memory before reassigning a pointer ("overwrite leak"), or forgetting to free in error handling branches.
 
 ### 2. Dangling Pointer / Use After Free
 
-A pointer to freed memory continues to be used. This error does not necessarily crash immediately—that block of memory might not have been allocated to someone else yet, so the data "looks" valid, but it is completely unreliable.
+A pointer pointing to freed memory is continued to be used. This error doesn't necessarily crash immediately—that block of memory might not have been allocated to someone else yet, the data "looks" valid, but it is completely unreliable.
 
 ### 3. Double Free
 
-Calling `free` twice on the same block of memory. The heap manager's internal data structures get corrupted, which can cause an immediate crash or might not manifest until much later.
+Calling `free` twice on the same block of memory. The heap manager's internal data structures are corrupted, which may cause an immediate crash or strike much later.
 
 ### 4. Buffer Overflow
 
-Writing outside the boundaries of the allocated memory region, corrupting the metadata of adjacent memory blocks or other data. Off-by-one errors are a typical cause.
+Writing outside the allocated memory area, corrupting metadata of adjacent memory blocks or other data. Off-by-one errors are a typical cause.
 
 ### 5. Uninitialized Read
 
-The contents of memory allocated by `malloc` are indeterminate. Reading without assigning a value yields garbage.
+The content of memory allocated by `malloc` is uncertain. Reading without assigning reads garbage values.
 
 ## Debugging Tools
 
 ### Valgrind
 
-The most classic memory debugging tool on Linux, capable of detecting leaks, illegal reads and writes, uninitialized reads, and double frees. No recompilation is needed—just prepend `valgrind` before your program:
+The most classic memory debugging tool on Linux, capable of detecting leaks, illegal reads/writes, uninitialized reads, and double frees. No need to recompile, just add `valgrind` before the program:
 
 ```bash
-gcc -g -o demo demo.c
-valgrind --leak-check=full ./demo
+gcc -g program.c -o program
+valgrind --leak-check=full ./program
 ```
 
 ### AddressSanitizer (ASan)
 
-A compiler-built-in memory error detection tool with much lower performance overhead than Valgrind:
+A compiler-built memory error detection tool with much lower performance overhead than Valgrind:
 
 ```bash
-gcc -fsanitize=address -g -o demo demo.c
-./demo
+gcc -g -O1 -fsanitize=address -fno-omit-frame-pointer program.c -o program
+./program
 ```
 
-We recommend always enabling ASan during development and testing.
+It is recommended to always enable ASan during development and testing phases.
 
-## C++ Transition — How RAII Ends the Nightmare of Manual Management
+## C++ Transition — How RAII ends the nightmare of manual management
 
-### The Core Idea of RAII
+### Core Idea of RAII
 
-Bind the lifetime of a resource to the lifetime of an object. The constructor acquires the resource, and the destructor releases it. When an object goes out of scope, its destructor is guaranteed to be called (even if an exception occurs), ensuring the resource is properly released.
+Bind the lifecycle of a resource to the lifecycle of an object. The constructor acquires the resource, the destructor releases it. When the object leaves scope, the destructor is guaranteed to be called (even if exceptions occur), and the resource is guaranteed to be released correctly.
 
 ### The Three Smart Pointers
 
-`std::unique_ptr`—exclusive ownership, not copyable but movable. Automatically releases when it goes out of scope. We recommend creating it with `std::make_unique`.
+`std::unique_ptr` — Exclusive ownership, not copyable but movable. Automatically releases when leaving scope. Recommended to create with `std::make_unique`.
 
-`std::shared_ptr`—shared ownership with reference counting. Releases memory when the last `shared_ptr` is destroyed. We recommend creating it with `std::make_shared`.
+`std::shared_ptr` — Shared ownership + reference counting. Releases memory when the last `shared_ptr` is destroyed. Recommended to create with `std::make_shared`.
 
-`std::weak_ptr`—does not increase the reference count; used to break circular references between `shared_ptr`.
+`std::weak_ptr` — Does not increase reference count, used to break circular references between `shared_ptr`s.
 
 ### Standard Library Containers
 
-`std::vector` replaces manually malloc'd dynamic arrays, and `std::string` replaces manually malloc'd string buffers. In modern C++, you almost never need to use `new`/`delete` directly, let alone `malloc`/`free`.
+`std::vector` replaces dynamic arrays with manual `malloc`, and `std::string` replaces string buffers with manual `malloc`. In modern C++, you almost never need to use `malloc`/`free` directly, let alone `new`/`delete`.
 
 ## Summary
 
-We started with memory layout, clarified the respective roles of the stack and the heap, dissected the semantics and pitfalls of the four dynamic memory functions one by one, summarized the five most common memory errors, and finally compared C++'s RAII and smart pointers. Dynamic memory management is one of the most error-prone areas in C, but once you master the right methodology and tools, most errors can be avoided.
+We started with memory layout, clarified the roles of stack and heap, dissected the semantics and traps of the four dynamic memory functions one by one, summarized the five most common memory errors, and finally compared C++'s RAII and smart pointers. Dynamic memory management is one of the most error-prone areas in C, but after mastering the correct methodology and tools, most errors can be avoided.
 
 ## Exercises
 
 ### Exercise 1: Fixed-Size Memory Pool Allocator
 
-Implement a simple fixed-size memory pool that carves fixed-size blocks from a large chunk of memory, supporting allocation and reclamation.
+Implement a simple fixed-size memory pool that carves fixed-size blocks from a large block of memory, supporting allocation and reclamation.
 
-```c
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
+```cpp
+// Implement a fixed-size memory pool
+#define BLOCK_SIZE 64
+#define POOL_SIZE 1024
 
-typedef struct MemoryPool MemoryPool;
-
-/// @brief 创建一个固定大小内存池
-/// @param block_size 每个块的大小（字节）
-/// @param block_count 块的数量
-/// @return 指向内存池的指针，失败返回 NULL
-MemoryPool* pool_create(size_t block_size, size_t block_count);
-
-/// @brief 从内存池中分配一个块
-void* pool_alloc(MemoryPool* pool);
-
-/// @brief 将块归还给内存池
-void pool_free(MemoryPool* pool, void* block);
-
-/// @brief 销毁内存池，释放所有内存
-void pool_destroy(MemoryPool* pool);
-
-int main(void) {
-    // TODO: 创建一个 64 字节/块、共 64 块的内存池
-    // TODO: 分配几个块，写入数据，然后释放
-    // TODO: 销毁内存池
-    return 0;
-}
+void* pool_alloc();
+void pool_free(void* ptr);
 ```
 
-Hint: Use a linked list to manage free blocks—store a pointer to the next free block in the first few bytes of each free block.
+Hint: Use a linked list to manage free blocks—the first few bytes of each free block store a pointer to the next free block.
 
 ### Exercise 2: malloc/free Wrapper with Statistics
 
-Implement a wrapper layer around `malloc` and `free` that tracks all allocation and deallocation operations, printing a statistical report when the program exits.
+Implement a wrapper layer for `malloc` and `free` that tracks all allocation and deallocation operations and prints a statistical report when the program exits.
 
-```c
-#include <stddef.h>
-#include <stdio.h>
-
-/// @brief 带统计的 malloc
+```cpp
+// Implement a wrapper for malloc/free
 void* tracked_malloc(size_t size, const char* file, int line);
-
-/// @brief 带统计的 free
 void tracked_free(void* ptr);
 
-/// @brief 打印内存统计报告
-void mem_report(void);
-
-#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
-
-int main(void) {
-    // TODO: 用 TMALLOC 分配几块内存
-    // TODO: 故意只释放其中一部分
-    // TODO: 调用 mem_report() 查看哪些分配没有被释放
-    return 0;
-}
+// Macro to automatically capture file and line
+#define MALLOC(size) tracked_malloc(size, __FILE__, __LINE__)
+#define FREE(ptr) tracked_free(ptr)
 ```
 
-Hint: Use an array or linked list to record the details of each allocation. `atexit(mem_report)` can register an exit hook.
+Hint: Use an array or linked list to record information for each allocation. `atexit` can register an exit hook.

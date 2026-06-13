@@ -428,7 +428,7 @@ char* result = malloc(strlen(s) + strlen(t) + 1); // OK，+1 给 '\0'
 /// @return a / (*b)
 int fix_lexical_trap(int a, int* b)
 {
-    // TODO: 修复代码中的陷阱
+    // 练习： 修复代码中的陷阱
     return a/*b;
 }
 ```
@@ -441,7 +441,7 @@ int fix_lexical_trap(int a, int* b)
 /// @return 1 表示低 4 位全为零，0 表示至少有一位非零
 int fix_priority_trap(unsigned int flags)
 {
-    // TODO: 修复代码中的陷阱
+    // 练习： 修复代码中的陷阱
     return flags & 0x0F == 0;
 }
 ```
@@ -455,7 +455,7 @@ int fix_priority_trap(unsigned int flags)
 /// @return 1 表示相等，0 表示不等
 int fix_assignment_trap(int x, int target)
 {
-    // TODO: 修复代码中的陷阱
+    // 练习： 修复代码中的陷阱
     if (x = target)
         return 1;
     return 0;
@@ -471,7 +471,7 @@ int fix_assignment_trap(int x, int target)
 /// @return 数组中的最大值
 int fix_semicolon_trap(int* arr, int n)
 {
-    // TODO: 修复代码中的陷阱
+    // 练习： 修复代码中的陷阱
     int max_val = arr[0];
     for (int i = 1; i < n; i++)
         if (arr[i] > max_val);
@@ -489,7 +489,7 @@ int fix_semicolon_trap(int* arr, int n)
 /// @return 1 表示会溢出，0 表示安全
 int fix_overflow_check(int a, int b)
 {
-    // TODO: 修复代码中的陷阱
+    // 练习： 修复代码中的陷阱
     if (a + b < 0)
         return 1;
     return 0;
@@ -505,7 +505,7 @@ int fix_overflow_check(int a, int b)
 /// @return 新分配的拼接字符串，调用者负责释放
 char* fix_string_concat(const char* s, const char* t)
 {
-    // TODO: 修复代码中的所有陷阱
+    // 练习： 修复代码中的所有陷阱
     char* result = malloc(strlen(s) + strlen(t));
     strcpy(result, s);
     strcat(result, t);

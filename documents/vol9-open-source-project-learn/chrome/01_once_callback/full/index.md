@@ -33,7 +33,7 @@
 
 前置知识章节中涉及的 C++ 独立示例代码已提炼为可编译的最小工程，位于：
 
-```
+```text
 code/volumn_codes/vol9/full_tutorial_codes/chrome_design/
 ```
 

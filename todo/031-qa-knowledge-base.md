@@ -18,7 +18,7 @@ estimated_effort: medium
 - `documents/appendix/terminology.md` 已有术语表。
 - 文档中已有零散 StackOverflow、cppreference、WG21 链接。
 - `.github/DISCUSSION_TEMPLATE/` 已有方向讨论模板。
-- `todo/091-community-qa-knowledge-base.md` 有旧规划。
+- 旧 `091-community-qa-knowledge-base.md` 的规划已合并进本文件，原文件已移除。
 
 ## Gaps
 
@@ -53,10 +53,10 @@ estimated_effort: medium
 
 ## Old TODO Merge
 
-- `091-community-qa-knowledge-base.md`
+- [x] `091-community-qa-knowledge-base.md`（已合并进本文件，原文件已移除）
 
 ## Acceptance
 
 - [ ] FAQ 入口设计完成。
 - [ ] QA index 结构完成。
-- [ ] CONTRIBUTING 中说明如何提交 QA 条目。
+- [x] CONTRIBUTING 中说明如何提交 QA 条目。（已落地于 CONTRIBUTING.md「QA 与知识库规则」段）

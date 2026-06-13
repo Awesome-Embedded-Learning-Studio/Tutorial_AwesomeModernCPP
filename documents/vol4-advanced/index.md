@@ -38,5 +38,6 @@ tags:
 
 <ChapterNav variant="sub">
   <ChapterLink href="05-spaceship-operator">三路比较运算符</ChapterLink>
+  <ChapterLink href="03-empty-base-optimization">空基类优化（EBO）</ChapterLink>
   <ChapterLink href="msvc-cpp-modules">C++ Modules (MSVC)</ChapterLink>
 </ChapterNav>

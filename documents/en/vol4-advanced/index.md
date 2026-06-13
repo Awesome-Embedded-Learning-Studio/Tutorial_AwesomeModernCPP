@@ -1,6 +1,6 @@
 ---
-title: 'Part IV: Advanced Topics'
-description: Advanced C++20-26 Features
+title: 'Volume 4: Advanced Topics'
+description: C++20-26 Advanced Features
 platform: host
 tags:
 - cpp-modern
@@ -8,20 +8,20 @@ tags:
 - intermediate
 translation:
   source: documents/vol4-advanced/index.md
-  source_hash: 8022266e678a2c17a0160a8e06e057d3ad256b1acb4ad829063ec0ee0b400fc0
-  translated_at: '2026-05-26T11:38:54.974755+00:00'
+  source_hash: 876294454f59cf37104575dc6b93a3e3e8d5e98d545cd7c3a6b1aa1cc7fec775
+  translated_at: '2026-06-13T11:50:46.746327+00:00'
   engine: anthropic
-  token_count: 229
+  token_count: 247
 ---
 # Volume 4: Advanced Topics
 
-> Status: Partial content available (pending rewrite)
+> Status: Partial content available (to be rewritten)
 
 ## Overview
 
 This volume covers advanced C++20/23/26 features.
 
-## Existing Articles (Pending Rewrite to Generic Content)
+## Existing Articles (to be rewritten to generic content)
 
 ### Template Programming (Categorized by C++ Standard)
 
@@ -42,6 +42,7 @@ This volume covers advanced C++20/23/26 features.
 ### Other
 
 <ChapterNav variant="sub">
-  <ChapterLink href="05-spaceship-operator">Spaceship Operator</ChapterLink>
+  <ChapterLink href="05-spaceship-operator">Three-Way Comparison Operator</ChapterLink>
+  <ChapterLink href="03-empty-base-optimization">Empty Base Optimization (EBO)</ChapterLink>
   <ChapterLink href="msvc-cpp-modules">C++ Modules (MSVC)</ChapterLink>
 </ChapterNav>

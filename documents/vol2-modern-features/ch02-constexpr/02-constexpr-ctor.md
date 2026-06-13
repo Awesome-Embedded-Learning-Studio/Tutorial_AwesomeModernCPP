@@ -11,7 +11,7 @@ tags:
   - 编译期计算
 difficulty: intermediate
 platform: host
-cpp_standard: [11, 14, 17]
+cpp_standard: [11, 14, 17, 20]
 reading_time_minutes: 15
 prerequisites:
   - "Chapter 2: constexpr 基础"
@@ -344,7 +344,7 @@ static_assert(kObj.values[3] == 13);
 static_assert(kObj.sum == 46);  // 10+11+12+13=46
 ```
 
-## 第五步——constexpr 析构函数（C++20 预告）
+## 第五步——constexpr 析构函数（C++20）
 
 在 C++20 之前，字面类型要求析构函数必须是平凡的（trivial）。这意味着你不能在析构函数里做任何清理工作。这个限制在 C++20 中被取消——你可以写 `constexpr` 析构函数了。
 

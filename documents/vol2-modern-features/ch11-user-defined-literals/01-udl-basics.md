@@ -407,6 +407,17 @@ auto angle = 3.14159_rad;
 每个数字后面都带着它的单位，代码几乎不需要注释(看着是真的爽啊!)
 
 
+## 小结
+
+用户自定义字面量本质上是用编译期能力给"裸数字"穿上单位的衣服——`100_ms`、`72_MHz`、`4_KiB` 一眼就能看懂，所有转换都在编译期完成，运行时零开销。记住几条要点：
+
+- `operator""` 有四种 cooked 形式（`unsigned long long` / `long double` / `const char*` / `char`）外加一种 raw 形式（字符串模板）。日常用 cooked 就够，只有要解析自定义数字语法（二进制、千分位）才上 raw。
+- 后缀一律**下划线开头**（`_ms`）。不带下划线的后缀（`ms`）是留给标准库的，自己用迟早踩雷。
+- 先用标准库现成的（`chrono` 的 `1h/1min/1s`、`"abc"s`、`"abc"sv`），不够再造自己的。
+- 字面量是编译期常量，可以放心塞进 `constexpr`、模板参数、数组尺寸。
+
+代价几乎为零，收益是把"这个数到底是什么单位"的疑问从 code review 里彻底消灭。怎么在真实工程里组织一整套自己的字面量库，留到 UDL 实战篇再展开。
+
 ## 参考资源
 
 - [cppreference: User-defined literals](https://en.cppreference.com/w/cpp/language/user_literal)
