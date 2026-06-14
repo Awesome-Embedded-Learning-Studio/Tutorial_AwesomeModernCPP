@@ -3,7 +3,7 @@
 [English](README.en.md) | 中文
 
 > 一套面向工程实践的现代 C++ 系统教程：从 C/C++ 基础、现代语言特性，到并发、性能、工程化、嵌入式实战与开源项目研读。
-
+> 试一试点一下下面的图片？
 <p align="center">
   <a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/">
     <img src="documents/images/screenshots/01-home.png" alt="在线文档站首页预览 · 点击进入" width="860">

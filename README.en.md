@@ -3,6 +3,7 @@
 [中文](README.md) | English
 
 > A practice-oriented modern C++ learning project: from C/C++ fundamentals and modern language features to concurrency, performance, engineering, embedded practice, and open-source code study.
+> What about click the image below?
 
 <p align="center">
   <a href="https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/en/">
