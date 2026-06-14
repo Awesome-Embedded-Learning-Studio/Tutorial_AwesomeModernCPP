@@ -13,7 +13,7 @@ order: 2
 platform: host
 prerequisites:
 - 卷一：std::string 基础用法
-reading_time_minutes: 14
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern

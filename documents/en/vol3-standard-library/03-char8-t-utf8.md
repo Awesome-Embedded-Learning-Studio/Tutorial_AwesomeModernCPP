@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 卷一：std::string 与字符串字面量基础
-reading_time_minutes: 12
+reading_time_minutes: 7
 tags:
 - host
 - cpp-modern
