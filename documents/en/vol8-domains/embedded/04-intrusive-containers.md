@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Intrusive container design
+description: Intrusive Container Design
 difficulty: intermediate
 order: 4
 platform: stm32f1
@@ -19,132 +19,155 @@ tags:
 title: Intrusive Container Design
 translation:
   source: documents/vol8-domains/embedded/04-intrusive-containers.md
-  source_hash: 24e237b2960b248f9f2dc4c56c20e8e807a888d72f4844b5541a5197c450bd42
-  translated_at: '2026-05-26T11:37:35.486345+00:00'
+  source_hash: be6a1adfb9f0ecf819e11505b29abc841596da95c16afb75d38001765af4d2f5
+  translated_at: '2026-06-14T00:21:18.768776+00:00'
   engine: anthropic
-  token_count: 1424
+  token_count: 1425
 ---
-# Modern C++ for Embedded Systems Tutorial — Intrusive Container Design
+# Modern C++ for Embedded: Intrusive Container Design
 
-Do you remember what standard containers do to your data? They copy pointers, allocate nodes, maintain extra memory layouts, and at some point silently chew up your cache locality. Intrusive containers are more straightforward: data objects stick their own hands out to act as list nodes — who's paying for extra memory and indirection? Not me.
+Do you remember what standard containers do with your data? They copy pointers, allocate nodes, maintain extra memory layouts, and silently devour your cache locality at some point. Intrusive containers are more straightforward: the data objects stick their own hands out to act as list nodes—who needs extra memory and indirection? Not me.
 
 ------
 
-## What Are Intrusive Containers, and Why Are They So Great for Embedded
+## What are Intrusive Containers and Why are They Great for Embedded Systems
 
-The key point of intrusive containers: node information (next/prev/...) lives directly inside the user object, rather than allocating a separate node to wrap the object pointer. The advantages are obvious:
+The key point of intrusive containers is that node information (next/prev/...) is placed directly inside the user object, rather than allocating a separate node wrapper to hold the object pointer. The advantages are obvious:
 
-- Zero extra allocation — no need to malloc/new a wrapper on every push (extremely important).
-- Better cache locality — objects and metadata are together, making traversal faster.
-- Smaller memory footprint and determinism — very friendly for memory-constrained or real-time systems.
+- **Zero extra allocation** — No need to `malloc`/`new` a wrapper on every `push` (crucial).
+- **Better cache locality** — Objects and metadata are together, making traversal faster.
+- **Smaller memory footprint and determinism** — Very friendly for memory-constrained or real-time systems.
 
-The disadvantages are equally straightforward:
+The disadvantages are equally direct:
 
-- Objects are coupled to the container interface (intrusion), requiring source modifications to the object structure.
-- If an object needs to be in multiple lists simultaneously, it requires multiple "hook" members or multiple inheritance.
-- Improper use can lead to dangling pointers or duplicate insertions, requiring more careful lifecycle management.
+- **Objects are coupled to the container interface** (intrusive), requiring modifications to the object structure.
+- **If an object needs to be in multiple lists simultaneously**, it requires multiple "hook" members or multiple inheritance.
+- **Misuse can lead to dangling pointers or duplicate insertion issues**, requiring more careful lifecycle management.
 
-Applicable scenarios: task schedulers, free-block lists, driver lists, kernel/RTOS data structures, memory pool free-lists, and more.
+**Applicable scenarios:** task schedulers, free-lists for idle blocks, driver lists, kernel/RTOS data structures, memory pool free-lists, etc.
 
 ------
 
 ## Two Common Implementation Strategies
 
-1. **Base class hook (inheritance)**: Objects inherit a hook base class that contains next/prev. Type-safe, and easy to cast.
-2. **Member hook**: Objects contain a hook member (more flexible, allowing multiple hook instances), but this requires the `container_of` trick to convert a hook pointer back to an object pointer.
+1. **Base class hook (inheritance)**: The object inherits from a hook base class that contains `next`/`prev`. It is type-safe and easy to cast.
+2. **Member hook**: The object contains a hook member (more flexible, allows multiple hook instances), but requires the `offsetof` technique to convert the hook pointer back to the object pointer.
 
-Below, we first implement a clean, ready-to-use "base class hook" doubly linked list (suitable for tutorials and embedded), and then discuss the ideas and caveats of the member hook approach.
+Below, we will first implement a clean, ready-to-use "base class hook" doubly linked list (suitable for tutorials and embedded systems), and then discuss the logic and caveats of member hooks.
 
 ------
 
-## Code: A Simple, Type-Safe Intrusive Doubly Linked List (Inheritance-Based)
+## Code: Simple, Type-Safe Intrusive Doubly Linked List (Inheritance-based)
 
-The goal of the following implementation: small and clear, compatible with C++11, and suitable for embedded compilers.
+The goal of this implementation: small and clear, C++11 compatible, suitable for embedded compilers.
 
 ```cpp
-// intrusive_list.h
+// intrusive_list.hpp
 #pragma once
-#include <cassert>
-#include <iterator>
 
-// Intrusive list node base — 继承它即可成为链表节点
-template<typename T>
-struct IntrusiveListNode {
-    T* prev = nullptr;
-    T* next = nullptr;
+// A minimal, type-safe intrusive doubly linked list node.
+// T must inherit from IntrusiveNode<T>.
+template <typename T>
+class IntrusiveNode {
+public:
+    IntrusiveNode() : prev(nullptr), next(nullptr) {}
+
+    // Check if the node is currently part of a list
+    bool is_linked() const {
+        return next != nullptr || prev != nullptr;
+    }
+
+    // Remove this node from the list.
+    // Safe to call only if the node is actually linked.
+    void unlink() {
+        if (next) {
+            next->prev = prev;
+        }
+        if (prev) {
+            prev->next = next;
+        }
+        next = prev = nullptr;
+    }
+
+private:
+    T* prev;
+    T* next;
+
+    friend class IntrusiveList<T>;
 };
 
-// Intrusive doubly linked list
-template<typename T>
+// The intrusive list container itself.
+// Does NOT manage memory ownership; it only manages pointers.
+template <typename T>
 class IntrusiveList {
 public:
     IntrusiveList() : head(nullptr), tail(nullptr) {}
 
     bool empty() const { return head == nullptr; }
 
-    void push_front(T* node) {
-        assert(node && node->prev == nullptr && node->next == nullptr && "节点必须处于未链接状态");
-        node->next = head;
-        if (head) head->prev = node;
-        head = node;
-        if (!tail) tail = node;
-    }
+    // Push to the front of the list
+    void push_front(T* item) {
+        if (!item) return;
 
-    void push_back(T* node) {
-        assert(node && node->prev == nullptr && node->next == nullptr && "节点必须处于未链接状态");
-        node->prev = tail;
-        if (tail) tail->next = node;
-        tail = node;
-        if (!head) head = node;
-    }
+        item->IntrusiveNode<T>::next = head;
+        item->IntrusiveNode<T>::prev = nullptr;
 
-    T* pop_front() {
-        if (!head) return nullptr;
-        T* n = head;
-        head = head->next;
-        if (head) head->prev = nullptr;
-        else tail = nullptr;
-        n->next = n->prev = nullptr;
-        return n;
-    }
-
-    void erase(T* node) {
-        assert(node && "erase null");
-        if (node->prev) node->prev->next = node->next;
-        else head = node->next;
-
-        if (node->next) node->next->prev = node->prev;
-        else tail = node->prev;
-
-        node->prev = node->next = nullptr;
-    }
-
-    void clear() {
-        T* cur = head;
-        while (cur) {
-            T* nxt = cur->next;
-            cur->prev = cur->next = nullptr;
-            cur = nxt;
+        if (head) {
+            head->IntrusiveNode<T>::prev = item;
+        } else {
+            tail = item; // List was empty
         }
-        head = tail = nullptr;
+        head = item;
     }
 
-    // 简单迭代器（只读/可写）
-    struct iterator {
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = T;
-        using pointer = T*;
-        using reference = T&;
+    // Push to the back of the list
+    void push_back(T* item) {
+        if (!item) return;
 
-        explicit iterator(T* p) : p(p) {}
-        reference operator*() const { return *p; }
-        pointer operator->() const { return p; }
-        iterator& operator++() { p = p->next; return *this; }
-        iterator operator++(int) { iterator tmp = *this; ++*this; return tmp; }
-        bool operator==(const iterator& o) const { return p == o.p; }
-        bool operator!=(const iterator& o) const { return p != o.p; }
+        item->IntrusiveNode<T>::prev = tail;
+        item->IntrusiveNode<T>::next = nullptr;
+
+        if (tail) {
+            tail->IntrusiveNode<T>::next = item;
+        } else {
+            head = item; // List was empty
+        }
+        tail = item;
+    }
+
+    // Standard iteration support
+    T* front() { return head; }
+    T* back() { return tail; }
+    const T* front() const { return head; }
+    const T* back() const { return tail; }
+
+    // Iterator implementation for range-based for loops
+    class iterator {
+    public:
+        iterator(T* ptr) : current(ptr) {}
+
+        T& operator*() { return *current; }
+        T* operator->() { return current; }
+
+        // Prefix increment
+        iterator& operator++() {
+            if (current) current = current->IntrusiveNode<T>::next;
+            return *this;
+        }
+
+        // Postfix increment
+        iterator operator++(int) {
+            iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+
+        bool operator!=(const iterator& other) const {
+            return current != other.current;
+        }
+
     private:
-        T* p;
+        T* current;
     };
 
     iterator begin() { return iterator(head); }
@@ -154,102 +177,127 @@ private:
     T* head;
     T* tail;
 };
-
 ```
 
-**How to use it:**
+**How to use:**
 
 ```cpp
-// example.cpp
-#include "intrusive_list.h"
-#include <iostream>
+#include "intrusive_list.hpp"
+#include <cstdio>
 
-struct Task : IntrusiveListNode<Task> {
-    int id;
-    Task(int i): id(i) {}
+// Example 1: Task Control Block
+class Task : public IntrusiveNode<Task> {
+public:
+    const char* name;
+    int priority;
+
+    Task(const char* n, int p) : name(n), priority(p) {}
+
+    void run() {
+        printf("Running task: %s (Priority %d)\n", name, priority);
+    }
 };
 
 int main() {
-    IntrusiveList<Task> runq;
-    Task a(1), b(2), c(3);
+    Task task1("Idle", 0);
+    Task task2("Logger", 10);
+    Task task3("Network", 5);
 
-    runq.push_back(&a);
-    runq.push_back(&b);
-    runq.push_front(&c); // 链表顺序： c, a, b
+    IntrusiveList<Task> ready_queue;
 
-    for (auto &t : runq) {
-        std::cout << "Task " << t.id << "\n";
+    ready_queue.push_back(&task1);
+    ready_queue.push_back(&task2);
+    ready_queue.push_front(&task3); // Network goes to front
+
+    printf("--- Task Queue ---\n");
+    for (auto& t : ready_queue) {
+        t.run();
     }
 
-    runq.erase(&a);
+    // Remove a specific task
+    task2.unlink();
 
-    if (auto p = runq.pop_front()) {
-        std::cout << "pop " << p->id << "\n";
+    printf("\n--- After removing Logger ---\n");
+    for (auto& t : ready_queue) {
+        printf("Task: %s\n", t.name);
     }
+
+    return 0;
 }
-
 ```
 
-This code can be compiled directly with any embedded-compatible C++ compiler (as long as it supports basic templates and `nullptr`).
+This code compiles directly with embedded-compatible C++ compilers (as long as they support basic templates and `constexpr`).
 
 ------
 
-## Member Hook: When an Object Needs to Appear in Multiple Lists
+## Member Hook: When Objects Need to Appear in Multiple Lists
 
-The inheritance approach is simple, but if an object needs to belong to multiple lists simultaneously (for example, in both a ready_list and a wait_list), you need multiple hook members or the member hook approach.
+The inheritance approach is simple, but if an object needs to belong to multiple lists simultaneously (e.g., in both a `ready_list` and a `wait_list`), you need multiple hook members or use the member hook approach.
 
-The key to the member hook is `container_of` — given a pointer to a hook member, calculating the pointer back to the containing object (a macro commonly used in the Linux kernel).
+The key to member hooks is `offsetof` — given a pointer to a hook member, calculate the pointer to the containing object (a macro commonly used in the Linux kernel).
 
-A simple macro-based implementation (clear and widely used):
+A simple macro implementation (clear and commonly used):
 
 ```cpp
-#include <cstddef> // offsetof
-#define CONTAINER_OF(ptr, type, member) \
-    ((type*) ( (char*)(ptr) - offsetof(type, member) ))
+#include <cstddef>
 
+// A generic hook node for member lists
+struct LinkNode {
+    LinkNode* prev = nullptr;
+    LinkNode* next = nullptr;
+};
+
+// Helper macro: container_of
+// Given ptr (address of member), type (container type), and member (member name)
+#define GET_CONTAINER(ptr, type, member) \
+    reinterpret_cast<type*>(reinterpret_cast<char*>(ptr) - offsetof(type, member))
 ```
 
 Example structure:
 
 ```cpp
-struct MyObject {
-    IntrusiveListNode<MyObject> ready_hook;   // for ready list
-    IntrusiveListNode<MyObject> wait_hook;    // for wait list
-    int data;
+class Device {
+public:
+    int id;
+    LinkNode dev_list_hook;   // Hook for global device list
+    LinkNode ready_hook;      // Hook for ready queue
+    LinkNode wait_hook;       // Hook for wait queue
+
+    Device(int i) : id(i) {}
 };
 
-// 操作 ready list 时，将传入 &obj->ready_hook，然后用 CONTAINER_OF 转回 MyObject*
-
+// Usage:
+// Device* d = GET_CONTAINER(node_ptr, Device, dev_list_hook);
 ```
 
-The member hook is more flexible, but requires special attention during use: `offsetof` must match the actual member name, and it is strongly recommended to check whether the hook is already linked before insertion (to avoid duplicate insertions).
+Member hooks are more flexible, but require special care when using: the `member` name in `GET_CONTAINER` must match the actual member name; and it is strongly recommended to check if the hook is already linked before insertion to avoid duplicate insertion.
 
 ------
 
-## Design Recommendations and Pitfall Guide
+## Design Advice and Pitfall Prevention
 
-1. **Object lifecycles must be explicit**: Nodes in a list must be removed from all lists before being destroyed. Otherwise, dangling pointers will occur, and the consequence is usually a hard-to-locate crash.
-2. **Check state before insertion**: Add a `bool linked` field or assertion to the hook to prevent duplicate insertions. Make good use of `assert` in test code.
-3. **Prefer member hooks for multi-hook requirements**: If an object switches between multiple containers frequently, member hooks are more flexible.
-4. **Be careful with memory barriers/atomicity in concurrent scenarios**: If you need to manipulate lists in an ISR or on multi-core systems, you must use locks, atomic CAS, or specialized lock-free algorithms (beyond the scope of this article).
-5. **Provide an RAII wrapper**: Consider providing a small `IntrusiveListGuard` or `ScopedUnlink` to ensure objects are safely unregistered when exceptions or early returns occur. Embedded code might not have exceptions, but RAII helps write safer cleanup code.
-6. **Debug information**: During development, printing node states (id/address/prev/next) can quickly help locate errors.
-7. **Don't overuse them**: Intrusive containers are not a silver bullet. If you don't care about per-allocation overhead, or if the object is immutable (third-party library), don't intrude into the object. Standard `std::list`/`vector` are simpler, safer, and easier to maintain.
+1. **Object lifecycles must be explicit**: Nodes in a list must be removed from all lists before being destroyed. Otherwise, dangling pointers will appear, often leading to hard-to-locate crashes.
+2. **Check state before insertion**: Add an `is_linked` field or assertion to the hook to prevent duplicate insertion. Use `assert` frequently in test code.
+3. **Prefer member hooks for multiple hook requirements**: If an object switches between containers frequently, member hooks are more flexible.
+4. **Be careful with memory barriers/atomicity in concurrent scenarios**: If you operate on lists in an ISR or multi-core environment, you must use locks, atomic CAS, or specialized lock-free algorithms (beyond the scope of this article).
+5. **Provide RAII wrappers**: Consider providing a small `ScopeGuard` or `IntrusiveListAutoUnlink` to ensure objects are safely unlinked on exceptions or early returns. Embedded code might not use exceptions, but RAII helps write safer release code.
+6. **Debug information**: During development, printing node status (id/address/prev/next) can quickly pinpoint errors.
+7. **Don't abuse them**: Intrusive containers are not a silver bullet. If you don't care about per-allocation overhead or the object is immutable (third-party library), don't intrude on the object; standard `std::list`/`std::vector` are simpler, safer, and easier to maintain.
 
 ------
 
 ## When to Choose Intrusive Containers
 
-In embedded, kernel, and real-time systems, resources and latency are the top priorities, making intrusive data structures a very natural choice in these scenarios. They are particularly suitable for:
+In embedded / kernel / real-time systems, resources and latency are top priorities. Intrusive data structures are a very natural choice in these scenarios. They are particularly suitable for:
 
-- Systems that require determinism and avoid heap allocation (bootloaders, RTOS kernels).
-- High-performance free-lists, task queues, timer wheels, and more.
-- Scenarios where you want the smallest possible memory footprint.
+- Systems requiring determinism and avoiding heap allocation (bootloaders, RTOS kernels).
+- High-performance free-lists, task queues, timer wheels, etc.
+- Scenarios where minimal memory footprint is desired.
 
-If you are working on standard application-layer business logic, or if objects come from third-party libraries (where you cannot modify the structure), the maintenance cost of an intrusive approach may outweigh the benefits.
+If you are working on general application-layer business logic, or if objects come from third-party libraries (where structure modification is impossible), the maintenance cost of intrusive solutions may outweigh the benefits.
 
 ------
 
 ## Conclusion
 
-The idea behind intrusive containers is not complicated: let the data take responsibility for its own "positioning." However, this requires you to have a clearer understanding of the object's responsibilities — who inserts it, who removes it, and when it gets removed. Turn those responsibilities into code, and turn that code into conventions. For embedded systems, this is a very pragmatic engineering philosophy: save a byte of memory, gain a bit more determinism.
+The idea behind intrusive containers isn't complex: let the data take responsibility for its own "position". However, this requires you to be clearer about the object's responsibilities—who inserts it, who deletes it, and when it is deleted. Codify these responsibilities into code, and then turn that code into standards. For embedded systems, this is a very "pragmatic" engineering philosophy: save a bit of memory, gain a bit of determinism.

@@ -19,38 +19,38 @@ tags:
 title: Circular Buffer Implementation
 translation:
   source: documents/vol8-domains/embedded/03-circular-buffer.md
-  source_hash: 244238468099658b6070bdd00700e98ca2c24f4e869ccb425b756eb1ff99b464
-  translated_at: '2026-05-26T11:37:34.986895+00:00'
+  source_hash: 8c134e19ee132d94c025e8b4c70083d7d6ca8206d7b828f8d8fb6396ee391a86
+  translated_at: '2026-06-14T00:20:56.830619+00:00'
   engine: anthropic
-  token_count: 980
+  token_count: 981
 ---
 # Embedded C++ Tutorial — Circular Buffer
 
-In the embedded world, one type of problem pops up again and again: **a data source continuously produces data, a consumer processes it slowly, and we want to avoid `malloc` in between.** Enter an ancient yet timeless data structure — the **circular buffer (also known as a ring buffer)**.
+In the embedded world, one problem recurs constantly: **a data source produces data continuously, a consumer processes it slowly, and we want to avoid `malloc` in between.** Thus, an ancient but timeless data structure takes the stage—the **Circular Buffer (Ring Buffer)**.
 
-Think of it as a warehouse with a fixed size; once full, it starts over from the beginning. No resizing, no fragmentation, no "new failed" errors. It is perfectly suited for MCUs, drivers, interrupts, DMA, UARTs, audio streams, and more.
+You can think of it as a warehouse with a fixed size; when it's full, we start over from the beginning. No resizing, no fragmentation, no "new failed," making it perfect for MCUs, drivers, interrupts, DMA, serial ports, audio streams, and other scenarios.
 
 ------
 
 ## Why Does Embedded Love Circular Buffers So Much?
 
-In the PC world, we can freely `new` and `std::vector::push_back`. But in embedded systems, these operations sound dangerous:
+In the PC world, we can freely `malloc` and `new`. But in embedded systems, these operations sound dangerous:
 
-- Heap memory is small and prone to fragmentation
-- We cannot call `malloc` in an interrupt context
-- Real-time systems cannot tolerate unpredictable latency
+- Heap memory is small and prone to fragmentation.
+- We cannot `malloc` within an interrupt context.
+- Real-time systems cannot tolerate unpredictable latency.
 
-The characteristics of a circular buffer, however, make it practically tailor-made for embedded:
+The characteristics of a circular buffer are practically tailor-made for embedded systems:
 
-- **Fixed size, determined at compile time or initialization**
-- **O(1) enqueue / dequeue**
-- **Contiguous memory, cache-friendly**
-- **No dynamic allocation required**
-- **Simple to implement, easy to make lock-free / interrupt-safe**
+- **Fixed size, determined at compile time or initialization.**
+- **O(1) enqueue / dequeue.**
+- **Contiguous memory, cache-friendly.**
+- **No dynamic allocation required.**
+- **Simple implementation, easy to make lock-free / interrupt-safe.**
 
-To sum it up in one sentence:
+To summarize in one sentence:
 
-> **It's not clever, but it's reliable.**
+> **It isn't smart, but it is reliable.**
 
 ------
 
@@ -58,231 +58,200 @@ To sum it up in one sentence:
 
 A circular buffer is essentially:
 
-- A fixed-size array
+- A fixed-size array.
 - Two indices:
-  - `head`: write position
-  - `tail`: read position
+  - `write_idx`: The write position.
+  - `read_idx`: The read position.
 
-When an index reaches the end of the array, it **wraps around to the beginning**, forming a circle.
+When an index reaches the end of the array, it **wraps around to the beginning**, like a circle.
 
-```cpp
-
-[ 0 ][ 1 ][ 2 ][ 3 ][ 4 ][ 5 ]
-        ↑         ↑
-      tail      head
-
+```mermaid
+graph LR
+    A[Buffer Array] --> B[write_idx]
+    A --> C[read_idx]
+    B -- "Write Data" --> D[Move write_idx]
+    C -- "Read Data" --> E[Move read_idx]
 ```
 
-Writing data: move `head`
-Reading data: move `tail`
+Writing data: Move `write_idx`.
+Reading data: Move `read_idx`.
 
 There is only one key question to figure out:
-👉 **How do we distinguish between "full" and "empty"?**
+👉 **How to distinguish "full" from "empty"?**
 
 ------
 
-## How to Distinguish "Empty" and "Full"? (A Classic Puzzle)
+## How to Distinguish "Empty" and "Full"? (The Classic Puzzle)
 
 There are three common approaches:
 
-1. **Waste one element (most common)**
-2. Maintain an additional `count`
-3. Use an additional `full` flag
+1. **Waste one element (most common).**
+2. Maintain an extra `count`.
+3. Use an extra `bool` flag.
 
-In embedded development, **approach 1 is the most popular**: simple, unambiguous, and logically clear. The rules are:
+In embedded systems, **Approach 1 is the most popular**: simple, unambiguous, and logically clear. The rules are:
 
-- Buffer size is `N`
-- It can actually store a maximum of `N - 1` elements
+- Buffer size is `Capacity + 1`.
+- Actual maximum storage is `Capacity` elements.
 - Condition checks:
-  - Empty: `head == tail`
-  - Full: `(head + 1) % N == tail`
+  - Empty: `read_idx == write_idx`
+  - Full: `(write_idx + 1) % Size == read_idx`
 
-Yes, we sacrifice one slot in exchange for a lifetime of peace of mind.
+Yes, we sacrifice one slot to buy a lifetime of peace.
 
 ------
 
 ## A Clean C++ Circular Buffer Implementation
 
-Below is a **no dynamic memory, templated, embedded-friendly** implementation.
+Below is a **no-dynamic-memory, templated, embedded-friendly** implementation.
 
 ### Basic Interface Design
 
 ```cpp
-#pragma once
-#include <cstddef>
-#include <array>
+template <typename T, size_t Capacity>
+class CircularBuffer {
+    // Actual array size = User available capacity + 1
+    T data_[Capacity + 1];
+    size_t read_idx_ = 0;
+    size_t write_idx_ = 0;
 
-template<typename T, std::size_t Capacity>
-class RingBuffer {
 public:
-    bool push(const T& value);
-    bool pop(T& out);
-
-    bool empty() const;
-    bool full() const;
-
-    std::size_t size() const;
-    std::size_t capacity() const { return Capacity - 1; }
-
-private:
-    std::array<T, Capacity> buffer_{};
-    std::size_t head_ = 0;
-    std::size_t tail_ = 0;
+    // ... methods
 };
-
 ```
 
 Note one detail:
-👉 **`Capacity` actual array size = user-usable capacity + 1**
+👉 **`data_[Capacity + 1]` actual array size = user available capacity + 1**
 
 ------
 
-## Enqueue (push): Move Forward One Step
+## Enqueue (push): Step Forward
 
 ```cpp
-template<typename T, std::size_t Capacity>
-bool RingBuffer<T, Capacity>::push(const T& value)
-{
+bool push(const T& item) {
     if (full()) {
-        return false;  // 缓冲区满了
+        return false; // Buffer full
     }
 
-    buffer_[head_] = value;
-    head_ = (head_ + 1) % Capacity;
+    data_[write_idx_] = item;
+    write_idx_ = (write_idx_ + 1) % (Capacity + 1);
     return true;
 }
-
 ```
 
-There is no dark magic here:
+There is no black magic here:
 
-- First, check if it is full
-- Write the data
-- Move `head`
-- If it reaches the end, wrap around to the beginning
+- First check if full.
+- Write data.
+- Move `write_idx_`.
+- If at the end, wrap to the beginning.
 
-**O(1), it will never be slow.**
+**O(1), never slow.**
 
 ------
 
-## Dequeue (pop): The Consumer Takes the Stage
+## Dequeue (pop): The Consumer Enters
 
 ```cpp
-template<typename T, std::size_t Capacity>
-bool RingBuffer<T, Capacity>::pop(T& out)
-{
+bool pop(T& item) {
     if (empty()) {
-        return false;  // 没数据
+        return false; // Buffer empty
     }
 
-    out = buffer_[tail_];
-    tail_ = (tail_ + 1) % Capacity;
+    item = data_[read_idx_];
+    read_idx_ = (read_idx_ + 1) % (Capacity + 1);
     return true;
 }
-
 ```
 
 Equally simple:
 
-- If empty, fail
-- Read the data
-- Move `tail`
+- Fail if empty.
+- Read data.
+- Move `read_idx_`.
 
 ------
 
-## State Check Functions
+## Status Check Functions
 
 ```cpp
-template<typename T, std::size_t Capacity>
-bool RingBuffer<T, Capacity>::empty() const
-{
-    return head_ == tail_;
+bool empty() const {
+    return read_idx_ == write_idx_;
 }
 
-template<typename T, std::size_t Capacity>
-bool RingBuffer<T, Capacity>::full() const
-{
-    return (head_ + 1) % Capacity == tail_;
+bool full() const {
+    return (write_idx_ + 1) % (Capacity + 1) == read_idx_;
 }
-
-template<typename T, std::size_t Capacity>
-std::size_t RingBuffer<T, Capacity>::size() const
-{
-    if (head_ >= tail_) {
-        return head_ - tail_;
-    }
-    return Capacity - (tail_ - head_);
-}
-
 ```
 
-The `size()` pattern is very common in embedded development,
-avoiding complex branching without using an additional counter.
+The `full()` check is very common in embedded systems; it avoids complex branching and doesn't use an extra counter.
 
 ------
 
 ## A Real-World Embedded Use Case
 
-### UART Reception (ISR + Main Loop)
+### Serial Reception (ISR + Main Loop)
 
 ```cpp
-RingBuffer<uint8_t, 128> rx_buffer;
+CircularBuffer<uint8_t, 256> rx_buffer;
 
-void USART_IRQHandler()
-{
-    uint8_t data = UART_Read();
-    rx_buffer.push(data);  // 中断里只做这件事
-}
-
-int main()
-{
-    while (1) {
-        uint8_t ch;
-        if (rx_buffer.pop(ch)) {
-            process_char(ch);
-        }
+// UART Interrupt Service Routine
+void USART1_IRQHandler() {
+    if (USART1->ISR & USART_ISR_RXNE) {
+        uint8_t data = USART1->RDR;
+        rx_buffer.push(data); // Non-blocking write
     }
 }
 
+// Main Loop
+int main() {
+    while (1) {
+        uint8_t byte;
+        if (rx_buffer.pop(byte)) {
+            process_byte(byte); // Process slowly
+        }
+        // Do other tasks...
+    }
+}
 ```
 
-This approach has several deeply embedded-friendly advantages:
+This approach has several very "embedded" advantages:
 
-- The logic inside the ISR is extremely short
-- No `malloc`
-- The main loop processes data at its own pace
-- Even if processing is a bit slow, it will not block interrupts
+- The logic inside the ISR is extremely short.
+- No `malloc`.
+- The main loop processes data at its own pace.
+- Even if processing is slow, it won't block the interrupt.
 
 ------
 
-## A Practical Note on Thread Safety / Interrupt Safety
+## A Reality Check on Thread Safety / Interrupt Safety
 
 The implementation above is:
 
-- **Single producer + single consumer**
-- One runs in an interrupt, the other in the main loop
+- **Single Producer + Single Consumer (SPSC)**
+- One runs in an interrupt, the other in the main loop.
 
 On many MCUs, this is **naturally safe** (as long as index reads and writes are atomic).
 
-But if you encounter any of the following situations:
+However, if you encounter one of the following situations:
 
-- Multithreading
-- Multiple producers
-- SMP
-- RTOS inter-task communication
+- Multithreading.
+- Multiple producers.
+- SMP (Symmetric Multi-Processing).
+- Communication between RTOS tasks.
 
-Then you will need:
+You will need:
 
-- Disabling interrupts
-- Atomic variables
-- Or a mutex / spinlock
+- Critical sections (disable interrupts).
+- Atomic variables.
+- Or a mutex / spinlock.
 
 ------
 
-## Comparing with std::queue / std::vector
+## Comparison with std::queue / std::vector
 
-| Approach       | Dynamic Allocation | Deterministic | Embedded-Friendly |
-| -------------- | ------------------ | ------------- | ----------------- |
-| std::vector    | Yes                | No            | ❌                 |
-| std::queue     | Depends on underlying container | No | ❌                 |
-| Circular Buffer | No                | Yes           | ✅                 |
+| Approach      | Dynamic Allocation | Deterministic | Embedded Friendly |
+| ------------- | ------------------ | ------------- | ----------------- |
+| std::vector  | Yes                | No            | ❌                 |
+| std::queue   | Depends on underlying container | No | ❌ |
+| Circular Buffer | No            | Yes           | ✅                 |

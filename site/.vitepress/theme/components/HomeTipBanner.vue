@@ -1,30 +1,28 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useData } from 'vitepress'
+import { useData, withBase } from 'vitepress'
 
 const { lang } = useData()
 const isEn = computed(() => lang.value.startsWith('en'))
+const link = computed(() => withBase('/roadmap/'))
 </script>
 
 <template>
   <div class="home-tip-banner">
     <span class="home-tip-icon">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
-        <path d="M9 18h6"/>
-        <path d="M10 22h4"/>
+        <circle cx="12" cy="12" r="10" />
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
       </svg>
     </span>
     <span class="home-tip-text">
       <template v-if="isEn">
-        Tool versions, APIs, and configurations in this tutorial may change over time. We recommend verifying against
-        <a href="https://en.cppreference.com/" target="_blank" rel="noopener noreferrer">the official documentation</a>
-        and treating the tutorial content as a reference for ideas rather than an absolute standard.
+        Not sure where to start?
+        <a :href="link">Read the learning roadmap →</a>
       </template>
       <template v-else>
-        本教程中的工具版本、API 和配置可能随时间变化，建议对照
-        <a href="https://zh.cppreference.com/" target="_blank" rel="noopener noreferrer">官方文档</a>
-        进行验证，将教程内容作为思路参考而非绝对标准。
+        不知道从哪里开始？
+        <a :href="link">点击查看学习路线图 →</a>
       </template>
     </span>
   </div>
@@ -39,8 +37,8 @@ const isEn = computed(() => lang.value.startsWith('en'))
   display: flex;
   align-items: center;
   gap: 10px;
-  background-color: var(--vp-tip-bg, rgba(83, 162, 83, 0.08));
-  border: 1px solid var(--vp-tip-border, rgba(83, 162, 83, 0.2));
+  background-color: var(--vp-tip-bg, rgba(63, 81, 181, 0.08));
+  border: 1px solid var(--vp-tip-border, rgba(63, 81, 181, 0.2));
   color: var(--vp-tip-text, var(--vp-c-text-2));
   font-size: 14px;
   line-height: 1.6;
@@ -48,19 +46,20 @@ const isEn = computed(() => lang.value.startsWith('en'))
 
 .home-tip-icon {
   flex-shrink: 0;
-  color: var(--vp-tip-accent, #53a253);
+  color: var(--vp-tip-accent, #3f51b5);
   display: flex;
   align-items: center;
 }
 
 .home-tip-text a {
-  color: var(--vp-tip-accent, #53a253);
+  color: var(--vp-tip-accent, #3f51b5);
   text-decoration: underline;
   text-underline-offset: 2px;
-  font-weight: 500;
+  font-weight: 600;
+  margin-left: 2px;
 }
 
 .home-tip-text a:hover {
-  color: var(--vp-tip-accent-hover, #3d7a3d);
+  color: var(--vp-tip-accent-hover, #303f9f);
 }
 </style>

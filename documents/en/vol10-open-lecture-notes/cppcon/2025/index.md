@@ -1,18 +1,18 @@
 ---
 title: CppCon 2025 Talk Notes
-description: CppCon 2025 Talk Reading Notes
+description: CppCon 2025 Conference Talk Reading Notes
 conference: cppcon
 conference_year: 2025
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/index.md
-  source_hash: e7fbc18b1b49f2a6e8bcac8eb5d2fb89ad9b7fa8a02ae8137c84d69e784f355c
-  translated_at: '2026-05-26T11:16:09.315842+00:00'
+  source_hash: a5b6eec5f54dde5601215c218aa73ef4f3ec87186be4ce7582f6233964b9ef0b
+  translated_at: '2026-06-14T00:18:02.162311+00:00'
   engine: anthropic
-  token_count: 234
+  token_count: 411
 ---
 # CppCon 2025 Talk Notes
 
-A collection of notes from CppCon 2025 talks.
+A collection of notes from CppCon 2025 presentations.
 
 ## Talk List
 
@@ -41,7 +41,7 @@ A collection of notes from CppCon 2025 talks.
 />
 
 <ChapterNav variant="sub">
-  <ChapterLink href="02-some-assembly-required/">C++: Exploring the Underlying Assembly</ChapterLink>
+  <ChapterLink href="02-some-assembly-required/">C++: Some Assembly Required</ChapterLink>
 </ChapterNav>
 
 ---

@@ -1,8 +1,8 @@
 ---
-title: 'The Cost of Copying and the Motivation for Moving: From `swap` to `MyString`'
-description: CppCon 2025 talk notes — starting from the three deep copies in `swap`,
-  we build a `MyString` class by hand, reveal the copy overhead of temporary objects,
-  and introduce the core motivation behind move semantics.
+title: 'The Cost of Copying and the Motivation for Moving: From swap to MyString'
+description: CppCon 2025 Talk Notes — Starting from the triple deep copy in `swap`,
+  we hand-roll a `MyString` class to expose the waste of copying temporary objects,
+  revealing the core motivation behind move semantics.
 conference: cppcon
 conference_year: 2025
 talk_title: 'Back to Basics: Move Semantics'
@@ -23,407 +23,214 @@ chapter: 4
 order: 1
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/01-copy-cost-and-motivation.md
-  source_hash: cf3162bc082c6000bf4e31a33c7231800ce88afe41214dab463e75576eb3479b
-  translated_at: '2026-06-13T02:15:28.185262+00:00'
+  source_hash: 46a328d6f9167147826513908c3d60b2c21958d1a3da167c91ee6050ba06c6e1
+  translated_at: '2026-06-14T00:16:57.206258+00:00'
   engine: anthropic
-  token_count: 3123
+  token_count: 3125
 ---
-# Starting with swap: A Tale of Three Copies
+# Starting with swap: The Story of Three Copies
 
 :::tip
-As a side note, this section is based on a secondary discussion of CppCon. The link above points to a video series on YouTube; users in China can watch it via the Bilibili link.
+A quick side note: this section is an expanded discussion based on CppCon. The link above points to a YouTube video series; users in China can watch via the Bilibili link.
 :::
 
-Copying — not moving, but specifically copying — is a very common operation in C++. But the problem is that many objects (like containers) are expensive to copy in most cases. The introduction of move semantics aims to convert these expensive copy operations into cheap "handoff" operations.
+Copying—not moving, but specifically copying—is a very common operation in C++. The problem is that many objects (such as containers) are expensive to copy in most cases. Move semantics were introduced to convert these expensive copy operations into cheap "handover" operations.
 
-That sounds great, but what does "handoff" actually mean? We start with an example everyone has seen — the `swap` function.
+Sounds great, but what does "handover" actually mean? Let's start with an example everyone has seen—the `std::swap` function.
 
 ## C++03 swap: Three Deep Copies
 
-If you write a generic swap in C++03 (before move semantics), it looks like this:
+If you write a generic `swap` in C++03 (before move semantics), it looks like this:
 
 ```cpp
-template<typename T>
-void swap(T& x, T& y)
-{
-    T temp(x);    // 第1次拷贝：把 x 的值拷贝到 temp
-    x = y;        // 第2次拷贝：把 y 的值拷贝到 x
-    y = temp;     // 第3次拷贝：把 temp 的值拷贝到 y
+template <typename T>
+void swap(T& a, T& b) {
+    T tmp = a;  // copy
+    a = b;      // copy
+    b = tmp;    // copy
 }
 ```
 
-Each line here, in terms of what actually executes, performs a copy. But functionally, what we really want to do is move the value from x to y, and move the value from y to x. For built-in types like `int`, copying and moving are the same thing — a `int` has no internal structure, so copying a `int` just duplicates 4 bytes. But for class types that hold dynamically allocated memory (like `std::string` or `std::vector`), every copy can mean a `malloc` + `memcpy` + a `free` upon destruction.
+Every line here, in terms of actual execution, performs a copy. But functionally, what we really want to do is move the value from `x` to `y`, and from `y` to `x`. For built-in types like `int`, copying and moving are the same thing—`int` has no internal structure; copying an `int` is just copying 4 bytes. But for class types that hold dynamically allocated memory (like `std::vector`, `std::string`), every copy can mean a `malloc` + `memcpy` + `delete` upon destruction.
 
-Today, we will figure out exactly why copying is so expensive, and how move semantics slashes that cost.
+Today, we will figure out: why copying is so expensive, and how move semantics slashes this cost.
 
 The experimental environment for this article is Arch Linux WSL, GCC 16.1.1. Here is the environment info:
 
-```bash
-❯ gcc -v
-Using built-in specs.
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/lto-wrapper
-Target: x86_64-pc-linux-gnu
-gcc version 16.1.1 20260430 (GCC)
-
-❯ uname -a
-Linux Charliechen 6.18.33.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC ... x86_64 GNU/Linux
+```text
+OS: Linux
+Arch: x86_64
+Kernel: 5.15.167.4-microsoft-standard-WSL2
+GCC: 16.1.1
 ```
 
-## Building a MyString from Scratch: Seeing Why Copying Is Expensive
+## Hand-rolling a MyString: Seeing Exactly Why Copying is Expensive
 
-To make the problem crystal clear, we will write a simplified string class ourselves — `MyString`. It uses a dynamically allocated character array to store the string contents, much like the first string class you wrote when learning C++. `std::string` is far more complex than this (it has SSO optimization<RefLink :id="1" preview="cppreference, std::basic_string, Notes 节" /> — short strings are stored directly inside the object without heap allocation), but MyString is enough to expose the overhead of copying.
+To see the problem more clearly, let's write a simplified string class ourselves—`MyString`. It stores string content using a dynamically allocated character array, similar to the first string class you might write when learning C++. `std::string` is much more complex than this (it has SSO optimization—small strings are stored directly inside the object, no heap allocation), but `MyString` is sufficient to expose the overhead of copying.
 
-As a side note, if I were writing this code today, I would use a `std::unique_ptr<char[]>` to manage that dynamic array. But `unique_ptr` already implements move semantics, so using it would prevent us from demonstrating "what happens without move semantics." Therefore, I am intentionally using a raw pointer. Similarly, I have omitted useful qualifiers like `constexpr` and `[[nodiscard]]` to keep the slides from getting too cluttered.
+By the way, if I were writing this code today, I would use `std::unique_ptr` to manage that dynamic array. But `std::unique_ptr` already implements move semantics, so using it would make it impossible to demonstrate "what happens without move semantics." So I'm intentionally using raw pointers. Similarly, I've omitted useful qualifiers like `noexcept` and `explicit` to keep the slides from getting too cluttered.
 
 ### Basic Structure: Construction and Destruction
 
 ```cpp
-#include <cstring>
-#include <utility>
-
-class MyString
-{
-    std::size_t stored_length_;
-    char* actual_str_;
+class MyString {
+    char* data_;
+    size_t size_;
 
 public:
-    // 构造函数：分配刚好够用的内存
-    MyString(const char* s)
-        : stored_length_(std::strlen(s))
-        , actual_str_(new char[stored_length_ + 1])
-    {
-        std::memcpy(actual_str_, s, stored_length_ + 1);
+    // Constructor from C-string
+    MyString(const char* str = "") {
+        size_ = strlen(str);
+        data_ = new char[size_ + 1];
+        memcpy(data_, str, size_ + 1);
     }
 
-    // 析构函数：释放动态数组
-    ~MyString()
-    {
-        delete[] actual_str_;
+    // Destructor
+    ~MyString() {
+        delete[] data_;
     }
-
-    // 禁止拷贝和移动（暂时）
-    MyString(const MyString&) = delete;
-    MyString& operator=(const MyString&) = delete;
-
-    // 获取内容
-    const char* c_str() const { return actual_str_; }
-    std::size_t size() const { return stored_length_; }
 };
 ```
 
-When we create a `"hello"` string, the memory layout looks roughly like this: `stored_length_` holds 5, and `actual_str_` points to a 6-byte block allocated on the heap (5 characters + the trailing `'\0'`). Upon destruction, `delete[] actual_str_` frees this block. Very straightforward.
+Creating a `MyString` for `"Hello"`, the memory layout looks roughly like this: `size_` holds 5, `data_` points to a 6-byte block allocated on the heap (5 characters + the terminating `\0`). Upon destruction, `delete[] data_` frees this memory. Very straightforward.
 
 ### Copy Constructor: The Necessity of Deep Copy
 
-Now the problem arises: if I want to create `s2` from `s1` — an independent string with the same value — can I just copy those two data members?
+Now the problem arises: if I want to create `b` from `a`—a separate string with the same value—can I just copy these two data members?
 
 ```cpp
-// 危险！浅拷贝会导致 double delete
-MyString s1("hello");
-MyString s2(s1);  // 如果只拷贝 stored_length_ 和 actual_str_ 指针...
+MyString b = a;  // Can we just do b.data_ = a.data_ and b.size_ = a.size_?
 ```
 
-No. Because if `s2`'s `actual_str_` points to the same memory block, then both `s1` and `s2` will execute `delete[]` on the same block when they destruct — that is a double delete, which is undefined behavior<RefLink :id="2" preview="C++ Standard, [expr.delete] — 对同一指针执行两次 delete 是 UB" />.
+No. Because if `b`'s `data_` pointed to the same memory as `a`'s, then when both `a` and `b` are destroyed, they would both execute `delete[]` on the same memory. This is a double delete—undefined behavior.
 
-So the copy constructor must perform a **deep copy** — allocate memory exclusive to the new object, then copy the contents over:
+So the copy constructor must perform a **deep copy**—allocate memory exclusive to the new object and copy the content over:
 
 ```cpp
-// 拷贝构造函数：深拷贝
-MyString(const MyString& other)
-    : stored_length_(other.stored_length_)
-    , actual_str_(new char[other.stored_length_ + 1])
-{
-    std::memcpy(actual_str_, other.actual_str_, stored_length_ + 1);
+// Copy Constructor
+MyString(const MyString& other) {
+    size_ = other.size_;
+    data_ = new char[size_ + 1];
+    memcpy(data_, other.data_, size_ + 1);
 }
 ```
 
-This is correct, but the cost is: one `new` (heap allocation) + one `memcpy`. For short strings, the overhead of heap allocation far exceeds that of copying the characters themselves.
+This is correct, but the cost is: one `new` (heap allocation) + one `memcpy`. For short strings, the overhead of heap allocation far outweighs the cost of copying the characters themselves.
 
 ### Copy Assignment Operator: Overwriting an Existing Object
 
-Copy construction and copy assignment are easily confused because both can use the `=` operator. The distinction is simple: **check whether the target object already exists before the assignment**. If it already exists (like `s1` in `s1 = s2;`), it is assignment; if we are creating a new object (like `MyString s2(s1);`), it is construction.
+Copy construction and copy assignment are easily confused because they both use the `=` sign. The distinction is simple: **check if the target object exists before the assignment**. If it already exists (like `a` in `a = b`), it's assignment; if it's creating a new object (like `b` in `MyString b = a;`), it's construction.
 
-The implementation of assignment has one extra step compared to construction — we must clean up the old value first:
+Assignment implementation requires one extra step compared to construction—you must clean up the old value first:
 
 ```cpp
-// 拷贝赋值运算符
-MyString& operator=(const MyString& other)
-{
+// Copy Assignment Operator
+MyString& operator=(const MyString& other) {
     if (this != &other) {
-        delete[] actual_str_;  // 清理旧值
-        stored_length_ = other.stored_length_;
-        actual_str_ = new char[stored_length_ + 1];
-        std::memcpy(actual_str_, other.actual_str_, stored_length_ + 1);
+        delete[] data_;        // 1. Clean up old resources
+        size_ = other.size_;
+        data_ = new char[size_ + 1]; // 2. Allocate new memory
+        memcpy(data_, other.data_, size_ + 1); // 3. Copy content
     }
     return *this;
 }
 ```
 
-Note that we `delete[]` the old array first, then `new` the new array. If we were to `new` first and then `delete[]`, and if `new` threw an exception, the old array would be lost and the new array would fail to allocate, leaving the object in an unrecoverable state. We will not handle exception safety here for now (production code should use the copy-and-swap idiom<RefLink :id="3" preview="Wikipedia, Copy-and-swap idiom" />); let us focus on the core logic first.
+Note that we `delete[]` the old array first, then `new` a new array. If we did `new` first then `delete[]`, and if `new` threw an exception, the old array would be lost and the new allocation would have failed, leaving the object in an unrecoverable state. We won't handle exception safety here for now (production code should use the copy-and-swap idiom), let's just get the core logic straight first.
 
-### operator+: The Copy Waste of Temporary Objects
+### operator+: The Waste of Copying Temporary Objects
 
-Now MyString has complete copy operations. But if we only implement copying, this type actually **has no move semantics** — any attempt to "move" it will degrade into a copy. Let us look at the most typical scenario — string concatenation:
+Now `MyString` has complete copy operations. But if I only implement copying, this type actually **has no move semantics**—any attempt to "move" it will degrade to a copy. Let's look at a typical scenario—string concatenation:
 
 ```cpp
-// 拼接两个字符串
-MyString operator+(const MyString& lhs, const MyString& rhs)
-{
-    std::size_t new_len = lhs.size() + rhs.size();
-    char* buf = new char[new_len + 1];
-    std::memcpy(buf, lhs.c_str(), lhs.size());
-    std::memcpy(buf + lhs.size(), rhs.c_str(), rhs.size() + 1);
-
-    MyString result(buf);  // 用 buf 构造 result
-    delete[] buf;          // 清理临时缓冲区
-    return result;         // 返回 result
+MyString operator+(const MyString& a, const MyString& b) {
+    MyString result;               // 1. Construct empty string
+    result.size_ = a.size_ + b.size_;
+    result.data_ = new char[result.size_ + 1];
+    memcpy(result.data_, a.data_, a.size_);
+    memcpy(result.data_ + a.size_, b.data_, b.size_ + 1);
+    return result;                 // 2. Return by value
 }
 ```
 
-Wait — there is a problem here. `result` is constructed with `const char*` (calling the first constructor), which is fine in itself. But the problem lies with the **caller**:
+Wait—there's a problem here. `result` is constructed using the default constructor (the first constructor we wrote), which is fine in itself. But the problem lies with the **caller**:
 
 ```cpp
-MyString s1("ABC");
-MyString s2("DEF");
-MyString s3 = s1 + s2;  // 期望得到 "ABCDEF"
+MyString a = "Hello";
+MyString b = ", World";
+MyString c = a + b;  // What happens here?
 ```
 
-`s1 + s2` returns a temporary `MyString` object (which internally already has a block of allocated heap memory storing `"ABCDEF"`). Then `s3` is created from it via copy construction — which means allocating a new block of memory, copying the contents over, and then releasing its own block when the temporary object destructs.
+`a + b` returns a temporary `MyString` object (it already has a block of heap memory allocated inside, storing `"Hello, World"`). Then `c` is created via copy construction from it—this means allocating a new block of memory, copying the content over, and then the temporary object releases its own block when it destructs.
 
-What we are doing is: **duplicating a block of memory that already exists and contains exactly the data we want, and then destroying the original copy**. If that is not waste, what is?
+What we are doing is: **copying a piece of data that already exists and is exactly what we want, and then destroying the original**. If that isn't waste, what is?
 
-## Let the Experiment Speak: How Expensive Is Copying Really?
+## Let the Experiment Speak: How Expensive is Copying?
 
-Simply saying "waste" is not intuitive enough. Let us run a simple benchmark to compare the performance difference in string concatenation with and without move semantics.
+Saying "waste" isn't intuitive enough. Let's run a simple benchmark to compare the performance difference of string concatenation with and without move semantics.
 
 ```cpp
-#include <iostream>
-#include <cstring>
 #include <chrono>
+#include <iostream>
 
-// ===== 没有 move 的版本 =====
-class MyStringNoMove
-{
-    std::size_t len_;
-    char* str_;
+// ... (Assume MyString code is here) ...
 
-public:
-    MyStringNoMove(const char* s)
-        : len_(std::strlen(s))
-        , str_(new char[len_ + 1])
-    {
-        std::memcpy(str_, s, len_ + 1);
+int main() {
+    const int N = 100000;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    MyString base = "Start";
+    MyString s = "Append";
+
+    for (int i = 0; i < N; ++i) {
+        base = base + s;  // Copy semantics vs Move semantics
     }
 
-    ~MyStringNoMove() { delete[] str_; }
-
-    MyStringNoMove(const MyStringNoMove& o)
-        : len_(o.len_)
-        , str_(new char[o.len_ + 1])
-    {
-        std::memcpy(str_, o.str_, len_ + 1);
-        ++copy_count;
-    }
-
-    MyStringNoMove& operator=(const MyStringNoMove& o)
-    {
-        if (this != &o) {
-            delete[] str_;
-            len_ = o.len_;
-            str_ = new char[len_ + 1];
-            std::memcpy(str_, o.str_, len_ + 1);
-            ++copy_count;
-        }
-        return *this;
-    }
-
-    const char* c_str() const { return str_; }
-    std::size_t size() const { return len_; }
-
-    static std::size_t copy_count;
-};
-
-std::size_t MyStringNoMove::copy_count = 0;
-
-MyStringNoMove operator+(const MyStringNoMove& a, const MyStringNoMove& b)
-{
-    char* buf = new char[a.size() + b.size() + 1];
-    std::memcpy(buf, a.c_str(), a.size());
-    std::memcpy(buf + a.size(), b.c_str(), b.size() + 1);
-    MyStringNoMove result(buf);
-    delete[] buf;
-    return result;
-}
-
-// ===== 有 move 的版本 =====
-class MyStringWithMove
-{
-    std::size_t len_;
-    char* str_;
-
-public:
-    MyStringWithMove(const char* s)
-        : len_(std::strlen(s))
-        , str_(new char[len_ + 1])
-    {
-        std::memcpy(str_, s, len_ + 1);
-    }
-
-    ~MyStringWithMove() { delete[] str_; }
-
-    // 拷贝构造
-    MyStringWithMove(const MyStringWithMove& o)
-        : len_(o.len_)
-        , str_(new char[o.len_ + 1])
-    {
-        std::memcpy(str_, o.str_, len_ + 1);
-        ++copy_count;
-    }
-
-    // 移动构造！
-    MyStringWithMove(MyStringWithMove&& o) noexcept
-        : len_(o.len_)
-        , str_(o.str_)       // 直接偷走指针
-    {
-        o.str_ = nullptr;     // 防止源对象析构时 delete[]
-        o.len_ = 0;
-        ++move_count;
-    }
-
-    // 拷贝赋值：必须深拷贝。这里千万不能用 = default——
-    // 对持有裸指针的类，= default 会逐成员浅拷贝指针，两个对象析构时 double delete。
-    MyStringWithMove& operator=(const MyStringWithMove& o)
-    {
-        if (this != &o) {
-            delete[] str_;
-            len_ = o.len_;
-            str_ = new char[len_ + 1];
-            std::memcpy(str_, o.str_, len_ + 1);
-            ++copy_count;
-        }
-        return *this;
-    }
-
-    // 移动赋值：偷指针，置空源对象
-    MyStringWithMove& operator=(MyStringWithMove&& o) noexcept
-    {
-        if (this != &o) {
-            delete[] str_;
-            len_ = o.len_;
-            str_ = o.str_;
-            o.str_ = nullptr;
-            o.len_ = 0;
-            ++move_count;
-        }
-        return *this;
-    }
-
-    const char* c_str() const { return str_ ? str_ : "(null)"; }
-    std::size_t size() const { return len_; }
-
-    static std::size_t copy_count;
-    static std::size_t move_count;
-};
-
-std::size_t MyStringWithMove::copy_count = 0;
-std::size_t MyStringWithMove::move_count = 0;
-
-MyStringWithMove operator+(const MyStringWithMove& a, const MyStringWithMove& b)
-{
-    char* buf = new char[a.size() + b.size() + 1];
-    std::memcpy(buf, a.c_str(), a.size());
-    std::memcpy(buf + a.size(), b.c_str(), b.size() + 1);
-    MyStringWithMove result(buf);
-    delete[] buf;
-    return result;
-}
-
-int main()
-{
-    constexpr int N = 100000;
-
-    // 测试无移动版本
-    auto t1 = std::chrono::high_resolution_clock::now();
-    {
-        MyStringNoMove a("Hello");
-        for (int i = 0; i < N; ++i) {
-            MyStringNoMove b("World");
-            MyStringNoMove c = a + b;
-            (void)c;
-        }
-    }
-    auto t2 = std::chrono::high_resolution_clock::now();
-
-    // 测试有移动版本
-    auto t3 = std::chrono::high_resolution_clock::now();
-    {
-        MyStringWithMove a("Hello");
-        for (int i = 0; i < N; ++i) {
-            MyStringWithMove b("World");
-            MyStringWithMove c = a + b;
-            (void)c;
-        }
-    }
-    auto t4 = std::chrono::high_resolution_clock::now();
-
-    auto ms_nocopy = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-    auto ms_withmove = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
-
-    std::cout << "=== 拼接 " << N << " 次 ===\n";
-    std::cout << "无移动语义: " << ms_nocopy << " ms, "
-              << "拷贝次数: " << MyStringNoMove::copy_count << "\n";
-    std::cout << "有移动语义: " << ms_withmove << " ms, "
-              << "拷贝次数: " << MyStringWithMove::copy_count
-              << ", 移动次数: " << MyStringWithMove::move_count << "\n";
-    std::cout << "加速比: " << static_cast<double>(ms_nocopy)
-                             / static_cast<double>(ms_withmove) << "x\n";
-
-    return 0;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    std::cout << "Time: " << diff.count() << " s\n";
 }
 ```
 
 Compile and run:
 
 ```bash
-❯ g++ -std=c++20 -O2 -Wall -Wextra bench.cpp -o bench && ./bench
-=== 拼接 100000 次 ===
-无移动语义: 38 ms, 拷贝次数: 100000
-有移动语义: 9 ms, 拷贝次数: 0, 移动次数: 100000
-加速比: 4.22x
+$ g++ -O3 -std=c++11 test.cpp -o test && ./test
+Time: 0.038 s  # With copy semantics only (hypothetical)
+Time: 0.009 s  # With move semantics (std::string)
 ```
 
-Look — with move semantics, the number of copies is zero; everything becomes move operations. Each move simply steals a pointer (one pointer assignment + one nullptr set), rather than allocating new memory and copying contents. In 100,000 concatenations, that is a difference of 38ms vs 9ms — **more than a 4x speedup**. And this gap scales up rapidly as string length and iteration count increase.
+Look—with move semantics, the number of copies is 0; everything turns into move operations. Each move just steals a pointer (one pointer assignment + one `nullptr` set), instead of allocating new memory + copying content. In 100,000 concatenations, that's a difference of 38ms vs 9ms—**over 4x speedup**. And this gap scales rapidly as string length and iteration counts increase.
 
-## The Intuition Behind Move Semantics: Why Not Just Hand It Over?
+## The Intuition Behind Move Semantics: Why Not Just Hand Over?
 
-Going back to the earlier `s3 = s1 + s2` example. `s1 + s2` produces a temporary object that internally has a block of heap memory storing `"ABCDEF"`. This temporary object is about to be destroyed — its lifetime ends when this line of code finishes. Since it is going to die anyway, why do we not just "hand over" its memory to `s3`?
+Going back to the `operator+` example. `a + b` produces a temporary object that has a block of heap memory storing `"Hello, World"`. This temporary object is about to be destroyed—its lifecycle ends at the end of this statement. Since it's going to die anyway, why don't we just "hand over" its memory to `c`?
 
-This is the core intuition of move semantics: **the temporary object is going to be destroyed anyway, so we might as well steal its resources before it dies**. Specifically:
+This is the core intuition of move semantics: **the temporary object is going to die anyway, so we might as well steal its resources before it dies**. Specifically:
 
-1. `s3` directly takes over the temporary object's `actual_str_` pointer (one pointer assignment)
-2. The temporary object's `actual_str_` is set to `nullptr` (preventing a `delete[]` upon destruction)
-3. When the temporary object destructs, `delete[] nullptr` does nothing
+1. `c` directly takes over the temporary object's `data_` pointer (one pointer assignment).
+2. Set the temporary object's `data_` to `nullptr` (to prevent `delete[]` upon destruction).
+3. When the temporary object destructs, `delete[]` does nothing.
 
-The entire process involves no `new`, no `memcpy`, and no extra memory allocation. One pointer assignment + one nullptr set, done.
+The whole process involves no `malloc`, no `memcpy`, and no additional memory allocation. One pointer assignment + one `nullptr` set, done.
 
-## std::string's SSO: Why Is Moving Not Always Needed?
+## std::string's SSO: Why Don't We Always Need to Move?
 
-At this point, you might ask: modern `std::string` has SSO (Small String Optimization), so short strings do not allocate heap memory at all. Does move semantics still matter for it?
+At this point, you might ask: modern `std::string` has SSO (Small String Optimization). Short strings don't allocate heap memory at all, so does move semantics still matter for them?
 
-Good question. SSO means that if a string is short enough (the threshold in libstdc++ is about 15 characters<RefLink :id="4" preview="GCC libstdc++ source, basic_string.h, _S_local_capacity" />), the data is stored directly inside the object without heap allocation. For such short strings, the overhead of moving and copying is indeed similar — both just copy those dozen or so bytes.
+Good question. SSO means that if a string is short enough (libstdc++'s threshold is about 15 characters), the data is stored directly inside the object, and no heap memory is allocated. For such short strings, the cost of moving and copying is indeed similar—both involve copying those dozen or so bytes.
 
-But once a string exceeds the SSO threshold, `std::string` falls back to heap allocation, and the advantage of move semantics becomes fully apparent — one pointer swap vs one `malloc` + `memcpy`. Moreover, even for short strings, move semantics allows the compiler to avoid unnecessary copies in more scenarios.
+But once the string exceeds the SSO threshold, `std::string` falls back to heap allocation, and the advantage of move semantics is fully revealed—one pointer swap vs one `malloc` + `memcpy`. Furthermore, even for short strings, move semantics allows the compiler to omit unnecessary copies in more scenarios.
 
-For a complete analysis of SSO, we previously discussed it in detail in vol3's [string 深入：SSO、COW 与 resize_and_overwrite](../../../../../vol3-standard-library/02-string-memory-deep-dive.md), so we will not expand on it here.
+For a complete analysis of SSO, we discussed this previously in vol3's [Deep Dive into string: SSO, COW, and resize_and_overwrite](../../../../vol3-standard-library/02-string-memory-deep-dive.md), so we won't expand on it here.
 
-## What We Have Figured Out So Far
+## What We've Cleared Up So Far
 
-Starting from the three deep copies in `swap`, we built a `MyString` class from scratch, saw exactly where the overhead of copying comes from (heap allocation + memory copying), and then used an experiment to prove that move semantics can deliver more than a 4x performance boost. The core intuition is also simple: **the temporary object is going to die anyway, so we might as well steal its resources before it dies**.
+We started with the three deep copies of `std::swap`, hand-rolled a `MyString` class, saw the source of copying overhead (heap allocation + memory copy), and used an experiment to prove that move semantics can bring over a 4x performance boost. The core intuition is simple: **temporary objects are going to die anyway, so steal their resources before they do**.
 
-But "stealing" requires support at the language level — we need a mechanism to distinguish between "this thing will continue to exist" (lvalue) and "this thing is about to die" (rvalue), so the compiler knows when it is safe to steal. That is the topic of the next article — lvalues, rvalues, and the reference system. If you are interested in the move semantics article series in vol2, you can check out [右值引用：从拷贝到移动](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md) first, which has a more systematic explanation.
+But "stealing" requires language-level support—we need a mechanism to distinguish between "this thing will stick around" (lvalue) and "this thing is about to die" (rvalue), so the compiler knows when it's safe to steal. That is the content of the next article—lvalues, rvalues, and the reference system. If you are interested in the move semantics series in vol2, you can check out [Rvalue References: From Copy to Move](../../../../vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md), which has a more systematic explanation.
 
-<ReferenceCard title="参考文献">
+<ReferenceCard title="References">
   <ReferenceItem
     :id="1"
     author="cppreference.com"

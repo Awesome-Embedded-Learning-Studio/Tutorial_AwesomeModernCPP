@@ -78,6 +78,6 @@ export const navEn: DefaultTheme.NavItem[] = [
   { text: 'Reference', link: '/en/cpp-reference/' },
   { text: 'Appendix', link: '/en/appendix/' },
   { text: 'Community', link: '/en/community/' },
-  { text: 'Roadmap', link: '/en/community/dev/' },
+  { text: 'Roadmap', link: '/en/roadmap/' },
   { text: 'Team', link: '/en/team/' },
 ]

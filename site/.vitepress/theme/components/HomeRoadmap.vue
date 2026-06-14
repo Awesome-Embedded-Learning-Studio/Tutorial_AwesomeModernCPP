@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useData } from 'vitepress'
+import { useData, withBase } from 'vitepress'
 
 const { lang } = useData()
 const isEn = computed(() => lang.value.startsWith('en'))
@@ -92,7 +92,7 @@ const t = computed(() =>
         />
       </div>
 
-      <a class="home-roadmap__cta" :href="t.link">
+      <a class="home-roadmap__cta" :href="withBase(t.link)">
         📋 {{ t.cta }} →
       </a>
     </div>

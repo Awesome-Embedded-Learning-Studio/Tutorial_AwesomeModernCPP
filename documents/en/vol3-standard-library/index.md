@@ -1,6 +1,6 @@
 ---
-title: 'Part 3: Deep Dive into the Standard Library'
-description: In-depth guide to STL containers, iterators, and algorithms
+title: 'Volume Three: Deep Dive into the Standard Library'
+description: Deep dive into STL containers, iterators, and algorithms
 platform: host
 tags:
 - cpp-modern
@@ -8,25 +8,31 @@ tags:
 - intermediate
 translation:
   source: documents/vol3-standard-library/index.md
-  source_hash: a26180b80dd7a8f375637a8f3f5da60aef0e12f691b99413bddc1bae569dc22e
-  translated_at: '2026-05-26T11:37:46.849491+00:00'
+  source_hash: 6d341685c142401849898de762ab55be39b76fa975b91a23fd8882c728446c2e
+  translated_at: '2026-06-14T00:20:03.639470+00:00'
   engine: anthropic
-  token_count: 186
+  token_count: 207
 ---
 # Volume 3: Deep Dive into the Standard Library
 
-> Status: Partial content available (pending rewrite)
-
 ## Overview
 
-This volume provides a deep dive into the C++ standard library.
-
-## Existing Articles (Pending Rewrite to Generic Content)
+This volume provides an in-depth look at the C++ Standard Library, focusing on the implementation details of containers and strings.
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-initializer-lists">Initializer Lists</ChapterLink>
-  <ChapterLink href="05-object-size-and-trivial-types">Object Size and Trivial Types</ChapterLink>
-  <ChapterLink href="01-array">array</ChapterLink>
-  <ChapterLink href="02-span">span</ChapterLink>
-  <ChapterLink href="06-custom-allocators">Custom Allocators</ChapterLink>
+  <ChapterLink href="01-vector-deep-dive">vector Deep Dive</ChapterLink>
+  <ChapterLink href="02-string-memory-deep-dive">string Deep Dive</ChapterLink>
+  <ChapterLink href="03-char8-t-utf8">char8_t and UTF-8</ChapterLink>
+</ChapterNav>
+
+## Articles to be Rewritten
+
+The following are early drafts, planned to be rewritten and merged into the main chapter sequence.
+
+<ChapterNav variant="sub">
+  <ChapterLink href="01-array">array (To be rewritten)</ChapterLink>
+  <ChapterLink href="01-initializer-lists">initializer_list (To be rewritten)</ChapterLink>
+  <ChapterLink href="02-span">span (To be rewritten)</ChapterLink>
+  <ChapterLink href="05-object-size-and-trivial-types">Object Size and Trivial Types (To be rewritten)</ChapterLink>
+  <ChapterLink href="06-custom-allocators">Custom Allocators (To be rewritten)</ChapterLink>
 </ChapterNav>

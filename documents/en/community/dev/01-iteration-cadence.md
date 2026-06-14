@@ -1,99 +1,106 @@
 ---
-title: "Site Iteration Cadence"
-description: "Content production, site maintenance, PR/Issue handling, and release cadence for Tutorial_AwesomeModernCPP"
+title: Website Iteration Cadence
+description: Content production, site maintenance, PR/Issue handling, and release
+  schedule for Tutorial_AwesomeModernCPP
 chapter: 1
 order: 1
-tags: ["工程实践"]
+tags:
+- 工程实践
+translation:
+  source: documents/community/dev/01-iteration-cadence.md
+  source_hash: 8debf0c2ea6aa397b83abb8e8afd96b464145928846b90312f794fafa8dd0f2b
+  translated_at: '2026-06-14T00:14:11.471541+00:00'
+  engine: anthropic
+  token_count: 551
 ---
+# Site Iteration Rhythm
 
-# Site Iteration Cadence
+Tutorial_AwesomeModernCPP focuses primarily on content output. Version numbers measure the magnitude of content progress. Site maintenance, PR, and Issue handling serve the main content, rather than dictating the main rhythm.
 
-Tutorial_AwesomeModernCPP is driven primarily by content production. Version numbers measure the size of content progress. Site maintenance, PRs, and Issues support the main content path instead of taking it over.
+## Basic Beat
 
-## Basic Rhythm
+Maintainers usually perform a lightweight iteration every two to three days. Each round binds only one primary objective:
 
-Maintainers usually run a lightweight iteration every 2 to 3 days. Each iteration should have one main goal:
+- Complete a set of related content.
+- Fix a batch of issues affecting readability.
+- Fill in code, links, or translations for a specific chapter.
+- Address actionable PRs or Issues.
 
-- Finish a related group of content.
-- Fix a batch of reading problems.
-- Complete code, links, or translations for a chapter.
-- Handle clearly actionable PRs or Issues.
+A single iteration does not aim to cover all directions. Volume-level roadmaps, long-term candidates, and distant topics remain in `todo/`. Do not split temporary, article-level ideas into new governance files.
 
-One iteration does not need to cover every direction. Volume roadmaps, long-term candidates, and future themes remain in `todo/`. Temporary article-level ideas should not become new governance files.
+## Single-Round Maintenance Workflow
 
-## Per-Iteration Flow
+Each maintenance round proceeds in the following order:
 
-Each maintenance iteration follows this order:
+1. Review current P0/P1 goals in TODO and select one primary content objective.
+2. Quickly check Issues and PRs, handling only those that are actionable, affect the current version, or block readers.
+3. Complete content, example code, indices, and necessary English synchronization for this round.
+4. Run quality checks matching the scope of changes.
+5. If changes are user-perceivable, update the changelog or prepare the next version entry.
 
-1. Review the current P0/P1 TODO goals and choose one main content target.
-2. Quickly check Issues and PRs, handling only items that are actionable, release-relevant, or reader-blocking.
-3. Complete the content, example code, indexes, and required English/Chinese sync for the iteration.
-4. Run the quality checks that match the change scope.
-5. If the change is reader-visible, update the changelog or prepare the next release entry.
+PRs and Issues should be checked at least once per round. Urgent issues can be queued at any time, such as site build failures, major page 404s, seriously misleading example code, or external contributions requiring quick feedback.
 
-PRs and Issues should be checked at least once per iteration. Urgent problems may interrupt the cycle, such as broken site builds, important 404 pages, misleading example code, or external contributions that need quick feedback.
+## Version Rhythm
 
-## Version Cadence
+Version numbers describe the magnitude of changes, rather than forcefully driving the writing rhythm.
 
-Version numbers describe the size of change; they should not force the writing schedule.
+- **patch**: Bug fixes, links, site fixes, low-risk text revisions.
+- **minor**: Significant progress in a volume or topic where readers can perceive new learning paths or complete capabilities.
+- **major**: Major adjustments to TODO structure, site architecture, or content system.
 
-- patch: typo fixes, links, site fixes, and low-risk text corrections.
-- minor: one volume or topic has clearly moved forward, giving readers a new learning path or complete capability.
-- major: TODO structure, site architecture, or the content system changes substantially.
-
-Patch releases can ship as needed. Minor releases usually use a 2 to 4 week observation window and ship only when a topic forms a complete increment. Major releases should stay rare to avoid repeatedly changing reader and contributor entry points.
+patch releases can be made on demand. minor releases usually have an observation window of two to four weeks, and are published only when a topic forms a complete increment. major releases should be restrained to avoid frequently changing the entry perception for readers and contributors.
 
 ## Tags and Releases
 
-Tags and GitHub Releases are used separately. Tags mark lightweight maintenance checkpoints so readers can see ongoing progress through the README badge. GitHub Releases are reserved for content versions that readers should explicitly notice.
+Tags and GitHub Releases are used separately. Tags mark lightweight maintenance nodes, allowing readers to perceive continuous project activity via README badges; GitHub Releases are used only for content versions worthy of specific reader attention.
 
-- Patch-level fixes may be tagged without creating a GitHub Release.
-- Minor topic increments should usually create a Release with a changelog.
-- Major structural changes must create a Release and explain migration impact.
+- **patch** level fixes may only create a tag, without a GitHub Release.
+- **minor** level topic progress should usually create a Release, accompanied by a changelog.
+- **major** level structural adjustments must create a Release and explain migration impact.
 
-This keeps project activity visible without overwhelming readers with Release notifications.
+This preserves project activity signals while avoiding Release spam.
 
 ## Definition of Done
 
-A content iteration should usually satisfy these conditions:
+When a content iteration is complete, the following conditions should be met as much as possible:
 
-- The article can be read independently, with terms and C++ standard versions clearly marked.
-- Related volume pages, chapter indexes, or navigation entries are updated.
-- Example code in the article can compile, or platform/toolchain limits are explicitly stated.
-- Key Chinese and English pages stay in sync; community drafts and low-priority long-form notes may be translated later.
-- Internal links pass checks, and the production build succeeds.
+- The main text is readable independently, with terminology and standard versions clearly marked.
+- Relevant volume homepages, chapter indices, or navigation entries are updated.
+- Example code in the article compiles, or platform and toolchain limitations are explicitly stated.
+- Chinese and English key pages are synchronized; translations for community initial publications and low-priority long articles can be deferred.
+- Internal links pass checks, and production builds pass.
 
-For local fixes, run only the relevant checks. Before a release, run the full pre-release checks.
+If the round involves only local fixes, run only relevant checks; if preparing for a release, run full pre-release checks.
 
 ## PR and Issue Handling
 
-Issues are for actionable problems, Discussions are for open-ended learning conversations, and PRs are for concrete changes.
+Issues handle actionable problems, Discussions handle open learning discussions, and PRs handle specific modifications.
 
-Handle items in this order:
+Processing priority is as follows:
 
-1. Problems that block builds, deployment, or major reading paths.
-2. Clear, low-risk fixes already submitted as PRs.
+1. Issues blocking builds, deployment, or main reading paths.
+2. Clear, low-risk, easy-to-merge fixes in existing PRs.
 3. Content suggestions directly related to the current iteration theme.
-4. Learning questions that can become QA entries, appendix material, or future TODO items.
+4. Learning questions that can be consolidated into QA, appendices, or future TODOs.
 
-Learning questions should not fill the Issue list directly. High-quality discussions can be summarized into FAQ entries, appendix pages, or links from the main content.
+Learning questions should not be stuffed directly into the Issue list; high-quality discussions can be organized into FAQs, appendices, or main text links.
 
 ## Changelog Principles
 
-The changelog should describe reader-visible changes, not just file counts.
+Changelogs should describe reader-perceivable changes, rather than simply listing file counts.
 
-Prefer recording:
+Recommended records:
 
-- Which learning path was added or completed.
+- Which learning paths were added or completed.
 - Which examples can now run or be verified.
-- Which site entries, search behavior, navigation, or community flows improved.
-- Which contributors helped fix specific problems.
+- Which site entry points, search, navigation, or community processes were improved.
+- Which contributors helped fix specific issues.
 
-File counts, line counts, and commit counts can be supporting data, but they should not replace the explanation of what changed.
+File counts, line counts, and commit counts can serve as auxiliary data but should not replace change descriptions.
 
 ## Common Checks
 
-Choose checks by change scope during daily maintenance:
+For daily iterations, select checks based on the scope of changes:
 
 ```bash
 pnpm check:links
@@ -102,7 +109,7 @@ python3 scripts/check_quality.py documents/
 python3 scripts/build_examples.py --host
 ```
 
-Before a release, run:
+Before release, it is recommended to run:
 
 ```bash
 pnpm check:links
@@ -113,7 +120,7 @@ python3 scripts/check_quality.py documents/
 python3 scripts/build_examples.py --host
 ```
 
-If STM32 examples changed, also run:
+If STM32 examples are changed, also run:
 
 ```bash
 python3 scripts/build_examples.py --stm32
