@@ -24,6 +24,9 @@ importers:
       mermaid:
         specifier: ^10.9.6
         version: 10.9.6
+      shiki:
+        specifier: ^2.5.0
+        version: 2.5.0
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
