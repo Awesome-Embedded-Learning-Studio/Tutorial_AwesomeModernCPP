@@ -22,7 +22,7 @@ related:
 
 ## vector 已经够好，为什么还要这三兄弟
 
-vector 我们在[那一篇](01-vector-deep-dive)讲过了，连续内存、随机访问 O(1)、尾插均摊 O(1)，大多数场景它就是最优解。但它有几个盲区：头部插入是 O(n)（整个往前挪）、中间插入也是 O(n)、扩容时所有元素搬迁、迭代器/引用会因扩容失效。当你碰上「频繁在头部加东西」「需要在已知位置频繁插删且不能让迭代器失效」这类需求，vector 就不合适了。`deque`、`list`、`forward_list` 这三个，就是来补这些盲区的——它们用不同的内存布局，换来了 vector 给不了的能力，代价是各自的短板。
+vector 我们在[那一篇](03-vector-deep-dive)讲过了，连续内存、随机访问 O(1)、尾插均摊 O(1)，大多数场景它就是最优解。但它有几个盲区：头部插入是 O(n)（整个往前挪）、中间插入也是 O(n)、扩容时所有元素搬迁、迭代器/引用会因扩容失效。当你碰上「频繁在头部加东西」「需要在已知位置频繁插删且不能让迭代器失效」这类需求，vector 就不合适了。`deque`、`list`、`forward_list` 这三个，就是来补这些盲区的——它们用不同的内存布局，换来了 vector 给不了的能力，代价是各自的短板。
 
 一句话先记着：`deque` 是「能两头插的 vector」，`list` 是「能 O(1) 中间插删的链表」，`forward_list` 是「比 list 更省内存的单向链表」。
 
@@ -187,6 +187,15 @@ list   front insert: 4.8 ms
 | 极致省内存 + 只向前遍历（嵌入式） | `forward_list` |
 
 一句口诀：能用 vector 就用 vector，真要双端就 deque，真要链表特性才上 list / forward_list。顺序容器里，vector 几乎永远是默认答案，另外三个是「有明确需求时才换上去」的专项工具。关联容器我们前面讲完了 map 和 unordered_map，下一篇我们离开容器，去看标准库的迭代器与算法体系。
+
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="deque / list / forward_list：头插 O(1) 与 splice"
+  source-path="code/examples/vol3/05_deque_list_forward_list.cpp"
+  description="三者头插复杂度、sizeof 内存开销对比、list::splice 零拷贝节点搬家"
+  allow-run
+/>
 
 ## 参考资源
 

@@ -457,7 +457,7 @@ int main()
 
 <OnlineCompilerDemo
   title="std::thread 基础"
-  source-path="code/examples/vol34567/09_std_thread.cpp"
+  source-path="code/examples/vol5/09_std_thread.cpp"
   description="体验函数指针、lambda 和 functor 三种线程构造方式及数据分区并行"
   allow-run
 />

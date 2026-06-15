@@ -466,7 +466,7 @@ Experience the three construction methods of std::thread, thread ID queries, and
 
 <OnlineCompilerDemo
   title="std::thread Basics"
-  source-path="code/examples/vol34567/09_std_thread.cpp"
+  source-path="code/examples/vol5/09_std_thread.cpp"
   description="Experience function pointer, lambda, and functor thread construction methods along with data partitioned parallelism"
   allow-run
 />

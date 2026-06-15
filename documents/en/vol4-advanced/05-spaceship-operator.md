@@ -1258,7 +1258,7 @@ Experience C++20's three-way comparison operator default generation, custom vers
 
 <OnlineCompilerDemo
   title="C++20 Three-Way Comparison Operator (Spaceship)"
-  source-path="code/examples/vol34567/08_spaceship.cpp"
+  source-path="code/examples/vol4/08_spaceship.cpp"
   description="Experience default <=> generation, custom version comparison, and partial_ordering"
   allow-run
 />

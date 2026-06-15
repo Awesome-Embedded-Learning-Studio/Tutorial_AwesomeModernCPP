@@ -18,7 +18,7 @@ tags:
 - intermediate
 title: Object Size and Trivial Types
 translation:
-  source: documents/vol3-standard-library/05-object-size-and-trivial-types.md
+  source: documents/vol3-standard-library/12-object-size-and-trivial-types.md
   source_hash: f5c43a40fc7f0fc41bb19999da5fe2b0d173054f31d8622cf9a5f81d70468449
   translated_at: '2026-05-26T11:38:14.483343+00:00'
   engine: anthropic
@@ -260,7 +260,7 @@ Experience memory alignment and padding, type traits checks, and C++20 designate
 
 <OnlineCompilerDemo
   title="Object Size and Trivial Types"
-  source-path="code/examples/vol34567/04_object_size.cpp"
+  source-path="code/examples/vol3/12_object_size.cpp"
   description="Observe memory alignment and padding, is_trivially_copyable checks, and C++20 designated initializers"
   allow-run
   allow-x86-asm

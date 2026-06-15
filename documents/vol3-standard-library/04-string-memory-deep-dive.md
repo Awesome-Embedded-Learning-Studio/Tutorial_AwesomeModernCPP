@@ -24,7 +24,7 @@ title: "string 深入：SSO、COW 与 resize_and_overwrite"
 
 `std::string` 大概是标准库里被使唤得最多、却被理解得最浅的类型了。各位随手 `std::string s = "hello";` 写得开开心心，可一旦被人追问——"为什么 `sizeof(std::string)` 在我这机器上是 32？""为什么老代码里两个 string 居然共享同一份缓冲？""C++23 那个 `resize_and_overwrite` 到底省了啥？"——多半就答不上来了。这些问题，根全在 `string` 的内存模型和它的陈年历史里。
 
-这一篇，笔者就专门跟各位聊 `string` 的内存与缓冲这条主线：SSO 跟 COW 的历史纠葛、SSO 的实现阈值、还有 C++23 给我们送来的缓冲复用 API `resize_and_overwrite`。（C++20 的 `char8_t` 是另一个独立主题，见卷三 [char8_t 与 UTF-8 字符串](./03-char8-t-utf8.md)。）
+这一篇，笔者就专门跟各位聊 `string` 的内存与缓冲这条主线：SSO 跟 COW 的历史纠葛、SSO 的实现阈值、还有 C++23 给我们送来的缓冲复用 API `resize_and_overwrite`。（C++20 的 `char8_t` 是另一个独立主题，见卷三 [char8_t 与 UTF-8 字符串](./30-char8-t-utf8.md)。）
 
 ------
 
@@ -146,7 +146,7 @@ int main()
 
 <OnlineCompilerDemo
   title="string 内存深入：SSO 观察与 resize_and_overwrite"
-  source-path="code/examples/vol34567/16_string_memory.cpp"
+  source-path="code/examples/vol3/04_string_memory.cpp"
   description="观察 std::string 的 sizeof 与 SSO 行为，对比 resize() 与 C++23 resize_and_overwrite 的缓冲复用"
   run-options="-std=c++23"
   allow-run

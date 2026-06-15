@@ -1223,7 +1223,7 @@ Compare the differences in code behavior and sizeof between C and C++ GPIO encap
 
 <OnlineCompilerDemo
   title="性能与体积评估"
-  source-path="code/examples/vol34567/13_perf_eval.cpp"
+  source-path="code/examples/vol6/13_perf_eval.cpp"
   description="对比 C 与 C++ 的 GPIO 封装和环形缓冲区实现，观察 sizeof 差异"
   allow-run
   allow-x86-asm

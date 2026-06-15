@@ -221,7 +221,7 @@ target_link_libraries(my_firmware PRIVATE project_warnings)
 
 <OnlineCompilerDemo
   title="常见编译器选项"
-  source-path="code/examples/vol34567/14_compiler_options.cpp"
+  source-path="code/examples/vol7/14_compiler_options.cpp"
   description="对比 -O0 / -Os / -O2 下编译器生成的汇编，观察内联和常量折叠"
   allow-x86-asm
   arm-source-path="code/examples/compiler_explorer/compiler_opts_arm.cpp"

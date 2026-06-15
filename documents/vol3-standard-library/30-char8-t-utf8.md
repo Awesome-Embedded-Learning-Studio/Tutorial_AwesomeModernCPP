@@ -102,7 +102,7 @@ int main()
 
 <OnlineCompilerDemo
   title="char8_t 与 UTF-8 字符串：两坑与正确写法"
-  source-path="code/examples/vol34567/17_char8_t.cpp"
+  source-path="code/examples/vol3/14_char8_t.cpp"
   description="演示 C++20 u8 字面量类型变更的两个编译失败坑，以及显式转换与 u8string 两种正确写法"
   allow-run
   allow-x86-asm

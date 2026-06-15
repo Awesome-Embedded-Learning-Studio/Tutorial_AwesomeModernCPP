@@ -1251,7 +1251,7 @@ keys.insert({"Network", "IP"});
 
 <OnlineCompilerDemo
   title="C++20 三路比较运算符（Spaceship）"
-  source-path="code/examples/vol34567/08_spaceship.cpp"
+  source-path="code/examples/vol4/08_spaceship.cpp"
   description="体验 default <=> 自动生成比较、自定义版本号比较和 partial_ordering"
   allow-run
 />

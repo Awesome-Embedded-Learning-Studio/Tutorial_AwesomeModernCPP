@@ -399,7 +399,7 @@ We spent an entire article discussing the mutex family and RAII lock guards, and
 
 This principle is explicitly recorded in the C++ Core Guidelines as CP.20: "Use RAII, never plain `lock()`/`unlock()`." The only exception is `std::adopt_lock`—it accepts a mutex that is already locked, and is only responsible for unlocking on destruction. But even in this case, the locking action should be done through `std::lock()` or other safe mechanisms, not by manually calling `lock()`.
 
-> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `vol34567/10_mutex_raii.cpp`.
+> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `vol5/10_mutex_raii.cpp`.
 
 ## Run Online
 
@@ -407,7 +407,7 @@ Experience the three RAII lock guards: lock_guard, unique_lock + condition_varia
 
 <OnlineCompilerDemo
   title="mutex and RAII Locks"
-  source-path="code/examples/vol34567/10_mutex_raii.cpp"
+  source-path="code/examples/vol5/10_mutex_raii.cpp"
   description="Experience lock_guard counting, unique_lock+CV producer-consumer queue, and scoped_lock multi-lock safe swap"
   allow-run
 />

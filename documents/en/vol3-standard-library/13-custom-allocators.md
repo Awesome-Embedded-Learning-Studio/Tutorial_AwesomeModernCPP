@@ -18,7 +18,7 @@ tags:
 - intermediate
 title: Custom Allocator
 translation:
-  source: documents/vol3-standard-library/06-custom-allocators.md
+  source: documents/vol3-standard-library/13-custom-allocators.md
   source_hash: 73c2d198fac8c850e3849d204355a05b5b7fa2c4e94f8e5d380b349e37d03617
   translated_at: '2026-05-26T11:37:53.288166+00:00'
   engine: anthropic

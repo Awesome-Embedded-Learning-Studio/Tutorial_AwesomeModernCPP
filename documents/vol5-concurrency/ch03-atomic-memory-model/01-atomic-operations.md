@@ -455,7 +455,7 @@ int b = x.load();
 
 <OnlineCompilerDemo
   title="atomic 操作"
-  source-path="code/examples/vol34567/11_atomic.cpp"
+  source-path="code/examples/vol5/11_atomic.cpp"
   description="体验 atomic load/store、fetch_add、compare_exchange_strong 和 atomic_flag"
   allow-run
   allow-x86-asm

@@ -218,6 +218,15 @@ vector 的内存来自栈上 buffer，零全局堆分配
 
 自定义分配器的核心是「自己管一块内存的分配 / 释放」，三种经典策略——Bump（快、不释放单）、Pool（固定大小高频）、Stack（LIFO）——各有适用场景。理解它们之后，真要在 STL 里用，首选 C++17 的 `std::pmr`：`memory_resource` 抽象 + 标准实现（monotonic / pool）+ pmr 容器，运行时换策略、类型不爆炸。手写分配器用来理解机制、或做 pmr 不覆盖的特殊需求；常规场景，pmr 就够了。容器主线到此告一段落，下一篇我们转向标准库的迭代器与算法体系。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="自定义分配器：bump arena 与 std::pmr"
+  source-path="code/examples/vol3/13_custom_allocators.cpp"
+  description="手写线性分配器原型、std::pmr::monotonic_buffer_resource 让 vector 在栈 buffer 分配"
+  allow-run
+/>
+
 ## 参考资源
 
 - [std::pmr（memory_resource） — cppreference](https://en.cppreference.com/w/cpp/memory/resource)

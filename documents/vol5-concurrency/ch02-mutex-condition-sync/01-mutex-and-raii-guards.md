@@ -396,7 +396,7 @@ void safe_thread()
 
 <OnlineCompilerDemo
   title="mutex 与 RAII 锁"
-  source-path="code/examples/vol34567/10_mutex_raii.cpp"
+  source-path="code/examples/vol5/10_mutex_raii.cpp"
   description="体验 lock_guard 计数、unique_lock+CV 生产消费队列和 scoped_lock 多锁安全交换"
   allow-run
 />

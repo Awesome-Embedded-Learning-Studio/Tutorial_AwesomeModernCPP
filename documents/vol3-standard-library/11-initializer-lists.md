@@ -132,6 +132,15 @@ std::vector<int> v2{10, 0};    // 花括号：两个元素 10 和 0（initialize
 
 `std::initializer_list` 是花括号列表初始化背后的轻量视图：不拥有、元素 const、拷贝浅。它让 `{1, 2, 3}` 这种写法优雅地传给函数和容器，但「元素 const」埋了两个要记的点——一是移动陷阱（`vector{...}` 进容器必拷贝，重型类型要用 `push_back(move)`），二是花括号优先（有 `initializer_list` 构造时，`{}` 会抢着匹配）。下一篇我们离开初始化，去看类型本身的内存布局：对象大小与平凡类型。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="std::initializer_list：只读视图与移动陷阱"
+  source-path="code/examples/vol3/11_initializer_lists.cpp"
+  description="花括号生成的只读视图、元素 const 无法 move 的拷贝陷阱、花括号重载优先级"
+  allow-run
+/>
+
 ## 参考资源
 
 - [std::initializer_list — cppreference](https://en.cppreference.com/w/cpp/utility/initializer_list)

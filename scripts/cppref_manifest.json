@@ -40,7 +40,7 @@
     "order": 1,
     "difficulty": "beginner",
     "cpp_standard": [20, 23],
-    "tutorial_link": "../vol3-standard-library/02-span.md",
+    "tutorial_link": "../vol3-standard-library/08-span.md",
     "embedded_rating": "high"
   },
   {
@@ -238,7 +238,7 @@
     "order": 4,
     "difficulty": "beginner",
     "cpp_standard": [11, 14, 17, 20, 23],
-    "tutorial_link": "../vol3-standard-library/01-array.md",
+    "tutorial_link": "../vol3-standard-library/02-array.md",
     "embedded_rating": "high"
   },
   {
@@ -249,7 +249,7 @@
     "order": 5,
     "difficulty": "beginner",
     "cpp_standard": [11, 14, 17, 20, 23],
-    "tutorial_link": "../vol3-standard-library/01-initializer-lists.md",
+    "tutorial_link": "../vol3-standard-library/11-initializer-lists.md",
     "embedded_rating": "high"
   },
   {

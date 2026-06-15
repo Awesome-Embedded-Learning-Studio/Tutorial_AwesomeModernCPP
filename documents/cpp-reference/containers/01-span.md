@@ -72,7 +72,7 @@ int main() {
 
 ## 另见
 
-- [教程：span 详解](../../vol3-standard-library/02-span.md)
+- [教程：span 详解](../../vol3-standard-library/08-span.md)
 - [cppreference: std::span](https://en.cppreference.com/w/cpp/container/span)
 
 ---

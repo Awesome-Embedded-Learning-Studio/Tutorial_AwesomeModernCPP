@@ -76,7 +76,7 @@ Online comparison of C-style function calls versus C++ template zero-overhead ab
 
 <OnlineCompilerDemo
   title="内联与编译器优化"
-  source-path="code/examples/vol34567/12_inline_optimization.cpp"
+  source-path="code/examples/vol6/12_inline_optimization.cpp"
   description="对比 C 风格函数与 C++ 模板的内联优化效果，观察 constexpr 编译期计算"
   allow-run
   allow-x86-asm

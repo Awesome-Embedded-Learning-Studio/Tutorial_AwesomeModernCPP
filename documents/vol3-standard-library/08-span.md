@@ -169,6 +169,15 @@ span 因为轻量、零拷贝、跨容器统一，在嵌入式里几乎是「现
 
 span 和 string_view 都是「非拥有视图」，分界看元素类型：`span<T>` 通用于任意元素类型（包括可写、包括 `std::byte`），`string_view` 专门给字符序列（只读、带字符串语义）。处理二进制 buffer / 任意类型数据用 span，处理文本用 string_view。一句话记 span：它是指针加长度的正式封装，传参统一、切片零拷贝，但你得自己管好生命周期。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="span：非拥有的连续视图"
+  source-path="code/examples/vol3/08_span.cpp"
+  description="统一接收 C 数组/vector/array、动态与静态 extent、subspan 切片"
+  allow-run
+/>
+
 ## 参考资源
 
 - [std::span — cppreference](https://en.cppreference.com/w/cpp/container/span)

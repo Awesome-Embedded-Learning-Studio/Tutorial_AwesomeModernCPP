@@ -20,9 +20,9 @@ translation:
 This volume provides an in-depth look at the C++ Standard Library, focusing on the implementation details of containers and strings.
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-vector-deep-dive">vector Deep Dive</ChapterLink>
-  <ChapterLink href="02-string-memory-deep-dive">string Deep Dive</ChapterLink>
-  <ChapterLink href="03-char8-t-utf8">char8_t and UTF-8</ChapterLink>
+  <ChapterLink href="03-vector-deep-dive">vector Deep Dive</ChapterLink>
+  <ChapterLink href="04-string-memory-deep-dive">string Deep Dive</ChapterLink>
+  <ChapterLink href="30-char8-t-utf8">char8_t and UTF-8</ChapterLink>
 </ChapterNav>
 
 ## Articles to be Rewritten
@@ -30,9 +30,9 @@ This volume provides an in-depth look at the C++ Standard Library, focusing on t
 The following are early drafts, planned to be rewritten and merged into the main chapter sequence.
 
 <ChapterNav variant="sub">
-  <ChapterLink href="01-array">array (To be rewritten)</ChapterLink>
-  <ChapterLink href="01-initializer-lists">initializer_list (To be rewritten)</ChapterLink>
-  <ChapterLink href="02-span">span (To be rewritten)</ChapterLink>
-  <ChapterLink href="05-object-size-and-trivial-types">Object Size and Trivial Types (To be rewritten)</ChapterLink>
-  <ChapterLink href="06-custom-allocators">Custom Allocators (To be rewritten)</ChapterLink>
+  <ChapterLink href="02-array">array (To be rewritten)</ChapterLink>
+  <ChapterLink href="11-initializer-lists">initializer_list (To be rewritten)</ChapterLink>
+  <ChapterLink href="08-span">span (To be rewritten)</ChapterLink>
+  <ChapterLink href="12-object-size-and-trivial-types">Object Size and Trivial Types (To be rewritten)</ChapterLink>
+  <ChapterLink href="13-custom-allocators">Custom Allocators (To be rewritten)</ChapterLink>
 </ChapterNav>

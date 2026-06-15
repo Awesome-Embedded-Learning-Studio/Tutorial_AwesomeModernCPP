@@ -243,6 +243,15 @@ unordered_map: 2.2 ms
 
 至于什么时候选它而不是 map：不在乎顺序、且以查找/插入/删除为主，`unordered` 多半更快；需要有序遍历、范围查询、或稳定的迭代器顺序，就回到 map。下一篇我们离开关联容器，去看顺序容器里 vector 之外的选择——deque 和 list。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="unordered_map：哈希桶、rehash 质数序列、reserve"
+  source-path="code/examples/vol3/07_unordered_map_set.cpp"
+  description="观察 rehash 触发的 bucket_count 跳变、桶分布、reserve 预撑桶"
+  allow-run
+/>
+
 ## 参考资源
 
 - [std::unordered_map — cppreference](https://en.cppreference.com/w/cpp/container/unordered_map)

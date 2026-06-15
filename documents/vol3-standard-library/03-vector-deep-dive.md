@@ -268,7 +268,7 @@ int main()
 
 <OnlineCompilerDemo
   title="vector 实现层深入：扩容、失效、constexpr、erase_if"
-  source-path="code/examples/vol34567/15_vector_deep_dive.cpp"
+  source-path="code/examples/vol3/03_vector_deep_dive.cpp"
   description="观察 vector 扩容容量跳变、迭代器失效、move_if_noexcept 与 C++20 constexpr/erase_if"
   allow-run
   allow-x86-asm

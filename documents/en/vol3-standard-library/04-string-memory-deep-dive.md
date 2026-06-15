@@ -21,7 +21,7 @@ tags:
 - 内存管理
 title: 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
 translation:
-  source: documents/vol3-standard-library/02-string-memory-deep-dive.md
+  source: documents/vol3-standard-library/04-string-memory-deep-dive.md
   source_hash: 8887bdd7d4e968834210afa3b7772627cb52ccefe9b91e5f1add4ac46722cc51
   translated_at: '2026-06-14T00:19:45.074884+00:00'
   engine: anthropic
@@ -31,7 +31,7 @@ translation:
 
 `std::string` is likely the most heavily used type in the standard library, yet it is often the least understood. We happily write `std::string` code all day long, but when pressed with questions like—"Why is `sizeof(std::string)` 32 on my machine?", "Why do two strings in old code share the same buffer?", or "What exactly does C++23's `resize_and_overwrite` save?"—most of us are stumped. The root of these issues lies in the memory model and history of `std::string`.
 
-In this article, we will focus on the memory and buffer story of `std::string`: the historical entanglement of SSO and COW, implementation thresholds for SSO, and the buffer reuse API `resize_and_overwrite` introduced in C++23. (C++20's `std::u8string` is a separate topic; see Volume 3 [char8_t and UTF-8 Strings](./03-char8-t-utf8.md).)
+In this article, we will focus on the memory and buffer story of `std::string`: the historical entanglement of SSO and COW, implementation thresholds for SSO, and the buffer reuse API `resize_and_overwrite` introduced in C++23. (C++20's `std::u8string` is a separate topic; see Volume 3 [char8_t and UTF-8 Strings](./30-char8-t-utf8.md).)
 
 ------
 
@@ -137,7 +137,7 @@ void test_resize_and_overwrite() {
 
 <OnlineCompilerDemo
   title="Deep Dive into string Memory: SSO Observation and resize_and_overwrite"
-  source-path="code/examples/vol34567/16_string_memory.cpp"
+  source-path="code/examples/vol3/04_string_memory.cpp"
   description="Observe sizeof(std::string) and SSO behavior, compare buffer reuse between resize() and C++23 resize_and_overwrite"
   run-options="-std=c++23"
   allow-run

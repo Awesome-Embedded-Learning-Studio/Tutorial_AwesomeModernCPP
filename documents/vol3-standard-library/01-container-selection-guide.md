@@ -35,7 +35,7 @@ vol3 把主力容器逐个拆了一遍——`array`、`vector`、`deque`/`list`/
 
 标准库容器先分成两大类，这个分法决定了你问的第一个问题不一样。**顺序容器**（`array`、`vector`、`deque`、`list`、`forward_list`）按「位置」存数据，元素在容器里的次序就是你放进去的次序，你关心的是「我要在第几个位置插、在第几个位置删」。**关联容器**（`map`/`set` 和它们的 `unordered` 版）按「键」存数据，元素的次序由键决定（有序）或由哈希决定（无序），你关心的是「我按什么来查」。
 
-关联容器内部又分两小类。`map`/`set`/`multimap`/`multiset` 是**有序**的，底层是红黑树，按 key 排好序，查找是稳定的 `O(log n)`，还能按范围遍历。`unordered_map`/`unordered_set` 这一组是**无序**的，底层是哈希表，查找平均 `O(1)` 但最坏 `O(n)`（全撞同一个桶时），不能按序遍历。一句话区分：**要不要按 key 排序遍历？要，就红黑树；不要，就哈希换平均 O(1)**。这个权衡我们在 [map 与 set 深入](04-map-set-deep-dive.md) 和 [unordered_map 与 set 深入](05-unordered-map-set-deep-dive.md) 两篇里都实测过。
+关联容器内部又分两小类。`map`/`set`/`multimap`/`multiset` 是**有序**的，底层是红黑树，按 key 排好序，查找是稳定的 `O(log n)`，还能按范围遍历。`unordered_map`/`unordered_set` 这一组是**无序**的，底层是哈希表，查找平均 `O(1)` 但最坏 `O(n)`（全撞同一个桶时），不能按序遍历。一句话区分：**要不要按 key 排序遍历？要，就红黑树；不要，就哈希换平均 O(1)**。这个权衡我们在 [map 与 set 深入](06-map-set-deep-dive.md) 和 [unordered_map 与 set 深入](07-unordered-map-set-deep-dive.md) 两篇里都实测过。
 
 ## 复杂度速查：按操作挑容器
 
@@ -140,7 +140,7 @@ g++ -std=c++20 -O2 -o /tmp/cache_bench /tmp/cache_bench.cpp && /tmp/cache_bench
       └─ 其余             → vector (默认)
 ```
 
-两个补充。一是只要「借用一阵子」、不想转移所有权，用 `span`——它是「array/vector/C 数组的统一只读视图」，零拷贝传参的标配，详见 [span 深入](02-span.md)。二是 C++23 起有了新选项：想要「有序 + cache 友好」的 map，看 `flat_map`（底层是排序 vector）；想要「容量固定、绝不堆分配」的变长容器，看 C++26 的 `inplace_vector`——这俩我们放到 [新标准容器](10-new-containers-cpp23-26.md) 单独讲。
+两个补充。一是只要「借用一阵子」、不想转移所有权，用 `span`——它是「array/vector/C 数组的统一只读视图」，零拷贝传参的标配，详见 [span 深入](08-span.md)。二是 C++23 起有了新选项：想要「有序 + cache 友好」的 map，看 `flat_map`（底层是排序 vector）；想要「容量固定、绝不堆分配」的变长容器，看 C++26 的 `inplace_vector`——这俩我们放到 [新标准容器](10-new-containers-cpp23-26.md) 单独讲。
 
 ## 几个最常见的误选
 
@@ -149,6 +149,15 @@ g++ -std=c++20 -O2 -o /tmp/cache_bench /tmp/cache_bench.cpp && /tmp/cache_bench
 ## 临了收几句
 
 挑容器，先把三件事问清楚：操作复杂度、内存局部性、迭代器失效。这三条对得上，八九不离十；细节（异常安全、自定义分配、异构查找）再回到各容器的深入篇看。一个朴素但好用的默认值：**拿不准就 vector**，它连续、尾部摊还 O(1)、接口最全，是覆盖面最广的安全牌，等你量出它真的成了瓶颈再换。下一篇我们进入容器适配器——`stack`、`queue`、`priority_queue`，它们不是新容器，而是把底层容器「包」成栈/队列/堆的接口外壳。
+
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="容器选择：按位置存 vs 按键查"
+  source-path="code/examples/vol3/01_container_selection.cpp"
+  description="顺序容器（vector/list）与关联容器（map/unordered_map）的不同操作代价，呼应选择决策树"
+  allow-run
+/>
 
 ## 参考资源
 

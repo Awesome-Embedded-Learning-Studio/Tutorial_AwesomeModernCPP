@@ -204,6 +204,15 @@ static_assert(std::is_trivially_copyable_v<MyRegs>);
 - 聚合初始化方便；C++20 指定初始化更可读、不依赖成员顺序。
 - 把对布局和类型的假设用 `static_assert` 写进代码，让编译器替你守这些不变量。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="对象大小与平凡类型：trivial / trivially_copyable / standard-layout"
+  source-path="code/examples/vol3/12_object_size.cpp"
+  description="编译期 type_traits 查类型属性、static_assert 卡约束、vptr 与对齐的 sizeof 代价"
+  allow-run
+/>
+
 ## 参考资源
 
 - [类型特性（type traits） — cppreference](https://en.cppreference.com/w/cpp/header/type_traits)

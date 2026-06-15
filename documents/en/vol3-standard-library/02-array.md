@@ -18,7 +18,7 @@ tags:
 - intermediate
 title: std::array Fixed-Size Container
 translation:
-  source: documents/vol3-standard-library/01-array.md
+  source: documents/vol3-standard-library/02-array.md
   source_hash: 88bd85974c6f55b74530a26bf6cc96111f8a17e3ddaccef992e13ab5f1ed4b6b
   translated_at: '2026-05-26T11:37:08.725307+00:00'
   engine: anthropic
@@ -186,7 +186,7 @@ Experience the basic usage of `std::array`, `constexpr` lookup tables, and struc
 
 <OnlineCompilerDemo
   title="std::array Fixed-Size Container"
-  source-path="code/examples/vol34567/01_array.cpp"
+  source-path="code/examples/vol3/02_array.cpp"
   description="Experience basic std::array operations, constexpr CRC lookup tables, and structured bindings"
   allow-run
   allow-x86-asm

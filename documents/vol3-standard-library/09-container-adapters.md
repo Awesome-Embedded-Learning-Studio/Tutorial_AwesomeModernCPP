@@ -140,6 +140,16 @@ std::priority_queue<int> pq{std::less<int>{}, std::move(buf)};
 
 容器适配器的核心就一句：**底层容器 + 受限接口，受限换语义保证**。`stack`/`queue` 是把容器的一端或两端暴露成栈/队列；`priority_queue` 更进一步，用 `<algorithm>` 的堆函数把连续容器包成优先队列——`top` O(1)、增删 O(log n)、默认最大堆、换比较器变最小堆。两个使用上的坎要记牢：一是 `top()` 只是看、要真正取出元素得紧跟 `pop()`；二是 `priority_queue` 没有「删任意元素」「按值查找」的接口，如果你需要这些（比如要中途撤销某个元素），那该用的是 `set` 或 `multiset`，不是 priority_queue。下一篇我们把目光从经典容器移开，看看 C++23/26 给容器家族加的新成员——`flat_map`、`inplace_vector`、`mdspan`。
 
+想直接上手运行看看效果？点开下面的在线示例（能运行、也能看汇编）：
+
+<OnlineCompilerDemo
+  title="stack / queue / priority_queue：默认最大堆、greater 变最小堆"
+  source-path="code/examples/vol3/09_container_adapters.cpp"
+  description="三个适配器的语义、priority_queue 换比较器改堆方向、push/pop 背后的堆算法"
+  allow-run
+  allow-x86-asm
+/>
+
 ## 参考资源
 
 - [std::stack — cppreference](https://en.cppreference.com/w/cpp/container/stack)

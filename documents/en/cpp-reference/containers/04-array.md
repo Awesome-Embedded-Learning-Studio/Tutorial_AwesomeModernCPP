@@ -78,7 +78,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: std::array in Detail](../../vol3-standard-library/01-array.md)
+- [Tutorial: std::array in Detail](../../vol3-standard-library/02-array.md)
 - [cppreference: std::array](https://en.cppreference.com/w/cpp/container/array)
 
 ---

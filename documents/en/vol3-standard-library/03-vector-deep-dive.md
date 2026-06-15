@@ -21,7 +21,7 @@ tags:
 - vector
 title: 'Vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation'
 translation:
-  source: documents/vol3-standard-library/01-vector-deep-dive.md
+  source: documents/vol3-standard-library/03-vector-deep-dive.md
   source_hash: 3a794c3b8b7c339211aacff5c51798b07990dff9266fcf14a11fb79bdaa0a358
   translated_at: '2026-06-14T00:19:27.289156+00:00'
   engine: anthropic
@@ -272,7 +272,7 @@ Of course, you can also click this to see the phenomenon!
 
 <OnlineCompilerDemo
   title="Vector Implementation Deep Dive: Reallocation, Invalidation, constexpr, erase_if"
-  source-path="code/examples/vol34567/15_vector_deep_dive.cpp"
+  source-path="code/examples/vol3/03_vector_deep_dive.cpp"
   description="Observe vector capacity jumps, iterator invalidation, move_if_noexcept, and C++20 constexpr/erase_if"
   allow-run
   allow-x86-asm

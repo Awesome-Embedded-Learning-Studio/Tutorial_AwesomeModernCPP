@@ -18,7 +18,7 @@ tags:
 - intermediate
 title: Initializer list
 translation:
-  source: documents/vol3-standard-library/01-initializer-lists.md
+  source: documents/vol3-standard-library/11-initializer-lists.md
   source_hash: c5f32b513967607a52fde6a6dfa9cc779161a1848aa4ee39dcdc8073b866fe66
   translated_at: '2026-05-26T11:37:01.435396+00:00'
   engine: anthropic
@@ -234,7 +234,7 @@ Compare the differences between in-body assignment and initializer lists online,
 
 <OnlineCompilerDemo
   title="Initializer Lists vs. Member Assignment"
-  source-path="code/examples/vol34567/03_initializer_lists.cpp"
+  source-path="code/examples/vol3/11_initializer_lists.cpp"
   description="Compare in-body assignment with initializer lists, and experience the initialization of const and reference members"
   allow-run
 />

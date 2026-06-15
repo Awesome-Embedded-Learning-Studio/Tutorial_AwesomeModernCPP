@@ -80,7 +80,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: span In Depth](../../vol3-standard-library/02-span.md)
+- [Tutorial: span In Depth](../../vol3-standard-library/08-span.md)
 - [cppreference: std::span](https://en.cppreference.com/w/cpp/container/span)
 
 ---

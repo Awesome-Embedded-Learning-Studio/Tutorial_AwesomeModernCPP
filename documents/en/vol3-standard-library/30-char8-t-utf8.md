@@ -19,7 +19,7 @@ tags:
 - 类型安全
 title: char8_t and UTF-8 Strings
 translation:
-  source: documents/vol3-standard-library/03-char8-t-utf8.md
+  source: documents/vol3-standard-library/30-char8-t-utf8.md
   source_hash: bf65e1fa69d057d8e2387796ce4ed2c2c677e348f2808d359b0b024109c38afc
   translated_at: '2026-06-14T00:19:58.325857+00:00'
   engine: anthropic
@@ -112,7 +112,7 @@ int main() {
 
 <OnlineCompilerDemo
   title="char8_t and UTF-8 Strings: Pitfalls and Correct Usage"
-  source-path="code/examples/vol34567/17_char8_t.cpp"
+  source-path="code/examples/vol3/14_char8_t.cpp"
   description="Demonstrates the two compilation failure pitfalls of C++20 u8 literal type changes, and two correct methods: explicit casting and u8string"
   allow-run
   allow-x86-asm

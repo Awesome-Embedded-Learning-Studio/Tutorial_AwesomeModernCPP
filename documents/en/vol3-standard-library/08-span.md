@@ -18,7 +18,7 @@ tags:
 - intermediate
 title: std::span Array View
 translation:
-  source: documents/vol3-standard-library/02-span.md
+  source: documents/vol3-standard-library/08-span.md
   source_hash: 8894624edd7ee1cf4674210cb203bb69517deb95bfef2ceab3847e230b4e109f
   translated_at: '2026-05-26T11:37:07.215778+00:00'
   engine: anthropic
@@ -218,7 +218,7 @@ Experience std::span online by constructing views from different container types
 
 <OnlineCompilerDemo
   title="std::span Array View"
-  source-path="code/examples/vol34567/02_span.cpp"
+  source-path="code/examples/vol3/08_span.cpp"
   description="Experience constructing std::span views from different containers, subspan slicing, and other operations"
   allow-run
 />
