@@ -1,7 +1,7 @@
 ---
 title: Three-way comparison operator (C++20 Spaceship Operator)
-description: 'Detailed Explanation of the C++20 Three-Way Comparison Operator: Simplifying
-  Comparison Logic for Custom Types'
+description: 'Detailed explanation of the C++20 three-way comparison operator: simplifying
+  comparison logic for custom types'
 chapter: 11
 order: 5
 tags:
@@ -18,16 +18,16 @@ cpp_standard:
 platform: host
 translation:
   source: documents/vol4-advanced/05-spaceship-operator.md
-  source_hash: 968dba94e12efb78827b9f24621a35362acdf36dd79af278d44399a7a87cc4f6
-  translated_at: '2026-06-13T11:50:40.195404+00:00'
+  source_hash: d1e342cc4a916cbbfcc47ae43a9a40b3b2fd37d7107b2091c5520eb0bb30457b
+  translated_at: '2026-06-15T09:22:23.372298+00:00'
   engine: anthropic
-  token_count: 7328
+  token_count: 7327
 ---
 # Modern Embedded C++ Development — Three-Way Comparison Operator
 
 ## Introduction
 
-Have you ever found yourself frustrated with comparison operators while writing embedded code?
+Have you ever found comparison operators to be a headache while writing embedded code?
 
 ```cpp
 class SensorReading {
@@ -73,12 +73,12 @@ This is a disaster! To implement a fully sortable type, you need to write six co
 
 The **Three-way Comparison Operator** introduced in C++20, commonly known as the **Spaceship Operator** (`<=>`), was designed to solve this problem.
 
-> TL;DR: **The three-way comparison operator automatically generates all six comparison operators with a single definition, significantly simplifying comparison logic for custom types.**
+> TL;DR: **The three-way comparison operator defines all six comparison operators with a single definition, drastically simplifying comparison logic for custom types.**
 
 In embedded development, this feature is particularly useful:
 
 1. Sorting sensor data by time or priority
-2. Firmware version comparison (complex versions with alphanumeric suffixes)
+2. Firmware version comparison (complex versions with alphabetic suffixes)
 3. Lexicographical comparison of configuration parameters
 4. Task sorting in priority queues
 
@@ -91,7 +91,7 @@ In embedded development, this feature is particularly useful:
 
 ### Operator Symbol
 
-The three-way comparison operator uses the `<=>` symbol, named for its resemblance to a spaceship:
+The three-way comparison operator uses the `<=>` symbol, named so because it looks like a spaceship:
 
 ```cpp
 #include <compare>
@@ -110,7 +110,7 @@ struct Point {
 
 ### Return Value Type
 
-The return value of the three-way comparison operator is not `bool`, but rather a "comparison category" representing the result:
+The return value of the three-way comparison operator is not `bool`, but a "comparison category" representing the comparison result:
 
 ```cpp
 // <=> 返回值可以理解为：
@@ -151,13 +151,13 @@ int main() {
 ```
 
 ------
-**Best Practice**: Use `<`, `==`, and `>` directly to judge comparison results instead of calling named methods. This keeps code concise and works for all comparison categories.
+**Best Practice**: Use `<`, `==`, and `>` directly to judge the comparison result, rather than calling named methods. This makes the code more concise and applies to all comparison categories.
 
 ------
 
 ## Automatic Generation of Comparison Functions
 
-### Automatic Generation using =default
+### Using =default for Automatic Generation
 
 The simplest usage is to use `= default` to let the compiler automatically generate all comparison operators:
 
@@ -204,7 +204,7 @@ std::sort(sensors.begin(), sensors.end());
 
 ### Comparison Order
 
-The default generated `<=>` performs lexicographical comparison according to the **member declaration order**:
+The default generated `<=>` performs lexicographical comparison in **member declaration order**:
 
 ```cpp
 struct Version {
@@ -240,7 +240,7 @@ C++20 defines three comparison categories to represent comparison relationships 
 `strong_ordering` represents the strongest comparison relationship with the following properties:
 
 1. **Equivalence implies equality**: `a == b` if and only if all members of `a` and `b` are equal
-2. **Substitutability**: If `a == b`, then `f(a) == f(b)` holds for any function `f`
+2. **Substitutability**: When `a == b`, `f(a) == f(b)` holds for any function `f`
 
 Use cases: Integers, strings, simple value types
 
@@ -276,12 +276,12 @@ static_assert((c <=> a) == std::strong_ordering::greater);
 
 ### partial_ordering: Partial Ordering
 
-`partial_ordering` represents cases where values might be "incomparable":
+`partial_ordering` indicates that "incomparable" situations may exist:
 
-1. Some values cannot be compared (e.g., `NaN`)
+1. Some values may not be comparable (e.g., `NaN`)
 2. Equivalence does not imply equality
 
-Use cases: Floating-point numbers (existence of `NaN`), ranges with allowed values
+Use cases: Floating-point numbers (existence of `NaN`), ranges with permissible values
 
 ```cpp
 #include <compare>
@@ -319,7 +319,7 @@ static_assert((a <=> b) == std::partial_ordering::less);
 
 ### weak_ordering: Weak Ordering
 
-`weak_ordering` falls between strong and partial ordering:
+`weak_ordering` falls between strong ordering and partial ordering:
 
 1. Equivalence does not imply equality (there may be indistinguishable alternative representations)
 2. But all values are comparable (no `unordered`)
@@ -378,7 +378,7 @@ static_assert(!(s1 == s2));  // 不相等！
 | `std::weak_ordering::equivalent` | Equivalent |
 | `std::weak_ordering::greater` | Greater than |
 
-### Choosing Between Comparison Categories
+### Choosing Among the Three Comparison Categories
 
 ```cpp
 #include <compare>
@@ -444,7 +444,7 @@ graph TD
 
 ------
 
-## Embedded Scenarios in Practice
+## Real-World Embedded Scenarios
 
 ### Scenario 1: Sensor Data Priority Sorting
 
@@ -515,7 +515,7 @@ void message_queue_example() {
 
 ### Scenario 2: Firmware Version Comparison
 
-Firmware version numbers may have complex formats, such as alphanumeric suffixes:
+Firmware version numbers may have complex formats, such as alphabetic suffixes:
 
 ```cpp
 #include <compare>
@@ -661,7 +661,7 @@ void config_example() {
 
 ### Scenario 4: Sensor Data with NaN
 
-Some sensors might return invalid data (similar to the NaN concept):
+Some sensors might return invalid data (similar to the concept of NaN):
 
 ```cpp
 #include <compare>
@@ -808,9 +808,9 @@ void alarm_system() {
 
 ## Custom Three-Way Comparison Implementation
 
-### Manual Multi-Field Comparison
+### Manual Implementation of Multi-Field Comparison
 
-When the default lexicographical order doesn't meet requirements, manual implementation is needed:
+When the default lexicographical order does not meet requirements, manual implementation is needed:
 
 ```cpp
 #include <compare>
@@ -875,7 +875,7 @@ struct Task {
 };
 ```
 
-For C++20, you can implement simple helpers yourself:
+For C++20, you can implement a simple helper yourself:
 
 ```cpp
 // C++20比较合成助手
@@ -931,10 +931,10 @@ struct Task {
 
 ### Pitfall 1: Default == Does Not Reverse Generate <=> (Generation is One-Way)
 
-A widespread but outdated claim is: "Writing only `<=>` without `==` causes a compilation error." This was briefly true in early C++20 drafts, but was later fixed by **P1185 (Consistent defaulted comparisons, adopted as a C++20 Defect Report)**—the generation relationship between `<=>` and `==` is **one-way**:
+A widespread but now outdated claim is: "Writing only `<=>` without `==` causes a compilation error." This was briefly true in early C++20 drafts, but was later fixed by **P1185 (Consistent defaulted comparisons, adopted as a C++20 Defect Report)**—the generation relationship between `<=>` and `==` is **one-way**:
 
-- default `<=>` → The compiler conveniently generates `==`, `!=`, `<`, `>`, `<=`, and `>=`. So writing only `<=>` is fully sufficient; `==` comes "free".
-- Conversely, default `==` → Only generates `==` and `!=`, it will not reverse-generate `<=>` or any relational operators.
+- default `<=>` → The compiler conveniently generates `==`, `!=`, `<`, `>`, `<=`, and `>=` all together. So writing only `<=>` is perfectly sufficient; `==` comes "for free".
+- Conversely, default `==` → Only generates `==` and `!=`; it will not reverse-generate `<=>` or any relational operators.
 
 The real pitfall is the latter: You think "I only care about equality, defaulting a `==` is enough," but then someone writes a `a < b` expression, and the compilation blows up—because `==` doesn't come with relational operators.
 
@@ -964,7 +964,7 @@ int main() {
 }
 ```
 
-Tested (Arch Linux WSL, `-std=c++20`; g++ 16.1.1 and clang++ 22.1.6 behavior consistent):
+Tested (Arch Linux WSL, `-std=c++20`; g++ 16.1.1 and clang++ 22.1.6 behave consistently):
 
 ```text
 $ g++ -std=c++20 gotcha.cpp -o gotcha && ./gotcha
@@ -977,7 +977,7 @@ gotcha.cpp:23:21: error: no match for 'operator<' (operand types are 'HasEqualit
       |                   ~ ^ ~
 ```
 
-A one-sentence mnemonic: `<=>` is "upstream", `==` is "downstream"—upstream sends all operators downstream, while downstream only minds its own business. As long as you want any kind of magnitude comparison, you need `<=>`; only defaulting `==` will never get you `<=>`. See cppreference section "[Default comparisons](https://en.cppreference.com/mwiki/index.php?title=cpp/language/default_comparisons)".
+A one-sentence mnemonic: `<=>` is "upstream", `==` is "downstream"—upstream sends all operators downstream, while downstream only minds its own business. As long as you want any kind of magnitude comparison, you need `<=>`; defaulting only `==` will never get you `<=>`. See the cppreference section on "[Default comparisons](https://en.cppreference.com/mwiki/index.php?title=cpp/language/default_comparisons)" for details.
 
 ### Pitfall 2: Inconsistent Comparison Categories
 
@@ -1057,7 +1057,7 @@ DerivedWithNew d2{1, 2};
 // bool cmp = (d1 == d2);  // 编译错误！类型不同
 ```
 
-### Pitfall 4: The Floating-Point NaN Problem
+### Pitfall 4: The NaN Problem with Floating-Point Numbers
 
 Floating-point `NaN` (Not a Number) causes comparison results to be `unordered`:
 
@@ -1259,27 +1259,27 @@ Experience C++20's three-way comparison operator default generation, custom vers
 <OnlineCompilerDemo
   title="C++20 Three-Way Comparison Operator (Spaceship)"
   source-path="code/examples/vol4/08_spaceship.cpp"
-  description="Experience default <=> generation, custom version comparison, and partial_ordering"
+  description="Experience default <=> auto-generation, custom version comparison, and partial_ordering"
   allow-run
 />
 
-Let's look back one more time: The three-way comparison operator is an important feature introduced in C++20 that significantly simplifies comparison logic for custom types:
+Looking back, the three-way comparison operator is an important feature introduced in C++20 that drastically simplifies comparison logic for custom types:
 
 **Core Concepts**:
 
 | Concept | Description |
 |-----|------|
-| `<=>` operator | Three-way comparison operator, defines once to auto-generate all six comparison operators |
-| Comparison Categories | `strong_ordering`, `weak_ordering`, `partial_ordering` |
+| `<=>` operator | Three-way comparison operator; defines all six comparison operators with a single definition |
+| Comparison categories | `strong_ordering`, `weak_ordering`, `partial_ordering` |
 | `= default` | Let the compiler automatically generate comparison logic |
-| Comparison Order | Default lexicographical comparison by member declaration order |
+| Comparison order | Defaults to lexicographical comparison based on member declaration order |
 
 **Comparison Category Selection**:
 
 | Category | Characteristics | Use Cases |
 |-----|------|---------|
 | `strong_ordering` | Equivalence implies equality | Integers, enums, simple value types |
-| `weak_ordering` | Equivalence does not imply equality | Case-insensitive strings, comparisons ignoring fields |
+| `weak_ordering` | Equivalence does not imply equality | Case-insensitive strings, comparisons ignoring partial fields |
 | `partial_ordering` | Possibly incomparable | Floating-point numbers (NaN) |
 
-The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with previously learned features like auto, structured binding, and attributes, modern C++ has evolved into a powerful and expressive system programming language. In embedded development, rational use of these features can make code clearer and easier to maintain.
+The three-way comparison operator makes C++ comparison logic more concise and safe. Combined with previously learned features like auto, structured bindings, and attributes, modern C++ has evolved into a powerful and expressive system programming language. In embedded development, using these features appropriately makes code clearer and easier to maintain.

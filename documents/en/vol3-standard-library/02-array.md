@@ -1,238 +1,161 @@
 ---
+title: 'array: A fixed-size aggregate container determined at compile time'
+description: 'A Deep Dive into `std::array`: Wrapping C Arrays as Aggregate Types
+  with Zero Overhead, No Pointer Decay, `std::get` and Structured Bindings, Iterators
+  That Never Invalidate, `constexpr` Compile-Time Lookup, and the Precise Boundary
+  Between C Arrays and `vector`'
 chapter: 7
+order: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- array
+- 容器
+difficulty: intermediate
+platform: host
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
-description: A Detailed Look at the std::array Container
-difficulty: intermediate
-order: 1
-platform: host
-prerequisites:
-- 'Chapter 6: RAII与智能指针'
-reading_time_minutes: 6
-tags:
-- cpp-modern
-- host
-- intermediate
-title: std::array Fixed-Size Container
+reading_time_minutes: 12
+related:
+- vector 深入：三指针、扩容与迭代器失效
 translation:
   source: documents/vol3-standard-library/02-array.md
-  source_hash: 88bd85974c6f55b74530a26bf6cc96111f8a17e3ddaccef992e13ab5f1ed4b6b
-  translated_at: '2026-05-26T11:37:08.725307+00:00'
+  source_hash: f41713d84c0a41b88fe22a2838df40e140aeaa4ddab6f72383344f12e67cf698
+  translated_at: '2026-06-15T09:11:49.148384+00:00'
   engine: anthropic
-  token_count: 937
+  token_count: 1337
 ---
-# Modern C++ for Embedded Systems Tutorial — std::array: Compile-Time Fixed-Size Arrays
+# array: A Fixed-Size Aggregate Container for Compile-Time
 
-When writing embedded code, the heap often feels like an unreliable roommate: it can turn your world upside down at any moment. `std::array` is like that steady, quiet friend—its size is determined at compile time, it lives on the stack or in static storage, it involves no dynamic allocation, its performance is predictable, and its semantics are clear. A key focus here is how it compares to traditional C-style arrays.
+## What is array: A Zero-Overhead Aggregate Wrapper for C Arrays
 
-------
-
-## What is `std::array`
-
-`std::array` is a lightweight class template that wraps a C-style array: the size `N` is fixed at compile time, it provides an STL-style interface (`at()`, `operator[]`, `front()`, `back()`, iterators, etc.), and it typically incurs little to no runtime overhead compared to a raw array.
-
-------
-
-## Why We Like It in Embedded
-
-- **Zero dynamic allocation**: No `new`/`delete`, making it suitable for heap-less or memory-constrained environments.
-- **Predictable memory layout**: Compile-time size and contiguous storage make it easy to use with DMA (Direct Memory Access) and raw pointer interfaces.
-- **STL friendly**: Can be passed directly to algorithms (`std::sort`, `std::copy`) and container adapters.
-- **constexpr support**: Can be used for compile-time lookup tables or constant data.
-- **Type safety and self-documenting**: `std::array<T, N>` clearly expresses intent, offering a more modern approach than `T[N]`.
-
-------
-
-## Basic Usage (Code Examples)
+`std::array` is the "modern shell" that C++11 applied to C arrays. C arrays (`T[N]`) have several old shortcomings: they decay into pointers when passed as arguments (losing length information), lack iterators, cannot be copied or assigned as a whole, and cannot be returned from functions. `std::array` wraps this contiguous memory in a class template, equipping it with STL interfaces, and—crucially—**it is an aggregate type with absolutely no overhead**: the memory layout of `std::array<T, N>` is identical to that of a C array, with no virtual functions, no vtable pointers, and no extra members.
 
 ```cpp
 #include <array>
-#include <cstdio>
+std::array<int, 5> arr = {1, 2, 3, 4, 5};
+```
+
+That `N` is a template parameter, a compile-time constant. This means the size of an array is part of its type—`std::array<int, 3>` and `std::array<int, 4>` are two completely different types and cannot be assigned to each other. The price paid is zero dynamic allocation: the memory occupied by an array is exactly that contiguous block of data, residing on the stack or in the static area, never touching the heap.
+
+## Precise Comparison with C Arrays: No Decay, Interfaces, and Object Semantics
+
+Let's count the improvements of `array` over C arrays one by one. First, **it does not decay to a pointer**: a C array passed to a function decays to `T*`, losing its length; an array is an object, so when passed as an argument, it fully preserves its type (including `N`). You either pass by reference `std::array<T, N>&`, or explicitly provide `data()` to C interfaces. Second, **it has STL interfaces**: `size()`, `empty()`, `begin()` / `end()`, `front()`, `back()`, and `at()`, allowing it to be fed directly to algorithms and range-based for loops. Third, **it supports copy and assignment**: copy construction copies elements one by one, and it can be used as a return value or a class member—things C arrays cannot do.
+
+```cpp
+void func(std::array<int, 5>& a) {
+    // a.size() is 5, type is preserved
+    // No decay to int*
+}
+```
+
+But underneath, it is still that same contiguous memory. The standard guarantees that `array` is an aggregate, so `sizeof(std::array<T, N>)` equals `sizeof(T) * N` (no extra members, no waste other than potential tail padding). It has no overhead, simply adding interfaces and type safety.
+
+## The Boundary with vector: When to Use Fixed Size
+
+The dividing line between `array` and `vector` comes down to one thing: **is the size known at compile time?** If the size is fixed at compile time and won't change, use `array`—zero heap allocation, zero overhead, can be made `constexpr`, and saves RAM if placed in a static area. If the size is determined at runtime or requires insertion/deletion, use `vector`.
+
+The trade-offs are equivalent: the size of an `array` is part of its type (`std::array<int, 3>` and `std::array<int, 4>` are not interchangeable), so a function accepting "an int array of any size" cannot use `array` (you would need `std::span` or templates); `vector` doesn't have this limitation but incurs heap allocation and reallocation overhead. In short: **fixed size uses `array`, variable size uses `vector`**. For the middle ground (size known at runtime but avoiding heap allocation), wait for C++26's `std::dynarray`, or manage a buffer yourself with `std::span`.
+
+## Privileges of Being an Aggregate: std::get, Structured Bindings, and Tuple Interface
+
+Because `array` is an aggregate type, it enjoys "tuple-like" benefits beyond C arrays. `std::get` can access elements by compile-time index (returning a reference with type safety); C++17 structured bindings can unpack a small array directly into variables; `std::tuple_size` and `std::tuple_element` also recognize `array`, meaning it can be slotted into generic code that consumes tuple-like types.
+
+```cpp
+std::array<int, 3> coord = {10, 20, 30};
+auto& [x, y, z] = coord; // Structured binding
+static_assert(std::tuple_size<decltype(coord)>::value == 3);
+```
+
+None of this works with C arrays—C arrays can't use `std::get` and don't support structured bindings. For small arrays with "a fixed number of values" (like 3D coordinates or RGB), `array` plus structured binding is even smoother than writing a custom struct.
+
+## Complexity, Iterator Invalidation, and Exception Safety
+
+Complexity is straightforward: random access (`operator[]`) and `at()` are both O(1), traversal is O(n), and there is no reallocation or resizing because the size is fixed.
+
+Regarding **iterator invalidation**, `array` is the most worry-free: iterators never invalidate. Because `array` is a fixed-size aggregate with no resizing or insertion/deletion (the interface lacks `push_back` / `insert`), iterators, references, and pointers remain valid as long as the array object itself is alive. This is cleaner than `vector` (invalidation on resize), `deque`, or `list`.
+
+For exception safety, note that `at()` performs bounds checking and throws `std::out_of_range` if out of bounds; `operator[]` does not check, so out-of-bounds access is undefined behavior. In environments with exceptions disabled (like `-fno-exceptions`), `at()`'s check might degrade to a no-op or abort, so in those scenarios, use `operator[]` and ensure indices are correct yourself.
+
+## Let's Run It: Zero Overhead and constexpr
+
+Saying "zero overhead" isn't enough; let's run it to see. First, confirm that `sizeof` is truly the same as a C array:
+
+```cpp
+#include <array>
+#include <iostream>
 
 int main() {
-    // 编译期确定大小，无动态分配
     std::array<int, 5> arr = {1, 2, 3, 4, 5};
+    int c_arr[5] = {1, 2, 3, 4, 5};
 
-    // 范围 for 循环
-    for (const auto& val : arr) {
-        printf("%d ", val);
-    }
-    printf("\n");
+    static_assert(sizeof(arr) == sizeof(c_arr), "Sizes must match");
+    std::cout << "sizeof(array): " << sizeof(arr) << std::endl;
+    std::cout << "sizeof(c_arr): " << sizeof(c_arr) << std::endl;
 
-    // STL 算法
-    std::sort(arr.begin(), arr.end());
-
-    // at() 带边界检查（可能抛出 std::out_of_range）
-    int x = arr.at(2);
-
-    // size() 是常量表达式
-    static_assert(arr.size() == 5);
-
+    // Verify data() points to the first element
+    static_assert(sizeof(arr) == 5 * sizeof(int));
     return 0;
 }
 ```
 
-A quick reminder: `at()` is not suitable for bare-metal environments where exceptions are disabled or unavailable; use `operator[]` and ensure your indices are correct.
-
-------
-
-## Comparison with C Arrays and `std::vector`
-
-- **Versus C arrays**: `std::array` is a wrapped class that supports `size()`, iterators, `begin()`/`end()`, and structured bindings, and it can be copied or assigned as an object. Under the hood, it is still contiguous memory.
-- **Versus std::vector**: `std::vector` can be dynamically resized (requiring the heap), whereas `std::array` is heap-free, fixed in size, has lower overhead, and carries clearer semantics. In embedded development, we generally prefer `std::array`.
-
-------
-
-## Common Techniques and Details (From an Embedded Perspective)
-
-### 1. Static Storage or Stack?
-
-- Small arrays (tens or hundreds of bytes) can live on the stack. Be mindful of the stack depth limits of your tasks/ISRs (interrupt service routines).
-- Larger arrays should be declared `static` or placed in a dedicated section, or put in read-only flash (`constexpr` data) to save RAM.
-
-Example:
-
-```cpp
-// 栈上：小数组，函数作用域
-void foo() {
-    std::array<uint8_t, 16> buffer{};
-    // ...
-}
-
-// 静态区：大数组，生命周期贯穿程序运行
-static std::array<uint32_t, 1024> adc_buffer{};
-
-// Flash（只读）：编译期常量表
-constexpr std::array<uint8_t, 256> sine_table = []() constexpr {
-    std::array<uint8_t, 256> t{};
-    for (int i = 0; i < 256; ++i) {
-        t[i] = static_cast<uint8_t>(128 + 127 * sin(i * 2 * 3.14159265 / 256));
-    }
-    return t;
-}();
+```text
+sizeof(array): 20
+sizeof(c_arr): 20
 ```
 
-### 2. Using with DMA / Peripherals
+`sizeof` is completely equal, with no overhead—`array` is just that contiguous memory wrapped in a class. `data()` indeed points to the first element, so it can be safely handed to C interfaces or DMA.
 
-Because `std::array` guarantees contiguous memory, you can safely pass `data()` to DMA or the HAL (Hardware Abstraction Layer). However, ensure the element type is **trivially copyable and does not have complex construction requirements** (typically, use POD or trivial types).
-
-### 3. Compile-Time Tables and `constexpr`
-
-`std::array` can be used for compile-time constant lookup tables (avoiding runtime initialization):
-
-```cpp
-constexpr std::array<int, 4> multipliers = {2, 4, 8, 16};
-
-// 编译期求值
-static_assert(multipliers[2] == 8);
-
-constexpr int get_multiplier(int idx) {
-    return multipliers[idx]; // 编译期查表
-}
-```
-
-If you need to generate a more complex table at compile time, you can combine it with `std::index_sequence` for metaprogramming (we won't dive into complex implementations here, but the idea is to use `std::index_sequence` to expand indices and generate elements within a `constexpr` function).
-
-### 4. Structured Bindings and `std::tuple`
-
-`std::array` supports `std::get` and structured bindings (C++17):
-
-```cpp
-std::array<int, 3> rgb = {255, 128, 0};
-
-// 结构化绑定
-auto [r, g, b] = rgb;
-
-// std::get
-int red = std::get<0>(rgb);
-```
-
-### 5. Avoiding the Pointer Decay Pitfall
-
-C-style arrays decay into pointers when passed as arguments, but `std::array` does not. You must explicitly pass it by reference (`&`) or by value:
-
-```cpp
-// C 数组：退化为指针，丢失大小信息
-void c_func(int arr[4]) { // arr 实际是 int*
-    // sizeof(arr) != sizeof(int)*4
-}
-
-// std::array：不退化，保留大小信息
-void cpp_func(const std::array<int, 4>& arr) {
-    static_assert(arr.size() == 4);
-    int x = arr[0];
-}
-```
-
-### 6. Compatibility with Bare-Metal Exception Strategies
-
-Some embedded toolchains disable exception support, which affects the use of `at()` (which throws exceptions). In exception-free environments, we recommend using only `operator[]` and employing boundary-checking tools during compilation or development.
-
-------
-
-## Advanced Topic: When Elements Are Not POD
-
-Elements of `std::array` can be of any type `T`. However, there are common caveats in embedded development:
-
-- If `T` has complex constructors/destructors, static initialization behavior (especially zero-initialization) will differ, and you must ensure the construction cost is acceptable.
-- For buffers that need to be read or written via DMA, `T` should be trivially copyable.
-
-## Run Online
-
-Experience the basic usage of `std::array`, `constexpr` lookup tables, and structured bindings online:
-
-<OnlineCompilerDemo
-  title="std::array Fixed-Size Container"
-  source-path="code/examples/vol3/02_array.cpp"
-  description="Experience basic std::array operations, constexpr CRC lookup tables, and structured bindings"
-  allow-run
-  allow-x86-asm
-/>
-
-## Try It Out — Using `std::array` as a Compile-Time CRC Table
+Another major feature of `array` is **`constexpr`**—it can complete initialization and computation at compile time, placing the generated data directly into the read-only section. A classic use case is generating a CRC lookup table at compile time:
 
 ```cpp
 #include <array>
 #include <cstdint>
 
-// 简化的 CRC8 查表生成（编译期）
-constexpr uint8_t crc8_table_entry(uint8_t idx) {
-    uint8_t crc = idx;
-    for (int i = 0; i < 8; ++i) {
-        if (crc & 0x80)
-            crc = (crc << 1) ^ 0x07;
-        else
-            crc <<= 1;
-    }
-    return crc;
-}
-
-constexpr std::array<uint8_t, 256> generate_crc_table() {
-    std::array<uint8_t, 256> table{};
-    for (int i = 0; i < 256; ++i) {
-        table[i] = crc8_table_entry(static_cast<uint8_t>(i));
+constexpr std::array<uint16_t, 256> generate_crc_table() {
+    std::array<uint16_t, 256> table{};
+    for (uint16_t i = 0; i < 256; ++i) {
+        uint16_t crc = i;
+        for (int j = 0; j < 8; ++j) {
+            if (crc & 1)
+                crc = (crc >> 1) ^ 0xA001;
+            else
+                crc >>= 1;
+        }
+        table[i] = crc;
     }
     return table;
 }
 
-// 编译期生成，存放在 Flash 中
+// Computed at compile time, stored in Flash
 constexpr auto crc_table = generate_crc_table();
-
-constexpr uint8_t compute_crc8(const uint8_t* data, size_t len) {
-    uint8_t crc = 0;
-    for (size_t i = 0; i < len; ++i) {
-        crc = crc_table[crc ^ data[i]];
-    }
-    return crc;
-}
-
-int main() {
-    static_assert(compute_crc8((const uint8_t*)"123456789", 9) == 0xF4);
-    return 0;
-}
 ```
 
-On supported toolchains, this approach allows you to place lookup table data in flash, saving RAM.
+This 256-entry table is calculated at compile time. When the program runs, it reads directly from the read-only section, consuming neither RAM nor runtime CPU. This "compile-time lookup" is the golden combination of `array` + `constexpr`—C arrays with `constexpr` can't achieve this as cleanly (especially when involving copy returns).
+
+## Extensions: array in Embedded Systems (DMA / Flash / Stack)
+
+Because `array` involves zero heap allocation, guarantees contiguous memory, and supports `constexpr`, it is particularly popular in embedded systems. Here are a few practical points (beyond the main thread, use as needed). First, **contiguous memory guarantee**: the pointer returned by `data()` points to contiguous storage, which can be safely handed to DMA or HAL, provided the element type is trivially copyable. Second, **save RAM by using static storage**: use `static` for large arrays or place them in namespace scope; use `constexpr` for lookup table data to go directly to Flash, saving RAM. Third, **stack depth**: small arrays on the stack are fine, but be mindful of task / ISR stack depth limits—don't put a large `array` on a narrow stack.
+
+## Wrapping Up
+
+`array` is the modern shell for C arrays: zero overhead, STL interfaces, no decay, usable as an object, and benefiting from `std::get` and structured bindings via its aggregate nature. Its iterators never invalidate, it supports `constexpr`, and it has zero heap allocation—as long as the size is fixed at compile time, it is a more suitable choice than both C arrays and `vector`. In the next article, we look at its "dynamic version", `vector`, moving from fixed to variable size, at the cost of the heap and reallocation.
+
+Want to try running it immediately? Check out the online example below (runnable, with assembly view):
+
+<OnlineCompilerDemo
+  title="array: Zero-Overhead Aggregate Container and constexpr Lookup"
+  source-path="code/examples/vol3/02_array.cpp"
+  description="sizeof matches C arrays, constexpr CRC compile-time lookup, structured bindings"
+  allow-run
+/>
+
+## References
+
+- [std::array — cppreference](https://en.cppreference.com/w/cpp/container/array)
+- [Aggregate type — cppreference](https://en.cppreference.com/w/cpp/language/aggregate_initialization)
+- [Container iterator invalidation rules summary — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)

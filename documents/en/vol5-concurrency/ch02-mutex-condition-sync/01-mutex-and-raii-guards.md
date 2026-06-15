@@ -1,8 +1,7 @@
 ---
-title: Mutex and RAII Locks
-description: A systematic overview of the mutex family and RAII (Resource Acquisition
-  Is Initialization) lock guards, covering the evolution and best practices from `lock_guard`
-  to `scoped_lock`.
+title: Mutex and RAII Lock
+description: Systematically review the mutex family and RAII lock guards, covering
+  the evolution from `lock_guard` to `scoped_lock` and best practices.
 chapter: 2
 order: 1
 tags:
@@ -26,384 +25,267 @@ related:
 - condition_variable 与等待语义
 translation:
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md
-  source_hash: 41343836ecc79404aeb259d2ddd0e258de218c2c01671751292ee5ae1cbd6d3e
-  translated_at: '2026-05-26T11:42:08.230599+00:00'
+  source_hash: 04b39e9664388f01aa57d869f1713f276df3a6ba7565c60dce941f9d16181c72
+  translated_at: '2026-06-15T09:24:57.429078+00:00'
   engine: anthropic
-  token_count: 3182
+  token_count: 3181
 ---
 # mutex and RAII Locks
 
-In the previous article, we discussed thread ownership and RAII, mastering the lifetime management of `std::thread` and the scope-based resource control approach. Now a question arises: with threads in place, how do we safely share data between them? We have already seen the destructive power of data races in the article on fundamental concurrency issues—two threads writing to the same `int` simultaneously can cause a result of 2,000,000 to drop to 1,345,687. The most common solution to data races is the mutex, and the C++ standard library provides an entire mutex family along with matching RAII lock guards.
+In the previous post, we discussed thread ownership and RAII, mastering the lifecycle management of `std::thread` and the concept of scope-based resource control. Now, the question arises: with threads in play, how do they safely share data? We have already seen the power of data races in the concurrency basics post—two threads writing to the same `int` can result in 1,345,687 instead of 2,000,000. The most common solution to data races is the mutex, and the C++ Standard Library provides a whole family of mutexes and accompanying RAII lock guards.
 
-Our goal in this article is clear: first, we will walk through the four members of the mutex family—`std::mutex`, `std::recursive_mutex`, `std::timed_mutex`, and `std::recursive_timed_mutex`—to understand what problem each one solves. Then, we will systematically review the three RAII lock guards—`std::lock_guard`, `std::unique_lock`, and `std::scoped_lock`—which are the tools that should actually appear in our daily code. Throughout this process, we will repeatedly emphasize one principle: absolutely never manually call `lock()` and `unlock()`.
+In this post, our goal is clear: first, we will go through the four members of the mutex family—`std::mutex`, `std::recursive_mutex`, `std::timed_mutex`, and `std::shared_mutex`—one by one to understand what problems they solve. Then, we will systematically review three RAII lock guards—`std::lock_guard`, `std::unique_lock`, and `std::scoped_lock`—which are the tools that should actually appear in our daily code. Throughout this process, we will repeatedly emphasize one principle: never manually call `lock()` and `unlock()`.
 
-## std::mutex: The Most Basic Mutex
+## std::mutex: The Basic Mutex
 
-`std::mutex` is the standard mutex introduced in C++11, defined in the `<mutex>` header. It provides only three operations: `lock()`, `unlock()`, and `try_lock()`.
+`std::mutex` is the standard mutex introduced in C++11, defined in the `<mutex>` header file. It provides only three operations: `lock()`, `unlock()`, and `try_lock()`.
 
-`lock()` is a blocking call—if the mutex is already held by another thread, the current thread blocks and waits until it acquires the lock. `unlock()` releases the lock. `try_lock()` is the non-blocking version—it attempts to acquire the lock, returning `true` on success and `false` on failure, without waiting. These three operations constitute the entire interface of the mutex, simple to an astonishing degree.
+`lock()` is a blocking call—if the mutex is already held by another thread, the current thread blocks and waits until it acquires the lock. `unlock()` releases the lock. `try_lock()` is the non-blocking version—it attempts to acquire the lock, returning `true` on success and `false` on failure, without waiting. These three operations constitute the entire interface of a mutex, simple enough to be suspicious.
 
-Don't be too quick to assume that simplicity means there are no pitfalls. Take a look at this "handcrafted" style of code:
-
-```cpp
-#include <mutex>
-#include <iostream>
-
-std::mutex mtx;
-int shared_counter = 0;
-
-void bad_increment()
-{
-    mtx.lock();              // 手动加锁
-    shared_counter++;
-    // 如果这里抛出异常... unlock 永远不会执行
-    mtx.unlock();            // 手动解锁
-}
-```
-
-This code works on the normal path, but it has several fatal hidden dangers. If any exception is thrown between `m.lock()` and `m.unlock()` (of course, incrementing an `int` won't throw, but what if you replace it with a complex type, or intersperse other operations that might throw?), `m.unlock()` will never be executed. With the lock not released, all other threads waiting for this lock will block—this isn't a dead lock, but the effect is similar, and it's even harder to track down because the program doesn't freeze in an obvious loop-wait; it just "inexplicably" stops.
-
-An even worse scenario involves multiple return paths. If there are three or four `if` branches in the middle of your critical section, you have to write `m.unlock()` before each branch. Missing even one is a bug. In a large codebase, this "manual lock/unlock pairing" pattern is virtually impossible to guarantee for correctness.
-
-There is also a classic pitfall: the same lock being acquired twice by the same thread. `std::mutex` does not allow a thread to repeatedly lock it—if you call `lock()` while already holding the lock, the result is undefined behavior (most implementations will dead lock immediately). This is easy to stumble into unknowingly when the function call chain is complex:
+Don't rush to think simplicity means no pitfalls. Look at this "hand-crafted" code:
 
 ```cpp
 std::mutex mtx;
+int counter = 0;
 
-void function_a()
-{
+void unsafe_increment() {
     mtx.lock();
-    function_b();    // function_b 内部也锁了同一把 mutex
-    mtx.unlock();
-}
-
-void function_b()
-{
-    mtx.lock();      // 死锁！同一线程对 std::mutex 重复加锁
-    // ...
+    // ... do some work ...
+    counter++;
+    // ... more work that might throw ...
     mtx.unlock();
 }
 ```
 
-So the conclusion is clear: the direct interface of `std::mutex` should not appear in application code. Its design intent is to serve as the underlying cornerstone for RAII wrappers, not for you to manually call `lock()`/`unlock()` every day.
+This code works under normal paths, but it has several fatal hidden dangers. If an exception is thrown between `mtx.lock()` and `mtx.unlock()` (of course, `counter++` won't throw, but what if you replace `counter` with a complex type, or insert other operations that might throw in between?), `mtx.unlock()` will never be executed. The lock isn't released, and all other threads waiting for this lock block—this isn't strictly a deadlock, but the effect is similar, and it's harder to debug because the program doesn't freeze in an obvious loop, but rather "mysteriously" stops.
 
-## std::recursive_mutex: Allowing Repeated Locking by the Same Thread
+A worse scenario involves multiple return paths. If you have three or four `if` branches inside your critical section, you need to write `mtx.unlock()` before each branch. Missing one means a bug. In large codebases, this "manual pairing of lock/unlock" pattern is nearly impossible to guarantee correctness.
 
-`std::recursive_mutex` solves the "repeated locking by the same thread" problem mentioned above. It internally maintains a lock counter—the first `lock()` by the same thread sets the counter to 1, the second to 2, and so on; each `unlock()` decrements the counter by 1, and the lock is only truly released when the counter reaches 0.
+There is also a classic pitfall: the same lock being locked twice by the same thread. `std::mutex` does not allow the same thread to lock repeatedly—if you call `lock()` while already holding the lock, the result is undefined behavior (most implementations will deadlock immediately). This is easy to stumble into unknowingly when function call chains are complex:
 
 ```cpp
-#include <mutex>
-#include <iostream>
+void bad_recursive_call() {
+    mtx.lock();
+    // ... some logic ...
+    bad_recursive_call(); // Oops, deadlock here!
+    mtx.unlock();
+}
+```
 
-std::recursive_mutex rmtx;
+So the conclusion is clear: the direct interface of `std::mutex` should not appear in application code. Its design intent is to serve as the underlying cornerstone for RAII wrappers, not for you to manually `lock()`/`unlock()` every day.
 
-void recursive_function(int depth)
-{
-    std::lock_guard<std::recursive_mutex> lock(rmtx);
-    std::cout << "depth = " << depth << "\n";
-    if (depth > 0) {
-        recursive_function(depth - 1);  // 递归调用，再次加锁
+## std::recursive_mutex: Allowing Recursive Locking
+
+`std::recursive_mutex` solves the "same thread re-locking" problem mentioned above. It internally maintains a lock counter—the first time a thread locks it, the counter becomes 1; the second time, 2; and so on. Each call to `unlock()` decrements the counter; the lock is only truly released when the counter reaches 0.
+
+```cpp
+std::recursive_mutex rec_mtx;
+
+void recursive_function(int n) {
+    std::lock_guard<std::recursive_mutex> lock(rec_mtx);
+    if (n > 0) {
+        recursive_function(n - 1);
     }
 }
-
-int main()
-{
-    recursive_function(5);
-    return 0;
-}
 ```
 
-This code is perfectly legal—`std::recursive_mutex` allows the same thread to lock multiple times, each recursive call increments the counter, and each return triggers the destructor of `std::lock_guard` to decrement the counter. The lock is only truly released when the outermost function returns.
+This code is completely legal—`std::recursive_mutex` allows the same thread to lock multiple times. Each recursive call increases the counter, and each return triggers the destructor of the `std::unique_lock` (or `lock_guard`) to decrement the counter. The lock is only truly released when the outermost function returns.
 
-However, `std::recursive_mutex` is usually a signal of a design smell. If you need a recursive lock, it is highly likely because your interface design mixes "functions that need to be called under lock protection" with "internal implementations that don't need the lock." A better approach is to extract the "operations under lock protection" into an unlocked internal function, and let the outer interface handle the locking. A recursive lock is a crutch—it can help you walk, but you shouldn't rely on it.
+However, `std::recursive_mutex` is often a signal of a design smell. If you need a recursive lock, it's likely because your interface design mixes "functions that need to be called under lock protection" with "internal implementations that don't need locks." A better approach is to extract the "operations under lock protection" into an internal function without locking, and let the outer interface handle the locking. A recursive lock is a crutch; it helps you walk, but you shouldn't rely on it.
 
 ## std::timed_mutex: Mutex with Timeout
 
-`std::timed_mutex` adds two timeout-based locking operations on top of `std::mutex`: `try_lock_for()` and `try_lock_until()`.
+`std::timed_mutex` adds two timeout-based locking operations to `std::mutex`: `try_lock_for()` and `try_lock_until()`.
 
-`try_lock_for()` accepts a time duration (`std::chrono::duration`), repeatedly attempting to acquire the lock within the specified time, and returns `false` on timeout. `try_lock_until()` accepts an absolute time point (`std::chrono::time_point`), attempting to acquire the lock before the specified moment, and returns `false` on timeout. The difference between the two is similar to "wait for at most 100 milliseconds" versus "wait until 3 PM."
+`try_lock_for()` accepts a time duration (`std::chrono::duration`), repeatedly attempting to acquire the lock within the specified time, and returns `false` on timeout. `try_lock_until()` accepts an absolute time point (`std::chrono::time_point`), attempting to acquire the lock before the specified moment, and returns `false` on timeout. The difference is similar to "wait for at most 100 milliseconds" versus "wait until 3 PM."
 
 ```cpp
-#include <mutex>
-#include <chrono>
-#include <iostream>
+std::timed_mutex t_mtx;
 
-std::timed_mutex tmtx;
-
-void try_with_timeout()
-{
-    if (tmtx.try_lock_for(std::chrono::milliseconds(100))) {
-        // 成功获取锁
-        std::cout << "Lock acquired within 100ms\n";
-        // ... 临界区操作 ...
-        tmtx.unlock();
+void try_update() {
+    if (t_mtx.try_lock_for(std::chrono::milliseconds(100))) {
+        std::lock_guard<std::timed_mutex> lock(t_mtx, std::adopt_lock);
+        // Critical section
     } else {
-        // 超时，锁获取失败
-        std::cout << "Failed to acquire lock within 100ms\n";
-        // 可以做降级处理、记录日志、或者稍后重试
+        // Handle timeout
     }
 }
 ```
 
-`std::recursive_timed_mutex` is a combination of a recursive lock and a timed lock—the same thread can lock multiple times, while also supporting `try_lock_for()` and `try_lock_until()`. It is rarely used in practical engineering; just knowing it exists is enough.
+`std::recursive_timed_mutex` is a combination of a recursive lock and a timed lock—the same thread can lock multiple times, and it supports `try_lock_for()` and `try_lock_until()`. It is rarely used in actual engineering; just knowing it exists is enough.
 
-A quick note here: timed locks have higher overhead on some platforms because they need to interact with the system clock. If your scenario doesn't require timeout capabilities, a plain `std::mutex` is sufficient. Don't default to `std::timed_mutex` just because "it might come in handy."
+A quick reminder: locks with timeouts can have higher overhead on some platforms because they interact with the system clock. If your scenario doesn't require timeout capability, a regular `std::mutex` is sufficient. Don't default to `std::timed_mutex` just "in case."
 
 ## std::lock_guard: The Simplest RAII Wrapper
 
-We have finally arrived at the tools we should actually use. `std::lock_guard` is the lightest RAII lock guard introduced in C++11—it calls `lock()` on construction and `unlock()` on destruction, that's it. It doesn't accept `std::defer_lock`, has no `unlock()` method, and doesn't support moving—it has no extra capabilities whatsoever, but it is precisely this minimalist design that guarantees you can't use it incorrectly.
+Finally, we arrive at the tools we should actually use. `std::lock_guard` is the lightest weight RAII lock guard introduced in C++11—it calls `lock()` on construction and `unlock()` on destruction. That's it. It doesn't accept `defer_lock`, has no `unlock()` method, and doesn't support movement—it has no extra capabilities, but it is precisely this minimalist design that guarantees you can't use it incorrectly.
 
 ```cpp
-#include <mutex>
-#include <iostream>
-#include <vector>
-
 std::mutex mtx;
-std::vector<int> shared_data;
-
-void safe_push(int value)
-{
-    std::lock_guard<std::mutex> lock(mtx);  // 构造时自动 lock
-    shared_data.push_back(value);
-    // 无论正常返回、异常抛出、还是 early return，析构时都会 unlock
-}
+void critical_task() {
+    std::lock_guard<std::mutex> lock(mtx);
+    // Critical section
+} // Lock released automatically
 ```
 
-Note a common mistake made by beginners—forgetting to name the `std::lock_guard` variable:
+Note a common mistake beginners make—forgetting to name the `std::lock_guard` variable:
 
 ```cpp
-void bad_push(int value)
-{
-    std::lock_guard<std::mutex>(mtx);  // 临时对象！立刻析构！
-    shared_data.push_back(value);      // 没有锁保护
-}
-
-void good_push(int value)
-{
-    std::lock_guard<std::mutex> lock(mtx);  // lock 有名字，生命周期是整个作用域
-    shared_data.push_back(value);
-}
+// WRONG: Temporary object destroyed immediately!
+std::lock_guard<std::mutex>(mtx);
 ```
 
-An unnamed temporary object is destructed immediately at the end of the statement—the lock is released the moment it is acquired, which is equivalent to not locking at all. Compilers usually don't issue warnings for this situation, so always remember to give the lock object a name.
+An unnamed temporary object is destructed immediately when the statement ends—the lock is released just as soon as it's acquired, which is equivalent to not locking at all. Compilers usually don't warn about this, so remember to name your lock objects.
 
-`std::lock_guard` has a less commonly used but worth-knowing constructor option: `std::adopt_lock`. It tells `std::lock_guard`: "The lock is already held by the current thread; just handle releasing it on destruction, don't lock again." This option is primarily used in conjunction with the `std::lock()` function—first acquire multiple locks simultaneously via `std::lock()`, then hand them over to `std::lock_guard` using `std::adopt_lock`. We will see the specific usage when we discuss dead lock prevention in the next article.
+`std::lock_guard` has a rarely used but worth-knowing constructor option: `std::adopt_lock`. It tells `std::lock_guard`: "The lock is already held by the current thread, just manage the release on destruction, don't lock again." This option is mainly used to cooperate with the `std::lock()` function—first acquire multiple locks simultaneously via `std::lock()`, then hand them over to `std::lock_guard` for management using `std::adopt_lock`. We will see specific usage in the next post when discussing deadlock prevention.
 
 ## std::unique_lock: The Flexible but Not Heavy Swiss Army Knife
 
-If `std::lock_guard` is a reliable screwdriver, `std::unique_lock` is a Swiss army knife. On top of `std::lock_guard`, it adds several key capabilities: deferred locking, manual unlocking, lock ownership transfer, and cooperation with condition variables. Of course, the extra capabilities also mean extra state—`std::unique_lock` internally needs to store an "whether the lock is held" flag, making its overhead slightly larger than `std::lock_guard`, but in the vast majority of scenarios, this difference is negligible.
+If `std::lock_guard` is a reliable screwdriver, `std::unique_lock` is a Swiss Army knife. Based on `std::lock_guard`, it adds several key capabilities: deferred locking, manual unlocking, lock ownership transfer, and cooperation with condition variables. Of course, extra capabilities mean extra state—`std::unique_lock` needs to store an "owns lock" flag internally, so the overhead is slightly higher than `std::lock_guard`, but in the vast majority of scenarios, this difference is negligible.
 
 ### Basic Usage: As Simple as lock_guard
 
 ```cpp
-#include <mutex>
-
 std::mutex mtx;
-
-void basic_unique_lock()
-{
-    std::unique_lock<std::mutex> lock(mtx);  // 构造时加锁，析构时解锁
-    // 临界区...
+void task() {
+    std::unique_lock<std::mutex> lock(mtx);
+    // Critical section
 }
 ```
 
-The most basic usage is exactly the same as `std::lock_guard`: lock on construction, unlock on destruction.
+The most basic usage is exactly the same as `std::lock_guard`: construct to lock, destruct to unlock.
 
 ### Deferred Locking: defer_lock
 
-`std::defer_lock` tells `std::unique_lock` not to lock upon construction; we decide when to lock later. This is useful in "conditional locking" scenarios—not all code paths need the lock, but you want to enjoy RAII protection on the paths that do:
+`std::defer_lock` tells `std::unique_lock` not to lock upon construction; we decide when to lock later. This is useful in "conditional locking" scenarios—not all code paths need a lock, but you want to enjoy RAII protection on the paths that do:
 
 ```cpp
-#include <mutex>
-
-std::mutex mtx;
-bool needs_sync = true;  // 假设由外部条件决定
-
-void conditional_lock()
-{
-    std::unique_lock<std::mutex> lock(mtx, std::defer_lock);  // 构造时不加锁
-
-    if (needs_sync) {
-        lock.lock();  // 按需加锁
-    }
-
-    // ... 无论加没加锁，析构时都能正确处理
+std::unique_lock<std::mutex> lock(mtx, std::defer_lock);
+// ... do some unlocked work ...
+if (need_lock) {
+    lock.lock();
+    // Critical section
 }
 ```
 
-A more common use of `std::defer_lock` is in conjunction with `std::lock()` to achieve safe acquisition of multiple locks—first construct two `std::unique_lock`s with `std::defer_lock`, then use `std::lock()` to lock them simultaneously. This pattern will be detailed in the next article.
+`std::defer_lock` is more commonly used to cooperate with `std::lock` to implement safe multi-lock acquisition—first construct two `std::unique_lock`s with `std::defer_lock`, then use `std::lock` to lock them simultaneously. This pattern will be expanded in the next post.
 
-### Early Unlocking: Shrinking the Critical Section
+### Early Unlock: Reducing the Critical Section
 
 `std::unique_lock` allows you to manually call `unlock()` before the scope ends—this is valuable when you need to shrink the critical section. The shorter the lock is held, the shorter the wait time for other threads, and the higher the concurrency:
 
 ```cpp
-#include <mutex>
-#include <vector>
-#include <fstream>
-
+std::vector<int> data;
 std::mutex mtx;
-std::vector<int> shared_data;
 
-void process_and_save()
-{
-    std::unique_lock<std::mutex> lock(mtx);
-
-    // 在锁的保护下拷贝数据
-    auto snapshot = shared_data;
-
-    lock.unlock();  // 临界区结束，提前解锁
-
-    // 在锁外做耗时操作——不会阻塞其他线程
-    for (auto& v : snapshot) {
-        v *= 2;
+void process_data() {
+    std::vector<int> local_copy;
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        local_copy = data; // Copy under lock
+        lock.unlock();     // Release early
     }
-
-    // 保存到文件也是锁外的操作
-    std::ofstream ofs("output.txt");
-    for (int v : snapshot) {
-        ofs << v << "\n";
-    }
+    // Process local_copy without holding the lock
+    // ... heavy computation ...
 }
 ```
 
-This example demonstrates an important pattern: quickly complete the necessary data copy under the protection of the lock, then release the lock immediately, and perform subsequent processing outside the lock. `std::lock_guard` cannot unlock early—its design philosophy is "the lifetime of the lock equals the lifetime of the scope," with no exceptions.
+This example demonstrates an important pattern: quickly complete necessary data copying under the protection of the lock, then immediately release the lock, and perform subsequent processing outside the lock. `std::lock_guard` cannot unlock early—its design philosophy is "lock lifecycle equals scope lifecycle," with no exceptions.
 
-### Cooperation with Condition Variables
+### Cooperating with Condition Variables
 
-This is the most irreplaceable scenario for `std::unique_lock`. The `wait()` family of functions in `std::condition_variable` requires a `std::unique_lock` to be passed in; you cannot use `std::lock_guard`. The reason lies in the working mechanism of condition variables: a thread must release the lock while waiting (so other threads can enter the critical section to modify the condition), and it must re-acquire the lock when woken up. The "unlock-then-relock" capability provided by `std::unique_lock` is exactly what condition variables need.
+This is the most irreplaceable scenario for `std::unique_lock`. The `wait()` series of functions of `std::condition_variable` require passing in `std::unique_lock`, not `std::lock_guard`. The reason lies in the working mechanism of condition variables: a thread must release the lock when waiting (to allow other threads to enter the critical section and modify the condition), and re-acquire the lock when woken up. The "unlock-then-relock" capability provided by `std::unique_lock` is exactly what condition variables need.
 
 ```cpp
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <iostream>
+std::mutex mtx;
+std::condition_variable cv;
+bool ready = false;
 
-template<typename T>
-class ThreadSafeQueue {
-public:
-    void push(const T& value)
-    {
-        {
-            std::lock_guard<std::mutex> lock(mtx_);
-            queue_.push(value);
-        }
-        cv_.notify_one();
-    }
-
-    T pop()
-    {
-        std::unique_lock<std::mutex> lock(mtx_);  // 必须用 unique_lock
-        cv_.wait(lock, [this] { return !queue_.empty(); });
-        // wait 内部：条件不满足 -> unlock -> 等待 -> 被唤醒 -> re-lock -> 检查条件
-
-        T value = std::move(queue_.front());
-        queue_.pop();
-        return value;
-    }
-
-private:
-    std::queue<T> queue_;
-    mutable std::mutex mtx_;
-    std::condition_variable cv_;
-};
+void wait_for_ready() {
+    std::unique_lock<std::mutex> lock(mtx);
+    cv.wait(lock, [] { return ready; });
+    // ...
+}
 ```
 
-If you try to replace the `std::unique_lock` in the code with `std::lock_guard`, it won't even compile—the signature of `wait()` requires a `std::unique_lock`.
+If you try to swap the `std::unique_lock` inside `cv.wait` with `std::lock_guard`, it won't even compile—the signature of `wait` requires `std::unique_lock`.
 
 ### Lock Ownership Transfer
 
-`std::unique_lock` supports move semantics, allowing lock ownership to be transferred between functions. This is useful in certain architectural designs—for example, a function acquires the lock and does some initialization work, then transfers the lock ownership to the caller, who is responsible for subsequent critical section operations and the final unlocking:
+`std::unique_lock` supports move semantics, allowing lock ownership to be transferred between functions. This is useful in some architectural designs—for example, a function acquires a lock and does some initialization work, then transfers the lock ownership to the caller, who is responsible for subsequent critical section operations and final unlocking:
 
 ```cpp
-#include <mutex>
-
-std::mutex mtx;
-
-std::unique_lock<std::mutex> acquire_and_initialize()
-{
+std::unique_lock<std::mutex> acquire_and_process() {
     std::unique_lock<std::mutex> lock(mtx);
-    // 做一些需要锁保护的初始化工作
-    prepare_shared_state();
-    return lock;  // NRVO 或移动返回，锁的所有权转移给调用者
+    // Init logic
+    return lock; // Move ownership
 }
 
-void use_lock()
-{
-    std::unique_lock<std::mutex> lock = acquire_and_initialize();
-    // lock 持有锁，可以在临界区操作
-    modify_shared_state();
-    // lock 离开作用域时自动解锁
+void consumer() {
+    auto lock = acquire_and_process();
+    // Continue critical section
 }
 ```
 
-Note that `std::lock_guard` does not support moving—both its copy constructor and move constructor are deleted. If you need to transfer lock ownership, `std::unique_lock` is the only choice.
+Note that `std::lock_guard` does not support movement—both its copy constructor and move constructor are deleted. If you need to transfer lock ownership, `std::unique_lock` is the only choice.
 
-## std::scoped_lock: C++17's Multi-Lock Deadlock Prevention
+## std::scoped_lock: C++17 Multi-Lock Deadlock Prevention
 
-`std::scoped_lock` is an RAII lock guard introduced in C++17, specifically designed for multi-lock scenarios. Its constructor can accept any number of mutexes (it also accepts a single mutex, of course), and internally uses the dead lock avoidance algorithm provided by `std::lock()` to acquire all locks at once, releasing them in reverse order upon destruction.
+`std::scoped_lock` is an RAII lock guard introduced in C++17, designed specifically for multi-lock scenarios. Its constructor can accept any number of mutexes (it also accepts a single mutex), and it uses the deadlock avoidance algorithm provided by `std::lock` to acquire all locks at once, releasing them in reverse order upon destruction.
 
-This feature solves a very practical problem. Suppose two threads need to simultaneously operate on two data structures protected by different mutexes. The most naive approach is to nest `std::lock_guard`s:
+This feature solves a very real problem. Suppose two threads need to operate on two data structures protected by different mutexes simultaneously. The most naive approach is to nest `std::lock_guard`:
 
 ```cpp
-#include <mutex>
-#include <iostream>
-
-std::mutex mtx_a;
-std::mutex mtx_b;
-
-void thread1()
+// Thread 1
 {
-    std::lock_guard<std::mutex> lock_a(mtx_a);  // 先锁 A
-    std::cout << "thread1: locked A\n";
-    std::lock_guard<std::mutex> lock_b(mtx_b);  // 再锁 B
-    std::cout << "thread1: locked both\n";
+    std::lock_guard<std::mutex> lock1(mtx1);
+    std::lock_guard<std::mutex> lock2(mtx2);
+    // ...
 }
 
-void thread2()
+// Thread 2
 {
-    std::lock_guard<std::mutex> lock_b(mtx_b);  // 先锁 B
-    std::cout << "thread2: locked B\n";
-    std::lock_guard<std::mutex> lock_a(mtx_a);  // 再锁 A
-    std::cout << "thread2: locked both\n";
+    std::lock_guard<std::mutex> lock2(mtx2);
+    std::lock_guard<std::mutex> lock1(mtx1);
+    // ...
 }
 ```
 
-If thread1 acquires `mutex_a` while thread2 acquires `mutex_b`, both sides get stuck—the classic AB-BA dead lock. `std::scoped_lock` solves this with a single line of code:
+If Thread 1 grabs `mtx1` while Thread 2 grabs `mtx2`, both sides get stuck—the classic AB-BA deadlock. `std::scoped_lock` solves this in one line:
 
 ```cpp
-void safe_thread()
+// Both threads
 {
-    std::scoped_lock lock(mtx_a, mtx_b);  // 一次性安全获取两把锁
-    // 临界区...
+    std::scoped_lock lock(mtx1, mtx2);
+    // ...
 }
 ```
 
-The dead lock avoidance algorithm inside `std::scoped_lock` is based on a `std::lock()` backoff strategy: it tries to acquire all locks in a certain order, and if a certain `try_lock()` fails, it releases the already acquired locks and retries in a different order. This algorithm breaks the "hold and wait" condition among the four necessary conditions for dead lock—if acquisition fails, already held locks are released, eliminating the situation of "holding one lock while waiting for another."
+The internal deadlock avoidance algorithm of `std::scoped_lock` is based on a `std::lock` backoff strategy: try to acquire all locks in a certain order; if a specific lock fails, release the acquired locks and retry in a different order. This algorithm breaks the "hold and wait" condition of the four necessary conditions for deadlock—if acquisition fails, held locks are released, eliminating the situation of "holding one while waiting for another."
 
-`std::scoped_lock` can also be used for a single mutex scenario, where it is equivalent to `std::lock_guard`. But for the clarity of code intent, we still recommend using `std::lock_guard` for single-lock scenarios—seeing `std::lock_guard` tells you there is only one lock, and seeing `std::scoped_lock` tells you multiple locks might be involved. This is valuable information for anyone reading the code.
+`std::scoped_lock` can also be used for a single mutex, in which case it is equivalent to `std::lock_guard`. However, for code clarity, it is still recommended to use `std::lock_guard` for single-lock scenarios—seeing `std::lock_guard` tells you there is only one lock, seeing `std::scoped_lock` implies multiple locks might be involved, which is valuable information for anyone reading the code.
 
 ## lock_guard vs unique_lock vs scoped_lock: Selection Guide
 
-Let's put the core differences of the three RAII lock guards together to help you make quick choices in actual development.
+Let's compare the core differences of the three RAII lock guards to help you make quick choices in actual development.
 
-The design philosophy of `std::lock_guard` is "simplicity is beauty." It is neither copyable nor movable, cannot unlock early, and cannot defer locking—these "limitations" are precisely its advantages, because the more restrictions there are, the less room there is for error. For 90% of daily scenarios, `std::lock_guard` is enough: enter the function, construct the `std::lock_guard`, operate on shared data, return from the function, and the `std::lock_guard` destructs to release the lock. The entire process is a straight line with no branches.
+The design philosophy of `std::lock_guard` is "simplicity is beauty." It is non-copyable, non-movable, cannot unlock early, and cannot defer locking—these "limitations" are precisely its strengths, because the more restrictions, the smaller the room for error. For 90% of daily scenarios, `std::lock_guard` is sufficient: enter function, construct `std::lock_guard`, operate on shared data, function returns, `std::lock_guard` destructs and releases the lock. The whole process is a straight line with no branches.
 
-`std::unique_lock` is suited for the 10% of scenarios that require extra flexibility. The most typical is cooperation with condition variables—this is the irreplaceable core scenario for `std::unique_lock`. Next is the "copy data first, then unlock early" pattern—moving time-consuming operations outside the lock to reduce lock hold time. There are also deferred locking and lock ownership transfer, which are used in more complex architectural designs.
+`std::unique_lock` fits that 10% of scenarios requiring extra flexibility. The most typical is cooperating with condition variables—this is the core scenario where `std::lock_guard` is irreplaceable. Next is the "copy data first, then unlock early" pattern—moving time-consuming operations outside the lock to reduce hold time. There are also deferred locking and lock ownership transfer, which are used in more complex architectural designs.
 
-The core value of `std::scoped_lock` is dead lock prevention for multi-lock acquisition. As long as your code needs to hold two or more locks simultaneously, you should use `std::scoped_lock`. If the project has already adopted C++17, using `std::scoped_lock` for single-lock scenarios is also perfectly fine—but in terms of team conventions, distinguishing `std::lock_guard` (single lock) and `std::scoped_lock` (multiple locks) helps with code readability and maintainability.
+The core value of `std::scoped_lock` is deadlock prevention for multi-lock acquisition. Whenever your code needs to hold two or more locks simultaneously, you should use `std::scoped_lock`. If the project has already adopted C++17, using `std::scoped_lock` for single-lock scenarios is also perfectly fine—but in terms of team convention, distinguishing `std::lock_guard` (single lock) and `std::scoped_lock` (multi-lock) helps code readability and maintainability.
 
-## Engineering Principle: Absolutely Never Manually Call lock()/unlock()
+## Engineering Principle: Never Manually Call lock()/unlock()
 
-We spent an entire article discussing the mutex family and RAII lock guards, and the core principle we want to emphasize in the end is just one: absolutely never directly call `lock()` and `unlock()` in application code. We have repeatedly seen the reasons earlier—manually managing lock/unlock is virtually impossible to guarantee for correctness in scenarios with exception paths, multiple return paths, and nested calls, whereas RAII lock guards fundamentally eliminate this entire class of bugs by binding the lock's lifetime to the scope.
+We spent an entire post discussing the mutex family and RAII lock guards, and the core principle to emphasize is only one: never directly call `lock()` and `unlock()` in application code. We have seen the reasons repeatedly throughout the text—managing lock/unlock manually is almost impossible to guarantee correctness in scenarios involving exception paths, multiple return paths, and nested calls, whereas RAII lock guards fundamentally eliminate this entire class of bugs by binding the lock lifecycle to the scope.
 
-This principle is explicitly recorded in the C++ Core Guidelines as CP.20: "Use RAII, never plain `lock()`/`unlock()`." The only exception is `std::adopt_lock`—it accepts a mutex that is already locked, and is only responsible for unlocking on destruction. But even in this case, the locking action should be done through `std::lock()` or other safe mechanisms, not by manually calling `lock()`.
+This principle is explicitly recorded in the C++ Core Guidelines as CP.20: "Use RAII, never plain `lock()`/`unlock()`." The only exception is `std::adopt_lock`—it accepts an already locked mutex and is only responsible for unlocking upon destruction. But even in this case, the locking action should be done through `std::lock()` or other safe mechanisms, not by manually calling `lock()`.
 
-> 💡 The complete example code is in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `vol5/10_mutex_raii.cpp`.
+> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/examples/vol5/10_mutex_raii.cpp`.
 
 ## Run Online
 
-Experience the three RAII lock guards: lock_guard, unique_lock + condition_variable, and scoped_lock online:
+Experience the three RAII lock guards: `lock_guard`, `unique_lock` + `condition_variable`, and `scoped_lock` online:
 
 <OnlineCompilerDemo
   title="mutex and RAII Locks"
@@ -416,17 +298,17 @@ Experience the three RAII lock guards: lock_guard, unique_lock + condition_varia
 
 ### Exercise 1: Implement a Thread-Safe Wrapper for stack
 
-Given a `std::stack`, use `std::mutex` and `std::lock_guard` to implement a thread-safe wrapper for it. You are required to provide four interfaces: `push()`, `pop()` (returns `std::optional`, returning `std::nullopt` when the stack is empty), `top()` (also returns `std::optional`), and `empty()`. Hint: note that `pop()` and `top()` cannot return references—because after unlocking, if the caller accesses the reference, it becomes invalid.
+Given a `std::stack`, use `std::mutex` and `std::lock_guard` to implement a thread-safe wrapper for it. Requirements: provide `push`, `pop` (returns `T`, returns `std::optional` if empty), `try_pop` (also returns `std::optional`), and `size` interfaces. Hint: Note that `pop` and `try_pop` should not return references—because after unlocking, if the caller accesses the reference, it becomes invalid.
 
-### Exercise 2: Compare the Performance of lock_guard and unique_lock
+### Exercise 2: Compare Performance of lock_guard and unique_lock
 
-Write a simple benchmark: use four threads to each increment a shared counter 1,000,000 times, protected by `std::lock_guard` and `std::unique_lock` respectively. Compare the running times of the two—you will find that the difference is usually within the noise range, but in extreme scenarios, the extra state maintenance of `std::unique_lock` might manifest as measurable overhead. Question: under what conditions would this difference become significant?
+Write a simple benchmark: use 4 threads to increment a shared counter 1,000,000 times each, protected by `std::lock_guard` and `std::unique_lock` respectively. Compare their runtimes—you will find the difference is usually within the noise range, but in extreme scenarios, the extra state maintenance of `std::unique_lock` might manifest as measurable overhead. Think: Under what conditions does this difference become significant?
 
-### Exercise 3: Safely Swap Two Protected Data Structures with scoped_lock
+### Exercise 3: Safely Swap Two Protected Data with scoped_lock
 
-Suppose there are two `std::vector<int>`s, each protected by a `std::mutex`. Write a `safe_swap()` function that uses `std::scoped_lock` to acquire both locks simultaneously, then swaps the contents of the two vectors. Verify that repeatedly calling this function in a multi-threaded environment does not dead lock.
+Assume there are two `std::vector<int>`, each protected by a `std::mutex`. Write a `swap_data` function that uses `std::scoped_lock` to acquire both locks simultaneously, then swaps the contents of the two vectors. Verify that calling this function repeatedly in a multi-threaded environment does not cause a deadlock.
 
-## Reference Resources
+## References
 
 - [std::mutex -- cppreference](https://en.cppreference.com/w/cpp/thread/mutex)
 - [std::recursive_mutex -- cppreference](https://en.cppreference.com/w/cpp/thread/recursive_mutex)

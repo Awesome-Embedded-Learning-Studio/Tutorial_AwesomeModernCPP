@@ -1,7 +1,7 @@
 ---
 title: std::span
 description: Non-owning view of a contiguous sequence, a zero-overhead alternative
-  to passing a pointer and length
+  to passing pointer and length
 chapter: 99
 order: 1
 tags:
@@ -14,16 +14,16 @@ cpp_standard:
 - 23
 translation:
   source: documents/cpp-reference/containers/01-span.md
-  source_hash: f5119d6062487e0a1114f8dd97af01649b46b5634c29dd2d8f4a30f304ad3e1e
-  translated_at: '2026-05-26T10:13:56.498914+00:00'
+  source_hash: 08998f44d647e2c9ee6712ca4342ea677f4175754905abfb5e8db85473ef2cd7
+  translated_at: '2026-06-15T09:06:03.340062+00:00'
   engine: anthropic
   token_count: 472
 ---
 # std::span (C++20)
 
-## In a Nutshell
+## In a nutshell
 
-A lightweight, non-owning view that safely references a contiguous block of memory, replacing the traditional approach of passing a pointer paired with a length.
+A lightweight, non-owning view that safely references a contiguous sequence of memory, replacing the traditional method of passing pointers alongside length parameters.
 
 ## Header
 
@@ -33,16 +33,16 @@ A lightweight, non-owning view that safely references a contiguous block of memo
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Construction | `template<class T, size_t E = dynamic_extent> class span` | A class template supporting static or dynamic extents |
-| Get pointer | `T* data() const` | Access the underlying contiguous storage |
+| Constructor | `template<class T, size_t E = dynamic_extent> class span` | Template class supporting static or dynamic extent |
+| Get pointer | `T* data() const` | Access underlying contiguous storage |
 | Element count | `size_t size() const` | Returns the number of elements |
-| Size in bytes | `size_t size_bytes() const` | Returns the size of the sequence in bytes |
-| Check if empty | `bool empty() const` | Checks if the sequence is empty |
-| Subscript access | `reference operator[](size_t idx) const` | Accesses the specified element (no bounds checking) |
-| First element | `reference front() const` | Accesses the first element |
-| Last element | `reference back() const` | Accesses the last element |
-| Take first N | `template<size_t C> constexpr span<element_type, C> first() const` | Obtains a subview of the first N elements |
-| Take subview | `template<size_t O, size_t C> constexpr span<element_type, C> subspan() const` | Obtains a subview with the specified offset and length |
+| Byte size | `size_t size_bytes() const` | Returns the size of the sequence in bytes |
+| Is empty | `bool empty() const` | Checks if the sequence is empty |
+| Subscript | `reference operator[](size_t idx) const` | Access specified element (no bounds checking) |
+| First element | `reference front() const` | Access the first element |
+| Last element | `reference back() const` | Access the last element |
+| Take first N | `template<size_t C> constexpr span<element_type, C> first() const` | Get a sub-view of the first N elements |
+| Take sub-view | `template<size_t O, size_t C> constexpr span<element_type, C> subspan() const` | Get a sub-view with specified offset and length |
 
 ## Minimal Example
 
@@ -67,22 +67,22 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: Contains only a pointer and a length (or a compile-time constant extent), with no heap allocation.
+- Zero-overhead abstraction: Only contains a pointer and a size (or compile-time constant extent), with no heap allocation.
 - Perfect replacement for raw pointer parameters: Unifies interfaces for arrays, `std::array`, and `std::vector`, improving safety.
-- `TriviallyCopyable` type (explicitly required since C++23, though mainstream implementations already satisfied this beforehand), making it safe for ISR and DMA buffer operations.
+- `TriviallyCopyable` type (explicitly required in C++23, met by mainstream implementations prior), making it safe for use with ISRs and DMA buffers.
 - `size_bytes()` and `as_bytes()` greatly simplify hardware register mapping and low-level byte-level data processing.
 
 ## Compiler Support
 
 | GCC | Clang | MSVC |
 |-----|-------|------|
-| TBA | TBA | TBA |
+| TBD | TBD | TBD |
 
 ## See Also
 
-- [Tutorial: span In Depth](../../vol3-standard-library/08-span.md)
+- [Tutorial: Deep Dive into span](../../vol3-standard-library/08-span.md)
 - [cppreference: std::span](https://en.cppreference.com/w/cpp/container/span)
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
