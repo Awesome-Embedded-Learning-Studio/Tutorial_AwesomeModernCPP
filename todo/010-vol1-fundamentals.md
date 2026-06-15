@@ -55,10 +55,6 @@ estimated_effort: medium
 | c_tutorials/07 嵌入式 C 模式 | → 卷八（嵌入式开发主线） | 无链接 |
 | c_tutorials/01 ARM 架构 | → 卷八（STM32 平台） | 无链接 |
 
-### 教学 TODO 标记噪音
-
-c_tutorials 下约 55 处 `// TODO:` 标记（分布在 13、14、15、16 基础篇和 advanced_feature 01、03、05 中），全部为教学练习型（如 `// TODO: 自行实现`），但会被全仓 TODO 搜索误判为项目规划任务。
-
 ### advanced_feature 代码缺失
 
 c_tutorials 基础篇 16 篇均有配套 CMake 代码目录，但进阶专题 8 篇无配套代码。使用 Compiler Explorer 交互链接弥补（与 v0.4.0 已有模式一致）。
@@ -86,9 +82,9 @@ c_tutorials 基础篇 16 篇均有配套 CMake 代码目录，但进阶专题 8 
 - c_tutorials/07、c_tutorials/01 也应添加到卷八的引导。
 - 影响范围：5-7 篇文章末尾，约 20-30 行。
 
-#### N-2: 重命名教学 TODO 标记
+#### N-2: 重命名教学 TODO 标记 ✅ 已完成
 
-- 将 c_tutorials 下 55 处 `// TODO:` 统一改为 `// 练习：`。
+- c_tutorials 下教学 `// TODO:` 标记已统一改为 `// 练习：`（49 处，无残留 `// TODO`）。
 - 影响范围：7 篇文章。
 
 #### N-3: 删除遗留代码
@@ -140,7 +136,7 @@ c_tutorials 基础篇 16 篇均有配套 CMake 代码目录，但进阶专题 8 
 ## Acceptance
 
 - [ ] N-1: 关键跨卷前向链接完成（ch04→卷二、ch09→卷四、ch10→卷二/四、ch11→卷三、ch12→卷六/七/八）
-- [ ] N-2: 教学 TODO 标记全部重命名为 `// 练习：`
+- [x] N-2: 教学 TODO 标记全部重命名为 `// 练习：`
 - [ ] N-3: 遗留 `code/examples/vol1/` 已删除
 - [ ] M-1: 各章节 index.md 已添加 exercise 引导
 - [ ] M-2: advanced_feature 文章已添加 Compiler Explorer 链接

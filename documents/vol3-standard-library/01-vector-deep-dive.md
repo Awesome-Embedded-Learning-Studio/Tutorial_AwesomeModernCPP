@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 description: "从三指针内部表示出发，讲透 std::vector 的扩容代价、迭代器失效全景、move_if_noexcept 异常安全，以及 C++20 constexpr vector 与 erase/erase_if"
 difficulty: intermediate
-order: 1
+order: 3
 platform: host
 prerequisites:
 - '卷一：vector 基础用法（size / capacity / push_back）'

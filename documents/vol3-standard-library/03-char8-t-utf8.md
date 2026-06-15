@@ -5,7 +5,7 @@ cpp_standard:
 - 23
 description: "讲透 C++20 char8_t 的引入动机、u8 字面量类型变更的两个坑与迁移写法，以及 C++23 P2513 对数组初始化的放宽"
 difficulty: intermediate
-order: 3
+order: 30
 platform: host
 prerequisites:
 - '卷一：std::string 与字符串字面量基础'

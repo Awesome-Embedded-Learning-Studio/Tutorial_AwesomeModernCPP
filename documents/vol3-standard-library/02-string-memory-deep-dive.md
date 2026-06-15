@@ -7,7 +7,7 @@ cpp_standard:
 - 23
 description: "讲透 std::string 的 SSO 与 COW 历史纠葛、C++11 为何禁止 COW、SSO 阈值实现细节，以及 C++23 resize_and_overwrite 的缓冲复用"
 difficulty: intermediate
-order: 2
+order: 4
 platform: host
 prerequisites:
 - '卷一：std::string 基础用法'

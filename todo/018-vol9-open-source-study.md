@@ -49,15 +49,13 @@ estimated_effort: large
 | 移动语义一致性 | ✅ 一致 |
 | 测试覆盖度 | ✅ 12 个测试覆盖 A-F 六类不变量 |
 | 英文翻译 | ✅ 全量覆盖 |
-| markdownlint | ⚠️ 1 个错误（full/index.md 无语言代码块） |
+| markdownlint | ✅ 通过（full/index.md 代码块已加语言标记） |
 
 ## Maintenance Tasks
 
-以下为已有资产的待维护项，不涉及新内容：
-
-- [ ] **代码同步 `Status : uint8_t`**：`once_callback.hpp` 的 `enum class Status` 补上 `: uint8_t` 底层类型，与文章 01-2 一致
-- [ ] **修正测试计数**：文章 01-6 小结段 “11 个” → “12 个”
-- [ ] **lint 修复**：`full/index.md` 第 36 行无语言代码块加语言标记
+- [x] **代码同步 `Status : uint8_t`**：已完成，`once_callback.hpp` 的 `enum class Status : uint8_t` 与文章 01-2 一致
+- [x] **修正测试计数**：已完成，文章 01-6 已写 “12 个”，代码 12 个 TEST_CASE
+- [x] **lint 修复**：已完成，`full/index.md` 代码块已加 `text` 语言标记
 - [ ] **补充 Google Benchmark**：为 01-6 性能对比章节补充 benchmark 代码，将”预估”升级为实测数据
 
 ## Incremental Candidates

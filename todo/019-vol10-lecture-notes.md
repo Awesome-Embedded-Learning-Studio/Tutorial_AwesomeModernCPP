@@ -26,19 +26,7 @@ estimated_effort: medium
 
 ## Maintenance TODO
 
-### M1: Frontmatter 扩展字段标准化 ✅
-
-- **完成日期**：2026-06-10
-- `validate_frontmatter.py` 已增加 lecture note 专用字段校验：
-  - `conference`（校验值：cppcon / cppnow / meetingpp / course / blog）
-  - `conference_year`（校验范围：1990–2030）
-  - `talk_title`、`speaker`、`video_bilibili`、`video_youtube`、`slides_url`
-- 仅对 `vol10-open-lecture-notes/` 下的文章启用。
-
-### M2: Vue 组件文档 ✅
-
-- **完成日期**：2026-06-10
-- `CONTRIBUTING.md` 已增加"自定义 Vue 组件"章节，含全部 7 个组件的 Props 表和使用示例。
+> M1（Frontmatter 扩展字段）、M2（Vue 组件文档）已完成并归档。
 
 ### M3: 代码路径引用修复
 
@@ -98,8 +86,6 @@ CppNow、Meeting C++、NDC TechTown 等会议也有高质量 C++ 内容（如 Cp
 
 ## Acceptance
 
-- [x] Frontmatter 扩展字段标准化（validate_frontmatter.py）
-- [x] Vue 组件文档（CONTRIBUTING.md）
 - [ ] 代码路径引用修复（M3）
 - [ ] 交叉链接：延伸阅读区域（M4）
 - [ ] 候选池覆盖 CppCon 2024/2025 核心演讲

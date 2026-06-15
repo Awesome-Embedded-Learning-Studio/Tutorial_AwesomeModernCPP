@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 description: 自定义STL分配器
 difficulty: intermediate
-order: 6
+order: 13
 platform: host
 prerequisites:
 - 'Chapter 6: RAII与智能指针'

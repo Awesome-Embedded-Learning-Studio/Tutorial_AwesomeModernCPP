@@ -51,12 +51,7 @@ estimated_effort: medium
 - QA 收录规则和社区治理说明见 `CONTRIBUTING.md`。
 - 本文件只保留 QA 栏目的建设任务。
 
-## Old TODO Merge
-
-- [x] `091-community-qa-knowledge-base.md`（已合并进本文件，原文件已移除）
-
 ## Acceptance
 
 - [ ] FAQ 入口设计完成。
 - [ ] QA index 结构完成。
-- [x] CONTRIBUTING 中说明如何提交 QA 条目。（已落地于 CONTRIBUTING.md「QA 与知识库规则」段）

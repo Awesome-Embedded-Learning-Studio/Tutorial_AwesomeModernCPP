@@ -1,5 +1,5 @@
 ---
-chapter: 3
+chapter: 7
 cpp_standard:
 - 11
 - 14
@@ -7,7 +7,7 @@ cpp_standard:
 - 20
 description: 探讨C++对象内存布局
 difficulty: intermediate
-order: 5
+order: 12
 platform: host
 prerequisites:
 - 'Chapter 2: 零开支抽象'

@@ -1,228 +1,176 @@
 ---
+title: "span：非拥有的连续视图"
+description: "讲透 std::span：指针加长度的非拥有视图、动态与静态 extent 的内存差异、统一接收 array/vector/C 数组、零拷贝切片 subspan、字节视图 as_bytes，以及悬垂视图的生命周期陷阱"
 chapter: 7
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-description: C++20数组视图
-difficulty: intermediate
-order: 2
-platform: host
-prerequisites:
-- 'Chapter 6: RAII与智能指针'
-reading_time_minutes: 8
+order: 8
 tags:
-- cpp-modern
-- host
-- intermediate
-title: std::span 数组视图
+  - host
+  - cpp-modern
+  - intermediate
+  - span
+  - 容器
+difficulty: intermediate
+platform: host
+cpp_standard: [17, 20]
+reading_time_minutes: 14
+related:
+  - "array：编译期固定大小的聚合容器"
+  - "vector 深入：三指针、扩容与迭代器失效"
 ---
-# 嵌入式C++教程：std::span——轻量、非拥有的数组视图
 
-把 `std::span` 想象成 C++ 里的「透明的传送带」：它不拥有上面的货物（内存），只是平静又高效地告诉你"这里有多少个元素、从哪里开始"。在嵌入式里，我们经常需要把一段内存传给函数——既不想拷贝，也不想丢失类型信息或边界信息，`std::span` 就是为这种场景生的。
+# span：非拥有的连续视图
 
-或者说，直到C++20，一个标准的视图容器才出现。
+## span 是什么：一个指针加一个长度，仅此而已
 
-- `std::span<T>` 是**非拥有**（non-owning）的视图：不负责内存释放。
-- 它通常是一个指针 + 长度（非常轻量，拷贝成本低）。
-- 函数参数用 `std::span<const T>` 可以优雅地接受 `T[]`、`std::array`、`std::vector`、裸指针+长度 等多种来源。
-- **关键注意**：不要让 `span` 的生存期超过底层数据的生存期 —— 悬垂指针依旧会把你咬一口。
-
-------
-
-## 引子：为什么不直接用指针或 vector？
-
-在嵌入式代码里，我们常看到这样的函数签名：
+`std::span` 是 C++20 给「一段连续数据」配的标准化视图。它不拥有这段内存，只持有两样东西：一个指针，一个长度。就这么简单——你可以把它理解成一个「带边界信息的指针」，或者 C 里 `(ptr, len)` 这对参数的正式封装。它不分配、不释放、不拷贝底层数据，拷贝一个 span 就是拷贝那两个字（指针和 size），极其廉价。
 
 ```cpp
-void process_buffer(uint8_t* buf, size_t n);
-
+std::vector<int> v = {1, 2, 3, 4};
+std::span<int> s(v);       // s 指向 v 的数据，但不拥有
+s.size();                  // 4
+s[0];                      // 1
+s.data() == v.data();      // true
 ```
 
-这招确实灵活，但缺点：读者得同时记住 `buf` 的类型、长度单位是"元素数"还是"字节数"、函数是否要修改数据……出错的地方太多。 `std::span` 把这些语义显式化：类型和值（length）都在同一个对象里，阅读性和安全性都提升了。
+它的核心价值在「传参」：函数想接受「一段 T 数据」时，用 `std::span<const T>` 能统一接收 C 数组、`std::array`、`std::vector`、`(指针, 长度)` 等所有连续来源，既不拷贝数据，也不用把函数写成模板。
 
-------
+## 为什么需要它：指针+长度传参的老毛病
 
-## 基本用法
+C/C++ 里传「一段内存」给函数，老办法是 `void f(T* ptr, std::size_t n)`。这招能跑，但毛病不少：长度 `n` 的单位是元素还是字节得靠注释或猜；函数会不会修改数据看 `T*` 还是 `const T*`，容易漏；调用方传错长度没有任何编译期保护；而且这俩参数得成对传、成对记。span 把指针和长度打包进一个对象，类型（`span<const T>` vs `span<T>`）直接表达只读/可写意图，长度跟着对象走，丢不了。
 
 ```cpp
-#include <span>
-#include <vector>
-#include <array>
-#include <iostream>
+// 老办法：长度单位、只读与否全靠注释
+void process_old(const uint8_t* buf, std::size_t n);
 
-void print_bytes(std::span<const uint8_t> s) {
-    for (auto b : s) std::cout << std::hex << int(b) << ' ';
-    std::cout << std::dec << '\n';
-}
-
-int main() {
-    uint8_t buffer[] = {0x10, 0x20, 0x30};
-    std::vector<uint8_t> v = {1,2,3,4};
-    std::array<uint8_t, 3> a = {9,8,7};
-
-    print_bytes(buffer);             // 从内置数组构造
-    print_bytes(v);                  // 从 vector 构造
-    print_bytes(a);                  // 从 std::array 构造
-    print_bytes({v.data(), 2});      // 从 pointer + size 构造
-}
-
+// span 办法：类型即语义
+void process(std::span<const uint8_t> buf);   // 明确：只读，长度内建
+void mutate(std::span<uint8_t> buf);          // 明确：会改，长度内建
 ```
 
-`print_bytes` 用 `std::span<const uint8_t>` 接收输入：既说明了不修改内容，又接受多种容器来源，调用方无需拷贝数据。
+这比写 `template<class C> void process(const C& c)` 也更省事——不用为每种容器实例化一份，避免编译膨胀。
 
-------
+## 动态 extent 与静态 extent
 
-## 动态与静态 extent
+span 有两种形态，区别在「长度是运行时存还是编译期定」。`std::span<T>`（完整写法 `std::span<T, std::dynamic_extent>`）是**动态 extent**：长度作为成员存着，运行时任意；`std::span<T, N>` 是**静态 extent**：长度 `N` 编译期定死，不在对象里存。
 
-`std::span` 有两种形态：
-
-- `std::span<T>`（或 `std::span<T, std::dynamic_extent>`）：运行时大小；
-- `std::span<T, N>`：编译期固定元素数 `N`（称为静态 extent）。
-
-示例：
+这个区别会直接体现在 `sizeof` 上——咱们待会儿跑跑看。动态 extent 要存指针 + size（两个字），静态 extent 只存指针（size 编译期已知，省掉）。日常里动态 extent 更常用（数据长度往往运行时才定），静态 extent 适合「我知道就是 N 个」的场合，能省一个字的存储，还能换来一点编译期检查。
 
 ```cpp
 int arr[4];
-std::span<int, 4> s_fixed(arr);      // 只有长度为 4 的数组能绑定
-std::span<int> s_dyn(arr, 4);        // 任意长度，运行时记录
-
+std::span<int, 4> s_fixed(arr);     // 只能绑长度 4 的数据
+std::span<int>    s_dyn(arr);       // 任意长度，运行时记 4
 ```
 
-静态 `Extent` 可以在某些场景下启用额外的编译期检查或优化，但在嵌入式中，动态 extent 更常用（因为 buffer 长度常由运行时决定）。
+## 接收任意连续来源：array / vector / C 数组 / 指针+长度
 
-------
-
-## 有用的成员函数
+span 的构造函数覆盖了几乎所有连续数据来源，这让函数参数用 `span` 能一统江湖：
 
 ```cpp
-s.size();          // 元素个数
-s.size_bytes();    // 字节数（注意！元素个数 * sizeof(T)）
-s.data();          // 指向首元素的指针（可能为 nullptr 当 size()==0）
-s.empty();
-s.front(), s.back();
-s[i];              // 下标，不做运行时检查（与 operator[] 语义一致）
-s.subspan(offset, count);   // 切片，返回新的 span（仍为 non-owning）
-s.first(n), s.last(n);     // 前 n 个或后 n 个元素视图
-std::as_bytes(s);          // 将 span<T> 视为 span<const std::byte>
-std::as_writable_bytes(s); // 视为 span<std::byte>（当 T 可写时）
+void print(std::span<const int> s);
 
+int buf[] = {0x10, 0x20, 0x30};
+std::array<int, 3> a = {1, 2, 3};
+std::vector<int>   v = {4, 5, 6, 7};
+int* p = v.data();
+
+print(buf);                 // C 数组（自动推 N）
+print(a);                   // std::array
+print(v);                   // std::vector
+print({p, 2});              // 指针 + 长度
 ```
 
-注意：`operator[]` 不检查越界；如果需要边界检查，自行用 `at`-like wrapper 或在调试时加断言。
+调用方不用拷贝数据，函数内部也不用为每种容器写重载或模板。注意 `span<const T>` 表示只读视图——如果函数要改数据，用 `span<T>`（非 const）。
 
-------
+## subspan、first、last：零拷贝切片
 
-## 进阶示例：subspan 与字节操作
+span 提供 `subspan(offset, count)`、`first(n)`、`last(n)` 三件套，返回的是新的 span（还是非拥有视图），不拷贝任何数据。这在协议解析、缓冲区处理里特别顺手——把一个大 buffer 切成 header / payload，各自当 span 传下去：
+
+```cpp
+void recv_packet(std::span<uint8_t> buffer)
+{
+    if (buffer.size() < 4) {
+        return;
+    }
+    auto header  = buffer.first(4);          // 前 4 字节视图
+    uint16_t len = static_cast<uint16_t>(header[2] | (header[3] << 8));
+    if (buffer.size() < 4 + len) {
+        return;
+    }
+    auto payload = buffer.subspan(4, len);   // 跳过 header 取 payload 视图
+    // payload 仍是非拥有视图，零拷贝
+}
+```
+
+整个过程中没有任何字节被拷贝，切出来的 header / payload 都指向原 buffer 内部。
+
+## 字节视图：as_bytes / as_writable_bytes
+
+处理二进制数据时，常需要把 `span<T>` 当成原始字节看。`std::as_bytes(s)` 返回 `span<const std::byte>`，`std::as_writable_bytes(s)` 返回 `span<std::byte>`（仅当 T 非 const 时可用）。这对 CRC、序列化、内存 dump 这类「把结构当字节流」的场景很合适：
+
+```cpp
+std::span<int> data = /* ... */;
+auto bytes = std::as_bytes(data);          // span<const std::byte>，只读字节
+// crc(bytes.data(), bytes.size());
+```
+
+注意区分只读和可写：读用 `as_bytes`，要原地改字节用 `as_writable_bytes`（且底层 span 必须 non-const）。
+
+## 生命周期：span 不拥有，悬垂会咬人
+
+span 最大的坑，也是它「非拥有」性质的必然代价：**它不管理底层内存的生命周期**。底层活多久，span 就最多活多久；底层没了，span 就是悬垂视图，访问就是未定义行为。最经典的错误是 span 绑了一个临时对象，然后把它返回出去：
+
+```cpp
+std::span<int> bad()
+{
+    std::vector<int> v = {1, 2, 3};
+    return v;   // v 在函数结束时销毁，返回的 span 立刻悬垂
+}
+```
+
+调用方拿到这个 span 再访问，就是访问已释放内存。记住这条铁律：**span 的生命周期不得超过它所指向的数据**。只要你不把 span 绑到临时量、不把它存得比底层数据久，它就是安全的。
+
+## 跑跑看：动态 vs 静态 extent 的 sizeof
+
+前面说动态 extent 存两个字、静态 extent 只存指针，咱们跑跑看：
 
 ```cpp
 #include <span>
-#include <cstddef> // for std::byte
+#include <iostream>
 
-void recv_packet(std::span<uint8_t> buffer) {
-    if (buffer.size() < 4) return;
-    auto header = buffer.first(4);
-    uint16_t len = header[2] | (header[3] << 8);
-
-    if (buffer.size() < 4 + len) return;
-    auto payload = buffer.subspan(4, len);
-
-    // 把 payload 当作字节流传给 CRC 函数
-    auto bytes = std::as_bytes(payload);
-    // crc_check(bytes.data(), bytes.size()); // 示例：调用检验函数
+int main()
+{
+    int arr[4] = {};
+    std::span<int>        dyn;            // 动态 extent：可默认构造（空 span）
+    std::span<int, 4>     fixed(arr);     // 静态 extent：必须绑定数据
+    std::cout << "sizeof(span<int>)    = " << sizeof(dyn) << '\n';
+    std::cout << "sizeof(span<int,4>)  = " << sizeof(fixed) << '\n';
+    std::cout << "sizeof(void*)        = " << sizeof(void*) << '\n';
+    return 0;
 }
-
 ```
 
-这种把整体 buffer 切片成 header/payload 的写法尤其适合嵌入式协议解析，简洁而安全（只要你保证传进来的 `buffer` 有效）。
-
-------
-
-## 当做函数参数的最佳实践
-
-把 API 设计成接收 `std::span` 有几个好处：
-
-- 调用者可以传入数组、`std::array`、`std::vector` 或裸指针+长度；
-- 函数签名清楚地表达"这是一个视图（可能只读）"；
-- 函数内不需要 template 泛型来支持各种容器。
-
-示例：
-
-```cpp
-void process(std::span<const int> data); // 明确：不修改数据
-void mutate(std::span<int> data);         // 明确：会修改数据
-
+```bash
+g++ -std=c++20 -O2 -o /tmp/span_sizeof /tmp/span_sizeof.cpp && /tmp/span_sizeof
 ```
 
-这比写 `template<class Container> void process(const Container& c)` 更直观，也避免了不必要的编译膨胀。
+```text
+sizeof(span<int>)    = 16
+sizeof(span<int,4>)  = 8
+sizeof(void*)        = 8
+```
 
-------
+（64 位平台，GCC 16.1.1。）动态 extent 是 16 字节（一个 8 字节指针 + 一个 8 字节 size），静态 extent 只有 8 字节（就一个指针，size 编译期已知，省掉了）。这就是静态 extent 的存储优势——在大量传递 span 的场景（比如嵌入式里满地都是的 buffer 视图），省一半的字是有意义的。
 
-## 常见坑
+## 延伸：嵌入式里的 span（DMA / 协议解析）
 
-1. **悬垂视图**：最常见错误。不要把 `std::span` 绑定到局部 `std::vector` 的 `data()` 并把它返回给调用者：
+span 因为轻量、零拷贝、跨容器统一，在嵌入式里几乎是「现代版 buffer 指针」，这里补几个实战用法（主线之外，按需取用）。DMA 回调把数据放进固定 buffer 后，用 span 切片解析 header / payload，无需拷贝；从 Flash 读数据到缓冲区，用 span 切块处理；中断 / 实时路径里传小段数据，span 拷贝廉价（就两个字）。只要守住「span 不拥有、不超底层生命周期」这条线，它就是裸指针的安全替代。
 
-   ```cpp
-   std::span<int> bad() {
-       std::vector<int> v = {1,2,3};
-       return v; // ❌ v 被销毁，返回的 span 悬垂
-   }
+## 临了收几句：span 和 string_view 怎么分
 
-   ```
+span 和 string_view 都是「非拥有视图」，分界看元素类型：`span<T>` 通用于任意元素类型（包括可写、包括 `std::byte`），`string_view` 专门给字符序列（只读、带字符串语义）。处理二进制 buffer / 任意类型数据用 span，处理文本用 string_view。一句话记 span：它是指针加长度的正式封装，传参统一、切片零拷贝，但你得自己管好生命周期。
 
-1. **以为有所有权**：span 不持有内存，不会析构或释放。若需要所有权，用 `std::vector`、`unique_ptr` 等。
+## 参考资源
 
-1. **不恰当的字节视图**：`std::as_bytes` 返回 `span<const std::byte>`，用于只读字节访问；`as_writable_bytes` 仅在底层可写时使用。
-
-1. **越界访问**：`operator[]` 不检查边界。必要时做显式检查或使用调试断言。
-
-1. **不是以 null 结尾的字符串**：`std::span<char>` 不是 `C` 字符串，不保证以 `'\0'` 结尾。处理字符串请用 `std::string_view` 或明确长度处理。
-
-------
-
-## 与 `std::string_view` 的对比
-
-- `std::string_view` 是专门为字符序列设计的（只读视图），并带有字符串语义（常用于文本）。
-- `std::span<char>`/`std::span<std::byte>` 通用于任意元素类型，包括可写情况。
-  在处理二进制协议/缓冲区时，`std::span` 更合适；处理不可变文本时，用 `string_view` 更语义化。
-
-------
-
-## 嵌入式场景快速举例
-
-- DMA 回调把数据放进固定 buffer，回调把 `std::span` 传给处理函数，无需拷贝。
-- 从 Flash 读出数据到缓冲区，然后用 `std::span` 切片解析头和块。
-- 在中断或实时路径中传递小段数据，`span` 的拷贝开销极低。
-
-------
-
-## 代码小贴士
-
-1. 将函数参数写成 `std::span<const T>`，以表达只读意图。
-2. 若想允许传入大小为 N 的 buffer，但不更改逻辑，可接受 `std::span<T, N>`（静态 extent）。
-3. 使用 `subspan`, `first`, `last` 构造子视图，而非手动计算指针偏移。
-4. 在公共 API 文档里明确说明：**span 不负责生命周期管理**。
-
-------
-
-## 在线运行
-
-在线体验 std::span 从不同容器类型构造视图、subspan 切片操作：
-
-<OnlineCompilerDemo
-  title="std::span 数组视图"
-  source-path="code/examples/vol34567/02_span.cpp"
-  description="体验 std::span 从不同容器构造视图、subspan 切片等操作"
-  allow-run
-/>
-
-## 速查 API
-
-`s` 为 `std::span<T>`：
-
-- `s.size()`, `s.size_bytes()`, `s.data()`, `s.empty()`
-- `s[i]`（无边界检查）、`s.front()`、`s.back()`
-- `s.begin()`, `s.end()`（支持范围 for）
-- `s.subspan(offset, count)`, `s.first(n)`, `s.last(n)`
-- `std::as_bytes(s)`、`std::as_writable_bytes(s)`
+- [std::span — cppreference](https://en.cppreference.com/w/cpp/container/span)
+- [std::byte — cppreference](https://en.cppreference.com/w/cpp/types/byte)
+- [P0122 span 提案 — open-std](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0122r7.pdf)
