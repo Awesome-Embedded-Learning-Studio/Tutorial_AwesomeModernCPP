@@ -58,7 +58,7 @@ VALID_TAGS = {
 }
 
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
-VALID_CPP_STANDARDS = {'11', '14', '17', '20', '23'}
+VALID_CPP_STANDARDS = {'11', '14', '17', '20', '23', '26'}
 
 # Lecture note specific fields (vol10-open-lecture-notes)
 VALID_CONFERENCES = {'cppcon', 'cppnow', 'meetingpp', 'course', 'blog'}

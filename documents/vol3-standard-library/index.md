@@ -17,6 +17,7 @@ tags:
 ## 容器与数据结构
 
 <ChapterNav variant="sub">
+  <ChapterLink href="01-container-selection-guide">容器选择指南</ChapterLink>
   <ChapterLink href="01-array">array：定长数组</ChapterLink>
   <ChapterLink href="01-vector-deep-dive">vector 深入</ChapterLink>
   <ChapterLink href="02-string-memory-deep-dive">string 深入</ChapterLink>
@@ -24,6 +25,8 @@ tags:
   <ChapterLink href="04-map-set-deep-dive">map 与 set 深入</ChapterLink>
   <ChapterLink href="05-unordered-map-set-deep-dive">unordered_map 与 set 深入</ChapterLink>
   <ChapterLink href="02-span">span：非拥有视图</ChapterLink>
+  <ChapterLink href="09-container-adapters">容器适配器：stack/queue/priority_queue</ChapterLink>
+  <ChapterLink href="10-new-containers-cpp23-26">新标准容器：flat_map/inplace_vector/mdspan</ChapterLink>
   <ChapterLink href="01-initializer-lists">初始化列表</ChapterLink>
   <ChapterLink href="05-object-size-and-trivial-types">对象大小与平凡类型</ChapterLink>
   <ChapterLink href="06-custom-allocators">自定义分配器</ChapterLink>
