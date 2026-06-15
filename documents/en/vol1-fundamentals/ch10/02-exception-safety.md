@@ -1,31 +1,31 @@
 ---
-title: Exception Safety
-description: Understand the four levels of exception safety, and master the RAII (Resource
-  Acquisition Is Initialization) guard pattern to ensure resources are properly released
-  when exceptions occur.
 chapter: 10
-order: 2
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 异常基础
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand the four levels of exception safety, and master the RAII (Resource
+  Acquisition Is Initialization) guard pattern to ensure resources are properly released
+  when exceptions occur.
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 异常基础
+reading_time_minutes: 14
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Exception Safety
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch10/02-exception-safety.md
   source_hash: 1dfc4d3b5bc01f52b1156cd043d0fa9637f18c1f658996886dad1ecf315806f8
-  translated_at: '2026-05-26T10:58:04.785896+00:00'
-  engine: anthropic
   token_count: 2333
+  translated_at: '2026-05-26T10:58:04.785896+00:00'
 ---
 # Exception Safety
 

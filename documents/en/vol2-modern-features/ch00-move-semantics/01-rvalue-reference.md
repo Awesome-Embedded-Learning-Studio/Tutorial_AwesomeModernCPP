@@ -1,32 +1,32 @@
 ---
-title: 'Rvalue References: From Copying to Moving'
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
 description: Understanding the C++ value category system, and mastering the binding
   rules and core semantics of rvalue references.
-chapter: 0
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 卷一：C++ 基础入门
+reading_time_minutes: 18
+related:
+- 移动构造与移动赋值
+- 完美转发
 tags:
 - host
 - cpp-modern
 - intermediate
 - 移动语义
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 卷一：C++ 基础入门
-related:
-- 移动构造与移动赋值
-- 完美转发
+title: 'Rvalue References: From Copying to Moving'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch00-move-semantics/01-rvalue-reference.md
   source_hash: 17b5ddce9a0c55adbca888803b2617ad4a14da240d10c6c8a381fea9967b5082
-  translated_at: '2026-05-26T11:17:37.767432+00:00'
-  engine: anthropic
   token_count: 3209
+  translated_at: '2026-05-26T11:17:37.767432+00:00'
 ---
 # Rvalue References: From Copying to Moving
 

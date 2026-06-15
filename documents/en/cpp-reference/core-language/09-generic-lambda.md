@@ -1,25 +1,26 @@
 ---
-title: Generic Lambda
-description: Allows lambda expression parameters to use the `auto` placeholder, with
-  the compiler automatically performing type deduction.
 chapter: 99
-order: 9
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
 cpp_standard:
 - 14
 - 17
 - 20
 - 23
+description: Allows lambda expression parameters to use the `auto` placeholder, with
+  the compiler automatically performing type deduction.
+difficulty: intermediate
+order: 9
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+title: Generic Lambda
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/09-generic-lambda.md
   source_hash: 725b3b370ef68b22088d8557c658b5cff4775a13f1dfa0d1c93c2e6719956625
-  translated_at: '2026-05-26T10:16:06.394850+00:00'
-  engine: anthropic
   token_count: 360
+  translated_at: '2026-05-26T10:16:06.394850+00:00'
 ---
 # Generic Lambda (C++14)
 

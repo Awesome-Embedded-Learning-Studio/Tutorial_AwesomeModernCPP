@@ -1,24 +1,26 @@
 ---
-title: "强类型 typedef：防止混淆的类型安全"
-description: "用 phantom type 模式和 C++17 参数推导实现类型安全的单位系统"
 chapter: 4
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 类型安全
-  - 类型别名
+cpp_standard:
+- 11
+- 14
+- 17
+description: 用 phantom type 模式和 C++17 参数推导实现类型安全的单位系统
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 4: enum class 与强类型枚举"
+- 'Chapter 4: enum class 与强类型枚举'
+reading_time_minutes: 11
 related:
-  - "用户自定义字面量"
+- 用户自定义字面量
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+- 类型别名
+title: 强类型 typedef：防止混淆的类型安全
 ---
-
 # 强类型 typedef：防止混淆的类型安全
 
 ## 引言

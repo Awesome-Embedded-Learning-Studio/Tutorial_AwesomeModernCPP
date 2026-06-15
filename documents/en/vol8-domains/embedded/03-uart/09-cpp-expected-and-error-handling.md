@@ -1,21 +1,22 @@
 ---
-title: 'Part 39: std::expected Error Handling — A Better Choice Than Exceptions in
-  Embedded Systems'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 9
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 9
+title: 'Part 39: std::expected Error Handling — A Better Choice Than Exceptions in
+  Embedded Systems'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/09-cpp-expected-and-error-handling.md
   source_hash: 3ceccc30709c1f1a003eb607da2588c224478548f7ff7a09157f2bec7ce526ec
-  translated_at: '2026-05-26T12:19:16.660521+00:00'
-  engine: anthropic
   token_count: 1380
+  translated_at: '2026-05-26T12:19:16.660521+00:00'
+description: ''
 ---
 # Part 39: `std::expected` Error Handling — A Better Choice Than Exceptions in Embedded
 

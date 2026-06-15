@@ -1,21 +1,24 @@
 ---
-title: "异常安全"
-description: "理解异常安全的四个等级，掌握 RAII 守卫模式确保资源在异常发生时正确释放"
 chapter: 10
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解异常安全的四个等级，掌握 RAII 守卫模式确保资源在异常发生时正确释放
 difficulty: intermediate
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "异常基础"
+- 异常基础
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 异常安全
 ---
-
 # 异常安全
 
 抛出一个异常很容易——`throw std::runtime_error("oops")` 一行就够了。但真正让人头疼的问题是：异常飞过的时候，在此之前已经打开的文件、分配的内存、锁住的互斥量……这些东西谁来收拾？如果没人管，轻则内存泄漏，重则程序状态彻底崩坏。异常安全（exception safety）讨论的就是这件事——不是"怎么抛异常"，而是"异常发生后，程序的状态还能不能看"。

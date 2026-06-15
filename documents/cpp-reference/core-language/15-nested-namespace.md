@@ -1,16 +1,19 @@
 ---
-title: "嵌套命名空间"
-description: "用 A::B::C 语法替代多层嵌套的 namespace 大括号"
 chapter: 99
-order: 15
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 用 A::B::C 语法替代多层嵌套的 namespace 大括号
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 15
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: 嵌套命名空间
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

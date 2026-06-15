@@ -1,26 +1,28 @@
 ---
-title: "手搓动态数组——从零实现容器"
-description: "从零设计和实现一个类型安全的动态数组库，理解内存扩缩容策略、错误处理模式与 API 设计原则，打通通向 std::vector 的理解之路"
 chapter: 1
-order: 105
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 进阶
-  - 容器
-  - 内存管理
+cpp_standard:
+- 11
+- 14
+- 17
+description: 从零设计和实现一个类型安全的动态数组库，理解内存扩缩容策略、错误处理模式与 API 设计原则，打通通向 std::vector 的理解之路
 difficulty: intermediate
+order: 105
 platform: host
-reading_time_minutes: 30
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "指针进阶：多级指针、指针与 const"
-  - "动态内存管理：malloc/free/realloc 的正确使用"
-  - "结构体、联合体与内存对齐"
-  - "C 语言陷阱与常见错误"
+- 指针进阶：多级指针、指针与 const
+- 动态内存管理：malloc/free/realloc 的正确使用
+- 结构体、联合体与内存对齐
+- C 语言陷阱与常见错误
+reading_time_minutes: 18
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 容器
+- 内存管理
+title: 手搓动态数组——从零实现容器
 ---
-
 # 手搓动态数组——从零实现容器
 
 我们在写 C 程序的时候，最痛苦的事情之一就是数组大小必须在编译期确定。你想存 10 个数据，声明 `int arr[10]`；后来需求变了要存 100 个，你得回去改代码重新编译。更要命的是，很多时候你压根就不知道运行时会有多少个数据入列——用户输入多少条记录、网络收到多少个包、传感器采集多少个样本，这些都是运行时才能确定的。

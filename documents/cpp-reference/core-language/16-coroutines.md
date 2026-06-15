@@ -1,17 +1,19 @@
 ---
-title: "Coroutines（协程基础）"
-description: "无栈协程的语言支持：函数可挂起执行并稍后恢复，实现惰性求值与异步流程"
 chapter: 99
-order: 16
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - coroutine
+cpp_standard:
+- 20
+- 23
+description: 无栈协程的语言支持：函数可挂起执行并稍后恢复，实现惰性求值与异步流程
 difficulty: intermediate
-cpp_standard: [20, 23]
+order: 16
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- coroutine
+title: Coroutines（协程基础）
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

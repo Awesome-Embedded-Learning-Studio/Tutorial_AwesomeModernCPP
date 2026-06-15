@@ -12,7 +12,7 @@ prerequisites:
 - 11 C 字符串与缓冲区安全
 - 12 结构体与内存对齐
 - 14 动态内存管理
-reading_time_minutes: 11
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern

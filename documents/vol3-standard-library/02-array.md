@@ -1,22 +1,26 @@
 ---
-title: "array：编译期固定大小的聚合容器"
-description: "讲透 std::array：作为聚合类型零开销包住 C 数组、不退化为指针、std::get 与结构化绑定、永不失效的迭代器、constexpr 编译期查表，以及与 C 数组和 vector 的精确边界"
 chapter: 7
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - array
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 讲透 std::array：作为聚合类型零开销包住 C 数组、不退化为指针、std::get 与结构化绑定、永不失效的迭代器、constexpr
+  编译期查表，以及与 C 数组和 vector 的精确边界
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 12
+reading_time_minutes: 7
 related:
-  - "vector 深入：三指针、扩容与迭代器失效"
+- vector 深入：三指针、扩容与迭代器失效
+tags:
+- host
+- cpp-modern
+- intermediate
+- array
+- 容器
+title: array：编译期固定大小的聚合容器
 ---
-
 # array：编译期固定大小的聚合容器
 
 ## array 到底是什么：零开销包住 C 数组的聚合类

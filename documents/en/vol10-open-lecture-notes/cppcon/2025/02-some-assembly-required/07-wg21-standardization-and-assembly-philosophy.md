@@ -1,29 +1,30 @@
 ---
-title: WG21 Standardization and x86/RISC-V Assembly Philosophy
-description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 7
+platform: host
+reading_time_minutes: 30
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 7
+talk_title: 'C++: Some Assembly Required'
+title: WG21 Standardization and x86/RISC-V Assembly Philosophy
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/07-wg21-standardization-and-assembly-philosophy.md
   source_hash: c2b43f1d7eb03178b6a2f18ed355c6db1cbc0a8eda074ccb9592ff65884f4836
-  translated_at: '2026-06-14T00:16:05.966470+00:00'
-  engine: anthropic
   token_count: 10526
+  translated_at: '2026-06-14T00:16:05.966470+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # WG21 and the Organizational Hierarchy of the C++ Standard
 

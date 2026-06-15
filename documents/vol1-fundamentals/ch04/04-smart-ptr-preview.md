@@ -1,22 +1,25 @@
 ---
-title: "智能指针预告"
-description: "了解为什么需要智能指针，初步认识 unique_ptr 如何自动管理内存，为卷二的深入学习埋下伏笔"
 chapter: 4
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 了解为什么需要智能指针，初步认识 unique_ptr 如何自动管理内存，为卷二的深入学习埋下伏笔
 difficulty: beginner
-reading_time_minutes: 10
+order: 4
 platform: host
 prerequisites:
-  - "引用"
+- 引用
+reading_time_minutes: 9
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 智能指针预告
 ---
-
 # 智能指针预告
 
 到目前为止，我们已经和裸指针打了好几章的交道了。指针确实强大，但也确实危险——每次 `new` 了一块内存，就得时刻记着 `delete` 掉它，中间任何路径漏掉了就是内存泄漏。现代 C++ 给出了一套系统性的解决方案：**智能指针（smart pointer）**。这一章我们先不深入，只是带你认识一下它解决什么问题、基本用法长什么样。真正的全面讲解放在卷二，和移动语义、RAII 一起系统展开。

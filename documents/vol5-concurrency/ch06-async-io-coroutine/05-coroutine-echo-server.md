@@ -1,26 +1,26 @@
 ---
-title: "实战：协程 Echo Server"
-description: "用 C++20 协程和自研事件循环实现一个完整的 TCP Echo Server，串联前四篇的所有知识点"
 chapter: 6
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - coroutine
-  - 异步编程
-  - 实战
+cpp_standard:
+- 20
+description: 用 C++20 协程和自研事件循环实现一个完整的 TCP Echo Server，串联前四篇的所有知识点
 difficulty: advanced
+order: 5
 platform: host
-reading_time_minutes: 35
-cpp_standard: [20]
 prerequisites:
-  - "异步 I/O 与事件循环"
-  - "promise_type 与 awaitable"
+- 异步 I/O 与事件循环
+- promise_type 与 awaitable
+reading_time_minutes: 40
 related:
-  - "Actor 模型与消息传递"
+- Actor 模型与消息传递
+tags:
+- host
+- cpp-modern
+- advanced
+- coroutine
+- 异步编程
+- 实战
+title: 实战：协程 Echo Server
 ---
-
 # 实战：协程 Echo Server
 
 四篇理论铺垫——从异步编程范式的演进，到 C++20 协程基础，到 `promise_type` 和 awaitable 的定制机制，再到上篇把协程和 epoll 事件循环接通——我们终于走到了实战这一步。说实话，前面的每一篇都在为这一刻做准备：我们要用自己搭的协程框架写一个真正能跑的网络程序——一个 TCP Echo Server。

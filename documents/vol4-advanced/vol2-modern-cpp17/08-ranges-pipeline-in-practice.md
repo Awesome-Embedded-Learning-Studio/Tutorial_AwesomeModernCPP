@@ -11,7 +11,7 @@ order: 8
 platform: host
 prerequisites:
 - 'Chapter 8: 类型安全'
-reading_time_minutes: 19
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host

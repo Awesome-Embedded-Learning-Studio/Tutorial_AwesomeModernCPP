@@ -1,31 +1,31 @@
 ---
-title: Introduction to Value Categories
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand the concepts of lvalues and rvalues, master the basic usage
   of references, and lay the foundation for move semantics.
-chapter: 1
-order: 4
 difficulty: beginner
-reading_time_minutes: 12
+order: 4
 platform: host
 prerequisites:
 - const 初探
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Introduction to Value Categories
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch01/04-value-categories.md
   source_hash: 242fc75da53284aed6d62dac3c6f661785313f67f172625626f81e961bd7669d
-  translated_at: '2026-05-26T10:44:15.849333+00:00'
-  engine: anthropic
   token_count: 2073
+  translated_at: '2026-05-26T10:44:15.849333+00:00'
 ---
 # Introduction to Value Categories
 

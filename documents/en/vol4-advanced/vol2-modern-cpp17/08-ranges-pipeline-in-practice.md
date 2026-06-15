@@ -11,18 +11,18 @@ order: 8
 platform: host
 prerequisites:
 - 'Chapter 8: 类型安全'
-reading_time_minutes: 19
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host
 - intermediate
 title: Pipes and Ranges in Practice
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/vol2-modern-cpp17/08-ranges-pipeline-in-practice.md
   source_hash: 41896798a70b054936dbc6dc2d4bfe1de7d006d7aa04eb93a76c08dd9751276a
-  translated_at: '2026-05-26T11:41:06.812417+00:00'
-  engine: anthropic
   token_count: 3136
+  translated_at: '2026-05-26T11:41:06.812417+00:00'
 ---
 # Modern Embedded C++ Tutorial — Pipeline Operations and Ranges in Practice
 

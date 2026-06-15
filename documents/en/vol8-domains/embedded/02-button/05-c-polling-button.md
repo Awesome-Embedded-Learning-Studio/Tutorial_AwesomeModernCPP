@@ -1,21 +1,22 @@
 ---
-title: 'Part篇 23: Polling Buttons in C — Your First Time Controlling an LED with a
-  Button'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 5
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 5
+title: 'Part篇 23: Polling Buttons in C — Your First Time Controlling an LED with a
+  Button'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/05-c-polling-button.md
   source_hash: e0b865c83a896f18c013c16013f418aecdd2aa531cc5438c68a323a299953b9c
-  translated_at: '2026-05-26T12:12:14.955131+00:00'
-  engine: anthropic
   token_count: 1844
+  translated_at: '2026-05-26T12:12:14.955131+00:00'
+description: ''
 ---
 # Part 23: C Language Button Polling — Making a Button Control an LED for the First Time
 

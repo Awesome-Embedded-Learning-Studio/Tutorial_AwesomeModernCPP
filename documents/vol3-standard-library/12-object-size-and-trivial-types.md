@@ -1,22 +1,26 @@
 ---
-title: "对象大小、对齐与平凡类型"
-description: "讲透 sizeof/alignof 与内存填充、trivial/trivially_copyable/standard-layout 的精确区分、POD 的拆分、何时能安全 memcpy、聚合初始化与 C++20 指定初始化"
 chapter: 7
-order: 12
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 类型安全
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 讲透 sizeof/alignof 与内存填充、trivial/trivially_copyable/standard-layout 的精确区分、POD
+  的拆分、何时能安全 memcpy、聚合初始化与 C++20 指定初始化
 difficulty: intermediate
+order: 12
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 15
+reading_time_minutes: 8
 related:
-  - "array：编译期固定大小的聚合容器"
+- array：编译期固定大小的聚合容器
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+- 容器
+title: 对象大小、对齐与平凡类型
 ---
-
 # 对象大小、对齐与平凡类型
 
 写底层代码、和 C 接口打交道、或优化内存占用时，常被一串看似晦涩的名词绕晕：`sizeof`、`alignof`、`alignas`、`trivial`、`standard-layout`、`trivially_copyable`、聚合（aggregate）……这些概念看起来零碎，其实是一张互相勾连的地图：它们决定对象的内存表示、拷贝语义、能否安全 `memcpy`、能否与 C 结构体 ABI 兼容、以及初始化的灵活性。这一篇把它们理顺。

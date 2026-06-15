@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98面向对象：类与对象深度剖析
-reading_time_minutes: 20
+reading_time_minutes: 16
 related:
 - C++98运算符重载
 - 何时用C++、用哪些C++特性

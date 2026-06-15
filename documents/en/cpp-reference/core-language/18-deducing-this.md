@@ -1,22 +1,23 @@
 ---
-title: Deducing this
+chapter: 99
+cpp_standard:
+- 23
 description: 'Explicit object parameter deduction: allows the first parameter of a
   member function to be automatically deduced as the type and value category of *this'
-chapter: 99
+difficulty: intermediate
 order: 18
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-cpp_standard:
-- 23
+title: Deducing this
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/18-deducing-this.md
   source_hash: f7d3a4a262494cd9dcdc50df0f44dcbc94acd965bd6a197ca712541ed92ef8d2
-  translated_at: '2026-05-26T10:17:09.858331+00:00'
-  engine: anthropic
   token_count: 507
+  translated_at: '2026-05-26T10:17:09.858331+00:00'
 ---
 <!--
 Reference Card Template

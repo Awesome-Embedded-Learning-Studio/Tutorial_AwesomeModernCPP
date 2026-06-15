@@ -1,23 +1,25 @@
 ---
-title: "模板编译模型与未来展望"
-description: "CppCon 2025 演讲笔记 —— 模板不该被孤立编译、Concepts 作为编译期函数构建类型系统、接口继承与 Concepts 互补、未来生态建设"
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: "Concept-based Generic Programming"
-speaker: "Bjarne Stroustrup"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW"
-video_youtube: "https://www.youtube.com/watch?v=VMGB75hsDQo"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 演讲笔记 —— 模板不该被孤立编译、Concepts 作为编译期函数构建类型系统、接口继承与 Concepts 互补、未来生态建设
 difficulty: intermediate
-platform: host
-cpp_standard: [20, 23]
-chapter: 1
 order: 4
+platform: host
+reading_time_minutes: 28
+speaker: Bjarne Stroustrup
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: Concept-based Generic Programming
+title: 模板编译模型与未来展望
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
-
 # 模板不该被孤立编译
 
 前面聊到用 concepts 给模板加约束的时候，我脑子里一直盘旋着一个问题：如果我对 `advance` 的参数加上精确的 concept 约束，比如要求必须是 `random_access_iterator`，那 `input_iterator` 不就被拒之门外了吗？我是不是得针对不同迭代器类别写一堆重载，每个重载里用不同的方式推进？这岂不是又回到了接口不稳定的老路上——每多支持一种迭代器类型，我就得回去改 `advance` 的声明？

@@ -1,16 +1,21 @@
 ---
-title: "范围 for 循环"
-description: "用更简洁的语法遍历容器或数组中的所有元素"
 chapter: 99
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 用更简洁的语法遍历容器或数组中的所有元素
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 7
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: 范围 for 循环
 ---
-
 # 范围 for 循环（C++11）
 
 ## 一句话

@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 'Chapter 0: 前言与基础'
-reading_time_minutes: 15
+reading_time_minutes: 12
 related: []
 tags:
 - cpp-modern

@@ -1,27 +1,27 @@
 ---
-title: "OnceCallback 实战（一）：动机与接口设计"
-description: "从一次真实的异步回调 bug 出发，拆解 std::function 在异步场景的三大缺陷，设计 OnceCallback 的完整目标 API"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - 函数对象
+cpp_standard:
+- 23
+description: 从一次真实的异步回调 bug 出发，拆解 std::function 在异步场景的三大缺陷，设计 OnceCallback 的完整目标 API
 difficulty: beginner
+order: 1
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 11
 prerequisites:
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
-  - "OnceCallback 前置知识（五）：std::move_only_function"
-  - "OnceCallback 前置知识（六）：Deducing this"
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+reading_time_minutes: 10
 related:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+title: OnceCallback 实战（一）：动机与接口设计
 ---
-
 # OnceCallback 实战（一）：动机与接口设计
 
 ## 引言

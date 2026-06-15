@@ -1,22 +1,25 @@
 ---
-title: "算法库初见"
-description: "快速上手 algorithm 中的常用算法，配合 lambda 表达式实现灵活的数据处理"
 chapter: 11
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 快速上手 algorithm 中的常用算法，配合 lambda 表达式实现灵活的数据处理
 difficulty: beginner
-reading_time_minutes: 15
+order: 3
 platform: host
 prerequisites:
-  - "关联容器快速上手"
+- 关联容器快速上手
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 算法库初见
 ---
-
 # 算法库初见
 
 前面两章，我们把 `vector` 和关联容器的基本操作都过了一遍。现在问题来了——当你需要对一堆数据做排序、查找、过滤、统计的时候，第一反应是不是写一个 for 循环？

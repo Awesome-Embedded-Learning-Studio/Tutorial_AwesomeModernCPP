@@ -1,16 +1,20 @@
 ---
-title: "std::exchange"
-description: "将旧值替换为新值并返回旧值"
 chapter: 99
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+description: 将旧值替换为新值并返回旧值
 difficulty: beginner
-cpp_standard: [14, 17, 20, 23]
+order: 10
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::exchange
 ---
-
 # std::exchange（C++14）
 
 ## 一句话

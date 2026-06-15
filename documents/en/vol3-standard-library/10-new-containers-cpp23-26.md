@@ -1,36 +1,36 @@
 ---
-title: 'New Standard Containers: flat_map, inplace_vector, and mdspan'
+chapter: 7
+cpp_standard:
+- 23
+- 26
 description: 'A review of the new members added to the containers family in C++23/26:
   `flat_map` flattens the red-black tree into a sorted `vector` (ordered and cache-friendly,
   but O(n) insertion/deletion), `inplace_vector` is a fixed-capacity container without
   heap allocation (C++26), `mdspan` provides a multidimensional view (C++23, with
   `submdspan` slicing in C++26), and the `hive` proposal is still in progress.'
-chapter: 7
-order: 10
-tags:
-- host
-- cpp-modern
-- intermediate
-- 容器
 difficulty: intermediate
+order: 10
 platform: host
-cpp_standard:
-- 23
-- 26
-reading_time_minutes: 15
 prerequisites:
 - map 与 set 深入
 - unordered_map 与 set 深入
 - span：非拥有的连续视图
 - array：编译期固定大小的聚合容器
+reading_time_minutes: 9
 related:
 - 容器选择指南：按操作、内存与失效规则挑对容器
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+title: 'New Standard Containers: flat_map, inplace_vector, and mdspan'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/10-new-containers-cpp23-26.md
   source_hash: 4523da607c36be4c2dea1098f2d4dfdc971c898009bca41835d083bfb92bd015
-  translated_at: '2026-06-15T09:18:18.938018+00:00'
-  engine: anthropic
   token_count: 1880
+  translated_at: '2026-06-15T09:18:18.938018+00:00'
 ---
 # New Standard Containers: flat_map, inplace_vector, and mdspan
 

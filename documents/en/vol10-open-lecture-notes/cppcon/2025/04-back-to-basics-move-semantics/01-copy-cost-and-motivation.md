@@ -1,32 +1,33 @@
 ---
-title: 'The Cost of Copying and the Motivation for Moving: From `swap` to `MyString`'
-description: CppCon 2025 Talk Notes — Starting from the three deep copies in `swap`,
-  we implement a `MyString` class from scratch to expose the waste of copying temporary
-  objects and reveal the core motivation behind move semantics.
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: 'Back to Basics: Move Semantics'
-speaker: Ben Saks
-video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
-video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
-tags:
-- cpp-modern
-- host
-- beginner
-difficulty: beginner
-platform: host
 cpp_standard:
 - 11
 - 17
 - 20
-chapter: 4
+description: CppCon 2025 Talk Notes — Starting from the three deep copies in `swap`,
+  we implement a `MyString` class from scratch to expose the waste of copying temporary
+  objects and reveal the core motivation behind move semantics.
+difficulty: beginner
 order: 1
+platform: host
+reading_time_minutes: 9
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: 'The Cost of Copying and the Motivation for Moving: From `swap` to `MyString`'
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/01-copy-cost-and-motivation.md
   source_hash: 56bd3dfb332458806f57c221de5b61f3c1f11c9d163355a0a288bdfb1fb01c15
-  translated_at: '2026-06-15T09:09:23.799382+00:00'
-  engine: anthropic
   token_count: 3125
+  translated_at: '2026-06-15T09:09:23.799382+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
 # Starting with swap: A Tale of Three Copies
 

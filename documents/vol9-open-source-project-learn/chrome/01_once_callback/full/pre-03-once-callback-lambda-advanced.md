@@ -1,25 +1,29 @@
 ---
-title: "OnceCallback 前置知识（三）：Lambda 高级特性"
-description: "深入讲解 mutable lambda、初始化捕获（init capture）、C++20 lambda capture pack expansion 和泛型 lambda——OnceCallback 中 bind_once 与 then() 的核心实现技巧"
 chapter: 0
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
-  - 函数对象
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+description: 深入讲解 mutable lambda、初始化捕获（init capture）、C++20 lambda capture pack expansion
+  和泛型 lambda——OnceCallback 中 bind_once 与 then() 的核心实现技巧
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [14, 17, 20, 23]
-reading_time_minutes: 11
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
 related:
-  - "OnceCallback 实战（三）：bind_once 实现"
-  - "OnceCallback 实战（五）：then 链式组合"
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（五）：then 链式组合
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- 函数对象
+title: OnceCallback 前置知识（三）：Lambda 高级特性
 ---
-
 # OnceCallback 前置知识（三）：Lambda 高级特性
 
 ## 引言

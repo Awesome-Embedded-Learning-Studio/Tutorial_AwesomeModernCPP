@@ -11,7 +11,7 @@ order: 6
 platform: host
 prerequisites:
 - 'Chapter 2: 零开销抽象'
-reading_time_minutes: 6
+reading_time_minutes: 5
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 零开销抽象
 title: EBO (Empty Base Optimization)
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/03-empty-base-optimization.md
   source_hash: 3489c25ee12064211c70c3b43127eeb31d5a3080a8648c62ff6c3f9258fe0ee1
-  translated_at: '2026-06-13T11:50:22.052740+00:00'
-  engine: anthropic
   token_count: 840
+  translated_at: '2026-06-13T11:50:22.052740+00:00'
 ---
 # Empty Base Optimization (EBO): A C++ Slimming Technique
 

@@ -1,24 +1,27 @@
 ---
-title: "线程安全队列"
-description: "用 mutex + condition_variable 构建可关闭、支持超时的 bounded blocking queue"
 chapter: 4
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 用 mutex + condition_variable 构建可关闭、支持超时的 bounded blocking queue
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "condition_variable 与等待语义"
+- condition_variable 与等待语义
+reading_time_minutes: 26
 related:
-  - "线程安全容器设计"
-  - "SPSC 与 MPMC 队列"
+- 线程安全容器设计
+- SPSC 与 MPMC 队列
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+title: 线程安全队列
 ---
-
 # 线程安全队列
 
 上一篇我们在 condition_variable 那篇里写了一个简化版的 `BoundedQueue`——有 `push` 和 `pop`，能阻塞，能通知。说实话，当时写完觉得还挺像回事的，但如果你直接把它扔进生产代码里，我敢打赌不用两天就会出问题：队列怎么优雅地关闭？消费者阻塞在 `pop` 上的时候，生产者线程崩了怎么办？如果我不想无限期等待，只想尝试取一个元素呢？如果我想从外部取消等待呢？

@@ -1,21 +1,21 @@
 ---
-title: "指针与数组、const 和空指针"
-description: "深入理解数组名退化为指针的机制、const 与指针的四种组合、NULL 指针和野指针的防范，为学习 C++ 引用和智能指针打下基础"
 chapter: 1
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+description: 深入理解数组名退化为指针的机制、const 与指针的四种组合、NULL 指针和野指针的防范，为学习 C++ 引用和智能指针打下基础
 difficulty: beginner
+order: 10
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "指针入门：地址的世界"
+- 指针入门：地址的世界
+reading_time_minutes: 11
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 指针与数组、const 和空指针
 ---
-
 # 指针与数组、const 和空指针
 
 上一篇里我们掌握了指针的基本操作——声明、初始化、取地址、解引用、指针运算。现在我们来啃指针里几个比较绕但非常重要的应用：数组和指针之间到底是什么关系，`const` 和指针组合在一起有多少种意思，以及 NULL 指针和野指针为什么这么危险。

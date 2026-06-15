@@ -1,20 +1,21 @@
 ---
-title: 'Part 40: UART Driver Template — Zero-Size Abstraction and Compile-Time Dispatch'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 10
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 10
+title: 'Part 40: UART Driver Template — Zero-Size Abstraction and Compile-Time Dispatch'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/10-cpp-uart-driver-template.md
   source_hash: dcff20bb3e13302abb27dba51403a383f3dd3dd99b9a6bd6eb24732523c13192
-  translated_at: '2026-05-26T12:17:42.925140+00:00'
-  engine: anthropic
   token_count: 1749
+  translated_at: '2026-05-26T12:17:42.925140+00:00'
+description: ''
 ---
 # Part 40: UART Driver Template — Zero-Size Abstraction and Compile-Time Dispatch
 

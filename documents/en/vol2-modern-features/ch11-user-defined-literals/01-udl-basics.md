@@ -1,30 +1,30 @@
 ---
-title: User-Defined Literal Fundamentals
-description: operator"" Raw/Cooked Forms and Standard Library Literals
 chapter: 11
+cpp_standard:
+- 11
+- 14
+- 17
+description: operator"" Raw/Cooked Forms and Standard Library Literals
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+reading_time_minutes: 8
+related:
+- UDL 实战
 tags:
 - host
 - cpp-modern
 - intermediate
 - 字面量
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 9
-prerequisites:
-- 'Chapter 2: constexpr 基础'
-related:
-- UDL 实战
+title: User-Defined Literal Fundamentals
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch11-user-defined-literals/01-udl-basics.md
   source_hash: 79f96fecadfca38c1c66530fe58a6e4434c6ce14d6dc59e0fd46dcda20c1dd9e
-  translated_at: '2026-06-13T11:50:08.723988+00:00'
-  engine: anthropic
   token_count: 2455
+  translated_at: '2026-06-13T11:50:08.723988+00:00'
 ---
 # Basics of User-Defined Literals
 

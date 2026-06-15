@@ -1,21 +1,21 @@
 ---
-title: "程序结构与编译基础"
-description: "理解 C 程序的基本结构、编译四阶段流程、头文件机制和基本 I/O，为后续 C++ 学习打下编译模型基础"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+description: 理解 C 程序的基本结构、编译四阶段流程、头文件机制和基本 I/O，为后续 C++ 学习打下编译模型基础
 difficulty: beginner
+order: 1
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11]
 prerequisites:
-  - "无（本系列第一篇）"
+- 无（本系列第一篇）
+reading_time_minutes: 13
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 程序结构与编译基础
 ---
-
 # 程序结构与编译基础
 
 如果你之前写过一些 C 代码，大概率是在 IDE 里点一下"运行"就完事了——代码怎么从 `.c` 文件变成一个能跑的二进制，这个中间过程可能从来没关心过。但说实话，理解编译模型这件事，在后续学习 C++ 的时候会变得非常关键：模板实例化、头文件策略、ODR（One Definition Rule）这些东西，如果不懂编译的基本流程，基本上就是在黑箱操作。所以我们从一开始就把这件事理清楚。

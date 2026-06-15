@@ -1,28 +1,28 @@
 ---
-title: 'if if/switch Initializers: Narrowing Variable Scope'
+chapter: 5
+cpp_standard:
+- 17
 description: 'C++17 `if` and `switch` initializers: scoping variable lifetimes just
   right'
-chapter: 5
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 5: 结构化绑定'
+reading_time_minutes: 9
+related:
+- RAII 深入理解
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 12
-prerequisites:
-- 'Chapter 5: 结构化绑定'
-related:
-- RAII 深入理解
+title: 'if if/switch Initializers: Narrowing Variable Scope'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch05-structured-bindings/02-init-statements.md
   source_hash: ff666effc594cf2608cafbcb97166d82d795f2d3c33e1034f752d27eaeb93b9f
-  translated_at: '2026-05-26T11:29:27.949348+00:00'
-  engine: anthropic
   token_count: 1735
+  translated_at: '2026-05-26T11:29:27.949348+00:00'
 ---
 # if/switch Initializers: Narrowing Variable Scope
 

@@ -1,9 +1,18 @@
 ---
-title: 'Hands-on: Coroutine Echo Server'
+chapter: 6
+cpp_standard:
+- 20
 description: Implementing a complete TCP Echo Server using C++20 coroutines and a
   custom event loop, tying together all the concepts from the previous four articles
-chapter: 6
+difficulty: advanced
 order: 5
+platform: host
+prerequisites:
+- 异步 I/O 与事件循环
+- promise_type 与 awaitable
+reading_time_minutes: 40
+related:
+- Actor 模型与消息传递
 tags:
 - host
 - cpp-modern
@@ -11,22 +20,13 @@ tags:
 - coroutine
 - 异步编程
 - 实战
-difficulty: advanced
-platform: host
-reading_time_minutes: 35
-cpp_standard:
-- 20
-prerequisites:
-- 异步 I/O 与事件循环
-- promise_type 与 awaitable
-related:
-- Actor 模型与消息传递
+title: 'Hands-on: Coroutine Echo Server'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch06-async-io-coroutine/05-coroutine-echo-server.md
   source_hash: 9c92e4e5a6bf68498d9680f661f1f3e9c61bfdb18acef3f8d23823f2a1cf041a
-  translated_at: '2026-05-26T11:45:23.348723+00:00'
-  engine: anthropic
   token_count: 9479
+  translated_at: '2026-05-26T11:45:23.348723+00:00'
 ---
 # Hands-On: Coroutine Echo Server
 

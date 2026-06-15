@@ -3,21 +3,20 @@ chapter: 7
 cpp_standard:
 - 20
 - 23
-description: "讲透 C++20 char8_t 的引入动机、u8 字面量类型变更的两个坑与迁移写法，以及 C++23 P2513 对数组初始化的放宽"
+description: 讲透 C++20 char8_t 的引入动机、u8 字面量类型变更的两个坑与迁移写法，以及 C++23 P2513 对数组初始化的放宽
 difficulty: intermediate
 order: 30
 platform: host
 prerequisites:
-- '卷一：std::string 与字符串字面量基础'
-reading_time_minutes: 12
+- 卷一：std::string 与字符串字面量基础
+reading_time_minutes: 6
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型安全
-title: "char8_t 与 UTF-8 字符串"
+title: char8_t 与 UTF-8 字符串
 ---
-
 # char8_t 与 UTF-8 字符串
 
 在 C++20 之前，UTF-8 字符串字面量 `u8"..."` 的类型是 `const char[N]`——跟普通字符串在类型上压根没区别。这听着好像无所谓，其实是不少坑的老巢：你没法在类型层面分清"这一串是 UTF-8"还是"这一串是本地执行字符集"，编译器也帮不上你挡住那种把 UTF-8 当裸字节乱打印的错。C++20 引入 `char8_t`，就是要把 UTF-8 从 `char` 那片模糊地带里独立出来，给它一个专属类型，让类型系统替咱们把关。这改动来自提案 **P0482R6**「char8_t: A type for UTF-8 characters and strings」，探测支持看 `__cpp_char8_t`（C++20，值 `201811L`）。

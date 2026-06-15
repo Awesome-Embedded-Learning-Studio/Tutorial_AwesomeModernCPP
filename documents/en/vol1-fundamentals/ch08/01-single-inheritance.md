@@ -1,30 +1,30 @@
 ---
-title: Single Inheritance
-description: Master single inheritance syntax, construction and destruction order,
-  understand the object slicing problem and its solutions
 chapter: 8
-order: 1
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- 函数调用与类型转换
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master single inheritance syntax, construction and destruction order,
+  understand the object slicing problem and its solutions
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- 函数调用与类型转换
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Single Inheritance
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch08/01-single-inheritance.md
   source_hash: af1757a4f91327266e08b3bd82efa316e84fd6f01df69a378a0b64dea7d22e17
-  translated_at: '2026-05-26T10:53:43.053340+00:00'
-  engine: anthropic
   token_count: 2307
+  translated_at: '2026-05-26T10:53:43.053340+00:00'
 ---
 # Single Inheritance
 

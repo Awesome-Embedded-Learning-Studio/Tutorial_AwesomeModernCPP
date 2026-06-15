@@ -1,21 +1,22 @@
 ---
-title: 'Understanding the Revolutionary Features of C++20 — Coroutine Support Part
-  2: Writing a Simple Coroutine Scheduler'
-description: ''
+chapter: 10
+difficulty: intermediate
+order: 9
+platform: host
+reading_time_minutes: 25
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 10
-order: 9
+title: 'Understanding the Revolutionary Features of C++20 — Coroutine Support Part
+  2: Writing a Simple Coroutine Scheduler'
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/02-coroutine-scheduler.md
   source_hash: a958e4bdda10633048b6eed587a002c22173e7c2b1618a656893cf003d1e2265
-  translated_at: '2026-05-26T11:38:46.571919+00:00'
-  engine: anthropic
   token_count: 6731
+  translated_at: '2026-05-26T11:38:46.571919+00:00'
+description: ''
 ---
 # Understanding the Revolutionary Features of C++20 — Coroutine Support Part 2: Writing a Simple Coroutine Scheduler
 

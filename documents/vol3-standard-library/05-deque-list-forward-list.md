@@ -1,28 +1,30 @@
 ---
-title: "deque、list 与 forward_list：vector 之外的三个选择"
-description: "讲透顺序容器里 vector 之外的三个选择：deque 的分段连续双端结构、list 的双向链表与 splice、forward_list 的极致省内存，以及遍历 cache 与头插复杂度的真实取舍"
 chapter: 7
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 容器
+cpp_standard:
+- 11
+- 20
+description: 讲透顺序容器里 vector 之外的三个选择：deque 的分段连续双端结构、list 的双向链表与 splice、forward_list
+  的极致省内存，以及遍历 cache 与头插复杂度的真实取舍
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [11, 20]
-reading_time_minutes: 22
 prerequisites:
-  - "vector 深入：三指针、扩容与迭代器失效"
+- vector 深入：三指针、扩容与迭代器失效
+reading_time_minutes: 8
 related:
-  - "容器选择指南"
+- 容器选择指南
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+title: deque、list 与 forward_list：vector 之外的三个选择
 ---
-
 # deque、list 与 forward_list：vector 之外的三个选择
 
 ## vector 已经够好，为什么还要这三兄弟
 
-vector 我们在[那一篇](03-vector-deep-dive)讲过了，连续内存、随机访问 O(1)、尾插均摊 O(1)，大多数场景它就是最优解。但它有几个盲区：头部插入是 O(n)（整个往前挪）、中间插入也是 O(n)、扩容时所有元素搬迁、迭代器/引用会因扩容失效。当你碰上「频繁在头部加东西」「需要在已知位置频繁插删且不能让迭代器失效」这类需求，vector 就不合适了。`deque`、`list`、`forward_list` 这三个，就是来补这些盲区的——它们用不同的内存布局，换来了 vector 给不了的能力，代价是各自的短板。
+vector 我们在[那一篇](03-vector-deep-dive.md)讲过了，连续内存、随机访问 O(1)、尾插均摊 O(1)，大多数场景它就是最优解。但它有几个盲区：头部插入是 O(n)（整个往前挪）、中间插入也是 O(n)、扩容时所有元素搬迁、迭代器/引用会因扩容失效。当你碰上「频繁在头部加东西」「需要在已知位置频繁插删且不能让迭代器失效」这类需求，vector 就不合适了。`deque`、`list`、`forward_list` 这三个，就是来补这些盲区的——它们用不同的内存布局，换来了 vector 给不了的能力，代价是各自的短板。
 
 一句话先记着：`deque` 是「能两头插的 vector」，`list` 是「能 O(1) 中间插删的链表」，`forward_list` 是「比 list 更省内存的单向链表」。
 

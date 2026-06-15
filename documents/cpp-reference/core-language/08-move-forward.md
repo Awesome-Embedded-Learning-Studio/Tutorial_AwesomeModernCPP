@@ -1,16 +1,21 @@
 ---
-title: "std::move"
-description: "将左值转换为右值引用，触发移动语义以实现资源的高效转移"
 chapter: 99
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 将左值转换为右值引用，触发移动语义以实现资源的高效转移
 difficulty: intermediate
-cpp_standard: [11, 14, 17, 20, 23]
+order: 8
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: std::move
 ---
-
 # std::move（C++11）
 
 ## 一句话

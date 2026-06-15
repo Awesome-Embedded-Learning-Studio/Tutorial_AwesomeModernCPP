@@ -1,20 +1,21 @@
 ---
-title: 'Part 26: Refactoring Button Code with `enum class` — Type-Safe Input'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 8
+platform: stm32f1
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 8
+title: 'Part 26: Refactoring Button Code with `enum class` — Type-Safe Input'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/08-cpp-enum-class-button.md
   source_hash: 337e2f76412a48cf19054b4e6fe3e9bb6509ddd460785ff053c0788bc68cb38c
-  translated_at: '2026-05-26T12:11:54.253568+00:00'
-  engine: anthropic
   token_count: 795
+  translated_at: '2026-05-26T12:11:54.253568+00:00'
+description: ''
 ---
 # Part 26: `enum class` Refactoring Button Code — Type-Safe Input
 

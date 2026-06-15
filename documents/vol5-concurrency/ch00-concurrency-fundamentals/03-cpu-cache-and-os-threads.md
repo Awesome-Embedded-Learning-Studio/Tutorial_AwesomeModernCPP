@@ -1,26 +1,28 @@
 ---
-title: "CPU cache 与 OS 线程"
-description: "从硬件缓存层次结构到操作系统线程模型，理解多线程程序运行的真实物理舞台"
 chapter: 0
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 基础
-  - atomic
+cpp_standard:
+- 11
+- 17
+- 20
+description: 从硬件缓存层次结构到操作系统线程模型，理解多线程程序运行的真实物理舞台
 difficulty: intermediate
+order: 3
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 17, 20]
 prerequisites:
-  - "为什么需要并发"
-  - "并发基本问题"
+- 为什么需要并发
+- 并发基本问题
+reading_time_minutes: 27
 related:
-  - "std::thread 基础"
-  - "原子操作模式"
+- std::thread 基础
+- 原子操作模式
+tags:
+- host
+- cpp-modern
+- intermediate
+- 基础
+- atomic
+title: CPU cache 与 OS 线程
 ---
-
 # CPU cache 与 OS 线程
 
 前两篇我们建立了并发的"为什么"和"出什么问题"这两层认知。但有一个很现实的事情一直被我们有意无意地绕过去了：多线程程序到底跑在什么样的硬件和操作系统之上？我们写 `std::thread t(func)` 的时候，背后发生了什么？为什么有时候多线程程序跑起来不仅没变快，反而比单线程还慢？

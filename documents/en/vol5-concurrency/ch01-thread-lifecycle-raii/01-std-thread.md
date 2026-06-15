@@ -1,32 +1,32 @@
 ---
-title: std::thread Basics
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Master C++ thread creation, joining, detaching, IDs, and hardware concurrency
   queries, and build intuition for your first multithreaded program.
-chapter: 1
+difficulty: beginner
 order: 1
+platform: host
+prerequisites:
+- CPU cache 与 OS 线程
+reading_time_minutes: 15
+related:
+- 线程参数与生命周期
+- 线程所有权与 RAII
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
-difficulty: beginner
-platform: host
-reading_time_minutes: 20
-cpp_standard:
-- 11
-- 14
-- 17
-prerequisites:
-- CPU cache 与 OS 线程
-related:
-- 线程参数与生命周期
-- 线程所有权与 RAII
+title: std::thread Basics
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch01-thread-lifecycle-raii/01-std-thread.md
   source_hash: 3c0b3d21b5ed102e2c133bd511b483dc03343df1fe9967f874496d7c911908d4
-  translated_at: '2026-06-15T09:23:40.757337+00:00'
-  engine: anthropic
   token_count: 3677
+  translated_at: '2026-06-15T09:23:40.757337+00:00'
 ---
 # std::thread Basics
 

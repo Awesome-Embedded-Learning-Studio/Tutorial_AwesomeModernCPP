@@ -1,29 +1,30 @@
 ---
-title: The Essence of the STL and Generic Programming
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 4
+platform: host
+reading_time_minutes: 12
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 4
+talk_title: 'C++: Some Assembly Required'
+title: The Essence of the STL and Generic Programming
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/04-stl-and-generic-programming.md
   source_hash: a0f6377dc58c22b431f842d4b65bd4dfec2d19587321e9e75c7fccb4d0918996
-  translated_at: '2026-05-26T11:11:30.028767+00:00'
-  engine: anthropic
   token_count: 2315
+  translated_at: '2026-05-26T11:11:30.028767+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # Rethinking "Generic" Through the Origins of the STL
 

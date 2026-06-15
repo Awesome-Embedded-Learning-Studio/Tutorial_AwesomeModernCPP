@@ -1,20 +1,21 @@
 ---
-title: 'Part 34: HAL UART Initialization and Transmission — Making the Chip Talk'
-description: ''
+chapter: 17
+difficulty: beginner
+order: 4
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 17
-order: 4
+title: 'Part 34: HAL UART Initialization and Transmission — Making the Chip Talk'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/04-hal-uart-init-and-send.md
   source_hash: 4418b714c7874cb00fde17309b315da325a619bbb39fd5be6aa890c1fb490118
-  translated_at: '2026-05-26T12:15:55.985533+00:00'
-  engine: anthropic
   token_count: 1367
+  translated_at: '2026-05-26T12:15:55.985533+00:00'
+description: ''
 ---
 # Part 34: HAL UART Initialization and Transmission — Making the Chip Speak
 

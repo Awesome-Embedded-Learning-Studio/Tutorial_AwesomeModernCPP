@@ -1,28 +1,28 @@
 ---
-title: Pointers, Arrays, const, and Null Pointers
+chapter: 1
+cpp_standard:
+- 11
 description: Gain a deep understanding of the array-to-pointer decay mechanism, the
   four combinations of `const` and pointers, and how to guard against NULL pointers
   and wild pointers, laying the foundation for learning C++ references and smart pointers.
-chapter: 1
+difficulty: beginner
 order: 10
+platform: host
+prerequisites:
+- 指针入门：地址的世界
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
-difficulty: beginner
-platform: host
-reading_time_minutes: 15
-cpp_standard:
-- 11
-prerequisites:
-- 指针入门：地址的世界
+title: Pointers, Arrays, const, and Null Pointers
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/07B-pointers-arrays-const.md
   source_hash: c144abb04048044a685d91c47cffedcbdb63dbdab3a4759354ea0d8607c927e4
-  translated_at: '2026-05-26T10:29:56.167699+00:00'
-  engine: anthropic
   token_count: 1750
+  translated_at: '2026-05-26T10:29:56.167699+00:00'
 ---
 # Pointers, Arrays, const, and Null Pointers
 

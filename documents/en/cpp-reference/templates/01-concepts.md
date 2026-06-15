@@ -1,23 +1,24 @@
 ---
-title: Constraints and Concepts
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: Apply semantic constraints to template parameters at compile time, providing
   clear error messages.
-chapter: 99
+difficulty: intermediate
 order: 1
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - 模板
-difficulty: intermediate
-cpp_standard:
-- 20
-- 23
+title: Constraints and Concepts
 translation:
+  engine: anthropic
   source: documents/cpp-reference/templates/01-concepts.md
   source_hash: 863a07dfc69e39d779e7f20666cb954b8f24f117a900fc82c971e8464ee496e6
-  translated_at: '2026-05-26T10:18:09.108361+00:00'
-  engine: anthropic
   token_count: 423
+  translated_at: '2026-05-26T10:18:09.108361+00:00'
 ---
 # Constraints and Concepts (C++20)
 

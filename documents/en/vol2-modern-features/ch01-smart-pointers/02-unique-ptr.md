@@ -1,34 +1,34 @@
 ---
-title: 'A Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive
-  Ownership'
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: A deep dive into the implementation principles, usage, and best practices
   of unique pointers
-chapter: 1
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 17
+related:
+- shared_ptr 详解
+- 自定义删除器
 tags:
 - host
 - cpp-modern
 - intermediate
 - unique_ptr
 - 智能指针
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 1: RAII 深入理解'
-related:
-- shared_ptr 详解
-- 自定义删除器
+title: 'A Deep Dive into unique_ptr: A Zero-Overhead Smart Pointer with Exclusive
+  Ownership'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/02-unique-ptr.md
   source_hash: 639dd98dad2e71b1ad17c5079f27eb2d919f0b6c51a47e3c19897026a31e443c
-  translated_at: '2026-05-26T11:20:53.246140+00:00'
-  engine: anthropic
   token_count: 3506
+  translated_at: '2026-05-26T11:20:53.246140+00:00'
 ---
 # A Deep Dive into unique_ptr: The Zero-Overhead Smart Pointer for Exclusive Ownership
 

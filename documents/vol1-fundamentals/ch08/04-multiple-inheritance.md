@@ -1,21 +1,24 @@
 ---
-title: "多继承与虚继承"
-description: "理解多继承的语法、菱形继承问题及虚继承的解决方案，学会审慎使用多继承"
 chapter: 8
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解多继承的语法、菱形继承问题及虚继承的解决方案，学会审慎使用多继承
 difficulty: intermediate
-reading_time_minutes: 12
+order: 4
 platform: host
 prerequisites:
-  - "抽象类与接口"
+- 抽象类与接口
+reading_time_minutes: 9
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 多继承与虚继承
 ---
-
 # 多继承与虚继承
 
 在前面的章节里，我们讨论的都是单继承——一个类只有一个直接基类。这覆盖了绝大多数面向对象设计的需求。但 C++ 还允许一个类同时继承多个基类，这就是多继承（multiple inheritance）。多继承能力强大但争议极大——用好它能让设计更灵活，用不好则会让整个继承体系变得难以维护。（所以比起来笔者更信赖组合的方式）

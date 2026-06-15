@@ -1,33 +1,33 @@
 ---
-title: 'Deep Dive into auto Deduction: Not Just a Shortcut'
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
 description: Understanding the complete type deduction rules, common pitfalls, and
   best practices of `auto`
-chapter: 6
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 11
+related:
+- decltype 与返回类型推导
+- 类模板参数推导
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型别名
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 0: 右值引用'
-related:
-- decltype 与返回类型推导
-- 类模板参数推导
+title: 'Deep Dive into auto Deduction: Not Just a Shortcut'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch06-auto-decltype/01-auto-deep-dive.md
   source_hash: 8580b521d88ff11ec69e589efbc7ee18a243d92e5470a5cfd074c74333d6ee6f
-  translated_at: '2026-05-26T11:30:41.621437+00:00'
-  engine: anthropic
   token_count: 2177
+  translated_at: '2026-05-26T11:30:41.621437+00:00'
 ---
 # Deep Dive into auto Type Deduction: More Than Just Laziness
 

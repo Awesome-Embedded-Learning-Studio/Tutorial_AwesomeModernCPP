@@ -1,21 +1,22 @@
 ---
-title: 'Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements
-  Analysis and Basic Framework'
-description: ''
+chapter: 1
+difficulty: intermediate
+order: 4
+platform: host
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 1
-order: 4
+title: 'Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements
+  Analysis and Basic Framework'
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/01-file-copier-requirements-and-framework.md
   source_hash: f4c115a8025bf912239a5defbdc8200dba0fb92daf51ffc490bc3eecd20a7976
-  translated_at: '2026-05-26T11:51:28.325086+00:00'
-  engine: anthropic
   token_count: 1336
+  translated_at: '2026-05-26T11:51:28.325086+00:00'
+description: ''
 ---
 # Modern C++ in Practice — Building a File Copier from Scratch (Part 1): Requirements Analysis and Basic Framework
 

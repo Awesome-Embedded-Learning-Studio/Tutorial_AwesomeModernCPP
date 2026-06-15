@@ -1,10 +1,20 @@
 ---
-title: ARM Architecture and System Fundamentals
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Starting from von Neumann and Harvard architectures, we break down the
   ARM Cortex-M instruction set, register file, exception vector table, and processor
   modes to build a mental model of the underlying hardware.
-chapter: 1
+difficulty: intermediate
 order: 101
+platform: host
+prerequisites:
+- C 语言基础：数据类型与内存
+- 指针与内存地址
+- 基本的嵌入式开发概念
+reading_time_minutes: 22
 tags:
 - host
 - cpp-modern
@@ -12,23 +22,13 @@ tags:
 - 嵌入式
 - 寄存器
 - 基础
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-prerequisites:
-- C 语言基础：数据类型与内存
-- 指针与内存地址
-- 基本的嵌入式开发概念
+title: ARM Architecture and System Fundamentals
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/01-arm-architecture-fundamentals.md
   source_hash: dbb70b59c6f30ff39845496a6ed2a0a4da543d16bbdfc0327094abd340aba1a8
-  translated_at: '2026-06-13T11:43:43.847103+00:00'
-  engine: anthropic
   token_count: 3517
+  translated_at: '2026-06-13T11:43:43.847103+00:00'
 ---
 # ARM Architecture and Fundamentals
 

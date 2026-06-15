@@ -1,28 +1,28 @@
 ---
-title: string_view Performance Analysis
+chapter: 8
+cpp_standard:
+- 17
 description: Benchmarking the performance gains of replacing `const string&` with
   `string_view`
-chapter: 8
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 8: string_view 内部原理'
+reading_time_minutes: 13
+related:
+- string_view 陷阱与最佳实践
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 8: string_view 内部原理'
-related:
-- string_view 陷阱与最佳实践
+title: string_view Performance Analysis
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch08-string-view/02-string-view-performance.md
   source_hash: dffc79d7347e41fa3ceba4c56fa407ef7ab1586dcde7b1f120428f1a1c4f3d77
-  translated_at: '2026-05-26T11:32:34.907268+00:00'
-  engine: anthropic
   token_count: 2920
+  translated_at: '2026-05-26T11:32:34.907268+00:00'
 ---
 # string_view Performance Analysis
 

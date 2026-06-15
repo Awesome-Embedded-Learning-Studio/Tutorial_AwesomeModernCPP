@@ -11,7 +11,7 @@ order: 12
 platform: host
 prerequisites:
 - 多级指针与声明读法
-reading_time_minutes: 12
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - 基础
 title: '`restrict`, Incomplete Types, and Struct Pointers'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/08B-restrict-incomplete-types.md
   source_hash: 5ae618e6616269e796e77210bc518a9f89b5cb8a8bb4dba4507b805404e8f1bc
-  translated_at: '2026-05-26T10:30:36.857915+00:00'
-  engine: anthropic
   token_count: 1782
+  translated_at: '2026-05-26T10:30:36.857915+00:00'
 ---
 # restrict, Incomplete Types, and Struct Pointers
 

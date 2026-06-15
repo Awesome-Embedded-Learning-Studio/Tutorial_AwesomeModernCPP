@@ -1,25 +1,28 @@
 ---
-title: "mutex 与 RAII 锁"
-description: "系统梳理 mutex 家族与 RAII 锁守卫，从 lock_guard 到 scoped_lock 的演进与最佳实践"
 chapter: 2
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
-  - RAII守卫
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 系统梳理 mutex 家族与 RAII 锁守卫，从 lock_guard 到 scoped_lock 的演进与最佳实践
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 22
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程所有权与 RAII"
+- 线程所有权与 RAII
+reading_time_minutes: 17
 related:
-  - "死锁与锁顺序"
-  - "condition_variable 与等待语义"
+- 死锁与锁顺序
+- condition_variable 与等待语义
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+- RAII守卫
+title: mutex 与 RAII 锁
 ---
-
 # mutex 与 RAII 锁
 
 上一篇我们聊了线程所有权与 RAII，掌握了 `std::thread` 的生命周期管理和基于作用域的资源控制思路。现在问题来了：有了线程，线程之间怎么安全地共享数据？我们在并发基本问题那一篇里已经见过 data race 的威力了——两个线程同时写一个 `int`，结果就能从 2000000 跑成 1345687。解决 data race 最通用的手段就是互斥量（mutex），而 C++ 标准库为我们准备了一整个 mutex 家族和配套的 RAII 锁守卫。

@@ -1,32 +1,32 @@
 ---
-title: Destructors and Resource Management
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand when destructors are called, and get an initial grasp of the
   RAII (Resource Acquisition Is Initialization) principle and the design rationale
   behind the Rule of Three.
-chapter: 6
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - 构造函数
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Destructors and Resource Management
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch06/03-destructors.md
   source_hash: b49081fc86cec87f7a867bc01e176a02572893dbadf30e468bb2f7e4b3ad28db
-  translated_at: '2026-05-26T10:50:48.605245+00:00'
-  engine: anthropic
   token_count: 2399
+  translated_at: '2026-05-26T10:50:48.605245+00:00'
 ---
 # Destructors and Resource Management
 

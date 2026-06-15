@@ -1,22 +1,25 @@
 ---
-title: "STL 常用模式"
-description: "容器选择指南、常见陷阱和性能基础"
 chapter: 11
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 容器选择指南、常见陷阱和性能基础
 difficulty: beginner
-reading_time_minutes: 15
+order: 4
 platform: host
 prerequisites:
-  - "算法库初见"
+- 算法库初见
+reading_time_minutes: 19
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: STL 常用模式
 ---
-
 # STL 常用模式
 
 前面三章，我们分别搞定了 `vector`、关联容器和算法库，每一章都在各自的领域里深耕。但实际写代码的时候，问题往往不是"某个容器怎么用"或"某个算法怎么调"，而是"我该选哪个容器"、"为什么我的程序跑得这么慢"、"怎么又踩到迭代器失效的坑了"。这些都是跨容器、跨算法的综合问题，需要一个系统化的视角来应对。

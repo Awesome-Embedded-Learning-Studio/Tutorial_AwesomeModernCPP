@@ -1,32 +1,32 @@
 ---
-title: Move Construction and Move Assignment
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
 description: Master the core mechanisms of move semantics to achieve zero-copy resource
   transfer.
-chapter: 0
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 19
+related:
+- RVO 与 NRVO
+- 完美转发
 tags:
 - host
 - cpp-modern
 - intermediate
 - 移动语义
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 0: 右值引用'
-related:
-- RVO 与 NRVO
-- 完美转发
+title: Move Construction and Move Assignment
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch00-move-semantics/02-move-semantics.md
   source_hash: 0933784ba3b9b1bd4521968854d905fc5447666febaddcd74e7649b9883690da
-  translated_at: '2026-05-26T11:17:13.018460+00:00'
-  engine: anthropic
   token_count: 4414
+  translated_at: '2026-05-26T11:17:13.018460+00:00'
 ---
 # Move Construction and Move Assignment
 

@@ -9,7 +9,7 @@ order: 14
 platform: host
 prerequisites:
 - 指针与数组、const 和空指针
-reading_time_minutes: 23
+reading_time_minutes: 18
 tags:
 - host
 - cpp-modern
@@ -18,11 +18,11 @@ tags:
 - 基础
 title: Arrays In Depth
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/10-arrays-deep-dive.md
   source_hash: 68cafa122521b4f5ac8765bd9beb1beb161954ae85c386774bd891976a67ef9f
-  translated_at: '2026-05-26T10:31:58.778280+00:00'
-  engine: anthropic
   token_count: 2966
+  translated_at: '2026-05-26T10:31:58.778280+00:00'
 ---
 # A Deeper Look at Arrays
 

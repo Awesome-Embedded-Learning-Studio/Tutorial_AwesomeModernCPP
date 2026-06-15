@@ -1,24 +1,25 @@
 ---
-title: Coroutines (Coroutine Basics)
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: 'Language support for stackless coroutines: functions can suspend execution
   and resume later, enabling lazy evaluation and asynchronous flows.'
-chapter: 99
+difficulty: intermediate
 order: 16
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
 - coroutine
-difficulty: intermediate
-cpp_standard:
-- 20
-- 23
+title: Coroutines (Coroutine Basics)
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/16-coroutines.md
   source_hash: ff2e9ba415581403b2a336afafa9bf9cc60897e340d72ea513043872017b5cee
-  translated_at: '2026-05-26T10:16:56.000856+00:00'
-  engine: anthropic
   token_count: 677
+  translated_at: '2026-05-26T10:16:56.000856+00:00'
 ---
 <!--
 Reference Card Template

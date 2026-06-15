@@ -1,9 +1,21 @@
 ---
-title: SPSC and MPMC Queues
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: From ring buffer SPSC to Michael-Scott MPMC queues, cache-friendly producer-consumer
   queue design
-chapter: 4
+difficulty: advanced
 order: 4
+platform: host
+prerequisites:
+- 无锁编程基础
+reading_time_minutes: 26
+related:
+- 线程安全队列
+- 线程池设计
 tags:
 - host
 - cpp-modern
@@ -11,25 +23,13 @@ tags:
 - atomic
 - 无锁
 - 循环缓冲区
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- 无锁编程基础
-related:
-- 线程安全队列
-- 线程池设计
+title: SPSC and MPMC Queues
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/04-lock-free-queues.md
   source_hash: 93b8e3696584cb9feffefabb4e6f6400c2d6939ae465023f98c8c1b900458246
-  translated_at: '2026-05-20T04:41:56.714493+00:00'
-  engine: anthropic
   token_count: 5461
+  translated_at: '2026-05-20T04:41:56.714493+00:00'
 ---
 # SPSC and MPMC Queues
 

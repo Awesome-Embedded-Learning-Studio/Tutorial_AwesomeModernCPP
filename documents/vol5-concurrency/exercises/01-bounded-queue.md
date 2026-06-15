@@ -1,23 +1,24 @@
 ---
-title: "Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives"
-description: "通过阻塞队列、分片缓存和 C++20 同步原语实践，掌握 mutex、condition_variable、关闭语义和背压策略"
 chapter: 10
-order: 1
+cpp_standard:
+- 17
+- 20
+description: 通过阻塞队列、分片缓存和 C++20 同步原语实践，掌握 mutex、condition_variable、关闭语义和背压策略
 difficulty: intermediate
-tags:
-  - host
-  - cpp-modern
-  - mutex
-  - intermediate
-cpp_standard: [17, 20]
-reading_time_minutes: 29
+order: 1
 prerequisites:
-  - "卷五 ch00: 并发思维与基础"
-  - "卷五 ch01: 线程生命周期与 RAII"
-  - "卷五 ch02: 互斥量、条件变量与同步原语"
-  - "Lab 0: Thread Lifecycle Lab"
+- '卷五 ch00: 并发思维与基础'
+- '卷五 ch01: 线程生命周期与 RAII'
+- '卷五 ch02: 互斥量、条件变量与同步原语'
+- 'Lab 0: Thread Lifecycle Lab'
+reading_time_minutes: 21
+tags:
+- host
+- cpp-modern
+- mutex
+- intermediate
+title: 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 ---
-
 # Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives
 
 ## 目标

@@ -1,16 +1,21 @@
 ---
-title: "std::atomic"
-description: "无锁原子操作类型，用于多线程间无数据竞争的安全数据共享"
 chapter: 99
-order: 1
-tags:
-  - host
-  - atomic
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 无锁原子操作类型，用于多线程间无数据竞争的安全数据共享
 difficulty: intermediate
-cpp_standard: [11, 14, 17, 20, 23]
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- atomic
+- intermediate
+title: std::atomic
 ---
-
 # std::atomic（C++11）
 
 ## 一句话

@@ -1,30 +1,31 @@
 ---
-title: Ranges, Iterators, and Concept Combinations
-description: CppCon 2025 talk notes — from the problems with iterator pairs to Range
-  abstractions, then to Concept composition and requires expressions
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: Concept-based Generic Programming
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 talk notes — from the problems with iterator pairs to Range
+  abstractions, then to Concept composition and requires expressions
+difficulty: intermediate
+order: 2
+platform: host
+reading_time_minutes: 37
 speaker: Bjarne Stroustrup
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
-video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-chapter: 1
-order: 2
+talk_title: Concept-based Generic Programming
+title: Ranges, Iterators, and Concept Combinations
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/02-range-and-concept-composition.md
   source_hash: f8ffa47fc5c0d3fefa9ec35bd85b19babfabe35422ee000ac0049b29efa51d6c
-  translated_at: '2026-05-26T11:05:48.659458+00:00'
-  engine: anthropic
   token_count: 6360
+  translated_at: '2026-05-26T11:05:48.659458+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
 # Unchecked Pointers and the Boundaries of Generic Programming
 

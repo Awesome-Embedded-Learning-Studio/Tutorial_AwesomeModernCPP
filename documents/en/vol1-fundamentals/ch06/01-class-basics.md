@@ -1,31 +1,31 @@
 ---
-title: Class Definition
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'From `struct` to `class`: Master the basics of defining C++ classes,
   member variables and functions, and access control'
-chapter: 6
-order: 1
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
 - std::string
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Class Definition
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch06/01-class-basics.md
   source_hash: fef76e4b2368c43d8b0910024fd797430c627288688bbe071f40366219d885f3
-  translated_at: '2026-05-26T10:50:41.032281+00:00'
-  engine: anthropic
   token_count: 2522
+  translated_at: '2026-05-26T10:50:41.032281+00:00'
 ---
 # Defining Classes
 

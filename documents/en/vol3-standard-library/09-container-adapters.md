@@ -1,36 +1,36 @@
 ---
-title: 'Container Adapters: How stack, queue, and priority_queue Are Wrapped'
+chapter: 7
+cpp_standard:
+- 11
+- 20
+- 23
 description: 'A deep dive into the three container adapters: they are not new containers,
   but rather wrappers around underlying containers that provide restricted interfaces
   to express LIFO/FIFO/heap semantics. We explore the essence of `priority_queue`
   as an underlying container combined with `std::push_heap`/`pop_heap`, covering the
   default max-heap, converting to a min-heap by swapping comparators, and the addition
   of `push_range` in C++23.'
-chapter: 7
+difficulty: intermediate
 order: 9
+platform: host
+prerequisites:
+- vector 深入：三指针、扩容与迭代器失效
+- deque、list 与 forward_list：vector 之外的三个选择
+reading_time_minutes: 9
+related:
+- 容器选择指南：按操作、内存与失效规则挑对容器
 tags:
 - host
 - cpp-modern
 - intermediate
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 20
-- 23
-reading_time_minutes: 13
-prerequisites:
-- vector 深入：三指针、扩容与迭代器失效
-- deque、list 与 forward_list：vector 之外的三个选择
-related:
-- 容器选择指南：按操作、内存与失效规则挑对容器
+title: 'Container Adapters: How stack, queue, and priority_queue Are Wrapped'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/09-container-adapters.md
   source_hash: 08bc8dd7591c4aec4f05629412e7bb5172af01aa85a2d35d3fd561fabaff6137
-  translated_at: '2026-06-15T09:17:12.996956+00:00'
-  engine: anthropic
   token_count: 1648
+  translated_at: '2026-06-15T09:17:12.996956+00:00'
 ---
 # Container Adapters: How `stack`, `queue`, and `priority_queue` Wrap Underlying Containers
 

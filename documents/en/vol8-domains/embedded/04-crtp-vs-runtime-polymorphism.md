@@ -11,18 +11,18 @@ order: 4
 platform: stm32f1
 prerequisites:
 - 'Chapter 1: 构建工具链'
-reading_time_minutes: 8
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: CRTP vs Runtime Polymorphism
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/04-crtp-vs-runtime-polymorphism.md
   source_hash: 95df4c381cdb564a05ec206b9b503fd8220265fcfee7bd66011a07c6eb5a71c9
-  translated_at: '2026-05-26T12:19:12.971255+00:00'
-  engine: anthropic
   token_count: 1038
+  translated_at: '2026-05-26T12:19:12.971255+00:00'
 ---
 # Compile-Time Polymorphism vs. Runtime Polymorphism
 

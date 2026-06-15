@@ -1,9 +1,18 @@
 ---
-title: jthread and Stop Tokens
+chapter: 5
+cpp_standard:
+- 20
 description: 'C++20 auto-joining threads and cooperative cancellation: complete usage
   of `stop_source`, `stop_token`, and `stop_callback`'
-chapter: 5
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- promise 与 packaged_task
+reading_time_minutes: 19
+related:
+- 线程所有权与 RAII
+- 线程池设计
 tags:
 - host
 - cpp-modern
@@ -11,22 +20,13 @@ tags:
 - 异步编程
 - RAII守卫
 - 进阶
-difficulty: intermediate
-platform: host
-reading_time_minutes: 22
-cpp_standard:
-- 20
-prerequisites:
-- promise 与 packaged_task
-related:
-- 线程所有权与 RAII
-- 线程池设计
+title: jthread and Stop Tokens
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch05-future-task-threadpool/03-jthread-and-stop-token.md
   source_hash: 4c2a8ac69cbe613ec907a2cd164e203e962daebcb03fd9f3d30c2c4a483da809
-  translated_at: '2026-05-20T04:43:14.571815+00:00'
-  engine: anthropic
   token_count: 3922
+  translated_at: '2026-05-20T04:43:14.571815+00:00'
 ---
 # jthread and Stop Tokens
 

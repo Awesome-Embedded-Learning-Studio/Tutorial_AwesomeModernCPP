@@ -1,25 +1,26 @@
 ---
-title: std::unique_ptr
-description: A smart pointer with exclusive ownership, releasing resources automatically
-  with zero overhead.
 chapter: 99
-order: 1
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: A smart pointer with exclusive ownership, releasing resources automatically
+  with zero overhead.
+difficulty: beginner
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::unique_ptr
 translation:
+  engine: anthropic
   source: documents/cpp-reference/memory/01-unique-ptr.md
   source_hash: 7fe4ab2885f8549ff78763d8cf4284d65bfef9fe9592628ccaebe2d210402900
-  translated_at: '2026-05-26T10:17:15.894143+00:00'
-  engine: anthropic
   token_count: 506
+  translated_at: '2026-05-26T10:17:15.894143+00:00'
 ---
 <!--
 Reference Card Template

@@ -1,21 +1,24 @@
 ---
-title: "错误处理方式对比"
-description: "对比异常、错误码、optional 和 expected 的错误处理策略"
 chapter: 10
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 对比异常、错误码、optional 和 expected 的错误处理策略
 difficulty: intermediate
-reading_time_minutes: 14
+order: 3
 platform: host
 prerequisites:
-  - "异常安全"
+- 异常安全
+reading_time_minutes: 15
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 错误处理方式对比
 ---
-
 # 错误处理方式对比
 
 C++ 这门语言给我们的错误处理工具，说实话，比大多数语言都要多。C 时代我们只有返回值和 `errno`；Java 和 C# 那边几乎全靠异常；Rust 给了 `Result<T, E>` 和 `?` 操作符。而 C++ 呢？它全都有。错误码、异常、`std::optional`、`std::expected`——工具箱里塞得满满当当。多并不是坏事，但如果我们不理解每种工具的设计意图和取舍，就很容易写出风格混乱的代码：同一个项目里，有的函数返回 `-1`，有的抛异常，有的返回 `std::nullopt`，调用者每次都要翻文档才能知道该怎么处理错误。

@@ -1,16 +1,18 @@
 ---
-title: "std::format"
-description: "类型安全、可扩展的格式化输出库，替代 printf 和 stringstream"
 chapter: 99
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 20
+- 23
+description: 类型安全、可扩展的格式化输出库，替代 printf 和 stringstream
 difficulty: beginner
-cpp_standard: [20, 23]
+order: 7
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::format
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

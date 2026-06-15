@@ -1,26 +1,29 @@
 ---
-title: "C++98面向对象：类与对象深度剖析"
-description: "从C结构体到C++类的跨越——访问控制、构造析构、初始化列表、this指针、静态成员、const成员函数、友元、explicit和mutable，讲清楚每一个细节"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从C结构体到C++类的跨越——访问控制、构造析构、初始化列表、this指针、静态成员、const成员函数、友元、explicit和mutable，讲清楚每一个细节
 difficulty: beginner
-reading_time_minutes: 30
-prerequisites:
-  - "C++98入门：命名空间、引用与作用域解析"
-  - "C++98函数接口：重载与默认参数"
-related:
-  - "C++98面向对象：继承与多态"
-  - "C++98运算符重载"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C++98入门：命名空间、引用与作用域解析
+- C++98函数接口：重载与默认参数
+reading_time_minutes: 23
+related:
+- C++98面向对象：继承与多态
+- C++98运算符重载
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98面向对象：类与对象深度剖析
 ---
-
 # C++98面向对象：类与对象深度剖析
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

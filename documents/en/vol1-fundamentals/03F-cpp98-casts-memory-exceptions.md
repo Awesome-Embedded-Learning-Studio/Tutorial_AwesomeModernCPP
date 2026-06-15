@@ -1,34 +1,34 @@
 ---
-title: 'C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling'
-description: Precise use cases for the four C++ type casting operators, managing dynamic
-  objects with new/delete and placement new, exception handling mechanisms and embedded
-  trade-offs, and inline and typedef
 chapter: 0
-order: 3
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
-difficulty: intermediate
-reading_time_minutes: 25
-prerequisites:
-- C++98面向对象：类与对象深度剖析
-- C++98面向对象：继承与多态
-related:
-- 何时用C++、用哪些C++特性
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Precise use cases for the four C++ type casting operators, managing dynamic
+  objects with new/delete and placement new, exception handling mechanisms and embedded
+  trade-offs, and inline and typedef
+difficulty: intermediate
+order: 3
 platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+- C++98面向对象：继承与多态
+reading_time_minutes: 18
+related:
+- 何时用C++、用哪些C++特性
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 'C++98 Advanced: Type Conversions, Dynamic Memory, and Exception Handling'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03F-cpp98-casts-memory-exceptions.md
   source_hash: dcfc538a941ebfe4ed5f6119516b31472737563ff87dcd9a152dc548e2b5e36e
-  translated_at: '2026-05-26T10:26:08.616239+00:00'
-  engine: anthropic
   token_count: 3446
+  translated_at: '2026-05-26T10:26:08.616239+00:00'
 ---
 # Advanced C++98: Type Conversions, Dynamic Memory, and Exception Handling
 

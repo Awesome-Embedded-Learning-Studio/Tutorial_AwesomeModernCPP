@@ -1,20 +1,21 @@
 ---
-title: How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
-description: ''
+chapter: 1
+difficulty: intermediate
+order: 7
+platform: host
+reading_time_minutes: 3
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 1
-order: 7
+title: How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/cpp-modules-on-vs2026.md
   source_hash: fe090fdfeeb8298a2e0fd0faad68e8f211d7e66f61112dcb6b652589a4382a16
-  translated_at: '2026-05-26T11:53:17.162756+00:00'
-  engine: anthropic
   token_count: 617
+  translated_at: '2026-05-26T11:53:17.162756+00:00'
+description: ''
 ---
 # How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
 

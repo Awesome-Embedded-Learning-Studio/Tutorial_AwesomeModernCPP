@@ -1,30 +1,30 @@
 ---
-title: Function Template
-description: Master the syntax, template instantiation mechanism, and type deduction
-  of `template<typename T>`, and learn to write generic functions.
 chapter: 9
-order: 1
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- OOP 实战
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master the syntax, template instantiation mechanism, and type deduction
+  of `template<typename T>`, and learn to write generic functions.
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- OOP 实战
+reading_time_minutes: 16
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Function Template
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch09/01-function-templates.md
   source_hash: 7d983cf1353eb7e3443a37ac7ee3aa1a8ac068ac54acabaa5ee03aefc9b756e2
-  translated_at: '2026-05-26T10:56:40.722448+00:00'
-  engine: anthropic
   token_count: 2879
+  translated_at: '2026-05-26T10:56:40.722448+00:00'
 ---
 # Function Templates
 

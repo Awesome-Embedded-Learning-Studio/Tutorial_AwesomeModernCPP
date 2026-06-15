@@ -1,20 +1,23 @@
 ---
-title: "中断安全的代码编写"
-description: "ISR安全编程实践"
 chapter: 10
-order: 5
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: ISR安全编程实践
 difficulty: advanced
-reading_time_minutes: 25
-prerequisites:
-  - "Chapter 10.1-10.4: 原子操作与内存序"
-cpp_standard: [11, 14, 17, 20]
+order: 5
 platform: stm32f1
+prerequisites:
+- 'Chapter 10.1-10.4: 原子操作与内存序'
+reading_time_minutes: 15
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 中断安全的代码编写
 ---
-
 # 嵌入式现代C++开发——中断安全的代码编写
 
 ## 引言

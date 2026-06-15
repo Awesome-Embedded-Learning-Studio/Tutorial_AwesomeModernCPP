@@ -1,23 +1,24 @@
 ---
-title: Modules
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: 'Compilation unit mechanism replacing header files: faster compilation,
   better encapsulation, macro isolation'
-chapter: 99
+difficulty: intermediate
 order: 17
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-cpp_standard:
-- 20
-- 23
+title: Modules
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/17-modules.md
   source_hash: 389a256e6dfe9638a25e1d299f0a1715123c4601ede35b955c34e57741a30a2a
-  translated_at: '2026-05-26T10:16:53.858858+00:00'
-  engine: anthropic
   token_count: 441
+  translated_at: '2026-05-26T10:16:53.858858+00:00'
 ---
 <!--
 Reference Card Template

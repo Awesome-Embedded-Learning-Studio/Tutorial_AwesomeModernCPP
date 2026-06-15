@@ -1,22 +1,24 @@
 ---
-title: "std::initializer_list：花括号背后的轻量序列"
-description: "讲透 std::initializer_list：编译器为 {…} 生成的只读视图、浅拷贝与 const 元素、元素无法移动进容器的「移动陷阱」、花括号初始化的重载优先级，以及与容器构造的关系"
 chapter: 7
-order: 11
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+description: 讲透 std::initializer_list：编译器为 {…} 生成的只读视图、浅拷贝与 const 元素、元素无法移动进容器的「移动陷阱」、花括号初始化的重载优先级，以及与容器构造的关系
 difficulty: intermediate
+order: 11
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 12
+reading_time_minutes: 6
 related:
-  - "vector 深入：三指针、扩容与迭代器失效"
-  - "span：非拥有的连续视图"
+- vector 深入：三指针、扩容与迭代器失效
+- span：非拥有的连续视图
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+title: std::initializer_list：花括号背后的轻量序列
 ---
-
 # std::initializer_list：花括号背后的轻量序列
 
 ## initializer_list 是什么：编译器为 {…} 生成的只读视图

@@ -1,27 +1,27 @@
 ---
-title: 'Path operations: Cross-platform path handling'
-description: Use `std::filesystem::path` for unified cross-platform path handling
 chapter: 9
+cpp_standard:
+- 17
+description: Use `std::filesystem::path` for unified cross-platform path handling
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 11
+related:
+- 文件与目录操作
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 1: RAII 深入理解'
-related:
-- 文件与目录操作
+title: 'Path operations: Cross-platform path handling'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch09-filesystem/01-filesystem-path.md
   source_hash: 949d1664e017452108d9cfd8617a9c4759dd7b4172a91825db15247c5b3c33e0
-  translated_at: '2026-06-14T00:18:41.648574+00:00'
-  engine: anthropic
   token_count: 2960
+  translated_at: '2026-06-14T00:18:41.648574+00:00'
 ---
 # Path Operations: Cross-Platform Path Handling
 

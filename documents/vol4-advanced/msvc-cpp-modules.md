@@ -1,14 +1,15 @@
 ---
-title: 一文读懂 MSVC C++ Modules：原理、动机与工程实践
-description: ''
+chapter: 11
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 11
-order: 8
+title: 一文读懂 MSVC C++ Modules：原理、动机与工程实践
+description: ''
 ---
 # 一文读懂 MSVC C++ Modules：原理、动机与工程实践
 

@@ -1,33 +1,33 @@
 ---
-title: Functional Programming Patterns
+chapter: 3
+cpp_standard:
+- 14
+- 17
+- 20
 description: Higher-order functions, composition, currying — functional programming
   techniques in C++
-chapter: 3
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 3: std::function 与可调用对象'
+reading_time_minutes: 15
+related:
+- 卷四：Ranges 库深入
 tags:
 - host
 - cpp-modern
 - intermediate
 - lambda
 - 函数对象
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 14
-- 17
-- 20
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 3: Lambda 基础'
-- 'Chapter 3: std::function 与可调用对象'
-related:
-- 卷四：Ranges 库深入
+title: Functional Programming Patterns
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch03-lambda/05-functional-patterns.md
   source_hash: 0e5cb437254c7ba3e357fa429c0425b557224adbd7697f3d419365a60aadf787
-  translated_at: '2026-05-26T11:26:32.913932+00:00'
-  engine: anthropic
   token_count: 3839
+  translated_at: '2026-05-26T11:26:32.913932+00:00'
 ---
 # Functional Programming Patterns
 

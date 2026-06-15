@@ -13,7 +13,7 @@ order: 18
 platform: host
 prerequisites:
 - 结构体与内存对齐
-reading_time_minutes: 10
+reading_time_minutes: 7
 tags:
 - host
 - cpp-modern
@@ -22,11 +22,11 @@ tags:
 - 内存管理
 title: Dynamic Memory Management
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/14-dynamic-memory.md
   source_hash: 3836764443c6a59bf37fa71374e3af7a47c1784857804cc5ad250ad3f0d161f8
-  translated_at: '2026-06-13T11:42:32.736720+00:00'
-  engine: anthropic
   token_count: 1480
+  translated_at: '2026-06-13T11:42:32.736720+00:00'
 ---
 # Dynamic Memory Management
 

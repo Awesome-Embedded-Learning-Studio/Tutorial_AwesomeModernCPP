@@ -1,22 +1,25 @@
 ---
-title: "基本数据类型"
-description: "掌握 C++ 的整数、浮点、字符和布尔类型，理解类型大小、取值范围与平台差异"
 chapter: 1
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 C++ 的整数、浮点、字符和布尔类型，理解类型大小、取值范围与平台差异
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "第一个 C++ 程序"
+- 第一个 C++ 程序
+reading_time_minutes: 17
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 基本数据类型
 ---
-
 # 基本数据类型
 
 上一章我们写出了第一个 C++ 程序，用 `int` 声明了整数变量，用 `std::cin` 和 `std::cout` 完成了输入输出。你可能当时就在想：`int` 到底能存多大的数？小数怎么办？文字怎么表示？这些问题非常好，因为它们直指 C++ 类型系统的核心——我们这一章就来彻底搞清楚 C++ 给我们提供了哪些基本数据类型，每种类型能存什么、存多少、边界在哪里。

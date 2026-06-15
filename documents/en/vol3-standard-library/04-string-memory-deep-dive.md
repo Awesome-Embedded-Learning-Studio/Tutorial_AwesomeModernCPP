@@ -13,7 +13,7 @@ order: 2
 platform: host
 prerequisites:
 - 卷一：std::string 基础用法
-reading_time_minutes: 9
+reading_time_minutes: 7
 tags:
 - host
 - cpp-modern
@@ -21,11 +21,11 @@ tags:
 - 内存管理
 title: 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/04-string-memory-deep-dive.md
   source_hash: 8887bdd7d4e968834210afa3b7772627cb52ccefe9b91e5f1add4ac46722cc51
-  translated_at: '2026-06-14T00:19:45.074884+00:00'
-  engine: anthropic
   token_count: 1659
+  translated_at: '2026-06-14T00:19:45.074884+00:00'
 ---
 # Deep Dive into string: SSO, COW, and resize_and_overwrite
 

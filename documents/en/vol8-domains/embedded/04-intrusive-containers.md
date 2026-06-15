@@ -11,18 +11,18 @@ order: 4
 platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
-reading_time_minutes: 9
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - stm32f1
 - intermediate
 title: Intrusive Container Design
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/04-intrusive-containers.md
   source_hash: be6a1adfb9f0ecf819e11505b29abc841596da95c16afb75d38001765af4d2f5
-  translated_at: '2026-06-14T00:21:18.768776+00:00'
-  engine: anthropic
   token_count: 1425
+  translated_at: '2026-06-14T00:21:18.768776+00:00'
 ---
 # Modern C++ for Embedded: Intrusive Container Design
 

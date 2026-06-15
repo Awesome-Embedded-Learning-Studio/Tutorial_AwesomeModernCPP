@@ -1,29 +1,30 @@
 ---
-title: Reading Assembly and Register ABI
-description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 2
+platform: host
+reading_time_minutes: 29
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 2
+talk_title: 'C++: Some Assembly Required'
+title: Reading Assembly and Register ABI
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/02-reading-assembly-and-registers-abi.md
   source_hash: bec3d8e1f569731bab727bc9560b1d5e262abad84aecb3225b9b1adff65d7b1f
-  translated_at: '2026-06-13T11:47:13.409719+00:00'
-  engine: anthropic
   token_count: 5565
+  translated_at: '2026-06-13T11:47:13.409719+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # Reading Assembly: Building Intuition from Scratch
 

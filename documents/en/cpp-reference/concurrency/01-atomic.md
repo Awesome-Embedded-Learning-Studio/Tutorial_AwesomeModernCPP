@@ -1,26 +1,27 @@
 ---
-title: std::atomic
-description: Lock-free atomic operation types for safe, data-race-free data sharing
-  between multiple threads.
 chapter: 99
-order: 1
-tags:
-- host
-- atomic
-- intermediate
-difficulty: intermediate
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Lock-free atomic operation types for safe, data-race-free data sharing
+  between multiple threads.
+difficulty: intermediate
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- atomic
+- intermediate
+title: std::atomic
 translation:
+  engine: anthropic
   source: documents/cpp-reference/concurrency/01-atomic.md
   source_hash: c64b85388ab6ff5821595b20802a2f1297b71951216c37ec060bb08351cac675
-  translated_at: '2026-05-26T10:12:20.640395+00:00'
-  engine: anthropic
   token_count: 501
+  translated_at: '2026-05-26T10:12:20.640395+00:00'
 ---
 # std::atomic (C++11)
 

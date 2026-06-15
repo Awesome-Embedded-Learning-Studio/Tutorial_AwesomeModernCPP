@@ -1,33 +1,33 @@
 ---
-title: C Pitfalls and Common Mistakes
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: We systematically organize the most common syntax and semantic pitfalls
   in the C language. We examine why errors occur from the perspectives of compiler
   behavior and standard specifications, and explore the improvements C++ has made.
-chapter: 1
+difficulty: intermediate
 order: 19
+platform: host
+prerequisites:
+- 数据类型基础：整数与内存
+- 运算符与表达式基础
+- 控制流：条件与循环
+reading_time_minutes: 13
 tags:
 - host
 - cpp-modern
 - intermediate
 - 进阶
 - 基础
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
-cpp_standard:
-- 11
-- 14
-- 17
-prerequisites:
-- 数据类型基础：整数与内存
-- 运算符与表达式基础
-- 控制流：条件与循环
+title: C Pitfalls and Common Mistakes
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/03-c-traps-and-pitfalls.md
   source_hash: 297c1c90447072633e1051615b0e2c6fd5609da27b09282fbf79e4a256018e0f
-  translated_at: '2026-06-13T11:44:15.337763+00:00'
-  engine: anthropic
   token_count: 2916
+  translated_at: '2026-06-13T11:44:15.337763+00:00'
 ---
 # C Language Pitfalls and Common Errors
 

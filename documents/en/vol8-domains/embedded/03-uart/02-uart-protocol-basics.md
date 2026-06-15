@@ -1,20 +1,21 @@
 ---
-title: 'Part 32: UART Protocol In-Depth — How to Synchronize Without a Clock Line'
-description: ''
+chapter: 17
+difficulty: beginner
+order: 2
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 17
-order: 2
+title: 'Part 32: UART Protocol In-Depth — How to Synchronize Without a Clock Line'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/02-uart-protocol-basics.md
   source_hash: b6d86655fcc8eff238a82143d6a1bc6a8bafa81f52bc43289df84bfda408f753
-  translated_at: '2026-05-26T12:14:50.042005+00:00'
-  engine: anthropic
   token_count: 1530
+  translated_at: '2026-05-26T12:14:50.042005+00:00'
+description: ''
 ---
 # Part 32: UART Protocol In Depth — How to Synchronize Without a Clock Line
 

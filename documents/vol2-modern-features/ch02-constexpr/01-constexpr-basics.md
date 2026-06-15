@@ -1,25 +1,27 @@
 ---
-title: "constexpr 基础：编译期求值的艺术"
-description: "从 constexpr 变量到 constexpr 函数，掌握编译期计算的核心机制与标准演进"
 chapter: 2
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - constexpr
-  - 编译期计算
+cpp_standard:
+- 11
+- 14
+- 17
+description: 从 constexpr 变量到 constexpr 函数，掌握编译期计算的核心机制与标准演进
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 17
 related:
-  - "constexpr 构造函数与字面类型"
-  - "编译期计算实战"
+- constexpr 构造函数与字面类型
+- 编译期计算实战
+tags:
+- host
+- cpp-modern
+- intermediate
+- constexpr
+- 编译期计算
+title: constexpr 基础：编译期求值的艺术
 ---
-
 # constexpr 基础：编译期求值的艺术
 
 ## 引言

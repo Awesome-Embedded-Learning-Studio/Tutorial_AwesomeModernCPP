@@ -1,21 +1,22 @@
 ---
-title: 'Part 38: UART IRQ Handling and Callbacks — The Complete Puzzle of Interrupt
-  Reception'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 8
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 8
+title: 'Part 38: UART IRQ Handling and Callbacks — The Complete Puzzle of Interrupt
+  Reception'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/08-uart-irq-handler-and-callback.md
   source_hash: c0a86e9a6d69c3552d18c50ac4d5ac39eaa64a3903c3e233252fcb21b203d2a7
-  translated_at: '2026-05-26T12:16:38.783352+00:00'
-  engine: anthropic
   token_count: 1360
+  translated_at: '2026-05-26T12:16:38.783352+00:00'
+description: ''
 ---
 # Part 38: UART IRQ Handling and Callbacks — The Complete Picture of Interrupt-Driven Reception
 

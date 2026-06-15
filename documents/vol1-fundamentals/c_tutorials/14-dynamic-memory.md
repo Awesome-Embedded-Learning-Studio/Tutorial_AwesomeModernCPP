@@ -11,7 +11,7 @@ order: 18
 platform: host
 prerequisites:
 - 结构体与内存对齐
-reading_time_minutes: 10
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern

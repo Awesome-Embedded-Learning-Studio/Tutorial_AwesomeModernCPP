@@ -11,18 +11,18 @@ order: 4
 platform: stm32f1
 prerequisites:
 - 'Chapter 3: 内存与对象管理'
-reading_time_minutes: 11
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: Using Placement New
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/04-placement-new.md
   source_hash: 25977c6db8c7cc7dc3e3caaec03250bb09393d7cd6df958d853d7b48c33c178a
-  translated_at: '2026-05-26T12:20:27.066187+00:00'
-  engine: anthropic
   token_count: 1817
+  translated_at: '2026-05-26T12:20:27.066187+00:00'
 ---
 # Embedded C++ Tutorial: placement new
 

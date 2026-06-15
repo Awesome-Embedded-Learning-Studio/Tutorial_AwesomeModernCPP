@@ -1,29 +1,29 @@
 ---
-title: 'Data Type Basics: Integers and Memory'
+chapter: 1
+cpp_standard:
+- 11
 description: 'Understanding the C integer family from scratch: the differences between
   signed and unsigned types, fixed-width types, and the `sizeof` operator, laying
   the type system foundation for future learning.'
-chapter: 1
+difficulty: beginner
 order: 2
+platform: host
+prerequisites:
+- 程序结构与编译基础
+reading_time_minutes: 12
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-platform: host
-reading_time_minutes: 15
-cpp_standard:
-- 11
-prerequisites:
-- 程序结构与编译基础
+title: 'Data Type Basics: Integers and Memory'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/02A-data-types-basics.md
   source_hash: 2d46ab4d2c6c8c1703c01edf433403680b22d1726e3c6f5c3fc49a1d0df04528
-  translated_at: '2026-05-26T10:27:05.057375+00:00'
-  engine: anthropic
   token_count: 1971
+  translated_at: '2026-05-26T10:27:05.057375+00:00'
 ---
 # Data Type Basics: Integers and Memory
 

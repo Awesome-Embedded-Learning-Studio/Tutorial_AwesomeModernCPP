@@ -11,18 +11,18 @@ order: 2
 platform: stm32f1
 prerequisites:
 - 'Chapter 3: 内存与对象管理'
-reading_time_minutes: 6
+reading_time_minutes: 5
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: Static Storage and Stack Allocation Strategies
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-static-and-stack-allocation.md
   source_hash: 0bb24db10c20e5193c9c6ffa4a6f150ebcd75c7e178d62e963655b09bd693b87
-  translated_at: '2026-05-26T12:13:46.076201+00:00'
-  engine: anthropic
   token_count: 920
+  translated_at: '2026-05-26T12:13:46.076201+00:00'
 ---
 # Embedded C++ Tutorial — Static Storage and Stack Allocation Strategies
 

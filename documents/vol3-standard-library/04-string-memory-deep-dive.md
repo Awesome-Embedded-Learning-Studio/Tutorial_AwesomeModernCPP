@@ -5,21 +5,21 @@ cpp_standard:
 - 14
 - 17
 - 23
-description: "讲透 std::string 的 SSO 与 COW 历史纠葛、C++11 为何禁止 COW、SSO 阈值实现细节，以及 C++23 resize_and_overwrite 的缓冲复用"
+description: 讲透 std::string 的 SSO 与 COW 历史纠葛、C++11 为何禁止 COW、SSO 阈值实现细节，以及 C++23 resize_and_overwrite
+  的缓冲复用
 difficulty: intermediate
 order: 4
 platform: host
 prerequisites:
-- '卷一：std::string 基础用法'
-reading_time_minutes: 14
+- 卷一：std::string 基础用法
+reading_time_minutes: 8
 tags:
 - host
 - cpp-modern
 - intermediate
 - 内存管理
-title: "string 深入：SSO、COW 与 resize_and_overwrite"
+title: string 深入：SSO、COW 与 resize_and_overwrite
 ---
-
 # string 深入：SSO、COW 与 resize_and_overwrite
 
 `std::string` 大概是标准库里被使唤得最多、却被理解得最浅的类型了。各位随手 `std::string s = "hello";` 写得开开心心，可一旦被人追问——"为什么 `sizeof(std::string)` 在我这机器上是 32？""为什么老代码里两个 string 居然共享同一份缓冲？""C++23 那个 `resize_and_overwrite` 到底省了啥？"——多半就答不上来了。这些问题，根全在 `string` 的内存模型和它的陈年历史里。

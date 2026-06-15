@@ -1,14 +1,15 @@
 ---
-title: "第40篇：UART 驱动模板 —— 零大小抽象与编译时分发"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 10
+platform: stm32f1
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第40篇：UART 驱动模板 —— 零大小抽象与编译时分发
+description: ''
 ---
 # 第40篇：UART 驱动模板 —— 零大小抽象与编译时分发
 

@@ -1,22 +1,25 @@
 ---
-title: "std::string"
-description: "掌握 std::string 的构造、拼接、查找和子串操作，学会在 C++ 中安全高效地处理字符串"
 chapter: 5
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 std::string 的构造、拼接、查找和子串操作，学会在 C++ 中安全高效地处理字符串
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "std::array"
+- std::array
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: std::string
 ---
-
 # std::string
 
 在上一篇教程里，我们花了大把篇幅和 C 风格字符串搏斗——手动管理 `\0` 终止符、小心翼翼地防止缓冲区溢出、用 `strncpy` 和 `snprintf` 如履薄冰地操作每一段字符数组。如果你跟我一样被这些折腾得够呛，那么接下来这个消息会让你松一大口气：C++ 标准库给我们准备了一个真正的字符串类型，叫做 `std::string`，它自动管理内存、自动处理长度、支持直观的拼接和比较，基本上把我们之前在 C 里踩过的坑全部填平了。

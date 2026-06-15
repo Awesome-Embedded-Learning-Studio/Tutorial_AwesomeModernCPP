@@ -13,7 +13,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98面向对象：类与对象深度剖析
-reading_time_minutes: 20
+reading_time_minutes: 15
 related:
 - C++98运算符重载
 - 何时用C++、用哪些C++特性
@@ -25,11 +25,11 @@ tags:
 - 基础
 title: 'C++98 Object-Oriented Programming: Inheritance and Polymorphism'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03D-cpp98-inheritance-polymorphism.md
   source_hash: e06a45e70a25a16b2267f86191270722d475098ee6fa6d1299c9bf6fd961073a
-  translated_at: '2026-05-26T10:25:13.541293+00:00'
-  engine: anthropic
   token_count: 2898
+  translated_at: '2026-05-26T10:25:13.541293+00:00'
 ---
 # C++98 Object-Oriented Programming: Inheritance and Polymorphism
 

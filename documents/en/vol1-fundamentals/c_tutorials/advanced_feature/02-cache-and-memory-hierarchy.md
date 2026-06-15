@@ -1,32 +1,32 @@
 ---
-title: Cache Mechanisms and Memory Hierarchy
+chapter: 1
+cpp_standard:
+- 11
+- 17
 description: Starting from the memory hierarchy, we break down how cache lines, mapping
   policies, and the MESI coherence protocol work, and then apply this to cache-friendly
   programming practices and C++ cache-line alignment tools.
-chapter: 1
+difficulty: intermediate
 order: 102
+platform: host
+prerequisites:
+- 数据类型基础：整数与内存
+- 指针与数组
+- 结构体与内存布局
+reading_time_minutes: 21
 tags:
 - host
 - cpp-modern
 - intermediate
 - 优化
 - 内存管理
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 17
-prerequisites:
-- 数据类型基础：整数与内存
-- 指针与数组
-- 结构体与内存布局
+title: Cache Mechanisms and Memory Hierarchy
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/02-cache-and-memory-hierarchy.md
   source_hash: 6a17113b8ac463363799b614f28c3b4dec9e4258c8f52e1432b0eb451088d377
-  translated_at: '2026-05-26T10:35:25.311574+00:00'
-  engine: anthropic
   token_count: 3048
+  translated_at: '2026-05-26T10:35:25.311574+00:00'
 ---
 # Cache Mechanisms and the Memory Hierarchy
 

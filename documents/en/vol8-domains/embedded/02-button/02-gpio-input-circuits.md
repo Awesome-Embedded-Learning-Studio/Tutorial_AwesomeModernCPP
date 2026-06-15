@@ -1,21 +1,22 @@
 ---
-title: 'Part 20: GPIO Input Mode Internal Circuitry — How a Chip "Hears" External
-  Signals'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 2
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 2
+title: 'Part 20: GPIO Input Mode Internal Circuitry — How a Chip "Hears" External
+  Signals'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/02-gpio-input-circuits.md
   source_hash: d4e4ec66429dc36883a0a6e9b8dfad40ad6992e442aed89c509848b85d20f512
-  translated_at: '2026-05-26T12:11:11.087047+00:00'
-  engine: anthropic
   token_count: 1600
+  translated_at: '2026-05-26T12:11:11.087047+00:00'
+description: ''
 ---
 # Part 20: GPIO Input Mode Internal Circuitry — How the Chip "Hears" External Signals
 

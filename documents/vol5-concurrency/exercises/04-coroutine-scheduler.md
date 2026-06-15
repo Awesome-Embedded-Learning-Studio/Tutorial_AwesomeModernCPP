@@ -1,21 +1,21 @@
 ---
-title: "Lab 4: Coroutine Scheduler and Event Loop"
-description: "实现极简协程调度器，掌握 C++20 协程从语法到运行时的完整链路：Task、Scheduler、timer、epoll 事件循环"
 chapter: 10
-order: 5
+cpp_standard:
+- 20
+description: 实现极简协程调度器，掌握 C++20 协程从语法到运行时的完整链路：Task、Scheduler、timer、epoll 事件循环
 difficulty: advanced
-tags:
-  - host
-  - cpp-modern
-  - coroutine
-  - advanced
-cpp_standard: [20]
-reading_time_minutes: 18
+order: 5
 prerequisites:
-  - "卷五 ch06: 异步 I/O 与协程"
-  - "Lab 3: Production-style Thread Pool"
+- '卷五 ch06: 异步 I/O 与协程'
+- 'Lab 3: Production-style Thread Pool'
+reading_time_minutes: 14
+tags:
+- host
+- cpp-modern
+- coroutine
+- advanced
+title: 'Lab 4: Coroutine Scheduler and Event Loop'
 ---
-
 # Lab 4: Coroutine Scheduler and Event Loop
 
 ## 目标

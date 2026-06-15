@@ -1,31 +1,31 @@
 ---
-title: range-for loop
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the range-for loop introduced in C++11, and iterate over arrays
   and containers in the most concise way.
-chapter: 2
-order: 3
 difficulty: beginner
-reading_time_minutes: 10
+order: 3
 platform: host
 prerequisites:
 - 循环语句
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: range-for loop
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch02/03-range-for.md
   source_hash: 5ae7af74c4fa44a5ebd49d2cf24dc9d2f2fa544d4602bd9f591bf50080165813
-  translated_at: '2026-05-26T10:47:26.587859+00:00'
-  engine: anthropic
   token_count: 1667
+  translated_at: '2026-05-26T10:47:26.587859+00:00'
 ---
 # The range-for Loop
 

@@ -1,36 +1,36 @@
 ---
-title: 'Asynchronous Programming Evolution: From Callback Hell to Coroutines'
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Tracing the evolution of asynchronous programming paradigms—callbacks,
   future chains, and coroutines—to understand the motivation, pain points, and implementation
   forms of each model in C++.
-chapter: 6
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 线程池设计
+- promise 与 packaged_task
+reading_time_minutes: 18
+related:
+- C++20 协程基础
+- 异步 I/O 与事件循环
 tags:
 - host
 - cpp-modern
 - intermediate
 - 异步编程
 - 基础
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- 线程池设计
-- promise 与 packaged_task
-related:
-- C++20 协程基础
-- 异步 I/O 与事件循环
+title: 'Asynchronous Programming Evolution: From Callback Hell to Coroutines'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch06-async-io-coroutine/01-async-programming-evolution.md
   source_hash: 69bdb786dac2ba9a89659ceb3dbc19b6a9c686db20dd2b1800f19ad72d3bf599
-  translated_at: '2026-06-13T11:51:48.247704+00:00'
-  engine: anthropic
   token_count: 3751
+  translated_at: '2026-06-13T11:51:48.247704+00:00'
 ---
 # Evolution of Asynchronous Programming: From Callback Hell to Coroutines
 

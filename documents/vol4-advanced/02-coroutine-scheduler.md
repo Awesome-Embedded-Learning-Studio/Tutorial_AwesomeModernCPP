@@ -1,14 +1,15 @@
 ---
-title: 理解C++20的革命特性——协程支持2：编写简单的协程调度器
-description: ''
+chapter: 10
+difficulty: intermediate
+order: 9
+platform: host
+reading_time_minutes: 25
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 10
-order: 9
+title: 理解C++20的革命特性——协程支持2：编写简单的协程调度器
+description: ''
 ---
 # 理解C++20的革命特性——协程支持2：编写简单的协程调度器
 

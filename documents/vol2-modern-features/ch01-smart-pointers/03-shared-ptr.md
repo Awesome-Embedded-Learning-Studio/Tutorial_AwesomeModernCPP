@@ -1,27 +1,29 @@
 ---
-title: "shared_ptr 详解：共享所有权与引用计数"
-description: "理解 shared_ptr 的控制块机制、线程安全与性能特征"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - shared_ptr
-  - 智能指针
-  - 引用计数
+cpp_standard:
+- 11
+- 14
+- 17
+description: 理解 shared_ptr 的控制块机制、线程安全与性能特征
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Chapter 1: RAII 深入理解"
-  - "Chapter 1: unique_ptr 详解"
+- 'Chapter 1: RAII 深入理解'
+- 'Chapter 1: unique_ptr 详解'
+reading_time_minutes: 25
 related:
-  - "weak_ptr 与循环引用"
-  - "自定义删除器"
+- weak_ptr 与循环引用
+- 自定义删除器
+tags:
+- host
+- cpp-modern
+- intermediate
+- shared_ptr
+- 智能指针
+- 引用计数
+title: shared_ptr 详解：共享所有权与引用计数
 ---
-
 # shared_ptr 详解：共享所有权与引用计数
 
 上一篇我们聊了 `unique_ptr`——独占所有权的零开销智能指针。但现实世界中的资源并不总是"一主独占"的。有时候，一个对象确实需要被多个模块共同持有、共同管理——比如一个配置对象被多个子系统读取，一个网络连接被多个任务共享，一个缓存条目被多个消费者访问。这时候，`unique_ptr` 的"独占"语义就显得不够用了。

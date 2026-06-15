@@ -1,29 +1,29 @@
 ---
-title: Floating-Point, Characters, const, and Type Conversions
+chapter: 1
+cpp_standard:
+- 11
 description: Master C floating-point types and precision issues, character storage
   and encoding, the `const` qualifier, and implicit type conversion rules, and understand
   the motivation behind C++ type safety design.
-chapter: 1
+difficulty: beginner
 order: 3
+platform: host
+prerequisites:
+- 数据类型基础：整数与内存
+reading_time_minutes: 12
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-platform: host
-reading_time_minutes: 15
-cpp_standard:
-- 11
-prerequisites:
-- 数据类型基础：整数与内存
+title: Floating-Point, Characters, const, and Type Conversions
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/02B-float-char-const-cast.md
   source_hash: 3368b183f945c161559191cd6cf9f8e1f25cf4427c3012aa5b4bd766c525cd2a
-  translated_at: '2026-05-26T10:27:39.813907+00:00'
-  engine: anthropic
   token_count: 1956
+  translated_at: '2026-05-26T10:27:39.813907+00:00'
 ---
 # Floating Point, Characters, const, and Type Conversions
 

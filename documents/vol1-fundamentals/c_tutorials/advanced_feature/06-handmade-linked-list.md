@@ -1,25 +1,25 @@
 ---
-title: "手搓单链表——指针与内存的实战"
-description: "从零实现经典单链表，掌握插入、删除、查找算法与哨兵节点技巧"
 chapter: 1
-order: 106
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 实战
-  - 内存管理
-  - 智能指针
+cpp_standard:
+- 11
+description: 从零实现经典单链表，掌握插入、删除、查找算法与哨兵节点技巧
 difficulty: advanced
+order: 106
 platform: host
-reading_time_minutes: 30
-cpp_standard: [11]
 prerequisites:
-  - "手搓动态数组——malloc 与 realloc 实战"
-  - "指针到底在指什么"
-  - "C 语言陷阱与常见错误"
+- 手搓动态数组——malloc 与 realloc 实战
+- 指针到底在指什么
+- C 语言陷阱与常见错误
+reading_time_minutes: 26
+tags:
+- host
+- cpp-modern
+- advanced
+- 实战
+- 内存管理
+- 智能指针
+title: 手搓单链表——指针与内存的实战
 ---
-
 # 手搓单链表——指针与内存的实战
 
 到目前为止我们已经折腾过动态数组了，那一篇里我们用 `malloc` 和 `realloc` 管理一块连续内存，体验了一把"手动挡"内存管理的乐趣。但是连续内存有一个天生的限制——在中间插入和删除元素的时候，你需要把后面所有的数据都挪一遍，时间复杂度 O(n)。对于频繁插入删除的场景，这显然不够优雅。

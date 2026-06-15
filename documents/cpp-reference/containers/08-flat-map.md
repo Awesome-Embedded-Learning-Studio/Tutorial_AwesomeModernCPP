@@ -1,16 +1,17 @@
 ---
-title: "std::flat_map"
-description: "基于连续存储的有序关联容器，缓存友好的 std::map 替代品"
 chapter: 99
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 23
+description: 基于连续存储的有序关联容器，缓存友好的 std::map 替代品
 difficulty: beginner
-cpp_standard: [23]
+order: 8
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::flat_map
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

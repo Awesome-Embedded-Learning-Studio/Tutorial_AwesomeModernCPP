@@ -1,26 +1,28 @@
 ---
-title: "std::function、std::invoke 与可调用对象"
-description: "理解类型擦除、函数调用机制与零开销回调设计"
 chapter: 3
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
-  - std_function
-  - std_invoke
-  - 函数对象
+cpp_standard:
+- 11
+- 14
+- 17
+description: 理解类型擦除、函数调用机制与零开销回调设计
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Chapter 3: Lambda 基础"
+- 'Chapter 3: Lambda 基础'
+reading_time_minutes: 15
 related:
-  - "函数式编程模式"
+- 函数式编程模式
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- std_function
+- std_invoke
+- 函数对象
+title: std::function、std::invoke 与可调用对象
 ---
-
 # std::function、std::invoke 与可调用对象
 
 ## 引言

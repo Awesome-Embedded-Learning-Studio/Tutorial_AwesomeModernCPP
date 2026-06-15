@@ -1,9 +1,19 @@
 ---
-title: Concurrency Performance Testing and Benchmarking
+chapter: 8
+cpp_standard:
+- 17
+- 20
 description: Master the usage of Google Benchmark, avoid common pitfalls in concurrent
   benchmarking, and learn to use performance counters to locate bottlenecks.
-chapter: 8
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 并发程序调试技巧
+- 线程池
+reading_time_minutes: 17
+related:
+- CPU cache 与 OS 线程
 tags:
 - host
 - cpp-modern
@@ -12,23 +22,13 @@ tags:
 - mutex
 - 优化
 - 进阶
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 17
-- 20
-prerequisites:
-- 并发程序调试技巧
-- 线程池
-related:
-- CPU cache 与 OS 线程
+title: Concurrency Performance Testing and Benchmarking
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch08-debug-testing-perf/02-concurrency-benchmarks.md
   source_hash: cec196de6157ff04ef51de1d14d828f4ea56457f99f926eaa2d0894e6f54d349
-  translated_at: '2026-06-13T11:52:15.714726+00:00'
-  engine: anthropic
   token_count: 4251
+  translated_at: '2026-06-13T11:52:15.714726+00:00'
 ---
 # Concurrency Performance Testing and Benchmarking
 

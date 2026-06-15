@@ -1,22 +1,25 @@
 ---
-title: "值类别简介"
-description: "理解左值与右值的概念，掌握引用的基本用法，为后续移动语义打下基础"
 chapter: 1
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解左值与右值的概念，掌握引用的基本用法，为后续移动语义打下基础
 difficulty: beginner
-reading_time_minutes: 12
+order: 4
 platform: host
 prerequisites:
-  - "const 初探"
+- const 初探
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 值类别简介
 ---
-
 # 值类别简介
 
 到这一章为止，我们已经跟变量、类型、const 打过不少交道了。但你有没有想过一个问题：为什么有些表达式能放在赋值号左边，有些就只能放在右边？为什么 `int& ref = x;` 编译得过，`int& ref = 42;` 就编译不过？这些看似零散的现象，背后其实有一条统一的线索——**值类别**（value category）。

@@ -1,14 +1,15 @@
 ---
-title: "第42篇：命令处理器与完整代码走读 —— 从串口输入到 LED 控制"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 12
+platform: stm32f1
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第42篇：命令处理器与完整代码走读 —— 从串口输入到 LED 控制
+description: ''
 ---
 # 第42篇：命令处理器与完整代码走读 —— 从串口输入到 LED 控制
 

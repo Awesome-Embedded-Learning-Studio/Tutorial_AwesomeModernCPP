@@ -1,23 +1,26 @@
 ---
-title: "Ranges、Views 与管道组合：惰性求值的力量"
-description: "CppCon 2025 演讲笔记 —— Mike Shah：受约束算法、views 惰性求值、管道操作符、ranges::to，补 eager vs lazy 实测基准、无限 range、views 版本归属表（C++20/23/26）"
+chapter: 3
 conference: cppcon
 conference_year: 2025
-talk_title: "Back to Basics: C++ Ranges"
-speaker: "Mike Shah"
-video_youtube: "https://www.youtube.com/watch?v=Q434UHWRzI0"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - Ranges
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 演讲笔记 —— Mike Shah：受约束算法、views 惰性求值、管道操作符、ranges::to，补 eager
+  vs lazy 实测基准、无限 range、views 版本归属表（C++20/23/26）
 difficulty: intermediate
-platform: host
-cpp_standard: [20, 23]
-chapter: 3
 order: 3
+platform: host
+reading_time_minutes: 19
+speaker: Mike Shah
+tags:
+- cpp-modern
+- host
+- intermediate
+- Ranges
+talk_title: 'Back to Basics: C++ Ranges'
+title: Ranges、Views 与管道组合：惰性求值的力量
+video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 ---
-
 # Ranges、Views 与管道组合：惰性求值的力量
 
 :::tip

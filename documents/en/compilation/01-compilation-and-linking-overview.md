@@ -1,20 +1,21 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking: An Introduction'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 1
+platform: host
+reading_time_minutes: 30
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 1
+title: 'Deep Dive into C/C++ Compilation and Linking: An Introduction'
 translation:
+  engine: anthropic
   source: documents/compilation/01-compilation-and-linking-overview.md
   source_hash: f64199c9f2c14c9bbecaa0d2c99fe13f95106444e9133fe0507e013e42ea7717
-  translated_at: '2026-05-26T10:11:53.705895+00:00'
-  engine: anthropic
   token_count: 5800
+  translated_at: '2026-05-26T10:11:53.705895+00:00'
+description: ''
 ---
 # A Deep Dive into C/C++ Compilation and Linking: Introduction
 

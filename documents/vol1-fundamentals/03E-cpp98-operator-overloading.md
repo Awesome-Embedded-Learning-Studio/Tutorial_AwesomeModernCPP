@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98面向对象：类与对象深度剖析
-reading_time_minutes: 13
+reading_time_minutes: 10
 related:
 - C++98面向对象：继承与多态
 - C++98进阶：类型转换、动态内存与异常处理

@@ -1,23 +1,24 @@
 ---
-title: std::format
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: A type-safe, extensible formatting output library, replacing `printf`
   and `stringstream`
-chapter: 99
+difficulty: beginner
 order: 7
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-difficulty: beginner
-cpp_standard:
-- 20
-- 23
+title: std::format
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/07-format.md
   source_hash: 1228d5185a8712960df28fba1fa0eeac096e06a52a98d667b3d0eb06cbc9a3f2
-  translated_at: '2026-05-26T10:14:17.459174+00:00'
-  engine: anthropic
   token_count: 509
+  translated_at: '2026-05-26T10:14:17.459174+00:00'
 ---
 <!--
 Reference Card Template

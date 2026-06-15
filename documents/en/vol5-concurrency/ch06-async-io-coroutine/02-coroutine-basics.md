@@ -1,32 +1,32 @@
 ---
-title: C++20 Coroutine Fundamentals
+chapter: 6
+cpp_standard:
+- 20
 description: Dive deep into C++20 coroutine syntax, state machine models, and lifecycle
   management, and understand the compiler transformations behind `co_await`, `co_yield`,
   and `co_return`.
-chapter: 6
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 异步编程演进：从回调地狱到协程
+reading_time_minutes: 25
+related:
+- promise_type 与 awaitable
+- 异步 I/O 与事件循环
 tags:
 - host
 - cpp-modern
 - intermediate
 - coroutine
 - 异步编程
-difficulty: intermediate
-platform: host
-reading_time_minutes: 30
-cpp_standard:
-- 20
-prerequisites:
-- 异步编程演进：从回调地狱到协程
-related:
-- promise_type 与 awaitable
-- 异步 I/O 与事件循环
+title: C++20 Coroutine Fundamentals
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch06-async-io-coroutine/02-coroutine-basics.md
   source_hash: ffe072d22553156ceee0efbae135d04cf3f717b498821b61c92c771e8d118899
-  translated_at: '2026-05-20T04:44:59.439012+00:00'
-  engine: anthropic
   token_count: 5417
+  translated_at: '2026-05-20T04:44:59.439012+00:00'
 ---
 # C++20 Coroutine Basics
 

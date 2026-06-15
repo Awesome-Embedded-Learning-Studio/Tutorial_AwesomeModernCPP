@@ -1,26 +1,26 @@
 ---
-title: "std::variant：类型安全的联合体"
-description: "用 variant 替代 union，配合 visit 实现类型安全的多态"
 chapter: 4
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - variant
-  - 类型安全
+cpp_standard:
+- 17
+description: 用 variant 替代 union，配合 visit 实现类型安全的多态
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 3: Lambda 基础"
-  - "Chapter 4: enum class"
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 4: enum class'
+reading_time_minutes: 13
 related:
-  - "std::optional"
-  - "错误处理的现代方式"
+- std::optional
+- 错误处理的现代方式
+tags:
+- host
+- cpp-modern
+- intermediate
+- variant
+- 类型安全
+title: std::variant：类型安全的联合体
 ---
-
 # std::variant：类型安全的联合体
 
 ## 引言

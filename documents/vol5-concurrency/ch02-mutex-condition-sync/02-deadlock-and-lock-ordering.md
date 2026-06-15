@@ -1,23 +1,26 @@
 ---
-title: "死锁与锁顺序"
-description: "深入死锁的四个必要条件，掌握锁顺序约束、try_lock 回退与 scoped_lock 多锁获取策略"
 chapter: 2
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入死锁的四个必要条件，掌握锁顺序约束、try_lock 回退与 scoped_lock 多锁获取策略
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "mutex 与 RAII 锁"
+- mutex 与 RAII 锁
+reading_time_minutes: 18
 related:
-  - "condition_variable 与等待语义"
+- condition_variable 与等待语义
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+title: 死锁与锁顺序
 ---
-
 # 死锁与锁顺序
 
 上一篇我们系统梳理了 mutex 家族和三个 RAII 锁守卫，掌握了从 `lock_guard` 到 `scoped_lock` 的选择策略。那一篇里我们反复提到"死锁"这个词，但并没有深入展开——因为我们先把工具准备好，再来对付这个真正的敌人。这一篇我们就来正面对抗死锁。

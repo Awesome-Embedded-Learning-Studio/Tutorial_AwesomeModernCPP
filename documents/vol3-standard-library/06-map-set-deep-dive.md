@@ -1,24 +1,28 @@
 ---
-title: "map 与 set 深入：红黑树、异构查找与节点句柄"
-description: "从红黑树底层实现讲透 std::map 与 set：O(log n) 复杂度与稳定的迭代器、C++14 透明比较器的异构查找、C++17 节点句柄 extract/merge 与改 key 的唯一正道"
 chapter: 7
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - map
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从红黑树底层实现讲透 std::map 与 set：O(log n) 复杂度与稳定的迭代器、C++14 透明比较器的异构查找、C++17
+  节点句柄 extract/merge 与改 key 的唯一正道
 difficulty: intermediate
+order: 6
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 25
 prerequisites:
-  - "vector 深入：三指针、扩容与迭代器失效"
+- vector 深入：三指针、扩容与迭代器失效
+reading_time_minutes: 15
 related:
-  - "容器选择指南"
+- 容器选择指南
+tags:
+- host
+- cpp-modern
+- intermediate
+- map
+- 容器
+title: map 与 set 深入：红黑树、异构查找与节点句柄
 ---
-
 # map 与 set 深入：红黑树、异构查找与节点句柄
 
 ## 家族合影：map、set 和它们的兄弟
@@ -81,7 +85,7 @@ struct TreeNode {
 
 这里要特别拎出来讲的不是复杂度——红黑树慢点就慢点，很正常——而是**迭代器失效**。map 的失效规矩和 vector 完全是两套，而这恰恰是你在工程里选 map 而不是 vector 的一个硬理由。
 
-vector 我们在[那一篇](03-vector-deep-dive)讲过：一旦扩容，所有迭代器、引用、指针全部失效，因为底层是连续内存、整体搬迁。map 不一样，它的元素是挂在各自独立的树节点上的：
+vector 我们在[那一篇](03-vector-deep-dive.md)讲过：一旦扩容，所有迭代器、引用、指针全部失效，因为底层是连续内存、整体搬迁。map 不一样，它的元素是挂在各自独立的树节点上的：
 
 - **插入**：不失效任何已有的迭代器、引用、指针
 - **删除**：只失效被删元素本身的那一个迭代器/引用，其他元素纹丝不动

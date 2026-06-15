@@ -1,24 +1,25 @@
 ---
-title: "读写锁与 shared_mutex"
-description: "C++17 shared_mutex 的读多写少场景应用，分析写饥饿问题与性能边界"
 chapter: 2
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
+cpp_standard:
+- 17
+- 20
+description: C++17 shared_mutex 的读多写少场景应用，分析写饥饿问题与性能边界
 difficulty: intermediate
+order: 4
 platform: host
-reading_time_minutes: 20
-cpp_standard: [17, 20]
 prerequisites:
-  - "condition_variable 与等待语义"
+- condition_variable 与等待语义
+reading_time_minutes: 14
 related:
-  - "mutex 与 RAII 锁"
-  - "线程安全容器设计"
+- mutex 与 RAII 锁
+- 线程安全容器设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+title: 读写锁与 shared_mutex
 ---
-
 # 读写锁与 shared_mutex
 
 到目前为止，我们讨论的同步原语都是"排他式"的——一个线程拿到锁，其他所有线程都得在外面等着。但现实中有一大类场景并不是这样的：**读多写少**。配置数据、缓存、路由表、字典——这些东西绝大部分时间在被读取，偶尔才被更新。如果每次读取都要排他地获取 mutex，那多个读线程之间就被不必要地串行化了——它们完全可以并发地读取同一个数据结构，因为读操作不会修改任何状态。

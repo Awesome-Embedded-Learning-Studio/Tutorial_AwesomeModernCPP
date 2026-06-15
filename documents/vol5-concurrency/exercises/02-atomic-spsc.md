@@ -1,22 +1,23 @@
 ---
-title: "Lab 2: Atomic Metrics and SPSC Ring Buffer"
-description: "通过原子计数器和单生产者单消费者环形缓冲区，掌握 atomic、memory_order、false sharing 和基准测试方法论"
 chapter: 10
-order: 2
+cpp_standard:
+- 17
+- 20
+description: 通过原子计数器和单生产者单消费者环形缓冲区，掌握 atomic、memory_order、false sharing 和基准测试方法论
 difficulty: intermediate
-tags:
-  - host
-  - cpp-modern
-  - atomic
-  - memory_order
-  - intermediate
-cpp_standard: [17, 20]
-reading_time_minutes: 16
+order: 2
 prerequisites:
-  - "卷五 ch03: 原子操作与内存模型"
-  - "Lab 0: Thread Lifecycle Lab"
+- '卷五 ch03: 原子操作与内存模型'
+- 'Lab 0: Thread Lifecycle Lab'
+reading_time_minutes: 14
+tags:
+- host
+- cpp-modern
+- atomic
+- memory_order
+- intermediate
+title: 'Lab 2: Atomic Metrics and SPSC Ring Buffer'
 ---
-
 # Lab 2: Atomic Metrics and SPSC Ring Buffer
 
 ## 目标

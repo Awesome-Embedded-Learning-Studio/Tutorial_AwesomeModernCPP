@@ -1,24 +1,25 @@
 ---
-title: "OnceCallback 前置知识（六）：Deducing this (C++23)"
-description: "深入理解 C++23 显式对象参数（deducing this）如何让 OnceCallback::run() 在编译期优雅地拦截左值调用，替代 Chromium 的双重重载 hack"
 chapter: 0
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
+cpp_standard:
+- 23
+description: 深入理解 C++23 显式对象参数（deducing this）如何让 OnceCallback::run() 在编译期优雅地拦截左值调用，替代
+  Chromium 的双重重载 hack
 difficulty: intermediate
+order: 6
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 10
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
 related:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识（四）：Concepts 与 requires 约束"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+title: OnceCallback 前置知识（六）：Deducing this (C++23)
 ---
-
 # OnceCallback 前置知识（六）：Deducing this (C++23)
 
 ## 引言

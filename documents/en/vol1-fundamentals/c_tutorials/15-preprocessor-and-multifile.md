@@ -13,7 +13,7 @@ order: 19
 platform: host
 prerequisites:
 - 动态内存管理
-reading_time_minutes: 7
+reading_time_minutes: 5
 tags:
 - host
 - cpp-modern
@@ -22,11 +22,11 @@ tags:
 - CMake
 title: Preprocessor and Multi-file Projects
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/15-preprocessor-and-multifile.md
   source_hash: b5c9c89effc7a423196745c4c035b15ec8eb90864e5504e5d5803fd3a9dd63e0
-  translated_at: '2026-06-13T11:42:44.455279+00:00'
-  engine: anthropic
   token_count: 1128
+  translated_at: '2026-06-13T11:42:44.455279+00:00'
 ---
 # The Preprocessor and Multi-File Projects
 

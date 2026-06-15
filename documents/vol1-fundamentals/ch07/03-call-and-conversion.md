@@ -1,21 +1,24 @@
 ---
-title: "函数调用与类型转换"
-description: "掌握 operator() 和类型转换运算符的重载，学会实现函数对象和安全的隐式转换"
 chapter: 7
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 operator() 和类型转换运算符的重载，学会实现函数对象和安全的隐式转换
 difficulty: intermediate
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "流与下标运算符"
+- 流与下标运算符
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 函数调用与类型转换
 ---
-
 # 函数调用与类型转换
 
 前面的章节里，我们已经让自定义类型支持了算术运算、下标访问、流输入输出——让对象表现得像值、像容器、像可打印的东西。但运算符重载的能力远不止于此。这一章我们要处理的是两个非常有意思的场景：让对象表现得像函数，以及让对象能隐式或显式地"变成"另一种类型。

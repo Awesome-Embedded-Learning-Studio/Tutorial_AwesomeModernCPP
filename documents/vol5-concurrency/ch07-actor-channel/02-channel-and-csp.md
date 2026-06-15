@@ -1,25 +1,26 @@
 ---
-title: "Channel 与 CSP 模型"
-description: "理解 CSP（Communicating Sequential Processes）并发模型，用 C++ 实现类 Go channel 的通信管道"
 chapter: 7
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 异步编程
-  - 进阶
+cpp_standard:
+- 17
+- 20
+description: 理解 CSP（Communicating Sequential Processes）并发模型，用 C++ 实现类 Go channel 的通信管道
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 25
-cpp_standard: [17, 20]
 prerequisites:
-  - "Actor 模型与消息传递"
-  - "线程安全队列"
+- Actor 模型与消息传递
+- 线程安全队列
+reading_time_minutes: 24
 related:
-  - "协程 Echo Server 实战"
+- 协程 Echo Server 实战
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+- 进阶
+title: Channel 与 CSP 模型
 ---
-
 # Channel 与 CSP 模型
 
 上一篇我们聊了 Actor 模型——用有身份的 Actor + 异步消息传递来组织并发。这一篇我们看另一个同样主张"不共享内存"的流派：CSP（Communicating Sequential Processes，通信顺序进程）。

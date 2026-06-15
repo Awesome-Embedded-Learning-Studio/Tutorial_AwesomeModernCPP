@@ -1,23 +1,25 @@
 ---
-title: "WG21 标准化与 x86/RISC-V 汇编哲学"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 7
+platform: host
+reading_time_minutes: 70
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: WG21 标准化与 x86/RISC-V 汇编哲学
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # WG21 与 C++ 标准的组织链路
 
 在各种技术文章和视频里，我们经常看到"WG21"这个缩写，但很少有人把这条完整的组织链路从头到尾捋清楚。实际上层级虽然多，结构本身并不复杂——我们先把这条链路理一遍，后面再看提案和标准文档的时候，至少知道这些东西是从哪来的、谁在管。

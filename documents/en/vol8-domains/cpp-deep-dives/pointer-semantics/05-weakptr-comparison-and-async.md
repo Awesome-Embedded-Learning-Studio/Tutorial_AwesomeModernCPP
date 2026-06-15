@@ -1,9 +1,19 @@
 ---
-title: '`std::weak_ptr` Comparison and Practical Async Callbacks'
+chapter: 1
+cpp_standard:
+- 17
+- 20
 description: 'Comparing `std::weak_ptr` with Chrome WeakPtr: a safety analysis of
   six asynchronous callback capture patterns'
-chapter: 1
+difficulty: advanced
 order: 5
+platform: host
+prerequisites:
+- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
+- 卷二 · 第一章：weak_ptr 与循环引用
+reading_time_minutes: 7
+related:
+- 跨线程安全、性能取舍与设计原则总结
 tags:
 - host
 - cpp-modern
@@ -11,23 +21,13 @@ tags:
 - 智能指针
 - 异步编程
 - 回调机制
-difficulty: advanced
-platform: host
-reading_time_minutes: 8
-prerequisites:
-- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
-- 卷二 · 第一章：weak_ptr 与循环引用
-related:
-- 跨线程安全、性能取舍与设计原则总结
-cpp_standard:
-- 17
-- 20
+title: '`std::weak_ptr` Comparison and Practical Async Callbacks'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/05-weakptr-comparison-and-async.md
   source_hash: e71aa17f860345c3ebdc18ef482f08e7eec3aa5e6fc918fc53381f07184bd56d
-  translated_at: '2026-05-26T11:56:10.444261+00:00'
-  engine: anthropic
   token_count: 1619
+  translated_at: '2026-05-26T11:56:10.444261+00:00'
 ---
 # std::weak_ptr vs. Chrome WeakPtr and Async Callback Patterns in Practice
 

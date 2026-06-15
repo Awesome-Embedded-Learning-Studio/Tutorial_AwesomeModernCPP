@@ -1,16 +1,21 @@
 ---
-title: "nullptr"
-description: "类型安全的空指针字面量，替代 NULL 和 0"
 chapter: 99
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 类型安全的空指针字面量，替代 NULL 和 0
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 4
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: nullptr
 ---
-
 # nullptr（C++11）
 
 ## 一句话

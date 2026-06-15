@@ -1,23 +1,24 @@
 ---
-title: Nested namespaces
-description: Replace multi-level nested namespace braces with the `A::B::C` syntax
 chapter: 99
-order: 15
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: Replace multi-level nested namespace braces with the `A::B::C` syntax
+difficulty: beginner
+order: 15
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: Nested namespaces
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/15-nested-namespace.md
   source_hash: 3aed83f966e3c5c860686def8273b68c5b7f869cf9ce1c50370a45fff65dae07
-  translated_at: '2026-05-26T10:16:40.516631+00:00'
-  engine: anthropic
   token_count: 417
+  translated_at: '2026-05-26T10:16:40.516631+00:00'
 ---
 <!--
 Reference Card Template

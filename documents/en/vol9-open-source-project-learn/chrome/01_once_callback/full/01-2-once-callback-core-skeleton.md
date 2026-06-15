@@ -1,10 +1,23 @@
 ---
-title: 'OnceCallback in Practice (Part 2): Building the Core Skeleton'
+chapter: 1
+cpp_standard:
+- 23
 description: Building the OnceCallback class skeleton in five steps from scratch—template
   partial specialization, data members, constructor constraints, run() consumption
   semantics, and query interfaces
-chapter: 1
+difficulty: beginner
 order: 2
+platform: host
+prerequisites:
+- OnceCallback 实战（一）：动机与接口设计
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+reading_time_minutes: 10
+related:
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
 tags:
 - host
 - cpp-modern
@@ -12,26 +25,13 @@ tags:
 - 回调机制
 - 函数对象
 - 模板
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 13
-prerequisites:
-- OnceCallback 实战（一）：动机与接口设计
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
-- OnceCallback 前置知识（四）：Concepts 与 requires 约束
-- OnceCallback 前置知识（五）：std::move_only_function
-- OnceCallback 前置知识（六）：Deducing this
-related:
-- OnceCallback 实战（三）：bind_once 实现
-- OnceCallback 实战（四）：取消令牌设计
+title: 'OnceCallback in Practice (Part 2): Building the Core Skeleton'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-2-once-callback-core-skeleton.md
   source_hash: 537925a4f921a63c964f12d365b3e7c0d35a5abf8169998edb58cc011344d1ea
-  translated_at: '2026-05-26T12:25:22.536516+00:00'
-  engine: anthropic
   token_count: 2293
+  translated_at: '2026-05-26T12:25:22.536516+00:00'
 ---
 # OnceCallback in Practice (Part 2): Building the Core Skeleton
 

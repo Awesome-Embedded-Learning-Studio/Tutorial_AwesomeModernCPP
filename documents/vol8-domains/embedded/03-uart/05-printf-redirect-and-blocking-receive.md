@@ -1,14 +1,15 @@
 ---
-title: "第35篇：printf 重定向与阻塞接收 —— 让芯片用 printf 说话，也学会倾听"
-description: ""
-tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
-difficulty: beginner
-platform: stm32f1
 chapter: 17
+difficulty: beginner
 order: 5
+platform: stm32f1
+reading_time_minutes: 8
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+title: 第35篇：printf 重定向与阻塞接收 —— 让芯片用 printf 说话，也学会倾听
+description: ''
 ---
 # 第35篇：printf 重定向与阻塞接收 —— 让芯片用 printf 说话，也学会倾听
 

@@ -10,7 +10,7 @@ difficulty: beginner
 order: 6
 platform: host
 prerequisites: []
-reading_time_minutes: 44
+reading_time_minutes: 31
 related: []
 tags:
 - cpp-modern

@@ -1,23 +1,26 @@
 ---
-title: "thread_local 与 call_once"
-description: "掌握线程局部存储与一次性初始化机制，写出线程安全的懒初始化与全局状态"
 chapter: 1
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 内存管理
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握线程局部存储与一次性初始化机制，写出线程安全的懒初始化与全局状态
 difficulty: intermediate
+order: 4
 platform: host
-reading_time_minutes: 18
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程所有权与 RAII"
+- 线程所有权与 RAII
+reading_time_minutes: 19
 related:
-  - "线程参数与生命周期"
+- 线程参数与生命周期
+tags:
+- host
+- cpp-modern
+- intermediate
+- 内存管理
+title: thread_local 与 call_once
 ---
-
 # thread_local 与 call_once
 
 上一篇我们用 RAII 解决了线程所有权和生命周期管理的问题。这一篇我们要看另一个维度的问题：当多个线程需要访问某些"全局状态"时，怎么既保证线程安全又不牺牲性能？

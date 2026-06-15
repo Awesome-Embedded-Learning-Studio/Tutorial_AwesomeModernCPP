@@ -1,22 +1,25 @@
 ---
-title: "循环语句"
-description: "掌握 for、while、do-while 循环和 break/continue 控制，学会让程序重复执行任务"
 chapter: 2
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 for、while、do-while 循环和 break/continue 控制，学会让程序重复执行任务
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "条件语句"
+- 条件语句
+reading_time_minutes: 11
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 循环语句
 ---
-
 # 循环语句
 
 计算机最擅长的事情就是不知疲倦地重复做同一件事。倒不如说，计算机就是由无穷无尽的数据存，取，不倦的判断0和1，然后循环的做他们，组成了我们的互联网世界！

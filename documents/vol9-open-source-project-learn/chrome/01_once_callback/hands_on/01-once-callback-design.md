@@ -1,26 +1,27 @@
 ---
-title: "once_callback 设计指南（一）：动机与接口设计"
-description: "从 Chromium OnceCallback 出发，设计一个 C++23 的 move-only、一次性消费回调组件——第一部分聚焦动机分析和 API 设计"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 回调机制
-  - 函数对象
+cpp_standard:
+- 23
+description: 从 Chromium OnceCallback 出发，设计一个 C++23 的 move-only、一次性消费回调组件——第一部分聚焦动机分析和
+  API 设计
 difficulty: advanced
+order: 1
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 20
 prerequisites:
-  - "std::function、std::invoke 与可调用对象"
-  - "移动语义与完美转发"
+- std::function、std::invoke 与可调用对象
+- 移动语义与完美转发
+reading_time_minutes: 19
 related:
-  - "OnceCallback 与 RepeatingCallback"
-  - "bind_once / bind_repeating 与参数绑定"
+- OnceCallback 与 RepeatingCallback
+- bind_once / bind_repeating 与参数绑定
+tags:
+- host
+- cpp-modern
+- advanced
+- 回调机制
+- 函数对象
+title: once_callback 设计指南（一）：动机与接口设计
 ---
-
 # once_callback 设计指南（一）：动机与接口设计
 
 ## 引言

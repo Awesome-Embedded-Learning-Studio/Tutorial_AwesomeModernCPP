@@ -1,21 +1,22 @@
 ---
-title: 'Part 42: Command Processor and Full Code Walkthrough — From Serial Input to
-  LED Control'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 12
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 12
+title: 'Part 42: Command Processor and Full Code Walkthrough — From Serial Input to
+  LED Control'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/12-command-processor-and-main-walkthrough.md
   source_hash: 45f223049477b1ca1c04f47775f0dbd144d88c025c01458534238c6d8009ad4d
-  translated_at: '2026-05-26T12:18:15.934277+00:00'
-  engine: anthropic
   token_count: 1789
+  translated_at: '2026-05-26T12:18:15.934277+00:00'
+description: ''
 ---
 # Part 42: Command Handler and Full Code Walkthrough — From Serial Input to LED Control
 

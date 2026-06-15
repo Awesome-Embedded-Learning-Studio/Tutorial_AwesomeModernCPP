@@ -1,22 +1,25 @@
 ---
-title: "引用"
-description: "深入理解 C++ 引用：引用的语法、引用与指针的区别，以及 const 引用在函数参数中的重要作用"
 chapter: 4
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解 C++ 引用：引用的语法、引用与指针的区别，以及 const 引用在函数参数中的重要作用
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "指针运算与数组"
+- 指针运算与数组
+reading_time_minutes: 15
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 引用
 ---
-
 # 引用
 
 指针很强大，但说实话，也很容易惹麻烦。上一章我们花了大量篇幅和指针打交道——解引用、取地址、空指针检查、`->` 操作符......写多了你就会发现，很多场景下我们并不需要指针的全部能力。我们只是想"给函数传一个大对象但不想拷贝"，或者"让函数修改调用者的变量"。这些需求用指针当然能做，但语法上总显得笨重。C++ 给了我们一个更安全、更简洁的替代方案：**引用**。这一章我们就来把引用从头到尾搞清楚。

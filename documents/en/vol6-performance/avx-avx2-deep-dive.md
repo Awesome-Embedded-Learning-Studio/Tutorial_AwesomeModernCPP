@@ -1,21 +1,22 @@
 ---
-title: 'In-Depth Introduction to the AVX Instruction Set Series: Domains, Significance,
-  and Basic Usage and Examples of AVX / AVX2'
-description: ''
+chapter: 2
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 2
-order: 3
+title: 'In-Depth Introduction to the AVX Instruction Set Series: Domains, Significance,
+  and Basic Usage and Examples of AVX / AVX2'
 translation:
+  engine: anthropic
   source: documents/vol6-performance/avx-avx2-deep-dive.md
   source_hash: 39da2b3a5a4d6ba1a0e593a1c2fa35355eb91e856ad3d137db96413557586496
-  translated_at: '2026-05-26T11:50:35.783290+00:00'
-  engine: anthropic
   token_count: 1205
+  translated_at: '2026-05-26T11:50:35.783290+00:00'
+description: ''
 ---
 # An In-Depth Look at the AVX Instruction Set Family: Domains, Significance, and Basic Usage and Examples of AVX / AVX2
 

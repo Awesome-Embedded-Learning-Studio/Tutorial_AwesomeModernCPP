@@ -1,20 +1,21 @@
 ---
-title: 'Part 43: Common Pitfalls and Practical Exercises — Getting Creative with UART'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 13
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 13
+title: 'Part 43: Common Pitfalls and Practical Exercises — Getting Creative with UART'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/13-pitfalls-and-exercises.md
   source_hash: 703f55d71c3658a109167fe2bcc8253f3cd6caebfb5b1c27ce00f0f3399c6bb0
-  translated_at: '2026-05-26T12:18:34.119874+00:00'
-  engine: anthropic
   token_count: 1131
+  translated_at: '2026-05-26T12:18:34.119874+00:00'
+description: ''
 ---
 # Part 43: Common Pitfalls and Hands-on Exercises — Mastering UART
 

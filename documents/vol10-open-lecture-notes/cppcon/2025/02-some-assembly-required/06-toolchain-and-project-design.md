@@ -1,23 +1,25 @@
 ---
-title: "编译器、工具链与项目设计底线"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 6
+platform: host
+reading_time_minutes: 20
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: 编译器、工具链与项目设计底线
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # C++ 的拼装工程：编译器、工具链和那些"不进标准但很好用"的库
 
 很多程序员对 C++ 生态的理解停留在"语言本身加上标准库"的层面——写代码、编译、运行，完事了。但梳理一下整个工程流程就会发现，C++ 这个语言本身只是整个工程里的一小块。真正要把一套组件拼装成一个能跑的东西，需要的东西远比 C++ 语法多得多。今天想聊的就是这个"拼装"过程，以及支撑它的那些基础设施。

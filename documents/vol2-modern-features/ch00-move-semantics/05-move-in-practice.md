@@ -1,24 +1,26 @@
 ---
-title: "移动语义实战：从 STL 到自定义类型"
-description: "移动语义在标准库和自定义类型中的实际应用与性能对比"
 chapter: 0
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 移动语义
+cpp_standard:
+- 11
+- 14
+- 17
+description: 移动语义在标准库和自定义类型中的实际应用与性能对比
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
-  - "Chapter 0: RVO 与 NRVO"
+- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: RVO 与 NRVO'
+reading_time_minutes: 23
 related:
-  - "完美转发"
+- 完美转发
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+title: 移动语义实战：从 STL 到自定义类型
 ---
-
 # 移动语义实战：从 STL 到自定义类型
 
 前面四篇文章我们把移动语义的理论基础从头到尾梳理了一遍：值类别、右值引用、移动构造与移动赋值、RVO/NRVO、完美转发。现在到了把理论落地的环节——我们来看看移动语义在实际代码中到底能带来多大的性能差异，以及在 STL 容器和自定义类型中应该如何正确使用它。这一篇会有不少代码和实测数据，建议你跟着敲一遍，亲手感受一下拷贝和移动之间的差距。

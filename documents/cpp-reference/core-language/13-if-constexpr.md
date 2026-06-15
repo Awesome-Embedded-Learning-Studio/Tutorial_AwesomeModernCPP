@@ -1,17 +1,20 @@
 ---
-title: "if constexpr"
-description: "编译期条件分支，根据模板参数在编译时选择性地编译代码路径"
 chapter: 99
-order: 13
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - if_constexpr
+cpp_standard:
+- 17
+- 20
+- 23
+description: 编译期条件分支，根据模板参数在编译时选择性地编译代码路径
 difficulty: intermediate
-cpp_standard: [17, 20, 23]
+order: 13
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- if_constexpr
+title: if constexpr
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

@@ -1,25 +1,29 @@
 ---
-title: "错误处理的演进：从错误码到类型安全"
-description: "错误码、异常、optional、expected——错误处理方案的演进与选择"
 chapter: 10
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 类型安全
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 错误码、异常、optional、expected——错误处理方案的演进与选择
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17, 20, 23]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 4: std::optional"
-  - "Chapter 4: std::variant"
+- 'Chapter 4: std::optional'
+- 'Chapter 4: std::variant'
+reading_time_minutes: 13
 related:
-  - "optional 用于错误处理"
-  - "std::expected"
+- optional 用于错误处理
+- std::expected
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+title: 错误处理的演进：从错误码到类型安全
 ---
-
 # 错误处理的演进：从错误码到类型安全
 
 笔者写 C++ 这些年，感受最深的一件事就是：**错误处理永远是项目中最难做好的部分**。不是因为它复杂——恰恰是因为它看起来太简单了。很多人觉得 `if (ret != 0)` 或者 `try { ... } catch (...)` 就够了，但真正到了维护阶段，才发现到处都是没处理的错误、被吞掉的异常、以及根本不知道为什么失败的函数调用。

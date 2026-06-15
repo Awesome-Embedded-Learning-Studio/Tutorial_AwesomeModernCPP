@@ -1,16 +1,18 @@
 ---
-title: "std::jthread"
-description: "自动 join 的线程类，析构时发送停止请求并等待线程退出"
 chapter: 99
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 20
+- 23
+description: 自动 join 的线程类，析构时发送停止请求并等待线程退出
 difficulty: beginner
-cpp_standard: [20, 23]
+order: 4
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::jthread
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

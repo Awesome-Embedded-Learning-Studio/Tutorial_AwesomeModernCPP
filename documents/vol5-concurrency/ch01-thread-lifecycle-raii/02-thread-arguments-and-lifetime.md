@@ -1,24 +1,27 @@
 ---
-title: "线程参数与生命周期"
-description: "深入线程参数的传递机制，识别悬垂引用与对象析构顺序引发的并发 bug"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 内存管理
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入线程参数的传递机制，识别悬垂引用与对象析构顺序引发的并发 bug
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 22
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "std::thread 基础"
+- std::thread 基础
+reading_time_minutes: 18
 related:
-  - "线程所有权与 RAII"
-  - "CPU cache 与 OS 线程"
+- 线程所有权与 RAII
+- CPU cache 与 OS 线程
+tags:
+- host
+- cpp-modern
+- intermediate
+- 内存管理
+title: 线程参数与生命周期
 ---
-
 # 线程参数与生命周期
 
 上一篇我们学会了 `std::thread` 的基本操作——创建、join、detach、获取 ID。当时我们有意无意地绕过了一个非常重要的话题：传给线程的参数，到底是怎么到线程函数手里的？为什么有时候我明明传了一个引用进去，线程里改了外面的变量却没变？为什么用了 `std::ref` 之后，程序有时候又莫名其妙地崩了？

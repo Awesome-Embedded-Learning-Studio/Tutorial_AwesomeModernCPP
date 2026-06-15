@@ -1,30 +1,30 @@
 ---
-title: Dynamic Memory Management
-description: Master `new`/`delete` usage and pitfalls, and understand the central
-  role of RAII (Resource Acquisition Is Initialization)
 chapter: 12
-order: 2
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 内存布局
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master `new`/`delete` usage and pitfalls, and understand the central
+  role of RAII (Resource Acquisition Is Initialization)
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 内存布局
+reading_time_minutes: 13
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Dynamic Memory Management
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch12/02-new-delete.md
   source_hash: c19581f6753bf0d13c99d1ed7b70c00f7f9f2204e7c1ca400d530dbf5d5bbe2e
-  translated_at: '2026-05-26T11:02:05.310596+00:00'
-  engine: anthropic
   token_count: 2539
+  translated_at: '2026-05-26T11:02:05.310596+00:00'
 ---
 # Dynamic Memory Management
 

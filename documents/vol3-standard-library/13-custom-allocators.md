@@ -1,22 +1,25 @@
 ---
-title: "自定义分配器与 PMR：自己管内存"
-description: "讲透自定义分配器：Bump/池/栈三种策略的机制与取舍、placement new 与对象构造析构、C++17 std::pmr 的 memory_resource 体系（monotonic/pool）与 pmr 容器，以及何时该自己管内存"
 chapter: 7
-order: 13
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 内存管理
-  - 容器
+cpp_standard:
+- 11
+- 17
+- 20
+description: 讲透自定义分配器：Bump/池/栈三种策略的机制与取舍、placement new 与对象构造析构、C++17 std::pmr 的 memory_resource
+  体系（monotonic/pool）与 pmr 容器，以及何时该自己管内存
 difficulty: advanced
+order: 13
 platform: host
-cpp_standard: [11, 17, 20]
-reading_time_minutes: 16
+reading_time_minutes: 7
 related:
-  - "vector 深入：三指针、扩容与迭代器失效"
+- vector 深入：三指针、扩容与迭代器失效
+tags:
+- host
+- cpp-modern
+- advanced
+- 内存管理
+- 容器
+title: 自定义分配器与 PMR：自己管内存
 ---
-
 # 自定义分配器与 PMR：自己管内存
 
 ## 为什么需要自定义分配器

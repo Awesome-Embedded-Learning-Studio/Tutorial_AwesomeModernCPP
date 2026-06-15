@@ -1,21 +1,24 @@
 ---
-title: "虚函数与多态"
-description: "理解 virtual、override 和 vtable 机制，掌握运行时多态的实现原理与正确用法"
 chapter: 8
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解 virtual、override 和 vtable 机制，掌握运行时多态的实现原理与正确用法
 difficulty: intermediate
-reading_time_minutes: 15
+order: 2
 platform: host
 prerequisites:
-  - "单继承"
+- 单继承
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 虚函数与多态
 ---
-
 # 虚函数与多态
 
 上一篇我们学了单继承——派生类继承了基类的成员，可以在其基础上扩展新的行为。但继承本身只解决了一半的问题：如果我们拿着一个基类指针去操作派生类对象，调用的却永远是基类版本的函数，那继承的表达力就被砍了一大截。虚函数正是补上这另一半的关键——它让"通过基类接口调用派生类实现"成为可能，这就是运行时多态。

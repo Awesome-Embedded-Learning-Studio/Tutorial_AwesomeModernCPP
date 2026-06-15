@@ -1,16 +1,20 @@
 ---
-title: "std::make_unique"
-description: "安全构造 unique_ptr 的工厂函数，避免直接使用 new 导致的异常安全隐患"
 chapter: 99
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+description: 安全构造 unique_ptr 的工厂函数，避免直接使用 new 导致的异常安全隐患
 difficulty: beginner
-cpp_standard: [14, 17, 20, 23]
+order: 4
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::make_unique
 ---
-
 # std::make_unique（C++14）
 
 ## 一句话

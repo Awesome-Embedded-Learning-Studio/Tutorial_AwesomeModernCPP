@@ -1,23 +1,27 @@
 ---
-title: "移动操作、std::move 与拷贝消除"
-description: "CppCon 2025 演讲笔记 —— 移动构造/赋值的完整实现、std::move 的真实含义、NRVO 与 C++17 强制拷贝消除、moved-from 状态"
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: "Back to Basics: Move Semantics"
-speaker: "Ben Saks"
-video_bilibili: "https://www.bilibili.com/video/BV1X54y1P7uM"
-video_youtube: "https://www.youtube.com/watch?v=szU5b972F7E"
-tags:
-  - cpp-modern
-  - host
-  - beginner
+cpp_standard:
+- 11
+- 17
+- 20
+description: CppCon 2025 演讲笔记 —— 移动构造/赋值的完整实现、std::move 的真实含义、NRVO 与 C++17 强制拷贝消除、moved-from
+  状态
 difficulty: beginner
-platform: host
-cpp_standard: [11, 17, 20]
-chapter: 4
 order: 3
+platform: host
+reading_time_minutes: 25
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: 移动操作、std::move 与拷贝消除
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
-
 # 移动操作、std::move 与拷贝消除
 
 :::tip

@@ -1,23 +1,25 @@
 ---
-title: "阅读汇编与寄存器 ABI"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 2
+platform: host
+reading_time_minutes: 38
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: 阅读汇编与寄存器 ABI
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # 阅读汇编：从零开始建立直觉
 
 面对满屏的 `mov`、`add`、`jmp` 搭配一堆看不懂的寄存器名，初学者的第一反应往往是关掉标签页。写模板报错的时候至少还能去 Stack Overflow 搜一下，但汇编输出就像天书一样，不知道该从哪里开始看。然而，只要借助 Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, godbolt.org, 2012" /> 做一些有针对性的实验，就会发现汇编其实可以"半读半猜"地看懂，并不需要真的会写它。

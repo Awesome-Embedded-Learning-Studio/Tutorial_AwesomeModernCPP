@@ -1,25 +1,26 @@
 ---
-title: "optional 用于错误处理"
-description: "用 std::optional 表示'可能失败的操作'，替代错误码和异常"
 chapter: 10
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - optional
-  - 类型安全
+cpp_standard:
+- 17
+- 23
+description: 用 std::optional 表示'可能失败的操作'，替代错误码和异常
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [17, 23]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 10: 错误处理的演进"
-  - "Chapter 4: std::optional"
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 4: std::optional'
+reading_time_minutes: 10
 related:
-  - "std::expected"
+- std::expected
+tags:
+- host
+- cpp-modern
+- intermediate
+- optional
+- 类型安全
+title: optional 用于错误处理
 ---
-
 # optional 用于错误处理
 
 在上一篇里我们梳理了 C++ 错误处理的演进路线，最后提到 `std::optional` 可以用于表达"可能失败的操作"。这一篇我们就来深入看看，`optional` 在错误处理场景下到底好不好用、该怎么用、以及什么时候不该用它。

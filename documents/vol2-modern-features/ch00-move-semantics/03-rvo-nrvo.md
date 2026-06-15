@@ -1,23 +1,25 @@
 ---
-title: "RVO 与 NRVO：编译器的返回值优化"
-description: "深入理解返回值优化机制，从 C++11 到 C++17 保证消除拷贝"
 chapter: 0
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 移动语义
+cpp_standard:
+- 11
+- 14
+- 17
+description: 深入理解返回值优化机制，从 C++11 到 C++17 保证消除拷贝
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 19
 related:
-  - "移动语义实战"
+- 移动语义实战
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+title: RVO 与 NRVO：编译器的返回值优化
 ---
-
 # RVO 与 NRVO：编译器的返回值优化
 
 

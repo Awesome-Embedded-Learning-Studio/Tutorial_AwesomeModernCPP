@@ -1,22 +1,25 @@
 ---
-title: "static 成员"
-description: "掌握类的 static 变量与函数，理解类级别的共享状态与单例模式的初步思想"
 chapter: 6
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握类的 static 变量与函数，理解类级别的共享状态与单例模式的初步思想
 difficulty: beginner
-reading_time_minutes: 10
+order: 4
 platform: host
 prerequisites:
-  - "析构函数与资源管理"
+- 析构函数与资源管理
+reading_time_minutes: 11
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: static 成员
 ---
-
 # static 成员
 
 到现在为止，我们接触的所有成员变量和成员函数都绑定在"对象"上——每创建一个 `Sensor`，就多一份 `pin`、多一份 `cached_value`，它们各自独立、互不干扰。但在实际工程里，有一类数据和操作天然就不属于某个具体对象，而是属于**整个类**。比如：当前系统里到底创建了多少个 `UARTPort` 实例？硬件抽象层有没有初始化过？所有 `Sensor` 共享的默认采样频率是多少？

@@ -1,32 +1,32 @@
 ---
-title: 'Strongly-Typed typedef: Type Safety to Prevent Confusion'
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
 description: Implementing a type-safe unit system using the phantom type pattern and
   C++17 argument deduction
-chapter: 4
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 4: enum class 与强类型枚举'
+reading_time_minutes: 11
+related:
+- 用户自定义字面量
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型安全
 - 类型别名
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 4: enum class 与强类型枚举'
-related:
-- 用户自定义字面量
+title: 'Strongly-Typed typedef: Type Safety to Prevent Confusion'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch04-type-safety/02-strong-types.md
   source_hash: 6711c85220cd71d1e56fe89eb2673231c1211165867dbf61a1252275ab56ac5e
-  translated_at: '2026-05-26T11:27:29.716026+00:00'
-  engine: anthropic
   token_count: 2459
+  translated_at: '2026-05-26T11:27:29.716026+00:00'
 ---
 # Strong Typedefs: Type Safety to Prevent Mix-ups
 

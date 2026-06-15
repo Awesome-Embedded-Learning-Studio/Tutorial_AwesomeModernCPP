@@ -1,23 +1,25 @@
 ---
-title: "Compiler Explorer 深度使用与 AI 辅助"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 3
+platform: host
+reading_time_minutes: 38
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: Compiler Explorer 深度使用与 AI 辅助
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # 用 Compiler Explorer 看汇编：从"天书"到"能看懂"
 
 很多 C++ 开发者对阅读汇编有一种本能的抗拒，觉得那是编译器原理课或者底层工程师才需要接触的东西。然而，当模板报错信息变得难以理解、性能优化无从下手、或者 `inline` 关键字似乎不起作用的时候，学会看汇编就不再是一个可选项，而是一项必要的技能。在众多工具中，Compiler Explorer<RefLink :id="1" preview="Matt Godbolt, Compiler Explorer, 2012–present" />（通常简称 godbolt）是最实用的入门途径之一。本节将介绍一套从零开始阅读汇编的方法，目标是帮助读者从"完全看不懂"过渡到"能看出点门道"。

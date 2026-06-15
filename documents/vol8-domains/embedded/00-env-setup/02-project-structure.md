@@ -1,14 +1,15 @@
 ---
-title: 第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
-description: ''
+chapter: 14
+difficulty: beginner
+order: 2
+platform: stm32f1
+reading_time_minutes: 15
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 2
+title: 第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
+description: ''
 ---
 # 第2篇：项目结构篇 —— HAL 库获取、启动文件坑位与目录搭建
 

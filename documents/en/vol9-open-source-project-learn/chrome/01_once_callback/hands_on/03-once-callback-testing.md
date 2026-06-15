@@ -1,32 +1,32 @@
 ---
-title: 'once_callback Design Guide (Part 3): Testing Strategy and Performance Comparison'
+chapter: 1
+cpp_standard:
+- 23
 description: Design system test cases for `once_callback`, compare performance differences
   with the original Chromium version and the standard library approach, and summarize
   the design trade-offs.
-chapter: 1
+difficulty: advanced
 order: 3
+platform: host
+prerequisites:
+- once_callback 设计指南（一）：动机与接口设计
+- once_callback 设计指南（二）：逐步实现
+reading_time_minutes: 11
+related:
+- 回调取消与组合模式
 tags:
 - host
 - cpp-modern
 - advanced
 - 回调机制
 - 函数对象
-difficulty: advanced
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 13
-prerequisites:
-- once_callback 设计指南（一）：动机与接口设计
-- once_callback 设计指南（二）：逐步实现
-related:
-- 回调取消与组合模式
+title: 'once_callback Design Guide (Part 3): Testing Strategy and Performance Comparison'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/03-once-callback-testing.md
   source_hash: 25b2e6cda1efd104125afd610167dda7f5b19ee3cf346fb3ccf3b83bf83c8a54
-  translated_at: '2026-06-13T11:55:17.638057+00:00'
-  engine: anthropic
   token_count: 2581
+  translated_at: '2026-06-13T11:55:17.638057+00:00'
 ---
 # once_callback Design Guide (Part 3): Testing Strategy and Performance Comparison
 

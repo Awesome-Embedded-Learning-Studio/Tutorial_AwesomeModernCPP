@@ -1,32 +1,32 @@
 ---
-title: Your First C++ Program
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Write, compile, and run your first C++ program, and understand the `main`
   function, input and output, and the compilation process.
-chapter: 0
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - Linux 环境搭建
 - Windows 环境搭建
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Your First C++ Program
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch00/03-first-program.md
   source_hash: 55bef806dde5556058e26f79e243255777f05f53f7cd33a3be173e30fa4927e5
-  translated_at: '2026-05-26T10:41:55.209513+00:00'
-  engine: anthropic
   token_count: 1893
+  translated_at: '2026-05-26T10:41:55.209513+00:00'
 ---
 # Your First C++ Program
 

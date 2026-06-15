@@ -8,7 +8,7 @@ order: 4
 platform: host
 prerequisites:
 - 浮点、字符、const 与类型转换
-reading_time_minutes: 11
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern

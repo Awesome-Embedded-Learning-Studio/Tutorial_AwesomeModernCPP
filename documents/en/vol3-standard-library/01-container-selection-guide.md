@@ -1,40 +1,40 @@
 ---
-title: 'Container Selection Guide: Choosing the Right Container by Operation, Memory,
-  and Invalidation Rules'
-description: 'Combine the sequential and associative containers covered in Volume
-  3 into a decision map: categorize them by operation complexity, memory locality,
-  and iterator invalidation rules, and include a decision tree to clarify the pitfalls
-  of choosing the wrong container.'
 chapter: 7
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- 容器
-- 内存管理
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 17
 - 20
 - 23
-reading_time_minutes: 14
+description: 'Combine the sequential and associative containers covered in Volume
+  3 into a decision map: categorize them by operation complexity, memory locality,
+  and iterator invalidation rules, and include a decision tree to clarify the pitfalls
+  of choosing the wrong container.'
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - array：编译期固定大小的聚合容器
+reading_time_minutes: 12
 related:
 - vector 深入：三指针、扩容与迭代器失效
 - deque、list 与 forward_list：vector 之外的三个选择
 - map 与 set 深入
 - unordered_map 与 set 深入
 - span：非拥有的连续视图
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+- 内存管理
+title: 'Container Selection Guide: Choosing the Right Container by Operation, Memory,
+  and Invalidation Rules'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/01-container-selection-guide.md
   source_hash: 6cc32538d98c1ac76e31ae36e66f57555ae8ed7c4665d154c2c9e34ae2b41f67
-  translated_at: '2026-06-15T09:10:45.682134+00:00'
-  engine: anthropic
   token_count: 1858
+  translated_at: '2026-06-15T09:10:45.682134+00:00'
 ---
 # Container Selection Guide: Pick the Right Container Based on Operations, Memory, and Invalidation Rules
 

@@ -1,9 +1,18 @@
 ---
-title: 'consteval and constinit: New Tools for Compile-Time Guarantees'
+chapter: 2
+cpp_standard:
+- 20
+- 23
 description: C++20 immediate functions and compile-time initialization, precise distinctions
   from `constexpr`, and selection strategies
-chapter: 2
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+reading_time_minutes: 14
+related:
+- constexpr 构造函数与字面类型
 tags:
 - host
 - cpp-modern
@@ -11,22 +20,13 @@ tags:
 - consteval
 - constinit
 - 编译期计算
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 2: constexpr 基础'
-related:
-- constexpr 构造函数与字面类型
+title: 'consteval and constinit: New Tools for Compile-Time Guarantees'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch02-constexpr/03-consteval-constinit.md
   source_hash: 401080169dadf4b663ae4cb31f44826c2c222ed3397aa74b3f1cee528dff5c0e
-  translated_at: '2026-05-26T11:24:41.831090+00:00'
-  engine: anthropic
   token_count: 2861
+  translated_at: '2026-05-26T11:24:41.831090+00:00'
 ---
 # consteval and constinit: New Tools for Compile-Time Guarantees
 

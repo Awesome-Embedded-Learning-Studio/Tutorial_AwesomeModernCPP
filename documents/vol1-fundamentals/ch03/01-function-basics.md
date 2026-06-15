@@ -1,22 +1,25 @@
 ---
-title: "函数基础"
-description: "掌握 C++ 函数的定义、声明、参数传递和返回值，理解作用域与生命周期"
 chapter: 3
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 C++ 函数的定义、声明、参数传递和返回值，理解作用域与生命周期
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "range-for 循环"
+- range-for 循环
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 函数基础
 ---
-
 # 函数基础
 
 孩子们，我见过的，有人写代码真的会写一个一万行的程序从头到尾只有 `main()` 一个函数，所有代码像面条一样堆在一起。显然，这个人不太懂函数（小白除外）

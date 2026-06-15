@@ -1,22 +1,25 @@
 ---
-title: "关联容器快速上手"
-description: "掌握 std::map、std::set 和 std::unordered_map 的核心操作，学会按键查找和维护有序集合"
 chapter: 11
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 std::map、std::set 和 std::unordered_map 的核心操作，学会按键查找和维护有序集合
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
 prerequisites:
-  - "std::vector 快速上手"
+- std::vector 快速上手
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 关联容器快速上手
 ---
-
 # 关联容器快速上手
 
 上一章，我们把 `std::vector` 从头到尾过了一遍——动态数组、连续存储、下标随机访问 O(1)，处理有序序列的时候它就是主力。但很多场景下我们关心的不是"第几个元素是什么"，而是"某个 key 对应的 value 是什么"。比如统计一段文本里每个单词出现了几次，或者检查某个单词是否在拼写词典里——这种"给一个 key，查一个结果"的需求，用 vector 来做的话要么排序后二分查找，要么线性扫描，写起来费劲性能也差。C++ 标准库为我们准备了一组专门解决这类问题的容器，叫做**关联容器**（associative container）。

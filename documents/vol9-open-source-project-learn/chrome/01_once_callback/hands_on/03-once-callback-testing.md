@@ -1,25 +1,25 @@
 ---
-title: "once_callback 设计指南（三）：测试策略与性能对比"
-description: "系统设计 once_callback 的测试用例，对比与 Chromium 原版和标准库方案的性能差异，总结设计取舍"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 回调机制
-  - 函数对象
+cpp_standard:
+- 23
+description: 系统设计 once_callback 的测试用例，对比与 Chromium 原版和标准库方案的性能差异，总结设计取舍
 difficulty: advanced
+order: 3
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 20
 prerequisites:
-  - "once_callback 设计指南（一）：动机与接口设计"
-  - "once_callback 设计指南（二）：逐步实现"
+- once_callback 设计指南（一）：动机与接口设计
+- once_callback 设计指南（二）：逐步实现
+reading_time_minutes: 12
 related:
-  - "回调取消与组合模式"
+- 回调取消与组合模式
+tags:
+- host
+- cpp-modern
+- advanced
+- 回调机制
+- 函数对象
+title: once_callback 设计指南（三）：测试策略与性能对比
 ---
-
 # once_callback 设计指南（三）：测试策略与性能对比
 
 ## 引言

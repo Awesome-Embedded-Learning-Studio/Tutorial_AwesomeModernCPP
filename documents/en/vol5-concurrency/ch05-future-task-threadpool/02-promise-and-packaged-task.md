@@ -1,33 +1,33 @@
 ---
-title: promise and packaged_task
-description: Manually setting the value and exception of a future, wrapping callable
-  objects with `packaged_task`, and building flexible task channels
 chapter: 5
-order: 2
-tags:
-- host
-- cpp-modern
-- intermediate
-- 异步编程
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Manually setting the value and exception of a future, wrapping callable
+  objects with `packaged_task`, and building flexible task channels
+difficulty: intermediate
+order: 2
+platform: host
 prerequisites:
 - std::async 与 future
+reading_time_minutes: 23
 related:
 - jthread 与停止令牌
 - 线程池设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+title: promise and packaged_task
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch05-future-task-threadpool/02-promise-and-packaged-task.md
   source_hash: 45a6a89f7574e65be996f0c97cd3fa9065261706bc6c4fb38670218a9583dd9f
-  translated_at: '2026-05-26T11:44:00.498667+00:00'
-  engine: anthropic
   token_count: 4646
+  translated_at: '2026-05-26T11:44:00.498667+00:00'
 ---
 # promise and packaged_task
 

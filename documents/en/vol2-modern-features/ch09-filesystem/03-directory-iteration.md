@@ -1,28 +1,28 @@
 ---
-title: Directory Traversal and Search
-description: Usage and performance of `directory_iterator` and `recursive_directory_iterator`
 chapter: 9
+cpp_standard:
+- 17
+description: Usage and performance of `directory_iterator` and `recursive_directory_iterator`
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 9: path 操作'
+- 'Chapter 9: 文件与目录操作'
+reading_time_minutes: 12
+related:
+- Lambda 基础
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 9: path 操作'
-- 'Chapter 9: 文件与目录操作'
-related:
-- Lambda 基础
+title: Directory Traversal and Search
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch09-filesystem/03-directory-iteration.md
   source_hash: bd49ae18f832afe6a4ebffedbd902a630ebbb466cbc0ea3451e256a48da23b97
-  translated_at: '2026-05-26T11:35:13.306929+00:00'
-  engine: anthropic
   token_count: 3175
+  translated_at: '2026-05-26T11:35:13.306929+00:00'
 ---
 # Directory Traversal and Search
 

@@ -11,7 +11,7 @@ platform: host
 prerequisites:
 - 数据类型基础：整数与内存
 - 运算符基础：让数据动起来
-reading_time_minutes: 12
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 入门
 title: 'Pointer Basics: The World of Addresses'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/07A-pointer-essentials.md
   source_hash: c5ae5266d83b12c2ca20c96f0c8fd7ecb48aafd78b5580467c8165f931b797ec
-  translated_at: '2026-05-26T10:29:35.209825+00:00'
-  engine: anthropic
   token_count: 1577
+  translated_at: '2026-05-26T10:29:35.209825+00:00'
 ---
 # Pointer Basics: The World of Addresses
 

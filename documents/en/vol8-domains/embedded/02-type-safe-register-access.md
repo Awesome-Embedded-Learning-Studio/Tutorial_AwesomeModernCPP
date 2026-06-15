@@ -11,18 +11,18 @@ order: 2
 platform: stm32f1
 prerequisites:
 - 'Chapter 7: 容器与数据结构'
-reading_time_minutes: 7
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - stm32f1
 - intermediate
 title: Type-Safe Register Access
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-type-safe-register-access.md
   source_hash: 01e1bfe6b9c623aff34bb3e910c4abf01ca82e1b62702ccfe41fab167c2923f9
-  translated_at: '2026-06-14T00:20:46.752858+00:00'
-  engine: anthropic
   token_count: 1107
+  translated_at: '2026-06-14T00:20:46.752858+00:00'
 ---
 # Embedded C++ Tutorial — Type-Safe Register Access
 

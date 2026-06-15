@@ -14,7 +14,7 @@ prerequisites:
 - 指针进阶：不完整类型与多级指针
 - 结构体与内存布局
 - 编译与链接基础
-reading_time_minutes: 32
+reading_time_minutes: 23
 tags:
 - host
 - cpp-modern
@@ -23,11 +23,11 @@ tags:
 - 基础
 title: Building Reusable C Code
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/08-reusable-c-code.md
   source_hash: 58d1b4309b15042b8c7c0c93c8439713afff651f916d93ebe5daa0e7b1008e53
-  translated_at: '2026-05-26T10:39:50.793817+00:00'
-  engine: anthropic
   token_count: 4667
+  translated_at: '2026-05-26T10:39:50.793817+00:00'
 ---
 # Building Reusable C Code
 

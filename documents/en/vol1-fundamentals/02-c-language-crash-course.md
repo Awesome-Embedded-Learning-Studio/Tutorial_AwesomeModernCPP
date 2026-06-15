@@ -11,7 +11,7 @@ difficulty: beginner
 order: 2
 platform: host
 prerequisites: []
-reading_time_minutes: 40
+reading_time_minutes: 26
 related: []
 tags:
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - intermediate
 title: C严谨的C语言快速复习
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/02-c-language-crash-course.md
   source_hash: 78bfd7c6549bb701b4dcadf7c1f8066d4c634a89a0ec01cdf332192c3144f824
-  translated_at: '2026-05-26T10:23:36.922272+00:00'
-  engine: anthropic
   token_count: 5758
+  translated_at: '2026-05-26T10:23:36.922272+00:00'
 ---
 # A Quick C Language Review
 

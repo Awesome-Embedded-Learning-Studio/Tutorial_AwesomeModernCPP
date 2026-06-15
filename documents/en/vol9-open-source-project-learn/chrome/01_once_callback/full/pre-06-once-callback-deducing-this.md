@@ -1,31 +1,31 @@
 ---
-title: 'OnceCallback Prerequisites (Part 6): Deducing this (C++23)'
+chapter: 0
+cpp_standard:
+- 23
 description: A deep dive into how C++23 explicit object parameters (deducing this)
   allow `OnceCallback::run()` to elegantly intercept lvalue calls at compile time,
   replacing Chromium's double-overload hack.
-chapter: 0
+difficulty: intermediate
 order: 6
+platform: host
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（四）：Concepts 与 requires 约束
 tags:
 - host
 - cpp-modern
 - intermediate
 - 模板
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 10
-prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+title: 'OnceCallback Prerequisites (Part 6): Deducing this (C++23)'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-06-once-callback-deducing-this.md
   source_hash: d12fb3db3d69c7e5d8d830b169ac971f50fde46b1eb5255baed897fdfe1dbe18
-  translated_at: '2026-05-26T12:28:53.615588+00:00'
-  engine: anthropic
   token_count: 1664
+  translated_at: '2026-05-26T12:28:53.615588+00:00'
 ---
 # Prerequisite Knowledge for OnceCallback (Part 6): Deducing this (C++23)
 

@@ -11,7 +11,7 @@ order: 4
 platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
-reading_time_minutes: 9
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - stm32f1

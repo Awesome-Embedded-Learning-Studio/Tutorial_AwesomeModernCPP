@@ -1,23 +1,25 @@
 ---
-title: "类型安全、Number 约束与边界检查"
-description: "CppCon 2025 演讲笔记 —— 从隐式窄化转换到 Number<T> 包装类型，再到 safe_int 与 checked_span"
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: "Concept-based Generic Programming"
-speaker: "Bjarne Stroustrup"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW"
-video_youtube: "https://www.youtube.com/watch?v=VMGB75hsDQo"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 演讲笔记 —— 从隐式窄化转换到 Number<T> 包装类型，再到 safe_int 与 checked_span
 difficulty: intermediate
-platform: host
-cpp_standard: [20, 23]
-chapter: 1
 order: 1
+platform: host
+reading_time_minutes: 45
+speaker: Bjarne Stroustrup
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: Concept-based Generic Programming
+title: 类型安全、Number 约束与边界检查
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
-
 # 让我们从手动判断到隐式守护说起
 
 :::tip

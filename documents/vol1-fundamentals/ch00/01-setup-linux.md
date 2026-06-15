@@ -1,20 +1,23 @@
 ---
-title: "Linux 环境搭建"
-description: "在 Linux 上搭建 C++ 开发环境：安装编译器、CMake 和 VS Code，从零配置到编译运行第一个程序"
 chapter: 0
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 在 Linux 上搭建 C++ 开发环境：安装编译器、CMake 和 VS Code，从零配置到编译运行第一个程序
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: Linux 环境搭建
 ---
-
 # Linux 环境搭建
 
 在开始写 C++ 之前，我们得先把工位收拾好。这一篇要做的事情很简单——在 Linux 上从零搭建一套能编译、能构建、能舒服写代码的 C++ 开发环境。整个过程大概十五分钟，但如果你是第一次折腾 Linux 环境配置，留半小时，嗯，说不定也有可能是一天，比较稳妥。前提是你早就熟悉Linux了，不熟悉Linux的朋友下一篇——Windows部署走起。

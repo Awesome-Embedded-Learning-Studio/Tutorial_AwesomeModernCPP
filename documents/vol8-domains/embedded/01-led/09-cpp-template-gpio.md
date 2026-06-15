@@ -1,14 +1,15 @@
 ---
-title: 第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
-description: ''
+chapter: 15
+difficulty: beginner
+order: 9
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 9
+title: 第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
+description: ''
 ---
 # 第14篇：第二次重构 —— 模板登场，编译时绑定端口和引脚
 

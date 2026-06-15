@@ -1,22 +1,22 @@
 ---
-title: "path 操作：跨平台路径处理"
-description: "用 std::filesystem::path 统一处理跨平台路径"
 chapter: 9
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: 用 std::filesystem::path 统一处理跨平台路径
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 1: RAII 深入理解"
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 14
 related:
-  - "文件与目录操作"
+- 文件与目录操作
+tags:
+- host
+- cpp-modern
+- intermediate
+title: path 操作：跨平台路径处理
 ---
-
 # path 操作：跨平台路径处理
 
 笔者之前写跨平台代码的时候，最头疼的就是路径处理。Windows 用反斜杠 `\`，Linux 和 macOS 用正斜杠 `/`，路径分隔符不一样就算了，绝对路径的表示方式也不同（`C:\Users\...` vs `/home/...`），更别提 Unicode 文件名、符号链接这些高级话题。以前只能靠一堆 `#ifdef _WIN32` 加上字符串拼接来凑合，代码写得自己都不想看。
@@ -362,7 +362,7 @@ std::vector<fs::path> find_by_extension(const fs::path& dir,
     }
 
     std::string lower_ext;
-    std::transform(ext.begin(), ext.end(), std::back_inserter(lower_ext), ::tolower);    
+    std::transform(ext.begin(), ext.end(), std::back_inserter(lower_ext), ::tolower);
     for (const auto& entry : fs::directory_iterator(dir)) {
         if (entry.is_regular_file()) {
             auto path_ext = entry.path().extension().string();

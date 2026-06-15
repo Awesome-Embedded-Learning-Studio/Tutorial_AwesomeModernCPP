@@ -1,34 +1,34 @@
 ---
-title: constexpr constructors and literal types
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Enable custom types to participate in compile-time computation, and understand
   the design constraints and evolution of literal types.
-chapter: 2
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 2: constexpr 基础'
+reading_time_minutes: 11
+related:
+- consteval 与 constinit
+- 编译期计算实战
 tags:
 - host
 - cpp-modern
 - intermediate
 - constexpr
 - 编译期计算
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 2: constexpr 基础'
-related:
-- consteval 与 constinit
-- 编译期计算实战
+title: constexpr constructors and literal types
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch02-constexpr/02-constexpr-ctor.md
   source_hash: a8de6bf5dd8148d2a32f15ee4dea8aedc612ab95be646c3092c8c3bcca3c5a3c
-  translated_at: '2026-06-13T11:49:48.019532+00:00'
-  engine: anthropic
   token_count: 3119
+  translated_at: '2026-06-13T11:49:48.019532+00:00'
 ---
 # `constexpr` Constructors and Literal Types
 

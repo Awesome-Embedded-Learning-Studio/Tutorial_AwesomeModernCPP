@@ -11,18 +11,18 @@ order: 1
 platform: stm32f1
 prerequisites:
 - 'Chapter 3: 内存与对象管理'
-reading_time_minutes: 6
+reading_time_minutes: 5
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: Dynamic Allocation Issues
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-dynamic-allocation-issues.md
   source_hash: 2576910a33d419a77e06cb69a15f53c465165bceaf93afa51db63827e973309b
-  translated_at: '2026-05-26T11:59:52.455732+00:00'
-  engine: anthropic
   token_count: 770
+  translated_at: '2026-05-26T11:59:52.455732+00:00'
 ---
 # The Cost of Dynamic Memory: Fragmentation and Non-Determinism (Memory Layout, Fragmentation, and Alignment)
 

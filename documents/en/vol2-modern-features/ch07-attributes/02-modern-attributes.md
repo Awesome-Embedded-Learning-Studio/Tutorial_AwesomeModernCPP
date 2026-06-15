@@ -1,29 +1,29 @@
 ---
-title: 'C++20-23 New Attributes: Performance-Oriented Compiler Hints'
+chapter: 7
+cpp_standard:
+- 20
+- 23
 description: '[[likely]]/[[unlikely]], [[no_unique_address]], [[assume]], and other
   new attributes'
-chapter: 7
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 7: 标准属性详解'
+reading_time_minutes: 12
+related:
+- constexpr 构造函数与字面类型
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 7: 标准属性详解'
-related:
-- constexpr 构造函数与字面类型
+title: 'C++20-23 New Attributes: Performance-Oriented Compiler Hints'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch07-attributes/02-modern-attributes.md
   source_hash: f2a8984b78649a0904715ec0cfc829732f4a4300acc9ce5b747c822345a9f146
-  translated_at: '2026-06-14T00:18:22.744952+00:00'
-  engine: anthropic
   token_count: 2676
+  translated_at: '2026-06-14T00:18:22.744952+00:00'
 ---
 # C++20-23 New Attributes: Performance-Oriented Compiler Hints
 

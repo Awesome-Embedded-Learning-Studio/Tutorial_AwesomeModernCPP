@@ -10,7 +10,7 @@ difficulty: beginner
 order: 1
 platform: stm32f1
 prerequisites: []
-reading_time_minutes: 12
+reading_time_minutes: 10
 related: []
 tags:
 - cpp-modern

@@ -1,33 +1,33 @@
 ---
-title: Thread-Safe Queue
-description: Building a closeable, timeout-supporting bounded blocking queue with
-  `mutex` + `condition_variable`
 chapter: 4
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- mutex
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Building a closeable, timeout-supporting bounded blocking queue with
+  `mutex` + `condition_variable`
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - condition_variable 与等待语义
+reading_time_minutes: 26
 related:
 - 线程安全容器设计
 - SPSC 与 MPMC 队列
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+title: Thread-Safe Queue
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/01-thread-safe-queue.md
   source_hash: 1fa1f6a0bfae90d0f8b6e903d234908048aab0502d588fac75059a8d1322e184
-  translated_at: '2026-05-20T04:41:50.333341+00:00'
-  engine: anthropic
   token_count: 5320
+  translated_at: '2026-05-20T04:41:50.333341+00:00'
 ---
 # Thread-Safe Queues
 

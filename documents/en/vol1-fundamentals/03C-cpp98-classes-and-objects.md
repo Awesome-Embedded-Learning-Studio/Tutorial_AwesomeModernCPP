@@ -1,37 +1,37 @@
 ---
-title: 'C++98 Object-Oriented: In-Depth Analysis of Classes and Objects'
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: The leap from C structs to C++ classes — access control, constructors
   and destructors, initializer lists, the `this` pointer, static members, `const`
   member functions, friends, `explicit`, and `mutable`, with every detail explained
   clearly.
-chapter: 0
+difficulty: beginner
 order: 3
+platform: host
+prerequisites:
+- C++98入门：命名空间、引用与作用域解析
+- C++98函数接口：重载与默认参数
+reading_time_minutes: 23
+related:
+- C++98面向对象：继承与多态
+- C++98运算符重载
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-reading_time_minutes: 30
-prerequisites:
-- C++98入门：命名空间、引用与作用域解析
-- C++98函数接口：重载与默认参数
-related:
-- C++98面向对象：继承与多态
-- C++98运算符重载
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-platform: host
+title: 'C++98 Object-Oriented: In-Depth Analysis of Classes and Objects'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03C-cpp98-classes-and-objects.md
   source_hash: ed0e10cad5efdbf091e7c670cecf162d0668ffd209d509afda2389ee8612d7fb
-  translated_at: '2026-05-26T10:25:00.500060+00:00'
-  engine: anthropic
   token_count: 4139
+  translated_at: '2026-05-26T10:25:00.500060+00:00'
 ---
 # C++98 Object-Oriented Programming: A Deep Dive into Classes and Objects
 

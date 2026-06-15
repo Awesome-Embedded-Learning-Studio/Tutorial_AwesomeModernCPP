@@ -1,20 +1,21 @@
 ---
-title: 'Part 33: STM32 USART Peripheral — The Serial Engine Inside the Chip'
-description: ''
+chapter: 17
+difficulty: beginner
+order: 3
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 17
-order: 3
+title: 'Part 33: STM32 USART Peripheral — The Serial Engine Inside the Chip'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/03-stm32-usart-peripheral.md
   source_hash: 04a873e68c1606743dd942721a7cea8eb0979698946fbce9259c1f1d13847968
-  translated_at: '2026-05-26T12:15:16.059561+00:00'
-  engine: anthropic
   token_count: 1667
+  translated_at: '2026-05-26T12:15:16.059561+00:00'
+description: ''
 ---
 # Part 33: STM32 USART Peripheral — The Serial Engine Inside the Chip
 

@@ -1,26 +1,27 @@
 ---
-title: enum class
-description: Scoped enumerations prevent enumeration values from polluting the outer
-  namespace and prohibit implicit type conversions.
 chapter: 99
-order: 5
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Scoped enumerations prevent enumeration values from polluting the outer
+  namespace and prohibit implicit type conversions.
+difficulty: beginner
+order: 5
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: enum class
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/05-enum-class.md
   source_hash: fc1119531ee51121638ceba0fcafcd0029e2186344f648dcdbd1cb70e7cdd12e
-  translated_at: '2026-05-26T10:15:36.831894+00:00'
-  engine: anthropic
   token_count: 394
+  translated_at: '2026-05-26T10:15:36.831894+00:00'
 ---
 # enum class (C++11)
 

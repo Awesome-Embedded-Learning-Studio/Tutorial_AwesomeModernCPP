@@ -1,31 +1,31 @@
 ---
-title: Getting Started with Associative Containers
+chapter: 11
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the core operations of `std::map`, `std::set`, and `std::unordered_map`,
   and learn how to perform key-based lookups and maintain ordered collections.
-chapter: 11
-order: 2
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
 prerequisites:
 - std::vector 快速上手
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Getting Started with Associative Containers
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch11/02-map-set.md
   source_hash: 365ba715d7c3abc319104ed0b6fdd7d2464114a8c6dd85968605560e9b1b8897
-  translated_at: '2026-05-26T10:59:15.450539+00:00'
-  engine: anthropic
   token_count: 2772
+  translated_at: '2026-05-26T10:59:15.450539+00:00'
 ---
 # Getting Started with Associative Containers
 

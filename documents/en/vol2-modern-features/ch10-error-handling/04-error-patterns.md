@@ -1,35 +1,35 @@
 ---
-title: 'Error Handling Patterns Summary: A Selection Guide and Best Practices'
-description: A comprehensive comparison of all error handling approaches, providing
-  scenario-based selection guidelines.
 chapter: 10
-order: 4
-tags:
-- host
-- cpp-modern
-- intermediate
-- 类型安全
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
-reading_time_minutes: 20
+description: A comprehensive comparison of all error handling approaches, providing
+  scenario-based selection guidelines.
+difficulty: intermediate
+order: 4
+platform: host
 prerequisites:
 - 'Chapter 10: 错误处理的演进'
 - 'Chapter 10: optional 用于错误处理'
 - 'Chapter 10: std::expected'
+reading_time_minutes: 13
 related:
 - RAII 深入理解
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+title: 'Error Handling Patterns Summary: A Selection Guide and Best Practices'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch10-error-handling/04-error-patterns.md
   source_hash: aae379f59aac125a1c2944b75ff76e575a081758ec0299b6a74ed718a12cff68
-  translated_at: '2026-05-26T11:36:02.080864+00:00'
-  engine: anthropic
   token_count: 2747
+  translated_at: '2026-05-26T11:36:02.080864+00:00'
 ---
 # Error Handling Patterns Summary: A Selection Guide and Best Practices
 

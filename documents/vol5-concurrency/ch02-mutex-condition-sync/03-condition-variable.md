@@ -1,25 +1,28 @@
 ---
-title: "condition_variable 与等待语义"
-description: "掌握条件变量的 wait/notify 机制，理解虚假唤醒、谓词写法与丢失唤醒问题"
 chapter: 2
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
-  - 异步编程
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握条件变量的 wait/notify 机制，理解虚假唤醒、谓词写法与丢失唤醒问题
 difficulty: intermediate
+order: 3
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "mutex 与 RAII 锁"
+- mutex 与 RAII 锁
+reading_time_minutes: 18
 related:
-  - "读写锁与 shared_mutex"
-  - "线程安全队列"
+- 读写锁与 shared_mutex
+- 线程安全队列
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+- 异步编程
+title: condition_variable 与等待语义
 ---
-
 # condition_variable 与等待语义
 
 上一篇我们聊了 mutex 和 RAII 锁——知道怎么保护临界区、怎么避免死锁。但有一个问题我们没有解决：如果线程需要"等某个条件成立"才能继续执行，光靠 mutex 怎么做？最朴素的想法是写一个循环，反复加锁检查条件，不满足就解锁睡一小会儿再试——这就是所谓的**忙等待（busy-wait）**或者**轮询（polling）**。它能工作，但代价是白白消耗 CPU 周期，而且"睡多久"这个参数很难调准：睡短了浪费 CPU，睡长了响应迟钝。

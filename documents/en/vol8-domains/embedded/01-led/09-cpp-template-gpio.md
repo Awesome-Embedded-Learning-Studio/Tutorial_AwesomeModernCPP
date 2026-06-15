@@ -1,21 +1,22 @@
 ---
-title: 'Part 14: The Second Refactoring — Templates Take the Stage, Binding Ports
-  and Pins at Compile Time'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 9
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 9
+title: 'Part 14: The Second Refactoring — Templates Take the Stage, Binding Ports
+  and Pins at Compile Time'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/09-cpp-template-gpio.md
   source_hash: 6c7ad77aaa2c8f4086c204810c3cfeca22f46d8779d785ba69e4e466c078c9f3
-  translated_at: '2026-05-26T12:07:06.667965+00:00'
-  engine: anthropic
   token_count: 1308
+  translated_at: '2026-05-26T12:07:06.667965+00:00'
+description: ''
 ---
 # Part 14: The Second Refactoring — Templates Take the Stage, Binding Ports and Pins at Compile Time
 

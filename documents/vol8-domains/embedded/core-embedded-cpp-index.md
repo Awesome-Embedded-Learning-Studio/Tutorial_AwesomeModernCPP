@@ -1,14 +1,15 @@
 ---
-title: 目录
-description: ''
+chapter: 0
+difficulty: intermediate
+order: 0
+platform: stm32f1
+reading_time_minutes: 3
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 0
-order: 0
+title: 目录
+description: ''
 ---
 # 目录
 

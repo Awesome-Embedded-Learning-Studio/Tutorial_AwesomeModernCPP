@@ -1,28 +1,28 @@
 ---
-title: Program Structure and Compilation Basics
+chapter: 1
+cpp_standard:
+- 11
 description: Understand the basic structure of C programs, the four-stage compilation
   process, the header file mechanism, and basic I/O, laying the compilation model
   foundation for subsequent C++ learning.
-chapter: 1
+difficulty: beginner
 order: 1
+platform: host
+prerequisites:
+- 无（本系列第一篇）
+reading_time_minutes: 12
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
-difficulty: beginner
-platform: host
-reading_time_minutes: 20
-cpp_standard:
-- 11
-prerequisites:
-- 无（本系列第一篇）
+title: Program Structure and Compilation Basics
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/01-program-structure-and-compilation.md
   source_hash: c08bd273b728d1f016a330164f09b6da4461347309537a306426b1bf9d6efbd1
-  translated_at: '2026-05-26T10:26:57.648099+00:00'
-  engine: anthropic
   token_count: 2334
+  translated_at: '2026-05-26T10:26:57.648099+00:00'
 ---
 # Program Structure and Compilation Basics
 

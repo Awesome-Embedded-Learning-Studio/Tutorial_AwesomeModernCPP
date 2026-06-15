@@ -1,22 +1,23 @@
 ---
-title: "C 字符串与缓冲区安全"
-description: "理解 C 字符串 \\0 终止的内存模型，掌握 string.h 核心函数和 snprintf 安全格式化，识别并防范缓冲区溢出漏洞"
 chapter: 1
-order: 15
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 17
+description: 理解 C 字符串 \0 终止的内存模型，掌握 string.h 核心函数和 snprintf 安全格式化，识别并防范缓冲区溢出漏洞
 difficulty: beginner
+order: 15
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 17]
 prerequisites:
-  - "指针与数组、const 和空指针"
+- 指针与数组、const 和空指针
+reading_time_minutes: 13
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: C 字符串与缓冲区安全
 ---
-
 # C 字符串与缓冲区安全
 
 C 语言里没有真正的"字符串类型"——这是每一个从 C 转向 C++ 的开发者都会发出的感叹。在 C 的世界里，字符串就是一块以 `\0` 结尾的 `char` 数组，所有的操作都建立在这个约定之上。这个约定简单到令人感动，也脆弱到令人崩溃——你忘记写那个 `\0`，整个程序的行为就是未定义的；你把一个 100 字节的字符串拷进 50 字节的缓冲区，缓冲区后面的内存就被你踩烂了。

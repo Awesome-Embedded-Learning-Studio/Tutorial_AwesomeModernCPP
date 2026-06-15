@@ -1,14 +1,15 @@
 ---
-title: "第33篇：STM32 USART 外设 —— 芯片内部的串口引擎"
-description: ""
-tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
-difficulty: beginner
-platform: stm32f1
 chapter: 17
+difficulty: beginner
 order: 3
+platform: stm32f1
+reading_time_minutes: 9
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+title: 第33篇：STM32 USART 外设 —— 芯片内部的串口引擎
+description: ''
 ---
 # 第33篇：STM32 USART 外设 —— 芯片内部的串口引擎
 

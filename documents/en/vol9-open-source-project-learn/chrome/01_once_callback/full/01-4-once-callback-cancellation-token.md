@@ -1,10 +1,20 @@
 ---
-title: 'OnceCallback in Practice (Part 4): Cancellation Token Design'
+chapter: 1
+cpp_standard:
+- 23
 description: A deep dive into the design of CancelableToken — implementing a lightweight
   cancellation mechanism with `shared_ptr` + `atomic<bool>`, and how it integrates
   into the execution flow of `OnceCallback`.
-chapter: 1
+difficulty: beginner
 order: 4
+platform: host
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
+related:
+- OnceCallback 实战（五）：then 链式组合
+- OnceCallback 实战（六）：测试与性能对比
 tags:
 - host
 - cpp-modern
@@ -13,23 +23,13 @@ tags:
 - atomic
 - 智能指针
 - 引用计数
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 9
-prerequisites:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-related:
-- OnceCallback 实战（五）：then 链式组合
-- OnceCallback 实战（六）：测试与性能对比
+title: 'OnceCallback in Practice (Part 4): Cancellation Token Design'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-4-once-callback-cancellation-token.md
   source_hash: f81ee6ef5c051c052e0789a29f73b72a3087a5b7e64a5d769630dcdd45b48ea7
-  translated_at: '2026-05-26T12:25:32.809695+00:00'
-  engine: anthropic
   token_count: 1525
+  translated_at: '2026-05-26T12:25:32.809695+00:00'
 ---
 # OnceCallback in Practice (Part 4): Cancellation Token Design
 

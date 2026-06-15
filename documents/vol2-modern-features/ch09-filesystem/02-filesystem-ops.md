@@ -1,22 +1,22 @@
 ---
-title: "文件与目录操作"
-description: "exists、copy、move、remove、权限与空间查询"
 chapter: 9
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: exists、copy、move、remove、权限与空间查询
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 9: path 操作"
+- 'Chapter 9: path 操作'
+reading_time_minutes: 16
 related:
-  - "目录遍历与搜索"
+- 目录遍历与搜索
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 文件与目录操作
 ---
-
 # 文件与目录操作
 
 上一篇我们学会了用 `std::filesystem::path` 处理路径的语法问题——构造、分解、修改、比较，全是纯计算，不碰磁盘。这一篇我们开始动真格的：用 `<filesystem>` 库直接操作文件系统——检查文件是否存在、创建目录、复制文件、删除文件、查询权限和磁盘空间。
@@ -215,7 +215,7 @@ fs::path dst = "/backup/important_config.yaml";
 std::error_code ec;
 fs::copy_file(src, dst,
               fs::copy_options::overwrite_existing, ec);
-// 可能性1. 如果 dst 已经存在, 复制过程中内容可能会被逐步覆盖, 
+// 可能性1. 如果 dst 已经存在, 复制过程中内容可能会被逐步覆盖,
 // 从而导致其他进程看到一个被部分复制的文件
 // 可能性2. 如果复制中途停电宕机, dst文件可能处于不完整甚至损坏的状态
 if (ec) {

@@ -1,31 +1,31 @@
 ---
-title: Constructor
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the complete usage of default constructors, parameterized constructors,
   copy constructors, initializer lists, and delegating constructors.
-chapter: 6
-order: 2
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
 prerequisites:
 - 类的定义
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Constructor
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch06/02-constructors.md
   source_hash: 1ad8bd59a228c1844fabd052c252a1acf11f2050fd269dc703b6090beea3994e
-  translated_at: '2026-05-26T10:50:53.314174+00:00'
-  engine: anthropic
   token_count: 2206
+  translated_at: '2026-05-26T10:50:53.314174+00:00'
 ---
 # Constructors
 

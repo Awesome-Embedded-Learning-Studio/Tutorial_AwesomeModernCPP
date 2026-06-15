@@ -1,31 +1,31 @@
 ---
-title: Static Members
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master `static` variables and functions in classes, and understand class-level
   shared state and the foundational concepts of the singleton pattern.
-chapter: 6
-order: 4
 difficulty: beginner
-reading_time_minutes: 10
+order: 4
 platform: host
 prerequisites:
 - 析构函数与资源管理
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Static Members
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch06/04-static-members.md
   source_hash: 8013ec2441fed211c39e9c07f16c8edaa5612cd665e7a3706e5f533761378002
-  translated_at: '2026-05-26T10:51:23.323464+00:00'
-  engine: anthropic
   token_count: 2309
+  translated_at: '2026-05-26T10:51:23.323464+00:00'
 ---
 # static Members
 

@@ -1,30 +1,30 @@
 ---
-title: Function Calls and Type Conversions
-description: Master overloading `operator()` and type conversion operators, and learn
-  to implement function objects and safe implicit conversions.
 chapter: 7
-order: 3
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 流与下标运算符
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master overloading `operator()` and type conversion operators, and learn
+  to implement function objects and safe implicit conversions.
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 流与下标运算符
+reading_time_minutes: 13
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Function Calls and Type Conversions
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch07/03-call-and-conversion.md
   source_hash: a8f51161b9bc3fbea23fa943372a01233139b770dd0c18cc47ead5c10671c8ae
-  translated_at: '2026-05-26T10:52:49.410305+00:00'
-  engine: anthropic
   token_count: 2615
+  translated_at: '2026-05-26T10:52:49.410305+00:00'
 ---
 # Function Calls and Type Conversions
 

@@ -1,24 +1,28 @@
 ---
-title: "unordered_map 与 unordered_set 深入：哈希表、桶与自定义 hash"
-description: "从哈希表底层讲透 std::unordered_map/set：桶与链地址法、装填因子与 rehash、平均 O(1) 与最坏 O(n)、自定义 hash 的写法、C++14 起 rehash 不失效引用，以及与 map 的选择决策"
 chapter: 7
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - unordered_map
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从哈希表底层讲透 std::unordered_map/set：桶与链地址法、装填因子与 rehash、平均 O(1) 与最坏 O(n)、自定义
+  hash 的写法、C++14 起 rehash 不失效引用，以及与 map 的选择决策
 difficulty: intermediate
+order: 7
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 25
 prerequisites:
-  - "map 与 set 深入：红黑树、异构查找与节点句柄"
+- map 与 set 深入：红黑树、异构查找与节点句柄
+reading_time_minutes: 10
 related:
-  - "容器选择指南"
+- 容器选择指南
+tags:
+- host
+- cpp-modern
+- intermediate
+- unordered_map
+- 容器
+title: unordered_map 与 unordered_set 深入：哈希表、桶与自定义 hash
 ---
-
 # unordered_map 与 unordered_set 深入：哈希表、桶与自定义 hash
 
 ## 和 map 是亲戚，但底层换了个世界

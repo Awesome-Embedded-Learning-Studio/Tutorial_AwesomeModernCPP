@@ -1,31 +1,31 @@
 ---
-title: Type Conversion
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand C++ implicit and explicit conversion rules, master the use
   of `static_cast`, and avoid classic type-casting pitfalls.
-chapter: 1
-order: 2
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
 - 基本数据类型
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Type Conversion
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch01/02-type-conversion.md
   source_hash: d5116402dce2ac13fa1175892d2bd7244cce4ab8cb5fc33dd72d86392b81badc
-  translated_at: '2026-05-26T10:42:40.481800+00:00'
-  engine: anthropic
   token_count: 2297
+  translated_at: '2026-05-26T10:42:40.481800+00:00'
 ---
 # Type Conversion
 

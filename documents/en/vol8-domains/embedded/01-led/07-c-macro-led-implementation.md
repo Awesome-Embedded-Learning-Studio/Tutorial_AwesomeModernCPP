@@ -1,20 +1,21 @@
 ---
-title: 'Part 12: LED Drivers in the C Macro Era — Works, But Not Elegant'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 7
+platform: stm32f1
+reading_time_minutes: 21
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 7
+title: 'Part 12: LED Drivers in the C Macro Era — Works, But Not Elegant'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/07-c-macro-led-implementation.md
   source_hash: c964b0dca0544a4195b04c0cce76c6064075cbe1983c3fcbd1fd11237e9983af
-  translated_at: '2026-05-26T12:07:22.220897+00:00'
-  engine: anthropic
   token_count: 2561
+  translated_at: '2026-05-26T12:07:22.220897+00:00'
+description: ''
 ---
 # Part 12: LED Drivers in the C Macro Era — It Works, But It Isn't Elegant
 

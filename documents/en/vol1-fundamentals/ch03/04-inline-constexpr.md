@@ -1,32 +1,32 @@
 ---
-title: '`inline` and `constexpr` Functions'
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand the true meaning of `inline` and the compile-time evaluation
   capabilities of `constexpr` functions, laying the foundation for zero-overhead abstraction
   in modern C++.
-chapter: 3
-order: 4
 difficulty: beginner
-reading_time_minutes: 12
+order: 4
 platform: host
 prerequisites:
 - 重载与默认参数
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: '`inline` and `constexpr` Functions'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch03/04-inline-constexpr.md
   source_hash: e063dd484f26dbf9f70231b6ed77c286b56eda156e7954857199027f2ace75b3
-  translated_at: '2026-05-26T10:46:46.225217+00:00'
-  engine: anthropic
   token_count: 2356
+  translated_at: '2026-05-26T10:46:46.225217+00:00'
 ---
 # inline and constexpr Functions
 

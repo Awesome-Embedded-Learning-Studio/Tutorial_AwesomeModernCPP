@@ -1,14 +1,15 @@
 ---
-title: 第21篇：按钮电路与机械抖动 —— 真实世界的信号长什么样
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 3
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 3
+title: 第21篇：按钮电路与机械抖动 —— 真实世界的信号长什么样
+description: ''
 ---
 # 第21篇：按钮电路与机械抖动 —— 真实世界的信号长什么样
 

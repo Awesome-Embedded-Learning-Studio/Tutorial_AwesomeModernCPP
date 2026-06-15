@@ -1,24 +1,25 @@
 ---
-title: "Cache 机制与内存层次"
-description: "从内存层次结构出发，拆解缓存行、映射策略、MESI 一致性协议的工作机制，落到缓存友好编程实践和 C++ 的缓存行对齐工具"
 chapter: 1
-order: 102
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 优化
-  - 内存管理
+cpp_standard:
+- 11
+- 17
+description: 从内存层次结构出发，拆解缓存行、映射策略、MESI 一致性协议的工作机制，落到缓存友好编程实践和 C++ 的缓存行对齐工具
 difficulty: intermediate
+order: 102
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 17]
 prerequisites:
-  - "数据类型基础：整数与内存"
-  - "指针与数组"
-  - "结构体与内存布局"
+- 数据类型基础：整数与内存
+- 指针与数组
+- 结构体与内存布局
+reading_time_minutes: 20
+tags:
+- host
+- cpp-modern
+- intermediate
+- 优化
+- 内存管理
+title: Cache 机制与内存层次
 ---
-
 # Cache 机制与内存层次
 
 如果你的程序跑得慢，而你已经在算法层面把时间复杂度压到了极限，那瓶颈很可能不是 CPU 算不过来，而是它在那儿干等着数据从内存搬过来。现代 CPU 的运算速度和主存的访问速度之间差了几个数量级——如果不在这条鸿沟上搭几座桥，再强的运算单元也只能望洋兴叹。这些"桥"就是我们今天要聊的主角：Cache。

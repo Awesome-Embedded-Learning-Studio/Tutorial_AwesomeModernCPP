@@ -13,7 +13,7 @@ order: 1
 platform: host
 prerequisites:
 - 卷一：vector 基础用法（size / capacity / push_back）
-reading_time_minutes: 16
+reading_time_minutes: 14
 tags:
 - host
 - cpp-modern
@@ -21,11 +21,11 @@ tags:
 - vector
 title: 'Vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/03-vector-deep-dive.md
   source_hash: 3a794c3b8b7c339211aacff5c51798b07990dff9266fcf14a11fb79bdaa0a358
-  translated_at: '2026-06-14T00:19:27.289156+00:00'
-  engine: anthropic
   token_count: 2821
+  translated_at: '2026-06-14T00:19:27.289156+00:00'
 ---
 # Vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation
 

@@ -1,26 +1,27 @@
 ---
-title: constexpr
-description: A keyword indicating that the value of a variable or function can be
-  evaluated at compile time
 chapter: 99
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: A keyword indicating that the value of a variable or function can be
+  evaluated at compile time
+difficulty: intermediate
+order: 1
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+title: constexpr
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/01-constexpr.md
   source_hash: 8d89ae16e8442155ce90a0552fa89a8d6af42aa44d37fdf4f0637340af1e8f97
-  translated_at: '2026-05-26T10:14:54.825670+00:00'
-  engine: anthropic
   token_count: 370
+  translated_at: '2026-05-26T10:14:54.825670+00:00'
 ---
 # constexpr (C++11)
 

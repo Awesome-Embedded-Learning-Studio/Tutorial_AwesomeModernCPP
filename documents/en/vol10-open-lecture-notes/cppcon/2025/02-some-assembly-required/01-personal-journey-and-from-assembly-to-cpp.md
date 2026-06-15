@@ -1,29 +1,30 @@
 ---
-title: My Journey and the Awakening from Assembly to C++
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 1
+platform: host
+reading_time_minutes: 35
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 1
+talk_title: 'C++: Some Assembly Required'
+title: My Journey and the Awakening from Assembly to C++
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/01-personal-journey-and-from-assembly-to-cpp.md
   source_hash: 6dafe831c94d103e7e1fa4397ff5dca81f053647301911f239d237e00900a422
-  translated_at: '2026-06-13T11:46:21.095546+00:00'
-  engine: anthropic
   token_count: 6122
+  translated_at: '2026-06-13T11:46:21.095546+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # Why C++ Programmers Should Care About Assembly
 

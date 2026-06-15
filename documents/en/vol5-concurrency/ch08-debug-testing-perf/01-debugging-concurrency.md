@@ -1,34 +1,34 @@
 ---
-title: Concurrent Program Debugging Techniques
-description: Master the use of tools like ThreadSanitizer and Helgrind, and establish
-  a systematic diagnostic workflow for concurrency bugs.
 chapter: 8
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- 进阶
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master the use of tools like ThreadSanitizer and Helgrind, and establish
+  a systematic diagnostic workflow for concurrency bugs.
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - mutex 与 RAII 锁
 - 原子操作
 - 线程安全队列
+reading_time_minutes: 26
 related:
 - 并发性能测试与基准
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+title: Concurrent Program Debugging Techniques
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch08-debug-testing-perf/01-debugging-concurrency.md
   source_hash: f7097c193f2b900441cf3b2eee489e8b5c4ffc1bd4a32a4cff132a1d5604bb64
-  translated_at: '2026-05-20T04:49:49.095419+00:00'
-  engine: anthropic
   token_count: 5016
+  translated_at: '2026-05-20T04:49:49.095419+00:00'
 ---
 # Debugging Concurrent Programs
 

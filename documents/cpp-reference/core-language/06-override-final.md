@@ -1,16 +1,21 @@
 ---
-title: "override 说明符"
-description: "在成员函数声明后使用，确保该函数确实覆盖了基类的虚函数，否则编译报错"
 chapter: 99
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 在成员函数声明后使用，确保该函数确实覆盖了基类的虚函数，否则编译报错
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 6
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: override 说明符
 ---
-
 # override 说明符（C++11）
 
 ## 一句话

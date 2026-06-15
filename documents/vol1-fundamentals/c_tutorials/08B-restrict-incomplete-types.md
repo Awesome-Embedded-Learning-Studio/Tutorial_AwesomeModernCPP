@@ -9,7 +9,7 @@ order: 12
 platform: host
 prerequisites:
 - 多级指针与声明读法
-reading_time_minutes: 12
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern

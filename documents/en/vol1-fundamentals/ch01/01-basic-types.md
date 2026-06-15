@@ -1,31 +1,31 @@
 ---
-title: Basic Data Types
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master C++ integer, floating-point, character, and boolean types, and
   understand type sizes, value ranges, and platform differences.
-chapter: 1
-order: 1
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
 - 第一个 C++ 程序
+reading_time_minutes: 17
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Basic Data Types
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch01/01-basic-types.md
   source_hash: 1984d5a4e598c9335dbae2f9f51e4515cf9fb0e4e14444f22c4d1effdcb9d608
-  translated_at: '2026-05-26T10:42:30.550976+00:00'
-  engine: anthropic
   token_count: 3051
+  translated_at: '2026-05-26T10:42:30.550976+00:00'
 ---
 # Fundamental Data Types
 

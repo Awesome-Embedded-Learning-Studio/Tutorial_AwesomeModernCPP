@@ -1,17 +1,18 @@
 ---
-title: Website Iteration Cadence
+chapter: 1
 description: Content production, site maintenance, PR/Issue handling, and release
   schedule for Tutorial_AwesomeModernCPP
-chapter: 1
 order: 1
+reading_time_minutes: 4
 tags:
 - 工程实践
+title: Website Iteration Cadence
 translation:
+  engine: anthropic
   source: documents/community/dev/01-iteration-cadence.md
   source_hash: 8debf0c2ea6aa397b83abb8e8afd96b464145928846b90312f794fafa8dd0f2b
-  translated_at: '2026-06-14T00:14:11.471541+00:00'
-  engine: anthropic
   token_count: 551
+  translated_at: '2026-06-14T00:14:11.471541+00:00'
 ---
 # Site Iteration Rhythm
 

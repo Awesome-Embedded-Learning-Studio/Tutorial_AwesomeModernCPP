@@ -1,19 +1,23 @@
 ---
-title: "流与下标运算符"
-description: "掌握 << >> 重载和 operator[] 的实现，让自定义类型支持流式 I/O 和索引访问"
 chapter: 7
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 << >> 重载和 operator[] 的实现，让自定义类型支持流式 I/O 和索引访问
 difficulty: intermediate
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "算术与比较运算符"
+- 算术与比较运算符
+reading_time_minutes: 10
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 流与下标运算符
 ---
 # 流与下标运算符
 

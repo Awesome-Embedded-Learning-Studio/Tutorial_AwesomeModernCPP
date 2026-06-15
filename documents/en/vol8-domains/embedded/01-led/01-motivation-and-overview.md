@@ -1,20 +1,21 @@
 ---
-title: 'Part 6: Starting by Lighting the First LED — Why We Use Modern C++ for STM32'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 1
+platform: stm32f1
+reading_time_minutes: 22
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 1
+title: 'Part 6: Starting by Lighting the First LED — Why We Use Modern C++ for STM32'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/01-motivation-and-overview.md
   source_hash: 893dbb72425c37cfd9fd38832830d09b5e374ae7eb44c4ca124ac050999ae2ca
-  translated_at: '2026-05-26T12:03:11.907957+00:00'
-  engine: anthropic
   token_count: 2498
+  translated_at: '2026-05-26T12:03:11.907957+00:00'
+description: ''
 ---
 # Part 6: Lighting the First LED — Why We Use Modern C++ for STM32
 

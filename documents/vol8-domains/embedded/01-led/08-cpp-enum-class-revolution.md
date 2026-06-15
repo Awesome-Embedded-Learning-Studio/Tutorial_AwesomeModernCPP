@@ -1,14 +1,15 @@
 ---
-title: 第13篇：第一次重构 —— enum class取代宏，类型安全的开始
-description: ''
+chapter: 15
+difficulty: beginner
+order: 8
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 8
+title: 第13篇：第一次重构 —— enum class取代宏，类型安全的开始
+description: ''
 ---
 # 第13篇：第一次重构 —— enum class取代宏，类型安全的开始
 

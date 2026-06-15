@@ -1,28 +1,29 @@
 ---
-title: "从单机并发到分布式"
-description: "理解单机并发与分布式系统的根本差异——局部失败、网络不可靠、时钟不一致，以及这些差异如何影响并发模型的选择"
 chapter: 9
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 进阶
-  - 异步编程
-  - atomic
-  - mutex
+cpp_standard:
+- 17
+- 20
+description: 理解单机并发与分布式系统的根本差异——局部失败、网络不可靠、时钟不一致，以及这些差异如何影响并发模型的选择
 difficulty: advanced
+order: 1
 platform: host
-reading_time_minutes: 25
-cpp_standard: [17, 20]
 prerequisites:
-  - "Actor 模型与消息传递"
-  - "Channel 与 CSP 模型"
-  - "并发程序调试技巧"
+- Actor 模型与消息传递
+- Channel 与 CSP 模型
+- 并发程序调试技巧
+reading_time_minutes: 24
 related:
-  - "分布式一致性原语初探"
+- 分布式一致性原语初探
+tags:
+- host
+- cpp-modern
+- advanced
+- 进阶
+- 异步编程
+- atomic
+- mutex
+title: 从单机并发到分布式
 ---
-
 # 从单机并发到分布式
 
 > ℹ️ **本节定位**：这一章是概念导览，不配可运行代码、也不引入外部框架。目的是让你在进入卷八的分布式实战之前，先把"单机并发 → 分布式"的认知框架搭起来——知道哪些旧经验还能用，哪些得推倒重来。

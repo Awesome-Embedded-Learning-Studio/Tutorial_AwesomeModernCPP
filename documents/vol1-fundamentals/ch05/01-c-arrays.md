@@ -1,22 +1,25 @@
 ---
-title: "C 风格数组"
-description: "掌握 C 风格数组的声明、初始化和多维用法，理解数组退化及其对函数传参的影响"
 chapter: 5
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 C 风格数组的声明、初始化和多维用法，理解数组退化及其对函数传参的影响
 difficulty: beginner
-reading_time_minutes: 12
+order: 1
 platform: host
 prerequisites:
-  - "智能指针预告"
+- 智能指针预告
+reading_time_minutes: 10
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C 风格数组
 ---
-
 # C 风格数组
 
 到目前为止，我们处理数据的方式都是"一个变量存一个值"。但现实世界的数据很少是孤立存在的——一组传感器读数、一串字符、一个矩阵、一张成绩表，这些东西天然就是"一堆相同类型的数据排成一排"。数组（array）就是 C 和 C++ 提供的最原始的、用来存储这种"同类型连续数据"的机制。

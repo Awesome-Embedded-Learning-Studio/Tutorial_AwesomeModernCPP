@@ -1,21 +1,22 @@
 ---
-title: 'Part 1: Building an STM32 Development Toolchain from Scratch — Cross-Compilation
-  Principles and Installation Guide'
-description: ''
+chapter: 14
+difficulty: beginner
+order: 1
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 1
+title: 'Part 1: Building an STM32 Development Toolchain from Scratch — Cross-Compilation
+  Principles and Installation Guide'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/00-env-setup/01-toolchain-setup.md
   source_hash: 3e0fe3078ac0320a7d603f5acb8bb8d4d1dce68ee183250e7477e7fc45171b5f
-  translated_at: '2026-05-26T11:57:24.345125+00:00'
-  engine: anthropic
   token_count: 1569
+  translated_at: '2026-05-26T11:57:24.345125+00:00'
+description: ''
 ---
 # Part 1: Building an STM32 Toolchain from Scratch — Cross-Compilation Principles and Installation Guide
 

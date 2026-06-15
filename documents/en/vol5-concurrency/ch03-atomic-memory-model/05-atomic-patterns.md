@@ -1,34 +1,34 @@
 ---
-title: Atomic Operation Memory Order
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Correct implementation of classic atomic patterns such as SeqLock, Double-Checked
   Locking, reference counting, and publish-subscribe.
-chapter: 3
+difficulty: advanced
 order: 5
+platform: host
+prerequisites:
+- fence 与编译器屏障
+- atomic_wait 与 atomic_ref
+reading_time_minutes: 22
+related:
+- 无锁编程基础
 tags:
 - host
 - cpp-modern
 - advanced
 - atomic
 - 无锁
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- fence 与编译器屏障
-- atomic_wait 与 atomic_ref
-related:
-- 无锁编程基础
+title: Atomic Operation Memory Order
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch03-atomic-memory-model/05-atomic-patterns.md
   source_hash: 6a16ee5ae8b32d406353bc2afbd7dc091077f2bcf1b3ac8dbdc6599198b87cc4
-  translated_at: '2026-06-13T11:51:22.489438+00:00'
-  engine: anthropic
   token_count: 5394
+  translated_at: '2026-06-13T11:51:22.489438+00:00'
 ---
 # Atomic Operation Patterns
 

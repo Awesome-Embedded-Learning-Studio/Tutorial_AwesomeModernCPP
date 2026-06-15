@@ -1,31 +1,31 @@
 ---
-title: 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
-description: Master mutex, condition_variable, shutdown semantics, and backpressure
-  strategies through hands-on practice with blocking queues, sharded caches, and C++20
-  synchronization primitives.
 chapter: 10
-order: 1
-difficulty: intermediate
-tags:
-- host
-- cpp-modern
-- mutex
-- intermediate
 cpp_standard:
 - 17
 - 20
-reading_time_minutes: 29
+description: Master mutex, condition_variable, shutdown semantics, and backpressure
+  strategies through hands-on practice with blocking queues, sharded caches, and C++20
+  synchronization primitives.
+difficulty: intermediate
+order: 1
 prerequisites:
 - '卷五 ch00: 并发思维与基础'
 - '卷五 ch01: 线程生命周期与 RAII'
 - '卷五 ch02: 互斥量、条件变量与同步原语'
 - 'Lab 0: Thread Lifecycle Lab'
+reading_time_minutes: 21
+tags:
+- host
+- cpp-modern
+- mutex
+- intermediate
+title: 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/01-bounded-queue.md
   source_hash: 0662020f6d904e3b61908b6d4799141b7a25d84bbc5942ed4e93af653c51cfa3
-  translated_at: '2026-05-26T11:47:05.566996+00:00'
-  engine: anthropic
   token_count: 5613
+  translated_at: '2026-05-26T11:47:05.566996+00:00'
 ---
 # Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives
 

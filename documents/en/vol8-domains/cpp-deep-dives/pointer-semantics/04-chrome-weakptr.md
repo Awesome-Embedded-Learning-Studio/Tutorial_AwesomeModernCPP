@@ -1,9 +1,18 @@
 ---
-title: 'Chrome-like WeakPtr: Reference Count Control Block and WeakPtrFactory'
+chapter: 1
+cpp_standard:
+- 17
+- 20
 description: Implement an educational version of Chrome's WeakPtr, and understand
   the ref-counted control block and sequence binding model
-chapter: 1
+difficulty: advanced
 order: 4
+platform: host
+prerequisites:
+- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
+reading_time_minutes: 9
+related:
+- std::weak_ptr 对比与异步回调实战
 tags:
 - host
 - cpp-modern
@@ -11,22 +20,13 @@ tags:
 - 智能指针
 - 引用计数
 - 回调机制
-difficulty: advanced
-platform: host
-reading_time_minutes: 12
-prerequisites:
-- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
-related:
-- std::weak_ptr 对比与异步回调实战
-cpp_standard:
-- 17
-- 20
+title: 'Chrome-like WeakPtr: Reference Count Control Block and WeakPtrFactory'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/04-chrome-weakptr.md
   source_hash: c7810fbd0d1980848dcbc7a8559e8c564c7ff5f8a2359266da316380b557d05e
-  translated_at: '2026-05-26T11:55:12.912926+00:00'
-  engine: anthropic
   token_count: 2303
+  translated_at: '2026-05-26T11:55:12.912926+00:00'
 ---
 # Chrome-like WeakPtr: Reference-Counted Control Block and WeakPtrFactory
 

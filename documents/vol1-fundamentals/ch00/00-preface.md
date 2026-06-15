@@ -1,19 +1,23 @@
 ---
-title: "前言：为什么学 C++"
-description: "了解 C++ 的核心价值、应用领域与学习路线，开启现代 C++ 之旅"
 chapter: 0
-order: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 了解 C++ 的核心价值、应用领域与学习路线，开启现代 C++ 之旅
 difficulty: beginner
-reading_time_minutes: 8
+order: 0
 platform: host
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-cpp_standard: [11, 14, 17, 20, 23]
+- cpp-modern
+- host
+- beginner
+- 入门
+title: 前言：为什么学 C++
 ---
-
 # 前言：为什么学 C++
 
 说实话，写这篇前言的时候我想了很久——到底该用什么语气来开这个头。如果只是冷冰冰地列一堆"C++ 很强"的理由，那跟翻 Wikipedia 没什么区别，实在没什么意思。所以我想换一种方式：聊聊我自己为什么要折腾 C++，以及为什么我觉得在 2026 年的今天，C++ 依然值得你花时间认真学习。

@@ -1,23 +1,24 @@
 ---
-title: std::span
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: Non-owning view of a contiguous sequence, a zero-overhead alternative
   to passing pointer and length
-chapter: 99
+difficulty: beginner
 order: 1
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-difficulty: beginner
-cpp_standard:
-- 20
-- 23
+title: std::span
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/01-span.md
   source_hash: 08998f44d647e2c9ee6712ca4342ea677f4175754905abfb5e8db85473ef2cd7
-  translated_at: '2026-06-15T09:06:03.340062+00:00'
-  engine: anthropic
   token_count: 472
+  translated_at: '2026-06-15T09:06:03.340062+00:00'
 ---
 # std::span (C++20)
 

@@ -1,23 +1,25 @@
 ---
-title: "Range、迭代器与 Concept 组合"
-description: "CppCon 2025 演讲笔记 —— 从迭代器对的问题到 Range 抽象，再到 Concept 组合与 requires 表达式"
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: "Concept-based Generic Programming"
-speaker: "Bjarne Stroustrup"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW"
-video_youtube: "https://www.youtube.com/watch?v=VMGB75hsDQo"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 演讲笔记 —— 从迭代器对的问题到 Range 抽象，再到 Concept 组合与 requires 表达式
 difficulty: intermediate
-platform: host
-cpp_standard: [20, 23]
-chapter: 1
 order: 2
+platform: host
+reading_time_minutes: 37
+speaker: Bjarne Stroustrup
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: Concept-based Generic Programming
+title: Range、迭代器与 Concept 组合
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
-
 # 未检查的指针与泛型编程的边界
 
 之前写 C++ 的时候，我遇到过一个特别典型的问题：拿到一个指针，想取它的前 10 个元素组成一个子视图，但写出来的代码怎么看怎么别扭。比如你有一个 `double*`，你想说"我要这个指针指向的前 10 个元素"，但仅仅看那段代码的话，不管是你还是编译器，都没办法知道这个指针到底指向了多少个元素、10 有没有越界。这是完全未检查的。我之前一直觉得这没什么办法，指针嘛，本来就是这样。但后来我意识到，如果你的代码审查没有把这种写法标记为潜在问题，那说明审查本身也不够严格。
@@ -153,7 +155,7 @@ Concepts 是 C++20 引入的，但它的思想根源可以追溯到 Alex Stepano
 // 先定义我们自己的 concept：随机访问迭代器范围
 // 注意：这里用标准库的 concept 来组合，不需要从零写
 template<typename Iter>
-concept RandomAccessRange = 
+concept RandomAccessRange =
     std::random_access_iterator<Iter> &&
     std::sentinel_for<Iter, Iter>;
 
@@ -468,11 +470,11 @@ int main() {
 
 ```text
 排序 vector:   [走随机访问路径]
-1 2 3 4 5 
+1 2 3 4 5
 排序 forward_list:   [走前向迭代器路径：复制-排序-回写]
-1 2 3 4 5 
+1 2 3 4 5
 降序排序 vector:   [走随机访问路径]
-5 4 3 2 1 
+5 4 3 2 1
 ```
 
 完美，两条路径各走各的，互不干扰。你注意看，谓词我给了默认值 `std::less<>`，这样常见情况就不用每次都传了，想降序的时候传个 `std::greater<>{}` 就行。这种"提供合理默认值"的习惯是我从标准库学来的，能大幅降低调用方的负担。
@@ -532,10 +534,10 @@ void my_sort(R&& r) {
 int main() {
     std::vector<int> v{3, 1, 4, 1, 5, 9, 2, 6};
     my_sort(v);  // 编译通过，vector<int> 既满足 forward_range 又满足 sortable
-    
+
     // my_sort("hello");  // 编译错误，字符串不满足 sortable
     // 报错信息会明确告诉你：约束 'sortable_range<R>' 未满足
-    
+
     for (int x : v) std::cout << x << ' ';
     // 输出：1 1 2 3 4 5 6 9
 }

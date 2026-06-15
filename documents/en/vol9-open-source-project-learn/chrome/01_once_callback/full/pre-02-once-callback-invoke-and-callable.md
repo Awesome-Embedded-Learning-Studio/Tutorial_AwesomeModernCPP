@@ -1,33 +1,33 @@
 ---
-title: 'OnceCallback Prerequisites (Part 2): std::invoke and the Unified Call Protocol'
+chapter: 0
+cpp_standard:
+- 17
 description: A deep dive into how `std::invoke` unifies the calling conventions of
   function pointers, member function pointers, lambda expressions, and functors, and
   the role of `std::invoke_result_t` in type deduction for `OnceCallback`.
-chapter: 0
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 8
+related:
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（五）：then 链式组合
 tags:
 - host
 - cpp-modern
 - intermediate
 - 函数对象
 - std_invoke
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 10
-prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
-related:
-- OnceCallback 实战（三）：bind_once 实现
-- OnceCallback 实战（五）：then 链式组合
+title: 'OnceCallback Prerequisites (Part 2): std::invoke and the Unified Call Protocol'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-02-once-callback-invoke-and-callable.md
   source_hash: 138cb6dff4c2a4b0cbec4c16902d1d2a1375c8acf794d66bcd43ff239d6f55c0
-  translated_at: '2026-05-26T12:27:42.281653+00:00'
-  engine: anthropic
   token_count: 1605
+  translated_at: '2026-05-26T12:27:42.281653+00:00'
 ---
 # OnceCallback Prerequisites (Part 2): `std::invoke` and the Uniform Calling Convention
 

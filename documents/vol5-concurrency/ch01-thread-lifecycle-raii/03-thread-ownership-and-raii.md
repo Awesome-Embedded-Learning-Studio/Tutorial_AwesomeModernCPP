@@ -1,24 +1,27 @@
 ---
-title: "线程所有权与 RAII"
-description: "用 RAII 包装 std::thread，实现异常安全的 joining_thread guard 与作用域退出清理"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - RAII
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 用 RAII 包装 std::thread，实现异常安全的 joining_thread guard 与作用域退出清理
 difficulty: intermediate
+order: 3
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程参数与生命周期"
+- 线程参数与生命周期
+reading_time_minutes: 18
 related:
-  - "mutex 与 RAII 锁"
-  - "jthread 与停止令牌"
+- mutex 与 RAII 锁
+- jthread 与停止令牌
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII
+title: 线程所有权与 RAII
 ---
-
 # 线程所有权与 RAII
 
 上一篇我们搞清楚了 `std::thread` 的参数传递和生命周期管理，知道了一个 `std::thread` 对象在销毁之前必须被 `join()` 或 `detach()`，否则程序会直接 `std::terminate()`。但说实话，每次手动调 `join()` 是一件很烦的事情——不是因为它难，而是因为它太容易忘了。特别是在有异常抛出的代码路径里，你可能在一个函数中间就跳出去了，后面的 `join()` 根本执行不到。更糟糕的是，如果你的函数有多个 `return` 路径，每一条都得记得 `join()`，漏一个就是定时炸弹。

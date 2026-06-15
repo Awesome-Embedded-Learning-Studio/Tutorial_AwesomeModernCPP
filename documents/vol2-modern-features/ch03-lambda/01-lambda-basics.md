@@ -1,24 +1,26 @@
 ---
-title: "Lambda 基础：匿名函数的优雅表达"
-description: "从语法要素到 STL 配合，掌握 C++ lambda 表达式的核心用法"
 chapter: 3
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
+cpp_standard:
+- 11
+- 14
+- 17
+description: 从语法要素到 STL 配合，掌握 C++ lambda 表达式的核心用法
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 13
 related:
-  - "Lambda 捕获机制深入"
-  - "std::function 与类型擦除"
+- Lambda 捕获机制深入
+- std::function 与类型擦除
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+title: Lambda 基础：匿名函数的优雅表达
 ---
-
 # Lambda 基础：匿名函数的优雅表达
 
 ## 引言

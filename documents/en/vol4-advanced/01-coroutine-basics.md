@@ -1,20 +1,21 @@
 ---
-title: Understanding the Revolutionary Features of C++20 — Coroutine Support 1
-description: ''
+chapter: 10
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 23
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 10
-order: 8
+title: Understanding the Revolutionary Features of C++20 — Coroutine Support 1
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/01-coroutine-basics.md
   source_hash: 1bed23f1e5078d644337bb60c12da6bf7a788ff3ad0d185ebbbc7eb3c1d1b1b0
-  translated_at: '2026-05-26T11:39:03.210388+00:00'
-  engine: anthropic
   token_count: 5509
+  translated_at: '2026-05-26T11:39:03.210388+00:00'
+description: ''
 ---
 # Understanding the Revolutionary Feature of C++20 — Coroutine Support Part 1
 

@@ -1,24 +1,26 @@
 ---
-title: "std::thread 基础"
-description: "掌握 C++ 线程的创建、join、detach、ID 与硬件并发查询，建立第一个多线程程序的直觉"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握 C++ 线程的创建、join、detach、ID 与硬件并发查询，建立第一个多线程程序的直觉
 difficulty: beginner
+order: 1
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "CPU cache 与 OS 线程"
+- CPU cache 与 OS 线程
+reading_time_minutes: 18
 related:
-  - "线程参数与生命周期"
-  - "线程所有权与 RAII"
+- 线程参数与生命周期
+- 线程所有权与 RAII
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: std::thread 基础
 ---
-
 # std::thread 基础
 
 前一章我们聊了 CPU cache 的层次结构、MESI 协议、false sharing，也看了 Linux 的线程模型和 futex 机制——这些都是多线程程序运行的物理舞台。但光知道舞台长什么样还不够，我们得亲自上台演一演。这一篇就是我们的第一次登台：从 `std::thread` 的构造开始，搞清楚线程怎么创建、怎么等待、怎么"放手不管"，以及在操作过程中有哪些一不留神就会踩的坑。

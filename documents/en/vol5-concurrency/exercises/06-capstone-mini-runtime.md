@@ -1,18 +1,11 @@
 ---
-title: 'Capstone: Mini Concurrent Runtime'
-description: Combine components from all labs in Volume V to build a mini concurrent
-  runtime, training system design, component composition, and observability.
 chapter: 10
-order: 7
-difficulty: advanced
-tags:
-- host
-- cpp-modern
-- coroutine
-- advanced
 cpp_standard:
 - 20
-reading_time_minutes: 9
+description: Combine components from all labs in Volume V to build a mini concurrent
+  runtime, training system design, component composition, and observability.
+difficulty: advanced
+order: 7
 prerequisites:
 - 'Lab 0: Thread Lifecycle Lab'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
@@ -21,12 +14,19 @@ prerequisites:
 - 'Lab 3: Production-style Thread Pool'
 - 'Lab 4: Coroutine Scheduler and Event Loop'
 - 'Lab 5: Channel or Actor Runtime'
+reading_time_minutes: 7
+tags:
+- host
+- cpp-modern
+- coroutine
+- advanced
+title: 'Capstone: Mini Concurrent Runtime'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/06-capstone-mini-runtime.md
   source_hash: 9703a584a9a9805fad187494a8070d1d93eba952e9c671217c54d1fc84edf144
-  translated_at: '2026-06-14T00:20:34.530410+00:00'
-  engine: anthropic
   token_count: 1677
+  translated_at: '2026-06-14T00:20:34.530410+00:00'
 ---
 # Capstone: Mini Concurrent Runtime
 

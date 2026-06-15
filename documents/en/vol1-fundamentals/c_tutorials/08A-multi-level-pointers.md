@@ -11,7 +11,7 @@ order: 11
 platform: host
 prerequisites:
 - 指针与数组、const 和空指针
-reading_time_minutes: 12
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - 基础
 title: Multi-level Pointers and Declaration Reading
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/08A-multi-level-pointers.md
   source_hash: 6e968d15e00e5bce8ca6401b44e88f3dad722376b4a53d4a256a7d4629c631ba
-  translated_at: '2026-05-26T10:30:25.011609+00:00'
-  engine: anthropic
   token_count: 1726
+  translated_at: '2026-05-26T10:30:25.011609+00:00'
 ---
 # Multi-Level Pointers and Reading Declarations
 

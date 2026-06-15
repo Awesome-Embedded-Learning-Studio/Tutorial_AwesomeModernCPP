@@ -1,22 +1,24 @@
 ---
-title: "标准属性详解：让编译器成为你的代码审查员"
-description: "C++11-17 标准属性的语义、用法与最佳实践"
 chapter: 7
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+description: C++11-17 标准属性的语义、用法与最佳实践
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 1: RAII 深入理解"
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 12
 related:
-  - "C++20-23 新属性"
+- C++20-23 新属性
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 标准属性详解：让编译器成为你的代码审查员
 ---
-
 # 标准属性详解：让编译器成为你的代码审查员
 
 笔者在写代码的时候，经常遇到几种令人头大的情况：调用了一个返回错误码的函数但忘了检查，编译器一声不吭就放过了；有个参数在某个编译配置下用不到，编译器满屏警告未使用变量；想标记某个 API 过时了，但只能靠文档或注释提醒调用方。C++11 开始引入、并在后续版本逐步扩展的标准属性语法 `[[attribute]]` 就是来解决这些问题的——用标准化的方式给编译器传递额外信息，让它帮我们做静态检查。

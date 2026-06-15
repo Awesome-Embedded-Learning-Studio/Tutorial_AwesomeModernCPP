@@ -1,33 +1,33 @@
 ---
-title: Thread Parameters and Lifetime
-description: Dive into thread parameter passing mechanisms, identifying concurrency
-  bugs caused by dangling references and object destruction order.
 chapter: 1
-order: 2
-tags:
-- host
-- cpp-modern
-- intermediate
-- 内存管理
-difficulty: intermediate
-platform: host
-reading_time_minutes: 22
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Dive into thread parameter passing mechanisms, identifying concurrency
+  bugs caused by dangling references and object destruction order.
+difficulty: intermediate
+order: 2
+platform: host
 prerequisites:
 - std::thread 基础
+reading_time_minutes: 18
 related:
 - 线程所有权与 RAII
 - CPU cache 与 OS 线程
+tags:
+- host
+- cpp-modern
+- intermediate
+- 内存管理
+title: Thread Parameters and Lifetime
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch01-thread-lifecycle-raii/02-thread-arguments-and-lifetime.md
   source_hash: 2acf83ae14bab23867a3ff351e9c1bff052fb15dcbc0ec7428c261e79f3a90e5
-  translated_at: '2026-05-20T04:34:03.498432+00:00'
-  engine: anthropic
   token_count: 3850
+  translated_at: '2026-05-20T04:34:03.498432+00:00'
 ---
 # Thread Parameters and Lifetimes
 

@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking Techniques 9: Shared Library
-  Details (Final)'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 9
+platform: host
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 9
+title: 'Deep Dive into C/C++ Compilation and Linking Techniques 9: Shared Library
+  Details (Final)'
 translation:
+  engine: anthropic
   source: documents/compilation/09-dynamic-library-details.md
   source_hash: 3d81feb96f6f0cfd74cb5164d00b7320a92674ea432bfe50b6ed987efc14765c
-  translated_at: '2026-05-26T10:13:10.899158+00:00'
-  engine: anthropic
   token_count: 1646
+  translated_at: '2026-05-26T10:13:10.899158+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking Techniques 9: Shared Library Details (Finale)
 

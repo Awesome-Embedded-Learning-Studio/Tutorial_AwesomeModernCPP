@@ -1,19 +1,23 @@
 ---
-title: "算术与比较运算符"
-description: "掌握算术运算符和比较运算符的重载方法，实现一个完整的 Fraction 分数类"
 chapter: 7
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握算术运算符和比较运算符的重载方法，实现一个完整的 Fraction 分数类
 difficulty: intermediate
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "this 指针与链式调用"
+- this 指针与链式调用
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 算术与比较运算符
 ---
 # 算术与比较运算符
 

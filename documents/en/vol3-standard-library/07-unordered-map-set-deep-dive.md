@@ -1,35 +1,35 @@
 ---
-title: 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and
-  Custom Hash'
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'A Deep Dive into `std::unordered_map/set` Internals: Buckets and Chaining,
   Load Factor and Rehashing, Average O(1) vs. Worst-case O(n), Writing Custom Hash
   Functions, Reference Stability Since C++14, and Choosing Between `map` and `unordered_map`'
-chapter: 7
+difficulty: intermediate
 order: 7
+platform: host
+prerequisites:
+- map 与 set 深入：红黑树、异构查找与节点句柄
+reading_time_minutes: 11
+related:
+- 容器选择指南
 tags:
 - host
 - cpp-modern
 - intermediate
 - unordered_map
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 25
-prerequisites:
-- map 与 set 深入：红黑树、异构查找与节点句柄
-related:
-- 容器选择指南
+title: 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and
+  Custom Hash'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/07-unordered-map-set-deep-dive.md
   source_hash: a3cf49fa7d4ccc305a644f57d65bf38e1eb602ff03fcc39d5d129439c485fc0b
-  translated_at: '2026-06-15T09:15:13.512469+00:00'
-  engine: anthropic
   token_count: 2065
+  translated_at: '2026-06-15T09:15:13.512469+00:00'
 ---
 # Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and Custom Hashing
 

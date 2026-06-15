@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - 数据类型基础：整数与内存
 - 运算符基础：让数据动起来
-reading_time_minutes: 12
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern

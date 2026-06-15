@@ -1,14 +1,15 @@
 ---
-title: "第39篇：std::expected 错误处理 —— 嵌入式中比异常更好的选择"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 9
+platform: stm32f1
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第39篇：std::expected 错误处理 —— 嵌入式中比异常更好的选择
+description: ''
 ---
 # 第39篇：std::expected 错误处理 —— 嵌入式中比异常更好的选择
 

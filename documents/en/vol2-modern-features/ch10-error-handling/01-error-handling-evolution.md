@@ -1,35 +1,35 @@
 ---
-title: 'The Evolution of Error Handling: From Error Codes to Type Safety'
-description: Error codes, exceptions, optional, expected — the evolution and selection
-  of error handling strategies
 chapter: 10
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- 类型安全
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
-reading_time_minutes: 18
+description: Error codes, exceptions, optional, expected — the evolution and selection
+  of error handling strategies
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - 'Chapter 4: std::optional'
 - 'Chapter 4: std::variant'
+reading_time_minutes: 13
 related:
 - optional 用于错误处理
 - std::expected
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+title: 'The Evolution of Error Handling: From Error Codes to Type Safety'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch10-error-handling/01-error-handling-evolution.md
   source_hash: 0527269738778238d40225dd5caa726ca179ab47e1bc524a0f586b6cf08b407a
-  translated_at: '2026-05-26T11:35:48.354388+00:00'
-  engine: anthropic
   token_count: 2466
+  translated_at: '2026-05-26T11:35:48.354388+00:00'
 ---
 # The Evolution of Error Handling: From Error Codes to Type Safety
 

@@ -1,24 +1,24 @@
 ---
-title: "用 C 实现面向对象编程"
-description: "用结构体 + 函数指针模拟类、封装、继承与多态，理解 OOP 的底层实现机制"
 chapter: 1
-order: 104
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 实战
-  - 基础
+cpp_standard:
+- 11
+description: 用结构体 + 函数指针模拟类、封装、继承与多态，理解 OOP 的底层实现机制
 difficulty: advanced
+order: 104
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11]
 prerequisites:
-  - "指针进阶：多级指针、指针与 const"
-  - "结构体、联合体与内存对齐"
-  - "函数指针与回调机制"
+- 指针进阶：多级指针、指针与 const
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+reading_time_minutes: 15
+tags:
+- host
+- cpp-modern
+- advanced
+- 实战
+- 基础
+title: 用 C 实现面向对象编程
 ---
-
 # 用 C 实现面向对象编程
 
 说实话，这个话题笔者纠结了很久要不要写。毕竟都 2026 年了，谁还在 C 里手搓 OOP？但后来想想——嵌入式开发、Linux 内核、GTK/GLib、Lua 源码，这些重量级的 C 项目哪一个不是在用 struct + 函数指针做面向对象？更关键的是，如果你不理解 C 层面 OOP 是怎么拼出来的，那学 C++ 的时候对虚函数表、vptr、动态绑定的理解就永远是空中楼阁——你知道语法怎么用，但不知道底下发生了什么。

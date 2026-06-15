@@ -1,36 +1,36 @@
 ---
-title: 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node
-  Handles'
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Deep dive into the underlying Red-Black Tree implementation of `std::map`
   and `set`: O(log n) complexity and stable iterators, heterogeneous lookup with C++14
   transparent comparators, and the only correct way to modify keys using C++17 node
   handles (`extract`/`merge`).'
-chapter: 7
+difficulty: intermediate
 order: 6
+platform: host
+prerequisites:
+- vector 深入：三指针、扩容与迭代器失效
+reading_time_minutes: 16
+related:
+- 容器选择指南
 tags:
 - host
 - cpp-modern
 - intermediate
 - map
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 25
-prerequisites:
-- vector 深入：三指针、扩容与迭代器失效
-related:
-- 容器选择指南
+title: 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node
+  Handles'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/06-map-set-deep-dive.md
   source_hash: 77321460fc6211a6e3fcec9b1c10ff5f68cd10c7c94768e2dadaa01998741357
-  translated_at: '2026-06-15T09:14:20.578956+00:00'
-  engine: anthropic
   token_count: 2719
+  translated_at: '2026-06-15T09:14:20.578956+00:00'
 ---
 # Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node Handles
 
@@ -95,7 +95,7 @@ Let's calculate the complexity clearly first. Red-black tree height is O(log n),
 
 What needs to be singled out here is not the complexity—it's normal for red-black trees to be a bit slower—but **iterator invalidation**. The invalidation rules for `map` are completely different from `vector`, and this is precisely a hard reason why you might choose `map` over `vector` in engineering.
 
-We covered `vector` in [that post](03-vector-deep-dive): once reallocation happens, all iterators, references, and pointers are invalidated because the underlying memory is contiguous and moves as a whole. `map` is different; its elements hang on independent tree nodes:
+We covered `vector` in [that post](03-vector-deep-dive.md): once reallocation happens, all iterators, references, and pointers are invalidated because the underlying memory is contiguous and moves as a whole. `map` is different; its elements hang on independent tree nodes:
 
 - **Insertion**: Does not invalidate any existing iterators, references, or pointers.
 - **Deletion**: Only invalidates the iterator/reference of the deleted element itself; all other elements remain untouched.

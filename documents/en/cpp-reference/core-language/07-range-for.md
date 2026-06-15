@@ -1,25 +1,26 @@
 ---
-title: Range-based for loop
-description: Iterate over all elements in a container or array with more concise syntax
 chapter: 99
-order: 7
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Iterate over all elements in a container or array with more concise syntax
+difficulty: beginner
+order: 7
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: Range-based for loop
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/07-range-for.md
   source_hash: 71206a5364cd1d7ea15a3be0e9749f68e557ff2aa400389ff554bdf4d3c4b2b9
-  translated_at: '2026-05-26T10:15:51.251212+00:00'
-  engine: anthropic
   token_count: 320
+  translated_at: '2026-05-26T10:15:51.251212+00:00'
 ---
 # Range-based for Loop (C++11)
 

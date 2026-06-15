@@ -1,31 +1,31 @@
 ---
-title: 'UDL in Practice: A Type-Safe Unit System'
-description: Implementing a type-safe physical unit system using user-defined literals
 chapter: 11
+cpp_standard:
+- 14
+- 17
+description: Implementing a type-safe physical unit system using user-defined literals
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 11: 用户自定义字面量基础'
+- 'Chapter 4: 强类型 typedef'
+reading_time_minutes: 11
+related:
+- constexpr 基础
 tags:
 - host
 - cpp-modern
 - intermediate
 - 字面量
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 14
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 11: 用户自定义字面量基础'
-- 'Chapter 4: 强类型 typedef'
-related:
-- constexpr 基础
+title: 'UDL in Practice: A Type-Safe Unit System'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch11-user-defined-literals/02-udl-practice.md
   source_hash: 9f70dc7cce796962a7a9bb3f7072a9d1e86793ef6dcbb9c6d15f3371aca82da2
-  translated_at: '2026-05-26T11:36:20.077610+00:00'
-  engine: anthropic
   token_count: 3063
+  translated_at: '2026-05-26T11:36:20.077610+00:00'
 ---
 # UDL in Practice: A Type-Safe Unit System
 

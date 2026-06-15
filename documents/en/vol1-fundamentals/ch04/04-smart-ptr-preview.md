@@ -1,32 +1,32 @@
 ---
-title: Smart Pointer Preview
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Learn why we need smart pointers, get an initial look at how `unique_ptr`
   automatically manages memory, and lay the groundwork for deeper exploration in Volume
   Two.
-chapter: 4
-order: 4
 difficulty: beginner
-reading_time_minutes: 10
+order: 4
 platform: host
 prerequisites:
 - 引用
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Smart Pointer Preview
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch04/04-smart-ptr-preview.md
   source_hash: 81b571dbabba1e5c271539224cb5709d99359a8957b29d510530735c36b43b67
-  translated_at: '2026-05-26T10:48:42.337533+00:00'
-  engine: anthropic
   token_count: 1706
+  translated_at: '2026-05-26T10:48:42.337533+00:00'
 ---
 # Smart Pointer Preview
 

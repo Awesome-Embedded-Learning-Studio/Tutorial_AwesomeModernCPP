@@ -1,21 +1,22 @@
 ---
-title: 'Understanding MSVC C++ Modules in One Article: Principles, Motivations, and
-  Engineering Practices'
-description: ''
+chapter: 11
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 11
-order: 8
+title: 'Understanding MSVC C++ Modules in One Article: Principles, Motivations, and
+  Engineering Practices'
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/msvc-cpp-modules.md
   source_hash: 74e75bca1d633acf4bdb1479b00dd46b5c104dda06e8b75af8043848d615024d
-  translated_at: '2026-05-26T11:39:57.001588+00:00'
-  engine: anthropic
   token_count: 1178
+  translated_at: '2026-05-26T11:39:57.001588+00:00'
+description: ''
 ---
 # Understanding MSVC C++ Modules: Principles, Motivation, and Engineering Practice
 

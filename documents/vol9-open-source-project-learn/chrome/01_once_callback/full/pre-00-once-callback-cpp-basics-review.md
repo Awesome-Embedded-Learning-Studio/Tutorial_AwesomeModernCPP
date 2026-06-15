@@ -1,25 +1,28 @@
 ---
-title: "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
-description: "一篇快速复习 OnceCallback 系列所需的所有 C++ 基础特性——移动语义、完美转发、可变参数模板、智能指针、atomic、lambda、类型特征等，为后续深度学习做好准备"
 chapter: 0
-order: 0
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 基础
-  - 入门
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 一篇快速复习 OnceCallback 系列所需的所有 C++ 基础特性——移动语义、完美转发、可变参数模板、智能指针、atomic、lambda、类型特征等，为后续深度学习做好准备
 difficulty: intermediate
+order: 0
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 25
 prerequisites:
-  - "卷一 C++ 基础入门"
+- 卷一 C++ 基础入门
+reading_time_minutes: 14
 related:
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
-  - "OnceCallback 前置知识（三）：Lambda 高级特性"
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（三）：Lambda 高级特性
+tags:
+- host
+- cpp-modern
+- intermediate
+- 基础
+- 入门
+title: OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
 ---
-
 # OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
 
 ## 引言

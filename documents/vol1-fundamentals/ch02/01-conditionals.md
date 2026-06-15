@@ -1,22 +1,25 @@
 ---
-title: "条件语句"
-description: "掌握 if/else、switch 和三元运算符，学会用条件语句控制程序走向"
 chapter: 2
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 if/else、switch 和三元运算符，学会用条件语句控制程序走向
 difficulty: beginner
-reading_time_minutes: 12
+order: 1
 platform: host
 prerequisites:
-  - "值类别简介"
+- 值类别简介
+reading_time_minutes: 10
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 条件语句
 ---
-
 # 条件语句
 
 额，你写程序，不可能没有if/else，对吧。如果程序永远只按照一条直线走到底，那它就和一个只会复读的机器没什么区别。现实中的程序需要做判断——"用户输入了负数？那就提示错误""传感器读数超过阈值？那就触发报警"。条件语句就是赋予程序这种"做决定"能力的机制。

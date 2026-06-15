@@ -1,31 +1,31 @@
 ---
-title: Pointer Arithmetic and Arrays
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master pointer arithmetic, the relationship between pointers and arrays,
   and pointer operations on C-style strings.
-chapter: 4
-order: 2
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
 - 指针基础
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Pointer Arithmetic and Arrays
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch04/02-pointer-arithmetic.md
   source_hash: 4dfbfc7aa5bee26e36ad834ce4463043100ce547b3d6bf025478bb5bc2897eb2
-  translated_at: '2026-05-26T10:48:07.579657+00:00'
-  engine: anthropic
   token_count: 2582
+  translated_at: '2026-05-26T10:48:07.579657+00:00'
 ---
 # Pointer Arithmetic and Arrays
 

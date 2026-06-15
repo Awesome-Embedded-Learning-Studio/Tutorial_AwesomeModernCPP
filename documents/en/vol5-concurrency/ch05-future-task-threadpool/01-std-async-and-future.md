@@ -1,33 +1,33 @@
 ---
-title: std::async and future
-description: Understanding `std::async` launch policies, the blocking semantics of
-  `future.get`, and the deferred trap
 chapter: 5
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- 异步编程
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understanding `std::async` launch policies, the blocking semantics of
+  `future.get`, and the deferred trap
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - 线程安全队列
+reading_time_minutes: 24
 related:
 - promise 与 packaged_task
 - 线程池设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+title: std::async and future
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch05-future-task-threadpool/01-std-async-and-future.md
   source_hash: 31367c94a78e8403d9b1a3b9d7e670ce34f2159b63a0a77d59561e4f4e80b375
-  translated_at: '2026-05-20T04:42:48.216328+00:00'
-  engine: anthropic
   token_count: 4366
+  translated_at: '2026-05-20T04:42:48.216328+00:00'
 ---
 # std::async and future
 

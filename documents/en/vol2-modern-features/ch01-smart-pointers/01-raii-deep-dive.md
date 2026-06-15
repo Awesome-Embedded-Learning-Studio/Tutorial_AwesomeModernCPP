@@ -1,33 +1,33 @@
 ---
-title: 'RAII In Depth: The Cornerstone of Resource Management'
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: From underlying mechanisms to practical applications, master the RAII
   (Resource Acquisition Is Initialization) principle comprehensively.
-chapter: 1
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 17
+related:
+- unique_ptr 详解
+- scope_guard 与 defer
 tags:
 - host
 - cpp-modern
 - intermediate
 - RAII
 - 内存管理
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
-related:
-- unique_ptr 详解
-- scope_guard 与 defer
+title: 'RAII In Depth: The Cornerstone of Resource Management'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/01-raii-deep-dive.md
   source_hash: a10c85b7e706ea9437ff67d47658ca50e37902a5470f36f4da43c8d6df904717
-  translated_at: '2026-05-26T11:19:31.723724+00:00'
-  engine: anthropic
   token_count: 3726
+  translated_at: '2026-05-26T11:19:31.723724+00:00'
 ---
 # A Deep Dive into RAII: The Cornerstone of Resource Management
 

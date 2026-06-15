@@ -1,23 +1,23 @@
 ---
-title: "目录遍历与搜索"
-description: "directory_iterator 与 recursive_directory_iterator 的用法与性能"
 chapter: 9
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: directory_iterator 与 recursive_directory_iterator 的用法与性能
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 9: path 操作"
-  - "Chapter 9: 文件与目录操作"
+- 'Chapter 9: path 操作'
+- 'Chapter 9: 文件与目录操作'
+reading_time_minutes: 13
 related:
-  - "Lambda 基础"
+- Lambda 基础
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 目录遍历与搜索
 ---
-
 # 目录遍历与搜索
 
 前两篇我们学会了用 `path` 处理路径、用文件操作函数管理文件和目录。但在实际项目中，最常见的需求其实是"在某个目录下找到我想要的文件"。比如：收集所有 `.cpp` 文件送给编译器，在资源目录里找到所有纹理图片，或者统计项目代码的总行数。

@@ -1,23 +1,24 @@
 ---
-title: Three-way comparison operator (<=>)
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: A C++20 language feature that automatically generates all six comparison
   operators from a single definition.
-chapter: 99
+difficulty: intermediate
 order: 12
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-cpp_standard:
-- 20
-- 23
+title: Three-way comparison operator (<=>)
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/12-spaceship-operator.md
   source_hash: d03fa35b82ab836a64c86a85a4be50a942b81f56abe5f67e35aac9a54dc17b6c
-  translated_at: '2026-05-26T10:16:16.396663+00:00'
-  engine: anthropic
   token_count: 523
+  translated_at: '2026-05-26T10:16:16.396663+00:00'
 ---
 <!--
 Reference Card Template

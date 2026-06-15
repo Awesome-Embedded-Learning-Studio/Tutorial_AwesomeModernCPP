@@ -1,31 +1,31 @@
 ---
-title: promise_type and awaitable
+chapter: 6
+cpp_standard:
+- 20
 description: Master the two major customization extension points of C++20 coroutines—`promise_type`
   controls coroutine behavior, while awaitable controls suspension and resumption.
-chapter: 6
+difficulty: advanced
 order: 3
+platform: host
+prerequisites:
+- C++20 协程基础
+reading_time_minutes: 28
+related:
+- 异步 I/O 与事件循环
+- 协程 Echo Server 实战
 tags:
 - host
 - cpp-modern
 - advanced
 - coroutine
 - 异步编程
-difficulty: advanced
-platform: host
-reading_time_minutes: 30
-cpp_standard:
-- 20
-prerequisites:
-- C++20 协程基础
-related:
-- 异步 I/O 与事件循环
-- 协程 Echo Server 实战
+title: promise_type and awaitable
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch06-async-io-coroutine/03-promise-type-and-awaitable.md
   source_hash: 7e640814d8bf6b9d34b83e4824465ebecdf8cc0017be5b5da2fed0cf4bc85799
-  translated_at: '2026-05-20T04:46:59.715535+00:00'
-  engine: anthropic
   token_count: 5943
+  translated_at: '2026-05-20T04:46:59.715535+00:00'
 ---
 # promise_type and awaitable
 

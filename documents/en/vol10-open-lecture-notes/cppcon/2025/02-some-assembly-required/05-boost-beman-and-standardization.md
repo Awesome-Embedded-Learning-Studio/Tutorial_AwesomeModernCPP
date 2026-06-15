@@ -1,29 +1,30 @@
 ---
-title: Boost, Beman, and the C++ Standardization Path
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 5
+platform: host
+reading_time_minutes: 20
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 5
+talk_title: 'C++: Some Assembly Required'
+title: Boost, Beman, and the C++ Standardization Path
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/05-boost-beman-and-standardization.md
   source_hash: 3d5624c64346be62c1181dc160e1db7e559cdb3fad0de459d4e53e4323112c56
-  translated_at: '2026-05-26T11:15:03.085272+00:00'
-  engine: anthropic
   token_count: 4113
+  translated_at: '2026-05-26T11:15:03.085272+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # Boost: Inside the C++ Standard Library's "Back Garden"
 

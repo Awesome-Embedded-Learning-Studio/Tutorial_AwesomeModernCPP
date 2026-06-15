@@ -1,25 +1,28 @@
 ---
-title: "线程安全容器设计"
-description: "粗粒度锁、细粒度锁、分片锁与 copy-on-write 四种策略的设计与权衡"
 chapter: 4
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - mutex
-  - 容器
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 粗粒度锁、细粒度锁、分片锁与 copy-on-write 四种策略的设计与权衡
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程安全队列"
-  - "读写锁与 shared_mutex"
+- 线程安全队列
+- 读写锁与 shared_mutex
+reading_time_minutes: 23
 related:
-  - "无锁编程基础"
+- 无锁编程基础
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+- 容器
+title: 线程安全容器设计
 ---
-
 # 线程安全容器设计
 
 说实话，笔者第一次需要写一个"多线程能用的 map"的时候，第一反应是——这有什么难的，不就是在每个操作外面加个 lock_guard 吗？然后真的动手写了才发现，事情远没有那么简单。加锁本身不难，难的是加对了、加够了、加得恰到好处。锁加粗了性能炸，锁加细了正确性炸，锁加错位置了直接 data race 炸。

@@ -14,7 +14,7 @@ prerequisites:
 - 11 C 字符串与缓冲区安全
 - 12 结构体与内存对齐
 - 14 动态内存管理
-reading_time_minutes: 11
+reading_time_minutes: 8
 tags:
 - host
 - cpp-modern
@@ -23,11 +23,11 @@ tags:
 - 基础
 title: File I/O and Standard Library Overview
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/16-file-io-and-stdlib.md
   source_hash: e9a734634f87a00129e5ca66d6817aec7c2976dd5bdea8a4ba8ef4fa7c84c657
-  translated_at: '2026-06-13T11:43:06.371064+00:00'
-  engine: anthropic
   token_count: 1855
+  translated_at: '2026-06-13T11:43:06.371064+00:00'
 ---
 # File I/O and Standard Library Overview
 

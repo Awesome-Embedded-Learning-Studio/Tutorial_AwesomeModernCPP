@@ -1,29 +1,29 @@
 ---
-title: 'Internal Mechanics of string_view: Non-Owning String Views'
+chapter: 8
+cpp_standard:
+- 17
 description: Understanding the implementation mechanism of `string_view`, its comparison
   with SSO, and its construction sources
-chapter: 8
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 17
+related:
+- string_view 性能分析
+- string_view 陷阱与最佳实践
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 0: 右值引用'
-related:
-- string_view 性能分析
-- string_view 陷阱与最佳实践
+title: 'Internal Mechanics of string_view: Non-Owning String Views'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch08-string-view/01-string-view-internals.md
   source_hash: a0a009491524531a04cdff6ea62afb12d4c912b1e84bdd34e505dba244a64269
-  translated_at: '2026-05-26T11:32:43.964326+00:00'
-  engine: anthropic
   token_count: 3346
+  translated_at: '2026-05-26T11:32:43.964326+00:00'
 ---
 # string_view Internals: A Non-Owning String View
 

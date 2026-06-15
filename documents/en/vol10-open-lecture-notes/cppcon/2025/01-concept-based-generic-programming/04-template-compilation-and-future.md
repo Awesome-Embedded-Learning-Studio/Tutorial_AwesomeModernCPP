@@ -1,31 +1,32 @@
 ---
-title: Template Compilation Model and Future Outlook
+chapter: 1
+conference: cppcon
+conference_year: 2025
+cpp_standard:
+- 20
+- 23
 description: CppCon 2025 talk notes — templates shouldn't be compiled in isolation,
   concepts as compile-time functions for building a type system, complementary nature
   of interface inheritance and concepts, and future ecosystem development
-conference: cppcon
-conference_year: 2025
-talk_title: Concept-based Generic Programming
+difficulty: intermediate
+order: 4
+platform: host
+reading_time_minutes: 28
 speaker: Bjarne Stroustrup
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
-video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-chapter: 1
-order: 4
+talk_title: Concept-based Generic Programming
+title: Template Compilation Model and Future Outlook
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/04-template-compilation-and-future.md
   source_hash: fa37499a23540a3c77d21e3e7acf33586e20828216923a4d6876029ba73d29ee
-  translated_at: '2026-05-26T11:06:46.187438+00:00'
-  engine: anthropic
   token_count: 4467
+  translated_at: '2026-05-26T11:06:46.187438+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
 # Templates Shouldn't Be Compiled in Isolation
 

@@ -1,14 +1,15 @@
 ---
-title: 快速在WSL上开发一般的C++上位机程序
-description: ''
+chapter: 1
+difficulty: intermediate
+order: 6
+platform: host
+reading_time_minutes: 5
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 1
-order: 6
+title: 快速在WSL上开发一般的C++上位机程序
+description: ''
 ---
 # 快速在WSL上开发一般的C++上位机程序
 

@@ -1,33 +1,33 @@
 ---
-title: atomic operation
-description: 'Complete operation manual for std::atomic<T>: load/store, fetch_add,
-  compare_exchange, and lock-free determination'
 chapter: 3
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-- atomic
-difficulty: intermediate
-platform: host
-reading_time_minutes: 22
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: 'Complete operation manual for std::atomic<T>: load/store, fetch_add,
+  compare_exchange, and lock-free determination'
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - latch、barrier 与 semaphore
+reading_time_minutes: 18
 related:
 - 内存序详解
 - 原子操作模式
+tags:
+- host
+- cpp-modern
+- intermediate
+- atomic
+title: atomic operation
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch03-atomic-memory-model/01-atomic-operations.md
   source_hash: dc06bd976c7e03b3be88b94c28c35be66ac78a049e3ff700d91050ffdb32f196
-  translated_at: '2026-06-15T09:26:55.817508+00:00'
-  engine: anthropic
   token_count: 4110
+  translated_at: '2026-06-15T09:26:55.817508+00:00'
 ---
 # Atomic Operations
 

@@ -1,16 +1,20 @@
 ---
-title: "std::shared_ptr"
-description: "通过引用计数共享对象所有权的智能指针"
 chapter: 2
-order: 0
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 通过引用计数共享对象所有权的智能指针
 difficulty: intermediate
-cpp_standard: [11, 14, 17, 20]
+order: 0
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: std::shared_ptr
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

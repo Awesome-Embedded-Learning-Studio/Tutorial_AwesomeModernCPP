@@ -1,25 +1,27 @@
 ---
-title: "unique_ptr 详解：独占所有权的零开销智能指针"
-description: "深入 unique_ptr 的实现原理、用法与最佳实践"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - unique_ptr
-  - 智能指针
+cpp_standard:
+- 11
+- 14
+- 17
+description: 深入 unique_ptr 的实现原理、用法与最佳实践
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 1: RAII 深入理解"
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 17
 related:
-  - "shared_ptr 详解"
-  - "自定义删除器"
+- shared_ptr 详解
+- 自定义删除器
+tags:
+- host
+- cpp-modern
+- intermediate
+- unique_ptr
+- 智能指针
+title: unique_ptr 详解：独占所有权的零开销智能指针
 ---
-
 # unique_ptr 详解：独占所有权的零开销智能指针
 
 在上一篇我们聊了 RAII——C++ 资源管理的基石。现在我们来看 RAII 思想在智能指针领域最直接的体现：`std::unique_ptr`。这个类的设计哲学可以用一句话概括：**一个对象，一个主人，零开销**。它不搞什么引用计数、不做原子操作、不分配额外的控制块——你给它一个对象，它替你管好；你离开作用域，它替你删掉。就这么简单。（btw，这玩意怎么面试这么爱考）

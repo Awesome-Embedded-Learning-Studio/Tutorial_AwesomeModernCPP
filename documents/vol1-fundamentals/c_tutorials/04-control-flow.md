@@ -8,7 +8,7 @@ order: 6
 platform: host
 prerequisites:
 - 位运算与求值顺序
-reading_time_minutes: 15
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern

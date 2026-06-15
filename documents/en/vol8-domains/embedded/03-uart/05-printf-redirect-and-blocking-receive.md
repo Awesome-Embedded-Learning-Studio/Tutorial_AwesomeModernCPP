@@ -1,21 +1,22 @@
 ---
-title: 'Part 35: `printf` Redirection and Blocking Receive — Making the Chip Speak
-  with `printf`, and Listen Too'
-description: ''
+chapter: 17
+difficulty: beginner
+order: 5
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 17
-order: 5
+title: 'Part 35: `printf` Redirection and Blocking Receive — Making the Chip Speak
+  with `printf`, and Listen Too'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/05-printf-redirect-and-blocking-receive.md
   source_hash: bfc84034896ca641ead87b2adc1105cac3d20bae8a305e95f3f2c0a7b13b2f2d
-  translated_at: '2026-05-26T12:15:52.556018+00:00'
-  engine: anthropic
   token_count: 1226
+  translated_at: '2026-05-26T12:15:52.556018+00:00'
+description: ''
 ---
 # Part 35: printf Retargeting and Blocking Receive — Making the Chip Speak with printf, and Learning to Listen
 

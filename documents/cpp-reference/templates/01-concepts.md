@@ -1,16 +1,18 @@
 ---
-title: "约束与概念"
-description: "在编译期对模板参数施加语义约束，提供清晰的错误信息"
 chapter: 99
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - 模板
+cpp_standard:
+- 20
+- 23
+description: 在编译期对模板参数施加语义约束，提供清晰的错误信息
 difficulty: intermediate
-cpp_standard: [20, 23]
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- 模板
+title: 约束与概念
 ---
-
 # 约束与概念（C++20）
 
 ## 一句话

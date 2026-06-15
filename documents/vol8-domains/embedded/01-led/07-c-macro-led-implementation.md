@@ -1,14 +1,15 @@
 ---
-title: 第12篇：C宏时代的LED驱动 —— 能跑但不优雅
-description: ''
+chapter: 15
+difficulty: beginner
+order: 7
+platform: stm32f1
+reading_time_minutes: 21
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 7
+title: 第12篇：C宏时代的LED驱动 —— 能跑但不优雅
+description: ''
 ---
 # 第12篇：C宏时代的LED驱动 —— 能跑但不优雅
 

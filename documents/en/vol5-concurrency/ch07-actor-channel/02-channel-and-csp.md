@@ -1,32 +1,32 @@
 ---
-title: Channels and the CSP Model
+chapter: 7
+cpp_standard:
+- 17
+- 20
 description: Understanding the CSP (Communicating Sequential Processes) concurrency
   model, implementing Go-like channels in C++
-chapter: 7
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- Actor 模型与消息传递
+- 线程安全队列
+reading_time_minutes: 24
+related:
+- 协程 Echo Server 实战
 tags:
 - host
 - cpp-modern
 - intermediate
 - 异步编程
 - 进阶
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 17
-- 20
-prerequisites:
-- Actor 模型与消息传递
-- 线程安全队列
-related:
-- 协程 Echo Server 实战
+title: Channels and the CSP Model
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch07-actor-channel/02-channel-and-csp.md
   source_hash: 2fe033f08c0df15f8bfef37e75e815af4947f53456d931c5f4a80ade88241259
-  translated_at: '2026-05-20T04:48:08.473555+00:00'
-  engine: anthropic
   token_count: 5701
+  translated_at: '2026-05-20T04:48:08.473555+00:00'
 ---
 # Channels and the CSP Model
 

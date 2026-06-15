@@ -1,23 +1,26 @@
 ---
-title: "第一个 C++ 程序"
-description: "编写、编译和运行你的第一个 C++ 程序，理解 main 函数、输入输出和编译流程"
 chapter: 0
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 编写、编译和运行你的第一个 C++ 程序，理解 main 函数、输入输出和编译流程
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "Linux 环境搭建"
-  - "Windows 环境搭建"
+- Linux 环境搭建
+- Windows 环境搭建
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 第一个 C++ 程序
 ---
-
 # 第一个 C++ 程序
 
 环境搭好了，编译器也装好了，接下来该干正事了——写我们的第一行 C++ 代码。

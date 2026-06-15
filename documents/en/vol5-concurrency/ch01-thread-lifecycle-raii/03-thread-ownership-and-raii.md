@@ -1,33 +1,33 @@
 ---
-title: Thread Ownership and RAII
-description: Wrapping `std::thread` with RAII to implement an exception-safe `joining_thread`
-  guard and scope-exit cleanup
 chapter: 1
-order: 3
-tags:
-- host
-- cpp-modern
-- intermediate
-- RAII
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Wrapping `std::thread` with RAII to implement an exception-safe `joining_thread`
+  guard and scope-exit cleanup
+difficulty: intermediate
+order: 3
+platform: host
 prerequisites:
 - 线程参数与生命周期
+reading_time_minutes: 18
 related:
 - mutex 与 RAII 锁
 - jthread 与停止令牌
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII
+title: Thread Ownership and RAII
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch01-thread-lifecycle-raii/03-thread-ownership-and-raii.md
   source_hash: f8c117653d9fde2694952716e1b91c176973c6f3621e15a88b4cb1a613fdbc81
-  translated_at: '2026-05-20T04:35:21.082754+00:00'
-  engine: anthropic
   token_count: 3758
+  translated_at: '2026-05-20T04:35:21.082754+00:00'
 ---
 # Thread Ownership and RAII
 

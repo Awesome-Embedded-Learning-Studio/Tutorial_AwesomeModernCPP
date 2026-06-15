@@ -1,31 +1,31 @@
 ---
-title: When to Use C++ and Which Features to Use
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Exploring when to choose C++ over C, and how to wisely use C++ features
   in embedded environments, including recommended, compromised, and prohibited features.
-chapter: 0
+difficulty: beginner
 order: 4
+platform: host
+prerequisites: []
+reading_time_minutes: 16
+related: []
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-reading_time_minutes: 18
-prerequisites: []
-related: []
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-platform: host
+title: When to Use C++ and Which Features to Use
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/04-when-to-use-cpp.md
   source_hash: 4416492a771f9b4df027778c76a10300b14863d65a1e101936b99c28c8db1aa5
-  translated_at: '2026-05-26T10:26:21.523524+00:00'
-  engine: anthropic
   token_count: 2630
+  translated_at: '2026-05-26T10:26:21.523524+00:00'
 ---
 # When to Use C++ and Which Features to Use
 

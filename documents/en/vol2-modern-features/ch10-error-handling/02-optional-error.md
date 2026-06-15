@@ -1,32 +1,32 @@
 ---
-title: Using `optional` for Error Handling
+chapter: 10
+cpp_standard:
+- 17
+- 23
 description: Using `std::optional` to represent 'operations that may fail', replacing
   error codes and exceptions
-chapter: 10
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 4: std::optional'
+reading_time_minutes: 11
+related:
+- std::expected
 tags:
 - host
 - cpp-modern
 - intermediate
 - optional
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 23
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 10: 错误处理的演进'
-- 'Chapter 4: std::optional'
-related:
-- std::expected
+title: Using `optional` for Error Handling
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch10-error-handling/02-optional-error.md
   source_hash: 1325123438c62de6c965f5f9c5487f0f3fa5b5fc6a0d4c00bde5939f355bcca1
-  translated_at: '2026-05-26T11:34:52.460207+00:00'
-  engine: anthropic
   token_count: 2717
+  translated_at: '2026-05-26T11:34:52.460207+00:00'
 ---
 # Using optional for Error Handling
 

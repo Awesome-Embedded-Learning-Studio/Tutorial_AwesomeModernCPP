@@ -1,25 +1,28 @@
 ---
-title: "原子操作模式"
-description: "SeqLock、Double-Checked Locking、引用计数与发布-订阅等经典原子模式的正确实现"
 chapter: 3
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - atomic
-  - 无锁
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: SeqLock、Double-Checked Locking、引用计数与发布-订阅等经典原子模式的正确实现
 difficulty: advanced
+order: 5
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "fence 与编译器屏障"
-  - "atomic_wait 与 atomic_ref"
+- fence 与编译器屏障
+- atomic_wait 与 atomic_ref
+reading_time_minutes: 26
 related:
-  - "无锁编程基础"
+- 无锁编程基础
+tags:
+- host
+- cpp-modern
+- advanced
+- atomic
+- 无锁
+title: 原子操作模式
 ---
-
 # 原子操作模式
 
 > 📖 **应用场景**：这一篇的原子模式在嵌入式里有个高频落地——ISR 和主循环之间无锁共享变量。如果你在写单片机固件，配着 [卷八·中断安全编程](../../vol8-domains/embedded/05-interrupt-safe-coding.md)看会更通透。

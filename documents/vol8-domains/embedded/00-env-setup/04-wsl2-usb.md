@@ -1,14 +1,15 @@
 ---
-title: 环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
-description: ''
+chapter: 14
+difficulty: beginner
+order: 4
+platform: stm32f1
+reading_time_minutes: 14
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 4
+title: 环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
+description: ''
 ---
 # 环境搭建（四）：WSL2 USB 透传，让 ST-Link 穿越虚拟化边界
 

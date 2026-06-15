@@ -1,25 +1,28 @@
 ---
-title: "并发程序调试技巧"
-description: "掌握 ThreadSanitizer、Helgrind 等工具的使用方法，建立并发 bug 的系统性诊断流程"
 chapter: 8
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 ThreadSanitizer、Helgrind 等工具的使用方法，建立并发 bug 的系统性诊断流程
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "mutex 与 RAII 锁"
-  - "原子操作"
-  - "线程安全队列"
+- mutex 与 RAII 锁
+- 原子操作
+- 线程安全队列
+reading_time_minutes: 26
 related:
-  - "并发性能测试与基准"
+- 并发性能测试与基准
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+title: 并发程序调试技巧
 ---
-
 # 并发程序调试技巧
 
 说实话，调试并发程序的痛苦程度，只有亲自踩过坑的人才能理解。单线程程序的 bug 好歹是确定性的——你给定同样的输入，它一定在同一个地方以同样的方式炸掉。但并发 bug 不是这样。数据竞争可能跑一万次才出现一次，死锁可能只在某个特定的线程调度顺序下才触发，而且它总是"在你这里没问题，在 CI 上必挂"。笔者曾经为一个 data race 搞了整整两天，最后发现是一个 lambda 捕获了局部变量的引用——这种 bug 你光看代码根本看不出来，因为单线程执行路径下它完全正确。

@@ -1,26 +1,29 @@
 ---
-title: "异步编程演进：从回调地狱到协程"
-description: "梳理异步编程范式的演进脉络——回调、future 链、协程，理解每种模型的动机、痛点与 C++ 中的实现形态"
 chapter: 6
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 异步编程
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 梳理异步编程范式的演进脉络——回调、future 链、协程，理解每种模型的动机、痛点与 C++ 中的实现形态
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程池设计"
-  - "promise 与 packaged_task"
+- 线程池设计
+- promise 与 packaged_task
+reading_time_minutes: 21
 related:
-  - "C++20 协程基础"
-  - "异步 I/O 与事件循环"
+- C++20 协程基础
+- 异步 I/O 与事件循环
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+- 基础
+title: 异步编程演进：从回调地狱到协程
 ---
-
 # 异步编程演进：从回调地狱到协程
 
 > 📖 **前置阅读**：这一篇会用到 C++20 协程。如果你还没接触过 `co_await`/`co_return`、`promise_type` 这些底层机制，可以先翻 [卷四·协程基础](../../vol4-advanced/01-coroutine-basics.md)——那里从零拆解了协程的"骨架"是怎么搭起来的。

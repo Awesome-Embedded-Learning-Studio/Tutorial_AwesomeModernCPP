@@ -11,7 +11,7 @@ difficulty: beginner
 order: 6
 platform: host
 prerequisites: []
-reading_time_minutes: 44
+reading_time_minutes: 20
 related: []
 tags:
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - intermediate
 title: Performance and Size Evaluation
 translation:
+  engine: anthropic
   source: documents/vol6-performance/06-evaluating-performance-and-size.md
   source_hash: 8f239d8b3cc3df3a3dc27eb08425c56cf467d163cb010c46344ce41c8b53a80d
-  translated_at: '2026-06-15T09:30:43.435662+00:00'
-  engine: anthropic
   token_count: 6915
+  translated_at: '2026-06-15T09:30:43.435662+00:00'
 ---
 # Modern Embedded C++ Tutorial — Does C++ Necessarily Cause Code Bloat?
 

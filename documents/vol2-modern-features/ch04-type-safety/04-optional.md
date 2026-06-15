@@ -1,24 +1,25 @@
 ---
-title: "std::optional：优雅表达'可能没有值'"
-description: "用 optional 替代特殊值和裸指针，安全表达可选语义"
 chapter: 4
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - optional
-  - 类型安全
+cpp_standard:
+- 17
+- 23
+description: 用 optional 替代特殊值和裸指针，安全表达可选语义
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [17, 23]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 4: std::variant"
+- 'Chapter 4: std::variant'
+reading_time_minutes: 13
 related:
-  - "错误处理的现代方式"
+- 错误处理的现代方式
+tags:
+- host
+- cpp-modern
+- intermediate
+- optional
+- 类型安全
+title: std::optional：优雅表达'可能没有值'
 ---
-
 # std::optional：优雅表达"可能没有值"
 
 ## 引言

@@ -1,25 +1,27 @@
 ---
-title: "泛型 Lambda 与模板 Lambda"
-description: "从 auto 参数到模板参数，lambda 的泛型编程能力"
 chapter: 3
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
-  - 泛型
+cpp_standard:
+- 14
+- 17
+- 20
+description: 从 auto 参数到模板参数，lambda 的泛型编程能力
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [14, 17, 20]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 3: Lambda 基础"
-  - "Chapter 3: Lambda 捕获机制深入"
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 3: Lambda 捕获机制深入'
+reading_time_minutes: 13
 related:
-  - "函数式编程模式"
+- 函数式编程模式
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- 泛型
+title: 泛型 Lambda 与模板 Lambda
 ---
-
 # 泛型 Lambda 与模板 Lambda
 
 ## 引言

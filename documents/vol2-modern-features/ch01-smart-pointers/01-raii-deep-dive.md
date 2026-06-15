@@ -1,25 +1,27 @@
 ---
-title: "RAII 深入理解：资源管理的基石"
-description: "从底层机制到实战应用，全面掌握 RAII 原则"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - RAII
-  - 内存管理
+cpp_standard:
+- 11
+- 14
+- 17
+description: 从底层机制到实战应用，全面掌握 RAII 原则
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 17
 related:
-  - "unique_ptr 详解"
-  - "scope_guard 与 defer"
+- unique_ptr 详解
+- scope_guard 与 defer
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII
+- 内存管理
+title: RAII 深入理解：资源管理的基石
 ---
-
 # RAII 深入理解：资源管理的基石
 
 笔者最早学 C++ 的时候，对"资源管理"这件事完全没有概念——new 了一个对象就忘了 delete，打开了一个文件就忘了 fclose，锁住了 mutex 就忘了 unlock。后来项目越来越大，这种"手抖忘释放"的 bug 开始像蟑螂一样，发现一只就意味着角落里还有十只(嗯，事实证明发现的时候我可能还要同时写项目复盘报告咯，哭)。直到有一天笔者认真读了 Bjarne Stroustrup 的书，才明白 C++ 早就为我们准备了一套优雅的解决方案：RAII。

@@ -1,14 +1,15 @@
 ---
-title: "第43篇：常见坑位与实战练习 —— 把 UART 玩出花样来"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 13
+platform: stm32f1
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第43篇：常见坑位与实战练习 —— 把 UART 玩出花样来
+description: ''
 ---
 # 第43篇：常见坑位与实战练习 —— 把 UART 玩出花样来
 

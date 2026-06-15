@@ -1,34 +1,34 @@
 ---
-title: Memory Order Explained
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: From compiler reordering to CPU reordering, breaking down the six `memory_order`
   values and the happens-before relationship one by one.
-chapter: 3
+difficulty: advanced
 order: 2
+platform: host
+prerequisites:
+- atomic 操作
+reading_time_minutes: 16
+related:
+- fence 与编译器屏障
+- 原子操作模式
 tags:
 - host
 - cpp-modern
 - advanced
 - atomic
 - memory_order
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- atomic 操作
-related:
-- fence 与编译器屏障
-- 原子操作模式
+title: Memory Order Explained
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md
   source_hash: daf000fe389a45fe175cafa1f72f5dafcd40f2b83bb51d0dc03260d73dfe648b
-  translated_at: '2026-05-20T04:38:31.241349+00:00'
-  engine: anthropic
   token_count: 2916
+  translated_at: '2026-05-20T04:38:31.241349+00:00'
 ---
 # Memory Order Explained
 

@@ -1,21 +1,24 @@
 ---
-title: "OOP 实战"
-description: "综合运用继承、多态和运算符重载，实现一个完整的图形绘制系统，并讨论继承 vs 组合的设计选择"
 chapter: 8
-order: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 综合运用继承、多态和运算符重载，实现一个完整的图形绘制系统，并讨论继承 vs 组合的设计选择
 difficulty: intermediate
-reading_time_minutes: 15
+order: 5
 platform: host
 prerequisites:
-  - "多继承与虚继承"
+- 多继承与虚继承
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: OOP 实战
 ---
-
 # OOP 实战
 
 到目前为止，我们已经把 OOP 的核心零件全部拆解过一遍了——类与对象、构造与析构、继承与多态、运算符重载、虚继承。每个知识点单独拿出来不算复杂，但真正写项目的时候，这些零件是同时出场、互相配合的。这一章我们换一种玩法：不再零散地讲知识点，而是从头到尾实现一个完整的图形绘制系统，把前面学的所有 OOP 技术一次性串起来，最后还会讨论继承 vs 组合的设计选择。

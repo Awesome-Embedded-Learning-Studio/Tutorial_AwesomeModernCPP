@@ -10,7 +10,7 @@ order: 17
 platform: host
 prerequisites:
 - 12 结构体与内存对齐
-reading_time_minutes: 15
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern

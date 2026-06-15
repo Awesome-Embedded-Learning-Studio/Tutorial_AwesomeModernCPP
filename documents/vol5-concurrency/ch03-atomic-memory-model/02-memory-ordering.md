@@ -1,25 +1,28 @@
 ---
-title: "内存序详解"
-description: "从编译器重排到 CPU 重排，逐个拆解六种 memory_order 与 happens-before 关系"
 chapter: 3
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - atomic
-  - memory_order
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从编译器重排到 CPU 重排，逐个拆解六种 memory_order 与 happens-before 关系
 difficulty: advanced
+order: 2
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "atomic 操作"
+- atomic 操作
+reading_time_minutes: 16
 related:
-  - "fence 与编译器屏障"
-  - "原子操作模式"
+- fence 与编译器屏障
+- 原子操作模式
+tags:
+- host
+- cpp-modern
+- advanced
+- atomic
+- memory_order
+title: 内存序详解
 ---
-
 # 内存序详解
 
 上一篇我们完整地拆解了 `std::atomic<T>` 的操作集——load、store、fetch_add、compare_exchange，一口气用下来默认参数就能跑。但你有没有注意到，几乎每个原子操作都有一个可选的 `std::memory_order` 参数？很多人（包括当年的笔者）都是直接无视它，反正默认值能工作嘛。

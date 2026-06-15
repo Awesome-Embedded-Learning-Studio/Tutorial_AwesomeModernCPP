@@ -1,31 +1,31 @@
 ---
-title: 'WeakPtr Anti-Pattern: The Fatal Pitfall of T* + raw Flag*'
+chapter: 1
+cpp_standard:
+- 17
+- 20
 description: Deep dive into why `T*` + raw `Flag*` is not a reliable `WeakPtr`, reproducing
   UB with a minimal example
-chapter: 1
+difficulty: advanced
 order: 2
+platform: host
+prerequisites:
+- 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
+reading_time_minutes: 8
+related:
+- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
 tags:
 - host
 - cpp-modern
 - advanced
 - 智能指针
 - 引用计数
-difficulty: advanced
-platform: host
-reading_time_minutes: 11
-prerequisites:
-- 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
-related:
-- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
-cpp_standard:
-- 17
-- 20
+title: 'WeakPtr Anti-Pattern: The Fatal Pitfall of T* + raw Flag*'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/02-unsafe-weakptr-ub.md
   source_hash: 2077fd44adf00a49be04935895503109025582298fd60609aa03ef7d442d9b9b
-  translated_at: '2026-05-26T11:54:41.334423+00:00'
-  engine: anthropic
   token_count: 1878
+  translated_at: '2026-05-26T11:54:41.334423+00:00'
 ---
 # The WeakPtr Anti-Pattern: The Fatal Trap of `T* + raw Flag*`
 

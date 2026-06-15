@@ -1,23 +1,26 @@
 ---
-title: "语法统一、高级 Concept 与泛型哲学"
-description: "CppCon 2025 演讲笔记 —— 语法统一性、SmartPtr 约束、多参数 Concept、泛型 vs OOP、迭代完善与 C++26 反射初体验"
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: "Concept-based Generic Programming"
-speaker: "Bjarne Stroustrup"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW"
-video_youtube: "https://www.youtube.com/watch?v=VMGB75hsDQo"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 演讲笔记 —— 语法统一性、SmartPtr 约束、多参数 Concept、泛型 vs OOP、迭代完善与 C++26
+  反射初体验
 difficulty: intermediate
-platform: host
-cpp_standard: [20, 23]
-chapter: 1
 order: 3
+platform: host
+reading_time_minutes: 44
+speaker: Bjarne Stroustrup
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: Concept-based Generic Programming
+title: 语法统一、高级 Concept 与泛型哲学
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
-
 # 语法统一这件事，也许比咱们想的重要得多
 
 我之前一直觉得，语法统一嘛，就是"写起来好看一点"的表面功夫。但如果你回头看 Simula 或者 Java，你会发现一个很别扭的设计：自定义类型必须用 `new` 来创建，但内置类型不行。在 Simula 里你甚至不能对 `int` 用 `new`。这就导致一个致命后果——你永远写不出一个真正通用的容器或者算法，因为它在语法层面就被劈成了两半。一半处理内置类型，一半处理自定义类型，两套代码，两套规则。

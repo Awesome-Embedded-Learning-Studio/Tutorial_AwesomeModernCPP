@@ -1,29 +1,29 @@
 ---
-title: 'Lab 0: Thread Lifecycle Lab'
+chapter: 10
+cpp_standard:
+- 17
+- 20
 description: Build practical skills in thread creation, RAII (Resource Acquisition
   Is Initialization) wrappers, parameter lifetimes, and `thread_local` statistics
   through a parallel file scanner.
-chapter: 10
-order: 0
 difficulty: intermediate
+order: 0
+prerequisites:
+- '卷五 ch00: 并发思维与基础'
+- '卷五 ch01: 线程生命周期与 RAII'
+reading_time_minutes: 23
 tags:
 - host
 - cpp-modern
 - atomic
 - beginner
-cpp_standard:
-- 17
-- 20
-reading_time_minutes: 45
-prerequisites:
-- '卷五 ch00: 并发思维与基础'
-- '卷五 ch01: 线程生命周期与 RAII'
+title: 'Lab 0: Thread Lifecycle Lab'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/00-thread-lifecycle.md
   source_hash: f23eb737442de2a38066d1df35a38e169fc1e094005d858fc082e02607f3aaac
-  translated_at: '2026-05-26T11:46:56.934720+00:00'
-  engine: anthropic
   token_count: 5741
+  translated_at: '2026-05-26T11:46:56.934720+00:00'
 ---
 # Lab 0: Thread Lifecycle Lab
 

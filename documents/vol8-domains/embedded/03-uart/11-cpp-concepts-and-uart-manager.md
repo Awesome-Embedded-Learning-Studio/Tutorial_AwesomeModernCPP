@@ -1,14 +1,15 @@
 ---
-title: "第41篇：Concepts 约束 GPIO 初始化 + UartManager —— 类型安全的组装"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 11
+platform: stm32f1
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第41篇：Concepts 约束 GPIO 初始化 + UartManager —— 类型安全的组装
+description: ''
 ---
 # 第41篇：Concepts 约束 GPIO 初始化 + UartManager —— 类型安全的组装
 

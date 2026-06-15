@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 卷一：std::string 与字符串字面量基础
-reading_time_minutes: 7
+reading_time_minutes: 6
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 类型安全
 title: char8_t and UTF-8 Strings
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/30-char8-t-utf8.md
   source_hash: bf65e1fa69d057d8e2387796ce4ed2c2c677e348f2808d359b0b024109c38afc
-  translated_at: '2026-06-14T00:19:58.325857+00:00'
-  engine: anthropic
   token_count: 1220
+  translated_at: '2026-06-14T00:19:58.325857+00:00'
 ---
 # char8_t and UTF-8 Strings
 

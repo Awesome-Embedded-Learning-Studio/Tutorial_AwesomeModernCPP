@@ -9,7 +9,7 @@ order: 16
 platform: host
 prerequisites:
 - restrict、不完整类型与结构体指针
-reading_time_minutes: 24
+reading_time_minutes: 16
 tags:
 - host
 - cpp-modern
@@ -18,11 +18,11 @@ tags:
 - 基础
 title: Structs and Memory Alignment
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/12-struct-and-memory-alignment.md
   source_hash: 1da76ff6fd68afc58f2076c9eb1028dc79bb5512d8d1c5ebdc53e6d00facaedb
-  translated_at: '2026-06-13T11:41:51.648816+00:00'
-  engine: anthropic
   token_count: 3331
+  translated_at: '2026-06-13T11:41:51.648816+00:00'
 ---
 # Structs and Memory Alignment
 

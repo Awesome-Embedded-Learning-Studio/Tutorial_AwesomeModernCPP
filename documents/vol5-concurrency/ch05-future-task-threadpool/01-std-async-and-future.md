@@ -1,24 +1,27 @@
 ---
-title: "std::async 与 future"
-description: "理解 std::async 的 launch policy、future.get 的阻塞语义与 deferred 陷阱"
 chapter: 5
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 异步编程
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解 std::async 的 launch policy、future.get 的阻塞语义与 deferred 陷阱
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "线程安全队列"
+- 线程安全队列
+reading_time_minutes: 24
 related:
-  - "promise 与 packaged_task"
-  - "线程池设计"
+- promise 与 packaged_task
+- 线程池设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+title: std::async 与 future
 ---
-
 # std::async 与 future
 
 写到这一篇，说实话笔者是松了一口气的。前面几章我们一直在跟 `std::thread`、`std::mutex`、`std::atomic` 这些底层原语打交道，直接操控线程的创建、同步、甚至内存序。这玩意儿写多了确实累——你得自己管线程生命周期，自己设计同步机制，自己把结果从子线程搬回主线程，还得操心异常怎么传回来、线程崩了怎么办。每次写一个并发任务都要重复这套流程，写着写着你就会想：有没有一种方式，让我只管说"帮我异步跑一个任务，把结果拿回来"，其他的你别烦我？

@@ -1,21 +1,22 @@
 ---
-title: "Lab 0: Thread Lifecycle Lab"
-description: "通过并行文件扫描器，训练线程创建、RAII 包装、参数生命周期和 thread_local 统计的实战能力"
 chapter: 10
-order: 0
+cpp_standard:
+- 17
+- 20
+description: 通过并行文件扫描器，训练线程创建、RAII 包装、参数生命周期和 thread_local 统计的实战能力
 difficulty: intermediate
-tags:
-  - host
-  - cpp-modern
-  - atomic
-  - beginner
-cpp_standard: [17, 20]
-reading_time_minutes: 45
+order: 0
 prerequisites:
-  - "卷五 ch00: 并发思维与基础"
-  - "卷五 ch01: 线程生命周期与 RAII"
+- '卷五 ch00: 并发思维与基础'
+- '卷五 ch01: 线程生命周期与 RAII'
+reading_time_minutes: 23
+tags:
+- host
+- cpp-modern
+- atomic
+- beginner
+title: 'Lab 0: Thread Lifecycle Lab'
 ---
-
 # Lab 0: Thread Lifecycle Lab
 
 ## 目标

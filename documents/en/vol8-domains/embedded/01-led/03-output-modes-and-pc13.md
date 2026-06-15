@@ -1,21 +1,22 @@
 ---
-title: 'Part 8: Push-Pull, Open-Drain, and PC13 — The Hardware Secrets Behind Lighting
-  an LED'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 3
+platform: stm32f1
+reading_time_minutes: 24
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 3
+title: 'Part 8: Push-Pull, Open-Drain, and PC13 — The Hardware Secrets Behind Lighting
+  an LED'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/03-output-modes-and-pc13.md
   source_hash: dd1b84c08aff841749581b7323b6c86db93d07c3534e355731acb7c188617f5a
-  translated_at: '2026-05-26T12:05:31.367982+00:00'
-  engine: anthropic
   token_count: 2602
+  translated_at: '2026-05-26T12:05:31.367982+00:00'
+description: ''
 ---
 # Part 8: Push-Pull, Open-Drain, and PC13 — The Hardware Secrets Behind Lighting an LED
 

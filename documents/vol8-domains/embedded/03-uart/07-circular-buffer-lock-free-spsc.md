@@ -1,14 +1,15 @@
 ---
-title: "第37篇：无锁环形缓冲区 —— ISR 与主循环之间的安全通道"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 7
+platform: stm32f1
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第37篇：无锁环形缓冲区 —— ISR 与主循环之间的安全通道
+description: ''
 ---
 # 第37篇：无锁环形缓冲区 —— ISR 与主循环之间的安全通道
 

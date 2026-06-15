@@ -1,24 +1,25 @@
 ---
-title: Fold expression
-description: Reduce a parameter pack using a binary operator, replacing recursive
-  template expansion.
 chapter: 99
-order: 3
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
 cpp_standard:
 - 17
 - 20
 - 23
+description: Reduce a parameter pack using a binary operator, replacing recursive
+  template expansion.
+difficulty: intermediate
+order: 3
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+title: Fold expression
 translation:
+  engine: anthropic
   source: documents/cpp-reference/templates/03-fold-expressions.md
   source_hash: 6e8c6f034c15f79952f1d9a25a17b0f8d97b8246d3acc31849f2175092cae6f9
-  translated_at: '2026-05-26T10:18:24.646199+00:00'
-  engine: anthropic
   token_count: 406
+  translated_at: '2026-05-26T10:18:24.646199+00:00'
 ---
 # Fold Expressions (C++17)
 

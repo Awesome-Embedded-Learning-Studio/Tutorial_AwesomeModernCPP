@@ -1,28 +1,29 @@
 ---
-title: "OnceCallback 实战（四）：取消令牌设计"
-description: "深入理解 CancelableToken 的设计——用 shared_ptr + atomic<bool> 实现轻量级取消机制，以及它如何集成到 OnceCallback 的执行流程中"
 chapter: 1
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - atomic
-  - 智能指针
-  - 引用计数
+cpp_standard:
+- 23
+description: 深入理解 CancelableToken 的设计——用 shared_ptr + atomic<bool> 实现轻量级取消机制，以及它如何集成到
+  OnceCallback 的执行流程中
 difficulty: beginner
+order: 4
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 9
 prerequisites:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
 related:
-  - "OnceCallback 实战（五）：then 链式组合"
-  - "OnceCallback 实战（六）：测试与性能对比"
+- OnceCallback 实战（五）：then 链式组合
+- OnceCallback 实战（六）：测试与性能对比
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- atomic
+- 智能指针
+- 引用计数
+title: OnceCallback 实战（四）：取消令牌设计
 ---
-
 # OnceCallback 实战（四）：取消令牌设计
 
 ## 引言

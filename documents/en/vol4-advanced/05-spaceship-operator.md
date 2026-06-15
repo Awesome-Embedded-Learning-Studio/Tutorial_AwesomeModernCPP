@@ -1,27 +1,27 @@
 ---
-title: Three-way comparison operator (C++20 Spaceship Operator)
+chapter: 11
+cpp_standard:
+- 20
 description: 'Detailed explanation of the C++20 three-way comparison operator: simplifying
   comparison logic for custom types'
-chapter: 11
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+- 'Chapter 11.2: 结构化绑定'
+reading_time_minutes: 22
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-reading_time_minutes: 30
-prerequisites:
-- 'Chapter 11.1: auto与decltype'
-- 'Chapter 11.2: 结构化绑定'
-cpp_standard:
-- 20
-platform: host
+title: Three-way comparison operator (C++20 Spaceship Operator)
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/05-spaceship-operator.md
   source_hash: d1e342cc4a916cbbfcc47ae43a9a40b3b2fd37d7107b2091c5520eb0bb30457b
-  translated_at: '2026-06-15T09:22:23.372298+00:00'
-  engine: anthropic
   token_count: 7327
+  translated_at: '2026-06-15T09:22:23.372298+00:00'
 ---
 # Modern Embedded C++ Development — Three-Way Comparison Operator
 

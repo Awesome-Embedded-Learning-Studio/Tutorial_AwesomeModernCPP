@@ -1,26 +1,27 @@
 ---
-title: auto
-description: A placeholder that lets the compiler automatically deduce the type of
-  a variable or function return value
 chapter: 99
-order: 3
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: A placeholder that lets the compiler automatically deduce the type of
+  a variable or function return value
+difficulty: beginner
+order: 3
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: auto
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/03-auto-decltype.md
   source_hash: 75554e72bb849a782dce5de0a3a97f52d930df7ea621293962e910b358a46882
-  translated_at: '2026-05-26T10:15:05.751748+00:00'
-  engine: anthropic
   token_count: 387
+  translated_at: '2026-05-26T10:15:05.751748+00:00'
 ---
 # auto (C++11)
 

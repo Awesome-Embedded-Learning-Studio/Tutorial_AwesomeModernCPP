@@ -1,30 +1,30 @@
 ---
-title: Introduction to Template Specialization
-description: Understand the concepts of full specialization and partial specialization,
-  and learn how to provide customized template implementations for specific types.
 chapter: 9
-order: 3
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 类模板
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand the concepts of full specialization and partial specialization,
+  and learn how to provide customized template implementations for specific types.
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 类模板
+reading_time_minutes: 14
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Introduction to Template Specialization
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch09/03-specialization-basics.md
   source_hash: 5ce521703b4e50bccd5cc43f1e2e84edef5c7afe6aa2a68221aede393c4ab37d
-  translated_at: '2026-05-26T10:56:06.820013+00:00'
-  engine: anthropic
   token_count: 2546
+  translated_at: '2026-05-26T10:56:06.820013+00:00'
 ---
 # Introduction to Template Specialization
 

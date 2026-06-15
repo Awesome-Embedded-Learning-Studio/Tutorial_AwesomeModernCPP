@@ -1,31 +1,31 @@
 ---
-title: 'RVO and NRVO: Compiler Return Value Optimization'
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
 description: Deep dive into the return value optimization mechanism, guaranteeing
   copy elision from C++11 to C++17.
-chapter: 0
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 19
+related:
+- 移动语义实战
 tags:
 - host
 - cpp-modern
 - intermediate
 - 移动语义
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
-related:
-- 移动语义实战
+title: 'RVO and NRVO: Compiler Return Value Optimization'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch00-move-semantics/03-rvo-nrvo.md
   source_hash: 8d67d746d9f8272674ab3ce99886ea907654c8affe26a59d7d2dfabc512f452e
-  translated_at: '2026-05-26T11:18:10.686224+00:00'
-  engine: anthropic
   token_count: 3665
+  translated_at: '2026-05-26T11:18:10.686224+00:00'
 ---
 # RVO and NRVO: Compiler Return Value Optimization
 

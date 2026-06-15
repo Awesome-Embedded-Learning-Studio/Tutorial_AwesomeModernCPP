@@ -1,31 +1,31 @@
 ---
-title: 'std::expected<T, E>: Type-Safe Error Propagation'
+chapter: 10
+cpp_standard:
+- 23
 description: C++23's `expected` type and monadic operations, implementing elegant
   error propagation chains
-chapter: 10
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 10: optional 用于错误处理'
+reading_time_minutes: 11
+related:
+- 错误处理模式总结
 tags:
 - host
 - cpp-modern
 - intermediate
 - expected
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 10: 错误处理的演进'
-- 'Chapter 10: optional 用于错误处理'
-related:
-- 错误处理模式总结
+title: 'std::expected<T, E>: Type-Safe Error Propagation'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch10-error-handling/03-expected-error.md
   source_hash: c04dde9a1bfd0eef6a7f6b0342bac5785f3b88aad62a942ec1e7b94974f0716c
-  translated_at: '2026-05-26T11:35:56.762113+00:00'
-  engine: anthropic
   token_count: 3399
+  translated_at: '2026-05-26T11:35:56.762113+00:00'
 ---
 # std::expected<T, E>: Type-Safe Error Propagation
 

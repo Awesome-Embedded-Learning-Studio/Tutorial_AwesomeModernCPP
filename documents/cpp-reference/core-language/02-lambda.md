@@ -1,16 +1,21 @@
 ---
-title: "Lambda 表达式"
-description: "就地定义匿名函数对象，可捕获作用域内的变量"
 chapter: 99
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 就地定义匿名函数对象，可捕获作用域内的变量
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: Lambda 表达式
 ---
-
 # Lambda 表达式（C++11）
 
 ## 一句话

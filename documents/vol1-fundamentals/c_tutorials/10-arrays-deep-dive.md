@@ -8,7 +8,7 @@ order: 14
 platform: host
 prerequisites:
 - 指针与数组、const 和空指针
-reading_time_minutes: 23
+reading_time_minutes: 18
 tags:
 - host
 - cpp-modern

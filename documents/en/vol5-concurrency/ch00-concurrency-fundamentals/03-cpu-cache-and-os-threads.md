@@ -1,34 +1,34 @@
 ---
-title: CPU Cache and OS Threads
+chapter: 0
+cpp_standard:
+- 11
+- 17
+- 20
 description: From the hardware cache hierarchy to the OS thread model, understanding
   the real physical stage where multithreaded programs execute.
-chapter: 0
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 为什么需要并发
+- 并发基本问题
+reading_time_minutes: 27
+related:
+- std::thread 基础
+- 原子操作模式
 tags:
 - host
 - cpp-modern
 - intermediate
 - 基础
 - atomic
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 17
-- 20
-prerequisites:
-- 为什么需要并发
-- 并发基本问题
-related:
-- std::thread 基础
-- 原子操作模式
+title: CPU Cache and OS Threads
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch00-concurrency-fundamentals/03-cpu-cache-and-os-threads.md
   source_hash: 94c702129dc64029311ea000163119052a11506433a9c538142e54859c958552
-  translated_at: '2026-05-20T04:34:28.797438+00:00'
-  engine: anthropic
   token_count: 3825
+  translated_at: '2026-05-20T04:34:28.797438+00:00'
 ---
 # CPU Cache and OS Threads
 

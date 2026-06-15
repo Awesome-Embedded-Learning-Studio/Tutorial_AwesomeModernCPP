@@ -1,24 +1,27 @@
 ---
-title: "C++98入门：命名空间、引用与作用域解析"
-description: "从C到C++的第一步——命名空间解决名称冲突、引用替代指针传参、作用域解析访问全局与命名空间成员，三大基础特性彻底讲透"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从C到C++的第一步——命名空间解决名称冲突、引用替代指针传参、作用域解析访问全局与命名空间成员，三大基础特性彻底讲透
 difficulty: beginner
-reading_time_minutes: 20
-prerequisites:
-  - "C语言速通复习"
-related:
-  - "C++98函数接口：重载与默认参数"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C语言速通复习
+reading_time_minutes: 16
+related:
+- C++98函数接口：重载与默认参数
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: C++98入门：命名空间、引用与作用域解析
 ---
-
 # C++98入门：命名空间、引用与作用域解析
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

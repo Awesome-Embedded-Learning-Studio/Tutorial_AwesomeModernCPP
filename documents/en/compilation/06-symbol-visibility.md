@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A3: A Discussion
-  on Symbol Visibility'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 6
+platform: host
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 6
+title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A3: A Discussion
+  on Symbol Visibility'
 translation:
+  engine: anthropic
   source: documents/compilation/06-symbol-visibility.md
   source_hash: 2eba7fe1f3e1e8640236cc462adbe47dbbecbbe87a07fce3185940d10fdeb204
-  translated_at: '2026-05-26T10:10:49.428133+00:00'
-  engine: anthropic
   token_count: 1004
+  translated_at: '2026-05-26T10:10:49.428133+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation Technology — Shared Libraries A3: A Discussion on Symbol Visibility
 

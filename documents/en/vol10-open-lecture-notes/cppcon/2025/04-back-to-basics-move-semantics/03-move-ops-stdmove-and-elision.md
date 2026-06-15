@@ -1,32 +1,33 @@
 ---
-title: Move Operations, std::move, and Copy Elision
-description: CppCon 2025 Talk Notes — Complete Implementation of Move Construction/Assignment,
-  The Real Meaning of std::move, NRVO vs. C++17 Mandatory Copy Elision, and Moved-from
-  State
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: 'Back to Basics: Move Semantics'
-speaker: Ben Saks
-video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
-video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
-tags:
-- cpp-modern
-- host
-- beginner
-difficulty: beginner
-platform: host
 cpp_standard:
 - 11
 - 17
 - 20
-chapter: 4
+description: CppCon 2025 Talk Notes — Complete Implementation of Move Construction/Assignment,
+  The Real Meaning of std::move, NRVO vs. C++17 Mandatory Copy Elision, and Moved-from
+  State
+difficulty: beginner
 order: 3
+platform: host
+reading_time_minutes: 21
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: Move Operations, std::move, and Copy Elision
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/03-move-ops-stdmove-and-elision.md
   source_hash: aa77a7851692af982bd553ebff0a041002f6647fa683abb87a989cc5d3357f06
-  translated_at: '2026-06-14T00:17:55.581146+00:00'
-  engine: anthropic
   token_count: 4573
+  translated_at: '2026-06-14T00:17:55.581146+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
 # Move Operations, std::move, and Copy Elision
 

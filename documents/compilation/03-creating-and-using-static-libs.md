@@ -1,14 +1,15 @@
 ---
-title: 深入理解CC++的编译与链接技术3：如何制作和使用静态库
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 3
+title: 深入理解CC++的编译与链接技术3：如何制作和使用静态库
+description: ''
 ---
 # 深入理解CC++的编译与链接技术3：如何制作和使用静态库
 

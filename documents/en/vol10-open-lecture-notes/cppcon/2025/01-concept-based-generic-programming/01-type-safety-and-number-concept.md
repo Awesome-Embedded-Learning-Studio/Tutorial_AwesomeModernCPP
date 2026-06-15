@@ -1,30 +1,31 @@
 ---
-title: Type Safety, Number Constraints, and Bounds Checking
-description: CppCon 2025 Talk Notes — From implicit narrowing conversions to `Number<T>`
-  wrapper types, then to `safe_int` and `checked_span`
+chapter: 1
 conference: cppcon
 conference_year: 2025
-talk_title: Concept-based Generic Programming
+cpp_standard:
+- 20
+- 23
+description: CppCon 2025 Talk Notes — From implicit narrowing conversions to `Number<T>`
+  wrapper types, then to `safe_int` and `checked_span`
+difficulty: intermediate
+order: 1
+platform: host
+reading_time_minutes: 44
 speaker: Bjarne Stroustrup
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
-video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-chapter: 1
-order: 1
+talk_title: Concept-based Generic Programming
+title: Type Safety, Number Constraints, and Bounds Checking
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md
   source_hash: 8544c9e61cc4d54dcd89cd940ed7586cd254287c34b28993472cfb611ca5e201
-  translated_at: '2026-06-14T00:15:24.728382+00:00'
-  engine: anthropic
   token_count: 8924
+  translated_at: '2026-06-14T00:15:24.728382+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
+video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
 ---
 # From Manual Checks to Implicit Guards
 

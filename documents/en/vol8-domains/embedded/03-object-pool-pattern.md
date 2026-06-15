@@ -11,18 +11,18 @@ order: 3
 platform: stm32f1
 prerequisites:
 - 'Chapter 3: 内存与对象管理'
-reading_time_minutes: 8
+reading_time_minutes: 5
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: Object Pool Pattern
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-object-pool-pattern.md
   source_hash: 5ba90bc727848fabfbb3137a5b4c15371df735a928e8a72bddf7c2f81e87792f
-  translated_at: '2026-05-26T12:13:24.526475+00:00'
-  engine: anthropic
   token_count: 1211
+  translated_at: '2026-05-26T12:13:24.526475+00:00'
 ---
 # Embedded C++ Tutorial: Object Pool Pattern
 

@@ -1,25 +1,28 @@
 ---
-title: "enum class 与强类型枚举"
-description: "告别整数隐式转换，用 enum class 构建类型安全的枚举"
 chapter: 4
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - enum_class
-  - 类型安全
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 告别整数隐式转换，用 enum class 构建类型安全的枚举
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 0: 移动构造与移动赋值"
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 13
 related:
-  - "强类型 typedef"
-  - "std::variant"
+- 强类型 typedef
+- std::variant
+tags:
+- host
+- cpp-modern
+- intermediate
+- enum_class
+- 类型安全
+title: enum class 与强类型枚举
 ---
-
 # enum class 与强类型枚举
 
 ## 引言

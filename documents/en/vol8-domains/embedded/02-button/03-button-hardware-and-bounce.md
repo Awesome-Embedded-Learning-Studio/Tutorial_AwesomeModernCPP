@@ -1,21 +1,22 @@
 ---
-title: 'Part 21: Button Circuits and Mechanical Bounce — What Do Real-World Signals
-  Look Like?'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 3
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 3
+title: 'Part 21: Button Circuits and Mechanical Bounce — What Do Real-World Signals
+  Look Like?'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/03-button-hardware-and-bounce.md
   source_hash: b9992baf1af2425bd8b83ef661eeb50fa7fc4cd9b2e2294dc61d57248bb93c48
-  translated_at: '2026-05-26T12:11:06.404702+00:00'
-  engine: anthropic
   token_count: 1461
+  translated_at: '2026-05-26T12:11:06.404702+00:00'
+description: ''
 ---
 # Part 21: Button Circuits and Mechanical Bounce — What Real-World Signals Look Like
 

@@ -1,20 +1,21 @@
 ---
-title: 'Part 25: 7-State Debounce State Machine — The Core of This Series'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 7
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 7
+title: 'Part 25: 7-State Debounce State Machine — The Core of This Series'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/07-debounce-state-machine.md
   source_hash: 105b11e7d7d22ab9859d953c12c557cb4ea19c1f0acfb7e058f1315261c60efd
-  translated_at: '2026-05-26T12:12:26.917508+00:00'
-  engine: anthropic
   token_count: 1974
+  translated_at: '2026-05-26T12:12:26.917508+00:00'
+description: ''
 ---
 # Part 25: The 7-State Debounce State Machine — The Core of This Series
 

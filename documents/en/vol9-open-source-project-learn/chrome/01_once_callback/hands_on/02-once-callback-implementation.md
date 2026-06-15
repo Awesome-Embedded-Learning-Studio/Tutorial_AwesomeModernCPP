@@ -1,32 +1,32 @@
 ---
-title: 'once_callback Design Guide (Part 2): Step-by-Step Implementation'
+chapter: 1
+cpp_standard:
+- 23
 description: From the core skeleton to a complete component, a four-step walkthrough
   of the implementation strategy of `once_callback`, with a focus on understanding
   template techniques and ownership design.
-chapter: 1
+difficulty: advanced
 order: 2
+platform: host
+prerequisites:
+- once_callback 设计指南（一）：动机与接口设计
+reading_time_minutes: 24
+related:
+- bind_once / bind_repeating 与参数绑定
+- 回调取消与组合模式
 tags:
 - host
 - cpp-modern
 - advanced
 - 回调机制
 - 函数对象
-difficulty: advanced
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 30
-prerequisites:
-- once_callback 设计指南（一）：动机与接口设计
-related:
-- bind_once / bind_repeating 与参数绑定
-- 回调取消与组合模式
+title: 'once_callback Design Guide (Part 2): Step-by-Step Implementation'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/hands_on/02-once-callback-implementation.md
   source_hash: bdd1a944cddf8dc214171648a079e8a32b7c01d4f58dda52c516ade3096ef21a
-  translated_at: '2026-05-26T12:31:28.959391+00:00'
-  engine: anthropic
   token_count: 4335
+  translated_at: '2026-05-26T12:31:28.959391+00:00'
 ---
 # once_callback Design Guide (Part 2): Step-by-Step Implementation
 

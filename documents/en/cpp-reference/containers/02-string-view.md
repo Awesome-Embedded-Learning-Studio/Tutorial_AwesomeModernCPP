@@ -1,24 +1,25 @@
 ---
-title: std::string_view
-description: Lightweight, non-owning string view, a zero-copy reference to a contiguous
-  sequence of characters
 chapter: 99
-order: 2
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: Lightweight, non-owning string view, a zero-copy reference to a contiguous
+  sequence of characters
+difficulty: beginner
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::string_view
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/02-string-view.md
   source_hash: c02f01a41e1a3a72a09dda5e846b5ed0675c6ad5b1343cda95eafa94ef82c389
-  translated_at: '2026-05-26T10:13:55.202443+00:00'
-  engine: anthropic
   token_count: 507
+  translated_at: '2026-05-26T10:13:55.202443+00:00'
 ---
 # std::string_view (C++17)
 

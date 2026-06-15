@@ -1,24 +1,26 @@
 ---
-title: "C 语言陷阱与常见错误"
-description: "系统梳理 C 语言中最容易踩的语法与语义陷阱，从编译器行为和标准规范的角度搞清楚为什么会出错，以及 C++ 做了哪些改进"
 chapter: 1
-order: 19
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 进阶
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+description: 系统梳理 C 语言中最容易踩的语法与语义陷阱，从编译器行为和标准规范的角度搞清楚为什么会出错，以及 C++ 做了哪些改进
 difficulty: intermediate
+order: 19
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17]
 prerequisites:
-  - "数据类型基础：整数与内存"
-  - "运算符与表达式基础"
-  - "控制流：条件与循环"
+- 数据类型基础：整数与内存
+- 运算符与表达式基础
+- 控制流：条件与循环
+reading_time_minutes: 18
+tags:
+- host
+- cpp-modern
+- intermediate
+- 进阶
+- 基础
+title: C 语言陷阱与常见错误
 ---
-
 # C 语言陷阱与常见错误
 
 说实话，笔者在学 C 语言的时候，踩过的坑比写过的正确代码还多。C 语言的设计哲学是"信任程序员"——编译器不会拦着你做蠢事，它只会默默地把蠢事编译成机器码，然后看着你 segfault。K&R 时代的很多设计决策在今天看来已经有些"古老"了，但为了向下兼容，这些陷阱被一代代地保留了下来，成为每个 C/C++ 程序员的必修课。

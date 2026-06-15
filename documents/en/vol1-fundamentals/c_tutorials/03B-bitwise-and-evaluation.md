@@ -1,28 +1,28 @@
 ---
-title: Bitwise Operations and Evaluation Order
+chapter: 1
+cpp_standard:
+- 11
 description: A deep dive into the four fundamental bitwise operations, shift caveats,
   operator precedence traps, evaluation order and sequence points, and understanding
   the essence of undefined behavior (UB).
-chapter: 1
+difficulty: beginner
 order: 5
+platform: host
+prerequisites:
+- 运算符基础：让数据动起来
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
-difficulty: beginner
-platform: host
-reading_time_minutes: 15
-cpp_standard:
-- 11
-prerequisites:
-- 运算符基础：让数据动起来
+title: Bitwise Operations and Evaluation Order
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/03B-bitwise-and-evaluation.md
   source_hash: 6726ef3c1f82b2cbaf86581adaf486e306cd216c72c990d97b1c43ae813ee9a3
-  translated_at: '2026-05-26T10:28:02.590715+00:00'
-  engine: anthropic
   token_count: 1969
+  translated_at: '2026-05-26T10:28:02.590715+00:00'
 ---
 # Bitwise Operations and Evaluation Order
 

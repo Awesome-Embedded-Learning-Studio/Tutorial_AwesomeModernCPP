@@ -1,10 +1,21 @@
 ---
-title: From Standalone Concurrency to Distributed Systems
+chapter: 9
+cpp_standard:
+- 17
+- 20
 description: 'Understanding the fundamental differences between standalone concurrency
   and distributed systems: partial failure, unreliable networks, and clock skew, and
   how these differences affect the choice of concurrency models.'
-chapter: 9
+difficulty: advanced
 order: 1
+platform: host
+prerequisites:
+- Actor 模型与消息传递
+- Channel 与 CSP 模型
+- 并发程序调试技巧
+reading_time_minutes: 20
+related:
+- 分布式一致性原语初探
 tags:
 - host
 - cpp-modern
@@ -13,24 +24,13 @@ tags:
 - 异步编程
 - atomic
 - mutex
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 17
-- 20
-prerequisites:
-- Actor 模型与消息传递
-- Channel 与 CSP 模型
-- 并发程序调试技巧
-related:
-- 分布式一致性原语初探
+title: From Standalone Concurrency to Distributed Systems
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch09-distributed-bridge/01-from-concurrent-to-distributed.md
   source_hash: f3b7488020472c1d0b8699b7c6803c41cef83a3b7271719bd4b78e2de09ad4ef
-  translated_at: '2026-06-13T11:52:44.087482+00:00'
-  engine: anthropic
   token_count: 3256
+  translated_at: '2026-06-13T11:52:44.087482+00:00'
 ---
 # From Standalone Concurrency to Distributed Systems
 

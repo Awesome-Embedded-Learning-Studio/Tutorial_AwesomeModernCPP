@@ -1,30 +1,30 @@
 ---
-title: C Strings and Buffer Safety
+chapter: 1
+cpp_standard:
+- 11
+- 17
 description: Understand the null-terminated memory model of C strings, master core
   `string.h` functions and safe formatting with `snprintf`, and identify and prevent
   buffer overflow vulnerabilities.
-chapter: 1
+difficulty: beginner
 order: 15
+platform: host
+prerequisites:
+- 指针与数组、const 和空指针
+reading_time_minutes: 13
 tags:
 - host
 - cpp-modern
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-platform: host
-reading_time_minutes: 20
-cpp_standard:
-- 11
-- 17
-prerequisites:
-- 指针与数组、const 和空指针
+title: C Strings and Buffer Safety
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/11-c-strings-and-buffer-safety.md
   source_hash: eae877481b61978cb41bf9130f93eedaf517e01ec8f99a0e441271327adbfc8d
-  translated_at: '2026-05-26T10:32:17.414513+00:00'
-  engine: anthropic
   token_count: 2346
+  translated_at: '2026-05-26T10:32:17.414513+00:00'
 ---
 # C Strings and Buffer Safety
 

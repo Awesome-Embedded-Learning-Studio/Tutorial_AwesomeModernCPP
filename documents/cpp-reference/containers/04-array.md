@@ -1,16 +1,21 @@
 ---
-title: "std::array"
-description: "固定大小的连续容器，零开销封装 C 风格数组"
 chapter: 99
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 固定大小的连续容器，零开销封装 C 风格数组
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 4
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::array
 ---
-
 # std::array（C++11）
 
 ## 一句话

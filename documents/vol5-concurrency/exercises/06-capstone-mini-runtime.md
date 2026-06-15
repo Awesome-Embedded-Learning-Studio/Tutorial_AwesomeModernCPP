@@ -1,26 +1,26 @@
 ---
-title: "Capstone: Mini Concurrent Runtime"
-description: "组合卷五所有 Lab 的组件，构建一个 mini 并发运行时，训练系统设计、组件组合和可观测性"
 chapter: 10
-order: 7
+cpp_standard:
+- 20
+description: 组合卷五所有 Lab 的组件，构建一个 mini 并发运行时，训练系统设计、组件组合和可观测性
 difficulty: advanced
-tags:
-  - host
-  - cpp-modern
-  - coroutine
-  - advanced
-cpp_standard: [20]
-reading_time_minutes: 9
+order: 7
 prerequisites:
-  - "Lab 0: Thread Lifecycle Lab"
-  - "Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives"
-  - "Lab 2: Atomic Metrics and SPSC Ring Buffer"
-  - "Lab 2.5: Concurrency Debugging Lab"
-  - "Lab 3: Production-style Thread Pool"
-  - "Lab 4: Coroutine Scheduler and Event Loop"
-  - "Lab 5: Channel or Actor Runtime"
+- 'Lab 0: Thread Lifecycle Lab'
+- 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+- 'Lab 2: Atomic Metrics and SPSC Ring Buffer'
+- 'Lab 2.5: Concurrency Debugging Lab'
+- 'Lab 3: Production-style Thread Pool'
+- 'Lab 4: Coroutine Scheduler and Event Loop'
+- 'Lab 5: Channel or Actor Runtime'
+reading_time_minutes: 7
+tags:
+- host
+- cpp-modern
+- coroutine
+- advanced
+title: 'Capstone: Mini Concurrent Runtime'
 ---
-
 # Capstone: Mini Concurrent Runtime
 
 ## 目标

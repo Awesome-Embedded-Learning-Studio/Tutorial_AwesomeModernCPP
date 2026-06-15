@@ -1,29 +1,30 @@
 ---
-title: Deep Dive into Compiler Explorer and AI Assistance
-description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes — C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 30
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 3
+talk_title: 'C++: Some Assembly Required'
+title: Deep Dive into Compiler Explorer and AI Assistance
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/03-compiler-explorer-and-ai-assisted.md
   source_hash: 5a14336bd024756b91e3e64d1885670a7ba5430d36c0640dcd128e7137290163
-  translated_at: '2026-06-13T11:48:02.597949+00:00'
-  engine: anthropic
   token_count: 4945
+  translated_at: '2026-06-13T11:48:02.597949+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # Reading Assembly with Compiler Explorer: From "Greek" to "Intelligible"
 

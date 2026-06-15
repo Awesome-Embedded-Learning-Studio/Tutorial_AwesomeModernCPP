@@ -1,35 +1,35 @@
 ---
-title: 'OnceCallback Prerequisites (Part 3): Advanced Lambda Features'
+chapter: 0
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
 description: An in-depth look at mutable lambdas, init captures, C++20 lambda capture
   pack expansion, and generic lambdas — the core implementation techniques behind
   `bind_once` and `then()` in `OnceCallback`.
-chapter: 0
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
+related:
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（五）：then 链式组合
 tags:
 - host
 - cpp-modern
 - intermediate
 - lambda
 - 函数对象
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 14
-- 17
-- 20
-- 23
-reading_time_minutes: 11
-prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-related:
-- OnceCallback 实战（三）：bind_once 实现
-- OnceCallback 实战（五）：then 链式组合
+title: 'OnceCallback Prerequisites (Part 3): Advanced Lambda Features'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-03-once-callback-lambda-advanced.md
   source_hash: 36cc54b68c7b78d692011d4a01cd95ad8df814c9f770cddfb22df259f52d7796
-  translated_at: '2026-05-26T12:27:42.515153+00:00'
-  engine: anthropic
   token_count: 1886
+  translated_at: '2026-05-26T12:27:42.515153+00:00'
 ---
 # Prerequisites for OnceCallback (Part 3): Advanced Lambda Features
 

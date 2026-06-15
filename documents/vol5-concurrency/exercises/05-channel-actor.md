@@ -1,22 +1,22 @@
 ---
-title: "Lab 5: Channel or Actor Runtime"
-description: "通过 Channel 或 Actor 模式实践消息传递并发，掌握 CSP、mailbox、select 和取消语义"
 chapter: 10
-order: 6
+cpp_standard:
+- 20
+description: 通过 Channel 或 Actor 模式实践消息传递并发，掌握 CSP、mailbox、select 和取消语义
 difficulty: advanced
-tags:
-  - host
-  - cpp-modern
-  - coroutine
-  - advanced
-cpp_standard: [20]
-reading_time_minutes: 13
+order: 6
 prerequisites:
-  - "卷五 ch07: Actor 与 Channel"
-  - "Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives"
-  - "Lab 4: Coroutine Scheduler and Event Loop"
+- '卷五 ch07: Actor 与 Channel'
+- 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+- 'Lab 4: Coroutine Scheduler and Event Loop'
+reading_time_minutes: 10
+tags:
+- host
+- cpp-modern
+- coroutine
+- advanced
+title: 'Lab 5: Channel or Actor Runtime'
 ---
-
 # Lab 5: Channel or Actor Runtime
 
 ## 目标

@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98入门：命名空间、引用与作用域解析
-reading_time_minutes: 16
+reading_time_minutes: 14
 related:
 - C++98面向对象：类与对象深度剖析
 tags:

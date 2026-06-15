@@ -1,14 +1,15 @@
 ---
-title: 第8篇：推挽、开漏与PC13 —— LED点亮的硬件秘密
-description: ''
+chapter: 15
+difficulty: beginner
+order: 3
+platform: stm32f1
+reading_time_minutes: 23
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 3
+title: 第8篇：推挽、开漏与PC13 —— LED点亮的硬件秘密
+description: ''
 ---
 # 第8篇：推挽、开漏与PC13 —— LED点亮的硬件秘密
 

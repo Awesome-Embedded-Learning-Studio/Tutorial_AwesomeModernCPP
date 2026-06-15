@@ -1,16 +1,21 @@
 ---
-title: "constexpr"
-description: "指示变量或函数的值可以在编译期求值的关键字"
 chapter: 99
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 指示变量或函数的值可以在编译期求值的关键字
 difficulty: intermediate
-cpp_standard: [11, 14, 17, 20, 23]
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: constexpr
 ---
-
 # constexpr（C++11）
 
 ## 一句话

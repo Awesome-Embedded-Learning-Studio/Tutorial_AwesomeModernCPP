@@ -1,22 +1,23 @@
 ---
-title: std::flat_map
+chapter: 99
+cpp_standard:
+- 23
 description: A sorted associative container based on contiguous storage, a cache-friendly
   alternative to `std::map`
-chapter: 99
+difficulty: beginner
 order: 8
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-difficulty: beginner
-cpp_standard:
-- 23
+title: std::flat_map
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/08-flat-map.md
   source_hash: bbb5226ff887c9e3581041bf5e974bb22024ac2dae49d89c8973eaff10604140
-  translated_at: '2026-05-26T10:14:35.567727+00:00'
-  engine: anthropic
   token_count: 498
+  translated_at: '2026-05-26T10:14:35.567727+00:00'
 ---
 <!--
 . `std::flat_map` (C++23)

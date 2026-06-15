@@ -1,20 +1,21 @@
 ---
-title: 'Deep Dive: MSVC Debugging Mechanisms and Visual Studio Debugger Internals'
-description: ''
+chapter: 1
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 1
-order: 8
+title: 'Deep Dive: MSVC Debugging Mechanisms and Visual Studio Debugger Internals'
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/msvc-debugging-internals.md
   source_hash: e0fb89ff17cb032f1c3caa3643a4e9baae89c76667d017c0a0d1ed89b060968c
-  translated_at: '2026-05-26T11:54:30.987609+00:00'
-  engine: anthropic
   token_count: 1343
+  translated_at: '2026-05-26T11:54:30.987609+00:00'
+description: ''
 ---
 # Deep Dive: MSVC Debugging Mechanisms and Visual Studio Debugger Principles
 

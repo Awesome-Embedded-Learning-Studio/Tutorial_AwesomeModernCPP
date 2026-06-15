@@ -1,34 +1,34 @@
 ---
-title: 'OnceCallback in Practice (Part 6): Testing and Performance Comparison'
+chapter: 1
+cpp_standard:
+- 23
 description: We systematically design six categories of test cases to verify all core
   behaviors of `OnceCallback`, and compare the performance differences against the
   original Chromium implementation and standard library solutions.
-chapter: 1
+difficulty: beginner
 order: 6
+platform: host
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
+- OnceCallback 实战（五）：then 链式组合
+reading_time_minutes: 7
+related:
+- OnceCallback 前置知识（五）：std::move_only_function
 tags:
 - host
 - cpp-modern
 - beginner
 - 回调机制
 - 函数对象
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 10
-prerequisites:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 实战（三）：bind_once 实现
-- OnceCallback 实战（四）：取消令牌设计
-- OnceCallback 实战（五）：then 链式组合
-related:
-- OnceCallback 前置知识（五）：std::move_only_function
+title: 'OnceCallback in Practice (Part 6): Testing and Performance Comparison'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-6-once-callback-testing-and-perf.md
   source_hash: 2dfbbd169402f28789a1fe88fb11db240e59ec83f8a570b0880a99b0abb1b0bb
-  translated_at: '2026-06-13T11:54:42.854860+00:00'
-  engine: anthropic
   token_count: 1889
+  translated_at: '2026-06-13T11:54:42.854860+00:00'
 ---
 # OnceCallback in Practice (Part 6): Testing and Performance Comparison
 

@@ -1,24 +1,25 @@
 ---
-title: "WeakPtr 反模式：T* + raw Flag* 的致命陷阱"
-description: "深入分析 T* + raw Flag* 为什么不是可靠 WeakPtr，用最小示例复现 UB"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 智能指针
-  - 引用计数
+cpp_standard:
+- 17
+- 20
+description: 深入分析 T* + raw Flag* 为什么不是可靠 WeakPtr，用最小示例复现 UB
 difficulty: advanced
+order: 2
 platform: host
-reading_time_minutes: 11
 prerequisites:
-  - "非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr"
+- 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
+reading_time_minutes: 8
 related:
-  - "SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进"
-cpp_standard: [17, 20]
+- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
+tags:
+- host
+- cpp-modern
+- advanced
+- 智能指针
+- 引用计数
+title: WeakPtr 反模式：T* + raw Flag* 的致命陷阱
 ---
-
 # WeakPtr 反模式：`T* + raw Flag*` 的致命陷阱
 
 ## 引言

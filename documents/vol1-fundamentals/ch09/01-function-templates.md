@@ -1,21 +1,24 @@
 ---
-title: "函数模板"
-description: "掌握 template<typename T> 的语法、实例化机制和类型推导，学会编写泛型函数"
 chapter: 9
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 template<typename T> 的语法、实例化机制和类型推导，学会编写泛型函数
 difficulty: intermediate
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "OOP 实战"
+- OOP 实战
+reading_time_minutes: 16
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 函数模板
 ---
-
 # 函数模板
 
 假设我们现在要写一个 `max` 函数，它接受两个值，返回较大的那个。思路很直接——两行代码就能搞定。但如果我们的程序里同时需要比较 `int`、`double` 和 `std::string`，那就要写三个版本：一个 `max(int, int)`，一个 `max(double, double)`，一个 `max(std::string, std::string)`。三个版本的逻辑完全一样，都是 `(a > b) ? a : b`，区别仅仅是参数类型不同。

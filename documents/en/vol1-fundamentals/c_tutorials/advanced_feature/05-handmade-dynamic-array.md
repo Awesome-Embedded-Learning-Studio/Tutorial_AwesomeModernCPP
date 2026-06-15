@@ -1,10 +1,21 @@
 ---
-title: Implementing a Dynamic Vector from Scratch
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Design and implement a type-safe dynamic array library from scratch.
   We will explore memory expansion and contraction strategies, error handling patterns,
   and API design principles, paving the way for a deeper understanding of `std::vector`.
-chapter: 1
+difficulty: intermediate
 order: 105
+platform: host
+prerequisites:
+- 指针进阶：多级指针、指针与 const
+- 动态内存管理：malloc/free/realloc 的正确使用
+- 结构体、联合体与内存对齐
+- C 语言陷阱与常见错误
+reading_time_minutes: 17
 tags:
 - host
 - cpp-modern
@@ -12,24 +23,13 @@ tags:
 - 进阶
 - 容器
 - 内存管理
-difficulty: intermediate
-platform: host
-reading_time_minutes: 30
-cpp_standard:
-- 11
-- 14
-- 17
-prerequisites:
-- 指针进阶：多级指针、指针与 const
-- 动态内存管理：malloc/free/realloc 的正确使用
-- 结构体、联合体与内存对齐
-- C 语言陷阱与常见错误
+title: Implementing a Dynamic Vector from Scratch
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/05-handmade-dynamic-array.md
   source_hash: 1601bf7a93a6e966bb07cd6fc3f6d1d9cc65ac292dfca121f7e3be43be984600
-  translated_at: '2026-06-13T11:44:43.115178+00:00'
-  engine: anthropic
   token_count: 3969
+  translated_at: '2026-06-13T11:44:43.115178+00:00'
 ---
 # Hand-Rolling a Dynamic Array — Implementing a Container from Scratch
 

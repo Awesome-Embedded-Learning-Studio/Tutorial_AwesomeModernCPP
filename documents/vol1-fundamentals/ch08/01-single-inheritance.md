@@ -1,21 +1,24 @@
 ---
-title: "单继承"
-description: "掌握单继承的语法、构造与析构顺序，理解对象切片问题及其解决方案"
 chapter: 8
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握单继承的语法、构造与析构顺序，理解对象切片问题及其解决方案
 difficulty: intermediate
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "函数调用与类型转换"
+- 函数调用与类型转换
+reading_time_minutes: 11
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 单继承
 ---
-
 # 单继承
 
 到目前为止，我们写的所有类都是"独立"的——一个类封装自己的数据、提供自己的接口，彼此之间没有亲缘关系。但现实世界的事物并不是孤立存在的：一个学生（Student）是一个人（Person），一辆轿车（Car）是一种交通工具（Vehicle）。这种"is-a"关系就是继承要表达的核心语义。

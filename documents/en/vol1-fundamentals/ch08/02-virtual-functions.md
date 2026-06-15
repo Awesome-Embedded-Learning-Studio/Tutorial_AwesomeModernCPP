@@ -1,30 +1,30 @@
 ---
-title: Virtual Functions and Polymorphism
-description: Understand `virtual`, `override`, and the vtable mechanism, and master
-  the implementation principles and correct usage of runtime polymorphism.
 chapter: 8
-order: 2
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- 单继承
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand `virtual`, `override`, and the vtable mechanism, and master
+  the implementation principles and correct usage of runtime polymorphism.
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 单继承
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Virtual Functions and Polymorphism
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch08/02-virtual-functions.md
   source_hash: 256898e67ae8b8da6b8ed28822fcc1a071f732d37e8bdc64f974442388343556
-  translated_at: '2026-05-26T10:54:21.144336+00:00'
-  engine: anthropic
   token_count: 2293
+  translated_at: '2026-05-26T10:54:21.144336+00:00'
 ---
 # Virtual Functions and Polymorphism
 

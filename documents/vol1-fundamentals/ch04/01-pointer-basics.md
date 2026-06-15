@@ -1,22 +1,25 @@
 ---
-title: "指针基础"
-description: "从零开始理解指针：取地址、解引用、指针类型与空指针，掌握 C++ 内存访问的核心机制"
 chapter: 4
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从零开始理解指针：取地址、解引用、指针类型与空指针，掌握 C++ 内存访问的核心机制
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "inline 与 constexpr 函数"
+- inline 与 constexpr 函数
+reading_time_minutes: 11
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 指针基础
 ---
-
 # 指针基础
 
 指针大概是 C++ 里名声最响、也最容易劝退新手的特性了。如果你之前接触过 Python 或 Java，很可能习惯了"变量就是对象本身"的思维——变量里存的就是数据，拿来用就好。但 C++ 不一样，它给了我们直接操作内存地址的能力，而指针就是这个能力的入口。

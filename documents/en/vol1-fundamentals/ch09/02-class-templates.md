@@ -1,30 +1,30 @@
 ---
-title: Class template
-description: Master class template definitions, member functions, and template parameters
-  to implement a generic stack.
 chapter: 9
-order: 2
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 函数模板
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master class template definitions, member functions, and template parameters
+  to implement a generic stack.
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 函数模板
+reading_time_minutes: 13
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Class template
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch09/02-class-templates.md
   source_hash: 837ed3752d165681aeb9912de7dd16a3e81c621815fd1f18b2e158a1041359f2
-  translated_at: '2026-05-26T10:55:19.270924+00:00'
-  engine: anthropic
   token_count: 2561
+  translated_at: '2026-05-26T10:55:19.270924+00:00'
 ---
 # Class Templates
 

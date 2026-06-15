@@ -1,20 +1,21 @@
 ---
-title: Table of Contents
-description: ''
+chapter: 0
+difficulty: intermediate
+order: 0
+platform: stm32f1
+reading_time_minutes: 3
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 0
-order: 0
+title: Table of Contents
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/core-embedded-cpp-index.md
   source_hash: 43e930e53edd7d6ea7e44a71ba3dfb77736cff0ea3fdb04c87141b5e9e4c11d7
-  translated_at: '2026-06-15T09:31:47.242094+00:00'
-  engine: anthropic
   token_count: 858
+  translated_at: '2026-06-15T09:31:47.242094+00:00'
+description: ''
 ---
 # Table of Contents
 

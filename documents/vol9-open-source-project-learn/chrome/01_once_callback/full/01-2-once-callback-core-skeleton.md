@@ -1,30 +1,30 @@
 ---
-title: "OnceCallback 实战（二）：核心骨架搭建"
-description: "从零开始五步搭建 OnceCallback 的类骨架——模板偏特化、数据成员、构造函数约束、run() 消费语义、查询接口"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - 函数对象
-  - 模板
+cpp_standard:
+- 23
+description: 从零开始五步搭建 OnceCallback 的类骨架——模板偏特化、数据成员、构造函数约束、run() 消费语义、查询接口
 difficulty: beginner
+order: 2
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 13
 prerequisites:
-  - "OnceCallback 实战（一）：动机与接口设计"
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
-  - "OnceCallback 前置知识（四）：Concepts 与 requires 约束"
-  - "OnceCallback 前置知识（五）：std::move_only_function"
-  - "OnceCallback 前置知识（六）：Deducing this"
+- OnceCallback 实战（一）：动机与接口设计
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+reading_time_minutes: 9
 related:
-  - "OnceCallback 实战（三）：bind_once 实现"
-  - "OnceCallback 实战（四）：取消令牌设计"
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+title: OnceCallback 实战（二）：核心骨架搭建
 ---
-
 # OnceCallback 实战（二）：核心骨架搭建
 
 ## 引言

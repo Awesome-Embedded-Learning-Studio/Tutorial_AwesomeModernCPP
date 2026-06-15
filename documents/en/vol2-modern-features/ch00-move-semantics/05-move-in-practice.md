@@ -1,31 +1,31 @@
 ---
-title: 'Move Semantics in Practice: From STL to Custom Types'
-description: 移动语义在标准库和自定义类型中的实际应用与性能对比
 chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+description: 移动语义在标准库和自定义类型中的实际应用与性能对比
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+- 'Chapter 0: RVO 与 NRVO'
+reading_time_minutes: 23
+related:
+- 完美转发
 tags:
 - host
 - cpp-modern
 - intermediate
 - 移动语义
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 20
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
-- 'Chapter 0: RVO 与 NRVO'
-related:
-- 完美转发
+title: 'Move Semantics in Practice: From STL to Custom Types'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch00-move-semantics/05-move-in-practice.md
   source_hash: 67b03b192397fcccb49a2ff1a51a34528037856d00b95231857e91e36f53720a
-  translated_at: '2026-05-26T11:19:49.630252+00:00'
-  engine: anthropic
   token_count: 5735
+  translated_at: '2026-05-26T11:19:49.630252+00:00'
 ---
 # Move Semantics in Practice: From STL to Custom Types
 

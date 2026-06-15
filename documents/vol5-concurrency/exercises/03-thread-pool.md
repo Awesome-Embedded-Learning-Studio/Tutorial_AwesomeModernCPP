@@ -1,21 +1,22 @@
 ---
-title: "Lab 3: Production-style Thread Pool"
-description: "实现固定大小线程池，掌握 future、packaged_task、异常传播、优雅关闭和背压策略"
 chapter: 10
-order: 4
+cpp_standard:
+- 17
+- 20
+description: 实现固定大小线程池，掌握 future、packaged_task、异常传播、优雅关闭和背压策略
 difficulty: advanced
-tags:
-  - host
-  - cpp-modern
-  - advanced
-cpp_standard: [17, 20]
-reading_time_minutes: 16
+order: 4
 prerequisites:
-  - "卷五 ch05: future、任务与线程池"
-  - "Lab 0: Thread Lifecycle Lab"
-  - "Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives"
+- '卷五 ch05: future、任务与线程池'
+- 'Lab 0: Thread Lifecycle Lab'
+- 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- advanced
+title: 'Lab 3: Production-style Thread Pool'
 ---
-
 # Lab 3: Production-style Thread Pool
 
 ## 目标

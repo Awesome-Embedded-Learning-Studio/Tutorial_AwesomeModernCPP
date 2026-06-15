@@ -1,32 +1,32 @@
 ---
-title: 'span: Non-owning Contiguous View'
+chapter: 7
+cpp_standard:
+- 17
+- 20
 description: 'Mastering `std::span`: a non-owning view of pointer plus length, memory
   differences between dynamic and static extent, unified acceptance of `array`/`vector`/C
   arrays, zero-copy slicing with `subspan`, byte views via `as_bytes`, and lifetime
   pitfalls of dangling views.'
-chapter: 7
+difficulty: intermediate
 order: 8
+platform: host
+reading_time_minutes: 8
+related:
+- array：编译期固定大小的聚合容器
+- vector 深入：三指针、扩容与迭代器失效
 tags:
 - host
 - cpp-modern
 - intermediate
 - span
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-reading_time_minutes: 14
-related:
-- array：编译期固定大小的聚合容器
-- vector 深入：三指针、扩容与迭代器失效
+title: 'span: Non-owning Contiguous View'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/08-span.md
   source_hash: aa13cd106e6e9e1905111e31764926c9549f43cc5deca56a6f2e91837bb6a009
-  translated_at: '2026-06-15T09:16:15.140682+00:00'
-  engine: anthropic
   token_count: 1441
+  translated_at: '2026-06-15T09:16:15.140682+00:00'
 ---
 # span: A Non-owning Contiguous View
 

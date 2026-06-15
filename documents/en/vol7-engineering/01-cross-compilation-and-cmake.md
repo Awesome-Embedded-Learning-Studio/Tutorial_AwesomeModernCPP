@@ -12,7 +12,7 @@ order: 1
 platform: host
 prerequisites:
 - 'Chapter 0: 前言与基础'
-reading_time_minutes: 18
+reading_time_minutes: 13
 related: []
 tags:
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - intermediate
 title: A Brief Guide to Cross-Compiling and CMake
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/01-cross-compilation-and-cmake.md
   source_hash: 96f3692b2eef6e172c5a1da5be83edc62dcc598517a8ea4e090d86942419b3b1
-  translated_at: '2026-05-26T11:50:30.076667+00:00'
-  engine: anthropic
   token_count: 2604
+  translated_at: '2026-05-26T11:50:30.076667+00:00'
 ---
 # Modern Embedded C++ Tutorial: Cross-Compilation Basics and CMake Multi-Target Builds
 

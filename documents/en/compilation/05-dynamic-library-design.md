@@ -1,21 +1,22 @@
 ---
-title: 'In-Depth Understanding of C/C++ Compilation and Linking 6 — A2: Dynamic Library
-  Design Basics — ABI Interface Design'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 5
+platform: host
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 5
+title: 'In-Depth Understanding of C/C++ Compilation and Linking 6 — A2: Dynamic Library
+  Design Basics — ABI Interface Design'
 translation:
+  engine: anthropic
   source: documents/compilation/05-dynamic-library-design.md
   source_hash: a39613cd032f73df57a8c51b73c11b820f9c99cc843d56937150158affe19444
-  translated_at: '2026-05-26T10:10:47.369251+00:00'
-  engine: anthropic
   token_count: 2087
+  translated_at: '2026-05-26T10:10:47.369251+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking 6 — A2: ABI Design Interfaces for Shared Library Design Basics
 

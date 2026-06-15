@@ -1,28 +1,28 @@
 ---
-title: 'Lab 5: Channel or Actor Runtime'
+chapter: 10
+cpp_standard:
+- 20
 description: Practice message-passing concurrency using the Channel or Actor pattern,
   and master CSP, mailbox, select, and cancellation semantics.
-chapter: 10
-order: 6
 difficulty: advanced
+order: 6
+prerequisites:
+- '卷五 ch07: Actor 与 Channel'
+- 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+- 'Lab 4: Coroutine Scheduler and Event Loop'
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
 - coroutine
 - advanced
-cpp_standard:
-- 20
-reading_time_minutes: 13
-prerequisites:
-- '卷五 ch07: Actor 与 Channel'
-- 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
-- 'Lab 4: Coroutine Scheduler and Event Loop'
+title: 'Lab 5: Channel or Actor Runtime'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/05-channel-actor.md
   source_hash: 2f161479dabe8697da6f7cd6cec5cf86bfd93f87d2b234b1b045dd56e0978139
-  translated_at: '2026-05-26T11:49:08.582591+00:00'
-  engine: anthropic
   token_count: 2608
+  translated_at: '2026-05-26T11:49:08.582591+00:00'
 ---
 # Lab 5: Channel or Actor Runtime
 

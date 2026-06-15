@@ -1,21 +1,21 @@
 ---
-title: "三路比较运算符（C++20 Spaceship Operator）"
-description: "C++20三路比较运算符详解：简化自定义类型的比较逻辑"
 chapter: 11
-order: 5
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+description: C++20三路比较运算符详解：简化自定义类型的比较逻辑
 difficulty: intermediate
-reading_time_minutes: 30
-prerequisites:
-  - "Chapter 11.1: auto与decltype"
-  - "Chapter 11.2: 结构化绑定"
-cpp_standard: [20]
+order: 5
 platform: host
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+- 'Chapter 11.2: 结构化绑定'
+reading_time_minutes: 23
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 三路比较运算符（C++20 Spaceship Operator）
 ---
-
 # 嵌入式现代C++开发——三路比较运算符
 
 ## 引言

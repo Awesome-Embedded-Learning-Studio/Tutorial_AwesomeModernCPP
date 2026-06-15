@@ -1,14 +1,15 @@
 ---
-title: 深入理解C/C++编译与链接技术4：动态库A1：基本讨论之`-fPIC`
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 4
+platform: host
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 4
+title: 深入理解C/C++编译与链接技术4：动态库A1：基本讨论之`-fPIC`
+description: ''
 ---
 # 深入理解C/C++编译与链接技术4：动态库A1：基本讨论之`-fPIC`
 

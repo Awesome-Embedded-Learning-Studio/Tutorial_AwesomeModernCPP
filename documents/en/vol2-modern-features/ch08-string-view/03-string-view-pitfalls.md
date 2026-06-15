@@ -1,28 +1,28 @@
 ---
-title: string_view Pitfalls and Best Practices
+chapter: 8
+cpp_standard:
+- 17
 description: Dangling references, null termination, implicit conversions — common
   `string_view` pitfalls and how to avoid them
-chapter: 8
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 8: string_view 内部原理'
+reading_time_minutes: 13
+related:
+- string_view 性能分析
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 8: string_view 内部原理'
-related:
-- string_view 性能分析
+title: string_view Pitfalls and Best Practices
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch08-string-view/03-string-view-pitfalls.md
   source_hash: 91abf9c98e9a83f341bdef81fa58c673b53baceaa4eaf265c8f3520ecefb3202
-  translated_at: '2026-05-26T11:34:08.082388+00:00'
-  engine: anthropic
   token_count: 2550
+  translated_at: '2026-05-26T11:34:08.082388+00:00'
 ---
 # string_view Pitfalls and Best Practices
 

@@ -11,18 +11,18 @@ order: 1
 platform: stm32f1
 prerequisites:
 - 'Chapter 1: 构建工具链'
-reading_time_minutes: 19
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: Zero-Overhead Abstraction
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-zero-overhead-abstraction.md
   source_hash: 03af5e7165b9cd5be865db1fc88856b77044d27ba20f47537356944291f35c6d
-  translated_at: '2026-05-26T12:10:33.521058+00:00'
-  engine: anthropic
   token_count: 2369
+  translated_at: '2026-05-26T12:10:33.521058+00:00'
 ---
 # Modern C++ for Embedded Systems—Zero-Overhead Abstraction
 

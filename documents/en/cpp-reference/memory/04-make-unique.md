@@ -1,25 +1,26 @@
 ---
-title: std::make_unique
-description: Factory function for safely constructing a unique pointer, avoiding exception
-  safety hazards caused by direct use of `new`
 chapter: 99
-order: 4
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 14
 - 17
 - 20
 - 23
+description: Factory function for safely constructing a unique pointer, avoiding exception
+  safety hazards caused by direct use of `new`
+difficulty: beginner
+order: 4
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::make_unique
 translation:
+  engine: anthropic
   source: documents/cpp-reference/memory/04-make-unique.md
   source_hash: 54ae46289ea576d23b6ae06f20ce1a367b98a2f2574597017f841dea17451477
-  translated_at: '2026-05-26T10:17:29.644093+00:00'
-  engine: anthropic
   token_count: 421
+  translated_at: '2026-05-26T10:17:29.644093+00:00'
 ---
 # std::make_unique (C++14)
 

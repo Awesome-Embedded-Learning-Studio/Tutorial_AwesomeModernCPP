@@ -1,32 +1,32 @@
 ---
-title: 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Master the weak reference mechanism of weak pointers to resolve circular
   reference issues with shared pointers.
-chapter: 1
+difficulty: intermediate
 order: 4
+platform: host
+prerequisites:
+- 'Chapter 1: shared_ptr 详解'
+reading_time_minutes: 14
+related:
+- 自定义删除器
 tags:
 - host
 - cpp-modern
 - intermediate
 - weak_ptr
 - 智能指针
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 1: shared_ptr 详解'
-related:
-- 自定义删除器
+title: 'weak_ptr and Circular References: Breaking the Ownership Deadlock'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/04-weak-ptr.md
   source_hash: b570b6f9d18d1acbe9d8452c742b9d9721b0b2761be98f56787ccf17dce7a745
-  translated_at: '2026-05-26T11:22:02.906939+00:00'
-  engine: anthropic
   token_count: 2899
+  translated_at: '2026-05-26T11:22:02.906939+00:00'
 ---
 # weak pointer and Circular References: Breaking the Ownership Deadlock
 

@@ -1,21 +1,21 @@
 ---
-title: "指定初始化器"
-description: "现代C++指定初始化器详解与嵌入式应用"
 chapter: 11
-order: 6
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 20
+description: 现代C++指定初始化器详解与嵌入式应用
 difficulty: intermediate
-reading_time_minutes: 30
-prerequisites:
-  - "Chapter 11.1: auto与decltype"
-  - "Chapter 11.2: 结构化绑定"
-cpp_standard: [20]
+order: 6
 platform: host
+prerequisites:
+- 'Chapter 11.1: auto与decltype'
+- 'Chapter 11.2: 结构化绑定'
+reading_time_minutes: 15
+tags:
+- cpp-modern
+- host
+- intermediate
+title: 指定初始化器
 ---
-
 # 嵌入式现代C++开发——指定初始化器
 
 ## 引言

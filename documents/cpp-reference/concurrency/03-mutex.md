@@ -1,16 +1,21 @@
 ---
-title: "std::mutex"
-description: "提供独占、非递归的所有权语义，用于保护共享数据免受多线程同时访问。"
 chapter: 99
-order: 3
-tags:
-  - host
-  - mutex
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 提供独占、非递归的所有权语义，用于保护共享数据免受多线程同时访问。
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 3
+reading_time_minutes: 1
+tags:
+- host
+- mutex
+- beginner
+title: std::mutex
 ---
-
 # std::mutex（C++11）
 
 ## 一句话

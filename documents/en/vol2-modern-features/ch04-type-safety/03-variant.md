@@ -1,32 +1,32 @@
 ---
-title: 'std::variant: A Type-Safe Union'
+chapter: 4
+cpp_standard:
+- 17
 description: Using `variant` instead of `union`, combined with `visit` to achieve
   type-safe polymorphism
-chapter: 4
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 4: enum class'
+reading_time_minutes: 13
+related:
+- std::optional
+- 错误处理的现代方式
 tags:
 - host
 - cpp-modern
 - intermediate
 - variant
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 3: Lambda 基础'
-- 'Chapter 4: enum class'
-related:
-- std::optional
-- 错误处理的现代方式
+title: 'std::variant: A Type-Safe Union'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch04-type-safety/03-variant.md
   source_hash: 81d99b49b224001e9f5a0f0432eec42cd6eef679ea5fe985c106aa4b669e6733
-  translated_at: '2026-06-07T02:14:12.511358+00:00'
-  engine: anthropic
   token_count: 2916
+  translated_at: '2026-06-07T02:14:12.511358+00:00'
 ---
 # std::variant: A Type-Safe Union
 

@@ -1,26 +1,27 @@
 ---
-title: std::mutex
-description: Provides exclusive, non-recursive ownership semantics, used to protect
-  shared data from simultaneous access by multiple threads.
 chapter: 99
-order: 3
-tags:
-- host
-- mutex
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Provides exclusive, non-recursive ownership semantics, used to protect
+  shared data from simultaneous access by multiple threads.
+difficulty: beginner
+order: 3
+reading_time_minutes: 1
+tags:
+- host
+- mutex
+- beginner
+title: std::mutex
 translation:
+  engine: anthropic
   source: documents/cpp-reference/concurrency/03-mutex.md
   source_hash: 4ead663492b3c9476a9f944cea6cfe2f15537db116ef192cac3f171e0c305602
-  translated_at: '2026-05-26T10:12:30.711864+00:00'
-  engine: anthropic
   token_count: 362
+  translated_at: '2026-05-26T10:12:30.711864+00:00'
 ---
 # std::mutex (C++11)
 

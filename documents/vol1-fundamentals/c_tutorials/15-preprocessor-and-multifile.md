@@ -11,7 +11,7 @@ order: 19
 platform: host
 prerequisites:
 - 动态内存管理
-reading_time_minutes: 7
+reading_time_minutes: 6
 tags:
 - host
 - cpp-modern

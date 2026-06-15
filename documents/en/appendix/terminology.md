@@ -1,16 +1,17 @@
 ---
-title: Glossary
+chapter: 99
 description: Standard translation reference table for technical terms in this project
+order: 0
+reading_time_minutes: 8
 tags:
 - 基础
-chapter: 99
-order: 0
+title: Glossary
 translation:
+  engine: anthropic
   source: documents/appendix/terminology.md
   source_hash: 196eb84369e66ed9a72950957ad430ac6dd024a4dbc092a4775a829165660d31
-  translated_at: '2026-05-26T10:09:25.855956+00:00'
-  engine: anthropic
   token_count: 1617
+  translated_at: '2026-05-26T10:09:25.855956+00:00'
 ---
 # Glossary
 

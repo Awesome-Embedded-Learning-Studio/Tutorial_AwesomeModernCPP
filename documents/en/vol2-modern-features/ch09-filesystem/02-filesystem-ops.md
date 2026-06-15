@@ -1,27 +1,27 @@
 ---
-title: File and Directory Operations
-description: exists, copy, move, remove, permission and space queries
 chapter: 9
+cpp_standard:
+- 17
+description: exists, copy, move, remove, permission and space queries
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 'Chapter 9: path 操作'
+reading_time_minutes: 12
+related:
+- 目录遍历与搜索
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 9: path 操作'
-related:
-- 目录遍历与搜索
+title: File and Directory Operations
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch09-filesystem/02-filesystem-ops.md
   source_hash: 8fd5e0b1e8e7a44582eb5a5973bf711a2a3129b326f15711a412ff2248853fdc
-  translated_at: '2026-06-14T00:19:02.053785+00:00'
-  engine: anthropic
   token_count: 3359
+  translated_at: '2026-06-14T00:19:02.053785+00:00'
 ---
 # File and Directory Operations
 

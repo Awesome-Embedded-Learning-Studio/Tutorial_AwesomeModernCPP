@@ -1,30 +1,30 @@
 ---
-title: Error Handling Comparison
-description: Comparing exception, error code, optional, and expected error handling
-  strategies
 chapter: 10
-order: 3
-difficulty: intermediate
-reading_time_minutes: 14
-platform: host
-prerequisites:
-- 异常安全
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Comparing exception, error code, optional, and expected error handling
+  strategies
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 异常安全
+reading_time_minutes: 15
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Error Handling Comparison
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch10/03-error-handling-comparison.md
   source_hash: aa664f3bed2f905c812a2a0565402e5f2655a3faf1a8baf020bd65934c133b5f
-  translated_at: '2026-05-26T10:57:57.860385+00:00'
-  engine: anthropic
   token_count: 2673
+  translated_at: '2026-05-26T10:57:57.860385+00:00'
 ---
 # Comparing Error Handling Strategies
 

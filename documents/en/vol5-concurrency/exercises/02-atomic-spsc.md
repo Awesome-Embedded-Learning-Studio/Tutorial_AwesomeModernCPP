@@ -1,29 +1,29 @@
 ---
-title: 'Lab 2: Atomic Metrics and SPSC Ring Buffer'
+chapter: 10
+cpp_standard:
+- 17
+- 20
 description: Master atomic, memory_order, false sharing, and benchmarking methodologies
   via atomic counters and single-producer single-consumer ring buffers.
-chapter: 10
-order: 2
 difficulty: intermediate
+order: 2
+prerequisites:
+- '卷五 ch03: 原子操作与内存模型'
+- 'Lab 0: Thread Lifecycle Lab'
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern
 - atomic
 - memory_order
 - intermediate
-cpp_standard:
-- 17
-- 20
-reading_time_minutes: 16
-prerequisites:
-- '卷五 ch03: 原子操作与内存模型'
-- 'Lab 0: Thread Lifecycle Lab'
+title: 'Lab 2: Atomic Metrics and SPSC Ring Buffer'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/02-atomic-spsc.md
   source_hash: adad8f737d9d3ef0b4cce931937876d7cf38f554eb2e1aaa2041d918845dec4c
-  translated_at: '2026-06-14T00:20:24.057615+00:00'
-  engine: anthropic
   token_count: 3311
+  translated_at: '2026-06-14T00:20:24.057615+00:00'
 ---
 # Lab 2: Atomic Metrics and SPSC Ring Buffer
 

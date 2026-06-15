@@ -11,18 +11,18 @@ order: 7
 platform: host
 prerequisites:
 - 'Chapter 8: 类型安全'
-reading_time_minutes: 16
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - intermediate
 title: C++20 Range Library Basics and Views
 translation:
+  engine: anthropic
   source: documents/vol4-advanced/vol2-modern-cpp17/07-ranges-basics-and-views.md
   source_hash: f8bc594ee9cbcf6b907f60feb2f458d2d3412646523f21596a4f50246d4a1cbb
-  translated_at: '2026-05-26T11:40:13.208481+00:00'
-  engine: anthropic
   token_count: 2581
+  translated_at: '2026-05-26T11:40:13.208481+00:00'
 ---
 # Modern Embedded C++ Tutorial — C++20 Ranges Library Basics and Views
 

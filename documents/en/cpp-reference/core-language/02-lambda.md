@@ -1,26 +1,27 @@
 ---
-title: Lambda Expression
-description: Define anonymous function objects inline, capable of capturing variables
-  within scope.
 chapter: 99
-order: 2
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Define anonymous function objects inline, capable of capturing variables
+  within scope.
+difficulty: beginner
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: Lambda Expression
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/02-lambda.md
   source_hash: 3222707510d24648c0c63987fa249d9a279b31d141e152412247211ec786fa2d
-  translated_at: '2026-05-26T10:15:11.927305+00:00'
-  engine: anthropic
   token_count: 416
+  translated_at: '2026-05-26T10:15:11.927305+00:00'
 ---
 # Lambda Expressions (C++11)
 

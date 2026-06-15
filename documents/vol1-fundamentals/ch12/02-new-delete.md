@@ -1,21 +1,24 @@
 ---
-title: "动态内存管理"
-description: "掌握 new/delete 使用与陷阱，理解 RAII 核心地位"
 chapter: 12
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 new/delete 使用与陷阱，理解 RAII 核心地位
 difficulty: intermediate
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "内存布局"
+- 内存布局
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 动态内存管理
 ---
-
 # 动态内存管理
 
 上一章我们把程序的内存空间拆成了栈、堆、静态区、代码段四大块，搞清楚了数据"住在哪里"和"活多久"。但有一个悬念没有展开：堆上的动态内存到底怎么管？`new` 和 `delete` 背后做了什么？为什么前面几乎所有章节都在念叨"用智能指针，别裸写 `delete`"？

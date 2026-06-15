@@ -1,33 +1,33 @@
 ---
-title: 'Prerequisites for OnceCallback (Part 5): std::move_only_function (C++23)'
+chapter: 0
+cpp_standard:
+- 23
 description: An in-depth look at C++23's std::move_only_function—the core storage
   type of OnceCallback—covering the evolution from std::function, SBO behavior, and
   why OnceCallback requires independent three-state management.
-chapter: 0
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 9
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（六）：测试与性能对比
 tags:
 - host
 - cpp-modern
 - intermediate
 - 函数对象
 - 智能指针
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 10
-prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
-related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 实战（六）：测试与性能对比
+title: 'Prerequisites for OnceCallback (Part 5): std::move_only_function (C++23)'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-05-once-callback-move-only-function.md
   source_hash: 61ad68cd231af8ec4dafcf8a45948cfa4ec4353ca184e11c04f06387fe805c6b
-  translated_at: '2026-05-26T12:29:11.875311+00:00'
-  engine: anthropic
   token_count: 1747
+  translated_at: '2026-05-26T12:29:11.875311+00:00'
 ---
 # Prerequisites for OnceCallback (Part 5): std::move_only_function (C++23)
 

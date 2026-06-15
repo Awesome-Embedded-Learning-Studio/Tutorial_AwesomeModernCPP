@@ -1,25 +1,26 @@
 ---
-title: "非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr"
-description: "理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed<T> 和 ObserverPtr<T>"
 chapter: 1
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 智能指针
-  - 内存管理
+cpp_standard:
+- 17
+- 20
+description: 理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed<T> 和 ObserverPtr<T>
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 20
 prerequisites:
-  - "卷二 · 第一章：RAII 深入理解"
-  - "卷二 · 第一章：weak_ptr 与循环引用"
+- 卷二 · 第一章：RAII 深入理解
+- 卷二 · 第一章：weak_ptr 与循环引用
+reading_time_minutes: 13
 related:
-  - "WeakPtr 反模式：T* + raw Flag* 的致命陷阱"
-cpp_standard: [17, 20]
+- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+tags:
+- host
+- cpp-modern
+- intermediate
+- 智能指针
+- 内存管理
+title: 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
 ---
-
 # 非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr
 
 ## 引言

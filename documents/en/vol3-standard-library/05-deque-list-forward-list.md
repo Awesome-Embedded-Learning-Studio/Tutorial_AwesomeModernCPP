@@ -1,38 +1,38 @@
 ---
-title: 'deque, list, and forward_list: Three Alternatives to vector'
+chapter: 7
+cpp_standard:
+- 11
+- 20
 description: 'A deep dive into the three alternatives to `vector` among sequential
   containers: `deque`''s segmented continuous double-ended structure, `list`''s doubly
   linked list and `splice`, and `forward_list`''s extreme memory efficiency, along
   with the real-world trade-offs between cache locality and front insertion complexity.'
-chapter: 7
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- vector 深入：三指针、扩容与迭代器失效
+reading_time_minutes: 9
+related:
+- 容器选择指南
 tags:
 - host
 - cpp-modern
 - intermediate
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 20
-reading_time_minutes: 22
-prerequisites:
-- vector 深入：三指针、扩容与迭代器失效
-related:
-- 容器选择指南
+title: 'deque, list, and forward_list: Three Alternatives to vector'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/05-deque-list-forward-list.md
   source_hash: 6261f8c5044326c92a14489fabfac97598fdad483b776f39a6a7fb43619a5888
-  translated_at: '2026-06-15T09:12:38.685009+00:00'
-  engine: anthropic
   token_count: 1650
+  translated_at: '2026-06-15T09:12:38.685009+00:00'
 ---
 # deque, list, and forward_list: Three Alternatives to vector
 
 ## Why do we need these three when vector is already good enough?
 
-We covered `vector` in the [previous article](03-vector-deep-dive). It has contiguous memory, O(1) random access, and amortized O(1) insertion at the end. For most scenarios, it is the optimal solution. However, it has a few blind spots: insertion at the head is O(n) (shifting everything forward), insertion in the middle is also O(n), reallocation moves all elements, and iterators/references are invalidated upon expansion. When we encounter requirements like "frequently adding items to the head" or "frequently inserting/deleting at known positions without invalidating iterators," `vector` is no longer suitable. `deque`, `list`, and `forward_list` exist to fill these gaps—they use different memory layouts to gain capabilities that `vector` cannot provide, at the cost of their own specific trade-offs.
+We covered `vector` in the [previous article](03-vector-deep-dive.md). It has contiguous memory, O(1) random access, and amortized O(1) insertion at the end. For most scenarios, it is the optimal solution. However, it has a few blind spots: insertion at the head is O(n) (shifting everything forward), insertion in the middle is also O(n), reallocation moves all elements, and iterators/references are invalidated upon expansion. When we encounter requirements like "frequently adding items to the head" or "frequently inserting/deleting at known positions without invalidating iterators," `vector` is no longer suitable. `deque`, `list`, and `forward_list` exist to fill these gaps—they use different memory layouts to gain capabilities that `vector` cannot provide, at the cost of their own specific trade-offs.
 
 Remember this rule of thumb for now: `deque` is a "vector that can insert at both ends," `list` is a "linked list with O(1) insertion/deletion in the middle," and `forward_list` is a "singly linked list that saves more memory than `list`."
 

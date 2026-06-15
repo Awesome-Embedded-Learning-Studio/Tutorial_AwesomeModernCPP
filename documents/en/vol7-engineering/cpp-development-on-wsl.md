@@ -1,20 +1,21 @@
 ---
-title: Quickly Develop General C++ Host Applications on WSL
-description: ''
+chapter: 1
+difficulty: intermediate
+order: 6
+platform: host
+reading_time_minutes: 5
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 1
-order: 6
+title: Quickly Develop General C++ Host Applications on WSL
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/cpp-development-on-wsl.md
   source_hash: 9384edd8b346dc03e297ae3b5b6674fd372f12f603b58b74b9ed112669637a4b
-  translated_at: '2026-05-26T11:53:14.690409+00:00'
-  engine: anthropic
   token_count: 1019
+  translated_at: '2026-05-26T11:53:14.690409+00:00'
+description: ''
 ---
 # Quickly Developing General C++ Host Programs on WSL
 

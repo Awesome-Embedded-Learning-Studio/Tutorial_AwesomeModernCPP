@@ -1,30 +1,30 @@
 ---
-title: Memory Layout
-description: Understand the memory model of the stack, heap, static storage, and code
-  segments, and learn to analyze the storage location and lifetime of variables.
 chapter: 12
-order: 1
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- STL 常用模式
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand the memory model of the stack, heap, static storage, and code
+  segments, and learn to analyze the storage location and lifetime of variables.
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- STL 常用模式
+reading_time_minutes: 14
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Memory Layout
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch12/01-memory-layout.md
   source_hash: 13a3773fc7844e21766c52ae92086fc063d5bd34a3cb22644272e2d0cf18fc5f
-  translated_at: '2026-05-26T11:01:27.201653+00:00'
-  engine: anthropic
   token_count: 2135
+  translated_at: '2026-05-26T11:01:27.201653+00:00'
 ---
 # Memory Layout
 

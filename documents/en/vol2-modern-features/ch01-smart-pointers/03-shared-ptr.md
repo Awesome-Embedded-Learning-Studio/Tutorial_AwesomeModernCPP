@@ -1,9 +1,21 @@
 ---
-title: 'A Detailed Look at shared_ptr: Shared Ownership and Reference Counting'
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Understanding the control block mechanism, thread safety, and performance
   characteristics of shared pointers
-chapter: 1
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 1: RAII 深入理解'
+- 'Chapter 1: unique_ptr 详解'
+reading_time_minutes: 25
+related:
+- weak_ptr 与循环引用
+- 自定义删除器
 tags:
 - host
 - cpp-modern
@@ -11,25 +23,13 @@ tags:
 - shared_ptr
 - 智能指针
 - 引用计数
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 20
-prerequisites:
-- 'Chapter 1: RAII 深入理解'
-- 'Chapter 1: unique_ptr 详解'
-related:
-- weak_ptr 与循环引用
-- 自定义删除器
+title: 'A Detailed Look at shared_ptr: Shared Ownership and Reference Counting'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/03-shared-ptr.md
   source_hash: 9114fe8009c863522c68fe9a08d3b76affb519a89d94d0a0cae1eafc03b0146d
-  translated_at: '2026-06-07T02:13:44.058182+00:00'
-  engine: anthropic
   token_count: 4051
+  translated_at: '2026-06-07T02:13:44.058182+00:00'
 ---
 # A Deep Dive into shared_ptr: Shared Ownership and Reference Counting
 

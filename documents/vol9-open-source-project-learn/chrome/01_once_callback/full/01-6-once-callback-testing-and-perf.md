@@ -1,27 +1,27 @@
 ---
-title: "OnceCallback 实战（六）：测试与性能对比"
-description: "系统化设计六类测试用例验证 OnceCallback 的所有核心行为，对比与 Chromium 原版和标准库方案的性能差异"
 chapter: 1
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - 函数对象
+cpp_standard:
+- 23
+description: 系统化设计六类测试用例验证 OnceCallback 的所有核心行为，对比与 Chromium 原版和标准库方案的性能差异
 difficulty: beginner
+order: 6
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 10
 prerequisites:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 实战（三）：bind_once 实现"
-  - "OnceCallback 实战（四）：取消令牌设计"
-  - "OnceCallback 实战（五）：then 链式组合"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（四）：取消令牌设计
+- OnceCallback 实战（五）：then 链式组合
+reading_time_minutes: 8
 related:
-  - "OnceCallback 前置知识（五）：std::move_only_function"
+- OnceCallback 前置知识（五）：std::move_only_function
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+title: OnceCallback 实战（六）：测试与性能对比
 ---
-
 # OnceCallback 实战（六）：测试与性能对比
 
 ## 引言

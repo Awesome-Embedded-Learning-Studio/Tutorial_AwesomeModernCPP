@@ -1,16 +1,18 @@
 ---
-title: "Modules（模块）"
-description: "替代头文件的编译单元机制：更快编译、更好的封装、宏隔离"
 chapter: 99
-order: 17
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: 替代头文件的编译单元机制：更快编译、更好的封装、宏隔离
 difficulty: intermediate
-cpp_standard: [20, 23]
+order: 17
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: Modules（模块）
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

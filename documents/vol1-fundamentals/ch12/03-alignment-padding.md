@@ -1,21 +1,24 @@
 ---
-title: "内存对齐与填充"
-description: "理解对齐规则和 sizeof 计算方法，掌握 alignas/alignof 的用法"
 chapter: 12
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解对齐规则和 sizeof 计算方法，掌握 alignas/alignof 的用法
 difficulty: intermediate
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "动态内存管理"
+- 动态内存管理
+reading_time_minutes: 15
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 内存对齐与填充
 ---
-
 # 内存对齐与填充
 
 上一章，我们把程序的内存空间拆成了栈、堆、静态区和代码段四大区域，搞清楚了数据"住在哪里"和"活多久"。现在我们再往下一层看——即便数据都在同一块内存区域里，它也不是想怎么摆放就怎么摆放的。如果你写过一阵子 C++，大概率遇到过这样的困惑：一个结构体明明只有三个成员，`sizeof` 出来的结果却比三个成员大小之和大了不少。见了鬼了，咱们多出来的那些字节去哪了？

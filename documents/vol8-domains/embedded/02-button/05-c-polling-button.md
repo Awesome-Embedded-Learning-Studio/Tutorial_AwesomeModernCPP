@@ -1,14 +1,15 @@
 ---
-title: 第23篇：C 语言轮询按钮 —— 第一次亲手让按钮控制 LED
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 5
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 5
+title: 第23篇：C 语言轮询按钮 —— 第一次亲手让按钮控制 LED
+description: ''
 ---
 # 第23篇：C 语言轮询按钮 —— 第一次亲手让按钮控制 LED
 

@@ -1,26 +1,27 @@
 ---
-title: "OnceCallback 前置知识（五）：std::move_only_function (C++23)"
-description: "深入理解 C++23 的 std::move_only_function——OnceCallback 的核心存储类型，从 std::function 的演进动机到 SBO 行为，再到为什么 OnceCallback 需要独立的三态管理"
 chapter: 0
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 函数对象
-  - 智能指针
+cpp_standard:
+- 23
+description: 深入理解 C++23 的 std::move_only_function——OnceCallback 的核心存储类型，从 std::function
+  的演进动机到 SBO 行为，再到为什么 OnceCallback 需要独立的三态管理
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 10
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 9
 related:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 实战（六）：测试与性能对比"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 实战（六）：测试与性能对比
+tags:
+- host
+- cpp-modern
+- intermediate
+- 函数对象
+- 智能指针
+title: OnceCallback 前置知识（五）：std::move_only_function (C++23)
 ---
-
 # OnceCallback 前置知识（五）：std::move_only_function (C++23)
 
 ## 引言

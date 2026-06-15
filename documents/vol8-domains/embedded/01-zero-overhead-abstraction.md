@@ -11,7 +11,7 @@ order: 1
 platform: stm32f1
 prerequisites:
 - 'Chapter 1: 构建工具链'
-reading_time_minutes: 19
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - intermediate

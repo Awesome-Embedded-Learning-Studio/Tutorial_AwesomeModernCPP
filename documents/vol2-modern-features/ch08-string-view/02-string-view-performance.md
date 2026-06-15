@@ -1,22 +1,22 @@
 ---
-title: "string_view 性能分析"
-description: "基准测试 string_view 替代 const string& 的性能收益"
 chapter: 8
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: 基准测试 string_view 替代 const string& 的性能收益
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 8: string_view 内部原理"
+- 'Chapter 8: string_view 内部原理'
+reading_time_minutes: 13
 related:
-  - "string_view 陷阱与最佳实践"
+- string_view 陷阱与最佳实践
+tags:
+- host
+- cpp-modern
+- intermediate
+title: string_view 性能分析
 ---
-
 # string_view 性能分析
 
 上一篇我们深入了 `string_view` 的内部原理，知道了它是"指针 + 长度"的非拥有视图。这一篇我们用数据说话——`string_view` 到底比 `const std::string&` 快多少？在什么场景下收益最大？有没有反而更慢的情况？

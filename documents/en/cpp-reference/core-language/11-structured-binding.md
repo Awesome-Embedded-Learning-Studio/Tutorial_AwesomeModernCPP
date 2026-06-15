@@ -1,24 +1,25 @@
 ---
-title: Structured binding
-description: Destructure elements of a tuple, pair, struct, or array into multiple
-  variables at once
 chapter: 99
-order: 11
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: Destructure elements of a tuple, pair, struct, or array into multiple
+  variables at once
+difficulty: beginner
+order: 11
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: Structured binding
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/11-structured-binding.md
   source_hash: 201ae798cccf5a6c549492c1a571c3b649627961e37c2bd2b131f3095e7f81e9
-  translated_at: '2026-05-26T10:16:07.876888+00:00'
-  engine: anthropic
   token_count: 545
+  translated_at: '2026-05-26T10:16:07.876888+00:00'
 ---
 <!--
 Reference Card Template

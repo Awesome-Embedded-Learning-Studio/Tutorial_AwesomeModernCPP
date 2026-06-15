@@ -1,16 +1,20 @@
 ---
-title: "std::unique_ptr"
-description: "独占所有权的智能指针，零开销自动释放资源"
 chapter: 99
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 独占所有权的智能指针，零开销自动释放资源
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20]
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::unique_ptr
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

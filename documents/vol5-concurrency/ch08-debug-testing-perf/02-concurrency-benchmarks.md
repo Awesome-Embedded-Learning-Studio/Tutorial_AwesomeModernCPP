@@ -1,27 +1,28 @@
 ---
-title: "并发性能测试与基准"
-description: "掌握 Google Benchmark 的使用方法，避开并发基准测试中的常见陷阱，学会用性能计数器定位瓶颈"
 chapter: 8
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - atomic
-  - mutex
-  - 优化
-  - 进阶
+cpp_standard:
+- 17
+- 20
+description: 掌握 Google Benchmark 的使用方法，避开并发基准测试中的常见陷阱，学会用性能计数器定位瓶颈
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 25
-cpp_standard: [17, 20]
 prerequisites:
-  - "并发程序调试技巧"
-  - "线程池"
+- 并发程序调试技巧
+- 线程池
+reading_time_minutes: 20
 related:
-  - "CPU cache 与 OS 线程"
+- CPU cache 与 OS 线程
+tags:
+- host
+- cpp-modern
+- intermediate
+- atomic
+- mutex
+- 优化
+- 进阶
+title: 并发性能测试与基准
 ---
-
 # 并发性能测试与基准
 
 > 📖 **深入阅读**：这篇只讲并发场景下的基准测试。更通用的性能工程——benchmark 方法论、cache 友好性、SIMD/AVX、读汇编——是 [卷六·性能工程](../../vol6-performance/index.md)的主场。

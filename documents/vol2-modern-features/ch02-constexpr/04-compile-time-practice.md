@@ -1,26 +1,29 @@
 ---
-title: "编译期计算实战：从查表到编译期字符串"
-description: "综合运用 constexpr 实现编译期查表、字符串处理、状态机和设计模式"
 chapter: 2
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - constexpr
-  - 编译期计算
-  - 零开销抽象
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 综合运用 constexpr 实现编译期查表、字符串处理、状态机和设计模式
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 20
 prerequisites:
-  - "Chapter 2: constexpr 基础"
-  - "Chapter 2: constexpr 构造函数与字面类型"
+- 'Chapter 2: constexpr 基础'
+- 'Chapter 2: constexpr 构造函数与字面类型'
+reading_time_minutes: 17
 related:
-  - "卷四：模板元编程"
+- 卷四：模板元编程
+tags:
+- host
+- cpp-modern
+- intermediate
+- constexpr
+- 编译期计算
+- 零开销抽象
+title: 编译期计算实战：从查表到编译期字符串
 ---
-
 # 编译期计算实战：从查表到编译期字符串
 
 ## 引言

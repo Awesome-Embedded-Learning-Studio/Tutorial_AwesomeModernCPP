@@ -1,23 +1,24 @@
 ---
-title: "类模板参数推导 (CTAD)"
-description: "C++17 的 CTAD 机制与自定义推导指引"
 chapter: 6
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 泛型
+cpp_standard:
+- 17
+- 20
+description: C++17 的 CTAD 机制与自定义推导指引
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [17, 20]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 6: auto 推导深入"
+- 'Chapter 6: auto 推导深入'
+reading_time_minutes: 13
 related:
-  - "decltype 与返回类型推导"
+- decltype 与返回类型推导
+tags:
+- host
+- cpp-modern
+- intermediate
+- 泛型
+title: 类模板参数推导 (CTAD)
 ---
-
 # 类模板参数推导 (CTAD)
 
 在 C++17 之前，每次实例化类模板都得把模板参数写全。哪怕编译器完全能从构造函数的参数推导出模板参数，你也得老老实实写一遍：

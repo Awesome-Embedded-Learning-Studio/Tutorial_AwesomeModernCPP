@@ -1,22 +1,25 @@
 ---
-title: "std::vector 快速上手"
-description: "掌握 vector 的增删改查和容量管理，学会使用最常用的 C++ 动态容器"
 chapter: 11
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 vector 的增删改查和容量管理，学会使用最常用的 C++ 动态容器
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "错误处理方式对比"
+- 错误处理方式对比
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: std::vector 快速上手
 ---
-
 # std::vector 快速上手
 
 前面几章我们把 C++ 的语言核心——类型系统、控制流、函数、类与继承——基本过了一遍。从现在开始，我们要进入一个全新的领域：标准模板库（STL）。STL 提供了一大批现成的容器、算法和迭代器，能让我们少造很多轮子。而在所有容器中，`std::vector` 绝对是出场率最高的那个——动态数组，自动扩容，元素连续存储，随机访问 O(1)。说实话，如果你不确定该用什么容器，用 `vector` 就对了，其他容器都是在特定场景下才有优势。

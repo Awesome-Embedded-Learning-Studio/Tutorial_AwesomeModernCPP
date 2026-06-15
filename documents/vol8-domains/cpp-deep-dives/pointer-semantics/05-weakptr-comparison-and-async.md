@@ -1,26 +1,27 @@
 ---
-title: "std::weak_ptr 对比与异步回调实战"
-description: "对比 std::weak_ptr 与 Chrome WeakPtr，六种异步回调捕获模式的安全分析"
 chapter: 1
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 智能指针
-  - 异步编程
-  - 回调机制
+cpp_standard:
+- 17
+- 20
+description: 对比 std::weak_ptr 与 Chrome WeakPtr，六种异步回调捕获模式的安全分析
 difficulty: advanced
+order: 5
 platform: host
-reading_time_minutes: 8
 prerequisites:
-  - "Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory"
-  - "卷二 · 第一章：weak_ptr 与循环引用"
+- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
+- 卷二 · 第一章：weak_ptr 与循环引用
+reading_time_minutes: 7
 related:
-  - "跨线程安全、性能取舍与设计原则总结"
-cpp_standard: [17, 20]
+- 跨线程安全、性能取舍与设计原则总结
+tags:
+- host
+- cpp-modern
+- advanced
+- 智能指针
+- 异步编程
+- 回调机制
+title: std::weak_ptr 对比与异步回调实战
 ---
-
 # std::weak_ptr 对比与异步回调实战
 
 ## 引言

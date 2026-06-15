@@ -1,23 +1,25 @@
 ---
-title: "个人历程与从汇编到 C++ 的觉醒"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 1
+platform: host
+reading_time_minutes: 36
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: 个人历程与从汇编到 C++ 的觉醒
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # 为什么 C++ 程序员应该关注汇编
 
 很多 C++ 教程和老师都会告诉你：写 C++ 不用管底层，编译器比你聪明，你只管用模板、用智能指针、用标准库算法，剩下的交给优化器。然而在实践中，当你对着跑得慢的代码反复优化却看不到进展的时候，真正需要做的是看一看你的代码到底编译成了什么——也就是汇编输出。很多情况下，那个你以为"零成本抽象"的模板函数，编译器根本没有内联；那个你觉得"应该很快"的 lambda，在循环里被反复构造和销毁。汇编不会骗你，它就是你的代码真正变成的样子。

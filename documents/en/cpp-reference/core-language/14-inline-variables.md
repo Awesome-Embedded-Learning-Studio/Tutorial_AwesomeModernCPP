@@ -1,24 +1,25 @@
 ---
-title: Inline Variable
-description: Defining global variables in a header file without violating the ODR
-  (one definition rule), with the compiler guaranteeing a single instance
 chapter: 99
-order: 14
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: Defining global variables in a header file without violating the ODR
+  (one definition rule), with the compiler guaranteeing a single instance
+difficulty: beginner
+order: 14
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: Inline Variable
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/14-inline-variables.md
   source_hash: 0ea7b67e0dde71306439802b1916ff0d7a5310c37f59ee4b2fda966cb6ca843c
-  translated_at: '2026-05-26T10:16:18.167467+00:00'
-  engine: anthropic
   token_count: 422
+  translated_at: '2026-05-26T10:16:18.167467+00:00'
 ---
 <!--
 Reference Card Template

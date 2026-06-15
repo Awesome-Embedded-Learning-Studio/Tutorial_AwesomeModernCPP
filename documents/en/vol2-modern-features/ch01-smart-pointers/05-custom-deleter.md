@@ -1,9 +1,20 @@
 ---
-title: Custom Deleters and Intrusive Reference Counting
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
 description: Wrapping C APIs, managing special resources, and implementing intrusive
   smart pointers
-chapter: 1
+difficulty: intermediate
 order: 5
+platform: host
+prerequisites:
+- 'Chapter 1: unique_ptr 详解'
+- 'Chapter 1: shared_ptr 详解'
+reading_time_minutes: 16
+related:
+- scope_guard 与 defer
 tags:
 - host
 - cpp-modern
@@ -11,24 +22,13 @@ tags:
 - 智能指针
 - intrusive_ptr
 - 引用计数
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 1: unique_ptr 详解'
-- 'Chapter 1: shared_ptr 详解'
-related:
-- scope_guard 与 defer
+title: Custom Deleters and Intrusive Reference Counting
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/05-custom-deleter.md
   source_hash: 733849f0fc5636e2b6d5b12d1bc892c4a3f51411b9f01a03a82d62e3306af5d3
-  translated_at: '2026-05-26T11:22:13.521371+00:00'
-  engine: anthropic
   token_count: 3983
+  translated_at: '2026-05-26T11:22:13.521371+00:00'
 ---
 # Custom Deleters and Intrusive Reference Counting
 

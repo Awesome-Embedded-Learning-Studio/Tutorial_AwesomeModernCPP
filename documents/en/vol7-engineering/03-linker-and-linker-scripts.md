@@ -12,7 +12,7 @@ order: 3
 platform: host
 prerequisites:
 - 'Chapter 0: 前言与基础'
-reading_time_minutes: 15
+reading_time_minutes: 11
 related: []
 tags:
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - intermediate
 title: Linker and Linker Scripts
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/03-linker-and-linker-scripts.md
   source_hash: 3a0f3c55d4b17b8aeee508a5737d73e2eb6e33bad0be591bb17391b397311b90
-  translated_at: '2026-05-26T11:52:54.303665+00:00'
-  engine: anthropic
   token_count: 2123
+  translated_at: '2026-05-26T11:52:54.303665+00:00'
 ---
 # Linker and Linker Scripts: From Principles to Practice
 

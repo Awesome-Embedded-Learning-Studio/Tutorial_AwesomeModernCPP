@@ -1,25 +1,25 @@
 ---
-title: "once_callback 设计指南（二）：逐步实现"
-description: "从核心骨架到完整组件，四步走读 once_callback 的实现策略，重点理解模板技巧和所有权设计"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 回调机制
-  - 函数对象
+cpp_standard:
+- 23
+description: 从核心骨架到完整组件，四步走读 once_callback 的实现策略，重点理解模板技巧和所有权设计
 difficulty: advanced
+order: 2
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 30
 prerequisites:
-  - "once_callback 设计指南（一）：动机与接口设计"
+- once_callback 设计指南（一）：动机与接口设计
+reading_time_minutes: 24
 related:
-  - "bind_once / bind_repeating 与参数绑定"
-  - "回调取消与组合模式"
+- bind_once / bind_repeating 与参数绑定
+- 回调取消与组合模式
+tags:
+- host
+- cpp-modern
+- advanced
+- 回调机制
+- 函数对象
+title: once_callback 设计指南（二）：逐步实现
 ---
-
 # once_callback 设计指南（二）：逐步实现
 
 ## 引言

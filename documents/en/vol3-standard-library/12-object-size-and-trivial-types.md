@@ -1,33 +1,33 @@
 ---
-title: Object Size, Alignment, and Trivial Types
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: We explain `sizeof`/`alignof` and memory padding, the precise distinctions
   between trivial/trivially copyable/standard-layout, the decomposition of POD (Plain
   Old Data), when `memcpy` is safe, and aggregate initialization vs. C++20 designated
   initializers.
-chapter: 7
+difficulty: intermediate
 order: 12
+platform: host
+reading_time_minutes: 7
+related:
+- array：编译期固定大小的聚合容器
 tags:
 - host
 - cpp-modern
 - intermediate
 - 类型安全
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 15
-related:
-- array：编译期固定大小的聚合容器
+title: Object Size, Alignment, and Trivial Types
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/12-object-size-and-trivial-types.md
   source_hash: 152da35221b5197e7ef3a825583be934ee6291a0739678f081a9e81d195efbd6
-  translated_at: '2026-06-15T09:20:18.710978+00:00'
-  engine: anthropic
   token_count: 1635
+  translated_at: '2026-06-15T09:20:18.710978+00:00'
 ---
 # Object Size, Alignment, and Trivial Types
 

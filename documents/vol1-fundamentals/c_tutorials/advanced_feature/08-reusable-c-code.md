@@ -13,7 +13,7 @@ prerequisites:
 - 指针进阶：不完整类型与多级指针
 - 结构体与内存布局
 - 编译与链接基础
-reading_time_minutes: 32
+reading_time_minutes: 24
 tags:
 - host
 - cpp-modern

@@ -1,16 +1,19 @@
 ---
-title: "std::string_view"
-description: "轻量级非拥有字符串视图，零拷贝引用连续字符序列"
 chapter: 99
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 轻量级非拥有字符串视图，零拷贝引用连续字符序列
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::string_view
 ---
-
 # std::string_view（C++17）
 
 ## 一句话

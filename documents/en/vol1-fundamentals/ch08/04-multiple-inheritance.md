@@ -1,31 +1,31 @@
 ---
-title: Multiple Inheritance and Virtual Inheritance
-description: Understand the syntax of multiple inheritance, the diamond inheritance
-  problem, and the solution provided by virtual inheritance, and learn to use multiple
-  inheritance judiciously.
 chapter: 8
-order: 4
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 抽象类与接口
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand the syntax of multiple inheritance, the diamond inheritance
+  problem, and the solution provided by virtual inheritance, and learn to use multiple
+  inheritance judiciously.
+difficulty: intermediate
+order: 4
+platform: host
+prerequisites:
+- 抽象类与接口
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Multiple Inheritance and Virtual Inheritance
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch08/04-multiple-inheritance.md
   source_hash: 312ebd8aee413fd1731f5ebe6aa253b46894cc5d9acb3d5775b524088ddfd9b6
-  translated_at: '2026-05-26T10:54:20.454995+00:00'
-  engine: anthropic
   token_count: 2111
+  translated_at: '2026-05-26T10:54:20.454995+00:00'
 ---
 # Multiple Inheritance and Virtual Inheritance
 

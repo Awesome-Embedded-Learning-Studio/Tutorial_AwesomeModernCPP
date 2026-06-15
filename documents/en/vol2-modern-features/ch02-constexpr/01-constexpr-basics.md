@@ -1,33 +1,33 @@
 ---
-title: 'constexpr Basics: The Art of Compile-Time Evaluation'
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
 description: From `constexpr` variables to `constexpr` functions, master the core
   mechanisms and standard evolution of compile-time computation.
-chapter: 2
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 17
+related:
+- constexpr 构造函数与字面类型
+- 编译期计算实战
 tags:
 - host
 - cpp-modern
 - intermediate
 - constexpr
 - 编译期计算
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 18
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
-related:
-- constexpr 构造函数与字面类型
-- 编译期计算实战
+title: 'constexpr Basics: The Art of Compile-Time Evaluation'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch02-constexpr/01-constexpr-basics.md
   source_hash: 0285029e807ada351f0c0a7501219f25453af46787ee930c46d24e47002d1640
-  translated_at: '2026-05-26T11:24:13.320482+00:00'
-  engine: anthropic
   token_count: 3136
+  translated_at: '2026-05-26T11:24:13.320482+00:00'
 ---
 # constexpr Basics: The Art of Compile-Time Evaluation
 

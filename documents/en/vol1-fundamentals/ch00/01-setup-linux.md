@@ -1,30 +1,30 @@
 ---
-title: Linux Environment Setup
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Setting up a C++ development environment on Linux: installing the compiler,
   CMake, and VS Code, from zero configuration to compiling and running your first
   program'
-chapter: 0
-order: 1
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Linux Environment Setup
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch00/01-setup-linux.md
   source_hash: c37553d865b3ab94b79f1d28b26ade13bd4809e05f7f45f8be3b8bd3f85059ae
-  translated_at: '2026-05-26T10:41:26.350652+00:00'
-  engine: anthropic
   token_count: 1997
+  translated_at: '2026-05-26T10:41:26.350652+00:00'
 ---
 # Setting Up the Linux Environment
 

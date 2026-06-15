@@ -1,32 +1,32 @@
 ---
-title: References
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Deep dive into C++ references: reference syntax, differences between
   references and pointers, and the crucial role of `const` references in function
   parameters.'
-chapter: 4
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - 指针运算与数组
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: References
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch04/03-references.md
   source_hash: 51d34634bf4c2b24846169050a696593069d236041da8b2b0ac5ec7413681b01
-  translated_at: '2026-05-26T10:48:52.993332+00:00'
-  engine: anthropic
   token_count: 2315
+  translated_at: '2026-05-26T10:48:52.993332+00:00'
 ---
 # References
 

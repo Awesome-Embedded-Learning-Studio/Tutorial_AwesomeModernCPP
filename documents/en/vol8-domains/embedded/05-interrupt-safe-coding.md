@@ -1,28 +1,28 @@
 ---
-title: Writing Interrupt-Safe Code
-description: ISR-safe programming practices
 chapter: 10
-order: 5
-tags:
-- cpp-modern
-- intermediate
-- stm32f1
-difficulty: advanced
-reading_time_minutes: 25
-prerequisites:
-- 'Chapter 10.1-10.4: 原子操作与内存序'
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: ISR-safe programming practices
+difficulty: advanced
+order: 5
 platform: stm32f1
+prerequisites:
+- 'Chapter 10.1-10.4: 原子操作与内存序'
+reading_time_minutes: 15
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: Writing Interrupt-Safe Code
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/05-interrupt-safe-coding.md
   source_hash: 95dfe114ab4697194a4ae0d40372ef7639ef7929f4c22f03d3414d5525bd98e4
-  translated_at: '2026-05-26T12:23:39.677550+00:00'
-  engine: anthropic
   token_count: 3481
+  translated_at: '2026-05-26T12:23:39.677550+00:00'
 ---
 # Modern C++ for Embedded Systems—Writing Interrupt-Safe Code
 

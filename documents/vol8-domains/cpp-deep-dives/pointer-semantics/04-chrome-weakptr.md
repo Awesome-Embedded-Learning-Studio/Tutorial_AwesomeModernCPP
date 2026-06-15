@@ -1,25 +1,26 @@
 ---
-title: "Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory"
-description: "实现教学版 Chrome WeakPtr，理解 ref-counted control block 与序列绑定模型"
 chapter: 1
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 智能指针
-  - 引用计数
-  - 回调机制
+cpp_standard:
+- 17
+- 20
+description: 实现教学版 Chrome WeakPtr，理解 ref-counted control block 与序列绑定模型
 difficulty: advanced
+order: 4
 platform: host
-reading_time_minutes: 12
 prerequisites:
-  - "SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进"
+- SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
+reading_time_minutes: 9
 related:
-  - "std::weak_ptr 对比与异步回调实战"
-cpp_standard: [17, 20]
+- std::weak_ptr 对比与异步回调实战
+tags:
+- host
+- cpp-modern
+- advanced
+- 智能指针
+- 引用计数
+- 回调机制
+title: Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
 ---
-
 # Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
 
 ## 引言

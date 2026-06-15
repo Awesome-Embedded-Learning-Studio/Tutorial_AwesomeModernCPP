@@ -1,32 +1,32 @@
 ---
-title: 'std::initializer_list: The Lightweight Sequence Behind Curly Braces'
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
 description: 'Deep dive into `std::initializer_list`: the compiler-generated read-only
   view for `{...}`, shallow copies and `const` elements, the "move trap" where elements
   cannot be moved into containers, overload resolution priority for brace initialization,
   and its relationship with container constructors.'
-chapter: 7
+difficulty: intermediate
 order: 11
+platform: host
+reading_time_minutes: 4
+related:
+- vector 深入：三指针、扩容与迭代器失效
+- span：非拥有的连续视图
 tags:
 - host
 - cpp-modern
 - intermediate
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-reading_time_minutes: 12
-related:
-- vector 深入：三指针、扩容与迭代器失效
-- span：非拥有的连续视图
+title: 'std::initializer_list: The Lightweight Sequence Behind Curly Braces'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/11-initializer-lists.md
   source_hash: 3559a8bcc57fe924d5db6f17a6544dd8c8d3d957e70172525613642c34fa59c0
-  translated_at: '2026-06-15T09:19:15.134431+00:00'
-  engine: anthropic
   token_count: 1288
+  translated_at: '2026-06-15T09:19:15.134431+00:00'
 ---
 # std::initializer_list: The Lightweight Sequence Behind Braces
 

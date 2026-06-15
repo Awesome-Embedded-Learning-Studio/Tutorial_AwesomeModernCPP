@@ -1,14 +1,15 @@
 ---
-title: "第32篇：UART 协议详解 —— 没有时钟线怎么同步"
-description: ""
-tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
-difficulty: beginner
-platform: stm32f1
 chapter: 17
+difficulty: beginner
 order: 2
+platform: stm32f1
+reading_time_minutes: 11
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+title: 第32篇：UART 协议详解 —— 没有时钟线怎么同步
+description: ''
 ---
 # 第32篇：UART 协议详解 —— 没有时钟线怎么同步
 

@@ -1,32 +1,33 @@
 ---
-title: 'Lvalues, Rvalues, and References: Type System Foundations of Move Semantics'
-description: CppCon 2025 Talk Notes — From K&R's lvalue and rvalue definitions to
-  the C++11 value category system, a detailed explanation of lvalue references, const
-  reference binding rules, and rvalue references
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: 'Back to Basics: Move Semantics'
-speaker: Ben Saks
-video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
-video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
-tags:
-- cpp-modern
-- host
-- beginner
-difficulty: beginner
-platform: host
 cpp_standard:
 - 11
 - 17
 - 20
-chapter: 4
+description: CppCon 2025 Talk Notes — From K&R's lvalue and rvalue definitions to
+  the C++11 value category system, a detailed explanation of lvalue references, const
+  reference binding rules, and rvalue references
+difficulty: beginner
 order: 2
+platform: host
+reading_time_minutes: 23
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: 'Lvalues, Rvalues, and References: Type System Foundations of Move Semantics'
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/04-back-to-basics-move-semantics/02-lvalue-rvalue-and-references.md
   source_hash: 4f05a25d8d24a6f4994777434ed41472bf0ffa294ea7d73c1723ab0624097041
-  translated_at: '2026-06-14T00:17:27.683604+00:00'
-  engine: anthropic
   token_count: 3728
+  translated_at: '2026-06-14T00:17:27.683604+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
 # Lvalues, Rvalues, and References: The Type System Foundations of Move Semantics
 

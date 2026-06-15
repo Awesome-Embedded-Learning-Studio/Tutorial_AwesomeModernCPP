@@ -1,24 +1,27 @@
 ---
-title: "promise 与 packaged_task"
-description: "手动设置 future 的值与异常，用 packaged_task 封装可调用对象，构建灵活的任务通道"
 chapter: 5
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 异步编程
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 手动设置 future 的值与异常，用 packaged_task 封装可调用对象，构建灵活的任务通道
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 20
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "std::async 与 future"
+- std::async 与 future
+reading_time_minutes: 23
 related:
-  - "jthread 与停止令牌"
-  - "线程池设计"
+- jthread 与停止令牌
+- 线程池设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+title: promise 与 packaged_task
 ---
-
 # promise 与 packaged_task
 
 上一篇我们用 `std::async` 启动异步任务，通过 `std::future` 拿回结果。整个过程确实方便，但笔者折腾下来发现有一个限制让人不太舒服：`std::async` 把"启动任务"和"获取结果"绑死了——你调用了 `std::async`，任务就启动了，返回的 future 就跟这个任务关联了。你没法先创建一个 future，然后在某个时刻往里面塞值；也没法把一个已有的函数对象包装成异步任务，塞到队列里稍后再执行。一旦你想做"任务提交"和"任务执行"分离的事情（比如线程池），`std::async` 就不够用了。

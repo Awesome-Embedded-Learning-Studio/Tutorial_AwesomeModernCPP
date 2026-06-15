@@ -1,25 +1,27 @@
 ---
-title: "函数式编程模式"
-description: "高阶函数、组合、柯里化——C++ 中的函数式编程技巧"
 chapter: 3
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
-  - 函数对象
+cpp_standard:
+- 14
+- 17
+- 20
+description: 高阶函数、组合、柯里化——C++ 中的函数式编程技巧
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 3: Lambda 基础"
-  - "Chapter 3: std::function 与可调用对象"
+- 'Chapter 3: Lambda 基础'
+- 'Chapter 3: std::function 与可调用对象'
+reading_time_minutes: 15
 related:
-  - "卷四：Ranges 库深入"
+- 卷四：Ranges 库深入
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+- 函数对象
+title: 函数式编程模式
 ---
-
 # 函数式编程模式
 
 ## 引言

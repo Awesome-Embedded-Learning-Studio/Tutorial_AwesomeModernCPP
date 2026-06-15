@@ -11,7 +11,7 @@ order: 4
 platform: stm32f1
 prerequisites:
 - 'Chapter 3: 内存与对象管理'
-reading_time_minutes: 11
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate

@@ -1,30 +1,30 @@
 ---
-title: Memory Alignment and Padding
-description: Understand alignment rules and `sizeof` calculation methods, and master
-  the usage of `alignas`/`alignof`.
 chapter: 12
-order: 3
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 动态内存管理
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Understand alignment rules and `sizeof` calculation methods, and master
+  the usage of `alignas`/`alignof`.
+difficulty: intermediate
+order: 3
+platform: host
+prerequisites:
+- 动态内存管理
+reading_time_minutes: 15
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Memory Alignment and Padding
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch12/03-alignment-padding.md
   source_hash: 6f1478d6dc0607248ffff63fc6dc72bd6c98609b6de76c8d8e3888474775e17c
-  translated_at: '2026-05-26T11:00:46.630169+00:00'
-  engine: anthropic
   token_count: 2720
+  translated_at: '2026-05-26T11:00:46.630169+00:00'
 ---
 # Memory Alignment and Padding
 

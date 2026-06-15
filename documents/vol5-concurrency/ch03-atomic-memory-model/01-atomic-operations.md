@@ -1,24 +1,28 @@
 ---
-title: "atomic 操作"
-description: "std::atomic<T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free 判断"
 chapter: 3
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - atomic
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: std::atomic<T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free
+  判断
 difficulty: intermediate
+order: 1
 platform: host
-reading_time_minutes: 22
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "latch、barrier 与 semaphore"
+- latch、barrier 与 semaphore
+reading_time_minutes: 20
 related:
-  - "内存序详解"
-  - "原子操作模式"
+- 内存序详解
+- 原子操作模式
+tags:
+- host
+- cpp-modern
+- intermediate
+- atomic
+title: atomic 操作
 ---
-
 # atomic 操作
 
 到目前为止，我们讨论的同步原语——mutex、condition variable、latch、barrier、semaphore——本质上都是"先加锁，再操作，最后解锁"的思路。它们很安全，也很直观，但有一个共同的代价：哪怕你只想保护一个简单的整数自增，也得走一遍 lock → modify → unlock 的完整流程。对于"修改一个变量"这种粒度极小的操作来说，这套流程的重量就显得不太匹配了。

@@ -1,25 +1,26 @@
 ---
-title: "consteval 与 constinit：编译期保证的新工具"
-description: "C++20 的立即函数和编译期初始化，与 constexpr 的精确区分与选择策略"
 chapter: 2
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - consteval
-  - constinit
-  - 编译期计算
+cpp_standard:
+- 20
+- 23
+description: C++20 的立即函数和编译期初始化，与 constexpr 的精确区分与选择策略
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [20, 23]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 2: constexpr 基础"
+- 'Chapter 2: constexpr 基础'
+reading_time_minutes: 15
 related:
-  - "constexpr 构造函数与字面类型"
+- constexpr 构造函数与字面类型
+tags:
+- host
+- cpp-modern
+- intermediate
+- consteval
+- constinit
+- 编译期计算
+title: consteval 与 constinit：编译期保证的新工具
 ---
-
 # consteval 与 constinit：编译期保证的新工具
 
 ## 引言

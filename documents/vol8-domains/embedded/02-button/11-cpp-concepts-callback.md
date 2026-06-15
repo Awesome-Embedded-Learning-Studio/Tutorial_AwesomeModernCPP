@@ -1,14 +1,15 @@
 ---
-title: 第29篇：Concepts 约束回调 + 完整代码走读
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 11
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 11
+title: 第29篇：Concepts 约束回调 + 完整代码走读
+description: ''
 ---
 # 第29篇：Concepts 约束回调 + 完整代码走读
 

@@ -1,14 +1,15 @@
 ---
-title: 第25篇：7 状态消抖状态机 —— 本系列的核心
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 7
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 7
+title: 第25篇：7 状态消抖状态机 —— 本系列的核心
+description: ''
 ---
 # 第25篇：7 状态消抖状态机 —— 本系列的核心
 

@@ -1,29 +1,29 @@
 ---
-title: '`decltype` and Return Type Deduction'
-description: Deduction rules of decltype, decltype(auto), and trailing return types
 chapter: 6
-order: 2
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 14
 - 17
-reading_time_minutes: 15
+description: Deduction rules of decltype, decltype(auto), and trailing return types
+difficulty: intermediate
+order: 2
+platform: host
 prerequisites:
 - 'Chapter 6: auto 推导深入'
+reading_time_minutes: 10
 related:
 - 类模板参数推导
+tags:
+- host
+- cpp-modern
+- intermediate
+title: '`decltype` and Return Type Deduction'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch06-auto-decltype/02-decltype.md
   source_hash: be7eeddab838be9d499d2ac473ce1cef7d492c4fee4fe29707b50d63deb973b2
-  translated_at: '2026-05-26T11:30:21.203988+00:00'
-  engine: anthropic
   token_count: 1905
+  translated_at: '2026-05-26T11:30:21.203988+00:00'
 ---
 # decltype and Return Type Deduction
 

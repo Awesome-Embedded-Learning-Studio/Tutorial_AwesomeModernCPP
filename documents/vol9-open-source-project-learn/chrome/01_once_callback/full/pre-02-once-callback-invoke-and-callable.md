@@ -1,26 +1,27 @@
 ---
-title: "OnceCallback 前置知识（二）：std::invoke 与统一调用协议"
-description: "深入理解 std::invoke 如何统一函数指针、成员函数指针、lambda、仿函数的调用方式，以及 std::invoke_result_t 在 OnceCallback 中的类型推导作用"
 chapter: 0
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 函数对象
-  - std_invoke
+cpp_standard:
+- 17
+description: 深入理解 std::invoke 如何统一函数指针、成员函数指针、lambda、仿函数的调用方式，以及 std::invoke_result_t
+  在 OnceCallback 中的类型推导作用
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 10
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 8
 related:
-  - "OnceCallback 实战（三）：bind_once 实现"
-  - "OnceCallback 实战（五）：then 链式组合"
+- OnceCallback 实战（三）：bind_once 实现
+- OnceCallback 实战（五）：then 链式组合
+tags:
+- host
+- cpp-modern
+- intermediate
+- 函数对象
+- std_invoke
+title: OnceCallback 前置知识（二）：std::invoke 与统一调用协议
 ---
-
 # OnceCallback 前置知识（二）：std::invoke 与统一调用协议
 
 ## 引言

@@ -1,22 +1,22 @@
 ---
-title: "string_view 陷阱与最佳实践"
-description: "悬垂引用、null 终止、隐式转换——string_view 的常见坑与规避方法"
 chapter: 8
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: 悬垂引用、null 终止、隐式转换——string_view 的常见坑与规避方法
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 8: string_view 内部原理"
+- 'Chapter 8: string_view 内部原理'
+reading_time_minutes: 14
 related:
-  - "string_view 性能分析"
+- string_view 性能分析
+tags:
+- host
+- cpp-modern
+- intermediate
+title: string_view 陷阱与最佳实践
 ---
-
 # string_view 陷阱与最佳实践
 
 前面两篇我们讲了 `string_view` 的内部原理和性能优势，看起来它简直是个完美的工具——轻量、快速、零分配。但笔者必须在这里泼一盆冷水：`string_view` 是笔者用过的 C++ 特性中，最容易写出未定义行为的工具之一。原因很简单：它不拥有数据。只要你忘了这一点，悬垂引用、野指针、乱码、甚至安全漏洞都可能等着你。

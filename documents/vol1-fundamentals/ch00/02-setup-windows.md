@@ -1,20 +1,23 @@
 ---
-title: "Windows 环境搭建"
-description: "在 Windows 上搭建 C++ 开发环境：安装 Visual Studio 或 MinGW、配置 CMake 和 vcpkg，从零开始到编译运行"
 chapter: 0
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 在 Windows 上搭建 C++ 开发环境：安装 Visual Studio 或 MinGW、配置 CMake 和 vcpkg，从零开始到编译运行
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: Windows 环境搭建
 ---
-
 # Windows 环境搭建
 
 > ⚠LLM：这部分内容笔者没有精力仔细验证，懂行的朋友欢迎批评指正！

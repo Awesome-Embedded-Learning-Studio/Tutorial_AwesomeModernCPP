@@ -1,20 +1,21 @@
 ---
-title: 'Part 22: HAL GPIO Input API — How to Read Button State in Code'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 4
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 4
+title: 'Part 22: HAL GPIO Input API — How to Read Button State in Code'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/04-hal-gpio-input.md
   source_hash: d9beddcba6146789438c19cb77e80a3a009af89874ed226ff9c3adb560384f48
-  translated_at: '2026-05-26T12:11:07.797286+00:00'
-  engine: anthropic
   token_count: 1531
+  translated_at: '2026-05-26T12:11:07.797286+00:00'
+description: ''
 ---
 # Part 22: HAL GPIO Input API — How to Read Button State in Code
 

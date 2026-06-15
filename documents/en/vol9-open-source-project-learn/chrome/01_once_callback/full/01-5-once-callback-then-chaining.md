@@ -1,10 +1,20 @@
 ---
-title: 'OnceCallback in Practice (Part 5): Chaining with `then`'
+chapter: 1
+cpp_standard:
+- 23
 description: A line-by-line breakdown of the ownership chain design in `then()` —
   from pipeline thinking to `void`/non-`void` branch handling, understanding the most
   elegant ownership management in `OnceCallback`.
-chapter: 1
+difficulty: beginner
 order: 5
+platform: host
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+reading_time_minutes: 8
+related:
+- OnceCallback 实战（六）：测试与性能对比
 tags:
 - host
 - cpp-modern
@@ -12,23 +22,13 @@ tags:
 - 回调机制
 - 函数对象
 - 模板
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 9
-prerequisites:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
-- OnceCallback 前置知识（三）：Lambda 高级特性
-related:
-- OnceCallback 实战（六）：测试与性能对比
+title: 'OnceCallback in Practice (Part 5): Chaining with `then`'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-5-once-callback-then-chaining.md
   source_hash: f5dd3bfba9d0e474bf30a0bb13f7b8a1d98951a7bef96793ec9db952dd6d2034
-  translated_at: '2026-05-26T12:25:30.907930+00:00'
-  engine: anthropic
   token_count: 1629
+  translated_at: '2026-05-26T12:25:30.907930+00:00'
 ---
 # OnceCallback in Practice (Part 5): Chaining with `then`
 

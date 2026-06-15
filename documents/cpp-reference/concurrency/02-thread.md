@@ -1,16 +1,21 @@
 ---
-title: "std::thread"
-description: "表示单个执行线程的类，允许并发执行多个函数"
 chapter: 99
-order: 2
-tags:
-  - host
-  - mutex
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 表示单个执行线程的类，允许并发执行多个函数
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- mutex
+- beginner
+title: std::thread
 ---
-
 # std::thread（C++11）
 
 ## 一句话

@@ -1,25 +1,25 @@
 ---
-title: "std::expected<T, E>：类型安全的错误传播"
-description: "C++23 的 expected 类型与 monadic 操作，实现优雅的错误传播链"
 chapter: 10
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - expected
-  - 类型安全
+cpp_standard:
+- 23
+description: C++23 的 expected 类型与 monadic 操作，实现优雅的错误传播链
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 10: 错误处理的演进"
-  - "Chapter 10: optional 用于错误处理"
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 10: optional 用于错误处理'
+reading_time_minutes: 11
 related:
-  - "错误处理模式总结"
+- 错误处理模式总结
+tags:
+- host
+- cpp-modern
+- intermediate
+- expected
+- 类型安全
+title: std::expected<T, E>：类型安全的错误传播
 ---
-
 # std::expected<T, E>：类型安全的错误传播
 
 上一篇我们聊了 `std::optional` 在错误处理中的应用，也指出了它的局限——不能携带错误信息。当你需要知道"为什么失败"的时候，`optional` 就力不从心了。C++23 引入的 `std::expected<T, E>` 正是为了填补这个空白：它既告诉你"有没有值"，也告诉你"没有值的原因是什么"。

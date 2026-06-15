@@ -12,7 +12,7 @@ order: 17
 platform: host
 prerequisites:
 - 12 结构体与内存对齐
-reading_time_minutes: 15
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
@@ -21,11 +21,11 @@ tags:
 - 类型安全
 title: Unions, Enums, Bit Fields, and Typedefs
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/13-union-enum-bitfield-typedef.md
   source_hash: a52d435d36f071778bcf0dbb760180bafdf1ac9c53bc81cb9a10537e7c04f59f
-  translated_at: '2026-06-13T11:42:17.535200+00:00'
-  engine: anthropic
   token_count: 2215
+  translated_at: '2026-06-13T11:42:17.535200+00:00'
 ---
 # Unions, Enums, Bit Fields, and typedef
 

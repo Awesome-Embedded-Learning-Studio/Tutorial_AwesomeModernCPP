@@ -1,24 +1,25 @@
 ---
-title: std::filesystem
-description: 'Cross-platform file system operation library: path manipulation, directory
-  traversal, and file status queries'
 chapter: 99
-order: 6
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: 'Cross-platform file system operation library: path manipulation, directory
+  traversal, and file status queries'
+difficulty: beginner
+order: 6
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::filesystem
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/06-filesystem.md
   source_hash: 31beda2f84b5927c98a29d0ae91c27a14284ad4dee010d9a06404c023839dc85
-  translated_at: '2026-05-26T10:14:07.396187+00:00'
-  engine: anthropic
   token_count: 633
+  translated_at: '2026-05-26T10:14:07.396187+00:00'
 ---
 <!--
 Reference Card Template

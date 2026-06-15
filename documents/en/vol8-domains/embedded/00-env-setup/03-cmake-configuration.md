@@ -1,20 +1,21 @@
 ---
-title: CMake Configuration — Building an STM32 Build System from Scratch
-description: ''
+chapter: 14
+difficulty: beginner
+order: 3
+platform: stm32f1
+reading_time_minutes: 17
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 3
+title: CMake Configuration — Building an STM32 Build System from Scratch
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/00-env-setup/03-cmake-configuration.md
   source_hash: b413fb1eac6642f586a8bb8afe4c0f937d15f7afdcb263c59d5926ae0cbd7f8c
-  translated_at: '2026-05-26T11:58:16.514187+00:00'
-  engine: anthropic
   token_count: 3108
+  translated_at: '2026-05-26T11:58:16.514187+00:00'
+description: ''
 ---
 # CMake Configuration — Building an STM32 Build System from Scratch
 

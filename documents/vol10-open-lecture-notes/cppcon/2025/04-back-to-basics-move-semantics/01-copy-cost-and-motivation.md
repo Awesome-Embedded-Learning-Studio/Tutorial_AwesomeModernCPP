@@ -1,23 +1,26 @@
 ---
-title: "拷贝的开销与移动的动机：从 swap 到 MyString"
-description: "CppCon 2025 演讲笔记 —— 从 swap 的三次深拷贝出发，手搓 MyString 类，揭示临时对象的拷贝浪费，引出移动语义的核心动机"
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: "Back to Basics: Move Semantics"
-speaker: "Ben Saks"
-video_bilibili: "https://www.bilibili.com/video/BV1X54y1P7uM"
-video_youtube: "https://www.youtube.com/watch?v=szU5b972F7E"
-tags:
-  - cpp-modern
-  - host
-  - beginner
+cpp_standard:
+- 11
+- 17
+- 20
+description: CppCon 2025 演讲笔记 —— 从 swap 的三次深拷贝出发，手搓 MyString 类，揭示临时对象的拷贝浪费，引出移动语义的核心动机
 difficulty: beginner
-platform: host
-cpp_standard: [11, 17, 20]
-chapter: 4
 order: 1
+platform: host
+reading_time_minutes: 13
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: 拷贝的开销与移动的动机：从 swap 到 MyString
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
-
 # 从 swap 说起：三次拷贝的故事
 
 :::tip

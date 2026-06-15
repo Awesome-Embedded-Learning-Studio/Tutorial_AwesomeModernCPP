@@ -1,32 +1,32 @@
 ---
-title: 'Custom Allocators & PMR: Managing Memory Yourself'
+chapter: 7
+cpp_standard:
+- 11
+- 17
+- 20
 description: 'Deep dive into custom allocators: mechanisms and trade-offs of Bump,
   Pool, and Stack strategies, placement new with object construction and destruction,
   the C++17 `std::pmr` `memory_resource` system (`monotonic`/`pool`) and `pmr` containers,
   and when to manage memory manually.'
-chapter: 7
+difficulty: advanced
 order: 13
+platform: host
+reading_time_minutes: 7
+related:
+- vector 深入：三指针、扩容与迭代器失效
 tags:
 - host
 - cpp-modern
 - advanced
 - 内存管理
 - 容器
-difficulty: advanced
-platform: host
-cpp_standard:
-- 11
-- 17
-- 20
-reading_time_minutes: 16
-related:
-- vector 深入：三指针、扩容与迭代器失效
+title: 'Custom Allocators & PMR: Managing Memory Yourself'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/13-custom-allocators.md
   source_hash: a035d00a57044775e7d5dba72a7de2bb6c5efa0efef3e94f42578aef5907b024
-  translated_at: '2026-06-15T09:21:25.554976+00:00'
-  engine: anthropic
   token_count: 1666
+  translated_at: '2026-06-15T09:21:25.554976+00:00'
 ---
 # Custom Allocators & PMR: Managing Your Own Memory
 

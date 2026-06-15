@@ -1,14 +1,15 @@
 ---
-title: 第26篇：`enum class` 重构按钮代码 —— 类型安全的输入
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 8
+platform: stm32f1
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 8
+title: 第26篇：`enum class` 重构按钮代码 —— 类型安全的输入
+description: ''
 ---
 # 第26篇：`enum class` 重构按钮代码 —— 类型安全的输入
 

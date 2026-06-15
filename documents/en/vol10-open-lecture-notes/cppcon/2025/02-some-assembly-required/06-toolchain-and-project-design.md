@@ -1,29 +1,30 @@
 ---
-title: Compilers, Toolchains, and Project Design Baselines
-description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: 'C++: Some Assembly Required'
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 Talk Notes —— C++: Some Assembly Required by Matt Godbolt'
+difficulty: intermediate
+order: 6
+platform: host
+reading_time_minutes: 18
 speaker: Matt Godbolt
-video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
-video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-chapter: 2
-order: 6
+talk_title: 'C++: Some Assembly Required'
+title: Compilers, Toolchains, and Project Design Baselines
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/06-toolchain-and-project-design.md
   source_hash: 48cea3f59be3f3407d4ebe4296f2a3d9d0c0984515c0903ff237dd833323c7b4
-  translated_at: '2026-06-13T11:48:31.424972+00:00'
-  engine: anthropic
   token_count: 3268
+  translated_at: '2026-06-13T11:48:31.424972+00:00'
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
 # The C++ Assembly Project: Compilers, Toolchains, and "Non-Standard but Excellent" Libraries
 

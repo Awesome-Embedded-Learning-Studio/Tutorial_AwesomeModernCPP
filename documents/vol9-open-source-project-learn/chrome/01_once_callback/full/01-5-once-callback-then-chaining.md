@@ -1,27 +1,27 @@
 ---
-title: "OnceCallback 实战（五）：then 链式组合"
-description: "逐行拆解 then() 的所有权链设计——从管道思维到 void/非 void 分支处理，理解 OnceCallback 中最精巧的所有权管理"
 chapter: 1
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - 函数对象
-  - 模板
+cpp_standard:
+- 23
+description: 逐行拆解 then() 的所有权链设计——从管道思维到 void/非 void 分支处理，理解 OnceCallback 中最精巧的所有权管理
 difficulty: beginner
+order: 5
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 9
 prerequisites:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识（二）：std::invoke 与统一调用协议"
-  - "OnceCallback 前置知识（三）：Lambda 高级特性"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+reading_time_minutes: 7
 related:
-  - "OnceCallback 实战（六）：测试与性能对比"
+- OnceCallback 实战（六）：测试与性能对比
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+title: OnceCallback 实战（五）：then 链式组合
 ---
-
 # OnceCallback 实战（五）：then 链式组合
 
 ## 引言

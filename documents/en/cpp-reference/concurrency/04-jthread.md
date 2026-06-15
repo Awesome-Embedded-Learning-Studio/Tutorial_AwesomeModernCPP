@@ -1,23 +1,24 @@
 ---
-title: std::jthread
+chapter: 99
+cpp_standard:
+- 20
+- 23
 description: A thread class that automatically joins, sending a stop request and waiting
   for the thread to exit upon destruction.
-chapter: 99
+difficulty: beginner
 order: 4
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-difficulty: beginner
-cpp_standard:
-- 20
-- 23
+title: std::jthread
 translation:
+  engine: anthropic
   source: documents/cpp-reference/concurrency/04-jthread.md
   source_hash: 086dce477a31c89263c97393ead9b091f5497a690feb634821b0da44a9904475
-  translated_at: '2026-05-26T10:13:10.774510+00:00'
-  engine: anthropic
   token_count: 526
+  translated_at: '2026-05-26T10:13:10.774510+00:00'
 ---
 <!--
 Reference Card Template

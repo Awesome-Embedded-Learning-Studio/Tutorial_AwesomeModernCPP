@@ -1,33 +1,33 @@
 ---
-title: Lock-Free Programming Fundamentals
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: CAS loops, lock-free vs. wait-free, the ABA problem, and memory reclamation
   challenges—building foundational judgment for lock-free programming.
-chapter: 4
+difficulty: advanced
 order: 3
+platform: host
+prerequisites:
+- 原子操作模式
+reading_time_minutes: 29
+related:
+- SPSC 与 MPMC 队列
 tags:
 - host
 - cpp-modern
 - advanced
 - atomic
 - 无锁
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- 原子操作模式
-related:
-- SPSC 与 MPMC 队列
+title: Lock-Free Programming Fundamentals
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md
   source_hash: 8bc0fe05876e6efe7565af0e9169a74089ffe28ab7016505920ed17fc98e20e5
-  translated_at: '2026-05-20T04:41:18.899171+00:00'
-  engine: anthropic
   token_count: 4442
+  translated_at: '2026-05-20T04:41:18.899171+00:00'
 ---
 # Lock-Free Programming Fundamentals
 

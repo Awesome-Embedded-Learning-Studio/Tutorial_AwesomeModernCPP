@@ -1,25 +1,27 @@
 ---
-title: "auto 推导深入：不只是偷懒"
-description: "理解 auto 的完整推导规则、常见陷阱与最佳实践"
 chapter: 6
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 类型别名
-  - 类型安全
+cpp_standard:
+- 11
+- 14
+- 17
+description: 理解 auto 的完整推导规则、常见陷阱与最佳实践
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 0: 右值引用"
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 11
 related:
-  - "decltype 与返回类型推导"
-  - "类模板参数推导"
+- decltype 与返回类型推导
+- 类模板参数推导
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型别名
+- 类型安全
+title: auto 推导深入：不只是偷懒
 ---
-
 # auto 推导深入：不只是偷懒
 
 笔者每次看到有人把 `auto` 理解成"让编译器猜类型"就想纠正一下。`auto` 的推导规则其实是完全确定的，和模板参数推导遵循同一套机制。它不是魔法，更不是偷懒——在很多场景下，用 `auto` 比手写类型更安全，因为当你改了某个函数的返回类型时，所有用 `auto` 接收的地方会自动跟着变，不会出现忘记改的情况。

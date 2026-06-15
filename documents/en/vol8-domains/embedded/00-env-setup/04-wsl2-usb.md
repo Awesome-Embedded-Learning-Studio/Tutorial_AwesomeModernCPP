@@ -1,21 +1,22 @@
 ---
-title: 'Environment Setup (Part 4): WSL2 USB Passthrough, Letting ST-Link Cross the
-  Virtualization Boundary'
-description: ''
+chapter: 14
+difficulty: beginner
+order: 4
+platform: stm32f1
+reading_time_minutes: 13
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 4
+title: 'Environment Setup (Part 4): WSL2 USB Passthrough, Letting ST-Link Cross the
+  Virtualization Boundary'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/00-env-setup/04-wsl2-usb.md
   source_hash: 32ae0e014d727cdf7d3bddccce08f45eff977344397e60f1afc0d4bd59a2bb2d
-  translated_at: '2026-05-26T11:59:41.032466+00:00'
-  engine: anthropic
   token_count: 2015
+  translated_at: '2026-05-26T11:59:41.032466+00:00'
+description: ''
 ---
 # Environment Setup (Part 4): WSL2 USB Passthrough — Making ST-Link Cross the Virtualization Boundary
 

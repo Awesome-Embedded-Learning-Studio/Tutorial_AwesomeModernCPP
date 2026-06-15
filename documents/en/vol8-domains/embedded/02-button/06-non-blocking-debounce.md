@@ -1,20 +1,21 @@
 ---
-title: 'Part 24: Non-blocking Debounce — Keeping the CPU Moving'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 6
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 6
+title: 'Part 24: Non-blocking Debounce — Keeping the CPU Moving'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/06-non-blocking-debounce.md
   source_hash: b8b0050f3de67179929f301036d8a697948234f130a92539eda697170010ed3f
-  translated_at: '2026-05-26T12:11:27.712481+00:00'
-  engine: anthropic
   token_count: 1479
+  translated_at: '2026-05-26T12:11:27.712481+00:00'
+description: ''
 ---
 # Part 24: Non-blocking Debounce — Don't Make the CPU Wait
 

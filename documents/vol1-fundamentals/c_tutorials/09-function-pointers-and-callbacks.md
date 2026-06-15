@@ -10,7 +10,7 @@ prerequisites:
 - 07A 指针基础与核心用法
 - 07B 指针、数组与 const
 - 08A 多级指针与函数参数
-reading_time_minutes: 13
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern

@@ -1,21 +1,22 @@
 ---
-title: 'In-Depth Understanding of C/C++ Compilation and Linking Part 4: Shared Library
-  A1: Basic Discussion of `-fPIC`'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 4
+platform: host
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 4
+title: 'In-Depth Understanding of C/C++ Compilation and Linking Part 4: Shared Library
+  A1: Basic Discussion of `-fPIC`'
 translation:
+  engine: anthropic
   source: documents/compilation/04-dynamic-libraries-1.md
   source_hash: ea133fb871fb203dc57822edf6c9d9bc1fe1c6a35f84e6a9705272f4ba437436
-  translated_at: '2026-05-26T10:10:22.009614+00:00'
-  engine: anthropic
   token_count: 476
+  translated_at: '2026-05-26T10:10:22.009614+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking Part 4: Dynamic Libraries A1: Basic Discussion on `-fPIC`
 

@@ -1,22 +1,23 @@
 ---
-title: "C++20-23 新属性：性能导向的编译器提示"
-description: "[[likely]]/[[unlikely]]、[[no_unique_address]]、[[assume]] 等新属性"
 chapter: 7
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: '[[likely]]/[[unlikely]]、[[no_unique_address]]、[[assume]] 等新属性'
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [20, 23]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 7: 标准属性详解"
+- 'Chapter 7: 标准属性详解'
+reading_time_minutes: 14
 related:
-  - "constexpr 构造函数与字面类型"
+- constexpr 构造函数与字面类型
+tags:
+- host
+- cpp-modern
+- intermediate
+title: C++20-23 新属性：性能导向的编译器提示
 ---
-
 # C++20-23 新属性：性能导向的编译器提示
 
 上一章我们看了 C++11-17 的标准属性，它们主要解决"代码正确性"的问题——强制检查返回值、消除警告、标记废弃 API。C++20 和 C++23 新增的属性则换了一个方向：它们更关注性能，给编译器提供优化提示。`[[likely]]` 和 `[[unlikely]]` 帮编译器做分支预测优化(啊哈,我记得我第一次接触是在看GNU C特性的代码)，`[[no_unique_address]]` 节省内存布局中的冗余空间，`[[assume]]` 让编译器基于假设做更激进的优化。
@@ -156,7 +157,7 @@ struct Container {
 struct [[gnu::packed]] PackedContainer {
     // offset   0: e       (1 字节)
     // offset 1~4: x       (4 字节)
-    Empty e;        
+    Empty e;
     int x;
 };
 

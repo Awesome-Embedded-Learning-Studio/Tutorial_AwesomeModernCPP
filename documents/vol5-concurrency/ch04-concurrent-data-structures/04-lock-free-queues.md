@@ -1,26 +1,29 @@
 ---
-title: "SPSC 与 MPMC 队列"
-description: "从 ring buffer SPSC 到 Michael-Scott MPMC 队列，缓存友好的生产者-消费者队列设计"
 chapter: 4
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - atomic
-  - 无锁
-  - 循环缓冲区
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从 ring buffer SPSC 到 Michael-Scott MPMC 队列，缓存友好的生产者-消费者队列设计
 difficulty: advanced
+order: 4
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "无锁编程基础"
+- 无锁编程基础
+reading_time_minutes: 26
 related:
-  - "线程安全队列"
-  - "线程池设计"
+- 线程安全队列
+- 线程池设计
+tags:
+- host
+- cpp-modern
+- advanced
+- atomic
+- 无锁
+- 循环缓冲区
+title: SPSC 与 MPMC 队列
 ---
-
 # SPSC 与 MPMC 队列
 
 说实话，笔者写这篇的时候反复纠结了很久——到底要不要手把手带大家实现一遍 Michael-Scott 队列？这东西的 CAS 逻辑看着不复杂，但你一旦动手写就会发现到处是坑，尤其是那个 `dequeue` 里的数据读取和 CAS 的时序问题，笔者自己第一次实现的时候就翻车了。不过纠结归纠结，这条路还是得走一遍，因为只有自己写过了才能真正理解"为什么 SPSC 比 MPMC 快那么多"。

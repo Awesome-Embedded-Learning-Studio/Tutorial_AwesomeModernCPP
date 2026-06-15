@@ -1,24 +1,25 @@
 ---
-title: std::exchange
-description: Replace the old value with the new value and return the old value.
 chapter: 99
-order: 10
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 14
 - 17
 - 20
 - 23
+description: Replace the old value with the new value and return the old value.
+difficulty: beginner
+order: 10
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::exchange
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/10-exchange.md
   source_hash: c1890f25c39410033bdf66e6f5889ea5dcab2f49d5f97f439abc16121093325e
-  translated_at: '2026-05-26T10:16:00.541504+00:00'
-  engine: anthropic
   token_count: 306
+  translated_at: '2026-05-26T10:16:00.541504+00:00'
 ---
 # std::exchange (C++14)
 

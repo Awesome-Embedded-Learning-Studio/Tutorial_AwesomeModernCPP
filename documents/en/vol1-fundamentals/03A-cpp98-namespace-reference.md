@@ -1,34 +1,34 @@
 ---
-title: 'C++98 Basics: Namespaces, References, and Scope Resolution'
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'The first step from C to C++ — a thorough explanation of three fundamental
   features: namespaces for resolving name conflicts, references replacing pointers
   for passing arguments, and scope resolution for accessing global and namespace members.'
-chapter: 0
+difficulty: beginner
 order: 3
+platform: host
+prerequisites:
+- C语言速通复习
+reading_time_minutes: 16
+related:
+- C++98函数接口：重载与默认参数
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-difficulty: beginner
-reading_time_minutes: 20
-prerequisites:
-- C语言速通复习
-related:
-- C++98函数接口：重载与默认参数
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-platform: host
+title: 'C++98 Basics: Namespaces, References, and Scope Resolution'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03A-cpp98-namespace-reference.md
   source_hash: 75e180340b51863e6836426da286ee3c8758c395826196a7192685bd377b64eb
-  translated_at: '2026-05-26T10:21:55.262119+00:00'
-  engine: anthropic
   token_count: 2555
+  translated_at: '2026-05-26T10:21:55.262119+00:00'
 ---
 # Getting Started with C++98: Namespaces, References, and Scope Resolution
 

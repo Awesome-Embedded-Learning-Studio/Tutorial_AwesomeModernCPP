@@ -1,25 +1,25 @@
 ---
-title: "C++20 协程基础"
-description: "深入 C++20 协程的语法、状态机模型与生命周期管理，理解 co_await/co_yield/co_return 的编译器变换"
 chapter: 6
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - coroutine
-  - 异步编程
+cpp_standard:
+- 20
+description: 深入 C++20 协程的语法、状态机模型与生命周期管理，理解 co_await/co_yield/co_return 的编译器变换
 difficulty: intermediate
+order: 2
 platform: host
-reading_time_minutes: 30
-cpp_standard: [20]
 prerequisites:
-  - "异步编程演进：从回调地狱到协程"
+- 异步编程演进：从回调地狱到协程
+reading_time_minutes: 25
 related:
-  - "promise_type 与 awaitable"
-  - "异步 I/O 与事件循环"
+- promise_type 与 awaitable
+- 异步 I/O 与事件循环
+tags:
+- host
+- cpp-modern
+- intermediate
+- coroutine
+- 异步编程
+title: C++20 协程基础
 ---
-
 # C++20 协程基础
 
 上一篇我们看到协程让异步代码看起来像同步代码——线性流程，没有嵌套，没有回调金字塔。那篇的重点是"为什么需要协程"和"协程长什么样"，我们只是展示了最终效果，但没解释它背后到底发生了什么。这一篇我们要把协程从里到外拆清楚：编译器对协程函数做了什么变换？协程帧里存了什么？`coroutine_handle` 是怎么管理协程生命周期的？这些问题的答案构成了理解 C++20 协程的基础。

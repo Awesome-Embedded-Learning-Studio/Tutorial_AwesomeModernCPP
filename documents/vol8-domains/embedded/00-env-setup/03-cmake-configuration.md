@@ -1,14 +1,15 @@
 ---
-title: CMake 配置篇 —— 从零构建 STM32 构建系统
-description: ''
+chapter: 14
+difficulty: beginner
+order: 3
+platform: stm32f1
+reading_time_minutes: 17
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 3
+title: CMake 配置篇 —— 从零构建 STM32 构建系统
+description: ''
 ---
 # CMake 配置篇 —— 从零构建 STM32 构建系统
 

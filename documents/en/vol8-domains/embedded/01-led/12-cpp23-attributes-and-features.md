@@ -1,21 +1,22 @@
 ---
-title: 'Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof
-  of Zero-Overhead Abstraction'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 12
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 12
+title: 'Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof
+  of Zero-Overhead Abstraction'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features.md
   source_hash: e7358ff02a99ecd65da0e19a2de45ac94ed699905fee5cbb14694278d1123acb
-  translated_at: '2026-05-26T12:08:58.330486+00:00'
-  engine: anthropic
   token_count: 1810
+  translated_at: '2026-05-26T12:08:58.330486+00:00'
+description: ''
 ---
 # Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof of Zero-Overhead Abstraction
 

@@ -1,24 +1,25 @@
 ---
-title: "SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进"
-description: "用 shared_ptr<Flag> 构建 control block，实现对象销毁后的安全判空"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 智能指针
-  - 引用计数
+cpp_standard:
+- 17
+- 20
+description: 用 shared_ptr<Flag> 构建 control block，实现对象销毁后的安全判空
 difficulty: intermediate
+order: 3
 platform: host
-reading_time_minutes: 8
 prerequisites:
-  - "WeakPtr 反模式：T* + raw Flag* 的致命陷阱"
+- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+reading_time_minutes: 6
 related:
-  - "Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory"
-cpp_standard: [17, 20]
+- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
+tags:
+- host
+- cpp-modern
+- intermediate
+- 智能指针
+- 引用计数
+title: SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
 ---
-
 # SimpleWeakPtr：T* + shared_ptr\<Flag\> 的安全改进
 
 ## 引言

@@ -1,10 +1,17 @@
 ---
-title: Building a Singly Linked List from Scratch — A Practical Guide to Pointers
-  and Memory
+chapter: 1
+cpp_standard:
+- 11
 description: Implement a classic singly linked list from scratch, mastering insertion,
   deletion, and search algorithms, along with sentinel node techniques.
-chapter: 1
+difficulty: advanced
 order: 106
+platform: host
+prerequisites:
+- 手搓动态数组——malloc 与 realloc 实战
+- 指针到底在指什么
+- C 语言陷阱与常见错误
+reading_time_minutes: 26
 tags:
 - host
 - cpp-modern
@@ -12,21 +19,14 @@ tags:
 - 实战
 - 内存管理
 - 智能指针
-difficulty: advanced
-platform: host
-reading_time_minutes: 30
-cpp_standard:
-- 11
-prerequisites:
-- 手搓动态数组——malloc 与 realloc 实战
-- 指针到底在指什么
-- C 语言陷阱与常见错误
+title: Building a Singly Linked List from Scratch — A Practical Guide to Pointers
+  and Memory
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/06-handmade-linked-list.md
   source_hash: 8aa2c07ba2e85b95ff188ad5da8b9c819475510a8b76e373d102e78b65cdd6f2
-  translated_at: '2026-05-26T10:39:49.061415+00:00'
-  engine: anthropic
   token_count: 4490
+  translated_at: '2026-05-26T10:39:49.061415+00:00'
 ---
 # Building a Singly Linked List from Scratch — A Practical Guide to Pointers and Memory
 

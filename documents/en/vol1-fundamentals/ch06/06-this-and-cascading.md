@@ -1,31 +1,31 @@
 ---
-title: '`this` Pointer and Method Chaining'
+chapter: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand the essence of the `this` pointer, master the chaining pattern,
   and learn the correct usage of `const` member functions.
-chapter: 6
-order: 6
 difficulty: beginner
-reading_time_minutes: 10
+order: 6
 platform: host
 prerequisites:
 - 友元
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: '`this` Pointer and Method Chaining'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch06/06-this-and-cascading.md
   source_hash: a8aa1a6a4a9b014bfc0998aaf6c183d3228f8811cb4f3772d2cd2868c4f4cee1
-  translated_at: '2026-05-26T10:51:40.177155+00:00'
-  engine: anthropic
   token_count: 2234
+  translated_at: '2026-05-26T10:51:40.177155+00:00'
 ---
 # The `this` Pointer and Method Chaining
 

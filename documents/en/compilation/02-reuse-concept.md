@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking Techniques 2: Introduction to
-  Shared and Static Libraries'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 2
+platform: host
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 2
+title: 'Deep Dive into C/C++ Compilation and Linking Techniques 2: Introduction to
+  Shared and Static Libraries'
 translation:
+  engine: anthropic
   source: documents/compilation/02-reuse-concept.md
   source_hash: c42b8e94395b08130fcd7932d2b44078655ee2f1875aa04d131816e753c571f9
-  translated_at: '2026-05-26T10:09:04.201407+00:00'
-  engine: anthropic
   token_count: 1658
+  translated_at: '2026-05-26T10:09:04.201407+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking Part 2: Introduction to Static and Shared Libraries
 

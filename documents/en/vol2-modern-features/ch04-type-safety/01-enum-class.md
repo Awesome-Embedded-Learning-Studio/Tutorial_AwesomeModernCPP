@@ -1,34 +1,34 @@
 ---
-title: enum class and Strongly Typed Enums
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Say goodbye to implicit integer conversions, and build type-safe enumerations
   with enum class
-chapter: 4
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 0: 移动构造与移动赋值'
+reading_time_minutes: 13
+related:
+- 强类型 typedef
+- std::variant
 tags:
 - host
 - cpp-modern
 - intermediate
 - enum_class
 - 类型安全
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 0: 移动构造与移动赋值'
-related:
-- 强类型 typedef
-- std::variant
+title: enum class and Strongly Typed Enums
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch04-type-safety/01-enum-class.md
   source_hash: 295cdd57ee8f7d69a580809a6d8137ab5c4d8e351079436441f9652b16d65885
-  translated_at: '2026-05-26T11:27:16.933494+00:00'
-  engine: anthropic
   token_count: 3100
+  translated_at: '2026-05-26T11:27:16.933494+00:00'
 ---
 # enum class and Strongly-Typed Enumerations
 

@@ -1,20 +1,21 @@
 ---
-title: 'Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 6
+platform: stm32f1
+reading_time_minutes: 69
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 6
+title: 'Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/06-hal-gpio-output.md
   source_hash: 9029ec886405ec08b786bcb253e720291383e378eaf2f18822358253ea877431
-  translated_at: '2026-05-26T12:08:11.905578+00:00'
-  engine: anthropic
   token_count: 1542
+  translated_at: '2026-05-26T12:08:11.905578+00:00'
+description: ''
 ---
 # Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move
 

@@ -1,22 +1,26 @@
 ---
-title: "Introduction to the Algorithm Library"
-description: "Get started with commonly used algorithms from <algorithm>, combined with lambda expressions for flexible data processing"
 chapter: 11
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Get started with commonly used algorithms from <algorithm>, combined
+  with lambda expressions for flexible data processing
 difficulty: beginner
-reading_time_minutes: 15
+order: 3
 platform: host
 prerequisites:
-  - "Associative Containers Quick Start"
+- Associative Containers Quick Start
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: Introduction to the Algorithm Library
 ---
-
 # Introduction to the Algorithm Library
 
 In the previous two chapters, we covered the basic operations of `vector` and associative containers. Now the question is—when you need to sort, search, filter, or aggregate a collection of data, is your first instinct to write a for loop?

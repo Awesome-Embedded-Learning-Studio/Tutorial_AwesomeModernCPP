@@ -1,22 +1,25 @@
 ---
-title: "析构函数与资源管理"
-description: "理解析构函数的调用时机，初步认识 RAII 原则和 Rule of Three 的设计思路"
 chapter: 6
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解析构函数的调用时机，初步认识 RAII 原则和 Rule of Three 的设计思路
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "构造函数"
+- 构造函数
+reading_time_minutes: 10
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 析构函数与资源管理
 ---
-
 # 析构函数与资源管理
 
 构造函数负责把对象带入一个合法的状态——分配内存、打开文件、初始化硬件。但所有这些资源都有一个共同的问题：它们必须在某个时刻被归还。`malloc` 了不 `free`、`fopen` 了不 `fclose`、锁了互斥量不解锁——程序就会慢慢泄漏资源，最终耗尽系统配额或者陷入死锁。

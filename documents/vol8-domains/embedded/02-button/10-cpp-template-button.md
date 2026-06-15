@@ -1,14 +1,15 @@
 ---
-title: 第28篇：Button 模板类设计 —— 把一切交给编译器
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 10
+platform: stm32f1
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 10
+title: 第28篇：Button 模板类设计 —— 把一切交给编译器
+description: ''
 ---
 # 第28篇：Button 模板类设计 —— 把一切交给编译器
 

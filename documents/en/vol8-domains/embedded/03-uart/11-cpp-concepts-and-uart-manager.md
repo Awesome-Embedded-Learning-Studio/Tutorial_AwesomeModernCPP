@@ -1,21 +1,22 @@
 ---
-title: 'Part 41: Concepts-Constrained GPIO Initialization + UartManager — Type-Safe
-  Assembly'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 11
+platform: stm32f1
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 11
+title: 'Part 41: Concepts-Constrained GPIO Initialization + UartManager — Type-Safe
+  Assembly'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/11-cpp-concepts-and-uart-manager.md
   source_hash: 4e378aa94dc28c0c50d94786d7dc29c0ecf48aa948e48195eaf0d0902ffd5fcf
-  translated_at: '2026-05-26T12:17:54.927783+00:00'
-  engine: anthropic
   token_count: 1340
+  translated_at: '2026-05-26T12:17:54.927783+00:00'
+description: ''
 ---
 # Part 41: Concepts-Constrained GPIO Initialization + UartManager — Type-Safe Assembly
 

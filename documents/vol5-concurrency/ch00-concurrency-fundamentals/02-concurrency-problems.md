@@ -1,25 +1,27 @@
 ---
-title: "并发基本问题"
-description: "识别并发编程中最常见的 bug：data race、race condition、死锁、活锁、饥饿与优先级反转"
 chapter: 0
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - atomic
-  - mutex
+cpp_standard:
+- 11
+- 17
+- 20
+description: 识别并发编程中最常见的 bug：data race、race condition、死锁、活锁、饥饿与优先级反转
 difficulty: beginner
+order: 2
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 17, 20]
 prerequisites:
-  - "为什么需要并发"
+- 为什么需要并发
+reading_time_minutes: 15
 related:
-  - "mutex 与 RAII 守卫"
-  - "std::atomic 原子操作"
+- mutex 与 RAII 守卫
+- std::atomic 原子操作
+tags:
+- host
+- cpp-modern
+- beginner
+- atomic
+- mutex
+title: 并发基本问题
 ---
-
 # 并发基本问题
 
 上一篇我们聊了"为什么需要并发"，建立了基本的判断力。但知道为什么还不够，我们还需要知道并发代码到底会出什么问题。说实话，并发 bug 令人头疼的地方不在于它有多复杂——而在于它**不可预测**。一个多线程程序在你本机跑了十万次都正常，上线后凌晨三点在客户环境崩了，你拿到 dump 一看，跟你的预期完全对不上！

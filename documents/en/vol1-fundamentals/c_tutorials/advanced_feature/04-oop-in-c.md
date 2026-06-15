@@ -1,31 +1,31 @@
 ---
-title: Implementing Object-Oriented Programming in C
+chapter: 1
+cpp_standard:
+- 11
 description: Simulating classes, encapsulation, inheritance, and polymorphism using
   structs and function pointers, and understanding the underlying implementation mechanisms
   of OOP
-chapter: 1
+difficulty: advanced
 order: 104
+platform: host
+prerequisites:
+- 指针进阶：多级指针、指针与 const
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+reading_time_minutes: 15
 tags:
 - host
 - cpp-modern
 - advanced
 - 实战
 - 基础
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-prerequisites:
-- 指针进阶：多级指针、指针与 const
-- 结构体、联合体与内存对齐
-- 函数指针与回调机制
+title: Implementing Object-Oriented Programming in C
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/04-oop-in-c.md
   source_hash: 7076b700e1553318757e63738851cc851eef39f6656671b9834042d3cbb600a1
-  translated_at: '2026-05-26T10:36:34.039156+00:00'
-  engine: anthropic
   token_count: 3517
+  translated_at: '2026-05-26T10:36:34.039156+00:00'
 ---
 # Implementing OOP in C
 

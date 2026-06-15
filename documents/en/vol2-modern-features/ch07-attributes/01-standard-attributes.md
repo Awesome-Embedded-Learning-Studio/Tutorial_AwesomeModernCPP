@@ -1,29 +1,29 @@
 ---
-title: 'Standard Attributes Explained: Making the Compiler Your Code Reviewer'
-description: Semantics, usage, and best practices for C++11-17 standard attributes
 chapter: 7
-order: 1
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 14
 - 17
-reading_time_minutes: 18
+description: Semantics, usage, and best practices for C++11-17 standard attributes
+difficulty: intermediate
+order: 1
+platform: host
 prerequisites:
 - 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 11
 related:
 - C++20-23 新属性
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 'Standard Attributes Explained: Making the Compiler Your Code Reviewer'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch07-attributes/01-standard-attributes.md
   source_hash: bc7841e2ffaf30c56978133e2dcf75046f0496bf9da4a83697a68399c163787b
-  translated_at: '2026-05-26T11:31:29.584312+00:00'
-  engine: anthropic
   token_count: 2431
+  translated_at: '2026-05-26T11:31:29.584312+00:00'
 ---
 # Standard Attributes in Depth: Making the Compiler Your Code Reviewer
 

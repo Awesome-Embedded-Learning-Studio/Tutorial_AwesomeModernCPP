@@ -1,20 +1,21 @@
 ---
-title: 'Part 10: HAL_GPIO_Init — The Ritual of Telling the Chip About Pin Configurations'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 5
+platform: stm32f1
+reading_time_minutes: 21
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 5
+title: 'Part 10: HAL_GPIO_Init — The Ritual of Telling the Chip About Pin Configurations'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/05-hal-gpio-init.md
   source_hash: 072f6cbaf94f8bf45298818233d9e9c74661fe24b4b350037a2e52a96b8838b9
-  translated_at: '2026-05-26T12:05:21.215210+00:00'
-  engine: anthropic
   token_count: 3062
+  translated_at: '2026-05-26T12:05:21.215210+00:00'
+description: ''
 ---
 # Part 10: HAL_GPIO_Init — The Ritual of Telling the Chip How to Configure Its Pins
 

@@ -1,31 +1,31 @@
 ---
-title: 'SimpleWeakPtr: A Safe Improvement Over T* + shared_ptr<Flag>'
+chapter: 1
+cpp_standard:
+- 17
+- 20
 description: Building a control block with `shared_ptr<Flag>` to safely check for
   null after object destruction.
-chapter: 1
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
+reading_time_minutes: 6
+related:
+- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
 tags:
 - host
 - cpp-modern
 - intermediate
 - 智能指针
 - 引用计数
-difficulty: intermediate
-platform: host
-reading_time_minutes: 8
-prerequisites:
-- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
-related:
-- Chrome-like WeakPtr：引用计数控制块与 WeakPtrFactory
-cpp_standard:
-- 17
-- 20
+title: 'SimpleWeakPtr: A Safe Improvement Over T* + shared_ptr<Flag>'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/03-simple-weakptr.md
   source_hash: ac358386b001141f476aeef7ffc56fa795fb26b8f4e3dbceaeb6b057bf488327
-  translated_at: '2026-05-26T11:55:45.485895+00:00'
-  engine: anthropic
   token_count: 1438
+  translated_at: '2026-05-26T11:55:45.485895+00:00'
 ---
 # SimpleWeakPtr: Safe Improvements with T* + shared_ptr\<Flag\>
 

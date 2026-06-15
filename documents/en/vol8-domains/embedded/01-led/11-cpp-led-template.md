@@ -1,21 +1,22 @@
 ---
-title: 'Part 16: Fourth Refactoring — LED Template, From Generic GPIO to Dedicated
-  Abstraction'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 11
+platform: stm32f1
+reading_time_minutes: 26
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 11
+title: 'Part 16: Fourth Refactoring — LED Template, From Generic GPIO to Dedicated
+  Abstraction'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/11-cpp-led-template.md
   source_hash: 9915cc35c5ee69b992b1824124e63a5a09b4cc744a9f0d3562a1f780a16107f0
-  translated_at: '2026-05-26T12:09:11.400230+00:00'
-  engine: anthropic
   token_count: 4388
+  translated_at: '2026-05-26T12:09:11.400230+00:00'
+description: ''
 ---
 # Part 16: Fourth Refactoring — The LED Template, From Generic GPIO to Domain-Specific Abstraction
 

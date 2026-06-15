@@ -1,24 +1,24 @@
 ---
-title: "latch、barrier 与 semaphore"
-description: "C++20 同步原语：一次性/多次使用的同步屏障与计数信号量，场景选择与工程模式"
 chapter: 2
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - mutex
+cpp_standard:
+- 20
+description: C++20 同步原语：一次性/多次使用的同步屏障与计数信号量，场景选择与工程模式
 difficulty: advanced
+order: 5
 platform: host
-reading_time_minutes: 20
-cpp_standard: [20]
 prerequisites:
-  - "condition_variable 与等待语义"
+- condition_variable 与等待语义
+reading_time_minutes: 19
 related:
-  - "atomic 操作"
-  - "线程池设计"
+- atomic 操作
+- 线程池设计
+tags:
+- host
+- cpp-modern
+- advanced
+- mutex
+title: latch、barrier 与 semaphore
 ---
-
 # latch、barrier 与 semaphore
 
 上一篇我们深入拆解了 `condition_variable` 的等待-通知机制——虚假唤醒、丢失唤醒、带谓词的 `wait`。有了这些基础，我们现在可以面对一个更实际的问题：很多时候我们并不需要"某个条件满足才继续"这种通用的等待语义，而是只需要"等到大家都到齐了再继续"或者"限制同时访问资源的线程数量"。这两种需求分别对应**屏障（barrier）**和**信号量（semaphore）**两种同步模式，而 C++20 终于把这两个概念以 `std::latch`、`std::barrier` 和 `std::counting_semaphore` 的形式纳入了标准库。

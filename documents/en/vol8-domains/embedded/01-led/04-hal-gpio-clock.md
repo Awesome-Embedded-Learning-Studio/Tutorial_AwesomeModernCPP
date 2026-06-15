@@ -1,21 +1,22 @@
 ---
-title: 'Part 9: HAL Clock Enable — Without a Clock, a Peripheral Is Just a Piece of
-  Dormant Silicon'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 4
+platform: stm32f1
+reading_time_minutes: 21
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 4
+title: 'Part 9: HAL Clock Enable — Without a Clock, a Peripheral Is Just a Piece of
+  Dormant Silicon'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/04-hal-gpio-clock.md
   source_hash: c328592f0ef1a42e41e289bbdb550851ade7ae452259f0d790a27f3ebefc5f56
-  translated_at: '2026-05-26T12:04:39.485053+00:00'
-  engine: anthropic
   token_count: 2834
+  translated_at: '2026-05-26T12:04:39.485053+00:00'
+description: ''
 ---
 # Part 9: HAL Clock Enable — Without a Clock, a Peripheral Is Just a Dead Piece of Silicon
 

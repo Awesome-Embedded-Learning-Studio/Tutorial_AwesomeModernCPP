@@ -1,23 +1,25 @@
 ---
-title: "用户自定义字面量基础"
-description: "operator\"\" 的原始/cooked 形式与标准库字面量"
 chapter: 11
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 字面量
+cpp_standard:
+- 11
+- 14
+- 17
+description: operator"" 的原始/cooked 形式与标准库字面量
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 2: constexpr 基础"
+- 'Chapter 2: constexpr 基础'
+reading_time_minutes: 10
 related:
-  - "UDL 实战"
+- UDL 实战
+tags:
+- host
+- cpp-modern
+- intermediate
+- 字面量
+title: 用户自定义字面量基础
 ---
-
 # 用户自定义字面量基础
 
 笔者在写嵌入式代码的时候，经常遇到这种让人难受的场景：`TIM1->ARR = (1000 - 1)` 里面的 1000 是毫秒还是微秒？`USART1->BRR = 0x271` 到底是 9600 还是 115200？`#define BUFFER_SIZE 1024` 是字节还是字？这些"魔数"不仅难以理解，还容易出错——更糟糕的是，不同单位之间的转换完全依赖程序员手动计算，稍有不慎就会出问题。

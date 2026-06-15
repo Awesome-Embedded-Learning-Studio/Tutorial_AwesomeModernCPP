@@ -9,7 +9,7 @@ order: 8
 platform: host
 prerequisites:
 - 控制流：让程序学会选择和重复
-reading_time_minutes: 24
+reading_time_minutes: 19
 tags:
 - host
 - cpp-modern
@@ -18,11 +18,11 @@ tags:
 - 基础
 title: Scope and Storage Duration
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/06-scope-and-storage.md
   source_hash: 6f5f04a7650642fc294fdf8488f92465e74b56f8ba33056c3273f3747b315674
-  translated_at: '2026-05-26T10:31:36.008456+00:00'
-  engine: anthropic
   token_count: 3100
+  translated_at: '2026-05-26T10:31:36.008456+00:00'
 ---
 # Scope and Storage Duration
 

@@ -1,29 +1,29 @@
 ---
-title: 'Foreword: Why Learn C++'
-description: Understand the core value, application domains, and learning path of
-  C++, and start your modern C++ journey
 chapter: 0
-order: 0
-difficulty: beginner
-reading_time_minutes: 8
-platform: host
-tags:
-- cpp-modern
-- host
-- beginner
-- 入门
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Understand the core value, application domains, and learning path of
+  C++, and start your modern C++ journey
+difficulty: beginner
+order: 0
+platform: host
+reading_time_minutes: 12
+tags:
+- cpp-modern
+- host
+- beginner
+- 入门
+title: 'Foreword: Why Learn C++'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch00/00-preface.md
   source_hash: a512e2b0083886c41d9d475acb43566677cc6d22d743e2987d4fce8164c6439e
-  translated_at: '2026-05-26T10:40:51.023914+00:00'
-  engine: anthropic
   token_count: 1323
+  translated_at: '2026-05-26T10:40:51.023914+00:00'
 ---
 # Preface: Why Learn C++
 

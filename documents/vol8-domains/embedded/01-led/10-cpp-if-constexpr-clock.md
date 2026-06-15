@@ -1,14 +1,15 @@
 ---
-title: 第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
-description: ''
+chapter: 15
+difficulty: beginner
+order: 10
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 10
+title: 第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
+description: ''
 ---
 # 第15篇：第三次重构 —— if constexpr让时钟使能在编译时自动选对
 

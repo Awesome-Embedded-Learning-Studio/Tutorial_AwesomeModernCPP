@@ -1,22 +1,25 @@
 ---
-title: "重载与默认参数"
-description: "掌握函数重载的规则和默认参数的用法，理解重载决议机制，避免两者的常见冲突"
 chapter: 3
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握函数重载的规则和默认参数的用法，理解重载决议机制，避免两者的常见冲突
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "参数传递方式"
+- 参数传递方式
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 重载与默认参数
 ---
-
 # 重载与默认参数
 
 上一章我们搞清楚了参数传递的几种方式——值传递、指针传递、引用传递。现在问题来了：假设我们要写一个 `print` 函数，打印整数、打印浮点数、打印字符串，这三件事本质上都是"打印"，但 C 语言的规矩是每个函数必须有一个独一无二的名字。于是你就得写 `print_int()`、`print_float()`、`print_string()`——光是起名字就够让人崩溃的，调用的时候还得自己判断该用哪个。

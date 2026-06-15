@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A4: Link-Time
-  Missing Symbol Behavior and Runtime Dynamic Loading'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 7
+platform: host
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 7
+title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A4: Link-Time
+  Missing Symbol Behavior and Runtime Dynamic Loading'
 translation:
+  engine: anthropic
   source: documents/compilation/07-symbol-missing-and-runtime-loading.md
   source_hash: a30854cfdd900e38145a6bed8b1d3fa1f5b121cf632188a2b7b3e96493279296
-  translated_at: '2026-05-26T10:11:23.701087+00:00'
-  engine: anthropic
   token_count: 1418
+  translated_at: '2026-05-26T10:11:23.701087+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation Technology — Dynamic Libraries Part 4: Missing Symbol Behavior at Link Time and Runtime Dynamic Loading
 

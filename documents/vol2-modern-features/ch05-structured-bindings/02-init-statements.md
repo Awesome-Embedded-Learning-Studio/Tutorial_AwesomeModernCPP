@@ -1,22 +1,22 @@
 ---
-title: "if/switch 初始化器：缩小变量作用域"
-description: "C++17 的 if 和 switch 初始化器，让变量生命周期恰到好处"
 chapter: 5
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: C++17 的 if 和 switch 初始化器，让变量生命周期恰到好处
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 12
 prerequisites:
-  - "Chapter 5: 结构化绑定"
+- 'Chapter 5: 结构化绑定'
+reading_time_minutes: 9
 related:
-  - "RAII 深入理解"
+- RAII 深入理解
+tags:
+- host
+- cpp-modern
+- intermediate
+title: if/switch 初始化器：缩小变量作用域
 ---
-
 # if/switch 初始化器：缩小变量作用域
 
 笔者在review代码的时候经常看到这种模式：先声明一个变量，用它做判断，然后整个函数剩余部分都能看到这个变量——即使它只在 `if` 分支里有意义。这种"变量泄漏到外层作用域"的问题在 C++ 里由来已久，但 C++17 终于给了我们一个优雅的解决方案：if 和 switch 的初始化语句。

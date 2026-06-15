@@ -1,25 +1,26 @@
 ---
-title: std::array
-description: Fixed-size contiguous container, zero-overhead wrapper for C-style arrays
 chapter: 99
-order: 4
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Fixed-size contiguous container, zero-overhead wrapper for C-style arrays
+difficulty: beginner
+order: 4
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::array
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/04-array.md
   source_hash: e5f7f56e6b65e001f05b42cb5ca16f25351de75e2af2374cc5c7eb21cf5a299d
-  translated_at: '2026-06-15T09:06:13.960964+00:00'
-  engine: anthropic
   token_count: 420
+  translated_at: '2026-06-15T09:06:13.960964+00:00'
 ---
 # std::array (C++11)
 

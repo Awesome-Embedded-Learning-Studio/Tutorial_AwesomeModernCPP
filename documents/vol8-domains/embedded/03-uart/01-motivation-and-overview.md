@@ -1,14 +1,15 @@
 ---
-title: "第31篇：从按钮到串口 —— 为什么 UART 是嵌入式通信的基石"
-description: ""
-tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
-difficulty: beginner
-platform: stm32f1
 chapter: 17
+difficulty: beginner
 order: 1
+platform: stm32f1
+reading_time_minutes: 11
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+title: 第31篇：从按钮到串口 —— 为什么 UART 是嵌入式通信的基石
+description: ''
 ---
 # 第31篇：从按钮到串口 —— 为什么 UART 是嵌入式通信的基石
 

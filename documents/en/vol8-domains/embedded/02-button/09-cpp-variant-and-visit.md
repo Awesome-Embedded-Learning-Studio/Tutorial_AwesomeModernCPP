@@ -1,21 +1,22 @@
 ---
-title: 'Part 27: `std::variant` Events + `std::visit` Dispatching — Type-Safe "What
-  Happened'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 9
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 9
+title: 'Part 27: `std::variant` Events + `std::visit` Dispatching — Type-Safe "What
+  Happened'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/09-cpp-variant-and-visit.md
   source_hash: 2f20607a3461c1bef610a9bc65e1e753cea59261432d5b95c424bf48b37c7bdd
-  translated_at: '2026-05-26T12:12:30.326573+00:00'
-  engine: anthropic
   token_count: 1475
+  translated_at: '2026-05-26T12:12:30.326573+00:00'
+description: ''
 ---
 # Part 27: `std::variant` Events + `std::visit` Dispatch — Type-Safe "What Happened"
 

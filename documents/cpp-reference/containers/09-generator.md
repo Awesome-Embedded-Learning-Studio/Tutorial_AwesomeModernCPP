@@ -1,17 +1,18 @@
 ---
-title: "std::generator"
-description: "基于协程的同步生成器，用 co_yield 惰性产生值序列"
 chapter: 99
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - coroutine
+cpp_standard:
+- 23
+description: 基于协程的同步生成器，用 co_yield 惰性产生值序列
 difficulty: intermediate
-cpp_standard: [23]
+order: 9
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- coroutine
+title: std::generator
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

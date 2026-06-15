@@ -1,31 +1,31 @@
 ---
-title: std::string
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master `std::string` construction, concatenation, searching, and substring
   operations, and learn to handle strings safely and efficiently in C++.
-chapter: 5
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - std::array
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: std::string
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch05/03-std-string.md
   source_hash: aced1be774180f534a1b374bc257368dd47eb18d4100eafc35e92e4b2e6f90cc
-  translated_at: '2026-05-26T10:50:09.490984+00:00'
-  engine: anthropic
   token_count: 2725
+  translated_at: '2026-05-26T10:50:09.490984+00:00'
 ---
 # std::string
 

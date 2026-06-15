@@ -1,16 +1,19 @@
 ---
-title: "std::variant"
-description: "类型安全的联合体，在任意时刻持有其候选类型之一的值"
 chapter: 99
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+- 20
+- 23
+description: 类型安全的联合体，在任意时刻持有其候选类型之一的值
 difficulty: intermediate
-cpp_standard: [17, 20, 23]
+order: 3
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: std::variant
 ---
-
 # std::variant（C++17）
 
 ## 一句话

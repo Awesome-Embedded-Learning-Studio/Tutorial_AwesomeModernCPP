@@ -1,16 +1,17 @@
 ---
-title: "std::print"
-description: "类型安全的格式化输出到 stdout，C++ 的新 Hello World"
 chapter: 99
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 23
+description: 类型安全的格式化输出到 stdout，C++ 的新 Hello World
 difficulty: beginner
-cpp_standard: [23]
+order: 10
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::print
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

@@ -1,21 +1,22 @@
 ---
-title: 'Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISRs and the Main
-  Loop'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 7
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 7
+title: 'Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISRs and the Main
+  Loop'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/07-circular-buffer-lock-free-spsc.md
   source_hash: 8de84062a51802cb9a09dbbdaeff32ad8bcf8001044a2ed2a2ff603fd4841d6c
-  translated_at: '2026-05-26T12:17:01.081291+00:00'
-  engine: anthropic
   token_count: 1532
+  translated_at: '2026-05-26T12:17:01.081291+00:00'
+description: ''
 ---
 # Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISR and Main Loop
 

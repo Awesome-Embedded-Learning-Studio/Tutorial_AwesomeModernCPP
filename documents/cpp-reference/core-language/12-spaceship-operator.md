@@ -1,16 +1,18 @@
 ---
-title: "三路比较运算符 (<=>)"
-description: "一次定义自动生成全部六种比较运算符的 C++20 语言特性"
 chapter: 99
-order: 12
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 20
+- 23
+description: 一次定义自动生成全部六种比较运算符的 C++20 语言特性
 difficulty: intermediate
-cpp_standard: [20, 23]
+order: 12
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 三路比较运算符 (<=>)
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

@@ -1,21 +1,22 @@
 ---
-title: 'Part 13: First Refactoring — Replacing Macros with enum class, the Start of
-  Type Safety'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 8
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 8
+title: 'Part 13: First Refactoring — Replacing Macros with enum class, the Start of
+  Type Safety'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution.md
   source_hash: f8b0472a1e1d9b03fb216f2cfc73b47927cf313fc0292523e1115842cca9cdb7
-  translated_at: '2026-05-26T12:06:12.539347+00:00'
-  engine: anthropic
   token_count: 1490
+  translated_at: '2026-05-26T12:06:12.539347+00:00'
+description: ''
 ---
 # Part 13: The First Refactor — Replacing Macros with enum class, the Start of Type Safety
 

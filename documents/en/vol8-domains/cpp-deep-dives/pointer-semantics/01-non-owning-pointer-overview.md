@@ -1,32 +1,32 @@
 ---
-title: 'A Panorama of Non-Owning Pointers: From T* to Borrowed to ObserverPtr'
+chapter: 1
+cpp_standard:
+- 17
+- 20
 description: Understanding the semantic boundaries of borrowing, observing, and non-owning
   pointers in C++, implementing `Borrowed<T>` and `ObserverPtr<T>` from scratch
-chapter: 1
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 卷二 · 第一章：RAII 深入理解
+- 卷二 · 第一章：weak_ptr 与循环引用
+reading_time_minutes: 13
+related:
+- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
 tags:
 - host
 - cpp-modern
 - intermediate
 - 智能指针
 - 内存管理
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
-prerequisites:
-- 卷二 · 第一章：RAII 深入理解
-- 卷二 · 第一章：weak_ptr 与循环引用
-related:
-- WeakPtr 反模式：T* + raw Flag* 的致命陷阱
-cpp_standard:
-- 17
-- 20
+title: 'A Panorama of Non-Owning Pointers: From T* to Borrowed to ObserverPtr'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md
   source_hash: 8c3bc7304a09ebee4c8298b6323195b5156a7c9a74dbaf611519bc5a57509c4b
-  translated_at: '2026-05-26T11:56:01.036850+00:00'
-  engine: anthropic
   token_count: 2432
+  translated_at: '2026-05-26T11:56:01.036850+00:00'
 ---
 # The Non-Owning Pointer Landscape: From T* to Borrowed to ObserverPtr
 

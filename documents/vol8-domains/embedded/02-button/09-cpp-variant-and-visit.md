@@ -1,14 +1,15 @@
 ---
-title: '第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"'
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 16
+difficulty: intermediate
 order: 9
+platform: stm32f1
+reading_time_minutes: 7
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"
+description: ''
 ---
 # 第27篇：`std::variant` 事件 + `std::visit` 分发 —— 类型安全的"发生了什么"
 

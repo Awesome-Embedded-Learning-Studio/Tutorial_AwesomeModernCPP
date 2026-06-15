@@ -1,21 +1,22 @@
 ---
-title: 'Part 5: Advanced Debugging — From `printf` to a Complete GDB (GNU Debugger)
-  Environment'
-description: ''
+chapter: 14
+difficulty: beginner
+order: 5
+platform: stm32f1
+reading_time_minutes: 24
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 5
+title: 'Part 5: Advanced Debugging — From `printf` to a Complete GDB (GNU Debugger)
+  Environment'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/00-env-setup/05-debugging-guide.md
   source_hash: c360f75e524dcf5c92f15a767476d520e72f348f144be853cb12fe34781b5b66
-  translated_at: '2026-05-26T12:01:18.276291+00:00'
-  engine: anthropic
   token_count: 3194
+  translated_at: '2026-05-26T12:01:18.276291+00:00'
+description: ''
 ---
 # Part 5: Advanced Debugging — From printf to a Complete GDB Environment
 

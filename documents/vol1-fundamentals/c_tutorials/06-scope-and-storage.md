@@ -8,7 +8,7 @@ order: 8
 platform: host
 prerequisites:
 - 控制流：让程序学会选择和重复
-reading_time_minutes: 24
+reading_time_minutes: 20
 tags:
 - host
 - cpp-modern

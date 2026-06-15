@@ -1,16 +1,19 @@
 ---
-title: "std::optional"
-description: "一个可能包含值也可能不包含值的包装器，用于安全表达“无值”语义"
 chapter: 99
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 一个可能包含值也可能不包含值的包装器，用于安全表达“无值”语义
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 3
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::optional
 ---
-
 # std::optional（C++17）
 
 ## 一句话

@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking Techniques 3: How to Create and
-  Use Static Libraries'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 3
+title: 'Deep Dive into C/C++ Compilation and Linking Techniques 3: How to Create and
+  Use Static Libraries'
 translation:
+  engine: anthropic
   source: documents/compilation/03-creating-and-using-static-libs.md
   source_hash: 79ffd88cde2473e0b07e01fd5de01422eb942c50868bd9db2293d5ac3e11a9bc
-  translated_at: '2026-05-26T10:10:06.991070+00:00'
-  engine: anthropic
   token_count: 871
+  translated_at: '2026-05-26T10:10:06.991070+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking Part 3: How to Create and Use Static Libraries
 

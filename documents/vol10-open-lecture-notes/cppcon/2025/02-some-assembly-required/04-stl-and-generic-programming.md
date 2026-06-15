@@ -1,23 +1,25 @@
 ---
-title: "STL 与泛型编程的本质"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 4
+platform: host
+reading_time_minutes: 13
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: STL 与泛型编程的本质
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # 从 STL 的起源重新理解"泛型"到底在干什么
 
 回顾自己的C++学习历程，笔者注意到，市场上不少的C++教程，仅仅将对 STL 的理解停留在"容器 + 算法 + 迭代器"这个三件套的层面，把它当作一个工具箱：需要什么容器就 `#include` 什么，需要排序就调 `std::sort`，用起来确实方便，也确实担当得起"标准库"这三个字（大家干活都是直接用，我猜测除非出问题了，不会有人一边写代码还要一边默念底下的模板实现！）。但很少有人想过它为什么被设计成这样。顺着 Stepanov<RefLink :id="1" preview="Matt Godbolt, C++: Some Assembly Required, CppCon 2025" /> 的历史往下挖，我们会发现一件事——STL 从一开始就不是为了"提供容器"而存在的，它的终极目标是写出一个**一劳永逸的排序算法**。
@@ -38,12 +40,12 @@ order: 4
 
 int main() {
     int arr[] = {5, 3, 1, 4, 2};
-    
+
     // std::sort 不关心你传的是什么容器
     // 它只关心：迭代器是不是 RandomAccessIterator（能不能做加减法、能不能解引用）
     // 元素能不能用 operator< 比较、能不能 swap 和移动
     std::sort(std::begin(arr), std::end(arr));
-    
+
     for (int x : arr) {
         std::cout << x << ' ';
     }
@@ -78,9 +80,9 @@ int main() {
         {"Bob", 25},
         {"Charlie", 35}
     };
-    
+
     std::sort(std::begin(people), std::end(people));
-    
+
     for (const auto& p : people) {
         std::cout << p.name << ": " << p.age << '\n';
     }
@@ -128,7 +130,7 @@ int main() {
     int arr[] = {1, 2, 3, 4, 5};
     // 编译器看到调用，发现已经有 int 版本的实例了，直接用
     int sum = my_accumulate(arr, arr + 5, 0);
-    
+
     // double arr2[] = {1.0, 2.0, 3.0};
     // double sum2 = my_accumulate(arr2, arr2 + 3, 0.0);
     // 如果取消上面两行注释，但没有提前声明 double 版本，

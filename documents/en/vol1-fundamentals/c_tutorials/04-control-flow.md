@@ -10,7 +10,7 @@ order: 6
 platform: host
 prerequisites:
 - 位运算与求值顺序
-reading_time_minutes: 15
+reading_time_minutes: 12
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 基础
 title: 'Control Flow: Teaching Programs to Choose and Repeat'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/04-control-flow.md
   source_hash: c432d40382b92c1c4b36dd849d5878805f1a742c101a18c77d32a5a8e659aaa9
-  translated_at: '2026-05-26T10:28:47.698969+00:00'
-  engine: anthropic
   token_count: 2594
+  translated_at: '2026-05-26T10:28:47.698969+00:00'
 ---
 # Control Flow: Teaching Programs to Choose and Repeat
 

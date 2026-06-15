@@ -1,10 +1,11 @@
 ---
-title: 术语表
-description: 项目中英文技术术语标准翻译对照表
-tags:
-  - 基础
 chapter: 99
+description: 项目中英文技术术语标准翻译对照表
 order: 0
+reading_time_minutes: 8
+tags:
+- 基础
+title: 术语表
 ---
 # 术语表
 

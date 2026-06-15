@@ -1,28 +1,28 @@
 ---
-title: 'Lab 4: Coroutine Scheduler and Event Loop'
+chapter: 10
+cpp_standard:
+- 20
 description: 'Implement a minimal coroutine scheduler, and master the complete C++20
   coroutine chain from syntax to runtime: Task, Scheduler, timer, and epoll event
   loop.'
-chapter: 10
-order: 5
 difficulty: advanced
+order: 5
+prerequisites:
+- '卷五 ch06: 异步 I/O 与协程'
+- 'Lab 3: Production-style Thread Pool'
+reading_time_minutes: 14
 tags:
 - host
 - cpp-modern
 - coroutine
 - advanced
-cpp_standard:
-- 20
-reading_time_minutes: 18
-prerequisites:
-- '卷五 ch06: 异步 I/O 与协程'
-- 'Lab 3: Production-style Thread Pool'
+title: 'Lab 4: Coroutine Scheduler and Event Loop'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/04-coroutine-scheduler.md
   source_hash: e841fcf7c238a8184911e3e4eb7a06be95bb6f6320d0a31034190388aa665b33
-  translated_at: '2026-05-26T11:49:18.998481+00:00'
-  engine: anthropic
   token_count: 3627
+  translated_at: '2026-05-26T11:49:18.998481+00:00'
 ---
 # Lab 4: Coroutine Scheduler and Event Loop
 

@@ -1,14 +1,15 @@
 ---
-title: AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
-description: ''
+chapter: 2
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 2
-order: 3
+title: AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
+description: ''
 ---
 # AVX 指令集系列深度介绍：领域、意义、以及 AVX / AVX2 的基本用法与样例
 

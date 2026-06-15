@@ -1,14 +1,15 @@
 ---
-title: "第38篇：UART IRQ 处理与回调 —— 中断接收的完整拼图"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 8
+platform: stm32f1
+reading_time_minutes: 8
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第38篇：UART IRQ 处理与回调 —— 中断接收的完整拼图
+description: ''
 ---
 # 第38篇：UART IRQ 处理与回调 —— 中断接收的完整拼图
 

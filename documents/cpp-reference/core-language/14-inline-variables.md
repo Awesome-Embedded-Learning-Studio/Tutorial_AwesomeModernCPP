@@ -1,16 +1,19 @@
 ---
-title: "内联变量"
-description: "在头文件中定义全局变量而不违反 ODR，编译器保证单一实例"
 chapter: 99
-order: 14
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 在头文件中定义全局变量而不违反 ODR，编译器保证单一实例
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 14
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: 内联变量
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

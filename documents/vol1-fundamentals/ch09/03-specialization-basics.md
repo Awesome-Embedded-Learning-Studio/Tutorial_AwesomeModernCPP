@@ -1,21 +1,24 @@
 ---
-title: "模板特化初步"
-description: "理解全特化与偏特化的概念，学会为特定类型提供定制化的模板实现"
 chapter: 9
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解全特化与偏特化的概念，学会为特定类型提供定制化的模板实现
 difficulty: intermediate
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "类模板"
+- 类模板
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 模板特化初步
 ---
-
 # 模板特化初步
 
 模板的强大之处在于"一套代码，多种类型"。但现实工程里，我们经常会碰到这样一种情况：通用版本对大多数类型工作得很好，偏偏有那么几个类型——要么语义不同，要么性能需求不同——需要一份专门定制的实现。比如我们写了一个通用的 `max()` 函数模板，对 `int` 和 `double` 都能正确比较大小，但传进来两个 `const char*` 的时候，它比较的是指针地址而不是字符串内容，这显然不是我们想要的。

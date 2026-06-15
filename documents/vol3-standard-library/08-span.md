@@ -1,23 +1,25 @@
 ---
-title: "span：非拥有的连续视图"
-description: "讲透 std::span：指针加长度的非拥有视图、动态与静态 extent 的内存差异、统一接收 array/vector/C 数组、零拷贝切片 subspan、字节视图 as_bytes，以及悬垂视图的生命周期陷阱"
 chapter: 7
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - span
-  - 容器
+cpp_standard:
+- 17
+- 20
+description: 讲透 std::span：指针加长度的非拥有视图、动态与静态 extent 的内存差异、统一接收 array/vector/C 数组、零拷贝切片
+  subspan、字节视图 as_bytes，以及悬垂视图的生命周期陷阱
 difficulty: intermediate
+order: 8
 platform: host
-cpp_standard: [17, 20]
-reading_time_minutes: 14
+reading_time_minutes: 7
 related:
-  - "array：编译期固定大小的聚合容器"
-  - "vector 深入：三指针、扩容与迭代器失效"
+- array：编译期固定大小的聚合容器
+- vector 深入：三指针、扩容与迭代器失效
+tags:
+- host
+- cpp-modern
+- intermediate
+- span
+- 容器
+title: span：非拥有的连续视图
 ---
-
 # span：非拥有的连续视图
 
 ## span 是什么：一个指针加一个长度，仅此而已

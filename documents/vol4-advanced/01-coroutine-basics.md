@@ -1,14 +1,15 @@
 ---
-title: 理解C++20的革命特性——协程支持1
-description: ''
+chapter: 10
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 23
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 10
-order: 8
+title: 理解C++20的革命特性——协程支持1
+description: ''
 ---
 # 理解C++20的革命特性——协程支持1
 

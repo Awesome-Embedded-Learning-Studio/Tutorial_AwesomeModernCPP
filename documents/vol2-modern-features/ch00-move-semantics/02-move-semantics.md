@@ -1,24 +1,26 @@
 ---
-title: "移动构造与移动赋值"
-description: "掌握移动语义的核心机制，实现零拷贝资源转移"
 chapter: 0
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 移动语义
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握移动语义的核心机制，实现零拷贝资源转移
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 0: 右值引用"
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 19
 related:
-  - "RVO 与 NRVO"
-  - "完美转发"
+- RVO 与 NRVO
+- 完美转发
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+title: 移动构造与移动赋值
 ---
-
 # 移动构造与移动赋值
 
 上一篇我们把值类别和右值引用的底子打好了。现在该干正事了——让我们的类真正学会"移动"而不是"拷贝"。说实话，笔者第一次手写移动构造函数的时候犯了不少错：忘记置空源对象的指针、忘记处理自赋值、搞不清楚什么时候该加 `noexcept`……这篇文章就把自己踩过的坑一并分享出来，争取让大家少走弯路。

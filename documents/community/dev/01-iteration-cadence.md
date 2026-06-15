@@ -1,11 +1,12 @@
 ---
-title: "网站迭代节奏"
-description: "Tutorial_AwesomeModernCPP 的内容产出、站点维护、PR/Issue 处理和发版节奏"
 chapter: 1
+description: Tutorial_AwesomeModernCPP 的内容产出、站点维护、PR/Issue 处理和发版节奏
 order: 1
-tags: ["工程实践"]
+reading_time_minutes: 4
+tags:
+- 工程实践
+title: 网站迭代节奏
 ---
-
 # 网站迭代节奏
 
 Tutorial_AwesomeModernCPP 的迭代以内容产出为主，版本号用于度量内容推进幅度。站点维护、PR 和 Issue 处理服务于主线内容，不反过来接管主线节奏。

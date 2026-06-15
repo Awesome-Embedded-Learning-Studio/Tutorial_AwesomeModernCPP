@@ -1,14 +1,15 @@
 ---
-title: "第36篇：中断基础与 NVIC —— 让硬件主动通知 CPU"
-description: ""
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
-difficulty: intermediate
-platform: stm32f1
 chapter: 17
+difficulty: intermediate
 order: 6
+platform: stm32f1
+reading_time_minutes: 9
+tags:
+- cpp-modern
+- intermediate
+- stm32f1
+title: 第36篇：中断基础与 NVIC —— 让硬件主动通知 CPU
+description: ''
 ---
 # 第36篇：中断基础与 NVIC —— 让硬件主动通知 CPU
 

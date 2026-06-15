@@ -1,34 +1,34 @@
 ---
-title: Thread-Safe Container Design
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Design and trade-offs of four strategies: coarse-grained locks, fine-grained
   locks, sharded locks, and copy-on-write'
-chapter: 4
+difficulty: intermediate
 order: 2
+platform: host
+prerequisites:
+- 线程安全队列
+- 读写锁与 shared_mutex
+reading_time_minutes: 24
+related:
+- 无锁编程基础
 tags:
 - host
 - cpp-modern
 - intermediate
 - mutex
 - 容器
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- 线程安全队列
-- 读写锁与 shared_mutex
-related:
-- 无锁编程基础
+title: Thread-Safe Container Design
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/02-thread-safe-containers.md
   source_hash: 9aa5dfb9e73a85705d8a82e3f06b2d70afa586cf371d68b5a9a6ee9b349428e2
-  translated_at: '2026-05-20T04:40:43.578777+00:00'
-  engine: anthropic
   token_count: 4007
+  translated_at: '2026-05-20T04:40:43.578777+00:00'
 ---
 # Thread-Safe Container Design
 

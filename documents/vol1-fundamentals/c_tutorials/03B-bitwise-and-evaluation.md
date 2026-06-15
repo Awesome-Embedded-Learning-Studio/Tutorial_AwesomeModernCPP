@@ -1,21 +1,21 @@
 ---
-title: "位运算与求值顺序"
-description: "深入位运算的四大操作、移位注意事项、运算符优先级陷阱、求值顺序与序列点，理解未定义行为的本质"
 chapter: 1
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
+cpp_standard:
+- 11
+description: 深入位运算的四大操作、移位注意事项、运算符优先级陷阱、求值顺序与序列点，理解未定义行为的本质
 difficulty: beginner
+order: 5
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "运算符基础：让数据动起来"
+- 运算符基础：让数据动起来
+reading_time_minutes: 10
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+title: 位运算与求值顺序
 ---
-
 # 位运算与求值顺序
 
 上一篇里我们把算术、关系、逻辑这些常用运算符过了一遍。现在我们来啃两块比较硬的骨头：位运算和求值顺序。位运算在一般的应用层编程中用得不多，但如果你以后要接触嵌入式开发或者底层系统编程，位运算就是你的日常工具——配置硬件寄存器、解析通信协议的位字段、实现标志位集合，全靠它。求值顺序和序列点则是理解"为什么有些代码在不同编译器上结果不一样"的关键。

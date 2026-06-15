@@ -1,21 +1,22 @@
 ---
-title: 'Part 2: Project Structure — Acquiring the HAL Library, Startup Code Pitfalls,
-  and Directory Setup'
-description: ''
+chapter: 14
+difficulty: beginner
+order: 2
+platform: stm32f1
+reading_time_minutes: 15
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 2
+title: 'Part 2: Project Structure — Acquiring the HAL Library, Startup Code Pitfalls,
+  and Directory Setup'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/00-env-setup/02-project-structure.md
   source_hash: 42983cc0de29f3716726931f1e2f1c8f784798697d1d4a59b379c1c11fa34fa6
-  translated_at: '2026-05-26T11:59:09.043220+00:00'
-  engine: anthropic
   token_count: 2359
+  translated_at: '2026-05-26T11:59:09.043220+00:00'
+description: ''
 ---
 # Part 2: Project Structure — Getting the HAL Library, Startup File Pitfalls, and Directory Setup
 

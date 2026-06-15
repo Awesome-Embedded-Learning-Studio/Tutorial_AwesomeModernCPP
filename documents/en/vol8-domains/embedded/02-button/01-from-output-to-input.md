@@ -1,20 +1,21 @@
 ---
-title: 'Part 19: From Output to Input — Why Buttons Are Harder Than LEDs'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 1
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 1
+title: 'Part 19: From Output to Input — Why Buttons Are Harder Than LEDs'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/01-from-output-to-input.md
   source_hash: 03b7c2f10cb4887ce6c0fdaa24de8f6bcc02127b033270480bd2ddc102ff1764
-  translated_at: '2026-05-26T12:10:20.197367+00:00'
-  engine: anthropic
   token_count: 1416
+  translated_at: '2026-05-26T12:10:20.197367+00:00'
+description: ''
 ---
 # Part 19: From Output to Input — Why Buttons Are Harder Than LEDs
 

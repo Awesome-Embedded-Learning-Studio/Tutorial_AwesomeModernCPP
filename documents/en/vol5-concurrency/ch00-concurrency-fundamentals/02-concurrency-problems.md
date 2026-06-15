@@ -1,33 +1,33 @@
 ---
-title: Fundamental Concurrency Issues
+chapter: 0
+cpp_standard:
+- 11
+- 17
+- 20
 description: 'Identify the most common bugs in concurrent programming: data race,
   race condition, dead lock, livelock, starvation, and priority inversion.'
-chapter: 0
+difficulty: beginner
 order: 2
+platform: host
+prerequisites:
+- 为什么需要并发
+reading_time_minutes: 16
+related:
+- mutex 与 RAII 守卫
+- std::atomic 原子操作
 tags:
 - host
 - cpp-modern
 - beginner
 - atomic
 - mutex
-difficulty: beginner
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 17
-- 20
-prerequisites:
-- 为什么需要并发
-related:
-- mutex 与 RAII 守卫
-- std::atomic 原子操作
+title: Fundamental Concurrency Issues
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch00-concurrency-fundamentals/02-concurrency-problems.md
   source_hash: d336eb3333a93d0c5756f6d12e6aaa776b0bd2dfa36ea281f9e3cf2d2cde736a
-  translated_at: '2026-05-20T04:31:55.772461+00:00'
-  engine: anthropic
   token_count: 2616
+  translated_at: '2026-05-20T04:31:55.772461+00:00'
 ---
 # Fundamental Concurrency Problems
 

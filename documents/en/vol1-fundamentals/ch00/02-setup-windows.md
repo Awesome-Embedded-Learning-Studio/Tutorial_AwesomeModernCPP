@@ -1,29 +1,29 @@
 ---
-title: Windows Environment Setup
+chapter: 0
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Setting up a C++ development environment on Windows: installing Visual
   Studio or MinGW, configuring CMake and vcpkg, from scratch to compiling and running'
-chapter: 0
-order: 2
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Windows Environment Setup
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch00/02-setup-windows.md
   source_hash: 4952192019c839bc9675709aeb7dcdcd7cc99411fc7d616fea443aee76c851b8
-  translated_at: '2026-05-26T10:41:24.717946+00:00'
-  engine: anthropic
   token_count: 2319
+  translated_at: '2026-05-26T10:41:24.717946+00:00'
 ---
 # Windows Environment Setup
 

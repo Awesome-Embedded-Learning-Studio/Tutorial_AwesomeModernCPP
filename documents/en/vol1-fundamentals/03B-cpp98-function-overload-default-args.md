@@ -13,7 +13,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98入门：命名空间、引用与作用域解析
-reading_time_minutes: 16
+reading_time_minutes: 14
 related:
 - C++98面向对象：类与对象深度剖析
 tags:
@@ -24,11 +24,11 @@ tags:
 - 基础
 title: 'C++98 Function Interfaces: Overloading and Default Parameters'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03B-cpp98-function-overload-default-args.md
   source_hash: afaa1f96398f6b108e6931c5b37f17d90ebaa70659d7343d1597b01f03979ec9
-  translated_at: '2026-05-26T10:23:06.749087+00:00'
-  engine: anthropic
   token_count: 2068
+  translated_at: '2026-05-26T10:23:06.749087+00:00'
 ---
 # C++98 Function Interfaces: Overloading and Default Arguments
 

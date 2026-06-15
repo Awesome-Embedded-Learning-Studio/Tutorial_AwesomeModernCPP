@@ -1,16 +1,17 @@
 ---
-title: "Deducing this"
-description: "显式对象参数推导：让成员函数的第一个参数自动推导为 *this 的类型与值类别"
 chapter: 99
-order: 18
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 23
+description: 显式对象参数推导：让成员函数的第一个参数自动推导为 *this 的类型与值类别
 difficulty: intermediate
-cpp_standard: [23]
+order: 18
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: Deducing this
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

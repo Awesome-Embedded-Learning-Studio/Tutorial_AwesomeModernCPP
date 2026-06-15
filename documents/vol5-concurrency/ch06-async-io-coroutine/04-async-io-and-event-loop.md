@@ -1,25 +1,25 @@
 ---
-title: "异步 I/O 与事件循环"
-description: "理解 I/O 多路复用（epoll/io_uring）的工作原理，构建协程驱动的事件循环，打通异步 I/O 的最后一公里"
 chapter: 6
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - coroutine
-  - 异步编程
+cpp_standard:
+- 20
+description: 理解 I/O 多路复用（epoll/io_uring）的工作原理，构建协程驱动的事件循环，打通异步 I/O 的最后一公里
 difficulty: advanced
+order: 4
 platform: host
-reading_time_minutes: 35
-cpp_standard: [20]
 prerequisites:
-  - "promise_type 与 awaitable"
-  - "CPU cache 与 OS 线程"
+- promise_type 与 awaitable
+- CPU cache 与 OS 线程
+reading_time_minutes: 25
 related:
-  - "协程 Echo Server 实战"
+- 协程 Echo Server 实战
+tags:
+- host
+- cpp-modern
+- advanced
+- coroutine
+- 异步编程
+title: 异步 I/O 与事件循环
 ---
-
 # 异步 I/O 与事件循环
 
 前面我们搞清楚了 C++20 协程的内部机制——`promise_type` 控制生命周期，awaiter/awaitable 控制挂起与恢复，调度器通过 `await_suspend` 拿到协程 handle 来管理执行时机。但说实话，到目前为止我们写的调度器只是一个"就绪队列"——它不知道什么叫"等数据到达"，不知道什么叫"等网络连接就绪"，更不知道什么叫"等定时器到期"。

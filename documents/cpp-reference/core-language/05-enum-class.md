@@ -1,16 +1,21 @@
 ---
-title: "enum class"
-description: "作用域枚举，防止枚举值污染外部命名空间且禁止隐式类型转换"
 chapter: 99
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 作用域枚举，防止枚举值污染外部命名空间且禁止隐式类型转换
 difficulty: beginner
-cpp_standard: [11, 14, 17, 20, 23]
+order: 5
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: enum class
 ---
-
 # enum class（C++11）
 
 ## 一句话

@@ -1,21 +1,24 @@
 ---
-title: "类模板"
-description: "掌握类模板定义、成员函数和模板参数，实现泛型栈"
 chapter: 9
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握类模板定义、成员函数和模板参数，实现泛型栈
 difficulty: intermediate
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "函数模板"
+- 函数模板
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: 类模板
 ---
-
 # 类模板
 
 上一章我们学会了用 `template <typename T>` 让函数变成泛型的——一个 `max_value` 就能处理各种类型。但函数模板只能泛化"一段逻辑"。如果我们想要一个泛化的"数据结构"呢？比如一个栈——它的 push、pop、top 操作对各种类型来说逻辑完全一样，但栈内部需要存储一组同类型的元素，这个"类型"在编写类的时候就决定了。C++ 标准库之所以能提供 `std::vector<int>`、`std::vector<std::string>` 这样灵活的容器，靠的就是类模板（class template）。这也是我们本章的主角！它让我们把类型参数化到整个类的层面——成员变量、成员函数、甚至嵌套类型都可以使用模板参数。这一章我们就来搞清楚类模板的语法、成员函数的定义方式、模板参数的种类，最后手把手实现一个完整的泛型栈。

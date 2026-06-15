@@ -1,31 +1,31 @@
 ---
-title: Embedded C Programming Patterns
+chapter: 1
+cpp_standard:
+- 11
+- 17
 description: Register access patterns, proper use of `volatile`, interrupt-safe programming,
   peripheral abstraction layer design, and bare-metal development patterns
-chapter: 1
+difficulty: intermediate
 order: 107
+platform: host
+prerequisites:
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+- 指针进阶：多级指针、指针与 const
+reading_time_minutes: 17
 tags:
 - host
 - cpp-modern
 - intermediate
 - 嵌入式
 - 单片机
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 17
-prerequisites:
-- 结构体、联合体与内存对齐
-- 函数指针与回调机制
-- 指针进阶：多级指针、指针与 const
+title: Embedded C Programming Patterns
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/07-embedded-c-patterns.md
   source_hash: 44dabb8c455d7a5563bc16965235b0f6af1d490541fd892e391cb6c8b66f2928
-  translated_at: '2026-05-26T10:37:36.534206+00:00'
-  engine: anthropic
   token_count: 3384
+  translated_at: '2026-05-26T10:37:36.534206+00:00'
 ---
 # Embedded C Programming Patterns
 

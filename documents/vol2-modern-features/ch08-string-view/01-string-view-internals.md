@@ -1,23 +1,23 @@
 ---
-title: "string_view 内部原理：非拥有字符串视图"
-description: "理解 string_view 的实现机制、与 SSO 的对比和构造来源"
 chapter: 8
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: 理解 string_view 的实现机制、与 SSO 的对比和构造来源
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 0: 右值引用"
+- 'Chapter 0: 右值引用'
+reading_time_minutes: 18
 related:
-  - "string_view 性能分析"
-  - "string_view 陷阱与最佳实践"
+- string_view 性能分析
+- string_view 陷阱与最佳实践
+tags:
+- host
+- cpp-modern
+- intermediate
+title: string_view 内部原理：非拥有字符串视图
 ---
-
 # string_view 内部原理：非拥有字符串视图
 
 笔者最近在写一个 IniParser 项目的时候，跟字符串打交道打得快要吐了——split、trim、substr，各种操作满天飞。每次用 `std::string` 做子串操作都意味着一次堆分配，解析一个配置文件下来，堆上的碎片比笔者的桌面还乱。后来笔者认真研究了一下 `std::string_view`，才发现 C++17 给我们准备了一个这么好用的工具。不过用好它的前提是真正理解它的内部机制，否则很容易踩到生命周期的坑——这个我们留到下一篇陷阱篇再细说。

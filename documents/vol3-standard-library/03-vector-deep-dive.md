@@ -5,21 +5,21 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: "从三指针内部表示出发，讲透 std::vector 的扩容代价、迭代器失效全景、move_if_noexcept 异常安全，以及 C++20 constexpr vector 与 erase/erase_if"
+description: 从三指针内部表示出发，讲透 std::vector 的扩容代价、迭代器失效全景、move_if_noexcept 异常安全，以及 C++20
+  constexpr vector 与 erase/erase_if
 difficulty: intermediate
 order: 3
 platform: host
 prerequisites:
-- '卷一：vector 基础用法（size / capacity / push_back）'
-reading_time_minutes: 16
+- 卷一：vector 基础用法（size / capacity / push_back）
+reading_time_minutes: 14
 tags:
 - host
 - cpp-modern
 - intermediate
 - vector
-title: "vector 深入：三指针、扩容与迭代器失效"
+title: vector 深入：三指针、扩容与迭代器失效
 ---
-
 # vector 深入：三指针、扩容与迭代器失效
 
 这一篇，笔者想跟各位好好聊聊 `std::vector` 的实现层。

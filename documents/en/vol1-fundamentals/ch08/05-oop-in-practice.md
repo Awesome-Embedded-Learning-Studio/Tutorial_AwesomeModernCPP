@@ -1,31 +1,31 @@
 ---
-title: OOP in Practice
-description: Comprehensively apply inheritance, polymorphism, and operator overloading
-  to implement a complete graphics rendering system, and discuss the design choice
-  between inheritance and composition.
 chapter: 8
-order: 5
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- 多继承与虚继承
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Comprehensively apply inheritance, polymorphism, and operator overloading
+  to implement a complete graphics rendering system, and discuss the design choice
+  between inheritance and composition.
+difficulty: intermediate
+order: 5
+platform: host
+prerequisites:
+- 多继承与虚继承
+reading_time_minutes: 14
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: OOP in Practice
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch08/05-oop-in-practice.md
   source_hash: f541652f93905ff02717f94191be45d57087920d9d1986896948dcd144ee4754
-  translated_at: '2026-05-26T10:55:15.166915+00:00'
-  engine: anthropic
   token_count: 3243
+  translated_at: '2026-05-26T10:55:15.166915+00:00'
 ---
 # OOP in Practice
 

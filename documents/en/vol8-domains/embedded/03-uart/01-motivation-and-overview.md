@@ -1,20 +1,21 @@
 ---
-title: 'Part 31: From Buttons to Serial — Why UART Is the Foundation of Embedded Communication'
-description: ''
+chapter: 17
+difficulty: beginner
+order: 1
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 17
-order: 1
+title: 'Part 31: From Buttons to Serial — Why UART Is the Foundation of Embedded Communication'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/01-motivation-and-overview.md
   source_hash: efdeb2909faec61ce58456cb501ee25969620d8fd4bb5d49bb330384665ea915
-  translated_at: '2026-05-26T12:14:49.931658+00:00'
-  engine: anthropic
   token_count: 1995
+  translated_at: '2026-05-26T12:14:49.931658+00:00'
+description: ''
 ---
 # Part 31: From Buttons to Serial — Why UART Is the Cornerstone of Embedded Communication
 

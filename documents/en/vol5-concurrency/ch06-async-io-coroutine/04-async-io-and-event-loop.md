@@ -1,31 +1,31 @@
 ---
-title: Asynchronous I/O and Event Loops
+chapter: 6
+cpp_standard:
+- 20
 description: Understand how I/O multiplexing (epoll/io_uring) works, build a coroutine-driven
   event loop, and bridge the final gap in asynchronous I/O.
-chapter: 6
+difficulty: advanced
 order: 4
+platform: host
+prerequisites:
+- promise_type 与 awaitable
+- CPU cache 与 OS 线程
+reading_time_minutes: 25
+related:
+- 协程 Echo Server 实战
 tags:
 - host
 - cpp-modern
 - advanced
 - coroutine
 - 异步编程
-difficulty: advanced
-platform: host
-reading_time_minutes: 35
-cpp_standard:
-- 20
-prerequisites:
-- promise_type 与 awaitable
-- CPU cache 与 OS 线程
-related:
-- 协程 Echo Server 实战
+title: Asynchronous I/O and Event Loops
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch06-async-io-coroutine/04-async-io-and-event-loop.md
   source_hash: ef24e2f38eeb3caece0731d0e89703097248a52b4c2cc64ad93c54ee1acc49b7
-  translated_at: '2026-05-20T04:47:00.232107+00:00'
-  engine: anthropic
   token_count: 4825
+  translated_at: '2026-05-20T04:47:00.232107+00:00'
 ---
 # Asynchronous I/O and the Event Loop
 

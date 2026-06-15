@@ -1,14 +1,15 @@
 ---
-title: "第34篇：HAL UART 初始化与发送 —— 让芯片开口说话"
-description: ""
-tags:
-  - beginner
-  - cpp-modern
-  - stm32f1
-difficulty: beginner
-platform: stm32f1
 chapter: 17
+difficulty: beginner
 order: 4
+platform: stm32f1
+reading_time_minutes: 8
+tags:
+- beginner
+- cpp-modern
+- stm32f1
+title: 第34篇：HAL UART 初始化与发送 —— 让芯片开口说话
+description: ''
 ---
 # 第34篇：HAL UART 初始化与发送 —— 让芯片开口说话
 

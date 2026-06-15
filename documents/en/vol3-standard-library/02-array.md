@@ -1,33 +1,33 @@
 ---
-title: 'array: A fixed-size aggregate container determined at compile time'
+chapter: 7
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'A Deep Dive into `std::array`: Wrapping C Arrays as Aggregate Types
   with Zero Overhead, No Pointer Decay, `std::get` and Structured Bindings, Iterators
   That Never Invalidate, `constexpr` Compile-Time Lookup, and the Precise Boundary
   Between C Arrays and `vector`'
-chapter: 7
+difficulty: intermediate
 order: 2
+platform: host
+reading_time_minutes: 7
+related:
+- vector 深入：三指针、扩容与迭代器失效
 tags:
 - host
 - cpp-modern
 - intermediate
 - array
 - 容器
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-reading_time_minutes: 12
-related:
-- vector 深入：三指针、扩容与迭代器失效
+title: 'array: A fixed-size aggregate container determined at compile time'
 translation:
+  engine: anthropic
   source: documents/vol3-standard-library/02-array.md
   source_hash: f41713d84c0a41b88fe22a2838df40e140aeaa4ddab6f72383344f12e67cf698
-  translated_at: '2026-06-15T09:11:49.148384+00:00'
-  engine: anthropic
   token_count: 1337
+  translated_at: '2026-06-15T09:11:49.148384+00:00'
 ---
 # array: A Fixed-Size Aggregate Container for Compile-Time
 

@@ -1,24 +1,28 @@
 ---
-title: "从循环到迭代器：遍历数据的抽象之路"
-description: "CppCon 2025 演讲笔记 —— Mike Shah：从 for 循环、指针遍历到迭代器抽象，补全迭代器类别体系并用 GCC 16.1.1 实测 legacy tag 与 C++20 concept 的差异"
+chapter: 3
 conference: cppcon
 conference_year: 2025
-talk_title: "Back to Basics: C++ Ranges"
-speaker: "Mike Shah"
-video_youtube: "https://www.youtube.com/watch?v=Q434UHWRzI0"
-tags:
-  - cpp-modern
-  - host
-  - beginner
-  - Ranges
-  - 容器
+cpp_standard:
+- 11
+- 17
+- 20
+description: CppCon 2025 演讲笔记 —— Mike Shah：从 for 循环、指针遍历到迭代器抽象，补全迭代器类别体系并用 GCC 16.1.1
+  实测 legacy tag 与 C++20 concept 的差异
 difficulty: beginner
-platform: host
-cpp_standard: [11, 17, 20]
-chapter: 3
 order: 1
+platform: host
+reading_time_minutes: 20
+speaker: Mike Shah
+tags:
+- cpp-modern
+- host
+- beginner
+- Ranges
+- 容器
+talk_title: 'Back to Basics: C++ Ranges'
+title: 从循环到迭代器：遍历数据的抽象之路
+video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 ---
-
 # 从循环到迭代器：遍历数据的抽象之路
 
 :::tip

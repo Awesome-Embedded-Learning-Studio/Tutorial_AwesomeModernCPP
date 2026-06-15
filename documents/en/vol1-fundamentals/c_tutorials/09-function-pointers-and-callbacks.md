@@ -12,7 +12,7 @@ prerequisites:
 - 07A 指针基础与核心用法
 - 07B 指针、数组与 const
 - 08A 多级指针与函数参数
-reading_time_minutes: 13
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - 入门
 title: Function Pointers and the Callback Pattern
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/09-function-pointers-and-callbacks.md
   source_hash: 7d2e4310adaaf99e9b72ad2e76c4ca8f701f2e7dffeadfd149b69579480fa86b
-  translated_at: '2026-05-26T10:31:21.790654+00:00'
-  engine: anthropic
   token_count: 1866
+  translated_at: '2026-05-26T10:31:21.790654+00:00'
 ---
 # Function Pointers and the Callback Pattern
 

@@ -1,21 +1,22 @@
 ---
-title: 'Part 15: The Third Refactor — Using `if constexpr` to Automatically Select
-  the Right Clock Enable at Compile Time'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 10
+platform: stm32f1
+reading_time_minutes: 8
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 10
+title: 'Part 15: The Third Refactor — Using `if constexpr` to Automatically Select
+  the Right Clock Enable at Compile Time'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/10-cpp-if-constexpr-clock.md
   source_hash: 46566194d11d1983b4a63adaf02f386ff3ba4f1984048233c29a68999773f466
-  translated_at: '2026-05-26T12:07:50.338434+00:00'
-  engine: anthropic
   token_count: 1426
+  translated_at: '2026-05-26T12:07:50.338434+00:00'
+description: ''
 ---
 # Part 15: The Third Refactoring — Using `if constexpr` to Automatically Select Clock Enable at Compile Time
 

@@ -1,26 +1,29 @@
 ---
-title: "线程池设计"
-description: "从 worker + 任务队列 + condition_variable 出发，构建支持 future 返回、异常传播和优雅关闭的线程池"
 chapter: 5
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 异步编程
-  - mutex
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从 worker + 任务队列 + condition_variable 出发，构建支持 future 返回、异常传播和优雅关闭的线程池
 difficulty: advanced
+order: 4
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "jthread 与停止令牌"
-  - "promise 与 packaged_task"
+- jthread 与停止令牌
+- promise 与 packaged_task
+reading_time_minutes: 34
 related:
-  - "线程安全队列"
-  - "std::async 与 future"
+- 线程安全队列
+- std::async 与 future
+tags:
+- host
+- cpp-modern
+- advanced
+- 异步编程
+- mutex
+title: 线程池设计
 ---
-
 # 线程池设计
 
 前面几篇我们把 `std::async`、`std::future`、`std::promise`、`std::packaged_task` 这套异步基础设施逐个拆解了一遍，也在 packaged_task 那篇的末尾搭了一个单线程的 `SimpleTaskQueue` 作为引子。那个简陋的队列虽然跑得通，但它只有一个 worker 线程——说实话，提交 4 个任务只能排着队一个一个跑，完全没有并行可言，跟直接在主线程调用也没什么本质区别。

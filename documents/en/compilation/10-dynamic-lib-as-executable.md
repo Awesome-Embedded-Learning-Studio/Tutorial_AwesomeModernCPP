@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking (Bonus): Can a Shared Library
-  Be Executed Like an Executable?'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 10
+platform: host
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 10
+title: 'Deep Dive into C/C++ Compilation and Linking (Bonus): Can a Shared Library
+  Be Executed Like an Executable?'
 translation:
+  engine: anthropic
   source: documents/compilation/10-dynamic-lib-as-executable.md
   source_hash: f2314fe9d950e03f2cf309ca8e5a8a878c8cb3f598e71d53cbcde9fa28c12e57
-  translated_at: '2026-05-26T10:12:20.758953+00:00'
-  engine: anthropic
   token_count: 2823
+  translated_at: '2026-05-26T10:12:20.758953+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking (Bonus): Can a Shared Library Be Executed Like an Executable?
 

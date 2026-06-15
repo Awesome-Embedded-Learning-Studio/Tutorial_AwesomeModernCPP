@@ -1,26 +1,28 @@
 ---
-title: "自定义删除器与侵入式引用计数"
-description: "封装 C API、管理特殊资源，以及侵入式智能指针的实现"
 chapter: 1
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 智能指针
-  - intrusive_ptr
-  - 引用计数
+cpp_standard:
+- 11
+- 14
+- 17
+description: 封装 C API、管理特殊资源，以及侵入式智能指针的实现
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 1: unique_ptr 详解"
-  - "Chapter 1: shared_ptr 详解"
+- 'Chapter 1: unique_ptr 详解'
+- 'Chapter 1: shared_ptr 详解'
+reading_time_minutes: 17
 related:
-  - "scope_guard 与 defer"
+- scope_guard 与 defer
+tags:
+- host
+- cpp-modern
+- intermediate
+- 智能指针
+- intrusive_ptr
+- 引用计数
+title: 自定义删除器与侵入式引用计数
 ---
-
 # 自定义删除器与侵入式引用计数
 
 到目前为止，我们讨论的智能指针都在管理"new 出来的对象"——析构时调用 `delete`，一切自然而然。但现实世界远比这复杂。你需要管理的资源可能是 `fopen()` 返回的 `FILE*`（要用 `fclose` 关闭），可能是 `malloc()` 分配的内存（要用 `free` 释放），可能是 POSIX 的文件描述符 `int`（要用 `close` 关闭），可能是 SDL 的窗口、OpenGL 的纹理、CUDA 的 stream——每种资源都有自己的释放函数。如果智能指针只能 `delete`，那它就太鸡肋了。

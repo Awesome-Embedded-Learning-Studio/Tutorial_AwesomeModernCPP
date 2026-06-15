@@ -1,14 +1,15 @@
 ---
-title: 第18篇：常见坑位与实战练习 —— 把LED玩出花样来
-description: ''
+chapter: 15
+difficulty: beginner
+order: 13
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 13
+title: 第18篇：常见坑位与实战练习 —— 把LED玩出花样来
+description: ''
 ---
 # 第18篇：常见坑位与实战练习 —— 把LED玩出花样来
 

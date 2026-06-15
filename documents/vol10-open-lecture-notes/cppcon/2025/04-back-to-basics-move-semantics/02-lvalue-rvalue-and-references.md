@@ -1,23 +1,26 @@
 ---
-title: "左值、右值与引用：移动语义的类型系统基石"
-description: "CppCon 2025 演讲笔记 —— 从 K&R 的左值右值定义到 C++11 的值类别体系，详解左值引用、const 引用绑定规则与右值引用"
+chapter: 4
 conference: cppcon
 conference_year: 2025
-talk_title: "Back to Basics: Move Semantics"
-speaker: "Ben Saks"
-video_bilibili: "https://www.bilibili.com/video/BV1X54y1P7uM"
-video_youtube: "https://www.youtube.com/watch?v=szU5b972F7E"
-tags:
-  - cpp-modern
-  - host
-  - beginner
+cpp_standard:
+- 11
+- 17
+- 20
+description: CppCon 2025 演讲笔记 —— 从 K&R 的左值右值定义到 C++11 的值类别体系，详解左值引用、const 引用绑定规则与右值引用
 difficulty: beginner
-platform: host
-cpp_standard: [11, 17, 20]
-chapter: 4
 order: 2
+platform: host
+reading_time_minutes: 25
+speaker: Ben Saks
+tags:
+- cpp-modern
+- host
+- beginner
+talk_title: 'Back to Basics: Move Semantics'
+title: 左值、右值与引用：移动语义的类型系统基石
+video_bilibili: https://www.bilibili.com/video/BV1X54y1P7uM
+video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 ---
-
 # 左值、右值与引用：移动语义的类型系统基石
 
 :::tip

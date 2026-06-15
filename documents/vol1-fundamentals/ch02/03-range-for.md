@@ -1,22 +1,25 @@
 ---
-title: "range-for 循环"
-description: "掌握 C++11 引入的 range-for 循环，用最简洁的方式遍历数组和容器"
 chapter: 2
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 C++11 引入的 range-for 循环，用最简洁的方式遍历数组和容器
 difficulty: beginner
-reading_time_minutes: 10
+order: 3
 platform: host
 prerequisites:
-  - "循环语句"
+- 循环语句
+reading_time_minutes: 9
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: range-for 循环
 ---
-
 # range-for 循环
 
 写传统的 for 循环遍历数组时，我们总要做一件事——管好那个索引变量。`for (int i = 0; i < n; ++i)`，这行代码我们写过无数遍，但也写错过无数遍：`<` 写成 `<=` 导致越界访问，`i` 忘了自增导致死循环，数组长度改了但循环条件忘了跟着改......说实话，这种因为手滑引入的 bug 最让人头疼，因为它不是逻辑错误，纯粹是体力活没干好。

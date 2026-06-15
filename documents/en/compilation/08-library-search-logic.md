@@ -1,21 +1,22 @@
 ---
-title: 'Deep Dive into C/C++ Compilation and Linking Techniques 8: Library File Search
-  Logic'
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 8
+platform: host
+reading_time_minutes: 8
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 8
+title: 'Deep Dive into C/C++ Compilation and Linking Techniques 8: Library File Search
+  Logic'
 translation:
+  engine: anthropic
   source: documents/compilation/08-library-search-logic.md
   source_hash: 0fcdb97390300a41a4e0e56821ecfb6558454c67049bed731e91e7ec5dcbe381
-  translated_at: '2026-05-26T10:11:47.766625+00:00'
-  engine: anthropic
   token_count: 1221
+  translated_at: '2026-05-26T10:11:47.766625+00:00'
+description: ''
 ---
 # Deep Dive into C/C++ Compilation and Linking Part 8: Library File Search Logic
 

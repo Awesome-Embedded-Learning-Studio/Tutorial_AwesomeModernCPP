@@ -1,26 +1,26 @@
 ---
-title: "OnceCallback 前置知识（四）：Concepts 与 requires 约束"
-description: "从模板构造函数劫持移动构造函数的真实问题出发，理解 Concepts 和 requires 约束如何保护 OnceCallback 的构造函数正确匹配"
 chapter: 0
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - concepts
-  - 模板
+cpp_standard:
+- 20
+description: 从模板构造函数劫持移动构造函数的真实问题出发，理解 Concepts 和 requires 约束如何保护 OnceCallback 的构造函数正确匹配
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [20]
-reading_time_minutes: 11
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
-  - "OnceCallback 前置知识（一）：函数类型与模板偏特化"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 9
 related:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识（五）：std::move_only_function"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（五）：std::move_only_function
+tags:
+- host
+- cpp-modern
+- intermediate
+- concepts
+- 模板
+title: OnceCallback 前置知识（四）：Concepts 与 requires 约束
 ---
-
 # OnceCallback 前置知识（四）：Concepts 与 requires 约束
 
 ## 引言

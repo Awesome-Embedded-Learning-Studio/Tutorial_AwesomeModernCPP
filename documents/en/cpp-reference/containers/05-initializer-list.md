@@ -1,26 +1,27 @@
 ---
-title: std::initializer_list
-description: Lightweight proxy type used when initializing objects or passing arguments
-  with curly braces `{}`
 chapter: 99
-order: 5
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Lightweight proxy type used when initializing objects or passing arguments
+  with curly braces `{}`
+difficulty: beginner
+order: 5
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::initializer_list
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/05-initializer-list.md
   source_hash: aee3f97cd1a75fd47d8d15060f08cf186e4ff14367c651860d2881fd20178a53
-  translated_at: '2026-06-15T09:06:26.428918+00:00'
-  engine: anthropic
   token_count: 508
+  translated_at: '2026-06-15T09:06:26.428918+00:00'
 ---
 <!--
 Reference Card Template

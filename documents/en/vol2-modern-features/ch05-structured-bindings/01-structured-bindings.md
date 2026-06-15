@@ -1,28 +1,28 @@
 ---
-title: 'Structured Bindings: Unpacking Multiple Values in One Line'
-description: Unpack pairs, tuples, arrays, and structs elegantly with structured bindings
 chapter: 5
+cpp_standard:
+- 17
+description: Unpack pairs, tuples, arrays, and structs elegantly with structured bindings
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 'Chapter 4: std::variant'
+- 'Chapter 4: std::optional'
+reading_time_minutes: 11
+related:
+- if/switch 初始化器
 tags:
 - host
 - cpp-modern
 - intermediate
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 4: std::variant'
-- 'Chapter 4: std::optional'
-related:
-- if/switch 初始化器
+title: 'Structured Bindings: Unpacking Multiple Values in One Line'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch05-structured-bindings/01-structured-bindings.md
   source_hash: 07aa03d38d149f507524f711f4da22ee3d297b1e6d1764876cb0f6f4c2a19262
-  translated_at: '2026-05-26T11:29:30.484231+00:00'
-  engine: anthropic
   token_count: 2107
+  translated_at: '2026-05-26T11:29:30.484231+00:00'
 ---
 # Structured Bindings: Unpacking Multiple Values in One Line
 

@@ -1,22 +1,25 @@
 ---
-title: "const 初探"
-description: "掌握 const 修饰变量和指针的各种用法，初步了解 constexpr 编译期常量"
 chapter: 1
-order: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握 const 修饰变量和指针的各种用法，初步了解 constexpr 编译期常量
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
-  - "类型转换"
+- 类型转换
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: const 初探
 ---
-
 # const 初探
 
 写代码的时候，有些东西就是不应该被改动的——配置参数一旦设定就不应该被意外覆盖，数组的容量声明之后就不应该再变化，圆周率这种物理常数就更不用说了。如果我们全靠"自觉"来保证这些值不被修改，那跟闭着眼睛走夜路没什么区别，迟早有一天会手滑改掉某个关键值，然后花半天时间去排查一个莫名其妙的 bug。

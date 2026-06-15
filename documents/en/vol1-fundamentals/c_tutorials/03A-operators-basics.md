@@ -10,7 +10,7 @@ order: 4
 platform: host
 prerequisites:
 - 浮点、字符、const 与类型转换
-reading_time_minutes: 11
+reading_time_minutes: 9
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 基础
 title: 'Operator Basics: Making Data Move'
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/03A-operators-basics.md
   source_hash: 2057953d278a84e09f9679e6d1a760fec6325b73ffda5a5048b6ab3a29fc49b7
-  translated_at: '2026-05-26T10:27:38.855224+00:00'
-  engine: anthropic
   token_count: 1503
+  translated_at: '2026-05-26T10:27:38.855224+00:00'
 ---
 # Operator Basics: Making Data Move
 

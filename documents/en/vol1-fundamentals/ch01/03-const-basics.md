@@ -1,31 +1,31 @@
 ---
-title: A First Look at const
+chapter: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the various uses of the `const` qualifier with variables and pointers,
   and get a preliminary understanding of `constexpr` compile-time constants.
-chapter: 1
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - 类型转换
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: A First Look at const
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch01/03-const-basics.md
   source_hash: f1ce1f2b0ae10756b59bd4894eea06a297a7e793a736ab43cf6c0d211b188115
-  translated_at: '2026-05-26T10:43:12.421253+00:00'
-  engine: anthropic
   token_count: 2260
+  translated_at: '2026-05-26T10:43:12.421253+00:00'
 ---
 # A First Look at const
 

@@ -1,33 +1,33 @@
 ---
-title: 'Prerequisites for OnceCallback (Part 4): Concepts and requires Constraints'
+chapter: 0
+cpp_standard:
+- 20
 description: Starting from the real problem of template constructors hijacking move
   constructors, we explore how concepts and requires constraints protect the constructors
   of OnceCallback to ensure correct matching.
-chapter: 0
+difficulty: intermediate
 order: 4
+platform: host
+prerequisites:
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+reading_time_minutes: 9
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（五）：std::move_only_function
 tags:
 - host
 - cpp-modern
 - intermediate
 - concepts
 - 模板
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-reading_time_minutes: 11
-prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
-related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识（五）：std::move_only_function
+title: 'Prerequisites for OnceCallback (Part 4): Concepts and requires Constraints'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-04-once-callback-concepts-and-requires.md
   source_hash: e8b1894804c419d1e2255cf1123bac98c561fa062ceb658827dd87fc35517e84
-  translated_at: '2026-05-26T12:28:57.556303+00:00'
-  engine: anthropic
   token_count: 1757
+  translated_at: '2026-05-26T12:28:57.556303+00:00'
 ---
 # Prerequisite Knowledge for OnceCallback (Part 4): Concepts and requires Constraints
 

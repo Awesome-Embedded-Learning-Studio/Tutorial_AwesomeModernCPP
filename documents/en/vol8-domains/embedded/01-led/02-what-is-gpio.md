@@ -1,20 +1,21 @@
 ---
-title: 'Part 7: What Exactly Is GPIO — The Past and Present of General-Purpose I/O'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 2
+platform: stm32f1
+reading_time_minutes: 25
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 2
+title: 'Part 7: What Exactly Is GPIO — The Past and Present of General-Purpose I/O'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/02-what-is-gpio.md
   source_hash: 79c605428f81de109fd4a5e27145a4b3e526a891c4de00b21cded7c27749ad70
-  translated_at: '2026-05-26T12:02:23.869175+00:00'
-  engine: anthropic
   token_count: 2841
+  translated_at: '2026-05-26T12:02:23.869175+00:00'
+description: ''
 ---
 # Part 7: What Exactly Is GPIO — The Past and Present of General-Purpose I/O
 

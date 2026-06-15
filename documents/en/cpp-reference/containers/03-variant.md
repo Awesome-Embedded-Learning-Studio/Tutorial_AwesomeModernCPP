@@ -1,24 +1,25 @@
 ---
-title: std::variant
-description: A type-safe union that holds a value of one of its alternative types
-  at any given time
 chapter: 99
-order: 3
-tags:
-- host
-- cpp-modern
-- intermediate
-difficulty: intermediate
 cpp_standard:
 - 17
 - 20
 - 23
+description: A type-safe union that holds a value of one of its alternative types
+  at any given time
+difficulty: intermediate
+order: 3
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: std::variant
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/03-variant.md
   source_hash: e34295641193107d22e44d40b7c148c46c73d1b120c249d15b16c2a8fd11743d
-  translated_at: '2026-05-26T10:13:22.028996+00:00'
-  engine: anthropic
   token_count: 443
+  translated_at: '2026-05-26T10:13:22.028996+00:00'
 ---
 # std::variant (C++17)
 

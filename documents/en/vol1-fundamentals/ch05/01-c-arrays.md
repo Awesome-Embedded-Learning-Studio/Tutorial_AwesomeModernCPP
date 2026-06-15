@@ -1,32 +1,32 @@
 ---
-title: C-style arrays
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the declaration, initialization, and multidimensional usage of
   C-style arrays, and understand array decay and its impact on function parameter
   passing.
-chapter: 5
-order: 1
 difficulty: beginner
-reading_time_minutes: 12
+order: 1
 platform: host
 prerequisites:
 - 智能指针预告
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: C-style arrays
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch05/01-c-arrays.md
   source_hash: 11eb714f9ef673a96f34c3bae81fc3cb6cf8b4ac8e081c9845538c04c7288308
-  translated_at: '2026-05-26T10:49:09.692572+00:00'
-  engine: anthropic
   token_count: 2103
+  translated_at: '2026-05-26T10:49:09.692572+00:00'
 ---
 # C-Style Arrays
 

@@ -1,20 +1,21 @@
 ---
-title: 'Part 30: EXTI Interrupts + Pitfalls and Exercises'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 12
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 12
+title: 'Part 30: EXTI Interrupts + Pitfalls and Exercises'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/12-exti-interrupt-and-exercises.md
   source_hash: 7eb1b5506e65effac513f672453928868bec0ad943d2d45203153069bdca1d3b
-  translated_at: '2026-05-26T12:13:12.510434+00:00'
-  engine: anthropic
   token_count: 1703
+  translated_at: '2026-05-26T12:13:12.510434+00:00'
+description: ''
 ---
 # Part 30: EXTI Interrupts + Pitfalls and Exercises
 

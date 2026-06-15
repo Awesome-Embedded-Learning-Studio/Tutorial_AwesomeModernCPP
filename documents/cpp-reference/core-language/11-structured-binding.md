@@ -1,16 +1,19 @@
 ---
-title: "结构化绑定"
-description: "将 tuple、pair、struct 或数组的元素一次性解构到多个变量"
 chapter: 99
-order: 11
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 将 tuple、pair、struct 或数组的元素一次性解构到多个变量
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 11
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: 结构化绑定
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

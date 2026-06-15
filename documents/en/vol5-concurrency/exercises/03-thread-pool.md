@@ -1,28 +1,28 @@
 ---
-title: 'Lab 3: Production-style Thread Pool'
-description: Implement a fixed-size thread pool, mastering future, packaged_task,
-  exception propagation, graceful shutdown, and backpressure strategies.
 chapter: 10
-order: 4
-difficulty: advanced
-tags:
-- host
-- cpp-modern
-- advanced
 cpp_standard:
 - 17
 - 20
-reading_time_minutes: 16
+description: Implement a fixed-size thread pool, mastering future, packaged_task,
+  exception propagation, graceful shutdown, and backpressure strategies.
+difficulty: advanced
+order: 4
 prerequisites:
 - '卷五 ch05: future、任务与线程池'
 - 'Lab 0: Thread Lifecycle Lab'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- advanced
+title: 'Lab 3: Production-style Thread Pool'
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/exercises/03-thread-pool.md
   source_hash: 79a9c2a6b736d7e5080460a44e5e05fc556e161f20bad161dde1916d6fe9aff6
-  translated_at: '2026-05-26T11:48:01.981549+00:00'
-  engine: anthropic
   token_count: 3190
+  translated_at: '2026-05-26T11:48:01.981549+00:00'
 ---
 # Lab 3: Production-style Thread Pool
 

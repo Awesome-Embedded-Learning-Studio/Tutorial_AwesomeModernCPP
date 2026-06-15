@@ -1,32 +1,32 @@
 ---
-title: Overloading and Default Arguments
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the rules of function overloading and the use of default parameters,
   understand the overload resolution mechanism, and avoid common conflicts between
   the two.
-chapter: 3
-order: 3
 difficulty: beginner
-reading_time_minutes: 12
+order: 3
 platform: host
 prerequisites:
 - 参数传递方式
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Overloading and Default Arguments
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch03/03-overloading-default.md
   source_hash: 28497e2a384345bb03ad75c710cf07b8c97bc5f06e45a831a8159aa3fdf9e24c
-  translated_at: '2026-05-26T10:46:56.509778+00:00'
-  engine: anthropic
   token_count: 2149
+  translated_at: '2026-05-26T10:46:56.509778+00:00'
 ---
 # Overloading and Default Arguments
 

@@ -1,22 +1,22 @@
 ---
-title: "数据类型基础：整数与内存"
-description: "从零开始理解 C 语言的整型家族、有符号与无符号的区别、固定宽度类型和 sizeof 运算符，为后续学习打下类型系统基础"
 chapter: 1
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 从零开始理解 C 语言的整型家族、有符号与无符号的区别、固定宽度类型和 sizeof 运算符，为后续学习打下类型系统基础
 difficulty: beginner
+order: 2
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "程序结构与编译基础"
+- 程序结构与编译基础
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 数据类型基础：整数与内存
 ---
-
 # 数据类型基础：整数与内存
 
 如果你之前接触过 Python，可能会记得写 `x = 42` 就完事了——不用告诉 Python 这个 `x` 是整数还是小数，解释器自己猜。但到了 C 这边，规矩就变了：每一个变量在出生的时候，我们必须明确告诉编译器"这家伙到底是什么类型的"。乍一看像是多此一举，但实际上这个"声明类型"的动作，是 C 语言性能强大的根基——编译器因为知道每个变量占多少内存、数据怎么存储，才能生成最高效的机器码。

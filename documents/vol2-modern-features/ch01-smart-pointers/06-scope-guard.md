@@ -1,23 +1,26 @@
 ---
-title: "scope_guard 与 defer：通用作用域守卫"
-description: "实现轻量级、零开销的通用作用域守卫模式"
 chapter: 1
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - RAII守卫
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 实现轻量级、零开销的通用作用域守卫模式
 difficulty: intermediate
+order: 6
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 1: RAII 深入理解"
+- 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 13
 related:
-  - "自定义删除器"
+- 自定义删除器
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII守卫
+title: scope_guard 与 defer：通用作用域守卫
 ---
-
 # scope_guard 与 defer：通用作用域守卫
 
 在前面几篇我们讨论了智能指针——它们管理的是"资源的生命周期"（内存、文件句柄、socket 等）。但在实际工程中，还有一类场景：你需要在作用域退出时执行某个操作，但这个操作不一定是"释放资源"。它可能是恢复某个全局状态、提交或回滚一个事务、记录一条日志、通知某个监控组件。这种"退出时执行"的需求比资源管理更普遍、更灵活，而专门为资源管理设计的智能指针并不能很好地覆盖这些场景。

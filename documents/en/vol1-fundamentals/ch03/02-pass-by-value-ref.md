@@ -1,32 +1,32 @@
 ---
-title: Parameter Passing Methods
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Understand the differences between pass-by-value, pass-by-reference,
   and pass-by-const-reference, and learn to choose the correct parameter passing method
   for different scenarios.
-chapter: 3
-order: 2
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
 - 函数基础
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Parameter Passing Methods
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch03/02-pass-by-value-ref.md
   source_hash: 026c61b15f4a6894bdc6a13310b7a4573782c1fc5358bc7af2a3cf7185d9839f
-  translated_at: '2026-05-26T10:45:10.622178+00:00'
-  engine: anthropic
   token_count: 2242
+  translated_at: '2026-05-26T10:45:10.622178+00:00'
 ---
 # Parameter Passing
 

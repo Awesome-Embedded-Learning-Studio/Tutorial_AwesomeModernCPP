@@ -1,16 +1,18 @@
 ---
-title: "std::span"
-description: "连续序列的非拥有视图，零开销替代指针+长度传参"
 chapter: 99
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 20
+- 23
+description: 连续序列的非拥有视图，零开销替代指针+长度传参
 difficulty: beginner
-cpp_standard: [20, 23]
+order: 1
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::span
 ---
-
 # std::span（C++20）
 
 ## 一句话

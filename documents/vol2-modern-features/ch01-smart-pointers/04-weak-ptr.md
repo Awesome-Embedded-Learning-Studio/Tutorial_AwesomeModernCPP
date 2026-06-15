@@ -1,24 +1,26 @@
 ---
-title: "weak_ptr 与循环引用：打破所有权的死锁"
-description: "掌握 weak_ptr 的弱引用机制，解决 shared_ptr 的循环引用问题"
 chapter: 1
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - weak_ptr
-  - 智能指针
+cpp_standard:
+- 11
+- 14
+- 17
+description: 掌握 weak_ptr 的弱引用机制，解决 shared_ptr 的循环引用问题
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 1: shared_ptr 详解"
+- 'Chapter 1: shared_ptr 详解'
+reading_time_minutes: 14
 related:
-  - "自定义删除器"
+- 自定义删除器
+tags:
+- host
+- cpp-modern
+- intermediate
+- weak_ptr
+- 智能指针
+title: weak_ptr 与循环引用：打破所有权的死锁
 ---
-
 # weak_ptr 与循环引用：打破所有权的死锁
 
 上一篇我们聊了 `shared_ptr`——通过引用计数实现共享所有权。`shared_ptr` 看起来很美好：只要最后一个持有者离开，对象就自动销毁。但现实是，这个"自动销毁"有一个致命的敌人：**循环引用**。当两个对象互相持有对方的 `shared_ptr` 时，它们的引用计数永远不会归零——两个"管家"互相以为对方还持有钥匙，谁也不敢关门，结果就是内存泄漏。

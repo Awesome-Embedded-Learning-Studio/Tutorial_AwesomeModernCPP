@@ -1,14 +1,15 @@
 ---
-title: 第19篇：从输出到输入 —— 为什么按钮比 LED 难
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 1
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 1
+title: 第19篇：从输出到输入 —— 为什么按钮比 LED 难
+description: ''
 ---
 # 第19篇：从输出到输入 —— 为什么按钮比 LED 难
 

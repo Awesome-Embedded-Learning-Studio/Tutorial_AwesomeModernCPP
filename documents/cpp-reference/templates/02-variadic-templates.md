@@ -1,16 +1,21 @@
 ---
-title: "可变参数模板"
-description: "接受零个或多个模板参数或函数参数的模板机制"
 chapter: 99
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 接受零个或多个模板参数或函数参数的模板机制
 difficulty: intermediate
-cpp_standard: [11, 14, 17, 20, 23]
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 可变参数模板
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

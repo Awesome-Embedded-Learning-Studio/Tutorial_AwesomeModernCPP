@@ -1,22 +1,25 @@
 ---
-title: "类的定义"
-description: "从 struct 到 class：掌握 C++ 类的定义、成员变量与函数、访问控制的基本用法"
 chapter: 6
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 从 struct 到 class：掌握 C++ 类的定义、成员变量与函数、访问控制的基本用法
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "std::string"
+- std::string
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 类的定义
 ---
-
 # 类的定义
 
 在前面的章节里，我们用 `std::string` 处理文本、用 `std::array` 管理固定大小的集合——这些类型用起来方便，但它们到底是怎么被"发明"出来的？答案是类。`std::string` 本身就是一个类，`std::array` 也是一个类，C++ 标准库里几乎所有的工具都是用类来构建的。我们当然可以说，类是 C++ 最核心的抽象机制：它把"数据"和"操作数据的函数"打包成一个整体，让我们能够像使用内置类型一样使用自定义类型。

@@ -1,23 +1,23 @@
 ---
-title: "结构化绑定：一行解包多个值"
-description: "用结构化绑定优雅地解包 pair、tuple、数组和结构体"
 chapter: 5
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+description: 用结构化绑定优雅地解包 pair、tuple、数组和结构体
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 4: std::variant"
-  - "Chapter 4: std::optional"
+- 'Chapter 4: std::variant'
+- 'Chapter 4: std::optional'
+reading_time_minutes: 11
 related:
-  - "if/switch 初始化器"
+- if/switch 初始化器
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 结构化绑定：一行解包多个值
 ---
-
 # 结构化绑定：一行解包多个值
 
 笔者在写代码的时候，经常遇到一个很别扭的场景：函数返回了多个值，你得一个个拆开赋给变量。用 `pair` 的时候写 `result.first`、`result.second`，用 `tuple` 的时候写 `std::get<0>(t)` —— 要么语义不明，要么写法丑陋。C++11 引入了 `std::tie` 来缓解这个问题，但老实说，那语法也不算优雅：你得先声明好所有变量，再用 `tie` 往里塞。有没有那种,跟Python返回多个值的拆分写法一样爽的feature呢? 真有了孩子们!

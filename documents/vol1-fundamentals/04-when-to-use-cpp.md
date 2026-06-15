@@ -1,22 +1,25 @@
 ---
-title: "何时用C++、用哪些C++特性"
-description: "探讨何时选择C++而非C，以及如何在嵌入式环境中明智地使用C++特性，包括推荐使用、折中和禁用的特性"
 chapter: 0
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 探讨何时选择C++而非C，以及如何在嵌入式环境中明智地使用C++特性，包括推荐使用、折中和禁用的特性
 difficulty: beginner
-reading_time_minutes: 18
-prerequisites: []
-related: []
-cpp_standard: [11, 14, 17, 20]
+order: 4
 platform: host
+prerequisites: []
+reading_time_minutes: 16
+related: []
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 何时用C++、用哪些C++特性
 ---
-
 # 何时用 C++、用哪些 C++ 特性
 
 说实话，每次看到嵌入式圈子里爆发"C vs C++"的圣战，笔者都觉得挺无奈的。争论往往很快就滑向信仰层面——用 C 的觉得 C++ 是邪教，用 C++ 的觉得 C 是原始社会。但真正的问题是：我们手头的这个项目，在这块硬件上，用这门语言划不划算？这个问题没有任何人能替你回答，但我可以分享一下在实际项目中踩出来的经验，帮大家少走点弯路。

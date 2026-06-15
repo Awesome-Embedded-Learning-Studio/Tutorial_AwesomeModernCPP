@@ -1,28 +1,31 @@
 ---
-title: "容器选择指南：按操作、内存与失效规则挑对容器"
-description: "把 vol3 讲过的顺序容器与关联容器串成一张决策地图：按操作复杂度、内存局部性、迭代器失效规则三条线，加上一棵选择决策树，说清选错容器会踩的坑"
 chapter: 7
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 容器
-  - 内存管理
+cpp_standard:
+- 11
+- 17
+- 20
+- 23
+description: 把 vol3 讲过的顺序容器与关联容器串成一张决策地图：按操作复杂度、内存局部性、迭代器失效规则三条线，加上一棵选择决策树，说清选错容器会踩的坑
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 17, 20, 23]
-reading_time_minutes: 14
 prerequisites:
-  - "array：编译期固定大小的聚合容器"
+- array：编译期固定大小的聚合容器
+reading_time_minutes: 11
 related:
-  - "vector 深入：三指针、扩容与迭代器失效"
-  - "deque、list 与 forward_list：vector 之外的三个选择"
-  - "map 与 set 深入"
-  - "unordered_map 与 set 深入"
-  - "span：非拥有的连续视图"
+- vector 深入：三指针、扩容与迭代器失效
+- deque、list 与 forward_list：vector 之外的三个选择
+- map 与 set 深入
+- unordered_map 与 set 深入
+- span：非拥有的连续视图
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+- 内存管理
+title: 容器选择指南：按操作、内存与失效规则挑对容器
 ---
-
 # 容器选择指南：按操作、内存与失效规则挑对容器
 
 ## 这篇要解决什么：选错容器就是埋性能 bug

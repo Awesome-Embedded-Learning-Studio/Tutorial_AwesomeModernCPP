@@ -1,22 +1,25 @@
 ---
-title: "构造函数"
-description: "掌握默认构造、参数化构造、拷贝构造、初始化列表和委托构造的完整用法"
 chapter: 6
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握默认构造、参数化构造、拷贝构造、初始化列表和委托构造的完整用法
 difficulty: beginner
-reading_time_minutes: 15
+order: 2
 platform: host
 prerequisites:
-  - "类的定义"
+- 类的定义
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 构造函数
 ---
-
 # 构造函数
 
 上一章我们学了怎么定义一个类——写成员变量、写成员函数、用 `public` 和 `private` 控制访问权限。但有一个问题我们一直绕过去了：对象被创建出来的时候，它的成员变量里装的是什么？答案是——如果你什么都不做，局部对象的成员变量里装的是 **垃圾值！** ，是上一次那块内存里残留的随机数据。

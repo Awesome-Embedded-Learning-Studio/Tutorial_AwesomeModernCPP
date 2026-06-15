@@ -1,26 +1,27 @@
 ---
-title: std::thread
-description: A class representing a single thread of execution, allowing multiple
-  functions to execute concurrently.
 chapter: 99
-order: 2
-tags:
-- host
-- mutex
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: A class representing a single thread of execution, allowing multiple
+  functions to execute concurrently.
+difficulty: beginner
+order: 2
+reading_time_minutes: 2
+tags:
+- host
+- mutex
+- beginner
+title: std::thread
 translation:
+  engine: anthropic
   source: documents/cpp-reference/concurrency/02-thread.md
   source_hash: 2dd45afcbbdffe639639ad953479852b85567f32504f35a63d37b8863dc3cd20
-  translated_at: '2026-05-26T10:12:33.175214+00:00'
-  engine: anthropic
   token_count: 438
+  translated_at: '2026-05-26T10:12:33.175214+00:00'
 ---
 # std::thread (C++11)
 

@@ -1,32 +1,32 @@
 ---
-title: Why We Need Concurrency
+chapter: 0
+cpp_standard:
+- 11
+- 17
+- 20
 description: Understand the difference between concurrency and parallelism, master
   Amdahl's Law and Gustafson's Law, and build the engineering judgment to know when
   to introduce concurrency.
-chapter: 0
+difficulty: beginner
 order: 1
+platform: host
+reading_time_minutes: 11
+related:
+- 并发基本问题
+- std::thread 基础
 tags:
 - host
 - cpp-modern
 - beginner
 - 基础
 - 入门
-difficulty: beginner
-platform: host
-reading_time_minutes: 12
-cpp_standard:
-- 11
-- 17
-- 20
-related:
-- 并发基本问题
-- std::thread 基础
+title: Why We Need Concurrency
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch00-concurrency-fundamentals/01-why-concurrency.md
   source_hash: 3d5a79225b0f2761b5ea7403f304f71da6e9ac2f90b4967aaf24e430486e4a79
-  translated_at: '2026-05-20T04:34:29.186546+00:00'
-  engine: anthropic
   token_count: 1349
+  translated_at: '2026-05-20T04:34:29.186546+00:00'
 ---
 # Why We Need Concurrency
 

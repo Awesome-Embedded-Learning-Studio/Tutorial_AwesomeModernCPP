@@ -1,25 +1,26 @@
 ---
-title: "UDL 实战：类型安全的单位系统"
-description: "用用户自定义字面量实现类型安全的物理单位系统"
 chapter: 11
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 字面量
-  - 类型安全
+cpp_standard:
+- 14
+- 17
+description: 用用户自定义字面量实现类型安全的物理单位系统
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 11: 用户自定义字面量基础"
-  - "Chapter 4: 强类型 typedef"
+- 'Chapter 11: 用户自定义字面量基础'
+- 'Chapter 4: 强类型 typedef'
+reading_time_minutes: 11
 related:
-  - "constexpr 基础"
+- constexpr 基础
+tags:
+- host
+- cpp-modern
+- intermediate
+- 字面量
+- 类型安全
+title: UDL 实战：类型安全的单位系统
 ---
-
 # UDL 实战：类型安全的单位系统
 
 上一篇我们学了用户自定义字面量的基础语法——`operator""` 的各种形式、标准库字面量、命名规则。这一篇我们要把这些知识用起来，构建一个真正实用的**类型安全单位系统**。

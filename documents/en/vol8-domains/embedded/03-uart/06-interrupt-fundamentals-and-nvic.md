@@ -1,21 +1,22 @@
 ---
-title: 'Part 36: Interrupt Basics and NVIC — Letting Hardware Proactively Notify the
-  CPU'
-description: ''
+chapter: 17
+difficulty: intermediate
+order: 6
+platform: stm32f1
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 17
-order: 6
+title: 'Part 36: Interrupt Basics and NVIC — Letting Hardware Proactively Notify the
+  CPU'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-uart/06-interrupt-fundamentals-and-nvic.md
   source_hash: 827336d06a96eee8d7a8570ae26c012033296a4a714f004bf117b51af745d373
-  translated_at: '2026-05-26T12:16:34.042121+00:00'
-  engine: anthropic
   token_count: 1323
+  translated_at: '2026-05-26T12:16:34.042121+00:00'
+description: ''
 ---
 # Part 36: Interrupt Basics and NVIC — Letting Hardware Notify the CPU Actively
 

@@ -1,22 +1,26 @@
 ---
-title: "std::vector Quick Start"
-description: "Master vector's CRUD operations and capacity management, and learn to use C++'s most common dynamic container"
 chapter: 11
-order: 1
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Master vector's CRUD operations and capacity management, and learn to
+  use C++'s most common dynamic container
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
-  - "Error Handling Approaches Compared"
+- Error Handling Approaches Compared
+reading_time_minutes: 12
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: std::vector Quick Start
 ---
-
 # std::vector Quick Start
 
 In the previous chapters, we covered the core of the C++ language—type systems, control flow, functions, classes, and inheritance. Now we are entering a whole new territory: the Standard Template Library (STL). The STL provides a large collection of ready-made containers, algorithms, and iterators that save us from reinventing the wheel. Among all containers, `std::vector` is by far the most frequently used—a dynamic array that grows automatically, stores elements contiguously, and supports O(1) random access. Honestly, if you are not sure which container to use, just go with `vector`. Other containers only have an advantage in specific scenarios.

@@ -1,33 +1,33 @@
 ---
-title: Deadlock and Lock Ordering
-description: Dive into the four necessary conditions for dead lock, and master lock
-  ordering constraints, `try_lock` fallbacks, and `scoped_lock` multi-lock acquisition
-  strategies.
 chapter: 2
-order: 2
-tags:
-- host
-- cpp-modern
-- intermediate
-- mutex
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Dive into the four necessary conditions for dead lock, and master lock
+  ordering constraints, `try_lock` fallbacks, and `scoped_lock` multi-lock acquisition
+  strategies.
+difficulty: intermediate
+order: 2
+platform: host
 prerequisites:
 - mutex 与 RAII 锁
+reading_time_minutes: 18
 related:
 - condition_variable 与等待语义
+tags:
+- host
+- cpp-modern
+- intermediate
+- mutex
+title: Deadlock and Lock Ordering
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/02-deadlock-and-lock-ordering.md
   source_hash: 3610a18246675fc93df655733191a20ffacfe350c0b8125cab6c1c970e7d6a96
-  translated_at: '2026-05-20T04:36:27.588635+00:00'
-  engine: anthropic
   token_count: 3600
+  translated_at: '2026-05-20T04:36:27.588635+00:00'
 ---
 # Deadlock and Lock Ordering
 

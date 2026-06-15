@@ -1,22 +1,25 @@
 ---
-title: "this 指针与链式调用"
-description: "理解 this 指针的本质，掌握链式调用模式和 const 成员函数的正确用法"
 chapter: 6
-order: 6
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解 this 指针的本质，掌握链式调用模式和 const 成员函数的正确用法
 difficulty: beginner
-reading_time_minutes: 10
+order: 6
 platform: host
 prerequisites:
-  - "友元"
+- 友元
+reading_time_minutes: 11
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: this 指针与链式调用
 ---
-
 # this 指针与链式调用
 
 到目前为止，我们写的类都有一个默契——成员函数"知道"自己操作的是哪个对象。调用 `led.on()`，`on()` 就操作 `led`；调用 `other_led.on()`，`on()` 就操作 `other_led`。同一个函数，不同对象调用，行为各不相同。这件事看起来理所当然，但背后的机制值得深挖：编译器到底怎么让一个函数"知道"调用者是谁的？

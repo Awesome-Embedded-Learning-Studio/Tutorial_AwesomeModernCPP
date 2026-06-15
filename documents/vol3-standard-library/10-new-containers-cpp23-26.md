@@ -1,26 +1,28 @@
 ---
-title: "新标准容器：flat_map、inplace_vector 与 mdspan"
-description: "梳理 C++23/26 给容器家族补的新成员：flat_map 把红黑树拍平成排序 vector（有序 + cache 友好但插删 O(n)）、inplace_vector 定容不堆分配（C++26）、mdspan 多维视图（C++23，submdspan 切片在 C++26），以及还在路上的 hive 提案"
 chapter: 7
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 容器
+cpp_standard:
+- 23
+- 26
+description: 梳理 C++23/26 给容器家族补的新成员：flat_map 把红黑树拍平成排序 vector（有序 + cache 友好但插删 O(n)）、inplace_vector
+  定容不堆分配（C++26）、mdspan 多维视图（C++23，submdspan 切片在 C++26），以及还在路上的 hive 提案
 difficulty: intermediate
+order: 10
 platform: host
-cpp_standard: [23, 26]
-reading_time_minutes: 15
 prerequisites:
-  - "map 与 set 深入"
-  - "unordered_map 与 set 深入"
-  - "span：非拥有的连续视图"
-  - "array：编译期固定大小的聚合容器"
+- map 与 set 深入
+- unordered_map 与 set 深入
+- span：非拥有的连续视图
+- array：编译期固定大小的聚合容器
+reading_time_minutes: 10
 related:
-  - "容器选择指南：按操作、内存与失效规则挑对容器"
+- 容器选择指南：按操作、内存与失效规则挑对容器
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+title: 新标准容器：flat_map、inplace_vector 与 mdspan
 ---
-
 # 新标准容器：flat_map、inplace_vector 与 mdspan
 
 ## 这一篇讲什么：C++23/26 补的几个长期缺口

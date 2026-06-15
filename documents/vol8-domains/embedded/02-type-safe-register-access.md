@@ -11,7 +11,7 @@ order: 2
 platform: stm32f1
 prerequisites:
 - 'Chapter 7: 容器与数据结构'
-reading_time_minutes: 7
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - stm32f1

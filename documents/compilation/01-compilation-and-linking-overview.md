@@ -1,14 +1,15 @@
 ---
-title: 深入理解C/C++的编译与链接技术：导论
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 1
+platform: host
+reading_time_minutes: 32
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 1
+title: 深入理解C/C++的编译与链接技术：导论
+description: ''
 ---
 # 深入理解C/C++的编译与链接技术：导论
 

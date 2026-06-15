@@ -1,25 +1,25 @@
 ---
-title: "promise_type 与 awaitable"
-description: "掌握 C++20 协程的两大定制扩展点——promise_type 控制协程行为，awaitable 控制挂起与恢复"
 chapter: 6
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - coroutine
-  - 异步编程
+cpp_standard:
+- 20
+description: 掌握 C++20 协程的两大定制扩展点——promise_type 控制协程行为，awaitable 控制挂起与恢复
 difficulty: advanced
+order: 3
 platform: host
-reading_time_minutes: 30
-cpp_standard: [20]
 prerequisites:
-  - "C++20 协程基础"
+- C++20 协程基础
+reading_time_minutes: 28
 related:
-  - "异步 I/O 与事件循环"
-  - "协程 Echo Server 实战"
+- 异步 I/O 与事件循环
+- 协程 Echo Server 实战
+tags:
+- host
+- cpp-modern
+- advanced
+- coroutine
+- 异步编程
+title: promise_type 与 awaitable
 ---
-
 # promise_type 与 awaitable
 
 上一篇我们看到了 C++20 协程的基本语法——`co_await`、`co_yield`、`co_return` 长什么样，编译器帮我们生成了一个什么样的状态机。但说实话，光会用那几个关键字只是皮毛。C++20 协程真正的威力——或者说真正的"坑"——在于它把几乎所有的行为决策都交给了两个定制点：`promise_type` 和 `awaitable`（更准确地说是 awaiter）。这让协程变成了一个"框架"而不是一个"功能"：语言标准只规定了编译器在什么时候调用什么方法，至于这些方法怎么实现，完全由你决定。

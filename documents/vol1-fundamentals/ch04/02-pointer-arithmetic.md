@@ -1,22 +1,25 @@
 ---
-title: "指针运算与数组"
-description: "掌握指针算术运算、指针与数组的关系，以及 C 风格字符串的指针操作"
 chapter: 4
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 掌握指针算术运算、指针与数组的关系，以及 C 风格字符串的指针操作
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "指针基础"
+- 指针基础
+reading_time_minutes: 14
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 指针运算与数组
 ---
-
 # 指针运算与数组
 
 如果你已经理解了"指针就是地址"这件事，那么接下来我们要面对一个更深层的真相——在 C++ 里，指针和数组**在最底层的本质上**几乎是同一枚硬币的两面。（笔者很不建议混淆指针和数组的概念，因为这只会在工程逻辑上害人）

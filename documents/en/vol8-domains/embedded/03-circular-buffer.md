@@ -11,18 +11,18 @@ order: 3
 platform: stm32f1
 prerequisites:
 - 'Chapter 6: RAII与智能指针'
-reading_time_minutes: 6
+reading_time_minutes: 4
 tags:
 - cpp-modern
 - stm32f1
 - intermediate
 title: Circular Buffer Implementation
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/03-circular-buffer.md
   source_hash: 8c134e19ee132d94c025e8b4c70083d7d6ca8206d7b828f8d8fb6396ee391a86
-  translated_at: '2026-06-14T00:20:56.830619+00:00'
-  engine: anthropic
   token_count: 981
+  translated_at: '2026-06-14T00:20:56.830619+00:00'
 ---
 # Embedded C++ Tutorial — Circular Buffer
 

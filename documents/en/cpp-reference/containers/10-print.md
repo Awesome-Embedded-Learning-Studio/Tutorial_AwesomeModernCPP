@@ -1,21 +1,22 @@
 ---
-title: std::print
-description: Type-safe formatted output to stdout, the new Hello World in C++
 chapter: 99
+cpp_standard:
+- 23
+description: Type-safe formatted output to stdout, the new Hello World in C++
+difficulty: beginner
 order: 10
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-difficulty: beginner
-cpp_standard:
-- 23
+title: std::print
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/10-print.md
   source_hash: 04881d0f3973a97b4c21bdf51ca60b6223459154cd0b1fb5c39920cd1fd5addb
-  translated_at: '2026-05-26T10:14:41.686544+00:00'
-  engine: anthropic
   token_count: 432
+  translated_at: '2026-05-26T10:14:41.686544+00:00'
 ---
 <!--
 Reference Card Template

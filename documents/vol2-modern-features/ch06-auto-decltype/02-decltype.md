@@ -1,22 +1,24 @@
 ---
-title: "decltype 与返回类型推导"
-description: "decltype 的推导规则、decltype(auto) 与尾置返回类型"
 chapter: 6
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 11
+- 14
+- 17
+description: decltype 的推导规则、decltype(auto) 与尾置返回类型
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "Chapter 6: auto 推导深入"
+- 'Chapter 6: auto 推导深入'
+reading_time_minutes: 10
 related:
-  - "类模板参数推导"
+- 类模板参数推导
+tags:
+- host
+- cpp-modern
+- intermediate
+title: decltype 与返回类型推导
 ---
-
 # decltype 与返回类型推导
 
 上一章我们详细讲了 `auto` 的推导规则——默认丢弃引用和顶层 const。但有些时候我们需要的是"原封不动地保留表达式的类型"，包括引用和 const。这就是 `decltype` 的领域。

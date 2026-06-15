@@ -1,30 +1,30 @@
 ---
-title: Common STL Patterns
-description: Container selection guide, common pitfalls, and performance fundamentals
 chapter: 11
-order: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Container selection guide, common pitfalls, and performance fundamentals
 difficulty: beginner
-reading_time_minutes: 15
+order: 4
 platform: host
 prerequisites:
 - 算法库初见
+reading_time_minutes: 18
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Common STL Patterns
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch11/04-stl-patterns.md
   source_hash: fbccb2de68f9dd8a7ff0c5f75c85dccbed9ed5058b461828659644fb07cae296
-  translated_at: '2026-05-26T10:59:36.576358+00:00'
-  engine: anthropic
   token_count: 3572
+  translated_at: '2026-05-26T10:59:36.576358+00:00'
 ---
 # Common STL Patterns
 

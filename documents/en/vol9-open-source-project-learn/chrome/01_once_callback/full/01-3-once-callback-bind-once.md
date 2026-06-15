@@ -1,10 +1,20 @@
 ---
-title: 'OnceCallback in Practice (Part 3): Implementing `bind_once`'
+chapter: 1
+cpp_standard:
+- 23
 description: A line-by-line breakdown of the parameter binding implementation in `bind_once`—from
   the motivation to lambda capture pack expansion, followed by manually walking through
   a complete template instantiation example.
-chapter: 1
+difficulty: beginner
 order: 3
+platform: host
+prerequisites:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+reading_time_minutes: 7
+related:
+- OnceCallback 实战（四）：取消令牌设计
 tags:
 - host
 - cpp-modern
@@ -12,23 +22,13 @@ tags:
 - 回调机制
 - 函数对象
 - 模板
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 9
-prerequisites:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
-- OnceCallback 前置知识（三）：Lambda 高级特性
-related:
-- OnceCallback 实战（四）：取消令牌设计
+title: 'OnceCallback in Practice (Part 3): Implementing `bind_once`'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-3-once-callback-bind-once.md
   source_hash: 4d4e48ce3f36e5b1346673c61f911113149c22e7d13b78b362a76a05497c0caa
-  translated_at: '2026-05-26T12:24:47.631061+00:00'
-  engine: anthropic
   token_count: 1481
+  translated_at: '2026-05-26T12:24:47.631061+00:00'
 ---
 # OnceCallback in Practice (Part 3): Implementing bind_once
 

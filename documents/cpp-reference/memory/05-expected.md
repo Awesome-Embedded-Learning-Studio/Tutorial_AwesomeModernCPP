@@ -1,17 +1,18 @@
 ---
-title: "std::expected"
-description: "承载正常值或错误信息的类型安全包装，替代异常和双返回值模式"
 chapter: 99
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - expected
+cpp_standard:
+- 23
+description: 承载正常值或错误信息的类型安全包装，替代异常和双返回值模式
 difficulty: intermediate
-cpp_standard: [23]
+order: 5
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- intermediate
+- expected
+title: std::expected
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

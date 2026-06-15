@@ -1,23 +1,25 @@
 ---
-title: "Boost、Beman 与 C++ 标准化路径"
-description: "CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt"
+chapter: 2
 conference: cppcon
 conference_year: 2025
-talk_title: "C++: Some Assembly Required"
-speaker: "Matt Godbolt"
-video_bilibili: "https://www.bilibili.com/video/BV1ptCCBKEwW?p=2"
-video_youtube: "https://www.youtube.com/watch?v=zoYT7R94S3c"
-tags:
-  - cpp-modern
-  - host
-  - intermediate
+cpp_standard:
+- 17
+- 20
+description: 'CppCon 2025 演讲笔记 —— C++: Some Assembly Required by Matt Godbolt'
 difficulty: intermediate
-platform: host
-cpp_standard: [17, 20]
-chapter: 2
 order: 5
+platform: host
+reading_time_minutes: 20
+speaker: Matt Godbolt
+tags:
+- cpp-modern
+- host
+- intermediate
+talk_title: 'C++: Some Assembly Required'
+title: Boost、Beman 与 C++ 标准化路径
+video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
+video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
 ---
-
 # Boost：原来 C++ 标准库的"后花园"长这样
 
 学 C++ 的时候很多人都有个困惑：标准库里那些东西到底是怎么来的？是某天委员会开个会，一群大佬拍脑袋说"我们加个 `shared_ptr` 进去吧"？还是有什么更系统化的流程？看完历史资料把这条线理清楚之后，结论让人印象深刻——原来几乎所有日常使用的组件，都来自同一个地方。
@@ -193,7 +195,7 @@ std::optional<std::string> extract_email(const UserInfo& user) {
 
 int main() {
     int input_id = 42;
-    
+
     // 以前的写法：一层一层手动检查，嵌套 if，看着就累
     std::optional<std::string> result;
     auto user_opt = find_user(input_id);
@@ -203,13 +205,13 @@ int main() {
             result = email_opt.value();
         }
     }
-    
+
     if (result) {
         std::cout << "邮箱: " << *result << "\n";
     } else {
         std::cout << "无法获取邮箱\n";
     }
-    
+
     return 0;
 }
 ```
@@ -243,24 +245,24 @@ std::optional<std::string> extract_email(const UserInfo& user) {
 
 int main() {
     int input_id = 42;
-    
+
     // 有了 and_then 之后，链式调用，清爽多了
     auto result = find_user(input_id)
         .and_then(extract_email);
-    
+
     // transform 可以在不解包的情况下对值做变换
     auto upper_result = result.transform([](const std::string& email) {
         std::string upper = email;
         for (char& c : upper) c = std::toupper(c);
         return upper;
     });
-    
+
     if (upper_result) {
         std::cout << "邮箱(大写): " << *upper_result << "\n";
     } else {
         std::cout << "无法获取邮箱\n";
     }
-    
+
     return 0;
 }
 ```
@@ -297,17 +299,17 @@ void process(std::span<const uint8_t> data) {
 
 int main() {
     std::vector<uint8_t> vec = {1, 2, 3, 4, 5};
-    
+
     // vector 直接传，完美
     process(vec);
-    
+
     // 取子范围也方便
     process(std::span<uint8_t>(vec).subspan(1, 3));
-    
+
     // C 数组也行
     uint8_t arr[] = {10, 20, 30};
     process(arr);
-    
+
     return 0;
 }
 ```

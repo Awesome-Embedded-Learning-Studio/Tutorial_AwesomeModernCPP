@@ -1,25 +1,26 @@
 ---
-title: if constexpr
+chapter: 99
+cpp_standard:
+- 17
+- 20
+- 23
 description: Compile-time conditional branching that selectively compiles code paths
   based on template parameters.
-chapter: 99
+difficulty: intermediate
 order: 13
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
 - if_constexpr
-difficulty: intermediate
-cpp_standard:
-- 17
-- 20
-- 23
+title: if constexpr
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/13-if-constexpr.md
   source_hash: b9d65858e0b0e11f0c5703f6edda87e6d191cf5cb61b1f3ecf4f69cb48b28ce5
-  translated_at: '2026-05-26T10:16:40.695003+00:00'
-  engine: anthropic
   token_count: 483
+  translated_at: '2026-05-26T10:16:40.695003+00:00'
 ---
 <!--
 Reference Card Template

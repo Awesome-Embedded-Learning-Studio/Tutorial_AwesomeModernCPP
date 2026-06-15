@@ -1,14 +1,15 @@
 ---
-title: 第6篇：从点亮第一盏LED开始 —— 我们为什么要用现代C++写STM32
-description: ''
+chapter: 15
+difficulty: beginner
+order: 1
+platform: stm32f1
+reading_time_minutes: 21
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 1
+title: 第6篇：从点亮第一盏LED开始 —— 我们为什么要用现代C++写STM32
+description: ''
 ---
 # 第6篇：从点亮第一盏LED开始 —— 我们为什么要用现代C++写STM32
 

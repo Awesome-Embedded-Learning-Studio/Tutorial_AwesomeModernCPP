@@ -1,14 +1,15 @@
 ---
-title: 第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
-description: ''
+chapter: 14
+difficulty: beginner
+order: 1
+platform: stm32f1
+reading_time_minutes: 11
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 14
-order: 1
+title: 第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
+description: ''
 ---
 # 第1篇：从零搭建 STM32 开发工具链 —— 交叉编译原理与安装指南
 

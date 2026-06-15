@@ -1,24 +1,25 @@
 ---
-title: std::optional
-description: A wrapper that may or may not contain a value, used to safely express
-  a "no value" semantic.
 chapter: 99
-order: 3
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 17
 - 20
 - 23
+description: A wrapper that may or may not contain a value, used to safely express
+  a "no value" semantic.
+difficulty: beginner
+order: 3
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::optional
 translation:
+  engine: anthropic
   source: documents/cpp-reference/memory/03-optional.md
   source_hash: 79fa4c5e44a437944026ea566af1a0f9662962fad408c26544fc1b8d9748f00d
-  translated_at: '2026-05-26T10:17:33.868342+00:00'
-  engine: anthropic
   token_count: 400
+  translated_at: '2026-05-26T10:17:33.868342+00:00'
 ---
 # std::optional (C++17)
 

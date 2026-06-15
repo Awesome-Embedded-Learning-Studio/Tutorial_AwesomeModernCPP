@@ -1,34 +1,34 @@
 ---
-title: 'OnceCallback in Practice (Part 1): Motivation and Interface Design'
+chapter: 1
+cpp_standard:
+- 23
 description: Starting from a real asynchronous callback bug, we break down the three
   major shortcomings of `std::function` in asynchronous scenarios, and design the
   complete target API for `OnceCallback`.
-chapter: 1
+difficulty: beginner
 order: 1
+platform: host
+prerequisites:
+- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 前置知识（六）：Deducing this
+reading_time_minutes: 10
+related:
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
 tags:
 - host
 - cpp-modern
 - beginner
 - 回调机制
 - 函数对象
-difficulty: beginner
-platform: host
-cpp_standard:
-- 23
-reading_time_minutes: 11
-prerequisites:
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
-- OnceCallback 前置知识（五）：std::move_only_function
-- OnceCallback 前置知识（六）：Deducing this
-related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+title: 'OnceCallback in Practice (Part 1): Motivation and Interface Design'
 translation:
+  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-1-once-callback-motivation-and-api-design.md
   source_hash: b99ecb8050d929f2402dba605c6cfbedd93411dc4adebcb9f49ab7dca10337b9
-  translated_at: '2026-05-26T12:24:43.140050+00:00'
-  engine: anthropic
   token_count: 1732
+  translated_at: '2026-05-26T12:24:43.140050+00:00'
 ---
 # OnceCallback in Practice (Part 1): Motivation and Interface Design
 

@@ -1,30 +1,30 @@
 ---
-title: Streams and Subscript Operators
-description: Master `<<` and `>>` overloading and `operator[]` implementation to enable
-  stream I/O and indexed access for custom types.
 chapter: 7
-order: 2
-difficulty: intermediate
-reading_time_minutes: 12
-platform: host
-prerequisites:
-- 算术与比较运算符
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master `<<` and `>>` overloading and `operator[]` implementation to enable
+  stream I/O and indexed access for custom types.
+difficulty: intermediate
+order: 2
+platform: host
+prerequisites:
+- 算术与比较运算符
+reading_time_minutes: 11
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Streams and Subscript Operators
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch07/02-io-subscript.md
   source_hash: c7b632b75413f8f7dee3290b8ab2aa83cc955b0d120187dee1e1f058d5f06154
-  translated_at: '2026-05-26T10:53:03.243681+00:00'
-  engine: anthropic
   token_count: 2459
+  translated_at: '2026-05-26T10:53:03.243681+00:00'
 ---
 # Stream and Subscript Operators
 

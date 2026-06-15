@@ -1,24 +1,27 @@
 ---
-title: "无锁编程基础"
-description: "CAS 循环、lock-free vs wait-free、ABA 问题和内存回收挑战，建立无锁编程的基本判断力"
 chapter: 4
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - atomic
-  - 无锁
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: CAS 循环、lock-free vs wait-free、ABA 问题和内存回收挑战，建立无锁编程的基本判断力
 difficulty: advanced
+order: 3
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 14, 17, 20]
 prerequisites:
-  - "原子操作模式"
+- 原子操作模式
+reading_time_minutes: 28
 related:
-  - "SPSC 与 MPMC 队列"
+- SPSC 与 MPMC 队列
+tags:
+- host
+- cpp-modern
+- advanced
+- atomic
+- 无锁
+title: 无锁编程基础
 ---
-
 # 无锁编程基础
 
 前两篇我们用 mutex + condition_variable 构建了线程安全队列和容器，在 ch03 我们把 `std::atomic` 的操作集和六种内存序全部拆完了，还在"原子操作模式"那篇里写了 SeqLock、自旋锁和引用计数。那些内容回答的是"怎么做原子操作"的问题，但还没有碰过一个更深层的问题：**如果我们完全不用锁，能不能写出正确的并发数据结构？**

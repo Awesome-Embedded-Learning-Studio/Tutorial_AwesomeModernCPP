@@ -1,34 +1,35 @@
 ---
-title: STL Algorithms in Practice and Iterator Pitfalls
+chapter: 3
+conference: cppcon
+conference_year: 2025
+cpp_standard:
+- 11
+- 17
+- 20
 description: 'CppCon 2025 Talk Notes — Mike Shah: STL Algorithm Family in Practice,
   Hard Constraints on Iterator Categories, with an Algorithm Cheat Sheet and Invalidation
   Rules Table, Using GCC to Test Silent UB from Iterator Invalidation and Capture
   with _GLIBCXX_DEBUG'
-conference: cppcon
-conference_year: 2025
-talk_title: 'Back to Basics: C++ Ranges'
+difficulty: beginner
+order: 2
+platform: host
+reading_time_minutes: 20
 speaker: Mike Shah
-video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 tags:
 - cpp-modern
 - host
 - beginner
 - Ranges
 - 容器
-difficulty: beginner
-platform: host
-cpp_standard:
-- 11
-- 17
-- 20
-chapter: 3
-order: 2
+talk_title: 'Back to Basics: C++ Ranges'
+title: STL Algorithms in Practice and Iterator Pitfalls
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/02-stl-algorithms-and-iterator-pitfalls.md
   source_hash: 1cae51e3ffb476ae69dfde3639fb5f16f98e7c907185b4cb8216ef73fb3a213d
-  translated_at: '2026-06-13T02:13:47.465561+00:00'
-  engine: anthropic
   token_count: 3893
+  translated_at: '2026-06-13T02:13:47.465561+00:00'
+video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 ---
 # STL Algorithms in Practice and Iterator Pitfalls
 

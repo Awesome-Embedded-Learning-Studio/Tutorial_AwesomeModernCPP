@@ -1,36 +1,36 @@
 ---
-title: Thread Pool Design
+chapter: 5
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Starting from a worker, task queue, and `condition_variable`, we build
   a thread pool that supports `future` returns, exception propagation, and graceful
   shutdown.
-chapter: 5
+difficulty: advanced
 order: 4
+platform: host
+prerequisites:
+- jthread 与停止令牌
+- promise 与 packaged_task
+reading_time_minutes: 34
+related:
+- 线程安全队列
+- std::async 与 future
 tags:
 - host
 - cpp-modern
 - advanced
 - 异步编程
 - mutex
-difficulty: advanced
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- jthread 与停止令牌
-- promise 与 packaged_task
-related:
-- 线程安全队列
-- std::async 与 future
+title: Thread Pool Design
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch05-future-task-threadpool/04-thread-pool.md
   source_hash: 5c05ded33db6e734648e2ea6af2aa67c24671c415aaaf22427eee02526695729
-  translated_at: '2026-05-20T04:44:28.015432+00:00'
-  engine: anthropic
   token_count: 6911
+  translated_at: '2026-05-20T04:44:28.015432+00:00'
 ---
 # Thread Pool Design
 

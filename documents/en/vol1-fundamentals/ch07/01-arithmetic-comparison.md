@@ -1,30 +1,30 @@
 ---
-title: Arithmetic and Comparison Operators
-description: Master the overloading of arithmetic and comparison operators, and implement
-  a complete Fraction class.
 chapter: 7
-order: 1
-difficulty: intermediate
-reading_time_minutes: 15
-platform: host
-prerequisites:
-- this 指针与链式调用
-tags:
-- cpp-modern
-- host
-- intermediate
-- 进阶
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
+description: Master the overloading of arithmetic and comparison operators, and implement
+  a complete Fraction class.
+difficulty: intermediate
+order: 1
+platform: host
+prerequisites:
+- this 指针与链式调用
+reading_time_minutes: 13
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: Arithmetic and Comparison Operators
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch07/01-arithmetic-comparison.md
   source_hash: 48ba042cd34e32efcbc149222afb65868db83b92a05809dec71b2c0fae19eccf
-  translated_at: '2026-05-26T10:52:26.131357+00:00'
-  engine: anthropic
   token_count: 2930
+  translated_at: '2026-05-26T10:52:26.131357+00:00'
 ---
 # Arithmetic and Comparison Operators
 

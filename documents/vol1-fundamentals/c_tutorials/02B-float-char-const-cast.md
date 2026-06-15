@@ -1,22 +1,22 @@
 ---
-title: "浮点、字符、const 与类型转换"
-description: "掌握 C 语言的浮点类型与精度问题、字符存储与编码、const 限定符和隐式类型转换规则，理解 C++ 类型安全设计的动机"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+cpp_standard:
+- 11
+description: 掌握 C 语言的浮点类型与精度问题、字符存储与编码、const 限定符和隐式类型转换规则，理解 C++ 类型安全设计的动机
 difficulty: beginner
+order: 3
 platform: host
-reading_time_minutes: 15
-cpp_standard: [11]
 prerequisites:
-  - "数据类型基础：整数与内存"
+- 数据类型基础：整数与内存
+reading_time_minutes: 12
+tags:
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
+title: 浮点、字符、const 与类型转换
 ---
-
 # 浮点、字符、const 与类型转换
 
 上一篇里我们把整数家族从里到外拆了一遍——整型层级、有符号无符号、固定宽度类型和 sizeof。但程序世界里不只有整数：商品价格需要小数，屏幕上的文字需要字符，变量声明后有时候需要保护它不被乱改，不同类型的数据混在一起运算时编译器到底怎么处理。这些就是我们今天要一块一块啃的内容。

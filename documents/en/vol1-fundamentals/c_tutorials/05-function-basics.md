@@ -10,7 +10,7 @@ order: 7
 platform: host
 prerequisites:
 - 指针与数组、const 和空指针
-reading_time_minutes: 12
+reading_time_minutes: 10
 tags:
 - host
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - 基础
 title: Function Basics and Parameter Passing
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/05-function-basics.md
   source_hash: 52ac72efa9b0b73c5e1deb359525fa5ee279170f394f95f639532f4fcc3e02b5
-  translated_at: '2026-05-26T10:28:11.498698+00:00'
-  engine: anthropic
   token_count: 1747
+  translated_at: '2026-05-26T10:28:11.498698+00:00'
 ---
 # Function Basics and Parameter Passing
 

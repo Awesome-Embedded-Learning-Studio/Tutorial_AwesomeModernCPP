@@ -13,7 +13,7 @@ order: 3
 platform: host
 prerequisites:
 - C++98面向对象：类与对象深度剖析
-reading_time_minutes: 13
+reading_time_minutes: 10
 related:
 - C++98面向对象：继承与多态
 - C++98进阶：类型转换、动态内存与异常处理
@@ -25,11 +25,11 @@ tags:
 - 基础
 title: C++98 Operator Overloading
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/03E-cpp98-operator-overloading.md
   source_hash: b009bef70dd4643d89549fd9dd33c08a9f01766b3f5f03a22ca1d2f990a8a20d
-  translated_at: '2026-05-26T10:24:38.937506+00:00'
-  engine: anthropic
   token_count: 1909
+  translated_at: '2026-05-26T10:24:38.937506+00:00'
 ---
 # C++98 Operator Overloading
 

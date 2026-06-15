@@ -12,7 +12,7 @@ order: 2
 platform: host
 prerequisites:
 - 'Chapter 0: 前言与基础'
-reading_time_minutes: 9
+reading_time_minutes: 7
 related: []
 tags:
 - cpp-modern
@@ -20,11 +20,11 @@ tags:
 - intermediate
 title: Guide to Common Compiler Options
 translation:
+  engine: anthropic
   source: documents/vol7-engineering/02-compiler-options.md
   source_hash: 3cbac8ed01ae577e224ab152b4ec1d5ceea65745a9a2b5b418cbb10e7a3986ca
-  translated_at: '2026-06-15T09:31:23.887546+00:00'
-  engine: anthropic
   token_count: 1542
+  translated_at: '2026-06-15T09:31:23.887546+00:00'
 ---
 # Modern Embedded C++ Tutorial: Common Compiler Flags Guide
 

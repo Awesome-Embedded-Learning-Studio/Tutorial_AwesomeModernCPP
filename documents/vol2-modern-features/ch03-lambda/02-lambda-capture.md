@@ -1,23 +1,26 @@
 ---
-title: "Lambda 捕获机制深入"
-description: "值捕获、引用捕获、初始化捕获的语义与陷阱"
 chapter: 3
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - lambda
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 值捕获、引用捕获、初始化捕获的语义与陷阱
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "Chapter 3: Lambda 基础"
+- 'Chapter 3: Lambda 基础'
+reading_time_minutes: 15
 related:
-  - "泛型 Lambda 与模板 Lambda"
+- 泛型 Lambda 与模板 Lambda
+tags:
+- host
+- cpp-modern
+- intermediate
+- lambda
+title: Lambda 捕获机制深入
 ---
-
 # Lambda 捕获机制深入
 
 ## 引言

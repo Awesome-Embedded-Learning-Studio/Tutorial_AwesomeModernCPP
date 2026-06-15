@@ -1,16 +1,19 @@
 ---
-title: "std::filesystem"
-description: "跨平台的文件系统操作库：路径操作、目录遍历、文件状态查询"
 chapter: 99
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - beginner
+cpp_standard:
+- 17
+- 20
+- 23
+description: 跨平台的文件系统操作库：路径操作、目录遍历、文件状态查询
 difficulty: beginner
-cpp_standard: [17, 20, 23]
+order: 6
+reading_time_minutes: 2
+tags:
+- host
+- cpp-modern
+- beginner
+title: std::filesystem
 ---
-
 <!--
 参考卡模板 (Reference Card Template)
 用于 documents/cpp-reference/ 下的特性速查页。

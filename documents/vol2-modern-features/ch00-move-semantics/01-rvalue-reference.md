@@ -1,24 +1,26 @@
 ---
-title: "右值引用：从拷贝到移动"
-description: "理解 C++ 值类别体系，掌握右值引用的绑定规则与核心语义"
 chapter: 0
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 移动语义
+cpp_standard:
+- 11
+- 14
+- 17
+description: 理解 C++ 值类别体系，掌握右值引用的绑定规则与核心语义
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 15
 prerequisites:
-  - "卷一：C++ 基础入门"
+- 卷一：C++ 基础入门
+reading_time_minutes: 18
 related:
-  - "移动构造与移动赋值"
-  - "完美转发"
+- 移动构造与移动赋值
+- 完美转发
+tags:
+- host
+- cpp-modern
+- intermediate
+- 移动语义
+title: 右值引用：从拷贝到移动
 ---
-
 # 右值引用：从拷贝到移动
 
 欢迎来到现代C++！尽管现代C++这个词一般说的是C++11以及之后的C++。但是特性变更足以拿出来好好说说了。

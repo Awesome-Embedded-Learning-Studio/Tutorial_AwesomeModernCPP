@@ -1,20 +1,21 @@
 ---
-title: 'Part 28: Button Template Class Design — Leave Everything to the Compiler'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 10
+platform: stm32f1
+reading_time_minutes: 6
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 10
+title: 'Part 28: Button Template Class Design — Leave Everything to the Compiler'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/10-cpp-template-button.md
   source_hash: e35b56f1419e97e2e177ab5a9209d7a2ee0b9904049a578cab236be1b412754c
-  translated_at: '2026-05-26T12:12:57.693642+00:00'
-  engine: anthropic
   token_count: 1486
+  translated_at: '2026-05-26T12:12:57.693642+00:00'
+description: ''
 ---
 # Part 28: Designing a Button Template Class — Letting the Compiler Handle Everything
 

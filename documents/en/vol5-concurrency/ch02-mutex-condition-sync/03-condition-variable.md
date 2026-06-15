@@ -1,34 +1,34 @@
 ---
-title: condition_variable and Wait Semantics
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master the wait/notify mechanism of condition variables, and understand
   spurious wakeups, predicate patterns, and lost wakeups.
-chapter: 2
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- mutex 与 RAII 锁
+reading_time_minutes: 18
+related:
+- 读写锁与 shared_mutex
+- 线程安全队列
 tags:
 - host
 - cpp-modern
 - intermediate
 - mutex
 - 异步编程
-difficulty: intermediate
-platform: host
-reading_time_minutes: 25
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- mutex 与 RAII 锁
-related:
-- 读写锁与 shared_mutex
-- 线程安全队列
+title: condition_variable and Wait Semantics
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/03-condition-variable.md
   source_hash: 55180d919c132785b2b2ff56ff781820c74bc4d65ba0ea80520055cc1e8f4327
-  translated_at: '2026-05-20T04:36:55.732540+00:00'
-  engine: anthropic
   token_count: 3161
+  translated_at: '2026-05-20T04:36:55.732540+00:00'
 ---
 # condition_variable and Wait Semantics
 

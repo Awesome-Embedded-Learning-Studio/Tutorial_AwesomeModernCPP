@@ -1,31 +1,31 @@
 ---
-title: 'scope_guard and defer: Generic Scope Guards'
-description: Implement a lightweight, zero-overhead generic scope guard pattern
 chapter: 1
-order: 6
-tags:
-- host
-- cpp-modern
-- intermediate
-- RAII守卫
-difficulty: intermediate
-platform: host
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
-reading_time_minutes: 15
+description: Implement a lightweight, zero-overhead generic scope guard pattern
+difficulty: intermediate
+order: 6
+platform: host
 prerequisites:
 - 'Chapter 1: RAII 深入理解'
+reading_time_minutes: 13
 related:
 - 自定义删除器
+tags:
+- host
+- cpp-modern
+- intermediate
+- RAII守卫
+title: 'scope_guard and defer: Generic Scope Guards'
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch01-smart-pointers/06-scope-guard.md
   source_hash: fdd9356cbea5eeef1159ffbffa52cbe4a4198314acc109f20c00fa3d90ba994a
-  translated_at: '2026-05-26T11:23:30.606044+00:00'
-  engine: anthropic
   token_count: 2908
+  translated_at: '2026-05-26T11:23:30.606044+00:00'
 ---
 # scope_guard and defer: A General-Purpose Scope Guard
 

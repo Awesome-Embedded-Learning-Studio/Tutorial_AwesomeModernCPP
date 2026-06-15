@@ -1,26 +1,27 @@
 ---
-title: override specifier
-description: Used after a member function declaration to ensure the function actually
-  overrides a base class virtual function, otherwise a compilation error occurs.
 chapter: 99
-order: 6
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Used after a member function declaration to ensure the function actually
+  overrides a base class virtual function, otherwise a compilation error occurs.
+difficulty: beginner
+order: 6
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: override specifier
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/06-override-final.md
   source_hash: b7306d0b76990914cc840f8b6868f856de44f05b98ed09558670e282d94d535b
-  translated_at: '2026-05-26T10:15:51.790175+00:00'
-  engine: anthropic
   token_count: 366
+  translated_at: '2026-05-26T10:15:51.790175+00:00'
 ---
 # override Specifier (C++11)
 

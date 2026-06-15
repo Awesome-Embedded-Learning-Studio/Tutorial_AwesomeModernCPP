@@ -1,23 +1,24 @@
 ---
-title: std::generator
+chapter: 99
+cpp_standard:
+- 23
 description: Coroutine-based synchronous generator that lazily produces a sequence
   of values using `co_yield`
-chapter: 99
+difficulty: intermediate
 order: 9
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
 - coroutine
-difficulty: intermediate
-cpp_standard:
-- 23
+title: std::generator
 translation:
+  engine: anthropic
   source: documents/cpp-reference/containers/09-generator.md
   source_hash: 6882f358f85f992952fff1c32e9de115e0935af67e80afad88796ecdc681a1c9
-  translated_at: '2026-05-26T10:15:35.091727+00:00'
-  engine: anthropic
   token_count: 467
+  translated_at: '2026-05-26T10:15:35.091727+00:00'
 ---
 <!--
 Reference Card Template

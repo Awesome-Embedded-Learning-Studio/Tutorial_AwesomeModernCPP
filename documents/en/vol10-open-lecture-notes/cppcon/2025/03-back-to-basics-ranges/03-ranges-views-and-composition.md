@@ -1,31 +1,32 @@
 ---
-title: 'Ranges, Views, and Pipeline Composition: The Power of Lazy Evaluation'
+chapter: 3
+conference: cppcon
+conference_year: 2025
+cpp_standard:
+- 20
+- 23
 description: 'CppCon 2025 Talk Notes — Mike Shah: Constrained algorithms, view lazy
   evaluation, pipe operator, ranges::to, plus eager vs. lazy benchmark comparisons,
   infinite ranges, and a views version attribution table (C++20/23/26)'
-conference: cppcon
-conference_year: 2025
-talk_title: 'Back to Basics: C++ Ranges'
+difficulty: intermediate
+order: 3
+platform: host
+reading_time_minutes: 19
 speaker: Mike Shah
-video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 tags:
 - cpp-modern
 - host
 - intermediate
 - Ranges
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 20
-- 23
-chapter: 3
-order: 3
+talk_title: 'Back to Basics: C++ Ranges'
+title: 'Ranges, Views, and Pipeline Composition: The Power of Lazy Evaluation'
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/03-ranges-views-and-composition.md
   source_hash: 1a4d9d53040a5421050b3d5066124dd1f0ad9a30db9364f11086d6e1d865fb90
-  translated_at: '2026-06-13T02:14:47.820594+00:00'
-  engine: anthropic
   token_count: 3928
+  translated_at: '2026-06-13T02:14:47.820594+00:00'
+video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 ---
 # Ranges, Views, and Pipeline Composition: The Power of Lazy Evaluation
 

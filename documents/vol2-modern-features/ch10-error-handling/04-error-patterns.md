@@ -1,25 +1,29 @@
 ---
-title: "错误处理模式总结：选择指南与最佳实践"
-description: "综合对比所有错误处理方案，提供场景化选择指南"
 chapter: 10
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 类型安全
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: 综合对比所有错误处理方案，提供场景化选择指南
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17, 20, 23]
-reading_time_minutes: 20
 prerequisites:
-  - "Chapter 10: 错误处理的演进"
-  - "Chapter 10: optional 用于错误处理"
-  - "Chapter 10: std::expected"
+- 'Chapter 10: 错误处理的演进'
+- 'Chapter 10: optional 用于错误处理'
+- 'Chapter 10: std::expected'
+reading_time_minutes: 13
 related:
-  - "RAII 深入理解"
+- RAII 深入理解
+tags:
+- host
+- cpp-modern
+- intermediate
+- 类型安全
+title: 错误处理模式总结：选择指南与最佳实践
 ---
-
 # 错误处理模式总结：选择指南与最佳实践
 
 经过前三篇文章的铺垫，我们分别讨论了错误码、异常、`optional` 和 `expected` 的优缺点。这一篇是整个错误处理主题的收尾——笔者要把所有方案放在一起做一个综合对比，然后给出一个实用的选择指南，以及一些从踩坑中总结出来的最佳实践。

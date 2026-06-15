@@ -1,22 +1,25 @@
 ---
-title: "类型转换"
-description: "理解 C++ 的隐式转换与显式转换规则，掌握 static_cast 的使用，避开类型转换中的经典陷阱"
 chapter: 1
-order: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 理解 C++ 的隐式转换与显式转换规则，掌握 static_cast 的使用，避开类型转换中的经典陷阱
 difficulty: beginner
-reading_time_minutes: 12
+order: 2
 platform: host
 prerequisites:
-  - "基本数据类型"
+- 基本数据类型
+reading_time_minutes: 13
 tags:
-  - cpp-modern
-  - host
-  - beginner
-  - 入门
-  - 基础
-cpp_standard: [11, 14, 17, 20]
+- cpp-modern
+- host
+- beginner
+- 入门
+- 基础
+title: 类型转换
 ---
-
 # 类型转换
 
 写过几行 C++ 代码之后，你一定会碰到这样的情况：一个 `int` 需要变成 `double`，一个 `double` 需要截断成 `int`，或者一个有符号数和一个无符号数在做比较。类型转换在真实的程序里几乎无处不在——而你如果不理解它的规则，编译器就会在背后悄悄替你做决定，然后你在某个深夜收获一个完全看不懂的 bug。

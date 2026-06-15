@@ -1,20 +1,21 @@
 ---
-title: 'Part 29: Concepts-Constrained Callbacks + Full Code Walkthrough'
-description: ''
+chapter: 16
+difficulty: intermediate
+order: 11
+platform: stm32f1
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
-difficulty: intermediate
-platform: stm32f1
-chapter: 16
-order: 11
+title: 'Part 29: Concepts-Constrained Callbacks + Full Code Walkthrough'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/02-button/11-cpp-concepts-callback.md
   source_hash: 56a5f9b60153686ab7b7d6e6275112703ed0264ef593a52fb03f311eb7c79d4c
-  translated_at: '2026-05-26T12:13:42.633301+00:00'
-  engine: anthropic
   token_count: 1595
+  translated_at: '2026-05-26T12:13:42.633301+00:00'
+description: ''
 ---
 # Part 29: Constraining Callbacks with Concepts + Full Code Walkthrough
 

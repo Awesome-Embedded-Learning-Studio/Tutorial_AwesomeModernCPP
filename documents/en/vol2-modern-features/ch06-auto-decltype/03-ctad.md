@@ -1,29 +1,29 @@
 ---
-title: Class Template Argument Deduction (CTAD)
-description: C++17 CTAD and Custom Deduction Guides
 chapter: 6
+cpp_standard:
+- 17
+- 20
+description: C++17 CTAD and Custom Deduction Guides
+difficulty: intermediate
 order: 3
+platform: host
+prerequisites:
+- 'Chapter 6: auto 推导深入'
+reading_time_minutes: 13
+related:
+- decltype 与返回类型推导
 tags:
 - host
 - cpp-modern
 - intermediate
 - 泛型
-difficulty: intermediate
-platform: host
-cpp_standard:
-- 17
-- 20
-reading_time_minutes: 15
-prerequisites:
-- 'Chapter 6: auto 推导深入'
-related:
-- decltype 与返回类型推导
+title: Class Template Argument Deduction (CTAD)
 translation:
+  engine: anthropic
   source: documents/vol2-modern-features/ch06-auto-decltype/03-ctad.md
   source_hash: d97c07b61ab63d55a67a79e80fa689eb175e331115815ff3ae20b93e3f60e6ed
-  translated_at: '2026-05-26T11:30:37.105605+00:00'
-  engine: anthropic
   token_count: 2665
+  translated_at: '2026-05-26T11:30:37.105605+00:00'
 ---
 # Class Template Argument Deduction (CTAD)
 

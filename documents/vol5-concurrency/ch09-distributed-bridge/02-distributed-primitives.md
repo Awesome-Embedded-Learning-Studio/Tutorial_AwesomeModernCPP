@@ -1,26 +1,27 @@
 ---
-title: "分布式一致性原语初探"
-description: "从线性一致性到因果一致性，理解一致性模型谱系与 Paxos/Raft 核心思想，用 gRPC + C++20 协程搭建分布式通信骨架"
 chapter: 9
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - advanced
-  - 进阶
-  - 异步编程
-  - atomic
+cpp_standard:
+- 17
+- 20
+description: 从线性一致性到因果一致性，理解一致性模型谱系与 Paxos/Raft 核心思想，用 gRPC + C++20 协程搭建分布式通信骨架
 difficulty: advanced
+order: 2
 platform: host
-reading_time_minutes: 30
-cpp_standard: [17, 20]
 prerequisites:
-  - "从单机并发到分布式"
-  - "promise_type 与 awaitable"
+- 从单机并发到分布式
+- promise_type 与 awaitable
+reading_time_minutes: 31
 related:
-  - "协程 Echo Server 实战"
+- 协程 Echo Server 实战
+tags:
+- host
+- cpp-modern
+- advanced
+- 进阶
+- 异步编程
+- atomic
+title: 分布式一致性原语初探
 ---
-
 # 分布式一致性原语初探
 
 > ℹ️ **本节定位**：承接上一篇，继续概念导览。这里讲的一致性模型谱系同样不配可运行代码，重在帮你建立"从强一致到弱一致"的直觉，为日后读分布式论文和卷八实战打底。

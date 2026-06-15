@@ -1,34 +1,34 @@
 ---
-title: Mutex and RAII Lock
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Systematically review the mutex family and RAII lock guards, covering
   the evolution from `lock_guard` to `scoped_lock` and best practices.
-chapter: 2
+difficulty: intermediate
 order: 1
+platform: host
+prerequisites:
+- 线程所有权与 RAII
+reading_time_minutes: 15
+related:
+- 死锁与锁顺序
+- condition_variable 与等待语义
 tags:
 - host
 - cpp-modern
 - intermediate
 - mutex
 - RAII守卫
-difficulty: intermediate
-platform: host
-reading_time_minutes: 22
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
-prerequisites:
-- 线程所有权与 RAII
-related:
-- 死锁与锁顺序
-- condition_variable 与等待语义
+title: Mutex and RAII Lock
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/01-mutex-and-raii-guards.md
   source_hash: 04b39e9664388f01aa57d869f1713f276df3a6ba7565c60dce941f9d16181c72
-  translated_at: '2026-06-15T09:24:57.429078+00:00'
-  engine: anthropic
   token_count: 3181
+  translated_at: '2026-06-15T09:24:57.429078+00:00'
 ---
 # mutex and RAII Locks
 

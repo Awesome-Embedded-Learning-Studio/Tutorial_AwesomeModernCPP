@@ -1,20 +1,21 @@
 ---
-title: 'Part 18: Common Pitfalls and Hands-on Practice — Having Fun with LEDs'
-description: ''
+chapter: 15
+difficulty: beginner
+order: 13
+platform: stm32f1
+reading_time_minutes: 10
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 13
+title: 'Part 18: Common Pitfalls and Hands-on Practice — Having Fun with LEDs'
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-led/13-pitfalls-and-exercises.md
   source_hash: 20e7dc756e285ab3e206f725de1e1671030edd9ad71cc5a68265e84106b1645b
-  translated_at: '2026-05-26T12:08:49.663261+00:00'
-  engine: anthropic
   token_count: 1922
+  translated_at: '2026-05-26T12:08:49.663261+00:00'
+description: ''
 ---
 # Part 18: Common Pitfalls and Practical Exercises — Getting Creative with LEDs
 

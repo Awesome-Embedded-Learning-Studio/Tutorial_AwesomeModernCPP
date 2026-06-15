@@ -1,16 +1,19 @@
 ---
-title: "折叠表达式"
-description: "将参数包按二元运算符展开归约，替代递归模板展开"
 chapter: 99
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 17
+- 20
+- 23
+description: 将参数包按二元运算符展开归约，替代递归模板展开
 difficulty: intermediate
-cpp_standard: [17, 20, 23]
+order: 3
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 折叠表达式
 ---
-
 # 折叠表达式（C++17）
 
 ## 一句话

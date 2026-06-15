@@ -1,25 +1,28 @@
 ---
-title: "OnceCallback 前置知识（一）：函数类型与模板偏特化"
-description: "深入理解函数类型 int(int,int) 是什么，以及 OnceCallback<R(Args...)> 背后的模板偏特化技巧——编译器如何通过模式匹配拆解函数签名"
 chapter: 0
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 深入理解函数类型 int(int,int) 是什么，以及 OnceCallback<R(Args...)> 背后的模板偏特化技巧——编译器如何通过模式匹配拆解函数签名
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 10
 prerequisites:
-  - "OnceCallback 前置知识速查：C++11/14/17 核心特性回顾"
+- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+reading_time_minutes: 8
 related:
-  - "OnceCallback 前置知识（五）：std::move_only_function"
-  - "OnceCallback 实战（二）：核心骨架搭建"
+- OnceCallback 前置知识（五）：std::move_only_function
+- OnceCallback 实战（二）：核心骨架搭建
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: OnceCallback 前置知识（一）：函数类型与模板偏特化
 ---
-
 # OnceCallback 前置知识（一）：函数类型与模板偏特化
 
 ## 引言

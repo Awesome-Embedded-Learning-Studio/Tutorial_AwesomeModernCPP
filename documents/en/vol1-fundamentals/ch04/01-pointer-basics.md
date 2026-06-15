@@ -1,31 +1,31 @@
 ---
-title: Pointer Basics
+chapter: 4
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: 'Understanding pointers from scratch: taking addresses, dereferencing,
   pointer types, and null pointers, mastering the core mechanisms of C++ memory access.'
-chapter: 4
-order: 1
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
 - inline 与 constexpr 函数
+reading_time_minutes: 12
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Pointer Basics
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch04/01-pointer-basics.md
   source_hash: 77f7dcd7558781b1323aff07abc4b16765db0922fe21a387686c9bfcba9254d6
-  translated_at: '2026-05-26T10:47:33.444483+00:00'
-  engine: anthropic
   token_count: 2000
+  translated_at: '2026-05-26T10:47:33.444483+00:00'
 ---
 # Pointer Basics
 

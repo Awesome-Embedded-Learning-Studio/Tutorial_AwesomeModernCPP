@@ -1,31 +1,31 @@
 ---
-title: Function Basics
+chapter: 3
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master C++ function definition, declaration, parameter passing, and return
   values, and understand scope and lifetime.
-chapter: 3
-order: 1
 difficulty: beginner
-reading_time_minutes: 15
+order: 1
 platform: host
 prerequisites:
 - range-for 循环
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Function Basics
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch03/01-function-basics.md
   source_hash: 2900f0ca3e5ff4ce6e303da4140691fc7a48305d31bbf5ca17d86336a544b28c
-  translated_at: '2026-05-26T10:45:59.629535+00:00'
-  engine: anthropic
   token_count: 2137
+  translated_at: '2026-05-26T10:45:59.629535+00:00'
 ---
 # Function Basics
 

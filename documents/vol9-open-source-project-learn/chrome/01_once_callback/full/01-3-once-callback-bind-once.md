@@ -1,27 +1,27 @@
 ---
-title: "OnceCallback 实战（三）：bind_once 实现"
-description: "逐行拆解 bind_once 的参数绑定实现——从动机到 lambda 捕获包展开，再到手动展开一个完整的模板实例化例子"
 chapter: 1
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 回调机制
-  - 函数对象
-  - 模板
+cpp_standard:
+- 23
+description: 逐行拆解 bind_once 的参数绑定实现——从动机到 lambda 捕获包展开，再到手动展开一个完整的模板实例化例子
 difficulty: beginner
+order: 3
 platform: host
-cpp_standard: [23]
-reading_time_minutes: 9
 prerequisites:
-  - "OnceCallback 实战（二）：核心骨架搭建"
-  - "OnceCallback 前置知识（二）：std::invoke 与统一调用协议"
-  - "OnceCallback 前置知识（三）：Lambda 高级特性"
+- OnceCallback 实战（二）：核心骨架搭建
+- OnceCallback 前置知识（二）：std::invoke 与统一调用协议
+- OnceCallback 前置知识（三）：Lambda 高级特性
+reading_time_minutes: 7
 related:
-  - "OnceCallback 实战（四）：取消令牌设计"
+- OnceCallback 实战（四）：取消令牌设计
+tags:
+- host
+- cpp-modern
+- beginner
+- 回调机制
+- 函数对象
+- 模板
+title: OnceCallback 实战（三）：bind_once 实现
 ---
-
 # OnceCallback 实战（三）：bind_once 实现
 
 ## 引言

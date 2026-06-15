@@ -11,7 +11,7 @@ difficulty: beginner
 order: 1
 platform: stm32f1
 prerequisites: []
-reading_time_minutes: 12
+reading_time_minutes: 10
 related: []
 tags:
 - cpp-modern
@@ -19,11 +19,11 @@ tags:
 - stm32f1
 title: Resources and Real-Time Constraints in Embedded Systems
 translation:
+  engine: anthropic
   source: documents/vol8-domains/embedded/01-resource-and-realtime-constraints.md
   source_hash: 5a292bda5a45a4c180240381379f3a89495651476a96e01b29856cce67b4dcc0
-  translated_at: '2026-05-26T12:09:35.449598+00:00'
-  engine: anthropic
   token_count: 1514
+  translated_at: '2026-05-26T12:09:35.449598+00:00'
 ---
 # Embedded Resource and Real-Time Constraints
 

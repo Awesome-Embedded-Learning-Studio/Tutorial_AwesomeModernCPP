@@ -1,24 +1,27 @@
 ---
-title: "C++98进阶：类型转换、动态内存与异常处理"
-description: "四种C++类型转换运算符的精确使用场景、new/delete与placement new管理动态对象、异常处理机制与嵌入式取舍、inline和typedef"
 chapter: 0
-order: 3
-tags:
-  - cpp-modern
-  - host
-  - intermediate
-  - 进阶
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 四种C++类型转换运算符的精确使用场景、new/delete与placement new管理动态对象、异常处理机制与嵌入式取舍、inline和typedef
 difficulty: intermediate
-reading_time_minutes: 25
-prerequisites:
-  - "C++98面向对象：类与对象深度剖析"
-  - "C++98面向对象：继承与多态"
-related:
-  - "何时用C++、用哪些C++特性"
-cpp_standard: [11, 14, 17, 20]
+order: 3
 platform: host
+prerequisites:
+- C++98面向对象：类与对象深度剖析
+- C++98面向对象：继承与多态
+reading_time_minutes: 19
+related:
+- 何时用C++、用哪些C++特性
+tags:
+- cpp-modern
+- host
+- intermediate
+- 进阶
+title: C++98进阶：类型转换、动态内存与异常处理
 ---
-
 # C++98进阶：类型转换、动态内存与异常处理
 
 > 完整的仓库地址在 [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP) 中，您也可以光顾一下，喜欢的话给一个 Star 激励一下作者

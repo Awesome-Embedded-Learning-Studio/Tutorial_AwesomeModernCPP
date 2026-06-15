@@ -1,14 +1,15 @@
 ---
-title: 第16篇：第四次重构 —— LED模板，从通用GPIO到专用抽象
-description: ''
+chapter: 15
+difficulty: beginner
+order: 11
+platform: stm32f1
+reading_time_minutes: 25
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-difficulty: beginner
-platform: stm32f1
-chapter: 15
-order: 11
+title: 第16篇：第四次重构 —— LED模板，从通用GPIO到专用抽象
+description: ''
 ---
 # 第16篇：第四次重构 —— LED模板，从通用GPIO到专用抽象
 

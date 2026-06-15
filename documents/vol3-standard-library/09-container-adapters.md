@@ -1,24 +1,27 @@
 ---
-title: "容器适配器：stack、queue、priority_queue 是怎么「包」出来的"
-description: "讲透三个容器适配器：它们不是新容器，而是给底层容器套上受限接口拼出 LIFO/FIFO/堆语义；priority_queue 的本质是底层容器加 std::push_heap/pop_heap，默认最大堆、换比较器变最小堆，外加 C++23 的 push_range"
 chapter: 7
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 容器
+cpp_standard:
+- 11
+- 20
+- 23
+description: 讲透三个容器适配器：它们不是新容器，而是给底层容器套上受限接口拼出 LIFO/FIFO/堆语义；priority_queue 的本质是底层容器加
+  std::push_heap/pop_heap，默认最大堆、换比较器变最小堆，外加 C++23 的 push_range
 difficulty: intermediate
+order: 9
 platform: host
-cpp_standard: [11, 20, 23]
-reading_time_minutes: 13
 prerequisites:
-  - "vector 深入：三指针、扩容与迭代器失效"
-  - "deque、list 与 forward_list：vector 之外的三个选择"
+- vector 深入：三指针、扩容与迭代器失效
+- deque、list 与 forward_list：vector 之外的三个选择
+reading_time_minutes: 8
 related:
-  - "容器选择指南：按操作、内存与失效规则挑对容器"
+- 容器选择指南：按操作、内存与失效规则挑对容器
+tags:
+- host
+- cpp-modern
+- intermediate
+- 容器
+title: 容器适配器：stack、queue、priority_queue 是怎么「包」出来的
 ---
-
 # 容器适配器：stack、queue、priority_queue 是怎么「包」出来的
 
 ## 适配器不是容器：是给底层容器套个受限外壳

@@ -1,23 +1,24 @@
 ---
-title: std::expected
+chapter: 99
+cpp_standard:
+- 23
 description: A type-safe wrapper holding either a normal value or error information,
   replacing exceptions and dual-return-value patterns
-chapter: 99
+difficulty: intermediate
 order: 5
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - intermediate
 - expected
-difficulty: intermediate
-cpp_standard:
-- 23
+title: std::expected
 translation:
+  engine: anthropic
   source: documents/cpp-reference/memory/05-expected.md
   source_hash: 445e0cacc91a4636be0b4f70b6fc5b25b3a02e2deae1173b09406670529226c7
-  translated_at: '2026-05-26T10:18:10.339930+00:00'
-  engine: anthropic
   token_count: 634
+  translated_at: '2026-05-26T10:18:10.339930+00:00'
 ---
 <!--
 Reference Card Template

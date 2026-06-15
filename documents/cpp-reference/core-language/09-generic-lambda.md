@@ -1,16 +1,20 @@
 ---
-title: "泛型 Lambda"
-description: "允许 Lambda 表达式的参数使用 auto 占位符，编译器自动推导类型"
 chapter: 99
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - intermediate
+cpp_standard:
+- 14
+- 17
+- 20
+- 23
+description: 允许 Lambda 表达式的参数使用 auto 占位符，编译器自动推导类型
 difficulty: intermediate
-cpp_standard: [14, 17, 20, 23]
+order: 9
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- intermediate
+title: 泛型 Lambda
 ---
-
 # 泛型 Lambda（C++14）
 
 ## 一句话

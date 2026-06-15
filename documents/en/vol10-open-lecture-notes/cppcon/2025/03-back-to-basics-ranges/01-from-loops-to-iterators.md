@@ -1,33 +1,34 @@
 ---
-title: 'From Loops to Iterators: The Path to Data Traversal Abstraction'
+chapter: 3
+conference: cppcon
+conference_year: 2025
+cpp_standard:
+- 11
+- 17
+- 20
 description: 'CppCon 2025 Talk Notes — Mike Shah: From for loops and pointer traversal
   to iterator abstractions, completing the iterator category hierarchy, and benchmarking
   legacy tags versus C++20 concepts with GCC 16.1.1'
-conference: cppcon
-conference_year: 2025
-talk_title: 'Back to Basics: C++ Ranges'
+difficulty: beginner
+order: 1
+platform: host
+reading_time_minutes: 20
 speaker: Mike Shah
-video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 tags:
 - cpp-modern
 - host
 - beginner
 - Ranges
 - 容器
-difficulty: beginner
-platform: host
-cpp_standard:
-- 11
-- 17
-- 20
-chapter: 3
-order: 1
+talk_title: 'Back to Basics: C++ Ranges'
+title: 'From Loops to Iterators: The Path to Data Traversal Abstraction'
 translation:
+  engine: anthropic
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/01-from-loops-to-iterators.md
   source_hash: 0af4b0bc780951002c86a5ff9e3f3696ce0f9d21f0aa5b0bf97370a1e08e0f8a
-  translated_at: '2026-06-15T09:08:29.981722+00:00'
-  engine: anthropic
   token_count: 4007
+  translated_at: '2026-06-15T09:08:29.981722+00:00'
+video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 ---
 # From Loops to Iterators: The Path to Abstracting Data Traversal
 

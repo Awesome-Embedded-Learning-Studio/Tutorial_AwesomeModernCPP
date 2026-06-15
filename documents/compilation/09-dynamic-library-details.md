@@ -1,14 +1,15 @@
 ---
-title: 深入理解CC++的编译与链接技术9：动态库细节（完结）
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 9
+platform: host
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 9
+title: 深入理解CC++的编译与链接技术9：动态库细节（完结）
+description: ''
 ---
 # 深入理解CC++的编译与链接技术9：动态库细节（完结）
 

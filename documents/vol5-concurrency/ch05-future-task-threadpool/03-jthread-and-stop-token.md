@@ -1,26 +1,26 @@
 ---
-title: "jthread 与停止令牌"
-description: "C++20 的自动 join 线程与协作式取消机制：stop_source、stop_token、stop_callback 的完整用法"
 chapter: 5
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 异步编程
-  - RAII守卫
-  - 进阶
+cpp_standard:
+- 20
+description: C++20 的自动 join 线程与协作式取消机制：stop_source、stop_token、stop_callback 的完整用法
 difficulty: intermediate
+order: 3
 platform: host
-reading_time_minutes: 22
-cpp_standard: [20]
 prerequisites:
-  - "promise 与 packaged_task"
+- promise 与 packaged_task
+reading_time_minutes: 18
 related:
-  - "线程所有权与 RAII"
-  - "线程池设计"
+- 线程所有权与 RAII
+- 线程池设计
+tags:
+- host
+- cpp-modern
+- intermediate
+- 异步编程
+- RAII守卫
+- 进阶
+title: jthread 与停止令牌
 ---
-
 # jthread 与停止令牌
 
 说实话，笔者在写前面几篇的时候，用 `std::thread` 用得挺心虚的。每次都要手动 `join()`，稍不留神就 `std::terminate()` 收场，想中途停掉一个线程还得自己搞 `std::atomic<bool>` 的标志位——这都 2026 年了，C++ 的线程管理居然还这么"原始"。上一篇我们用 `std::promise` 和 `std::packaged_task` 构建了手动控制异步任务的能力，但底层的线程工具一直没升级，所以这一篇我们就要把这块短板补上。

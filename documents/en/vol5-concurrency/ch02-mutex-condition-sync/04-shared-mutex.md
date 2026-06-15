@@ -1,31 +1,31 @@
 ---
-title: Read-Write Locks and shared_mutex
+chapter: 2
+cpp_standard:
+- 17
+- 20
 description: C++17 `shared_mutex` applications in read-heavy, write-light scenarios,
   analyzing write starvation issues and performance boundaries
-chapter: 2
+difficulty: intermediate
 order: 4
+platform: host
+prerequisites:
+- condition_variable 与等待语义
+reading_time_minutes: 14
+related:
+- mutex 与 RAII 锁
+- 线程安全容器设计
 tags:
 - host
 - cpp-modern
 - intermediate
 - mutex
-difficulty: intermediate
-platform: host
-reading_time_minutes: 20
-cpp_standard:
-- 17
-- 20
-prerequisites:
-- condition_variable 与等待语义
-related:
-- mutex 与 RAII 锁
-- 线程安全容器设计
+title: Read-Write Locks and shared_mutex
 translation:
+  engine: anthropic
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/04-shared-mutex.md
   source_hash: 9b89015a3c8b2083856030f60c54f61b1695479e3d09b86dae1ec870e0149aa7
-  translated_at: '2026-05-20T04:36:39.482406+00:00'
-  engine: anthropic
   token_count: 2330
+  translated_at: '2026-05-20T04:36:39.482406+00:00'
 ---
 # Reader-Writer Locks and shared_mutex
 

@@ -1,25 +1,26 @@
 ---
-title: nullptr
-description: Type-safe null pointer literal, replacing `NULL` and `0`
 chapter: 99
-order: 4
-tags:
-- host
-- cpp-modern
-- beginner
-difficulty: beginner
 cpp_standard:
 - 11
 - 14
 - 17
 - 20
 - 23
+description: Type-safe null pointer literal, replacing `NULL` and `0`
+difficulty: beginner
+order: 4
+reading_time_minutes: 1
+tags:
+- host
+- cpp-modern
+- beginner
+title: nullptr
 translation:
+  engine: anthropic
   source: documents/cpp-reference/core-language/04-nullptr.md
   source_hash: 7c82ab55e4e0fa53aa7febb6b442da6f96212e7148e77f9c8a010c0063f650df
-  translated_at: '2026-05-26T10:15:37.088681+00:00'
-  engine: anthropic
   token_count: 312
+  translated_at: '2026-05-26T10:15:37.088681+00:00'
 ---
 # nullptr (C++11)
 

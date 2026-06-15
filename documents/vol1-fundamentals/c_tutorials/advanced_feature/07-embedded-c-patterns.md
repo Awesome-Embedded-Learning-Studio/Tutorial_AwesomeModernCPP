@@ -1,24 +1,25 @@
 ---
-title: "嵌入式 C 编程模式"
-description: "寄存器访问模式、volatile 正确使用、中断安全编程、外设抽象层设计与裸机开发模式"
 chapter: 1
-order: 107
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 嵌入式
-  - 单片机
+cpp_standard:
+- 11
+- 17
+description: 寄存器访问模式、volatile 正确使用、中断安全编程、外设抽象层设计与裸机开发模式
 difficulty: intermediate
+order: 107
 platform: host
-reading_time_minutes: 25
-cpp_standard: [11, 17]
 prerequisites:
-  - "结构体、联合体与内存对齐"
-  - "函数指针与回调机制"
-  - "指针进阶：多级指针、指针与 const"
+- 结构体、联合体与内存对齐
+- 函数指针与回调机制
+- 指针进阶：多级指针、指针与 const
+reading_time_minutes: 16
+tags:
+- host
+- cpp-modern
+- intermediate
+- 嵌入式
+- 单片机
+title: 嵌入式 C 编程模式
 ---
-
 # 嵌入式 C 编程模式
 
 写桌面程序的时候，我们基本上不需要关心编译器会不会偷偷把一次内存读操作给优化掉、或者两段代码会不会在同一时刻踩同一块数据。但一旦你把目光投向裸机——没有操作系统、没有标准库、甚至没有 `main` 的标准入口——这些问题就全冒出来了。嵌入式 C 编程有一套自己的模式语言：寄存器用结构体映射，硬件状态必须用 `volatile` 保护，中断和主循环之间的数据交换需要精心设计的同步机制。

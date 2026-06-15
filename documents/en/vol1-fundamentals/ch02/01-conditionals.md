@@ -1,31 +1,31 @@
 ---
-title: Conditional Statements
+chapter: 2
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
 description: Master if/else, switch, and the ternary operator, and learn to control
   program flow with conditional statements.
-chapter: 2
-order: 1
 difficulty: beginner
-reading_time_minutes: 12
+order: 1
 platform: host
 prerequisites:
 - 值类别简介
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-cpp_standard:
-- 11
-- 14
-- 17
-- 20
+title: Conditional Statements
 translation:
+  engine: anthropic
   source: documents/vol1-fundamentals/ch02/01-conditionals.md
   source_hash: c559a79e36a9c78116c910faf6e5afc5cbcb59eccc61aadd643d768ec8a9a0db
-  translated_at: '2026-05-26T10:43:45.518427+00:00'
-  engine: anthropic
   token_count: 1946
+  translated_at: '2026-05-26T10:43:45.518427+00:00'
 ---
 # Conditional Statements
 

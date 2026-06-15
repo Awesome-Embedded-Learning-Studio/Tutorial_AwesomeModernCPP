@@ -1,14 +1,15 @@
 ---
-title: 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
-description: ''
+chapter: 13
+difficulty: intermediate
+order: 7
+platform: host
+reading_time_minutes: 7
 tags:
 - cpp-modern
 - host
 - intermediate
-difficulty: intermediate
-platform: host
-chapter: 13
-order: 7
+title: 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
+description: ''
 ---
 # 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
 
