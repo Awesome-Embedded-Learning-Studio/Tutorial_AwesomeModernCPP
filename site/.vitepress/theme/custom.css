@@ -143,6 +143,42 @@
   white-space: pre;
 }
 
+/* shiki 高亮输出（只读源码区）。高度/背景/字体对齐 fallback 的 .source-code，避免切换跳动 */
+.online-compiler-demo__source-view {
+  min-width: 0;
+}
+
+.online-compiler-demo__source-highlight .shiki {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-highlight .shiki code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+}
+
+/* 双主题：默认走 light 变量，html.dark 下切 dark 变量
+   （VitePress 暗色即 <html class="dark">，正好对接 shiki 的 defaultColor:false 输出） */
+.online-compiler-demo__source-highlight .shiki,
+.online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-light);
+}
+
+html.dark .online-compiler-demo__source-highlight .shiki,
+html.dark .online-compiler-demo__source-highlight .shiki span {
+  color: var(--shiki-dark) !important;
+}
+
 .online-compiler-demo__source-hint {
   margin: 8px 0 0 !important;
   color: var(--vp-c-text-2);

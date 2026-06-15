@@ -48,7 +48,14 @@
           </button>
         </div>
 
-        <pre v-if="!editorOpen" class="online-compiler-demo__source-code"><code>{{ displaySource }}</code></pre>
+        <div v-if="!editorOpen" class="online-compiler-demo__source-view">
+          <div
+            v-if="highlightedHtml"
+            class="online-compiler-demo__source-highlight"
+            v-html="highlightedHtml"
+          />
+          <pre v-else class="online-compiler-demo__source-code"><code>{{ displaySource }}</code></pre>
+        </div>
         <textarea
           v-else
           v-model="editorSource"
@@ -205,7 +212,9 @@
 
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+
+import { highlightCpp } from '../shiki'
 
 type ActionId = 'run' | 'x86-asm' | 'arm-asm'
 type SourceKind = 'default' | 'arm'
@@ -270,6 +279,7 @@ const activeAction = ref<ActionId | 'godbolt' | 'source' | ''>('')
 const error = ref('')
 const result = ref<CompileResult | null>(null)
 const editorOpen = ref(false)
+const highlightedHtml = ref('')
 const optionsOpen = ref(false)
 const editorSourceKind = ref<SourceKind>('default')
 const editorSource = ref('')
@@ -289,6 +299,18 @@ const rawArmSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${norma
 const displaySource = computed(() =>
   displayKind.value === 'arm' ? armSource.value : source.value,
 )
+
+// 只读源码区做 shiki 高亮：源码一变（懒加载完成 / 切 ARM tab）就重新高亮。
+// 高亮是异步的——未就绪时 template 先用纯文本 fallback，就绪后替换为着色 HTML。
+watch(displaySource, async (code) => {
+  highlightedHtml.value = ''
+  if (!code) return
+  try {
+    highlightedHtml.value = await highlightCpp(code)
+  } catch {
+    highlightedHtml.value = ''
+  }
+})
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
