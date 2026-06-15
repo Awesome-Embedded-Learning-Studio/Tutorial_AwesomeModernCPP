@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: 讲透 std::initializer_list：编译器为 {…} 生成的只读视图、浅拷贝与 const 元素、元素无法移动进容器的「移动陷阱」、花括号初始化的重载优先级，以及与容器构造的关系
+description: 讲透 std::initializer_list：编译器为 {...} 生成的只读视图、浅拷贝与 const 元素、元素无法移动进容器的「移动陷阱」、花括号初始化的重载优先级，以及与容器构造的关系
 difficulty: intermediate
 order: 11
 platform: host
@@ -21,7 +21,7 @@ title: std::initializer_list：花括号背后的轻量序列
 ---
 # std::initializer_list：花括号背后的轻量序列
 
-## initializer_list 是什么：编译器为 {…} 生成的只读视图
+## initializer_list 是什么：编译器为 `{...}` 生成的只读视图
 
 `std::initializer_list` 是 C++11 给「花括号列表初始化」配的标准库类型。你写 `vector<int>{1, 2, 3}` 或 `f({1, 2, 3})` 时，编译器会在背后构造一个 `std::initializer_list<int>`，代表 `{1, 2, 3}` 这段序列。它本身是个极轻量的对象——大致就是一个指针加一个长度，和 `span` 一样属于「不拥有数据的视图」。
 
@@ -45,7 +45,7 @@ f({1, 2, 3, 4, 5});   // 不拷贝 5 个 int，只传一个视图
 
 但「元素是 const」这一点要记住：initializer_list 里的元素是 `const T`，你拿不到非 const 访问。这看起来无害，却在和移动语义结合时挖了个大坑——下一节专门说。
 
-## 移动陷阱：{…} 里的元素，进容器时只能拷贝
+## 移动陷阱：`{...}` 里的元素，进容器时只能拷贝
 
 这是 initializer_list 最经典的坑。你想把几个对象塞进 vector，顺手写了 `vector<T>{a, b, c}`，以为现代 C++ 会高效地移动它们——结果它们是**拷贝**进去的。
 
@@ -119,7 +119,7 @@ push_back(move)      : copies=0 moves=3
 
 所以记住这个性能坑：**把若干对象塞进容器，`vector{move(a), ...}` 仍会拷贝进 vector，只有 `push_back(move)` 才零拷贝**。当 T 是重型类型（大 string、大 vector），这个差距是实打实的拷贝开销。
 
-## 花括号优先：为什么 {…} 总爱匹配 initializer_list 构造
+## 花括号优先：为什么 `{...}` 总爱匹配 initializer_list 构造
 
 initializer_list 还有个「重载偏好」：只要一个类的构造函数有 `initializer_list` 版本，花括号初始化就会优先选它，哪怕别的构造函数看起来更「合身」。最经典的翻车现场是 `vector<int>`：
 
