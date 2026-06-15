@@ -86,6 +86,69 @@
   background: var(--vp-c-bg-soft);
 }
 
+/* 分栏：桌面左右、窄屏上下（断点见下方 @media） */
+.online-compiler-demo__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+.online-compiler-demo__source-pane,
+.online-compiler-demo__control-pane {
+  min-width: 0;
+}
+
+/* 源码 tab 切换（仅 arm-source-path 存在时出现） */
+.online-compiler-demo__source-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.online-compiler-demo__button--tab {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.online-compiler-demo__button--tab.is-active {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg);
+}
+
+/* 只读源码块：等宽，与「结果区」「编辑器」风格一致 */
+.online-compiler-demo__source-code {
+  margin: 0;
+  min-height: 260px;
+  max-height: 460px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--vp-code-block-bg);
+  color: var(--vp-code-block-color);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow: auto;
+}
+
+.online-compiler-demo__source-code code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.online-compiler-demo__source-hint {
+  margin: 8px 0 0 !important;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+}
+
 .online-compiler-demo__header {
   display: flex;
   align-items: flex-start;
@@ -129,7 +192,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .online-compiler-demo__meta span {
@@ -352,6 +415,12 @@
   margin: 12px 0 0 !important;
   color: var(--vp-c-text-2);
   font-size: 13px;
+}
+
+@media (max-width: 911px) {
+  .online-compiler-demo__split {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {

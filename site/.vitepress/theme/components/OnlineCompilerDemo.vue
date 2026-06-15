@@ -1,5 +1,5 @@
 <template>
-  <section class="online-compiler-demo">
+  <section ref="rootElement" class="online-compiler-demo">
     <div class="online-compiler-demo__header">
       <div>
         <p class="online-compiler-demo__eyebrow">Compiler Explorer</p>
@@ -27,153 +27,173 @@
       </a>
     </div>
 
-    <div class="online-compiler-demo__meta">
-      <span v-for="action in actions" :key="action.id">
-        {{ action.label }}: {{ action.compiler }} {{ action.options }}
-        <template v-if="action.id === 'arm-asm' && armSourcePath"> / 精简 ARM 源码</template>
-      </span>
-    </div>
+    <div class="online-compiler-demo__split">
+      <div class="online-compiler-demo__source-pane">
+        <div v-if="armSourcePath" class="online-compiler-demo__source-tabs">
+          <button
+            type="button"
+            class="online-compiler-demo__button online-compiler-demo__button--secondary online-compiler-demo__button--tab"
+            :class="{ 'is-active': displayKind !== 'arm' }"
+            @click="switchSourceKind('default')"
+          >
+            源码
+          </button>
+          <button
+            type="button"
+            class="online-compiler-demo__button online-compiler-demo__button--secondary online-compiler-demo__button--tab"
+            :class="{ 'is-active': displayKind === 'arm' }"
+            @click="switchSourceKind('arm')"
+          >
+            ARM 精简源码
+          </button>
+        </div>
 
-    <div class="online-compiler-demo__actions">
-      <button
-        v-for="action in actions"
-        :key="action.id"
-        class="online-compiler-demo__button"
-        type="button"
-        :disabled="Boolean(activeAction)"
-        @click="compile(action)"
-      >
-        <span v-if="activeAction === action.id">处理中...</span>
-        <span v-else>{{ action.label }}</span>
-      </button>
-      <button
-        v-if="actions.length"
-        class="online-compiler-demo__button online-compiler-demo__button--secondary"
-        type="button"
-        :disabled="Boolean(activeAction)"
-        @click="openEditor('default')"
-      >
-        编辑源码
-      </button>
-      <button
-        v-if="armSourcePath"
-        class="online-compiler-demo__button online-compiler-demo__button--secondary"
-        type="button"
-        :disabled="Boolean(activeAction)"
-        @click="openEditor('arm')"
-      >
-        编辑 ARM 源码
-      </button>
-      <button
-        class="online-compiler-demo__button online-compiler-demo__button--secondary"
-        type="button"
-        :disabled="Boolean(activeAction)"
-        @click="optionsOpen = !optionsOpen"
-      >
-        编译条件
-      </button>
-      <button
-        class="online-compiler-demo__button online-compiler-demo__button--secondary"
-        type="button"
-        :disabled="Boolean(activeAction)"
-        @click="openGodbolt"
-      >
-        打开 Godbolt
-      </button>
-    </div>
+        <pre v-if="!editorOpen" class="online-compiler-demo__source-code"><code>{{ displaySource }}</code></pre>
+        <textarea
+          v-else
+          v-model="editorSource"
+          class="online-compiler-demo__textarea"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+        />
 
-    <div v-if="optionsOpen && actions.length" class="online-compiler-demo__options">
-      <div class="online-compiler-demo__options-header">
-        <strong>编译条件</strong>
-        <span>运行、汇编和 Godbolt 外链都会使用当前设置</span>
-      </div>
-      <div class="online-compiler-demo__option-list">
-        <label
-          v-for="action in actions"
-          :key="action.id"
-          class="online-compiler-demo__option-row"
+        <p
+          v-if="!editorOpen && (sourceLoadState === 'loading' || sourceLoadState === 'error')"
+          class="online-compiler-demo__source-hint"
         >
-          <span class="online-compiler-demo__option-label">{{ action.label }}</span>
-          <input
-            v-model.trim="actionSettings[action.id].compiler"
-            class="online-compiler-demo__input"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="compiler id"
-          />
-          <textarea
-            v-model="actionSettings[action.id].options"
-            class="online-compiler-demo__options-textarea"
-            rows="2"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="compiler options"
-          />
-        </label>
-      </div>
-      <div class="online-compiler-demo__editor-actions">
-        <button
-          class="online-compiler-demo__button online-compiler-demo__button--secondary"
-          type="button"
-          :disabled="Boolean(activeAction)"
-          @click="resetCompileOptions"
-        >
-          还原编译条件
-        </button>
-        <button
-          class="online-compiler-demo__button online-compiler-demo__button--secondary"
-          type="button"
-          @click="optionsOpen = false"
-        >
-          收起编译条件
-        </button>
-      </div>
-    </div>
+          {{ sourceLoadState === 'error' ? '源码加载失败，可点上方源码链接查看' : '加载源码中…' }}
+        </p>
 
-    <div v-if="editorOpen" class="online-compiler-demo__editor">
-      <div class="online-compiler-demo__editor-header">
-        <strong>{{ editorSourceKind === 'arm' ? '编辑 ARM 精简源码' : '编辑源码' }}</strong>
-        <span>上方运行/汇编按钮会使用当前编辑内容</span>
+        <div v-if="editorOpen" class="online-compiler-demo__editor-actions">
+          <button
+            class="online-compiler-demo__button online-compiler-demo__button--secondary"
+            type="button"
+            :disabled="Boolean(activeAction)"
+            @click="resetEditor"
+          >
+            还原源码
+          </button>
+          <button
+            class="online-compiler-demo__button online-compiler-demo__button--secondary"
+            type="button"
+            @click="closeEditor"
+          >
+            保存并收起
+          </button>
+        </div>
       </div>
-      <textarea
-        v-model="editorSource"
-        class="online-compiler-demo__textarea"
-        spellcheck="false"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-      />
-      <div class="online-compiler-demo__editor-actions">
-        <button
-          class="online-compiler-demo__button online-compiler-demo__button--secondary"
-          type="button"
-          :disabled="Boolean(activeAction)"
-          @click="resetEditor"
-        >
-          还原源码
-        </button>
-        <button
-          class="online-compiler-demo__button online-compiler-demo__button--secondary"
-          type="button"
-          @click="editorOpen = false"
-        >
-          收起编辑器
-        </button>
+
+      <div class="online-compiler-demo__control-pane">
+        <div class="online-compiler-demo__meta">
+          <span v-for="action in actions" :key="action.id">
+            {{ action.label }}: {{ action.compiler }} {{ action.options }}
+            <template v-if="action.id === 'arm-asm' && armSourcePath"> / 精简 ARM 源码</template>
+          </span>
+        </div>
+
+        <div class="online-compiler-demo__actions">
+          <button
+            v-for="action in actions"
+            :key="action.id"
+            class="online-compiler-demo__button"
+            type="button"
+            :disabled="Boolean(activeAction)"
+            @click="compile(action)"
+          >
+            <span v-if="activeAction === action.id">处理中...</span>
+            <span v-else>{{ action.label }}</span>
+          </button>
+          <button
+            v-if="actions.length"
+            class="online-compiler-demo__button online-compiler-demo__button--secondary"
+            type="button"
+            :disabled="Boolean(activeAction)"
+            @click="editorOpen ? closeEditor() : openEditor()"
+          >
+            {{ editorOpen ? '只读预览' : '编辑源码' }}
+          </button>
+          <button
+            class="online-compiler-demo__button online-compiler-demo__button--secondary"
+            type="button"
+            :disabled="Boolean(activeAction)"
+            @click="optionsOpen = !optionsOpen"
+          >
+            编译条件
+          </button>
+          <button
+            class="online-compiler-demo__button online-compiler-demo__button--secondary"
+            type="button"
+            :disabled="Boolean(activeAction)"
+            @click="openGodbolt"
+          >
+            打开 Godbolt
+          </button>
+        </div>
+
+        <div v-if="optionsOpen && actions.length" class="online-compiler-demo__options">
+          <div class="online-compiler-demo__options-header">
+            <strong>编译条件</strong>
+            <span>运行、汇编和 Godbolt 外链都会使用当前设置</span>
+          </div>
+          <div class="online-compiler-demo__option-list">
+            <label
+              v-for="action in actions"
+              :key="action.id"
+              class="online-compiler-demo__option-row"
+            >
+              <span class="online-compiler-demo__option-label">{{ action.label }}</span>
+              <input
+                v-model.trim="actionSettings[action.id].compiler"
+                class="online-compiler-demo__input"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="compiler id"
+              />
+              <textarea
+                v-model="actionSettings[action.id].options"
+                class="online-compiler-demo__options-textarea"
+                rows="2"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="compiler options"
+              />
+            </label>
+          </div>
+          <div class="online-compiler-demo__editor-actions">
+            <button
+              class="online-compiler-demo__button online-compiler-demo__button--secondary"
+              type="button"
+              :disabled="Boolean(activeAction)"
+              @click="resetCompileOptions"
+            >
+              还原编译条件
+            </button>
+            <button
+              class="online-compiler-demo__button online-compiler-demo__button--secondary"
+              type="button"
+              @click="optionsOpen = false"
+            >
+              收起编译条件
+            </button>
+          </div>
+        </div>
+
+        <div v-if="result" class="online-compiler-demo__result">
+          <div class="online-compiler-demo__result-header">
+            <strong>{{ result.title }}</strong>
+            <span>{{ result.compiler }} {{ result.options }}</span>
+          </div>
+          <pre><code>{{ result.text }}</code></pre>
+        </div>
       </div>
     </div>
 
     <p v-if="error" class="online-compiler-demo__error">
       {{ error }}
     </p>
-
-    <div v-if="result" class="online-compiler-demo__result">
-      <div class="online-compiler-demo__result-header">
-        <strong>{{ result.title }}</strong>
-        <span>{{ result.compiler }} {{ result.options }}</span>
-      </div>
-      <pre><code>{{ result.text }}</code></pre>
-    </div>
 
     <noscript>
       <p class="online-compiler-demo__noscript">
@@ -185,7 +205,7 @@
 
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import { computed, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 type ActionId = 'run' | 'x86-asm' | 'arm-asm'
 type SourceKind = 'default' | 'arm'
@@ -243,6 +263,9 @@ const props = withDefaults(defineProps<{
 
 const source = ref('')
 const armSource = ref('')
+const displayKind = ref<SourceKind>('default')
+const sourceLoadState = ref<'idle' | 'loading' | 'loaded' | 'error'>('idle')
+const rootElement = ref<HTMLElement | null>(null)
 const activeAction = ref<ActionId | 'godbolt' | 'source' | ''>('')
 const error = ref('')
 const result = ref<CompileResult | null>(null)
@@ -262,6 +285,10 @@ const sourceUrl = computed(() => withBase(`/${normalizedSourcePath.value}`))
 const armSourceUrl = computed(() => withBase(`/${normalizedArmSourcePath.value}`))
 const rawSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedSourcePath.value}`)
 const rawArmSourceUrl = computed(() => `${props.rawBase}/${props.branch}/${normalizedArmSourcePath.value}`)
+
+const displaySource = computed(() =>
+  displayKind.value === 'arm' ? armSource.value : source.value,
+)
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
@@ -348,19 +375,30 @@ async function fetchText(url: string): Promise<{ ok: true; text: string } | { ok
   }
 }
 
-async function openEditor(kind: SourceKind): Promise<void> {
+async function openEditor(): Promise<void> {
   activeAction.value = 'source'
   error.value = ''
 
   try {
-    editorSourceKind.value = kind
-    editorSource.value = await loadSourceForKind(kind)
+    editorSourceKind.value = displayKind.value
+    editorSource.value = await loadSourceForKind(displayKind.value)
     editorOpen.value = true
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err)
   } finally {
     activeAction.value = ''
   }
+}
+
+function closeEditor(): void {
+  // 收起编辑器前把编辑内容回写到对应源码缓存：只读预览就显示改过的代码，
+  // 后续运行 / 汇编 / Godbolt 也会使用这份内容（loadSource 命中缓存即可）。
+  if (editorSourceKind.value === 'arm') {
+    armSource.value = editorSource.value
+  } else {
+    source.value = editorSource.value
+  }
+  editorOpen.value = false
 }
 
 async function resetEditor(): Promise<void> {
@@ -455,6 +493,11 @@ async function compile(action: DemoAction): Promise<void> {
   try {
     if (!action.compiler.trim()) {
       throw new Error(`${action.label} 缺少 compiler id`)
+    }
+
+    if (action.id === 'arm-asm' && props.armSourcePath) {
+      displayKind.value = 'arm'
+      await ensureSourceLoaded('arm')
     }
 
     const currentSource = await loadSource(action)
@@ -728,4 +771,54 @@ std::size_t used_packet_buffers() {
 }
 `,
 }
+
+// —— 源码区分栏与懒加载：进入视口即加载主源码 ——
+function switchSourceKind(kind: SourceKind): void {
+  if (editorOpen.value) closeEditor()
+  displayKind.value = kind
+  ensureSourceLoaded(kind)
+}
+
+async function ensureSourceLoaded(kind: SourceKind = displayKind.value): Promise<void> {
+  const cache = kind === 'arm' ? armSource : source
+  if (cache.value) {
+    sourceLoadState.value = 'loaded'
+    return
+  }
+  sourceLoadState.value = 'loading'
+  try {
+    await loadSourceForKind(kind)
+    sourceLoadState.value = 'loaded'
+  } catch {
+    sourceLoadState.value = 'error'
+  }
+}
+
+let lazyObserver: IntersectionObserver | null = null
+
+onMounted(() => {
+  const target = rootElement.value
+  if (!target) return
+
+  const trigger = (entries: IntersectionObserverEntry[]) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      lazyObserver?.disconnect()
+      lazyObserver = null
+      ensureSourceLoaded('default')
+    }
+  }
+
+  if (typeof IntersectionObserver === 'undefined') {
+    ensureSourceLoaded('default')
+    return
+  }
+
+  lazyObserver = new IntersectionObserver(trigger, { rootMargin: '256px' })
+  lazyObserver.observe(target)
+})
+
+onBeforeUnmount(() => {
+  lazyObserver?.disconnect()
+  lazyObserver = null
+})
 </script>
