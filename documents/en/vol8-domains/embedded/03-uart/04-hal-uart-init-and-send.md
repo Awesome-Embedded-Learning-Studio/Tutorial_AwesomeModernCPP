@@ -8,180 +8,180 @@ tags:
 - beginner
 - cpp-modern
 - stm32f1
-title: 'Part 34: HAL UART Initialization and Transmission — Making the Chip Talk'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/03-uart/04-hal-uart-init-and-send.md
-  source_hash: 4418b714c7874cb00fde17309b315da325a619bbb39fd5be6aa890c1fb490118
-  token_count: 1367
-  translated_at: '2026-05-26T12:15:55.985533+00:00'
+title: 'Part 34: HAL UART Initialization and Transmission — Making the Chip Speak'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/03-uart/04-hal-uart-init-and-send.md
+  source_hash: a19e27a0f1f0e91835c3d24cce1ea518b356e7150f67a8ad5238f189841d1b4f
+  translated_at: '2026-06-16T04:11:51.097378+00:00'
+  engine: anthropic
+  token_count: 1371
 ---
 # Part 34: HAL UART Initialization and Transmission — Making the Chip Speak
 
-> We've covered hardware fundamentals for three parts, and now we can finally write some code. The goal of this part is simple: make the chip send its first words to your computer via UART.
+> We've covered the hardware principles for three parts; now we can finally write some code. The goal for this part is simple: make the chip send its first words to your computer via UART.
 
 ---
 
 ## Our Goal
 
-Before writing any code, let's clarify what we want to achieve. The end result is straightforward: after flashing the code, open a terminal application on your PC (baud rate 115200, 8N1), and you will see "Hello UART!" appear in the terminal. That's it. But this means the entire UART transmission chain—GPIO configuration, USART clock enabling, HAL initialization, and blocking transmission—is fully working.
+Before writing code, let's clarify what we aim to achieve. The final result is this: after flashing the code, open a terminal emulator on your PC (baud rate 115200, 8N1), and you will see "Hello UART!" appear. It's just that simple. But this implies that the entire UART transmission chain—GPIO configuration, USART clock enabling, HAL initialization, and blocking transmission—is fully connected.
 
-This part only covers transmission, not reception. The reason is simple: transmitting is much easier than receiving. Transmission is an active action—the chip decides when to send and what to send. Reception is a passive action—you don't know when external data will arrive or how much will come. Let's get transmission working first to build confidence, and then we'll tackle reception in the next part.
+This part only covers transmission, not reception. The reason is simple: transmission is much easier than reception. Transmission is an active action—the chip decides when to send and what to send. Reception is a passive action—you don't know when external data will arrive or how much will come. Let's get transmission working first to build confidence, and then we'll handle reception in the next part.
 
 ---
 
 ## Five Steps of the Initialization Sequence
 
-To get USART1 working, we need to complete the following five steps in order. Each step has a clear purpose, so let's go through them one by one.
+To get USART1 working, we need to complete the following five steps in order. Each step has a clear reason, so let's go through them one by one.
 
-### Step 1: Enable the GPIOA Clock
+### Step 1: Enable GPIOA Clock
 
-Both PA9 and PA10 are on GPIOA. Just like in the LED/button tutorials, GPIO port clocks are off by default, so we must enable them first.
+Both PA9 and PA10 are on GPIOA. Just like in the LED/button tutorial, the GPIO port clock is off by default and must be turned on first.
 
-```c
+```cpp
 __HAL_RCC_GPIOA_CLK_ENABLE();
 ```
 
 ### Step 2: Configure PA9 (TX) as Alternate Function Push-Pull Output
 
-The previous part already explained why the TX pin needs AF_PP mode—the USART peripheral directly controls the voltage level of this pin, while the GPIO controller takes a back seat.
+The previous part explained why the TX pin needs AF_PP mode—the USART peripheral directly controls the level of this pin, and the GPIO controller takes a back seat.
 
-```c
-GPIO_InitTypeDef gpio = {0};
-gpio.Pin   = GPIO_PIN_9;
-gpio.Mode  = GPIO_MODE_AF_PP;
-gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-HAL_GPIO_Init(GPIOA, &gpio);
+```cpp
+GPIO_InitTypeDef GPIO_InitStruct = {0};
+GPIO_InitStruct.Pin = GPIO_PIN_9;
+GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 ```
 
-`GPIO_SPEED_FREQ_HIGH` sets the output slew rate. At 115200 baud, each bit lasts about 8.68 microseconds, and the signal edges need to be sharp enough to stabilize within the sampling window. High-speed mode ensures this.
+`GPIO_SPEED_FREQ_HIGH` sets the output toggle rate of the pin. At 115200 baud, each bit lasts about 8.68 microseconds, and the signal edges need to be sharp enough to be stable within the sampling window. High-speed mode ensures this.
 
-### Step 3: Configure PA10 (RX) as Input with Pull-Up
+### Step 3: Configure PA10 (RX) as Pull-Up Input
 
-Even though this part only handles transmission, it's common practice to configure RX during initialization to avoid coming back to change it later when adding receive functionality.
+Although this part only does transmission, it is common practice to configure RX during initialization to avoid coming back to change it later when adding receive functionality.
 
-```c
-gpio.Pin  = GPIO_PIN_10;
-gpio.Mode = GPIO_MODE_INPUT;
-gpio.Pull = GPIO_PULLUP;
-HAL_GPIO_Init(GPIOA, &gpio);
+```cpp
+GPIO_InitStruct.Pin = GPIO_PIN_10;
+GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+GPIO_InitStruct.Pull = GPIO_PULLUP;
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 ```
 
-The pull-up resistor ensures the RX line stays high when idle, which matches the UART protocol's idle state. Without a pull-up, the RX line floats and might be triggered by noise into detecting false start bits.
+The pull-up resistor ensures the RX line stays high when idle, consistent with the UART protocol's idle state. Without a pull-up, the RX line floats and might be triggered by noise to detect a false start bit.
 
-### Step 4: Enable the USART1 Clock
+### Step 4: Enable USART1 Clock
 
-```c
+```cpp
 __HAL_RCC_USART1_CLK_ENABLE();
 ```
 
-USART1 hangs off the APB2 bus, and this macro operates on the USART1EN bit of the RCC_APB2ENR register. Just like enabling the GPIO clock, if we don't call this macro, writes to the USART registers won't take effect.
+USART1 hangs on the APB2 bus. This macro operates on the USART1EN bit of the RCC_APB2ENR register. Just like GPIO clock enabling, if you don't call this macro, USART registers cannot be written.
 
-### Step 5: Configure and Initialize the USART
+### Step 5: Configure and Initialize USART
 
-This is the most critical step. The `UART_InitTypeDef` structure defines the USART communication parameters:
+This is the most critical step. The `UART_InitTypeDef` structure defines the communication parameters for USART:
 
-```c
-UART_InitTypeDef init = {0};
-init.BaudRate   = 115200;
-init.WordLength = UART_WORDLENGTH_8B;
-init.StopBits   = UART_STOPBITS_1;
-init.Parity     = UART_PARITY_NONE;
-init.Mode       = UART_MODE_TX_RX;
-init.HwFlowCtl  = UART_HWCONTROL_NONE;
-init.OverSampling = UART_OVERSAMPLING_16;
-
+```cpp
+UART_HandleTypeDef huart1;
 huart1.Instance = USART1;
-huart1.Init     = init;
-HAL_UART_Init(&huart1);
+huart1.Init.BaudRate = 115200;
+huart1.Init.WordLength = UART_WORDLENGTH_8B;
+huart1.Init.StopBits = UART_STOPBITS_1;
+huart1.Init.Parity = UART_PARITY_NONE;
+huart1.Init.Mode = UART_MODE_TX_RX;
+huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+
+if (HAL_UART_Init(&huart1) != HAL_OK) {
+    // Error handling
+}
 ```
 
-Let's explain each parameter:
+Let's explain the parameters one by one:
 
-- **BaudRate = 115200** — The baud rate we chose. As analyzed in the previous part, the error at a 64 MHz clock is only 0.08%, which is perfectly fine.
+- **BaudRate = 115200** — The baud rate we chose. The previous part analyzed that with a 64 MHz clock, the error is only 0.08%, which is completely fine.
 - **WordLength = UART_WORDLENGTH_8B** — 8 data bits. This is the standard configuration, covering all ASCII characters and the full range of a byte (0-255).
-- **StopBits = UART_STOPBITS_1** — 1 stop bit. The most commonly used configuration.
-- **Parity = UART_PARITY_NONE** — No parity. Without a parity bit, one frame is exactly 1+8+1=10 bits.
-- **Mode = UART_MODE_TX_RX** — Enable both transmission and reception. Even if we're only transmitting right now, there's no harm in enabling both directions.
+- **StopBits = UART_STOPBITS_1** — 1 stop bit. The most common configuration.
+- **Parity = UART_PARITY_NONE** — No parity. No parity bit is added, so a frame is 1+8+1=10 bits.
+- **Mode = UART_MODE_TX_RX** — Enable both transmission and reception. Even if we only transmit now and don't receive, enabling both directions doesn't hurt.
 - **HwFlowCtl = UART_HWCONTROL_NONE** — No hardware flow control. Not needed for debugging scenarios.
 - **OverSampling = UART_OVERSAMPLING_16** — 16x oversampling. The default and most robust choice.
 
-Combined together, these parameters form what we commonly call the **8N1** (8 data bits, no parity, 1 stop bit) configuration at 115200 baud. This is the most common UART configuration in the embedded world—if you're unsure what to use, 8N1 + 115200 is the safest choice.
+These parameters combined form what we often call the **8N1** (8 data bits, no parity, 1 stop bit) configuration at 115200 baud. This is the most common UART configuration in the embedded world—if you are unsure what to use, 8N1 + 115200 is the safest choice.
 
 ---
 
-## The UartConfig Struct
+## The UartConfig Structure
 
-In our C++ code, these HAL constants are wrapped into the type-safe `enum class`, and then combined into the `UartConfig` struct:
+In our C++ code, these HAL constants are wrapped into type-safe `enum class`es, and then combined into the `UartConfig` structure:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/device/uart/uart_config.hpp
+enum class BaudRate : uint32_t { /* ... */ };
+enum class WordLength : uint32_t { /* ... */ };
+// ... other enums ...
+
 struct UartConfig {
-    uint32_t baud_rate      = 115200;
-    WordLength word_length  = WordLength::Bits8;
-    Parity parity           = Parity::None;
-    StopBits stop_bits      = StopBits::One;
-    Mode mode               = Mode::TxRx;
-    HwFlowControl hw_flow   = HwFlowControl::None;
+    BaudRate baud_rate = BaudRate::Rate115200;
+    WordLength word_length = WordLength::Bits8;
+    StopBits stop_bits = StopBits::One1;
+    Parity parity = Parity::None;
+    FlowControl flow_control = FlowControl::None;
+    // ...
 };
 ```
 
-The default values are 8N1 + 115200 + full duplex + no flow control. When initializing in `main.cpp`, we only need to write:
+The default values are 8N1 + 115200 + full duplex + no flow control. When initializing in `UartDriver`, we only need to write:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/main.cpp
-Logger::driver().init(device::uart::UartConfig{.baud_rate = 115200});
+UartDriver uart1(USART1, { .baud_rate = BaudRate::Rate115200 });
 ```
 
-Here we use C++20's designated initializer—specifying only the fields we need to change (`baud_rate`), while the remaining fields automatically use their default values. If you need to change the parity, just write `.parity = Parity::Even`, without having to list all the fields.
+Here we use C++20's designated initializer—only specify the fields that need changing (`baud_rate`), and the rest automatically use default values. If you need to change the parity, just write `.parity = Parity::Even`, without having to write all fields.
 
 ---
 
 ## Blocking Transmission: HAL_UART_Transmit
 
-Once initialization is complete, sending data requires just one function call:
+After initialization, sending data requires just one function call:
 
-```c
-uint8_t data[] = "Hello UART!\r\n";
-HAL_UART_Transmit(&huart1, data, strlen((char*)data), HAL_MAX_DELAY);
+```cpp
+HAL_UART_Transmit(&huart1, (uint8_t*)data, size, HAL_MAX_DELAY);
 ```
 
-`HAL_UART_Transmit()` works as follows:
+`HAL_UART_Transmit` works as follows:
 
-1. Write the first byte to the DR register (triggering transmission)
-2. Poll and wait for the TXE flag (Transmit Data Register Empty)
-3. Once TXE is set, write the next byte
-4. Repeat until all bytes are sent
-5. Finally, wait for the TC flag (Transmission Complete)
+1. Write the first byte to the DR register (trigger transmission).
+2. Poll waiting for the TXE flag (Transmit Data Register Empty).
+3. After TXE is set, write the next byte.
+4. Repeat until all bytes are sent.
+5. Finally, wait for the TC flag (Transmission Complete).
 
-`HAL_MAX_DELAY` means wait indefinitely—the function won't return until all data has been sent. This is perfectly fine in a debugging scenario. If your system has strict response time requirements, you can specify a timeout value (in milliseconds), and the function will return `HAL_TIMEOUT` when it times out.
+`HAL_MAX_DELAY` means infinite wait—the function won't return until all data is sent. In a debugging scenario, this is perfectly fine. If your system has strict response time requirements, you can specify a timeout value (in milliseconds), after which the function returns `HAL_TIMEOUT`.
 
-Why is this function called "blocking"? Because it ties up the CPU during transmission. At 115200 baud, sending one byte (10 bits) takes about 87 microseconds. Sending the 13 bytes of "Hello UART!\r\n" takes about 1.1 milliseconds. During those 1.1 milliseconds, the CPU can't do anything else—it's busy-waiting on the TXE flag. For debug log output, this cost is perfectly acceptable. But if you need to run a control loop every 100 microseconds in a real-time system, a 1.1 millisecond block would be fatal.
+Why is this function called "blocking"? Because it blocks the CPU during transmission. At 115200 baud, sending one byte (10 bits) takes about 87 microseconds. Sending 13 bytes of "Hello UART!\r\n" takes about 1.1 milliseconds. During this 1.1 milliseconds, the CPU can't do anything—it is busy-waiting for the TXE flag. For debug log output, this cost is completely acceptable. But if you need to run a control loop every 100 microseconds in a real-time system, a 1.1 millisecond block is fatal.
 
 ---
 
 ## In Our Code: send_string
 
-The C++ driver wraps the blocking transmission into a more user-friendly interface. `send_string()` accepts a `std::string_view`:
+The C++ driver wraps blocking transmission into a more friendly interface. `send_string` accepts a `std::string_view`:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/device/uart/uart_driver.hpp
-void send_string(std::string_view str) {
-    auto bytes = std::as_bytes(std::span<const char>{str});
-    [[maybe_unused]] auto result = send(bytes, HAL_MAX_DELAY);
+void UartDriver::send_string(std::string_view str) {
+    auto data = std::as_bytes(std::span(str));
+    HAL_UART_Transmit(&huart_, const_cast<uint8_t*>(static_cast<const uint8_t*>(data.data())),
+                      data.size(), HAL_MAX_DELAY);
 }
 ```
 
-`std::string_view` is a C++17 string view—it doesn't copy data, but only holds a pointer to the raw character data and its length. `std::as_bytes()` converts the character view into a byte view, which is then passed to `send()`. Internally, `send()` calls `HAL_UART_Transmit()` and returns `std::expected<size_t, UartError>`—but `send_string()` simply ignores the return value (`[[maybe_unused]]`) because it's primarily used for debug logs, and no special error handling is needed if something goes wrong.
+`std::string_view` is a C++17 string view—it doesn't copy data, only holding a pointer to the original character data and its length. `std::as_bytes` converts the character view into a byte view, then passes it to `HAL_UART_Transmit`. Internally, `HAL_UART_Transmit` returns a `HAL_StatusTypeDef`—but `send_string` simply ignores the return value (`[[maybe_unused]]`), because it is mainly used for debug logs and errors don't need special handling there.
 
-If you need finer-grained error control, you can call `send()` directly:
+If you need finer error control, you can directly call `send_bytes`:
 
 ```cpp
-auto result = driver.send(std::as_bytes(std::span<const char>{"Hello\r\n"}), 1000);
-if (!result) {
-    // 处理错误：result.error() 是 UartError 枚举值
-}
+auto status = uart1.send_bytes(std::as_bytes(std::span("Hello")));
 ```
 
 The detailed error handling mechanism will be covered in Part 39 when we discuss `std::expected`.
@@ -190,26 +190,26 @@ The detailed error handling mechanism will be covered in Part 39 when we discuss
 
 ## First Test
 
-With the code written, flash it to the board, open your terminal (115200, 8N1), and you should see:
+The code is written, flashed to the board, and the terminal is opened (115200, 8N1). You should see:
 
 ```text
 Hello UART!
 ```
 
-If you see it—congratulations, your UART transmission chain is fully working.
+If you see it—congratulations, your UART transmission chain is fully connected.
 
-If you don't see it, it's most likely one of the following three issues:
+If you don't see it, it's likely one of three problems:
 
-**Nothing in the terminal?** Check your wiring. Adapter TX to PA10, adapter RX to PA9, GND to GND. All three wires are essential. Also, confirm that the terminal is connected to the correct COM port (on Linux, it's `/dev/ttyUSB0` or `/dev/ttyACM0`; on Windows, it's something like `COM3`).
+**Terminal shows nothing?** Check the wiring. Adapter TX to PA10, Adapter RX to PA9, GND to GND. All three lines are indispensable. Also confirm the terminal is connected to the correct COM port (on Linux it's `/dev/ttyUSB0` or `/dev/ttyACM0`, on Windows it's `COM3` or similar).
 
-**Garbled text in the terminal?** Baud rate mismatch. Confirm that both the terminal and the code are set to 115200. If your code uses a different baud rate, the terminal must match it.
+**Terminal shows garbled text?** Baud rate mismatch. Confirm both the terminal and the code are set to 115200. If your code uses a different baud rate, the terminal must match it.
 
-**Only the first line is correct, and the rest is garbled?** The TX line might have a poor connection. This phenomenon occurs when Dupont wires are unstable—the line is still making contact during the first transmission, but comes loose during subsequent transmissions. Try a different wire.
+**Only the first line is correct, then it goes wrong?** The TX line might have poor contact. This phenomenon occurs when Dupont wires are unstable—the line is connected during the first line transmission, but comes loose during subsequent transmission. Try a different wire.
 
 ---
 
 ## Summary
 
-In this part, we completed the entire UART transmission process: five-step initialization (GPIO clock → TX/RX pin configuration → USART clock → UART_InitTypeDef → HAL_UART_Init) + blocking transmission. The moment "Hello UART!" appears in the terminal means the hardware wiring is correct, the clock configuration is correct, the baud rate matches, and the USART peripheral is working properly.
+In this part, we completed the full UART transmission process: five-step initialization (GPIO clock → TX/RX pin configuration → USART clock → UART_InitTypeDef → HAL_UART_Init) + blocking transmission. The moment "Hello UART!" appears in the terminal, it means the hardware wiring is correct, the clock configuration is correct, the baud rate matches, and the USART peripheral is working normally.
 
-With transmission sorted out, we'll do two things in the next part: redirect `printf()` output directly to the serial port (printf redirection), and try blocking reception—where you'll discover the fatal flaw of blocking reception, setting the stage for introducing interrupt-driven reception later.
+With transmission conquered, in the next part we will do two things: redirect `printf` output directly to the serial port (printf retargeting), and attempt blocking reception—then you will discover the fatal problem with blocking reception, paving the way for introducing interrupt-driven reception.

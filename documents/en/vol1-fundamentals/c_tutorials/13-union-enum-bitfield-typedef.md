@@ -4,15 +4,15 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: Master the use of unions, enums, bit fields, and typedefs; understand
-  techniques such as type punning and hardware register mapping; and compare them
-  with type-safe alternatives in C++.
+description: Master the use of unions, enums, bit fields, and typedef, understand
+  techniques like type punning and hardware register mapping, and compare them with
+  C++'s type-safe alternatives.
 difficulty: beginner
 order: 17
 platform: host
 prerequisites:
 - 12 结构体与内存对齐
-reading_time_minutes: 10
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern
@@ -21,26 +21,25 @@ tags:
 - 类型安全
 title: Unions, Enums, Bit Fields, and Typedefs
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/13-union-enum-bitfield-typedef.md
-  source_hash: a52d435d36f071778bcf0dbb760180bafdf1ac9c53bc81cb9a10537e7c04f59f
+  source_hash: 6e4953c3a9b1086fbfca22324dcc15e10d01e47558380c048daf9de0ca019ecd
+  translated_at: '2026-06-16T03:35:48.921052+00:00'
+  engine: anthropic
   token_count: 2215
-  translated_at: '2026-06-13T11:42:17.535200+00:00'
 ---
 # Unions, Enums, Bit Fields, and typedef
 
-In the previous post, we completely dissected the memory layout of structs and figured out that compilers insert padding bytes between your fields. In this post, we will look at four language features—unions, enums, bit-fields, and typedef—that seem like "supporting characters" to structs, but each has its own irreplaceable role. Unions let you play tricks on the same memory block, enums let you replace magic numbers with meaningful names, bit-fields let you control memory layout bit by bit, and typedef lets you create aliases for types and clean up complex declarations.
+In the previous post, we completely dissected the memory layout of structs and figured out how the compiler inserts padding bytes between your fields. In this post, we will look at four language features—unions, enums, bit-fields, and typedef—that seem like "supporting characters" to structs, but each has its own indispensable role. Unions let you play tricks on the same memory block, enums let you replace magic numbers with meaningful names, bit-fields allow you to control memory layout bit by bit, and typedef lets you create aliases for types and clean up complex declarations.
 
 These four features are almost inseparable in embedded development. If you look at the header files of any MCU (like STM32's CMSIS headers), you will find that register definitions are a combination of unions + structs + bit-fields + typedef. Only by understanding them can you read those dense Hardware Abstraction Layer (HAL) codes.
 
 > **Learning Objectives**
 >
-> After completing this chapter, you will be able to:
->
+> - After completing this chapter, you will be able to:
 > - [ ] Understand the memory sharing mechanism of unions and type punning techniques.
 > - [ ] Master the definition, usage, and limitations of enums.
 > - [ ] Use bit-fields to define compact hardware register structures.
-> - [ ] Skilled in using typedef to simplify complex type declarations.
+> - [ ] Skillfully use typedef to simplify complex type declarations.
 > - [ ] Combine these features to implement tagged unions and protocol frame parsing.
 > - [ ] Understand the corresponding type-safe alternatives in C++.
 
@@ -49,23 +48,24 @@ These four features are almost inseparable in embedded development. If you look 
 All code in this post has been verified in the following environment:
 
 - **Operating System**: Linux (Ubuntu 22.04+) / WSL2 / macOS
-- **Compiler**: GCC 11+ (confirm version via `gcc --version`)
-- **Compiler Flags**: `-Wall -Wextra -std=c11` (warnings enabled, C11 standard specified)
+- **Compiler**: GCC 11+ (Confirm version via `gcc --version`)
+- **Compiler Flags**: `-Wall -Wextra -std=c11` (Enable warnings, specify C11 standard)
 - **Verification**: All code can be compiled and run directly
 
-## Step 1 — Using Unions to Perform Magic on the Same Memory
+## Step 1 — Performing Magic on the Same Memory with Unions
 
-### Understanding the Union Memory Model
+### Understanding the Memory Model of Unions
 
-The definition syntax of a union is almost identical to a struct, except the keyword changes from `struct` to `union`. However, their memory behaviors are vastly different: members of a struct each occupy independent memory spaces, while all members of a union **share the same starting memory address**. The size of a union is equal to the size of its largest member (plus possible alignment padding).
+The definition syntax of a union is almost identical to a struct, with the only difference being the keyword changing from `struct` to `union`. However, their memory behaviors are vastly different: each member of a struct occupies its own independent memory space, whereas all members of a union **share the exact same memory starting at the same address**. The size of a union is equal to the size of its largest member (possibly plus some alignment padding).
 
 ```c
 #include <stdio.h>
 
+// Define a union containing different types
 union Data {
     int i;
     float f;
-    char str[4];
+    char str[20];
 };
 
 int main() {
@@ -76,11 +76,6 @@ int main() {
     printf("Address of f: %p\n", (void*)&data.f);
     printf("Address of str: %p\n", (void*)&data.str);
 
-    data.i = 0x12345678;
-    printf("After setting i to 0x12345678:\n");
-    printf("f = %f\n", data.f); // Undefined behavior in strict theory, but let's see
-    printf("str[0] = 0x%x\n", (unsigned char)data.str[0]);
-
     return 0;
 }
 ```
@@ -88,37 +83,34 @@ int main() {
 Output:
 
 ```text
-sizeof(union Data) = 4
-Address of i: 0x7ffd12345678
-Address of f: 0x7ffd12345678
-Address of str: 0x7ffd12345678
-After setting i to 0x12345678:
-f = 3.141592 // Garbage value depends on endianness and float representation
-str[0] = 0x78
+sizeof(union Data) = 20
+Address of i: 0x7ffc12345678
+Address of f: 0x7ffc12345678
+Address of str: 0x7ffc12345678
 ```
 
-The size of `union Data` is 4 bytes—determined by the largest member `int` (assuming 32-bit int). The starting addresses of `i`, `f`, and `str` are exactly the same; writing to one overwrites the others.
+The size of `union Data` is 20 bytes—determined by the largest member `str`. The starting addresses of `i`, `f`, and `str` are exactly the same; writing to one will overwrite the others.
 
-> ⚠️ **Warning**: Only **one** member of a union is valid at any given time. Reading from a member other than the one most recently written to is Undefined Behavior (UB) in the C standard (except for specific type punning cases). You must remember which member is active yourself; the compiler won't check it for you.
+> ⚠️ **Warning**: Only **one** member of a union is valid at any given moment. Writing to one member and then reading another is undefined behavior (UB) in the C standard (except for specific type punning exceptions). You must remember which member is currently active yourself; the compiler will not check this for you.
 
-### Using Type Punning to View the Binary Representation of Floats
+### Viewing the Binary Representation of Floats via Type Punning
 
-Although the C standard says "reading a member other than the last one written is undefined behavior," there is an important exception: type punning through unions is **legal** in C99 and later. Type punning means interpreting the same memory block as different types:
+Although the C standard states that "reading a member other than the last one written to is undefined behavior," there is an important exception: type punning through unions is **legal** in C99 and later. Type punning means interpreting the same memory block as different types:
 
 ```c
 #include <stdio.h>
 
-union FloatBits {
+union FloatPunner {
     float f;
-    unsigned int u; // Assuming float and int are both 32-bit
+    unsigned int u; // Assuming 32-bit int
 };
 
 int main() {
-    union FloatBits fb;
-    fb.f = 3.14159f;
+    union FloatPunner pun;
+    pun.f = 3.14159f;
 
-    printf("Float value: %f\n", fb.f);
-    printf("Hex representation: 0x%08x\n", fb.u);
+    printf("Float value: %f\n", pun.f);
+    printf("Hex representation: 0x%08x\n", pun.u);
 
     return 0;
 }
@@ -128,39 +120,39 @@ Output:
 
 ```text
 Float value: 3.141590
-Hex representation: 0x40490fd0
+Hex representation: 0x40490fd8
 ```
 
-This is completely legal in C. However, be aware that this is **Undefined Behavior in C++**—the C++ standard does not permit type punning through unions. If you need to do similar things in C++, use `memcpy` (which the compiler optimizes away) or `std::bit_cast` (C++20).
+This is completely legal in C. However, be aware that this is **Undefined Behavior in C++**—the C++ standard does not permit type punning through unions. If you need to do something similar in C++, you should use `memcpy` (which the compiler will optimize away) or `std::bit_cast` (C++20).
 
 ### Combining Unions and Structs to Implement Variant Types
 
-A union truly shines when combined with structs and enums. A standalone union is of limited use—because you don't know which member is currently stored. But if you add a "tag" to record the current type, it becomes a meaningful variant type:
+The moment a union truly shines is when combined with structs and enums. A standalone union isn't very useful—because you don't know which member currently holds data. But if you add a "tag" to record the current type, it becomes a meaningful variant type:
 
 ```c
 #include <stdio.h>
 #include <string.h>
 
-enum ValueType { TYPE_INT, TYPE_FLOAT, TYPE_STRING };
+enum DataType { INT, FLOAT, STR };
 
 struct Variant {
-    enum ValueType type;
+    enum DataType type;
     union {
         int i;
         float f;
-        char str[16];
+        char str[20];
     } value;
 };
 
 void print_variant(struct Variant *v) {
     switch (v->type) {
-        case TYPE_INT:
+        case INT:
             printf("Integer: %d\n", v->value.i);
             break;
-        case TYPE_FLOAT:
+        case FLOAT:
             printf("Float: %f\n", v->value.f);
             break;
-        case TYPE_STRING:
+        case STR:
             printf("String: %s\n", v->value.str);
             break;
     }
@@ -168,12 +160,12 @@ void print_variant(struct Variant *v) {
 
 int main() {
     struct Variant v1;
-    v1.type = TYPE_INT;
+    v1.type = INT;
     v1.value.i = 42;
 
     struct Variant v2;
-    v2.type = TYPE_STRING;
-    strncpy(v2.value.str, "Hello", sizeof(v2.value.str));
+    v2.type = STR;
+    strcpy(v2.value.str, "Hello, World");
 
     print_variant(&v1);
     print_variant(&v2);
@@ -182,9 +174,9 @@ int main() {
 }
 ```
 
-This combination of "tag + union" is called a **tagged union**, a basic technique for implementing polymorphism in C.
+This combination of "tag + union" is called a **tagged union**, which is the basic technique for implementing polymorphism in C.
 
-## Step 2 — Using Enums to Name Integers
+## Step 2 — Naming Integers with Enums
 
 ### Understanding the Nature of Enums
 
@@ -196,12 +188,6 @@ enum Color {
     GREEN,
     BLUE
 };
-
-int main() {
-    enum Color c = RED;
-    printf("RED = %d, GREEN = %d\n", RED, GREEN); // Output: 0, 1
-    return 0;
-}
 ```
 
 Enum values increment starting from 0 by default. You can explicitly specify values:
@@ -214,21 +200,21 @@ enum Status {
 };
 ```
 
-### Beware of Enum Limitations
+### Beware of the Limitations of Enums
 
-C language enums have a characteristic that is both loved and hated: **enum values are essentially `int`**. This means you can assign any integer to an enum variable, and the compiler won't complain:
+C language enums have a feature that is both loved and hated: **enum values are essentially `int`**. This means you can assign any integer to an enum variable, and the compiler won't complain:
 
 ```c
 enum Color c = 123; // Legal in C, but 123 is not a valid Color!
 ```
 
-This laxity is seen as "flexibility" in C, but from a type safety perspective, it's a disaster—the compiler has no way to check "is this value a valid enum value?". This is the fundamental reason why C++ introduced `enum class`.
+This looseness is considered "flexibility" in C, but from a type safety perspective, it's a disaster—the compiler has no way to check "is this value a valid enum value?". This is the fundamental reason why C++ introduced `enum class`.
 
-## Step 3 — Using Bit-Fields to Allocate Memory by Bits
+## Step 3 — Allocating Memory Bit by Bit with Bit Fields
 
-### Basic Syntax of Bit-Fields
+### Basic Syntax of Bit Fields
 
-Bit-fields allow you to allocate storage space in a struct in units of **bits**. The syntax is to add a colon and the number of bits after the field name:
+Bit fields allow you to allocate storage space in a struct in units of **bits**. The syntax involves adding a colon and the number of bits after the field name:
 
 ```c
 struct Flags {
@@ -237,72 +223,70 @@ struct Flags {
     unsigned int mode  : 2;
     unsigned int reserved : 4;
 };
-
-int main() {
-    struct Flags f;
-    f.flag1 = 1;
-    f.mode = 2; // Binary 10
-
-    printf("sizeof(struct Flags) = %zu\n", sizeof(f)); // Likely 1 or 4 bytes depending on alignment
-    return 0;
-}
 ```
 
-Accessing bit-field members is exactly the same as accessing normal struct members.
+Accessing bit field members is exactly the same as normal structs:
 
-### Mapping Hardware Registers with Bit-Fields
+```c
+struct Flags f;
+f.flag1 = 1;
+f.mode = 0b11;
+```
 
-The most common application of bit-fields in embedded development is mapping hardware registers:
+### Mapping Hardware Registers with Bit Fields
+
+The most common application of bit fields in embedded development is mapping hardware registers:
 
 ```c
 typedef struct {
-    volatile unsigned int CR1 : 3;  // Control bits 0-2
-    volatile unsigned int CR2 : 1;  // Control bit 3
-    volatile unsigned int RESERVED : 4; // Bits 4-7
-    // ... assume 8-bit register for simplicity
-} Register_t;
+    uint32_t CR1; // Control Register 1
+    uint32_t CR2; // Control Register 2
+    uint32_t SR;  // Status Register
+} USART_TypeDef;
 
-// Usage
-Register_t *reg = (Register_t *)0x40000000; // Hypothetical address
-reg->CR1 = 0x5; // Set control bits
+// Or using bit fields (compiler-dependent!)
+typedef struct {
+    uint32_t UE : 1;      // USART Enable
+    uint32_t UESM : 1;    // USART Enable in Stop Mode
+    uint32_t RE : 1;      // Receiver Enable
+    uint32_t TE : 1;      // Transmitter Enable
+    uint32_t : 28;        // Reserved
+} USART_CR1_Bits;
 ```
 
-### Portability Traps of Bit-Fields
+### Beware of Portability Traps with Bit Fields
 
-Bit-fields are convenient to use, but they come at a cost you must face: **poor portability**. The C standard leaves several critical details of bit-fields unspecified—allocation order (low-to-high or high-to-low), alignment, and padding rules are all left to the compiler implementation.
+Bit fields are pleasant to use, but they come with a cost you must face: **poor portability**. The C standard leaves several key details of bit fields unspecified—allocation order (low-to-high or vice-versa), alignment, and padding rules are all left to the compiler implementation.
 
-> ⚠️ **Warning**: When using bit-fields to map hardware registers, always refer to the standard headers provided by the compiler (like STM32's CMSIS headers). The register structures in those headers are verified by the vendor, and the bit-field allocation direction matches the platform. Manually writing bit-field mappings for hardware registers is likely to cause issues across different compilers.
+> ⚠️ **Warning**: When using bit fields to map hardware registers, always refer to the standard headers provided by the compiler (like STM32's CMSIS headers). The register structures in those headers are verified by the vendor, and the bit field allocation direction matches the platform. Manually writing bit fields to map hardware registers is likely to cause issues across different compilers.
 
-### Bit-Fields vs. Manual Bitmasking
+### Bit Fields vs. Manual Bitmasking
 
-Because of the portability issues with bit-fields, many embedded projects avoid them entirely in favor of manual bitwise operation masks:
+Because of the portability issues of bit fields, many embedded projects avoid them entirely in favor of hand-written bitwise operation masks:
 
 ```c
-// Manual bitmasking
-#define REG_CR1_MASK 0x07
-#define REG_CR2_MASK 0x08
+// Manual masking
+#define REG_CR1_UE_POS  0
+#define REG_CR1_UE_MASK (1U << REG_CR1_UE_POS)
 
-unsigned int reg = 0x00;
-reg = (reg & ~REG_CR1_MASK) | (new_value & REG_CR1_MASK);
+// Enable
+*reg_ptr |= REG_CR1_UE_MASK;
+
+// Disable
+*reg_ptr &= ~REG_CR1_UE_MASK;
 ```
 
-Bitmasking offers full portability and doesn't depend on compiler behavior, but the downside is poor code readability. In practice, both are often mixed.
+The advantage of bitwise masks is complete portability and independence from compiler behavior, but the disadvantage is poor code readability. In practice, the two are often mixed.
 
-## Step 4 — Using typedef to Alias Types
+## Step 4 — Aliasing Types with typedef
 
 ### Basic Usage
 
 The core function of typedef is simple—create a new name for an existing type:
 
 ```c
-typedef unsigned int uint32_t;
-typedef struct { int x, y; } Point;
-
-int main() {
-    uint32_t val = 10;
-    Point p = {1, 2};
-    return 0;
-}
+typedef unsigned int uint32_t; // Standard style
+typedef struct Node Node;      // Simplify struct names
 ```
 
 ### Simplifying Function Pointer Declarations
@@ -310,28 +294,28 @@ int main() {
 One of the most practical scenarios for typedef is simplifying function pointer declarations:
 
 ```c
-typedef int (*CompareFunc)(const void *, const void *);
+// Original declaration
+void (*signal_handler)(int signo);
 
-// Usage
-int sort_array(int *arr, int size, CompareFunc cmp) {
-    // ... implementation
-    return 0;
-}
+// Using typedef
+typedef void (*SignalHandler)(int signo);
+
+SignalHandler old_handler; // Much cleaner
 ```
 
 ### Difference Between typedef and `#define`
 
-`typedef` creates a **true type alias** processed by the compiler, whereas `#define` is just preprocessor text replacement:
+typedef creates a **true type alias** processed by the compiler; whereas `#define` is just preprocessor text replacement:
 
 ```c
-#define pINT int *
-typedef int * pINT2;
+typedef int* IntPtr;
+#define INT_PTR int*
 
-pINT a, b; // Expands to: int * a, b; (a is int*, b is int!)
-pINT2 c, d; // Both c and d are int*
+IntPtr p1, p2; // p1 and p2 are both int*
+INT_PTR p3, p4; // p3 is int*, p4 is int!
 ```
 
-> ⚠️ **Warning**: `typedef` names cannot be used in forward declarations. The solution is to write `struct Tag;` for the forward declaration first, then use `typedef struct Tag Tag;` in the subsequent full definition. This pattern is very common when implementing self-referencing data structures like linked lists or trees. Also, don't overuse typedef—a good typedef should add information (e.g., `uint32_t` is more meaningful than `unsigned int`), not just hide information.
+> ⚠️ **Warning**: typedef names cannot be used in forward declarations directly in some contexts (though `typedef struct X X;` works). The solution is to write `struct X;` for the forward declaration first, then use `typedef struct X X;` in the full definition later. This pattern is very common when implementing self-referencing data structures like linked lists or trees. Also, don't overuse typedef—a good typedef should add information (e.g., `DeviceStatus` is more meaningful than `int`), not just hide it.
 
 ## C++ Transition
 
@@ -340,89 +324,70 @@ pINT2 c, d; // Both c and d are int*
 ```cpp
 enum class Color { Red, Green, Blue };
 
-int main() {
-    // Color c = Red; // Error!
-    Color c = Color::Red; // OK
-    // int x = c;      // Error! No implicit conversion
-    int x = static_cast<int>(c); // OK
-}
+Color c = Color::Red;
+// int x = Color::Red; // Error! No implicit conversion
 ```
 
 `enum class` can also specify the underlying type:
 
 ```cpp
-enum class Status : unsigned char { OK = 0, ERROR = 255 };
+enum class Status : uint8_t { Ok = 0, Error = 1 };
 ```
 
-### std::variant: Type-Safe Union (C++17)
+### std::variant: Type-Safe Unions (C++17)
 
 ```cpp
 #include <variant>
-#include <iostream>
-
-int main() {
-    std::variant<int, float, std::string> v;
-
-    v = 42;
-    std::cout << std::get<int>(v) << "\n";
-
-    v = "Hello";
-    if (std::holds_alternative<std::string>(v)) {
-        std::cout << std::get<std::string>(v) << "\n";
-    }
+std::variant<int, float, std::string> v;
+v = 42;
+if (std::holds_alternative<int>(v)) {
+    int x = std::get<int>(v);
 }
 ```
 
 ### Restricting Union Usage in C++
 
-If a union member has non-trivial constructors, destructors, or copy operations (like `std::string`), you must manually manage the lifecycle of these members. Therefore, in C++, prefer `std::variant`.
+If a union member has non-trivial constructors, destructors, or copy operations (like `std::string`), you must manually manage the lifecycle of these members. Therefore, in C++, prioritize using `std::variant`.
 
-### std::bitset: Replacing Manual Bit-Fields
+### std::bitset: Replacing Manual Bit Fields
 
 ```cpp
 #include <bitset>
-#include <iostream>
-
-int main() {
-    std::bitset<8> flags(0b10101010);
-    flags.set(2);
-    std::cout << flags << "\n"; // Prints binary representation
-}
+std::bitset<8> flags;
+flags.set(1);
 ```
 
-### using Replaces typedef (C++11)
+### using instead of typedef (C++11)
 
 ```cpp
-typedef int (*OldFunc)(int);
-using NewFunc = int (*)(int); // More intuitive syntax
-
+using IntPtr = int*;
 template<typename T>
-using Vec = std::vector<T>; // Template alias (typedef can't do this)
+using Vec = std::vector<T>; // Typedef can't do this easily
 ```
 
 ## Summary
 
-In this post, we covered four C language features—unions, enums, bit-fields, and typedef—and their modern alternatives in C++. These four features share a common theme: they are typical cases where C language chooses "flexibility" over "safety". The C++ improvement approach is clear: `enum class` constrains enums, `std::variant` automatically manages the active member of unions, `std::bitset` provides portable bit set operations, and `using` provides a more intuitive alias syntax.
+In this post, we covered four C language features—unions, enums, bit-fields, and typedef—as well as their modern alternatives in C++. These four features share a common theme: they are typical cases where C language chooses "flexibility" over "safety". C++'s improvement approach is very clear: `enum class` constrains enums, `std::variant` automatically manages the active member of unions, `std::bitset` provides portable bit set operations, and `using` provides a more intuitive alias syntax.
 
 ## Exercises
 
 ### Exercise 1: IEEE 754 Float Decomposition
 
-Use a union to implement a tool that decomposes a `float` value into IEEE 754 format sign bit, exponent, and mantissa, and prints them.
+Use a union to implement a tool that decomposes a `float` value into IEEE 754 format sign bit, exponent, and mantissa, and prints them out.
 
 ```c
 #include <stdio.h>
 #include <stdint.h>
 
-// TODO: Define union and implement logic
+// TODO: Define the union and implement the logic
 ```
 
 ### Exercise 2: 32-bit Hardware Control Register
 
-Use bit-fields to define a 32-bit hardware control register struct, then write functions to manipulate it.
+Use bit fields to define a 32-bit hardware control register struct, then write functions to manipulate it.
 
 ```c
-// TODO: Define struct and functions
+// TODO: Define the struct and functions
 ```
 
 ### Exercise 3: Simple Tagged Union
@@ -430,5 +395,5 @@ Use bit-fields to define a 32-bit hardware control register struct, then write f
 Use an enum and a union to implement a tagged union that can store an `int`, a `float`, or a string pointer.
 
 ```c
-// TODO: Implement tagged union and print function
+// TODO: Implement the tagged union
 ```

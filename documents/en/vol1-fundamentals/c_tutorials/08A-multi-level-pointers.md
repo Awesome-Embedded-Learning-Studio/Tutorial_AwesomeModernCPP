@@ -3,9 +3,8 @@ chapter: 1
 cpp_standard:
 - 11
 description: Gain a deep understanding of the memory model and practical use cases
-  for multi-level pointers, distinguish between arrays of pointers and pointers to
-  arrays, and master the cdecl declaration reading method and combinations of multi-level
-  const pointers.
+  for multi-level pointers, distinguish between pointer arrays and array pointers,
+  and master `cdecl` declaration syntax and combinations of multi-level `const` pointers.
 difficulty: beginner
 order: 11
 platform: host
@@ -18,248 +17,302 @@ tags:
 - beginner
 - 入门
 - 基础
-title: Multi-level Pointers and Declaration Reading
+title: Multilevel Pointers and Declaration Syntax
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/08A-multi-level-pointers.md
-  source_hash: 6e968d15e00e5bce8ca6401b44e88f3dad722376b4a53d4a256a7d4629c631ba
-  token_count: 1726
-  translated_at: '2026-05-26T10:30:25.011609+00:00'
+  source_hash: 4cd00db0e2461eff0f5b3da303b40d4974aef54993b33e2441c7d7973b2c43c5
+  translated_at: '2026-06-16T05:49:41.504780+00:00'
+  engine: anthropic
+  token_count: 1725
 ---
-# Multi-Level Pointers and Reading Declarations
+# Multi-level Pointers and Reading Declarations
 
-In the previous chapter, we clarified the relationships between pointers, arrays, `nullptr`, and `NULL`. Now let's tackle the trickier parts of pointers—multi-level pointers (pointers to pointers), the "confusing twins" of pointer arrays and array pointers, and a method to keep your brain from crashing when you see declarations like `int (*(*fp)(int))[10]`.
+In the previous post, we clarified the relationship between pointers, arrays, `const`, and `NULL`. Now, let's tackle the more convoluted parts of pointers—multi-level pointers (pointers to pointers), the "confusing twins" (pointer arrays vs. array pointers), and a method to keep your brain from freezing when seeing declarations like `const int* const *`.
 
-Honestly, these concepts are easy to mix up when you're first learning. But in my experience, don't try to rote-memorize them. Once you master a methodology for reading declarations, you can break down even the most complex ones. More importantly, C++ features like `std::unique_ptr`, `std::shared_ptr`, and pointer transfers via move semantics are all built on these underlying mechanisms.
+Honestly, these concepts are easy to mix up when learning. However, my experience is: don't rote memorize. Once you master a methodology for reading declarations, you can deconstruct even the most complex ones. More importantly, C++ features like `unique_ptr<T[]>`, `std::span`, and pointer transfers via move semantics are all built upon these underlying mechanisms.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the memory model and practical use cases of multi-level pointers
-> - [ ] Distinguish between pointer arrays and array pointers
-> - [ ] Break down any C declaration using the cdecl reading method
-> - [ ] Correctly read and write multi-level `const` pointer declarations
+> - [ ] Understand the memory model and practical use cases of multi-level pointers.
+> - [ ] Distinguish between pointer arrays and array pointers.
+> - [ ] Deconstruct any C declaration using the cdecl reading method.
+> - [ ] Correctly read and write multi-level `const` pointer declarations.
 
 ## Environment Setup
 
-We will run all the following experiments in this environment:
+We will conduct all subsequent experiments in the following environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
+- Platform: Linux x86_64 (WSL2 is also acceptable)
 - Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-std=c++17 -Wall -Wextra -g`
+- Compiler flags: `-Wall -Wextra -std=c17`
 
-## Step 1 — Understand What Multi-Level Pointers Actually Point To
+## Step 1 — Understanding What Multi-level Pointers Actually Point To
 
-### Memory Model: Nested Links
+### Memory Model: Chains within Chains
 
-If the address stored in a pointer points to another pointer, that's a multi-level pointer. `int *p1` points to `int`, `int **p2` points to `int *`, `int ***p3` points to `int **`, and so on. In memory, they form a chain:
-
-```text
-p3 ──→ p2 ──→ p1 ──→ int(42)
-```
-
-Each level stores the address of the next level. `*p3` yields `p2` (type `int **`), `**p3` yields `p1` (type `int *`), and `***p3` is the final `int`. Let's verify this:
-
-```cpp
-int val = 42;
-int *p1 = &val;
-int **p2 = &p1;
-int ***p3 = &p2;
-
-printf("p3  = %p\n", (void *)p3);
-printf("*p3 = %p  (p2)\n", (void *)*p3);
-printf("**p3 = %p  (p1)\n", (void *)**p3);
-printf("***p3 = %d  (val)\n", ***p3);
-```
+If the address stored in a pointer points to another pointer, we have a multi-level pointer. `int*` points to `int`, `int**` points to `int*`, `int***` points to `int**`, and so on. In memory, they resemble a chain:
 
 ```text
-p3  = 0x7ffd12345680
-*p3 = 0x7ffd12345678  (p2)
-**p3 = 0x7ffd12345670  (p1)
-***p3 = 42  (val)
+int*** ppp  ──→  int** pp  ──→  int* p  ──→  int value = 42
+  0x1000          0x2000         0x3000       0x4000
 ```
 
-Great, each level of dereferencing moves downstream along the chain, ultimately fetching the `val`.
+Each level of the pointer stores the address of the next level. `*ppp` yields `pp` (`int**`), `**ppp` yields `p` (`int*`), and `***ppp` is the final value `42`. Let's verify this:
 
-### When to Use Multi-Level Pointers
+```c
+#include <stdio.h>
 
-Truth be told, situations requiring more than two levels are rare in normal projects. The most common scenario is: **when you want to modify a pointer variable itself inside a function** (not the data it points to), you need to pass the address of that pointer in:
+int main(void)
+{
+    int value = 42;
+    int* p = &value;
+    int** pp = &p;
+    int*** ppp = &pp;
 
-```cpp
-void alloc_int(int **out) {
-    *out = (int *)malloc(sizeof(int));
-    **out = 42;
+    printf("value 的地址 = %p\n", (void*)&value);
+    printf("p   的值     = %p\n", (void*)p);
+    printf("pp  解一次   = %p\n", (void*)*pp);
+    printf("ppp 解三次   = %d\n", ***ppp);
+    return 0;
+}
+```
+
+```bash
+gcc -Wall -Wextra -std=c17 multi_ptr.c -o multi_ptr && ./multi_ptr
+```
+
+**Output:**
+
+```text
+value 的地址 = 0x7ffd1234abcd
+p   的值     = 0x7ffd1234abcd
+pp  解一次   = 0x7ffd1234abcd
+ppp 解三次   = 42
+```
+
+Excellent. Each level of dereferencing moves further down the chain, eventually yielding `42`.
+
+### When to use multi-level pointers
+
+Frankly, scenarios involving more than two levels are rare in typical projects. The most common scenario is: **when we need to modify a pointer variable itself (not the data it points to) inside a function**, we must pass the address of that pointer in:
+
+```c
+void allocate_buffer(int** out_ptr, int size)
+{
+    *out_ptr = (int*)malloc(size * sizeof(int));
+    // 修改的是 out_ptr 指向的那个指针变量
 }
 
-int *p = NULL;
-alloc_int(&p);  // Pass the address of p
+int main(void)
+{
+    int* buffer = NULL;
+    allocate_buffer(&buffer, 100);
+    // 现在 buffer 指向了 malloc 分配的内存
+    free(buffer);
+    return 0;
+}
 ```
 
-C only supports pass-by-value. To modify the `p` variable itself, we must pass `&p`—which is of type `int **`.
+C uses pass-by-value only. To modify the `buffer` variable itself, we must pass `&buffer`—which means using an `int**`.
 
-> ⚠️ **Pitfall Warning**
-> Multi-level pointers are not for showing off. Pointers with three or more levels should not appear in the vast majority of projects—if you find yourself writing `int ****p`, there's likely a flaw in your design. Use structs to encapsulate data instead of using raw multi-level pointers.
+> ⚠️ **Warning**
+> Multi-level pointers are not for showing off. Pointers with three or more levels of indirection should not appear in most projects—if you find yourself writing `int****`, there is a high probability that your design is flawed. Use structs to encapsulate data instead of using raw multi-level pointers.
 
-### argv — The Most Common Double Pointer
+### argv—The Most Common Double Pointer
 
-The `argv` parameter of the `main` function is an `char **`:
+The `argv` parameter of the `main` function is a `char**`:
 
-```cpp
-int main(int argc, char *argv[]) { ... }
-int main(int argc, char **argv) { ... }  // Exactly the same
+```c
+int main(int argc, char *argv[]) { /* ... */ }
+int main(int argc, char **argv)    { /* ... */ }  // 完全等价
 ```
 
-`char *argv[]` in a parameter list decays to `char **argv`, so both forms are identical. `argv` points to a `char *` array, where each element points to a command-line argument string, terminated by a `NULL` sentinel:
+In the parameter list, `char *argv[]` decays to `char**`, so the two forms are identical. `argv` points to an array of `char*`, where each element points to a command-line argument string, terminated by a `NULL` sentinel:
 
 ```text
-argv ──→ [ argv[0] ] ──→ "./program"
-         [ argv[1] ] ──→ "hello"
-         [ argv[2] ] ──→ "world"
-         [ argv[3] ] ──→ NULL
+argv
+  │
+  ▼
+  ┌─────┐     ┌─────────────────┐
+  │ ptr ├────→│ "./myprogram\0" │  argv[0]
+  ├─────┤     └─────────────────┘
+  │ ptr ├────→│ "hello\0"       │  argv[1]
+  ├─────┤     └─────────────────┘
+  │ ptr ├────→│ "world\0"       │  argv[2]
+  ├─────┤     └─────────────────┘
+  │ NULL │     argv[3] = NULL
+  └─────┘
 ```
 
-## Step 2 — Distinguish Between Pointer Arrays and Array Pointers
+## Step Two — Distinguishing Pointer Arrays and Array Pointers
 
-`int *arr[10]` and `int (*arr)[10]` look like they only differ by a pair of parentheses, but their meanings are completely different. This is the most classic pair of "confusing twins" in C declaration syntax.
+`int* a[10]` and `int (*a)[10]` differ only by a pair of parentheses, yet their meanings are completely different. This is the classic "confusing twins" of C declaration syntax.
 
-### Pointer Array: `int *arr[10]`
+### Pointer Array: `int* a[10]`
 
-`int *arr[10]` declares an **array** containing 10 `int *` elements:
+`int* a[10]` declares an **array** containing 10 `int*` elements:
 
-```cpp
-int a = 1, b = 2, c = 3;
-int *arr[3] = {&a, &b, &c};
+```c
+int x = 10, y = 20, z = 30;
+int* arr[3] = {&x, &y, &z};
 
-printf("%d\n", *arr[0]);  // 1
-printf("%d\n", *arr[1]);  // 2
-printf("%d\n", *arr[2]);  // 3
+printf("%d %d %d\n", *arr[0], *arr[1], *arr[2]);
+// 10 20 30
 ```
 
-Memory layout—the array contiguously stores three pointer values, and each pointer points to a different `int`:
+Memory layout — the array stores three pointer values contiguously, each pointing to a different `int`:
 
 ```text
-arr[0] ──→ int(1)
-arr[1] ──→ int(2)
-arr[2] ──→ int(3)
+arr[0]  arr[1]  arr[2]
+  │        │       │
+  ▼        ▼       ▼
+ &x       &y      &z
 ```
 
-### Array Pointer: `int (*arr)[10]`
+### Array Pointer: `int (*a)[10]`
 
-`int (*arr)[10]` declares a **pointer** that points to an entire row of an array containing 10 `int` elements. The most common use case is with 2D arrays:
+`int (*a)[10]` declares a **pointer** that points to an entire array of 10 `int` values. The most common use case is with two-dimensional arrays:
 
-```cpp
-int matrix[3][10];
-int (*arr)[10] = matrix;  // Points to the first row
+```c
+int matrix[3][10] = {
+    {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+    {10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+    {20, 21, 22, 23, 24, 25, 26, 27, 28, 29}
+};
 
-arr[0][0] = 42;
-arr++;  // Skip an entire row (10 ints = 40 bytes), point to the next row
-arr[0][0] = 99;  // This is matrix[1][0]
+int (*row_ptr)[10] = matrix;  // 指向第一行
+printf("%d\n", (*row_ptr)[2]);         // 2
+printf("%d\n", (*(row_ptr + 1))[2]);   // 12，跳到第二行
 ```
 
-`arr++` skips an entire row (10 `int`s = 40 bytes), pointing to the next row.
+`row_ptr + 1` skips an entire row (10 `int`s = 40 bytes) and points to the next row.
 
-> ⚠️ **Pitfall Warning**
-> `int *arr = matrix` is not the answer you want—the precedence of `[]` is higher than `*`, so `int *arr[3]` would first evaluate the array subscript and then dereference, leading to completely wrong results. The correct syntax requires parentheses: `int (*arr)[10]`. Precedence issues are one of the most common sources of bugs in C.
+> ⚠️ **Warning**
+> `*(row_ptr + 1)[2]` is not what you want—the precedence of `[]` is higher than `*`, so this evaluates `(row_ptr + 1)[2]` first before dereferencing, leading to incorrect results. The correct syntax requires parentheses: `(*(row_ptr + 1))[2]`. Operator precedence is one of the most common sources of bugs in C.
 
-## Step 3 — Master the cdecl Reading Method
+## Step 3 — Mastering the cdecl Reading Method
 
-There is a systematic way to read any C declaration, called the "right-left rule" (also known as the spiral rule). The core principle: **start from the identifier, read to the right first, then to the left, and jump to the next level when you encounter parentheses**.
+There is a systematic way to read any C declaration, known as the "Right-Left Rule" (also called the Spiral Rule). The core rule is: **Start from the identifier, read to the right, then read to the left, and jump to the next level when you encounter parentheses.**
 
-Take `int *a[10]` as an example:
+Take `int* a[10]` as an example:
 
-1. Find the identifier `a`
-2. Go right: `[10]` — "a is an array of 10 elements"
-3. Go left: `*` — "of pointer type"
-4. Go left: `int` — "to int"
-5. Combined: **a is an array of 10 elements of type pointer to int (pointer array)**
+1. Find the identifier `a`.
+2. Go right: `[10]` — "a is an array of 10 elements".
+3. Go left: `int*` — "of type pointer to int".
+4. Combined: **a is an array of 10 pointers to int (pointer array).**
 
 Take `int (*a)[10]` as an example:
 
-1. Identifier `a`
-2. Blocked by parentheses going right, so go left first: `*` — "a is a pointer"
-3. Exit parentheses, go right: `[10]` — "to an array of 10 elements"
-4. Go left: `int` — "of type int"
-5. Combined: **a is a pointer to an array of 10 ints (array pointer)**
+1. Find the identifier `a`.
+2. Blocked by parentheses to the right, go left first: `*` — "a is a pointer".
+3. Exit the parentheses, go right: `[10]` — "to an array of 10 elements".
+4. Go left again: `int` — "of type int".
+5. Combined: **a is a pointer to an array of 10 ints (array pointer).**
 
 Now let's look at a function pointer: `int (*func)(double)`
 
-1. Identifier `func`
-2. Blocked by parentheses, go left: `*` — "func is a pointer"
-3. Exit parentheses, go right: `(double)` — "to a function taking a double parameter"
-4. Go left: `int` — "returning int"
-5. Combined: **func is a function pointer, pointing to a function that takes a double and returns an int**
+1. Find the identifier `func`.
+2. Blocked by parentheses, go left: `*` — "func is a pointer".
+3. Exit the parentheses, go right: `(double)` — "to a function taking a double".
+4. Go left: `int` — "returning int".
+5. Combined: **func is a function pointer pointing to a function that takes a double and returns an int.**
 
-You'll get the hang of this method after a few practice rounds, and you won't panic when you see any weird declaration in the future. You can also use the online tool [cdecl.org](https://cdecl.org/) to verify your reading.
+You will get the hang of this method after a few practice runs, so you won't panic when you see complex declarations in the future. You can also use the online tool [cdecl.org](https://cdecl.org/) to verify your interpretation.
 
-> ⚠️ **Pitfall Warning**
-> In the declaration `int *a, b;`, `a` is an `int *`, but `b` is just an `int`—not two pointers. The `*` follows the declarator, not the type. If you really want to declare two pointers, you must write `int *a, *b;`. This trap has tripped up countless people.
+> ⚠️ **Warning**
+> In the declaration `int* a, b`, `a` is an `int*`, but `b` is just an `int`—not two pointers. The `*` binds to the declarator, not the type specifier. If you truly want to declare two pointers, you must write `int *a, *b`. This pitfall has tripped up countless developers.
 
-## Step 4 — Combinations of const and Multi-Level Pointers
+## Step 4 — Combining `const` with Multi-level Pointers
 
-The combinations of `const` and single-level pointers were covered in the previous chapter. Now let's look at multi-level cases—the core principle remains the same: **`const` modifies the type immediately to its left (if it's at the far left, it modifies the type to its right)**.
+The combination of `const` and single-level pointers was covered in the previous article. Now let's look at multi-level situations—the core principle remains unchanged: **`const` modifies the type immediately to its left (if it is on the far left, it modifies the type to the right).**
 
-### Review: Single-Level const Pointers
+### Review: Single-level `const` Pointers
 
-```cpp
-const int *p;       // Pointer to const int (can't modify data via p)
-int *const p;       // Const pointer to int (can't change where p points)
-const int *const p; // Const pointer to const int (can't do either)
+```c
+const int* p1;              // 指向 const int 的指针，不能通过 p1 改值，但 p1 可改方向
+int* const p2 = &v;         // const 指针，p2 不能改方向，但可通过它改值
+const int* const p3 = &v;   // 都锁死了
 ```
 
-### Multi-Level const Pointers
+### Multi-level const Pointers
 
-When `int **` appears, `const` can be added at different positions:
+When we have `int**`, `const` can be placed in different positions:
 
-```cpp
-const int **p;       // Pointer to (pointer to const int)
-int *const *p;       // Pointer to (const pointer to int)
-int **const p;       // Const pointer to (pointer to int)
-const int *const *p; // Pointer to (const pointer to const int)
-const int **const p; // Const pointer to (pointer to const int)
+```c
+int value = 42;
+int* ptr = &value;
+
+// 底层 const：指向的指针是只读的
+int* const* pp1 = &ptr;
+// pp1 可以改，*pp1 不能改，**pp1 可以改
+
+// 顶层 const：pp2 本身是只读的
+int** const pp2 = &ptr;
+// pp2 不能改，*pp2 可以改，**pp2 可以改
+
+// 双重 const
+const int* const* pp3 = &ptr;
+// pp3 可以改，*pp3 不能改，**pp3 不能改
 ```
 
-We still use the right-left rule to break it down layer by layer. Take `const int **const p` as an example: `p` is a const pointer → pointing to a pointer → pointing to a `const int`.
+We still use the right-left rule to parse this layer by layer. Taking `const int* const* p` as an example: `p` is a pointer → to a `const` pointer → which points to a `const int`.
 
-This kind of thing is indeed uncommon in practice, but understanding how to read it is very important—similar complex types frequently appear in C++ standard library function signatures and template error messages.
+While this is indeed rare in practice, understanding how to read it is crucial—similar complex types frequently appear in C++ standard library function signatures and template error messages.
 
-## Connecting to C++
+## C++ Bridge
 
-The multi-level pointer mechanisms in C all have modern counterparts in C++. Understanding the underlying principles helps us better use these high-level tools.
+C's multi-level pointer mechanism has modern equivalents in C++. Understanding the underlying principles helps us use these high-level tools more effectively.
 
-`std::vector` automatically manages dynamic arrays, eliminating the need for manual `malloc`/`free`. The pain of manually managing 2D arrays with `int **` in C (allocating, freeing row by row, easily forgetting), can be done in a single line in C++:
+`std::unique_ptr<T[]>` automatically manages dynamic arrays, eliminating the need for manual `malloc`/`free`. The pain of manually managing two-dimensional arrays in C using `int**` (allocation, row-by-row deallocation, and the ease of forgetting) can be resolved in C++ with a single line:
 
 ```cpp
-std::vector<std::vector<int>> matrix(3, std::vector<int>(10));
+auto matrix = std::make_unique<int[]>(rows * cols);
+// 用 matrix[i * cols + j] 访问，离开作用域自动释放
 ```
 
-Move semantics are essentially pointer transfers—instead of copying data, the ownership of the resource is "stolen" and the source object is nullified. This is exactly the same as manually swapping pointers and nullifying them in C, except C++ has standardized this pattern.
+Move semantics essentially boils down to pointer transfer—instead of copying data, we "steal" ownership of the resource and leave the source object empty. This is exactly like manually swapping pointers and then nullifying them in C, except C++ standardizes this pattern.
 
-`std::span` packages the classic C combination of "pointer + length" into a single type-safe object, removing the need to manually manage the length, and it can be automatically constructed from arrays, vectors, and arrays.
+`std::span<const int>` bundles the classic C function combination of "pointer + length" into a type-safe object. It eliminates manual length management and can be automatically constructed from arrays, vectors, or `std::array`.
 
-`std::reference_wrapper` provides rebindable reference semantics, which can replace multi-level pointers when storing "references" in containers.
+`std::reference_wrapper<int>` provides rebindable reference semantics, acting as a cleaner alternative to multi-level pointers when storing "references" in containers.
 
-We will dive deep into these topics in subsequent C++ tutorials. For now, just remember the core idea: **the philosophy of C++ is to use the type system to automatically manage resources, rather than relying on the programmer's discipline**.
+We will discuss these topics in depth in the upcoming C++ tutorials. For now, just remember the core philosophy: **C++ relies on the type system to automatically manage resources, rather than relying on programmer discipline.**
 
 ## Summary
 
-The core logic of multi-level pointers is actually quite simple: each level stores the address of the next level, and dereferencing means moving downstream along the chain. The real source of confusion is pointer arrays versus array pointers—just remember "look at the parentheses first, then read in the direction." The cdecl reading method is the most important practical skill in this chapter; practice it a few times and you'll be able to break down any declaration. For multi-level `const`, analyze it layer by layer using the right-left rule, don't try to read it all at once.
+The core logic of multi-level pointers is actually quite simple: each level stores the address of the next level, and dereferencing simply moves down the chain. The real source of confusion lies between pointer arrays and array pointers—just remember to "check the parentheses first, then read the direction." The cdecl reading method is the most important skill from this article; with a little practice, you can dissect any declaration. Analyze multi-level `const` layer by layer using the right-left rule, rather than trying to read it all at once.
 
 ## Exercises
 
-### Exercise: Allocation and Deallocation of a Dynamic 2D Array
+### Exercise: Allocation and Deallocation of Dynamic 2D Arrays
 
-Use multi-level pointers to implement the allocation, filling, and deallocation of a dynamic 2D array. Please implement the following three functions yourself:
+Use multi-level pointers to implement the allocation, population, and deallocation of a dynamic two-dimensional array. Please implement the following three functions yourself:
 
-```cpp
-int **alloc_2d(int rows, int cols);
-void fill_2d(int **matrix, int rows, int cols);
-void free_2d(int **matrix, int rows);
+```c
+/// @brief 分配 rows x cols 的动态二维数组
+/// @param rows 行数
+/// @param cols 列数
+/// @return 指向二维数组的二级指针，失败返回 NULL
+int** allocate_matrix(int rows, int cols);
+
+/// @brief 释放动态二维数组
+/// @param matrix 二级指针
+/// @param rows 行数（用于逐行释放）
+void free_matrix(int** matrix, int rows);
+
+/// @brief 将二维数组的所有元素填充为指定值
+/// @param matrix 二级指针
+/// @param rows 行数
+/// @param cols 列数
+/// @param value 填充值
+void fill_matrix(int** matrix, int rows, int cols, int value);
 ```
 
-Hint: When allocating, first allocate a pointer array (the dimension that `int **` points to), then `malloc` each row individually. When freeing, do the reverse order—free each row first, then free the pointer array itself.
+**Hint:** When allocating, first allocate the pointer array (the dimension pointed to by `int**`), then `malloc` each row individually. When freeing, do the reverse—free each row first, then free the pointer array itself.
 
-## References
+## Resources
 
 - [C declaration syntax - cppreference](https://en.cppreference.com/w/c/language/declarations)
 - [cdecl: C declaration translator](https://cdecl.org/)

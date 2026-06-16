@@ -4,9 +4,9 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: From modular design, header file interfaces, and opaque pointers to platform
-  abstraction layers, systematically master the engineering organization methods of
-  C code, and how C++ namespaces, classes, and PIMPL inherit these ideas.
+description: Master the engineering organization methods of C code, from modular design,
+  header file interfaces, and opaque pointers to platform abstraction layers, and
+  learn how C++ namespaces, classes, and PIMPL inherit these ideas.
 difficulty: intermediate
 order: 108
 platform: host
@@ -14,82 +14,82 @@ prerequisites:
 - 指针进阶：不完整类型与多级指针
 - 结构体与内存布局
 - 编译与链接基础
-reading_time_minutes: 23
+reading_time_minutes: 24
 tags:
 - host
 - cpp-modern
 - intermediate
 - 工程实践
 - 基础
-title: Building Reusable C Code
+title: Build Reusable C Code
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/advanced_feature/08-reusable-c-code.md
-  source_hash: 58d1b4309b15042b8c7c0c93c8439713afff651f916d93ebe5daa0e7b1008e53
+  source_hash: 9606a167228f91715e395ecdde2db074f4218e574eee04916eb556416aa6436f
+  translated_at: '2026-06-16T03:40:09.385057+00:00'
+  engine: anthropic
   token_count: 4667
-  translated_at: '2026-05-26T10:39:50.793817+00:00'
 ---
 # Building Reusable C Code
 
-Anyone who has written tens of thousands of lines of C code has probably experienced this—at the start of a project, everything is fine; a few `.c` files cobbled together are enough to get things running. But as features pile up, the code turns into a tangled mess: header files include each other indiscriminately, global variables are everywhere, changing a single struct field forces a dozen source files to recompile, and just when you finally get it working on a PC, porting it to an STM32 brings a whole new set of issues. Frankly, the root cause of this pain often isn't a broken algorithm or a blown-up pointer—it's failing to take "code organization" seriously from day one.
+Anyone who has written tens of thousands of lines of C code has likely experienced this—everything starts off fine at the beginning of a project, a few `.c` and `.h` files cobbled together and it works. But as features pile up, the code starts to turn into a mess: header files are indiscriminately included everywhere, global variables are all over the place, changing a field in a struct triggers a recompile of a dozen source files, and just when you finally get it working on your PC, porting it to STM32 brings up a whole new set of problems. Honestly, the root of this pain is often not a wrong algorithm or a blown-up pointer, but rather a failure to take "code organization" seriously from the start.
 
-How do other languages handle this? Java has `package` and `interface`, Rust has `mod` and `trait`, Python has `__init__.py` and naming conventions—they all provide modularization infrastructure at the language level. What about C? C has nothing. No namespaces, no classes, no access control, no module system. What C gives us is the preprocessor's `#include` and `#ifndef`, plus a lot of discipline we have to enforce ourselves.
+How do other languages handle this? Java has packages and private access, Rust has modules and crates, Python has modules and naming conventions—they all provide modular infrastructure at the language level. What about C? C has nothing. No namespaces, no classes, no access control, no module system. What C gives us is the preprocessor's `#include` and `#define`, plus a lot of discipline we need to enforce ourselves.
 
-But this doesn't mean we can't write clean, modular code in C—it just means we need to manually achieve what other languages do for us automatically. Understanding these manual techniques is crucial, because C++'s `namespace`, `class` access control, the PIMPL idiom, and even C++20 Modules are all engineering upgrades built on top of these C manual practices. Once you understand the C approach, you'll truly grasp why C++ is designed the way it is.
+But this doesn't mean we can't write clean, modular code in C—it just means we need to achieve what other languages do for you automatically, using manual techniques. Understanding these manual techniques is crucial, because C++'s `namespace`, `private` access control, the PIMPL idiom, and even C++20 Modules are all engineered upgrades over these manual C practices. Once you understand the C way, you can truly understand why C++ is designed the way it is.
 
-In this article, we'll systematically walk through this methodology—from modular design principles and header file interface design, to hiding implementations with opaque pointers, configuration management, and cross-platform porting.
+In this article, we will systematically review this methodology—from modular design principles and header file interface design to opaque pointers for hiding implementation, configuration management, and cross-platform porting.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the core principles of modular design, splitting functionality into independent compilation units
-> - [ ] Write clean header file interfaces, ensuring "declarations only, no implementations in headers"
-> - [ ] Use the opaque pointer pattern to hide implementation details
-> - [ ] Distinguish between use cases for compile-time and runtime configuration
-> - [ ] Write a platform abstraction layer for cross-platform porting
-> - [ ] Manage API version compatibility
+> - [ ] Understand the core principles of modular design and split functionality into independent compilation units.
+> - [ ] Write clean header file interfaces, ensuring "headers contain only declarations, no implementation."
+> - [ ] Use the opaque pointer pattern to hide implementation details.
+> - [ ] Distinguish between compile-time and runtime configuration use cases.
+> - [ ] Write a Platform Abstraction Layer (PAL) to achieve cross-platform porting.
+> - [ ] Manage API version compatibility.
 
 ## Environment Setup
 
-All code examples in this article can be compiled and run in a standard C environment. The C++ bridging section uses the C++17 standard. We recommend always enabling the `-Wall -Wextra` compiler flag to catch potential issues.
+All code examples in this text can be compiled and run in a standard C environment. The C++ section uses the C++17 standard. It is recommended to always enable the `-Wall -Wextra` compiler flags to catch potential issues.
 
-```text
-平台：Linux / macOS / Windows (MSVC/MinGW)
-编译器：GCC >= 9 或 Clang >= 12
-标准：-std=c11（C 部分）/ -std=c++17（C++ 对比部分）
-依赖：pthread（线程安全示例需要，Linux 默认提供）
+```bash
+sudo apt install gcc clang make
 ```
 
-## Step One — Understand What Makes a "Good Module"
+## Step 1 — Figure Out What a "Good Module" Is
 
-Before diving into specific techniques, we need to clarify what "modularization" actually means. Many people think modularization simply means splitting code into multiple `.c` files—but that's just physical separation, not true modularization. Think of it like organizing a toolbox: dumping all your tools into separate drawers is "splitting" (they're physically separated, but still hard to find), whereas labeling each drawer and enforcing "this drawer is only for wrenches, that one is only for screwdrivers"—that's modularization. True modularization satisfies one core principle: **every module is an independent, replaceable compilation unit with a clear interface**.
+Before diving into specific techniques, we need to clarify the concept of "modularity." Many people think modularity simply means splitting code into multiple `.c` files—this is just physical separation, not true modularity. You can think of it like organizing a toolbox: throwing all tools into one big drawer is "splitting" (physically separate, but still hard to find things), whereas labeling drawers and specifying "this drawer is only for wrenches, that one is only for screwdrivers" is modularity. True modularity must satisfy one core principle: **Each module is an independent, replaceable compilation unit with a clear interface**.
 
-What does a good module look like? Suppose we're writing a UART driver module. The header file exposes only the types and functions the caller needs to know; all implementation details are hidden in the `.c` file; internally used functions are all prefixed with `static`; and dependencies between modules are clearly reflected through header include relationships. The benefit of this approach is: when you need to port the UART driver from an STM32F1 to an ESP32, you only need to swap out the corresponding `.c` implementation—the caller's code doesn't need to change at all.
+What does a good module look like? Suppose we are writing a UART driver module. The header file exposes only the types and functions the caller needs to know; implementation details are completely hidden in the `.c` file; internal helper functions are all marked `static`; dependencies between modules are clearly reflected through header `include` relationships. The benefit is: when you need to port the UART driver from STM32F1 to ESP32, you only need to replace the corresponding `.c` implementation, and the caller code doesn't need to change a single line.
 
-A module's file organization typically looks like this:
+A module's file organization usually looks like this:
 
 ```text
-uart_driver/
-  ├── uart_driver.h    // 公开接口：类型声明、函数声明、文档注释
-  ├── uart_driver.c    // 私有实现：结构体完整定义、静态函数、内部变量
-  └── uart_config.h    // 配置参数（可选，编译期配置用）
+my_module/
+├── inc/          # Public headers
+│   └── my_module.h
+├── src/          # Implementation files
+│   └── my_module.c
+└── tests/        # Unit tests
+    └── test_my_module.c
 ```
 
-This structure looks simple, but the devil is in the details. Let's break it down piece by piece.
+This structure looks simple, but the devil is in the details. Let's break them down one by one.
 
-## Step Two — Design Clean Header File Interfaces
+## Step 2 — Design Clean Header File Interfaces
 
-A header file is the sole contract between a module and the outside world, so it must be clean, stable, and self-contained. "Self-contained" means: after a user `#include`s your header file, they don't need to manually include anything else for it to compile.
+The header file is the only contract between a module and the outside world, so it must be clean, stable, and self-contained. "Self-contained" means: after a user `#include`s your header file, they should be able to compile without manually including anything else.
 
 ### Header Guards and Include Principles
 
-Header guards are fundamental—you can use `#ifndef`/`#define`/`#endif` or `#pragma once` (supported by all mainstream compilers). More important is the include principle: a header file should only include what it directly depends on. If your header uses `size_t`, then `#include <stddef.h>`; if it uses `uint32_t`, then `#include <stdint.h>`. Never rely on the assumption that "the caller must have already included it"—that's just digging a hole for yourself.
+Header guards are basic literacy—using `#ifndef`/`#define`/`#endif` or `#pragma once` (supported by mainstream compilers) works. More important is the principle of includes: header files should only include what they directly depend on. If your header file uses `size_t`, then `#include <stddef.h>`; if it uses `uint32_t`, then `#include <stdint.h>`. Never rely on assumptions like "the caller must have already included this"—that's digging a hole for yourself.
 
 Let's write a clean header file example:
 
-```c
-// uart_driver.h — 一个干净的头文件示例
+```cpp
+// inc/uart_driver.h
 #ifndef UART_DRIVER_H
 #define UART_DRIVER_H
 
@@ -100,32 +100,22 @@ Let's write a clean header file example:
 extern "C" {
 #endif
 
-// 前向声明，不暴露内部结构
-typedef struct UartDriver UartDriver;
+// Handle for the UART device (opaque pointer)
+typedef struct UartDevice UartDevice;
 
-// 错误码
-typedef enum {
-    kUartOk       = 0,
-    kUartErrParam = -1,
-    kUartErrBusy  = -2,
-    kUartErrIo    = -3
-} UartResult;
-
-// 配置结构体——调用者需要知道的东西
+// Configuration structure
 typedef struct {
     uint32_t baudrate;
     uint8_t  data_bits;
     uint8_t  stop_bits;
+    uint8_t  parity; // 0=none, 1=odd, 2=even
 } UartConfig;
 
-// 生命周期管理
-UartDriver* uart_create(const UartConfig* config);
-void        uart_destroy(UartDriver* drv);
-
-// 数据操作
-UartResult uart_send(UartDriver* drv, const uint8_t* data, size_t len);
-UartResult uart_receive(UartDriver* drv, uint8_t* buf, size_t buf_size,
-                        size_t* received);
+// API functions
+UartDevice* uart_create(const UartConfig* config);
+void uart_destroy(UartDevice* dev);
+int uart_send(UartDevice* dev, const uint8_t* data, size_t len);
+int uart_recv(UartDevice* dev, uint8_t* buffer, size_t size);
 
 #ifdef __cplusplus
 }
@@ -134,73 +124,58 @@ UartResult uart_receive(UartDriver* drv, uint8_t* buf, size_t buf_size,
 #endif // UART_DRIVER_H
 ```
 
-You might notice these two lines: `#ifdef __cplusplus`. This isn't C++ code, but adding `extern "C"` is a good practice—it ensures that when this header is included by C++ code, the linker can correctly find these C-style functions. Many well-known C libraries (SQLite, libcurl, zlib) do this.
+You might notice the `#ifdef __cplusplus` lines. This isn't C++ code, but adding `extern "C"` is a good habit—it ensures that when this header is included by C++ code, the linker can correctly find these C-style functions. Many famous C libraries (SQLite, libcurl, zlib) do this.
 
-### Things That Absolutely Should Not Appear in Header Files
+### Things That Should Absolutely Never Appear in Header Files
 
-There are a few things that should never appear in public header files. Putting the definition of an `static` function in a header file means every compilation unit that includes it gets its own copy, which not only wastes space but also easily leads to weird linking issues. The same goes for internal constants defined as macros and implementation-specific types—anything starting with an underscore or containing "internal" or "priv" in its name should not appear in a public header file.
+There are certain things that should absolutely never appear in public header files. Placing the definition of a `static` function in a header file means every compilation unit that includes it gets a copy, which wastes space and easily leads to strange linking issues. The same applies to macro definitions for internal constants and types used for implementation—anything starting with an underscore or containing "internal" or "priv" should not be in a public header file.
 
 ```c
-// 千万别这么干——公开头文件里放内部实现细节
-#ifndef BAD_MODULE_H
-#define BAD_MODULE_H
-
-#define INTERNAL_BUFFER_SIZE 256      // 不该暴露
-#define MAGIC_NUMBER 0xDEADBEEF       // 不该暴露
-
-// 把完整结构体暴露出来了——调用者可以直接访问字段
-typedef struct {
-    uint8_t buffer[256];              // 内部缓冲区，不该让调用者看到
-    int head;                         // 内部状态
-    int tail;
-    int count;
-} BadQueue;
-
-void bad_queue_push(BadQueue* q, uint8_t val);
-static void internal_helper(void) {   // 每个编译单元一份副本！
-    // ...
-}
-
-#endif
+// === DON'T DO THIS ===
+// inc/uart_driver.h
+static int helper_function() { ... } // Bad!
+#define INTERNAL_BUFFER_SIZE 128     // Bad!
+typedef struct { ... } InternalCtx;  // Bad!
 ```
 
-> ⚠️ **Pitfall Warning**
-> Exposing the full struct definition in a header file means callers will eventually be tempted to directly access internal fields. Once you modify the struct layout, all source files that include this header must recompile—in a large project, this could mean minutes of compilation time. Even worse, callers might already be depending on your internal implementation, making it impossible to change.
+> ⚠️ **Warning**
+> Exposing the full definition of a struct in a header file means callers will eventually be tempted to directly access internal fields. Once you modify the struct layout, all source files including this header must be recompiled—in large projects, this could be several minutes of compilation time. Worse, callers might start depending on your internal implementation, making it impossible for you to change it.
 
-## Step Three — Hide Implementations with Opaque Pointers
+## Step 3 — Hide Implementation with Opaque Pointers
 
-In the previous pointer deep dive, we saw the basic usage of incomplete types and opaque pointers. Now let's re-examine them in the context of modular design. The opaque pointer is the most powerful information-hiding tool in C—you can think of it as the C equivalent of the `private` keyword in object-oriented languages. Callers only know "this thing exists," but have no idea what it looks like inside, and can only manipulate it through the functions you provide.
+In the previous pointer article, we saw the basic usage of incomplete types and opaque pointers. Now, let's re-examine them in the context of modular design. The opaque pointer is the most powerful information-hiding tool in C—you can think of it as the C version of the `private` keyword in object-oriented languages. The caller only knows "this thing exists," but doesn't know what's inside, and can only manipulate it through functions you provide.
 
 ### Complete Module Example: Ring Buffer
 
-Let's write a complete ring buffer module, tying together header file design, opaque pointers, and error handling. First, the header file—this is the only thing the caller needs to include:
+Let's write a complete ring buffer module, combining header design, opaque pointers, and error handling. First, the header file—this is the only thing the caller needs to include:
 
 ```c
-// ring_buffer.h — 环形缓冲区公开接口
+// inc/ring_buffer.h
 #ifndef RING_BUFFER_H
 #define RING_BUFFER_H
 
-#include <stdint.h>
 #include <stddef.h>
-#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// 不透明类型——调用者拿到的只是个指针
+// Opaque pointer
 typedef struct RingBuffer RingBuffer;
 
-// 创建与销毁
-RingBuffer* ringbuf_create(size_t capacity);
-void        ringbuf_destroy(RingBuffer* rb);
+// Creation and destruction
+RingBuffer* ring_buf_create(size_t capacity);
+void        ring_buf_destroy(RingBuffer* rb);
 
-// 数据操作
-bool   ringbuf_push(RingBuffer* rb, uint8_t data);
-bool   ringbuf_pop(RingBuffer* rb, uint8_t* out);
-size_t ringbuf_count(const RingBuffer* rb);
-bool   ringbuf_is_empty(const RingBuffer* rb);
-bool   ringbuf_is_full(const RingBuffer* rb);
+// Core operations
+int ring_buf_push(RingBuffer* rb, uint8_t data);
+int ring_buf_pop(RingBuffer* rb, uint8_t* data);
+
+// Query functions
+size_t ring_buf_size(const RingBuffer* rb);
+int    ring_buf_is_empty(const RingBuffer* rb);
+int    ring_buf_is_full(const RingBuffer* rb);
 
 #ifdef __cplusplus
 }
@@ -209,30 +184,30 @@ bool   ringbuf_is_full(const RingBuffer* rb);
 #endif // RING_BUFFER_H
 ```
 
-In the header file, we don't expose the internal structure of `RingBuffer`—`typedef struct RingBuffer RingBuffer;` is just a forward declaration plus a typedef. Callers only get a `RingBuffer*` pointer, and then manipulate it through the functions we provide. They don't know whether the buffer is implemented with an array or a linked list—they know nothing, and that's exactly right.
+In the header file, we did not expose the internal structure of `RingBuffer`—`typedef struct RingBuffer RingBuffer` is just a forward declaration plus typedef. The caller only gets a `RingBuffer` pointer and can manipulate it through the functions we provide. They don't know if the buffer is implemented with an array or a linked list—they know nothing—which is exactly right.
 
-Next is the implementation file. Note that the full struct definition appears only here:
+Next is the implementation file. Note that the full definition of the struct appears only here:
 
 ```c
-// ring_buffer.c — 环形缓冲区实现
+// src/ring_buffer.c
 #include "ring_buffer.h"
 #include <stdlib.h>
+#include <string.h>
 
-// 完整的结构体定义只出现在 .c 文件里
 struct RingBuffer {
-    uint8_t* data;      // 动态分配的缓冲区
-    size_t   capacity;   // 总容量
-    size_t   head;       // 写入位置
-    size_t   tail;       // 读取位置
-    size_t   count;      // 当前元素数量
+    uint8_t* buffer;
+    size_t   capacity;
+    size_t   head;
+    size_t   tail;
+    size_t   count;
 };
 
-RingBuffer* ringbuf_create(size_t capacity) {
-    RingBuffer* rb = (RingBuffer*)malloc(sizeof(RingBuffer));
+RingBuffer* ring_buf_create(size_t capacity) {
+    RingBuffer* rb = malloc(sizeof(RingBuffer));
     if (!rb) return NULL;
 
-    rb->data = (uint8_t*)malloc(capacity);
-    if (!rb->data) {
+    rb->buffer = malloc(capacity);
+    if (!rb->buffer) {
         free(rb);
         return NULL;
     }
@@ -244,223 +219,197 @@ RingBuffer* ringbuf_create(size_t capacity) {
     return rb;
 }
 
-void ringbuf_destroy(RingBuffer* rb) {
+void ring_buf_destroy(RingBuffer* rb) {
     if (rb) {
-        free(rb->data);
+        free(rb->buffer);
         free(rb);
     }
 }
 
-bool ringbuf_push(RingBuffer* rb, uint8_t data) {
-    if (!rb || rb->count == rb->capacity) return false;
-
-    rb->data[rb->head] = data;
-    rb->head = (rb->head + 1) % rb->capacity;
-    rb->count++;
-    return true;
-}
-
-bool ringbuf_pop(RingBuffer* rb, uint8_t* out) {
-    if (!rb || rb->count == 0) return false;
-
-    *out = rb->data[rb->tail];
+int ring_buf_push(RingBuffer* rb, uint8_t data) {
+    if (!rb || ring_buf_is_full(rb)) return -1;
+    rb->buffer[rb->tail] = data;
     rb->tail = (rb->tail + 1) % rb->capacity;
-    rb->count--;
-    return true;
+    rb->count++;
+    return 0;
 }
 
-size_t ringbuf_count(const RingBuffer* rb) {
+int ring_buf_pop(RingBuffer* rb, uint8_t* data) {
+    if (!rb || ring_buf_is_empty(rb)) return -1;
+    *data = rb->buffer[rb->head];
+    rb->head = (rb->head + 1) % rb->capacity;
+    rb->count--;
+    return 0;
+}
+
+size_t ring_buf_size(const RingBuffer* rb) {
     return rb ? rb->count : 0;
 }
 
-bool ringbuf_is_empty(const RingBuffer* rb) {
-    return rb ? (rb->count == 0) : true;
+int ring_buf_is_empty(const RingBuffer* rb) {
+    return rb ? (rb->count == 0) : 1;
 }
 
-bool ringbuf_is_full(const RingBuffer* rb) {
-    return rb ? (rb->count == rb->capacity) : true;
+int ring_buf_is_full(const RingBuffer* rb) {
+    return rb ? (rb->count == rb->capacity) : 0;
 }
 ```
 
-After writing it, let's verify:
+After writing this, let's verify it:
 
-```text
-$ gcc -Wall -Wextra -std=c11 -c ring_buffer.c -o ring_buffer.o
-(无输出 = 编译成功，无警告无错误)
+```bash
+gcc -c src/ring_buffer.c -I inc -o ring_buffer.o
 ```
 
 Let's write a simple test to confirm the behavior is correct:
 
 ```c
-// test_ringbuf.c
+// tests/test_ring_buffer.c
 #include "ring_buffer.h"
 #include <stdio.h>
 #include <assert.h>
 
-int main(void) {
-    RingBuffer* rb = ringbuf_create(4);
+int main() {
+    RingBuffer* rb = ring_buf_create(5);
     assert(rb != NULL);
 
-    assert(ringbuf_is_empty(rb));
-    assert(!ringbuf_is_full(rb));
+    // Test basic push/pop
+    for (int i = 0; i < 5; i++) {
+        assert(ring_buf_push(rb, i) == 0);
+    }
+    assert(ring_buf_is_full(rb) == 1);
 
-    ringbuf_push(rb, 10);
-    ringbuf_push(rb, 20);
-    ringbuf_push(rb, 30);
-    assert(ringbuf_count(rb) == 3);
+    // Test overflow
+    assert(ring_buf_push(rb, 99) == -1);
 
+    // Test pop
     uint8_t val;
-    assert(ringbuf_pop(rb, &val) && val == 10);
-    assert(ringbuf_pop(rb, &val) && val == 20);
-    assert(ringbuf_count(rb) == 1);
+    for (int i = 0; i < 5; i++) {
+        assert(ring_buf_pop(rb, &val) == 0);
+        assert(val == i);
+    }
+    assert(ring_buf_is_empty(rb) == 1);
 
-    ringbuf_destroy(rb);
+    ring_buf_destroy(rb);
     printf("All tests passed!\n");
     return 0;
 }
 ```
 
-```text
-$ gcc -Wall -std=c11 test_ringbuf.c ring_buffer.c -o test_ringbuf && ./test_ringbuf
-All tests passed!
+```bash
+gcc tests/test_ring_buffer.c ring_buffer.o -o test_runner
+./test_runner
+# Output: All tests passed!
 ```
 
-There are a few noteworthy design decisions here. The first thing all public functions do is check whether the `rb` parameter is `NULL`—because C has no exception mechanism, the best we can do is intercept null pointers at the entry point to avoid triggering a segfault deep inside the function. `const RingBuffer*` appears in the parameters of query functions, which is a promise to the caller: this function will not modify the buffer's state.
+There are a few notable design decisions here. The first thing every public function does is check if the `rb` parameter is `NULL`—because C has no exception mechanism, the best we can do is intercept null pointers at the entry to avoid triggering a segmentation fault deep inside the function. `const` appears in the parameters of query functions, promising the caller: this function will not modify the buffer's state.
 
-> ⚠️ **Pitfall Warning**
-> The opaque pointer pattern has a common failure scenario: the caller gets an `NULL` (for example, `ringbuf_create` returns `NULL` due to insufficient memory) and then calls `ringbuf_push(rb, data)` without checking. Although our implementation does NULL checks in every function, don't assume all libraries do this. Cultivate the habit of checking return values—especially for functions involving memory allocation.
+> ⚠️ **Warning**
+> There is a common failure scenario with the opaque pointer pattern: the caller gets a `NULL` (e.g., `ring_buf_create` returns `NULL` due to memory exhaustion) and then calls `ring_buf_push` without checking. Although our implementation checks for NULL in every function, don't expect all libraries to do this. Cultivate the habit of checking return values—especially for functions involving memory allocation.
 
-The power of this opaque pointer pattern lies in the fact that if we later want to change the ring buffer from dynamic allocation to a static array, add thread safety, or switch to a power-of-2 optimization (using bitwise operations instead of modulo), we only need to modify `ring_buffer.c`. All caller code remains completely untouched, and doesn't even need to recompile—as long as the interface signatures in the header file don't change.
+The power of this opaque pointer pattern lies in the fact that if we later want to change the ring buffer from dynamic allocation to a static array, or add thread safety, or switch to a power-of-2 optimization (using bitwise operations instead of modulo), we only need to modify `ring_buffer.c`. All caller code remains completely untouched, and doesn't even need recompilation—as long as the interface signatures in the header remain unchanged.
 
-## Step Four — Learn to Manage Configuration Parameters
+## Step 4 — Learn to Manage Configuration Parameters
 
-Once modularization reaches a certain point, we'll find that some parameters need to be adjusted based on specific use cases—buffer sizes, timeout durations, thread safety toggles, and so on. The management of these parameters can be roughly divided into two categories: compile-time configuration and runtime configuration.
+Once modularity reaches a certain level, we will find that some parameters need to be adjusted based on specific usage scenarios—buffer size, timeout, thread safety switches, etc. The management of these parameters can be roughly divided into two categories: compile-time configuration and runtime configuration.
 
-### Compile-Time Configuration: Zero-Overhead Flexibility
+### Compile-Time Configuration: Zero-Cost Flexibility
 
-Compile-time configuration is implemented through macro definitions or configuration header files, and is suitable for parameters that are determined at compile time and won't change during runtime. The benefit is zero runtime overhead—the compiler can inline constants directly into the code and even perform constant folding optimizations.
+Compile-time configuration is implemented through macro definitions or configuration header files, suitable for parameters that are determined at compile-time and do not change during runtime. The benefit is zero runtime overhead—the compiler can inline constants directly into the code and even perform constant folding optimizations.
 
 ```c
-// ring_config.h — 编译期配置
-#ifndef RING_CONFIG_H
-#define RING_CONFIG_H
+// inc/my_module_config.h
+#ifndef MY_MODULE_CONFIG_H
+#define MY_MODULE_CONFIG_H
 
-// 默认缓冲区容量，可通过编译选项覆盖
-// 用法: -DRINGBUF_DEFAULT_CAPACITY=512
-#ifndef RINGBUF_DEFAULT_CAPACITY
-#define RINGBUF_DEFAULT_CAPACITY 256
+// Buffer size (default 256, can be overridden by compiler flags)
+#ifndef MODULE_BUFFER_SIZE
+#define MODULE_BUFFER_SIZE 256
 #endif
 
-// 是否启用线程安全（嵌入式单线程场景可以关闭）
-#ifndef RINGBUF_THREAD_SAFE
-#define RINGBUF_THREAD_SAFE 0
+// Enable debug output
+#ifndef MODULE_DEBUG
+#define MODULE_DEBUG 0
 #endif
 
-// 是否启用统计功能
-#ifndef RINGBUF_ENABLE_STATS
-#define RINGBUF_ENABLE_STATS 0
+// Thread safety switch
+#ifndef MODULE_THREAD_SAFE
+#define MODULE_THREAD_SAFE 0
 #endif
 
-#endif // RING_CONFIG_H
+#endif // MY_MODULE_CONFIG_H
 ```
 
-Then, in the implementation file, we do conditional compilation based on these macros:
+Then, in the implementation file, use conditional compilation based on these macros:
 
 ```c
-// ring_buffer.c 片段 — 条件编译示例
-#include "ring_config.h"
+// src/my_module.c
+#include "my_module_config.h"
 
-#if RINGBUF_THREAD_SAFE
-#include <pthread.h>
+#if MODULE_THREAD_SAFE
+    #include <pthread.h>
+    static pthread_mutex_t mutex;
 #endif
 
-struct RingBuffer {
-    uint8_t* data;
-    size_t   capacity;
-    size_t   head;
-    size_t   tail;
-    size_t   count;
-#if RINGBUF_THREAD_SAFE
-    pthread_mutex_t lock;
-#endif
-#if RINGBUF_ENABLE_STATS
-    size_t total_pushed;
-    size_t total_popped;
-#endif
-};
-
-bool ringbuf_push(RingBuffer* rb, uint8_t data) {
-    if (!rb || rb->count == rb->capacity) return false;
-
-#if RINGBUF_THREAD_SAFE
-    pthread_mutex_lock(&rb->lock);
+void module_function() {
+#if MODULE_THREAD_SAFE
+    pthread_mutex_lock(&mutex);
 #endif
 
-    rb->data[rb->head] = data;
-    rb->head = (rb->head + 1) % rb->capacity;
-    rb->count++;
+    // Core logic...
 
-#if RINGBUF_ENABLE_STATS
-    rb->total_pushed++;
+#if MODULE_THREAD_SAFE
+    pthread_mutex_unlock(&mutex);
 #endif
-
-#if RINGBUF_THREAD_SAFE
-    pthread_mutex_unlock(&rb->lock);
-#endif
-
-    return true;
 }
 ```
 
-This pattern is extremely common in the embedded world. Through conditional compilation, the same codebase can adapt to resource-constrained MCUs (turning off unnecessary features to save Flash and RAM) and feature-rich Linux environments.
+This style is very common in the embedded field. Through conditional compilation, the same codebase can adapt to resource-constrained microcontrollers (turning off unneeded features to save Flash and RAM) and feature-rich Linux environments.
 
-Note a key detail: don't hardcode compile-time configuration macros directly in the `.c` file. Instead, put them in a separate `ring_config.h`, and wrap each macro with `#ifndef ... #endif`. This way, users can override default values through compiler flags (`-DRINGBUF_DEFAULT_CAPACITY=512`) without modifying the source code.
+Note a key detail: don't hardcode compile-time configuration macros directly in the `.c` file. Instead, put them in a separate `*_config.h`, and wrap every macro with `#ifndef`. This allows users to override default values via compiler options (`-D`) without modifying the source code.
 
 ### Runtime Configuration: Dynamic Flexibility
 
-Runtime configuration is passed through function parameters or configuration structs, and is suitable for parameters that are only determined at program startup or might change during execution. The `UartConfig` struct in the UART driver example earlier is a typical runtime configuration.
+Runtime configuration is passed through function parameters or configuration structures, suitable for parameters determined at program startup or that may change during execution. The `UartConfig` structure in the UART driver earlier is a typical runtime configuration.
 
-When should you use compile-time configuration versus runtime configuration? There's a rough rule of thumb: **in embedded environments, use compile-time configuration for parameters that "require re-flashing to change," and use runtime configuration for parameters that "might differ across devices or scenarios."** For example, if your product has multiple models with different baud rates, the baud rate should be a runtime configuration; but if a module's data buffer size is fixed across the entire product line, compile-time configuration is more appropriate.
+When to use compile-time vs. runtime configuration? There's a rough rule: **In embedded environments, parameters that "require re-flashing if changed" use compile-time configuration, while parameters that "might differ between devices or scenarios" use runtime configuration.** For example, if your product has multiple models with different baud rates, the baud rate should be runtime configuration; but if a module's data buffer size is fixed across the entire product line, compile-time configuration is more appropriate.
 
-> ⚠️ **Pitfall Warning**
-> Don't nest conditional compilation too deeply. If you find yourself writing three or more levels of `#if ... #endif`, the code's readability will plummet. A better approach is to split differently configured code into separate helper functions, and use a single level of conditional compilation to choose which function to call.
+> ⚠️ **Warning**
+> Don't nest conditional compilation too deeply. If you find yourself writing more than three levels of `#if`, code readability drops drastically. A better approach is to split code for different configurations into separate helper functions, using one layer of conditional compilation to choose which function to call.
 
-## Step Five — Achieve Cross-Platform Porting with a Platform Abstraction Layer
+## Step 5 — Handle Cross-Platform with a Platform Abstraction Layer
 
-The core technique for making code run on multiple platforms is introducing a Platform Abstraction Layer. The principle is simple: **isolate all platform-specific code in one place, and have upper-layer code only call the abstract interfaces**. Think of it like a universal charger—whether your phone uses USB-C or Lightning, just plug in the adapter and it charges; that adapter is the "platform abstraction layer."
+To get code running on multiple platforms, the core technique is introducing a Platform Abstraction Layer (PAL). The principle is simple: **isolate all platform-specific code in one place, and upper-level code only calls abstract interfaces**. You can think of it like a universal charger—whether your phone uses USB-C or Lightning, plug in the adapter and it charges; the adapter is that "platform abstraction layer."
 
-Suppose our ring buffer needs to use a fixed-size static array on embedded platforms (no `malloc`), while on a PC, dynamic allocation is fine. We first define a set of platform interfaces:
+Suppose our ring buffer needs to use fixed-size static arrays on embedded platforms (no `malloc`), while on the PC, dynamic allocation is fine. First, we define a set of platform interfaces:
 
 ```c
-// platform.h — 平台抽象层
+// inc/platform.h
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
 #include <stddef.h>
 
-// 内存分配接口
-void* platform_alloc(size_t size);
+// Memory allocation interface
+void* platform_malloc(size_t size);
 void  platform_free(void* ptr);
 
-// 互斥锁接口（用于线程安全）
-typedef struct PlatformMutex PlatformMutex;
-PlatformMutex* platform_mutex_create(void);
-void           platform_mutex_lock(PlatformMutex* mtx);
-void           platform_mutex_unlock(PlatformMutex* mtx);
-void           platform_mutex_destroy(PlatformMutex* mtx);
+// Critical section interface (for thread safety)
+void  platform_enter_critical(void);
+void  platform_exit_critical(void);
 
 #endif // PLATFORM_H
 ```
 
-Then we provide different implementations for different platforms. First, the Linux version:
+Then provide different implementations for different platforms. First, the Linux version:
 
 ```c
-// platform_linux.c — Linux 实现
+// src/platform_linux.c
 #include "platform.h"
 #include <stdlib.h>
-#include <pthread.h>
+#include <stdio.h>
 
-void* platform_alloc(size_t size) {
+void* platform_malloc(size_t size) {
     return malloc(size);
 }
 
@@ -468,293 +417,203 @@ void platform_free(void* ptr) {
     free(ptr);
 }
 
-struct PlatformMutex {
-    pthread_mutex_t mtx;
-};
-
-PlatformMutex* platform_mutex_create(void) {
-    PlatformMutex* m = (PlatformMutex*)malloc(sizeof(PlatformMutex));
-    if (m) pthread_mutex_init(&m->mtx, NULL);
-    return m;
+void platform_enter_critical(void) {
+    // Linux user-space: use pthread mutex if needed
 }
 
-void platform_mutex_lock(PlatformMutex* mtx) {
-    if (mtx) pthread_mutex_lock(&mtx->mtx);
-}
-
-void platform_mutex_unlock(PlatformMutex* mtx) {
-    if (mtx) pthread_mutex_unlock(&mtx->mtx);
-}
-
-void platform_mutex_destroy(PlatformMutex* mtx) {
-    if (mtx) {
-        pthread_mutex_destroy(&mtx->mtx);
-        free(mtx);
-    }
+void platform_exit_critical(void) {
+    // Linux user-space: release pthread mutex
 }
 ```
 
-Next, the bare-metal version:
+Now the bare-metal version:
 
 ```c
-// platform_bare_metal.c — 裸机实现（STM32/ESP32 等）
+// src/platform_baremetal.c
 #include "platform.h"
+#include "stm32f4xx.h"
 
-// 裸机环境下用静态内存池代替 malloc
-#define kPlatformHeapSize 4096
-static uint8_t s_heap[kPlatformHeapSize];
-static size_t  s_heap_offset = 0;
+// Static memory pool for bare-metal
+static uint8_t memory_pool[4096];
+static size_t pool_offset = 0;
 
-void* platform_alloc(size_t size) {
-    // 简陋的 bump allocator，仅供演示
-    if (s_heap_offset + size > kPlatformHeapSize) return NULL;
-    void* ptr = &s_heap[s_heap_offset];
-    s_heap_offset += size;
-    // 注意：这个 allocator 不支持 free
+void* platform_malloc(size_t size) {
+    // Simple bump allocator from static pool
+    if (pool_offset + size > sizeof(memory_pool)) return NULL;
+    void* ptr = &memory_pool[pool_offset];
+    pool_offset += size;
     return ptr;
 }
 
 void platform_free(void* ptr) {
-    (void)ptr;  // bump allocator 不支持释放
+    // Static pool cannot be easily freed in this simple example
 }
 
-// 裸机环境下用关中断代替互斥锁
-struct PlatformMutex {
-    int irq_state;
-};
-
-PlatformMutex* platform_mutex_create(void) {
-    return (PlatformMutex*)platform_alloc(sizeof(PlatformMutex));
+void platform_enter_critical(void) {
+    __disable_irq(); // ARM Cortex-M specific
 }
 
-void platform_mutex_lock(PlatformMutex* mtx) {
-    // 实际要用具体的 MCU API
-    // mtx->irq_state = __disable_irq();
-}
-
-void platform_mutex_unlock(PlatformMutex* mtx) {
-    // __restore_irq(mtx->irq_state);
-}
-
-void platform_mutex_destroy(PlatformMutex* mtx) {
-    // bump allocator 不支持释放
+void platform_exit_critical(void) {
+    __enable_irq();
 }
 ```
 
-With the platform abstraction layer in place, the ring buffer code doesn't need to care at all about what platform it's running on—`platform_alloc` calls `malloc` on Linux and allocates from a static memory pool on STM32; `platform_mutex_lock` uses `pthread_mutex` on Linux and disables interrupts on bare metal. When porting to a new platform, we only need to write a new `platform_xxx.c`; the core business logic doesn't change a single line.
+With the platform abstraction layer, the ring buffer code doesn't need to care what platform it's running on—`platform_malloc` calls `malloc` on Linux and allocates from a static memory pool on STM32; `platform_enter_critical` uses `pthread_mutex` on Linux and disables interrupts on bare-metal. When porting to a new platform, you only need to write a new `platform_*.c`, and the core business logic remains untouched.
 
-Cross-platform code also has a common type trap: the size of fundamental types may differ across platforms. `int` might be 16-bit on an 8-bit MCU but 32-bit on a 32-bit platform, and `long` is 64-bit on 64-bit Linux but 32-bit on Windows. Therefore, cross-platform code should uniformly use the fixed-width types defined in `<stdint.h>`: `uint8_t`, `uint16_t`, `uint32_t`, `size_t`, and so on.
+Cross-platform code has another common type trap: the size of basic types might differ on different platforms. `int` might be 16-bit on an 8-bit MCU, but 32-bit on a 32-bit platform; `long` is 64-bit on 64-bit Linux but 32-bit on Windows. So cross-platform code should consistently use fixed-width types defined in `<stdint.h>`: `int32_t`, `uint32_t`, `size_t`, etc.
 
-## Step Six — Evolve Your API Stably
+## Step 6 — Evolve the API Stably
 
-When your module is used by multiple projects, API stability becomes an issue you must take seriously. Changing a function name or adding a parameter means all callers have to follow suit—and if you can't control the callers, that's a disaster.
+When your module is used by multiple projects, API stability becomes a must-treat issue. Changing a function name or adding a parameter means all callers have to change—if you can't control the callers, that's a disaster.
 
-### Embedding Version Numbers
+### Embed Version Numbers
 
-A simple approach is to define version number macros in the header file and provide a runtime query interface:
+A simple approach is to define version number macros in the header file and provide a query interface at runtime:
 
 ```c
-// ring_buffer.h 片段
-#define RINGBUF_VERSION_MAJOR 1
-#define RINGBUF_VERSION_MINOR 2
-#define RINGBUF_VERSION_PATCH 0
+// inc/my_module.h
+#define MY_MODULE_VERSION_MAJOR 1
+#define MY_MODULE_VERSION_MINOR 2
+#define MY_MODULE_VERSION_PATCH 0
 
-const char* ringbuf_version(void);
+// Returns version in format: 0x010200 (1.2.0)
+uint32_t my_module_get_version(void);
 ```
 
 ```c
-// ring_buffer.c 片段
-const char* ringbuf_version(void) {
-    return "1.2.0";
+// src/my_module.c
+uint32_t my_module_get_version(void) {
+    return (MY_MODULE_VERSION_MAJOR << 16) |
+           (MY_MODULE_VERSION_MINOR << 8)  |
+           (MY_MODULE_VERSION_PATCH);
 }
 ```
 
-### The "Add-Only, Don't-Modify" Strategy
+### "Add-Only" Strategy
 
-When adding new features, try to do so by adding new functions rather than modifying existing function signatures. For example, if your ring buffer originally only supported `uint8_t` and now needs to support multi-byte data, don't change the parameter type of `ringbuf_push` from `uint8_t` to `void*`—that would break all existing callers. The correct approach is to add a new set of functions:
+When adding new features, try to implement them by adding new functions rather than modifying existing function signatures. For example, if your ring buffer originally only supported single-byte `push`, and now needs to support multi-byte data, don't change the parameter type of `ring_buf_push` from `uint8_t` to `void*`—this breaks all existing callers. The correct approach is to add a new group of functions:
 
 ```c
-// 原有 API 保持不变
-bool ringbuf_push(RingBuffer* rb, uint8_t data);
-bool ringbuf_pop(RingBuffer* rb, uint8_t* out);
-
-// 新增：多字节操作
-bool   ringbuf_write(RingBuffer* rb, const void* data, size_t len);
-size_t ringbuf_read(RingBuffer* rb, void* buf, size_t buf_size);
+// New API for multi-byte operations
+int ring_buf_write(RingBuffer* rb, const uint8_t* data, size_t len);
+int ring_buf_read(RingBuffer* rb, uint8_t* buffer, size_t len);
 ```
 
 If an old interface truly needs to be deprecated, you can first mark it with a macro to give users a migration buffer period:
 
 ```c
-// 标记废弃接口
-#ifdef __GNUC__
-#define RINGBUF_DEPRECATED \
-    __attribute__((deprecated("use ringbuf_write instead")))
-#elif defined(_MSC_VER)
-#define RINGBUF_DEPRECATED \
-    __declspec(deprecated("use ringbuf_write instead"))
-#else
-#define RINGBUF_DEPRECATED
+// inc/my_module.h
+#if MY_MODULE_VERSION >= 0x020000
+    #warning "old_func is deprecated, please use new_func instead"
 #endif
 
-RINGBUF_DEPRECATED bool ringbuf_push_batch(RingBuffer* rb,
-                                            const uint8_t* data,
-                                            size_t len);
+// Mark old function as deprecated
+__attribute__((deprecated)) void old_func(void);
 ```
 
-## C++ Bridging
+## C++ Transition
 
-The modularization techniques we've labored over in C all have more powerful native support in C++. Understanding the C approach helps us grasp the design motivation and underlying mechanisms of C++ tools—every "new feature" in C++ wasn't invented out of thin air; they are engineering upgrades built on top of C's manual practices.
+The modular techniques we struggled with in C have much more powerful native support in C++. Understanding the C approach helps us understand the design motivation and underlying mechanisms of C++ tools—every "new feature" in C++ wasn't invented out of thin air; they are engineered upgrades over manual C practices.
 
 | C Manual Practice | C++ Native Support | What It Improves |
-|-----------|-------------|-----------|
+|-------------------|--------------------|------------------|
 | File-level `static` functions | `private`/`protected` members | Compiler-enforced access control, no reliance on self-discipline |
-| Naming prefixes (`ringbuf_`, `uart_`) | `namespace` | True namespace isolation, no need to manually write prefixes |
-| opaque pointer pattern | PIMPL idiom + `unique_ptr` | Automatic memory management, no manual create/destroy needed |
-| `#include` + `#ifndef` guards | C++20 Modules | Eliminates macro pollution, redundant parsing, and fragile dependency order |
-| `typedef` | `using` + `auto` | More intuitive type aliases, automatic type deduction |
-| Hand-written `deprecated` macros | `[[deprecated]]` attributes | Standardized deprecation marking |
+| Naming prefixes (`module_`, `internal_`) | `namespace` | True namespace isolation, no manual prefix writing |
+| Opaque pointer pattern | PIMPL idiom + `unique_ptr` | Automatic memory management, no manual create/destroy |
+| `#include` + header guards | C++20 Modules | Eliminates macro pollution, redundant parsing, fragile dependency order |
+| `typedef` + macros | `using` + `auto` | More intuitive type aliases, automatic type deduction |
+| Hand-written `__attribute__((deprecated))` macro | `[[deprecated]]` attribute | Standardized deprecation marking |
 
-### Namespaces and Classes Replacing Header File Partitioning
+### `namespace` and `class` Replace Header File Partitioning
 
-C uses files and naming prefixes for logical partitioning, while C++ uses `namespace` for true namespace isolation and `class`'s access control to replace the manual separation of header and source files:
+C uses files and naming prefixes for logical partitioning; C++ uses `namespace` for true namespace isolation and `class` access control to replace manually separating header and source files:
 
 ```cpp
-// C++ 里，模块化是语言级别的功能
+// Modern C++ Module
 namespace uart {
 
 class Driver {
 public:
-    // 公开接口——相当于 .h 里的函数声明
-    explicit Driver(const Config& config);
+    struct Config { uint32_t baudrate; };
+
+    Driver(const Config& cfg);
     ~Driver();
 
-    Result send(const uint8_t* data, size_t len);
-    Result receive(uint8_t* buf, size_t buf_size, size_t& received);
-
+    void send(std::span<const uint8_t> data);
+    // private implementation is hidden by default
 private:
-    // 私有实现——相当于 .c 里的 static 函数和内部变量
-    struct Impl;
-    Impl* pimpl_;
+    class Impl; // Forward declaration
+    Impl* pImpl; // PIMPL pointer
 };
 
 } // namespace uart
 ```
 
-### The Pimpl Idiom — A Compile-Time Firewall
+### Pimpl Idiom — Compile-Time Firewall
 
-PIMPL (Pointer to Implementation) is the C++ version of C's opaque pointer, but it has an additional important use case in C++: **reducing header file dependencies and speeding up compilation**. In large C++ projects, modifying a single header file can trigger the recompilation of hundreds of source files. If the definitions of private members are all hidden in the `Impl`, and the header file only needs a forward declaration `struct Impl;`, then modifying private members only affects the `.cpp` file and won't cause massive recompilation.
+PIMPL (Pointer to Implementation) is the C++ version of the C opaque pointer, but it has an additional important use in C++: **reducing header dependencies and speeding up compilation**. In large C++ projects, modifying a header file can trigger hundreds of source files to recompile. If private member definitions are hidden in the `.cpp` file, the header only needs a forward declaration `class Impl`. Then, modifying private members only affects the `.cpp` file and doesn't cause massive recompilation.
 
 ```cpp
-// network_client.h
-#include <string>
-#include <memory>
-
-class NetworkClient {
-public:
-    explicit NetworkClient(const std::string& host, uint16_t port);
-    ~NetworkClient();
-
-    bool connect();
-    void disconnect();
-    bool send(const std::string& message);
-
+// inc/driver.h
+class Driver {
 private:
-    struct Impl;  // 前向声明
-    std::unique_ptr<Impl> pimpl_;
+    class Impl; // Forward declaration
+    Impl* pImpl; // Opaque pointer
+public:
+    Driver();
+    ~Driver(); // Must be defined in .cpp
+    void operate();
 };
 
-// network_client.cpp
-#include "network_client.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-
-struct NetworkClient::Impl {
-    int sockfd = -1;
-    std::string host;
-    uint16_t port;
-
-    bool connect() { /* 调用 socket API ... */ return true; }
-    void disconnect() { if (sockfd >= 0) close(sockfd); }
+// src/driver.cpp
+class Driver::Impl {
+public:
+    int heavy_data[1024];
 };
 
-NetworkClient::NetworkClient(const std::string& host, uint16_t port)
-    : pimpl_(std::make_unique<Impl>()) {
-    pimpl_->host = host;
-    pimpl_->port = port;
-}
-
-// 析构函数必须在 .cpp 里定义，因为 Impl 在这里才完整
-NetworkClient::~NetworkClient() = default;
-
-bool NetworkClient::connect()    { return pimpl_->connect(); }
-void NetworkClient::disconnect() { pimpl_->disconnect(); }
+Driver::Driver() : pImpl(new Impl()) {}
+Driver::~Driver() { delete pImpl; } // Defined here because Impl is complete here
 ```
 
-Note that the destructor must be defined in the `.cpp` file (or be `= default`), and cannot be in the header file—because `Impl` is an incomplete type in the header file, and `unique_ptr`'s destructor needs to know the full definition of `Impl` to correctly delete it.
+Note the destructor must be defined in the `.cpp` file (or defaulted), not in the header—because `Impl` is an incomplete type in the header, and the destructor of `unique_ptr` (or `delete`) needs the complete definition of `Impl` to correctly delete it.
 
-### The C++20 Module System
+### C++20 Module System
 
-C++20 introduced the Modules system, designed to fundamentally replace the header file's `#include` mechanism. Modules directly address many inherent problems of header files—macro pollution, redundant parsing, and fragile dependency order. However, frankly speaking, as of the end of 2024, mainstream compiler support for modules is still rapidly evolving, and adopting modules in large projects requires significant migration effort. But it's worth understanding as a trend, and we won't dive into it here (the upcoming C++ advanced volume will cover it in detail).
+C++20 introduced the Modules system, aiming to fundamentally replace the header file's `#include` mechanism. Modules directly solve many inherent problems of header files—macro pollution, redundant parsing, fragile dependency order. However, honestly, as of the end of 2024, mainstream compiler support for modules is still evolving rapidly, and adopting modules in large projects requires significant migration work. But it's worth understanding as a trend; we won't expand here (the subsequent C++ Advanced volume will cover this specifically).
 
 ## Exercises
 
-### Exercise 1: String Hash Table with Opaque Pointers
+### Exercise 1: Opaque Pointer String Hash Map
 
-Implement a simple string-to-integer mapping table using opaque pointers to hide the internal implementation. Requirements:
+Implement a simple string-to-integer map using opaque pointers to hide the internal implementation. Requirements:
 
 ```c
-// hashmap.h — 你需要编写的公开接口
-#ifndef HASHMAP_H
-#define HASHMAP_H
+// inc/strmap.h
+StrMap* strmap_create(void);
+void    strmap_destroy(StrMap* map);
 
-#include <stddef.h>
-
-typedef struct HashMap HashMap;
-
-HashMap* hashmap_create(size_t bucket_count);
-void     hashmap_destroy(HashMap* map);
-
-/// 插入键值对，如果 key 已存在则覆盖旧值
-/// @return 0 表示成功，非零表示失败
-int hashmap_insert(HashMap* map, const char* key, int value);
-
-/// 查找 key 对应的值，通过 out 返回
-/// @return 0 表示找到，非零表示不存在
-int hashmap_lookup(const HashMap* map, const char* key, int* out);
-
-/// 删除指定 key
-/// @return 0 表示成功删除，非零表示 key 不存在
-int hashmap_remove(HashMap* map, const char* key);
-
-#endif // HASHMAP_H
+int  strmap_put(StrMap* map, const char* key, int value);
+int  strmap_get(StrMap* map, const char* key, int* out_value);
+void strmap_remove(StrMap* map, const char* key);
 ```
 
-Hint: Internally, you can implement the hash table using a simple array of linked lists (chaining). For the hash function, you can use the classic `djb2` algorithm. Remember that all internal types and helper functions must be hidden in the `.c` file.
+**Hint:** Internally, you can use a simple array of linked lists (separate chaining) to implement the hash map. The hash function can use the classic `djb2` algorithm. Remember that all internal types and helper functions must be hidden in the `.c` file.
 
 ### Exercise 2: Platform Abstraction Layer Practice
 
-Write a platform abstraction layer for the hash table from Exercise 1 above, replacing the standard library's `malloc`/`free`. Requirements:
+Write a platform abstraction layer for the hash map in Exercise 1 to replace the standard library's `malloc`/`free`. Requirements:
 
 ```c
-// pal.h — 平台抽象层接口
-#ifndef PAL_H
-#define PAL_H
-
-#include <stddef.h>
-
-void* pal_alloc(size_t size);
-void  pal_free(void* ptr);
-
-#endif // PAL_H
+// inc/platform.h
+void* plat_malloc(size_t size);
+void  plat_free(void* ptr);
 ```
 
-Please implement two versions: one using the standard library's `malloc`/`free` (suitable for PC), and another using a static memory pool (suitable for embedded bare-metal environments). The hash table's `.c` file should allocate memory by including `pal.h`, rather than calling `malloc` directly.
+Please implement two versions: one using the standard library `malloc`/`free` (suitable for PC), and another using a static memory pool (suitable for embedded bare-metal environments). The hash map's `.c` file should allocate memory by including `platform.h` and calling `plat_malloc`, rather than directly calling `malloc`.
 
-## References
+## Reference Resources
 
-- [Opaque Pointer Pattern - Wikipedia](https://en.wikipedia.org/wiki/Opaque_pointer)
+- [Opaque Pointer - Wikipedia](https://en.wikipedia.org/wiki/Opaque_pointer)
 - [Linux Kernel Coding Style - Chapter 5: Typedefs](https://www.kernel.org/doc/html/latest/process/coding-style.html#typedefs)
-- [PIMPL Idiom - cppreference](https://en.cppreference.com/w/cpp/language/pimpl)
+- [PIMPL - cppreference](https://en.cppreference.com/w/cpp/language/pimpl)
 - [C++20 Modules - cppreference](https://en.cppreference.com/w/cpp/language/modules)

@@ -4,82 +4,80 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Replace multi-level nested namespace braces with the `A::B::C` syntax
+description: Use `A::B::C` syntax instead of nested namespace braces
 difficulty: beginner
 order: 15
-reading_time_minutes: 1
+reading_time_minutes: 2
 tags:
 - host
 - cpp-modern
 - beginner
-title: Nested namespaces
+title: Nested Namespaces
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/15-nested-namespace.md
-  source_hash: 3aed83f966e3c5c860686def8273b68c5b7f869cf9ce1c50370a45fff65dae07
-  token_count: 417
-  translated_at: '2026-05-26T10:16:40.516631+00:00'
+  source_hash: 3a94860212341828616537940d079fd7b81f0fff3acda7dbf780db22f24277cc
+  translated_at: '2026-06-16T03:29:27.263714+00:00'
+  engine: anthropic
+  token_count: 421
 ---
 <!--
 Reference Card Template
-Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
+For feature cheat sheets under documents/cpp-reference/.
+Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
+1. Must include 1 platform tag (use 'host' for reference cards)
+2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
 # Nested Namespaces (C++17)
 
-## In a Nutshell
+## The Gist
 
-Use `namespace A::B::C { ... }` on a single line to replace three levels of nested braces—pure syntactic sugar, but it drastically reduces indentation levels.
+Use `namespace A::B::C` to replace three layers of nested braces—pure syntactic sugar that drastically reduces indentation levels.
 
 ## Header
 
 None (language feature)
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Syntax | Equivalent |
-|--------|------------|
-| `namespace A::B { ... }` | `namespace A { namespace B { ... } }` |
+|------|---------|
 | `namespace A::B::C { ... }` | `namespace A { namespace B { namespace C { ... } } }` |
-| `namespace A::inline B { ... }` | `namespace A { inline namespace B { ... } }` (C++20) |
+| `namespace A::B::C::D { ... }` | `namespace A { namespace B { namespace C { namespace D { ... } } } }` |
+| `namespace A::B { inline namespace C { ... } }` | `namespace A { namespace B { inline namespace C { ... } } }` (C++20) |
 
 ## Minimal Example
 
 ```cpp
-// Standard: C++17
-#include <iostream>
-
-// 嵌套命名空间定义
-namespace hardware::spi {
-    void init() { std::cout << "SPI init\n"; }
-}
-
-// 等价的 C++11 写法（效果完全相同）
-namespace hardware {
-    namespace i2c {
-        void init() { std::cout << "I2C init\n"; }
+// C++17 style: concise and flat
+namespace App::Hardware::Driver {
+    void init() {
+        // Initialization logic
     }
 }
 
-int main() {
-    hardware::spi::init(); // SPI init
-    hardware::i2c::init(); // I2C init
+// Traditional C++ style: verbose and deeply indented
+namespace App {
+    namespace Hardware {
+        namespace Driver {
+            void init() {
+                // Initialization logic
+            }
+        }
+    }
 }
 ```
 
 ## Embedded Applicability: Low
 
-- Pure syntactic sugar with no effect on generated code, but embedded projects typically do not use deep namespace hierarchies
-- Helpful for code organization in large libraries and drivers, reducing indentation nesting
-- Embedded code often uses flatter namespaces (such as `bsp::`, `hal::`), where a single level is sufficient
-- Universally supported by C++17 compilers, with no compatibility concerns
+- Pure syntactic sugar; it does not affect generated code, but embedded projects typically do not have deep namespace hierarchies.
+- Helpful for organizing code in large libraries and drivers by reducing indentation nesting.
+- Embedded code often uses flatter namespaces (e.g., `HAL`, `Driver`), where a single level is sufficient.
+- Universally supported by C++17 compilers with no compatibility concerns.
 
 ## Compiler Support
 
@@ -93,4 +91,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

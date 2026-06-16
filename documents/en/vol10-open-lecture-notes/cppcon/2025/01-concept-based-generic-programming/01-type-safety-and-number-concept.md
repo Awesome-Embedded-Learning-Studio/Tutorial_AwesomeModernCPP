@@ -5,12 +5,12 @@ conference_year: 2025
 cpp_standard:
 - 20
 - 23
-description: CppCon 2025 Talk Notes — From implicit narrowing conversions to `Number<T>`
-  wrapper types, then to `safe_int` and `checked_span`
+description: CppCon 2025 Talk Notes — From implicit narrowing conversions to Number<T>
+  wrappers, then to safe_int and checked_span
 difficulty: intermediate
 order: 1
 platform: host
-reading_time_minutes: 44
+reading_time_minutes: 45
 speaker: Bjarne Stroustrup
 tags:
 - cpp-modern
@@ -18,26 +18,26 @@ tags:
 - intermediate
 talk_title: Concept-based Generic Programming
 title: Type Safety, Number Constraints, and Bounds Checking
-translation:
-  engine: anthropic
-  source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md
-  source_hash: 8544c9e61cc4d54dcd89cd940ed7586cd254287c34b28993472cfb611ca5e201
-  token_count: 8924
-  translated_at: '2026-06-14T00:15:24.728382+00:00'
 video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW
 video_youtube: https://www.youtube.com/watch?v=VMGB75hsDQo
+translation:
+  source: documents/vol10-open-lecture-notes/cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md
+  source_hash: 25d91cc9115483e13048b38ca9b076ebd35dc36c12deab7430e33d9fd6f8f442
+  translated_at: '2026-06-16T03:49:27.313553+00:00'
+  engine: anthropic
+  token_count: 8926
 ---
 # From Manual Checks to Implicit Guards
 
 :::tip
-A quick note: this section is an expansion based on CppCon talks. The links above point to their video series on YouTube; users in China can watch via the Bilibili links.
+A quick note: this section is an expansion based on CppCon content. The links above point to their video series on YouTube; users in China can watch via the Bilibili link.
 :::
 
-Generic programming in C++ dates back to 1991 when templates were introduced into the language (C++ Release 3.0). Stroustrup's primary motivation for designing templates was to replace C preprocessor macros with type-safe generic containers. In *The Design and Evolution of C++*, he wrote that macros "fail to obey scope and type rules and don't interact well with tools," whereas templates were designed to be "as efficient as macros" but type safe<RefLink :id="1" preview="Stroustrup, The Design and Evolution of C++, 1994, Ch.15" />.
+Generic programming in C++ dates back to 1991 when templates were introduced into the language (C++ Release 3.0). Stroustrup's primary motivation for designing templates was to replace C preprocessor macros with type-safe generic containers. In *The Design and Evolution of C++*, he wrote that macros "fail to obey scope and type rules and don't interact well with tools," whereas templates were designed to be "as efficient as macros" but type-safe<RefLink :id="1" preview="Stroustrup, The Design and Evolution of C++, 1994, Ch.15" />.
 
-But the story took an unexpected turn in 1994. Erwin Unruh presented a piece of valid C++ code at a C++ committee meeting that wouldn't even compile, yet the compiler output a sequence of prime numbers line by line in the error messages<RefLink :id="2" preview="Unruh, Prime Number Computation, C++ committee meeting, 1994" />. The entire committee realized that templates had inadvertently constituted a Turing-complete system for compile-time computation. The following year, Todd Veldhuizen published a paper systematically describing this technique and named it **Template Metaprogramming**<RefLink :id="3" preview="Veldhuizen, Using C++ Template Metaprograms, C++ Report, 1995" />. Thus, templates evolved from a "type-safe macro replacement" to an indispensable compile-time abstraction mechanism in C++.
+But the story took an unexpected turn in 1994. Erwin Unruh presented a piece of legal C++ code at a C++ committee meeting that wouldn't even compile, yet the compiler output a sequence of prime numbers line by line in the error messages<RefLink :id="2" preview="Unruh, Prime Number Computation, C++ committee meeting, 1994" />. The committee realized that templates had inadvertently constituted a Turing-complete system for compile-time computation. The following year, Todd Veldhuizen published a paper systematically describing this technique and named it **Template Metaprogramming**<RefLink :id="3" preview="Veldhuizen, Using C++ Template Metaprograms, C++ Report, 1995" />. Templates thus evolved from a "type-safe macro replacement" to an indispensable compile-time abstraction mechanism in C++.
 
-Template error messages often span hundreds of lines and are notoriously unreadable—this is why many C++ developers shy away from generic programming. However, as project scale grows, code without generics becomes so repetitive that it's hard to maintain. In this article, we start from the basic motivation of generic programming and work our way to a concrete, actionable type safety issue—implicit narrowing conversion.
+Template error messages often span hundreds of lines and are notoriously unreadable—this is why many C++ developers shy away from generic programming. However, as project scale grows, code without generics becomes so repetitive that it's hard to maintain. In this article, we start from the basic motivation of generic programming and arrive at a concrete, actionable type safety issue—implicit narrowing conversion.
 
 The experimental environment for this article is Arch Linux WSL, GCC 16.1.1. Here is the environment information:
 
@@ -57,21 +57,21 @@ Linux Charliechen 6.6.114.1-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Mon D
 ```
 
 
-## First, let's clarify what generic programming is actually trying to achieve
+## First, let's clarify what generic programming is trying to achieve
 
-The effect of generic programming is to make code more general and more abstract—this is only half right. Alex Stepanov (father of the STL) pointed out that the goal of generic programming is to "express ideas in the most general, efficient, and flexible way," and the key is expressing ideas, not abstraction for abstraction's sake. Treating means as ends is a common pitfall in programming—another typical example is the abuse of design patterns.
+The effect of generic programming is to write code that is more general and more abstract—this is only half right. Alex Stepanov (father of the STL) pointed out that the goal of generic programming is to "express ideas in the most general, efficient, and flexible way," and the key is expressing ideas, not abstraction for the sake of abstraction. Treating means as ends is a common pitfall in programming—another typical example is the abuse of design patterns.
 
-This distinction is important. We don't design code starting from an abstract model; we start from concrete, efficient algorithms, discover commonalities, and then extract them. Moreover, performance cannot be sacrificed, as a large part of C++'s significance lies in this. As hardware gets stronger, our expectations for software are skyrocketing, while semiconductor processes seem to have hit a bottleneck, leaving less and less room for sloppy coding.
+This distinction is important. We don't design code starting from an abstract model; we start from concrete, efficient algorithms, discover commonalities, and then extract them. Moreover, performance cannot be sacrificed, as a significant part of C++'s existence depends on it. As hardware gets stronger, our expectations for software expand rapidly, yet semiconductor processes seem to have hit a bottleneck, leaving less and less room for sloppy coding.
 
-Generic programming demands more from us: it requires us to see reusable patterns in abstract domains. And its bottom line is—after abstraction, performance must not be worse than a hand-written specific version. Otherwise, there is no point in introducing generic programming. Writing code itself is about getting the job done; don't do unnecessary work. If a piece of code won't be reused and is performance-sensitive, don't introduce generics.
+Generic programming demands more from us: it requires us to perceive reusable patterns in abstract domains. And its bottom line is—after abstraction, performance must not be inferior to a hand-written specific version. Otherwise, there is no point in introducing generic programming. Writing code itself is the layer of completing work in the hierarchy of needs; do not do extra things. If a certain place won't be reused and is sensitive to performance, don't introduce generics.
 
 ## Alex Stepanov's C++ design criteria
 
-Stepanov proposed three design criteria around 1994<RefLink :id="4" preview="Stepanov & Lee, The Standard Template Library, HP Labs, 1995" />: first is generality, good generic components should express usages even the designer didn't think of; second is uncompromising efficiency, writing system-level code in C++ should match C, and linear algebra should match Fortran; third is statically typed interfaces, checked at compile time, not leaving errors to runtime. Later, he added two very practical requirements: compile time shouldn't be so long that one can go for coffee (header-only libraries find this hard to guarantee), and the learning curve shouldn't be so steep that it requires a MIT PhD to get started<RefLink :id="5" preview="Nygaard, cited in Stroustrup, Concept-Based Generic Programming in C++, 2025, §1" />—as for whether C++ achieved this, everyone knows the answer.
+Around 1994, Stepanov proposed three design criteria<RefLink :id="4" preview="Stepanov & Lee, The Standard Template Library, HP Labs, 1995" />: first is generality, a good generic component should be able to express usages even the designer hadn't thought of; second is uncompromising efficiency, writing system-level code in C++ should match C, and writing linear algebra should match Fortran; third is statically typed interfaces, checked at compile-time, leaving no errors for runtime. Later, he added two very practical requirements: compile time shouldn't be so long that one can go for coffee (header-only libraries find this hard to guarantee), and the learning curve shouldn't be so steep that it requires an MIT PhD to get started<RefLink :id="5" preview="Nygaard, cited in Stroustrup, Concept-Based Generic Programming in C++, 2025, §1" />—as for whether C++ achieved this, everyone knows the answer.
 
-## Implicit Narrowing Conversion: A Classic Type Safety Trap
+## Implicit narrowing conversion: a classic type safety trap
 
-With the motivation out of the way, let's start with a specific problem. The introduction of a concept must have a corresponding problem scenario, otherwise, it's a castle in the air. Look at this code:
+With the motivation covered, let's start with a specific problem. The introduction of a concept must have a corresponding problem scenario, otherwise it's a castle in the air. Look at this code:
 
 ```cpp
 #include <iostream>
@@ -93,19 +93,19 @@ int main() {
 }
 ```
 
-This code uses C++23 syntax to ensure all compilers can compile it directly.
+This code uses pre-C++23 syntax to ensure all compilers can compile it directly.
 
-On my machine, the result is `overflow = -25536`, `int_pi = 3`. The compiler doesn't give a single warning (unless you turn on `-Wall -Wextra`, but many projects don't). This kind of bug is particularly insidious: the code runs, but the result is wrong, and it often doesn't show up when data volumes are small, only surfacing after going live.
+On my machine, the result is `overflow = -25536`, `int_pi = 3`. The compiler doesn't give a single warning (unless you turn on `-Wall -Wextra`, but many projects don't). This kind of bug is particularly insidious: the code runs, but the result is wrong, and it often doesn't show up when data volumes are small, only surfacing after deployment.
 
-Many people think "this is just a C++ feature, just be careful." But relying on human diligence is unreliable. Bjarne Stroustrup himself said he wanted to solve this problem back then but couldn't, and the C camp wouldn't let him change it. So as users, can we prevent it ourselves?
+Many people think "this is just a C++ feature, be careful yourself." But relying on human vigilance is unreliable. Bjarne Stroustrup himself said that he wanted to solve this problem back then but couldn't, and the C camp wouldn't allow changes. So as users, can we prevent it ourselves?
 
 ## Using C++20 concepts to model "Numbers"
 
-C++20 gives us a new weapon: concepts. Its essence is simple—a concept is a compile-time evaluated boolean predicate, input is a type, output is true or false. Another way to put it: it lets the compiler understand a "concept" without us needing to describe it in complex natural language.
+C++20 gives us a new weapon: concepts. Their essence is simple—a concept is a compile-time evaluated boolean predicate, taking a type as input and outputting true or false. Put another way: it lets the compiler understand a "concept" without us needing to describe it in complex natural language.
 
-The standard library already defines some basic concepts, like `std::integral` and `std::floating_point`, which judge whether a type is an integer type or a floating-point type. These aren't new inventions; the first edition of K&R C distinguished between int and float, but now we have a language-level, compile-time queryable representation.
+The standard library already defines some basic concepts, such as `std::integral` and `std::floating_point`, which judge whether a type is an integer type or a floating-point type. These aren't new inventions; the first edition of K&R C distinguished between int and float, but now we have a language-level, compile-time queryable representation.
 
-Let's first write a simple concept to express the concept of "number":
+Let's write a simple concept first to express the concept of "number":
 
 ```cpp
 #include <concepts>
@@ -124,15 +124,15 @@ static_assert(!number<std::string>, "string 不是 number");
 
 There is a syntactic detail worth explaining here: `std::integral<T>` looks like a function call, but it isn't. `std::integral` is a concept, `<T>` instantiates it with type T, and the value of the whole expression is a compile-time bool. You can't write `std::integral(T)`, that syntax is wrong. Just understand it as "perform the integral test on T", returning true or false.
 
-Running the code above, all four `static_assert` pass, indicating our `number` concept basically works.
+Running the code above, all four `static_assert` pass, indicating our `number` concept is basically usable.
 
-## Write a narrowing judgment by hand
+## Writing a narrowing judgment ourselves
 
-Can we write a concept to judge "when assigning a value of type U to type T, will a narrowing conversion occur"? Since I'm writing this article.
+Can we write a concept to judge "whether assigning a value of type U to type T will cause a narrowing conversion"? Since we are writing this article.
 
-First, if T's representation range is smaller than U's, narrowing is obviously possible. For example, assigning `int` to `short`, `int` can represent many more values than `short`. But how to judge "smaller range"? The C++ standard library doesn't directly give us a concept for "type's value range", but `<type_traits>` has `std::numeric_limits`, which can query the min and max of various types. If U is floating-point and T is integer, the fractional part will definitely be lost, this is also narrowing.
+First, if T's representable range is smaller than U's, narrowing is obviously possible. For example, assigning `int` to `short`, `int` can represent many more values than `short`. But how to judge "smaller range"? The C++ standard library doesn't directly give us a "type's value range" concept, but `<type_traits>` has `std::numeric_limits`, which can query the min and max of various types. If U is floating-point and T is integer, the fractional part will definitely be lost, which is also narrowing.
 
-There's another easily overlooked situation: U and T are both integers, the size is the same (e.g., both 32-bit), but signedness differs, then assigning a negative number to an unsigned type will also cause problems. Writing these rules into code:
+There is another easily overlooked situation: U and T are both integers, the size is the same (e.g., both 32-bit), but signedness differs, then assigning a negative number to an unsigned type will also cause problems. Writing these rules into code:
 
 ```cpp
 #include <concepts>
@@ -173,35 +173,35 @@ static_assert(!narrowing_assign<double, float>, "float -> double 不是窄化");
 static_assert(!narrowing_assign<int, int>, "int -> int 不是窄化");
 ```
 
-Compile and run, all six `static_assert` pass. We can use the last `!narrowing_assign<int, int>` to verify the logic: assigning the same type, in case 1, `smaller_range<int, int>` in `max() < max()` is false, `min() > min()` is also false, so it doesn't trigger; case 2 requires U is floating-point and T is integer, not satisfied; case 3 requires signedness differs, `int` and `int` are obviously the same. All three branches are false, the whole thing is false, negated `static_assert` passes—this matches our intuition that "same type assignment doesn't narrow".
+Compile and run, all six `static_assert` pass. We can use the last `!narrowing_assign<int, int>` to verify the logic: assigning the same type, in case 1, `smaller_range<int, int>` `max() < max()` is false, `min() > min()` is also false, so it doesn't trigger; case 2 requires U is floating and T is integer, not satisfied; case 3 requires signedness differs, `int` and `int` are obviously the same. All three branches are false, the whole is false, negated `static_assert` passes—this matches our intuition that "same type assignment doesn't narrow".
 
-One more thing worth mentioning: where `&&` and `||` are mixed in `narrowing_assign`, parentheses must be added. Because `&&` has higher precedence than `||`, without parentheses, `number<T> && number<U>` only constrains the first `||` branch, and the latter two branches might be evaluated on non-number types—although the result happens to be correct for current test cases, semantically it's wrong. Adding parentheses makes the three branches a whole, then uniformly constrained by `number<T> && number<U>`, the logic is rigorous.
+Another point worth mentioning: where `&&` and `||` are mixed in `narrowing_assign`, parentheses must be added. Because `&&` has higher precedence than `||`, without parentheses, `number<T> && number<U>` only constrains the first `||` branch, and the latter two branches might be evaluated on non-number types—although the result happens to be correct for current test cases, semantically it's wrong. Adding parentheses makes the three branches a whole, then uniformly constrained by `number<T> && number<U>`, the logic is rigorous.
 
 ## Some edge cases need to be thought through
 
-The implementation above covers most scenarios, but there are details worth mentioning. For example, conversion between floating-point numbers: `double` to `float`, does it count as narrowing? From a precision perspective, of course, because `double` can represent more significant digits than `float`. But in the current implementation, `smaller_range<float, double>` will judge `numeric_limits<float>::max() < numeric_limits<double>::max()`, which is true, so it will be correctly identified as narrowing.
+The above implementation covers most scenarios, but some details are worth mentioning. For example, conversion between floating-point numbers: `double` to `float`, does it count as narrowing? From a precision perspective, of course, because `double` can represent more significant digits than `float`. But in the current implementation, `smaller_range<float, double>` will judge `numeric_limits<float>::max() < numeric_limits<double>::max()`, which is true, so it will be correctly identified as narrowing.
 
 Another example is `char` to `unsigned char`. The signedness of `char` is implementation-defined (signed on some platforms, unsigned on others). If `char` is signed on the platform, then `signed_integral<char> != signed_integral<unsigned char>` is true, and it will be identified as narrowing. This is actually reasonable, because if `char` is -1, assigning it to `unsigned char` becomes 255.
 
-However, note that this implementation is not 100% rigorous. The standard's definition of narrowing conversion (in C++11 list initialization rules) is more detailed than what's written here, for example, considering whether the value is within the integer range when converting from floating-point to integer. But as a starting point, this concept can already block most pitfalls for us. It can be improved gradually.
+However, note that this implementation is not 100% rigorous. The standard's definition of narrowing conversion (in the list initialization rules of C++11) is more detailed than what's written here, for example, considering whether the value is within the integer range when converting from floating-point to integer. But as a starting point, this concept can already block most pitfalls for us. It can be improved gradually.
 
-At this point, we can summarize one thing: concepts aren't some profound metaprogramming trick, they are just a mechanism to "write constraints on types as compile-time checkable boolean expressions". Previously when writing templates, constraints relied entirely on documentation and naming conventions (e.g., "please pass a random access iterator"), the compiler didn't care, if you passed the wrong thing, it would spit out a pile of gibberish. Now with concepts, the compiler can tell you "the type you passed doesn't meet the requirements" immediately, and the error message is human-readable.
+Here we can summarize one thing: concepts aren't some profound metaprogramming trick, they are just a mechanism to "write constraints on types as compile-time checkable boolean expressions". Before, writing templates, constraints relied entirely on documentation and naming conventions (e.g., "please pass a random access iterator"), the compiler didn't care, if you passed the wrong thing, you'd get a pile of gibberish. Now with concepts, the compiler can tell you at the first moment "the type you passed doesn't meet the requirements", and the error message is human-readable.
 
-The next step is to apply this `narrowing_assign` concept to actual functions to make a safe assignment wrapper—this is the content of the next section. At least the core idea of "using concepts to express type constraints" is sorted out here.
+The next step is to apply this `narrowing_assign` concept to actual functions to make a safe assignment wrapper—that's the content of the next section. At least the core idea of "using concepts to express type constraints" is sorted out here.
 
 ---
 
-# From Manual Checks to Implicit Guards: Stuffing Narrowing Checks into Types
+# From Manual Checks to Implicit Guards: Putting Narrowing Conversion Checks into Types
 
-In the previous section, we figured out the judgment rules for narrowing conversion. If you run these rules through your head every time you write code, it's almost impossible—when signed and unsigned are mixed, which one is bigger, will it overflow, can the positive part be represented, just thinking about these is dizzying. The speaker said writing this thing out by hand takes about a page, and it's very messy and tricky.
+In the previous section, we figured out the judgment rules for narrowing conversion. If we go through these rules in our heads every time we write code, it's almost impossible—when signed and unsigned are mixed, which one is bigger, will it overflow, can the positive part be represented, just thinking about these is dizzying. The speaker said writing this thing out manually is about a page of paper, and it's very messy and tricky.
 
-So the task for this section is: turn that page of messy logic into real running code, and then hide it so you don't feel its existence when writing code normally.
+So the task of this section is: turn that page of messy logic into real running code, and then hide it so you don't feel its existence when writing code normally.
 
 ## First, translate the judgment logic into code
 
-An intuition is: to judge whether assigning a value from type U to type T will cause narrowing, just use a `static_cast` and compare. But think carefully, that's not it at all—when signed and unsigned are mixed, the comparison itself has traps. So we need an honest, step-by-step function.
+An intuition is: to judge whether assigning a value from type U to type T will cause narrowing, just use a `static_cast` and compare. But think carefully, that's not the case at all—when signed and unsigned are mixed, the comparison itself has traps. So we need an honest, step-by-step judgment function.
 
-The idea is: do as much exclusion work as possible at compile time, filtering out those situations where "narrowing absolutely cannot happen", leaving only the paths that really need runtime checking. This is actually what generic programming emphasizes—don't do work at runtime that shouldn't be done.
+The idea is: do as much exclusion work as possible at compile-time, filtering out those situations where "narrowing absolutely cannot happen", leaving only the paths that really need runtime checking. This is actually what generic programming emphasizes—don't do work at runtime that shouldn't be done.
 
 ```cpp
 #include <type_traits>
@@ -277,13 +277,13 @@ constexpr bool would_narrow(U u) noexcept {
 }
 ```
 
-Looking back at this function, the boundary between how much can be excluded at compile time and how much must be checked at runtime when signed and unsigned are mixed really needs careful thought. There's an easy pitfall: simply using round-trip (convert then convert back) to detect narrowing fails during signed→unsigned conversion—because `int(-1) → unsigned(4294967295) → int(-1)` is completely reversible in two's complement, round-trip can't detect it. So you must explicitly check "is the source value negative" before the round-trip. `if constexpr` plays a key role here—branches that can be determined at compile time won't generate code at all, there won't be a bunch of useless comparison instructions.
+Looking back at this function, when signed and unsigned are mixed, how much can be excluded at compile-time and how much must be checked at runtime, this boundary really needs careful thought. There is a pitfall: simply using round-trip (convert there and back) to detect narrowing fails when converting signed→unsigned—because `int(-1) → unsigned(4294967295) → int(-1)` is completely reversible on two's complement, round-trip can't detect it. So you must explicitly check "is the source value negative" before the round-trip. `if constexpr` plays a key role here—branches that can be determined at compile-time won't generate code at all, no useless comparison instructions.
 
 ## What to do when narrowing occurs? Throw an exception
 
-With the judgment logic in place, the next decision is: how to handle it after detecting narrowing?
+With the judgment logic, the next thing to decide is: how to handle it after detecting narrowing?
 
-The speaker's solution is very direct—throw an exception. After compile-time filtering, the probability of narrowing actually triggering at runtime is extremely low. In most code, types match, excluded at compile time; for those remaining that need runtime checks, the vast majority won't actually overflow. Maybe one in a million calls triggers it, this is exactly the scenario where exceptions excel—handling extremely rare exceptional situations.
+The speaker's solution is very direct—throw an exception. After compile-time filtering, the probability of narrowing actually triggering at runtime is extremely low. In most code, types match, excluded at compile-time; for those remaining that need runtime checks, the vast majority won't actually overflow. Maybe one in a million calls triggers it, this is exactly the scenario where exceptions excel—handling extremely rare abnormal situations.
 
 ```cpp
 template<typename T, typename U>
@@ -328,7 +328,7 @@ int main() {
 }
 ```
 
-Run it and see the output:
+Run and see the output:
 
 ```text
 捕获到: narrowing conversion detected
@@ -337,11 +337,11 @@ Run it and see the output:
 a = 42, b = 100
 ```
 
-Great, everything that should be blocked is blocked. But the problem arises—you can't write `narrow_convert<int>(xxx)` at every assignment location. The code becomes verbose, and it's completely impossible to maintain consistency. Relying on programmer self-discipline to add checks, there will definitely be leaks. Some places add them, some forget, and bugs hide in those forgotten places.
+Great, everything that should be blocked was blocked. But the problem arises—you can't write `narrow_convert<int>(xxx)` at every assignment location. The code becomes verbose, and consistency is impossible to maintain. Relying on programmer self-discipline to add checks, there will definitely be leaks. Some places add them, some forget, and bugs hide in those forgotten places.
 
-## Stuff the check into the type: Number<T>
+## Putting the check into the type: Number<T>
 
-So the real solution is—make the check implicit. Define a wrapper type `Number<T>`, it automatically does narrowing checks when constructed. After that, this `Number<T>` is used just like a normal `T`, but without worrying about narrowing issues, because if the construction doesn't pass, this object doesn't exist at all.
+So the real solution is—make the check implicit. Define a wrapper type `Number<T>`, it automatically performs narrowing checks when constructed. After that, this `Number<T>` is used just like a normal `T`, but without worrying about narrowing issues, because if the construction doesn't pass, this object doesn't exist at all.
 
 ```cpp
 template<typename T>
@@ -364,7 +364,7 @@ public:
 };
 ```
 
-You see, this class itself has just that much stuff. It looks like demo code, but it really works. Let's try:
+You see, this class itself has just this much stuff. It looks like demo code, but it really works. Let's try:
 
 ```cpp
 int main() {
@@ -402,13 +402,13 @@ sum = 142
 捕获到: narrowing conversion detected
 ```
 
-At this point, we can see a key design idea: previously we thought template metaprogramming and the type system were two different things, but in fact, the type system itself is the best place to do checks. No need to remember where to check and where not to, just use `Number<T>` instead of `T`, and the check happens automatically. And because of the compile-time `if constexpr` branch, those paths that don't need checking (like same-type assignment) won't even generate judgment code, zero overhead.
+Here we can see a key design idea: previously we thought template metaprogramming and the type system were two different things, but in fact, the type system itself is the best place to do checks. No need to remember where to check and where not to, just use `Number<T>` instead of `T`, and the check happens automatically. And because of the compile-time `if constexpr` branch, those paths that don't need checking (like same type assignment) won't even generate judgment code, zero overhead.
 
 ## But being able to construct isn't enough, it needs to do arithmetic
 
-If a numeric type can only construct but not calculate, what's the difference between it and a constant? So we need to add arithmetic operators to `Number<T>`. But there's a problem here: `Number<int>` plus `Number<double>` should return what? You can't just return a type, you need rules.
+If a numeric type can only construct but not calculate, what's the difference between it and a constant? So we need to add arithmetic operators to `Number<T>`. But there is a problem here: `Number<int>` plus `Number<double>` should return what? You can't just return a type, you need rules.
 
-There's a thing in the standard library called `std::common_type`, it's exactly for this—given two types, telling you what type to use when doing arithmetic operations on them. For example, `common_type_t<int, double>` is `double`, `common_type_t<int, unsigned int>` is `unsigned int` on most platforms. We use it directly:
+There is a thing in the standard library called `std::common_type`, it does exactly this—given two types, telling you what type to use when doing arithmetic operations on them. For example, `common_type_t<int, double>` is `double`, `common_type_t<int, unsigned int>` is `unsigned int` on most platforms. We use it directly:
 
 ```cpp
 #include <type_traits>
@@ -455,7 +455,7 @@ public:
 };
 ```
 
-Let's run a slightly more complex example to verify:
+Run a slightly more complex example to verify:
 
 ```cpp
 int main() {
@@ -498,7 +498,7 @@ Output:
 ```
 
 :::warning Original text error correction: unsigned arithmetic overflow won't be caught by narrow_convert
-In the output above, the last line "addition overflow caught" **will not appear** in actual compilation and execution. Actual test result (GCC 16.1.1, C++20):
+In the output above, the last line "addition overflow caught" **will not appear** in actual compilation and running. Actual test result (GCC 16.1.1, C++20):
 
 ```text
 Raw unsigned sum: 705032704
@@ -506,9 +506,9 @@ Would narrow? 0
 No exception thrown! overflow = 705032704
 ```
 
-The reason is: arithmetic for `unsigned int + unsigned int` in C++ is **wrapping** (well-defined wrapping), the result of `3000000000u + 2000000000u` is `705032704`—a legal `unsigned int` value. Subsequently, `narrow_convert<unsigned int>(705032704u)` detects same-type assignment, `would_narrow` directly returns false, and the exception isn't thrown at all.
+The reason is: arithmetic of `unsigned int + unsigned int` in C++ is **wrapping** (well-defined wrapping), the result of `3000000000u + 2000000000u` is `705032704`—a legal `unsigned int` value. Subsequently, `narrow_convert<unsigned int>(705032704u)` detects same type assignment, `would_narrow` returns false directly, and the exception isn't thrown at all.
 
-This is a fundamental limitation of `Number<T>`'s current design: `narrow_convert` can only detect **narrowing conversions during assignment**, it cannot detect **overflow of the arithmetic operation itself**. To detect overflow, you need to use compiler built-ins (like `__builtin_add_overflow`) or manual checks:
+This is a fundamental limitation of `Number<T>`'s current design: `narrow_convert` can only detect **narrowing conversion during assignment**, not **overflow of the arithmetic operation itself**. To detect overflow, you need to use compiler built-ins (like `__builtin_add_overflow`) or manual checks:
 
 ```cpp
 template<typename T>
@@ -529,22 +529,22 @@ constexpr T safe_add(T a, T b) {
 }
 ```
 
-See [01-06-overflow-not-caught.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/01-concept-based-generic-programming/01-06-overflow-not-caught.cpp) for verification code.
+See verification code in [01-06-overflow-not-caught.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/blob/main/code/volumn_codes/vol10/cppcon/2025/01-concept-based-generic-programming/01-06-overflow-not-caught.cpp).
 :::
 
-Looking at the last overflow capture example—we need to note that `narrow_convert` can only intercept narrowing **during type conversion**, for overflow of the same-type arithmetic operation itself (like wrapping of `unsigned int + unsigned int`), it's powerless. `common_type_t<unsigned int, unsigned int>` is just `unsigned int` itself, the operation result has already wrapped into a legal value before being assigned to `Number<unsigned int>`. To fully defend against arithmetic overflow, additional mechanisms are needed (like compiler built-in overflow check functions), which is beyond `narrow_convert`'s responsibility.
+Looking at the last overflow capture example—we need to note that `narrow_convert` can only intercept narrowing **during type conversion**, for overflow of the same type arithmetic operation itself (like wrapping of `unsigned int + unsigned int`), it is powerless. `common_type_t<unsigned int, unsigned int>` is `unsigned int` itself, the operation result has already wrapped into a legal value before being assigned to `Number<unsigned int>`. To fully defend against arithmetic overflow, additional mechanisms are needed (like compiler built-in overflow check functions), which is beyond the scope of `narrow_convert`'s responsibility.
 
 At this point, from manual judgment rules, to runtime check functions, to exception handling strategies, to wrapper types and arithmetic operations, this line is finally connected. The key is to understand these things as a complete narrowing defense system, not isolated knowledge points.
 
 ---
 
-# Don't reinvent the wheel: Function objects in the standard library + eliminating comparison traps
+# No need to reinvent the wheel: Function objects in the standard library + eliminating comparison traps
 
-To implement a set of safe integer types, intuitively you have to write addition, subtraction, multiplication, division, and comparison operations all by hand, just thinking about it gives you a headache. But actually, the standard library has long prepared `std::plus`, `std::multiplies` and other function objects, each just a few lines of code, not black magic at all. Of course, reinventing the wheel counts as a traditional C++ art.
+To implement a set of safe integer types, intuitively you have to write addition, subtraction, multiplication, division, and comparison operations all by yourself, just thinking about it gives you a headache. But in fact, the standard library has long prepared `std::plus`, `std::multiplies` and other function objects, each is just a few lines of code, not black magic at all. Of course, reinventing the wheel counts as a traditional C++ skill.
 
 ## First, let's see how to write operators
 
-A common misconception is: to overload `operator+`, `operator*` for custom types, you have to write a bunch of `friend` functions inside or outside the class, handling various boundary conditions in each function. But actually, you just need to use the function objects from the standard library.
+A common misconception is: to overload `operator+`, `operator*` for custom types, you have to write a bunch of `friend` functions inside or outside the class, handling various boundary cases in each function. But actually, you just need to use the function objects from the standard library.
 
 ```cpp
 #include <functional>
@@ -566,11 +566,11 @@ struct safe_int {
 };
 ```
 
-You will find the key here is: `std::plus<T>{}` is a function object, when calling it, if an unintended type conversion happens (like mixing signed and unsigned), it will be blocked by the rules we set up earlier. The operation logic itself doesn't need concern, the standard library has already written it, we just "intercept" and "release".
+You will find the key here is: `std::plus<T>{}` is a function object, when you call it, if an unintended type conversion happens (like signed and unsigned mixed), it will be blocked by the rules we set earlier. The operation logic itself doesn't need concern, the standard library has already written it, we just handle "intercept" and "let pass".
 
 ## Comparison operations: the hardest hit area for signed/unsigned mixing
 
-Operator overloading itself isn't hard, but comparison operations are the hardest hit area for signed/unsigned mixing. Spent a whole afternoon debugging a bug, only to find it was just one wrong comparison line—this isn't uncommon.
+Operator overloading itself isn't hard, but comparison operations are the hardest hit area for signed/unsigned mixing. Spending a whole afternoon debugging a bug, only to find it's a wrong comparison line—this isn't uncommon.
 
 Look at this code:
 
@@ -585,13 +585,13 @@ int main() {
 }
 ```
 
-Run it, output is `0`, that is `false`. Negative less than positive, result is actually false? Why? The answer is C++'s implicit conversion rules have a rule—when signed and unsigned are mixed in a comparison, the signed number is converted to unsigned. So `-1` becomes a huge number (`4294967295`), of course it's not less than 2. This rule has existed since C was born in 1972, maybe it seemed fine at the time, but over decades who knows how many bugs it buried.
+Run it, the output is `0`, which is `false`. Negative is less than positive, but the result is actually false? Why? The answer is that C++'s implicit conversion rules have a clause—when signed and unsigned are mixed in a comparison, the signed number is converted to unsigned. So `-1` becomes a huge number (`4294967295`), of course not less than 2. This rule has existed since C was born in 1972, maybe it didn't seem like a big deal then, but over the decades, who knows how many bugs were buried.
 
-The speaker said it well: this rule should have been corrected in 1972, but by the time everyone realized how bad it was, there was too much code in the world relying on this behavior, couldn't change it. To this day we are still suffering from it.
+The speaker put it well: this set of rules should have been corrected in 1972, but by the time everyone realized how bad it was, there was already too much code in the world relying on this behavior, and it couldn't be changed. Today we are still suffering for it.
 
-## Fix this comparison trap by hand
+## Fixing this comparison trap yourself
 
-Since built-in types aren't reliable, let's take over comparison operations in our safe_int. The idea is direct: if the types on both sides differ (one signed one unsigned), do a special judgment first; if types are the same, go straight to normal comparison.
+Since built-in types aren't reliable, let's take over comparison operations in our safe_int. The idea is straightforward: if the types on both sides are inconsistent (one signed, one unsigned), do a special judgment first; if types are consistent, go directly to normal comparison.
 
 ```cpp
 template <typename T>
@@ -623,7 +623,7 @@ bool operator<(const safe_int<T>& a, const safe_int<U>& b) {
 }
 ```
 
-There is a key point here: `operator<` is written as a **templated free function** rather than a class-internal `friend`. The reason is that the class-internal `friend bool operator<(const safe_int& a, const safe_int& b)` only accepts two `safe_int<T>` with the same T. And `safe_int<int> < safe_int<unsigned int>` is a comparison between two different template instances, the class-internal friend can't match it at all. After writing it as a `template<typename T, typename U>` free function, the compiler can correctly match this operator between `safe_int<int>` and `safe_int<unsigned int>`. `if constexpr` lets the compiler optimize away branches it doesn't take, zero overhead. Equality comparison, greater-than comparison follow the same idea, just write accordingly.
+There is a key point here: `operator<` is written as a **templated free function** rather than a class member `friend`. The reason is that the class member `friend bool operator<(const safe_int& a, const safe_int& b)` only accepts two `safe_int<T>` with the same T. And `safe_int<int> < safe_int<unsigned int>` is a comparison between two different template instances, the class friend can't match it at all. After writing it as a `template<typename T, typename U>` free function, the compiler can correctly match this operator between `safe_int<int>` and `safe_int<unsigned int>`. `if constexpr` lets the compiler optimize away branches it doesn't take, zero overhead. Equality comparison, greater-than comparison follow the same idea, just write accordingly.
 
 Verify:
 
@@ -641,9 +641,9 @@ int main() {
 
 ## A bigger pit: range checking silently bypassed
 
-Comparison operations are fixed, but there's a more hidden scenario. The speaker gave a span example—this pattern is very common in actual code.
+Comparison operations are fixed, but there is a more hidden scenario. The speaker gave a span example—this pattern is very common in actual code.
 
-First, background. `std::span` is essentially a "fat pointer"—a pointer to a sequence of elements plus the length of the sequence. This idea isn't new, Dennis Ritchie proposed adding boundary-carrying pointers to C as early as the early 1990s (for variable-length arrays), called fat pointer then, but the committee felt the runtime overhead was too large and didn't adopt it<RefLink :id="7" preview="Ritchie, Variable-Size Arrays in C, 1990" />. Now C++20 finally added span, it's a vindication decades late—although span itself doesn't do boundary checks, it provides the foundation for upper-level safety wrappers.
+First, background. `std::span` is essentially a "fat pointer"—a pointer to a sequence of elements plus the length of the sequence. This idea isn't new, Dennis Ritchie proposed adding boundary-carrying pointers to C as early as the early 1990s (for variable-length arrays), called fat pointers then, but the committee felt the runtime overhead was too large and didn't adopt it<RefLink :id="7" preview="Ritchie, Variable-Size Arrays in C, 1990" />. Now C++20 finally added span, it's a vindication decades late—although span itself doesn't do boundary checks, it provides the foundation for upper-level safety wrappers.
 
 Where is the problem? Look at this code:
 
@@ -659,15 +659,15 @@ void process(std::span<int> data) {
 }
 ```
 
-`max_size` is `unsigned int`, value is 50. What happens to `50 - 500` in unsigned arithmetic? Underflow, becomes a huge number (around `4294967296 - 450`). Then `subspan` gets this huge length—and `std::span::subspan` in C++20 **has no** boundary check, it only has a precondition (violation is undefined behavior), it won't throw exceptions<RefLink :id="6" preview="cppreference, std::span::subspan, C++20" />. This means that huge number is passed directly in, the consequence is undefined behavior—might read memory it shouldn't, might not crash, but you can't count on span to stop it.
+`max_size` is `unsigned int`, value is 50. What happens to `50 - 500` under unsigned arithmetic? Underflow, becoming a huge number (around `4294967296 - 450`). Then `subspan` gets this huge length—and `std::span::subspan` in C++20 **has no** boundary check, it only has a precondition (violation is undefined behavior), it won't throw exceptions<RefLink :id="6" preview="cppreference, std::span::subspan, C++20" />. This means that huge number is passed directly in, the consequence is undefined behavior—it might read memory it shouldn't, it might not crash, but you can't count on span to stop it.
 
 Just because of a small typo, just because of built-in type conversion rules, you completely lose the protection of range checking. Many people think span is safe enough, didn't expect it to be bypassed at the parameter calculation layer.
 
-## Use safe_int to give span real protection
+## Using safe_int to give span real protection
 
-Now we have a safe_int that can intercept all wrong conversions, can we make span's size parameter protected too? Of course.
+Now that we have safe_int which can intercept all wrong conversions, can we make span's size parameter protected too? Of course.
 
-My idea is: first define a concept representing "type that can be spanned", then require in this concept that the size type must be a safe integer.
+My idea is: first define a concept representing "type that can be a span", then in this concept require that the size type must be a safe integer.
 
 ```cpp
 #include <concepts>
@@ -711,23 +711,23 @@ struct safe_span {
 };
 ```
 
-The key point is that the member variable `size_` is of type `safe_int<std::size_t>` not the bare `std::size_t`. This means any operation on this size—subtraction, comparison, assignment—will go through our safety check. If someone writes `50 - 500`, safe_int will report an error the moment the operation happens, rather than letting a huge number quietly slip into subspan. **We don't need to remedy this in span's boundary check, we need to eliminate the generation of wrong values from the source—integer operations themselves.** Looking back, the idea is actually simple: replace unsafe built-in integers with safe wrapper types, let errors be caught the moment they happen, rather than waiting for them to propagate to some boundary check to be discovered. In other words—let the class that should really be responsible handle the corresponding error, don't let other components cover for you.
+The key point is that the member variable `size_` is of type `safe_int<std::size_t>` rather than bare `std::size_t`. This means any operation on this size—subtraction, comparison, assignment—will go through our safety check. If someone writes `50 - 500`, safe_int will report an error at the moment of operation, rather than letting a huge number quietly flow into subspan. **We don't need to remedy in span's boundary check, we need to eliminate the generation of wrong values from the source—integer arithmetic itself.** Looking back, the idea is actually simple: replace unsafe built-in integers with safe wrapper types, letting errors be caught the moment they occur, rather than waiting for them to propagate to some boundary check. In other words—let the class that should really be responsible handle the corresponding error, rather than letting other components cover for you.
 
 ---
 
-# Add boundary checks to span: from manual defense to type deduction
+# Adding boundary checks to span: from manual defense to type deduction
 
-The problem of array out-of-bounds has always been a headache: it runs fast, but once it goes out of bounds, the program might crash in a completely unrelated place, and then you stare at gdb for half an hour. Next, let's look at a structured way to check subscript out-of-bounds.
+The problem of array out-of-bounds has always been a headache: it runs fast, but once out of bounds, the program might crash in a completely unrelated place, and then you stare at gdb for half an hour. Next, let's look at a structured way to check subscript out-of-bounds.
 
 ## First, clarify what we want to do
 
-The core requirement is actually very simple: I have a contiguous memory area, I know how big it is, I want to automatically check if the subscript is out of bounds every time I access it with a subscript. If it's out of bounds, throw an exception immediately or be blocked by the compiler, rather than waiting for memory to be corrupted before I find out.
+The core requirement is actually very simple: I have a contiguous memory area, I know how big it is, I want to automatically check if the subscript is out of bounds every time I access it with a subscript. If it's out of bounds, immediately throw an exception or be blocked by the compiler, rather than waiting until the memory is corrupted to discover it.
 
-Doesn't this sound like what `std::vector`'s `at()` does? But the difference is, I don't want to bear the cost of a dynamically allocated vector, I might just have a bare pointer plus a length, or a native array, and I want to access it in the same safe way. This is the meaning of span—it doesn't own the data, it just "looks" at the data, but when looking, it can help watch the boundaries.
+Doesn't this sound like what `std::vector`'s `at()` does? But the difference is, I don't want to bear the overhead of a dynamically allocated vector, I might just have a raw pointer plus a length, or a native array, and I want to access it in the same safe way. This is where span comes in—it doesn't own the data, it just "looks" at the data, but when looking, it can help watch the boundaries.
 
-## Write a checked subscript access by hand
+## Write a checked subscript access
 
-Let's start with the most basic scenario. Suppose I already have a span-like thing, it holds data and size internally. What I need to do now is overload `operator[]` to make it do a range check before executing the access.
+Let's start with the most basic scenario. Suppose I already have a span-like thing, it holds data and size internally. What I need to do now is overload `operator[]` to make it do a range check before executing access.
 
 ```cpp
 #include <iostream>
@@ -766,7 +766,7 @@ public:
 
 You see, the constructor here only accepts a pointer and a size, this is so-called "spanable"—anything that can provide a data pointer and element count can be used to initialize it. Then `operator[]` does one thing: if the index you give is greater than or equal to size, throw an exception directly.
 
-## Run it and see the effect
+## Run and see the effect
 
 ```cpp
 int main() {
@@ -794,11 +794,11 @@ Running it, the output is like this:
 捕获到异常: 下标越界了兄弟
 ```
 
-At this point, you might think, this isn't special, `std::vector::at()` is just like this. Don't worry, the key point is later.
+At this point, you might think, this isn't special, `std::vector::at()` does exactly this. Don't worry, the key point is coming.
 
-## The problem of negative subscripts—the pit of signed and unsigned
+## The problem of negative subscripts—the signed/unsigned pit
 
-There is an easily overlooked trap here. `operator[]` accepts a parameter of type `std::size_t`, this is an unsigned integer. If you pass a `-10` directly, what happens?
+There is an easily overlooked trap here. `operator[]` accepts a parameter of type `std::size_t`, which is an unsigned integer. If you pass a `-10` directly, what happens?
 
 ```cpp
 // 你以为你在传 -10，其实编译器会做隐式转换
@@ -806,7 +806,7 @@ There is an easily overlooked trap here. `operator[]` accepts a parameter of typ
 // s[-10] 实际上变成了 s[18446744073709551606] 之类的鬼东西
 ```
 
-But! If you change the parameter type to signed `ptrdiff_t`, then the compiler can help you block some obvious problems at compile time. Or, if you use the standard implementation of `std::span`, it has specific requirements for the subscript type.
+But! If you change the parameter type to signed `ptrdiff_t`, the compiler can help you block some obvious problems at compile-time. Or, if you use `std::span`'s standard implementation, it has specific requirements for the subscript type.
 
 Let me change the writing, make the subscript type signed, so negative numbers can be correctly identified:
 
@@ -858,9 +858,9 @@ Output:
 捕获到异常: 负数下标，你想干嘛
 ```
 
-It's worth noting here that when using `size_t` as the subscript type, a negative number passed in is directly implicitly converted to an astronomical number, then either it just happens to not go out of bounds and reads garbage data (more scary), or it goes out of bounds and throws an exception but the error message is completely misleading. After changing to `ptrdiff_t`, a negative number is a negative number, clear and clear.
+It's worth noting here that when using `size_t` as the subscript type, a negative number passed in is directly implicitly converted to an astronomical number, then either it just happens not to be out of bounds and reads garbage data (scarier), or it's out of bounds and throws an exception but the error message is completely misleading. After changing to `ptrdiff_t`, a negative number is a negative number, clear and simple.
 
-However, the compiler can only block the simplest cases like literal negative numbers. In actual projects, the real problems are often values calculated elsewhere—some function returns a -1 to indicate failure, forgetting to check and using it directly as a subscript. This can only be caught at runtime, but at least with this check, the program won't silently corrupt memory.
+However, the compiler can only block the simplest cases like literal negative numbers. In actual engineering, the real problems are often values calculated elsewhere—some function returns a -1 to indicate failure, forgetting to check and using it directly as a subscript. This can only be caught at runtime, but at least with this check, the program won't silently corrupt memory.
 
 ## Using another span's element as size—a more realistic scenario
 
@@ -918,11 +918,11 @@ Output:
 捕获到异常: params[0] 不是合法的正整数
 ```
 
-This kind of writing is particularly common in real projects. You get a number from a config file, network protocol, user input, and then use it to decide how many elements to access. Without checking, this is a perfect security vulnerability.
+This kind of writing is particularly common in real projects. You get a number from a config file, network protocol, or user input, and use it to decide how many elements to access. Without checking, this is a perfect security vulnerability.
 
 ## Type deduction: stop repeating what the compiler already knows
 
-At this point, every time you have to write `checked_span<int>`, `checked_span<double>` repeating the element type, while the compiler can deduce it from the initialization parameters. This is the problem that C++17's CTAD (Class Template Argument Deduction) was introduced to solve. Just add a deduction guide:
+At this point, every time you have to write `checked_span<int>`, `checked_span<double>` repeating the element type, while the compiler can deduce it from the initialization parameters. This is the problem that C++17's CTAD (Class Template Argument Deduction) solves. Just add a deduction guide:
 
 ```cpp
 template<typename T>
@@ -955,7 +955,7 @@ template<typename T>
 checked_span_v3(T*, std::size_t) -> checked_span_v3<T>;
 ```
 
-Now writing it is much cleaner:
+Now writing is much cleaner:
 
 ```cpp
 int main() {
@@ -983,15 +983,15 @@ int main() {
 }
 ```
 
-Type deduction seems like "syntactic sugar", but after writing hundreds of span-related codes in a project, you'll find that writing one less `int` isn't about saving three characters, it's that when you change `int` to `int64_t` later, you only need to change one place, not look all over the world for where you missed writing.
+Type deduction seems like "syntactic sugar", but after writing hundreds of span-related codes in a project, you'll find that not writing a `int` isn't about saving three characters, it's that when you change `int` to `int64_t` later, you only need to change one place, not look everywhere for where you missed writing.
 
 This is a core philosophy of generic programming: don't repeat what the compiler already knows and you already know.
 
-## Subspan and construction from pointers—a more complete toolbox
+## Sub-span and construction from pointers—a more complete toolbox
 
-Just having a complete span isn't enough. In actual development, you often need to cut a small piece from a large span, or construct a span from a bare pointer.
+Just a complete span isn't enough. In actual development, you often need to cut a small piece from a big span, or construct a span from a raw pointer.
 
-First, the scenario of constructing from a pointer. Since the meaning of span is safety, isn't constructing a span from a bare pointer inherently Unsafe? There's indeed no way to check whether that pointer really points to that many elements—the compiler doesn't know, and runtime can't verify it either. But the key is: **constructing a span from a pointer itself appears extremely abrupt in code reviews and static analysis tools**. If a project specification requires "all array access must go through span", then writing `span(ptr, n)` code, the reviewer can see at a glance: here is an unsafe boundary, needs focus. This is much easier to manage than having `ptr[i]` everywhere.
+First, the scenario of constructing from a pointer. Since the meaning of span is safety, isn't constructing a span from a raw pointer inherently Unsafe? Indeed, there is no way to check whether that pointer really points to that many elements—the compiler doesn't know, and runtime can't verify it. But the key is: **constructing a span from a pointer itself will appear extremely abrupt in code reviews and static analysis tools**. If a project specification requires "all array access must go through span", then writing `span(ptr, n)` code, the reviewer can see at a glance: here is an unsafe boundary, need to look closely. This is much easier to manage than `ptr[i]` everywhere.
 
 ```cpp
 #include <span>
@@ -1060,11 +1060,11 @@ Output:
 捕获: take_front: n 超过了 span 的大小
 ```
 
-Note the way I write the boundary check in `take_range`: `count > s.size() - offset`. I didn't use `offset + count > s.size()` here because the latter might overflow when signed and unsigned are mixed. Although in this scenario `offset` and `count` are both `size_t` and won't overflow, developing the habit of using subtraction rather than addition for range checks can save you from pitfalls in other places. This is also the idea mentioned in the speech of "using numbers rather than mixing signed and unsigned".
+Note how I wrote the boundary check in `take_range`: `count > s.size() - offset`. I didn't use `offset + count > s.size()` here because the latter might overflow when signed and unsigned are mixed. Although in this scenario `offset` and `count` are both `size_t` and won't overflow, developing the habit of using subtraction rather than addition for range checks can save you from pitfalls elsewhere. This is also the idea mentioned in the speech of "using numbers rather than mixing signed and unsigned".
 
-Similarly, these helper functions can also add deduction guides, so the call site doesn't need to write template parameters. Two lines of deduction guides, but the code reads completely differently—you see `take_front(full, 3)`, not `take_front<int>(full, 3)`. The compiler knows `full` is `span<int>`, it can deduce the return value is also `span<int>`, you don't need to worry about it.
+Similarly, these helper functions can also add deduction guides, so the call site doesn't need to write template parameters. It's just two lines of deduction guides, but the code reads completely differently—you see `take_front(full, 3)`, not `take_front<int>(full, 3)`. The compiler knows `full` is `span<int>`, it can deduce the return value is also `span<int>`, you don't need to worry about it.
 
-At this point, span's basic safe access, type deduction, and subspan slicing are all sorted. The code looks quite clean, no redundant repetition, checks are done where they should be. But things aren't over—there are more complex scenarios later.
+At this point, span's basic safe access, type deduction, and sub-span slicing are all sorted. The code looks quite clean, no redundant repetition, and checks are done where needed. But things aren't over—there are more complex scenarios ahead.
 
 <ReferenceCard title="References">
   <ReferenceItem
@@ -1125,5 +1125,5 @@ At this point, span's basic safe access, type deduction, and subspan slicing are
 ### Further Reading
 
 - Stroustrup, B. ["A History of C++: 1979–1991"](https://www.stroustrup.com/hopl2.pdf). *HOPL-II*, 1993. — Authoritative record of the early history of the C++ language, covering the full context of template design decisions.
-- Lourseyre, C. ["[History of C++] Templates: from C-style macros to concepts"](https://belaycpp.com/2021/10/01/history-of-c-templates-from-c-style-macros-to-concepts/). *Belay the C++*, 2021. — High-quality secondary整理 of Stroustrup's *D&E* Chapter 15,梳理ing the complete evolution from C macros to C++20 concepts.
+- Lourseyre, C. ["[History of C++] Templates: from C-style macros to concepts"](https://belaycpp.com/2021/10/01/history-of-c-templates-from-c-style-macros-to-concepts/). *Belay the C++*, 2021. — High-quality secondary reorganization of Stroustrup's *D&E* Chapter 15,梳理了从 C 宏到 C++20 concepts 的完整演进脉络.
 - Stroustrup, B. *The Design and Evolution of C++*. Addison-Wesley, 1994. — Authoritative interpretation of C++ language design decisions, Chapter 15 specifically discusses the design motivation and trade-offs of templates.

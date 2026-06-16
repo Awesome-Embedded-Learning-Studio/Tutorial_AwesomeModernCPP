@@ -2,7 +2,7 @@
 chapter: 10
 cpp_standard:
 - 23
-description: C++23's `expected` type and monadic operations, implementing elegant
+description: The C++23 `expected` type and monadic operations, implementing elegant
   error propagation chains
 difficulty: intermediate
 order: 3
@@ -21,517 +21,266 @@ tags:
 - 类型安全
 title: 'std::expected<T, E>: Type-Safe Error Propagation'
 translation:
-  engine: anthropic
   source: documents/vol2-modern-features/ch10-error-handling/03-expected-error.md
-  source_hash: c04dde9a1bfd0eef6a7f6b0342bac5785f3b88aad62a942ec1e7b94974f0716c
-  token_count: 3399
-  translated_at: '2026-05-26T11:35:56.762113+00:00'
+  source_hash: 31bfe8489ee19196b3a58f3e8405c538be69c40c97f6ba7c801dffe390b724fe
+  translated_at: '2026-06-16T03:59:29.226676+00:00'
+  engine: anthropic
+  token_count: 3394
 ---
 # std::expected<T, E>: Type-Safe Error Propagation
 
-In the previous article, we discussed how `std::optional` handles errors and pointed out its limitation—it cannot carry error information. When you need to know *why* something failed, `std::optional` falls short. `std::expected`, introduced in C++23, fills this gap: it tells you both whether a value exists and *why* it doesn't.
+In the previous post, we discussed the application of `std::optional` in error handling and pointed out its limitation—it cannot carry error information. When you need to know "why it failed," `std::optional` falls short. The `std::expected` introduced in C++23 fills this gap: it tells you both "whether there is a value" and "the reason why there isn't."
 
-If you have experience with Rust, the design philosophy behind `std::expected` is identical to Rust's `Result`—it holds a value `T` on success and an error `E` on failure. The difference is that C++ lacks compiler-enforced `match` checks and the `?` operator, so we rely on monadic operations and coding discipline to bridge the gap.
+If you have used Rust, the design philosophy of `std::expected` is identical to Rust's `Result`—holding a value `T` on success and an error `E` on failure. The difference is that C++ lacks compiler-enforced `panic` checks and the `?` operator, so we rely on monadic operations and coding discipline to bridge the gap.
 
-A quick note: `std::expected` is a C++23 feature. If you are currently using C++17 or C++20, this article provides a workable simplified implementation. In embedded scenarios, since there is no RTTI dependency, `std::expected` works perfectly fine.
+First, a note: `std::expected` is a C++23 feature. If you are currently using C++17 or C++20, this article provides a usable simplified implementation; in embedded scenarios, since there is no dependency on RTTI, `std::expected` works perfectly fine.
 
 ------
 
 ## Core Semantics of expected
 
-`std::expected` is a template class that holds either a success value of type `T` or an error object of type `E`. Its interface design borrows from `std::optional`—you can use `has_value()` or the boolean conversion operator to check for success, `value()` to get the value, and `error()` to get the error:
+`std::expected` is a template class that either holds a success value of type `T` or an error object of type `E`. Its interface design borrows from `std::optional`—you can use `has_value()` or operator `bool` to check for success, use `value()` to get the value, and `error()` to get the error:
 
 ```cpp
-#include <expected>
-#include <string>
-#include <iostream>
-
-enum class ParseError {
-    kEmptyInput,
-    kInvalidCharacter,
-    kOutOfRange,
-};
-
-std::expected<int, ParseError> parse_int(const std::string& s) {
-    if (s.empty()) {
-        return std::unexpected(ParseError::kEmptyInput);
-    }
-
-    try {
-        std::size_t pos = 0;
-        int value = std::stoi(s, &pos);
-        if (pos != s.size()) {
-            return std::unexpected(ParseError::kInvalidCharacter);
-        }
-        return value;
-    } catch (...) {
-        return std::unexpected(ParseError::kOutOfRange);
-    }
-}
-
-int main() {
-    auto r1 = parse_int("42");
-    if (r1) {
-        std::cout << "Value: " << r1.value() << "\n";  // 42
-    }
-
-    auto r2 = parse_int("42abc");
-    if (!r2) {
-        std::cout << "Error: " << static_cast<int>(r2.error()) << "\n";
-        // 输出 Error: 1（kInvalidCharacter）
-    }
+std::expected<int, std::string> parse_int(std::string_view str) {
+    if (str.empty()) return std::unexpected("empty string"); // Error
+    // ... parsing logic ...
+    return 42; // Success
 }
 ```
 
-`std::unexpected` is a helper template specifically used to construct the error branch of `std::expected`. Its role is similar to `std::nullopt` for `std::optional`—it explicitly expresses "this is an error."
+`std::unexpected` is a helper template specifically used to construct the error branch of `std::expected`. Its role is similar to `std::nullopt`之于 `std::optional`—it explicitly expresses "this is an error."
 
 ------
 
 ## Construction and Access
 
-`std::expected` offers several ways to be constructed. The most basic approach: construct directly with a value to indicate success, or use `std::unexpected` to indicate failure:
+`std::expected` offers rich construction methods. The most basic ones: construct directly with a value to indicate success, or use `std::unexpected` to indicate failure:
 
 ```cpp
-// 成功值构造
-std::expected<int, std::string> success = 42;
-
-// 错误构造
-std::expected<int, std::string> failure =
-    std::unexpected("something went wrong");
-
-// 就地构造
-std::expected<std::string, int> in_place_success{
-    std::in_place, "hello"};
+std::expected<int, ErrorCode> result1 = 42;             // Success
+std::expected<int, ErrorCode> result2 = std::unexpected(ErrorCode::InvalidInput); // Failure
 ```
 
-For access, `std::expected` provides an interface similar to `std::optional`, but adds a crucial member—`operator*`:
+Regarding access, `std::expected` provides an interface similar to `std::optional`, but adds a key member—`error()`:
 
 ```cpp
-std::expected<int, std::string> result = 42;
+if (result.has_value()) {
+    int val = result.value(); // Safe access
+} else {
+    ErrorCode err = result.error(); // Get error
+}
 
-// 检查
-result.has_value();      // true
-static_cast<bool>(result);  // true
-
-// 访问值
-result.value();          // 42，如果为空则抛出 std::bad_expected_access
-*result;                 // 42，未定义行为检查（类似 optional 的 operator*）
-result->some_member;     // 如果 T 是结构体
-
-// 访问错误（仅在 !has_value() 时调用）
-std::expected<int, std::string> err =
-    std::unexpected("oops");
-err.error();             // "oops"
-
-// 安全默认值
-result.value_or(0);      // 如果有值返回值，否则返回 0
+// Or use the dereference operator (throws on error)
+int val = *result;
 ```
 
-The difference between `value()` and `operator*` is that the former throws a `std::bad_expected_access` exception when `std::expected` is in an error state, while the latter results in undefined behavior. Therefore, use `operator*` on paths where you are certain a value exists, and use `value()` or check `has_value()` first on paths where you are less certain.
+The difference between `value()` and `operator*` is: the former throws a `std::bad_expected_access` exception when `std::expected` is in an error state, while the latter results in undefined behavior. So, use `operator*` on paths where "you are sure there is a value," and use `value()` or check `has_value()` first on paths where "you are not sure."
 
 ------
 
 ## Monadic Operations
 
-This is the most powerful part of `std::expected`. C++23's `std::expected` natively supports four monadic operations, allowing you to chain multiple potentially failing operations without deeply nesting `if/else` blocks.
+This is the most powerful part of `std::expected`. C++23's `std::expected` natively supports four monadic operations, allowing you to organize multiple potentially failing operations using chained calls without nesting `if` statements layer by layer.
 
 ### and_then: Chaining Potentially Failing Operations
 
-`and_then` takes a function `f`, which accepts the value inside `std::expected` and returns a new `std::expected`. If the current `std::expected` is in an error state, `f` is not called, and the error passes straight through to the end of the chain:
+`and_then` accepts a function `f`, where `f` accepts the value inside `std::expected` and returns a new `std::expected`. If the current `std::expected` is in an error state, `f` will not be called, and the error propagates directly to the end of the chain:
 
 ```cpp
-#include <expected>
-#include <string>
-#include <iostream>
-
-std::expected<int, std::string> validate_positive(int value) {
-    if (value > 0) return value;
-    return std::unexpected("Value must be positive");
-}
-
-std::expected<double, std::string> safe_divide(int num, int denom) {
-    if (denom == 0) {
-        return std::unexpected("Division by zero");
-    }
-    return static_cast<double>(num) / denom;
-}
-
-int main() {
-    std::string input = "42";
-
-    auto result = parse_int(input)
-        .and_then(validate_positive)
-        .and_then([](int v) {
-            return safe_divide(v, 2);
-        });
-
-    if (result) {
-        std::cout << "Result: " << *result << "\n";  // 21.0
-    } else {
-        std::cout << "Error: " << result.error() << "\n";
-    }
-}
+// Read file -> Parse config -> Validate config
+auto result = read_file("config.json")
+    .and_then(parse_json)      // If read fails, parse_json is skipped
+    .and_then(validate_config); // If parse fails, validate is skipped
 ```
 
-If `parse_int` returns an error, the subsequent `validate_range` and `to_hex_string` will not execute, and the error appears directly in `result`. This is what we mean by "automatic error pass-through."
+If `read_file` returns an error, subsequent `parse_json` and `validate_config` will not execute, and the error appears directly in `result`. This is the meaning of "automatic error propagation."
 
 ### transform: Transforming the Value
 
-The difference between `transform` and `and_then` is that the provided function returns a plain value instead of an `std::expected`. `transform` automatically wraps the return value into a new `std::expected`:
+The difference between `transform` and `and_then` is that the passed function returns a normal value instead of an `std::expected`. `transform` automatically wraps the return value into a new `std::expected`:
 
 ```cpp
-auto result = parse_int("42")
-    .transform([](int v) { return v * 2; })
-    .transform([](int v) { return std::to_string(v); });
-// result 的类型是 std::expected<std::string, ParseError>
+std::expected<int, Error> get_value();
+auto result = get_value()
+    .transform([](int v) { return v * 2; })  // int -> int
+    .transform([](int v) { return std::to_string(v); }); // int -> string
 ```
 
-Here, the first `transform` turns `int` into `int` (doubling it), and the second turns `int` into `std::string`. If any step fails, subsequent `transform` calls will not execute.
+Here, the first `transform` turns `int` into `int` (doubling), and the second turns `int` into `string`. If any step in the middle fails, subsequent `transform`s will not execute.
 
-`transform` is suited for operations that "cannot fail themselves." If an operation might fail, use `and_then`; if it is guaranteed to succeed, use `transform`.
+`transform` is suitable for transformation operations that "cannot fail themselves." If an operation might fail, use `and_then`; if it is guaranteed to succeed, use `transform`.
 
 ### or_else: Handling Errors
 
-`or_else` calls the provided function when `std::expected` is in an error state. It is typically used for error recovery, logging, or error enrichment:
+`or_else` calls the passed function when `std::expected` is in an error state, usually used for error recovery, logging, or error enrichment:
 
 ```cpp
-std::expected<int, std::string> try_cache(int key) {
-    return std::unexpected("cache miss for " + std::to_string(key));
-}
-
-std::expected<int, std::string> try_database(int key) {
-    return key * 100;  // 模拟从数据库获取
-}
-
-int main() {
-    auto result = try_cache(42)
-        .or_else([](const std::string& err) {
-            std::cerr << "Cache failed: " << err << ", trying DB\n";
-            return try_database(42);
-        });
-
-    // result 持有 4200
-}
+auto result = risky_operation()
+    .or_else([](Error err) {
+        log_error(err);
+        return try_backup_operation(); // Must return std::expected
+    });
 ```
 
-The function in `or_else` must return the same type of `std::expected`. This means you can perform error recovery inside `or_else`—if the fallback operation succeeds, the subsequent parts of the chain will continue down the success path.
+The function in `or_else` must return the same type of `std::expected`. This means you can perform error recovery inside `or_else`—if the alternative operation succeeds, the subsequent part of the chain will continue executing the success path.
 
-### transform_error: Transforming the Error Type
+### transform_error: Transforming Error Types
 
-`transform_error` allows you to transform the error object as it passes through, without affecting the success path. This is extremely useful for cross-layer error propagation—the lower layer might use one error type, while the upper layer requires another:
+`transform_error` allows you to transform the error object during error propagation without affecting the success path. This is very useful when propagating errors across layers—the lower layer might use one error type, while the upper layer needs another:
 
 ```cpp
-struct AppError {
-    int code;
-    std::string message;
-    std::string context;  // 额外的上下文信息
-};
-
-auto result = parse_int("abc")
-    .transform_error([](ParseError e) -> AppError {
-        return AppError{static_cast<int>(e),
-                        "Parse error",
-                        "in config file line 1"};
+auto result = low_level_io()
+    .transform_error([](IoError err) {
+        return AppError::IoFailed; // Convert IoError to AppError
     });
-// result 的类型是 std::expected<int, AppError>
 ```
 
 ### Complete Chaining Example
 
-Combining all four operations gives us a complete error-handling pipeline:
+Combining the four operations creates a complete error handling pipeline:
 
 ```cpp
-#include <expected>
-#include <string>
-#include <iostream>
-#include <charconv>
-#include <system_error>
-
-enum class ConfigError {
-    kFileNotFound,
-    kParseError,
-    kValidationError,
-};
-
-struct ServerConfig {
-    std::string host;
-    int port;
-};
-
-std::expected<std::string, ConfigError> read_file(
-    const std::string& path) {
-    // 简化：假设总是成功
-    return "host=192.168.1.1\nport=8080\n";
-}
-
-std::expected<ServerConfig, ConfigError> parse_config(
-    const std::string& content) {
-    ServerConfig cfg;
-    cfg.host = "localhost";
-    cfg.port = 8080;
-    // 简化：实际解析内容
-    return cfg;
-}
-
-std::expected<ServerConfig, ConfigError> validate_config(
-    ServerConfig cfg) {
-    if (cfg.port < 1 || cfg.port > 65535) {
-        return std::unexpected(ConfigError::kValidationError);
-    }
-    return cfg;
-}
-
-int main() {
-    auto result = read_file("server.cfg")
-        .and_then(parse_config)
-        .and_then(validate_config)
-        .transform([](const ServerConfig& cfg) -> std::string {
-            return cfg.host + ":" + std::to_string(cfg.port);
-        })
-        .transform_error([](ConfigError e) -> std::string {
-            switch (e) {
-                case ConfigError::kFileNotFound:
-                    return "Config file not found";
-                case ConfigError::kParseError:
-                    return "Config parse error";
-                case ConfigError::kValidationError:
-                    return "Config validation failed";
-            }
-            return "Unknown error";
-        });
-
-    if (result) {
-        std::cout << "Server: " << *result << "\n";
-    } else {
-        std::cerr << "Failed: " << result.error() << "\n";
-    }
-}
+auto conn_str = read_file("config.txt")
+    .and_then(parse_config)
+    .and_then(validate_config)
+    .transform(to_connection_string)
+    .or_else([](auto err) {
+        log_error(err);
+        return std::unexpected("config init failed");
+    });
 ```
 
 This chain reads very clearly: read file -> parse config -> validate config -> convert to connection string. If any step fails, subsequent steps are automatically skipped, and the error information is handled uniformly at the end of the chain.
 
 ------
 
-## expected vs. Exceptions vs. optional
+## expected vs Exceptions vs optional
 
-We have put together a comparison table to help you make choices in real-world scenarios:
+I have compiled a comparison table to help you make choices in actual scenarios:
 
 | Scenario | Recommended Approach | Reason |
 |------|---------|------|
-| Lookup/caching, failure has no specific reason | `std::optional` | Concise, no error information needed |
-| Parsing/IO, need to know the reason for failure | `std::expected` | Carries error information |
-| Multi-step operation chains, need error propagation | `std::expected` | Monadic operations support chaining |
-| Unrecoverable critical errors | Exceptions | Forced interruption, automatic RAII cleanup |
+| Lookup/Cache, failure without reason | `std::optional` | Concise, no error info needed |
+| Parsing/IO, need to know failure reason | `std::expected` | Carries error information |
+| Multi-step operation chain, need error propagation | `std::expected` | Monadic operations support chaining |
+| Unrecoverable critical errors | Exceptions | Forced interruption, RAII automatic cleanup |
 | Constructor failure | Exceptions | Constructors have no return value |
-| Embedded (no exception support) | `std::expected` or enum class | No RTTI dependency |
+| Embedded (no exception support) | `std::expected` or enum | No RTTI dependency |
 
-A practical rule of thumb: **If the caller needs to do different things based on the error type (retry, degrade, report), use `std::expected`; if you only need to know "success or failure," use `std::optional`; if it is a severe program-logic error (impossible to recover from), use exceptions.**
+A practical judgment method is: **If the caller needs to do different things based on the error type (retry, degrade, report), use `std::expected`; if you only need to know "success or failure," use `std::optional`; if it is a serious program logic error (impossible to recover), use exceptions.**
 
 ------
 
 ## Simplified Implementation for C++17 Environments
 
-If your project is still on C++17, don't worry—you can implement a fully functional simplified version of `std::expected`. The following implementation covers the core features and can be dropped directly into your project:
+If your project is still on C++17, don't worry, you can implement a functionally complete simplified version of `std::expected`. The implementation below covers core functionality and can be used directly in your project:
 
 ```cpp
-#include <utility>
-#include <type_traits>
-#include <stdexcept>
+#include <variant>
+#include <optional>
 
-/// 辅助类型：用于构造错误分支
-template <typename E>
-struct unexpected {
-    E value;
-    constexpr explicit unexpected(E v) : value(std::move(v)) {}
-};
-
-/// 简化版 expected<T, E>
-template <typename T, typename E>
-class expected {
-    bool has_value_;
-    union {
-        T val_;
-        E err_;
-    } storage_;
+template<typename T, typename E>
+class [[nodiscard]] expected {
+    std::variant<T, E> v_;
 
 public:
-    // 成功值构造
-    expected(const T& v) : has_value_(true) {
-        new(&storage_.val_) T(v);
-    }
+    // Construct from value (success)
+    expected(T&& val) : v_(std::move(val)) {}
 
-    expected(T&& v) : has_value_(true) {
-        new(&storage_.val_) T(std::move(v));
-    }
+    // Construct from error (failure)
+    expected(E&& err) : v_(std::move(err)) {}
 
-    // 错误构造
-    expected(unexpected<E> u) : has_value_(false) {
-        new(&storage_.err_) E(std::move(u.value));
-    }
+    // Check if it holds a value
+    bool has_value() const { return std::holds_alternative<T>(v_); }
+    explicit operator bool() const { return has_value(); }
 
-    // 析构
-    ~expected() {
-        if (has_value_) storage_.val_.~T();
-        else storage_.err_.~E();
-    }
+    // Get value (undefined behavior if error)
+    const T& operator*() const { return std::get<T>(v_); }
+    T& operator*() { return std::get<T>(v_); }
 
-    constexpr bool has_value() const noexcept { return has_value_; }
-    constexpr explicit operator bool() const noexcept {
-        return has_value_;
-    }
+    // Get error (undefined behavior if value)
+    const E& error() const { return std::get<E>(v_); }
+    E& error() { return std::get<E>(v_); }
 
-    T& value() {
-        if (!has_value_)
-            throw std::runtime_error("bad expected access");
-        return storage_.val_;
-    }
-
-    const T& value() const {
-        if (!has_value_)
-            throw std::runtime_error("bad expected access");
-        return storage_.val_;
-    }
-
-    const E& error() const {
-        if (has_value_)
-            throw std::runtime_error("no error present");
-        return storage_.err_;
-    }
-
-    T& operator*() { return storage_.val_; }
-    T* operator->() { return &storage_.val_; }
-
-    T value_or(T default_val) const {
-        return has_value_ ? storage_.val_ : default_val;
-    }
-
-    /// and_then：链接返回 expected 的操作
-    template <typename F>
+    // Monadic operations (simplified)
+    template<typename F>
     auto and_then(F&& f) -> decltype(f(std::declval<T>())) {
-        using ResultType = decltype(f(std::declval<T>()));
-        if (has_value_) return f(storage_.val_);
-        return ResultType(unexpected<E>{storage_.err_});
+        if (has_value()) return f(std::get<T>(v_));
+        return decltype(f(std::declval<T>()))(std::get<E>(v_));
     }
 
-    /// transform：对值做变换
-    template <typename F>
-    auto transform(F&& f)
-        -> expected<decltype(f(std::declval<T>())), E> {
-        using U = decltype(f(std::declval<T>()));
-        if (has_value_)
-            return expected<U, E>(f(storage_.val_));
-        return expected<U, E>(unexpected<E>{storage_.err_});
+    template<typename F>
+    auto transform(F&& f) -> expected<decltype(f(std::declval<T>())), E> {
+        if (has_value()) return f(std::get<T>(v_));
+        return std::get<E>(v_);
     }
+};
 
-    /// or_else：处理错误
-    template <typename F>
-    expected or_else(F&& f) {
-        if (has_value_) return *this;
-        return f(storage_.err_);
-    }
+template<typename E>
+class unexpected {
+    E val_;
+public:
+    unexpected(E&& val) : val_(std::move(val)) {}
+    const E& error() const { return val_; }
 };
 ```
 
-This implementation omits some details (fine-grained control of copy/move semantics, `std::unexpect_t` support, etc.), but the core semantics are completely correct and suitable for error handling in production environments.
+This implementation omits some details (fine-grained control of copy/move semantics, `std::unexpected` support, etc.), but the core semantics are entirely correct and can be used for error handling in production environments.
 
 ------
 
-## Practical Example: Multi-Layer Parsing Chain
+## General Example: Multi-Layer Parsing Chain
 
-Let's look at an example closer to real-world development—parsing a network address from a string, which involves multiple steps of validation and conversion:
+Let's look at an example closer to actual development—parsing a network address from a string, involving multi-step validation and conversion:
 
 ```cpp
-#include <string>
-#include <string_view>
-#include <expected>
-#include <iostream>
-#include <charconv>
+enum class AddrError { InvalidFormat, InvalidPort, UnknownProtocol };
 
-struct AddressError {
-    enum Code {
-        kEmptyInput,
-        kMissingPort,
-        kInvalidHost,
-        kInvalidPort,
-        kPortOutOfRange,
-    } code;
-    std::string detail;
-};
+using AddrResult = std::expected<SocketAddress, AddrError>;
 
-struct NetworkAddress {
-    std::string host;
-    int port;
-};
-
-std::expected<std::string, AddressError> validate_input(
-    std::string_view input) {
-    if (input.empty()) {
-        return std::unexpected(AddressError{
-            AddressError::kEmptyInput, "Input is empty"});
+AddrResult parse_address(std::string_view input) {
+    // 1. Validate format
+    if (input.empty() || input.find(':') == std::string_view::npos) {
+        return std::unexpected(AddrError::InvalidFormat);
     }
-    return std::string(input);
+
+    // 2. Split protocol and address
+    auto [proto, addr] = split_proto_and_addr(input);
+
+    // 3. Validate protocol
+    if (proto != "tcp" && proto != "udp") {
+        return std::unexpected(AddrError::UnknownProtocol);
+    }
+
+    // 4. Parse port
+    auto port = parse_port(addr);
+    if (!port.has_value()) {
+        return std::unexpected(AddrError::InvalidPort);
+    }
+
+    return SocketAddress{proto, addr, *port};
 }
 
-std::expected<NetworkAddress, AddressError> split_address(
-    std::string input) {
-    auto colon = input.rfind(':');
-    if (colon == std::string::npos) {
-        return std::unexpected(AddressError{
-            AddressError::kMissingPort,
-            "No port specified: " + input});
-    }
-
-    NetworkAddress addr;
-    addr.host = input.substr(0, colon);
-    if (addr.host.empty()) {
-        return std::unexpected(AddressError{
-            AddressError::kInvalidHost, "Host is empty"});
-    }
-
-    auto port_str = input.substr(colon + 1);
-    int port = 0;
-    auto [ptr, ec] = std::from_chars(
-        port_str.data(), port_str.data() + port_str.size(), port);
-    if (ec != std::errc{} || ptr != port_str.data() + port_str.size()) {
-        return std::unexpected(AddressError{
-            AddressError::kInvalidPort,
-            "Port is not a number: " + std::string(port_str)});
-    }
-    if (port < 1 || port > 65535) {
-        return std::unexpected(AddressError{
-            AddressError::kPortOutOfRange,
-            "Port out of range: " + std::to_string(port)});
-    }
-    addr.port = port;
-    return addr;
-}
-
-int main() {
-    auto result = validate_input("192.168.1.1:8080")
-        .and_then(split_address)
-        .transform([](const NetworkAddress& a) -> std::string {
-            return a.host + ":" + std::to_string(a.port);
-        })
-        .or_else([](const AddressError& e) -> std::expected<std::string, AddressError> {
-            std::cerr << "Error: " << e.detail << "\n";
-            return std::unexpected(e);
-        });
-
-    if (result) {
-        std::cout << "Address: " << *result << "\n";
-    }
-}
+// Usage
+auto result = parse_address("tcp:192.168.1.1:8080")
+    .and_then([](const SocketAddress& addr) {
+        return bind_socket(addr); // Returns std::expected<Socket, AddrError>
+    })
+    .transform([](const Socket& sock) {
+        return sock.get_handle(); // Returns int
+    });
 ```
 
-This example demonstrates the advantage of `std::expected` in multi-layer operations: each step returns an `std::expected`, and any failure automatically passes through, ultimately handled uniformly at the end of the chain. The error information carries sufficient context—the `message` field tells you exactly what went wrong.
+This example demonstrates the advantage of `std::expected` in multi-layer operations: each step returns `std::expected`, and any failure automatically propagates, ultimately handled uniformly at the end of the chain. The error information carries sufficient context—the `AddrError` field tells you specifically what went wrong.
 
 ------
 
 ## Summary
 
-`std::expected` is C++23's core tool for type-safe error handling. It provides more information than `std::optional`, is better suited for performance-sensitive and embedded scenarios than exceptions, and its monadic operations make error propagation chains elegant. If you are still on C++17, a simplified `std::expected` implementation can cover most of your needs.
+`std::expected` is C++23's core tool for type-safe error handling. It provides more error information than `std::optional`, is better suited for performance-sensitive and embedded scenarios than exceptions, and monadic operations make error propagation chains elegant. If you are still on C++17, a simplified `std::expected` implementation covers most needs.
 
-In the next article, we will comprehensively compare all error-handling approaches and provide a scenario-based selection guide.
+In the next post, we will comprehensively compare all error handling schemes and provide a scenario-based selection guide.
 
 ## Reference Resources
 

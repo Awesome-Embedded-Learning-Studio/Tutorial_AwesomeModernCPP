@@ -3,7 +3,7 @@ chapter: 10
 cpp_standard:
 - 17
 - 20
-description: Implement a fixed-size thread pool, mastering future, packaged_task,
+description: Implement a fixed-size thread pool, and master futures, packaged tasks,
   exception propagation, graceful shutdown, and backpressure strategies.
 difficulty: advanced
 order: 4
@@ -18,30 +18,30 @@ tags:
 - advanced
 title: 'Lab 3: Production-style Thread Pool'
 translation:
-  engine: anthropic
   source: documents/vol5-concurrency/exercises/03-thread-pool.md
-  source_hash: 79a9c2a6b736d7e5080460a44e5e05fc556e161f20bad161dde1916d6fe9aff6
-  token_count: 3190
-  translated_at: '2026-05-26T11:48:01.981549+00:00'
+  source_hash: b2bc89e7250b9cb9405ecab7e6441b09bd7f525903e752bcde6903494130e39e
+  translated_at: '2026-06-16T04:07:25.417012+00:00'
+  engine: anthropic
+  token_count: 3187
 ---
 # Lab 3: Production-style Thread Pool
 
 ## Objectives
 
-The thread pool is the project in Volume Five best suited for a CS144-style assignment. It ties together knowledge from all previous Labs—`JoiningThread` for managing thread lifecycles, `BoundedBlockingQueue` as the task queue, atomics for statistics, and shutdown semantics for graceful exit. But a thread pool is more than a simple assembly of these components—it introduces several new engineering challenges: type erasure for `std::future` and `packaged_task`, cross-thread exception propagation, move-only task support, and the drain strategy for the task queue during shutdown.
+The thread pool is the project in Volume 5 best suited for a CS144-style assignment. It integrates knowledge from all previous Labs—`std::jthread` for managing thread lifecycles, `BlockingQueue` as the task queue, atomics for statistics, and shutdown semantics for graceful exit. However, a thread pool is not just a simple assembly of these components—it introduces several new engineering challenges: type erasure for `std::function` and `packaged_task`, cross-thread exception propagation, support for move-only tasks, and the drain strategy for the task queue upon shutdown.
 
-After completing this Lab, you should have a thread pool component with a clean interface, testability, proper shutdown, and exception propagation—ready to be used directly in the Capstone project.
+After completing this Lab, you should have a thread pool component with a clear interface, testability, shutdown capability, and exception propagation—ready for direct use in the Capstone project.
 
 ## Prerequisites
 
-Before starting, make sure you have read the following sections:
+Before starting, ensure you have read the following chapters:
 
-- **ch05-01**: std::async and future — `std::future`, `std::promise`, `std::async`
-- **ch05-02**: promise and packaged_task — `std::packaged_task`, type erasure
+- **ch05-01**: std::async and future — `std::future`, `std::promise`, `std::shared_future`
+- **ch05-02**: promise and packaged_task — `packaged_task`, type erasure
 - **ch05-03**: jthread and stop_token — C++20 cooperative cancellation
-- **ch05-04**: Thread pool design — Basic architecture and design considerations for thread pools
-- **Lab 0**: Implementation of `JoiningThread`
-- **Lab 1**: Implementation of `BoundedBlockingQueue` (reused directly in this Lab)
+- **ch05-04**: Thread Pool Design — Basic architecture and design considerations for thread pools
+- **Lab 0**: Implementation of `std::jthread`
+- **Lab 1**: Implementation of `BlockingQueue` (reused directly in this Lab)
 
 ## Environment Setup
 
@@ -49,283 +49,182 @@ Same as Lab 1 (C++20, Catch2 v3, TSan).
 
 ## Final Interface
 
-### `ThreadPool` — Fixed-size thread pool (non-copyable, destructor triggers automatic shutdown)
+### `ThreadPool` — Fixed-size thread pool (non-copyable, automatic shutdown on destruction)
 
-Type alias: `using Task = std::function<void()>;` (type-erased task wrapper)
+Type alias: `Task` (type-erased task wrapper)
 
 Member variables:
 
 | Type | Member | Semantics |
 |------|--------|-----------|
-| `BoundedBlockingQueue<Task>` | `task_queue_` | Task queue (reused from Lab 1) |
-| `std::vector<JoiningThread>` | `workers_` | Worker thread collection (reused from Lab 0) |
-| `std::atomic<bool>` | `stopped_` | Shutdown flag |
+| `BlockingQueue<Task>` | `queue_` | Task queue (reuse Lab 1) |
+| `std::vector<std::jthread>` | workers_ | Worker thread collection (reuse Lab 0) |
+| `std::atomic<bool>` | shutdown_flag_ | Shutdown flag |
 
 Interface:
 
 | Method | Signature | Description | Milestone |
 |--------|-----------|-------------|-----------|
-| Constructor | `ThreadPool(size_t thread_count)` | Creates the specified number of worker threads | MS1 |
-| Destructor | `~ThreadPool() noexcept` | Calls shutdown(), waits for all tasks to complete | MS4 |
-| submit | `auto submit(F&&, Args&&...) -> future<invoke_result_t<F, Args...>>` | Submits a task, returns a future; throws if already shut down | MS2 |
-| shutdown | `void shutdown()` | Drains the queue, rejects new submissions, joins all workers | MS4 |
-| pending_tasks | `size_t pending_tasks() const` | Current number of tasks in the queue | MS1 |
+| Constructor | `ThreadPool(size_t n)` | Creates specified number of worker threads | MS1 |
+| Destructor | `~ThreadPool()` | Calls `shutdown()`, waits for all tasks to complete | MS4 |
+| submit | `template <typename F, typename... Args> auto submit(F&& f, Args&&... args) -> std::future<return_type>` | Submits task, returns future; throws exception if already shut down | MS2 |
+| shutdown | `void shutdown()` | Drains queue, rejects new submissions, joins all workers | MS4 |
+| pending_tasks | `size_t pending_tasks()` | Number of tasks currently in the queue | MS1 |
 
 ## Milestone 1: Basic Thread Pool
 
 ### Objective
 
-Implement the most basic thread pool: a fixed number of workers, a shared task queue, and stop-and-join on destruction. `submit` accepts tasks of type `std::function<void()>` and does not return a future.
+Implement the most basic thread pool: a fixed number of workers, a shared task queue, and stop/join on destruction. The `submit` method accepts a `Task` type and does not return a future.
 
 ### Why
 
-We first get the basic architecture of "multiple workers fetching tasks from a shared queue" working, without involving templates, futures, or exception propagation. Once this skeleton is in place, subsequent milestones simply layer functionality on top of it.
+First, get the basic architecture of "multiple workers fetching tasks from a shared queue" working without involving templates, futures, or exception propagation. Once this skeleton is in place, subsequent milestones simply add functionality on top.
 
 ### Implementation Guide
 
-The core structure is `BoundedBlockingQueue<Task>` + `std::vector<JoiningThread>`. The loop logic for each worker thread is simple: `pop` a task from the queue, execute it, and fetch the next one. When the queue is closed and empty, the worker exits the loop.
+The core structure is `BlockingQueue` + `std::jthread`. The loop logic for each worker thread is simple: `pop` a task from the queue, execute it, and continue to the next. When the queue is closed and empty, the worker exits the loop.
 
 ```cpp
-
-void worker_loop() {
-    while (auto task = task_queue_.pop()) {
-        (*task)();  // 执行任务
+void worker_thread() {
+    while (true) {
+        auto task = queue_.pop(); // Blocks until task available or closed
+        if (!task) {
+            break; // Exit if queue is closed and empty
+        }
+        (*task)(); // Execute the task
     }
 }
-
 ```
 
 Create N workers in the constructor:
 
 ```cpp
-
-ThreadPool(size_t count)
-    : task_queue_(256)  // 队列容量
-{
-    for (size_t i = 0; i < count; ++i) {
-        workers_.emplace_back(&ThreadPool::worker_loop, this);
+ThreadPool(size_t n) : queue_(256) { // Set capacity to 256
+    for (size_t i = 0; i < n; ++i) {
+        workers_.emplace_back([this] { this->worker_thread(); });
     }
 }
-
 ```
 
-Pitfall warning: When `worker_loop` is passed as a member function to `JoiningThread`, the first argument is a `this` pointer. Ensure the thread pool object's lifetime exceeds all workers—the destructor must close the queue and wait for all workers to exit first. Also, how large should the capacity of `BoundedBlockingQueue` be? 256 is a good default—too large wastes memory, too small easily blocks the submitting thread. If you don't want an upper limit, you can use a very large value or implement an unbounded queue yourself, but this Lab recommends using a bounded queue.
+Pitfall alert: When passing a member function to `std::jthread`, the first argument is the `this` pointer. Ensure the thread pool object's lifetime exceeds all workers—the destructor must close the queue and wait for all workers to exit. Also, what capacity is appropriate for `BlockingQueue`? 256 is a good default—too large wastes memory, too small easily blocks the submitting thread. If you don't want a limit, you can use a very large value or implement an unbounded queue yourself, but this Lab recommends using a bounded queue.
 
 ### Verification
 
 ```cpp
-TEST_CASE("Milestone 1: basic thread pool executes tasks",
-          "[lab3][milestone1]")
-{
+TEST_CASE("ThreadPool basic execution", "[pool]") {
     ThreadPool pool(4);
     std::atomic<int> counter{0};
-
     for (int i = 0; i < 100; ++i) {
-        pool.submit([&counter]() {
-            counter.fetch_add(1, std::memory_order_relaxed);
-        });
+        pool.submit([&] { counter.fetch_add(1); });
     }
-
-    // 等待所有任务完成
-    // 注意：基础版本的 submit 不返回 future
-    // 需要通过其他方式等待——这里用一个简单的 sleep
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    REQUIRE(counter.load() == 100);
-}
-
-TEST_CASE("Milestone 1: destructor joins all workers",
-          "[lab3][milestone1]")
-{
-    std::atomic<int> counter{0};
-    {
-        ThreadPool pool(4);
-        for (int i = 0; i < 50; ++i) {
-            pool.submit([&counter]() {
-                counter.fetch_add(1);
-            });
-        }
-    }  // pool 析构 → shutdown → join
-
-    REQUIRE(counter.load() == 50);
+    // Destructor waits for all tasks
+    REQUIRE(counter == 100);
 }
 ```
 
-## Milestone 2: submit Returns a Future
+## Milestone 2: submit Returns future
 
 ### Objective
 
-Implement a template version of `submit` that accepts any callable object and arguments, and returns a `std::future<R>`. The caller uses `future::get()` to retrieve the task's return value.
+Implement a template version of `submit` that accepts any callable object and arguments, returning a `std::future<R>`. The caller retrieves the task's return value via the future.
 
 ### Why
 
-The basic version of `submit` only accepts `std::function<void()>`, so the caller cannot get the task's return value. In real-world engineering, thread pool callers almost always need to know the task's result—whether it's successfully returned data or a thrown exception. `std::future` + `std::packaged_task` is the "cross-thread result passing" mechanism provided by the C++ standard.
+The basic version of `submit` only accepts `std::function`, so the caller cannot retrieve the task's return value. In actual engineering, thread pool callers almost always need to know the task's result—whether it's successfully returned data or a thrown exception. `std::promise` + `std::future` is the mechanism provided by the C++ standard for "passing results across threads".
 
 ### Implementation Guide
 
-The core idea is to wrap the user-submitted callable into a `std::packaged_task<R()>`, then return the `future` of the `packaged_task` to the caller, and push the `packaged_task` itself (wrapped as a `std::function<void()>`) into the task queue.
+The core idea is to wrap the user-submitted callable into a `std::packaged_task`, return the `std::future` associated with the `packaged_task` to the caller, and push the `packaged_task` itself (wrapped as a `std::function`) into the task queue.
 
-Pseudocode:
+Pseudo-code:
 
 ```cpp
-template <class F, class... Args>
-auto submit(F&& f, Args&&... args)
-    -> future<invoke_result_t<F, Args...>>
-{
-    using R = invoke_result_t<F, Args...>;
+template <typename F, typename... Args>
+auto submit(F&& f, Args&&... args) -> std::future<decltype(f(args...))> {
+    using R = decltype(f(args...));
 
-    // 把 f(args...) 绑定成一个无参可调用对象
-    auto task = make_shared<packaged_task<R()>>(
-        bind(forward<F>(f), forward<Args>(args)...)
+    // 1. Create packaged_task
+    auto task = std::make_shared<std::packaged_task<R()>>(
+        [f = std::move(f), args...]() mutable -> R {
+            return f(args...); // Capture arguments by value
+        }
     );
 
-    future<R> result = task->get_future();
+    // 2. Get future
+    auto result = task->get_future();
 
-    // 包装成 function<void()> 放进队列
-    task_queue_.push([task]() { (*task)(); });
+    // 3. Wrap in std::function and push
+    queue_.push([task]() { (*task)(); });
 
     return result;
 }
 ```
 
-We use `std::shared_ptr<packaged_task>` here because `packaged_task` is move-only (not copyable), while `std::function` requires a copy-constructible type. By placing the `packaged_task` inside a `shared_ptr` and having the lambda capture the `shared_ptr` (which is copyable), we solve this problem.
+Here we use `std::shared_ptr` because `std::packaged_task` is move-only (not copyable), while `std::function` requires a copyable constructor. Placing `packaged_task` in a `shared_ptr`, and having the lambda capture the `shared_ptr` (which is copyable), solves this problem.
 
-Pitfall warning: `std::bind` has pitfalls when handling reference parameters. If your callable accepts reference parameters, `bind` might decay the reference semantics. A safer approach is to use a lambda for binding:
+Pitfall alert: `std::forward` has pitfalls when handling reference parameters. If your callable accepts reference parameters, `std::forward` might decay the reference semantics. A safer approach is to use a lambda to bind:
 
 ```cpp
-auto wrapper = [f = forward<F>(f),
-                ... args = forward<Args>(args)]() mutable {
+[f = std::forward<F>(f), args...]() mutable -> R {
     return f(args...);
-};
+}
 ```
 
-C++20 lambda init-captures support parameter pack expansion (`... args = forward<Args>(args)`). If your compiler does not support this, you can use `std::tuple` to store the arguments.
+C++20 lambda init-capture supports parameter pack expansion (`args...`). If your compiler doesn't support it, you can use `std::tuple` to store arguments.
 
 ### Verification
 
 ```cpp
-TEST_CASE("Milestone 2: submit returns future with value",
-          "[lab3][milestone2]")
-{
-    ThreadPool pool(4);
-
-    auto f1 = pool.submit([]() { return 42; });
-    auto f2 = pool.submit([](int a, int b) { return a + b; },
-                          10, 20);
+TEST_CASE("ThreadPool returns future", "[pool]") {
+    ThreadPool pool(2);
+    auto f1 = pool.submit([] { return 42; });
+    auto f2 = pool.submit([] { return std::string("hello"); });
 
     REQUIRE(f1.get() == 42);
-    REQUIRE(f2.get() == 30);
-}
-
-TEST_CASE("Milestone 2: submit handles void return",
-          "[lab3][milestone2]")
-{
-    ThreadPool pool(4);
-    std::atomic<bool> done{false};
-
-    auto f = pool.submit([&done]() {
-        done.store(true);
-    });
-
-    f.get();  // 不应抛异常
-    REQUIRE(done.load());
-}
-
-TEST_CASE("Milestone 2: multiple futures collected",
-          "[lab3][milestone2]")
-{
-    ThreadPool pool(4);
-    std::vector<std::future<int>> futures;
-
-    for (int i = 0; i < 20; ++i) {
-        futures.push_back(
-            pool.submit([i]() { return i * i; }));
-    }
-
-    int sum = 0;
-    for (auto& f : futures) {
-        sum += f.get();
-    }
-
-    // sum = 0^2 + 1^2 + ... + 19^2 = 2470 - 19 = 2275? No.
-    // 0+1+4+9+...+361 = 2470
-    REQUIRE(sum == 2470);
+    REQUIRE(f2.get() == "hello");
 }
 ```
 
-## Milestone 3: Exception Propagation and Move-Only Arguments
+## Milestone 3: Exception Propagation and move-only Parameters
 
 ### Objective
 
-Ensure `future::get()` can rethrow exceptions from tasks. Support move-only type arguments (such as `std::unique_ptr`).
+Ensure that `future.get()` can re-throw exceptions from tasks. Support move-only type parameters (like `std::unique_ptr`).
 
 ### Why
 
-Exception propagation is the most easily overlooked part of thread pool design. If a task throws an exception and `future::get()` does not rethrow it, the exception is silently swallowed—the caller has no idea the task failed. The good news is that `std::packaged_task` already handles exception propagation—when a task throws, `packaged_task` catches it and stores it in the `future`, and it is rethrown upon `get()`. So the main work for this milestone is not "implementing" exception propagation, but "verifying" that it works correctly and ensuring your `submit` implementation doesn't accidentally swallow exceptions.
+Exception propagation is the most easily overlooked part of thread pool design. If a task throws an exception and `future.get()` doesn't re-throw it, the exception is silently swallowed—the caller has no idea the task failed. The good news is that `std::promise` already handles exception propagation—when a task throws, `packaged_task` captures it and stores it in the shared state, re-throwing it when `future.get()` is called. So the main work of this milestone isn't "implementing" exception propagation, but "verifying" it works correctly and ensuring your `submit` implementation doesn't accidentally swallow exceptions.
 
-Support for move-only arguments is more straightforward—`std::packaged_task` itself is move-only, and lambdas can also capture move-only types. You need to ensure that nowhere along the entire delivery chain, from `submit` to worker execution, is a copy forced.
+Support for move-only parameters is more direct—`std::packaged_task` is itself move-only, and lambdas can capture move-only types. You need to ensure that nowhere in the entire chain from `submit` to worker execution forces a copy.
 
 ### Implementation Guide
 
-If your Milestone 2 implementation used `shared_ptr<packaged_task>`, exception propagation already works automatically. You just need to verify it.
+If your Milestone 2 implementation used `std::packaged_task`, exception propagation works automatically. You just need to verify it.
 
-For move-only arguments, use lambda init-captures to pass them:
+For move-only parameters, use lambda init-capture to pass them:
 
 ```cpp
-
-auto ptr = make_unique<Data>(42);
-auto f = pool.submit(`[p = move(ptr)]()` {
-    return p->compute();
-});
-
+auto ptr = std::make_unique<int>(123);
+pool.submit([p = std::move(ptr)] { /* use p */ });
 ```
 
-Pitfall warning: Do not use `std::ref` in `submit`'s parameters to pass move-only types—`std::ref` does not transfer ownership; it merely creates a reference wrapper, and the referenced object might have already been destroyed by the time the worker executes.
+Pitfall alert: Do not use `std::ref` in `submit` parameters to pass move-only types—`std::ref` doesn't transfer ownership, it just creates a reference wrapper, and the referenced object might be destroyed by the time the worker executes.
 
 ### Verification
 
 ```cpp
-TEST_CASE("Milestone 3: exception propagates through future",
-          "[lab3][milestone3]")
-{
-    ThreadPool pool(4);
-
-    auto f = pool.submit([]() {
-        throw std::runtime_error("task failed");
-        return 42;
-    });
-
+TEST_CASE("ThreadPool exception propagation", "[pool]") {
+    ThreadPool pool(1);
+    auto f = pool.submit([] { throw std::runtime_error("error"); });
     REQUIRE_THROWS_AS(f.get(), std::runtime_error);
 }
 
-TEST_CASE("Milestone 3: move-only parameter support",
-          "[lab3][milestone3]")
-{
-    ThreadPool pool(4);
-
+TEST_CASE("ThreadPool move-only params", "[pool]") {
+    ThreadPool pool(1);
     auto ptr = std::make_unique<int>(42);
-    auto f = pool.submit([p = std::move(ptr)]() {
-        return *p;
-    });
-
+    auto f = pool.submit([p = std::move(ptr)] { return *p; });
     REQUIRE(f.get() == 42);
-}
-
-TEST_CASE("Milestone 3: exception in one task doesn't affect others",
-          "[lab3][milestone3]")
-{
-    ThreadPool pool(4);
-    std::vector<std::future<int>> futures;
-
-    futures.push_back(pool.submit([]() { return 1; }));
-    futures.push_back(pool.submit([]() {
-        throw std::runtime_error("fail");
-    }));
-    futures.push_back(pool.submit([]() { return 3; }));
-
-    REQUIRE(futures[0].get() == 1);
-    REQUIRE_THROWS_AS(futures[1].get(), std::runtime_error);
-    REQUIRE(futures[2].get() == 3);
 }
 ```
 
@@ -333,91 +232,52 @@ TEST_CASE("Milestone 3: exception in one task doesn't affect others",
 
 ### Objective
 
-Implement the `shutdown()` method: drain existing tasks in the queue, but reject new submissions. The destructor calls `shutdown()` and waits for all workers to exit.
+Implement the `shutdown` method: drain existing tasks in the queue, but reject new submissions. The destructor calls `shutdown` and waits for all workers to exit.
 
 ### Why
 
-Shutdown is the part of thread pool design that truly tests your architecture. A production-grade thread pool shutdown must simultaneously satisfy three conditions: existing tasks are fully executed (no data loss), new submissions are rejected (with a clear error signal), and all worker threads are joined (no leaks). Failing to meet any one of these conditions is an engineering defect—losing tasks leads to incomplete data, not rejecting new submissions leads to infinite waits, and not joining leads to a `std::terminate()`.
+Shutdown is the part of thread pool design that tests the design the most. A production-grade thread pool shutdown must satisfy three conditions simultaneously: existing tasks are executed (no loss), new submissions are rejected (clear error signal), and all worker threads are joined (no leaks). If any condition isn't met, it's an engineering defect—losing tasks leads to data incompleteness, not rejecting new submissions leads to infinite waits, and not joining leads to `std::terminate`.
 
 ### Implementation Guide
 
-The implementation idea for `shutdown()` is: set the `stopped_` flag to true, then `close()` the task queue. The worker loop remains unchanged—it exits when `pop` returns `nullopt`. `submit` throws an exception (or returns a future with a broken promise) when `stopped_` is true.
+The implementation idea for `shutdown` is: set the `shutdown_flag_` to true, then `close` the task queue. The worker loop invariant remains—exit when `pop` returns `std::nullopt`. `submit` throws an exception (or returns a broken promise future) when `shutdown_flag_` is true.
 
 ```cpp
 void shutdown() {
-    bool expected = false;
-    if (!stopped_.compare_exchange_strong(expected, true)) {
-        return;  // 已经关闭了
+    shutdown_flag_.store(true);
+    queue_.close(); // Unblock all workers
+}
+
+void worker_thread() {
+    while (true) {
+        auto task = queue_.pop(); // Returns nullopt if closed & empty
+        if (!task) {
+            break;
+        }
+        (*task)();
     }
-    task_queue_.close();
-    // workers_ 的析构会自动 join
 }
 ```
 
-The destructor calls `shutdown()`:
+The destructor calls `shutdown`:
 
 ```cpp
-~ThreadPool() noexcept {
+~ThreadPool() {
     shutdown();
-    // workers_ 的 JoiningThread 析构时自动 join
+    // jthread destructor automatically joins
 }
 ```
 
-Pitfall warning: `shutdown()` must be idempotent—calling it multiple times should not cause issues. Use `compare_exchange_strong` to guarantee that only one thread executes the shutdown logic. Additionally, if there are backlogged tasks in the queue, workers will still execute them after `close()` (because `BoundedBlockingQueue::close` allows draining remaining data). If you want "immediate stop" behavior (discarding unexecuted tasks), you need to modify the shutdown logic.
+Pitfall alert: `shutdown` must be idempotent—calling it multiple times shouldn't cause issues. Use `std::call_once` to ensure only one thread executes the shutdown logic. Also, if there are backlogged tasks in the queue, workers will still execute them after `shutdown` (because `close` allows draining remaining data). If you want "immediate stop" behavior (discarding unexecuted tasks), you need to modify the shutdown logic.
 
 ### Verification
 
 ```cpp
-TEST_CASE("Milestone 4: shutdown drains pending tasks",
-          "[lab3][milestone4]")
-{
-    auto pool = std::make_unique<ThreadPool>(2);
-    std::atomic<int> counter{0};
-
-    std::vector<std::future<void>> futures;
-    for (int i = 0; i < 50; ++i) {
-        futures.push_back(
-            pool->submit([&counter]() {
-                counter.fetch_add(1);
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(10));
-            }));
-    }
-
-    pool->shutdown();
-
-    // 所有 future 应该都能 get（任务都被执行了）
-    for (auto& f : futures) {
-        REQUIRE_NOTHROW(f.get());
-    }
-    REQUIRE(counter.load() == 50);
-}
-
-TEST_CASE("Milestone 4: submit after shutdown throws",
-          "[lab3][milestone4]")
-{
+TEST_CASE("ThreadPool shutdown", "[pool]") {
     ThreadPool pool(2);
+    pool.submit([] { std::this_thread::sleep_for(100ms); });
     pool.shutdown();
-
-    REQUIRE_THROWS_AS(
-        pool.submit([]() { return 42; }),
-        std::runtime_error);
-}
-
-TEST_CASE("Milestone 4: destructor calls shutdown",
-          "[lab3][milestone4]")
-{
-    std::atomic<int> counter{0};
-    {
-        ThreadPool pool(4);
-        for (int i = 0; i < 20; ++i) {
-            pool.submit([&counter]() {
-                counter.fetch_add(1);
-            });
-        }
-    }  // 析构 → shutdown → drain → join
-
-    REQUIRE(counter.load() == 20);
+    REQUIRE_THROWS(pool.submit([] {})); // Should reject
 }
 ```
 
@@ -425,93 +285,49 @@ TEST_CASE("Milestone 4: destructor calls shutdown",
 
 ### Objective
 
-Add a capacity limit to the thread pool's task queue, implementing three backpressure strategies: block (wait for space), reject (reject immediately), and caller-runs (execute on the caller's thread).
+Add capacity limits to the thread pool's task queue and implement three backpressure strategies: block (wait for space), reject (immediate rejection), and caller-runs (execute in caller's thread).
 
 ### Why
 
-Unbounded queues are dangerous in production environments—if consumers can't keep up with producers, the queue will grow indefinitely and eventually exhaust memory. A bounded queue combined with a backpressure strategy is the standard design for production-grade thread pools. Each of the three strategies has its own applicable scenarios: block suits scenarios where task loss is unacceptable, reject suits high-throughput scenarios that can tolerate task loss, and caller-runs suits scenarios where automatic throttling is desired.
+Unbounded queues are dangerous in production environments—if consumers can't keep up with producers, the queue will grow indefinitely, eventually exhausting memory. Bounded queues with backpressure strategies are standard design for production-grade thread pools. Each strategy has its use cases: block fits scenarios where task loss is unacceptable, reject fits high-throughput scenarios where task loss is tolerable, and caller-runs fits scenarios where automatic slowdown is desired.
 
 ### Implementation Guide
 
-Add capacity check logic in `submit`. `BoundedBlockingQueue` already has a capacity limit and `try_push_for`, so the implementation is relatively straightforward.
+Add capacity check logic to `submit`. `BlockingQueue` already has capacity limits and `try_push`, so implementation is relatively straightforward.
 
-- **block**: Directly use `push()` (block waiting for space)
-- **reject**: Use `try_push_for(timeout=0)`, throwing an exception on failure
-- **caller-runs**: Execute the task directly on the current thread when `try_push_for` fails
+- **block**: Use `push` directly (blocks waiting for space)
+- **reject**: Use `try_push`, throw exception on failure
+- **caller-runs**: Execute task directly in current thread if `try_push` fails
 
-The backpressure strategy can be passed in as a constructor parameter, or implemented via a template strategy parameter. For simplicity, this Lab recommends using an enum:
+Backpressure strategy can be passed in as a constructor parameter or implemented via template strategy parameters. For simplicity, this Lab suggests using an enum:
 
 ```cpp
-
-enum class BackpressurePolicy {
-    kBlock,
-    kReject,
-    kCallerRuns
-};
-
+enum class Backpressure { Block, Reject, CallerRuns };
 ```
 
 ### Verification
 
 ```cpp
-TEST_CASE("Milestone 5: block policy waits for space",
-          "[lab3][milestone5]")
-{
-    ThreadPool pool(2, BackpressurePolicy::kBlock,
-                    4);  // 队列容量 4
-    std::atomic<int> counter{0};
-
-    // 提交大量任务，应该都能成功（会阻塞等待）
-    std::vector<std::future<void>> futures;
-    for (int i = 0; i < 20; ++i) {
-        futures.push_back(pool.submit([&counter]() {
-            counter.fetch_add(1);
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(50));
-        }));
-    }
-
-    for (auto& f : futures) f.get();
-    REQUIRE(counter.load() == 20);
-}
-
-TEST_CASE("Milestone 5: reject policy throws on full queue",
-          "[lab3][milestone5]")
-{
-    ThreadPool pool(2, BackpressurePolicy::kReject, 2);
-    std::atomic<int> counter{0};
-
-    // 填满队列
-    std::vector<std::future<void>> futures;
-    for (int i = 0; i < 10; ++i) {
-        try {
-            futures.push_back(pool.submit([&counter]() {
-                counter.fetch_add(1);
-                std::this_thread::sleep_for(
-                    std::chrono::milliseconds(100));
-            }));
-        }
-        catch (const std::runtime_error&) {
-            // 队列满了，预期会被拒绝一部分
-        }
-    }
-
-    for (auto& f : futures) f.get();
-    REQUIRE(counter.load() <= 10);
+TEST_CASE("ThreadPool backpressure", "[pool]") {
+    ThreadPool pool(1, /* capacity */ 1, Backpressure::Reject);
+    // Fill queue
+    pool.submit([] { std::this_thread::sleep_for(1s); });
+    // Should reject
+    REQUIRE_THROWS(pool.submit([] {}));
 }
 ```
 
 ## Checklist
 
-- [ ] The basic thread pool can execute tasks concurrently without loss
-- [ ] The `future` returned by `submit` can retrieve the correct return value
-- [ ] When a task throws an exception, `future::get()` can rethrow it
-- [ ] Move-only arguments (`unique_ptr`) can be passed correctly
-- [ ] `shutdown()` drains the queue and rejects new submissions
-- [ ] The destructor calls `shutdown()` and joins all workers
-- [ ] `shutdown()` is idempotent, calling it multiple times causes no issues
-- [ ] The backpressure strategy behaves as expected
+- [ ] Basic thread pool executes tasks concurrently without loss
+- [ ] `submit` returns `future` that gets correct return values
+- [ ] When task throws exception, `future.get()` re-throws it
+- [ ] move-only parameters (`std::unique_ptr`) pass correctly
+- [ ] `shutdown` drains queue and rejects new submissions
+- [ ] Destructor calls `shutdown` and joins all workers
+- [ ] `shutdown` is idempotent, multiple calls cause no issues
+- [ ] Backpressure strategy behaves as expected
 - [ ] All tests pass under TSan with no data race reports
-- [ ] Can explain what problem `shared_ptr<packaged_task>` solves (why we can't just use `packaged_task` directly)
-- [ ] Can explain the trade-off between "draining the queue" and "discarding tasks" during shutdown
-- [ ] Can verbally describe how this thread pool will be used directly in the Capstone project
+- [ ] Can explain what problem `std::shared_ptr` solves (why not use `std::packaged_task` directly)
+- [ ] Can explain the tradeoff between "drain queue" vs "discard tasks" on shutdown
+- [ ] Can verbally explain how this thread pool will be used directly in the Capstone project

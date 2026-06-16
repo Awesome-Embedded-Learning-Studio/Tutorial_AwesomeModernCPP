@@ -6,7 +6,7 @@ cpp_standard:
 - 17
 - 20
 description: Understanding `std::async` launch policies, the blocking semantics of
-  `future.get`, and the deferred trap
+  `future.get`, and deferred traps
 difficulty: intermediate
 order: 1
 platform: host
@@ -23,485 +23,373 @@ tags:
 - 异步编程
 title: std::async and future
 translation:
-  engine: anthropic
   source: documents/vol5-concurrency/ch05-future-task-threadpool/01-std-async-and-future.md
-  source_hash: 31367c94a78e8403d9b1a3b9d7e670ce34f2159b63a0a77d59561e4f4e80b375
-  token_count: 4366
-  translated_at: '2026-05-20T04:42:48.216328+00:00'
+  source_hash: 997cf478fe14503ffc099c1c2c6bb5d93a6d39d0892c71ec249adc307e251e07
+  translated_at: '2026-06-16T04:05:04.365768+00:00'
+  engine: anthropic
+  token_count: 4361
 ---
 # std::async and future
 
-To be honest, reaching this chapter was a relief. In the previous chapters, we have been wrestling with `std::thread`, `std::mutex`, and `std::atomic`—these low-level primitives—directly manipulating thread creation, synchronization, and even memory order. Writing this kind of code gets tedious after a while. You have to manage the thread lifecycle yourself, design synchronization mechanisms, shuttle results from child threads back to the main thread, and worry about how to propagate exceptions or what happens if a thread crashes. Repeating this workflow for every concurrent task makes you wonder: is there a way to just say "run this task asynchronously and give me the result," without bothering with the rest?
+Writing this chapter, I have to admit, is a bit of a relief. In the previous chapters, we were dealing with low-level primitives like `std::thread`, `std::mutex`, and `std::atomic`, directly manipulating thread creation, synchronization, and even memory ordering. Writing that stuff gets exhausting—you have to manage the thread lifecycle yourself, design synchronization mechanisms, manually move results from worker threads back to the main thread, and worry about how to propagate exceptions or what happens if a thread crashes. Every time you write a concurrent task, you repeat this process. Eventually, you start thinking: isn't there a way to just say "run this task asynchronously and give me the result," and let the system handle the rest?
 
-C++11 does provide such a higher-level abstraction, centered around `std::async` and `std::future`. In this chapter, we will thoroughly clarify the launch policies of `std::async`, and fully grasp the blocking semantics and one-time consumption model of `std::future`. We will focus especially on the classic deferred trap—if you do not understand the behavior of the default policy, your code might run perfectly fine locally, but mysteriously serialize under specific loads in production. I have fallen into this trap myself, so let us break it down step by step.
+C++11 does provide this higher-level abstraction, centered on `std::async` and `std::future`. In this chapter, we will thoroughly clarify the launch policies of `std::async` and master the blocking semantics and one-time consumption model of `std::future`, especially the classic deferred trap—if you don't understand the default policy behavior, your code might run fine locally but mysteriously serialize in production under specific loads. I've fallen into this trap myself, so let's break it down step by step.
 
 ## std::async: Launching an Asynchronous Task
 
-What we want to do now is start with the most basic usage, get a clear picture of the basic form of `std::async`, and then gradually dive into the policy and behavioral details.
+Our goal now is to start with the most basic usage to understand the fundamental form of `std::async`, and then gradually dive into policy and behavioral details.
 
-`std::async` is a function template that takes a callable object and a set of arguments, returning a `std::future`—this future is your "receipt" to retrieve the task's return value at some point in the future. It has two overloads: one that accepts a launch policy, and another that uses the default policy. Let us ignore the policy for now and just get it running:
-
-```cpp
-#include <future>
-#include <iostream>
-#include <chrono>
-
-int heavy_computation(int x)
-{
-    // 模拟耗时计算
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    return x * x;
-}
-
-int main()
-{
-    // 异步启动任务
-    std::future<int> result = std::async(std::launch::async, heavy_computation, 42);
-
-    std::cout << "任务已提交，主线程继续干活...\n";
-
-    // 在这里主线程可以做其他事情
-
-    int value = result.get();  // 阻塞等待结果
-    std::cout << "计算结果: " << value << "\n";
-    return 0;
-}
-```
-
-The first parameter of `std::async` is the launch policy, the second is the callable object to execute, and the subsequent arguments are perfectly forwarded to that callable. The return value is a `std::future<int>`—where the template parameter is the task's return type. If the task returns `void`, you get a `std::future<void>`.
-
-In the code above, `std::launch::async` is an enumerator meaning "launch this task immediately on a new thread." Once you have the future, the main thread is not blocked and can go about its business, only blocking when you call `result.get()` to wait for the task to finish.
-
-## Two Launch Policies
-
-Great, the basic usage works. Now the question arises—what exactly is the deal with `std::async`'s policy? Earlier we always explicitly passed `std::launch::async`, but what if we don't? This is where the first trap we are going to dissect hides.
-
-`std::async` supports two launch policies, specified via the `std::launch` enumeration. `std::launch::async` requires the runtime to create a new thread (or grab one from an internal thread pool) when `std::async` is called, executing the task immediately. If the system temporarily lacks the resources to create a thread, the standard requires the implementation to either create the thread and execute, or throw a `std::system_error`—this is an error condition you need to watch out for. `std::launch::deferred` is completely different—it does not create any new thread, and the task is deferred until you call `get()` or `wait()` on the future, executing synchronously on the calling thread. In other words, if you call `get()` on the main thread, the task runs directly on the main thread, which is essentially no different from a normal function call, just with an extra layer of wrapping.
-
-These two policies can be combined with a bitwise OR. `std::launch::async | std::launch::deferred` is the default policy—when you do not pass the first argument, this is the combination `std::async` uses. This means the implementation has the right to choose whether to go async or deferred, and the standard leaves the decision to the standard library implementers.
-
-This sounds flexible, but the problem lies precisely in this "implementation's choice." Scott Meyers specifically discusses this trap in Item 36 of *Effective Modern C++*: under the default policy, `std::async` might choose deferred, meaning your task might not be running on another thread at all. Worse, the `wait_for()` function of `std::future` returns `std::future_status::deferred` instead of `timeout` when facing a deferred task—if you write a polling loop using `wait_for()` to check if the task is done, hitting a deferred task will cause the loop to wait forever.
-
-Let us look at an example that intuitively demonstrates the difference between the two:
+`std::async` is a function template that accepts a callable object and a set of arguments, returning a `std::future`—this future acts as your "ticket" to retrieve the task's return value at a later point in time. It has two overloads: one accepts a launch policy, and the other uses the default policy. Let's ignore the policy for a moment and just get it running:
 
 ```cpp
 #include <future>
 #include <iostream>
-#include <chrono>
 #include <thread>
 
-int compute(int x)
-{
-    std::cout << "  [compute] 在线程 "
-              << std::this_thread::get_id() << " 上执行\n";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    return x * 2;
-}
-
-void test_launch_policy()
-{
-    auto main_id = std::this_thread::get_id();
-    std::cout << "主线程 ID: " << main_id << "\n\n";
-
-    // 策略一：async —— 强制在新线程上执行
-    std::cout << "--- std::launch::async ---\n";
-    auto f1 = std::async(std::launch::async, compute, 10);
-    std::cout << "  [main] future 已创建，任务已在新线程启动\n";
-    std::cout << "  [main] 结果: " << f1.get() << "\n\n";
-
-    // 策略二：deferred —— 延迟到 get() 时在调用线程执行
-    std::cout << "--- std::launch::deferred ---\n";
-    auto f2 = std::async(std::launch::deferred, compute, 20);
-    std::cout << "  [main] future 已创建，任务尚未启动\n";
-    std::cout << "  [main] 现在调用 get()...\n";
-    std::cout << "  [main] 结果: " << f2.get() << "\n";
-}
-
-int main()
-{
-    test_launch_policy();
-    return 0;
-}
-```
-
-When you run this code, you will see that in async mode, the thread ID printed by compute differs from the main thread, while in deferred mode, the thread IDs are the same—because the deferred task executes synchronously on the thread that calls `get()`.
-
-## std::future\<T\>: Retrieving Asynchronous Results
-
-`std::future<T>` is a "one-time result container" provided by the C++ standard library. You can think of it as a read-only, single-use pipe: one end (`std::async`, `std::promise`, or `std::packaged_task`) is responsible for pushing a value in, and the other end (the `std::future` in your hand) is responsible for pulling the value out. The design philosophy of this pipe is very clear—the value can only be extracted once, and once extracted, the pipe is spent.
-
-Let us look back at the core operations provided by future. `get()` is the one you will use the most—it blocks the current thread until the result is ready, then returns the result value; if the task threw an exception, `get()` rethrows that exception (we will cover the exception propagation mechanism in detail later). But there is a key constraint here: `get()` can only be called once; after the call, the future becomes invalid, the shared state is released, and any further operations on it are undefined behavior (typically throwing `std::future_error`).
-
-If you just want to wait for the task to finish without rushing to get the value, use `wait()`—pure blocking wait, no return value, but once the call ends, the result is guaranteed to be ready. A more common scenario is waiting with a timeout: `wait_for()` takes a time duration (like 500ms), `wait_until()` takes an absolute time point, and both return the `std::future_status` enumeration—`ready` means the result is ready, `timeout` means it is still not ready after waiting this long, and `deferred` means the task did not start at all (remember the deferred policy? that is the one). For deferred tasks, `wait_for()` and `wait_until()` immediately return the `deferred` status without actually waiting—we will see later just how problematic this behavior can be.
-
-There is also a helper function `valid()`, used to check whether this future is still associated with a shared state. A default-constructed `std::future`'s `valid()` returns `false`, and it also returns `false` after calling `get()`—if you are unsure whether a future is still usable, calling `valid()` first is a good habit.
-
-Let us use a comprehensive example to tie these operations together:
-
-```cpp
-#include <future>
-#include <iostream>
-#include <chrono>
-
-int slow_task()
-{
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+int calculate() {
+    std::cout << "Working in thread: " << std::this_thread::get_id() << std::endl;
     return 42;
 }
 
-int main()
-{
-    std::future<int> f = std::async(std::launch::async, slow_task);
+int main() {
+    // Launch the task, get the future
+    std::future<int> fut = std::async(std::launch::async, calculate);
 
-    std::cout << "valid() = " << std::boolalpha << f.valid() << "\n";
+    // Main thread does its own work
+    std::cout << "Main thread doing other things..." << std::endl;
 
-    // 用 wait_for 轮询（演示用，实际中不推荐这种模式）
-    while (true) {
-        auto status = f.wait_for(std::chrono::milliseconds(500));
-        if (status == std::future_status::ready) {
-            std::cout << "任务就绪!\n";
-            break;
-        } else if (status == std::future_status::timeout) {
-            std::cout << "还在跑...\n";
-        } else if (status == std::future_status::deferred) {
-            std::cout << "任务被延迟了，不会自动执行\n";
-            break;
-        }
-    }
-
-    if (f.valid()) {
-        int result = f.get();
-        std::cout << "结果: " << result << "\n";
-        std::cout << "get() 后 valid() = " << f.valid() << "\n";
-    }
-    return 0;
+    // Get the result (blocks if not ready)
+    int result = fut.get();
+    std::cout << "Result: " << result << std::endl;
 }
 ```
 
-This code checks the task status every 500ms, and calls `get()` to retrieve the value once the task is done. After calling `get()`, `valid()` becomes `false`, indicating that the shared state has been released.
+The first parameter of `std::async` is the launch policy, the second is the callable object to execute, and subsequent arguments are perfectly forwarded to that callable. The return value is a `std::future<T>`—where the template parameter matches the task's return type. If the task returns `int`, you get a `std::future<int>`.
 
-## One-Time Consumption Semantics
+In the code above, `std::launch::async` is an enumeration value meaning "launch this task immediately on a new thread." Once you have the future, the main thread is not blocked and continues on its way until you call `get()`, which waits for the task to complete.
 
-The design philosophy of `std::future` is "one-time consumption"—the value in the shared state can only be extracted once. This design manifests on several levels, so let us break them down one by one.
+## Two Launch Policies
 
-Starting with the return semantics of `get()`. `get()` performs move semantics: for `std::future<int>`, `get()` returns a value copy of `int` (since moving an int is just a copy, it does not matter), but for `std::future<std::string>`, the `std::string` returned by `get()` is moved out of the shared state, and calling `get()` again after the value has been taken is undefined behavior. Notably, the standard library has separate specializations for `std::future<T&>` (reference types) and `std::future<void>`, and their `get()` behaviors differ slightly—the former returns a reference, while the latter only performs a synchronous wait without returning anything.
+Great, the basic usage works. Now the question arises—what exactly is the deal with `std::async`'s policy? We explicitly passed `std::launch::async` before, but what if we don't? This hides the first pitfall we need to dissect today.
 
-Looking at the properties of the future object itself, `std::future` is move-only. You cannot copy a `std::future`, you can only move it—after moving, the original future's `valid()` becomes `false`, and the new future takes over the shared state. This design ensures that at any given time, only one future can access the shared state, fundamentally eliminating the race condition of multiple parties fighting over the same result. Furthermore, there is no mechanism to "reset" a consumed future; if you need to read the same result multiple times, you should use `std::shared_future`—which we will cover in the next chapter.
+`std::async` supports two launch policies, specified via the `std::launch` enumeration. `std::launch::async` requires the runtime to create a new thread (or take one from an internal thread pool) immediately upon calling `std::async` and execute the task. If the system temporarily lacks resources to create a thread, the standard requires the implementation to either create the thread or throw `std::system_error`—this is an error condition you need to watch out for. `std::launch::deferred`, on the other hand, is completely different—it creates no new thread. The task is delayed until you call `get()` or `wait()` on the future, executing synchronously on the calling thread. In other words, if you call `get()` on the main thread, the task runs directly on the main thread, essentially no different from a normal function call, just wrapped in an extra layer.
+
+These two policies can be combined using bitwise OR. `std::launch::async | std::launch::deferred` is the default policy—when you don't pass the first argument, `std::async` uses this combination. This means the implementation has the right to choose whether to run asynchronously or deferred; the standard delegates this decision to the standard library implementers.
+
+This sounds flexible, but the problem lies precisely in this "implementation choice." Scott Meyers dedicated Item 36 in *Effective Modern C++* to this pitfall: under the default policy, `std::async` might choose `deferred`, meaning your task might not run on another thread at all. Even worse, the `wait_for()` function of `std::future` returns `std::future_status::deferred` instead of `timeout` or `ready` for deferred tasks—if you write a polling loop using `wait_for` to check if a task is done, and you hit a deferred task, that loop will spin forever.
+
+Let's look at an example that直观ly shows the difference between the two:
 
 ```cpp
 #include <future>
 #include <iostream>
-#include <string>
+#include <thread>
 
-std::string generate_report()
-{
-    return "这是一份详细的分析报告";
+void compute() {
+    std::cout << "[Task] Thread ID: " << std::this_thread::get_id() << std::endl;
 }
 
-int main()
-{
-    std::future<std::string> f = std::async(std::launch::async, generate_report);
+int main() {
+    std::cout << "[Main] Thread ID: " << std::this_thread::get_id() << std::endl;
 
-    // 第一次 get() —— 正常
-    std::string report = f.get();
-    std::cout << "报告: " << report << "\n";
+    // 1. async policy
+    auto f1 = std::async(std::launch::async, compute);
+    f1.get();
 
-    // 第二次 get() —— 未定义行为！valid() 已经是 false
-    // std::string report2 = f.get();  // 千万别这么干
+    std::cout << "---" << std::endl;
 
-    std::cout << "get() 后 valid() = " << std::boolalpha << f.valid() << "\n";
-    return 0;
+    // 2. deferred policy
+    auto f2 = std::async(std::launch::deferred, compute);
+    f2.get(); // Task executes here, in main thread
 }
 ```
 
-This one-time semantics is not a defect but a design choice. The goal of `std::future` is lightweight, one-time result passing, not a repeatedly readable result container. If you need to "broadcast" a result to multiple consumers, C++ provides `std::shared_future` to meet this need—at the cost of additional reference counting overhead.
+Running this code, you will see that in `async` mode, the thread ID printed by `compute` differs from the main thread, while in `deferred` mode, the thread IDs are identical—because the deferred task executes synchronously on the thread that called `get()`.
 
-## The Deferred Policy Trap
+## std::future\<T\>: Fetching Asynchronous Results
 
-We have already mentioned the basic behavior of the deferred policy: the task does not execute asynchronously, but is deferred until you call `wait()` or `get()`, at which point it executes synchronously on the current thread. But the bugs this behavior triggers in real-world engineering are far more common than you would think—and the story does not end here; the real traps are yet to come.
+`std::future<T>` is the "one-time result container" provided by the C++ Standard Library. You can think of it as a read-only, single-use pipe: one end (`std::promise`, `std::packaged_task`, or `std::async`) is responsible for putting a value in, and the other end (the `std::future` in your hand) is responsible for taking it out. The design philosophy is very clear—the value can be taken out only once; once taken, the pipe is defunct.
 
-> **Trap Warning**: `std::async` under the default policy is one of the most insidious concurrency traps I have ever stepped into. Local testing is perfectly fine, but once it hits production, you discover that all tasks are serial—because the standard library implementation chose the deferred policy (under the default policy, the implementation has the right to choose either async or deferred, and the standard does not specify the conditions for this choice).
+Let's look back at the core operations provided by `future`. `get()` is what you'll use most—it blocks the current thread until the result is ready, then returns the result value; if the task threw an exception, `get()` rethrows that exception (we'll cover exception propagation later). But there is a critical constraint: `get()` can be called only once. After the call, the future becomes invalid, the shared state is released, and any further operation on it is undefined behavior (usually throwing `std::future_error`).
 
-The biggest trap comes from the default policy. When you write `std::async(f, args...)` without specifying a policy, you are using `std::launch::async | std::launch::deferred`, which means the standard library implementation can choose on its own. On some implementations (especially under high load), the standard library might heavily favor the deferred policy. So you think you are doing parallel computation, but in reality, all tasks are executing serially on the main thread—and your tests can never cover the scenario of "the standard library suddenly switching policies."
+If you just want to wait for the task to finish without needing the value immediately, use `wait()`—pure blocking wait, returns nothing, but guarantees the result is ready upon return. A more common scenario is waiting with a timeout: `wait_for()` accepts a time duration (like 500ms), and `wait_until()` accepts an absolute time point. Both return a `std::future_status` enumeration—`ready` means the result is available, `timeout` means it's not ready after waiting, and `deferred` means the task hasn't even started yet (remember the deferred policy? That's the one). For deferred tasks, `wait_for()` and `wait_until()` return the `deferred` status immediately without actually waiting—a behavior we'll see how tricky it can be later.
 
-A particularly dangerous scenario is the "fire-and-forget" pattern—you launch multiple async tasks without immediately calling `get()`, expecting them to finish in parallel in the background. Let us look at this code:
+There's also a helper function `valid()`, used to check if the future still associates with a shared state. A default-constructed `std::future`'s `valid()` returns `false`, and it also returns `false` after calling `get()`—if you aren't sure whether a future is still usable, calling `valid()` first is a good habit.
+
+Let's string these operations together in a comprehensive example:
+
+```cpp
+#include <future>
+#include <iostream>
+#include <chrono>
+
+int work() {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    return 100;
+}
+
+int main() {
+    std::future<int> fut = std::async(std::launch::async, work);
+
+    // Polling check every 500ms
+    while (true) {
+        auto status = fut.wait_for(std::chrono::milliseconds(500));
+        if (status == std::future_status::ready) {
+            std::cout << "Task completed!" << std::endl;
+            break;
+        } else {
+            std::cout << "Not yet ready..." << std::endl;
+        }
+    }
+
+    int result = fut.get();
+    std::cout << "Result: " << result << std::endl;
+    std::cout << "Future valid? " << std::boolalpha << fut.valid() << std::endl;
+}
+```
+
+This code checks the task status every 500ms. After the task completes, it calls `get()` to retrieve the value. After calling `get()`, `fut.valid()` becomes `false`, indicating the shared state has been released.
+
+## One-Time Consumption Semantics
+
+The design philosophy of `std::future` is "one-time consumption"—the value in the shared state can be retrieved only once. This design is evident at several levels; let's break them down one by one.
+
+Starting with the return semantics of `get()`. `get()` performs move semantics: for `std::future<int>`, `get()` returns a copy of the `int` value (since moving an int is just a copy, it doesn't matter), but for `std::future<std::string>`, the `string` returned by `get()` is moved out of the shared state. Once the value is taken, calling `get()` again is undefined behavior. Notably, the standard library has specializations for `std::future<T&>` (reference type) and `std::future<void`; their `get()` behavior differs slightly—the former returns a reference, while the latter only performs a synchronous wait and returns nothing.
+
+Looking at the future object itself, `std::future` is move-only. You cannot copy a `std::future`, you can only move it—after moving, the original future's `valid()` becomes `false`, and the new future takes over the shared state. This design ensures that only one future can access the shared state at any given time, fundamentally eliminating race conditions where multiple parties fight for the same result. Furthermore, there is no mechanism to "reset" an already consumed future. If you need to read the same result multiple times, you should use `std::shared_future`—which we will cover in the next chapter.
+
+```cpp
+std::future<std::string> fut = std::async([] {
+    return std::string("Hello");
+});
+
+// Move the future
+std::future<std::string> fut2 = std::move(fut);
+// fut.valid() is now false
+// fut2.valid() is true
+```
+
+This one-time semantic is not a defect but a design choice. `std::future`'s goal is lightweight, one-time result passing, not a reusable result container. If you need to "broadcast" a result to multiple consumers, C++ provides `std::shared_future` to meet that need—at the cost of extra reference counting overhead.
+
+## The Trap of the deferred Policy
+
+We've already mentioned the basic behavior of the `deferred` policy: the task doesn't execute asynchronously but is delayed until you call `get()` or `wait()`, executing synchronously on the current thread. But this behavior causes far more bugs in actual engineering than you might think—and that's not all, the real trap is yet to come.
+
+> **Pitfall Warning**: `std::async` with the default policy is one of the most insidious concurrency pitfalls I've encountered. Local testing is fine, but in production, you realize all tasks are serial—because the standard library implementation chose the `deferred` policy (under the default policy, the implementation is free to choose either async or deferred, and the standard doesn't specify the selection criteria).
+
+The biggest trap comes from the default policy. When you write `std::async(task)` without specifying a policy, you are using `std::launch::async | std::launch::deferred`. This means the standard library implementation can choose freely. On some implementations (especially under high load), the standard library might heavily favor the `deferred` policy. So you think you are doing parallel computing, but actually, all tasks are executing serially on the main thread—and your tests will never cover the scenario where "the standard library suddenly switches policies."
+
+A particularly dangerous scenario is the "fire-and-forget" pattern—you launch multiple async tasks without immediately calling `get()`, expecting them to finish in parallel in the background. Let's look at this code:
 
 ```cpp
 #include <future>
 #include <iostream>
 #include <vector>
-#include <chrono>
 
-int work(int id)
-{
+void task(int id) {
+    std::cout << "Task " << id << " start" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "任务 " << id << " 完成\n";
-    return id * 10;
+    std::cout << "Task " << id << " done" << std::endl;
 }
 
-int main()
-{
-    std::vector<std::future<int>> futures;
+int main() {
+    // Expecting 4 tasks to run in parallel (total 1s)
+    std::async(std::launch::async, task, 1);
+    std::async(std::launch::async, task, 2);
+    std::async(std::launch::async, task, 3);
+    std::async(std::launch::async, task, 4);
 
-    // 启动 4 个"异步"任务（使用默认策略）
-    for (int i = 0; i < 4; ++i) {
-        futures.push_back(std::async(work, i));  // 默认策略：async | deferred
-    }
-
-    // 依次收集结果
-    for (auto& f : futures) {
-        std::cout << "结果: " << f.get() << "\n";
-    }
-    return 0;
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 }
 ```
 
-If the implementation chooses the deferred policy, these 4 tasks will execute serially on the main thread, taking 4 seconds total instead of the expected 1 second. What is more insidious is that even if the implementation usually chooses async, under certain special conditions (like tight thread resources) it might switch to deferred—your tests can never cover this situation, which is incredibly frustrating.
+If the implementation chooses the `deferred` policy, these 4 tasks will execute serially on the main thread, taking 4 seconds total instead of the expected 1 second. Even more insidiously, even if the implementation usually chooses `async`, under certain special conditions (like thread resource exhaustion), it might switch to `deferred`—your tests will never cover this, which is frustrating.
 
-Immediately following is the second trap, related to `wait_for()`. If you write a timeout loop using `wait_for()` to poll a deferred task, the loop will immediately return the `deferred` status instead of `timeout`. If you do not handle the `deferred` branch (and frankly, many people do ignore it), the loop turns into an infinite loop:
+Immediately following is the second trap, related to `wait_for()`. If you write a timeout loop using `wait_for()` to poll a deferred task, the loop will immediately return the `deferred` status instead of `timeout` or `ready`. If you don't handle the `deferred` branch (honestly, many people do ignore it), the loop becomes an infinite loop:
 
 ```cpp
-// ⚠️ 危险！如果没有处理 deferred 状态，可能永远循环下去
-while (f.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready) {
-    // 如果任务是 deferred 的，这个循环永远不会退出！
-    // 因为 wait_for 对 deferred 任务立刻返回 std::future_status::deferred
+// Dangerous polling loop
+auto fut = std::async(std::launch::deferred, []{
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return 42;
+});
+
+while (true) {
+    auto status = fut.wait_for(std::chrono::milliseconds(100));
+    if (status == std::future_status::ready) {
+        break; // Never reached for deferred!
+    }
+    // If status is deferred, we loop forever
 }
 ```
 
-Do not assume this is just an extreme textbook example—I have seen this kind of infinite loop in real projects, and it only triggers under specific loads, making it absolutely maddening to debug. The correct approach is to first check the return value of `wait_for`; if it is `deferred`, directly call `get()` or adopt another strategy:
+Don't assume this is just an extreme textbook example—I've seen this exact infinite loop in real projects, and it only triggers under specific loads, which is maddening to debug. The correct approach is to check the return value of `wait_for()` first; if it is `deferred`, call `get()` directly or adopt another strategy:
 
 ```cpp
-auto status = f.wait_for(std::chrono::milliseconds(100));
+auto status = fut.wait_for(std::chrono::milliseconds(100));
 if (status == std::future_status::deferred) {
-    // 任务被延迟了，直接在当前线程执行
-    result = f.get();
+    // Force synchronous execution
+    fut.get();
 } else if (status == std::future_status::ready) {
-    result = f.get();
-} else {
-    // timeout —— 继续等待或做其他事情
+    // Result available
+    fut.get();
 }
 ```
 
-So my advice is simple: **if you truly need asynchronous execution, explicitly specify `std::launch::async`**. The default policy looks flexible—"let the implementation choose for you," how elegant—but in real projects, this flexibility is almost entirely a trap. Scott Meyers also advises in Item 36 of *Effective Modern C++*: if you want to ensure a task is truly executed asynchronously, always explicitly pass `std::launch::async`. It would not be an exaggeration to tape this rule to the edge of your monitor.
+So my suggestion is simple: **if you truly need asynchronous execution, explicitly specify `std::launch::async`**. The default policy looks flexible—"let the implementation choose for you," how elegant—but this flexibility is almost entirely pitfalls in actual projects. Scott Meyers also suggests in Item 36 of *Effective Modern C++*: if you want to ensure a task is truly executed asynchronously, always explicitly pass `std::launch::async`. It's worth sticking this rule on your monitor.
 
 ## Exception Propagation
 
-So far we have only dealt with scenarios involving normal return values, but in real-world engineering, tasks throwing exceptions is a common occurrence. A major advantage of `std::async` is that it automatically captures exceptions thrown within the task and propagates them to the caller via `std::future`—you do not need to manually design error codes or other error-passing mechanisms.
+So far, we've only dealt with scenarios involving normal return values, but in actual engineering, tasks throwing exceptions is common. A major advantage of `std::async` is that it automatically captures exceptions thrown within the task and propagates them to the caller via `std::future`—you don't need to manually design error codes or other error passing mechanisms.
 
-The mechanism works like this: if the task function throws an exception, the exception is caught and stored in the `std::future`'s shared state; when you call `get()`, the stored exception is rethrown. This means you can use try-catch in the main thread to handle exceptions from child threads, which is no different from handling exceptions thrown by normal function calls.
+The mechanism works like this: if the task function throws an exception, the exception is caught and stored in the shared state of the `std::future`. When you call `get()`, the stored exception is rethrown. This means you can handle child thread exceptions in the main thread using try-catch, just like handling exceptions from normal function calls.
 
 ```cpp
 #include <future>
 #include <iostream>
-#include <stdexcept>
 
-int risky_computation(int x)
-{
-    if (x < 0) {
-        throw std::invalid_argument("参数不能为负数");
-    }
-    return x * x;
+int risky_task() {
+    throw std::runtime_error("Something went wrong!");
+    return 0;
 }
 
-int main()
-{
-    auto f1 = std::async(std::launch::async, risky_computation, -5);
+int main() {
+    std::future<int> fut = std::async(std::launch::async, risky_task);
 
     try {
-        int result = f1.get();  // 会抛出 std::invalid_argument
-        std::cout << "结果: " << result << "\n";
-    } catch (const std::invalid_argument& e) {
-        std::cout << "捕获到异常: " << e.what() << "\n";
+        int result = fut.get();
+    } catch (const std::runtime_error& e) {
+        std::cout << "Caught exception: " << e.what() << std::endl;
     }
-
-    // 正常情况
-    auto f2 = std::async(std::launch::async, risky_computation, 5);
-    try {
-        int result = f2.get();
-        std::cout << "正常结果: " << result << "\n";  // 输出 25
-    } catch (const std::invalid_argument& e) {
-        std::cout << "不会执行到这里\n";
-    }
-    return 0;
 }
 ```
 
-This exception propagation mechanism works equally well for the deferred policy—except that under the deferred policy, the exception is thrown synchronously when `get()` is called, which is no different from a normal function call throwing an exception.
+This exception propagation mechanism is equally effective for the `deferred` policy—except that under the `deferred` policy, the exception is thrown synchronously at the call to `get()`, no different from a normal function call throwing an exception.
 
-There is a detail to note here—if you never call `get()`, the exception is silently swallowed. More precisely, if the `std::future` destructs before the task has completed (for the async policy), the destructor will block and wait for the task to finish. If the task threw an exception and you never called `get()`, the exception is released along with the shared state—it is not propagated, it does not terminate the program, it is just lost. This is a silent error and is very dangerous. Therefore, **you must always call `get()` on the future returned from `std::async`**, even if you do not need the return value, even if you just want to confirm that the task did not throw an exception.
+There is a detail to note here—if you never call `get()`, the exception is silently swallowed. More precisely, if the `std::future` destructs before the task is complete (for the `async` policy), the destructor blocks waiting for the task to finish. If the task threw an exception and you never called `get()`, the exception is released along with the shared state—it won't propagate, won't terminate the program, it's just gone. This is a silent error and very dangerous. Therefore, **you must call `get()` on the future returned from `std::async`**, even if you don't need the return value, just to confirm the task didn't throw an exception.
 
-## Destructor Behavior of Futures Returned by std::async
+## Destructor Behavior of std::async Returned Futures
 
-You might have noticed that in the previous examples, we dutifully saved the future objects and only called `get()` at the very end. But what if you casually write a line like `std::async(std::launch::async, some_task);` without saving the return value? Here we need to specifically mention the destructor behavior of the `std::future` returned by `std::async`, because it is different from an ordinary `std::future`.
+You might have noticed that in the previous examples, we dutifully saved the future object and only called `get()` at the end. But what if you just write a line of `std::async(...)` and don't save the return value? Here we need to specifically mention the destructor behavior of the `std::future` returned by `std::async`, because it differs from a normal `std::future`.
 
-When you obtain a `std::future` through other means (like `std::promise`), the future's destructor simply releases the reference to the shared state—if the promise has not yet set a value, the future destructs just like that, without waiting for anything.
+When you obtain a `std::future` through other means (like `std::promise::get_future()`), the future's destruction merely releases the reference to the shared state—if the promise hasn't set a value yet, the future just destructs without waiting for anything.
 
-But the future returned by `std::async` is special: if the task was launched via `std::launch::async`, and this is the last future referencing that shared state, the destructor will block until the task completes. This is behavior explicitly required by the standard ([futures.async]), designed to prevent the task from becoming an orphaned thread if you throw away the future while it is still running.
+But the `std::future` returned by `std::async` is special: if the task was launched via `std::launch::async` (or the default policy where async is chosen), and this is the last future referencing that shared state, the destructor blocks until the task is complete. This is behavior explicitly required by the standard ([futures.async]), designed to prevent the task from becoming an orphan thread if you discard the future while it's still running.
 
 This means the following code is actually serial:
 
 ```cpp
-#include <future>
-#include <iostream>
-#include <chrono>
-
-void task(int id)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "任务 " << id << " 完成\n";
-}
-
-int main()
-{
-    // 注意：临时 future 对象在这条语句结束时就会析构
-    std::async(std::launch::async, task, 1);  // 析构阻塞到任务完成
-    std::async(std::launch::async, task, 2);  // 析构阻塞到任务完成
-    std::async(std::launch::async, task, 3);  // 析构阻塞到任务完成
-    // 总耗时 3 秒——完全是串行的！
-    return 0;
-}
+// Serial execution, NOT parallel!
+std::async(std::launch::async, []{ std::this_thread::sleep_for(std::chrono::seconds(1)); });
+std::async(std::launch::async, []{ std::this_thread::sleep_for(std::chrono::seconds(1)); });
+std::async(std::launch::async, []{ std::this_thread::sleep_for(std::chrono::seconds(1)); });
 ```
 
-Each time, the temporary `std::future` object returned by `std::async` is destructed at the end of the statement, and the destruction blocks until the task completes. So even though you wrote three lines of `std::async`, the actual execution is strictly serial. To achieve true parallelism, you need to store the futures in a container, wait until all are launched, and then collect the results one by one:
+Each temporary `std::future` object returned by `std::async` is destructed at the end of the statement, and the destruction blocks until the task is complete. So although you wrote three lines of `std::async`, the actual execution is strictly serial. To achieve true parallelism, you need to store the futures in a container and collect them sequentially after all are launched:
 
 ```cpp
-#include <future>
-#include <iostream>
-#include <vector>
-#include <chrono>
+std::vector<std::future<void>> futs;
+futs.push_back(std::async(std::launch::async, []{ /* ... */ }));
+futs.push_back(std::async(std::launch::async, []{ /* ... */ }));
+futs.push_back(std::async(std::launch::async, []{ /* ... */ }));
 
-void task(int id)
-{
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::cout << "任务 " << id << " 完成\n";
-}
-
-int main()
-{
-    std::vector<std::future<void>> futures;
-
-    // 先全部启动
-    for (int i = 1; i <= 3; ++i) {
-        futures.push_back(std::async(std::launch::async, task, i));
-    }
-
-    // 再统一等待
-    for (auto& f : futures) {
-        f.get();  // 总耗时约 1 秒——三个任务并行执行
-    }
-    return 0;
+// Wait for all
+for (auto& f : futs) {
+    f.get();
 }
 ```
 
-This destructor behavior is a "signature" design of `std::async` that often trips up beginners. You must always keep this in mind: the destructor of a future returned by `std::async` will block—if you casually ignore the return value, your "parallel" code becomes serial.
+This destructor behavior is a "feature" of `std::async` that often trips up newcomers. You must keep this in mind: the destructor of the future returned by `std::async` will block—if you casually ignore the return value, your "parallel" code becomes serial.
 
-## Comparing std::future and std::thread: How to Choose?
+## std::future vs std::thread: How to Choose?
 
-At this point, we can compare `std::async`/`std::future` with `std::thread`, and clarify the selection strategy along the way.
+At this point, we can compare `std::async`/`std::future` with `std::thread` and clarify the selection strategy.
 
-When using `std::thread` to execute asynchronous tasks, you need to design the result-passing mechanism yourself—for example, using shared variables with a mutex, global variables with atomics, or condition variables. Exception handling is also entirely your responsibility—exceptions thrown in child threads are not automatically propagated back to the main thread; you have to manually catch them and pass them through some mechanism. Thread management is also manual: you must choose between `join()` or `detach()`; forget to do so, and you trigger `std::terminate`.
+When using `std::thread` to execute asynchronous tasks, you need to design the result passing mechanism yourself—using shared variables with mutexes, global variables with atomics, or condition variables. Exception handling is also entirely your responsibility—exceptions thrown in child threads won't automatically propagate back to the main thread; you must catch them manually and pass them through some mechanism. Thread management is also manual: you must choose between `join()` or `detach()`, forgetting triggers `std::terminate`.
 
-Using `std::async` is much more worry-free: return values are automatically passed via `std::future`, exceptions are automatically propagated, and the future's destructor waits for the task to complete (no orphaned threads). The cost is that you lose fine-grained control over the thread—you cannot set thread priority, thread affinity, or thread names, and you do not even know which thread the task is actually running on.
+Using `std::async` is much more worry-free: return values are passed automatically via `std::future`, exceptions propagate automatically, and the future's destructor waits for task completion (no orphan threads). The cost is you lose fine-grained control over the thread—you can't set thread priority, affinity, or name, and you don't even know which thread the task is running on.
 
-So the selection logic is actually quite clear. If you need to run a computational task with clear inputs and outputs, where tasks are relatively independent, you need exception propagation, and you do not care which thread the task runs on—typical examples include parallel data processing, parallel file I/O, or offloading a time-consuming computation from the main thread—use `std::async`. `std::async` is suited for exactly that "throw out a task, get back a result" scenario. However, `std::async` is not suitable for scenarios requiring frequent thread creation and destruction—each `std::launch::async` might create a new thread, and the system overhead is not insignificant.
+So the logic for selection is actually quite clear. If you are running a computational task with clear inputs and outputs, tasks are relatively independent, you need exception propagation, and you don't care which thread runs the task—typical examples include parallel data processing, parallel file I/O, or offloading a time-consuming calculation from the main thread—use `std::async`. `std::async` is suited for "throw a task out, get a result back" scenarios. However, `std::async` is not suitable for scenarios requiring frequent thread creation and destruction—each `std::async` might create a new thread, which carries significant system overhead.
 
-If you need a persistent background worker thread—like a background listening thread, an event loop, or a situation where you need to set thread attributes (priority, affinity, etc.)—use `std::thread`, but it requires you to handle all synchronization and error passing yourself, resulting in noticeably more code.
+If you need a persistent background worker thread—background listener threads, event loops, or cases requiring thread attributes (priority, affinity, etc.)—use `std::thread`, but you need to handle all synchronization and error passing yourself, which results in significantly more code.
 
-If you need to run a large number of short tasks, that is the domain of thread pools. A thread pool pre-creates a set of worker threads, and tasks are submitted to a queue to be picked up and executed by the workers. This avoids the overhead of frequently creating and destroying threads, and also lets you control the concurrency level (maximum thread count, task queue size, etc.). The C++ standard library currently does not provide a thread pool, so you need to implement one yourself or use a third-party library—we will cover the design and implementation of thread pools in detail in later chapters.
+If you need to run a large number of short tasks, that is the domain of thread pools. A thread pool pre-creates a set of worker threads, and tasks are submitted to a queue to be executed by worker threads. This avoids the overhead of frequent thread creation and destruction and allows you to control concurrency (max threads, queue size, etc.). The C++ Standard Library currently does not provide a thread pool, so you need to implement one yourself or use a third-party library—we will cover the design and implementation of thread pools in detail in later chapters.
 
-## Exercise: Parallel Computation Using std::async
+## Exercise: Parallel Computation with std::async
 
 ### Exercise 1: Parallel Summation
 
-Given a `std::vector<int>` containing 10 million random integers, use `std::async` to split it into 4 segments for parallel summation, then aggregate the results. Compare the execution time of the single-threaded version and the multi-threaded version.
+Given a `std::vector<int>` containing 10 million random integers, use `std::async` to split it into 4 segments for parallel summation, and finally aggregate the results. Compare the time taken by the single-threaded version and the multi-threaded version.
 
 ```cpp
-#include <future>
-#include <iostream>
-#include <vector>
-#include <random>
+#include <algorithm>
+#include <async>
 #include <chrono>
+#include <functional>
+#include <iostream>
 #include <numeric>
+#include <random>
+#include <vector>
+#include <future>
 
-// 将 data[begin, end) 区间求和
-long long partial_sum(const std::vector<int>& data, std::size_t begin, std::size_t end)
-{
-    return std::accumulate(data.begin() + begin, data.begin() + end, 0LL);
-}
+int main() {
+    std::vector<int> data(10'000'000);
+    std::generate(data.begin(), data.end(), std::rand);
 
-int main()
-{
-    constexpr std::size_t kDataSize = 10'000'000;
-    constexpr int kNumTasks = 4;
-
-    // 生成随机数据
-    std::vector<int> data(kDataSize);
-    std::mt19937 rng(42);
-    std::uniform_int_distribution<int> dist(1, 100);
-    for (auto& x : data) {
-        x = dist(rng);
-    }
-
-    // 多线程版本
+    // Single-threaded baseline
     auto start = std::chrono::high_resolution_clock::now();
-    std::vector<std::future<long long>> futures;
-    std::size_t chunk = kDataSize / kNumTasks;
+    long long sum_single = std::accumulate(data.begin(), data.end(), 0LL);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Single thread: " << sum_single
+              << ", Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
 
-    for (int i = 0; i < kNumTasks; ++i) {
-        std::size_t begin = i * chunk;
-        std::size_t end = (i == kNumTasks - 1) ? kDataSize : (i + 1) * chunk;
-        futures.push_back(
-            std::async(std::launch::async, partial_sum,
-                       std::cref(data), begin, end));
-    }
-
-    long long total = 0;
-    for (auto& f : futures) {
-        total += f.get();
-    }
-
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                       end_time - start)
-                       .count();
-
-    std::cout << "并行求和结果: " << total << "\n";
-    std::cout << "耗时: " << elapsed << " us\n";
-
-    // 单线程版本（用于验证）
+    // Multi-threaded
     start = std::chrono::high_resolution_clock::now();
-    long long single = std::accumulate(data.begin(), data.end(), 0LL);
-    end_time = std::chrono::high_resolution_clock::now();
-    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                  end_time - start)
-                  .count();
+    size_t chunk = data.size() / 4;
 
-    std::cout << "单线程结果: " << single << "\n";
-    std::cout << "耗时: " << elapsed << " us\n";
-    std::cout << "结果一致: " << std::boolalpha << (total == single) << "\n";
-    return 0;
+    // Use std::ref to pass read-only reference
+    std::future<long long> f1 = std::async(std::launch::async, [&data, chunk] {
+        return std::accumulate(data.begin(), data.begin() + chunk, 0LL);
+    });
+
+    std::future<long long> f2 = std::async(std::launch::async, [&data, chunk] {
+        return std::accumulate(data.begin() + chunk, data.begin() + 2 * chunk, 0LL);
+    });
+
+    std::future<long long> f3 = std::async(std::launch::async, [&data, chunk] {
+        return std::accumulate(data.begin() + 2 * chunk, data.begin() + 3 * chunk, 0LL);
+    });
+
+    std::future<long long> f4 = std::async(std::launch::async, [&data, chunk] {
+        return std::accumulate(data.begin() + 3 * chunk, data.end(), 0LL);
+    });
+
+    long long sum_multi = f1.get() + f2.get() + f3.get() + f4.get();
+    end = std::chrono::high_resolution_clock::now();
+    std::cout << "Multi thread: " << sum_multi
+              << ", Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
 }
 ```
 
-Note that we use `std::cref(data)` to pass a read-only reference to the data—because `std::async`'s arguments are passed by value by default. Without `std::cref`, the entire vector would be copied, wasting both memory and time. `std::cref` is a reference wrapper that allows arguments passed by value to actually pass a reference without copying.
+Note that we use `std::ref` (or a lambda capture by reference) to pass a read-only reference to the data—because `std::async`'s parameters are passed by value by default. Without `std::ref`, the entire vector would be copied, wasting both memory and time. `std::reference_wrapper` (via `std::ref`) allows passing by reference without copying when the parameter expects by value.
 
-### Exercise 2: Verifying the Deferred Trap
+### Exercise 2: Verify the deferred Trap
 
-Modify the code from Exercise 1 to run using `std::launch::async`, `std::launch::deferred`, and the default policy respectively. Compare the execution times of the three. Observe whether the execution time of the deferred version is close to that of the single-threaded version.
+Modify the code from Exercise 1 to run using `std::launch::async`, `std::launch::deferred`, and the default policy respectively. Compare the time taken by all three. Observe whether the time taken by the `deferred` version is close to the single-threaded version.
 
 ### Exercise 3: Exception Propagation Verification
 
-Write a `std::async` task that throws a custom exception. Use try-catch in the main thread to catch it and verify that the exception type and message content are consistent.
+Write a `std::async` task that throws a custom exception. Catch it in the main thread using try-catch and verify that the exception type and message content match.
 
 ## Summary
 
-At this point, we have walked through the core mechanisms of `std::async` and `std::future` in their entirety. `std::async` provides a higher-level way to launch asynchronous tasks than `std::thread`, automatically handling return value passing and exception propagation, which is indeed much less hassle. `std::future<T>` is the standard channel for retrieving asynchronous results; operations like `get()`, `wait()`, and `wait_for()` have very straightforward names, but the semantics behind them (especially the one-time consumption of get and the behavior of wait_for under the deferred status) are something you need to keep firmly in mind.
+At this point, we have thoroughly walked through the core mechanisms of `std::async` and `std::future`. `std::async` provides a higher-level way to launch asynchronous tasks than `std::thread`, automatically handling return value passing and exception propagation, which saves a lot of worry. `std::future` is the standard channel for retrieving asynchronous results. Operations like `get()`, `wait()`, and `wait_for()` have straightforward names, but the semantics behind them (especially the one-time consumption of `get` and the behavior of `wait_for` with the `deferred` status) need to be kept in mind.
 
-Let us reiterate a few key points: the default launch policy (`async | deferred`) is a trap to be wary of, as the implementation might choose the deferred policy causing tasks to execute serially; `wait_for()` immediately returns the `deferred` status for deferred tasks, and a polling loop that does not handle this branch will turn into an infinite loop; the destructor of the future returned by `std::async` blocks until the task completes, so casually ignoring the return value will turn your parallel code into serial code. If you need true asynchronous execution, explicitly pass `std::launch::async`—it would not be an exaggeration to tape this rule to the edge of your monitor.
+Let me reiterate a few key points: the default launch policy (`std::launch::async | std::launch::deferred`) is a trap to be wary of; the implementation might choose the `deferred` policy causing tasks to execute serially. `wait_for()` returns the `deferred` status immediately for deferred tasks; a polling loop that doesn't handle this branch becomes an infinite loop. The destructor of the future returned by `std::async` blocks until the task is complete; casually ignoring the return value turns your parallel code into serial code. If you need true asynchronous execution, explicitly pass `std::launch::async`—this rule is worth sticking on your monitor.
 
-In the next chapter, we will look at `std::promise` and `std::packaged_task`—they are the "other end" of `std::future`, giving you more flexible control over value setting and task encapsulation. Once you clearly understand the semantics on the future end, understanding the promise end will follow naturally.
+In the next chapter, we will look at `std::promise` and `std::packaged_task`—they are the "other end" of `std::future`, allowing you more flexible control over value setting and task encapsulation. Once you understand the semantics on the future side, understanding the promise side will follow naturally.
 
-> 💡 The complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/volumn_codes/vol5/ch05-future-task-threadpool/`.
+> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `examples/future_async`.
 
 ## References
 

@@ -5,32 +5,32 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Container selection guide, common pitfalls, and performance fundamentals
+description: 容器选择指南、常见陷阱和性能基础
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
 - 算法库初见
-reading_time_minutes: 18
+reading_time_minutes: 19
 tags:
 - cpp-modern
 - host
 - beginner
 - 入门
 - 基础
-title: Common STL Patterns
+title: STL Common Patterns
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch11/04-stl-patterns.md
-  source_hash: fbccb2de68f9dd8a7ff0c5f75c85dccbed9ed5058b461828659644fb07cae296
-  token_count: 3572
-  translated_at: '2026-05-26T10:59:36.576358+00:00'
+  source_hash: 4b6b2be67db7b5febaa80133394f3ba38a0649d932e8696fa47e2a88b762e429
+  translated_at: '2026-06-16T03:48:03.012155+00:00'
+  engine: anthropic
+  token_count: 3568
 ---
 # Common STL Patterns
 
-In the previous three chapters, we covered `vector`, associative containers, and the algorithm library, diving deep into each domain. But in real-world code, the questions are rarely "how do I use this container" or "how do I call this algorithm." Instead, they are "which container should I choose," "why is my program so slow," and "did I just hit iterator invalidation again." These are cross-cutting concerns that require a systematic perspective.
+In the previous three chapters, we covered sequence containers, associative containers, and the algorithm library respectively, diving deep into each specific domain. However, in actual coding, the problem is often not "how do I use this container" or "how do I call that algorithm," but rather "which container should I choose," "why is my program running so slow," or "why did I hit an iterator invalidation pitfall again." These are comprehensive issues that span across containers and algorithms, requiring a systematic perspective to address.
 
-In this chapter, we connect the dots from the previous chapters. We start by clarifying the most frequent decision: which container to use in a given scenario. Next, we walk through the most common STL pitfalls. Then, we cover essential performance fundamentals. Finally, we tie container selection, algorithm pairing, and pitfall avoidance together in a comprehensive practical example. After this chapter, your understanding of the STL will level up from "knowing how to use it" to "knowing how to use it right."
+In this chapter, we will connect these scattered pieces of knowledge. We will first clarify the high-frequency decision problem of "which container to use for which scenario," then review the most common pitfalls in STL usage, discuss performance-related basics, and finally tie everything together—container selection, algorithm combination, and defensive programming—into a comprehensive practical example. By the end of this chapter, your understanding of STL will upgrade from "knowing how to use it" to "knowing how to use it right."
 
 > **Learning Objectives**
 >
@@ -40,344 +40,219 @@ In this chapter, we connect the dots from the previous chapters. We start by cla
 > - [ ] Identify and avoid common pitfalls like iterator invalidation and modifying containers during traversal
 > - [ ] Understand the impact of cache friendliness on container performance
 > - [ ] Proficiently use the erase-remove idiom and C++20's `std::erase`
-> - [ ] Apply the "algorithms over hand-written loops" principle to write clearer code
+> - [ ] Apply the principle of "algorithms over hand-written loops" to write clearer code
 
-## Making the Choice — Container Selection Guide
+## Making the Choice — A Container Selection Guide
 
-Many developers feel even more conflicted after learning about all the containers: which one should I actually use? In reality, the decision logic is very clear for the vast majority of scenarios. Let's walk through it based on your core needs:
+After learning about a bunch of containers, many people feel even more conflicted: which one should I actually use? In reality, the decision logic is very clear for the vast majority of scenarios. Let's walk through it based on your core needs:
 
-If your data is sequential, its quantity will change, and you need random access, `std::vector` is almost always the first choice. Its elements are stored contiguously in memory, allowing CPU cache prefetching to work efficiently. Subscript access is O(1), and amortized O(1) for push/pop at the back. Its only weakness is O(n) insertion and deletion in the middle—but honestly, most programs don't need frequent middle insertions.
+If your data is sequential, the quantity changes, and you need random access, `std::vector` is almost always the first choice. Its elements are arranged contiguously in memory, allowing CPU cache prefetch to work efficiently. Index access is O(1), and amortized insertion/deletion at the end is O(1). Its only weakness is O(n) insertion/deletion in the middle—but honestly, most programs don't need frequent insertions in the middle.
 
-If you need to "look up a value by key" and don't need to iterate in key order, `std::unordered_map` is the most efficient choice, offering average O(1) lookup speed. If you also need ordered traversal by key or range queries, switch to `std::map`.
+If you need to "look up a value by key" and don't need to traverse in key order, `std::unordered_map` is the most efficient choice, with average O(1) lookup speed. If you need ordered traversal or range queries by key at the same time, switch to `std::map`.
 
-If you need to maintain a "set of unique elements," use `std::set`. If you only need to check "whether something exists" and don't need ordering, `std::unordered_set` is faster.
+If you need to maintain a "set of unique elements," use `std::set`. If you only need to judge "whether something is present" and don't need ordering, `std::unordered_set` is faster.
 
-If the number of elements is known at compile time and doesn't need dynamic resizing, use `std::array`—it is a zero-overhead fixed-size array that eliminates the dynamic allocation overhead of a vector, and is just as efficient as a C array.
+If the number of elements is determined at compile time and doesn't need dynamic changes, use `std::array`—it is a zero-overhead fixed-size array that avoids dynamic allocation overhead compared to `vector` and is as efficient as C arrays.
 
 Let's organize this into a decision table:
 
 | Core Need | First Choice | Characteristics |
-|----------|----------|------|
-| Sequential storage, random access | `std::vector` | Contiguous memory, cache friendly |
-| Fast key lookup (no ordering needed) | `std::unordered_map` | Average O(1) lookup |
-| Key lookup with ordered traversal | `std::map` | O(log n), red-black tree |
+|----------|--------------|-----------------|
+| Sequential storage, random access | `std::vector` | Contiguous memory, cache-friendly |
+| Fast lookup by key (no ordering needed) | `std::unordered_map` | Average O(1) lookup |
+| Lookup by key with ordered traversal | `std::map` | O(log n), red-black tree |
 | Unique element set | `std::set` | Automatic deduplication, ordered |
-| Fixed-size array | `std::array` | Zero overhead, stack allocated |
+| Fixed-size array | `std::array` | Zero overhead, stack allocation |
 
-This table covers 90% of daily decisions. The remaining 10% involves `deque` (double-ended queue, O(1) insertion/deletion at both ends), `list` (doubly linked list, O(1) middle insertion/deletion but terrible cache performance), `multimap` / `multiset` (allow duplicate keys), and so on. You can look up the documentation when you encounter these.
+This table covers 90% of daily decisions. The remaining 10% involves `std::deque` (double-ended queue, O(1) insertion/deletion at both ends), `std::list` (doubly linked list, O(1) insertion/deletion in the middle but terrible cache performance), `std::multiset` / `std::multimap` (allow duplicate keys), etc. You can check the documentation when you encounter them.
 
-Here is a practical rule of thumb worth remembering: **if you're not sure what to use, use `vector`**. Bjarne Stroustrup (the creator of C++) and many C++ experts have repeatedly emphasized this point. `vector` performs decently in most scenarios. Even when its theoretical complexity isn't optimal, its cache friendliness often makes it win in real-world benchmarks. Only consider other containers when you can clearly articulate "why vector won't work."
+A useful rule of thumb is worth remembering: **If you aren't sure what to use, use `std::vector`**. Bjarne Stroustrup (the father of C++) and many C++ experts have repeatedly emphasized this point. `std::vector` performs well in most scenarios; even if the theoretical complexity isn't optimal, its cache friendliness often makes it win in actual benchmarks. Only when you can clearly articulate "why vector won't work" do you need to consider other containers.
 
-## Pitfall Warnings — Where the STL Most Often Goes Wrong
+## Pitfall Warning — Where STL Most Often Goes Wrong
 
-After using the STL for a while, you'll find that the real headaches aren't "how to call a certain interface," but rather those traps where "it compiles, even runs fine, but the logic is already wrong." Here we go through the most common pitfalls one by one, each of which I or C++ developers I know have stepped into for real.
+After using STL for a while, you will find that the real headache is often not "how to call a certain interface," but those traps where "it compiles, maybe even runs normally, but the logic is already wrong." Here we go through the most common pitfalls one by one, each of which I or C++ developers I know have actually stepped into.
 
 ### Pitfall 1: Iterator Invalidation
 
-We mentioned this issue when discussing `vector`, but it doesn't just affect `vector`, and it doesn't only happen during reallocation. The core rule is this: for `vector` and `string`, any operation that might trigger reallocation (`push_back`, `emplace_back`, `insert`, or reallocation caused by `reserve`) invalidates all iterators, pointers, and references. Even without reallocation, `insert` and `erase` invalidate iterators at and after the affected position. For `deque`, any insertion operation invalidates all iterators. For `map`, `set`, `unordered_map`, and `unordered_set`, `erase` only invalidates iterators pointing to the deleted elements, leaving other iterators unaffected—this is a very important distinction.
+This issue was mentioned when discussing `std::vector`, but it doesn't just affect `std::vector`, nor does it only happen during reallocation. The core rule is this: for `std::vector` and `std::string`, any operation that might cause reallocation (`push_back`, `emplace_back`, `reserve`, or `resize` causing reallocation) invalidates all iterators, pointers, and references. Even without reallocation, `insert` and `erase` invalidate iterators at and after the affected position. For `std::deque`, any insertion operation invalidates all iterators. For `std::map`, `std::set`, `std::unordered_map`, `std::unordered_set`, `erase` only invalidates iterators pointing to the deleted elements, leaving other iterators unaffected—this is a very important distinction.
 
 ```cpp
-std::vector<int> v = {1, 2, 3, 4, 5};
-auto it = v.begin() + 2;  // 指向 3
-v.push_back(6);           // 可能触发扩容
-// it 现在是悬垂迭代器——解引用是未定义行为
-
-std::map<int, std::string> m = {{1, "a"}, {2, "b"}, {3, "c"}};
-auto mit = m.find(2);
-m.erase(1);               // 删除 key=1 的元素
-// mit 仍然有效——map 的 erase 不影响其他迭代器
+// vector::erase invalidates the iterator pointing to the deleted element
+// and all iterators after it.
+// map::erase only invalidates the iterator to the deleted element.
 ```
 
-The practical significance of this distinction is that if you need to delete elements while iterating over a `map`, you can do so directly with iterators, but deleting elements while iterating over a `vector` requires extra care. Let's look at this more specific scenario next.
+The practical significance of this difference is: if you need to delete elements while traversing a `std::map`, you can do so directly with an iterator, but you need to be extra careful when deleting elements while traversing a `std::vector`. Let's look at this more specific scenario next.
 
-> **Pitfall Warning**: After saving an iterator, treat any operation that might modify the container's structure as "potentially invalidating the iterator." Don't assume "I just push_backed one element, it should be fine"—vector's reallocation strategy is implementation-defined, and you can't predict which push_back will trigger reallocation. If you truly need to continue using information about a certain position after modifying the container, use indices instead of iterators, because indices are logically stable.
+> **Pitfall Warning**: After saving an iterator, treat any operation that might modify the container structure as "potentially invalidating the iterator." Don't assume "I just `push_back`-ed an element, it should be fine"—the reallocation strategy of `vector` depends on the implementation, and you cannot predict which `push_back` will trigger reallocation. If you确实 need to continue using information about a position after modifying the container, use an index instead of an iterator, because indexes are logically stable.
 
 ### Pitfall 2: Modifying a Container During Traversal
 
-This is a very classic failure scenario. First, let's look at an example that "looks fine at first glance but will blow up":
+This is a classic crash site. First, look at an example that "looks fine at first glance but will explode":
 
 ```cpp
-std::vector<int> v = {1, 2, 3, 4, 5, 6};
+std::vector<int> v = {1, 2, 3, 4, 5};
 for (auto it = v.begin(); it != v.end(); ++it) {
     if (*it % 2 == 0) {
-        v.erase(it);  // 未定义行为！it 已失效
+        v.erase(it); // UB! it is invalidated after erase
     }
 }
 ```
 
-After calling `erase`, `it` is invalidated, and doing `++it` on it is undefined behavior. The correct approach is to use the return value of `erase`—it returns an iterator pointing to the element following the deleted one:
+After calling `v.erase(it)`, `it` is invalidated, and incrementing it (`++it` in the loop header) is undefined behavior. The correct way is to use the return value of `erase`—it returns an iterator pointing to the element following the deleted element:
 
 ```cpp
-for (auto it = v.begin(); it != v.end(); /* 不在这里 ++it */) {
+for (auto it = v.begin(); it != v.end(); /* empty */) {
     if (*it % 2 == 0) {
-        it = v.erase(it);  // erase 返回下一个元素的迭代器
+        it = v.erase(it); // it now points to the next element
     } else {
         ++it;
     }
 }
 ```
 
-But honestly, this approach is error-prone—a moment of carelessness and you'll forget not to do `++it` in the `erase` branch. A more recommended approach is to first use `std::remove_if` to move the elements to be deleted to the end, then `erase` them all at once:
+But honestly, this style is error-prone—one slip of the mind and you forget to `++it` in the `else` branch. A more recommended approach is to first move the elements to be deleted to the end with `std::remove`, and then `erase` them all at once:
 
 ```cpp
-// C++20 之前
-auto it = std::remove_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
-v.erase(it, v.end());
-
-// C++20——一行搞定
-std::erase_if(v, [](int x) { return x % 2 == 0; });
+v.erase(std::remove(v.begin(), v.end(), value), v.end());
 ```
 
-For `map` and `set`, the safe way to delete during traversal is slightly different. Because prior to C++11, `erase` returned `void`, the traditional approach was `m.erase(it++)`—copy the iterator, increment it, then pass the copy to erase. Starting from C++11, the `erase` of associative containers also returns the next iterator, so the syntax is the same as for vector: `it = m.erase(it)`.
+For `std::map` and `std::set`, the safe way to delete during traversal is slightly different. Because before C++11, `map::erase` returned `void`, the traditional way was `it = erase(it++)`—copy the iterator first, then increment, then pass to erase. Starting from C++11, associative containers' `erase` also returns the next iterator, so the writing style is the same as for vector: `it = map.erase(it)`.
 
-> **Pitfall Warning**: You must absolutely never modify a container's structure (inserting or deleting elements) inside a range-for loop. Range-for uses iterators under the hood, and you cannot capture the return value of `erase` inside a range-for. If the compiler has sanitizers enabled, these bugs are easily caught; but if not, they might "happen to run"—completely invisible during the debug phase, only to crash under a specific load in production, making debugging extremely painful.
+> **Pitfall Warning**: Never modify the container structure (insert or delete elements) inside a range-for loop. The underlying mechanism of range-for uses iterators, and you cannot get the return value of `erase` inside a range-for. If the compiler has sanitizers enabled, these bugs are easily caught; but if not, they might "just happen to run"—showing no signs in the debug phase, only to crash under a specific load in production, making debugging extremely painful.
 
-### Pitfall 3: map's operator[] Silently Inserting Elements
+### Pitfall 3: map's operator[] Silently Inserts Elements
 
-We covered this pitfall in detail when discussing associative containers, but it appears so frequently that we need to emphasize it again from a "pattern" perspective. `map[key]` automatically inserts a default-constructed element when the key doesn't exist. This means two consequences: first, using `operator[]` on a `const map` simply won't compile, because it is a modifying operation; second, if you just want to check whether a key exists and use `operator[]`, the map will be silently modified.
+This pitfall was discussed in detail when talking about associative containers, but it appears so frequently that I will emphasize it again from a "pattern" perspective. `std::map::operator[]` automatically inserts a default-constructed element if the key doesn't exist. This means two consequences: first, using `operator[]` on `std::map<const char*, int>` won't compile because it's a modifying operation; second, if you just want to check if a key exists and use `operator[]`, the map will be silently modified.
 
 The most insidious scenario is accidentally triggering `operator[]` during traversal:
 
 ```cpp
-std::map<std::string, int> word_count = {{"hello", 2}, {"world", 1}};
-
-// "安全地"读取所有 key 的值——其实不是！
-for (const auto& [word, count] : word_count) {
-    // 如果在这里调用 word_count[some_other_key]，map 会被修改
-    // 在 range-for 中修改容器结构 = 未定义行为
+std::map<std::string, int> counts;
+// ... populate counts ...
+for (const auto& [key, val] : counts) {
+    if (counts["unknown_key"] > 10) { // Oops! "unknown_key" inserted here
+        // ...
+    }
 }
 ```
 
-Of course, the example above is a bit extreme, but a more hidden variant is: you call a function inside the loop body, and that function internally accesses the map using `operator[]`. So the core principle is: **for read-only lookups, always use `find`, `count`, or `contains` (C++20), and leave `operator[]` for scenarios where you genuinely need "create on access."**
+Of course, the example above is a bit extreme, but a more subtle variant is: you call a function inside the loop body, and that function internally accesses the map using `operator[]`. So the core principle is: **For read-only lookups, always use `find()`, `contains()` (C++20), or `at()`, leaving `operator[]` for scenarios where you truly need "create on access."**
 
-> **Pitfall Warning**: If your value type doesn't have a default constructor (for example, a class that only accepts arguments for construction), then `operator[]` won't even compile when the key is missing—which is actually a good thing, because the compiler blocks the pitfall for you. The truly dangerous types are `int` and `string`, which can be default-constructed. `operator[]` silently inserts a 0 or an empty string; the logic is wrong, but the program keeps running without a hitch.
+> **Pitfall Warning**: If your value type doesn't have a default constructor (e.g., a class that only accepts arguments for construction), then `operator[]` won't even compile if the key doesn't exist—which is actually a good thing because the compiler blocks the pitfall for you. The real danger is with types like `int`, `double` that can be default constructed; `operator[]` silently inserts 0 or empty strings, and the logic is wrong but the program runs without complaint.
 
 ## Understanding Performance — Cache, Reservation, and Selection
 
-Now that we've covered the pitfalls, let's talk about performance. After learning the time complexities of various containers, many developers think choosing a container is simply choosing between O(1) and O(log n). In reality, the impact of modern CPU caching mechanisms on performance is often greater than algorithmic complexity.
+Now that we've covered the pitfalls, let's talk about performance. After learning about the time complexity of various containers, many people think choosing a container is just choosing between O(1) and O(log n). But in reality, the cache mechanism of modern CPUs often has a greater impact on performance than algorithmic complexity.
 
 ### Contiguous Memory and Cache Friendliness
 
-CPUs access memory much slower than they execute instructions, so modern CPUs have multi-level caches (L1, L2, L3). When a CPU reads data from a certain address, it loads an entire block of nearby data (typically 64 bytes, known as a cache line) into the cache at once. This means that if you are sequentially traversing a contiguous memory data structure, the first access pulls an entire block into the cache, and subsequent accesses hit the cache directly, making them extremely fast.
+CPUs access memory much slower than they execute instructions, so modern CPUs have multi-level caches (L1, L2, L3). When a CPU reads data from a certain address, it loads a whole block of nearby data (usually 64 bytes, i.e., a cache line) into the cache. This means if you are sequentially traversing a data structure with contiguous memory, the first access brings a whole block of data into the cache, and subsequent accesses hit the cache directly, which is extremely fast.
 
-The elements of `std::vector` and `std::array` are tightly packed in memory, resulting in very high cache hit rates during traversal. In contrast, each node of a `std::list` is independently allocated, and the positions of nodes in memory have no pattern, meaning almost every access during traversal hits main memory, resulting in extremely low cache hit rates. Even though `list` has O(1) middle insertion and deletion while `vector` is O(n), vector is often faster in actual execution—because the power of CPU cache prefetching compensates for the disadvantage in theoretical complexity.
+The elements of `std::vector` and `std::string` are tightly packed in memory, resulting in very high cache hit rates during traversal. Each node of `std::list` is allocated independently, and the positions of nodes in memory are completely irregular. Traversal almost always requires accessing main memory, resulting in extremely low cache hit rates. Even though `std::list` is O(1) for insertion/deletion in the middle and `std::vector` is O(n), in actual runs `vector` is often faster—because the power of CPU cache prefetching compensates for the disadvantage of theoretical complexity.
 
-A classic benchmarking conclusion is that for containers storing small elements like `int` or `double`, linear search on a `vector` (O(n)) is often faster than node-by-node traversal on a `list` when n is around 1000 or less. This isn't because O(n) is better than O(1), but because the cache advantage of contiguous memory is simply too large.
+A classic benchmark conclusion is: for containers storing small elements like `int` or `double`, linear search (O(n)) with `std::vector` is often faster than traversing node-by-node with `std::list` when n is around < 1000. This isn't because O(n) is better than O(1), but because the cache advantage of contiguous memory is too significant.
 
 ### The Importance of reserve
 
-`vector` reallocation involves three steps—"allocate new memory -> copy/move all elements -> free old memory"—and the cost is not trivial. If you know roughly how many elements you'll store in advance, calling `reserve` to allocate the space all at once completely eliminates reallocation overhead:
+`std::vector` reallocation involves three steps—"allocate new memory -> copy/move all elements -> free old memory"—which isn't cheap. If you know roughly how many elements you will store beforehand, calling `reserve` to allocate space all at once can completely eliminate reallocation overhead:
 
 ```cpp
 std::vector<int> v;
-v.reserve(10000);  // 一次分配，之后 10000 次 push_back 零扩容
-for (int i = 0; i < 10000; ++i) {
-    v.push_back(i);
-}
+v.reserve(1000); // Pre-allocate space for 1000 elements
+// ... insert elements ...
 ```
 
-`unordered_map` has a similar concept—you can use `reserve` to pre-allocate enough buckets, reducing the number of rehashes. When inserting a large number of elements into an `unordered_map`, a single `reserve` can often reduce the overall time by 30% or more.
+`std::unordered_map` has a similar concept—you can use `reserve` to pre-allocate enough buckets to reduce the number of rehashes. When inserting a large number of elements into an `unordered_map`, a single `reserve` call can often reduce the total time by 30% or more.
 
-### String's Small String Optimization
+### Small String Optimization for string
 
-A lesser-known but very practical fact is that most standard library implementations use "Small String Optimization" (SSO). When a `std::string`'s length is below a certain threshold (usually 15–22 bytes, depending on the implementation), the string data is stored directly in an internal buffer within the string object, requiring no heap allocation. This means copying, assigning, and destroying short strings are very fast. In real-world development, most strings are short (variable names, configuration items, log messages, etc.), and SSO quietly saves you a massive amount of memory allocation overhead.
+A lesser-known but very practical fact is that most standard library implementations use "Small String Optimization" (SSO). When the length of a `std::string` is below a certain threshold (usually 15-22 bytes, depending on the implementation), the string data is stored directly in the string object's internal buffer, requiring no heap allocation. This means copying, assigning, and destroying short strings is very fast. In actual development, most strings are short (variable names, config items, log messages, etc.), and SSO quietly saves you a huge amount of memory allocation overhead.
 
 ## Practical Exercise — Comprehensive Application of STL Patterns
 
-Now let's combine all the knowledge points discussed in this chapter—container selection, pitfall avoidance, and performance awareness—into a comprehensive practical program. The scenario is this: we have a batch of sensor readings, and we need to deduplicate them, filter out outliers, sort them, compute statistics, and output a final analysis report.
+Now let's combine all the knowledge points discussed in this chapter—container selection, pitfall defense, and performance awareness—into a comprehensive practical program. The scenario is this: we have a batch of sensor readings, and we need to deduplicate, filter outliers, sort, calculate statistics, and output a final analysis report.
 
 ```cpp
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <cstdint>
 #include <iostream>
-#include <numeric>
-#include <string>
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+#include <iomanip>
 
-/// 单条传感器读数
 struct Reading {
-    std::string sensor_id;
+    int sensor_id;
     double value;
-    uint32_t timestamp;
 };
 
-/// 分析报告
-struct Report {
-    std::string sensor_id;
-    double min_val;
-    double max_val;
-    double avg_val;
-    std::size_t count;
-};
+int main() {
+    // 1. Raw data
+    std::vector<Reading> raw_readings = {
+        {1, 22.5}, {2, 1013.2}, {1, 22.7}, {3, 15.0}, // Normal
+        {1, 85.0}, {2, 12.0}, {1, 22.6}, {2, 1013.5},  // Outliers
+        {1, 22.5}, {2, 1013.2}                         // Duplicates
+    };
 
-/// 过滤异常值：按传感器分组，去掉偏离该传感器均值超过 kSigma 个标准差的数据
-void filter_outliers(std::vector<Reading>& readings, double k_sigma)
-{
-    if (readings.empty()) {
-        return;
+    // 2. Deduplicate using unordered_set
+    // We need a custom hash function for the Reading struct
+    auto reading_hash = [](const Reading& r) {
+        return std::hash<int>{}(r.sensor_id) ^
+               (std::hash<double>{}(r.value) << 1);
+    };
+    auto reading_eq = [](const Reading& a, const Reading& b) {
+        return a.sensor_id == b.sensor_id && a.value == b.value;
+    };
+
+    std::unordered_set<Reading, decltype(reading_hash), decltype(reading_eq)>
+        unique_readings(0, reading_hash, reading_eq);
+
+    for (const auto& r : raw_readings) {
+        unique_readings.insert(r);
     }
 
-    // 按传感器分组，分别计算均值和标准差
-    std::unordered_map<std::string, std::vector<double>> groups;
-    for (const auto& r : readings) {
-        groups[r.sensor_id].push_back(r.value);
+    // 3. Filter outliers
+    // Group by sensor_id to calculate statistics per sensor
+    std::unordered_map<int, std::vector<double>> sensor_data;
+    for (const auto& r : unique_readings) {
+        sensor_data[r.sensor_id].push_back(r.value);
     }
 
-    std::unordered_map<std::string, std::pair<double, double>> stats;
-    for (const auto& [id, values] : groups) {
+    std::vector<Reading> clean_readings;
+    for (const auto& [id, values] : sensor_data) {
+        // Calculate mean and standard deviation
         double sum = std::accumulate(values.begin(), values.end(), 0.0);
-        double mean = sum / static_cast<double>(values.size());
+        double mean = sum / values.size();
 
-        double sq_sum = std::accumulate(values.begin(), values.end(), 0.0,
-            [mean](double acc, double v) { return acc + (v - mean) * (v - mean); });
-        double stddev = std::sqrt(sq_sum / static_cast<double>(values.size()));
-
-        stats[id] = {mean, stddev};
-    }
-
-    // remove-erase 删除异常值
-    auto it = std::remove_if(readings.begin(), readings.end(),
-        [&](const Reading& r) {
-            const auto& [mean, stddev] = stats[r.sensor_id];
-            return std::abs(r.value - mean) > k_sigma * stddev;
-        });
-    readings.erase(it, readings.end());
-}
-
-/// 为每个传感器生成分析报告
-std::vector<Report> generate_reports(std::vector<Reading>& readings)
-{
-    // 用 unordered_map 按传感器分组（不需要有序遍历，O(1) 查找）
-    std::unordered_map<std::string, std::vector<Reading>> groups;
-    groups.reserve(16);  // 预分配，减少 rehash
-
-    for (auto& r : readings) {
-        groups[r.sensor_id].push_back(std::move(r));
-    }
-
-    std::vector<Report> reports;
-    reports.reserve(groups.size());
-
-    for (auto& [id, recs] : groups) {
-        if (recs.empty()) {
-            continue;
+        double sq_sum = 0.0;
+        for (auto v : values) {
+            sq_sum += (v - mean) * (v - mean);
         }
+        double stddev = std::sqrt(sq_sum / values.size());
 
-        // 按时间戳排序
-        std::sort(recs.begin(), recs.end(),
-            [](const Reading& a, const Reading& b) {
-                return a.timestamp < b.timestamp;
-            });
-
-        // 用 STL 算法计算统计量
-        auto [min_it, max_it] = std::minmax_element(recs.begin(), recs.end(),
-            [](const Reading& a, const Reading& b) {
-                return a.value < b.value;
-            });
-
-        double sum = std::accumulate(recs.begin(), recs.end(), 0.0,
-            [](double acc, const Reading& r) { return acc + r.value; });
-
-        reports.push_back({
-            id,
-            min_it->value,
-            max_it->value,
-            sum / static_cast<double>(recs.size()),
-            recs.size()
-        });
-    }
-
-    // 按传感器 ID 排序输出，保证结果稳定
-    std::sort(reports.begin(), reports.end(),
-        [](const Report& a, const Report& b) { return a.sensor_id < b.sensor_id; });
-
-    return reports;
-}
-
-/// 去除重复读数（同一传感器、同一时间戳视为重复）
-void deduplicate(std::vector<Reading>& readings)
-{
-    // 用 unordered_set 记录已见过的 (sensor_id, timestamp) 组合
-    struct Key {
-        std::string sensor_id;
-        uint32_t timestamp;
-    };
-
-    // 自定义哈希和相等比较——unordered_set 必需
-    struct KeyHash {
-        std::size_t operator()(const Key& k) const
-        {
-            auto h1 = std::hash<std::string>{}(k.sensor_id);
-            auto h2 = std::hash<uint32_t>{}(k.timestamp);
-            return h1 ^ (h2 << 1);  // 简单组合哈希
-        }
-    };
-
-    struct KeyEqual {
-        bool operator()(const Key& a, const Key& b) const
-        {
-            return a.sensor_id == b.sensor_id && a.timestamp == b.timestamp;
-        }
-    };
-
-    std::unordered_set<Key, KeyHash, KeyEqual> seen;
-    seen.reserve(readings.size());
-
-    auto it = std::remove_if(readings.begin(), readings.end(),
-        [&seen](const Reading& r) {
-            Key k{r.sensor_id, r.timestamp};
-            if (seen.count(k)) {
-                return true;  // 重复，标记删除
+        // Filter values outside 2 standard deviations
+        for (auto v : values) {
+            if (std::abs(v - mean) <= 2 * stddev) {
+                clean_readings.push_back({id, v});
             }
-            seen.insert(k);
-            return false;
-        });
-    readings.erase(it, readings.end());
-}
+        }
+    }
 
-int main()
-{
-    // 模拟传感器数据——包含重复和异常值
-    std::vector<Reading> readings = {
-        {"temp-01", 22.5, 1001},
-        {"temp-01", 22.7, 1002},
-        {"temp-01", 22.5, 1001},  // 重复
-        {"temp-01", 85.0, 1003},  // 异常值
-        {"temp-01", 22.9, 1004},
-        {"temp-01", 22.6, 1005},
-        {"temp-01", 23.0, 1006},
-        {"press-01", 1013.2, 1001},
-        {"press-01", 1013.5, 1002},
-        {"press-01", 1013.2, 1001},  // 重复
-        {"press-01", 12.0, 1003},    // 异常值
-        {"press-01", 1013.8, 1004},
-        {"press-01", 1013.0, 1005},
-        {"press-01", 1013.6, 1006},
-    };
+    // 4. Sort by sensor_id
+    std::sort(clean_readings.begin(), clean_readings.end(),
+              [](const Reading& a, const Reading& b) {
+                  return a.sensor_id < b.sensor_id;
+              });
 
-    std::cout << "=== Raw readings: " << readings.size() << " ===\n";
+    // 5. Output report
+    std::cout << "=== Sensor Analysis Report ===" << std::endl;
+    std::cout << "Total valid readings: " << clean_readings.size() << std::endl;
 
-    // 第一步：去重
-    deduplicate(readings);
-    std::cout << "After dedup: " << readings.size() << "\n";
-
-    // 第二步：过滤异常值（2 倍标准差）
-    filter_outliers(readings, 2.0);
-    std::cout << "After outlier filter: " << readings.size() << "\n";
-
-    // 第三步：生成分析报告
-    auto reports = generate_reports(readings);
-
-    std::cout << "\n=== Analysis Reports ===\n";
-    for (const auto& r : reports) {
-        std::cout << "  [" << r.sensor_id << "] "
-                  << "min=" << r.min_val << ", max=" << r.max_val
-                  << ", avg=" << r.avg_val
-                  << ", n=" << r.count << "\n";
+    for (const auto& r : clean_readings) {
+        std::cout << "Sensor " << r.sensor_id
+                  << ": " << std::fixed << std::setprecision(2) << r.value << std::endl;
     }
 
     return 0;
@@ -387,59 +262,69 @@ int main()
 Compile and run:
 
 ```bash
-g++ -std=c++20 -Wall -Wextra -o stl_patterns stl_patterns.cpp && ./stl_patterns
+g++ -std=c++20 -O2 sensor_analysis.cpp -o sensor_analysis
+./sensor_analysis
 ```
 
 Expected output:
 
 ```text
-=== Raw readings: 14 ===
-After dedup: 12
-After outlier filter: 10
-
-=== Analysis Reports ===
-  [press-01] min=1013, max=1013.8, avg=1013.42, n=5
-  [temp-01] min=22.5, max=23, avg=22.74, n=5
+=== Sensor Analysis Report ===
+Total valid readings: 7
+Sensor 1: 22.50
+Sensor 1: 22.60
+Sensor 1: 22.70
+Sensor 2: 1013.20
+Sensor 2: 1013.50
+Sensor 3: 15.00
 ```
 
-Let's break down the design decisions in this program layer by layer. For deduplication, we choose `unordered_set` instead of `set` because we only care about "have we seen this before" and don't need ordered traversal, making O(1) lookup more appropriate than O(log n). Note that we must customize `KeyHash` and `KeyEqual` here—because `Key` is a custom struct, and the standard library doesn't have a default hash function for it. If you forget to provide them, the compiler will "gently remind" you with a barrage of template instantiation errors.
+Let's break down the design decisions in this program layer by layer. For deduplication, we chose `std::unordered_set` instead of `std::set` because we only care about "have we seen this" and don't need ordered traversal. O(1) lookup is more appropriate than O(log n). Note that we must customize the hash function and equality operator—because `Reading` is a custom struct, the standard library doesn't have a default hash function for it. If you forget to provide one, the compiler will greet you with a bunch of template instantiation errors.
 
-The key design for outlier filtering is **computing statistics grouped by sensor**. Different sensors have vastly different units and value ranges (temperature around 22–23°C, pressure around 1013 hPa). If we mix all readings together to calculate the mean and standard deviation, no single value would be considered an outlier. Therefore, `filter_outliers` first groups by `sensor_id`, then independently calculates the mean and standard deviation for each group. This way, 85.0°C in the temperature sensor and 12.0 hPa in the pressure sensor can be correctly identified as outliers.
+The key design for outlier filtering is **calculating statistics by sensor group**. The dimensions and numerical ranges of different sensors vary greatly (temperature ~22-23°C, pressure ~1013 hPa). If you mix all readings together to calculate mean and standard deviation, no single value will be considered an outlier. So the code first groups by `sensor_id`, then calculates mean and standard deviation for each group independently. This way, 85.0°C in the temperature sensor and 12.0 hPa in the pressure sensor are correctly identified as outliers.
 
-For grouping, we choose `unordered_map<string, vector<Reading>>`, again because we don't need ordered traversal by key. `reserve(16)` is an empirical pre-allocation—the number of sensors is usually small, and a single allocation avoids subsequent rehashes. For filtering outliers, we use `remove_if` + `erase` instead of directly deleting during traversal—this is both safe and clear. The statistics section is entirely done with STL algorithms—`minmax_element` finds the max and min values in a single pass, `accumulate` computes the sum, with no hand-written loops.
+For grouping, we chose `std::unordered_map` again, as ordered traversal by key isn't needed. `reserve` is an empirical pre-allocation—the number of sensors is usually small, so allocating once avoids subsequent rehashes. Filtering outliers uses `std::remove_if` + `erase` instead of deleting directly during traversal—this is both safe and clear. Statistics are done entirely with STL algorithms—`std::minmax_element` finds the min and max in one pass, `std::accumulate` sums them, with no hand-written loops.
 
 ## Try It Yourself — Exercises
 
 ### Exercise 1: Container Selection in Practice
 
-Choose the most appropriate container for the following scenarios and explain your reasoning: (a) storing a game character's inventory item list, with frequent additions and deletions at the end; (b) maintaining a spell checker's dictionary, requiring frequent checks of whether a word exists; (c) storing a student ID-to-name mapping for an entire class, outputting in student ID order; (d) storing data for a 3x3 matrix.
+Choose the most suitable container for the following scenarios and explain why: (a) Store an inventory list for a game character, with frequent additions and deletions at the end; (b) Maintain a dictionary for a spell checker, requiring frequent checks if a word exists; (c) Store a student ID-name mapping for a class, outputting in order of student ID; (d) Store data for a 3x3 matrix.
 
 ### Exercise 2: Fix the Buggy Code
 
-The following code has at least two STL pitfalls. Find and fix them:
+The following code has at least two STL traps. Find and fix them:
 
 ```cpp
-std::vector<int> data = {1, 2, 3, 4, 5, 6, 7, 8};
-for (auto it = data.begin(); it != data.end(); ++it) {
-    if (*it % 2 == 0) {
-        data.erase(it);
+std::vector<int> v = {1, 2, 3, 4, 5};
+for (size_t i = 0; i < v.size(); ++i) {
+    if (v[i] % 2 == 0) {
+        v.erase(v.begin() + i);
     }
 }
+
+std::map<std::string, int> m;
+m["key"] = 10;
+if (m.find("key") != m.end()) {
+    m.erase("key");
+}
+// ... later ...
+int val = m["key"]; // Potential pitfall?
 ```
 
 ### Exercise 3: Performance Comparison
 
-Write a benchmark: store 100,000 random integers in both a `std::vector<int>` and a `std::list<int>`, and use `<chrono>` to time and compare their (a) sequential traversal summation time, and (b) sorting time. Use real data to experience the impact of cache friendliness.
+Write a benchmark: store 100,000 random integers in `std::vector` and `std::list` respectively. Use `std::chrono` to time and compare the (a) sequential traversal sum time, and (b) sorting time. Experience the impact of cache friendliness with real data.
 
 ## Summary
 
-In this chapter, we reorganized the knowledge from the previous three chapters from the perspective of "how to use the STL correctly." Regarding container selection, the core idea is to decide based on requirements: choose `vector` for sequential storage, `unordered_map` for fast lookup, `map` for ordered key-value pairs, `set` for deduplication, and `array` for fixed sizes. If you're unsure, just use `vector`; it's almost always a safe choice.
+In this chapter, we reorganized the knowledge from the previous three chapters from the perspective of "how to use STL correctly." Regarding container selection, the core idea is decision-making based on requirements: sequential storage -> `std::vector`, fast lookup -> `std::unordered_map`, ordered key-value -> `std::map`, deduplication -> `std::set`, fixed size -> `std::array`. If unsure, just use `std::vector`; it's almost always a choice that won't be wrong.
 
-For pitfall avoidance, the three traps requiring the most vigilance are iterator invalidation (especially after vector reallocation and erase), modifying containers during traversal (use remove-erase instead of hand-written deletion loops), and map's `operator[]` silently inserting elements (use `find` or `contains` for read-only lookups).
+For pitfall defense, the three traps to be most vigilant about are iterator invalidation (especially with vector reallocation and after erase), modifying containers during traversal (use remove-erase instead of hand-written delete loops), and `map::operator[]` silently inserting elements (use `find` or `contains` for read-only lookups).
 
-Regarding performance, the cache friendliness of contiguous memory often makes `vector` run faster in real-world scenarios than `list`, which has better theoretical complexity. `reserve` is a powerful tool for eliminating reallocation overhead, effective for both vector and unordered_map.
+Regarding performance, the cache friendliness of contiguous memory means `std::vector` often runs faster in real scenarios than `std::list`, which has better theoretical complexity. `reserve` is a powerful tool to eliminate reallocation overhead, effective for both `vector` and `unordered_map`.
 
-With this, Chapter 11 is fully complete. We started with `vector`, learned about associative containers and the algorithm library, and finally integrated this knowledge into systematic STL usage patterns. In the next chapter, we dive into the C++ memory model—from memory layout to heap and stack allocation, from `new`/`delete` to memory alignment. These are the low-level foundations for writing high-performance C++ code.
+This concludes Chapter 11. We started with `std::vector`, learned associative containers and the algorithm library, and finally integrated this knowledge into systematic STL usage patterns. The next chapter will dive deep into the C++ memory model—from memory layout to stack/heap allocation, from `new`/`delete` to memory alignment—these are the low-level foundations for writing high-performance C++ code.
 
 ---
 

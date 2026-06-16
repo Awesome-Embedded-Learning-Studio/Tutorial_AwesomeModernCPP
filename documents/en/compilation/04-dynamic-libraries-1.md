@@ -8,65 +8,65 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'In-Depth Understanding of C/C++ Compilation and Linking Part 4: Shared Library
-  A1: Basic Discussion of `-fPIC`'
-translation:
-  engine: anthropic
-  source: documents/compilation/04-dynamic-libraries-1.md
-  source_hash: ea133fb871fb203dc57822edf6c9d9bc1fe1c6a35f84e6a9705272f4ba437436
-  token_count: 476
-  translated_at: '2026-05-26T10:10:22.009614+00:00'
+title: 'Deep Dive into C/C++ Compilation and Linking: Part 4 — Dynamic Libraries A1:
+  Basics of `-fPIC`'
 description: ''
+translation:
+  source: documents/compilation/04-dynamic-libraries-1.md
+  source_hash: 3c6ec9fab93bb3300298643b5d47ddce2ac3368ce66145d71e4e3ac9f35c7c59
+  translated_at: '2026-06-16T03:26:37.276305+00:00'
+  engine: anthropic
+  token_count: 482
 ---
-# Deep Dive into C/C++ Compilation and Linking Part 4: Dynamic Libraries A1: Basic Discussion on `-fPIC`
+# In-Depth Understanding of C/C++ Compilation and Linking Techniques 4: Dynamic Libraries A1: Basic Discussion
 
 ## Preface
 
-It has been an exhausting few weeks, juggling a bunch of tasks and preparing to start a new job. I finally found a moment to catch my breath and continue updating this blog series.
+I have been quite tired lately, busy with a pile of things and preparing to start a new job. I can finally take a short break here and continue updating this series of blog posts.
 
-This article primarily covers the basics of dynamic libraries. Specifically, we discuss how to build a dynamic library (focusing on Linux; building on Windows via the MSVC toolchain from the command line is rather painful, and plenty of mature build systems already abstract away those details, so we will skip a deep dive into Windows dynamic library builds here), along with some issues related to symbol name mangling.
+This article mainly discusses the basics of dynamic libraries. Specifically, it will cover how to create dynamic libraries (focusing on Linux; on Windows, using the MSVC toolchain at the command line is quite torturous, and since many mature build systems already cover the basic details, I will not detail how to build dynamic libraries on Windows here), as well as some issues regarding symbol name decoration.
 
 ## How to Create a Dynamic Library on Linux
 
-Creating a dynamic library is not complicated, but it generally requires following these steps:
+Creating a dynamic library is not difficult, but it generally requires following these steps:
 
-- The integrated binary relocatable files must be compiled with the position-independent flag (`-fPIC`, i.e., the Position Independent Code flag)
-- Integrate these PIC binary relocatable files, and then pass the `-shared` flag
+- The integrated binary relocatable files must be compiled with the Position Independent Code flag (`-fPIC`).
+- Integrate these PIC binary relocatable files, then pass the `-shared` flag.
 
-## Let's Talk About -fPIC
+## Let's Talk About `-fPIC`
 
-This option is quite interesting. Of course, there is not much to say about the `-shared` option—it simply tells our compiler to link a dynamic library. But why do these relocatable files need to be compiled as position-independent code?
+This option is quite interesting. Of course, there is nothing much to say about the `-shared` option; it simply tells our compiler to link a dynamic library. But why do these relocatable files need to be compiled with Position Independent Code?
 
-In *Advanced C/C++ Compilation Technology*, three progressively deeper questions are raised:
+In *Advanced C/C++ Compilation Techniques*, three progressive questions are raised:
 
 - What is `-fPIC`?
-- Is `-fPIC` strictly required to create a dynamic library (.so)?
-- Is `-fPIC` only used when compiling dynamic libraries?
+- Is `-fPIC` mandatory for creating a dynamic library (`.so`)?
+- Is `-fPIC` used only when compiling dynamic libraries?
 
-Below, I have organized the explanations from that book, combined with some of my own perspectives, and laid them out here.
+Below, I have summarized the book's arguments, combined with some of my own views, and presented them.
 
 #### What is `-fPIC`?
 
-`-fPIC` stands for **`Position-Independent Code`** (generating position-independent code). In other words, the compiled machine instructions **do not rely on a fixed load address** and can be loaded into any memory location at runtime without modifying the code itself. This aligns perfectly with our understanding of how dynamic libraries function. Ultimately, we need to export symbols from a dynamic library for use by third-party applications or other libraries. Therefore, we obviously cannot assign an absolute mapped address to these dynamic library symbols. Instead, at the point of reuse, we dynamically provide an offset address mapped into the consumer's process address space, which is how we achieve symbol reuse. Breaking it down step by step:
+The meaning of `-fPIC` is **generate Position Independent Code**. In other words, the generated machine instructions **do not rely on a fixed load address**. At runtime, they can be loaded to any memory location without modifying the code itself. This aligns perfectly with our understanding of dynamic library functionality. Ultimately, we need to export symbols from a dynamic library for use by third-party applications or other libraries. Therefore, we obviously cannot assign an absolute mapping address to these dynamic library symbols. Instead, during reuse, we dynamically assign an offset address mapped to the user's process address space, thus enabling symbol reuse. To put it step-by-step:
 
-- `-fPIC` maps symbols using **relative addresses** rather than absolute addresses
-- Global variables are accessed indirectly through the **GOT (Global Offset Table)**
-- Function calls jump through the **PLT (Procedure Linkage Table)**
+- `-fPIC` will map symbols using **relative addresses** rather than absolute addresses.
+- Global variables are accessed indirectly via the **GOT (Global Offset Table)**.
+- Function calls are made through jumps via the **PLT (Procedure Linkage Table)**.
 
 ------
 
-#### **Is `-fPIC` strictly required to create a dynamic library (.so)?**
+#### **Is `-fPIC` mandatory for creating a dynamic library (`.so`)?**
 
-Strictly speaking, not necessarily. Of course, if we consider that 32-bit PCs are practically extinct today (forgive my ignorance, but I have never actually seen a physical 32-bit PC, though I have tinkered a bit with MCUs), then we might affirm the above proposition.
+Strictly speaking, not necessarily. Of course, if we say that 32-bit PCs are already extinct (forgive my ignorance; I have never seen a physical 32-bit PC computer, though I have played a bit with microcontrollers), then we might hold a positive attitude towards the above proposition.
 
-Let's think about it: modern dynamic libraries are synonymous with shared libraries, where multiple processes share the code segment of a dynamic library. For different processes, it is perfectly reasonable to require that the code be loaded at any virtual address. Otherwise, the loader would have to perform **relocation patching** on the code at load time, which prevents the code segment from being shared and slows down loading.
+Let's think about it: modern dynamic libraries and shared libraries are synonymous, where multiple processes prepare to share the code segment of the dynamic library. For different processes, it is entirely reasonable to require that the code be placed at any virtual address. Otherwise, the loader must perform **relocation patching** on the code during loading, preventing the code segment from being shared and slowing down the loading speed.
 
-However, on x86-64, it is still possible to compile a usable dynamic library without `-fPIC`, but we lose the sharing property, and loading becomes slower (because addresses for all symbols must be fixed up at load time). So, if we think about it seriously, my conclusion is:
+However, on x86-64, it is still possible to compile usable dynamic libraries without `-fPIC`, but the sharing characteristic is lost, and the loading speed becomes slower (correcting addresses for all symbols during loading). So, if we think seriously about it, my conclusion is:
 
-> **Today, compiling a dynamic library must include the -`fPIC` flag; the benefits far outweigh the drawbacks (unless you are deeply concerned about minor performance penalties, in which case we are simply considering different scenarios).**
+> **Today, compiling dynamic libraries must carry the `-fPIC` flag; it does more good than harm (if you are worried about slight performance loss, just pretend I didn't say that; the scenarios considered are different).**
 
-#### Is `-fPIC` exclusive to dynamic libraries? Can we use `-fPIC` with static libraries?
+#### Is `-fPIC` exclusive to dynamic libraries? Can `-fPIC` be used with static libraries?
 
-Obviously not; otherwise, there would be no need to make this flag independent. In fact, we can absolutely apply `-fPIC` to relocatable files that are destined to be compiled into a static library. This is very common.
+Obviously not; otherwise, there would be no need to make this flag independent. In fact, we can absolutely apply `-fPIC` to relocatable files intended to be compiled into static libraries. This is very common.
 
-For example, I have a fairly large project on hand that generates a static library for each sub-module, and then packages all the generated static libraries in a directory into a single dynamic library. As we discussed in previous articles, a static library is simply a collection of relocatable files. So, it naturally follows that in this scenario, we must compile the source files with the `-fPIC` flag for the relocatable files contained within those static libraries.
+For example, I have a large project on hand that generates a static library for each sub-module, and then packages all the generated static libraries in that directory into one dynamic library. As we discussed in previous articles, a static library is simply a collection of relocatable files. Therefore, it is natural for us to realize that in the situation described above, we must compile the source files contained in these static libraries with the `-fPIC` flag.

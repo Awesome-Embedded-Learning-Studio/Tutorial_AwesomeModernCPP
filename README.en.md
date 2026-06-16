@@ -16,6 +16,7 @@
 ![Tag](https://img.shields.io/github/v/tag/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP?sort=semver&label=tag)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
+![AI agent ready](https://img.shields.io/badge/AI%20agent-ready-7C3AED)
 
 ---
 
@@ -160,6 +161,16 @@ See [changelogs/](changelogs/) for full release history.
 | `gh-pages` | Auto-deployed documentation site | Auto-generated |
 
 </details>
+
+## Use an AI agent (optional)
+
+This repo is ready for AI coding agents out of the box, and you're welcome to use an agent for learning or contributing:
+
+- 🤖 [AGENTS.md](./AGENTS.md) — vendor-neutral entry point (works with Claude Code / Cursor / Copilot / Codex / …)
+- 📚 [Learn C++ with an agent](./.github/learning-with-agents.md) + [common C++ misconceptions FAQ](./.github/faq.md)
+- ✍️ Claude-specific assets (writing style / review commands / hooks): see [CLAUDE.md](./CLAUDE.md)
+
+> Not using an agent? Just ignore these files — the main tutorials and examples don't depend on them.
 
 ## Contributing
 

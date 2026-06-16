@@ -5,7 +5,7 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Replace the old value with the new value and return the old value.
+description: Replace the old value with a new value and return the old value
 difficulty: beginner
 order: 10
 reading_time_minutes: 1
@@ -15,27 +15,27 @@ tags:
 - beginner
 title: std::exchange
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/10-exchange.md
-  source_hash: c1890f25c39410033bdf66e6f5889ea5dcab2f49d5f97f439abc16121093325e
-  token_count: 306
-  translated_at: '2026-05-26T10:16:00.541504+00:00'
+  source_hash: 835d27d86d82597a3b19ef0f0f1d8ff827e6520aa2d0fca593bc3a73bfcf7865
+  translated_at: '2026-06-16T03:28:57.962702+00:00'
+  engine: anthropic
+  token_count: 310
 ---
 # std::exchange (C++14)
 
 ## In a Nutshell
 
-Assigns a new value to a variable while retrieving its old value, eliminating the need for a manual temporary variable.
+Assigns a new value to a variable while retrieving its old value, avoiding the need for manual temporary variables.
 
 ## Header
 
 `#include <utility>`
 
-## Quick API Reference
+## Core API Quick Reference
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Replace and return old value | `template<class T, class U = T> T exchange(T& obj, U&& new_value);` | Replaces `obj` with `new_value`, returns the old value of `obj` |
+| Replace and return old value | `template<class T, class U = T> T exchange(T& obj, U&& new_value);` | Replaces `obj` with `new_value` and returns the old value of `obj` |
 
 ## Minimal Example
 
@@ -58,10 +58,10 @@ int main() {
 
 ## Embedded Applicability: Medium
 
-- It is a pure inline function with no extra heap allocation or system call overhead.
-- It relies on move semantics; when used with custom types, we need to verify the actual overhead of move construction or assignment.
-- It is very concise when implementing move constructors and state machine transitions, making it suitable for resource-rich scenarios.
-- Starting with C++20, it supports `constexpr` and can be used at compile time.
+- It is a pure inline function with no additional heap allocation or system call overhead.
+- It relies on move semantics; when using it with custom types, verify the actual cost of move construction/assignment.
+- It is very concise for implementing move constructors and state machine transitions, making it suitable for resource-rich environments.
+- Supported as `constexpr` since C++20, allowing for compile-time usage.
 
 ## Compiler Support
 
@@ -75,4 +75,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

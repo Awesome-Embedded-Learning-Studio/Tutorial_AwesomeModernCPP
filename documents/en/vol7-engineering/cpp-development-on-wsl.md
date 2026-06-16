@@ -8,157 +8,143 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: Quickly Develop General C++ Host Applications on WSL
-translation:
-  engine: anthropic
-  source: documents/vol7-engineering/cpp-development-on-wsl.md
-  source_hash: 9384edd8b346dc03e297ae3b5b6674fd372f12f603b58b74b9ed112669637a4b
-  token_count: 1019
-  translated_at: '2026-05-26T11:53:14.690409+00:00'
+title: Developing Generic C++ Host Applications on WSL Quickly
 description: ''
+translation:
+  source: documents/vol7-engineering/cpp-development-on-wsl.md
+  source_hash: 61db3c65723a774079854184c14f17581b960335a81089f1e83ccbbab85f633c
+  translated_at: '2026-06-16T04:08:13.681582+00:00'
+  engine: anthropic
+  token_count: 1025
 ---
 # Quickly Developing General C++ Host Programs on WSL
 
 ## Preface
 
-I distinctly remember writing a blog post like this before, but I can't find it anywhere. I'm about to start a new modern C++ analysis tutorial, so I plan to use this post to archive the environment setup process.
+I distinctly remember writing a blog post like this before, but I can no longer find it. As I am about to launch a new modern C++ analysis tutorial, I plan to use this post to archive the environment setup process.
 
-> Note: This article uses **WSL2 + Ubuntu (common)** as an example. Commands are run in PowerShell / Windows Terminal (Administrator) or the WSL bash shell. If you choose another distro (Debian, Fedora, etc.), replace the `apt` commands with the appropriate package manager.
+> **Note:** This guide uses **WSL2 + Ubuntu** as an example. Commands are run in PowerShell / Windows Terminal (Administrator) or WSL bash. If you choose another distro (Debian, Fedora, etc.), please replace `apt` commands with the appropriate package manager.
 >
-> We won't cover how to install WSL here—there are plenty of tutorials available online.
+> I will not teach how to install WSL here; there are plenty of tutorials available online.
 
 ------
 
 ## Prerequisites
 
-- Windows 10/11 (latest updates recommended); enabling WSL2 is recommended (better performance, and it's the default for new installations). You can use `wsl --install` to install WSL and common distros in one step. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/wsl/install?utm_source=chatgpt.com))
-- Install Visual Studio Code on the Windows side (download and install from [https://code.visualstudio.com](https://code.visualstudio.com/)).
-- Have a Microsoft account / administrator privileges to enable virtualization features (Hyper-V / Virtual Machine Platform) if necessary.
+- **Windows 10/11** (Latest updates recommended); WSL2 is recommended for better performance (and is the default for new installations). You can use `wsl --install` to install WSL and common distributions in one step. ([Microsoft Learn](https://learn.microsoft.com/en-us/windows/wsl/install?utm_source=chatgpt.com))
+- Install **Visual Studio Code** on Windows (download from [https://code.visualstudio.com](https://code.visualstudio.com/)).
+- A Microsoft account and administrator privileges are required to enable virtualization features (Hyper-V / Virtual Machine Platform) if necessary.
 
-## First Time in WSL: Update the System and Install Basic Build Tools
+## First Steps in WSL: Update System and Install Basic Build Tools
 
-Open Windows Terminal -> select Ubuntu (or your installed distro) to enter the shell, then run:
+Open Windows Terminal -> Select Ubuntu (or your installed distro) to enter the shell, then run:
 
 ```bash
-
-# 更新系统包索引与系统
 sudo apt update && sudo apt upgrade -y
-
-# 安装 C/C++ 常用工具（gcc/g++、make 等）
-sudo apt install -y build-essential gdb cmake ninja-build pkg-config
-
-# 建议安装 clang/clang-format（可选）
-sudo apt install -y clang clang-format
-
-# （可选）安装额外工具：python 用于一些构建脚本、ccache 等
-sudo apt install -y python3 python3-pip ccache
-
+sudo apt install -y build-essential cmake git gdb
 ```
 
-`build-essential` includes gcc/g++, make, and more. It's a very commonly used essential package for building on Debian/Ubuntu. See common community documentation for installation commands and details.
+`build-essential` includes `gcc`/`g++`, `make`, and other packages, and is a standard build dependency on Debian/Ubuntu. Refer to community documentation for installation details.
 
 ------
 
 ## Install VS Code on Windows and Enable the Remote - WSL Extension
 
 1. Download and install Visual Studio Code on Windows.
-2. Open VS Code, open the Extensions panel, search for and install:
-   - **Remote - WSL** (or the official extension named *WSL*) — allows you to open and run VS Code directly in the WSL environment (the editor runs on Windows, but extensions/execution run on WSL). VS Code has official WSL development documentation and tutorials. (This extension is truly a lifesaver.)
-3. We also recommend installing the following (the corresponding server-side extensions will be automatically installed in the WSL context later):
-   - **C/C++ (ms-vscode.cpptools)**: Microsoft's official C/C++ extension, providing IntelliSense, debugging, code navigation, etc. Note that this extension conflicts with clangd. If you prefer the Clang toolchain, do not install this; instead, install Clangd and Clang-tidy.
-   - **CMake Tools** (or C/C++ Extension Pack) — for CMake project management, configuration, building, switching kits, etc. If you don't use CMake, there are plenty of other VS Code extensions you'll need to search for yourself. Personally, I prefer using CMake.
-   - **CodeLLDB** (if you prefer the lldb debugger)
-   - **clang-format** support, GitLens (enhanced Git experience), EditorConfig, etc.
+2. Open VS Code and navigate to the **Extensions** panel. Search for and install:
+   - **Remote - WSL** (or the official extension named *WSL*) — This allows you to open and run VS Code directly within the WSL environment (the editor runs on Windows, but extensions/execution run on WSL). VS Code has official documentation and tutorials for WSL development. (This extension is a lifesaver).
+3. Recommended installations (the corresponding server extensions will be automatically installed in the WSL context later):
+   - **C/C++ (ms-vscode.cpptools)**: The official Microsoft C/C++ extension, providing IntelliSense, debugging, and code navigation. **Note:** This extension conflicts with `clangd`. If you prefer the Clang toolchain, do not install this; instead, install `clangd` and `clang-tidy`.
+   - **CMake Tools** (or the C/C++ Extension Pack) — Used for CMake project management, configuration, building, and switching kits. If you don't use CMake, VS Code has a plethora of other plugins you can search for. I personally prefer CMake.
+   - **CodeLLDB** (if you prefer the `lldb` debugger).
+   - **clang-format** support, GitLens (to enhance Git experience), EditorConfig, etc.
 
 ------
 
-## Opening a Project in WSL with VS Code (Truly "Developing Under Linux")
+## Opening a Project in WSL using VS Code (Truly "Developing under Linux")
 
-1. Open VS Code in Windows, press `F1` -> type `Remote-WSL: New Window` (or navigate to the project directory in the Ubuntu terminal and run `code .`, which will open a VS Code window on WSL).
-2. VS Code will automatically install the necessary server components in WSL, and the "green area in the bottom left corner" will display `WSL: <distro>`, indicating that the current window is connected to WSL.
+1. In Windows, open VS Code, press `Ctrl+Shift+P` -> input `WSL: Connect to WSL` (or navigate to your project directory in the Ubuntu terminal and run `code .`, which will open the VS Code window on WSL).
+2. VS Code will automatically install the necessary server components in WSL. A green indicator in the bottom-left corner will show **WSL: Ubuntu**, indicating the current window is connected to WSL.
 
-> When VS Code is opened in the WSL context, the Extensions panel on the left will prompt you to install extensions "in WSL:Ubuntu" (meaning the extensions will be installed in the WSL environment rather than Windows). We recommend installing C/C++, CMake Tools, etc. on WSL (click "Install in WSL: Ubuntu").
+> When VS Code opens in the WSL context, the Extensions panel on the left will prompt you to install extensions "Install in WSL:Ubuntu" (meaning the extension runs in the WSL environment rather than Windows). It is recommended to install C/C++ and CMake Tools in WSL (click "Install in WSL: Ubuntu").
 
 ------
 
-## Creating a Minimal CMake + C++ Project and Building/Debugging it in VS Code
+## Creating a Minimal CMake + C++ Project and Building/Debugging in VS Code
 
-Create the project files in the WSL home directory:
+Create project files in the WSL home directory:
 
 ```bash
-mkdir -p ~/projects/hello_cmake && cd ~/projects/hello_cmake
-
+mkdir -p hello_cmake/src
+cd hello_cmake
 ```
 
-Create a new file named `CMakeLists.txt`:
-
-```cmake
-cmake_minimum_required(VERSION 3.10)
-project(hello_cmake LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-add_executable(hello main.cpp)
-
-```
-
-Create a new file named `main.cpp`:
+Create a new file `src/main.cpp`:
 
 ```cpp
 #include <iostream>
 
 int main() {
-    std::cout << "Hello from WSL C++ world!\n";
-    int x = 42;
-    std::cout << "x = " << x << std::endl;
+    std::cout << "Hello from WSL!" << std::endl;
     return 0;
 }
+```
 
+Create `CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.10)
+project(HelloWSL)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+add_executable(hello_wsl src/main.cpp)
 ```
 
 Build (in the WSL terminal or VS Code's integrated terminal):
 
 ```bash
-mkdir -p build && cd build
-cmake .. -G "Ninja"        # 如果你安装了 ninja；否则用默认 make： cmake ..
+mkdir build && cd build
+cmake ..
 cmake --build .
-./hello
-
 ```
 
-If you installed and are using the **CMake Tools** extension: open the project root directory, and the extension will provide `Configure` and `Build` buttons in the bottom status bar—just click them. You can also select different kits (gcc/clang) and build directories.
+If you installed and are using the **CMake Tools** extension: Open the project root directory. The extension will provide **Build** and **Debug** buttons in the status bar at the bottom. You can click these to build or debug, and select different kits (gcc/clang) and build directories.
 
 ------
 
-## Configuring Debugging in VS Code (Using GDB from ms-vscode.cpptools)
+## Configuring Debugging in VS Code (Using gdb from ms-vscode.cpptools)
 
-Create a `launch.json` file in the project's `.vscode` directory (using cpptools's `cppdbg`):
+Create `.vscode/launch.json` in your project directory (using the `cpptools` generator):
 
 ```json
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Hello (gdb)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/hello",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "/usr/bin/gdb",
-      "setupCommands": [
-        { "description": "Enable pretty-printing", "text": "-enable-pretty-printing", "ignoreFailures": true }
-      ],
-      "preLaunchTask": "CMake: build"
-    }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/hello_wsl",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
 }
-
 ```
 
-The "program" field requires the file path of your application. `${workspaceFolder}` is the directory where you currently opened VS Code. Since the build output is placed in the `build` directory, you can find your generated application there.
+The `"program"` field requires the file path to your application. `${workspaceFolder}` refers to the directory you currently have open in VS Code. Since the build output is placed in the `build` folder, you will find your generated application there.
 
-If you use `tasks.json` to define a custom build task, ensure the `preLaunchTask` name matches. However, if you use CMake Tools, it will automatically create and manage build tasks/debug configurations, which is usually more convenient. In that case, switch to VS Code's debug panel and click
+If you use `tasks.json` to define custom build tasks, ensure the `"preLaunchTask"` name matches; however, if you use CMake Tools, it automatically creates and manages build tasks and debug configurations, which is usually more convenient. In this case, simply switch to the VS Code **Run and Debug** view and click the **Start Debugging** button (or press F5).

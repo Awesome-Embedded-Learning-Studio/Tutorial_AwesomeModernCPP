@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Deeply understanding the C++ zero-overhead abstraction principle
+description: Deep Dive into C++ Zero-Overhead Abstraction Principle
 difficulty: intermediate
 order: 1
 platform: stm32f1
@@ -16,42 +16,42 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: Zero-Overhead Abstraction
+title: zero-overhead abstraction
 translation:
-  engine: anthropic
   source: documents/vol8-domains/embedded/01-zero-overhead-abstraction.md
-  source_hash: 03af5e7165b9cd5be865db1fc88856b77044d27ba20f47537356944291f35c6d
+  source_hash: ec936eab770dff02ad30ac3b0ec4357856b3e638866e55649d1def158c44b320
+  translated_at: '2026-06-16T04:10:36.721943+00:00'
+  engine: anthropic
   token_count: 2369
-  translated_at: '2026-05-26T12:10:33.521058+00:00'
 ---
-# Modern C++ for Embedded Systems—Zero-Overhead Abstraction
+# Modern Embedded C++ Tutorial — Zero-Overhead Abstractions
 
 ## Preface
 
-We often get the feeling—and it is most people's first reaction—that complex code abstractions will impact execution time. For example, compared to using classes, I have genuinely seen friends who prefer to just write scattered functions and go all in. They believe that using classes incurs a time overhead.
+We often share a common intuition, which is also the first reaction for most people—complex code abstractions negatively impact execution time. For instance, compared to using classes, I have genuinely seen friends who prefer to just "go all-in" with scattered functions because they believe using classes incurs a time overhead.
 
-This is actually a very common misconception. Many people instinctively assume that terms like "object-oriented," "classes," and "templates" must be slower than C. After all, abstraction sounds like wrapping several layers around originally simple code—how could it not be slower?
+This is actually a very common misconception. Many people instinctively assume that terms like "Object-Oriented," "Class," and "Template" imply slowness compared to C. After all, abstraction sounds like wrapping layers upon layers on top of simple code, so how could it not be slow?
 
-I'm not sure if Bjarne Stroustrup actually said this (I haven't verified the quote), but the sentiment holds true: **"You don't pay for what you don't use, and what you do use, you couldn't hand-code any better."** Therefore, C++'s advanced abstraction features (such as classes, templates, and inline functions) should not produce extra runtime overhead after compilation. Their performance should be on par with hand-written low-level code. This is the pursuit of C++.
+I'm not sure if Bjarne Stroustrup said this—I haven't verified the source—but the saying certainly holds merit: **"You don't pay for what you don't use, and you can't write better hand-optimized code than what you use."** Therefore, C++'s advanced abstraction features (such as classes, templates, and inline functions) should not generate additional runtime overhead after compilation; their performance should be on par with hand-written low-level code. This is the pursuit of C++.
 
-To put it plainly, we want the code written in C++ to be nearly as efficient as hand-written assembly, while being more maintainable. This sounds a bit like "having your cake and eating it too," but it is precisely the original design intent of C++—to give you high-level abstraction capabilities without making you pay a performance price.
+To put it simply, we want the code we write in C++ to have efficiency nearly identical to hand-written assembly, while being more maintainable. This sounds a bit like "having your cake and eating it too," but it is precisely the original design intent of C++—to give you high-level abstraction capabilities without forcing you to pay a performance penalty.
 
 #### Why is this important in embedded systems?
 
-In desktop applications or server development, we might not be sensitive to a difference of a few clock cycles. But in embedded systems, the situation is completely different.
+In desktop application or server development, we might not be sensitive to a difference of a few clock cycles. However, in embedded systems, the situation is completely different.
 
-Embedded systems typically have strict resource constraints:
+Embedded systems usually have strict resource constraints:
 
-- **Limited CPU performance** - Every clock cycle is precious. Many MCUs might only run at a few tens of MHz, unlike your computer which easily hits several GHz.
-- **Constrained memory** - ROM/RAM capacity is limited. An entire program might only have a few tens of KB of Flash, and a few KB of RAM.
+- **Limited CPU performance** - Every clock cycle is precious. Many MCUs might only run at a few tens of MHz, unlike your PC which easily hits several GHz.
+- **Constrained memory** - ROM/RAM capacity is limited. The entire program might only have a few dozen KB of Flash and a few KB of RAM.
 - **Real-time requirements** - Tasks must be completed within a deterministic time. A delay of a few milliseconds can cause system failure.
-- **Power constraints** - Extra instructions mean more power consumption. For battery-powered devices, executing one more instruction drains a little more power.
+- **Power constraints** - Extra instructions mean more power consumption. For battery-powered devices, executing one more instruction consumes a bit more power.
 
-So in embedded development, we want code that is easy to maintain and understand, without sacrificing performance. Zero-overhead abstraction allows us to use modern C++ features to improve code maintainability without sacrificing performance. This is why we need to thoroughly understand this concept.
+Therefore, in embedded development, we want code that is maintainable and understandable, yet we cannot sacrifice performance. Zero-overhead abstractions allow us to use modern C++ features to improve code maintainability without sacrificing performance. This is why we need to understand this concept thoroughly.
 
-## Practical Case Analysis
+## Practical Case Studies
 
-Enough theory—let's look at some actual code. After all, we all know a very classic saying—`talk is cheap, show me the code`.
+Enough theory; let's look at actual code. After all, we all know a very classic saying—`talk is cheap, show me the code`.
 
 #### Example: GPIO Control
 
@@ -68,11 +68,11 @@ void set_pin() {
 
 ```
 
-What is wrong with this approach? First, there are magic numbers everywhere. What is `0x40020000`? Without looking at the manual, you have no idea. `PIN_5` might look meaningful, but its definition `(1 << 5)` is copy-pasted all over the codebase. If it ever needs to change, you have to do a global search and replace.
+What problems does this style have? First, there are magic numbers everywhere. What is `0x40020000`? Without looking at the manual, you have no idea. Although `PIN_5` looks meaningful, its definition `(1 << 5)` is actually copied and pasted all over the code. If you need to change it, you have to do a global search and replace.
 
-Even worse, this approach has no type safety. You can pass in a completely unrelated address, and the compiler will not complain. You could even accidentally write `*GPIO_PORT_A = PIN_5`, which directly overwrites the entire register instead of setting a specific bit.
+Even worse, this style has no type safety. You can pass a completely unrelated address in, and the compiler won't complain. You could even accidentally write `*GPIO_PORT_A = PIN_5`, overwriting the entire register instead of setting a specific bit.
 
-But in C++, we can make this much safer:
+But in C++, we can do this more safely:
 
 ```cpp
 // 类型安全的抽象
@@ -99,28 +99,28 @@ void set_pin() {
 
 ```
 
-It looks like there is more code, right? But think about it—this "extra" code is all template definitions that get processed at compile time. The final generated machine code is exactly the same as the C version above!
+The code looks longer, right? But think carefully: these "extra" lines are actually template definitions that are processed at compile time. The final generated machine code is exactly the same as the C version above!
 
-You can try it yourself. In my previous tests, I even found the overhead to be smaller than C—because the compiler has more contextual information to leverage when optimizing template code.
+You can try it out. In my previous tests, I even found the overhead to be smaller than C—because the compiler has more contextual information to utilize when optimizing template code.
 
-More importantly, you now have type safety. `GPIO_Port<0x40020000>` and `GPIO_Port<0x40020400>` are two completely different types and cannot be mixed up. Furthermore, all operations go through explicit interfaces, so there is no risk of accidentally overwriting a register.
+More importantly, you now have type safety. `GPIO_Port<0x40020000>` and `GPIO_Port<0x40020400>` are two completely different types and won't be confused. Also, all operations are performed through explicit interfaces, so there's no risk of accidentally overwriting registers.
 
 <OnlineCompilerDemo
-  title="GPIO Bit Manipulation: C Macros vs C++ Type-Safe Abstraction"
+  title="GPIO Bit Manipulation: C Macros vs C++ Type-Safe Abstractions"
   source-path="code/examples/chapter02/01_zero_overhead/gpio_example.cpp"
   arm-source-path="code/examples/compiler_explorer/gpio_zero_overhead_arm.cpp"
-  description="This example contains real MMIO addresses and is suitable for directly observing the optimized assembly. It does not perform register writes on the host machine."
+  description="This example contains real MMIO addresses and is suitable for directly observing optimized assembly; it does not perform register writes on the host."
   allow-x86-asm
   allow-arm-asm
 />
 
 #### Example: State Machine Implementation
 
-State machines are extremely common in embedded systems. Button handling, protocol parsing, motor control—state machines are everywhere.
+State machines are ubiquitous in embedded systems. Button handling, protocol parsing, motor control... state machines are everywhere.
 
 **C Style (using switch-case)**
 
-We have all written the traditional C implementation:
+We've all written the traditional C implementation:
 
 ```cpp
 enum State { IDLE, RUNNING, STOPPED };
@@ -142,7 +142,7 @@ void process_event(int event) {
 
 ```
 
-This approach is simple and direct, but it has a few problems. First, the state and event handling logic are all mixed into one large function, making it hard to maintain once the number of states grows. Second, adding a new state requires modifying code in multiple places. Most importantly, it is very difficult for the compiler to deeply optimize this kind of dynamic switch-case.
+This style is simple and direct, but it has several issues. First, state and event handling logic are mixed in one big function, making it hard to maintain as the number of states grows. Second, adding new states requires modifying code in multiple places. Most importantly, it is difficult for the compiler to perform deep optimization on this kind of dynamic switch-case.
 
 **Zero-Overhead C++ Abstraction (using compile-time polymorphism)**
 
@@ -173,17 +173,17 @@ using StateMachine = std::variant<IdleState, RunningState, StoppedState>;
 
 ```
 
-This looks complex, but the magic is that this is **compile-time polymorphism**, not runtime polymorphism. Note that we are using CRTP (Curiously Recurring Template Pattern), not virtual functions. The compiler knows the exact type of each state at compile time and can directly generate targeted code without needing a virtual function table lookup.
+This looks complex, but the magic lies in this being **compile-time polymorphism**, not runtime polymorphism. Note that we use CRTP (Curiously Recurring Template Pattern), not virtual functions. The compiler knows the specific type of each state at compile time and can directly generate targeted code without needing a virtual function table lookup.
 
-Combined with `std::variant`, we can also ensure type safety for state transitions at compile time. Moreover, the implementation of `std::variant` is typically zero-overhead as well—it is essentially a union plus a tag, exactly the same as if you had hand-written a union.
+Combined with `std::variant`, we can also ensure type safety during state transitions at compile time. Furthermore, the implementation of `std::variant` is usually zero-overhead—it is essentially a union plus a tag, just like a hand-written union.
 
 #### RAII Resource Management
 
-RAII (Resource Acquisition Is Initialization) is a very powerful concept in C++. In embedded systems, we frequently need to manage various resources: clocks, interrupts, DMA channels, and so on.
+RAII (Resource Acquisition Is Initialization) is a very powerful concept in C++. In embedded systems, we often need to manage various resources: clocks, interrupts, DMA channels...
 
-**Manual Management (prone to leaks)**
+**Manual Management (Prone to Leaks)**
 
-First, let's look at the problems with manual management:
+First, let's look at the problem with manual management:
 
 ```cpp
 void configure_peripheral() {
@@ -196,11 +196,11 @@ void configure_peripheral() {
 
 ```
 
-This code looks fine, but there is a hidden danger: if something goes wrong in `do_something()` (although we usually don't use exceptions in embedded systems, there might be other forms of error handling), or if you return early somewhere in the middle, `disable_clock()` will not be executed. The clock stays on, wasting power for nothing.
+This code looks fine, but there is a hidden pitfall: if something goes wrong in `do_something()` (although we usually don't use exceptions in embedded systems, there might be other forms of error handling), or if you return early somewhere in the middle, `disable_clock()` will not be executed. The clock stays on, wasting power.
 
 **Zero-Overhead RAII**
 
-Using the RAII approach, we can write it like this:
+Using the RAII philosophy, we can write it like this:
 
 ```cpp
 class ClockGuard {
@@ -223,13 +223,13 @@ void configure_peripheral() {
 
 ```
 
-The beauty of this approach is that no matter how your function exits—normal return, early return, or even an exception—the destructor of `ClockGuard` will be called. This is guaranteed by the C++ language.
+The beauty of this style is that no matter how your function exits—normal return, early return, or even exception—the destructor of `ClockGuard` will be called. This is guaranteed by the C++ language.
 
-The key point is that the compiler will inline the constructor and destructor, generating the exact same code as manual management! You gain the convenience of automatic resource management without paying any performance price. This is the essence of zero-overhead abstraction.
+The key is that the compiler will inline the constructor and destructor, generating code identical to manual management! You gain the convenience of automatic resource management without paying any performance cost. This is the essence of zero-overhead abstraction.
 
-## constexpr - Compile-Time Computation
+## constexpr - Compile-Time Calculation
 
-`constexpr` is a killer feature in modern C++. It allows you to perform computations at compile time rather than at runtime.
+`constexpr` is a killer feature in modern C++. It allows you to perform calculations at compile time instead of at runtime.
 
 ```cpp
 // 运行时计算(浪费CPU)
@@ -247,19 +247,19 @@ constexpr uint32_t DIVISOR = calculate_baud_divisor(72000000, 115200);
 
 ```
 
-You might think, what is the difference? Isn't it just adding the `constexpr` keyword?
+You might think, what's the difference? Isn't it just adding a `constexpr` keyword?
 
-The difference is huge! In the first version, the division operation must be executed every time the function is called. Division is a relatively slow operation on many MCUs and might take dozens of clock cycles.
+The difference is huge! In the first version, the division operation is executed every time the function is called. Division is a relatively slow operation on many MCUs, potentially taking dozens of clock cycles.
 
-In the second version, the compiler calculates the result at compile time. In the final machine code, `DIVISOR` is simply a constant written directly into the code, requiring no computation at all. This is a massive advantage for embedded systems—it saves CPU time and makes code execution time predictable (which is crucial for real-time systems).
+In the second version, the compiler calculates the result at compile time. In the final machine code, `DIVISOR` is just a constant, written directly into the code without any calculation. This is a huge advantage for embedded systems—it saves CPU time and makes execution time predictable (important for real-time systems).
 
-Even better, you can write very complex `constexpr` functions, including loops, conditional logic, and so on. As long as the parameters are known at compile time, the compiler can calculate the result. This allows you to move a lot of configuration calculations to compile time, rather than computing them on every boot.
+Even better, you can write very complex `constexpr` functions, including loops, conditional branching, etc. As long as the parameters are known at compile time, the compiler can calculate the result. This allows you to offload a lot of configuration calculation to compile time, rather than calculating it every time the system starts.
 
 <OnlineCompilerDemo
-  title="constexpr Baud Rate Division: Runtime Results and Optimized Output"
+  title="constexpr Baud Rate Divider: Runtime Results and Optimized Output"
   source-path="code/examples/chapter02/01_zero_overhead/constexpr_example.cpp"
   arm-source-path="code/examples/compiler_explorer/constexpr_baud_arm.cpp"
-  description="This demo can run on the host machine, and you can also compare the optimized output between x86-64 and Cortex-M."
+  description="This demo can run on the host, or compare optimized output between x86-64 and Cortex-M."
   allow-run
   allow-x86-asm
   allow-arm-asm
@@ -267,11 +267,11 @@ Even better, you can write very complex `constexpr` functions, including loops, 
 
 ## Practical Tips
 
-After covering so much theory, let's look at some practical tips. These are techniques I have used in real projects that genuinely improve code quality without impacting performance.
+We've covered a lot of theory; now let's look at some practical tips. These are techniques I have used in actual projects that genuinely improve code quality without affecting performance.
 
 ### 1. Use Inline Functions Instead of Macros
 
-Macros are an artifact of the C era. In C++, in most cases, you should use inline functions to replace macros.
+Macros are a relic of the C era. In C++, in most cases, you should use inline functions instead of macros.
 
 ```cpp
 // 不推荐:宏没有类型检查
@@ -285,15 +285,15 @@ inline constexpr T max(T a, T b) {
 
 ```
 
-Macros have too many problems. First, they have no type checking—you can pass anything into them. Second, they have weird side effects. For example, with `MAX(i++, j++)`, this macro expands to `((i++) > (j++) ? (i++) : (j++))`, causing `i` or `j` to be incremented twice!
+Macros have too many problems. First, they have no type checking; you can pass anything in. Second, they have strange side effects. For example, `MAX(i++, j++)` expands to `((i++) > (j++) ? (i++) : (j++))`, so `i` or `j` would be incremented twice!
 
-Inline functions do not have these problems. The compiler performs type checking, and parameters are only evaluated once. At the same time, because it is `inline`, the compiler directly inserts the function body at the call site, so there is no function call overhead.
+Inline functions don't have these problems. The compiler performs type checking, and parameters are only evaluated once. Also, because they are `inline`, the compiler inserts the function body directly at the call point, so there is no function call overhead.
 
-Add `constexpr`, and if the parameters are compile-time constants, the compiler can even calculate the result at compile time. This is something macros cannot do.
+With `constexpr`, if the parameters are compile-time constants, the compiler can even calculate the result at compile time. This is something macros cannot do.
 
 ### 2. Template Metaprogramming
 
-Template metaprogramming sounds very sophisticated, but the concept is simple: let the compiler do some work for you at compile time.
+Template metaprogramming sounds high-level, but the concept is simple: let the compiler do some work for you at compile time.
 
 ```cpp
 // 编译期循环展开
@@ -329,13 +329,13 @@ process_data(3);
 
 ```
 
-There is no loop structure, no loop counter, and no conditional branching. For loops with a small iteration count, this kind of unrolling can significantly improve performance because it avoids branch misprediction and loop overhead.
+There are no loop structures, no loop counters, and no conditional branches. For loops with a small iteration count, this unrolling can significantly improve performance because it avoids branch prediction failures and loop overhead.
 
-Of course, loop unrolling is not a silver bullet. If the loop count is large, unrolling will lead to code bloat. But for the small loops commonly seen in embedded systems (such as processing data from a few ADC channels), this is an excellent optimization technique.
+Of course, loop unrolling isn't a silver bullet. If the loop count is large, unrolling leads to code bloat. But for the small loops common in embedded systems (like processing data for a few ADC channels), this is a great optimization.
 
 ### 3. Strong Types Instead of Primitive Types
 
-Type safety is not just about preventing errors; it also makes code clearer.
+Type safety isn't just about preventing errors; it also makes code clearer.
 
 ```cpp
 // 易错:单位混淆
@@ -353,33 +353,33 @@ delay(Milliseconds{100});  // 清晰明确
 
 ```
 
-Look at the first version: `delay(100)`—what unit is this 100? You have to look at the documentation or comments. Moreover, it is very easy to get mixed up:
+Look at the first version: `delay(100)`—what unit is this 100? You have to look at the documentation or comments. It's also easy to get confused:
 
 ```cpp
 delay(1000);  // 想延迟1秒,但如果delay是微秒单位就惨了
 
 ```
 
-With strong types, this is not a problem. `delay(Milliseconds{1000})` clearly tells you this is 1000 milliseconds. And if you accidentally write `delay(Microseconds{1000})`, the compiler will directly report an error because the types do not match.
+With strong types, you won't have this problem. `delay(Milliseconds{1000})` clearly tells you this is 1000 milliseconds. If you accidentally write `delay(Microseconds{1000})`, the compiler will directly report an error because the types don't match.
 
-The key point is that these strong types are completely zero-overhead at runtime. `Milliseconds` is essentially just a `uint32_t`, and the compiler will completely optimize away this wrapper. You gain type safety without any performance loss.
+The key is that these strong types are completely zero-overhead at runtime. `Milliseconds` is essentially just a `uint32_t`, and the compiler will optimize away this wrapper completely. You gain type safety without any performance loss.
 
-## Verifying Zero Overhead—Seeing Is Believing
+## Verifying Zero Overhead — Seeing is Believing
 
-After talking so much about "zero overhead," you might be thinking: is it really true? How can you prove it?
+After all this talk about "zero overhead," you might be thinking: Really? How do you prove it?
 
-The most direct method is to look at the assembly code. Don't be afraid of assembly; it is actually not that complicated. You just need to compare whether the assembly generated by the C version and the C++ version are the same.
+The most direct way is to look at the assembly code. Don't be afraid of assembly; it's not that complex. You just need to compare whether the assembly generated by the C version and the C++ version is the same.
 
 ### Using Compiler Explorer
 
-I highly recommend using Compiler Explorer (<https://godbolt.org/>). This is an online tool that lets you see what assembly your code compiles into in real time.
+I strongly recommend using Compiler Explorer (<https://godbolt.org>). This is an online tool that lets you see what assembly your code compiles into in real-time.>
 
 You can write two versions of the code:
 
-- Write the C-style code on the left
-- Write the C++ abstracted code on the right
+- C-style code on the left
+- C++ abstract code on the right
 
-Then compare the assembly generated by both sides. If the assembly is exactly the same (or has only minor differences), that proves the abstraction is zero-overhead.
+Then compare the assembly generated by both sides. If the assembly is identical (or has only minor differences), it proves that the abstraction is zero-overhead.
 
 ### Local Verification
 
@@ -392,11 +392,11 @@ arm-none-eabi-g++ -O2 -S -fverbose-asm code.cpp
 
 ```
 
-`-O2` enables optimization (this is very important, as zero-overhead abstraction relies on compiler optimization), `-S` generates an assembly file, and `-fverbose-asm` adds comments in the assembly to make it easier to read.
+`-O2` means optimization is enabled (this is important; zero-overhead abstractions rely on compiler optimization), `-S` means generate an assembly file, and `-fverbose-asm` adds comments to the assembly, making it easier to understand.
 
-### Key Compiler Flags
+### Key Compiler Options
 
-Speaking of optimization, here are a few important compiler flags:
+Speaking of optimization, here are a few important compiler options:
 
 ```bash
 -O2 或 -O3    # 优化级别,至少要O2
@@ -406,41 +406,41 @@ Speaking of optimization, here are a few important compiler flags:
 
 ```
 
-**Important note**: With `-O0` or without optimization, many zero-overhead abstractions will have overhead. This is because the compiler does not perform inlining, constant folding, and other optimizations. So when testing zero-overhead abstractions, you must enable optimization!
+**Important Note**: With `-O0` or without optimization, many zero-overhead abstractions will have overhead. This is because the compiler doesn't perform inlining, constant folding, and other optimizations. So, when testing zero-overhead abstractions, make sure to turn on optimization!
 
-In real embedded projects, your Release build configuration should always have at least `-O2` optimization enabled. For the Debug configuration, you can use `-Og` (to optimize the debugging experience) or `-O0`.
+In actual embedded projects, your Release build configuration should always have at least `-O2` optimization enabled. Debug configuration can use `-Og` (for debug experience) or `-O0`.
 
-## My Casual Ramblings
+## Author's Ramblings
 
 #### "Abstraction always has overhead"
 
-Wrong. **Correct abstractions are zero-overhead after compilation**. The keyword here is "correct"—you need to use compile-time abstractions (templates, inline functions, constexpr, etc.), not runtime abstractions (virtual functions, dynamic allocation, etc.).
+Wrong. **Correct abstractions are zero-overhead after compilation**. The keyword here is "correct"—you should use compile-time abstractions (templates, inline functions, constexpr, etc.), not runtime abstractions (virtual functions, dynamic allocation, etc.).
 
-Many people are biased against abstraction because they have seen terrible abstractions. For example, using virtual functions everywhere, using dynamic memory everywhere. This kind of abstraction确实确实 does have overhead. But this is not a problem with abstraction itself; rather, it is a case of using the wrong tools.
+Many people are biased against abstraction because they have seen bad abstractions. For example, using virtual functions everywhere, or dynamic memory everywhere. This kind of abstraction does have overhead. But this isn't a problem with abstraction itself; it's using the wrong tool.
 
-Modern C++ provides a large number of compile-time abstraction tools that let you write code that is both abstract and efficient.
+Modern C++ provides a large number of compile-time abstraction tools, allowing you to write code that is both abstract and efficient.
 
 #### "Embedded must use C"
 
-This notion is both outdated and not outdated. However, modern C++ is perfectly suited for embedded development and has many advantages:
+This concept is outdated, but also not outdated. However, Modern C++ is perfectly suitable for embedded development and has many advantages:
 
 - Better type safety
 - Better resource management (RAII)
-- More powerful compile-time computation capabilities
+- More powerful compile-time calculation capabilities
 - Easier to maintain code
 
-I have seen far too many embedded projects written in C where the code is full of global variables, magic numbers, and duplicated code snippets. This kind of code is hard to maintain and very prone to bugs.
+I have seen too many embedded projects written in C where the code is full of global variables, magic numbers, and repetitive code fragments. This kind of code is hard to maintain and prone to bugs.
 
-After rewriting them with modern C++, the code volume might actually be smaller, and much clearer. Performance? There is absolutely no need to worry, provided you use the right features. **But it is precisely this "using the right features"** that makes me pessimistic about using C++ in embedded systems. Using C++ features correctly is not an easy task. The learning curve is indeed much steeper.
+After rewriting with Modern C++, the code volume might actually be smaller and clearer. Performance? You don't need to worry at all, provided you use the right features. **But it is precisely this "using the right features"** that makes me pessimistic about using C++ in embedded systems. Using C++ features correctly is not an easy task. The learning curve is indeed much steeper.
 
 #### "Templates increase code size"
 
-Yes! But this needs to be looked at on a case-by-case basis. Templates generate a separate copy of code for each type used, so if you instantiate the same template for 100 different types, it will indeed increase code size.
+Yes! But this depends on the situation. Templates generate a copy of code for each type used, so if you instantiate the same template for 100 types, it will indeed increase code size.
 
-But in actual embedded projects, you usually would not do this. Moreover, in many cases, using templates reasonably can actually **reduce** code size, because:
+However, in actual embedded projects, you usually won't do this. Moreover, in many cases, using templates reasonably can actually **reduce** code size because:
 
 - It avoids code duplication
 - The compiler can optimize better
-- You can use compile-time computation to replace runtime computation
+- You can replace runtime calculations with compile-time calculations
 
-My advice is: don't blindly worry about code size. First, write clear code, then compile it and check the actual size. In most cases, you will find that the template version is not much larger than the hand-written version, and might even be smaller.
+My advice is: don't blindly worry about code size. First, write clear code, then compile and check the actual size. In most cases, you will find that the template version is not much larger than the hand-written version, and might even be smaller.

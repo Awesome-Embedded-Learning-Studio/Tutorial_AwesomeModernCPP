@@ -5,14 +5,14 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: An in-depth explanation of how the linker works, how to write linker
-  scripts, and how to implement startup code.
+description: Deep dive into how the linker works, how to write linker scripts, and
+  how startup code is implemented.
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
 - 'Chapter 0: 前言与基础'
-reading_time_minutes: 11
+reading_time_minutes: 12
 related: []
 tags:
 - cpp-modern
@@ -20,62 +20,57 @@ tags:
 - intermediate
 title: Linker and Linker Scripts
 translation:
-  engine: anthropic
   source: documents/vol7-engineering/03-linker-and-linker-scripts.md
-  source_hash: 3a0f3c55d4b17b8aeee508a5737d73e2eb6e33bad0be591bb17391b397311b90
+  source_hash: cb2dd90c901bcac61641050de543824f1ec511dec25ac9b21b566fa872d67964
+  translated_at: '2026-06-16T04:08:11.255590+00:00'
+  engine: anthropic
   token_count: 2123
-  translated_at: '2026-05-26T11:52:54.303665+00:00'
 ---
-# Linker and Linker Scripts: From Principles to Practice
+# Linker and Linker Scripts: From Theory to Practice
 
 ## Introduction
 
-If you have read my "Deep Dive into C/C++ Compilation Principles" blog series, you likely already have a basic understanding of the linker. To briefly recap: the compiler is responsible for converting source code into object files, while the linker is the final step in the build process, combining these object files into the final executable program.
+If you have read the author's blog series "Deep Dive into C/C++ Compilation Principles," you likely already have a preliminary understanding of linkers. To briefly recap: the compiler is responsible for converting source code into object files, while the linker acts as the final stage in the build process, combining these object files into the final executable program.
 
-> Related reading:
+> Related Reading:
 >
-> - [Deep Dive into C/C++ Compilation and Linking Technologies - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/152921903)
-> - [Understanding C/C++ Compilation and Linking Technologies: Introduction - Zhihu](https://zhuanlan.zhihu.com/p/1972593756701189002)
+> - [Deep Dive into C/C++ Compilation and Linking Technology - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/152921903)
+> - [Understanding C/C++ Compilation and Linking Technology: Introduction - Zhihu](https://zhuanlan.zhihu.com/p/1972593756701189002)
 
-In embedded development, the importance of the linker is often underestimated. In reality, the linker's configuration and optimization strategies directly impact the program's code size, runtime performance, and even determine whether the program can start correctly. This article will take you through a deep understanding of the linker's working principles, focusing on writing linker scripts and implementing startup code, to help you build smaller, faster, and more reliable embedded programs.
+In embedded development, the importance of the linker is often underestimated. In reality, the linker's configuration and optimization strategies directly impact the program's code size, runtime performance, and even determine whether the program can start correctly. This article will take you deep into the working principles of the linker, focusing on writing linker scripts and implementing startup code, helping you build smaller, faster, and more reliable embedded programs.
 
 ------
 
 ## 1. Basic Working Principles of the Linker
 
-Before diving into linker scripts, let's clarify what the linker actually does. Understanding these basic concepts will help us write and debug linker scripts more effectively.
+Before diving into linker scripts, let's clarify exactly what the linker does. Understanding these basic concepts will help us write and debug linker scripts more effectively.
 
-### 1.1 Four Core Tasks of the Linker
+### 1.1 The Four Core Tasks of the Linker
 
-The linker's job may seem mysterious, but it can actually be summarized into the following four core tasks:
+The linker's work may seem mysterious, but it can actually be summarized into the following four core tasks:
 
-**(1) Symbol Resolution**
+**（1）Symbol Resolution**
 
-When you call a function defined in another file, the compiler only knows the function's name, not its actual address. The linker's job is to find the actual definition of this function and establish the connection:
+When you call a function defined in another file within one file, the compiler only knows the function's name, not its actual address. The linker's responsibility is to find the actual definition of this function and establish the connection:
 
 ```cpp
-// file1.cpp
-void printMessage() {
-    // 函数实现
-}
+// main.cpp
+extern int calculate(int x, int y); // Declaration only
 
-// file2.cpp
-extern void printMessage();  // 这只是一个声明
-void main() {
-    printMessage();  // 链接器负责找到实际的函数地址
+int main() {
+    return calculate(10, 20);
 }
-
 ```
 
-**(2) Address Assignment**
+**（2）Address Assignment**
 
-The linker assigns final memory addresses to all code and data in the program. This process may seem simple, but it is crucial in embedded systems—because different types of memory (FLASH, RAM) have different physical addresses and access characteristics.
+The linker assigns final memory addresses to all code and data in the program. This process seems simple, but it is crucial in embedded systems—because different types of memory (FLASH, RAM) have different physical addresses and access characteristics.
 
-**(3) Section Merging**
+**（3）Section Merging**
 
 Each object file generated by the compiler contains multiple sections, such as `.text` (code), `.data` (initialized data), and `.bss` (uninitialized data). The linker merges sections of the same type from all files together to form the unified layout of the final executable file.
 
-**(4) Library Linking**
+**（4）Library Linking**
 
 Programs typically use standard libraries or third-party libraries. The linker is responsible for extracting the required code from these libraries and integrating them into the final executable file.
 
@@ -83,367 +78,328 @@ Programs typically use standard libraries or third-party libraries. The linker i
 
 ## 2. Why Do Embedded Systems Need Custom Linker Scripts?
 
-After understanding the basic work of the linker, you might ask: don't the compiler and linker complete these tasks automatically? Why do we need to write linker scripts manually? This is because—embedded systems are diverse, and sometimes require mass production, which means we need to consider these details for cost optimization.
+After understanding the basic work of the linker, you might ask: Don't compilers and linkers automatically complete these tasks? Why do we need to manually write linker scripts? This is because—embedded systems are diverse, and sometimes require mass production, requiring us to consider these details for cost optimization.
 
 ### 2.1 Memory Constraints in Embedded Systems
 
 In embedded systems, memory is a scarce and fragmented resource, fundamentally different from general-purpose computers:
 
-- **Startup vectors must be placed at specific addresses**: After reset, the processor reads the interrupt vector table from a fixed address
-- **Program code must reside in FLASH**: FLASH is non-volatile memory, so code is not lost after power-off
-- **Read-only constants should stay in FLASH**: Fully utilize FLASH space to save precious RAM
-- **Runtime variables need to be placed in RAM**: RAM is readable and writable, but data is lost after power-off
-- **C++ global objects need to be constructed correctly**: Calling constructors requires dedicated startup code support
-- **Stack and heap must also be configured correctly**: Ensure the program has sufficient stack space and heap space
+- **The startup vector must be placed at a specific address**: After reset, the processor reads the interrupt vector table from a fixed address.
+- **Program code must reside in FLASH**: FLASH is non-volatile storage; code is not lost after power-off.
+- **Read-only constants should reside in FLASH**: Fully utilize FLASH space to save precious RAM.
+- **Runtime variables need to be placed in RAM**: RAM is readable and writable, but data is lost after power-off.
+- **C++ global objects need to be constructed correctly**: The calling of constructors requires support from dedicated startup code.
+- **Stack and heap must also be configured correctly**: Ensure the program has sufficient stack space and heap space.
 
-The default strategies of compilers and linkers are designed for general-purpose systems and cannot meet these hardware constraints at all. This is why we need **linker scripts**—they are configuration files that tell the linker "how to organize memory on this specific hardware."
+The default strategy of compilers and linkers is designed for general systems and cannot meet these hardware constraints at all. This is why we need **linker scripts**—it is the configuration file we use to tell the linker "how to organize memory on this specific hardware."
 
 ### 2.2 Core Concepts of Linker Scripts
 
 Before writing a linker script, let's understand a few of the most important concepts:
 
-**MEMORY region definition** Defines the name, start address, and length of physical memory regions. For example:
+**MEMORY Region Definition** Defines the name, origin, and length of physical memory regions. For example:
 
-```c
-MEMORY {
-  FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
-  RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+```ld
+MEMORY
+{
+    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
+    RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
 }
-
 ```
 
-**SECTIONS output section definition** Tells the linker how to organize various input sections (from object files) into output sections, and which MEMORY region to place them in:
+**SECTIONS Output Section Definition** Tells the linker how to organize various input sections (from object files) into output sections and place them in which MEMORY region:
 
-```c
-SECTIONS {
-  .text : { *(.text*) } > FLASH
-  .data : { *(.data*) } > RAM
+```ld
+SECTIONS
+{
+    .text : { *(.text*) } > FLASH
+    .data : { *(.data*) } > RAM AT > FLASH
 }
-
 ```
 
-**Symbol export** Linker scripts can define symbols that will be used in the startup code, such as:
+**Symbol Export** Linker scripts can define symbols that will be used in startup code, for example:
 
-- `_sdata` / `_edata`: Start and end addresses of the `.data` section
-- `_sbss` / `_ebss`: Start and end addresses of the `.bss` section
-- `_estack`: Stack top address
+- `__text_start__` / `__text_end__`: Start and end addresses of the `.text` section.
+- `__data_start__` / `__data_end__`: Start and end addresses of the `.data` section.
+- `__stack_top__`: Stack top address.
 
-**Common control directives**
+**Common Control Directives**
 
-- `KEEP()`: Prevent certain sections from being optimized away (such as the interrupt vector table)
-- `PROVIDE()`: Provide a default value for a symbol
-- `ASSERT()`: Perform constraint checks at link time
+- `KEEP()`: Prevent certain sections from being optimized out (e.g., interrupt vector tables).
+- `PROVIDE()`: Provide a default value for a symbol.
+- `ASSERT()`: Perform constraint checks at link time.
 
 ### 2.3 The Role of Different Sections
 
-Understanding the role of different sections is crucial for writing linker scripts correctly:
+Understanding the role of different sections is crucial for writing correct linker scripts:
 
-- **`.text`** — Executable code section, usually placed in FLASH
-- **`.rodata`** — Read-only constant section (such as string literals), also placed in FLASH
-- **`.data`** — Initialized global/static variables. This section is special: its contents are located in FLASH at link time (because the initial values need to be preserved), but at runtime they must be copied to RAM (because variables need to be writable)
-- **`.bss`** — Uninitialized global/static variables, which only exist in RAM and need to be zeroed at startup. Since there is no need to preserve initial values, `.bss` does not occupy FLASH space
+- **`.text`** — Executable code section, usually placed in FLASH.
+- **`.rodata`** — Read-only constant section (e.g., string literals), also placed in FLASH.
+- **`.data`** — Initialized global/static variables. This section is special: its content resides in FLASH at link time (because initial values need to be saved), but must be copied to RAM at runtime (because variables need to be writable).
+- **`.bss`** — Uninitialized global/static variables, existing only in RAM, and need to be zeroed at startup. Since they don't need to save initial values, `.bss` does not occupy FLASH space.
 
 ------
 
-## 3. Hands-on: Writing a Complete Linker Script
+## 3. Practice: Writing a Complete Linker Script
 
-Now that we've covered the theory, let's write a practically usable linker script. This example targets ARM Cortex-M microcontrollers, but the principles apply to all embedded platforms.
+Enough theory, let's write a real, usable linker script. This example targets ARM Cortex-M microcontrollers, but the principles apply to all embedded platforms.
 
 ### 3.1 Minimal Usable Linker Script
 
-```c
-/* minimal-arm.ld - ARM Cortex-M 最小链接脚本 */
-
-/* 指定程序入口点 */
+```ld
 ENTRY(Reset_Handler)
 
-/* 定义物理内存布局 */
 MEMORY
 {
-  FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
-  RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 256K
+    RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 64K
 }
 
-/* 计算栈顶地址（RAM 的末尾） */
-_estack = ORIGIN(RAM) + LENGTH(RAM);
-
-/* 定义输出节的布局 */
 SECTIONS
 {
-  /* 中断向量表必须放在 FLASH 起始处 */
-  .isr_vector :
-  {
-    KEEP(*(.isr_vector))  /* 防止被优化掉 */
-  } > FLASH
+    .isr_vector :
+    {
+        KEEP(*(.isr_vector))
+    } > FLASH
 
-  /* 程序代码和只读数据 */
-  .text :
-  {
-    *(.text*)              /* 所有代码 */
-    *(.rodata*)            /* 只读常量 */
-    *(.gcc_except_table)   /* 异常处理表 */
-    *(.eh_frame)           /* 栈展开信息 */
+    .text :
+    {
+        *(.text*)
+        *(.rodata*)
+        KEEP(*(.init))
+        KEEP(*(.fini))
+    } > FLASH
 
-    /* 保留初始化和析构函数指针 */
-    KEEP(*(.init))
-    KEEP(*(.fini))
-    KEEP(*(.init_array*))
-    KEEP(*(.fini_array*))
-  } > FLASH
+    .data :
+    {
+        __data_start__ = .;
+        *(.data*)
+        . = ALIGN(4);
+        __data_end__ = .;
+    } > RAM AT > FLASH
 
-  /* 已初始化数据段（需要从 FLASH 拷贝到 RAM） */
-  .data : AT(ADDR(.text) + SIZEOF(.text))
-  {
-    _sdata = .;           /* 标记 RAM 中的起始地址 */
-    *(.data*)
-    _edata = .;           /* 标记 RAM 中的结束地址 */
-  } > RAM
+    .bss :
+    {
+        __bss_start__ = .;
+        *(.bss*)
+        *(COMMON)
+        . = ALIGN(4);
+        __bss_end__ = .;
+    } > RAM
 
-  /* 记录 FLASH 中数据段的位置（用于拷贝） */
-  _sidata = LOADADDR(.data);
-
-  /* 未初始化数据段（需要清零） */
-  .bss :
-  {
-    _sbss = .;            /* 标记起始地址 */
-    *(.bss*)
-    *(COMMON)
-    _ebss = .;            /* 标记结束地址 */
-  } > RAM
-
-  /* 导出堆的起始位置 */
-  _end = .;
-  PROVIDE(end = _end);
+    .stack :
+    {
+        . = ALIGN(8);
+        __stack_top__ = .;
+        . = . + 0x1000; /* 4KB stack */
+    } > RAM
 }
-
-/* 导出栈顶符号，供启动文件使用 */
-PROVIDE(_estack = _estack);
-
 ```
 
-### 3.2 Script Breakdown
+### 3.2 Script Analysis
 
 The key points of this script:
 
-1. **Interrupt vector table** (`.isr_vector`) must be placed at the very beginning of FLASH, because the processor reads it from a fixed address after reset
-2. **Code section** (`.text`) follows immediately after, containing all executable code and read-only constants
-3. **Dual addresses of the `.data` section**:
-   - `AT(ADDR(.text) + SIZEOF(.text))` specifies the load address (LMA), i.e., the location of data in FLASH
-   - `> RAM` specifies the virtual address (VMA), i.e., where the data should be in RAM at runtime
-   - The startup code needs to copy data from the LMA to the VMA
-4. **Symbol export**: Symbols like `_sdata`, `_edata`, `_sbss`, and `_ebss` will be used by the startup code
+1. **Interrupt Vector Table** (`.isr_vector`) must be at the very beginning of FLASH because the processor reads it from a fixed address after reset.
+2. **Code Section** (`.text`) follows immediately, containing all executable code and read-only constants.
+3. **Dual Addresses of `.data` Section**:
+    - `AT > FLASH` specifies the Load Address (LMA), i.e., the location of data in FLASH.
+    - `> RAM` specifies the Virtual Address (VMA), i.e., where data should be in RAM during runtime.
+    - Startup code needs to copy data from LMA to VMA.
+4. **Symbol Export**: Symbols like `__data_start__`, `__data_end__`, `__bss_start__`, `__bss_end__` will be used by the startup code.
 
 ------
 
 ## 4. Startup Code: Bringing the Linker Script to Life
 
-With the linker script, the program's memory layout is determined. But this is not enough—we need startup code to complete the critical initialization work so the program can run correctly.
+With the linker script, the program's memory layout is determined. But this is not enough—we need startup code to complete key initialization work so the program can run correctly.
 
 ### 4.1 Complete Startup Code Flow
 
-After the processor resets, it jumps to `Reset_Handler` to execute. This is the first piece of code in the entire program, and its responsibilities are:
+After the processor resets, it jumps to `Reset_Handler` to execute. This is the first segment of code in the entire program, and its responsibilities are:
 
-1. **Disable interrupts** (optional, depends on the platform)
-2. **Copy the `.data` section**: Copy initialized data from FLASH to RAM
-3. **Zero the `.bss` section**: Zero out the uninitialized data area
-4. **Call C++ global constructors** (if using C++)
-5. **Set up the stack pointer**
-6. **Jump to the `main()` function**
+1. **Disable Interrupts** (Optional, depends on platform).
+2. **Copy `.data` Section**: Copy initialized data from FLASH to RAM.
+3. **Zero `.bss` Section**: Clear the uninitialized data area.
+4. **Call C++ Global Constructors** (if using C++).
+5. **Set Stack Pointer**.
+6. **Jump to `main` Function**.
 
 ### 4.2 Startup Code Implementation Example
 
-```c
-/* startup.c - ARM Cortex-M 启动代码 */
+```cpp
+extern "C" void Reset_Handler() {
+    // 1. Copy .data section from FLASH to RAM
+    extern uint32_t __data_start__, __data_end__;
+    extern uint32_t __load_data__; // LMA provided by linker script
 
-#include <stdint.h>
+    uint32_t* src = &__load_data__;
+    uint32_t* dst = &__data_start__;
+    while (dst < &__data_end__) {
+        *dst++ = *src++;
+    }
 
-/* 链接脚本导出的符号（外部符号） */
-extern uint32_t _sidata;   /* .data 在 FLASH 中的起始地址 */
-extern uint32_t _sdata;    /* .data 在 RAM 中的起始地址 */
-extern uint32_t _edata;    /* .data 在 RAM 中的结束地址 */
-extern uint32_t _sbss;     /* .bss 的起始地址 */
-extern uint32_t _ebss;     /* .bss 的结束地址 */
+    // 2. Zero .bss section
+    extern uint32_t __bss_start__, __bss_end__;
 
-/* C++ 构造函数数组（由链接脚本填充） */
-extern void (*__init_array_start[])(void);
-extern void (*__init_array_end[])(void);
+    dst = &__bss_start__;
+    while (dst < &__bss_end__) {
+        *dst++ = 0;
+    }
 
-/* main 函数声明 */
-extern int main(void);
+    // 3. Call C++ global constructors
+    extern void (*__init_array_start[])();
+    extern void (*__init_array_end[])();
 
-/**
- * 复位处理函数 - 程序的真正入口
- */
-void Reset_Handler(void) {
-  uint32_t *src, *dst;
+    for (auto func = __init_array_start; func < __init_array_end; ++func) {
+        (*func)();
+    }
 
-  /* 1. 拷贝 .data 段从 FLASH 到 RAM */
-  src = &_sidata;
-  dst = &_sdata;
-  while (dst < &_edata) {
-    *dst++ = *src++;
-  }
+    // 4. Call main
+    extern int main();
+    main();
 
-  /* 2. 清零 .bss 段 */
-  dst = &_sbss;
-  while (dst < &_ebss) {
-    *dst++ = 0;
-  }
-
-  /* 3. 调用 C++ 全局对象的构造函数 */
-  for (void (**p)() = __init_array_start; p < __init_array_end; ++p) {
-    (*p)();
-  }
-
-  /* 4. 跳转到 main 函数 */
-  main();
-
-  /* 如果 main 返回，进入无限循环 */
-  while (1);
+    // 5. If main returns, enter infinite loop
+    while (1) {}
 }
-
 ```
 
 ### 4.3 Why Are These Steps Necessary?
 
-**Why copy `.data`?** Initialized global variables need to preserve their initial values, which are stored in FLASH (non-volatile). However, the program needs to modify these variables at runtime, and FLASH is typically read-only, so the data must be copied to RAM.
+**Why copy `.data`?** Initialized global variables need to save their initial values, which are stored in FLASH (non-volatile). However, the program needs to modify these variables at runtime, and FLASH is typically read-only, so data must be copied to RAM.
 
 **Why zero `.bss`?** According to the C/C++ standard, uninitialized global variables should be initialized to 0. However, to save FLASH space, the compiler does not store 0 values for these variables in the image; instead, the program is responsible for zeroing them at startup.
 
-**Why call constructors?** C++ global objects need to be constructed before `main()`. The compiler places the addresses of these constructors in the `.init_array` array, and the startup code is responsible for calling them one by one.
+**Why call constructors?** C++ global objects need to be constructed before `main`. The compiler places the addresses of these constructors in the `__init_array` array, and the startup code is responsible for calling them one by one.
 
 ------
 
 ## 5. Special Considerations for C++ Development
 
-If you use C++ for embedded development, there are additional issues to note. C++ advanced features (such as global objects, exceptions, and RTTI) add extra complexity to the linking and startup process.
+If you use C++ for embedded development, you need to pay attention to some additional issues. C++ advanced features (such as global objects, exceptions, RTTI) bring extra complexity to the linking and startup process.
 
 ### 5.1 Global Object Construction Order
 
-C++ has a well-known "Static Initialization Order Fiasco":
+C++ has a famous "Static Initialization Order Fiasco":
 
-- **Within the same translation unit**: The initialization order of objects is consistent with their order of appearance in the code
+- **Within the same translation unit**: The initialization order of objects is consistent with their order of appearance in the code.
 - **Between different translation units**: The initialization order is undefined!
 
-This can lead to a situation where an object's constructor uses another object that has not yet been constructed. Solutions:
+This can lead to a situation where a constructor of one object uses another object that has not yet been constructed. Solutions:
 
-1. **Avoid dependencies between global objects** (most recommended)
-2. Use the **Meyers singleton pattern** (function-local static variables)
-3. Use **`__attribute__((init_priority(N)))`** (GCC extension, use with caution)
+1. **Avoid dependencies between global objects** (Most recommended).
+2. Use **Meyers Singleton** (function-local static variables).
+3. Use **`__attribute__((init_priority(100)))`** (GCC extension, use with caution).
 
 ```cpp
-// 使用 Meyers 单例避免初始化顺序问题
-class Logger {
+// Meyers Singleton
+class Config {
 public:
-    static Logger& getInstance() {
-        static Logger instance;  // 第一次调用时才构造
+    static Config& getInstance() {
+        static Config instance; // Initialized on first call
         return instance;
     }
-private:
-    Logger() = default;
+    // ...
 };
-
 ```
 
 ### 5.2 C++ Support in Linker Scripts
 
-Ensure the linker script correctly handles C++-related sections:
+Ensure the linker script correctly handles C++ related sections:
 
-```c
-.text : {
-    /* ... */
-    KEEP(*(.init_array*))    /* 构造函数指针数组 */
-    KEEP(*(.fini_array*))    /* 析构函数指针数组 */
-    *(.eh_frame)             /* 异常处理信息 */
-    *(.gcc_except_table)     /* 异常处理表 */
+```ld
+SECTIONS
+{
+    /* ... other sections ... */
+
+    .ARM.extab  : { *(.ARM.extab* .gnu.linkonce.armextab.*) } > FLASH
+    .ARM.exidx  : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } > FLASH
+
+    .init_array : {
+        PROVIDE_HIDDEN(__init_array_start = .);
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array*))
+        PROVIDE_HIDDEN(__init_array_end = .);
+    } > FLASH
 }
-
 ```
 
 If these sections are incorrectly discarded, constructors will not be called, or exception handling will fail.
 
 ### 5.3 Optimization Suggestions
 
-The golden rule of embedded C++ development: **if you don't need an advanced feature, don't use it**.
+The golden rule for embedded C++ development: **Don't use advanced features if you can avoid them.**
 
-- **Disable exceptions**: Use the `-fno-exceptions` compiler flag (exception handling significantly increases code size)
-- **Disable RTTI**: Use the `-fno-rtti` compiler flag (runtime type information is rarely used)
-- **Avoid dynamic memory allocation**: Embedded systems typically lack a complete heap manager
-- **Put constants in FLASH**: Use `const` and `constexpr` to place data in the `.rodata` section
+- **Disable Exceptions**: Use the `-fno-exceptions` compiler flag (exception handling significantly increases code size).
+- **Disable RTTI**: Use the `-fno-rtti` compiler flag (runtime type information is rarely used).
+- **Avoid Dynamic Memory Allocation**: Embedded systems usually lack complete heap management.
+- **Put Constants in FLASH**: Use `const` and `constexpr` to let data enter the `.rodata` section.
 
 ------
 
-## 6. Linking Optimization Tips and Best Practices
+## 6. Link Optimization Techniques and Best Practices
 
-Now that we've mastered the basics, let's look at how to further optimize the linking process, reduce code size, and improve startup speed.
+With the basics mastered, let's look at how to further optimize the linking process to reduce code size and improve startup speed.
 
 ### 6.1 Function-Level Linking Optimization
 
-Use the compiler's sectioning options and the linker's garbage collection feature:
+Use the compiler's section options and the linker's garbage collection functionality:
 
 ```bash
-
-# 编译时：将每个函数和数据放入独立的段
-arm-none-eabi-gcc -ffunction-sections -fdata-sections ...
-
-# 链接时：移除未使用的段
-arm-none-eabi-gcc -Wl,--gc-sections ...
-
+# GCC flags
+-ffunction-sections -fdata-sections -Wl,--gc-sections
 ```
 
 This way, if a function is not called by the program, the linker will automatically remove it from the final image.
 
 ### 6.2 Memory Usage Optimization
 
-**Tip 1: Put constants in FLASH**
+**Technique 1: Put Constants in FLASH**
 
 ```cpp
-const char msg[] = "Hello";              // 默认在 .rodata（好）
-static const int table[] = {1,2,3};      // 也在 .rodata（好）
-
+const char* error_msg = "System Error"; // Stored in .rodata (FLASH)
 ```
 
-**Tip 2: Avoid non-zero initialization of large arrays**
+**Technique 2: Avoid Non-Zero Initialization of Large Arrays**
 
 ```cpp
-// 不好：占用 10KB FLASH 空间（在 .data 段）
-uint8_t buffer[10240] = {1, 2, 3, ...};
+// Bad: occupies FLASH space
+int buffer[1000] = {1, 2, 3, ...};
 
-// 好：不占用 FLASH 空间（在 .bss 段），启动时在 main() 中初始化
-uint8_t buffer[10240];
-
+// Good: occupies only RAM, initialized at runtime
+int buffer[1000]; // .bss section
 ```
 
-**Tip 3: Use `ASSERT` for constraint checks**
+**Technique 3: Use `ASSERT()` for Constraint Checks**
 
-```c
-SECTIONS {
-    .text : { /* ... */ } > FLASH
-    ASSERT(SIZEOF(.text) < 0x7E000, "代码段超出 FLASH 空间")
-}
-
+```ld
+/* Ensure stack fits in RAM */
+ASSERT(__stack_top__ <= ORIGIN(RAM) + LENGTH(RAM), "Stack overflow detected")
 ```
 
 ### 6.3 Startup Performance Optimization
 
-**Measure constructor overhead** Constructing C++ global objects can be very time-consuming. You can:
+**Measuring Constructor Overhead** C++ global object construction can be very time-consuming. You can:
 
-1. Use the DWT performance counter to measure startup time
-2. Check the `.map` file to see which functions take up a lot of space
-3. Avoid complex operations in constructors (file I/O, dynamic allocation, peripheral initialization)
+1. Use DWT performance counters to measure startup time.
+2. Check the `.map` file to see which functions take up a lot of space.
+3. Avoid complex operations in constructors (file I/O, dynamic allocation, peripheral initialization).
 
-**Lazy initialization** Defer non-urgent initialization to `main()` or first use:
+**Lazy Initialization** Defer non-urgent initialization to `main` or first use:
 
 ```cpp
-// 不好：启动时就初始化
-Display display;
+class Sensor {
+public:
+    Sensor() : initialized(false) {}
 
-// 好：需要时再初始化
-Display* display = nullptr;
-void initDisplay() {
-    if (!display) {
-        display = new Display();
+    void read() {
+        if (!initialized) {
+            init_hardware();
+            initialized = true;
+        }
+        // ...
     }
-}
-
+private:
+    bool initialized;
+};
 ```

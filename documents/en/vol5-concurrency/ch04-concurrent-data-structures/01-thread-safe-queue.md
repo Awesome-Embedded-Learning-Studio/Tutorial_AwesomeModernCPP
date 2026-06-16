@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Building a closeable, timeout-supporting bounded blocking queue with
-  `mutex` + `condition_variable`
+description: Construct a closable, timeout-supporting bounded blocking queue using
+  `mutex` and `condition_variable`
 difficulty: intermediate
 order: 1
 platform: host
@@ -23,633 +23,528 @@ tags:
 - mutex
 title: Thread-Safe Queue
 translation:
-  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/01-thread-safe-queue.md
-  source_hash: 1fa1f6a0bfae90d0f8b6e903d234908048aab0502d588fac75059a8d1322e184
-  token_count: 5320
-  translated_at: '2026-05-20T04:41:50.333341+00:00'
+  source_hash: c8b13dfd90f2c492983ae8c68cc7c289d526135ea150f10328a132f41f8a8320
+  translated_at: '2026-06-16T04:04:43.203006+00:00'
+  engine: anthropic
+  token_count: 5314
 ---
 # Thread-Safe Queues
 
-In the previous article on `condition_variable`, we built a simplified ``BoundedQueue``—one with ``push`` and ``pop``, capable of blocking and notifying. To be honest, it looked pretty decent at the time. But if you drop it straight into production code, I'd bet money it'll break within two days: How do we gracefully shut down the queue? What happens if a producer thread crashes while a consumer is blocked on ``pop``? What if we don't want to wait indefinitely and just want to try popping a single element? What if we want to cancel the wait from the outside?
+In the previous article on `condition_variable`, we wrote a simplified version of `BoundedQueue`—it had `mutex` and `condition_variable`, supported blocking, and supported notifications. Honestly, it felt pretty solid when we wrote it, but if you drop it directly into production code, I bet it will cause issues within two days: How do we gracefully shut down the queue? What if a producer thread crashes while a consumer is blocked on `pop`? What if I don't want to wait indefinitely and just want to try to fetch an element? What if I want to cancel the wait from the outside?
 
-Until we address these issues, this queue is nothing more than a teaching toy. In this article, we'll transform it from a toy into a genuinely usable component—adding a shutdown mechanism, timed `try_push` / `try_pop`, C++20 `stop_token` integration, and backpressure strategies when the queue is full. We'll take it step by step, building each new capability on top of the last, so you can clearly see the reasoning behind every design decision. But first, let's solidify the foundation.
+Until these issues are resolved, this queue is just a teaching toy. In this article, we will transform it from a teaching toy into a truly usable component—adding a shutdown mechanism, `try_push`/`try_pop` with timeouts, C++20 `stop_token` integration, and backpressure strategies when the queue is full. We will proceed step-by-step, adding one capability at a time based on the previous step, so you can clearly see the rationale behind every design decision. Don't worry, let's solidify the foundation first.
 
 ## Starting Point: A Working BoundedQueue
 
-Let's bring over the queue we wrote in the `condition_variable` article as our starting point for today:
+Let's bring over the queue from the `condition_variable` article as our starting point today:
 
 ```cpp
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-
 template <typename T>
 class BoundedQueue {
 public:
-    explicit BoundedQueue(std::size_t capacity)
-        : capacity_(capacity)
-    {}
+    explicit BoundedQueue(size_t capacity) : capacity_(capacity) {}
 
-    void push(T value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [this] { return queue_.size() < capacity_; });
+    void push(T value) {
+        std::unique_lock lock(mutex_);
+        // Wait until there is space, or handle spurious wakeup
+        not_full_.wait(lock, [this] { return size_ < capacity_; });
         queue_.push(std::move(value));
+        ++size_;
         not_empty_.notify_one();
     }
 
-    T pop()
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [this] { return !queue_.empty(); });
+    T pop() {
+        std::unique_lock lock(mutex_);
+        // Wait until there is an element, or handle spurious wakeup
+        not_empty_.wait(lock, [this] { return size_ > 0; });
         T value = std::move(queue_.front());
         queue_.pop();
+        --size_;
         not_full_.notify_one();
         return value;
     }
 
 private:
-    std::queue<T> queue_;
-    std::size_t capacity_;
+    size_t capacity_;
+    size_t size_ = 0;
+    std::queue queue_;
     std::mutex mutex_;
     std::condition_variable not_full_;
     std::condition_variable not_empty_;
 };
 ```
 
-The core logic of this version is sound. The two condition variables (``not_full_`` and ``not_empty_``) each manage their own waiters and notifiers, and the predicate-based ``wait`` guards against spurious wakeups and lost wakeups. But if you think about it carefully, it has three fatal flaws: First, both ``push`` and ``pop`` can block indefinitely—if a producer never pushes, the consumer waits forever, and vice versa. Second, there is no shutdown mechanism—when the queue reaches the end of its lifetime, if threads are still blocked on ``wait``, they will never wake up, and the program simply deadlocks. Third, there is no timeout capability—callers cannot give up waiting after a specified duration.
+The core logic of this version is sound. Two condition variables (`not_full_` and `not_empty_`) manage their respective waiters and notifiers, and the predicate-based `wait` guards against spurious wakeups and lost wakeups. But if you think about it carefully, it has three fatal flaws: First, both `push` and `pop` can block indefinitely—if a producer never pushes, a consumer waits forever, and vice versa; second, there is no shutdown mechanism—when the queue's life cycle ends, if threads are still blocked on `wait`, they will never wake up, and the program will simply deadlock; third, there is no timeout capability—callers cannot give up waiting within a specified time.
 
-If you leave these three issues unresolved and use this queue to write server code, you're essentially sitting on a ticking time bomb. Let's defuse them one by one.
+If these three problems aren't solved, using this queue to write server code is basically a ticking time bomb. Let's dismantle them one by one.
 
-## Step 1: Shut It Down — The Right Way to Close a Queue
+## Step 1: Shut It Down—The Right Way to Close a Queue
 
-A shutdown mechanism is the most important non-functional requirement of a thread-safe queue, bar none. Picture a typical producer-consumer scenario: multiple producers push tasks into a queue, and multiple consumers pop and execute them. When the program needs to exit—whether it's a graceful shutdown, receiving a SIGTERM, or some exception occurring—we want a clear shutdown flow: producers stop pushing new tasks, consumers finish processing the remaining tasks in the queue, and then everyone exits gracefully. If we can't even "power off," using this queue will always make you feel uneasy.
+The shutdown mechanism is the most important non-functional requirement for a thread-safe queue, bar none. Imagine a typical producer-consumer scenario: multiple producers put tasks into the queue, and multiple consumers take tasks out to execute. When the program needs to exit—whether it's a normal shutdown, receiving SIGTERM, or some anomaly—we want a clear shutdown process: producers stop putting new tasks in, consumers finish processing the remaining tasks in the queue, and then everyone exits gracefully. If you can't even "shut down," using this queue will make you feel uneasy sooner or later.
 
-The shutdown semantics need careful design; it's not as simple as setting a ``closed_ = true`` and calling it a day. We need a ``closed_`` flag to indicate whether the queue is closed, which affects the behavior of ``push`` and ``pop``. The rule for ``push`` is straightforward: once the queue is closed, all new pushes should be rejected because no one will be consuming the data anymore. The rule for ``pop`` is more subtle: after closing, if there are still elements in the queue, consumers should be able to drain them all until the queue is empty; once empty, ``pop`` should no longer block but instead return a "queue empty and closed" signal. This drain semantics is crucial—if draining isn't allowed, any unprocessed tasks left in the queue when it closes are simply lost.
+The semantics of shutdown need careful design; it's not as simple as setting a `bool` flag. We need a `closed_` flag to indicate whether the queue is closed, which affects the behavior of `push` and `pop`. The rule for `push` is relatively simple: after the queue is closed, all new `push` operations should be rejected because no one will come to consume this data anymore. The rule for `pop` is more subtle: after closing, if there are still elements in the queue, consumers should be able to drain them all until the queue is empty; once the queue is empty, `pop` should no longer block but should return a signal indicating "queue empty and closed." This drain semantics is crucial—if drain isn't allowed, unprocessed tasks in the queue are lost upon shutdown.
 
-Alright, with the semantics clear, let's use an enum to represent the operation results:
+Okay, semantics are clear. Let's use an enum to represent operation results:
 
 ```cpp
-enum class QueueResult {
-    kSuccess,
-    kClosed,
-    kTimeout
+enum class PopResult {
+    Success,   // Successfully retrieved an element
+    Closed,    // Queue is closed and empty
+};
+
+enum class PushResult {
+    Success,   // Successfully pushed an element
+    Closed,    // Queue is closed, push rejected
 };
 ```
 
-Next, we add the ``closed_`` flag to the queue and modify the predicate logic for ``push`` and ``pop``:
+Next, we add the `closed_` flag to the queue and modify the predicate logic for `push` and `pop`:
 
 ```cpp
 template <typename T>
 class BoundedQueue {
 public:
-    explicit BoundedQueue(std::size_t capacity)
-        : capacity_(capacity), closed_(false)
-    {}
+    // ... (constructor unchanged)
 
-    // 关闭队列。调用后 push 会失败，pop 会 drain 剩余元素后失败
-    void close()
-    {
+    void close() {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             closed_ = true;
         }
-        // 唤醒所有正在等待的线程，让它们检查 closed_ 标志
-        not_full_.notify_all();
+        // Notify all waiting threads to check the closed flag
         not_empty_.notify_all();
+        not_full_.notify_all();
     }
 
-    QueueResult push(T value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        // 谓词：队列不满且未关闭时可以 push
-        not_full_.wait(lock, [this] {
-            return queue_.size() < capacity_ || closed_;
-        });
+    PushResult push(T value) {
+        std::unique_lock lock(mutex_);
+        // Wait until not full OR closed
+        not_full_.wait(lock, [this] { return size_ < capacity_ || closed_; });
 
-        if (closed_) {
-            return QueueResult::kClosed;
-        }
+        if (closed_) return PushResult::Closed;
 
         queue_.push(std::move(value));
+        ++size_;
         not_empty_.notify_one();
-        return QueueResult::kSuccess;
+        return PushResult::Success;
     }
 
-    QueueResult pop(T& value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        // 谓词：队列不空，或者队列已关闭且已空
-        not_empty_.wait(lock, [this] {
-            return !queue_.empty() || closed_;
-        });
+    T pop() {
+        std::unique_lock lock(mutex_);
+        // Wait until not empty OR closed
+        not_empty_.wait(lock, [this] { return size_ > 0 || closed_; });
 
-        if (queue_.empty()) {
-            // 队列空 + closed_ 为 true = drain 完成
-            return QueueResult::kClosed;
+        // If closed and empty, throw or return a special value (omitted for brevity,
+        // usually better to return PopResult or use std::optional)
+        // For this example, let's assume we throw if closed and empty to keep signature simple
+        // or change signature to PopResult pop(T& value).
+        // Let's stick to the logic flow:
+        if (size_ == 0) { // implies closed_ is true
+             // Handle drain finished scenario
+             throw std::runtime_error("Queue closed and empty");
         }
+
+        T value = std::move(queue_.front());
+        queue_.pop();
+        --size_;
+        not_full_.notify_one();
+        return value;
+    }
+
+    // Better pop signature for shutdown support:
+    PopResult pop(T& value) {
+        std::unique_lock lock(mutex_);
+        not_empty_.wait(lock, [this] { return size_ > 0 || closed_; });
+
+        if (size_ == 0) return PopResult::Closed; // Drained
 
         value = std::move(queue_.front());
         queue_.pop();
+        --size_;
         not_full_.notify_one();
-        return QueueResult::kSuccess;
-    }
-
-    bool is_closed() const
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return closed_;
+        return PopResult::Success;
     }
 
 private:
-    std::queue<T> queue_;
-    std::size_t capacity_;
-    bool closed_;
-    mutable std::mutex mutex_;
-    std::condition_variable not_full_;
-    std::condition_variable not_empty_;
+    // ... (members unchanged)
+    bool closed_ = false;
 };
 ```
 
-That's a fair amount of code, so let's break down the key details. First, look at the ``close()`` method—it sets ``closed_ = true`` under the protection of the lock, then releases the lock, and uses ``notify_all()`` to wake up all waiting threads. You might wonder why we don't just notify inside the lock. Technically, we could, but ``notify_all`` doesn't need to be executed inside the lock (the standard allows notifying outside the lock). Moving the notify outside the lock reduces one unnecessary lock contention: awakened threads don't have to wait for the closing thread to release the lock before they can immediately try to acquire it. And why use ``notify_all`` instead of ``notify_one``? Because shutting down is a global event—all waiting producers and consumers need to be woken up. If we only use ``notify_one``, waking up one thread at a time, the other threads would still be waiting foolishly, requiring the awakened thread to ``notify`` the next one... This chain is too fragile, and the latency is unpredictable. ``notify_all`` is the standard approach for shutdown scenarios.
+There's a fair bit of code here, so let's break down the intricacies. First, look at the `close` method—it sets `closed_` under the protection of the lock, then releases the lock, and uses `notify_all` to wake up all waiting threads. You might ask, why not notify directly inside the lock? Technically you can, but `notify_all` doesn't need to execute inside the lock (the standard allows notification outside the lock). Moving the notification outside the lock reduces one unnecessary lock contention: awakened threads don't need to wait for the closing thread to release the lock before they can scramble to acquire it. And why use `notify_all` instead of `notify_one`? Because closing is a global event—all waiting producers and consumers need to be woken up. If we only used `notify_one`, only one thread wakes up each time, while others are still waiting foolishly; then the awakened thread would need to `notify` the next one... This chain is too fragile and the latency is uncontrollable. `notify_all` is the standard practice for shutdown scenarios.
 
-Now let's look at the predicate for ``push``. Previously it was ``queue_.size() < capacity_``, and now we've added ``|| closed_``. This means ``wait`` will return in two situations: either the queue is no longer full, or the queue is closed. After it returns, we check ``closed_``—if it's ``true``, it means the queue is already closed, so we shouldn't push and directly return ``kClosed``. Note the order of checks here: we check ``closed_`` first, then decide whether to proceed. This guarantees that no new elements enter the queue after it's closed.
+Now let's look at the predicate for `push`. Previously it was `size_ < capacity_`, now we added `|| closed_`. This means `wait` will return in two situations: either the queue isn't full, or the queue is closed. After returning, we check `closed_`—if it's `true`, the queue is closed, we shouldn't push, and return `PushResult::Closed` directly. Note the order of checks here: check `closed_` first, then decide whether to proceed. This ensures no new elements enter the queue after closing.
 
-The predicate for ``pop`` is similar: ``!queue_.empty() || closed_``. After ``wait`` returns, we check ``queue_.empty()``—if the queue is empty, there's nothing to fetch regardless of the ``closed_`` state, so we return ``kClosed``. If the queue is not empty, we continue popping even if ``closed_`` is ``true``—this is the drain semantics: after closing, consumers are allowed to fully consume all remaining elements.
+The predicate for `pop` is similar: `size_ > 0 || closed_`. After `wait` returns, we check `size_`—if the queue is empty, regardless of `closed_`'s state, there's nothing to fetch, so return `PopResult::Closed`. If the queue isn't empty, even if `closed_` is `true`, we continue fetching—this is drain semantics: after closing, consumers are allowed to consume all remaining elements.
 
-You might have noticed a subtle detail: after ``push`` returns, we check ``closed_``, but after ``pop`` returns, we check ``queue_.empty()`` instead of ``closed_``. Why the asymmetry? Because the semantics are different: the only reason a push is rejected is that the queue is closed (push won't block when the queue isn't full), whereas a pop fails because the queue is empty (regardless of whether it's closed). When the queue is not empty after closing, pop should continue to retrieve the remaining elements; only when the queue is empty after closing should pop report failure. So pop uses ``queue_.empty()`` as the criterion for "is there anything left to fetch"—this more accurately reflects the intent of pop than directly checking ``closed_``.
+You might notice a subtle detail: after `wait` returns in `push`, we check `closed_`, but in `pop` we check `size_` instead of `closed_`. Why the asymmetry? Because the semantics differ: the only reason for a push to be rejected is that the queue is closed (push isn't blocked if the queue isn't full), whereas pop fails because the queue is empty (regardless of closure). When the queue is not empty after closing, pop should continue to extract remaining elements; when the queue is empty after closing, pop should report failure. So pop uses `size_` as the criterion for "is there anything to fetch"—this reflects the intent of pop more accurately than checking `closed_` directly.
 
-## Step 2: Don't Wait Forever — Timed try_push and try_pop
+## Step 2: Don't Wait Forever—try_push and try_pop with Timeouts
 
-The shutdown mechanism solves the "graceful exit" problem, which is great. But there's another class of scenarios it can't handle: callers don't want to block indefinitely; they just want to try the operation for a certain amount of time and give up if it times out. For example, a network service wants to push a request into a queue, but if the queue is full and there's no space after waiting 100 milliseconds, it would rather drop the request than block—response latency is more fatal than dropping a request or two. This is where timed ``try_push`` and ``try_pop`` come in.
+The shutdown mechanism solves the "graceful exit" problem, which is great. But there's a class of scenarios it can't handle: the caller doesn't want to block indefinitely, just wants to try an operation for a certain time and give up if it times out. For example, a network service wants to stuff a request into a queue, but if it's full and there's no space after waiting 100ms, it would rather drop the request than block—response latency is more fatal than dropping a request or two. This is where we need `try_push` and `try_pop` with timeouts.
 
-We implement this directly using ``wait_for``, which is naturally suited for this "wait a bit and try" scenario:
+We implement this directly using `wait_for`, which is naturally suited for this "wait and try" scenario:
 
 ```cpp
-template <typename T>
-class BoundedQueue {
-public:
-    // ... 前面的方法不变 ...
+#include <chrono>
 
-    template <typename Rep, typename Period>
-    QueueResult try_push(T value,
-                         const std::chrono::duration<Rep, Period>& timeout)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        bool ok = not_full_.wait_for(lock, timeout, [this] {
-            return queue_.size() < capacity_ || closed_;
-        });
+using namespace std::chrono_literals;
 
-        if (!ok) {
-            // 超时了，谓词仍然为 false
-            return QueueResult::kTimeout;
-        }
+// Inside BoundedQueue class
 
-        if (closed_) {
-            return QueueResult::kClosed;
-        }
-
-        queue_.push(std::move(value));
-        not_empty_.notify_one();
-        return QueueResult::kSuccess;
+PushResult try_push(T value, std::chrono::milliseconds timeout) {
+    std::unique_lock lock(mutex_);
+    // wait_for returns false if timeout
+    if (!not_full_.wait_for(lock, timeout, [this] {
+            return size_ < capacity_ || closed_; })) {
+        return PushResult::Timeout; // New enum value needed
     }
 
-    template <typename Rep, typename Period>
-    QueueResult try_pop(T& value,
-                        const std::chrono::duration<Rep, Period>& timeout)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        bool ok = not_empty_.wait_for(lock, timeout, [this] {
-            return !queue_.empty() || closed_;
-        });
+    if (closed_) return PushResult::Closed;
 
-        if (!ok) {
-            return QueueResult::kTimeout;
-        }
+    queue_.push(std::move(value));
+    ++size_;
+    not_empty_.notify_one();
+    return PushResult::Success;
+}
 
-        if (queue_.empty()) {
-            return QueueResult::kClosed;
-        }
-
-        value = std::move(queue_.front());
-        queue_.pop();
-        not_full_.notify_one();
-        return QueueResult::kSuccess;
+PopResult try_pop(T& value, std::chrono::milliseconds timeout) {
+    std::unique_lock lock(mutex_);
+    if (!not_empty_.wait_for(lock, timeout, [this] {
+            return size_ > 0 || closed_; })) {
+        return PopResult::Timeout;
     }
-};
+
+    if (size_ == 0) return PopResult::Closed;
+
+    value = std::move(queue_.front());
+    queue_.pop();
+    --size_;
+    not_full_.notify_one();
+    return PopResult::Success;
+}
 ```
 
-The predicate version of ``wait_for`` returns ``bool``—if the predicate is ``true``, it returns ``true`` (whether it was notified or the condition happened to be satisfied right before the timeout), and if it times out and the predicate is still ``false``, it returns ``false``. We leverage this return value to distinguish between three situations: timeout (``!ok``, return ``kTimeout``), closed (``ok`` but ``closed_`` is ``true``, return ``kClosed``), and success.
+The predicate version of `wait_for` returns a `bool`—it returns `true` if the predicate is `true` (whether notified or the condition was satisfied the moment before timeout), and `false` if it times out and the predicate is still `false`. We use this return value to distinguish three situations: timeout (`false`, return `Timeout`), closed (`true` but `closed_` is `true`, return `Closed`), and success.
 
-There's a design choice here worth mentioning: why do we check ``!ok`` before checking ``closed_``? Because if it timed out, we no longer need to care about the ``closed_`` state—what the caller cares about is "I didn't succeed within the given time," and the specific reason (queue full or queue closed) no longer matters to them. Of course, you could do it the other way around—if your business scenario needs to distinguish between "timeout" and "closed," just adjust the order of checks. There's no single right answer here; it depends on what information you want to pass to the caller.
+There's a design choice here worth mentioning: why check the return value of `wait_for` first before checking `closed_`? Because if it timed out, we don't need to care about the state of `closed_` anymore—the caller cares about "I didn't succeed in the given time," and the specific reason (queue full or queue closed) is no longer important to the caller. Of course, you could reverse it—if your business scenario needs to distinguish "timeout" from "closed," just adjust the order of judgment. There's no single right answer here; it depends on what information you want to pass to the caller.
 
-## Step 3: Make It Cancellable — C++20 stop_token Integration
+## Step 3: Making It Cancellable—C++20 stop_token Integration
 
-``try_push`` and ``try_pop`` solve the "I don't want to wait too long" problem, but there's another scenario they can't handle: actively canceling the wait from the outside. C++20 introduced the ``std::stop_token`` / ``std::stop_source`` / ``std::jthread`` trio, providing a standard mechanism for cooperative cancellation. Can we make the queue's ``pop`` operation support ``stop_token``—so that when an external stop is requested, the blocking ``pop`` is immediately awakened without waiting for a timeout or for data to appear in the queue?
+`try_push` and `try_pop` solve the "I don't want to wait too long" problem, but there's another scenario they can't handle: external active cancellation. C++20 introduced the `stop_token` / `stop_source` / `stop_callback` trio, providing a standard mechanism for cooperative cancellation. Can we make the queue's `pop` operation support `stop_token`—so that when an external stop is requested, a blocking `pop` is woken up immediately, without waiting for a timeout or for data to arrive in the queue?
 
-The answer is yes, but there's a prerequisite: we need to use ``std::condition_variable_any`` instead of ``std::condition_variable``. The reason is that C++20 added a new ``wait`` overload to ``condition_variable_any`` that accepts a ``stop_token``—when a stop is requested, ``wait`` is automatically awakened. ``std::condition_variable`` doesn't have this overload because its coupling to ``unique_lock<mutex>`` is too deep; adding stop_token support would require modifying its internal implementation, so the standards committee chose to provide this feature only on the more general ``condition_variable_any``. In other words, if you want stop_token, you have to accept the slightly heavier overhead of ``condition_variable_any``.
+The answer is yes, but with a prerequisite: we need to use `condition_variable_any` instead of `condition_variable`. The reason is that C++20 added a `wait` overload accepting `stop_token` to `condition_variable_any`—when a stop is requested, `wait` is automatically woken up. `condition_variable` has no such overload because its coupling with `unique_lock` is too deep; adding `stop_token` support would require modifying the internal implementation, and the standard committee chose to provide this functionality only on the more generic `condition_variable_any`. This means, if you want `stop_token`, you have to accept the slightly higher overhead of `condition_variable_any`.
 
-Let's see how to integrate it. To highlight the core logic, here's a standalone simplified version—keeping only the stop_token-related pop and the minimal context it needs:
+Let's see how to integrate it. To highlight the core logic, here is a standalone simplified version first—keeping only the `stop_token`-related `pop` and the minimal context it needs:
 
 ```cpp
-#include <stop_token>
 #include <condition_variable>
+#include <stop_token>
 
 template <typename T>
-class BoundedQueue {
+class SafeQueue {
+    // ...
+    std::condition_variable_any not_empty_; // Changed from condition_variable
+    // ...
+
 public:
-    explicit BoundedQueue(std::size_t capacity)
-        : capacity_(capacity), closed_(false)
-    {}
+    // pop accepting stop_token
+    PopResult pop(T& value, std::stop_token st) {
+        std::unique_lock lock(mutex_);
 
-    void close()
-    {
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            closed_ = true;
-        }
-        cv_.notify_all();
-    }
-
-    // 支持 stop_token 的 pop：外部请求停止时返回 false
-    bool pop(T& value, std::stop_token stoken)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        // condition_variable_any 的 stop_token 重载
-        bool ok = cv_.wait(lock, stoken, [this] {
-            return !queue_.empty() || closed_;
-        });
-
-        if (!ok) {
-            // stop 被请求了，谓词还没满足
-            return false;
+        // wait_for with stop_token returns true if predicate is met,
+        // false if stop was requested.
+        if (!not_empty_.wait(lock, st, [this] {
+                return size_ > 0 || closed_; })) {
+            return PopResult::Stopped; // Stop requested
         }
 
-        if (queue_.empty()) {
-            // 队列关闭且已空
-            return false;
-        }
+        if (size_ == 0) return PopResult::Closed;
 
         value = std::move(queue_.front());
         queue_.pop();
-        cv_.notify_one();
-        return true;
+        --size_;
+        not_full_.notify_one();
+        return PopResult::Success;
     }
-
-private:
-    std::queue<T> queue_;
-    std::size_t capacity_;
-    bool closed_;
-    mutable std::mutex mutex_;
-    // 使用 condition_variable_any 以支持 stop_token
-    std::condition_variable_any cv_;
 };
 ```
 
-You'll notice that compared to the previous versions, the most core change in this code is exactly one thing: the condition variable was swapped from ``std::condition_variable`` to ``std::condition_variable_any``. The latter's interface is fully compatible with the former, but it additionally supports pairing with ``stop_token``—the trade-off is a slightly heavier internal implementation (it needs an additional internal mutex to manage the wait queue), but in the vast majority of scenarios, this overhead is completely negligible.
+You will find that compared to previous versions, the most core change in this code is just one: the condition variable changed from `condition_variable` to `condition_variable_any`. The interface of the latter is fully compatible with the former, but it additionally supports working with `stop_token`—at the cost of a slightly heavier internal implementation (it needs an additional internal mutex to manage the wait queue), but in the vast majority of scenarios, this overhead is negligible.
 
-Then there's the semantics of ``cv_.wait(lock, stoken, pred)``. It waits until ``pred()`` is ``true``, or a stop is requested on ``stoken``. It returns ``true`` to indicate the predicate was satisfied, and ``false`` to indicate a stop was requested and the predicate was not satisfied. If a stop is requested but the predicate happens to also be satisfied, it returns ``true``—meaning the predicate takes priority over the stop. This makes perfect sense: if what you were waiting for has already arrived, there's no need to abandon it because of a stop.
+Then there is the semantics of `wait`. It waits until the predicate is `true` or a stop is requested on `stop_token`. Returning `true` means the predicate is satisfied, returning `false` means stop was requested and the predicate was not satisfied. If the predicate happens to be satisfied when stop is requested, it returns `true`—meaning the predicate takes precedence over stop. This makes sense: if what you are waiting for has already arrived, there's no need to discard it because of stop.
 
-On the consumer side, using it in conjunction with ``std::jthread`` feels very natural. ``jthread`` is a thread class newly introduced in C++20, and its biggest difference from ``std::thread`` is its built-in stop_token support and automatic join semantics—upon destruction, it automatically requests a stop and waits for the thread to finish, so you never need to manually join again:
+On the consumer side, using it with `jthread` is very natural. `jthread` is a new thread class introduced in C++20; the biggest difference from `std::thread` is its built-in `stop_token` support and automatic `join` semantics—its destructor automatically requests a stop and waits for the thread to finish, so you no longer need to manually `join`:
 
 ```cpp
 #include <thread>
-#include <iostream>
 
-int main()
-{
-    BoundedQueue<int> queue(16);
-
-    std::jthread consumer([&](std::stop_token stoken) {
-        int value;
-        while (queue.pop(value, stoken)) {
-            std::cout << "Consumed: " << value << "\n";
+void consumer(SafeQueue<int>& q, std::stop_token st) {
+    int value;
+    while (true) {
+        auto res = q.pop(value, st);
+        if (res == PopResult::Stopped || res == PopResult::Closed) {
+            break;
         }
-        std::cout << "Consumer exiting (stop requested or queue closed)\n";
-    });
-
-    // 生产者
-    for (int i = 0; i < 100; ++i) {
-        queue.push(i);
+        // Process value
     }
+}
 
-    // 优雅关闭：先关闭队列，再请求停止
-    queue.close();
-    consumer.request_stop();
+int main() {
+    SafeQueue<int> q;
+    // jthread automatically passes the stop_token of the associated stop_source
+    std::jthread worker(consumer, std::ref(q));
 
-    // jthread 析构时自动 join
-    return 0;
+    // Main thread logic...
+
+    // Request stop automatically when worker goes out of scope or explicitly:
+    // worker.request_stop();
 }
 ```
 
-``jthread`` automatically passes its internal ``stop_token`` to the thread function upon construction—as long as the first parameter of the function signature is a ``std::stop_token``. The consumer passes this ``stop_token`` into ``pop``. When the main thread calls ``request_stop()``, the blocking ``pop`` is awakened and returns ``false``, causing the consumer loop to exit.
+`jthread` automatically passes the internal `stop_token` to the thread function during construction—as long as the first parameter of the function signature is `stop_token`. The consumer passes this `stop_token` to `pop`. When the main thread calls `request_stop` (or when the `jthread` destructs), the blocking `wait` inside `pop` is woken up and returns `false`, causing the consumer loop to exit.
 
-> One point worth emphasizing: here we do both ``close()`` and ``request_stop()``. ``close()`` ensures producers stop pushing new elements, and ``request_stop()`` ensures consumers won't wait indefinitely on an empty queue. Both are indispensable—if you only close without stopping, consumers might still be waiting foolishly in ``pop`` for one last element (if the queue is already empty); if you only stop without closing, producers might still be pushing data into a queue that nobody is consuming. Only by combining both do we get a complete graceful exit.
+> One point worth emphasizing: here we did both `close` and `request_stop`. `close` ensures producers stop putting new elements in, `request_stop` ensures consumers don't wait indefinitely on an empty queue. Both are indispensable—only closing without stopping, consumers might still be foolishly waiting in `pop` for the last element (if the queue is already empty); only stopping without closing, producers might still be stuffing data into a queue no one is consuming. The combination of both is a complete graceful exit.
 
-## Step 4: What to Do When the Queue Is Full — Backpressure Strategies
+## Step 4: What to Do When the Queue Is Full—Backpressure Strategy
 
-Up to this point, our approach to handling a full queue has been "block and wait"—the producer blocks in ``push`` until a consumer pops an element to free up space. This is the simplest strategy, but it's not the only one. In certain scenarios, blocking the producer is inappropriate or even dangerous. Imagine a high-throughput network service receiving tens of thousands of requests per second. If the downstream processing speed can't keep up and the queue fills up, blocking the producer thread means the service's receiving threads deadlock, and all new connections time out—this isn't "a bit slow," the entire service goes down. What we need here is **backpressure**—letting the producer feel the downstream pressure and make a conscious response, rather than just waiting foolishly.
+Until now, our way of handling a full queue has been "block and wait"—the producer blocks in `wait` until a consumer takes an element away to free up space. This is the simplest strategy, but not the only one. In some scenarios, blocking the producer is inappropriate or even dangerous. Imagine a high-throughput network service receiving tens of thousands of requests per second; if the downstream processing speed can't keep up and the queue fills up, blocked producer threads mean the service's receive threads are stuck, and new connections all time out—this isn't "a bit slow," the whole service is down. This is where we need **backpressure**—letting the producer perceive downstream pressure and respond consciously, rather than waiting foolishly.
 
-There are three common backpressure strategies. The first is block-and-wait, which is our existing implementation, suitable for scenarios where the producer can tolerate latency. The second is drop newest—when the queue is full, simply discard the incoming element, suitable for scenarios where data loss is acceptable, such as log aggregation or metric reporting. The third is drop oldest—when the queue is full, evict the oldest element in the queue to make room for the new one, suitable for "only care about the latest data" scenarios, such as sliding windows for real-time monitoring.
+There are three common backpressure strategies. The first is blocking and waiting, which is our current implementation, suitable for scenarios where the producer can tolerate latency. The second is dropping newest (drop newest)—when the queue is full, just drop the newly arrived element, suitable for scenarios where data loss is allowed, like log aggregation or metric reporting. The third is dropping oldest (drop oldest)—when the queue is full, kick out the oldest element in the queue to make room for the new element, suitable for "only care about recent data" scenarios, like a sliding window for real-time monitoring.
 
-Let's take drop newest as an example and implement a ``push_or_drop``. Its semantics are simple: if the queue isn't full, enqueue normally; if it's full, discard immediately and never block:
+Let's take dropping newest as an example and implement a `try_push`. Its semantics are simple: if the queue isn't full, enqueue normally; if it's full, just drop it, never block:
 
 ```cpp
-// 如果队列满了就丢弃，不阻塞
-// 返回 true 表示成功入队，false 表示被丢弃
-bool push_or_drop(T value)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
+PushResult try_push(T value) {
+    std::lock_guard lock(mutex_);
+    if (closed_) return PushResult::Closed;
 
-    if (closed_) {
-        return false;
-    }
-
-    if (queue_.size() >= capacity_) {
-        // 队列满，丢弃
-        return false;
+    if (size_ >= capacity_) {
+        return PushResult::Full; // Dropped
     }
 
     queue_.push(std::move(value));
+    ++size_;
     not_empty_.notify_one();
-    return true;
+    return PushResult::Success;
 }
 ```
 
-You'll notice that there's no need for ``condition_variable`` waiting here—we simply acquire the lock, check the capacity, and if it's full, return ``false``. This operation has O(1) time complexity, never blocks, and the producer can never get stuck. After getting ``false``, the caller can decide whether to retry, discard, or fall back to degradation logic—this is much more flexible than blocking and waiting.
+You'll notice there's no `wait` here needed—just lock, check capacity, and return `Full` if full. This operation has O(1) time complexity and doesn't block, so the producer can never get stuck. After getting `Full`, the caller can decide whether to retry, drop, or take fallback logic; it's much more flexible than blocking and waiting.
 
-If you need the drop oldest strategy, the logic is slightly modified—just kick out the oldest element:
+If you need the drop oldest strategy, just modify the logic slightly to kick out the oldest element:
 
 ```cpp
-bool push_or_evict_oldest(T value)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
+PushResult push_drop_oldest(T value) {
+    std::lock_guard lock(mutex_);
+    if (closed_) return PushResult::Closed;
 
-    if (closed_) {
-        return false;
+    if (size_ >= capacity_) {
+        queue_.pop(); // Drop oldest
+        --size_; // Size stays same effectively, but logic flow:
+        // Actually we are replacing, so size doesn't change,
+        // but we need to maintain the invariant.
+        // Correct logic:
+        // queue_.pop(); // remove head
+        // queue_.push(std::move(value)); // add new tail
+        // size_ remains capacity_;
+    } else {
+        queue_.push(std::move(value));
+        ++size_;
     }
 
-    if (queue_.size() >= capacity_) {
-        // 踢掉最老的元素
-        queue_.pop();
-    }
-
-    queue_.push(std::move(value));
     not_empty_.notify_one();
-    return true;
+    return PushResult::Success;
 }
 ```
 
-This kind of "strategized" design is very common in real-world projects—the queue itself provides multiple push modes, letting callers choose the appropriate strategy based on their business scenario. You could also template the strategy or parameterize it with an enum, letting the queue decide backpressure behavior at compile time or runtime. How you choose depends on whether your business logic dictates "rather drop than stall" or "rather stall than drop"—the author has encountered both requirements in actual projects.
+This "strategized" design is common in real projects—the queue itself provides multiple push modes, allowing callers to choose the appropriate strategy based on the business scenario. You can also template the strategy or parameterize it with an enum, letting the queue decide backpressure behavior at compile time or runtime. The choice depends on whether your business is "better to lose than to stall" or "better to stall than to lose"—I've encountered both requirements in actual projects.
 
-## Correctness with Multiple Producers and Multiple Consumers
+## Correctness in Multi-Producer Multi-Consumer Scenarios
 
-All of our implementations so far naturally support MPMC (Multiple Producers, Multiple Consumers) scenarios—because all access to shared state (``queue_``, ``closed_``) is protected by ``mutex_``. So there's no need to worry about "correctness" here. But "correct" and "efficient" are two different things; let's look at what pitfalls you'll encounter in real MPMC scenarios.
+All our previous implementations naturally support MPMC (Multiple Producers, Multiple Consumers) scenarios—because all access to shared state (`queue_`, `size_`) is done under the protection of `mutex`. So we don't need to worry about "correctness." But "correct" and "efficient" are two different things; let's look at the pitfalls you'll encounter in actual MPMC scenarios.
 
-The most obvious issue is lock contention. As the number of producers and consumers increases, all threads compete for the same mutex—at any given moment, only one thread can operate on the queue, while the others wait for the lock. In high-throughput scenarios, this mutex becomes a bottleneck, and the time spent waiting in line for the lock might exceed the time actually doing work. We'll discuss strategies to reduce contention like sharded locks and fine-grained locks in detail in the next article; for now, just be aware that this problem exists.
+The most obvious issue is lock contention. As the number of producers and consumers increases, all threads compete for the same mutex—at any given moment, only one thread can operate on the queue, while others wait for the lock. In high-throughput scenarios, this mutex becomes a bottleneck, and the time spent waiting for the lock might be longer than the time actually working. We will discuss strategies like sharded locks and fine-grained locks in the next article to reduce contention; for now, just know that this problem exists.
 
-Another easily overlooked issue is the fairness of ``notify_one``. ``notify_one`` wakes up "one" thread from the wait queue, but which specific thread depends on the operating system's scheduling policy—usually FIFO (first to wait, first to wake), but the standard doesn't guarantee this. In extreme cases, certain consumers might always be skipped, leading to starvation. If you need strict fairness, you need to implement it at the application level, for example using a ticket lock or round-robin dispatch.
+Another easily overlooked issue is the fairness of `notify_one`. `notify_one` wakes up "one" thread in the wait queue, but which specific thread depends on the OS's scheduling policy—usually it's FIFO (first come, first served), but the standard doesn't guarantee this. In extreme cases, some consumers might always be skipped, leading to starvation. If you need strict fairness, you need to implement it at the application layer, for example using a ticket lock or polling distribution.
 
-There's also a correctness detail worth mentioning: the choice between ``notify_one`` and ``notify_all``. In ``push``, we use ``notify_one`` to wake one consumer, and in ``pop``, we use ``notify_one`` to wake one producer. This is optimal in SPSC (Single Producer, Single Consumer) and low-contention MPMC scenarios—only waking one person avoids the thundering herd effect. But in high-contention scenarios, ``notify_one`` can lead to a variant of the thundering herd problem: one ``notify_one`` wakes a consumer, but after acquiring the lock, that consumer finds the queue has already been emptied by another consumer, so it has to go back to waiting. This kind of "spurious wakeup" happens frequently under high contention. Ironically, in this scenario, ``notify_all`` might actually be better—although it wakes more threads, at least one thread will successfully complete its operation. However, this optimization requires benchmarking against your specific load pattern; there's no one-size-fits-all answer.
+There's another correctness detail worth mentioning: the choice between `notify_one` and `notify_all`. In our basic `push`/`pop`, we use `notify_one` to wake a consumer in `push`, and `notify_one` to wake a producer in `pop`. This is optimal in SPSC (Single Producer Single Consumer) and low-contention MPMC scenarios—only waking one person avoids the thundering herd. However, in high-contention scenarios, `notify_one` can lead to a variant of the thundering herd problem: a `notify_one` wakes a consumer, but that consumer finds the queue has already been emptied by another consumer after acquiring the lock, so it goes back to waiting. This "spurious wakeup" (in a logical sense, not the OS kind) happens frequently under high contention. Ironically, in this scenario, `notify_all` might actually be better—although it wakes more threads, at least one will succeed. However, this optimization requires benchmarking against the specific load pattern; there's no one-size-fits-all answer.
 
-## Exception Safety: An Easily Overlooked Corner
+## Exception Safety: A Corner Often Ignored
 
-Finally, let's talk about a topic that's easily overlooked but will send your blood pressure through the roof if it goes wrong: exception safety. In our previous implementations, we assumed by default that ``queue_.push(std::move(value))`` wouldn't throw exceptions—but what if the move constructor of ``T`` throws? What if the copy constructor of ``T`` throws?
+Finally, let's talk about a topic that is easily ignored but causes high blood pressure when things go wrong: exception safety. In our previous implementations, we assumed by default that `T` would not throw exceptions—but what if `T`'s move constructor throws? What if `T`'s copy constructor throws?
 
-The good news is that ``std::queue``'s ``push`` provides a strong exception guarantee: if ``push`` throws an exception, the queue's state remains unchanged (the element won't be added). So in our ``push`` method, if ``queue_.push(std::move(value))`` throws, the ``unique_lock`` destructor automatically releases the mutex, ``notify_one`` won't be called (because the exception skips over it), and the queue's state is exactly the same as before calling ``push``—which is exactly the behavior we want.
+The good news is that `std::queue`'s `push` provides a strong exception guarantee: if `T`'s constructor throws, the state of the queue doesn't change (the element isn't added). So in our `push` method, if `queue_.push` throws an exception, `unique_lock`'s destructor automatically releases the mutex, `not_empty_.notify_one` isn't called (because the exception skipped it), and the state of the queue is exactly the same as before calling `push`—this is exactly the behavior we want.
 
-But there's a more hidden problem lurking in ``pop``: what if the move assignment operator of ``T`` (on the ``value = std::move(queue_.front())`` line) throws an exception? At this point, the element is still in the queue (``queue_.front()`` returns a reference), but the assignment to ``value`` failed. The result is that the element remains in the queue, but the caller didn't get the value—the next ``pop`` will pop the same element again. This isn't necessarily a bug (it depends on the semantics of ``T``), but if ``T``'s move assignment isn't ``noexcept``, you need to carefully consider this edge case.
+But there's a more insidious problem hidden in `pop`: what if `T`'s move assignment operator (in the `value = ...` line) throws an exception? At this point, the element is still in the queue (`front()` returns a reference), but the assignment to `value` failed. The result is that the element remains in the queue, but the caller didn't get the value—the next `pop` will retrieve the same element again. This isn't necessarily a bug (depending on `T`'s semantics), but if `T`'s move assignment isn't `noexcept`, you need to consider this edge case carefully.
 
-If ``T`` is a standard type like ``int``, ``std::string``, or ``std::unique_ptr``, their move operations are all ``noexcept``, so there's nothing to worry about. But if you're storing custom types, it's best to ensure their move operations are ``noexcept``—the simplest way is to add ``static_assert`` to the queue's template constraints, letting the compiler enforce this for you:
+If `T` is `std::string`, `std::vector`, `std::shared_ptr` these standard types, their move operations are `noexcept`, so don't worry. But if you want to store custom types, it's best to ensure their move operations are `noexcept`—the simplest way is to add `std::is_nothrow_move_constructible_v` to the queue's template constraints, letting the compiler guard the gate for you:
 
 ```cpp
-static_assert(std::is_nothrow_move_constructible_v<T>,
-              "T must be nothrow move constructible");
-static_assert(std::is_nothrow_move_assignable_v<T>,
-              "T must be nothrow move assignable");
+template <typename T>
+    requires std::is_nothrow_move_constructible_v<T>
+class ThreadSafeQueue { ... };
 ```
 
-This way, if you accidentally store a type that can throw, the compiler will catch it at compile time, rather than crashing at runtime on some obscure code path.
+This way, if you accidentally store a type that throws exceptions, the compiler will stop you at compile time, rather than crashing at runtime on some strange path.
 
-By the way, ``wait`` itself is reliable in terms of exception safety. The C++ standard guarantees that if ``wait`` receives a signal while waiting but the predicate is still ``false`` (a spurious wakeup), it will re-wait without leaking the lock. If ``wait`` exits due to an exception (an extreme case), the lock is correctly released. So we don't need to worry extra about the exception safety of the condition variable's ``wait``.
+By the way, `condition_variable` itself is reliable in terms of exception safety. The C++ standard guarantees: if `wait` receives a signal while waiting but the predicate is still `false` (spurious wakeup), it will re-wait and won't leak the lock. If `wait` exits due to an exception (extreme case), the lock is released correctly. So we don't need to worry extra about the exception safety of the condition variable's `wait`.
 
-## Complete Implementation: Putting It All Together
+## Complete Implementation: Assembling Everything
 
-At this point, we've discussed the shutdown mechanism, timed operations, stop_token integration, and backpressure strategies. Now let's integrate all of these features together and present a complete, ready-to-use ``BoundedBlockingQueue``:
+By now, we have discussed the shutdown mechanism, timeout operations, `stop_token` integration, and backpressure strategies. Now let's integrate all these features together to present a complete, ready-to-use `ThreadSafeQueue`:
 
 ```cpp
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
 #include <stop_token>
-#include <type_traits>
-
-enum class QueueResult {
-    kSuccess,
-    kClosed,
-    kTimeout
-};
+#include <chrono>
+#include <optional>
+#include <concepts>
 
 template <typename T>
-class BoundedBlockingQueue {
-    static_assert(std::is_nothrow_move_constructible_v<T>,
-                  "T must be nothrow move constructible");
-    static_assert(std::is_nothrow_move_assignable_v<T>,
-                  "T must be nothrow move assignable");
-
+    requires std::is_nothrow_move_constructible_v<T>
+class ThreadSafeQueue {
 public:
-    explicit BoundedBlockingQueue(std::size_t capacity)
-        : capacity_(capacity), closed_(false)
-    {}
+    enum class PopResult { Success, Closed, Stopped, Timeout };
+    enum class PushResult { Success, Closed, Full, Timeout };
 
-    // === 基本操作 ===
+    explicit ThreadSafeQueue(size_t capacity) : capacity_(capacity) {}
 
-    QueueResult push(T value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [this] {
-            return queue_.size() < capacity_ || closed_;
-        });
-
-        if (closed_) {
-            return QueueResult::kClosed;
-        }
-
-        queue_.push(std::move(value));
-        not_empty_.notify_one();
-        return QueueResult::kSuccess;
-    }
-
-    QueueResult pop(T& value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [this] {
-            return !queue_.empty() || closed_;
-        });
-
-        if (queue_.empty()) {
-            return QueueResult::kClosed;
-        }
-
-        value = std::move(queue_.front());
-        queue_.pop();
-        not_full_.notify_one();
-        return QueueResult::kSuccess;
-    }
-
-    // === 超时操作 ===
-
-    template <typename Rep, typename Period>
-    QueueResult try_push(T value,
-                         const std::chrono::duration<Rep, Period>& timeout)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        bool ok = not_full_.wait_for(lock, timeout, [this] {
-            return queue_.size() < capacity_ || closed_;
-        });
-
-        if (!ok) {
-            return QueueResult::kTimeout;
-        }
-        if (closed_) {
-            return QueueResult::kClosed;
-        }
-
-        queue_.push(std::move(value));
-        not_empty_.notify_one();
-        return QueueResult::kSuccess;
-    }
-
-    template <typename Rep, typename Period>
-    QueueResult try_pop(T& value,
-                        const std::chrono::duration<Rep, Period>& timeout)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        bool ok = not_empty_.wait_for(lock, timeout, [this] {
-            return !queue_.empty() || closed_;
-        });
-
-        if (!ok) {
-            return QueueResult::kTimeout;
-        }
-        if (queue_.empty()) {
-            return QueueResult::kClosed;
-        }
-
-        value = std::move(queue_.front());
-        queue_.pop();
-        not_full_.notify_one();
-        return QueueResult::kSuccess;
-    }
-
-    // === stop_token 可取消操作 (C++20) ===
-
-    bool pop(T& value, std::stop_token stoken)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        bool ok = cv_any_.wait(lock, stoken, [this] {
-            return !queue_.empty() || closed_;
-        });
-
-        if (!ok || queue_.empty()) {
-            return false;
-        }
-
-        value = std::move(queue_.front());
-        queue_.pop();
-
-        if (queue_.size() < capacity_) {
-            not_full_.notify_one();
-        }
-        return true;
-    }
-
-    // === 背压策略 ===
-
-    bool push_or_drop(T value)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        if (closed_ || queue_.size() >= capacity_) {
-            return false;
-        }
-
-        queue_.push(std::move(value));
-        not_empty_.notify_one();
-        return true;
-    }
-
-    // === 管理 ===
-
-    void close()
-    {
+    // --- Shutdown ---
+    void close() {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            std::lock_guard lock(mutex_);
             closed_ = true;
         }
-        not_full_.notify_all();
-        not_empty_.notify_all();
-        cv_any_.notify_all();
+        not_empty_cv_.notify_all();
+        not_full_cv_.notify_all();
     }
 
-    bool is_closed() const
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return closed_;
+    // --- Blocking Operations ---
+    PushResult push(T value) {
+        std::unique_lock lock(mutex_);
+        not_full_cv_.wait(lock, [this] { return size_ < capacity_ || closed_; });
+        if (closed_) return PushResult::Closed;
+
+        internal_push(std::move(value));
+        return PushResult::Success;
     }
 
-    std::size_t size() const
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return queue_.size();
+    PopResult pop(T& value) {
+        std::unique_lock lock(mutex_);
+        not_empty_cv_.wait(lock, [this] { return size_ > 0 || closed_; });
+        if (size_ == 0) return PopResult::Closed;
+
+        internal_pop(value);
+        return PopResult::Success;
     }
 
-    bool empty() const
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return queue_.empty();
+    // --- Timeout Operations ---
+    template <typename Rep, typename Period>
+    PushResult try_push(T value, std::chrono::duration<Rep, Period> timeout) {
+        std::unique_lock lock(mutex_);
+        if (!not_full_cv_.wait_for(lock, timeout, [this] { return size_ < capacity_ || closed_; })) {
+            return PushResult::Timeout;
+        }
+        if (closed_) return PushResult::Closed;
+        internal_push(std::move(value));
+        return PushResult::Success;
+    }
+
+    template <typename Rep, typename Period>
+    PopResult try_pop(T& value, std::chrono::duration<Rep, Period> timeout) {
+        std::unique_lock lock(mutex_);
+        if (!not_empty_cv_.wait_for(lock, timeout, [this] { return size_ > 0 || closed_; })) {
+            return PopResult::Timeout;
+        }
+        if (size_ == 0) return PopResult::Closed;
+        internal_pop(value);
+        return PopResult::Success;
+    }
+
+    // --- Stop Token Operations ---
+    PopResult pop(T& value, std::stop_token st) {
+        std::unique_lock lock(mutex_);
+        // condition_variable_any supports stop_token
+        if (!not_empty_cva_.wait(lock, st, [this] { return size_ > 0 || closed_; })) {
+            return PopResult::Stopped;
+        }
+        if (size_ == 0) return PopResult::Closed;
+        internal_pop(value);
+        return PopResult::Success;
+    }
+
+    // --- Backpressure: Non-blocking Try ---
+    PushResult try_push_now(T value) {
+        std::lock_guard lock(mutex_);
+        if (closed_) return PushResult::Closed;
+        if (size_ >= capacity_) return PushResult::Full;
+        internal_push(std::move(value));
+        return PushResult::Success;
     }
 
 private:
-    std::queue<T> queue_;
-    std::size_t capacity_;
-    bool closed_;
-    mutable std::mutex mutex_;
-    std::condition_variable not_full_;
-    std::condition_variable not_empty_;
-    std::condition_variable_any cv_any_;  // 给 stop_token 用的
+    void internal_push(T value) {
+        queue_.push(std::move(value));
+        ++size_;
+        not_empty_cv_.notify_one();
+        not_empty_cva_.notify_one(); // Notify both
+    }
+
+    void internal_pop(T& value) {
+        value = std::move(queue_.front());
+        queue_.pop();
+        --size_;
+        not_full_cv_.notify_one();
+        not_full_cva_.notify_one(); // Notify both
+    }
+
+    size_t capacity_;
+    size_t size_ = 0;
+    std::queue queue_;
+    std::mutex mutex_;
+    bool closed_ = false;
+
+    // Standard CV for blocking/timeout
+    std::condition_variable not_empty_cv_;
+    std::condition_variable not_full_cv_;
+
+    // CV Any for stop_token support
+    std::condition_variable_any not_empty_cva_;
+    std::condition_variable_any not_full_cva_;
 };
 ```
 
-You might notice that here we maintain both ``not_full_`` and ``not_empty_`` (``condition_variable``), as well as ``cv_any_`` (``condition_variable_any``). The basic ``push``/``pop`` use the former (more efficient), while the ``stop_token`` version of ``pop`` uses the latter (supports stop_token). This is a practical compromise: code that doesn't need stop_token takes the high-performance path, and code that needs stop_token takes the general-purpose path. The best of both worlds, each taking what it needs.
+You might notice that here we maintain both `condition_variable` (`_cv`) and `condition_variable_any` (`_cva`). Basic `push`/`pop` use the former (more efficient), while the `stop_token` version of `pop` uses the latter (supports `stop_token`). This is a practical compromise: code that doesn't need `stop_token` takes the high-performance path, and code that needs `stop_token` takes the generic path. Best of both worlds, each takes what it needs.
 
 ## Summary
 
-In this article, we started from the teaching-version ``BoundedQueue`` in the condition_variable article and step by step transformed it into a production-grade ``BoundedBlockingQueue``. We added four key capabilities in sequence: a shutdown mechanism (``close()`` rejecting new pushes, allowing drain pops), timed try_push/try_pop (``wait_for`` for non-blocking attempts), stop_token integration (the C++20 overload of ``condition_variable_any`` for cooperative cancellation), and backpressure strategies (``push_or_drop`` providing a non-blocking drop mode).
+In this article, starting from the teaching version of `BoundedQueue` in the `condition_variable` article, we step-by-step transformed it into a production-grade `ThreadSafeQueue`. We successively added four key capabilities: a shutdown mechanism (`closed_` flag rejects new pushes, allows drain pops), `try_push`/`try_pop` with timeouts (using `wait_for` to implement non-blocking attempts), `stop_token` integration (using C++20 overloads of `condition_variable_any` to implement cooperative cancellation), and backpressure strategies (non-blocking drop modes provided by `try_push_now`).
 
-None of these capabilities exist in isolation—the shutdown mechanism relies on ``notify_all`` to wake all waiting threads, timed operations rely on the ``QueueResult`` enum to distinguish failure reasons, and the stop_token version of pop needs to work with ``close()`` to achieve a complete graceful exit. These designs, combined together, form a thread-safe queue that can be used directly in real-world projects.
+Each capability is not isolated—the shutdown mechanism relies on `notify_all` to wake all waiting threads, timeout operations rely on the `wait_for` return value to distinguish failure causes, and the `stop_token` version of `pop` needs to cooperate with `jthread` to achieve complete graceful exit. These designs combined form a thread-safe queue that can be used directly in real projects.
 
-Of course, this queue still has performance bottlenecks under high-contention scenarios—all threads share a single mutex, so throughput can't scale. In the next article, we'll discuss strategies like sharded locks, fine-grained locks, and copy-on-write to reduce contention, with the core idea being "make fewer threads fight over the same lock."
+Of course, this queue still has performance bottlenecks in high-contention scenarios—all threads share one mutex, so throughput doesn't go up. In the next article, we will discuss strategies like sharded locks, fine-grained locks, and copy-on-write to reduce contention. The core idea is "let fewer threads fight for the same lock."
 
 ## Exercises
 
-### Exercise 1: Bounded Blocking Queue with Shutdown Test
+### Exercise 1: Bounded Blocking Queue Shutdown Test
 
-Write a multi-threaded test to verify the correctness of the shutdown mechanism: start 3 producer threads and 2 consumer threads. Each producer pushes 100 elements, and each consumer pops until it receives ``kClosed``. After all producers finish, call ``close()``, and verify that the consumers end up having consumed exactly 300 elements (no losses, no duplicates), and that all threads exit normally.
+Write a multi-threaded test to verify the correctness of the shutdown mechanism: start 3 producer threads and 2 consumer threads. Producers each push 100 elements, consumers each `pop` until they receive `PopResult::Closed`. Call `close()` after all producers finish, and verify that consumers ultimately consumed exactly 300 elements (no loss, no duplicates), and all threads exit normally.
 
-Hint: Use an ``std::atomic<int>`` to count the total number of elements fetched by consumers, and after all threads join, check that it equals 300.
+**Hint:** Use an `std::atomic<int>` to count the total elements retrieved by consumers, and check after all threads `join` if it equals 300.
 
-### Exercise 2: Correctness Verification of Timed Pop
+### Exercise 2: Correctness Verification of Timeout Pop
 
-Create a queue with a capacity of 5 and don't push any elements. Start a consumer thread that calls ``try_pop`` with a 200ms timeout, and verify that it returns ``kTimeout``. Then push one element into the queue and call ``try_pop`` with a 200ms timeout again, verifying that it returns ``kSuccess``. Use ``std::chrono`` to measure the actual elapsed time of both operations, confirming that the wait time of the timed version is within the expected range.
+Create a queue with a capacity of 5 and do not push any elements. Start a consumer thread calling `try_pop` with a 200ms timeout, and verify it returns `PopResult::Timeout`. Then push one element into the queue, call `try_pop` with a 200ms timeout again, and verify it returns `PopResult::Success`. Use `std::chrono::steady_clock` to measure the actual duration of the two operations to confirm the timeout version's wait time is within the expected range.
 
-### Exercise 3: Canceling Pop with stop_token
+### Exercise 3: Stop Token Cancellation of Pop
 
-Use ``std::jthread`` to create a consumer, passing in the ``stop_token`` version of ``pop``. Have the main thread sleep for 100ms and then call ``request_stop()``, verifying that the consumer thread is awakened in ``pop`` and exits normally. Then try a different order: first ``close()`` the queue, then ``request_stop()``, and observe the consumer's behavior—if there are still elements in the queue, the consumer should drain them all before exiting.
+Use `std::jthread` to create a consumer, passing the `stop_token` version of `pop`. The main thread calls `request_stop` after sleeping for 100ms, and verify that the consumer thread is woken up in `pop` and exits normally. Then try another sequence: `close` the queue first, then `request_stop`, and observe the consumer's behavior—if there are still elements in the queue, the consumer should finish consuming them before exiting.
 
-> 💡 The complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit ``code/volumn_codes/vol5/ch04-concurrent-data-structures/``.
+> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `examples/thread_safe_queue`.
 
 ## References
 

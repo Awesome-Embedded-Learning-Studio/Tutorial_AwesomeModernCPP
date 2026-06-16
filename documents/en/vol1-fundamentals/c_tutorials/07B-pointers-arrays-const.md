@@ -2,9 +2,9 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Gain a deep understanding of the array-to-pointer decay mechanism, the
-  four combinations of `const` and pointers, and how to guard against NULL pointers
-  and wild pointers, laying the foundation for learning C++ references and smart pointers.
+description: Gain a deep understanding of the mechanism of array name decay to pointers,
+  the four combinations of `const` and pointers, and how to prevent `NULL` pointers
+  and wild pointers, laying a foundation for learning C++ references and smart pointers.
 difficulty: beginner
 order: 10
 platform: host
@@ -18,91 +18,105 @@ tags:
 - 入门
 title: Pointers, Arrays, const, and Null Pointers
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/07B-pointers-arrays-const.md
-  source_hash: c144abb04048044a685d91c47cffedcbdb63dbdab3a4759354ea0d8607c927e4
-  token_count: 1750
-  translated_at: '2026-05-26T10:29:56.167699+00:00'
+  source_hash: f6c070ed1e6b103d72987545db43b7d7b7c228fb4c7a721d97d4854264715a35
+  translated_at: '2026-06-16T03:34:09.899396+00:00'
+  engine: anthropic
+  token_count: 1746
 ---
 # Pointers, Arrays, const, and Null Pointers
 
-In the previous chapter, we mastered the basic operations of pointers—declaration, initialization, taking addresses, dereferencing, and pointer arithmetic. Now let's tackle a few tricky but crucial pointer applications: what exactly is the relationship between arrays and pointers, how many meanings can `const` and pointers combine to create, and why NULL pointers and wild pointers are so dangerous.
+In the previous chapter, we mastered the basics of pointers—declaration, initialization, taking addresses, dereferencing, and pointer arithmetic. Now, let's tackle a few more complex but crucial applications: what is the actual relationship between arrays and pointers, how many meanings do `const` and pointers have when combined, and why `NULL` pointers and wild pointers are so dangerous.
 
-Let's take it one step at a time. There's a lot to cover here, but the core logic is actually quite clear.
+Don't worry, we'll take this one step at a time. There's a lot to cover, but the core logic is actually quite clear.
 
 > **Learning Objectives**
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the mechanism of array name decay to pointers and its two exceptions
-> - [ ] Correctly read and write the four combination declarations of `const` and pointers
-> - [ ] Distinguish between NULL pointers and wild pointers, and master defensive techniques
+> - [ ] Understand the mechanism of array name decay to pointers and the two exceptional cases.
+> - [ ] Correctly read and write the four combined declarations of `const` and pointers.
+> - [ ] Distinguish between `NULL` pointers and wild pointers, and master defensive methods.
 
 ## Environment Setup
 
-We will run all of the following experiments in this environment:
+We will run all our experiments in the following environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
+- Platform: Linux x86\_64 (WSL2 is acceptable)
 - Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+- Compiler flags: `-std=c17 -Wall -Wextra -pedantic`
 
-## Step 1 — What Exactly Is an Array Name
+## Step 1 — What Exactly is an Array Name?
 
 ### "Decay" — A Core Rule
 
-In C, there is a very important rule: **in most contexts, an array name automatically decays into a pointer to its first element**. This rule sounds academic, but it's actually quite easy to understand—the array name `numbers` itself represents an entire contiguous block of memory, but when you assign it to a pointer or pass it to a function, the compiler only passes the starting address of that block, and the array's length information is "lost".
+There is a very important rule in C: **In most contexts, an array name automatically decays into a pointer to its first element**. This rule sounds academic, but it's actually quite easy to understand—the array name `arr` itself represents a whole contiguous block of memory. However, when you assign it to a pointer or pass it to a function, the compiler only passes the starting address of that block, and the length information of the array is "lost".
 
 ```c
-int numbers[5] = {1, 2, 3, 4, 5};
-int* ptr = numbers;      // 合法：numbers 退化为 &numbers[0]
+int arr[5] = {10, 20, 30, 40, 50};
+int *p = arr; // Equivalent to: int *p = &arr[0];
 ```
 
-The type of `numbers` itself is `int[5]` (an array containing 5 ints), but when assigned to a pointer, it automatically converts to `int*` (a pointer to the first element). This means `numbers[i]` and `*(numbers + i)` are completely equivalent—the subscript operator `[]` is essentially syntactic sugar for pointer arithmetic.
+`arr` itself is of type `int[5]` (an array containing 5 `int`s), but when assigned to a pointer, it automatically converts to `int *` (a pointer to the first element). This means `arr[i]` and `p[i]` are completely equivalent—the subscript operator `[]` is essentially syntactic sugar for pointer arithmetic.
 
-Because of this, we can use pointers to traverse an array:
+Because of this, we can use pointers to traverse arrays:
 
 ```c
-int numbers[5] = {10, 20, 30, 40, 50};
+#include <stdio.h>
 
-for (int* p = numbers; p < numbers + 5; p++) {
-    printf("%d ", *p);
+int main(void) {
+    int arr[5] = {10, 20, 30, 40, 50};
+    int *p = arr;
+
+    for (int i = 0; i < 5; i++) {
+        printf("Element %d: %d (Address: %p)\n", i, *p, (void *)p);
+        p++; // Move to the next integer
+    }
+
+    return 0;
 }
 ```
 
 Let's verify this by compiling and running:
 
 ```bash
-gcc -Wall -Wextra -std=c17 array_ptr.c -o array_ptr && ./array_ptr
+gcc -std=c17 -Wall -Wextra main.c -o main
+./main
 ```
 
 Output:
 
 ```text
-10 20 30 40 50
+Element 0: 10 (Address: 0x7ffc12345600)
+Element 1: 20 (Address: 0x7ffc12345604)
+Element 2: 30 (Address: 0x7ffc12345608)
+Element 3: 40 (Address: 0x7ffc1234560c)
+Element 4: 50 (Address: 0x7ffc12345610)
 ```
 
-### However — Arrays Are Not Pointers
+### However — An Array is Not a Pointer
 
-Here lies the crux of the matter: an array name only "often decays into a pointer", but **an array itself is not a pointer**. There are two scenarios where an array name does not decay:
+Here is the key point: an array name only "frequently decays to a pointer", **an array itself is not a pointer**. There are two scenarios where the array name does not decay:
 
-First, the `sizeof` operator. `sizeof(numbers)` returns the byte size of the entire array (5 × 4 = 20 bytes), not the size of a pointer (4 or 8 bytes). This is the technique we used in the previous chapter to calculate the number of array elements: `sizeof(numbers) / sizeof(numbers[0])`.
+First, the `sizeof` operator. `sizeof(arr)` returns the total byte size of the entire array (5 × 4 = 20 bytes), not the size of a pointer (4 or 8 bytes). This is the technique we used in the last chapter to calculate the number of array elements: `n = sizeof(arr) / sizeof(arr[0])`.
 
-Second, the `&` operator. The type of `&numbers` is "a pointer to the entire array" (`int(*)[5]`), not "a pointer to a pointer" (`int**`). It has the same numeric value as `numbers` (both are the address of the first byte of the array), but the types are different, and the step sizes for pointer arithmetic are also different.
+Second, the `&` (address-of) operator. The type of `&arr` is "pointer to the entire array" (`int (*)[5]`), not "pointer to a pointer" (`int **`). It has the same numeric value as `arr` (both are the address of the first byte of the array), but the type is different, so the step size in pointer arithmetic is also different.
 
 Let's verify these differences:
 
 ```c
 #include <stdio.h>
 
-int main(void)
-{
-    int numbers[5] = {10, 20, 30, 40, 50};
+int main(void) {
+    int arr[5] = {10, 20, 30, 40, 50};
 
-    printf("sizeof(numbers)    = %zu（整个数组）\n", sizeof(numbers));
-    printf("sizeof(&numbers)   = %zu（指针大小）\n", sizeof(&numbers));
-    printf("numbers 的值       = %p\n", (void*)numbers);
-    printf("&numbers 的值      = %p\n", (void*)&numbers);
-    printf("numbers + 1        = %p（跳过一个 int）\n", (void*)(numbers + 1));
-    printf("&numbers + 1       = %p（跳过整个数组）\n", (void*)(&numbers + 1));
+    printf("sizeof(arr) = %zu\n", sizeof(arr));       // 20 bytes
+    printf("sizeof(&arr) = %zu\n", sizeof(&arr));     // 8 bytes (pointer size)
+    printf("arr       : %p\n", (void *)arr);
+    printf("&arr      : %p\n", (void *)&arr);
+    printf("arr + 1   : %p (diff: %td bytes)\n",
+           (void *)(arr + 1), (char *)(arr + 1) - (char *)arr);
+    printf("&arr + 1  : %p (diff: %td bytes)\n",
+           (void *)(&arr + 1), (char *)(&arr + 1) - (char *)&arr);
 
     return 0;
 }
@@ -111,196 +125,190 @@ int main(void)
 Output:
 
 ```text
-sizeof(numbers)    = 20（整个数组）
-sizeof(&numbers)   = 8（指针大小）
-numbers 的值       = 0x7ffd1234abcd
-&numbers 的值      = 0x7ffd1234abcd
-numbers + 1        = 0x7ffd1234abd1（跳过一个 int，+4）
-&numbers + 1       = 0x7ffd1234abe1（跳过整个数组，+20）
+sizeof(arr) = 20
+sizeof(&arr) = 8
+arr       : 0x7ffc12345600
+&arr      : 0x7ffc12345600
+arr + 1   : 0x7ffc12345604 (diff: 4 bytes)
+&arr + 1  : 0x7ffc12345614 (diff: 20 bytes)
 ```
 
-Great, `numbers` and `&numbers` have the same numeric value, but `numbers + 1` only skips 4 bytes (one `int`), while `&numbers + 1` skips 20 bytes (the entire array). This is "different types, different step sizes".
+Excellent, `arr` and `&arr` have the same numeric value, but `arr + 1` only skipped 4 bytes (one `int`), while `&arr + 1` skipped 20 bytes (the entire array). This is "different types, different step sizes".
 
 > ⚠️ **Pitfall Warning**
-> An array will always decay into a pointer when passed to a function—inside the function, `sizeof(arr)` returns the pointer size, not the array size. So if you need to know the array length inside a function, you must pass a separate length parameter.
+> Once an array is passed to a function, it will definitely decay to a pointer—inside the function, `sizeof` returns the size of the pointer, not the size of the array. Therefore, if you need to know the array length inside a function, you must pass a length parameter as well.
 
-## Step 2 — The Four Combinations of const and Pointers
+## Step 2 — Four Combinations of const and Pointers
 
-The combinations of `const` and pointers are a classic interview topic, and they are also frequently used in actual coding. There are four combination methods in total, and we will break them down one by one, starting with the most intuitive.
+The combination of `const` and pointers is a classic interview question and something frequently used in actual coding. There are four combinations in total. Let's break them down one by one, starting with the most intuitive.
 
-### 1. A Non-const Pointer to const Data
-
-```c
-const int* p1 = &value;
-// *p1 = 100;   // 错误：不能通过 p1 修改指向的数据
-p1 = &other;    // 合法：指针本身可以指向别的地方
-```
-
-`const int*` means "the int that p1 points to is read-only"—you cannot modify that value through `p1`, but `p1` itself can point to other variables. Note that `value` itself doesn't necessarily have to be `const`; you are simply promising not to modify it through the `p1` pathway. This usage is extremely common in function parameters—`void process(const int* data)` tells the caller "rest assured, I guarantee I won't touch your data".
-
-### 2. A const Pointer to Non-const Data
+### 1. Non-const Pointer to const Data
 
 ```c
-int* const p2 = &value;
-*p2 = 100;      // 合法：可以修改指向的数据
-// p2 = &other;  // 错误：指针本身不可变
+const int *p1; // Read-only data, pointer can move
 ```
 
-The pointer itself is `const`—once initialized, it will always point to the same address, but you can modify the data in that memory block through it. This usage is very common in embedded development, such as hardware register mapping at fixed addresses:
+`const int *p1` means "the `int` pointed to by `p1` is read-only"—you cannot modify that value through `p1`, but `p1` itself can point to other variables. Note that the variable itself doesn't strictly have to be `const`; you are just promising not to modify it via the `p1` path. This usage is extremely common in function parameters—`void func(const int *p)` tells the caller "don't worry, I promise not to touch your data".
+
+### 2. const Pointer to Non-const Data
 
 ```c
-volatile unsigned int* const kGpioBase = (volatile unsigned int*)0x40020000;
+int * const p2; // Read-only pointer, data is mutable
 ```
 
-The value of the pointer (the address) remains fixed, but you can read and write the register through it.
-
-### 3. A const Pointer to const Data
+The pointer itself is `const`—once initialized, it will always point to the same address, but you can modify the data in that memory block through it. This usage is common in embedded development, for example, for hardware register mapping at a fixed address:
 
 ```c
-const int* const p3 = &value;
-// *p3 = 100;    // 错误
-// p3 = &other;  // 错误
+int * const GPIO_ODR = (int * const)0x40020014; // Fixed address
+*GPIO_ODR = 0xFF; // OK: Writing data
+// GPIO_ODR = ...; // Error: Cannot modify pointer
 ```
 
-Both sides are locked down—the pointer cannot change direction, and the data cannot be modified through the pointer. This is typically used for accessing read-only hardware registers or constant lookup tables.
+The value of the pointer (the address) is fixed, but the register can be read or written through it.
 
-### 4. A Plain `int*`
+### 3. const Pointer to const Data
 
-This is the most ordinary `int* p`, where both sides can be modified, with no special constraints.
+```c
+const int * const p3; // Both read-only
+```
+
+Both sides are locked—the pointer cannot change direction, and the data cannot be modified through the pointer. This is typically used for accessing read-only hardware registers or constant lookup tables.
+
+### 4. Ordinary Pointer
+
+```c
+int *p4; // Both mutable
+```
+
+This is the most ordinary `int *`. Both sides can be changed, with no special constraints.
 
 ### How to Read These Declarations
 
-A practical reading trick: look at whether `const` appears to the left or right of `*`.
+A practical reading technique: look at whether `const` appears to the left or right of the `*`.
 
-- `const` to the **left** of `*`: modifies the **pointed-to data** (data is immutable)
-- `const` to the **right** of `*`: modifies the **pointer itself** (direction is immutable)
-- Both sides: both are immutable
+- `const` on the **left** of `*`: modifies the **pointed-to data** (data is immutable).
+- `const` on the **right** of `*`: modifies the **pointer itself** (direction is immutable).
+- Both sides: both are immutable.
 
 > ⚠️ **Pitfall Warning**
-> Reading the declaration from right to left is also a good method: `const int* p` → "p is a pointer to int const" (a pointer to const int); `int* const p` → "p is a const pointer to int" (a const pointer to int).
+> Reading declarations from right to left is also a good method: `const int *p` → "p is a pointer to int const" (pointer to a const int); `int * const p` → "p is a const pointer to int" (const pointer to an int).
 
 ## Step 3 — NULL Pointers and Wild Pointers
 
-### NULL — "I'm Not Pointing at Anything"
+### NULL — "I'm Not Pointing to Anything"
 
-`NULL` is a macro with the value `(void*)0`, meaning "not pointing to any valid memory address". Dereferencing a NULL pointer is undefined behavior (UB)—on most systems, it triggers a segmentation fault (SIGSEGV), and the program crashes immediately.
+`NULL` is a macro with a value of `((void *)0)`, indicating that it does not point to any valid memory address. Dereferencing a `NULL` pointer is undefined behavior (UB)—on most systems it triggers a segmentation fault (SIGSEGV), crashing the program immediately.
 
-A segmentation fault sounds terrible, but it's actually a "good crash"—the problem is exposed immediately, and a quick look with a debugger tells you it's a NULL pointer dereference. In contrast, the wild pointer we're about to discuss is the truly scary thing.
+A segmentation fault sounds bad, but it's actually a "good crash"—the problem is exposed immediately. You just attach a debugger, and you know right away it's a null pointer dereference. In contrast, the wild pointer discussed below is the truly scary thing.
 
-### Wild Pointers — Time Bombs in Your Code
+### Wild Pointers — Ticking Time Bombs in Code
 
 A wild pointer is a pointer that points to invalid memory. It usually comes from three sources:
 
-The first is an **uninitialized pointer**—declared but not assigned a value, containing a random value on the stack, and this address could point anywhere. The second is a **dangling pointer**—the pointer once pointed to valid memory, but that memory has been freed (continuing to use the pointer after `free`). The third is **out-of-bounds access**—pointer arithmetic goes beyond the legal range.
+The first is **uninitialized pointers**—declared but not assigned, containing random values on the stack; this address could point anywhere. The second is **dangling pointers**—the pointer once pointed to valid memory, but that memory has been freed (using the pointer after `free`). The third is **out-of-bounds access**—pointer arithmetic has gone beyond the legal range.
 
 ```c
-// 未初始化——最经典的野指针
-int* wild;
-*wild = 42;   // 未定义行为：往随机地址写入 42
-
-// 悬空指针
-int* dangling = (int*)malloc(sizeof(int));
-free(dangling);
-*dangling = 42;  // 未定义行为：内存已经释放了
-
-// 好习惯：释放后置 NULL
-dangling = NULL;
+int *p;             // Wild: Uninitialized
+int *q = malloc(4);
+free(q);
+*q = 10;            // Wild: Dangling pointer (use-after-free)
+int arr[5];
+int *r = arr + 10;  // Wild: Out of bounds
 ```
 
-The terrifying thing about wild pointers is that they don't necessarily crash immediately—they might happen to point to a writable block of memory, and your program "appears" to run normally, but some unrelated variable has been quietly altered. The symptoms and the cause of this kind of bug can be worlds apart, making it incredibly frustrating to track down.
+The scary thing about wild pointers is that they don't necessarily crash immediately—they might happen to point to a writable block of memory. Your program "seems" to run normally, but some unrelated variable has been quietly overwritten by you. The symptoms of such bugs may be far removed from the cause, making debugging a frustrating experience.
 
 > ⚠️ **Pitfall Warning**
-> Wild pointers create "Schrödinger's bugs"—in your program, everything might seem perfectly fine, until one day you switch compilers or turn on optimizations, and it suddenly crashes. Moreover, the crash location is often far from the actual bug, making it extremely painful to debug.
+> Wild pointers create "Schrödinger's bugs"—in your program, everything might seem normal until one day you switch compilers or turn on optimizations, and it suddenly crashes. Moreover, the crash location is often far from the real bug, making troubleshooting extremely painful.
 
-### Three Defensive Rules
+### Three Rules of Defense
 
-The best defensive measures are actually quite simple; just remember these three rules:
+The best defensive measures are actually very simple. Just remember these three rules:
 
-1. **Initialize pointers immediately upon declaration**—even if you just initialize them to `NULL`
-2. **Set to `NULL` immediately after `free`**—to prevent accidental misuse later
-3. **Check if it is `NULL` before using a pointer**—add a layer of protection
+1. **Initialize immediately when declaring pointers**—even if you initialize them to `NULL`.
+2. **Set to `NULL` immediately after `free`**—to prevent subsequent misuse.
+3. **Check if it is `NULL` before using the pointer**—add a layer of protection.
 
 ```c
-int* safe_ptr = NULL;
+int *p = NULL; // Rule 1
+p = malloc(sizeof(int));
 
-// ... 某处分配了内存 ...
-
-if (safe_ptr != NULL) {
-    *safe_ptr = 42;   // 安全：确认非空才使用
+if (p != NULL) { // Rule 3
+    *p = 10;
 }
+
+free(p);
+p = NULL; // Rule 2
 ```
 
-These three rules can help you avoid the vast majority of pointer-related disasters. I sincerely suggest: burn these three rules into your muscle memory, and you will save yourself a lot of hair loss when coding later.
+These three rules can help you avoid the vast majority of pointer-related disasters. I sincerely suggest: burn these three rules into your muscle memory, and you will save yourself a lot of hair loss later in your coding career.
 
-## C++ Connection
+## C++ Transition
 
-C's raw pointers are powerful, but the responsibility falls entirely on the programmer. C++ builds on this foundation by doing a few very critical things.
+C raw pointers are powerful, but the responsibility lies entirely with the programmer. C++ builds on this by doing a few very critical things.
 
-First are **references**. A `int& r = value` is essentially a const pointer that the compiler automatically dereferences—it must be initialized at declaration, cannot be rebound once bound, and doesn't require `*` when used, making it syntactically like directly manipulating the original variable. A reference cannot be NULL (well, strictly speaking, you can construct a dangling reference, but that's intentionally asking for trouble), and it cannot point to uninitialized memory. In C++, passing by reference is preferred over passing by pointer for function parameters.
+First is the **reference**. A reference `T&` is essentially a const pointer that the compiler automatically dereferences—it must be initialized when declared, cannot be rebound once bound, and doesn't need `*` when used, syntactically acting like direct manipulation of the original variable. A reference cannot be `NULL` (well, strictly speaking, you can construct a dangling reference, but that's intentionally asking for trouble), and it cannot point to uninitialized memory. In C++, passing references is preferred over passing pointers for function parameters.
 
-Then there are **smart pointers**. `std::unique_ptr` and `std::shared_ptr` use the RAII mechanism to automatically manage memory lifecycles—memory is automatically released when the pointer goes out of scope, fundamentally eliminating memory leaks and dangling pointer issues caused by manual `malloc`/`free`.
+Then there are **smart pointers**. `std::unique_ptr` and `std::shared_ptr` use the RAII mechanism to automatically manage memory lifecycles—memory is automatically released when the pointer goes out of scope, fundamentally eliminating memory leaks and dangling pointer issues caused by manual `new`/`delete`.
 
 ```cpp
-// C++ 智能指针——先睹为快
-#include <memory>
-
-std::unique_ptr<int> p = std::make_unique<int>(42);
-// *p == 42，使用方式和原始指针一样
-// 离开作用域时自动 delete，不需要手动释放
+std::unique_ptr<int> p(new int(42)); // C++ style
+// No need to manually delete, automatic cleanup
 ```
 
-We will dive deep into these topics in subsequent C++ tutorials. For now, you just need to understand one core idea: **C++'s philosophy is to use the type system and object lifecycles for automatic management, rather than relying on the programmer's self-discipline**.
+We will discuss these in depth in the subsequent C++ tutorials. For now, just know the core philosophy: **C++ uses the type system and object lifecycles for automatic management, rather than relying on programmer self-discipline**.
 
 ## Summary
 
-Let's review the core points of this chapter. In most contexts, an array name decays into a pointer to its first element, but `sizeof` and `&` are two exceptions—in these scenarios, the array name retains its "array" identity. There are four combinations of `const` and pointers; just remember "const to the left of `*` modifies the data, and to the right modifies the pointer itself". Although a NULL pointer causes a segmentation fault, that's a "good crash"; wild pointers are the real time bombs, and remembering the three defensive rules (initialize upon declaration, set to NULL after free, check before use) will help you avoid the vast majority of disasters.
+Let's review the core points of this chapter. An array name decays to a pointer to its first element in most contexts, but `sizeof` and `&` are two exceptions—in these scenarios, the array name retains its "array" identity. `const` and pointers have four combinations; just remember "const on the left of `*` modifies the data, on the right modifies the pointer itself". While `NULL` pointers cause segmentation faults, that is a "good crash"; wild pointers are the real time bombs. Remembering the three rules of defense (initialize on declaration, set to `NULL` after `free`, check before use) will help you avoid the vast majority of disasters.
 
-At this point, we have built a solid foundation in pointers. Next, we will learn about functions—how to organize code to make it more reusable and easier to maintain.
+At this point, we have built a solid foundation in pointers. Next, we will learn about functions—how to organize code to make it more reusable and maintainable.
 
 ## Exercises
 
-### Exercise 1: Pointer-Based Linear Search
+### Exercise 1: Linear Search with Pointers
 
 Implement a linear search function that returns a pointer to the first occurrence of the target value in the array. If not found, return `NULL`.
 
 ```c
-/// @brief 在 int 数组中线性搜索目标值
-/// @param data 数组首元素地址
-/// @param count 元素个数
-/// @param target 要搜索的值
-/// @return 指向目标元素的指针，未找到则返回 NULL
-const int* linear_search(const int* data, size_t count, int target);
+int *find_int(int *arr, int size, int target) {
+    // TODO: Iterate using pointer arithmetic
+    // Return pointer if found, NULL otherwise
+}
 ```
 
-### Exercise 2: Pointer-Based Array Reversal
+### Exercise 2: Array Reversal with Pointers
 
-Implement an in-place array reversal function using only pointer arithmetic (two pointers moving from both ends toward the middle), without using array subscripts:
+Implement a function that reverses an array in-place, using only pointer arithmetic (two pointers moving from both ends towards the middle), without using array subscripts:
 
 ```c
-/// @brief 原地反转 int 数组
-/// @param data 数组首元素地址
-/// @param count 元素个数
-void reverse_array(int* data, size_t count);
+void reverse(int *arr, int size) {
+    // TODO: Swap elements using two pointers
+}
 ```
 
 ### Exercise 3: const Practice
 
-Determine which operations are legal and which will cause compilation errors in each of the following declarations:
+For each of the following declarations, determine which operations are legal and which will result in a compilation error:
 
 ```c
-int value = 42, other = 100;
+int x = 10;
+int y = 20;
+const int *p1 = &x;
+int * const p2 = &x;
+const int * const p3 = &x;
 
-const int* p1 = &value;
-int* const p2 = &value;
-const int* const p3 = &value;
-
-// 对每个指针 p1/p2/p3，判断以下操作是否合法：
-// *px = 50;      // 通过指针修改数据
-// px = &other;   // 修改指针指向
+// Test cases:
+// *p1 = 15;  // ?
+// p1 = &y;   // ?
+// *p2 = 15;  // ?
+// p2 = &y;   // ?
+// *p3 = 15;  // ?
+// p3 = &y;   // ?
 ```
 
 ## References
 
-- [cppreference: Pointer declarations](https://en.cppreference.com/w/c/language/pointer)
+- [cppreference: Pointer Declaration](https://en.cppreference.com/w/c/language/pointer)
 - [cppreference: NULL](https://en.cppreference.com/w/c/types/NULL)
-- [cppreference: Array-to-pointer decay](https://en.cppreference.com/w/c/language/conversion)
+- [cppreference: Array-to-pointer Decay](https://en.cppreference.com/w/c/language/conversion)

@@ -8,24 +8,24 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: 'Part 24: Non-blocking Debounce — Keeping the CPU Moving'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/02-button/06-non-blocking-debounce.md
-  source_hash: b8b0050f3de67179929f301036d8a697948234f130a92539eda697170010ed3f
-  token_count: 1479
-  translated_at: '2026-05-26T12:11:27.712481+00:00'
+title: 'Part 24: Non-blocking Debounce — Keeping the CPU from Waiting'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/02-button/06-non-blocking-debounce.md
+  source_hash: 25ccb48a6315cae61a9898b8d31b6c4156f8b8b6e9f249a1932075c08b2d3e5d
+  translated_at: '2026-06-16T04:10:56.237850+00:00'
+  engine: anthropic
+  token_count: 1485
 ---
 # Part 24: Non-blocking Debounce — Don't Make the CPU Wait
 
-> Continuing from the previous part: C language polling buttons work, but bounce causes multiple triggers. Using `HAL_Delay()` for blocking debounce solves the bounce issue, but at the cost of freezing the CPU for 20ms. This part introduces a non-blocking approach to time management.
+> Following the previous post: C language polling works, but jitter causes multiple triggers. Using `HAL_Delay` for blocking debounce solves the jitter, but at the cost of freezing the CPU for 20ms. This post introduces a non-blocking approach to time management.
 
 ---
 
 ## The Cost of Blocking Debounce
 
-At the end of the previous part, we tried the simplest debounce approach:
+At the end of the last post, we tried the simplest debounce solution:
 
 ```c
 // 阻塞式消抖
@@ -40,27 +40,27 @@ if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET) {
 }
 ```
 
-This approach does eliminate most bounce issues. But its cost is that `HAL_Delay(20)` freezes the CPU for 20 milliseconds.
+This solution does eliminate most jitter issues. However, the cost is that `HAL_Delay` freezes the CPU for 20 milliseconds.
 
-20ms doesn't sound like much. If you're only controlling an LED, waiting is no big deal. But in real projects, your main loop might have many things to do—reading sensor data, updating displays, handling communication protocols. If you block for 20ms every time you check a button, the real-time performance of other tasks is compromised.
+20ms doesn't sound long. If you are just controlling an LED, waiting is fine, it doesn't matter. But in real projects, your main loop might have many things to do—reading sensor data, updating displays, handling communication protocols. If you block for 20ms every time you check a button, the real-time performance of other tasks is compromised.
 
-Even worse is the final `while` loop—if the user holds the button down, the CPU gets stuck in this loop, and other tasks stop completely. This is no longer a "delay"; it's a "hang."
+Even worse is the final `while` loop—if the user holds the button down, the CPU gets stuck in this loop, and other tasks stop completely. This is no longer just a "delay"; it is a "hang".
 
-We need a way to debounce without blocking the CPU.
+We need a debounce method that does not block the CPU.
 
 ---
 
 ## HAL_GetTick: A Free Clock
 
-`HAL_GetTick()` returns the number of milliseconds elapsed since system startup. It is a 32-bit unsigned integer that starts at 0 and increments by 1 every millisecond, wrapping around to zero after about 49.7 days (which can be safely ignored for embedded projects).
+`HAL_GetTick` returns the number of milliseconds since the system started. It is a 32-bit unsigned integer, starting at 0 and incrementing by 1 every millisecond, overflowing back to zero after about 49.7 days (which can be basically ignored for embedded projects).
 
 ```c
 uint32_t now = HAL_GetTick();  // 例如返回 12345，表示系统已运行 12.345 秒
 ```
 
-The underlying implementation of `HAL_GetTick()` lives in `hal_mock.c`—the `SysTick_Handler()` interrupt fires every 1ms and calls `HAL_IncTick()` to increment a global counter. This counter is our source of time.
+The underlying implementation of `HAL_GetTick` is in `HAL_IncTick`—the `SysTick` interrupt triggers every 1ms, calling `HAL_IncTick` to increment a global counter. This counter is our source for time.
 
-The core idea behind using `HAL_GetTick()` for debouncing is: **record the time when a state change occurs, and check on the next loop iteration whether enough time has passed, rather than stopping to wait.**
+The core idea of using `HAL_GetTick` for debounce is: **Record the time when the state change occurs, and check in the next loop if enough time has passed, rather than stopping to wait.**
 
 ---
 
@@ -140,7 +140,7 @@ int main(void) {
 }
 ```
 
-Wait, there's a problem with the code above. I recorded the timestamp but didn't actually use it for the check. Let me rewrite a correct version:
+Wait, the code above has a problem. I only recorded the timestamp but didn't use it to make a judgment. Let me rewrite a correct version:
 
 ```c
     /* 消抖状态变量 */
@@ -182,59 +182,59 @@ Wait, there's a problem with the code above. I recorded the timestamp but didn't
     }
 ```
 
-### Line-by-Line Breakdown
+### Line-by-line Interpretation
 
-**State variables:**
+**State Variables:**
 
-- `last_stable`: The last confirmed stable button state. It only updates after the raw signal has been stable for 20ms.
-- `last_raw`: The most recent raw sample value. It updates whenever a different value is sampled.
-- `last_change_time`: The timestamp of the last change in the raw value.
+- `stable_state`: The last confirmed stable button state. It is updated only after the raw signal has been stable for 20ms.
+- `raw_state`: The most recent raw sample value. Updated whenever a different value is sampled.
+- `last_change_time`: The timestamp when the raw value last changed.
 
-**Core logic:**
+**Core Logic:**
 
-1. Sample `current` on every loop iteration.
-2. If `current` and `last_raw` differ, the signal is transitioning—update `last_raw` and reset the timer.
-3. If more than `debounce_ms` (20ms) has passed since the last change, and the raw value differs from the stable value—confirm that the state has truly changed, update the stable value, and trigger the event.
+1. Sample `raw_state` every loop.
+2. If `raw_state` and `stable_state` are different, it means the signal is jumping—update `last_change_time` and reset the timer.
+3. If `DEBOUNCE_TIME` (20ms) has passed since the last change, and the raw value differs from the stable value—confirm the state has really changed, update the stable value, and trigger the event.
 
-**Why this debounces:** During bounce, the signal transitions rapidly, and each transition resets the timer. Only when the signal remains unchanged for a continuous 20ms does the timer "expire" and the state get confirmed. The 5-20ms bounces are "filtered out" by the timer's constant resetting.
+**Why this debounces:** During jitter, the signal jumps rapidly, resetting the timer on every jump. Only when the signal remains unchanged for a continuous 20ms will the timer "expire" and the state be confirmed. The 5-20ms jumps during jitter are "filtered out" by the constant resetting of the timer.
 
-**Why it's non-blocking:** The entire logic only uses `HAL_GetTick()` for timestamp comparison (one subtraction + one comparison), with no `HAL_Delay()`. The main loop runs at full speed, spending only a few microseconds per iteration. You can easily add other tasks in the free space of the `while(1)` loop—LED blinking, sensor reading, communication handling—none of which will be interrupted by button debouncing.
-
----
-
-## Overflow Safety
-
-One detail is worth noting: `HAL_GetTick() - last_change_time` uses unsigned integer subtraction. Even if `HAL_GetTick()` wraps around to zero, the result of this subtraction remains correct—due to the modular arithmetic properties of unsigned integer subtraction.
-
-For example: `last_change_time = 0xFFFFFFF0`, `HAL_GetTick() = 0x00000010` (after overflow), the difference is `0x00000010 - 0xFFFFFFF0 = 0x00000020 = 32`. 32ms, correct.
-
-So you don't need to worry about the 49.7-day overflow issue. This is much cleaner than manually handling overflow, and it's a standard trick in embedded development for calculating time differences with unsigned integers.
+**Why it's non-blocking:** The entire logic only uses `HAL_GetTick` for timestamp comparison (one subtraction + one comparison), there is no `HAL_Delay`. The main loop runs at full speed, spending only a few microseconds per loop. You can completely insert other tasks—LED blinking, sensor reading, communication processing—into the empty spaces of the `while` loop without being interrupted by button debouncing.
 
 ---
 
-## Are There Still Problems With This Approach?
+## Safety of Overflow
 
-Non-blocking debounce solves the blocking problem of `HAL_Delay()`, but it's still not perfect:
+There is a detail worth noting: `HAL_GetTick` uses unsigned integer subtraction. Even if `HAL_GetTick` overflows and wraps to zero, the result of this subtraction is still correct—because of the modular arithmetic property of unsigned integer subtraction.
 
-1. **No concept of press and release events:** The code above performs an action when the stable value changes, but there are no explicit "press event" and "release event"—you have to determine yourself whether it changed from 0 to 1 or from 1 to 0.
-2. **No handling of the startup state:** What if the button is already held down when the system powers on? The "stable state" read during initialization is pressed, but this shouldn't trigger a "press event."
-3. **State variables scattered in the main loop:** `last_stable`, `last_raw`, and `last_change_time` are tightly coupled to the button logic, yet they exist as independent local variables. As the project grows more complex, maintaining these state variables becomes a headache.
+For example: `current = 100`, `last = 0xFFFFFFF0` (after overflow), the difference is `0x110` (272). 272ms, correct.
 
-These three problems point to the same solution: **encapsulate the debounce logic into a state machine**. A state machine centralizes the management of all state transition rules, where each state has clear entry conditions, dwell behaviors, and exit actions. Instead of scattered `if-else`, we get a structured `switch-case`.
+So you don't need to worry about the 49.7-day overflow issue. This is much more concise than manually handling overflow and is a standard trick in embedded development for using unsigned integers for time differences.
 
-This is the topic of the next part—the 7-state debounce state machine, the core of our final solution.
+---
+
+## Does This Solution Still Have Problems?
+
+Non-blocking debounce solves the blocking problem of `HAL_Delay`, but it is not yet perfect:
+
+1. **No concept of Press and Release events**: The code above performs an action when the stable value changes, but there are no clear "Press Event" and "Release Event"—you need to judge yourself whether it's going from 0 to 1 or 1 to 0.
+2. **No handling of startup state**: What if the button is already held down when the system powers up? The "stable state" read at initialization is "pressed", but this should not trigger a "press event".
+3. **State variables scattered in the main loop**: `stable_state`, `raw_state`, `last_change_time`—these variables are tightly coupled to the button logic but exist as independent local variables. As the project grows complex, maintaining these state variables will be a headache.
+
+These three problems point to the same solution: **Encapsulate the debounce logic into a state machine**. A state machine manages all state transition rules centrally, with clear entry conditions, resident behaviors, and exit actions for each state. No longer scattered `if` statements, but a structured `switch`.
+
+This is the topic of the next post—the 7-state debounce state machine, the core of our final solution.
 
 ---
 
 ## Looking Back
 
-In this part, we did three things: explained the problem with `HAL_Delay()` blocking debounce, introduced `HAL_GetTick()` for non-blocking time management, and implemented a workable non-blocking debounce algorithm.
+In this post, we did three things: explained the problem with `HAL_Delay` blocking debounce, introduced `HAL_GetTick` for non-blocking time management, and implemented a working non-blocking debounce algorithm.
 
 Key takeaways:
 
-- `HAL_GetTick()` returns a millisecond timestamp, driven by the SysTick interrupt underneath
-- The core of non-blocking debouncing: record the time of change, check if it has been stable long enough
-- Unsigned integer subtraction naturally handles overflow
-- Shortcomings of the current approach: no event concept, no startup handling, scattered state variables—all pointing toward a state machine
+- `HAL_GetTick` returns a millisecond timestamp, driven by the SysTick interrupt underneath.
+- Core of non-blocking debounce: record the change time, check if it has been stable for long enough.
+- Unsigned integer subtraction naturally handles overflow.
+- Shortcomings of the current solution: no event concept, no startup handling, scattered state variables—all pointing to a state machine.
 
-In the next part, we'll refactor the scattered `if-else` into a rigorous state machine.
+In the next post, we will refactor the scattered `if` statements into a rigorous state machine.

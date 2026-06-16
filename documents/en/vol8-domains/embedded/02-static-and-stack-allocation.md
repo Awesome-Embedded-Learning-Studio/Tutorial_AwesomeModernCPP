@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Using static storage and stack allocation
+description: Use static storage and stack allocation
 difficulty: intermediate
 order: 2
 platform: stm32f1
@@ -18,62 +18,58 @@ tags:
 - stm32f1
 title: Static Storage and Stack Allocation Strategies
 translation:
-  engine: anthropic
   source: documents/vol8-domains/embedded/02-static-and-stack-allocation.md
-  source_hash: 0bb24db10c20e5193c9c6ffa4a6f150ebcd75c7e178d62e963655b09bd693b87
+  source_hash: 0cba8954f9980ced0b2829a9f9be01961440017c445994a7b66a87e2192e41c7
+  translated_at: '2026-06-16T04:11:26.635328+00:00'
+  engine: anthropic
   token_count: 920
-  translated_at: '2026-05-26T12:13:46.076201+00:00'
 ---
 # Embedded C++ Tutorial — Static Storage and Stack Allocation Strategies
 
-> I caught a cold recently and took a long break to rest...
+> I caught a cold recently and took a long break to recover...
 
-In embedded systems, memory resources are scarce and unevenly distributed (Flash, SRAM, special high-speed SRAM, etc.). Choosing whether to place data in the **static region** (global, static variables, constants) or on the **stack** (function local variables, temporary objects) directly impacts program reliability, startup time, code maintainability, and real-time performance. This blog post provides production-ready strategies and example code, covering concepts, implementation details, common pitfalls, and practical recommendations.
+In embedded systems, memory resources are scarce and unevenly distributed (Flash, SRAM, specialized high-speed SRAM, etc.). Deciding whether to place data in the **static area** (global, static variables, constants) or on the **stack** (function local variables, temporary objects) directly impacts program reliability, startup time, code maintainability, and real-time performance. This blog post covers concepts, implementation details, common pitfalls, and practical engineering strategies with example code.
 
 ------
 
-## What Are Static Storage and Stack Allocation (Quick Definitions)
+## What are Static Storage and Stack Allocation? (Quick Definitions)
 
-**Static storage**: Memory allocated at compile time or link time, including `.text` (code + rodata), `.data` (initialized global/static variables, copied to RAM at runtime), and `.bss` (uninitialized global/static variables, zeroed at runtime). These variables exist for the entire lifetime of the program or until explicitly modified.
+**Static storage**: Memory allocated at compile/link time, including `.text` (code + rodata), `.data` (initialized global/static variables, copied to RAM at runtime), and `.bss` (uninitialized global/static variables, zeroed at runtime). These variables exist for the entire lifetime of the program or until explicitly changed.
 
-**Stack allocation**: Memory allocated by the stack pointer during a function call, used for local variables, return addresses, register saving, etc. The stack space is released when the function returns.
+**Stack allocation**: Memory allocated by the stack pointer during function calls, used for local variables, return addresses, and register saving. The stack space is released when the function returns.
 
 ------
 
 ## Why Be Careful in Embedded Systems?
 
-- **Predictability**: The size of static storage is visible at link time; stack growth depends on the runtime execution path, making it difficult to statically guarantee no overflow.
-- **Real-time performance**: Dynamic allocation or large stack frames can cause unpredictable latency. Stack usage in interrupt contexts requires special attention.
-- **Memory layout**: ROM/Flash and different grades of SRAM (on-chip/external) vary significantly in speed and capacity. Static data can be placed in appropriate regions (for example, putting large read-only tables in Flash).
-- **Reentrancy and thread safety**: Global/static variables are not thread-safe by default; they require additional synchronization in an RTOS environment. Stack data is inherently thread-safe for the current thread (each thread has its own independent stack).
+- **Predictability**: Static storage size is visible at link time; stack growth depends on the execution path, making it hard to statically guarantee that no overflow will occur.
+- **Real-time performance**: Dynamic allocation or large stack frames can cause unpredictable latency. Stack usage within interrupt contexts requires special attention.
+- **Memory layout**: ROM/Flash and different grades of SRAM (on-chip vs. external) differ significantly in speed and capacity. Static data can be placed in appropriate regions (e.g., putting large read-only tables in Flash).
+- **Reentrancy and thread safety**: Global/static variables are not thread-safe by default; in an RTOS environment, extra synchronization is required. Stack data is inherently thread-safe for the current thread (each thread has its own stack).
 
 ------
 
-## So What Belongs in Static Storage?
+## So, What Uses Static Storage?
 
-- **Read-only constants (const)**: In common ARM/GCC scenarios, these are placed in Flash's `.rodata` and do not consume RAM at runtime (unless forcibly copied). Using `const` for lookup tables, firmware version strings, etc., is a great way to save RAM.
-- **Initialized static variables (.data)**: The compiler generates initialization data in Flash, which is copied to RAM at startup, thus consuming RAM.
-- **Uninitialized static variables (.bss)**: These are zeroed at startup, consuming RAM but not leaving large blocks of initialization data in Flash.
-- **Placement control**: We can use linker scripts and `__attribute__((section("...")))` to control data placement into specific sections (such as fast SRAM, uninitialized sections like `.noinit`, etc.).
-- **Pitfalls to avoid**:
-  - Making large arrays or buffers static permanently consumes memory; without proper planning, this wastes memory or leads to shortages.
-  - Static mutable variables require consideration of concurrent access (interrupts, threads) using `volatile`/mutexes/atomic operations, etc.
+- **Read-only constants (`const`)**: In common ARM/GCC environments, these are placed in the `.rodata` section of Flash and do not consume RAM at runtime (unless forced to copy). Using `constexpr` for lookup tables, firmware version strings, etc., is a great way to save RAM.
+- **Initialized static variables (`.data`)**: The compiler generates initialization data in Flash, which is copied to RAM at startup, thus consuming RAM.
+- **Uninitialized static variables (`.bss`)**: These are zeroed at startup, consume RAM, but do not occupy large chunks of initialization data in Flash.
+- **Placement control**: You can use linker scripts and attributes to control data placement into specific sections (such as fast SRAM, uninitialized sections `.noinit`, etc.).
+- **Issues to avoid**:
+  - Making large arrays or buffers static permanently occupies memory. If not planned correctly, this wastes memory or leads to shortages.
+  - Static mutable variables must account for concurrent access (interrupts, threads) using `volatile`, mutexes, atomic operations, etc.
 
 Example: Placing a large lookup table in Flash
 
-```c++
-// foo.cpp
-static const uint16_t sine_table[256] = {
-    // ... 256 entries ...
-};
-
+```cpp
+// Placed in .rodata/Flash by default
+constexpr int SineTable[360] = { /* ... */ };
 ```
 
-If we need to explicitly place it in a specific section of `.rodata` / Flash:
+If you need to explicitly place it in a specific section (like Flash):
 
-```c++
-const uint16_t lookup[] __attribute__((section(".rodata.lookup"))) = { ... };
-
+```cpp
+__attribute__((section(".my_flash_section"))) const int BigTable[1024] = { /* ... */ };
 ```
 
 ------
@@ -82,101 +78,98 @@ const uint16_t lookup[] __attribute__((section(".rodata.lookup"))) = { ... };
 
 In embedded projects, we usually modify the linker script to place sections in appropriate memory regions.
 
-```c
+```ld
 MEMORY
 {
-  FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
-  RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
-  FASTRAM(rwx) : ORIGIN = 0x20020000, LENGTH = 32K
+  FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 512K
+  RAM (rwx)       : ORIGIN = 0x20000000, LENGTH = 128K
+  FAST_RAM (rwx)  : ORIGIN = 0x20020000, LENGTH = 32K
 }
 
 SECTIONS
 {
-  .text : { *(.text*) *(.rodata*) } > FLASH
+  .text : { *(.text*) } > FLASH
 
-  .data : AT(ADDR(.text) + SIZEOF(.text)) {
-    __data_start = .;
-    *(.data*)
-    __data_end = .;
-  } > RAM
+  /* Place critical data in fast RAM */
+  .fastdata : { *(.fastdata*) } > FAST_RAM AT > FLASH
 
-  .bss : {
-    __bss_start = .;
-    *(.bss*)
-    __bss_end = .;
-  } > RAM
-
-  /* 自定义段放在 FASTRAM */
-  .fastdata : {
-    *(.fastdata*)
-  } > FASTRAM
+  .data : { *(.data*) } > RAM AT > FLASH
+  .bss : { *(.bss*) } > RAM
 }
-
 ```
 
-This practice is very common in U-Boot, where `__attribute__((section(".fastdata")))` is used in the code to place performance-sensitive data into FASTRAM.
+This is very common in U-Boot, where `__attribute__((section(".fastdata")))` is used in code to place performance-sensitive data in FAST_RAM.
 
 ------
 
 ## Risks and Usage of Stack Allocation
 
-- **Large local variables easily trigger stack overflow**. For example:
+- **Large local variables can easily trigger stack overflow**. For example:
 
-```c++
-void foo() {
-    uint8_t big_buf[64*1024]; // 很可能超出单个线程/中断栈
+```cpp
+void riskyFunction() {
+    // Danger: 10KB on the stack!
+    uint8_t buffer[10240];
     // ...
 }
-
 ```
 
-- **Recursion**: Most embedded systems should avoid recursion (it is difficult to estimate the maximum depth).
-- **Variable Length Arrays (VLA) / alloca**: Features that change stack usage at runtime are extremely risky in embedded systems; we should disable or use them with extreme caution.
-- **Temporary objects within functions**: Small objects should preferably be placed on the stack; large objects should be placed in static storage or the heap (if allowed).
+- **Recursion**: Most embedded systems should avoid recursion (difficult to estimate maximum depth).
+- **Variable Length Arrays (VLA) / `alloca`**: Features that change stack usage at runtime are extremely risky in embedded systems; try to disable or use them with caution.
+- **Temporary objects inside functions**: Small objects should be prioritized for the stack; large objects should be static or on the heap (if allowed).
 
-Alternative approach: Make large buffers static or place them in task-specific memory pools.
+Alternative approach: Make large buffers static or put them in task-specific memory pools.
 
 ------
 
-## C++ Specific Details (Construction, Destruction, placement new)
+## C++ Specifics (Construction, Destruction, Placement New)
 
-- **Static object construction order**: The construction order of global static objects across different translation units is not guaranteed (the "static initialization order fiasco"). During the embedded startup phase, we should explicitly write critical initializations in `main()` or init functions.
-- **placement new**: We can explicitly construct objects on static/stack/specific memory regions (often used in heap-less systems):
+- **Static object construction order**: The construction order of global static objects across different files is not guaranteed (the "Static Initialization Order Fiasco"). During the embedded startup phase, try to explicitly write critical initialization in `main()` or init functions.
+- **Placement new**: You can explicitly construct objects on static/stack/specific memory regions (often used in heap-less systems):
 
-```c++
-alignas(MyType) static uint8_t buffer[sizeof(MyType)];
-MyType* p = new (buffer) MyType(args...);  // placement new
-p->~MyType(); // 手动析构
+```cpp
+// Static buffer
+alignas(std::string) unsigned char buffer[sizeof(std::string)];
 
+void demo() {
+    // Construct object in place
+    std::string* str = new (buffer) std::string("Hello World");
+
+    str->append("!");
+
+    // Must manually call destructor
+    str->~string();
+}
 ```
 
-This is very useful in malloc-free scenarios, but we must manage the object lifecycle properly.
+This is very useful in scenarios without `malloc`, but you must manage the object lifecycle carefully.
 
 ------
 
-## Strategies Without malloc (Required by Many Embedded Projects)
+## Strategies Without `malloc` (Required by Many Embedded Projects)
 
 - Use **fixed-size object pools or ring buffers** to replace the heap.
-- Implement type-safe allocation interfaces through templates or hand-written pools.
-- All long-lived buffers (such as network packet buffers) should primarily consider static allocation and be placed in appropriate sections.
+- Implement type-safe allocation interfaces via templates or handwritten pools.
+- Prioritize static allocation for all long-lived buffers (like network packet buffers) and place them in appropriate sections.
 
-A simple ring buffer (illustrative):
+Simple ring buffer (illustrative):
 
-```c++
-template<size_t N>
+```cpp
+template<typename T, size_t N>
 class RingBuffer {
-  uint8_t buf[N];
-  size_t head = 0, tail = 0;
-public:
-  bool push(uint8_t v) { size_t n = (head+1)%N; if (n==tail) return false; buf[head]=v; head=n; return true; }
-  bool pop(uint8_t &out) { if (head==tail) return false; out = buf[tail]; tail=(tail+1)%N; return true; }
-};
+    T buffer[N] = {}; // Static storage, stack-like usage
+    size_t head = 0;
+    size_t tail = 0;
 
+public:
+    bool push(const T& item) { /* ... */ }
+    bool pop(T& item) { /* ... */ }
+};
 ```
 
 ## Conclusion
 
-In embedded C++ development, **static storage provides predictability and controllable long-term memory usage**, while **the stack provides locality and thread isolation**. When making a choice, we should consider: buffer size, access patterns (concurrent/interrupt), performance (speed/access latency), and testability (stack usage can be measured). In practice, we should prioritize placing large objects, lookup tables, and DMA buffers in static regions or dedicated RAM; place small, short-lived temporary objects on the stack; and strictly control dynamic allocation, using object pools or placement new to manage memory when necessary.
+In embedded C++ development, **static storage provides predictability and controllable long-term memory usage**, while the **stack provides locality and thread isolation**. When choosing, consider: buffer size, access patterns (concurrency/interrupts), performance (speed/access latency), and testability (stack usage is measurable). In practice, prioritize placing large objects, lookup tables, and DMA buffers in static regions or dedicated RAM; place short-lived, temporary objects on the stack; strictly control dynamic allocation, and use object pools or placement-new to manage memory when necessary.
 
 ------
 

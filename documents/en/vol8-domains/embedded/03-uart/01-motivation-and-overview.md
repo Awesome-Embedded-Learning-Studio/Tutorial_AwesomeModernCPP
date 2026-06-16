@@ -8,242 +8,176 @@ tags:
 - beginner
 - cpp-modern
 - stm32f1
-title: 'Part 31: From Buttons to Serial — Why UART Is the Foundation of Embedded Communication'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/03-uart/01-motivation-and-overview.md
-  source_hash: efdeb2909faec61ce58456cb501ee25969620d8fd4bb5d49bb330384665ea915
-  token_count: 1995
-  translated_at: '2026-05-26T12:14:49.931658+00:00'
+title: 'Part 31: From Buttons to Serial — Why UART is the Cornerstone of Embedded
+  Communication'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/03-uart/01-motivation-and-overview.md
+  source_hash: 500d146af59c430f821d2bb25483e5cf5f25b2713ac2b9650bc71c72d88f9188
+  translated_at: '2026-06-16T04:11:49.056427+00:00'
+  engine: anthropic
+  token_count: 1999
 ---
-# Part 31: From Buttons to Serial — Why UART Is the Cornerstone of Embedded Communication
+# Part 31: From Buttons to Serial — Why UART is the Cornerstone of Embedded Communication
 
-> The LED tutorial taught the chip to "speak," and the button tutorial taught it to "listen." Now it's time to learn something new: how to make the chip "talk" with other devices.
-
----
-
-## Our chip is still an island
-
-Let's look back at the path we've taken. Over 13 LED tutorials, we started with GPIO output mode, figured out clock enabling, register configuration, and HAL wrappers, and finally built a zero-overhead LED abstraction using C++ templates and `enum class`. Over 12 button tutorials, we shifted to GPIO input mode, tackled pull-up/pull-down circuits, mechanical bouncing, debounce state machines, the `std::variant` event system, and Concepts-constrained callbacks. After both sets of tutorials, our STM32 can independently handle input and output—pressing buttons, lighting LEDs, debouncing, and state management, it does it all.
-
-But if you take a step back and look at the whole system, you'll spot a problem: our chip is essentially still an island. The LED is the chip's own output, and the button is physical-world input to the chip, but neither leaves the board. Want to know the chip's internal state? You have to stare at the LED on the board. Want to send a command to the chip? You have to reach out and press a button. If your project needs the chip to send temperature data to a PC for visualization, or if you want to send configuration parameters from the PC, LEDs and buttons simply aren't enough.
-
-What we need is a mechanism for the chip to exchange data with the outside world. Not just simple 0s and 1s, but real, structured data streams. That's where serial communication comes in.
+> The LED tutorial taught the chip to "speak," and the button tutorial taught it to "listen." Now it's time to learn something new: enabling the chip to "converse" with other devices.
 
 ---
 
-## UART: The oldest, simplest, and still ubiquitous protocol
+## Our Chip is Still an Island
 
-UART stands for Universal Asynchronous Receiver/Transmitter. Calling it "old" is no exaggeration—the basic principles of this protocol date back to the teletypewriter era of the 1960s. But calling it "obsolete" would be completely wrong, because even today, almost every MCU has at least one UART peripheral. The STM32F103C8T6 chip has three: USART1, USART2, and USART3.
+Let's look back at the path we've traveled. Over 13 LED tutorials, we started with GPIO output mode, mastered clock enabling, register configuration, and HAL wrappers, and finally built a zero-overhead LED abstraction using C++ templates and RAII. Over 12 button tutorials, we switched to GPIO input mode, tackled pull-up/pull-down circuits, mechanical bouncing, debounce state machines, event systems, and concept-constrained callbacks. After these two series, our STM32 can independently handle input and output—pressing buttons, lighting LEDs, debouncing, and state management are all covered.
 
-Why has UART survived this long? The reason is simple: it only needs two wires. One TX (transmit), one RX (receive), plus a common ground. No clock line (unlike SPI, which needs SCK), no addressing mechanism (unlike I2C, which needs device addresses and acknowledgments), and no master/slave concept. As long as two devices agree on "how fast to talk" (baud rate), they can communicate directly. This extreme simplicity makes UART the default choice for embedded debugging, log output, and sensor communication.
+But if you take a step back and examine the whole system, you'll notice an issue: our chip is essentially still an island. The LED is an output of the chip itself, and the button is an input from the physical world to the chip, but neither leaves the board. Want to know the chip's internal status? You have to stare at the LED on the board. Want to send a command to the chip? You have to reach out and press the button. If your project requires the chip to send temperature data to a PC for visualization, or if you want to send configuration parameters from the PC, LEDs and buttons are completely inadequate.
 
-You've probably heard of SPI and I2C. SPI is fast but requires four wires (MOSI, MISO, SCK, CS), making it suitable for high-speed on-board communication (like driving displays or reading Flash). I2C only needs two wires (SDA, SCL) but requires an addressing and acknowledgment mechanism, making it suitable for connecting multiple low-speed devices (like temperature sensors and EEPROMs). UART sits between the two—it uses the fewest wires (two), has the simplest protocol (no address, no acknowledgment, no clock), yet it's sufficient for the vast majority of "chip-to-PC" or "chip-to-chip point-to-point" communication needs.
-
-For our tutorial, UART has another irreplaceable advantage: it can connect directly to your computer. Buy a dirt-cheap USB-TTL adapter (one with a CH340 or CP2102 chip will do), plug it into a USB port, open a terminal app (minicom, PuTTY, or the Arduino IDE's serial monitor), and you can see the text sent by the chip on your PC, and send commands from the PC to the chip. It's not as complex as a JTAG debug probe, and it doesn't require the extra protocol parsing of SPI/I2C. Whatever the chip `printf` shows up directly in your terminal—it's that simple.
+We need a mechanism for the chip to exchange data with the outside world. Not just simple 0s and 1s, but real, structured data streams. This is where serial communication comes in.
 
 ---
 
-## What we are going to build
+## UART: The Oldest, Simplest, and Still Ubiquitous Protocol
 
-Before we officially start, let's take a look at the destination. This is what our code will look like once we've finished everything:
+UART stands for Universal Asynchronous Receiver/Transmitter. It is no exaggeration to call it "ancient"—the basic principles of this protocol date back to the teletype era of the 1960s. But calling it "obsolete" would be completely wrong, because today, almost every microcontroller has at least one UART peripheral. The STM32F103C8T6 chip has three: USART1, USART2, and USART3.
+
+Why has UART survived so long? The reason is simple: it only needs two wires. One TX (transmit), one RX (receive), plus a common ground wire. No clock line (unlike SPI which needs SCK), no addressing mechanism (unlike I2C which needs device addresses and acknowledgments), and no concept of master or slave. As long as two devices agree on "how fast to speak" (baud rate), they can communicate directly. This extreme simplicity makes UART the default choice for embedded debugging, log output, and sensor communication.
+
+You may have heard of SPI and I2C. SPI is fast but requires 4 wires (MOSI, MISO, SCK, CS), making it suitable for high-speed on-board communication (like driving displays or reading Flash). I2C only needs 2 wires (SDA, SCL) but requires addressing and acknowledgment mechanisms, making it suitable for connecting multiple low-speed devices (like temperature sensors and EEPROMs). UART sits between the two—fewest wires (2), simplest protocol (no address, no ack, no clock)—yet sufficient to meet the vast majority of "chip-to-PC" or "chip-to-chip peer-to-peer" needs.
+
+For this tutorial, UART has another irreplaceable advantage: it can connect directly to your computer. Buy a cheap USB-TTL adapter (one with a CH340 or CP2102 chip), plug it into USB, open a terminal software (minicom, PuTTY, or the Arduino IDE Serial Monitor), and you can see the text sent by the chip on your computer, and send commands from the computer to the chip. It's not as complex as a JTAG debugger, and doesn't require the extra protocol parsing of SPI/I2C. The content the chip prints out appears directly in your terminal—it's just that simple.
+
+---
+
+## What We Are Building
+
+Before we officially start, let's look at the destination. Here is what our code looks like after completing everything:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/main.cpp
-#include "base/circular_buffer.hpp"
-#include "device/button.hpp"
-#include "device/button_event.hpp"
-#include "device/led.hpp"
-#include "device/uart/uart_manager.hpp"
-#include "system/clock.h"
-
-extern "C" {
-#include "stm32f1xx_hal.h"
-}
-
-#include <array>
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
-
-extern base::CircularBuffer<128>& uart_rx_buffer();
-extern void uart_start_receive();
-
-using Logger = device::uart::UartManager<device::uart::UartInstance::Usart1>;
-
-static void usart1_gpio_init() noexcept {
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    GPIO_InitTypeDef gpio{};
-    gpio.Pin = GPIO_PIN_9;
-    gpio.Mode = GPIO_MODE_AF_PP;
-    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &gpio);
-
-    gpio.Pin = GPIO_PIN_10;
-    gpio.Mode = GPIO_MODE_INPUT;
-    gpio.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(GPIOA, &gpio);
-}
-
-static void handle_command(std::string_view cmd,
-                           device::LED<device::gpio::GpioPort::C, GPIO_PIN_13>& led) {
-    if (cmd == "LED ON") {
-        led.on();
-        Logger::driver().send_string("OK: LED ON\r\n");
-    } else if (cmd == "LED OFF") {
-        led.off();
-        Logger::driver().send_string("OK: LED OFF\r\n");
-    } else if (cmd == "HELP") {
-        Logger::driver().send_string("Commands: LED ON, LED OFF, HELP\r\n");
-    } else if (!cmd.empty()) {
-        Logger::driver().send_string("ERR: unknown command\r\n");
-    }
-}
-
 int main() {
-    HAL_Init();
-    clock::ClockConfig::instance().setup_system_clock();
+    // Initialize system clocks
+    SystemClock::Config();
 
-    device::LED<device::gpio::GpioPort::C, GPIO_PIN_13> led;
-    device::Button<device::gpio::GpioPort::A, GPIO_PIN_0> button;
+    // Initialize LED (PC13)
+    Led led;
+    led.Init();
 
-    Logger::driver().set_gpio_init(usart1_gpio_init);
-    Logger::driver().init(device::uart::UartConfig{.baud_rate = 115200});
-    Logger::driver().enable_interrupt();
-    Logger::driver().send_string("UART Logger Ready!\r\n");
+    // Initialize Button (PA0)
+    Button button;
+    button.Init();
 
-    uart_start_receive();
+    // Initialize UART (USART1, PA9/PA10, 115200 8N1)
+    UartManager<Usart1, 115200> uart;
+    uart.Init();
 
-    std::array<char, 128> line_buf{};
-    size_t line_len = 0;
+    // Print welcome message
+    uart.Send("System Ready. LED is OFF.\r\n");
 
-    while (1) {
-        button.poll_events(
-            [&](device::ButtonEvent event) {
-                std::visit(
-                    [&](auto&& e) {
-                        using T = std::decay_t<decltype(e)>;
-                        if constexpr (std::is_same_v<T, device::Pressed>) {
-                            led.on();
-                            Logger::driver().send_string("Button pressed!\r\n");
-                        } else {
-                            led.off();
-                            Logger::driver().send_string("Button released!\r\n");
-                        }
-                    },
-                    event);
-            },
-            HAL_GetTick());
+    // Enable interrupt-driven receive
+    uart.StartReceive();
 
-        auto& rx = uart_rx_buffer();
-        std::byte b{};
-        while (rx.pop(b)) {
-            char c = static_cast<char>(b);
-            if (c == '\r' || c == '\n') {
-                if (line_len > 0) {
-                    handle_command({line_buf.data(), line_len}, led);
-                    line_len = 0;
-                }
-            } else if (line_len < line_buf.size() - 1) {
-                line_buf[line_len++] = c;
-            }
+    while (true) {
+        // Process received commands
+        uart.ProcessInput();
+
+        // Handle button press locally
+        if (button.IsPressed()) {
+            led.Toggle();
         }
     }
 }
 ```
 
-If you completed the LED and button tutorials, the general structure of this code shouldn't feel completely foreign. The `HAL_Init()`, system clock, and template instantiations for the LED and Button are exactly the same as before. The new parts are concentrated in the UART-related code, and those are exactly what we'll break down one by one over the next 13 articles.
+If you have completed the LED and button tutorials, the general structure of this code should not be entirely unfamiliar. The `SystemClock`, LED, and Button template instantiations are exactly the same as before. The new parts are concentrated in the UART-related code, which is exactly what we will break down one by one in the next 13 articles.
 
-Let's briefly highlight a few things. `UartManager<UartInstance::Usart1>` is a type alias—it locks in "we're using USART1" at compile time via template parameters. `send_string()` enables the chip to send text to the PC. `uart_start_receive()` starts interrupt-driven reception—whenever the PC sends a byte, a hardware interrupt pushes that byte into a ring buffer. The main loop pulls bytes from the buffer, assembles them into a line, and hands them to `handle_command()` for command parsing. You type "LED ON" in the terminal, hit Enter, and the LED turns on—that's how the whole chain works.
+Let's highlight a few things briefly. `Usart1` is a type alias—locking in "we are using USART1" at compile time via template parameters. `uart.Send` allows the chip to send text to the PC. `uart.StartReceive` starts interrupt-driven reception—whenever the PC sends a byte, a hardware interrupt pushes that byte into a ring buffer. The main loop retrieves bytes from the buffer, assembles them into a line, and then hands them to `uart.ProcessInput` to parse commands. You type "LED ON" in the terminal, press Enter, and the LED lights up—this is how the whole chain works.
 
 ---
 
-## The path ahead
+## The Road Ahead
 
-The UART tutorial consists of 13 articles, divided into six stages.
+The UART tutorial consists of 13 parts, divided into six stages.
 
 ### Stage 1: Motivation (Part 31)
 
-The very article you're reading right now. It explains why we need to learn UART, what the final result looks like, and what hardware to prepare.
+This is the part you are reading right now. It explains why we need to learn UART, what the final result looks like, and what hardware needs to be prepared.
 
 ### Stage 2: Hardware Fundamentals (Parts 32-33)
 
-Part 32 breaks down the UART protocol itself—how synchronization works without a clock line, what a data frame looks like, how baud rate and oversampling work, and why 115200 is the most common default baud rate. Part 33 shifts to the STM32F103's USART peripheral—the differences between the three USART instances, key registers, GPIO alternate function pin configuration, and a preview of the NVIC interrupt connections.
+Part 32 dissects the UART protocol itself—how to synchronize without a clock line, what the data frame looks like, how baud rate and oversampling work, and why 115200 is the most common default baud rate. Part 33 shifts to the STM32F103 USART peripheral—the differences between the three USART instances, key registers, GPIO alternate function pin configuration, and a preview of NVIC interrupt connections.
 
 ### Stage 3: HAL + Blocking I/O (Parts 34-35)
 
-Part 34 uses the HAL API to complete initialization and perform the first transmission—making the chip say "Hello" to the PC. Part 35 implements `printf` redirection (making `printf()` output directly to the serial port) and attempts blocking reception. Then you'll discover the fatal flaw of blocking reception: the main loop gets stuck. This naturally leads into the theme of the next stage.
+Part 34 uses the HAL API to complete initialization and the first transmission—making the chip say "Hello" to the PC. Part 35 implements `printf` redirection (making `printf` output directly to the serial port) and attempts blocking reception. Then you will discover the fatal problem with blocking reception: the main loop is stuck. This naturally leads to the theme of the next stage.
 
 ### Stage 4: Interrupt-Driven (Parts 36-38)
 
-This is the core stage of the series. Part 36 provides a comprehensive look at the Cortex-M3 interrupt mechanism and NVIC configuration. Part 37 designs and implements a lock-free ring buffer to serve as a safe data channel between the ISR and the main loop. Part 38 strings together the complete callback chain for interrupt reception—from `USART1_IRQHandler` to `HAL_UART_RxCpltCallback` to the ring buffer's push and reception restart.
+This is the core stage of the series. Part 36 gives a comprehensive explanation of the Cortex-M3 interrupt mechanism and NVIC configuration. Part 37 designs and implements a lock-free ring buffer as a safe data channel between the ISR and the main loop. Part 38 strings together the complete interrupt reception callback chain—from `HAL_UART_RxCpltCallback` to `UsartManager::OnReceiveComplete` to the ring buffer's push and restart reception.
 
 ### Stage 5: C++ Abstractions (Parts 39-42)
 
-Part 39 introduces C++23's `std::expected` for error handling, replacing C-style error codes. Part 40 designs a UART driver template—using NTTP to select the USART instance, and EBO (Empty Base Optimization) to eliminate object overhead. Part 41 uses Concepts to constrain the GPIO initialization callback, and designs a UartManager lifecycle manager. Part 42 does a complete `main.cpp` walkthrough, assembling all the pieces together.
+Part 39 introduces C++23's `std::expected` for error handling, replacing C-style error codes. Part 40 designs the UART driver template—using NTTP to select the USART instance and empty base optimization (EBO) to eliminate object overhead. Part 41 uses Concepts to constrain the GPIO initialization callback and designs the `UartManager` lifecycle manager. Part 42 does a complete code walkthrough, assembling all the parts together.
 
 ### Stage 6: Summary (Part 43)
 
-A collection of common pitfalls (reversed TX/RX, baud rate mismatch, ring buffer overflow, missing volatile, etc.) along with three progressive exercises.
+A summary of common pitfalls (TX/RX reversed, baud rate mismatch, ring buffer overflow, missing `volatile`, etc.) and three progressive exercises.
 
 ---
 
-## Hardware preparation
+## Hardware Preparation
 
-The good news is that the UART tutorial doesn't require any more core hardware than the button tutorial—the Blue Pill + ST-Link setup remains the same. But you do need to prepare one extra item: a USB-TTL serial adapter.
+The good news is that the UART tutorial doesn't require more core hardware than the button tutorial—Blue Pill + ST-Link is still the setup. However, you need to prepare one extra item: a USB-TTL serial adapter.
 
 The specific list is as follows:
 
-- **STM32F103C8T6 Blue Pill development board** — the same board used in the LED/button tutorials
-- **ST-Link V2 debug probe** — for flashing and debugging, same as before
-- **USB-TTL serial adapter** — one with a CH340 or CP2102 chip will do, under ten bucks on Taobao. This adapter converts USB signals into UART TTL-level signals, allowing the PC and Blue Pill to send data to each other
-- **3 female-to-female DuPont wires** — to connect the adapter and the Blue Pill
+- **STM32F103C8T6 Blue Pill Board** — The same board used in the LED/Button tutorials
+- **ST-Link V2 Debugger** — For flashing and debugging, same as before
+- **USB-TTL Serial Adapter** — One with a CH340 or CP2102 chip is fine, under ten bucks on Taobao. This adapter converts USB signals to UART TTL level signals, allowing the PC and Blue Pill to send data to each other
+- **3 Dupont Wires (Female-to-Female)** — To connect the adapter to the Blue Pill
 
 Wiring scheme:
 
-```text
-适配器 TX  → PA10（Blue Pill RX）
-适配器 RX  → PA9 （Blue Pill TX）
-适配器 GND → GND （Blue Pill GND）
+```mermaid
+graph LR
+    PC[PC / USB] -->|USB| Adapter[USB-TTL Adapter]
+    Adapter -->|TX| RX[RX (PA10)]
+    Adapter -->|RX| TX[TX (PA9)]
+    Adapter -->|GND| GND[GND]
 ```
 
-Note a key point here: the adapter's TX connects to the Blue Pill's RX, and the adapter's RX connects to the Blue Pill's TX. "Your transmit is my receive"—getting this backwards is the most common UART wiring mistake, and we'll emphasize it repeatedly later.
+Note a key point here: The adapter's TX connects to the Blue Pill's RX, and the adapter's RX connects to the Blue Pill's TX. "Your transmit is my receive"—getting this reversed is the most common wiring error in UART, and we will emphasize this repeatedly later.
 
-Why PA9 and PA10? Because the default alternate function pins for USART1's TX and RX on the STM32F103 are PA9 and PA10. This is fixed at the factory; we didn't just pick them arbitrarily.
+Why PA9 and PA10? Because the default alternate function pins for USART1's TX and RX on the STM32F103 are PA9 and PA10. This is set at the factory and not something we chose arbitrarily.
 
 On the software side, you need to install a terminal program on your PC:
 
-- **Linux**: `minicom` (`sudo apt install minicom`) or `screen /dev/ttyUSB0 115200`
-- **Windows**: PuTTY (select Serial mode) or the Arduino IDE's serial monitor
-- **macOS**: `screen /dev/tty.usbserial* 115200` or CoolTerm
+- **Linux**: `minicom` (sudo apt install minicom) or `cutecom`
+- **Windows**: PuTTY (select Serial mode) or Arduino IDE Serial Monitor
+- **macOS**: `screen` or CoolTerm
 
-Set the terminal's baud rate to 115200, 8 data bits, no parity, 1 stop bit (abbreviated as 8N1)—this is also the default configuration in our code.
-
----
-
-## New C++ features we will learn
-
-The UART tutorial involves more C++ features than the previous two series, because we need to handle new problems like error handling, interrupt callbacks, and template instance selection. Here's a list upfront; we'll break each one down in subsequent articles:
-
-- **`std::expected<T, E>`** (C++23) — error handling in embedded systems, lighter than exceptions, safer than error codes
-- **`std::span`** (C++20) — a safe view over contiguous memory, replacing raw pointers + length
-- **`std::string_view`** (C++17) — zero-copy string view, a powerful tool for command parsing
-- **`consteval`** (C++20) — compile-time baud rate error verification
-- **Concepts** (C++20) — constraining the signatures of GPIO initialization callbacks
-- **`static inline` members** (C++17) — per-instance independent storage in template classes
-- **`volatile`** — shared variable semantics between the ISR and the main loop
-- **`extern "C"` ISR bridging** — a bridging pattern between C++ code and C-linked interrupt vectors
-- **`if constexpr`** (C++17) — compile-time selection of different USART instances
-
-None of these features are used just for the sake of using them—each solves a practical problem in implementing the UART driver. We won't teach the syntax first and then the application; instead, we'll introduce features within the context of specific problems, so you know "why we need it."
+Set the terminal baud rate to 115200, 8 data bits, no parity, 1 stop bit (abbreviated as 8N1)—this is also our default configuration in the code.
 
 ---
 
-## Where to next
+## New C++ Features We Will Learn
 
-The preparation is done. What UART is, why we should learn it, what the final result looks like, how to wire the hardware—you already know all of this.
+The UART tutorial involves more C++ features than the previous two series because we need to address new issues like error handling, interrupt callbacks, and template instance selection. Here is a list first, and each subsequent article will break them down:
 
-In the next article, we start from scratch: the UART protocol itself. Without a clock line, how do two devices know where a byte starts and ends? What roles do the start bit, data bits, parity bit, and stop bits play? Behind the baud rate number, what is the chip actually doing? Once you understand these questions, you won't be "blindly copying parameters" when writing code later; instead, you'll "know what this parameter means in the protocol."
+- **`std::expected`** (C++23) — Error handling in embedded systems, lighter than exceptions, safer than error codes
+- **`std::span`** (C++20) — A safe view over contiguous memory, replacing raw pointers + length
+- **`std::string_view`** (C++17) — Zero-copy string view, a sharp tool for command parsing
+- **`consteval`** (C++20) — Compile-time baud rate error verification
+- **Concepts** (C++20) — Constraining the signature of GPIO initialization callbacks
+- **`static` inline members** (C++17) — Per-instance independent storage in template classes
+- **`volatile`** — Shared variable semantics between ISRs and the main loop
+- **C++ to C ISR Bridge** — Bridge pattern between C++ code and C-linked interrupt vectors
+- **`if constexpr`** (C++17) — Selecting different USART instances at compile time
+
+None of these features are used just for the sake of it—each solves a practical problem in implementing the UART driver. We won't talk about syntax first and then application; instead, we will introduce features within specific problems so you know "why we need it."
+
+---
+
+## Where to Next
+
+The preparations are complete. You now know what UART is, why learn it, what the final result looks like, and how to connect the hardware.
+
+In the next part, we start from scratch: the UART protocol itself. Without a clock line, how do two devices know where a byte starts and ends? What roles do start bits, data bits, parity bits, and stop bits play? Behind the baud rate number, what is the chip actually doing? Once these questions are clear, you won't be "copying parameters" when writing code later, but rather "I know what this parameter means in the protocol."
 
 Ready? Let's go.

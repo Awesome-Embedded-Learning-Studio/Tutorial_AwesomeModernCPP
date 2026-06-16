@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Introduces the fundamental concepts of cross-compilation, toolchains,
-  and how to configure multi-target builds using CMake.
+description: Introduces the basic concepts of cross-compilation, toolchains, and configuration
+  methods for multi-target builds using CMake.
 difficulty: beginner
 order: 1
 platform: host
@@ -18,274 +18,259 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: A Brief Guide to Cross-Compiling and CMake
+title: Cross-compilation and a Simple Guide to CMake
 translation:
-  engine: anthropic
   source: documents/vol7-engineering/01-cross-compilation-and-cmake.md
-  source_hash: 96f3692b2eef6e172c5a1da5be83edc62dcc598517a8ea4e090d86942419b3b1
+  source_hash: 17a7cf9738924da151199b5148b0d6e1660d40804d6fe22a9ee17fcba8b4808f
+  translated_at: '2026-06-16T04:07:47.656857+00:00'
+  engine: anthropic
   token_count: 2604
-  translated_at: '2026-05-26T11:50:30.076667+00:00'
 ---
 # Modern Embedded C++ Tutorial: Cross-Compilation Basics and CMake Multi-Target Builds
 
 ## Introduction
 
-In the field of embedded development, we often face an interesting challenge: the development environment and the target runtime environment are usually completely different hardware platforms. You might write code on a powerful x86_64 workstation, but the final program needs to run on an ARM-based MCU (Microcontroller Unit) or a RISC-V processor. This is exactly why cross-compilation exists.
+In the field of embedded development, we often face an interesting challenge: the development environment and the target runtime environment are often completely different hardware platforms. You might write code on a powerful x86_64 workstation, but the final program needs to run on an ARM architecture microcontroller or a RISC-V processor. This is where cross-compilation comes into play.
 
-This article will dive into the fundamental concepts of cross-compilation and detail how to use CMake, a modern build system, to manage the build process for multiple target platforms. Whether you are a newcomer to embedded development or a seasoned developer looking to optimize your existing build process, this article will provide you with practical knowledge and techniques.
+This article will delve into the basic concepts of cross-compilation and detail how to use CMake, a modern build system, to manage build processes for multiple target platforms. Whether you are a newcomer to embedded development or a senior developer looking to optimize your existing build process, this article will provide you with practical knowledge and techniques.
 
 ## Part 1: Cross-Compilation Basics
 
 #### What is Cross-Compilation
 
-Cross-compilation refers to **the process of compiling on one platform (the host platform) to generate an executable program that runs on another platform (the target platform)**. This contrasts with native compilation, where the compiled program runs on the same platform that built it.
+Cross-compilation refers to the process of **compiling on one platform (the Host Platform) to generate an executable program that runs on another platform (the Target Platform)**. This contrasts with our common native compilation—where native compilation generates programs that run on the same platform that compiled them.
 
-A simple example: when you compile a C++ program on your Ubuntu x86_64 laptop, and that program will run on a Raspberry Pi's ARM processor, you are cross-compiling.
+A simple example: when you compile a C++ program on your Ubuntu x86_64 laptop, and this program will run on a Raspberry Pi's ARM processor, you are performing cross-compilation.
 
 #### Why We Need Cross-Compilation
 
-This isn't really a question—let me ask you instead: would you dare to deploy a full compiler toolchain on your microcontroller? An MCU (Microcontroller Unit) with only a few megabytes of Flash and a few dozen kilobytes of RAM obviously cannot run the GCC compiler.
+This question isn't really a question; let me ask you a question instead—would you dare to deploy a complete compiler toolchain on your microcontroller? A microcontroller with only a few MB of Flash and a few dozen KB of RAM obviously cannot run a GCC compiler.
 
-Furthermore, even if the target device could theoretically compile code, doing so on resource-constrained hardware would be incredibly slow. In contrast, compiling on a powerful development machine significantly shortens the development cycle and improves work efficiency. Desktop development environments also typically have a more complete ecosystem of development tools, including IDEs, debuggers, and profilers, which can significantly enhance the development experience.
+Moreover, even if the target device could theoretically compile code, compiling on resource-constrained hardware would be very slow. In contrast, compiling on a high-performance development machine can significantly shorten the development cycle and improve work efficiency. Desktop development environments usually have a more complete ecosystem of development tools, including IDEs, debuggers, performance analyzers, etc., which can significantly improve the development experience.
 
 #### Cross-Compilation Toolchain
 
-A cross-compilation toolchain is a set of tools specifically designed for cross-compilation, usually including:
+A cross-compilation toolchain is a set of tools specifically used for cross-compilation, usually including:
 
-- **Cross Compiler**: This is the core of the toolchain. For example, `arm-none-eabi-gcc` is used for bare-metal ARM development, and `aarch64-linux-gnu-gcc` is used for ARM64 Linux systems. The compiler is responsible for translating source code into the target platform's machine code.
+- **Cross Compiler**: This is the core of the toolchain, such as `arm-none-eabi-gcc` for bare-metal ARM development, or `aarch64-linux-gnu-gcc` for ARM64 Linux systems. The compiler is responsible for translating source code into machine code for the target platform.
 
-- **Cross Assembler**: Converts assembly language code into the target platform's machine code, usually used in conjunction with the compiler.
+- **Cross Assembler**: Converts assembly language code into machine code for the target platform, usually used in conjunction with the compiler.
 
-- **Cross Linker**: Links multiple object files (`.o` files) generated by the compiler into the final executable or library files, handling symbol resolution and address relocation.
+- **Cross Linker**: Links multiple object files (.o files) generated by compilation into the final executable or library files, handling symbol resolution and address relocation.
 
-- **Standard Libraries**: C/C++ standard libraries compiled for the target platform, including libc, libstdc++, and so on. These libraries must be compiled for the target architecture.
+- **Standard Libraries**: C/C++ standard libraries compiled for the target platform, including libc, libstdc++, etc. These libraries must be compiled for the target architecture.
 
-- **Auxiliary Tools**: Tools such as `objdump` (for viewing object files), `objcopy` (for converting object file formats), `size` (for viewing program size), and `nm` (for viewing symbol tables).
+- **Auxiliary Tools**: Tools such as `objdump` (view object files), `objcopy` (convert object file formats), `size` (view program size), `nm` (view symbol tables), etc.
 
 ##### Target Triplet
 
 In cross-compilation, we use a "target triplet" to precisely describe the target platform. This triplet usually consists of three or four parts:
 
-```cpp
-
-<架构>-<厂商>-<操作系统>-<ABI>
-
+```mermaid
+graph LR
+    A[Target Triplet] --> B[arch-vendor-os-abi]
+    B --> C[arch: CPU Architecture]
+    B --> D[vendor: Toolchain Vendor]
+    B --> E[os: Operating System]
+    B --> F[abi: Binary Interface]
 ```
 
-Let's look at a few real-world examples:
+Let's look at a few actual examples:
 
-- `arm-none-eabi`: ARM architecture, no vendor, no operating system (bare-metal), EABI (Embedded Application Binary Interface)
-- `aarch64-linux-gnu`: ARM64 architecture, Linux operating system, GNU toolchain
-- `x86_64-w64-mingw32`: x86_64 architecture, Windows operating system, MinGW toolchain
-- `riscv64-unknown-elf`: RISC-V 64-bit architecture, unknown vendor, ELF (Executable and Linkable Format) format
+- `arm-none-eabi`: ARM architecture, no vendor, no OS (bare-metal), EABI (Embedded Application Binary Interface)
+- `aarch64-linux-gnu`: ARM64 architecture, Linux OS, GNU toolchain
+- `x86_64-w64-mingw32`: x86_64 architecture, Windows OS, MinGW toolchain
+- `riscv64-unknown-elf`: RISC-V 64-bit architecture, unknown vendor, ELF format
 
 Understanding the target triplet is crucial for selecting the correct toolchain and configuring the build system. Different triplets imply different instruction sets, calling conventions, binary formats, and runtime environments.
 
 #### Challenges of Cross-Compilation
 
-Although powerful, cross-compilation brings several challenges:
+While powerful, cross-compilation also brings some challenges:
 
-**Dependency management**: When a program depends on third-party libraries, you need to ensure these libraries are also compiled for the target platform. You cannot link a library compiled for x86 into an ARM program.
+**Dependency Management**: When a program depends on third-party libraries, you need to ensure these libraries are also compiled for the target platform. You cannot link a library compiled for x86 into an ARM program.
 
-**System call differences**: Different operating systems have different system call interfaces, which need to be handled properly in the code.
+**System Call Differences**: Different operating systems have different system call interfaces, and these differences need to be handled properly in the code.
 
-**Endianness issues**: Different architectures might use different byte orders (big-endian or little-endian), requiring special attention when handling network protocols or file formats.
+**Endianness Issues**: Different architectures may use different endianness (big-endian or little-endian), which requires special attention when handling network protocols or file formats.
 
-**Pointer size**: The pointer size differs between 32-bit and 64-bit architectures, which can lead to subtle bugs.
+**Pointer Size**: Pointer sizes differ between 32-bit and 64-bit architectures, which can lead to subtle bugs.
 
-**Floating-point operations**: Floating-point implementations may vary slightly across platforms, and some embedded platforms lack a hardware floating-point unit entirely.
+**Floating Point Operations**: Implementations of floating-point operations may vary slightly across platforms, and some embedded platforms even lack hardware floating-point units.
 
 ## CMake Build System Basics
 
-Well, there are no hands-on exercises in this section, so just skim through it. We will dedicate a specific chapter to dive into this topic later.
+Well, there isn't any actual combat here, so just have a look. Later on, there will be a special chapter to chat about this.
 
 ### Why Choose CMake
 
-CMake (Cross-platform Make) is a cross-platform build system generator. It does not build programs directly; instead, it generates the files required by native build systems (such as Makefiles, Ninja build files, or Visual Studio project files).
+CMake (Cross-platform Make) is a cross-platform build system generator. It does not build programs directly; instead, it generates files required for the native build system (such as Makefiles, Ninja build files, or Visual Studio project files).
 
-For embedded development, CMake offers the following advantages:
+For embedded development, CMake has the following advantages:
 
-**Cross-platform support**: The same set of CMake configurations can be used on Linux, Windows, and macOS to generate build files for the respective platforms.
+**Cross-platform Support**: The same set of CMake configurations can be used on Linux, Windows, and macOS to generate build files for the corresponding platform.
 
-**Cross-compilation support**: CMake natively supports cross-compilation, making it easy to configure the target platform through a Toolchain file.
+**Cross-compilation Support**: CMake natively supports cross-compilation, making it easy to configure the target platform through Toolchain files.
 
-**Modular design**: CMake's module system makes it easy to manage multiple components and dependencies in complex projects.
+**Modular Design**: CMake's module system facilitates managing multiple components and dependencies in complex projects.
 
-**Modern features**: Supports target-oriented build configurations, making dependencies clearer and configuration more intuitive.
+**Modern Features**: Supports Target-oriented build configuration, making dependencies clearer and configuration more intuitive.
 
-**Broad IDE support**: Mainstream IDEs such as CLion, Visual Studio Code, and Qt Creator all have excellent CMake support.
+**Wide IDE Support**: Mainstream IDEs such as CLion, Visual Studio Code, and Qt Creator have good support for CMake.
 
-### Core CMake Concepts
+### CMake Basic Concepts
 
-Before diving into cross-compilation configuration, let's quickly review a few core CMake concepts:
+Before diving into cross-compilation configuration, let's quickly review CMake's several core concepts:
 
-**CMakeLists.txt**: This is the CMake configuration file that describes the project's structure, source files, dependencies, and build rules.
+**CMakeLists.txt**: This is CMake's configuration file, describing the project's structure, source files, dependencies, and build rules.
 
 **Target**: Can be an executable file, a library file, or a custom target. Modern CMake recommends a target-centric configuration approach.
 
-**Generator**: Determines what type of build system files CMake generates, such as Unix Makefiles, Ninja, or Visual Studio.
+**Generator**: Determines what type of build system files CMake generates, such as Unix Makefiles, Ninja, Visual Studio, etc.
 
-**Build Tree and Source Tree**: The source tree contains the source code and CMakeLists.txt, while the build tree is where the generated build files and compilation artifacts are stored. We recommend using out-of-source builds to keep the source directory clean.
+**Build Tree and Source Tree**: The source tree contains source code and CMakeLists.txt, while the build tree is where generated build files and compilation artifacts are stored. Out-of-source builds are recommended to keep the source directory clean.
 
 **Variables and Cache**: CMake uses variables to store configuration information, and certain variables are cached for reuse in subsequent configurations.
 
 ## CMake Cross-Compilation Configuration
 
-### 3.1 The Role of the Toolchain File
+### 3.1 The Role of Toolchain Files
 
-The Toolchain file is the core of CMake cross-compilation. It is a CMake script file that describes all the information needed for cross-compilation, including compiler paths, target system information, and compiler flags.
+The Toolchain file is the core of CMake cross-compilation. It is a CMake script file that describes all the information required for cross-compilation, including compiler paths, target system information, compilation options, etc.
 
 Benefits of using a Toolchain file:
 
 - **Reusability**: Configure once, share across multiple projects
-- **Version control**: Toolchain files can be placed under version control to ensure the team uses the same configuration
-- **Clear separation**: Separates platform-specific configuration from project logic
+- **Version Control**: Toolchain files can be included in version control to ensure the team uses the same configuration
+- **Clear Separation**: Separate platform-related configuration from project logic
 
 ### Writing a Toolchain File
 
-Let's start with an example Toolchain file for ARM Cortex-M:
+Let's start with an example of a Toolchain file for ARM Cortex-M:
 
 ```cmake
+# CMake minimum version requirement
+cmake_minimum_required(VERSION 3.20)
 
-# arm-none-eabi-toolchain.cmake
+# Declare the target system name
 set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_SYSTEM_PROCESSOR ARM)
 
-# 指定交叉编译器
-set(CMAKE_C_COMPILER arm-none-eabi-gcc)
-set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
-set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
+# Toolchain path settings
+set(TOOLCHAIN arm-none-eabi-)
+set(CMAKE_C_COMPILER ${TOOLCHAIN}gcc)
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN}g++)
 
-# 指定工具链程序
-set(CMAKE_OBJCOPY arm-none-eabi-objcopy)
-set(CMAKE_OBJDUMP arm-none-eabi-objdump)
-set(CMAKE_SIZE arm-none-eabi-size)
+# Compiler flags
+set(CMAKE_C_FLAGS
+    "-mcpu=cortex-m4 "
+    "-mthumb "
+    "-mfloat-abi=hard "
+    "-mfpu=fpv4-sp-d16 "
+    "-fno-exceptions "
+    "-fno-rtti"
+)
 
-# 设置编译器标志
-set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16")
-set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-exceptions -fno-rtti")
+set(CMAKE_CXX_FLAGS
+    "-mcpu=cortex-m4 "
+    "-mthumb "
+    "-mfloat-abi=hard "
+    "-mfpu=fpv4-sp-d16 "
+    "-fno-exceptions "
+    "-fno-rtti"
+)
 
-# 设置链接器标志
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-specs=nosys.specs -Wl,--gc-sections")
+# Disable compiler test program (compilation test may fail on bare metal)
+set(CMAKE_C_COMPILER_WORKS 1)
+set(CMAKE_CXX_COMPILER_WORKS 1)
 
-# 搜索路径配置
+# Search path control
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-
 ```
 
-Let's break down the various parts of this file in detail:
+Let's interpret the various parts of this file in detail:
 
-**CMAKE_SYSTEM_NAME**: Specifies the target system type. `Generic` indicates a bare-metal environment without an operating system, but it can also be `Linux`, `Windows`, and so on.
+**CMAKE_SYSTEM_NAME**: Specifies the target system type. `Generic` indicates a bare-metal environment without an operating system, but it can also be `Linux`, `Windows`, etc.
 
-**CMAKE_SYSTEM_PROCESSOR**: Specifies the target processor architecture, such as `arm`, `aarch64`, or `riscv64`.
+**CMAKE_SYSTEM_PROCESSOR**: Specifies the target processor architecture, such as `ARM`, `RISCV`, `XTENSA`, etc.
 
-**Compiler settings**: Explicitly specifies the cross-compilers to use. CMake will use these compilers instead of the system defaults.
+**Compiler Settings**: Explicitly specify the cross-compilers to use. CMake will use these compilers instead of the system defaults.
 
-**Compiler flags**:
+**Compiler Flags**:
 
 - `-mcpu=cortex-m4`: Specifies the target CPU model
-- `-mthumb`: Uses the Thumb instruction set (for higher code density)
+- `-mthumb`: Uses the Thumb instruction set (higher code density)
 - `-mfloat-abi=hard`: Uses the hardware floating-point ABI
 - `-mfpu=fpv4-sp-d16`: Specifies the floating-point unit type
-- `-fno-exceptions`: Disables C++ exceptions (common in embedded development)
-- `-fno-rtti`: Disables Run-Time Type Information (RTTI)
+- `-fno-exceptions`: Disables C++ exceptions (common in embedded systems)
+- `-fno-rtti`: Disables Run-Time Type Information
 
-**CMAKE_FIND_ROOT_PATH_MODE series**: Controls CMake's search behavior when looking for libraries, header files, and other resources, preventing the accidental use of host platform libraries.
+**CMAKE_FIND_ROOT_PATH_MODE series**: Controls CMake's search behavior when finding libraries, header files, etc., to avoid accidentally using libraries from the host platform.
 
 ### A More Complex Toolchain Example: ARM Linux
 
-For ARM devices running Linux (like the Raspberry Pi), the Toolchain file will be somewhat different:
+For ARM devices running Linux (like Raspberry Pi), the Toolchain file will be different:
 
 ```cmake
+cmake_minimum_required(VERSION 3.20)
 
-# aarch64-linux-gnu-toolchain.cmake
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_PROCESSOR aarch64)
+set(CMAKE_SYSTEM_PROCESSOR arm)
 
-# 工具链安装路径
-set(TOOLCHAIN_PREFIX /usr/aarch64-linux-gnu)
+# Path to the cross-compilation toolchain
+set(TOOLCHAIN_PATH /opt/gcc-arm-linux-gnueabihf)
+set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/arm-linux-gnueabihf-gcc)
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PATH}/bin/arm-linux-gnueabihf-g++)
 
-# 编译器
-set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
-set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
+# Sysroot settings
+set(CMAKE_SYSROOT /opt/arm-sysroot)
 
-# Sysroot设置(包含目标系统的库和头文件)
-set(CMAKE_SYSROOT ${TOOLCHAIN_PREFIX})
-set(CMAKE_FIND_ROOT_PATH ${TOOLCHAIN_PREFIX})
+set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
 
-# 编译器标志
-set(CMAKE_C_FLAGS_INIT "-march=armv8-a")
-set(CMAKE_CXX_FLAGS_INIT "${CMAKE_C_FLAGS_INIT}")
-
-# 搜索配置
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-# pkg-config配置
-set(ENV{PKG_CONFIG_PATH} "")
-set(ENV{PKG_CONFIG_LIBDIR} "${CMAKE_SYSROOT}/usr/lib/pkgconfig:${CMAKE_SYSROOT}/usr/share/pkgconfig")
-set(ENV{PKG_CONFIG_SYSROOT_DIR} ${CMAKE_SYSROOT})
-
 ```
 
-This example introduces the concept of `CMAKE_SYSROOT`. A sysroot is a directory that contains a copy of the target system's root filesystem, including library files, header files, and so on. This is very important for target platforms with a full operating system.
+This example introduces the concept of `CMAKE_SYSROOT`. A Sysroot is a directory that contains a copy of the target system's root file system, including library files, header files, etc. This is very important for target platforms with a complete operating system.
 
-### Using the Toolchain File
+### Using a Toolchain File
 
-To configure using a Toolchain file:
+Using a Toolchain file to configure:
 
 ```bash
-
-# 创建构建目录
-mkdir build-arm && cd build-arm
-
-# 使用toolchain文件配置CMake
-cmake -DCMAKE_TOOLCHAIN_FILE=../toolchains/arm-none-eabi-toolchain.cmake \
-      -DCMAKE_BUILD_TYPE=Release \
-      ..
-
-# 构建
-cmake --build .
-
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=cmake/arm-cortex-m4.cmake
 ```
 
-Important note: **The Toolchain file must be specified via `-DCMAKE_TOOLCHAIN_FILE` the first time you run CMake**, and it will be cached afterward. If you need to switch Toolchains, you must delete the build directory and reconfigure.
+Important tip: **The Toolchain file must be specified via `-DCMAKE_TOOLCHAIN_FILE` the first time you run CMake**, after which it will be cached. If you need to change the Toolchain, you must delete the build directory and reconfigure.
 
 ## Part 4: CMake Multi-Target Builds
 
-### What is a Multi-Target Build
+### What is Multi-Target Building
 
-A multi-target build means that the same set of source code can generate executable programs for different target platforms. In embedded development, this is very common:
+Multi-target building means that the same set of source code can generate executable programs for different target platforms. In embedded development, this is very common:
 
 - Building for multiple hardware variants (STM32F4, STM32F7)
-- Supporting both development boards and production boards
+- Supporting both development boards and product boards
 - Building test versions on the host platform and release versions on the target platform
-- Supporting multiple operating systems (Linux, RTOS (Real-Time Operating System), bare-metal)
+- Supporting multiple operating systems (Linux, RTOS, bare-metal)
 
-### Multi-Target Approach Based on Build Directories
+### Multi-Target Scheme Based on Build Directories
 
-The simplest multi-target build approach is to create independent build directories for each platform:
+The simplest multi-target build scheme is to create independent build directories for each platform:
 
-```bash
-
-# 项目结构
+```text
 project/
 ├── src/
-├── include/
-├── toolchains/
-│   ├── arm-cortex-m4.cmake
-│   ├── arm-cortex-m7.cmake
-│   └── x86_64-linux.cmake
-├── CMakeLists.txt
-└── builds/
-    ├── cortex-m4/
-    ├── cortex-m7/
-    └── host/
-
+├── cmake/
+│   ├── stm32f4.cmake
+│   ├── stm32f7.cmake
+│   └── linux-x86.cmake
+├── build_stm32f4/
+├── build_stm32f7/
+└── build_linux/
 ```
 
 Build script example:
@@ -293,186 +278,95 @@ Build script example:
 ```bash
 #!/bin/bash
 
-# 构建Cortex-M4版本
-cmake -S . -B builds/cortex-m4 \
-      -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake \
-      -DCMAKE_BUILD_TYPE=Release
-cmake --build builds/cortex-m4
+# Build for STM32F4
+cmake -B build_stm32f4 -DCMAKE_TOOLCHAIN_FILE=cmake/stm32f4.cmake
+cmake --build build_stm32f4
 
-# 构建Cortex-M7版本
-cmake -S . -B builds/cortex-m7 \
-      -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m7.cmake \
-      -DCMAKE_BUILD_TYPE=Release
-cmake --build builds/cortex-m7
+# Build for STM32F7
+cmake -B build_stm32f7 -DCMAKE_TOOLCHAIN_FILE=cmake/stm32f7.cmake
+cmake --build build_stm32f7
 
-# 构建主机测试版本
-cmake -S . -B builds/host \
-      -DCMAKE_BUILD_TYPE=Debug
-cmake --build builds/host
-
+# Build for Linux x86
+cmake -B build_linux -DCMAKE_TOOLCHAIN_FILE=cmake/linux-x86.cmake
+cmake --build build_linux
 ```
 
 ### Conditional Compilation and Platform Detection
 
-In CMakeLists.txt, we need to perform conditional configuration based on different platforms:
+In `CMakeLists.txt`, we need to perform conditional configuration based on different platforms:
 
 ```cmake
-cmake_minimum_required(VERSION 3.20)
-project(EmbeddedApp CXX C ASM)
-
-# 检测目标平台
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
-    message(STATUS "Building for ARM architecture")
-
-    # ARM特定配置
-    add_compile_definitions(TARGET_ARM)
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
-        message(STATUS "Bare-metal ARM target")
-        add_compile_definitions(BARE_METAL)
-    endif()
-
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-    message(STATUS "Building for x86_64 architecture")
-    add_compile_definitions(TARGET_X86_64)
-
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
-    message(STATUS "Building for RISC-V 64-bit")
-    add_compile_definitions(TARGET_RISCV64)
-endif()
-
-# 添加源文件
-set(COMMON_SOURCES
-    src/main.cpp
-    src/application.cpp
-)
-
-# 平台特定源文件
+# Detect the target platform
 if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
-    list(APPEND COMMON_SOURCES
-        src/startup_arm.s
-        src/hal_bare_metal.cpp
-    )
-else()
-    list(APPEND COMMON_SOURCES
-        src/hal_linux.cpp
-    )
+    # Bare-metal configuration
+    add_definitions(-DUSE_HAL_DRIVER)
+    target_sources(app PRIVATE src/stm32/peripherals.cpp)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Linux configuration
+    target_sources(app PRIVATE src/linux/peripherals.cpp)
 endif()
-
-# 创建可执行目标
-add_executable(app ${COMMON_SOURCES})
-
-# 平台特定链接配置
-if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
-    target_link_options(app PRIVATE
-        -T${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld
-        -Wl,-Map=${CMAKE_BINARY_DIR}/app.map
-    )
-endif()
-
 ```
 
 ### Using Generator Expressions
 
-CMake generator expressions provide a more flexible way to handle conditional configuration:
+CMake's generator expressions provide a more flexible way to perform conditional configuration:
 
 ```cmake
-
-# 根据配置类型设置不同的编译选项
-target_compile_options(app PRIVATE
-    $<$<CONFIG:Debug>:-O0 -g3>
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
+target_sources(app PRIVATE
+    src/common/main.cpp
+    $<$<PLATFORM_ID:Generic>:src/stm32/hal.cpp>
+    $<$<PLATFORM_ID:Linux>:src/linux/hal.cpp>
 )
 
-# 根据编译器类型设置选项
-target_compile_options(app PRIVATE
-    $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
-    $<$<CXX_COMPILER_ID:Clang>:-Weverything>
+target_compile_definitions(app PRIVATE
+    $<$<PLATFORM_ID:Generic>:ARM_MATH_CM4>
+    $<$<PLATFORM_ID:Linux>:SIMULATION_MODE>
 )
-
-# 根据平台设置链接库
-target_link_libraries(app PRIVATE
-    $<$<PLATFORM_ID:Linux>:pthread>
-    $<$<PLATFORM_ID:Windows>:ws2_32>
-)
-
 ```
 
-### Hardware Abstraction Layer (HAL) Design
+### Platform Abstraction Layer (HAL) Design
 
 In multi-target projects, a good hardware abstraction layer design is crucial:
 
-```cmake
+```cpp
+// src/hal/gpio_interface.hpp
+class IGpio {
+public:
+    virtual void init() = 0;
+    virtual void set(bool state) = 0;
+    virtual bool get() const = 0;
+    virtual ~IGpio() = default;
+};
 
-# 创建HAL接口库
-add_library(hal_interface INTERFACE)
-target_include_directories(hal_interface INTERFACE
-    include/hal
-)
+// src/stm32/gpio.hpp
+class Stm32Gpio : public IGpio {
+    // STM32 implementation
+};
 
-# 为不同平台创建HAL实现
-if(CMAKE_SYSTEM_NAME STREQUAL "Generic")
-    add_library(hal_impl STATIC
-        src/hal/gpio_stm32.cpp
-        src/hal/uart_stm32.cpp
-        src/hal/timer_stm32.cpp
-    )
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_library(hal_impl STATIC
-        src/hal/gpio_linux.cpp
-        src/hal/uart_linux.cpp
-        src/hal/timer_linux.cpp
-    )
-endif()
-
-target_link_libraries(hal_impl PUBLIC hal_interface)
-
-# 应用程序链接HAL
-target_link_libraries(app PRIVATE hal_impl)
-
+// src/linux/gpio.hpp
+class LinuxGpio : public IGpio {
+    // Linux implementation (e.g., using sysfs or gpiod)
+};
 ```
 
 ### Configuration Variant Management
 
-For different hardware variants of the same architecture, we can use CMake options and cache variables:
+For different hardware variants of the same architecture, CMake's options and cache variables can be used:
 
 ```cmake
+option(BOARD_VARIANT "Select board variant" "STM32F407")
 
-# 定义硬件变体选项
-set(TARGET_BOARD "STM32F407_DISCOVERY" CACHE STRING "Target board")
-set_property(CACHE TARGET_BOARD PROPERTY STRINGS
-    "STM32F407_DISCOVERY"
-    "STM32F429_DISCO"
-    "CUSTOM_BOARD_V1"
-    "CUSTOM_BOARD_V2"
-)
-
-# 根据板子配置
-if(TARGET_BOARD STREQUAL "STM32F407_DISCOVERY")
-    set(MCU_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16")
-    set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/STM32F407VG.ld")
-    add_compile_definitions(STM32F407xx)
-
-elseif(TARGET_BOARD STREQUAL "STM32F429_DISCO")
-    set(MCU_FLAGS "-mcpu=cortex-m4 -mfpu=fpv4-sp-d16")
-    set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/STM32F429ZI.ld")
-    add_compile_definitions(STM32F429xx)
-
+if(BOARD_VARIANT STREQUAL "STM32F407")
+    set(MCU_MODEL STM32F407xx)
+    set(FLASH_SIZE 1024)
+elseif(BOARD_VARIANT STREQUAL "STM32F429")
+    set(MCU_MODEL STM32F429xx)
+    set(FLASH_SIZE 2048)
 endif()
-
-# 应用配置
-add_compile_options(${MCU_FLAGS})
-target_link_options(app PRIVATE -T${LINKER_SCRIPT})
-
 ```
 
-Usage:
+When using:
 
 ```bash
-cmake -B build-f407 -DTARGET_BOARD=STM32F407_DISCOVERY \
-      -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake
-
-cmake -B build-f429 -DTARGET_BOARD=STM32F429_DISCO \
-      -DCMAKE_TOOLCHAIN_FILE=toolchains/arm-cortex-m4.cmake
-
+cmake -B build -DBOARD_VARIANT=STM32F429
 ```

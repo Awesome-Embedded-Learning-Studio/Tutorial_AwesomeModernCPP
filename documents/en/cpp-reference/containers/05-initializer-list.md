@@ -17,16 +17,16 @@ tags:
 - beginner
 title: std::initializer_list
 translation:
-  engine: anthropic
   source: documents/cpp-reference/containers/05-initializer-list.md
-  source_hash: aee3f97cd1a75fd47d8d15060f08cf186e4ff14367c651860d2881fd20178a53
-  token_count: 508
-  translated_at: '2026-06-15T09:06:26.428918+00:00'
+  source_hash: 197c5953f5761c391451a910096e121575d8ae79b09644f845eb7f7d3e1dcf00
+  translated_at: '2026-06-16T03:28:25.608053+00:00'
+  engine: anthropic
+  token_count: 513
 ---
 <!--
 Reference Card Template
-For feature quick reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a refined, structured format and do not require a narrative style.
+For feature cheat sheets under documents/cpp-reference/.
+Unlike article-template.md, reference cards follow a refined, structured format and do not require a narrative style.
 
 Tag usage rules:
 1. Must include 1 platform tag (use 'host' for reference cards)
@@ -35,11 +35,24 @@ Tag usage rules:
 4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
+---
+title: "std::initializer_list (C++11)"
+description: "A lightweight proxy object for passing brace-enclosed lists of initial values."
+tags:
+
+- cpp11
+- stl
+- host
+- beginner
+- type
+
+---
+
 # std::initializer_list (C++11)
 
-## In a Nutshell
+## In a nutshell
 
-A lightweight, read-only proxy object that allows you to conveniently pass an arbitrary number of initial values of the same type to containers or custom classes using brace initialization `{}`.
+A lightweight, read-only proxy object that allows us to conveniently pass an arbitrary number of initial values of the same type to containers or custom classes using brace-enclosed `init` lists.
 
 ## Header
 
@@ -50,11 +63,11 @@ A lightweight, read-only proxy object that allows you to conveniently pass an ar
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
 | Constructor | `initializer_list() noexcept` | Creates an empty list (usually implicitly constructed by the compiler) |
-| Element Count | `std::size_t size() const noexcept` | Returns the number of elements in the list |
-| Begin Pointer | `const T* begin() const noexcept` | Pointer to the first element |
-| End Pointer | `const T* end() const noexcept` | Pointer to one past the last element |
-| Begin Iterator | `const T* begin(std::initializer_list<T> il) noexcept` | Overloaded `std::begin` |
-| End Iterator | `const T* end(std::initializer_list<T> il) noexcept` | Overloaded `std::end` |
+| Element count | `std::size_t size() const noexcept` | Returns the number of elements in the list |
+| Begin pointer | `const T* begin() const noexcept` | Pointer to the first element |
+| End pointer | `const T* end() const noexcept` | Pointer to one past the last element |
+| Begin iterator | `const T* begin(std::initializer_list<T> il) noexcept` | Overloaded `begin` |
+| End iterator | `const T* end(std::initializer_list<T> il) noexcept` | Overloaded `end` |
 
 ## Minimal Example
 
@@ -81,9 +94,9 @@ int main() {
 
 ## Embedded Applicability: High
 
-- The underlying implementation typically contains only a pointer and a length (or two pointers), resulting in minimal memory overhead.
-- Copying `std::initializer_list` does not copy the underlying array; it only copies the proxy object itself, incurring no additional allocation overhead.
-- The underlying array may be stored in read-only memory, making it suitable for initializing static configuration tables placed in ROM.
+- The underlying implementation typically contains only a pointer and a size (or two pointers), resulting in minimal memory overhead.
+- Copying an `std::initializer_list` does not copy the underlying array; it only copies the proxy object itself, incurring no allocation overhead.
+- The underlying array may reside in read-only memory, making it suitable for initializing static configuration tables stored in ROM.
 
 ## Compiler Support
 
@@ -98,4 +111,4 @@ int main() {
 
 ---
 
-*Portions of content adapted from [cppreference.com](https://en.cppreference.com/), available under the [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license*
+*Part of the content is referenced from [cppreference.com](https://en.cppreference.com/) and licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

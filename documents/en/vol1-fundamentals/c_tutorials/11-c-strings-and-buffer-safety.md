@@ -3,7 +3,7 @@ chapter: 1
 cpp_standard:
 - 11
 - 17
-description: Understand the null-terminated memory model of C strings, master core
+description: Understand the memory model of null-terminated C strings, master core
   `string.h` functions and safe formatting with `snprintf`, and identify and prevent
   buffer overflow vulnerabilities.
 difficulty: beginner
@@ -20,44 +20,44 @@ tags:
 - 基础
 title: C Strings and Buffer Safety
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/11-c-strings-and-buffer-safety.md
-  source_hash: eae877481b61978cb41bf9130f93eedaf517e01ec8f99a0e441271327adbfc8d
-  token_count: 2346
-  translated_at: '2026-05-26T10:32:17.414513+00:00'
+  source_hash: 1a1c6e35bdd3b819e3b0355f256de78a99d34f9924de72b36b2021db1a6b5125
+  translated_at: '2026-06-16T05:51:23.329323+00:00'
+  engine: anthropic
+  token_count: 2342
 ---
 # C Strings and Buffer Safety
 
-C doesn't have a true "string type"—every developer transitioning from C to C++ makes this observation. In the C world, a string is simply a `char` array terminated by `\0`, and all operations are built on this convention. This convention is so simple it's endearing, yet so fragile it's infuriating—if you forget that `\0`, your program's behavior becomes undefined behavior (UB); if you copy a 100-byte string into a 50-byte buffer, you trample the memory right after it.
+C lacks a true "string type"—a realization every developer transitioning from C to C++ eventually has. In the world of C, a string is simply a `char` array terminated by a `\0`. All operations are built upon this convention. This convention is simple enough to be endearing, yet fragile enough to be maddening—if you forget that `\0`, your program's behavior becomes undefined; if you copy a 100-byte string into a 50-byte buffer, you will trample the memory following that buffer.
 
-Countless security vulnerabilities throughout history, from the early Morris Worm to recent CVEs, trace back to one root cause: **buffer overflow**. In this tutorial, we tear C strings apart from the inside out, understand their true nature, master safe operation techniques, recognize classic pitfalls, and ultimately build a solid low-level foundation for learning C++ `std::string` later.
+Countless security vulnerabilities throughout history, from the early Morris Worm to recent CVEs, trace back to a single root cause: **buffer overflow**. In this tutorial, we will dissect C strings inside and out, understand their essence, master safe handling techniques, recognize classic pitfalls, and ultimately build a solid low-level foundation for learning C++'s `std::string`.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the memory model of `\0`-terminated C strings
-> - [ ] Proficiently use core string and memory manipulation functions in `string.h`
-> - [ ] Master `snprintf` for safe formatted output
-> - [ ] Identify and prevent buffer overflow vulnerabilities
+> - [ ] Understand the `\0`-terminated memory model of C strings.
+> - [ ] Skillfully use core string and memory manipulation functions in `string.h`.
+> - [ ] Master `snprintf` for safe formatted output.
+> - [ ] Identify and prevent buffer overflow vulnerabilities.
 
 ## Environment Setup
 
-All of our following experiments run in this environment:
+We will conduct all subsequent experiments in the following environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
-- Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+- Platform: Linux x86_64 (WSL2 is acceptable).
+- Compiler: GCC 13+ or Clang 17+.
+- Compiler flags: `-Wall -Wextra -std=c17`.
 
-We strongly recommend adding the `-fsanitize=address` compiler flag during practice—AddressSanitizer catches most out-of-bounds memory accesses at runtime, serving as a safety net for C string operations.
+We strongly recommend adding the `-fsanitize=address` compiler flag during practice. AddressSanitizer can catch most buffer out-of-bounds accesses at runtime, serving as a safety net for C string operations.
 
-## Step 1 — Understand What a C String Looks Like in Memory
+## Step 1 — Understanding the Memory Layout of C Strings
 
 ### It's Just an Array, Plus a `\0`
 
-A C string is essentially a `char` array with an extra byte of value `0` (`\0`, the null character) appended after the valid content. The compiler doesn't check whether this terminator exists, and neither do the standard library string functions—everything relies on you maintaining this convention.
+A C string is essentially a `char` array with an extra byte of value `0` (`\0`, the null character) placed at the end of the valid content. The compiler does not verify the existence of this terminator, nor do the standard library string functions—everything relies on you maintaining this convention.
 
-Let's see what it actually looks like in memory:
+Let's see what this actually looks like in memory:
 
 ```c
 char greeting[] = "Hello";
@@ -67,9 +67,9 @@ char greeting[] = "Hello";
 // strlen(greeting) == 5  （不包含终止符）
 ```
 
-There is a very easily confused point here: the difference between `sizeof` and `strlen`. `sizeof` is a compile-time operator that returns the total number of bytes occupied by the entire array, including `\0`; `strlen` is a runtime function that counts characters from the beginning until it encounters `\0`, returning the length without the terminator.
+Here is a point that often causes confusion: the difference between `sizeof` and `strlen`. `sizeof` is a compile-time operator that returns the total number of bytes occupied by the entire array, including the `\0` (null terminator). `strlen` is a runtime function that counts characters from the beginning until it encounters `\0`, returning the length excluding the terminator.
 
-Let's look at the differences between three initialization methods:
+Let's look at the differences between the three initialization methods:
 
 ```c
 // 方式一：字符串字面量自动加 \0
@@ -82,12 +82,12 @@ char b[] = {'H', 'i'};        // sizeof == 2，这不是 C 字符串！
 char c[] = {'H', 'i', '\0'};  // sizeof == 3, strlen == 2，这才是合法的 C 字符串
 ```
 
-Method two is a valid `char` array, but it is **not** a C string—passing it to `strlen` or `printf("%s")` will cause memory to be read past the end until a `0` byte happens to be encountered. This is undefined behavior (UB).
+Method two is a valid `char` array, but it is **not** a C string. Passing it to `strlen` or `printf("%s")` causes the program to read memory continuously until it happens to encounter a `0` byte. This is undefined behavior (UB).
 
-> ⚠️ **Pitfall Warning**
-> Confusing `sizeof` and `strlen` is one of the most common mistakes beginners make. Remember: `sizeof` is calculated at compile time and gives the total array size (including `\0`), while `strlen` scans at runtime until `\0` and returns the character count (excluding `\0`). When an array is passed to a function, it decays to a pointer, and `sizeof` then only returns the pointer size—at that point, you can only rely on `strlen`.
+> ⚠️ **Warning**
+> Confusing `sizeof` with `strlen` is one of the most common mistakes beginners make. Remember: `sizeof` calculates the total size of the array at compile time (including `\0`), while `strlen` counts the number of characters up to the `\0` at runtime (excluding `\0`). When an array is passed to a function, it decays into a pointer, and `sizeof` will only return the pointer size—in this case, you must rely on `strlen`.
 
-### The Difference Between String Literals and Pointers
+### Difference Between String Literals and Pointers
 
 String literals are stored in the read-only data segment of the program; modifying them is undefined behavior (UB):
 
@@ -99,19 +99,19 @@ char t[] = "Hello";        // 数组拷贝，数据在栈上，可以修改
 t[0] = 'h';               // 没问题
 ```
 
-`const char* s = "Hello"` makes the pointer point to a string in the read-only data segment, while `char t[] = "Hello"` copies the string contents to an array on the stack. The former cannot be modified, but the latter can. If you confuse the two, debugging will be extremely painful later.
+`const char* s = "Hello"` points the pointer to a string in the read-only data segment, while `char t[] = "Hello"` copies the string contents to an array on the stack. The former cannot be modified, but the latter can. Confusing these two will make debugging extremely painful later on.
 
-## Step 2 — Master the Core Functions of string.h
+## Step 2 — Master Core Functions in string.h
 
-`<string.h>` is the core header file for C string and memory operations. We'll look at them in three groups: length and copying, concatenation and comparison, and memory operations.
+`<string.h>` is the core header file for C string and memory operations. We will look at them in three groups: length and copying, concatenation and comparison, and memory operations.
 
 ### Length and Copying
 
-`strlen` returns the string length (excluding the terminator). The principle is to scan byte-by-byte from start to finish until `\0` is found—time complexity is O(n), and repeatedly calling `strlen` on the same string inside a loop is a classic performance waste.
+`strlen` returns the string length (excluding the terminator). Its principle is to scan byte-by-byte from start to finish until `\0` is found—time complexity is O(n). Calling `strlen` on the same string repeatedly inside a loop is a classic waste of performance.
 
-`strcpy` copies the entire source string to the destination buffer. The problem is that it **completely ignores** how large the destination buffer is—if the source string is longer than the destination buffer, it overflows.
+`strcpy` copies the entire source string to the destination buffer. The problem is that it **completely ignores** the size of the destination buffer—if the source string is longer than the destination buffer, it overflows.
 
-`strncpy` is the length-limited version, but its behavior is a bit subtle: it copies at most `n` characters. If `strlen(src) >= n`, it stops after copying `n` characters, **but does not automatically append a terminator**. This behavior has tripped up countless people.
+`strncpy` is the version with a length limit, but its behavior is a bit subtle: it copies up to `n` characters. If `strlen(src) >= n`, it stops after copying `n` characters, **but it does not automatically append a terminator**. This behavior has tripped up countless people.
 
 ```c
 #include <stdio.h>
@@ -134,20 +134,20 @@ int main(void)
 gcc -Wall -Wextra -std=c17 str_copy.c -o str_copy && ./str_copy
 ```
 
-Output:
+**Execution Result:**
 
 ```text
 dst = "Hello, "
 ```
 
-This pattern appears repeatedly in C code: `strncpy` + manually `\0` terminating. If you see `strncpy` somewhere without a closely following `\0` termination step, it's very likely a hidden hazard.
+This pattern appears repeatedly in C code: `strncpy` followed by manual `\0` termination. If you see `strncpy` somewhere without immediate `\0` termination handling, it is highly likely a bug.
 
-> ⚠️ **Pitfall Warning**
-> `strncpy` does not guarantee termination! If the source string length is >= n, it stops after copying n characters and does not automatically append `\0`. Every time you use `strncpy`, you must manually write `\0` at the last position.
+> ⚠️ **Warning**
+> `strncpy` does not guarantee termination! If the source string length is greater than or equal to `n`, it stops after copying `n` characters and does not automatically append a `\0`. You must manually write `\0` at the last position after every use of `strncpy`.
 
 ### Concatenation and Comparison
 
-`strcat` appends the source string to the end of the destination string. It also doesn't care how much space is left in the destination buffer. `strncat` is the length-limited version, where the third parameter `n` refers to the **maximum number of characters to append**, and `strncat` guarantees it will automatically add `\0` after appending (this is different from `strncpy`).
+`strcat` appends the source string to the end of the destination string. It likewise ignores how much space remains in the destination buffer. `strncat` is the version with a length limit, where the third parameter `n` specifies the **maximum number of characters to append**. Furthermore, `strncat` guarantees that it will automatically add a `\0` after appending (this is different from `strncpy`).
 
 ```c
 char buffer[32] = "Hello";
@@ -155,7 +155,7 @@ strncat(buffer, ", World", sizeof(buffer) - strlen(buffer) - 1);
 // buffer 现在是 "Hello, World"
 ```
 
-`strcmp` compares two strings character by character, returning `0` if they are equal. Using `==` to compare two strings only compares the pointer addresses, not the contents—this is a classic beginner mistake.
+`strcmp` compares two strings character by character, returning `0` if they are equal. Using `==` to compare two strings only compares the pointer addresses, not the contents—this is a classic novice mistake.
 
 ```c
 if (strcmp(cmd, "START") == 0) {
@@ -163,11 +163,11 @@ if (strcmp(cmd, "START") == 0) {
 }
 ```
 
-### Memory Operations: memcpy, memmove, memset
+### Memory Operations: `memcpy`, `memmove`, `memset`
 
-These three functions operate on raw memory, don't care about `\0` terminators, count by bytes, and handle data of any type.
+These three functions operate on raw memory, ignore `\0` terminators, count by bytes, and handle data of any type.
 
-`memcpy` copies `n` bytes from the source address to the destination address, requiring that the source and destination do not overlap. `memmove` has the same functionality but correctly handles overlapping cases—at the cost of potentially being slightly slower. `memset` sets each byte of a block of memory to a specified value.
+`memcpy` copies `n` bytes from a source address to a destination address, requiring that the source and destination do not overlap. `memmove` has the same functionality but correctly handles overlapping regions—at the cost of being potentially slightly slower. `memset` sets every byte in a block of memory to a specified value.
 
 ```c
 #include <stdio.h>
@@ -190,19 +190,19 @@ int main(void)
 }
 ```
 
-Output:
+Execution result:
 
 ```text
 dst: 1 2 3 4 5
 src: 1 1 2 3 5
 ```
 
-> ⚠️ **Pitfall Warning**
-> `memcpy` handling overlapping regions is undefined behavior (UB). If you're not sure whether two memory blocks overlap, just use `memmove`—the performance difference is negligible, but the safety difference is night and day.
+> ⚠️ **Warning**
+> `memcpy` has undefined behavior when handling overlapping memory regions. If you are unsure whether two memory blocks overlap, use `memmove` directly—the performance difference is negligible, but the safety difference is significant.
 
-## Step 3 — Use snprintf for Safe Formatting
+## Step 3 — Safe Formatting with `snprintf`
 
-`sprintf` is the function for formatted output to a string, but like `strcpy`, it doesn't care about the destination buffer size. `snprintf` is its safe version, where the second parameter specifies the buffer size, guaranteeing that no more than this number of bytes (including the terminator) will be written.
+`sprintf` is a function that formats output into a string, but like `strcpy`, it does not check the size of the destination buffer. `snprintf` is its safe counterpart; the second argument specifies the buffer size, ensuring that no more than this number of bytes (including the null terminator) are written.
 
 ```c
 #include <stdio.h>
@@ -228,24 +228,24 @@ int main(void)
 gcc -Wall -Wextra -std=c17 snprintf_demo.c -o snprintf_demo && ./snprintf_demo
 ```
 
-Output:
+**Output:**
 
 ```text
 Result: "Temperature: 42 degrees"
 Written: 23, Buffer size: 32
 ```
 
-The return value of `snprintf` is very useful: it returns **how many characters would have been written if not truncated** (excluding the terminator). If this value is greater than or equal to the buffer size, it means the output was truncated.
+The return value of `snprintf` is quite useful: it returns **the number of characters that would have been written if not truncated** (excluding the null terminator). If this value is greater than or equal to the buffer size, it indicates that the output was truncated.
 
-In embedded development, `snprintf` is basically the only recommended way to construct strings—log formatting, sensor data concatenation, and command assembly for communication protocols should all go through `snprintf`.
+In embedded development, `snprintf` is basically the only recommended way to construct strings—log formatting, sensor data concatenation, and communication protocol command assembly should all rely on `snprintf`.
 
-## Step 4 — Understand Why Buffer Overflows Are So Dangerous
+## Step 4 — Understanding Why Buffer Overflows Are So Dangerous
 
-We've repeatedly mentioned "buffer overflow" up to this point; now let's formally break down what it actually is.
+We have mentioned "buffer overflow" repeatedly by now, so let's formally break down exactly what it is.
 
-### Classic Overflow Scenarios
+### Classic Overflow Scenario
 
-The essence of a buffer overflow is simple: the data written to a buffer exceeds its capacity, the excess data overflows into adjacent memory areas, and data that shouldn't be modified gets overwritten. Buffer overflows on the stack are especially dangerous because the function's return address is stored right there in the stack frame—attackers can carefully craft overly long input to overwrite the return address, making the program jump to code specified by the attacker. The Morris Worm in 1988 spread using exactly this kind of attack.
+The nature of a buffer overflow is simple: the data written to the buffer exceeds its capacity, and the excess data spills over into adjacent memory areas, overwriting data that should not be modified. Buffer overflows on the stack are particularly dangerous because a function's return address is stored within the stack frame—an attacker can craft a specially designed long input to overwrite the return address, causing the program to jump to code specified by the attacker. The Morris Worm in 1988 propagated using exactly this type of attack.
 
 ```c
 #include <stdio.h>
@@ -261,30 +261,30 @@ void vulnerable_function(const char* user_input)
 
 ### Three Lines of Defense
 
-The first line of defense: **always use length-limited functions**.
+The first line of defense: **Always use length-limited functions**.
 
 | Dangerous Function | Safe Alternative | Notes |
-|----------|----------|------|
+|--------------------|-----------------|-------|
 | `strcpy` | `strncpy` + manual termination | Or switch to `snprintf` |
 | `strcat` | `strncat` | Note the meaning of the third parameter |
 | `sprintf` | `snprintf` | Preferred choice |
 | `gets` | `fgets` | `gets` was completely removed in C11 |
 | `scanf("%s")` | `%Ns` or `fgets` + `sscanf` | Specify maximum width |
 
-The second line of defense is compiler flags. `-fstack-protector` inserts canary values into stack frames and checks whether they've been tampered with before the function returns. `-D_FORTIFY_SOURCE=2` makes the compiler replace unsafe functions with safe versions at compile time.
+The second line of defense is compiler options. `-fstack-protector` inserts a canary value into the stack frame and checks if it has been tampered with before the function returns. `-D_FORTIFY_SOURCE=2` instructs the compiler to replace unsafe functions with safe versions at compile time.
 
-The third line of defense is AddressSanitizer (`-fsanitize=address`), which can pinpoint the exact location of every out-of-bounds read or write.
+The third line of defense is AddressSanitizer (`-fsanitize=address`), which can precisely pinpoint the location of every out-of-bounds read or write.
 
 ```bash
 # 推荐的开发编译命令
 gcc -std=c17 -Wall -Wextra -g -fsanitize=address -fstack-protector-all your_code.c
 ```
 
-## Transitioning to C++
+## C++ Interoperability
 
-If you've been typing along with this tutorial up to this point, you've probably felt the tedium of C string operations—after every `strncpy` you have to manually add `\0`, and for every concatenation you have to calculate the remaining space. C++ fundamentally solves these problems through a few core components.
+If you have followed this tutorial and typed out the code up to this point, you have likely realized how tedious C string operations can be—manually adding `\0` after every `strncpy`, and calculating remaining space for every concatenation. C++ addresses these issues fundamentally through several core components.
 
-`std::string` maintains a dynamically allocated character array internally, automatically handling `\0` termination, memory allocation and deallocation, and capacity growth. You don't need to manually specify buffer sizes or worry about overflows:
+`std::string` maintains a dynamically allocated character array internally, automatically handling `\0` termination, memory allocation and deallocation, and capacity growth. You do not need to specify buffer sizes manually, nor worry about overflows:
 
 ```cpp
 #include <string>
@@ -295,29 +295,29 @@ std::string result = s1 + ", " + s2 + "!";  // 自动扩容
 printf("C string: %s\n", result.c_str());    // 和 C API 无障碍交互
 ```
 
-`std::string_view` (C++17) doesn't own the string data; it only holds a pointer and a length, essentially wrapping `(const char*, size_t)`. It's zero-copy when passing arguments and is compatible with both C strings and `std::string`. However, note that it doesn't own the data—a `string_view` pointing to a temporary object is a classic dangling reference trap.
+`std::string_view` (C++17) does not own string data; it only holds a pointer and a length, essentially encapsulating `(const char*, size_t)`. Passing it involves zero-copy, and it is compatible with C strings and `std::string`. However, note that it does not own the data—a `string_view` pointing to a temporary object is a classic dangling reference trap.
 
-With these two tools, `strcpy`, `strcat`, `sprintf`, and `strlen` should basically never appear directly in C++ code. Of course, when interacting with C APIs, or in extremely resource-constrained embedded environments, these functions are still necessary—which is why we spent an entire tutorial learning them.
+With these two tools, `strcpy`, `strcat`, `sprintf`, and `strlen` should basically never appear directly in C++ code. Of course, when interacting with C APIs or in extremely resource-constrained embedded environments, these functions are still necessary—which is why we spent an entire article learning them.
 
 ## Common Pitfalls
 
 | Pitfall | Description | Solution |
-|------|------|----------|
-| `strncpy` doesn't guarantee termination | When source string length >= n, it won't append `\0` | Always manually set the last byte to `\0` |
-| Using `==` to compare strings | Compares pointer addresses, not contents | Use `strcmp` |
-| Modifying string literals | Stored in the read-only segment, modification triggers a segfault | Copy with an array: `char s[] = "Hello"` |
-| Third parameter of `strncat` | It's the "maximum number of characters to append", not the total buffer size | Use `sizeof(dst) - strlen(dst) - 1` |
-| `memcpy` with overlapping regions | Undefined behavior (UB) | Use `memmove` when overlapping |
+|---------|-------------|----------|
+| `strncpy` does not guarantee null termination | Does not append `\0` when source length >= n | Always manually set the last byte to `\0` |
+| Comparing strings with `==` | Compares pointer addresses, not content | Use `strcmp` |
+| Modifying string literals | Stored in read-only segments; modification triggers a segmentation fault | Use an array copy: `char s[] = "Hello"` |
+| Third parameter of `strncat` | It is "maximum characters to append", not total buffer size | Use `sizeof(dst) - strlen(dst) - 1` |
+| `memcpy` with overlapping regions | Undefined behavior | Use `memmove` when overlapping |
 
 ## Summary
 
-A C string is a `char` array terminated by `\0`, with no protection from the type system, and all safety responsibilities fall on the programmer. The function family provided by `string.h` is the basic tool for string manipulation; the versions without length limits (`strcpy`, `strcat`, `sprintf`) are the primary sources of buffer overflows, and you should prefer the versions with `n` or `snprintf`. `memcpy` is for non-overlapping memory copies, and `memmove` is for potentially overlapping cases. Compiler flags provide an additional safety net. C++'s `std::string` automatically manages memory, and `std::string_view` provides zero-copy references—understanding the underlying C string model is the prerequisite for understanding why these C++ tools are designed the way they are.
+A C string is simply a `\0`-terminated `char` array. Without the protection of the type system, the entire safety responsibility lies with the programmer. The function family provided by `string.h` are the basic tools for string manipulation. Versions without length limits (`strcpy`, `strcat`, `sprintf`) are the primary source of buffer overflows; we should prioritize the `n`-suffixed versions or `snprintf`. `memcpy` is for non-overlapping memory copying, while `memmove` handles potentially overlapping situations. Compiler flags provide an additional safety net. C++'s `std::string` manages memory automatically, and `std::string_view` provides zero-copy references—understanding the underlying C string model is the prerequisite for understanding why these C++ tools are designed this way.
 
 ## Exercises
 
 ### Exercise 1: Safe String Library
 
-Implement a set of safe string manipulation functions where each function knows the destination buffer size and automatically handles truncation and termination:
+Implement a set of safe string manipulation functions where each function is aware of the destination buffer size and automatically handles truncation and termination:
 
 ```c
 #include <stddef.h>
@@ -345,11 +345,11 @@ size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
 size_t safe_str_format(char* dst, size_t dst_size, const char* format, ...);
 ```
 
-Hint: `safe_str_copy` can be implemented based on `strncpy`, but must guarantee termination; `safe_str_cat` needs to first calculate the current length of the destination string, then calculate the remaining available space; `safe_str_format` can be directly implemented using `vsnprintf`.
+**Hint:** We can implement `safe_str_copy` based on `strncpy`, but we must ensure null termination. For `safe_str_cat`, we need to calculate the current length of the destination string first, then determine the remaining available space. We can implement `safe_str_format` directly using `vsnprintf`.
 
 ### Exercise 2: String Splitting Function
 
-Implement a function that splits a string by a delimiter:
+Implement a function that splits a string based on a delimiter:
 
 ```c
 /// @brief 将字符串按分隔符切分，返回各子串的起止位置
@@ -368,9 +368,9 @@ size_t str_split(
 );
 ```
 
-Hint: Iterate through `input`, recording the start pointer and length of each substring. When you encounter a delimiter, end the current substring and start the next one. Don't forget to handle the last substring at the end of the string.
+> **Tip:** Iterate through `input`, recording the start pointer and length of each substring. When a delimiter is encountered, terminate the current substring and start the next one. Do not forget to handle the last substring at the end of the string.
 
-## References
+## Resources
 
 - [string.h - cppreference](https://en.cppreference.com/w/c/string/byte)
 - [stdio.h formatted output functions - cppreference](https://en.cppreference.com/w/c/io)

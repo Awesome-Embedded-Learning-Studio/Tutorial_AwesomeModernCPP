@@ -6,15 +6,15 @@ cpp_standard:
 - 20
 - 23
 description: 'Combine the sequential and associative containers covered in Volume
-  3 into a decision map: categorize them by operation complexity, memory locality,
-  and iterator invalidation rules, and include a decision tree to clarify the pitfalls
-  of choosing the wrong container.'
+  3 into a decision map: we will analyze them along three dimensions—operation complexity,
+  memory locality, and iterator invalidation rules—and include a decision tree. We
+  will also clarify the pitfalls of choosing the wrong container.'
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
 - array：编译期固定大小的聚合容器
-reading_time_minutes: 12
+reading_time_minutes: 11
 related:
 - vector 深入：三指针、扩容与迭代器失效
 - deque、list 与 forward_list：vector 之外的三个选择
@@ -30,144 +30,150 @@ tags:
 title: 'Container Selection Guide: Choosing the Right Container by Operation, Memory,
   and Invalidation Rules'
 translation:
-  engine: anthropic
   source: documents/vol3-standard-library/01-container-selection-guide.md
-  source_hash: 6cc32538d98c1ac76e31ae36e66f57555ae8ed7c4665d154c2c9e34ae2b41f67
-  token_count: 1858
-  translated_at: '2026-06-15T09:10:45.682134+00:00'
+  source_hash: d6c0140e79cd61f1773cd5c372b8cbdc497fc918f70e60e3fa0b64f75a7169f2
+  translated_at: '2026-06-16T06:08:43.136945+00:00'
+  engine: anthropic
+  token_count: 1849
 ---
-# Container Selection Guide: Pick the Right Container Based on Operations, Memory, and Invalidation Rules
+# Container Selection Guide: Picking the Right Container via Operations, Memory, and Invalidation Rules
 
-## What this solves: Choosing the wrong container plants performance bugs
+## The Goal: Choosing the Wrong Container Hides Performance Bugs
 
-Volume 3 dismantled the major containers one by one—`std::array`, `std::vector`, `std::forward_list`/`std::list`/`std::deque`, `std::set`/`std::map`, `std::unordered_set`/`std::unordered_map`, and `std::string`. Each article focused on "what this container looks like internally and why it's designed this way." This article flips the perspective: standing from the angle of "I have a pile of data to store, which one should I pick," we put them on the same table for comparison. Choosing the wrong container rarely crashes immediately; it just makes your program slow, causes references to invalidate inexplicably, and triggers repeated reallocations in hot loops. These are the hardest performance bugs to diagnose because the code "runs," it just runs frustratingly slow.
+Volume 3 dissected the major containers one by one—`array`, `vector`, `deque`/`list`/`forward_list`, `map`/`set`, `unordered_map`/`unordered_set`, and `span`. Each article focused on "what this container looks like internally and why it is designed this way." This article takes the opposite approach: standing from the perspective of "I have a pile of data to store, which one should I actually pick?" and putting them on the same table for comparison. Choosing the wrong container rarely crashes immediately; it just makes your program slow, causes references to fail mysteriously, and triggers repeated reallocations in hot loops. These are the hardest performance bugs to track down because the code "runs," it just runs sluggishly.
 
-Picking a container really comes down to three things: **what operations you need to perform (complexity), how data is laid out in memory (locality), and whether the iterators in your hand can still be trusted after modification (invalidation rules)**. Once these three are clear, the rest are details. We will walk through these three lines and wrap up with a decision tree.
+Picking a container really comes down to three things: **what operations you need to perform (complexity), how data is laid out in memory (locality), and whether your iterators remain valid after modification (invalidation rules)**. Once these three are clear, the rest is just details. We will walk through these three lines and wrap up with a decision tree.
 
-## First, distinguish the two major camps: sequence containers and associative containers
+## First, Distinguish the Two Major Camps: Sequential vs. Associative Containers
 
-Standard library containers are first divided into two broad categories, and this distinction determines the first question you ask. **Sequence containers** (`std::array`, `std::vector`, `std::deque`, `std::list`, `std::forward_list`) store data by "position." The order of elements in the container is the order you put them in, and you care about "inserting at which position, deleting at which position." **Associative containers** (`std::map`/`std::set` and their `unordered` versions) store data by "key." The order of elements is determined by the key (ordered) or by a hash (unordered), and you care about "what criteria I use to look up."
+Standard library containers are first divided into two broad categories. This distinction determines the first question you ask. **Sequential containers** (`array`, `vector`, `deque`, `list`, `forward_list`) store data by "position." The order of elements in the container is the order you put them in, and you care about "inserting at which position, deleting at which position." **Associative containers** (`map`/`set` and their `unordered` versions) store data by "key." The order of elements is determined by the key (ordered) or by a hash (unordered), and you care about "what am I querying by."
 
-Associative containers are further divided into two sub-categories. `std::map`/`std::set`/`std::multimap`/`std::multiset` are **ordered**, implemented via red-black trees, sorted by key, offer stable `O(log n)` lookup, and support range-based traversal. `std::unordered_map`/`std::unordered_set` are **unordered**, implemented via hash tables, offer average `O(1)` lookup but worst-case `O(n)` (when everything collides in the same bucket), and cannot be traversed in order. In a nutshell: **Do you need to traverse in key order? If yes, use a red-black tree; if no, use a hash for average O(1)**. We have benchmarked this trade-off in the [Deep Dive into map and set](06-map-set-deep-dive.md) and [Deep Dive into unordered_map and set](07-unordered-map-set-deep-dive.md) articles.
+Associative containers are further divided into two sub-categories. `map`/`set`/`multimap`/`multiset` are **ordered**, typically implemented as red-black trees, sorted by key. Lookup is stable `O(log n)`, and they allow range-based traversal. `unordered_map`/`unordered_set` are **unordered**, typically implemented as hash tables. Lookup is average `O(1)` but worst-case `O(n)` (when everything collides in the same bucket), and they do not support ordered traversal. In a nutshell: **Do you need to traverse in key order? If yes, use a red-black tree; if no, use a hash for average O(1)**. We tested this trade-off in [Deep Dive into map and set](06-map-set-deep-dive.md) and [Deep Dive into unordered_map and set](07-unordered-map-set-deep-dive.md).
 
-## Complexity Cheat Sheet: Pick a container by operation
+## Complexity Cheat Sheet: Picking Containers by Operation
 
-Let's spread the complexity out into a table to compare directly against the operations you need to perform. Note that the table refers to the cost of the "operation itself"; positioning (finding the spot to operate on) usually needs to be calculated separately.
+Spread the complexity out into a table to directly match against the operations you need to perform. Note that the table refers to the cost of the "operation itself"; positioning (finding the spot to operate) usually needs to be calculated separately.
 
-| Container | Random Access | Insert/Delete at Front | Insert/Delete at Back | Insert/Delete in Middle | Lookup by Key |
-|------|---------|---------|---------|---------|------------|
-| `std::array` | O(1) | — | — | — | — |
-| `std::vector` | O(1) | O(n) | Amortized O(1) | O(n) | — |
-| `std::deque` | O(1) | O(1) | O(1) | O(n) | — |
-| `std::list` | O(n) | O(1) | O(1) | O(1) (with iterator) | — |
-| `std::forward_list` | O(n) | O(1) | — | O(1) (with iterator) | — |
-| `std::set` / `std::map` | — | — | — | O(log n) | O(log n) |
-| `std::unordered_set` / `std::unordered_map` | — | — | — | Avg O(1) | Avg O(1), Worst O(n) |
+| Container | Random Access | Insert/Delete at Head | Insert/Delete at Tail | Insert/Delete in Middle | Lookup by Key |
+|-----------|---------------|-----------------------|-----------------------|--------------------------|---------------|
+| `array` | O(1) | — | — | — | — |
+| `vector` | O(1) | O(n) | Amortized O(1) | O(n) | — |
+| `deque` | O(1) | O(1) | O(1) | O(n) | — |
+| `list` | O(n) | O(1) | O(1) | O(1) (with existing iterator) | — |
+| `forward_list` | O(n) | O(1) | — | O(1) (with existing iterator) | — |
+| `map` / `set` | — | — | — | O(log n) | O(log n) |
+| `unordered_map` / `set` | — | — | — | Average O(1) | Average O(1), Worst O(n) |
 
-There are a few points in this table that are easily misinterpreted, so let's pull them out. First is the "O(1) insert in middle" for `std::list`/`std::forward_list`—this O(1) only applies to the **insertion action itself** (tweaking two pointers), provided you **already hold an iterator to that position**. If you have to traverse from the head to find the spot, that positioning step is O(n), making the total cost O(n). Many people see "list insert O(1)" and assume list is good for frequent insertions/deletions, but in most "frequent add/remove" scenarios, the positioning cost and cache unfriendliness drag list down to be slower than vector. Second is the "amortized O(1)" for `std::vector` at the tail—a single reallocation is indeed O(n), but amortized over N `push_back`s, each operation is constant, so the average is O(1); just remember to `reserve`, and reallocation counts can be suppressed to near zero. Third is `std::deque`; it looks beautiful with O(1) at both ends, but middle insertion is O(n) and more expensive than vector (due to its segmented structure moving more things), so deque is exclusive to "queues entering/exiting frequently at both ends"—don't use it as a general-purpose container.
+There are a few points in this table that are easily misinterpreted, so let's pull them out. The first is the "O(1) insert in middle" for `list` / `forward_list`—this O(1) only applies to the **insertion action itself** (tweaking two pointers in the list), provided you **already hold an iterator to that position**. If you have to traverse from the head to find the position, that step is O(n), making the total cost O(n). Many people see "list insert O(1)" and assume lists are good for frequent insertions/deletions, but in most "frequent modification" scenarios, the positioning cost and cache unfriendliness drag lists down to be slower than vectors. The second is the "amortized O(1)" for `vector` tail insertion—a single reallocation is indeed O(n), but amortized over N push_backs, it is constant time, so the average is O(1); just remember to use `reserve`, and you can suppress reallocations to nearly zero. The third is `deque`; head and tail insert/delete are both O(1), which looks great, but middle insert/delete is O(n) and is more expensive than `vector` (segmented structure requires moving more), so `deque` is exclusive to "queues with frequent entry/exit at both ends"; don't use it as a general-purpose container.
 
-## Memory Locality: Continuous vs. Node-based, the Performance Divide
+## Memory Locality: Continuous vs. Node-Based, The Performance Divide
 
-The complexity table only tells you "asymptotic speed," but two containers both marked "O(1) traversal" can differ by an order of magnitude in real speed—the gap lies in memory locality. The storage method determines how data is laid out in memory, which in turn decides if the CPU cache hits or misses.
+The complexity table only tells you "asymptotic speed," but two containers both labeled "O(1) traversal" can differ by an order of magnitude in real speed—the gap lies in memory locality. Storage method determines how data is laid out in memory, which in turn decides if the CPU cache hits or misses.
 
-Sequence containers fall into three tiers based on storage. `std::array`, `std::vector` are **contiguous** memory; elements are placed right next to each other. During traversal, a whole cache line enters L1 together, and the prefetcher can fetch the next block. `std::deque` is **segmented contiguous**—internally a group of fixed-size chunks; contiguous within a chunk, discontinuous between chunks, so random access requires calculating "which element of which chunk," and traversal is smooth within a chunk but stutters across chunks. `std::list` / `std::forward_list` are **node-based** storage; each element is individually `new`'d as a node, linked by pointers. They are scattered all over memory, and traversal jumps to a new address almost every time, resulting in terrible cache hit rates. Associative containers are all node-based: a red-black tree has a node per element, a hash table has a bucket hanging a chain of nodes, and their locality is inferior to contiguous containers.
+Sequential containers fall into three tiers based on storage method. `array` and `vector` use **continuous** memory; elements are packed tightly together. During traversal, a whole cache line enters L1 together, and the prefetcher can fetch the next block. `deque` is **segmented continuous**—internally a group of fixed-size chunks. Continuous within a chunk, discontinuous between chunks, so random access requires calculating "which chunk, which index," and traversal is smooth within a chunk but stutters across chunks. `list` / `forward_list` use **node-based** storage; each element is individually new'd, strung together by pointers. They are scattered all over memory, and traversal almost always jumps to a new address, resulting in terrible cache hit rates. Associative containers are all node-based: a node for a red-black tree, or a chain of nodes in a hash bucket; their locality is inferior to continuous containers.
 
-This gap isn't theoretical; run it and see.
+This gap isn't just theoretical; run it and you will understand.
 
 ```cpp
-// Benchmark: Traversal speed comparison
-#include <vector>
+#include <chrono>
+#include <cstdio>
 #include <list>
-#include <iostream>
+#include <vector>
 
-int main() {
-    const int N = 100000;
-    std::vector<int> vec(N);
-    std::list<int> lst(N);
-
-    // Fill with data
-    for(int i=0; i<N; ++i) {
-        vec[i] = i;
-        // list initialization omitted for brevity, assume filled
+int main()
+{
+    constexpr int N = 1'000'000;
+    std::vector<int> v(N);
+    std::list<int> l;
+    for (int i = 0; i < N; ++i) {
+        v[i] = i;
+        l.push_back(i);
     }
 
-    volatile long long sum = 0; // prevent optimization
+    volatile long long sink = 0;
 
-    // Vector traversal
-    auto start_vec = std::chrono::high_resolution_clock::now();
-    for(auto& val : vec) { sum += val; }
-    auto end_vec = std::chrono::high_resolution_clock::now();
+    auto t0 = std::chrono::high_resolution_clock::now();
+    long long sv = 0;
+    for (auto x : v) { sv += x; }
+    sink += sv;
+    auto t1 = std::chrono::high_resolution_clock::now();
 
-    // List traversal
-    auto start_lst = std::chrono::high_resolution_clock::now();
-    for(auto& val : lst) { sum += val; }
-    auto end_lst = std::chrono::high_resolution_clock::now();
+    long long sl = 0;
+    for (auto x : l) { sl += x; }
+    sink += sl;
+    auto t2 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Vector time: " << (end_vec - start_vec).count() << std::endl;
-    std::cout << "List time: " << (end_lst - start_lst).count() << std::endl;
+    auto us_v = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+    auto us_l = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    std::printf("vector 遍历 %lld us, list 遍历 %lld us, list 慢 %.2fx\n",
+                us_v, us_l, us_v ? (double)us_l / us_v : 0.0);
+    return 0;
 }
 ```
 
-Running this shows `std::vector` traversal is several times faster than `std::list` (the exact multiplier depends on machine and cache size, but the magnitude is several times, not a few percent)—both traversals are O(n), each addition is O(1), but `std::vector`'s contiguous memory maxes out cache hits, while `std::list`'s every node requires a separate memory access. This is the underlying reason for "why default to vector": in the vast majority of "store a pile of data and traverse" scenarios, the cache bonus from contiguous memory far outweighs the move overhead saved by linked lists. **Only when you truly need frequent insertions/deletions at known positions, and the cost of insertion/deletion significantly outweighs the cost of traversal, might list win**—this condition is much stricter than intuition suggests.
+```bash
+g++ -std=c++20 -O2 -o /tmp/cache_bench /tmp/cache_bench.cpp && /tmp/cache_bench
+```
 
-## Iterator Invalidation Cheat Sheet: After modifying the container, can your references still be used?
+Running a benchmark shows that iterating over a `vector` is several times faster than a `list` (the exact factor depends on the machine and cache size, but we are talking about orders of magnitude, not single-digit percentages). Both traversals are technically $O(n)$ with $O(1)$ increments, but `vector`'s contiguous memory maximizes cache utilization, whereas `list` requires a separate memory fetch for every node. This is the fundamental reason for "why default to `vector`": in the vast majority of "store a bunch of data and iterate" scenarios, the cache dividends from contiguous memory far outweigh the insertion overhead saved by linked lists. **Only when you genuinely need frequent insertions/deletions at known positions, and the cost of those modifications significantly outweighs traversal costs, can `list` potentially win**—this condition is far stricter than intuition suggests.
 
-The third dimension is iterator invalidation. You hold an iterator or reference, then perform an insertion/deletion on the container—can that iterator continue to be used? This directly determines whether you can "erase while traversing" or "store a reference for later use." The following table is a summary of the "Iterator invalidation" sections for each container on cppreference; it is authoritative and worth memorizing.
+## Iterator Invalidation Cheat Sheet: Can I Still Use This Reference?
 
-| Container | Insertion (insert / push) | Deletion (erase / pop) |
-|------|----------------------|--------------------|
-| `std::vector` / `std::string` | All invalid if reallocation occurs; otherwise, those after insertion point invalid | Erasure point and all after it invalid |
-| `std::deque` | **All invalid** | **All invalid** |
-| `std::list` / `std::forward_list` | Never invalid | Only the erased element invalid |
-| `std::map` / `std::set` etc. | Never invalid | Only the erased element invalid |
-| `std::unordered_map` / `std::unordered_set` etc. | Invalid if rehash triggered; otherwise never invalid | Only the erased element invalid |
+The third dimension is iterator invalidation. You obtain an iterator or reference, then insert or erase elements from the container. Can that iterator still be used? This directly determines whether you can "erase while iterating" or "store a reference for later use". The table below summarizes the "Iterator invalidation" sections from cppreference and is authoritative enough to be worth memorizing.
 
-Keep a close eye on the `std::deque` row in this table. Many people use deque as "a vector that can do O(1) at the head," but while vector only invalidates iterators after the point when not reallocating, **deque makes all iterators invalid on any erase**—this is caused by deque's segmented structure moving chunk pointers. If you "store a deque iterator, then later erase," you will almost certainly step on a landmine. Conversely, the biggest benefit of node-based containers (`std::list`, `std::set`, `std::map` and their unordered versions) is that **insertion never invalidates iterators, and deletion only invalidates the erased one**, so they naturally support "erasing by iterator while traversing" and "holding long-term references to elements."
+| Container | Insertion (`insert` / `push`) | Erasure (`erase` / `pop`) |
+|-----------|------------------------------|---------------------------|
+| `vector` / `string` | All invalidated if reallocation occurs; otherwise, iterators at and after the insertion point are invalidated | Erasure point and all subsequent iterators are invalidated |
+| `deque` | **All invalidated** | **All invalidated** |
+| `list` / `forward_list` | Never invalidated | Only the erased element is invalidated |
+| `map` / `set` etc. | Never invalidated | Only the erased element is invalidated |
+| `unordered_map` / `set` etc. | Invalidated if rehash occurs; otherwise never invalidated | Only the erased element is invalidated |
 
-There's also an unordered-container specific detail: rehash. `std::unordered_map` rehashes (expands buckets) when the load factor exceeds `max_load_factor` (default 1.0). This action invalidates all iterators (but references and pointers do **not** become invalid—this is explicitly guaranteed by the standard). The countermeasure is to `reserve` enough buckets upfront to avoid repeated rehashing in hot loops and to avoid iterators suddenly becoming invalid.
+Pay close attention to the row for `deque`. Many people treat `deque` as a "`vector` with $O(1)$ head/tail operations", but while `vector` only invalidates iterators after the erasure point when no reallocation happens, **any `erase` operation on a `deque` invalidates all iterators**—this is a consequence of its segmented structure shifting internal block pointers. If you "store a `deque` iterator and then `erase`" in your code, you will almost certainly hit a bug. In contrast, node-based containers (`list`, `map`, `set`, and their `unordered` variants) offer a major advantage: **insertion never invalidates iterators, and erasure only invalidates the iterator to the removed element**. This makes them naturally suited for "erasing by iterator while traversing" or "holding long-term references to elements".
+
+There is also a detail specific to `unordered` containers: rehashing. When the load factor exceeds `max_load_factor` (default 1.0), an `unordered_map` will rehash (expand buckets). This invalidates all iterators (but references and pointers are **not** invalidated, as explicitly guaranteed by the standard). The countermeasure is to call `reserve(n)` beforehand to allocate enough buckets, which avoids repeated rehashing in hot loops and prevents sudden iterator invalidation.
 
 ## Selection Decision Tree
 
-Twisting the three lines into a tree, we start with the question that should be asked first.
+Let's combine these three dimensions into a decision tree, starting with the most important questions.
 
-The first cut is "Is the size known at compile time?": If known and constant, use `std::array` directly—zero heap allocation, `constexpr` capable, saves RAM by living in static storage, nothing is cheaper. If unknown and variable length, proceed to the second cut. The second cut is "Is lookup by key?": If yes, enter the associative container branch—if you need ordered traversal by key, use `std::map`/`std::set` (O(log n)); if you only need average O(1) lookup, use `std::unordered_map`/`std::unordered_set` (remember to `reserve`). If not lookup by key, enter the sequence container branch. The third cut is "Where do you frequently insert/delete?": Frequent entry/exit at head or tail, `std::deque`; only growing at the tail, `std::vector` (be sure to `reserve`); frequent insert/delete at known middle positions and no random access needed, `std::list`; if none of the above apply, default to `std::vector`.
+The first cut is "Is the size known at compile time?": If yes and constant, use `array` directly—zero heap allocation, `constexpr` capable, saves RAM by placing data in the static storage area, and nothing is cheaper. If no or variable length, proceed to the second cut. The second cut is "Is it key-based lookup?": If yes, go to the associative container branch—use `map`/`set` ($O(\log n)$) if you need ordered traversal by key, or `unordered_map`/`unordered_set` (average $O(1)$) if you just need fast lookup (remember to `reserve`). If not key-based, go to the sequence container branch. The third cut is "Where do insertions/deletions happen frequently?": Frequent at both ends, `deque`; only growth at the end, `vector` (be sure to `reserve`); frequent at known middle positions and no random access needed, `list`; if none of the above apply, default to `vector`.
 
-```mermaid
-flowchart TD
-    A[Need to store data] --> B{Size known at compile time?}
-    B -- Yes --> C[std::array]
-    B -- No --> D{Lookup by Key?}
-    D -- Yes --> E{Need ordered traversal?}
-    E -- Yes --> F[std::map / std::set]
-    E -- No --> G[std::unordered_map / std::unordered_set]
-    D -- No --> H{Frequent insert/delete location?}
-    H -- Head/Tail --> I[std::deque]
-    H -- Tail only --> J[std::vector]
-    H -- Middle (known pos) --> K[std::list]
-    H -- Rare / Random --> L[std::vector]
+```text
+大小编译期已知且不变?
+├─ 是 → array
+└─ 否
+   ├─ 按键查找?
+   │  ├─ 要按 key 有序遍历 → map / set           (O(log n))
+   │  └─ 只要平均 O(1) 查找   → unordered_map/set (记得 reserve)
+   └─ 按位置存
+      ├─ 频繁头尾进出     → deque
+      ├─ 主要尾部增长     → vector (+ reserve)
+      ├─ 已知位置频繁增删 → list (确认定位+cache 不是瓶颈)
+      └─ 其余             → vector (默认)
 ```
 
-Two supplements. First, if you only need to "borrow for a while" and don't want to transfer ownership, use `std::span`—it's the "unified read-only view for array/vector/C-arrays," the standard for zero-copy parameter passing, detailed in [Deep Dive into span](08-span.md). Second, starting with C++23, there are new options: if you want a "sorted + cache-friendly" map, look at `std::flat_map` (under the hood it's a sorted vector); if you want a "fixed capacity, never heap allocates" variable-length container, look at C++26's `std::dynarray`—we'll cover these two in the [New Standard Containers](10-new-containers-cpp23-26.md) article.
+Here are two additional points. First, if we just need to "borrow for a while" and don't want to transfer ownership, use `span`—it is a "unified read-only view for arrays/vectors/C arrays" and the standard for zero-copy argument passing. See [Deep Dive into span](08-span.md) for details. Second, since C++23, we have new options: if we want an "ordered + cache-friendly" map, look at `flat_map` (backed by a sorted vector); if we want a variable-length container with "fixed capacity and never heap-allocates," look at C++26's `inplace_vector`—we will cover these two in [New Standard Containers](10-new-containers-cpp23-26.md).
 
-## Common Mis-selections
+## Common Pitfalls
 
-Listing a few high-frequency pitfalls to self-check when picking containers. First, **"Using list because of many insertions/deletions"**—ignoring positioning costs and cache unfriendliness; in most cases, vector plus erase is actually faster. List is only worth it when you truly hold a large number of iterators long-term, and insertions/deletions far outnumber traversals. Second, **unordered containers without reserve**—throwing N elements in without `reserve` triggers multiple rehashes; each rehash re-hashes all elements, wasting cycles in the hot path. Third, **vector repeated push_back without reserve**—same logic, moving the whole block on expansion; a single `reserve` eliminates most copies. Fourth, **passing references across containers ignoring invalidation rules**—especially storing iterators to deque then modifying the container, or erasing while traversing vector without updating the iterator. The compiler won't warn you about these bugs; they blow up at runtime.
+Let's list the frequent mistakes so we can self-check when picking containers. First, **"I use list because of frequent insertions/deletions"**—this ignores the cost of positioning and cache unfriendliness. In the vast majority of cases, a `vector` combined with `erase` is actually faster. `list` is only worth it when you truly hold a large number of iterators for a long time, and insertions/deletions far outnumber traversals. Second, **not reserving for unordered containers**—inserting N elements without `reserve(N)` triggers multiple rehashes. Every rehash re-hashes all elements, wasting cycles on the hot path. Third, **repeated `push_back` on vector without reserve**—similarly, expansion moves the entire block; a single `reserve` eliminates most copies. Fourth, **passing references across containers without checking invalidation rules**—especially storing iterators to a `deque` then modifying the container, or iterating over a `vector` while erasing without updating the iterator. The compiler won't warn you about these bugs; they crash at runtime.
 
 ## Wrapping Up
 
-When picking a container, get three things clear first: operation complexity, memory locality, and iterator invalidation. If these three align, you're 90% there; for details (exception safety, custom allocators, heterogeneous lookup), go back to the specific deep-dive articles. A simple but useful default: **when in doubt, use vector**. It's contiguous, amortized O(1) at the tail, has the most complete interface, and is the safest card with the broadest coverage. Wait until you measure it as a bottleneck before switching. In the next article, we enter container adapters—`std::stack`, `std::queue`, `std::priority_queue`. They aren't new containers, but interface shells wrapping underlying containers into stacks/queues/heaps.
+When picking a container, clarify three things first: operation complexity, memory locality, and iterator invalidation. If these align, you are 90% there. For details (exception safety, custom allocators, heterogeneous lookup), refer to the deep-dive articles for each container. A simple but useful default: **when in doubt, just use `vector`**. It is contiguous, has amortized O(1) push-back, and the most complete interface. It is the safest bet with the broadest coverage. Wait until you measure that it is actually a bottleneck before switching. In the next article, we will look at container adapters—`stack`, `queue`, and `priority_queue`. These aren't new containers, but interface wrappers that "package" underlying containers into stacks, queues, or heaps.
 
-Want to try it out yourself? Click the online example below (runnable and viewable assembly):
+Want to try it out and see the results immediately? Open the online example below (you can run it and view the assembly):
 
 <OnlineCompilerDemo
-  title="Container Selection: Store by Position vs. Lookup by Key"
+  title="Container Selection: Indexed vs. Keyed"
   source-path="code/examples/vol3/01_container_selection.cpp"
-  description="Different operation costs for sequence containers (vector/list) and associative containers (map/unordered_map), echoing the selection decision tree"
+  description="Different operation costs for sequential containers (vector/list) vs. associative containers (map/unordered_map), reflecting the decision tree"
   allow-run
 />
 
-## Reference Resources
+## References
 
-- [Container Library Overview (including iterator invalidation) — cppreference](https://en.cppreference.com/w/cpp/container)
-- [Container Iterator Invalidation Rules (by operation) — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
-- [std::vector Iterator Invalidation Section — cppreference](https://en.cppreference.com/w/cpp/container/vector#Iterator_invalidation)
+- [Container library overview (includes iterator invalidation rules) — cppreference](https://en.cppreference.com/w/cpp/container)
+- [Container iterator invalidation rules (by operation) — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
+- [std::vector Iterator invalidation section — cppreference](https://en.cppreference.com/w/cpp/container/vector#Iterator_invalidation)

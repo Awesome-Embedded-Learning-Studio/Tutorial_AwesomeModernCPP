@@ -15,11 +15,12 @@
 ![Tag](https://img.shields.io/github/v/tag/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP?sort=semver&label=tag)
 ![License](https://img.shields.io/github/license/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP)
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
+![AI agent ready](https://img.shields.io/badge/AI%20agent-ready-7C3AED)
 
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 439/440 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 440/440 docs translated
 <!-- COVERAGE_END -->
 
 ## 这是什么项目
@@ -163,6 +164,16 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 | `gh-pages` | 自动部署的文档站 | Auto-generated |
 
 </details>
+
+## 用 AI Agent 辅助（可选）
+
+本项目对 AI coding agent 开箱即用，也欢迎用 agent 辅助学习与贡献：
+
+- 🤖 [AGENTS.md](./AGENTS.md) —— 跨 agent 通用入口（Claude Code / Cursor / Copilot / Codex 等都读它）
+- 📚 [用 agent 辅助 C++ 学习](./.github/learning-with-agents.md) + [C++ 常见误解 FAQ](./.github/faq.md)
+- ✍️ Claude 专属资产（写作风格 / 审查命令 / hooks）见 [CLAUDE.md](./CLAUDE.md)
+
+> 不用 agent？忽略这些文件即可，主线教程与示例不依赖它们。
 
 ## 贡献
 

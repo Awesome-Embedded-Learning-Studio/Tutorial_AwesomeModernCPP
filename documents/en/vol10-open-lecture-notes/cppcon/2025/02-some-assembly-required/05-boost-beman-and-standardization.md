@@ -16,43 +16,43 @@ tags:
 - host
 - intermediate
 talk_title: 'C++: Some Assembly Required'
-title: Boost, Beman, and the C++ Standardization Path
-translation:
-  engine: anthropic
-  source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/05-boost-beman-and-standardization.md
-  source_hash: 3d5624c64346be62c1181dc160e1db7e559cdb3fad0de459d4e53e4323112c56
-  token_count: 4113
-  translated_at: '2026-05-26T11:15:03.085272+00:00'
+title: Boost, Beman, and the Path to C++ Standardization
 video_bilibili: https://www.bilibili.com/video/BV1ptCCBKEwW?p=2
 video_youtube: https://www.youtube.com/watch?v=zoYT7R94S3c
+translation:
+  source: documents/vol10-open-lecture-notes/cppcon/2025/02-some-assembly-required/05-boost-beman-and-standardization.md
+  source_hash: 44f3bf88b72a14b5055e10785b3bdad49cbc74b8d226e3f7a0b21fbd2fb7312a
+  translated_at: '2026-06-16T03:51:43.848759+00:00'
+  engine: anthropic
+  token_count: 4105
 ---
-# Boost: Inside the C++ Standard Library's "Back Garden"
+# Boost: This is What the C++ Standard Library's "Backyard" Looks Like
 
-When learning C++, many people share a common confusion: where do the things in the standard library actually come from? Did the committee just sit in a room one day and a bunch of big shots decide "let's add `shared_ptr`"? Or is there a more systematic process? After digging through the historical records and piecing together the timeline, the conclusion is striking—almost all the components we use daily come from the same place.
+When learning C++, many people have a confusion: where exactly do the things in the standard library come from? Did the committee just have a meeting one day where a bunch of big shots said, "Let's add ``shared_ptr``"? Or is there a more systematic process? After going through historical materials and clarifying this thread, the conclusion is striking—it turns out that almost all components we use daily come from the same place.
 
-## Clarifying the Relationship Between STL and the Standard Library
+## First, Let's Clarify the Relationship Between STL and the Standard Library
 
-Many people use "STL" and "C++ standard library" interchangeably. After all, in day-to-day coding, `#include <vector>` and saying "I used STL" won't earn you any corrections. But strictly speaking, they are two different things, and getting this straight is essential for making sense of the history.
+Many people use "STL" and "C++ Standard Library" interchangeably. After all, in daily coding, we ``#include <vector>`` and say "we used STL", and no one will correct you. But strictly speaking, these are two different things, and understanding this distinction prevents confusion when looking at history later.
 
-STL stands for "Standard Template Library"<RefLink :id="8" preview="Wikipedia: Standard Template Library, name origin and history" />—interestingly, the initials of Stepanov and Lee happen to be S and L as well, which many people consider a fun coincidence<RefLink :id="9" preview="Stepanov interview, STL naming anecdote" />. This library was created by Alexander Stepanov and Meng Lee<RefLink :id="1" preview="Stepanov & Lee, The Standard Template Library, HP Labs, 1995" /> while they were at HP. Stepanov has since retired, but what he accomplished back then essentially set the tone for C++. The concepts inside STL—separating iterators, algorithms, and containers, along with time complexity guarantees—seen from the perspective of 1994, were simply way ahead of their time. The proposal was ultimately approved at the ANSI/ISO committee meeting in July 1994, and the committee's response was described as "overwhelmingly favorable"<RefLink :id="10" preview="Wikipedia: History of the STL, committee approval" />. Keep in mind this was the nineties, when C++ standardization itself was still in its early stages. Passing with such an overwhelming majority proves that the work was truly exceptional.
+The full name of STL is "Standard Template Library"<RefLink :id="8" preview="Wikipedia: Standard Template Library, name origin and history" />—interestingly, the initials of Stepanov and Lee are also S and L, which many people treat as an interesting coincidence<RefLink :id="9" preview="Stepanov interview, STL naming anecdote" />. This library was developed by Alexander Stepanov and Meng Lee<RefLink :id="1" preview="Stepanov & Lee, The Standard Template Library, HP Labs, 1995" /> while at HP. Although Stepanov is now retired, what he did back then set the tone for C++. The concepts inside STL—iterators, separation of algorithms from containers, complexity guarantees—looking at 1994, these were simply ahead of their time. Later, this proposal received final approval at the ANSI/ISO committee meeting in July 1994, and the committee's response was described as "overwhelmingly favorable"<RefLink :id="10" preview="Wikipedia: History of the STL, committee approval" />. You have to realize that was the nineties; C++ standardization itself was still in its early stages. To pass by such a landslide shows that this thing was indeed done beautifully.
 
-But STL was just Stepanov and Lee's library. It was later partially absorbed into the standard, but not entirely. For example, SGI's STL implementation already had `hash_map`<RefLink :id="8" preview="Wikipedia: STL, SGI implementation and hash_map history" />, but the C++98 standard didn't include it—it didn't make it in until C++11 in the form of `unordered_map`. So the standard library's scope is much broader than STL. STL is the most core, most dazzling piece, but it's not everything.
+But STL is just that library of Stepanov and theirs. Later, parts of it were absorbed into the standard, but not all. For example, SGI's STL implementation had ``hash_map`` early on<RefLink :id="8" preview="Wikipedia: STL, SGI implementation and hash_map history" />, but the C++98 standard didn't include it until C++11 brought it in as ``unordered_map``. So the scope of the standard library is much larger than STL. STL is the most core and dazzling part of it, but not the whole thing.
 
-## So Where Did the Rest of the Standard Library Come From?
+## So Where Do the Other Things in the Standard Library Come From?
 
-`shared_ptr` is not STL, `tuple` is not STL, `regex` is not STL, and `filesystem` is not STL either. How did they get into the standard library? The answer comes down to two words: Boost.
+``shared_ptr`` is not STL, ``tuple`` is not STL, ``regex`` is not STL, and ``filesystem`` is not STL. How did they get into the standard library? The answer is two words: Boost.
 
-Hearing this answer for the first time might be surprising, because many tutorials barely mention Boost, dismissing it as "a third-party library, just be aware of it." But looking into Boost's history reveals the exact opposite—it's not that Boost basked in the standard library's glory, but rather that the standard library drew nourishment from Boost for a quarter of a century.
+Hearing this answer for the first time might be surprising, because many tutorials mention Boost only in passing, saying "this is a third-party library, just know it exists." But looking at Boost's history reveals the complete opposite—it's not that Boost borrowed from the standard library's fame, but rather the standard library drew nourishment from Boost for a quarter of a century.
 
-The Boost project was first officially released in 1999<RefLink :id="2" preview="Beman Dawes, Boost Libraries, 1999" />, almost in lockstep with the C++ standardization process. One of its roles—note, **only one** of them—was to serve as a testing ground for high-quality libraries: someone has a good idea, implements it in Boost, lets people use it, complain about it, and suggest improvements. Once it's been thoroughly validated by industry, they consider pushing it into the standard. But this "testing ground" metaphor has its limitations—we'll get into that later.
+The Boost project was first officially released in 1999<RefLink :id="2" preview="Beman Dawes, Boost Libraries, 1999" />, almost in sync with the C++ standardization process. One of its positions—note, **only one of them**—is to serve as a testing ground for high-quality libraries: someone has a good idea, implements it in Boost first, lets everyone use it, criticize it, and offer suggestions. Once it's fully validated by industry, they consider pushing it into the standard. But this "testing ground" metaphor has its limitations—we'll elaborate on that later.
 
-Here are some things we use every day that you might not realize originated in Boost: `shared_ptr`/`weak_ptr` came from Boost.SmartPtr, `function`/`bind` came from Boost.Function and Boost.Bind, `tuple` came from Boost.Tuple, `regex` came from Boost.Regex, `array` came from Boost.Array, `unordered_map`/`unordered_set` came from Boost.Unordered, `chrono` came from Boost.Chrono, and `filesystem` came from Boost.Filesystem. These aren't obscure components—they're things C++ programmers touch every single day. Each of them survived in Boost for anywhere from three to five years to over a decade, was tested by countless projects in real-world environments, had its bugs mostly ironed out, and had its API design polished, before finally being "graduated" into the standard.
+Below are some things we use every day but might not realize originated from Boost: ``shared_ptr``/``weak_ptr`` come from Boost.SmartPtr, ``function``/``bind`` come from Boost.Function and Boost.Bind, ``tuple`` comes from Boost.Tuple, ``regex`` comes from Boost.Regex, ``array`` comes from Boost.Array, ``unordered_map``/``unordered_set`` come from Boost.Unordered, ``chrono`` comes from Boost.Chrono, and ``filesystem`` comes from Boost.Filesystem. These aren't obscure components; they are things C++ programmers touch every day when writing code. Each of them survived in Boost for anywhere from three to five years to over a decade, was tested by countless projects in real environments, had bugs fixed, and API design polished, and only then was it "regularized."
 
-## Hands-on Verification: Tracing the Boost-Standard Library Connection
+## Hands-on Verification: Seeing the Origins of Boost and the Standard Library
 
-Talking is cheap, so let's run some code to get a feel for it. The local environment is Arch Linux WSL, GCC 16.1.1, with Boost 1.91 installed via pacman.
+Just talking isn't enough; let's run some code to get a feel for it. The local environment is Arch Linux WSL, GCC 16.1.1, and Boost 1.91 installed via pacman.
 
-First, let's look at the most classic example—`shared_ptr`. The Boost version and the standard library version have nearly identical interfaces. This is no coincidence; the standard library version was directly modeled after the Boost version:
+First, let's look at a classic example—``shared_ptr``. The Boost version and the standard library version have almost identical interfaces. This isn't a coincidence; it's because the standard library version was copied directly from the Boost version:
 
 ```cpp
 // 文件: shared_ptr_compare.cpp
@@ -80,7 +80,7 @@ int main() {
 }
 ```
 
-Output:
+Running result:
 
 ```text
 use_count: 1
@@ -88,9 +88,9 @@ value: 42
 after copy, use_count: 2
 ```
 
-There's nothing technically impressive about this example itself, but the core point is this: the API designs for `use_count()`, `make_shared`, and copy semantics weren't dreamed up by the committee sitting in a conference room. They were distilled from years of use and countless pitfalls encountered by the Boost community. The standardization process was more like "retroactive recognition" than "invention."
+This example itself has little technical depth, but the core point is this: ``use_count()``, ``make_shared``, copy semantics—these API designs weren't thought up by the committee sitting in a meeting room. They were settled after the Boost community used them for several years and stepped into countless pits. The standardization process is more like "ratification" than "invention."
 
-Let's look at a more interesting example: `boost::filesystem` and `std::filesystem`. The Boost version appeared much earlier; the filesystem library wasn't brought into the standard until C++17. The following script compares the usage differences between the two:
+Let's look at a more interesting example, ``boost::filesystem`` and ``std::filesystem``. The Boost version appeared much earlier; C++17 only brought the filesystem library into the standard. The script below compares the usage differences between the two:
 
 ```cpp
 // 文件: fs_compare.cpp
@@ -127,7 +127,7 @@ int main() {
 }
 ```
 
-Output (GCC 16.1.1, `-std=c++20`):
+Running result (GCC 16.1.1, ``-std=c++20``):
 
 ```text
 created: "/tmp/test_dir"
@@ -135,44 +135,44 @@ removed: "/tmp/test_dir"
 ```
 
 ::: details Why does the output have quotes?
-`std::filesystem::path`'s `operator<<` wraps paths in double quotes, which is mandated by the standard. If you don't want the quotes, you can change it to `std::cout << p.string() << "\n"`.
+``std::filesystem::path``'s ``operator<<`` wraps the path output in double quotes; this is behavior mandated by the standard. If you don't want quotes, you can change it to ``std::cout << p.string() << "\n"``.
 :::
 
-You'll notice that, apart from the different headers and namespaces, the code logic doesn't need to change at all. This is the value of Boost as a "testing ground"—in the years when the standard library had no filesystem support, it gave C++ programmers a unified, cross-platform solution for filesystem operations. By the time C++17 finally standardized `std::filesystem`, the API was already very mature, making migration almost zero-cost.
+You will find that except for the different header files and namespaces, the code logic doesn't need to change at all. This is the value of Boost as a "testing ground"—in those years when the standard library didn't have filesystem support, it gave C++ programmers a unified, cross-platform filesystem solution. When C++17 finally standardized ``std::filesystem``, the API was already very mature, and migration was almost zero-cost.
 
-## But Boost Isn't Just the Standard Library's "Farm Team"
+## But Boost Isn't Just the Standard Library's "Reserve Team"
 
-There's a common misconception that everything in Boost ultimately aims to enter the standard library, and anything that hasn't is a "failure." This idea is completely wrong. Boost contains many things that are fundamentally unsuitable for the standard library, yet are incredibly powerful in their respective domains. For example, Boost.Spirit is a combinator-based parser framework that lets you define parsing rules using EBNF-like syntax, writing parsers directly in C++. This is far too domain-specific for the standard library, but if you need to parse text, it's much more pleasant than hand-writing state machines. Boost.Python is an interoperability library between C++ and Python that lets you expose C++ interfaces to Python almost painlessly—something tied to a specific language clearly doesn't belong in the standard library. Boost.Compute is a GPGPU computing library similar to OpenCL, tightly coupled to hardware platforms, so it shouldn't be in the standard either. Boost.Beast is an HTTP and WebSocket library built on top of Boost.Asio, now used by many people doing C++ backend development.
+Here is a common misconception: that the ultimate goal of everything in Boost is to enter the standard library, and what didn't get in is a "failure." This idea is completely wrong. There are many things in Boost that are fundamentally unsuitable for the standard library, but they are incredibly powerful in their respective domains. For example, Boost.Spirit is a parser framework based on combinators that lets you define parsing rules using EBNF-like syntax, writing parsers directly in C++. This is too domain-specific; the standard library wouldn't include it, but for text parsing, it's much easier to use than writing state machines by hand. Boost.Python is an interoperability library between C++ and Python, allowing you to expose C++ interfaces to Python almost painlessly. Putting something tied to a specific language in the standard library is clearly inappropriate. Boost.Compute is a GPGPU computing library similar to OpenCL, strongly tied to the hardware platform, so it shouldn't be in the standard either. Boost.Beast is an HTTP and WebSocket library based on Boost.Asio, now used by many people doing C++ backend.
 
-So Boost's true positioning is this: it is both a source for the standard library and an independent, high-quality C++ library collection. Some things "graduate" into the standard library, while others continue to shine within Boost. The two are not contradictory.
+So Boost's real positioning is: it is both one of the sources of the standard library and an independent collection of high-quality C++ libraries. Some things "graduate" to the standard library, while others keep shining in Boost. The two are not contradictory.
 
 ---
 
-# From Boost to Beman: How the C++ Standard Library's "Conveyor Belt" Works
+# From Boost to Beman: How the C++ Standard Library's "Conveyor Belt" Turns
 
-## What's Actually Wrong with the "Testing Ground" Metaphor
+## Where Exactly Does the "Testing Ground" Metaphor Go Wrong?
 
-Earlier, we mentioned that one of Boost's roles is a "testing ground," a phrase that many tutorials have further simplified to "Boost is the testing ground for the C++ standard library." But many people interpret this as "everything in Boost will eventually enter the standard." This understanding is deeply flawed because it completely ignores the two critical questions of "how does it enter?" and "when does it enter?"
+Earlier, we mentioned that one of Boost's positions is a "testing ground." This statement is further simplified in many tutorials to "Boost is the testing ground for the C++ standard library." But many people understand this as "everything in Boost will eventually enter the standard." This understanding is problematic because it completely ignores the two key questions of "how it enters" and "when it enters."
 
-In reality, the relationship between Boost and the C++ standard committee is far less simple and direct than the phrase "testing ground" implies. Boost has its own governance structure, its own review process, and its own release cadence, while C++ standardization follows the ISO process. The goals of these two systems don't perfectly align. Some libraries in Boost are designed to be very generic and flexible, but precisely because they're so flexible, they actually require significant trimming and adjustment during standardization—a process that can take years or even longer. So when you see many Boost libraries taking several C++ standard versions from proposal to final adoption, it's not because the committee is inefficient, but because the integration cost between the two systems is genuinely high.
+In reality, the relationship between Boost and the C++ Standards Committee is far less simple and direct than the three words "testing ground" imply. Boost has its own governance structure, review process, and release rhythm, while C++ standardization follows the ISO process. The goals of the two systems are not entirely consistent. Some libraries in Boost are designed to be very general and flexible, but precisely because they are too flexible, standardization often requires extensive trimming and adjustment, a process that can take years or even longer. So you see many libraries in Boost take several C++ standard versions from proposal to final adoption. This isn't because the committee is inefficient, but because the docking cost of the two systems is indeed high.
 
-## The Beman Project: The "Conveyor Belt" Launched in 2024
+## The Beman Project: That "Conveyor Belt" Launched in 2024
 
-In 2024, David Sankel announced the Beman project<RefLink :id="4" preview="David Sankel, Beman Project, CppCon 2024" />. At first glance, you might think "another Boost alternative?" But looking closer reveals that it's nothing of the sort.
+In 2024, David Sankel announced the Beman project<RefLink :id="4" preview="David Sankel, Beman Project, CppCon 2024" />. At first glance, you might think "another Boost substitute?", but looking closer reveals it's not that at all.
 
-Beman's positioning is very clear: every library in it, from day one of its inception, has the goal of entering the C++ standard. This isn't "let's build a useful library and see if there's a chance to standardize it later," but rather "we are going to build a proposal that can be pushed directly to WG21, complete with a reference implementation." You can think of it as a conveyor belt—libraries complete their design, implementation, and real-world validation in Beman, then get pushed onto the standardization track with an accompanying paper.
+Beman's positioning is very clear: every library in it, from day one of its inception, has the goal of entering the C++ standard. This isn't "make a good library first and see if there's a chance to standardize later," but rather "we are going to make a proposal that can be pushed directly to WG21, complete with a full reference implementation." You can think of it as a conveyor belt—libraries complete design, implementation, and practical testing in Beman, then are pushed directly onto the standardization track with a paper.
 
-This positioning means Beman has significantly streamlined its processes. Boost's review process is quite heavy: you have to consider compatibility with dozens of other Boost libraries, meet Boost's code style requirements, and pass Boost community votes. Beman, frankly, is aimed squarely at standardization, so the overhead is much lower. There's no need to balance "building a general-purpose library" against "building a standard proposal," because in Beman, these two things are one and the same.
+This positioning means Beman has done a lot of streamlining in its process. Boost's review process is heavy; you have to consider compatibility with dozens of other Boost libraries, meet Boost's code style requirements, and pass community voting. Beman, frankly, is aimed straight at standardization, so the overhead is much lower. There's no need to balance between "making a general library" and "making a standard proposal" because in Beman, these two things are the same thing.
 
-Many people previously wondered "why not just take things directly from Boost into the standard?" The reason is actually simple—Boost's design constraints and the standard's constraints are different, so directly copying things over often doesn't work. And retrofitting a library that has already taken root in the Boost ecosystem carries high political and technical costs. Beman essentially sidesteps this problem by designing from scratch with "being standardizable" as a prerequisite.
+Many people previously wondered, "why not just take things from Boost into the standard?" The reason is simple—Boost's design constraints and the standard's constraints aren't the same. Direct porting often doesn't work, and refactoring a library already rooted in the Boost ecosystem has high political and technical costs. Beman effectively bypasses this issue by designing from the start with the premise of "being able to enter the standard."
 
-## What's in Beman Right Now
+## What's in Beman Now?
 
-Currently, Beman has about eight active repositories<RefLink :id="4" preview="Beman Project, GitHub organization" />, one of which is an example library, `exemplar`, demonstrating how a Beman library should organize its code, write documentation, and package an accompanying proposal. The `exemplar` itself is functionally simple, but its value as a "template" is significant.
+Currently, Beman has about 8 active repositories<RefLink :id="4" preview="Beman Project, GitHub organization" />, one of which is an example library ``exemplar``, showing how a Beman library should organize code, write documentation, and accompany proposals. This ``exemplar`` itself has simple functionality, but its value as a "template" is significant.
 
-Several practical subprojects are worth watching. For example, extensions to `optional`—C++23 finally added `transform` and `and_then` to `std::optional`<RefLink :id="11" preview="cppreference: std::optional, C++23 monadic operations" />, and Beman's Optional26 project aims to build further extensions on top of this for C++26. When writing code, every time you encounter a "might not have a value" scenario, you wrestle between `std::optional` and raw pointers. Using a raw pointer, `nullptr` can mean either "no value" or "an error occurred," and the semantics get muddled. Every time you see `if (ptr != nullptr)`, you're never quite sure if this null is a business-logic "absent" or a logical "error." Using `std::optional` makes the semantics clear, but chaining operations is incredibly painful.
+Several sub-projects in practical directions are worth watching. For example, extensions to ``optional``—C++23 finally added ``transform`` and ``and_then`` to ``std::optional``<RefLink :id="11" preview="cppreference: std::optional, C++23 monadic operations" />, and Beman's Optional26 project aims to make further extensions targeting C++26 on this basis. When writing code, every time we encounter a "possibly no value" scenario, we struggle between ``std::optional`` and raw pointers. Using a raw pointer, ``nullptr`` can mean either "no value" or "error occurred," mixing semantics. Every time you see ``if (ptr != nullptr)``, you aren't sure if this null is business logic "none" or logical "error." Using ``std::optional`` clears up the semantics, but chaining operations is very painful.
 
-Let's look at a concrete example. Suppose we have a workflow that looks up user info from a user ID, then extracts the email from that user info. Using pre-C++23 `std::optional`, you'd have to write it like this:
+Let's take a specific example. Suppose I have a flow that looks up user info from a user ID, then extracts an email from the user info. Using ``std::optional`` pre-C++23, you have to write it like this:
 
 ```cpp
 #include <optional>
@@ -222,9 +222,9 @@ int main() {
 }
 ```
 
-Look at this nesting—even with just two levels, it's already annoying. In real business code, three or four levels of nesting are common, and at each level you have to manually check `has_value()`, manually unwrap the value, and then pass it to the next layer. Rust's `Option::and_then` does a great job here, and C++ has long lacked a corresponding mechanism.
+Look at this nesting; even with just two layers, it's already annoying. In actual business code, three or four layers of nesting are common. Each layer requires manually checking ``has_value()``, manually unwrapping, and then passing it to the next layer. Rust's ``Option::and_then`` does this well, but C++ has long lacked a corresponding mechanism.
 
-Now, Beman's `optional` extension is filling exactly this gap. With `transform` and `and_then`, the same logic can be written like this:
+Now Beman's ``optional`` extension fills this gap. With ``transform`` and ``and_then``, the same logic can be written like this:
 
 ```cpp
 #include <optional>
@@ -273,17 +273,17 @@ int main() {
 }
 ```
 
-Running this on GCC 14, the code passes completely without any extra dependencies. The semantics of `and_then` are: if the current `optional` has a value, pass that value to the given function, which returns a new `optional`; if there's no value, directly return an empty `optional`, and the function is never called. `transform` is similar, but the given function returns a plain value instead of an `optional`, and `transform` automatically wraps it. `std::optional` always felt half-finished before, but now it's finally gained the most critical chaining capability. And this feature has already been formally standardized in C++23; Beman's `optional` project is more about further extension and exploration.
+Running this on GCC 14, this code passes completely without any extra dependencies. The semantics of ``and_then`` are: if the current ``optional`` has a value, pass that value to the given function, which returns a new ``optional``; if there is no value, return an empty ``optional`` directly, and the function won't be called at all. ``transform`` is similar, but the given function returns a normal value instead of ``optional``, and ``transform`` automatically wraps it. ``std::optional`` always felt half-baked before; now it finally has the most critical chaining ability. Moreover, this feature has been officially standardized in C++23, and Beman's ``optional`` project is mostly doing further extensions and exploration.
 
-Beyond the `optional` extensions, Beman also has subprojects like `scopes` (related to scope guards), `tasks` (async task abstractions), and `any_view` (type-erased views). Just from the names, you can tell they're targeting real pain points encountered in day-to-day development.
+Besides ``optional`` extensions, Beman also has sub-projects like ``scopes`` (scope guard related), ``tasks`` (async task abstraction), and ``any_view`` (type-erased views). Just looking at the names, you can feel they are aiming at pain points truly encountered in daily development.
 
-## There's Another Path: Individual Libraries Going Straight to the Standard
+## There's Another Path: Individual Libraries Enter the Standard Directly
 
-At this point, you might wonder: does everything that enters the standard have to go through an organization like Boost or Beman first? The answer is no. The C++ community has a group of particularly hardcore individuals who wrote a library themselves, then wrote (or co-wrote) a proposal, went through the rigorous WG21 review process, and ultimately pushed their library into the standard. This path is harder than going through Boost or Beman, because one person has to handle the implementation, documentation, proposal text, and defense all at once—but people have indeed done it.
+At this point, you might have a question: do all things entering the standard have to go through organizations like Boost or Beman? The answer is no. There is a group of particularly hardcore people in the C++ community who wrote a library themselves, then wrote a proposal themselves (or jointly with others), went through the heavy reviews of WG21, and finally pushed the library into the standard. This path is harder than going through Boost or Beman because one person has to handle implementation, documentation, proposal text, and defense simultaneously, but people have indeed done it.
 
-A few quintessential examples: Eric Niebler's **range-v3**<RefLink :id="5" preview="Eric Niebler, range-v3, C++20 ranges reference" /> library, after being published on GitHub, essentially served as the reference implementation for C++20 ranges. Many tutorials were still citing range-v3's documentation when C++20 support wasn't yet mature. Victor Zverovich's **{fmt}**<RefLink :id="6" preview="Victor Zverovich, {fmt}, std::format reference implementation" /> was practically every C++ programmer's formatting solution when `std::format` wasn't yet widely supported. Later, `fmt` directly became the reference implementation for `std::format`, with Victor himself as the proposal's primary driver. Now `std::format` is part of the standard in C++20<RefLink :id="13" preview="P0645R10: Text Formatting for C++20" />, but in production environments, people sometimes still use `fmt` directly because its compilation speed and error messages are better than the standard library implementation in certain scenarios. Howard Hinnant's **date**<RefLink :id="7" preview="Howard Hinnant, date library, C++20 chrono extension" /> filled a massive gap in C++ date handling—before C++20 introduced the time point extensions to `<chrono>`, handling dates in C++ meant either using the C-era `tm` struct (whose pitfalls could fill an entire article) or pulling in a third-party library—which ultimately drove the calendar and time zone support in C++20 `<chrono>`.
+A few typical examples: Eric Niebler's **range-v3**<RefLink :id="5" preview="Eric Niebler, range-v3, C++20 ranges reference" /> library, after being open-sourced on GitHub, basically served as the reference implementation for C++20 ranges, and many tutorials still cited range-v3 documentation when C++20 support wasn't complete. Victor Zverovich's **{fmt}**<RefLink :id="6" preview="Victor Zverovich, {fmt}, std::format reference implementation" /> was almost every C++ programmer's formatting solution when ``std::format`` wasn't widely supported. Later ``fmt`` directly became the reference implementation for ``std::format``, and Victor himself was a main driver of the proposal. Now ``std::format`` is part of the standard in C++20<RefLink :id="13" preview="P0645R10: Text Formatting for C++20" />, but in production environments, people sometimes still use ``fmt`` directly because its compilation speed and error messages are better than the standard library implementation in some scenarios. Howard Hinnant's **date**<RefLink :id="7" preview="Howard Hinnant, date library, C++20 chrono extension" /> library filled the huge gap in C++ date handling—before C++20 introduced time point extensions for ``<chrono>``, handling dates in C++ meant either using the C-era ``tm`` struct (whose pitfalls could fill a whole article) or introducing a third-party library—ultimately driving C++20's calendar and time zone support in ``<chrono>``.
 
-Then there's `std::span` (C++20) and `std::mdspan` (C++23)<RefLink :id="12" preview="cppreference: std::mdspan, C++23 multi-dimensional view" />. `span` is nearly ubiquitous in modern C++ code—whenever there's a need for "a view over a contiguous block of memory," `span` is far more pleasant to use than a raw pointer plus a length. Changing a function signature from `void process(uint8_t* data, size_t size)` to `void process(std::span<uint8_t> data)` dramatically improves the readability of the caller's code, and you never again see those silly bugs where "the pointer was passed correctly but the length was wrong."
+Then there is ``std::span`` (C++20) and ``std::mdspan`` (C++23)<RefLink :id="12" preview="cppreference: std::mdspan, C++23 multi-dimensional view" />. ``span`` is almost everywhere in modern C++ code—whenever there's a need for "a view of a contiguous block of memory," ``span`` is much easier to use than a raw pointer plus length. Changing a function signature from ``void process(uint8_t* data, size_t size)`` to ``void process(std::span<uint8_t> data)`` improves caller code readability by a level, and you never get low-level bugs like "pointer passed correctly but length wrong."
 
 ```cpp
 #include <span>
@@ -320,13 +320,13 @@ int main() {
 }
 ```
 
-`mdspan` solves the problem of multi-dimensional array views. Handling multi-dimensional arrays in C++ has always been a pain point—native multi-dimensional arrays require compile-time sizes, and `vector<vector<T>>` has performance issues due to non-contiguous memory. `mdspan` provides a multi-dimensional, non-owning view, and its layout mapping is customizable, meaning it can be used to view row-major C arrays, column-major Fortran arrays, or even image buffers with custom strides. A fairly large consortium is pushing this library because the high-performance computing domain has an urgent need for multi-dimensional array views.
+``mdspan`` solves the problem of multi-dimensional array views. Handling multi-dimensional arrays in C++ has always a pain point—native multi-dimensional arrays must have sizes known at compile time, and ``vector<vector<T>>`` has performance issues due to non-contiguous memory. ``mdspan`` provides a multi-dimensional, non-owning view, and its layout mapping is customizable, meaning it can be used to view row-major C arrays, column-major Fortran arrays, or even image buffers with custom strides. A fairly large alliance is driving this library because the high-performance computing field's need for multi-dimensional array views is too urgent.
 
-## Looking Back at the Big Picture
+## Looking Back at the Whole Picture
 
-By this point, the pipeline is clear. New C++ features enter the standard through roughly three paths. The first is the Boost path—historically established but process-heavy, suitable for general-purpose infrastructure that needs extended polishing. The second is the Beman path—newly launched in 2024, a lightweight process designed specifically for standardization, aiming to be an efficient conveyor belt. The third is the individual hero path, where the author writes the library and pushes the proposal themselves—hardest of all, but with no shortage of historical success stories. These three paths aren't mutually exclusive; Beman itself has many core Boost participants, and it's more of a complement to Boost's philosophy than a competitor. And many of those individual library authors are also contributors to Boost or Beman.
+By now, this chain is clear. There are roughly three paths for new C++ features to enter the standard: the first is the Boost path, with a long history but heavy process, suitable for general infrastructure that needs long polishing; the second is the Beman path, launched in 2024, a lightweight process designed specifically for standardization, aiming to be an efficient conveyor belt; the third is the individual hero path, where the author writes the library and pushes the proposal themselves, hardest but with many historical successes. These three paths aren't mutually exclusive. Beman itself has many core Boost participants; it's more of a supplement to Boost's philosophy than a competitor, and many of those individual library authors are also contributors to Boost or Beman.
 
-C++ standardization can look like a black box—where proposals come from, how they're reviewed, why some things enter the standard quickly while others wait a decade—it all seems incomprehensible. But looking back, it's not really that mysterious. It's just a group of people, through different organizational forms, continuously pushing battle-tested designs into the standard. Once you understand this, looking at the C++26 and C++29 proposal lists feels completely different—you can spot which ones came up the Beman conveyor belt, which ones were pushed by individual library authors, and which ones are still in early exploration, instead of staring blankly at a bunch of proposal numbers.
+C++ standardization looks like a black box—where proposals come from, how they are reviewed, why some things enter the standard quickly while others wait ten years—is completely incomprehensible. But looking back, it's not that mysterious. It's just a group of people, through different organizational forms, continuously pushing designs proven in practice into the standard. After understanding this, looking at the C++26 and C++29 proposal lists feels completely different—you can see which came from the Beman conveyor belt, which were pushed by individual library authors, and which are still in early exploration, instead of staring blankly at a list of proposal numbers.
 
 <ReferenceCard title="References">
   <ReferenceItem

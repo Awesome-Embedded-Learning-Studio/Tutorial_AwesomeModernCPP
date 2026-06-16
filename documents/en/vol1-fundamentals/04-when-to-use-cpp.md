@@ -5,8 +5,11 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Exploring when to choose C++ over C, and how to wisely use C++ features
-  in embedded environments, including recommended, compromised, and prohibited features.
+description: 'Here is the translation:
+
+
+  "Explores when to choose C++ over C, and how to wisely use C++ features in embedded
+  environments, covering recommended, cautious, and prohibited features.'
 difficulty: beginner
 order: 4
 platform: host
@@ -21,415 +24,306 @@ tags:
 - 基础
 title: When to Use C++ and Which Features to Use
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/04-when-to-use-cpp.md
-  source_hash: 4416492a771f9b4df027778c76a10300b14863d65a1e101936b99c28c8db1aa5
-  token_count: 2630
-  translated_at: '2026-05-26T10:26:21.523524+00:00'
+  source_hash: c593167374386fb7fe98148866a8c5ec733e3a59dc2b75119a227e26c7b229ca
+  translated_at: '2026-06-16T03:32:31.085030+00:00'
+  engine: anthropic
+  token_count: 2627
 ---
 # When to Use C++ and Which Features to Use
 
-Honestly, whenever I see another "C vs C++" holy war break out in the embedded community, I find it pretty frustrating. The debate almost always devolves into a matter of faith—C developers treat C++ like a cult, and C++ developers treat C like the Stone Age. But the real question is: for this specific project, on this specific hardware, is using this language actually worth it? No one can answer that question for you, but I can share the lessons learned from real-world projects to help you avoid some common pitfalls.
+Honestly, whenever I see a "C vs C++" holy war break out in the embedded community, I feel pretty helpless. The debate often quickly slides into the realm of faith—C users think C++ is a cult, and C++ users think C is primitive. But the real question is: For this project, on this hardware, is using this language cost-effective? No one can answer that for you, but I can share experience gained from actual projects to help you avoid some detours.
 
-In this chapter, we need to figure out two things: first, what kind of projects are worth migrating to C++; and second, once we adopt C++, which features should we embrace, which should we use with caution, and which we should avoid altogether.
+In this chapter, we need to clarify two things: First, what kind of project is worth upgrading to C++; second, once we use C++, which features should we use boldly, which should we use with caution, and which should be avoided if possible.
 
-## When C++ Is Worth It
+## When is C++ Worth the Effort
 
-Let's start with the basic premise: if your project's codebase exceeds tens of thousands of lines and includes multiple subsystems that require clear interface boundaries, the advantages of C++ start to shine. Of course, you can maintain projects of this scale in C, but your team needs to invest significant effort into maintaining the code's organizational structure—manually managing module divisions, hand-writing interface abstractions, and manually ensuring type safety. C++ features like classes, namespaces, and templates handle exactly these tasks at the language level. Especially when multiple subsystems require strict interface definitions, C++'s type system can catch a large number of interface misuse errors at compile time, whereas in C, these often don't surface until runtime.
+Let's start with the major premise: If your project code scale exceeds tens of thousands of lines and involves multiple subsystems that need clear interface boundaries, then the advantages of C++ will start to become apparent. In C, maintaining projects of this scale is certainly doable, but you need the team to invest a lot of energy in maintaining the code structure—manually managing module division, hand-writing interface abstractions, and manually ensuring type safety. C++ classes, namespaces, and templates do exactly these things at the language level. Especially when multiple subsystems require strict interface definitions, C++'s type system can block a large number of interface misuse errors at compile time, whereas in C, these often only expose themselves at runtime.
 
-Type safety is literally a matter of life and death in safety-critical systems. Automotive electronics, medical devices, aerospace—in these domains, the ubiquitous `void*` pointers and implicit type conversions in C are ticking time bombs. C++'s strong type system, enum classes, reference semantics, and `constexpr` correctness can prevent a massive number of low-level errors right at the compiler level. This isn't some fancy theoretical advantage; it tangibly reduces the probability of bugs making it into the product.
+Type safety is directly a matter of life and death in safety-critical systems. Automotive electronics, medical equipment, aerospace—in these fields, the implicit type conversions and loose typing common in C are simply ticking time bombs. C++'s strong type system, `enum class`, reference semantics, and `constexpr` correctness can prevent a large number of low-level errors from the compiler level. This is not some fancy theoretical advantage, but a tangible reduction in the probability of bugs entering the product.
 
-Code reuse requirements are another important consideration. If your project needs to reuse components across multiple product lines, or if there are many similar but not identical functional modules, C++'s template mechanism can really show its power—it can generate type-safe code at compile time with zero runtime overhead. Compared to the "generics" cobbled together with macros and `void*` in C, C++'s approach is both safe and elegant.
+Code reuse demand is also an important consideration. If your project needs to reuse components across multiple product lines, or has a large number of similar but not identical functional modules, C++'s template mechanism can be powerful—it generates type-safe code at compile time with zero runtime overhead. Compared to the "generics" cobbled together by macros and `void*` in C, C++'s solution is both safe and elegant.
 
-But to be fair, adopting C++ requires the team to have the corresponding technical expertise. If everyone on the team has only ever written C, has never heard of RAII (Resource Acquisition Is Initialization), and there are no training or code review mechanisms in place, rushing into C++ will most likely end in disaster. Conversely, if the team has members familiar with modern C++ practices who can establish and enforce reasonable coding standards, the advantages of C++ can truly be realized.
+But to be fair, the prerequisite for using C++ is that the team has the corresponding technical reserve. If the entire team has only written C, hasn't heard of RAII, and has no mechanism for training and code review, then rashly using C++ will most likely lead to a crash. Conversely, if the team has members familiar with modern C++ practices who can formulate and execute reasonable coding standards, then the advantages of C++ can truly be realized.
 
-### When C Is Still the Better Choice
+### When C is Still the Better Choice
 
-On the flip side, in some scenarios, sticking with C is the more pragmatic choice. When the target platform is extremely resource-constrained—for example, a low-cost MCU (Microcontroller Unit) with less than 32KB of Flash and less than 4KB of RAM—the simplicity and predictability of C are its greatest advantages. For simple applications with a very small codebase (say, under five thousand lines), introducing C++ actually adds unnecessary complexity. Additionally, if the project requires deep integration with a large amount of legacy C code, or if the target platform's toolchain has incomplete C++ support (which is not uncommon on some niche chips), sticking with C is often the least stressful decision.
+Conversely, in some scenarios, sticking with C is the more pragmatic choice. When the target platform is extremely resource-constrained—for example, low-cost MCUs with Flash less than 32KB and RAM less than 4KB—the simplicity and predictability of C are its greatest advantages. For simple applications with small code size (e.g., less than five thousand lines), introducing C++ adds unnecessary complexity. Additionally, if the project requires deep integration with a large amount of legacy C code, or if the target platform's toolchain has incomplete support for C++ (which is not uncommon on some niche chips), continuing with C is often the most worry-free decision.
 
-## Our Best Friends: Recommended Core Features
+## Our Good Friends: Recommended Core Features
 
-Alright, let's assume you've decided to go with C++. Next, we need to figure out which features should become part of your everyday development toolkit. All of these features adhere to the zero-overhead abstraction principle—you get better code organization without paying a runtime price.
+Alright, assuming you've decided to go with C++. Next, we need to figure out which features should become the basic toolbox for daily development. These features all conform to the principle of zero-overhead abstraction—enjoying better code organization without paying a runtime price.
 
 ### Classes and Encapsulation
 
-Classes and encapsulation are among the most fundamental and valuable features in C++. Let's look at a practical example—a sensor driver. In C, you might be used to writing something like this:
+Classes and encapsulation are one of the most basic and valuable features of C++. Let's look directly at a practical example—a sensor driver. In C, you might be used to writing this:
 
 ```c
-// C 风格：全局变量 + 裸函数
-volatile uint32_t* sensor_reg = (volatile uint32_t*)0x40010000;
+// sensor.c
+static volatile uint32_t* const SENSOR_ADDR = (uint32_t*)0x40000000;
 
-void sensor_enable(void) {
-    *sensor_reg |= 0x01;
+void sensor_init() {
+    *SENSOR_ADDR = 0x01;
 }
 
-uint16_t sensor_read(void) {
-    return (uint16_t)(*sensor_reg >> 16);
+uint32_t sensor_read() {
+    return *SENSOR_ADDR;
 }
 ```
 
-The problem with this approach is obvious: `SENSOR_BASE` is a global variable that can be manipulated directly from anywhere, with nothing to stop it. The C++ approach encapsulates the register addresses and access logic inside a class, exposing only the `init` and `read` interfaces to the outside world:
+The problem with this approach is obvious: `SENSOR_ADDR` is a global variable, and any place can directly manipulate it; no one can stop it. The C++ approach is to encapsulate the register address and access logic inside the class, exposing only `init` and `read` interfaces:
 
 ```cpp
-class SensorDriver {
-private:
-    uint32_t base_address_;
-    volatile uint32_t* const reg_;
+// sensor.hpp
+class Sensor {
+    static constexpr volatile uint32_t* const ADDR =
+        reinterpret_cast<volatile uint32_t*>(0x40000000);
 
 public:
-    explicit SensorDriver(uint32_t addr)
-        : base_address_(addr),
-          reg_(reinterpret_cast<volatile uint32_t*>(addr)) {}
-
-    void enable() {
-        *reg_ |= 0x01;
+    void init() const {
+        *ADDR = 0x01;
     }
 
-    uint16_t read() const {
-        return static_cast<uint16_t>(*reg_ >> 16);
+    [[nodiscard]] uint32_t read() const {
+        return *ADDR;
     }
 };
 ```
 
-The key point is that the code generated by the compiler is virtually indistinguishable from the machine code of the C version above—member functions are inlined by default, so there is no performance penalty. However, external code can no longer touch the registers directly, drastically reducing the chance of errors.
+The key is that the code generated by the compiler is almost indistinguishable from the machine code of the C version above—member functions are inline by default, so there is no loss in performance. However, external code can no longer touch the registers directly, drastically compressing the possibility of errors.
 
 ### Namespaces
 
-Naming collisions in large projects are a headache, especially after integrating several third-party libraries. The traditional C approach is to prefix function names, like `sensor_init`, `sensor_read`, `sensor_deinit`, which works but isn't exactly elegant. C++ namespaces provide a more systematic solution—by organizing related functions and classes into logical groups, the problem of naming collisions is eliminated at its root:
+Naming conflicts in large projects are a headache, especially when you integrate several third-party libraries. The traditional C approach is to add prefixes to function names, like `sensor_init()`, `timer_init()`, `uart_init()`, which works but isn't elegant. C++ namespaces provide a more systematic solution—organizing related functions and classes into logical groups, fundamentally eliminating naming conflicts:
 
 ```cpp
-namespace drivers {
-namespace gpio {
+namespace Drivers {
     void init();
-    void set_pin_mode(uint8_t pin, PinMode mode);
-    bool read_pin(uint8_t pin);
+    void transfer();
 }
 
-namespace uart {
-    void init(uint32_t baud_rate);
-    void send(const uint8_t* data, size_t len);
+namespace Utils {
+    void init();  // No conflict with Drivers::init
+    void log();
 }
-}
-
-// 调用时一目了然
-drivers::gpio::init();
-drivers::uart::init(115200);
 ```
 
-The best part is that namespaces are a purely compile-time feature and incur zero runtime overhead.
+Best of all, namespaces are a pure compile-time feature and produce no runtime overhead.
 
 ### Reference Semantics
 
-Compared to pointers, references have two key advantages: first, references cannot be null, so there is no need for null pointer checks; second, reference syntax more clearly expresses a function's intent. When we need to pass a large struct without copying it, a `const` reference is both efficient and safe; when a function needs to modify a passed parameter, a non-`const` reference clearly indicates this intent:
+Compared to pointers, references have two key advantages: first, references cannot be null, so there is no need for null pointer checks; second, reference syntax more clearly expresses the function's intent. When we need to pass a large struct but don't want to copy, a `const` reference is both efficient and safe; when a function needs to modify the passed argument, a non-`const` reference clearly indicates this intent:
 
 ```cpp
-// 用 const 引用传递大型结构体——避免拷贝，且不能被修改
-void process_data(const SensorData& data) {
-    uint16_t value = data.temperature;
-    // ...
+void update_config(Config& cfg) {
+    cfg.baud_rate = 115200;
 }
 
-// 非 const 引用表明函数会修改参数
-bool try_read(SensorData& output) {
-    if (data_available()) {
-        output.temperature = read_temperature();
-        output.humidity = read_humidity();
-        return true;
-    }
-    return false;
+void print_status(const Config& cfg) {
+    printf("Baud: %d\n", cfg.baud_rate);
 }
 ```
 
-Compared to the C pointer approach, we eliminate the `NULL` check, and the code is more concise. Under the hood, a reference is usually just a pointer, so there is no additional performance overhead.
+Compared to the C pointer approach, we save the `nullptr` check, and the code is more concise. Underlying implementation, references are usually just pointers, so there is no additional performance overhead.
 
-### Compile-Time Computation (constexpr)
+### Compile-Time Calculation (constexpr)
 
-`constexpr` is a killer feature of modern C++ for embedded development. It allows the compiler to complete calculations during the compilation phase, generating code that directly contains the resulting values with zero runtime overhead. For example, calculating the prescaler for a UART baud rate:
+`constexpr` is a killer feature of modern C++ in embedded development. It allows the compiler to complete calculations during the compilation phase, and the generated code directly contains the result value, with zero runtime overhead. For example, calculating the serial port baud rate divisor:
 
 ```cpp
-constexpr uint32_t calculate_baud_rate_divisor(uint32_t sysclk, uint32_t baud) {
-    return sysclk / (16 * baud);
+constexpr uint32_t calculate_baud_div(uint32_t clock, uint32_t baud) {
+    return clock / baud;
 }
 
-// 编译期就算好了，生成的代码里直接是结果值 39
-constexpr uint32_t divisor = calculate_baud_rate_divisor(72000000, 115200);
+constexpr uint32_t UART_DIV = calculate_baud_div(72000000, 115200);
 ```
 
-The traditional approach is to perform the division at runtime, but with a `constexpr` function, this division is completed during compilation. When the program runs, the value of `BAUD_PRESCALER` is already `417`, requiring no calculation at all. This not only improves performance but also makes the code's intent much clearer. It can even be used directly as an array size:
+The traditional approach is to do division at runtime, while with a `constexpr` function, this division is completed at compile time. When the program runs, the value of `UART_DIV` is already `625`, requiring no calculation. This not only improves performance but also makes the intent of the code clearer. It can even be used directly as an array size:
 
 ```cpp
-constexpr size_t kBufferSize = calculate_baud_rate_divisor(1000, 10);
-uint8_t buffer[kBufferSize];
+std::array<uint32_t, UART_DIV> buffer;
 ```
 
-### Strongly-Typed Enums (enum class)
+### Strongly Typed Enums (enum class)
 
-Traditional C enums have a few headache-inducing problems: they implicitly convert to integers, values from different enums can be mixed, and enum names pollute the enclosing scope. The `enum class` introduced in C++11 solves all of these problems at once:
+Traditional C enums have several annoying problems: they implicitly convert to integers, values between different enums can be mixed, and enum names pollute the outer scope. `enum class` introduced in C++11 solves all these problems at once:
 
 ```cpp
-enum class PinMode : uint8_t {
-    kInput = 0,
-    kOutput = 1,
-    kAlternate = 2,
-    kAnalog = 3
+enum class Periph : uint32_t {
+    UART1 = 0x40011000,
+    UART2 = 0x40004400
 };
 
-enum class PullMode : uint8_t {
-    kNoPull = 0,
-    kPullUp = 1,
-    kPullDown = 2
-};
-
-void set_mode(uint8_t pin, PinMode mode) {
-    switch (mode) {
-        case PinMode::kInput:  /* ... */ break;
-        case PinMode::kOutput: /* ... */ break;
-        default: break;
-    }
+void reset(Periph p) {
+    *reinterpret_cast<volatile uint32_t*>(p) = 0;
 }
 ```
 
-Now, if you try to pass the wrong type, the compiler will directly throw an error, instead of silently accepting it like a C enum and giving you a runtime surprise:
+Now if you try to pass the wrong type, the compiler will directly report an error, instead of silently accepting it like C enums and giving you a runtime surprise:
 
 ```cpp
-set_mode(5, PinMode::kOutput);        // 正确
-// set_mode(5, PullMode::kPullUp);    // 编译错误：类型不匹配
-// set_mode(5, 1);                    // 编译错误：不能隐式转换
+reset(Periph::UART1);  // OK
+reset(0x40011000);     // Compile error
 ```
 
-Furthermore, compilers typically optimize an `enum class` into a plain integer, so there is absolutely no performance loss.
+Moreover, compilers usually optimize `enum class` into ordinary integers, so there is absolutely no loss in performance.
 
-## Templates: Don't Swing a Good Sword Blindly
+## Templates: Don't Swing the Sword Blindly
 
-Templates are the most powerful but also the most easily abused feature in C++. In an embedded environment, we need to strike a balance between code reuse and code bloat.
+Templates are C++'s most powerful but also most easily abused feature. In embedded environments, we need to find a balance between code reuse and code bloat.
 
-### Simple Templates: Use Freely
+### Simple Templates: Use with Confidence
 
-Simple function templates are usually safe because they are often inlined by the compiler, and the最终 generated code is exactly the same as a hand-written type-specific version:
+Simple function templates are usually safe because they are often inlined by the compiler, and the final generated code is exactly the same as a hand-written specific type version:
 
 ```cpp
 template<typename T>
-inline void swap(T& a, T& b) {
-    T temp = a;
-    a = b;
-    b = temp;
+T clamp(T val, T min, T max) {
+    return (val < min) ? min : (val > max) ? max : val;
 }
-
-uint32_t x = 10, y = 20;
-swap(x, y);  // 编译器生成 swap<uint32_t>
 ```
 
-### Class Templates: Depends on the Scenario
+### Class Templates: It Depends
 
-Class templates are also very useful in the right scenarios. A typical example is a fixed-size ring buffer. By making the element type and size template parameters, we achieve a generic but zero-overhead buffer:
+Class templates are also useful in appropriate scenarios, with a typical example being a fixed-size ring buffer. By taking the element type and size as template parameters, we achieve a generic but zero-overhead buffer:
 
 ```cpp
 template<typename T, size_t N>
-class CircularBuffer {
-private:
-    T buffer_[N];
-    size_t head_ = 0;
-    size_t tail_ = 0;
-    size_t count_ = 0;
-
+class RingBuffer {
+    T data[N];
+    size_t head = 0, tail = 0;
 public:
-    bool push(const T& item) {
-        if (count_ >= N) return false;
-        buffer_[tail_] = item;
-        tail_ = (tail_ + 1) % N;
-        ++count_;
-        return true;
-    }
-
-    bool pop(T& item) {
-        if (count_ == 0) return false;
-        item = buffer_[head_];
-        head_ = (head_ + 1) % N;
-        --count_;
-        return true;
-    }
-
-    size_t size() const { return count_; }
-    bool empty() const { return count_ == 0; }
-    bool full() const { return count_ >= N; }
+    bool push(T item) { /* ... */ }
+    bool pop(T& item) { /* ... */ }
 };
 ```
 
-Since the size is determined at compile time, the compiler can perform thorough optimizations.
+Since the size is determined at compile time, the compiler can fully optimize.
 
-⚠️ But there is a pitfall to watch out for: every different combination of template parameters generates a separate piece of code. If you instantiate `RingBuffer<uint8_t, 32>` and `RingBuffer<uint8_t, 64>`, you will have two nearly identical copies of code in Flash. So, use templates, but don't abuse them.
+⚠️ But there is a pitfall to note: every different combination of template parameters generates a separate copy of the code. If you instantiate `RingBuffer<uint8_t, 128>` and `RingBuffer<uint8_t, 256>`, there will be two almost identical copies of the code in Flash. So use templates, but don't abuse them.
 
-### SFINAE and if constexpr: Use If Needed, But Don't Overcomplicate
+### SFINAE and if constexpr: Use but Don't Overcomplicate
 
-More advanced template techniques, like SFINAE (Substitution Failure Is Not An Error) and type traits, should be used with caution in embedded environments. C++17's `if constexpr` is much clearer than traditional SFINAE. If you truly need to select different implementations based on type, prefer using it:
+More advanced template techniques, like SFINAE and type traits, should be used with caution in embedded environments. C++17's `if constexpr` is much clearer than traditional SFINAE; if you really need to select different implementations based on type, prioritize using it:
 
 ```cpp
 template<typename T>
-void serialize(const T& value, uint8_t* buffer) {
-    if constexpr (std::is_integral<T>::value) {
-        // 整数类型：直接写入
-        *reinterpret_cast<T*>(buffer) = value;
-    } else if constexpr (std::is_floating_point<T>::value) {
-        // 浮点类型：同样直接写入
-        *reinterpret_cast<T*>(buffer) = value;
+auto process(T val) {
+    if constexpr (std::is_integral_v<T>) {
+        return val * 2;
+    } else {
+        return val;
     }
 }
 ```
 
-Only consider these techniques when you genuinely need compile-time type constraints, and try to keep things simple. If you make template metaprogramming too complex in an embedded context, even you won't be able to understand it two weeks later.
+Only consider these techniques when you truly need compile-time type constraints, and keep it as simple as possible. If template metaprogramming gets too complex in embedded systems, even you won't understand it two weeks later.
 
-## Features That Require a Disclaimer
+## Features Requiring a Disclaimer
 
-Some C++ features aren't completely off-limits, but they require extra care. The following features are double-edged swords in embedded projects—used well, they are powerful tools; used poorly, they are ticking time bombs.
+Some C++ features are not unusable, but require extra care. The following features are like double-edged swords in embedded projects—used well, they are sharp tools; used poorly, they are time bombs.
 
 ### Constructors and Destructors
 
-Simple, fast construction and destruction are perfectly fine. RAII (Resource Acquisition Is Initialization) style resource management is the best example—acquiring resources in the constructor and automatically releasing them in the destructor is both safe and elegant:
+Simple, fast construction and destruction are perfectly fine. RAII-style resource management is the best example—acquire resources during construction and automatically release them during destruction, which is both safe and elegant:
 
 ```cpp
-class ScopedLock {
-private:
-    Mutex& mutex_;
-
+class LockGuard {
+    Mutex& mtx;
 public:
-    explicit ScopedLock(Mutex& m) : mutex_(m) {
-        mutex_.lock();
-    }
-
-    ~ScopedLock() noexcept {
-        mutex_.unlock();
-    }
-
-    // 禁止拷贝和赋值
-    ScopedLock(const ScopedLock&) = delete;
-    ScopedLock& operator=(const ScopedLock&) = delete;
+    explicit LockGuard(Mutex& m) : mtx(m) { mtx.lock(); }
+    ~LockGuard() { mtx.unlock(); }
 };
 ```
 
-Using it is very simple; it automatically releases when leaving scope, and even if you `return` early, you won't forget to unlock:
+Usage is very simple; leaving the scope automatically releases it, and even if you `return` early, you won't forget to unlock:
 
 ```cpp
-void critical_section() {
-    ScopedLock lock(global_mutex);
-    // 临界区代码...
-}  // 自动释放锁
-```
-
-⚠️ But if you do dynamic memory allocation (`new`) in a constructor, call hardware initialization that might fail, or create objects requiring destruction in an interrupt context, you're just asking for trouble. The correct approach is to keep constructors simple and use an explicit `init` function to handle initializations that might fail:
-
-```cpp
-class GoodDriver {
-    static constexpr size_t kBufferSize = 1024;
-    uint8_t buffer_[kBufferSize];  // 栈上分配，不用 new
-    bool initialized_ = false;
-
-public:
-    GoodDriver() = default;  // 简单的默认构造
-
-    bool init() {
-        if (!init_hardware()) {
-            return false;
-        }
-        initialized_ = true;
-        return true;
-    }
-
-    ~GoodDriver() noexcept = default;
-};
-```
-
-Additionally, destructors must always be marked `noexcept`—if an exception is thrown during destruction, the program will directly call `std::terminate`, which in an embedded system means a crash.
-
-### Exception Handling: Disable by Default
-
-In embedded projects, my recommendation is to simply turn off exceptions via the `-fno-exceptions` compiler flag. This isn't prejudice—turning off exceptions can reduce code size by 10% to 30%, eliminate unpredictable execution times, and avoid the extra RAM overhead of stack unwinding. Moreover, many embedded toolchains have incomplete exception support to begin with, making debugging nearly impossible if something goes wrong.
-
-So, how do we handle errors? Use error codes. While not as elegant as exceptions, they are predictable, efficient, and easy to use for worst-case analysis:
-
-```cpp
-enum class ErrorCode : uint8_t {
-    kOk = 0,
-    kInvalidParameter,
-    kTimeout,
-    kHardwareError,
-    kBufferFull,
-    kNotInitialized
-};
-
-ErrorCode init_sensor(uint8_t address) {
-    if (address == 0 || address > 127) {
-        return ErrorCode::kInvalidParameter;
-    }
-
-    if (!check_hardware()) {
-        return ErrorCode::kHardwareError;
-    }
-
-    return ErrorCode::kOk;
+void critical_task() {
+    LockGuard lock(mutex);
+    // ... do critical stuff ...
+    // Automatic unlock here
 }
 ```
 
-For scenarios where you need to return both a value and an error state, you can use a simple struct to separate the two:
+⚠️ But if you do dynamic memory allocation (`new`), call hardware initialization that might fail, or create objects requiring destruction in an interrupt context within the constructor, you are asking for trouble. The correct approach is to keep the constructor simple and use an explicit `init()` function to handle initialization that might fail:
+
+```cpp
+class SpiDriver {
+public:
+    SpiDriver() = default;  // Do nothing
+    Error init() {          // Explicit initialization
+        // Setup hardware...
+        return Error::OK;
+    }
+};
+```
+
+Also, destructors must be marked `noexcept`—if an exception is thrown during destruction, the program will directly call `std::terminate`, which in embedded systems means a crash.
+
+### Exception Handling: Disabled by Default
+
+In embedded projects, my advice is to directly turn off exceptions via the `-fno-exceptions` compiler flag. This isn't bias—turning off exceptions can reduce code size by 10% to 30%, eliminate unpredictable execution time, and avoid the extra RAM overhead from stack unwinding. Moreover, many embedded toolchains have incomplete support for exceptions themselves, making debugging impossible if problems arise.
+
+So what about error handling? Use error codes. While not as elegant as exceptions, they are predictable, efficient, and easy to analyze for worst-case scenarios:
+
+```cpp
+enum class Error { OK, Timeout, InvalidParam };
+
+Error sensor_read(int& value) {
+    if (!sensor_ready()) return Error::Timeout;
+    value = *SENSOR_ADDR;
+    return Error::OK;
+}
+```
+
+For scenarios that need to return a value and an error status simultaneously, you can use a simple struct to separate the two:
 
 ```cpp
 struct Result {
-    ErrorCode error;
-    uint16_t value;
-
-    bool is_ok() const { return error == ErrorCode::kOk; }
+    Error err;
+    int value;
 };
-
-Result read_sensor() {
-    Result res;
-    if (!is_initialized()) {
-        res.error = ErrorCode::kNotInitialized;
-        res.value = 0;
-        return res;
-    }
-    res.error = ErrorCode::kOk;
-    res.value = read_hardware_register();
-    return res;
-}
 ```
 
-⚠️ Unless your system has abundant Flash and RAM, relaxed real-time requirements, a toolchain with complete exception support, and a team with extensive experience using exceptions—don't touch exceptions.
+⚠️ Unless your system has ample Flash and RAM, relaxed real-time requirements, full toolchain support for exceptions, and the team has extensive experience using exceptions—don't touch exceptions.
 
-### RTTI: Just Turn It Off
+### RTTI: Turn It Off
 
-Runtime Type Information (RTTI) should also be disabled by default using the `-fno-rtti` compiler flag. RTTI increases code size, requires extra metadata storage, and introduces performance overhead. In the vast majority of embedded scenarios, if you need to determine an object's type, adding a type identifier enum class to the base class is entirely sufficient; there is absolutely no need for `dynamic_cast`.
+Run-Time Type Information (RTTI) should also be disabled by default, using the `-fno-rtti` compiler flag. RTTI increases code size, requires extra metadata storage, and brings performance overhead. In the vast majority of embedded scenarios, if you need to determine the type, adding a type ID enum to the base class is sufficient; you don't need `dynamic_cast`.
 
-### Virtual Functions: Use Sparingly
+### Virtual Functions: Restricted Use
 
-Virtual functions provide runtime polymorphism, which is indeed useful when designing driver abstraction layers. But the cost is very real: every object containing virtual functions needs a vtable pointer (4 to 8 bytes), virtual function calls are 5% to 10% slower than direct calls, and they can prevent the compiler from performing inline optimizations.
+Virtual functions provide runtime polymorphism and are indeed useful when designing driver abstraction layers. But the cost is real: every object containing virtual functions needs a virtual table pointer (vptr) (4 to 8 bytes), virtual function calls are 5% to 10% slower than direct calls, and they can hinder compiler inline optimization.
 
-If you only need compile-time polymorphism, passing the concrete type via a template parameter is sufficient, with zero runtime overhead. Virtual functions should only be used in scenarios that genuinely require runtime polymorphism, and they should be avoided on performance-critical paths where they would be called frequently.
+If you only need compile-time polymorphism, passing specific types via template parameters is sufficient, with zero runtime overhead. Virtual functions should only be used in scenarios that truly require runtime polymorphism, and avoid frequent calls on performance-critical paths.
 
 ## Features to Avoid If Possible
 
-For the following features, our advice is to avoid them entirely in embedded environments if possible.
+The following features are recommended to be avoided in embedded environments if possible.
 
 ### Dynamic Memory Allocation
 
-`new`, `delete`, `malloc`, `free`—these operations, which are commonplace in desktop development, are risk sources in embedded systems. Heap fragmentation can cause memory allocation to fail after the system has been running for a while, and such failures are extremely difficult to reproduce and debug. The non-deterministic execution time of dynamic allocation also makes worst-case analysis impossible.
+`new`, `delete`, `malloc`, `free`—operations that are commonplace in desktop development are sources of risk in embedded systems. Heap fragmentation can cause memory allocation failures after running for a while, and such failures are extremely difficult to reproduce and debug. The unpredictable execution time of dynamic allocation also makes worst-case analysis impossible.
 
-The alternative is to use fixed-size data structures. The standard library's `std::array` is a safe choice, as it involves no dynamic memory. If you need dynamically sized containers, you can implement statically-capacity versions, or use a memory pool—pre-allocating a fixed number of equally sized memory blocks, where both allocation and deallocation are O(1) and fragmentation is impossible.
+Alternatives are to use fixed-size data structures. The standard library's `std::array` is a safe choice; it involves no dynamic memory. If you need dynamically sized containers, you can implement static capacity versions, or use memory pools—pre-allocate a fixed number of equally sized memory blocks, where allocation and deallocation are both O(1) and fragmentation-free.
 
 ### Most STL Containers
 
-`std::vector`, `std::list`, `std::map`, `std::string`—these containers all rely on dynamic memory allocation and are unsuitable for embedded environments. The reference counting in `std::shared_ptr` involves atomic operations, which carry significant overhead on some platforms. `std::iostream` should be avoided entirely; a simple `std::cout << "hello"` can introduce over 50KB of code.
+`std::vector`, `std::list`, `std::map`, `std::string`—these containers all rely on dynamic memory allocation and are not suitable for embedded environments. `std::shared_ptr`'s reference counting involves atomic operations, which has significant overhead on some platforms. `std::iostream` should be completely avoided; a simple `printf` can introduce over 50KB of code.
 
-But not everything in the standard library is off-limits. Algorithms in `std::sort` and `std::copy` (note that some allocate temporary memory), compile-time utilities like `std::tuple`, and `std::numeric_limits` from `<limits>`—these are all great, zero-overhead or low-overhead tools.
+But not all of the standard library is unusable. Algorithms in `<algorithm>` (note that some allocate temporary memory), compile-time tools like `<type_traits>`, and `std::array` and `std::span` in `<array>`—these are all zero-overhead or low-overhead good stuff.
 
-If you really need containers, check out the Embedded Template Library (ETL), which provides fixed-size containers that don't use dynamic memory, with interfaces compatible with the STL.
+If you really need containers, look at the Embedded Template Library (ETL), which provides fixed-size containers that don't use dynamic memory and are STL-compatible.
 
-### Standard Threading Library
+### Standard Multithreading Library
 
-Components like `std::thread` and `std::mutex` have large code footprints and rely on specific operating system support. In embedded systems, we usually just use the primitives provided by the RTOS—FreeRTOS tasks, semaphores, and queues, or the standard CMSIS-RTOS interfaces—these are optimized for embedded environments and consume fewer resources.
+`std::thread`, `std::mutex`—these components have large code volume and rely on specific operating system support. In embedded systems, it is usually better to use primitives provided directly by the RTOS—FreeRTOS tasks, semaphores, and queues, or CMSIS-RTOS standard interfaces—these have been optimized for the embedded environment and occupy fewer resources.
 
-## Final Thoughts
+## Final Words
 
-Choosing the right features is only the first step. To truly implement them in a project, you also need to establish clear coding standards that specify what is allowed, what is forbidden, and what requires review. Code reviews should be mandatory, paying special attention to whether forbidden features are being used secretly, whether templates are too complex and causing code bloat, and whether virtual functions are appearing where they shouldn't. Static analysis tools can help us automatically detect many of these issues, so don't skip this step.
+Choosing the right features is just the first step. To truly implement it in a project, you need to establish clear coding standards, specifying what is allowed, what is forbidden, and what needs review. Code review should be standard, specifically watching for sneaky use of disabled features, templates that are too complex causing code bloat, and virtual functions appearing where they shouldn't. Static analysis tools can help us automatically detect many such problems; don't skip this step.
 
-On the performance side, regularly check the compiled binary size to ensure there is no unexpected bloat. Perform actual measurements on performance-critical code paths instead of relying on gut feelings. There are many compiler optimization options, but their effects need to be verified through actual testing—don't experiment directly in production environments; get it working on the development board first.
+In terms of performance, periodically check the compiled binary size to ensure there is no unexpected bloat. Make actual measurements of performance-critical code paths; don't just rely on feeling. Compilers have many optimization options, but the effects need to be verified by actual measurement—don't try them directly in the production environment; make sure they work on the development board first.
 
-Language choice is not a matter of faith, but an engineering problem. Let the data speak, select tools on a per-module basis, and enforce constraints using automated means. Just remember this one sentence: use the right tool for the right job, and don't turn tools into beliefs.
+Language choice is not a matter of faith, but an engineering problem. Let data speak, choose tools by module layer, establish and enforce constraints with automated means. Remember this one sentence: use the right tool for the right job, don't turn tools into beliefs.

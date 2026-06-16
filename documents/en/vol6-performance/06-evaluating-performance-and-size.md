@@ -6,12 +6,12 @@ cpp_standard:
 - 17
 - 20
 description: Learn how to evaluate program performance and size overhead, and compare
-  the behavior of C and C++ in embedded environments through actual measurements.
+  C and C++ behavior in embedded environments through actual measurements.
 difficulty: beginner
 order: 6
 platform: host
 prerequisites: []
-reading_time_minutes: 20
+reading_time_minutes: 31
 related: []
 tags:
 - cpp-modern
@@ -19,130 +19,135 @@ tags:
 - intermediate
 title: Performance and Size Evaluation
 translation:
-  engine: anthropic
   source: documents/vol6-performance/06-evaluating-performance-and-size.md
-  source_hash: 8f239d8b3cc3df3a3dc27eb08425c56cf467d163cb010c46344ce41c8b53a80d
+  source_hash: 02e4a1266e0ee238aa7c3f7ad26794b9ba1e094ee183a3f1f96c7cb762a18ba9
+  translated_at: '2026-06-16T04:07:58.091499+00:00'
+  engine: anthropic
   token_count: 6915
-  translated_at: '2026-06-15T09:30:43.435662+00:00'
 ---
 # Modern Embedded C++ Tutorial — Does C++ Necessarily Cause Code Bloat?
 
-Regarding performance evaluation and program size, I believe most programmers have a better intuition for the former, while the latter might feel slightly unfamiliar—especially for those developing on host machines. I believe that in an era where storage feels increasingly cheap, few people care about the installer size of desktop applications anymore. However, in the embedded industry, where Flash is as precious as gold, it is still necessary to consider program size.
+Regarding performance evaluation and program size, I believe most programmers have a better feel for the former, while the latter might feel slightly unfamiliar—especially for friends working on host development. I believe that in an era where storage feels increasingly cheap, few people care about the distribution package size of desktop applications anymore. However, in the embedded industry, where a bit of Flash is as precious as gold, it is still necessary to consider program size.
 
-This brings us to a question. You know this is the "Modern Embedded C++ Tutorial" (though sometimes I write it as the Embedded Modern C++ Tutorial), but this is an age-old yet forever controversial topic: **Does C++ inevitably cause code bloat?**
+This raises a question. You know this is the "Modern Embedded C++ Tutorial" (sometimes, the author writes it as "Embedded Modern C++ Tutorial"), but this is an old yet always controversial topic: **Does C++ inevitably cause code bloat?**
 
-## Before We Start: Sharpening the Axe
+## Before We Start: Sharpen Your Axe
 
-Before we dive into the code battle, make sure your toolbox contains these tools:
+Before we start our code battle, let's make sure your toolbox contains these tools:
 
 #### arm-none-eabi-gcc / arm-none-eabi-g++
 
-This is the cross-compiler for the x86_64 host targeting the ARM platform. Let's give it a try:
+This is the cross-compiler for the ARM platform from X86_64. Let's run through it:
 
 ```bash
 arm-none-eabi-gcc --version
 ```
 
-If you see a version number, congratulations! If you see "command not found," you might need to download the toolchain from the official ARM website first. I'm on Arch Linux, so I just use `pacman` or `yay` to install it.
+If you see the version number, congratulations! If you see "command not found", you might need to go to the ARM official website to download the toolchain first. The author uses Arch Linux, so I just use pacman or yay to install it.
 
-> Note: The package name is `gcc-arm-none-eabi`. Otherwise, standard dependencies will be missing. Try installing `arm-none-eabi-gcc` first. If the demo doesn't build, it's because the standard EABI is missing.
+> Note: The package name is `gcc-arm-none-eabi`, otherwise it will be missing standard dependencies. Try `arm-none-eabi-gcc` first. If the demo doesn't pull through, it's the standard EABI issue.
 
 ```bash
-sudo pacman -S gcc-arm-none-eabi
+-fno-exceptions -fno-rtti
 ```
 
-> `-fno-exceptions` and `-fno-rtti` are the "diet pills" for using C++ in embedded systems. Without these two, your firmware might bloat like a steamed bun with baking powder due to the exception handling mechanism code.
+> These two parameters are the "diet pills" for using C++ in embedded systems. Without these, your firmware might bloat like dough with yeast due to the exception handling code.
 
 ------
 
-## Starting with Blinking: GPIO Driver (It's just a light, how hard can it be?)
+## Round One: Start with Blinking an LED: GPIO Driver (It's just a light, how hard can it be?)
 
-Our first task is to ground the previous content into reality. Let's see how our code looks and actually performs across different languages and programming paradigms.
+Our first task is to ground the previous content into reality. Let's see: with different languages and different programming paradigms, what does our code look like, and how does it actually perform?
 
 ### Task Brief
 
 We want to implement a GPIO driver to control an LED. This is the "Hello World" of the embedded world, as classic as printing "Hello World" when learning programming. The features include:
 
-- Turn light on/off (well...)
+- Turn light on/off (Um...)
 - Toggle state
-- PWM dimming (just to show off)
+- PWM dimming (Show off a bit)
 
-#### C Version — Plain and Simple
+#### C Language Version — Plain and Simple
 
 ```c
 typedef struct {
     volatile uint32_t* mod;   // Mode register
-    volatile uint32_t* set;   // Set register
-    volatile uint32_t* clr;   // Clear register
-    uint32_t mask;            // Pin mask
+    uint32_t pin;             // Pin number
 } GPIO_C;
 
-void gpio_init(GPIO_C* gpio, volatile uint32_t* mod, volatile uint32_t* set, volatile uint32_t* clr, uint32_t mask) {
+void gpio_init(GPIO_C* gpio, volatile uint32_t* mod, uint32_t pin) {
     gpio->mod = mod;
-    gpio->set = set;
-    gpio->clr = clr;
-    gpio->mask = mask;
-    *mod |= (1 << mask);  // Configure as output
+    gpio->pin = pin;
+    *mod |= (1 << pin);       // Set as output
 }
 
 void gpio_write(GPIO_C* gpio, bool state) {
     if (state)
-        *gpio->set = gpio->mask;
+        *gpio->mod |= (1 << gpio->pin);
     else
-        *gpio->clr = gpio->mask;
+        *gpio->mod &= ~(1 << gpio->pin);
 }
 
 void gpio_toggle(GPIO_C* gpio) {
-    *gpio->set = gpio->mask;  // Simplified for demo
+    *gpio->mod ^= (1 << gpio->pin);
 }
 ```
 
-This is my C programming style. Some friends might not like structs. I still recommend using structs, but don't pass them by value (triggering a copy); instead, pass a pointer to the object.
+This is the author's C programming style. Of course, some friends might not like structs. Well, I still recommend using structs, but don't pass them by value triggering a copy; instead, pass a pointer pointing to this object.
 
 #### C++ Version — OOP
 
 ```cpp
 class GPIO_CPP {
 public:
-    GPIO_CPP(volatile uint32_t* mod, volatile uint32_t* set, volatile uint32_t* clr, uint32_t mask)
-        : mod_(mod), set_(set), clr_(clr), mask_(mask) {
-        *mod_ |= (1 << mask_);
+    GPIO_CPP(volatile uint32_t* mod, uint32_t pin) : mod_(mod), pin_(pin) {
+        *mod_ |= (1 << pin_); // Constructor initializes hardware
     }
 
     void write(bool state) {
         if (state)
-            *set_ = mask_;
+            *mod_ |= (1 << pin_);
         else
-            *clr_ = mask_;
+            *mod_ &= ~(1 << pin_);
     }
 
     void toggle() {
-        *set_ = mask_;
+        *mod_ ^= (1 << pin_);
     }
 
 private:
     volatile uint32_t* mod_;
-    volatile uint32_t* set_;
-    volatile uint32_t* clr_;
-    uint32_t mask_;
+    uint32_t pin_;
 };
 ```
 
-A classic use of C++ is adopting the Object-Oriented Programming (OOP) paradigm.
+A classic use of C++ is to adopt the Object-Oriented Programming (OOP) paradigm.
 
-Of course, some might argue—who told you C++ is an OOP language? It's also a generic programming language. True, I have no objection. My own GPIO library is written using templates, but here, let's stick with OOP.
+Of course, some friends might argue—who told you C++ is an OOP language? It's also a generic programming language. True, I have no objection; my own GPIO library is written with templates. But here, let's consider OOP first.
 
-### Battle Analysis: Is there really a big difference?
+### Battle Analysis: Is the Difference Really Huge?
 
 Let's not judge yet; let's look at the differences!
 
-Save the C code above as `demo.c` and use the full compilation command as follows:
+We save the C code above as `demo.c`, then use the full compilation command as follows:
 
 ```bash
-arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Os -c demo.c -o demo_c.o
+arm-none-eabi-gcc -march=armv7-m -mcpu=cortex-m4 -mthumb -Os -c demo.c -o demo_c.o
 ```
 
-Huh? You say you just click a single button in the IDE? Alright, let's talk about what this is actually doing.
+Huh? You say you just single-click the IDE? Okay, let's talk about what this is doing.
+
+------
+
+#### `-march=armv7-m`
+
+Specifies the use of an **ARM bare-metal cross-compiler**:
+
+- `arm`: Target architecture is ARM
+- `none`: No operating system (bare-metal)
+- `eabi`: Embedded ABI
+
+The generated code **cannot run on Linux / Windows**, but is used for MCU Flash.
 
 ------
 
@@ -152,9 +157,9 @@ Specifies the **target CPU core model**:
 
 - Generates **instructions specific to Cortex-M4**
 - Enables M4-specific features (like DSP instructions)
-- Ensures the instruction set matches the actual MCU perfectly.
+- Ensures the instruction set matches the actual MCU exactly
 
-Of course, if you want to try testing for M1, that works too. Just swap in `cortex-m1` and give it a try.
+Of course, if you want to try testing for M1, that works too. Switch to `cortex-m1`, you can try them all.
 
 ------
 
@@ -162,11 +167,11 @@ Of course, if you want to try testing for M1, that works too. Just swap in `cort
 
 Forces the use of the **Thumb instruction set**:
 
-- The Cortex-M series **only supports Thumb**
-- Instructions are more compact, offering higher code density
-- It is the "default working mode" for the M series.
+- Cortex-M series **only supports Thumb**
+- Instructions are more compact, code density is higher
+- It is the "default working mode" for the M series
 
-For Cortex-M, this is a **mandatory option, not just an optimization**.
+For Cortex-M, this is a **mandatory option, not an optimization option**.
 
 ------
 
@@ -175,35 +180,35 @@ For Cortex-M, this is a **mandatory option, not just an optimization**.
 **Optimization level targeting minimum code size**:
 
 - Prioritizes reducing Flash usage
-- Based on `-O2`, deliberately avoids code bloat
-- Is the **most common and safest** optimization level in embedded development.
+- On top of `-O2` / `-O1`, deliberately avoids code bloat
+- Is the **most common and safest** optimization level in embedded systems
 
 ------
 
 #### `-c`: **Compile only, do not link**
 
-- Input: `demo.c`
-- Output: `demo.o`
-- Does not generate an executable file.
+- Input: `.c` / `.cpp`
+- Output: `.o` (object file)
+- Does not generate an executable file
 
-- Only `.o` files can be used for `size` analysis
-- Allows for precise evaluation of the code size of "a specific source file itself"
+- Only `.o` files can be used for `size`
+- Can accurately evaluate the code size of "a specific source file itself"
 
 ------
 
 #### `-o demo_c.o`
 
-Specifies the output filename:
+Specifies the output file name:
 
 ```bash
-size demo_c.o
+-o demo_c.o
 ```
 
-Avoids using the default `a.out`. This is especially clear when doing **multi-language / multi-version comparison experiments**.
+Avoids using the default `a.out`, which is especially clear when doing **multi-language / multi-version comparison experiments**.
 
 ------
 
-### Let's See the Results
+### Let's Look at the Results
 
 | Implementation | text (Code) | data | bss  | Total   |
 | -------------- | ----------- | ---- | ---- | ------- |
@@ -213,44 +218,45 @@ Avoids using the default `a.out`. This is especially clear when doing **multi-la
 
 **Surprised? Unexpected?**
 
-The C++ version is actually **72 bytes smaller**, reducing code size by 75%! This reduction buys you:
+The C++ version is actually **72 bytes smaller**, a 75% reduction in code size! This reduction buys us:
 
-- ✅ Better encapsulation (private members won't be accidentally modified)
+- ✅ Better encapsulation (private members won't be randomly modified)
 - ✅ Automatic initialization (won't forget to call `init`)
 - ✅ Type safety (won't pass wrong pointers)
-- ✅ More intuitive syntax (`led.write(true)` is much nicer than `gpio_write(&led, true)`)
+- ✅ More intuitive syntax (`gpio.write(true)` is much nicer than `gpio_write(&gpio, true)`)
 
-**Key Finding**: C++'s inline optimization makes the entire `example_cpp` function only 24 bytes, smaller than the sum of multiple functions in the C version! The compiler optimized all operations into direct register manipulations.
+**Key Discovery**: C++'s inline optimization makes the entire `example_cpp` function only 24 bytes, smaller than the C version's multiple functions combined! The compiler optimized all operations into direct register operations.
 
 ### The Truth at the Assembly Level
 
-Don't believe it? Let's look at the assembly code generated by the compiler (this is the compiler's "X-ray vision"):
+If you don't believe it, let's look at the assembly code generated by the compiler (this is the compiler's "X-ray vision"):
 
 **C version `example_c` (96 bytes, containing multiple function calls):**
 
 ```asm
 example_c:
-    push    {r3, lr}
-    mov     r3, r0
+    push    {r4, lr}
+    mov     r4, r0
     bl      gpio_init
-    movs    r0, #1
-    mov     r1, r3
+    mov     r0, r4
+    movs    r1, #1
     bl      gpio_write
-    mov     r0, r3
+    mov     r0, r4
     bl      gpio_toggle
-    pop     {r3, pc}
+    pop     {r4, pc}
 ```
 
-**C++ version `example_cpp` (only 24 bytes, fully inlined):**
+**C++ version `example_cpp` (Only 24 bytes, fully inlined):**
 
 ```asm
 example_cpp:
-    movs    r2, #5
-    str     r2, [r0, #12]
-    movs    r2, #16
-    str     r2, [r0, #8]
-    movs    r2, #20
-    str     r2, [r0, #4]
+    ldr     r3, [r0, #4]
+    movs    r2, #1
+    str     r2, [r3]
+    ldr     r3, [r0, #4]
+    ldr     r2, [r3]
+    eors    r2, r2, #1
+    str     r2, [r3]
     bx      lr
 ```
 
@@ -258,7 +264,7 @@ example_cpp:
 
 The compiler inlined all C++ class methods, eliminating function call overhead and generating optimal register operations directly. The C version, due to function separation, required extra stack operations and function jumps.
 
-**Conclusion**: C++ encapsulation is a "zero-overhead abstraction"—not only zero overhead, but in many cases, even more efficient! This isn't marketing hype; it's real!
+**Conclusion**: C++ encapsulation is "zero-overhead abstraction"—not only zero overhead, but in many cases, even more efficient! This isn't marketing hype; it's real!
 
 ------
 
@@ -266,29 +272,26 @@ The compiler inlined all C++ class methods, eliminating function call overhead a
 
 ### Task Brief
 
-The Ring Buffer is the "Swiss Army Knife" of embedded systems. When UART data floods in like a tidal wave, you need a place to temporarily store it. This is where the ring buffer shines—a data container where the end connects to the beginning, never wasting space.
+The Ring Buffer is the "Swiss Army Knife" of embedded systems. When UART data floods in like a torrent, you need a place to temporarily store them. This is where the ring buffer comes in—a data container where the head and tail connect, and nothing is wasted.
 
-Imagine a sushi conveyor belt; plates go around in a circle. You put plates on (write), and others take plates off (read). As long as the belt isn't full, it keeps spinning.
+Imagine a sushi conveyor belt; plates go around in a circle. You put plates down (write), and others take plates (read). As long as the belt isn't full, it keeps spinning.
 
-#### C Version — Plain and Simple
+#### C Language Version — Just Plain
 
 ```c
 typedef struct {
-    uint8_t* buffer;
-    uint32_t size;
-    uint32_t head;
-    uint32_t tail;
+    uint8_t buffer[256];
+    volatile uint32_t head;
+    volatile uint32_t tail;
 } RingBuffer_C;
 
-void rb_init(RingBuffer_C* rb, uint8_t* buffer, uint32_t size) {
-    rb->buffer = buffer;
-    rb->size = size;
+void rb_init(RingBuffer_C* rb) {
     rb->head = 0;
     rb->tail = 0;
 }
 
 bool rb_put(RingBuffer_C* rb, uint8_t data) {
-    uint32_t next = (rb->head + 1) % rb->size;
+    uint32_t next = (rb->head + 1) % 256;
     if (next == rb->tail) return false;
     rb->buffer[rb->head] = data;
     rb->head = next;
@@ -298,26 +301,24 @@ bool rb_put(RingBuffer_C* rb, uint8_t data) {
 bool rb_get(RingBuffer_C* rb, uint8_t* data) {
     if (rb->tail == rb->head) return false;
     *data = rb->buffer[rb->tail];
-    rb->tail = (rb->tail + 1) % rb->size;
+    rb->tail = (rb->tail + 1) % 256;
     return true;
 }
 ```
 
 #### C++ Version — Generic
 
-Alright, let's write this generically—generics have a known issue: code bloat.
+Okay, here we write generic code—generics have a fault, which is the code bloat issue.
 
 ```cpp
-template<uint32_t Size>
+template<size_t Size>
 class RingBuffer_CPP {
+    std::array<uint8_t, Size> buffer_;
+    size_t head_ = 0;
+    size_t tail_ = 0;
 public:
-    void init() {
-        head_ = 0;
-        tail_ = 0;
-    }
-
     bool put(uint8_t data) {
-        uint32_t next = (head_ + 1) % Size;
+        size_t next = (head_ + 1) % Size;
         if (next == tail_) return false;
         buffer_[head_] = data;
         head_ = next;
@@ -330,11 +331,6 @@ public:
         tail_ = (tail_ + 1) % Size;
         return true;
     }
-
-private:
-    uint8_t buffer_[Size];
-    uint32_t head_ = 0;
-    uint32_t tail_ = 0;
 };
 ```
 
@@ -342,7 +338,7 @@ private:
 
 ### Part 1: Ring Buffer Implementation Comparison
 
-Let's see the results:
+Let's look at the results:
 
 | Implementation | text (Code) | data | bss  | Total   |
 | -------------- | ----------- | ---- | ---- | ------- |
@@ -352,49 +348,49 @@ Let's see the results:
 
 **Surprised? Unexpected?**
 
-The C++ version is actually **68 bytes smaller**, reducing code size by 31%! And this is while implementing full ring buffer functionality. This reduction buys you:
+The C++ version is actually **68 bytes smaller**, a 31% reduction in code size! This is while implementing full ring buffer functionality. This reduction buys us:
 
 - ✅ Better encapsulation (internal indices won't be modified externally)
 - ✅ Automatic constructor initialization (won't forget to call `init`)
 - ✅ Type safety (won't pass wrong pointers)
 - ✅ More intuitive method calls (`rb.put(data)` is much nicer than `rb_put(&rb, data)`)
 
-**Key Finding**: C++ eliminates function call overhead through inline optimization, and the compiler can better optimize class methods. The C version needs multiple independent functions (`rb_init`, `rb_put`, `rb_get`, `rb_available`, `rb_free_space`, `rb_clear`), while the C++ version fuses these operations more compactly through smart inlining.
+**Key Discovery**: C++ eliminates function call overhead through inline optimization, and the compiler can better optimize class methods. The C version needs multiple independent functions (`rb_init`, `rb_put`, `rb_get`, `rb_available`, `rb_free_space`, `rb_clear`), while the C++ version fuses these operations more compactly through smart inlining.
 
 ### The Truth at the Assembly Level
 
-Don't believe it? Let's look at the assembly code generated by the compiler:
+If you don't believe it, let's look at the assembly code generated by the compiler:
 
-**C version `example_c_rb` (relies on multiple functions):**
+**C version `example_c_rb` (depends on multiple functions):**
 
 ```asm
 example_c_rb:
-    push    {r4, r5, lr}
-    mov     r5, r0
+    push    {r4, lr}
+    mov     r4, r0
     bl      rb_init
-    movs    r0, #42
-    mov     r1, r5
+    movs    r2, #42
+    mov     r0, r4
     bl      rb_put
-    mov     r1, r5
+    mov     r0, r4
+    movs    r1, #0
     bl      rb_get
-    pop     {r4, r5, pc}
+    pop     {r4, pc}
 ```
 
 **C++ version `example_cpp_rb` (fully inlined):**
 
 ```asm
 example_cpp_rb:
-    str     r0, [sp, #4]
-    movs    r0, #42
-    ldr     r3, [sp, #4]
-    strb    r0, [r3]
-    ldrb    r0, [r3]
+    movs    r2, #42
+    str     r2, [r0]
+    ldrb    r3, [r0]
+    str     r3, [r0, #1]
     bx      lr
 ```
 
 **See? The C++ version eliminated all function calls!**
 
-The compiler inlined all methods together, reducing stack operations, function jumps, and register saves. Because the C version separates functions, every `rb_put` and `rb_get` requires extra `bl` instructions and stack frame setup.
+The compiler inlined all methods together, reducing stack operations, function jumps, and register saves. The C version, because of function separation, needs extra `bl` instructions and stack frame setup for every `rb_put` and `rb_get`.
 
 ------
 
@@ -402,7 +398,7 @@ The compiler inlined all methods together, reducing stack operations, function j
 
 ### Task Brief
 
-Button debouncing is a "required course" for embedded engineers. Mechanical buttons chatter when pressed and released (like a spring vibrating back and forth). If not handled, one press might be registered as a dozen.
+Button debouncing is a "required course" for embedded engineers. Mechanical buttons generate chatter (bouncing) when pressed and released (like a spring vibrating back and forth). If not handled, one press might be registered as a dozen.
 
 We want to implement a state machine to:
 
@@ -411,32 +407,36 @@ We want to implement a state machine to:
 - Detect long press (holding for more than 1 second)
 - Debounce (ignore chatter within 50ms)
 
-### C Version: Classic State Machine
+### C Language Version: Classic State Machine
 
 ```c
-typedef enum { IDLE, PRESSED, HELD } State;
+typedef enum { IDLE, PRESSED, HOLD } State;
+typedef void (*Callback)(void);
 
 typedef struct {
     State state;
     uint32_t last_time;
+    Callback on_press;
+    Callback on_release;
 } Button_C;
 
-void button_update(Button_C* btn, bool pressed, uint32_t now) {
+void button_init(Button_C* btn, Callback press_cb, Callback release_cb) {
+    btn->state = IDLE;
+    btn->on_press = press_cb;
+    btn->on_release = release_cb;
+}
+
+void button_update(Button_C* btn, bool pin_state, uint32_t now) {
     switch (btn->state) {
         case IDLE:
-            if (pressed) {
+            if (pin_state && (now - btn->last_time > 50)) {
                 btn->state = PRESSED;
-                btn->last_time = now;
+                if (btn->on_press) btn->on_press();
             }
             break;
-        case PRESSED:
-            if (!pressed) btn->state = IDLE;
-            else if (now - btn->last_time > 1000) btn->state = HELD;
-            break;
-        case HELD:
-            if (!pressed) btn->state = IDLE;
-            break;
+        // ... other states
     }
+    btn->last_time = now;
 }
 ```
 
@@ -444,37 +444,28 @@ void button_update(Button_C* btn, bool pressed, uint32_t now) {
 
 ```cpp
 class Button_CPP {
+    enum class State { Idle, Pressed, Hold };
+    State state_ = State::Idle;
+    uint32_t last_time_ = 0;
+    std::function<void()> on_press_;
+    std::function<void()> on_release_;
+
 public:
-    using Callback = void(*)();
+    Button_CPP(std::function<void()> press_cb, std::function<void()> release_cb)
+        : on_press_(press_cb), on_release_(release_cb) {}
 
-    Button_CPP(Callback on_press) : on_press_(on_press) {}
-
-    void update(bool pressed, uint32_t now) {
+    void update(bool pin_state, uint32_t now) {
         switch (state_) {
-            case IDLE:
-                if (pressed) {
-                    state_ = PRESSED;
-                    last_time_ = now;
-                }
-                break;
-            case PRESSED:
-                if (!pressed) state_ = IDLE;
-                else if (now - last_time_ > 1000) {
-                    state_ = HELD;
+            case State::Idle:
+                if (pin_state && (now - last_time_ > 50)) {
+                    state_ = State::Pressed;
                     if (on_press_) on_press_();
                 }
                 break;
-            case HELD:
-                if (!pressed) state_ = IDLE;
-                break;
+            // ... other states
         }
+        last_time_ = now;
     }
-
-private:
-    enum State { IDLE, PRESSED, HELD };
-    State state_ = IDLE;
-    uint32_t last_time_ = 0;
-    Callback on_press_;
 };
 ```
 
@@ -486,22 +477,28 @@ private:
 | C++ Version (std::function) | 306 bytes   | 0    | 0    | 306      |
 | Difference            | **+134 bytes** | 0    | 0    | **+134** |
 
-**This time the difference is obvious!** The C++ version increased code size by **78%**. The cost of these 134 bytes comes from:
+**This time the difference is obvious!** The C++ version increased **code size by 78%**. The cost of these 134 bytes comes from these places:
 
-- The type erasure mechanism of `std::function` (requires a vtable)
+- `std::function`'s type erasure mechanism (requires virtual function tables)
 - Extra overhead for lambda captures
 - Runtime support code for dynamic polymorphism
 
-So, the point here is to tell you—not all abstractions in C++ are zero overhead. Taking **`std::function` as an example: it brings significant code bloat (78% growth)**. Moreover: **lambda captures have hidden costs, because each lambda requires extra storage and management code. Those familiar with lambdas should know this—it generates a closure type with an `operator()` call, storing a structure for every captured object**:
+So, this is trying to tell you—our C++ doesn't mean all abstractions are zero overhead. Taking **`std::function` as an example: it brings significant code bloat (78% growth)**. Moreover: **lambda captures have hidden costs, because each lambda requires extra storage and management code. Friends familiar with Lambdas should know this—it generates a struct with an `operator()` call, storing every captured object**:
 
-Here is a simple alternative:
+The alternative here is also simple:
 
 ```cpp
-// Use function pointer instead of std::function
-using Callback = void(*)();
+// Use function pointer or template callback instead
+template<typename Callback>
+class Button {
+    Callback on_press_;
+public:
+    Button(Callback press_cb) : on_press_(press_cb) {}
+    // ...
+};
 ```
 
-## Discussion
+## Let's Talk
 
 #### Code Size Comparison Table
 
@@ -509,41 +506,41 @@ Let's review:
 
 **Case 1: GPIO Operation Encapsulation**
 
-In the GPIO operation scenario, the C++ class encapsulation showed surprising advantages. The C version required 96 bytes to implement `gpio_init`, `gpio_write`, `gpio_toggle`, and other functions. The C++ version, through compiler inline optimization, compressed the entire operation sequence to just 24 bytes, reducing code size by 75%. This huge difference comes from the compiler's ability to fully inline C++ member function calls, eliminating function call overhead and stack frame management.
+In the GPIO operation scenario, C++ class encapsulation showed surprising advantages. The C version required 96 bytes to implement `gpio_init`, `gpio_write`, `gpio_toggle`, and other functions, while the C++ version compressed the entire operation sequence to just 24 bytes through compiler inline optimization, reducing code size by 75%. This huge difference comes from the compiler's ability to fully inline C++ member function calls, eliminating function call overhead and stack frame management.
 
 **Case 2: Ring Buffer Implementation**
 
-The ring buffer implementation further validates C++'s advantages. The C version required implementing six independent functions: `rb_init`, `rb_put`, `rb_get`, `rb_available`, `rb_free_space`, `rb_clear`, totaling 218 bytes. The C++ version reduced code size to 150 bytes through class encapsulation and method inlining, saving 31% space. The key is that the compiler can see the complete call chain, allowing for more aggressive optimization.
+The ring buffer implementation further validates C++'s advantages. The C version required implementing six independent functions: `rb_init`, `rb_put`, `rb_get`, `rb_available`, `rb_free_space`, `rb_clear`, totaling 218 bytes. The C++ version reduced code size to 150 bytes through class encapsulation and method inlining, saving 31% of space. The key is that the compiler can see the complete call chain, allowing for more aggressive optimization.
 
 **Case 3: The Warning of std::function**
 
-Not all C++ features are suitable for embedded development. When using `std::function` to implement callbacks, code swelled from the C version's 172 bytes to 306 bytes, an increase of 78%. This is because `std::function` requires type erasure mechanisms, vtable support, and management code for lambda captures. This case reminds us that in resource-constrained environments, we must carefully choose which C++ features to use.
+Not all C++ features are suitable for embedded development. When using `std::function` to implement callbacks, code swelled from the C version's 172 bytes to 306 bytes, an increase of 78%. This is because `std::function` requires type erasure mechanisms, virtual table support, and management code for lambda captures. This case reminds us that in resource-constrained environments, we must carefully choose which C++ features to use.
 
-| Feature                    | Code Growth  | Recommendation                                   |
-| -------------------------- | ------------ | ------------------------------------------------ |
-| Class Encapsulation (Basic)| -75% to -31% | Highly Recommended (Actually smaller in tests)   |
-| Class Encapsulation (Templates) | +4%      | Highly Recommended (Almost zero overhead)        |
-| Virtual Functions          | +20-40%      | Use with caution (Consider CRTP alternative)    |
-| Exception Handling         | +50-100%     | Disable (`-fno-exceptions`)                      |
-| RTTI                       | +30-50%      | Disable (`-fno-rtti`)                            |
-| std::function              | +78%         | Use with caution (Replace with function pointers or templates) |
-| Templates (Generic Containers) | +4%      | Highly Recommended (Compile-time optimization)   |
+| Feature               | Code Growth  | Suggestion                                           |
+| --------------------- | ------------ | ----------------------------------------------------- |
+| Class Encapsulation (Basic) | -75% to -31% | Highly Recommended (Actually smaller in tests)       |
+| Class Encapsulation (With Templates) | +4%          | Highly Recommended (Almost zero overhead)             |
+| Virtual Functions     | +20-40%      | Use with caution (Consider CRTP as alternative)       |
+| Exception Handling    | +50-100%     | Disable (`-fno-exceptions`)                           |
+| RTTI                  | +30-50%      | Disable (`-fno-rtti`)                                 |
+| std::function         | +78%         | Use with caution (Replace with function pointer or template) |
+| Templates (Generic Containers) | +4%          | Highly Recommended (Compile-time optimization)        |
 
 ### Performance Comparison Table
 
 Based on cycle count analysis at the assembly level:
 
-| Category              | C Implementation | C++ Implementation | Difference |
-| --------------------- | ---------------- | ------------------ | ---------- |
-| GPIO Single Operation | 8-10 cycles      | 8-10 cycles        | 0%         |
-| Buffer Read/Write     | 12-15 cycles     | 12-15 cycles       | 0%         |
-| Inlined Full Operation| Requires function call | Fully inlined | C++ is faster |
+| Category             | C Implementation | C++ Implementation | Difference |
+| -------------------- | ----------------- | ------------------ | ---------- |
+| Single GPIO Operation | 8-10 cycles       | 8-10 cycles       | 0%         |
+| Buffer Read/Write    | 12-15 cycles      | 12-15 cycles      | 0%         |
+| Complete Inlined Op  | Needs function call | Fully inlined     | C++ Faster |
 
-**Key Finding**: With optimizations enabled, C++'s zero-overhead abstraction is not a marketing slogan, but a verifiable fact. The assembly code generated by the compiler shows that C++ class methods and C functions are identical at the single operation level, while in complex operation scenarios, C++ is even faster due to inline optimization.
+**Key Discovery**: With optimizations enabled, C++'s zero-overhead abstraction is not a marketing slogan, but a verifiable fact. The assembly code generated by the compiler shows that C++ class methods and C functions are identical at the single operation level, while in complex operation scenarios, C++ is even faster due to inline optimization.
 
 ------
 
-## Best Practices: How to Use C++ Elegantly in Embedded Systems
+## Best Practices: How to Elegantly Use C++ in Embedded Systems
 
 ### 1. Compiler Options (Slimming Configuration)
 
@@ -553,19 +550,19 @@ The golden compiler configuration for embedded C++ development is as follows:
 -fno-exceptions -fno-rtti -Os -ffunction-sections -fdata-sections
 ```
 
-This configuration ensures C++ code remains efficient and compact in an embedded environment. Tests show that correctly configured C++ code can achieve a size comparable to or even smaller than C.
+This configuration ensures C++ code remains efficient and compact in embedded environments. Tests show that correctly configured C++ code can achieve a size comparable to or even smaller than C.
 
 ### 2. Recommended C++ Features
 
-The following features are proven by testing to perform excellently in embedded systems:
+The following features are verified by tests to perform excellently in embedded systems:
 
 **Classes and Objects (Highly Recommended)**
 
-Class encapsulation is a core advantage of C++, allowing hardware resources to be abstracted as objects. Tests show that simple class encapsulation not only doesn't increase code size but actually reduces it due to compiler optimization. For example, encapsulating GPIO registers as a class provides type safety and a better interface while maintaining zero overhead.
+Class encapsulation is a core advantage of C++, capable of abstracting hardware resources into objects. Tests show that simple class encapsulation not only doesn't increase code size but actually reduces it due to compiler optimization. For example, encapsulating GPIO registers into a class provides type safety and better interfaces while maintaining zero overhead.
 
 **Constructors and Destructors (Highly Recommended)**
 
-Constructors provide automatic initialization, and destructors implement the RAII pattern. This is C++'s most powerful resource management mechanism. In embedded systems, destructors can automatically close peripherals and release resources, avoiding leaks. Compilers can usually fully inline simple constructors.
+Constructors provide automatic initialization, and destructors implement the RAII pattern. This is C++'s most powerful resource management mechanism. In embedded systems, destructors can automatically shut down peripherals and release resources, avoiding leaks. Compilers can usually fully inline simple constructors.
 
 **Templates (Highly Recommended)**
 
@@ -573,53 +570,53 @@ Templates provide compile-time code generation with absolutely zero runtime over
 
 **constexpr (Highly Recommended)**
 
-`constexpr` functions are calculated at compile time, with results embedded directly in code. They can be used for calculating configuration parameters, lookup table generation, etc., with completely zero runtime overhead.
+`constexpr` functions calculate at compile time, embedding results directly into code. Can be used for calculating configuration parameters, lookup table generation, etc., with completely zero runtime overhead.
 
 **References and Inline Functions (Highly Recommended)**
 
-References avoid unnecessary copies, and inline functions eliminate function call overhead. In embedded systems, using references appropriately can significantly improve performance, especially when passing structs.
+References avoid unnecessary copies, and inline functions eliminate function call overhead. In embedded systems, reasonable use of references can significantly improve performance, especially when passing structs.
 
 **Operator Overloading (Moderately Recommended)**
 
-Operator overloading makes code more intuitive, for example, using `buffer << data` instead of `buffer_put(data)`. As long as it's not abused, operator overloading incurs no extra cost.
+Operator overloading makes code more intuitive, e.g., using `buffer << data` instead of `buffer_write(data)`. As long as it's not abused, operator overloading brings no extra overhead.
 
-### 3. C++ Features to Use with Caution
+### 3. Cautiously Used C++ Features
 
-The following features have some overhead and need to be weighed against the actual situation:
+The following features have certain overheads and need to be weighed based on the actual situation:
 
 **Virtual Functions (Use with Caution)**
 
-Virtual functions introduce a vtable, adding a 4-byte pointer overhead per object and requiring an indirect jump for every call. If you truly need polymorphism, consider using CRTP (Curiously Recurring Template Pattern) to achieve compile-time polymorphism and avoid runtime overhead.
+Virtual functions introduce a vtable, adding a 4-byte pointer overhead per object, and each call requires an indirect jump. If polymorphism is truly needed, consider using CRTP (Curiously Recurring Template Pattern) to implement compile-time polymorphism, avoiding runtime overhead.
 
 **std::function (Use with Caution)**
 
-Tests show `std::function` causes 78% code bloat. If you need a callback mechanism, prioritize function pointers (same overhead as C) or template callbacks (zero overhead). Only consider `std::function` when you need lambdas that capture state.
+Tests show `std::function` causes 78% code bloat. If a callback mechanism is needed, prioritize function pointers (same overhead as C) or template callbacks (zero overhead). Only consider `std::function` when lambdas with captured state are needed.
 
 **Dynamic Memory Allocation (Use with Caution)**
 
-`new` and `delete` can lead to memory fragmentation in embedded systems. It is recommended to use placement new with a static memory pool, or use stack-based objects. If you must use dynamic memory, consider a custom allocator.
+`new` and `delete` can lead to memory fragmentation in embedded systems. Suggest using placement new with a static memory pool, or using stack objects. If dynamic memory must be used, consider custom allocators.
 
 **STL Containers (Use with Caution)**
 
-Standard library containers like `std::vector` and `std::map` can have large implementations. It is recommended to test code size first or use libraries specifically optimized for embedded systems (like EASTL). For simple scenarios, hand-rolling fixed-size containers might be more appropriate.
+Standard library containers like `std::vector` and `std::map` can be large in implementation. Suggest testing code size first, or using container libraries specifically optimized for embedded (like EASTL). For simple scenarios, hand-rolled fixed-size containers might be more appropriate.
 
-### 4. C++ Features to Prohibit
+### 4. Forbidden C++ Features
 
 The following features should be completely avoided in embedded systems:
 
-**Exception Handling (Prohibited)**
+**Exception Handling (Forbidden)**
 
-The exception handling mechanism increases code size by 50-100% and introduces unpredictable execution paths. Embedded systems need deterministic behavior; use error codes or assertions instead of exceptions. Always add the `-fno-exceptions` compiler option.
+The exception handling mechanism can cause code bloat of 50-100% and introduces unpredictable execution paths. Embedded systems need deterministic behavior; use error codes or assertions instead of exceptions. Must add the `-fno-exceptions` compiler option.
 
-**RTTI (Prohibited)**
+**RTTI (Forbidden)**
 
-Run-Time Type Information increases code size by 30-50% and is rarely needed in embedded systems. Disable with `-fno-rtti`. If type identification is needed, you can manually implement a simple type tag system.
+Run-Time Type Information increases code by 30-50% and is rarely needed in embedded systems. Disable with `-fno-rtti`. If type identification is needed, a simple manual type tag system can be implemented.
 
-**iostream Library (Prohibited)**
+**iostream Library (Forbidden)**
 
-`std::cout` and `std::cin` introduce huge amounts of code (tens of KB), far beyond what an embedded system can bear. Use traditional `printf`/`scanf` or specialized embedded logging libraries.
+`std::cout` and `std::cin` introduce huge code (tens of KB), far beyond what embedded systems can bear. Use traditional `printf`/`scanf` or specialized embedded logging libraries.
 
-**Multiple Inheritance (Prohibited)**
+**Multiple Inheritance (Forbidden)**
 
 Multiple inheritance increases complexity and code size, and can lead to the diamond problem. In embedded systems, single inheritance or composition patterns are sufficient.
 
@@ -635,11 +632,11 @@ When the target hardware has less than 8KB Flash and less than 1KB RAM, C is the
 
 **Team Skill Stack Limitations**
 
-If team members are unfamiliar with C++ or the project timeline is tight, forcing the use of C++ might do more harm than good. C has a gentler learning curve and is easier to master.
+If team members are unfamiliar with C++, or the project timeline is tight, forcing C++ might do more harm than good. C has a gentler learning curve and is easier to master.
 
 **Pure C Codebase Integration**
 
-When integrating a large amount of existing C code, using C avoids the hassle of mixed programming. Although C++ can call C code, in some cases a pure C project is simpler.
+When integrating a large amount of existing C code, using C avoids the hassle of mixed programming. Although C++ can call C code, in some cases, a pure C project is simpler.
 
 **Insufficient Toolchain Support**
 
@@ -649,7 +646,7 @@ Some older or specialized compilers have incomplete C++ support and may produce 
 
 **Medium to High Resource Systems**
 
-When Flash is greater than 16KB and RAM is greater than 2KB, C++ advantages start to appear. Such systems have enough space to accommodate C++ abstraction mechanisms while benefiting from encapsulation and type safety.
+When Flash is greater than 16KB and RAM is greater than 2KB, C++ advantages start to show. Such systems have enough space to accommodate C++ abstraction mechanisms while benefiting from encapsulation and type safety.
 
 **Complex State Management**
 
@@ -657,11 +654,11 @@ When implementing complex logic like state machines, protocol stacks, or sensor 
 
 **Need Code Reuse**
 
-When there are multiple similar modules (like multiple UARTs or timers), C++ templates are safer and easier to debug than C macros. Templates provide compile-time type checking and parameterization.
+When there are multiple similar modules (e.g., multiple UARTs, multiple timers), C++ templates are safer and easier to debug than C macros. Templates provide compile-time type checking and parameterization.
 
 **Modern Development Practices**
 
-If the team is familiar with modern C++ (C++11 and later) and can correctly use features like smart pointers, move semantics, and lambdas, development efficiency will improve significantly.
+If the team is familiar with modern C++ (C++11 and later) and can correctly use features like smart pointers, move semantics, and lambdas, development efficiency will significantly improve.
 
 ### Mixed Usage (Best Practice)
 
@@ -673,26 +670,26 @@ Low-level drivers that directly manipulate registers are written in C to ensure 
 
 **Middle Abstraction Layer: Use C++**
 
-Wrap low-level drivers into C++ classes to provide an object-oriented interface. For example, wrapping a UART driver as a `SerialPort` class provides a safer, more easy-to-use API.
+Wrap low-level drivers into C++ classes to provide object-oriented interfaces. For example, wrapping a UART driver into a `SerialPort` class provides a safer, more easy-to-use API.
 
 **Application Logic Layer: Use C++**
 
-Implement business logic, state machines, and data processing in C++, utilizing features like classes, templates, and RAII to simplify code.
+Business logic, state machines, and data processing are implemented in C++, utilizing features like classes, templates, and RAII to simplify code.
 
-**Module Interfaces: Use `extern "C"`**
+**Module Interface: Use `extern "C"`**
 
-Use `extern "C"` declarations for interfaces between modules to ensure C and C++ modules can collaborate seamlessly. This maintains flexibility while avoiding name mangling issues.
+Interfaces between modules use `extern "C"` declarations to ensure C and C++ modules can collaborate seamlessly. This maintains flexibility while avoiding name mangling issues.
 
 ------
 
-## Run Online
+## Online Run
 
 Compare C and C++ GPIO encapsulation and ring buffer differences in code behavior and `sizeof` online:
 
 <OnlineCompilerDemo
   title="Performance and Size Evaluation"
   source-path="code/examples/vol6/13_perf_eval.cpp"
-  description="Compare C and C++ GPIO encapsulation and ring buffer implementations, observe sizeof differences"
+  description="Compare C and C++ GPIO encapsulation and ring buffer implementation, observe sizeof differences"
   allow-run
   allow-x86-asm
   arm-source-path="code/examples/compiler_explorer/perf_eval_arm.cpp"
@@ -705,17 +702,17 @@ Compare C and C++ GPIO encapsulation and ring buffer differences in code behavio
 
 Implement the three examples above on your development board and measure:
 
-1. Flash usage (using `size`)
+1. Flash usage (use `size`)
 2. RAM usage (check `.bss` and `.data` sections)
-3. Execution time (using DWT cycle counter)
+3. Run time (use DWT cycle counter)
 
 ### Exercise 2: Optimization Challenge
 
-Try optimizing the ring buffer:
+Try to optimize the ring buffer:
 
-1. When Size is a power of two, replace modulo with bitwise operations (`% Size` → `& (Size - 1)`)
+1. When Size is a power of 2, replace modulo with bitwise operations (`% Size` → `& (Size - 1)`)
 2. Implement zero-copy `peek` operation
-3. Add an interrupt-safe version (disable interrupts or use atomic operations)
+3. Add interrupt-safe version (disable interrupts or use atomic operations)
 
 ### Exercise 3: Design Decisions
 
@@ -731,38 +728,43 @@ Choose C or C++ for the following scenarios:
 Find the problems in the following C++ code:
 
 ```cpp
-// Bad: Virtual function + std::function + exceptions
-class BadButton {
+class BadExample {
+    std::vector<int> data;
 public:
-    virtual void update(bool pressed) {  // Virtual function overhead
-        if (pressed && on_click_) {      // std::function overhead
-            on_click_();                 // Potential exception throw
+    void add(int val) { data.push_back(val); }
+    void process() {
+        for (auto& d : data) {
+            // Complex processing
         }
     }
-    std::function<void()> on_click_;    // Type erasure overhead
 };
 ```
 
 **Improved Version**:
 
 ```cpp
-// Good: Static polymorphism + function pointer + no exceptions
-class GoodButton {
+template<size_t N>
+class GoodExample {
+    std::array<int, N> data;
+    size_t count = 0;
 public:
-    using Callback = void(*)();          // Simple function pointer
-    void update(bool pressed) {
-        if (pressed && on_click_) {
-            on_click_();                 // No exceptions allowed
+    bool add(int val) {
+        if (count >= N) return false;
+        data[count++] = val;
+        return true;
+    }
+    void process() {
+        for (size_t i = 0; i < count; ++i) {
+            // Complex processing
         }
     }
-    Callback on_click_ = nullptr;        // No overhead
 };
 ```
 
 ## Final Words
 
-Quoting Bjarne Stroustrup (the father of C++):
+Quoting Bjarne Stroustrup (Father of C++):
 
-> "C++ is not a language you have to use in its entirety, it is a language you can choose to use."
+> "C++ is not a language you have to use in its entirety, but a language you can choose to use."
 
-In embedded systems, we need to be smart choosers, not blind followers. Use the powerful features of C++ to improve code quality while avoiding those that don't fit in resource-constrained environments.
+In embedded systems, we need to be smart choosers, not blind followers. Use C++'s powerful features to improve code quality while avoiding those that don't fit in resource-constrained environments.

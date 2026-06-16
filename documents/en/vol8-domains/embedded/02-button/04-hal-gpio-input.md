@@ -8,18 +8,18 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: 'Part 22: HAL GPIO Input API — How to Read Button State in Code'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/02-button/04-hal-gpio-input.md
-  source_hash: d9beddcba6146789438c19cb77e80a3a009af89874ed226ff9c3adb560384f48
-  token_count: 1531
-  translated_at: '2026-05-26T12:11:07.797286+00:00'
+title: 'Part 22: HAL GPIO Input API — How to Read Button Status with Code'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/02-button/04-hal-gpio-input.md
+  source_hash: e146e6d17a05be3c87995679da6b4f91762a24dcffd5be0a1d6e11a0840f49c5
+  translated_at: '2026-06-16T04:11:03.063757+00:00'
+  engine: anthropic
+  token_count: 1537
 ---
-# Part 22: HAL GPIO Input API — How to Read Button State in Code
+# Part 22: HAL GPIO Input API — How to Read Button State with Code
 
-> Following up on the previous article: the hardware is ready, the wiring diagram is drawn, and bouncing is thoroughly explained. Now we finally get to write some code. This article breaks down the GPIO input interface provided by the HAL library.
+> Following the previous post: The hardware is ready, the wiring diagram is drawn, and bouncing is explained thoroughly. Now it is finally time to write code. This post breaks down the GPIO input interfaces provided by the HAL library.
 
 ---
 
@@ -29,66 +29,66 @@ In the LED tutorial, we used three HAL functions to control the LED:
 
 | Operation | HAL Function | Register Accessed |
 |-----------|-------------|-------------------|
-| Initialize pin | `HAL_GPIO_Init()` | CRL/CRH |
-| Write pin level | `HAL_GPIO_WritePin()` | ODR/BSRR |
-| Toggle pin level | `HAL_GPIO_TogglePin()` | ODR/BSRR |
+| Initialize pin | `HAL_GPIO_Init` | CRL/CRH |
+| Write pin level | `HAL_GPIO_WritePin` | ODR/BSRR |
+| Toggle pin level | `HAL_GPIO_TogglePin` | ODR/BSRR |
 
-For a button, we only need two: one for initialization, and one for reading.
+For buttons, we only need two: one for initialization and one for reading.
 
 | Operation | HAL Function | Register Accessed |
 |-----------|-------------|-------------------|
-| Initialize pin | `HAL_GPIO_Init()` | CRL/CRH |
-| **Read pin level** | `HAL_GPIO_ReadPin()` | **IDR** |
+| Initialize pin | `HAL_GPIO_Init` | CRL/CRH |
+| **Read pin level** | `HAL_GPIO_ReadPin` | **IDR** |
 
-`HAL_GPIO_Init()` was already broken down in the LED tutorial—it translates the configuration in the `GPIO_InitTypeDef` struct into bit-field operations on the CRL/CRH registers. Button initialization uses the exact same function as LED initialization, just with different parameters.
+`HAL_GPIO_Init` was already broken down in the LED tutorial—it translates the configuration in the `GPIO_InitTypeDef` structure into bit-field operations on the CRL/CRH registers. Button initialization uses the same function as LED initialization, just with different parameters.
 
 ---
 
 ## Input Mode Initialization
 
-### Input Configuration in GPIO_InitTypeDef
+### Input Configuration for GPIO_InitTypeDef
 
 The LED initialization code looks like this:
 
-```c
-GPIO_InitTypeDef init = {0};
-init.Pin = GPIO_PIN_13;
-init.Mode = GPIO_MODE_OUTPUT_PP;   // 推挽输出
-init.Pull = GPIO_NOPULL;
-init.Speed = GPIO_SPEED_FREQ_LOW;
-HAL_GPIO_Init(GPIOC, &init);
+```cpp
+GPIO_InitTypeDef GPIO_InitStruct = {0};
+GPIO_InitStruct.Pin = GPIO_PIN_5;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;  // Push-pull output
+GPIO_InitStruct.Pull = GPIO_NOPULL;          // No pull-up/pull-down
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;  // Low speed
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 ```
 
-For the button, we only need to change two parameters:
+For button initialization, we only need to change two parameters:
 
-```c
-GPIO_InitTypeDef init = {0};
-init.Pin = GPIO_PIN_0;
-init.Mode = GPIO_MODE_INPUT;       // 通用输入
-init.Pull = GPIO_PULLUP;           // 内部上拉
-init.Speed = GPIO_SPEED_FREQ_LOW;  // 输入模式下 Speed 无意义，但需要填值
-HAL_GPIO_Init(GPIOA, &init);
+```cpp
+GPIO_InitTypeDef GPIO_InitStruct = {0};
+GPIO_InitStruct.Pin = GPIO_PIN_0;
+GPIO_InitStruct.Mode = GPIO_MODE_INPUT;        // Input mode
+GPIO_InitStruct.Pull = GPIO_PULLUP;            // Internal pull-up
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;   // Ignored in input mode
+HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 ```
 
-There are three noteworthy points here:
+Three things are worth noting:
 
-**First, `Mode` changes from `GPIO_MODE_OUTPUT_PP` to `GPIO_MODE_INPUT`.** This corresponds to `MODE[1:0] = 00` (input mode) and `CNF[1:0] = 10` (pull-up/pull-down input) in the CRL register.
+**First, `Mode` changes from `GPIO_MODE_OUTPUT_PP` to `GPIO_MODE_INPUT`.** This corresponds to the `MODE` bits (input mode) and `PUPD` bits (pull-up/pull-down input) in the CRL register.
 
-**Second, `Pull` changes from `GPIO_NOPULL` to `GPIO_PULLUP`.** This enables the internal pull-up resistor and writes a 1 to the corresponding bit in the ODR to select the pull-up direction (the detail mentioned in the previous article about "ODR controlling pull-up/pull-down direction in input mode").
+**Second, `Pull` changes from `GPIO_NOPULL` to `GPIO_PULLUP`.** This enables the internal pull-up resistor and writes 1 to the corresponding bit in ODR to select the pull-up direction (that detail about "ODR controlling pull-up/down direction in input mode" mentioned in the last post).
 
-**Third, `Speed` has no practical meaning in input mode.** Speed controls the slew rate of the output driver—in input mode, the output driver is disconnected, so this parameter doesn't affect any behavior. However, the HAL requires you to fill in a value, so just put in anything.
+**Third, `Speed` has no actual meaning in input mode.** Speed controls the slew rate of the output driver—in input mode, the output driver is disconnected, so this parameter does not affect any behavior. However, HAL requires you to fill in a value; just pick anything.
 
 ### Don't Forget the Clock
 
 Just like with output, we must enable the corresponding clock before using any GPIO port. PA0 is on GPIOA, so:
 
-```c
+```cpp
 __HAL_RCC_GPIOA_CLK_ENABLE();
 ```
 
-If you forget this step, the `HAL_GPIO_Init()` call won't throw an error (it doesn't know whether you've enabled the clock or not), but the written configuration won't take effect—the pin will remain in its reset state (floating input), and the read value will be indeterminate. This is one of the most common pitfalls for beginners.
+If you forget this step, the `HAL_GPIO_Init` call won't error out (it doesn't know if you enabled the clock), but the written configuration won't take effect—the pin stays in reset state (floating input), and the read value will be indeterminate. This is one of the most common pitfalls for beginners.
 
-In the LED tutorial, we used `if constexpr` to automatically select the clock enable macro at compile time. The Button template class in this button tutorial will reuse the same mechanism. But if you're writing in C, remember to call it manually.
+In the LED tutorial, we used `RCC_ClkEnable` in the Button template class to automatically select the clock enable macro at compile time. But if you are writing in C, remember to call it manually.
 
 ---
 
@@ -96,146 +96,147 @@ In the LED tutorial, we used `if constexpr` to automatically select the clock en
 
 ### Function Signature
 
-```c
+```cpp
 GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 ```
 
-Two parameters: `GPIOx` specifies the port (GPIOA, GPIOB, GPIOC...), and `GPIO_Pin` specifies the pin number (`GPIO_PIN_0` ~ `GPIO_PIN_15`). The return value is the `GPIO_PinState` enum:
+Two parameters: `GPIOx` specifies the port (GPIOA, GPIOB, GPIOC...), and `GPIO_Pin` specifies the pin number (`GPIO_PIN_0` ~ `GPIO_PIN_15`). The return value is a `GPIO_PinState` enum:
 
-```c
+```cpp
 typedef enum {
-    GPIO_PIN_RESET = 0,  // 低电平
-    GPIO_PIN_SET   = 1   // 高电平
+    GPIO_PIN_RESET = 0,
+    GPIO_PIN_SET
 } GPIO_PinState;
 ```
 
 ### Underlying Implementation
 
-The HAL library's implementation of `HAL_GPIO_ReadPin()` is very concise:
+The HAL library's implementation of `HAL_GPIO_ReadPin` is very concise:
 
-```c
+```cpp
 GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
-    GPIO_PinState bitstatus;
-    if ((GPIOx->IDR & GPIO_Pin) != (uint32_t)GPIO_PIN_RESET) {
-        bitstatus = GPIO_PIN_SET;
-    } else {
-        bitstatus = GPIO_PIN_RESET;
-    }
-    return bitstatus;
+    return (GPIO_PinState)((GPIOx->IDR & GPIO_Pin) != 0U);
 }
 ```
 
-The core is a single bit operation: `GPIOx->IDR & GPIO_Pin`. `IDR` is a 16-bit read-only register where each bit corresponds to a pin. The value of `GPIO_PIN_0` is `0x0001`, so `IDR & 0x0001` simply extracts the value of bit 0. If it's not zero, the pin is high; otherwise, it's low.
+The core is a single bit operation: `GPIOx->IDR & GPIO_Pin`. `IDR` is a 16-bit read-only register where each bit corresponds to a pin. `GPIO_Pin`'s value is `0x0001` (for Pin 0), so `IDR & 0x0001` extracts the value of bit 0. If it's not 0, the pin is high; otherwise, it's low.
 
-This takes just a few clock cycles (LDR + AND + CMP, roughly 2-4 cycles after compiler optimization). A 72MHz CPU means reading a pin state takes only a few tens of nanoseconds.
+It takes just a few clock cycles (LDR + AND + CMP, about 2-4 cycles after compiler optimization). For a 72MHz CPU, this means reading pin state takes only a few tens of nanoseconds.
 
 ### Comparison with WritePin
 
-`HAL_GPIO_WritePin()` operates on the BSRR register (Bit Set/Reset Register), which is a write-only register—writing a 1 to the lower 16 bits resets (clears) the corresponding ODR bit, while writing a 1 to the upper 16 bits sets the corresponding ODR bit. This is an atomic operation that doesn't require the three-step read-modify-write process.
+`HAL_GPIO_WritePin` operates on the BSRR register (Bit Set/Reset Register), which is write-only—writing 1 to the lower 16 bits resets (clears) the corresponding ODR bit, and writing 1 to the upper 16 bits sets (assigns 1 to) the corresponding ODR bit. This is an atomic operation that doesn't require the read-modify-write process.
 
-`HAL_GPIO_ReadPin()` operates on the IDR register, which is read-only and directly returns the pin level.
+`HAL_GPIO_ReadPin` operates on the IDR register, which is read-only, directly returning the pin level.
 
 | | Output (LED) | Input (Button) |
 |---|-----------|-----------|
-| Initialization | `GPIO_MODE_OUTPUT_PP` | `GPIO_MODE_INPUT` |
-| Core operation | `HAL_GPIO_WritePin()` → BSRR | `HAL_GPIO_ReadPin()` → IDR |
-| Register attribute | BSRR write-only | IDR read-only |
-| Operation time | 1 clock cycle | 1 clock cycle |
+| Initialization | `HAL_GPIO_Init` | `HAL_GPIO_Init` |
+| Core Operation | `HAL_GPIO_WritePin` → BSRR | `HAL_GPIO_ReadPin` → IDR |
+| Register Attribute | BSRR Write-Only | IDR Read-Only |
+| Operation Time | 1 Clock Cycle | 1 Clock Cycle |
 
 ---
 
 ## read_pin_state(): Our C++ Wrapper
 
-In `device/gpio/gpio.hpp`, we added the `read_pin_state()` method to the GPIO template class:
+In `gpio.hpp`, we added a `read_pin_state` method to the GPIO template class:
 
 ```cpp
+enum class State { Low = 0, High = 1 };
+
 [[nodiscard]] State read_pin_state() const {
-    return static_cast<State>(HAL_GPIO_ReadPin(native_port(), PIN));
+    return static_cast<State>(
+        HAL_GPIO_ReadPin(GPIOx, GPIO_Pin_x)
+    );
 }
 ```
 
-There are a few design decisions here that need explaining.
+Here are a few design decisions to explain.
 
 ### Why Return a State Enum Instead of bool
 
-You could argue that returning a `bool` is simpler—`true` is high, `false` is low. But we chose to return the `State` enum (`State::Set` and `State::UnSet`) to maintain symmetry with the output side's `set_gpio_pin_state(State)`. This way, input and output use the same set of types, keeping the code style consistent.
+You could argue that returning `bool` is simpler—`true` is high, `false` is low. But we choose to return a `State` enum (`Low` and `High`), keeping symmetry with the output side's `write`. This way, input and output use the same set of types, and the code style remains consistent.
 
-Furthermore, the `State` enum is less prone to misuse than `bool`. If you're working with multiple pins, the meaning of `bool`'s `true`/`false` might get confused in different contexts—does `true` mean pressed or released? It depends on whether you're using pull-up or pull-down. But `State::Set` always means the pin is high, and `State::UnSet` always means it's low, with no ambiguity.
+Also, the `State` enum is less prone to misuse than `bool`. If you have multiple pins to operate, the `true`/`false` meaning of `bool` can be confusing in different contexts—is `true` pressed or released? It depends on whether it's pull-up or pull-down. But `High` always means the pin is at a high electrical level, and `Low` always means low, without ambiguity.
 
 ### Why Add [[nodiscard]]
 
-`[[nodiscard]]` tells the compiler that the return value of this function should not be ignored. If you write `button.read_pin_state();` without using the return value, the compiler will issue a warning.
+`[[nodiscard]]` tells the compiler: the return value of this function should not be ignored. If you write `read_pin_state()` but don't use the return value, the compiler will issue a warning.
 
-The sole purpose of reading a pin state is to get the return value. If you call `read_pin_state()` and don't use the result, the call is one hundred percent a mistake—most likely a forgotten assignment statement. In embedded development, if such a low-level error isn't caught, it could lead to the button state not being detected, causing abnormal system behavior that is difficult to debug.
+The sole purpose of reading pin state is to get the return value. If you call `read_pin_state()` and don't use the result, that call is 100% wrong—you likely forgot the assignment statement. In embedded development, if such a basic error isn't caught, it could lead to button states not being detected, causing abnormal system behavior that is hard to debug.
 
-### Zero Overhead of static_cast
+### Zero-Overhead of static_cast
 
-`HAL_GPIO_ReadPin()` returns a `GPIO_PinState` (0 or 1), and `static_cast<State>()` converts it to a `State::Set` or `State::UnSet`. `static_cast` conversion between enums is a purely compile-time operation—the underlying value (0 or 1) doesn't change, only the type information does. The generated machine code is exactly the same as using `GPIO_PinState` directly.
+`HAL_GPIO_ReadPin` returns `GPIO_PinState` (0 or 1), and `static_cast<State>` converts it to `State::Low` or `State::High`. `static_cast` between enums is a pure compile-time operation—the underlying value (0 or 1) doesn't change, only the type information does. The generated machine code is exactly the same as using the raw value directly.
 
 ### const Member Function
 
-`read_pin_state()` is declared as `const`—it doesn't modify any of the object's member variables. This is the standard C++ way to express a "read-only operation." In contrast, `set_gpio_pin_state()` is also declared as `const`—this is because our GPIO template class has no member variables to modify; all "state" exists in the hardware registers, not in the C++ object.
+`read_pin_state` is declared as `const`—it doesn't modify any member variables of the object. This is the standard C++ way to express a "read-only operation." In contrast, `write` is also declared as `const`—this is because our GPIO template class has no member variables to modify; all "state" exists in the hardware registers, not in the C++ object.
 
 ---
 
-## A Minimal C Example
+## Minimal C Example
 
-Before moving on to the complete polling program in the next article, let's first verify with a minimal C code snippet: can we read the button state?
+Before moving on to the complete polling program in the next post, let's verify with a minimal C code snippet: can we read the button state?
 
-```c
+```cpp
 #include "stm32f1xx_hal.h"
 
 int main(void) {
+    // 1. Initialize System Clock
     HAL_Init();
-    /* 系统时钟配置省略 */
+    SystemClock_Config();
 
-    /* 使能 GPIOA 时钟 */
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    // 2. Enable Clocks
+    __HAL_RCC_GPIOA_CLK_ENABLE();  // For Button (PA0)
+    __HAL_RCC_GPIOC_CLK_ENABLE();  // For LED (PC13)
 
-    /* 配置 PA0 为上拉输入 */
-    GPIO_InitTypeDef init = {0};
-    init.Pin = GPIO_PIN_0;
-    init.Mode = GPIO_MODE_INPUT;
-    init.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(GPIOA, &init);
+    // 3. Initialize Button (PA0) as Input with Pull-up
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* 同时配置 PC13 为推挽输出（控制 LED） */
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    GPIO_InitTypeDef led_init = {0};
-    led_init.Pin = GPIO_PIN_13;
-    led_init.Mode = GPIO_MODE_OUTPUT_PP;
-    led_init.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOC, &led_init);
+    // 4. Initialize LED (PC13) as Output
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+    // 5. Main Loop
     while (1) {
-        /* 读取 PA0 状态 */
-        GPIO_PinState state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+        // Read button state
+        GPIO_PinState button_state = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
 
-        if (state == GPIO_PIN_RESET) {
-            /* 按钮按下：低电平 → 点亮 LED（PC13 低电平有效） */
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+        // Control LED based on button (Active Low logic)
+        // Button Pressed (Low) -> LED ON (Low)
+        // Button Released (High) -> LED OFF (High)
+        if (button_state == GPIO_PIN_RESET) {
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); // LED ON
         } else {
-            /* 按钮松开：高电平 → 熄灭 LED */
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);   // LED OFF
         }
     }
 }
 ```
 
-This code does four things: (1) enables the GPIOA and GPIOC clocks, (2) configures PA0 as pull-up input, (3) configures PC13 as push-pull output, and (4) reads PA0 and controls PC13 in the main loop.
+This code does four things: (1) enables GPIOA and GPIOC clocks, (2) configures PA0 as pull-up input, (3) configures PC13 as push-pull output, (4) reads PA0 and controls PC13 in the main loop.
 
-⚠️ Note: this code **does not debounce**. If you quickly press the button, the LED might blink several times. In the next article, we will see a full demonstration of this problem and its solution.
+⚠️ **Note:** This code **does not debounce**. A quick press of the button might cause the LED to flash several times. In the next post, we will see a full demonstration of this problem and its solution.
 
-If you flash this code to the board, the LED turns on when you hold the button and turns off when you release it. The most basic input-output interaction is now realized.
+If you flash this code to the board, the LED turns on when the button is held down and turns off when released. The most basic input-output interaction is now realized.
 
 ---
 
 ## Looking Back
 
-This article broke down two HAL APIs: the input mode configuration of `HAL_GPIO_Init()` and the underlying implementation of `HAL_GPIO_ReadPin()`. The key takeaways are:
+This post broke down two HAL APIs: the input mode configuration of `HAL_GPIO_Init` and the underlying implementation of `HAL_GPIO_ReadPin`. Key points:
 
-1. Input initialization only requires two parameters: `GPIO_MODE_INPUT` + `GPIO_PULLUP`
-2. `HAL_GPIO_ReadPin()` simply reads the `IDR` register underneath, taking one clock cycle
-3. Our `read_pin_state()` wrapper adds `[[nodiscard]]` and `const`, returning a type-safe `State` enum
+1. Input initialization only needs `Mode` + `Pull` parameters.
+2. `HAL_GPIO_ReadPin` is essentially reading the `IDR` register, taking one clock cycle.
+3. Our `read_pin_state` wrapper adds `[[nodiscard]]` and `const`, returning a type-safe `State` enum.
 
-In the next article, we'll expand this minimal code into a complete C polling program—and see firsthand what happens without debouncing.
+In the next post, we will extend this minimal code into a complete C polling program—and then see firsthand what happens without debouncing.

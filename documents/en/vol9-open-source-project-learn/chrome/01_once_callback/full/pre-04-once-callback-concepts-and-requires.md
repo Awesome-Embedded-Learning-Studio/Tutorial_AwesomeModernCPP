@@ -2,9 +2,9 @@
 chapter: 0
 cpp_standard:
 - 20
-description: Starting from the real problem of template constructors hijacking move
-  constructors, we explore how concepts and requires constraints protect the constructors
-  of OnceCallback to ensure correct matching.
+description: We explore the real-world issue where template constructors hijack move
+  constructors, and understand how Concepts and `requires` constraints ensure `OnceCallback`
+  constructors match correctly.
 difficulty: intermediate
 order: 4
 platform: host
@@ -23,225 +23,211 @@ tags:
 - 模板
 title: 'Prerequisites for OnceCallback (Part 4): Concepts and requires Constraints'
 translation:
-  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-04-once-callback-concepts-and-requires.md
-  source_hash: e8b1894804c419d1e2255cf1123bac98c561fa062ceb658827dd87fc35517e84
-  token_count: 1757
-  translated_at: '2026-05-26T12:28:57.556303+00:00'
+  source_hash: 2d66382298f6e53f170ed119632aa7d08d3cce1abc9f95b1c2396e616e4d68f7
+  translated_at: '2026-06-16T04:13:42.814016+00:00'
+  engine: anthropic
+  token_count: 1749
 ---
-# Prerequisite Knowledge for OnceCallback (Part 4): Concepts and requires Constraints
+# OnceCallback Prerequisites (Part 4): Concepts and requires Constraints
 
 ## Introduction
 
-The constructor of `OnceCallback` has this seemingly redundant constraint:
+The `OnceCallback` constructor has a constraint that looks somewhat redundant:
 
 ```cpp
-template<typename Functor>
-    requires not_the_same_t<Functor, OnceCallback>
-explicit OnceCallback(Functor&& function);
+template <typename F, typename = std::enable_if_t<
+    not_the_same_t<F, OnceCallback>::value>>
+OnceCallback(F&& f);
 ```
 
-You might ask—why not just write ``template<typename Functor>`` and call it a day? What exactly is the extra ``requires not_the_same_t`` guarding against?
+You might ask—why not just write `OnceCallback(F&& f)` and be done with it? What exactly is the extra constraint guarding against?
 
-In this post, we answer that question. The answer involves a lesser-known pitfall in C++ overload resolution: **a template constructor can hijack move constructor calls in certain situations**. Concepts and ``requires`` constraints are the defensive weapons C++20 gives us.
+In this post, we will answer this question. The answer involves a lesser-known pitfall in C++ overload resolution: **template constructors can hijack move constructor calls in certain situations**. Concepts and `requires` constraints are the defensive weapons C++20 provides us.
 
 > **Learning Objectives**
 >
-> - Understand the overload competition between template constructors and move constructors
-> - Master the basic syntax of concepts and the usage of the ``requires`` clause
-> - Be able to interpret the design intent of ``not_the_same_t`` and the meaning of each line of code
+> - Understand the overload competition between template constructors and move constructors.
+> - Master the basic syntax of concepts and the usage of the `requires` clause.
+> - Be able to interpret the design intent of `not_the_same_t` and the meaning of every line of code.
 
 ---
 
-## Introducing the Problem: The Template Constructor "Offside"
+## Problem Introduction: The "Offside" of Template Constructors
 
-### Reconstructing the Scenario
+### Scenario Reconstruction
 
-Suppose we have a simple wrapper class that accepts any callable object:
+Assume we have a simple wrapper class that accepts any callable object:
 
 ```cpp
-template<typename FuncSignature>
-class Callback;
-
-template<typename R, typename... Args>
-class Callback<R(Args...)> {
+class Wrapper {
 public:
-    // 模板构造函数：接受任意可调用对象
-    template<typename Functor>
-    explicit Callback(Functor&& f) {
-        // 用 f 初始化内部存储...
-    }
+    // Accepts any callable
+    template <typename F>
+    Wrapper(F&& f) : func(std::forward<F>(f)) {}
 
-    // 编译器隐式生成的移动构造函数
-    // Callback(Callback&& other) noexcept;
+    // Move constructor (implicitly generated)
+    Wrapper(Wrapper&&) noexcept = default;
+
+    // Copy constructor (deleted)
+    Wrapper(const Wrapper&) = delete;
+private:
+    std::function<void()> func;
 };
 ```
 
-Now we write ``Callback cb2 = std::move(cb1);``—the intent is obvious: we want to call the move constructor. The compiler has two paths:
+Now we write `Wrapper w2(std::move(w1))`—the intent is obvious: we want to call the move constructor. The compiler has two paths:
 
-1. The implicitly generated move constructor ``Callback(Callback&&)``
-2. The instantiated template constructor ``Callback(Callback&&)`` (where ``Functor = Callback``)
+1. The implicitly generated move constructor `Wrapper(Wrapper&&)`.
+2. The template constructor instantiation `Wrapper<Wrapper>(Wrapper&&)` (where `F = Wrapper`).
 
-Intuitively, we might feel the move constructor should win—after all, it is "specifically designed for this type." But C++ overload resolution rules are not that simple. In some cases, a function signature instantiated from a template is a "more exact" match than an implicitly declared special member function—because the template parameter ``Functor`` can perfectly match the type of the passed argument (including ``Callback&&``), whereas the move constructor's parameter type is fixed at ``Callback&&``.
+Intuitively, we feel the move constructor should take priority—after all, it is "specifically designed for this type." However, C++ overload resolution rules are not that simple. In some cases, the function signature instantiated from a template is a "more exact" match than the implicitly declared special member function—because the template parameter `F` can perfectly match the type of the passed argument (including references), while the move constructor's parameter type is fixed `Wrapper&&`.
 
-When two overloads are equally good matches, C++ rules dictate that **non-template functions take precedence over template functions**. So in most cases, the move constructor does win. But edge cases are subtle—especially when forwarding references and exact matches are involved, where some compiler versions might behave differently. More critically, even if the move constructor wins, if the template constructor is also in the candidate list, certain SFINAE (Substitution Failure Is Not An Error) scenarios could lead to unexpected compilation errors.
+When the match quality of two overloads is identical, C++ rules dictate that **non-template functions take precedence over template functions**. So, in most cases, the move constructor does win. But edge cases are subtle—especially when forwarding references and perfect matching are involved, some compiler versions might behave differently. More critically, even if the move constructor wins, if the template constructor is also in the candidate list, certain SFINAE scenarios might lead to unexpected compilation errors.
 
 ### Minimal Reproduction
 
 ```cpp
-struct Wrapper {
-    // 模板构造函数：接受任何类型
-    template<typename T>
-    Wrapper(T&& x) {
-        std::cout << "template constructor\n";
-    }
+#include <utility>
 
-    // 移动构造函数（编译器隐式生成或显式声明）
-    Wrapper(Wrapper&& other) noexcept {
-        std::cout << "move constructor\n";
-    }
+class Test {
+public:
+    template <typename T>
+    Test(T&&) { /* Generic template */ }
+
+    Test(Test&&) noexcept = default; // Move constructor
+    Test(const Test&) = delete;      // Copy constructor
 };
 
-Wrapper a;
-Wrapper b = std::move(a);  // 你期望输出 "move constructor"
-                            // 在某些情况下可能输出 "template constructor"
+int main() {
+    Test t1;
+    // Which constructor is called?
+    Test t2(std::move(t1));
+}
 ```
 
-The solution is to add a constraint to the template constructor—making it **not** match ``Wrapper``'s own type.
+The solution is to add a constraint to the template constructor—make it **not** match the class's own type.
 
 ---
 
 ## Concept Basic Syntax
 
-C++20 introduced Concepts—a mechanism for naming constraints. You can think of a concept as a "named compile-time Boolean condition." If that feels hard to grasp—well, the author believes a concept is exactly what it sounds like: it represents a concept. Compared to the obscure ways we used to express things with `enable_if`, we can now more easily state what something is—it is XXX, and XXX is a concept. It is that simple.
+C++20 introduced Concepts—a mechanism for naming constraints. You can think of a concept as a "named compile-time boolean condition." If that sounds hard to grasp—personally, I think "concept" lives up to its name: it literally means a concept. Compared to the obscure way we used to express things with `enable_if`, we can now say what it is more easily—it is XXX, and XXX is a concept. It's just that simple.
 
-### Declaring a Concept
+### Declaring a concept
 
 ```cpp
-template<typename T>
+template <typename T>
 concept Integral = std::is_integral_v<T>;
 ```
 
-``Integral`` is a concept that checks whether ``T`` is an integer type. ``std::is_integral_v<T>`` is a compile-time Boolean constant. What we express here is very simple—we just want an integer type! Armed with this concept, we can use it with `requires` in the next step.
+`Integral` is a concept that checks if `T` is an integer type. `std::is_integral_v<T>` is a compile-time boolean constant. The meaning here is simple—we just want an integer type! With this concept, we can use it in the next step with `requires`.
 
-### Using the requires Clause
+### Using the requires clause
 
-The ``requires`` clause can be placed after a template declaration to constrain template parameters to satisfy a specific condition:
+The `requires` clause can be added after a template declaration to constrain template parameters to satisfy a specific condition:
 
 ```cpp
-template<typename T>
-    requires Integral<T>
-void foo(T x) {
-    // 只有 T 是整数类型时，这个函数才会被实例化
-}
-
-foo(42);    // OK：int 是整数
-foo(3.14);  // 编译错误：double 不满足 Integral
+template <typename T>
+requires Integral<T>
+void foo(T value);
 ```
 
-### Common Standard Library Concepts
+### Standard library common concepts
 
-C++20 provides a batch of predefined concepts in the ``<concepts>`` header:
+C++20 provides a batch of predefined concepts in the `<concepts>` header file:
 
 ```cpp
-#include <concepts>
-
-// std::invocable<F, Args...>：F 是否可以用 Args... 调用
-static_assert(std::invocable<int(*)(int), int>);
-
-// std::same_as<A, B>：A 和 B 是否是同一类型
-static_assert(std::same_as<int, int>);
-
-// std::convertible_to<From, To>：From 是否能隐式转换到 To
-static_assert(std::convertible_to<int, double>);
+std::integral<T>       // T is an integral type
+std::floating_point<T> // T is a floating point type
+std::same_as<T, U>     // T and U are the same type
+std::convertible_to<T, U> // T is convertible to U
 ```
 
 ---
 
 ## not_the_same_t: Line-by-Line Breakdown
 
-Now let us look at this concept in `OnceCallback`:
+Now let's look at this concept in `OnceCallback`:
 
 ```cpp
-template<typename F, typename T>
+template <typename F, typename T>
 concept not_the_same_t = !std::is_same_v<std::decay_t<F>, T>;
 ```
 
-What it does in one sentence is: **the decayed type of F is not T**. Let us break down the three key components one by one.
+What it does, in one sentence, is: **The decayed type of F is not T**. Let's break down the three key components one by one.
 
-### std::decay_t\<F\>: Decaying References and cv-Qualifiers
+### std::decay_t\<F\>: Decay references and cv-qualifiers
 
-``std::decay_t`` does three things to a type: removes references (``int&`` → ``int``), removes top-level const/volatile (``const int`` → ``int``), and decays array and function types (``int[5]`` → ``int*``, ``int(int)`` → ``int(*)(int)``).
+`std::decay_t<F>` does three things to a type: removes references (`int&` → `int`), removes top-level const/volatile (`const int` → `int`), and decays array and function types (`int[3]` → `int*`, `void(int)` → `void(*)(int)`).
 
-In the `OnceCallback` scenario, the most critical part is removing references. When we write ``OnceCallback cb2 = std::move(cb1)``, ``Functor`` is deduced as ``OnceCallback`` (not ``OnceCallback&&``, because the deduction rules for forwarding references deduce rvalues as non-reference types). But if it were ``OnceCallback cb2 = cb1;`` (even though copy is deleted, this is just an example), ``Functor`` would be deduced as ``OnceCallback&``. ``std::decay_t`` ensures that no matter what reference form ``Functor`` deduces to, after decay it is always ``OnceCallback``, which we then compare with ``T = OnceCallback``.
+In the `OnceCallback` scenario, the most critical part is removing references. When we write `OnceCallback(F&& f)`, `F` is deduced as `OnceCallback` (not `OnceCallback&&`, because forwarding reference deduction rules deduce rvalues as non-reference types). But if it were `OnceCallback(OnceCallback&)` (even though copy is deleted, this is just an example), `F` would be deduced as `OnceCallback&`. `std::decay_t` ensures that no matter what reference form `F` deduces to, after decay it is `OnceCallback`, which is compared with `T`.
 
-### std::is_same_v<...>: Comparing Two Types
+### std::is_same_v<...>: Compare two types
 
-``std::is_same_v<A, B>`` returns ``true`` when ``A`` and ``B`` are exactly the same. Note that "exactly the same" is very strict—``int`` and ``const int`` are different, and ``int&`` and ``int`` are also different. This is why we need ``std::decay_t`` to normalize the form first.
+`std::is_same_v<A, B>` returns `true` when `A` and `B` are identical. Note that "identical" is very strict—`int` and `const int` are different, `int&` and `int` are also different. That's why we need `std::decay_t` to unify the form first.
 
-### Negation ``!``: Constraint Passes When F Is Not T
+### Negation `!`: Constraint passes when F is not T
 
-The value of the entire concept is ``!std::is_same_v<std::decay_t<F>, T>``—the negation means that when ``F`` after decay is the same as ``T``, the constraint fails (the template is excluded), and when they are different, the constraint passes (the template participates in overload resolution).
+The value of the entire concept is `!std::is_same_v<...>`—negation means that when `F`'s decayed type is the same as `T`, the constraint fails (the template is excluded), and when they are different, the constraint passes (the template participates in overload resolution).
 
-### Effect After Adding the Constraint
+### Effect after adding the constraint
 
 ```cpp
-template<typename Functor>
-    requires not_the_same_t<Functor, OnceCallback>
-explicit OnceCallback(Functor&& f) : status_(Status::kValid), func_(std::move(f)) {}
+template <typename F>
+requires not_the_same_t<F, OnceCallback>
+OnceCallback(F&& f);
 ```
 
-When what is passed in is ``OnceCallback`` itself (such as in a move construction scenario), ``not_the_same_t<OnceCallback, OnceCallback>`` evaluates to ``!true = false``, the constraint is not satisfied, the template is excluded from the candidate list, and the compiler can only choose the move constructor. When what is passed in is a lambda, a function pointer, or other types, the constraint is satisfied, the template normally participates in overload resolution, and is selected as the constructor.
+When what is passed in is `OnceCallback` itself (like in a move constructor scenario), `not_the_same_t<F, OnceCallback>` evaluates to `false`, the constraint is not satisfied, and the template is removed from the candidate list. The compiler can only choose the move constructor. When a lambda, function pointer, or other type is passed, the constraint is satisfied, the template participates in overload resolution normally, and is selected as the constructor.
 
 ---
 
-## Application of This Pattern in the Standard Library
+## Application of this Pattern in the Standard Library
 
-This is not just a special requirement for `OnceCallback`. ``std::move_only_function``'s own implementation has an almost identical constraint—except that the standard library uses the standard concept ``std::constructible_from`` combined with ``!std::is_same_v``. Any move-only type-erased wrapper needs this defense—as long as your class simultaneously has "a template constructor that accepts any type" and "a compiler-generated move constructor," you must add a constraint to prevent the two from competing.
+This is not just a special requirement for `OnceCallback`. The standard library's own `std::function` implementation has almost identical constraints—except the standard library uses the standard concept `!std::same_as` combined with `std::type_identity`. Any move-only type-erasing wrapper needs this defense—as long as your class has both a "template constructor accepting any type" and a "compiler-generated move constructor", you must add a constraint to prevent competition between the two.
 
-```text
-模式总结：
-模板构造函数 + requires 排除自身类型 = 保护移动语义的正确匹配
+```cpp
+// Standard library style (simplified)
+template <typename F>
+requires (!std::same_as<std::decay_t<F>, MyType>)
+MyType(F&& f);
 ```
 
-If you write similar components in the future—such as your own ``unique_function``, ``any_invocable``, or other move-only wrappers—remember this pattern; it is a general defensive technique.
+If you write similar components in the future—like your own `unique_function`, `move_only_function` or other move-only wrappers—remember this pattern; it is a general defensive measure.
 
 ---
 
-## Pitfall Warnings
+## Pitfall Warning
 
-### If You Forget std::decay_t
+### If you forget std::decay_t
 
-If you only write ``!std::is_same_v<F, T>`` without adding ``std::decay_t``, the problem is that the deduced result of ``F`` might or might not include a reference, depending on the calling context. Consider the following scenario:
+If you only write `!std::is_same_v<F, T>` without adding `std::decay_t`, the problem is that the deduction result of `F` might carry a reference or might not, depending on the calling context. Consider the following scenario:
 
 ```cpp
-OnceCallback cb1([](int x) { return x; });
+// Scenario A: Move
+OnceCallback cb1;
+OnceCallback cb2(std::move(cb1)); // F deduced as OnceCallback
 
-// 场景 A：std::move(cb1) 是右值
-// Functor 推导为 OnceCallback（不带引用）
-// is_same_v<OnceCallback, OnceCallback> == true → 约束失败 ✓ 正确
-
-// 场景 B：const OnceCallback& ref = cb1;
-// 如果有人写了 OnceCallback cb2(ref);
-// Functor 推导为 const OnceCallback&
-// is_same_v<const OnceCallback&, OnceCallback> == false → 约束通过 ✗ 错误！
+// Scenario B: Lvalue reference (hypothetically)
+// OnceCallback cb3(cb1); // F deduced as OnceCallback&
 ```
 
-In scenario B, without ``decay_t``, ``const OnceCallback&`` and ``OnceCallback`` are not the same, the constraint passes, and the template constructor is selected—but semantically we expect either a compilation error (copy is deleted) or at least not the template constructor. After adding ``decay_t``, ``const OnceCallback&`` decays to ``OnceCallback``, which is the same as ``OnceCallback``, and the constraint correctly fails.
+In Scenario B, without `std::decay_t`, `F` (`OnceCallback&`) and `T` (`OnceCallback`) are not the same, the constraint passes, and the template constructor is selected—but semantically we expect a compilation error (copy is deleted) or at least not the template constructor. With `std::decay_t`, `F` decays to `OnceCallback`, which is the same as `T`, and the constraint correctly fails.
 
-### The static_assert(false) Trap
+### The trap of static_assert(false)
 
-Prior to C++23, ``static_assert(false, "...")`` in a template would cause all instantiations to trigger the assertion failure—even if this template is never called. This is because the C++ standard prior to C++23 required ``static_assert(false)`` to be immediately evaluated at template definition time. Chromium uses ``static_assert(!sizeof(*this), "...")`` to work around this limitation (``!sizeof`` is always ``false``, but it depends on the type of ``*this``, making it a dependent expression that is not evaluated at definition time). C++23 relaxed this rule, but if you compile with C++20, you still need to be aware of this issue.
+Before C++23, `static_assert(false)` in a template causes all instantiations to trigger assertion failure—even if this template is never called. This is because the C++ standard prior to C++23 required `static_assert` to be evaluated immediately when the template is defined. Chromium uses `static_assert(sizeof(T) != 0)` to bypass this limit (`sizeof(T)` is never 0, but it depends on the type of `T`, so it is a type-dependent expression and won't be evaluated at definition time). C++23 relaxed this rule, but if you compile with C++20, you still need to be aware of this issue.
 
 ---
 
 ## Summary
 
-In this post, we figured out that seemingly redundant ``requires not_the_same_t`` constraint on the `OnceCallback` constructor. Its purpose is to prevent the template constructor from hijacking the move constructor call in scenarios like ``OnceCallback cb2 = std::move(cb1)``. ``not_the_same_t`` removes the references and const qualifiers from ``F`` via ``std::decay_t``, compares it with ``T``, and negates the result to ensure the template is excluded when the class's own type is passed in. This pattern is used in all move-only type-erased wrappers—``std::move_only_function`` has a similar constraint.
+In this post, we cleared up the seemingly redundant `requires not_the_same_t<F, OnceCallback>` constraint on the `OnceCallback` constructor. Its existence is to prevent the template constructor from hijacking move constructor calls in scenarios like `OnceCallback cb2(std::move(cb1))`. `not_the_same_t` uses `std::decay_t` to strip references and const qualifiers from `F` before comparing with `T`, and the negation ensures the template is excluded when passing its own type. This pattern is used in all move-only type-erasing wrappers—`std::function` has similar constraints.
 
-In the next post, we will look at ``std::move_only_function``—it is the core storage type of `OnceCallback` and the key to our replacing Chromium's hand-written `BindState` with standard library facilities.
+In the next post, we will look at `std::move_only_function`—it is the core storage type of `OnceCallback` and the key to us using standard library facilities to replace Chromium's hand-written `BindState`.
 
-## References
+## Reference Resources
 
 - [cppreference: Constraints and concepts](https://en.cppreference.com/w/cpp/language/constraints)
 - [cppreference: std::decay](https://en.cppreference.com/w/cpp/types/decay)

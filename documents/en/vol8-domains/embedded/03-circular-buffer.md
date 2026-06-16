@@ -18,31 +18,31 @@ tags:
 - intermediate
 title: Circular Buffer Implementation
 translation:
-  engine: anthropic
   source: documents/vol8-domains/embedded/03-circular-buffer.md
-  source_hash: 8c134e19ee132d94c025e8b4c70083d7d6ca8206d7b828f8d8fb6396ee391a86
+  source_hash: 78f528fcbbdc020436f77546befb9d4382fe62ec7c906c1f91dce4c9e7b1603e
+  translated_at: '2026-06-16T04:11:26.586570+00:00'
+  engine: anthropic
   token_count: 981
-  translated_at: '2026-06-14T00:20:56.830619+00:00'
 ---
-# Embedded C++ Tutorial — Circular Buffer
+# Embedded C++ Tutorial — Circular Buffers
 
-In the embedded world, one problem recurs constantly: **a data source produces data continuously, a consumer processes it slowly, and we want to avoid `malloc` in between.** Thus, an ancient but timeless data structure takes the stage—the **Circular Buffer (Ring Buffer)**.
+In the embedded world, a specific problem appears constantly: **a data source continuously generates data, a consumer processes it slowly, and we want to avoid `malloc` in between.** Thus, an ancient but timeless data structure takes the stage—the **Circular Buffer (Ring Buffer)**.
 
-You can think of it as a warehouse with a fixed size; when it's full, we start over from the beginning. No resizing, no fragmentation, no "new failed," making it perfect for MCUs, drivers, interrupts, DMA, serial ports, audio streams, and other scenarios.
+You can think of it as a warehouse with a fixed size; when it is full, we start over from the beginning. No resizing, no fragmentation, no "new failed," making it perfect for MCUs, drivers, interrupts, DMA, serial ports, audio streams, and other scenarios.
 
 ------
 
-## Why Does Embedded Love Circular Buffers So Much?
+## Why does embedded love circular buffers so much?
 
 In the PC world, we can freely `malloc` and `new`. But in embedded systems, these operations sound dangerous:
 
 - Heap memory is small and prone to fragmentation.
 - We cannot `malloc` within an interrupt context.
-- Real-time systems cannot tolerate unpredictable latency.
+- Uncontrollable delays are undesirable in real-time systems.
 
 The characteristics of a circular buffer are practically tailor-made for embedded systems:
 
-- **Fixed size, determined at compile time or initialization.**
+- **Fixed size, determined at compile-time or initialization.**
 - **O(1) enqueue / dequeue.**
 - **Contiguous memory, cache-friendly.**
 - **No dynamic allocation required.**
@@ -54,7 +54,7 @@ To summarize in one sentence:
 
 ------
 
-## The Core Idea of a Circular Buffer (Actually Very Simple)
+## The Core Idea of a Circular Buffer (Actually quite simple)
 
 A circular buffer is essentially:
 
@@ -67,37 +67,39 @@ When an index reaches the end of the array, it **wraps around to the beginning**
 
 ```mermaid
 graph LR
-    A[Buffer Array] --> B[write_idx]
-    A --> C[read_idx]
-    B -- "Write Data" --> D[Move write_idx]
-    C -- "Read Data" --> E[Move read_idx]
+    A[Buffer Array] --> B[Write Index]
+    A --> C[Read Index]
+    B -->|Write Data| D[Move Write Index]
+    C -->|Read Data| E[Move Read Index]
+    D -.->|Wrap| B
+    E -.->|Wrap| C
 ```
 
 Writing data: Move `write_idx`.
 Reading data: Move `read_idx`.
 
-There is only one key question to figure out:
-👉 **How to distinguish "full" from "empty"?**
+There is only one question to figure out clearly:
+👉 **How to distinguish between "full" and "empty"?**
 
 ------
 
-## How to Distinguish "Empty" and "Full"? (The Classic Puzzle)
+## How to distinguish "empty" and "full"? (A classic problem)
 
-There are three common approaches:
+There are three common solutions:
 
-1. **Waste one element (most common).**
-2. Maintain an extra `count`.
-3. Use an extra `bool` flag.
+1. **Waste one element (Most common)**
+2. Maintain an extra `count`
+3. Use an extra `bool` flag
 
-In embedded systems, **Approach 1 is the most popular**: simple, unambiguous, and logically clear. The rules are:
+In embedded systems, **Solution 1 is the most popular**: simple, unambiguous, and logically clear. The rules are:
 
 - Buffer size is `Capacity + 1`.
-- Actual maximum storage is `Capacity` elements.
-- Condition checks:
+- It can actually store at most `Capacity` elements.
+- Conditions:
   - Empty: `read_idx == write_idx`
   - Full: `(write_idx + 1) % Size == read_idx`
 
-Yes, we sacrifice one slot to buy a lifetime of peace.
+Yes, we sacrifice one slot for a lifetime of peace.
 
 ------
 
@@ -110,30 +112,33 @@ Below is a **no-dynamic-memory, templated, embedded-friendly** implementation.
 ```cpp
 template <typename T, size_t Capacity>
 class CircularBuffer {
-    // Actual array size = User available capacity + 1
-    T data_[Capacity + 1];
+    // Actual array size = User capacity + 1
+    T buffer_[Capacity + 1];
     size_t read_idx_ = 0;
     size_t write_idx_ = 0;
 
 public:
-    // ... methods
+    bool push(const T& item);
+    bool pop(T& item);
+    bool empty() const;
+    bool full() const;
 };
 ```
 
-Note one detail:
-👉 **`data_[Capacity + 1]` actual array size = user available capacity + 1**
+Note a detail:
+👉 **`buffer_[Capacity + 1]` actual array size = user available capacity + 1**
 
 ------
 
-## Enqueue (push): Step Forward
+## Enqueue (push): Move forward one step
 
 ```cpp
 bool push(const T& item) {
     if (full()) {
-        return false; // Buffer full
+        return false;
     }
 
-    data_[write_idx_] = item;
+    buffer_[write_idx_] = item;
     write_idx_ = (write_idx_ + 1) % (Capacity + 1);
     return true;
 }
@@ -150,23 +155,23 @@ There is no black magic here:
 
 ------
 
-## Dequeue (pop): The Consumer Enters
+## Dequeue (pop): The consumer enters
 
 ```cpp
 bool pop(T& item) {
     if (empty()) {
-        return false; // Buffer empty
+        return false;
     }
 
-    item = data_[read_idx_];
+    item = buffer_[read_idx_];
     read_idx_ = (read_idx_ + 1) % (Capacity + 1);
     return true;
 }
 ```
 
-Equally simple:
+Similarly simple:
 
-- Fail if empty.
+- Return false if empty.
 - Read data.
 - Move `read_idx_`.
 
@@ -184,43 +189,43 @@ bool full() const {
 }
 ```
 
-The `full()` check is very common in embedded systems; it avoids complex branching and doesn't use an extra counter.
+The `full()` implementation is very common in embedded systems; it avoids complex branching and doesn't use an extra counter.
 
 ------
 
-## A Real-World Embedded Use Case
+## A Real Embedded Use Case
 
 ### Serial Reception (ISR + Main Loop)
 
 ```cpp
-CircularBuffer<uint8_t, 256> rx_buffer;
+CircularBuffer<uint8_t, 128> rx_buf;
 
 // UART Interrupt Service Routine
-void USART1_IRQHandler() {
+extern "C" void USART1_IRQHandler() {
     if (USART1->ISR & USART_ISR_RXNE) {
         uint8_t data = USART1->RDR;
-        rx_buffer.push(data); // Non-blocking write
+        rx_buf.push(data); // Non-blocking write
     }
 }
 
 // Main Loop
 int main() {
-    while (1) {
-        uint8_t byte;
-        if (rx_buffer.pop(byte)) {
-            process_byte(byte); // Process slowly
+    while (true) {
+        uint8_t data;
+        if (rx_buf.pop(data)) {
+            process_data(data);
         }
         // Do other tasks...
     }
 }
 ```
 
-This approach has several very "embedded" advantages:
+This approach has several very embedded-friendly advantages:
 
-- The logic inside the ISR is extremely short.
+- The logic in the ISR is extremely short.
 - No `malloc`.
-- The main loop processes data at its own pace.
-- Even if processing is slow, it won't block the interrupt.
+- The main loop processes data slowly.
+- Even if processing is a bit slow, it won't block the interrupt.
 
 ------
 
@@ -228,30 +233,30 @@ This approach has several very "embedded" advantages:
 
 The implementation above is:
 
-- **Single Producer + Single Consumer (SPSC)**
-- One runs in an interrupt, the other in the main loop.
+- **Single Producer + Single Consumer**
+- One in interrupt, one in the main loop
 
 On many MCUs, this is **naturally safe** (as long as index reads and writes are atomic).
 
-However, if you encounter one of the following situations:
+But if you encounter one of the following situations:
 
-- Multithreading.
-- Multiple producers.
-- SMP (Symmetric Multi-Processing).
-- Communication between RTOS tasks.
+- Multithreading
+- Multiple producers
+- SMP
+- Communication between RTOS tasks
 
-You will need:
+Then you need:
 
-- Critical sections (disable interrupts).
+- Disable interrupts.
 - Atomic variables.
-- Or a mutex / spinlock.
+- Or mutex / spinlock.
 
 ------
 
-## Comparison with std::queue / std::vector
+## Comparison with `std::queue` / `std::vector`
 
-| Approach      | Dynamic Allocation | Deterministic | Embedded Friendly |
+| Solution      | Dynamic Allocation | Deterministic | Embedded Friendly |
 | ------------- | ------------------ | ------------- | ----------------- |
-| std::vector  | Yes                | No            | ❌                 |
-| std::queue   | Depends on underlying container | No | ❌ |
-| Circular Buffer | No            | Yes           | ✅                 |
+| std::vector   | Yes                | No            | ❌                 |
+| std::queue    | Depends on underlying container | No            | ❌                 |
+| Circular Buffer | No                | Yes           | ✅                 |

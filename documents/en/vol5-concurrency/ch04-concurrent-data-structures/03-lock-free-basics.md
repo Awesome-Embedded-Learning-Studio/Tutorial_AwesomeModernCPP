@@ -5,14 +5,14 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: CAS loops, lock-free vs. wait-free, the ABA problem, and memory reclamation
-  challenges—building foundational judgment for lock-free programming.
+description: 'CAS loops, lock-free vs. wait-free, the ABA problem, and memory reclamation
+  challenges: building a solid foundation for lock-free programming.'
 difficulty: advanced
 order: 3
 platform: host
 prerequisites:
 - 原子操作模式
-reading_time_minutes: 29
+reading_time_minutes: 28
 related:
 - SPSC 与 MPMC 队列
 tags:
@@ -23,398 +23,294 @@ tags:
 - 无锁
 title: Lock-Free Programming Fundamentals
 translation:
-  engine: anthropic
   source: documents/vol5-concurrency/ch04-concurrent-data-structures/03-lock-free-basics.md
-  source_hash: 8bc0fe05876e6efe7565af0e9169a74089ffe28ab7016505920ed17fc98e20e5
-  token_count: 4442
-  translated_at: '2026-05-20T04:41:18.899171+00:00'
+  source_hash: b1a4c983b2f86adc46e35c09edaf55282c9a7391f4904105e92a1f35b60cf663
+  translated_at: '2026-06-16T04:05:10.246618+00:00'
+  engine: anthropic
+  token_count: 4437
 ---
-# Lock-Free Programming Fundamentals
+# Lock-Free Programming Basics
 
-In the previous two articles, we built thread-safe queues and containers using `mutex` + `condition_variable`. In ch03, we exhaustively covered the `std::atomic` operation set and all six memory orders, and in the "Atomic Operation Patterns" article, we implemented a SeqLock, a spinlock, and a reference counter. Those articles answered the question of "how to perform atomic operations," but we haven't touched upon a deeper question yet: **if we completely avoid locks, can we write correct concurrent data structures?**
+In the previous two articles, we built thread-safe queues and containers using mutexes and condition variables. In ch03, we exhaustively broke down the operation set and six memory orders of `std::atomic`, and in the article on "Atomic Operation Patterns," we implemented SeqLock, spinlocks, and reference counting. Those content answered the question of "how to perform atomic operations," but we haven't touched upon a deeper question yet: **If we completely abandon locks, can we write correct concurrent data structures?**
 
-To be honest, the first time the author heard the term "lock-free programming," the immediate reaction was, "Isn't this just showing off?" It wasn't until looking at a few lock-free stack implementations that it became clear this wasn't posturing—it's an entirely different mindset from lock-based concurrency. Instead of wrapping a critical section with a lock to make threads line up, all threads operate on the data structure simultaneously, using atomic operations to coordinate conflicts—those who conflict simply retry, but the system as a whole always moves forward. The cost of this approach is a massive increase in the complexity of correctness reasoning, and the benefit is more controllable latency in high-contention scenarios.
+Honestly, when I first heard the term "lock-free programming," my immediate intuition was, "Isn't this just showing off?" Later, after seeing a few lock-free stack implementations, I realized it wasn't showing off—it represents a completely different mindset from lock-based concurrency. You no longer wrap a critical section with a lock to make threads queue up; instead, you let all threads operate on the data structure simultaneously, using atomic operations to coordinate conflicts—whoever conflicts retries, but the system as a whole always moves forward. The cost of this approach is a skyrocketing complexity in reasoning about correctness, while the benefit is more controllable latency in high-contention scenarios.
 
-The term "lock-free" is actually quite misleading—it doesn't mean using no locks at all, but rather that the overall progress of the system cannot be blocked by the delay or crash of any single thread. This distinction is important and subtle. The author got tripped up by it several times when first entering this field, so in this article we will start with the precise definition of progress guarantees, thoroughly clarify the difference between lock-free and wait-free, and then move into the CAS loop, the core building block of lock-free programming. We will implement a classic lock-free stack, and then discuss the ABA problem and memory reclamation—two of the most notoriously difficult problems in lock-free programming. Finally, we will discuss when to use lock-free and when not to—this judgment is more important than knowing how to write lock-free code itself.
+The term "lock-free" is actually quite misleading—it doesn't mean using no locks whatsoever, but rather that the system's overall progress cannot be blocked by the delay or crash of any single thread. This distinction is important and subtle. I personally got tangled up in this several times when first entering this field, so in this article, we will start with the precise definition of progress guarantees, thoroughly clarify the difference between lock-free and wait-free, and then dive into the CAS loop, the core building block of lock-free programming. We will implement a classic lock-free stack, and then discuss the two thorniest problems in lock-free programming: the ABA problem and memory reclamation. Finally, we will discuss when to use lock-free techniques and when not to—this judgment is more important than the ability to write lock-free code itself.
 
 ## Lock-free vs Wait-free: What Exactly Is Guaranteed
 
-Many people understand "lock-free" as "not using `mutex`." This understanding isn't wrong, but it's imprecise—quite far from the full picture. In academia, Herlihy laid the foundation for the definitions of wait-free and lock-free in his 1991 paper, and later Herlihy, Luchangco, and Moir introduced the weaker concept of obstruction-free in 2003. The C++ standard and industry largely follow this three-tier framework, so we need to clarify the three levels of progress guarantees first.
+Many people understand "lock-free" as "not using mutex." This understanding isn't exactly wrong, but it's not precise enough—it's actually quite far off. In academia, Herlihy's 1991 paper established the definitional foundation for wait-free and lock-free. Later, in 2003, Herlihy, Luchangco, and Moir introduced the weaker concept of obstruction-free. The C++ standard and industry basically follow this three-tier framework, so we need to clarify the three levels of progress guarantees first.
 
-Let's start with the weakest: **obstruction-free** guarantees that if a thread is executed in isolation at some point in time—meaning all other threads are paused—it can complete its operation in a finite number of steps. Put simply, "if there's no contention, it can make progress." This guarantee is too weak to have any practical value, so we won't discuss it further.
+Let's start with the weakest: **obstruction-free** guarantees that if a thread is executed in isolation at some point in time—meaning all other threads are paused—it can complete its operation in a finite number of steps. Simply put, "if there is no contention, progress is made." This guarantee is too weak and has almost no practical value, so we won't discuss it further here.
 
-**Lock-free** takes it a step further: it guarantees that at any given moment, **at least one thread** in the system can complete its operation in a finite number of steps. Note that this is "at least one," not "every single one." This means that in a lock-free system, the system as a whole is making progress, but individual threads might keep retrying due to continuous CAS failures—theoretically, starvation is possible. The spinlock we wrote in the previous article is not lock-free: if one thread holds the lock and doesn't let go (for example, if it gets suspended by the OS), all other threads have to wait, and the system as a whole stalls.
+**Lock-free** takes a step further: it guarantees that at any moment, **at least one thread** in the system can complete its operation in a finite number of steps. Note the emphasis on "at least one," not "every single one." This means that in a lock-free system, the system as a whole is moving forward, but individual threads might keep retrying due to continuous CAS failures—theoretically, starvation is possible. The spinlock we wrote in the last article is not lock-free: if a thread holds the lock and won't let go (e.g., it gets suspended by the OS), all other threads have to wait idly, and the entire system stalls.
 
-**Wait-free** is the strongest guarantee: **every single thread** is guaranteed to complete its own operation in a finite number of steps, regardless of what other threads are doing or how fast they are running. Wait-free means no starvation, no retry loops, and every operation has a deterministic upper bound on the number of steps.
+**Wait-free** is the strongest guarantee: **every single thread** is guaranteed to complete its operation in a finite number of steps, regardless of what other threads are doing or how fast they are running. Wait-free implies no starvation and no retry loops; every operation has a deterministic upper bound on steps.
 
-The hierarchy from weak to strong is: blocking -> obstruction-free -> lock-free -> wait-free. With each step up, the implementation difficulty increases dramatically. In practical engineering, we usually aim for lock-free, because the implementation cost of wait-free is too high, and lock-free is already good enough in most scenarios—at least the system won't completely freeze because one thread gets stuck.
+The hierarchy from weak to strong is: blocking -> obstruction-free -> lock-free -> wait-free. With each step up, implementation difficulty increases significantly. In actual engineering, we usually aim for lock-free, because the cost of implementing wait-free is too high, and lock-free is sufficient in most scenarios—at least the system won't completely crash because one thread gets stuck.
 
-There is a common misconception that needs to be cleared up right away: **lock-free does not mean "faster."** Lock-free solves the progress guarantee problem, not the performance problem. A lock-free data structure might actually be slower than a `mutex` version under low contention, because the overhead of CAS retries might be greater than simply acquiring a lock. The advantage of lock-free shows up in high-contention, latency-sensitive scenarios—it won't cause the entire critical section to stall just because some thread gets paused by the scheduler. We will expand on this distinction with concrete data later in the "When to Use Lock-Free" section.
+A common misconception needs to be clarified upfront: **lock-free does not mean "faster"**. Lock-free solves the problem of progress guarantees, not performance. A lock-free data structure might be slower than a mutex version in low-contention scenarios because the overhead of CAS retries might be higher than simply taking a lock. The advantage of lock-free shows up in high-contention, latency-sensitive scenarios—it won't cause the entire critical section to block because a thread gets suspended by the scheduler. We will expand on this distinction with concrete data later in the "When to Use Lock-Free" section.
 
 ## The CAS Loop: The Cornerstone of Lock-Free Programming
 
-Alright, with the concept of progress guarantees cleared up, let's get our hands dirty. Almost all lock-free algorithms are built on top of one atomic primitive: Compare-And-Swap (CAS). In C++, this corresponds to the `compare_exchange_weak` and `compare_exchange_strong` member functions of `std::atomic`. We already introduced the signatures and semantics of these two functions in the "Atomic Operations" article in ch03, so we won't repeat the basics here. Instead, we will focus on their usage patterns in lock-free programming.
+Alright, with the concept of progress guarantees clear, let's get our hands dirty. Almost all lock-free algorithms are built on one atomic primitive: Compare-And-Swap (CAS). In C++, this corresponds to the `compare_exchange_weak` and `compare_exchange_strong` member functions of `std::atomic`. We already introduced the signatures and semantics of these two functions in the "Atomic Operations" article in ch03, so we won't repeat the basics here. Instead, we will focus on their usage patterns in lock-free programming.
 
-If you remember the ch03 content, the core semantics of CAS can be summarized in one sentence: **"I think the current value should be X; if it is, change it to Y; otherwise, tell me what it actually is right now."** In code, `compare_exchange` takes two key parameters—`expected` (the expected value) and `desired` (the new value). If the current value equals `expected`, it is changed to `desired` and returns `true`; if not, the current value is written back into `expected` and it returns `false`. The entire operation is atomic—no modifications from other threads can slip in between the "compare" and the "swap."
+If you remember the content from ch03, the core semantics of CAS can be summarized in one sentence: **"I think the current value should be X; if it is, swap it to Y; otherwise, tell me what it actually is now."** In code, `compare_exchange` accepts two key parameters—`expected` (the expected value) and `desired` (the new value). If the current value equals `expected`, it changes to `desired` and returns `true`; if not, it writes the current value back into `expected` and returns `false`. The entire operation is atomic, with no modifications from other threads interleaving between the "compare" and the "swap."
 
-We also discussed the difference between weak and strong in ch03, so let's do a quick recap. `compare_exchange_weak` allows spurious failure: even if the current value actually equals `expected`, it might still return `false`. This is unavoidable on certain hardware architectures (like ARM's LL/SC instruction pair). `compare_exchange_strong` guarantees no spurious failure. On x86, weak and strong generate exactly the same machine code (both are `CMPXCHG`), but on ARM, the strong version needs an internal retry loop to eliminate spurious failures.
+We also discussed the difference between weak and strong in ch03, so let's do a quick review. `compare_exchange_weak` allows spurious failure: even if the current value actually equals `expected`, it might return `false`. This is inevitable on certain hardware architectures (like ARM's LL/SC instruction pair). `compare_exchange_strong` guarantees no spurious failure. On x86, weak and strong generate exactly the same machine code (both are `cmpxchg`), but on ARM, the strong version requires an internal retry loop to eliminate spurious failures.
 
-A key rule of thumb—same as what we said in ch03: **use weak inside loops, and use strong for one-shot checks outside loops.** The reason is straightforward—if you're already in a loop, you're going to retry after a CAS failure anyway, so an extra spurious failure just means one more loop iteration. But if you use weak outside a loop, a single spurious failure will cause you to incorrectly believe the value has changed, potentially taking the wrong branch. On ARM, using strong inside a loop results in nested retry loops (your outer loop plus the inner loop of strong), wasting instructions for nothing.
+A key rule of thumb—same as in ch03: **use weak in loops, and use strong for one-off checks outside loops**. The reason is straightforward—if you are already in a loop, you will retry after a CAS failure anyway, so an extra spurious failure just means one more loop iteration. If you use weak outside a loop, a single spurious failure will lead you to wrongly believe the value has changed, potentially taking the wrong branch. On ARM, using strong inside a loop results in nested retry loops (your outer loop plus the inner loop of strong), wasting instructions.
 
-Let's first look at the simplest CAS loop—a manual implementation of atomic addition. While unnecessary in real engineering (`fetch_add` is sufficient), this example clearly demonstrates the basic structure of a CAS loop and serves as the foundation for the lock-free stack we will write later:
+Let's look at the simplest CAS loop—a manual implementation of atomic addition. While this example is unnecessary in actual engineering (`fetch_add` suffices), it clearly demonstrates the basic structure of a CAS loop and serves as the foundation for our lock-free stack later:
 
 ```cpp
-std::atomic<int> value{0};
-
-void atomic_add(int delta)
-{
-    int old = value.load(std::memory_order_relaxed);
-    while (!value.compare_exchange_weak(
-        old,
-        old + delta,
-        std::memory_order_relaxed,
-        std::memory_order_relaxed))
-    {
-        // CAS 失败时 old 被自动更新为当前值
-        // 重新计算 old + delta，然后重试
-    }
+// Atomic addition implemented via CAS loop
+int atomic_add_cas(std::atomic<int>& val, int delta) {
+    int old_val = val.load(std::memory_order_relaxed);
+    int new_val;
+    do {
+        new_val = old_val + delta;
+        // weak is preferred here because we are in a loop
+    } while (!val.compare_exchange_weak(old_val, new_val,
+                                        std::memory_order_relaxed));
+    return new_val;
 }
 ```
 
-What this loop does is: read the current value, compute the new value, and then try to swap the current value from `old_val` to `new_val`. If another thread modified `counter` during this process, CAS will fail and tell us what the latest value is (by writing it back into the `old_val` parameter), and we just need to recompute with the latest value and try again. This is so-called "optimistic concurrency": assume no conflicts, and retry if conflicts occur. You'll notice that this loop cannot be an infinite loop—after each failure, `old_val` is updated to a newer value, and the system as a whole moves forward—this is the manifestation of lock-free semantics at the micro level.
+What this loop does is: read the current value, calculate the new value, and then try to swap the current value from `old_val` to `new_val`. If another thread modified `val` during this process, CAS fails and tells us the latest value (by writing back to the `old_val` parameter), and we just recalculate using the latest value and try again. This is so-called "optimistic concurrency": assume no conflict, and retry if there is one. You will find that this loop cannot be an infinite loop—after every failure, `old_val` is updated to a newer value, so the system as a whole is moving forward—this is the embodiment of lock-free semantics at the microscopic level.
 
-Of course, for an addition operation, just using `fetch_add` is fine; there's no need to write a CAS loop manually. The real power of the CAS loop emerges in more complex operations—like updating linked list pointers or swapping the head node of a data structure. These operations cannot be expressed with simple `fetch_add` or `exchange` and must use CAS. Next, let's write a real lock-free data structure.
+Of course, for addition, just using `fetch_add` is enough; there's no need to write a CAS loop manually. The power of the CAS loop manifests in more complex operations—like updating linked list pointers or swapping the head node of a data structure. These operations cannot be expressed by simple `fetch_add` or `fetch_sub` and must use CAS. Next, let's write a real lock-free data structure.
 
-## The Classic Lock-Free Stack: From CAS Loops to Real Data Structures
+## Classic Lock-Free Stack: From CAS Loop to Real Data Structures
 
-Having understood the basic pattern of the CAS loop, we can now tackle a real lock-free data structure. The lock-free stack is the simplest of all lock-free data structures, and it's the starting point for almost all lock-free programming textbooks—Treiber published its design back in 1986. Let's first set up the overall structure, and then break down the implementations of push and pop step by step.
+Understanding the basic pattern of the CAS loop, we can now challenge a real lock-free data structure. The lock-free stack is the simplest among lock-free data structures and is the starting point for almost all lock-free programming textbooks—Treiber published its design back in 1986. We will first build the overall structure, then gradually break down the implementation of push and pop.
 
 ```cpp
-#include <atomic>
-#include <optional>
-
 template <typename T>
 class LockFreeStack {
-public:
-    LockFreeStack() : head_(nullptr) {}
-    ~LockFreeStack();
-
-    void push(const T& value);
-    std::optional<T> pop();
-
-private:
     struct Node {
         T data;
         Node* next;
         explicit Node(const T& val) : data(val), next(nullptr) {}
     };
 
-    std::atomic<Node*> head_;
+    std::atomic<Node*> head;
+
+public:
+    LockFreeStack() : head(nullptr) {}
+    void push(const T& val);
+    bool pop(T& res);
 };
 ```
 
-The structure is very simple: a singly linked list where `head_` is an atomic pointer pointing to the top node of the stack. All operations happen at the head, requiring synchronization of only this one pointer.
+The structure is very simple: a singly linked list where `head` is an atomic pointer pointing to the top node. All operations happen at the head, requiring synchronization on only this one pointer.
 
 ### push: Inserting a Node at the Top
 
 ```cpp
-void push(const T& value)
-{
-    Node* new_node = new Node(value);
-    Node* old_head = head_.load(std::memory_order_relaxed);
+template <typename T>
+void LockFreeStack<T>::push(const T& val) {
+    Node* new_node = new Node(val);
+    Node* old_head = head.load(std::memory_order_acquire);
 
     do {
         new_node->next = old_head;
-    } while (!head_.compare_exchange_weak(
-        old_head,
-        new_node,
-        std::memory_order_release,
-        std::memory_order_relaxed));
+        // weak is preferred here because we are in a loop
+    } while (!head.compare_exchange_weak(old_head, new_node,
+                                         std::memory_order_release,
+                                         std::memory_order_relaxed));
 }
 ```
 
-The logic of push has three steps: create a new node, point the new node's `next` to the current top of the stack, and then try to use CAS to swap `head_` from `old_head` to `new_node`. If CAS succeeds, the new node becomes the new top of the stack. If CAS fails, it means another thread beat us to modifying `head_`, but `compare_exchange_weak` will update `old_head` to the latest value, and we just need to reset `new_node->next` and try again.
+The logic of `push` is three steps: create a new node, point the new node's `next` to the current top, and then try to use CAS to swap `head` from `old_head` to `new_node`. If CAS succeeds, the new node becomes the new top. If CAS fails, it means another thread preemptively modified `head`, but `compare_exchange_weak` updates `old_head` to the latest value, so we just reset `new_node->next` and try again.
 
-Note the choice of memory orders: when CAS succeeds, we use `memory_order_release`, which guarantees that the writes to `next` and `data` in the new node complete before the CAS succeeds, so other threads that read the new value of `head_` via `memory_order_acquire` are guaranteed to see those writes. When CAS fails, `memory_order_relaxed` is sufficient—nothing was changed, so no synchronization is needed. The initial `load` of `head_` also uses `memory_order_relaxed`, because the real synchronization is guaranteed by the memory order of the CAS operation itself.
+Note the choice of memory order: when CAS succeeds, `memory_order_release` is used. This ensures that the writes to `new_node->data` and `new_node->next` complete before the CAS succeeds. When other threads read the new value of `head` via `acquire`, they are guaranteed to see these writes. When CAS fails, `memory_order_relaxed` is sufficient—nothing was modified, so no synchronization is needed. The initial `load` also uses `relaxed` because the real synchronization is guaranteed by the memory order of the CAS operation itself.
 
 ### pop: Removing a Node from the Top
 
 ```cpp
-std::optional<T> pop()
-{
-    Node* old_head = head_.load(std::memory_order_acquire);
+template <typename T>
+bool LockFreeStack<T>::pop(T& res) {
+    Node* old_head = head.load(std::memory_order_acquire);
 
     while (old_head) {
-        Node* next_node = old_head->next;
-        if (head_.compare_exchange_weak(
-                old_head,
-                next_node,
-                std::memory_order_acquire,
-                std::memory_order_relaxed)) {
-            // CAS 成功，old_head 已经从栈上摘下来了
-            T value = std::move(old_head->data);
-            // ⚠️ 这里有一个严重的问题：什么时候 delete old_head？
-            return value;
+        Node* next = old_head->next;
+        // Try to point head to the next node
+        if (head.compare_exchange_weak(old_head, next,
+                                       std::memory_order_release,
+                                       std::memory_order_relaxed)) {
+            res = old_head->data;
+            // ⚠️ CRITICAL: Cannot delete old_head here!
+            // We will discuss this later
+            break;
         }
-        // CAS 失败，old_head 已被更新为最新值，重试
+        // CAS failed, old_head was updated to the latest value by CAS, retry
     }
 
-    return std::nullopt;  // 栈空
+    return old_head != nullptr;
 }
 ```
 
-The logic of pop is also quite intuitive: read the current top of the stack, note its `next`, and then try to use CAS to swap `head_` from `old_head` to `old_head->next`. If successful, `old_head` has been detached from the stack, and we extract its data and return.
+The logic of `pop` is also intuitive: read the current top, note its `next`, and then try to use CAS to swap `head` from `old_head` to `next`. If successful, `old_head` is removed from the stack, and we extract its data and return.
 
-But—things aren't over yet. There is a huge pitfall in this code, which the author has marked with a comment. We have `old_head`, and we know it has been detached from the stack, but **we cannot immediately `delete` it**. The reason is: before we executed CAS, other threads might have also read the same `old_head` and are currently accessing its `next` pointer. If we free `old_head`'s memory right now, those threads would be accessing freed memory—use-after-free, a classic case of undefined behavior (UB). This problem cannot be solved by simply adding a `std::atomic` like a data race can—it is a **logical-level lifetime issue**.
+However—things aren't finished here. There is a huge pitfall in the code, which I marked with a comment. We have obtained `old_head` and know it has been removed from the stack, but **we cannot `delete` it immediately**. The reason is: before we executed CAS, other threads might have also read the same `old_head` and are operating on its `next` pointer. If we release the memory of `old_head` now, those threads are accessing freed memory—use-after-free, a typical undefined behavior. This problem isn't like a data race that can be solved by adding a `mutex`; it is a **logical-level lifetime issue**.
 
-This is the most notoriously difficult **memory reclamation problem** in lock-free programming. Let's set it aside for now and discuss it together after covering the ABA problem—the ABA and memory reclamation problems are intertwined, and it's hard to see the full picture if we look at them separately.
+This problem is the most tricky **memory reclamation problem** in lock-free programming. Let's put it aside for now and discuss it together after explaining the ABA problem—ABA and memory reclamation are intertwined, and it's hard to see the full picture by looking at them separately.
 
-## The ABA Problem: CAS's Number One Trap
+## The ABA Problem: The Number One Trap of CAS
 
-Next up is the most infamous bug pattern in lock-free programming—the ABA problem. If you've ever been asked about lock-free programming in an interview, chances are you've been asked about this too. It's famous not because it's hard to understand, but because it actually happens in practice, and once it does, it's extremely difficult to debug—the program won't crash; it will just silently produce incorrect results.
+Next, we encounter the most notorious bug pattern in lock-free programming—the ABA problem. If you've been asked about lock-free programming in an interview, you've likely been asked about this. It's famous not because it's hard to understand, but because it really happens in practice, and once it does, it's extremely hard to debug—the program won't crash; it will just silently produce wrong results.
 
 ### How ABA Happens
 
-Let's demonstrate with a concrete scenario. Suppose two threads are operating on our lock-free stack, and the initial state is A -> B -> C, with A at the top.
+Let's use a concrete scenario to demonstrate. Suppose two threads are operating on our lock-free stack, with an initial state of A -> B -> C, where A is the top.
 
-Thread 1 starts executing `pop`: it reads `head_`, gets A, and prepares to execute CAS to swap `head_` from A to B. But right before the CAS, Thread 1 gets suspended by the scheduler—this is where the trouble begins.
+Thread 1 starts executing `pop`: it reads `head`, gets A, and prepares to execute CAS to swap `head` from A to B. But just before CAS, Thread 1 gets suspended by the scheduler—this is where the trouble starts.
 
-Thread 2 starts working at this point: it fully executes two `pop`s, first popping A off (the stack becomes B -> C), then popping B off (the stack becomes C). Then Thread 2 `push`es a new value, and by coincidence the allocator reuses A's memory address, so the new node's address is exactly the same as the previous A's. Now the stack is A' -> C, but this A' has the exact same address as the previous A.
+Thread 2 starts working at this point: it fully executes two `pop`s, first popping A (stack becomes B -> C), then popping B (stack becomes C). Then Thread 2 `push`es a new value, and the allocator happens to reuse A's memory address, so the new node's address is exactly the same as the previous A. Now the stack becomes A' -> C, but this A' has the exact same address as the previous A.
 
-Thread 1 wakes up and executes CAS: `head_.compare_exchange_weak(A, B)`. It finds that `head_` is indeed A (same address), so CAS succeeds, and `head_` is set to B.
+Thread 1 wakes up and executes CAS: `head.compare_exchange_weak(old_head, next)`. It finds `head` is indeed A (address matches), CAS succeeds, and `head` is set to B.
 
-Here's the problem: B has already been popped and freed by Thread 2. Thread 1 has pointed `head_` to an already-invalidated node. Any subsequent operation on the stack will access freed memory—the program could crash at any moment, or worse, silently produce incorrect results, and you would have no idea where to start looking.
+Here is the problem: B has already been popped and released by Thread 2. Thread 1 has pointed `head` to a node that is already invalid. Any subsequent operation on the stack will access freed memory—the program might crash at any time, or worse, silently produce wrong results, and you won't know where to start looking.
 
 ### Why ABA Is So Dangerous
 
-The reason ABA is insidious is that CAS only cares about "whether the value equals the expected value," not "whether the value has changed in the meantime." In the ABA scenario, the pointer's value does indeed go from A to A (passing through B in between), and CAS cannot distinguish between "it's always been A" and "A -> B -> A"—to CAS, these two situations are exactly the same. This is not a design flaw in CAS, but an inherent limitation of it as a "value comparison" primitive.
+ABA is insidious because CAS only cares about "whether the value equals the expected," not "whether the value has changed in between." In the ABA scenario, the pointer value indeed goes from A to A (via B in between), but CAS cannot distinguish between "always was A" and "A -> B -> A"—to CAS, these two situations are identical. This isn't a design flaw of CAS, but an inherent limitation of it as a "value comparison" primitive.
 
-You might ask: does this really happen in practice? The answer is yes. In high-contention environments, nodes are frequently allocated and freed, and memory allocators are very likely to reuse recently freed addresses—especially allocators like `jemalloc`/`tcmalloc` that are optimized for small objects. They maintain free lists bucketed by size, and freshly freed memory can be immediately allocated out again. Combined with multi-threaded scheduling timing, the scenario of "Thread 1 reads and then gets suspended, Thread 2 does a full round of operations" can absolutely occur.
+You might ask: Does this really happen in practice? The answer is yes. In high-contention environments, nodes are frequently allocated and freed, and memory allocators are likely to reuse just-freed addresses—especially allocators like `jemalloc`/`tcmalloc` that are optimized for small objects, which maintain freelists bucketed by size, so memory just released can be allocated again immediately. Combined with multi-threaded scheduling timing, the scenario where "Thread 1 reads and gets suspended, Thread 2 does a full round of operations" is entirely possible.
 
-### Tagged Pointer: Adding Version Numbers to Pointers
+### Tagged Pointer: Adding a Version Number to Pointers
 
-Alright, the problem is clear, so let's look at the solution. The most common approach is the **tagged pointer**. The idea is straightforward: pack the pointer together with an incrementing version number, and increment the version number each time the pointer is modified. This way, even if the pointer's value goes from A -> B -> A, the version number goes from 0 -> 1 -> 2, and CAS will correctly fail due to the version number mismatch—the version number only increases and never decreases, so a wraparound is impossible.
+Okay, the problem is clear, now let's look at the solution. The most common solution is the **tagged pointer**. The idea is straightforward: pack a pointer with an incrementing version number, and increment the version number every time the pointer is modified. This way, even if the pointer value goes from A -> B -> A, the version number goes from 0 -> 1 -> 2, and CAS will correctly fail because the version numbers don't match—the version number only increases, so a loop is impossible.
 
-On 64-bit systems, we can use the upper 16 bits of the pointer to store the version number (because on most architectures, user-space pointers only use the lower 48 bits). Here is a simplified implementation:
+On 64-bit systems, we can use the upper 16 bits of the pointer to store the version number (since on most architectures, user-space pointers only use the lower 48 bits). Here is a simplified implementation:
 
 ```cpp
-#include <atomic>
-#include <cstdint>
-
 template <typename T>
-class TaggedPointer {
+class TaggedPtr {
+    using IntPtr = uintptr_t;
+    static constexpr IntPtr PTR_MASK = 0x0000FFFFFFFFFFFF; // Lower 48 bits for pointer
+    static constexpr IntPtr TAG_MASK = 0xFFFF000000000000; // Upper 16 bits for tag
+    static constexpr int TAG_SHIFT = 48;
+
+    IntPtr ptr_and_tag;
+
 public:
-    TaggedPointer() : atomic_(0) {}
-    TaggedPointer(T* ptr, uint16_t tag)
-    {
-        uint64_t raw = (static_cast<uint64_t>(tag) << kTagShift)
-                     | reinterpret_cast<uint64_t>(ptr);
-        atomic_.store(raw, std::memory_order_relaxed);
+    TaggedPtr(T* p = nullptr, uint16_t tag = 0)
+        : ptr_and_tag(reinterpret_cast<IntPtr>(p) | (static_cast<IntPtr>(tag) << TAG_SHIFT)) {}
+
+    T* get_ptr() const {
+        return reinterpret_cast<T*>(ptr_and_tag & PTR_MASK);
     }
 
-    T* get_ptr() const
-    {
-        return reinterpret_cast<T*>(atomic_.load(std::memory_order_relaxed) & kPtrMask);
+    uint16_t get_tag() const {
+        return static_cast<uint16_t>((ptr_and_tag & TAG_MASK) >> TAG_SHIFT);
     }
 
-    uint16_t get_tag() const
-    {
-        return static_cast<uint16_t>(atomic_.load(std::memory_order_relaxed) >> kTagShift);
+    TaggedPtr next_tag() const {
+        return TaggedPtr(get_ptr(), get_tag() + 1);
     }
-
-    bool compare_exchange_weak(TaggedPointer& expected, TaggedPointer desired)
-    {
-        uint64_t exp_value = expected.atomic_.load(std::memory_order_relaxed);
-        if (atomic_.compare_exchange_weak(exp_value,
-                desired.atomic_.load(std::memory_order_relaxed))) {
-            return true;
-        }
-        expected = TaggedPointer(exp_value);
-        return false;
-    }
-
-    TaggedPointer load() const
-    {
-        return TaggedPointer(atomic_.load(std::memory_order_acquire));
-    }
-
-    void store(TaggedPointer tp)
-    {
-        atomic_.store(tp.atomic_.load(std::memory_order_relaxed),
-                     std::memory_order_release);
-    }
-
-private:
-    std::atomic<uint64_t> atomic_;
-    static constexpr uint64_t kTagShift = 48;
-    static constexpr uint64_t kPtrMask = (1ULL << kTagShift) - 1;
-
-    explicit TaggedPointer(uint64_t raw) : atomic_(raw) {}
 };
 ```
 
-Rewriting the lock-free stack's `push` with a tagged pointer:
+Rewriting the lock-free stack's `head` using tagged pointer:
 
 ```cpp
-void push(const T& value)
-{
-    Node* new_node = new Node(value);
-    TaggedPointer<Node> old_head = head_.load();
-
-    do {
-        new_node->next = old_head.get_ptr();
-    } while (!head_.compare_exchange_weak(
-        old_head,
-        TaggedPointer<Node>(new_node, old_head.get_tag() + 1)));
-
-    // 每次成功 CAS 都伴随着 tag + 1
-    // 即使指针地址被复用，tag 不会重复，ABA 不会发生
-}
+std::atomic<TaggedPtr<Node>> head; // Change type
 ```
 
-The tagged pointer approach has a prerequisite: the architecture you're using must support CAS operations on 64 bits (or 128 bits, if you want to use more version number bits). On x86-64, this is not a problem; `CMPXCHG` natively supports 64-bit operations. On certain 32-bit embedded platforms, double-word CAS might be unavailable or very expensive, requiring other approaches.
+The tagged pointer solution has a prerequisite: your architecture's CAS must be able to operate on 64 bits (or 128 bits if you want more version bits). On x86-64, this is no problem; `std::atomic` natively supports 64-bit operations. On some 32-bit embedded platforms, double-word CAS might be unavailable or expensive, requiring other solutions.
 
-### Hazard Pointer: A More Universal Memory Protection
+### Hazard Pointer: More General Memory Protection
 
-The tagged pointer solves the ABA problem, but you'll notice it doesn't solve the memory reclamation problem we mentioned earlier—we still don't know when it's safe to `delete` a node. Hazard Pointer is a more universal approach proposed by Maged Michael in 2004. It solves both the ABA and memory reclamation problems simultaneously, and it's not limited to stacks—it works for queues, linked lists, and various other lock-free data structures. C++26 has already incorporated Hazard Pointers into the standard (`std::hazard_pointer`).
+Tagged pointer solves the ABA problem, but you'll notice it doesn't solve the memory reclamation problem we mentioned earlier—we still don't know when it's safe to `delete` a node. Hazard Pointer is a more general solution proposed by Maged Michael in 2004. It solves both ABA and memory reclamation problems simultaneously, and it's not just for stacks, but also for queues, linked lists, and various other lock-free data structures. C++26 has already included Hazard Pointer in the standard (`std::hazard_pointer`).
 
-The core idea of Hazard Pointers is very elegant: each thread holds one or a set of "hazard pointers" used to declare "I am currently accessing this node." When a thread wants to free a node, it cannot directly `delete` it; instead, it must first check all threads' hazard pointers—if someone is using this node, it defers the deallocation. Only when it confirms that no thread's hazard pointer points to this node can it be safely freed.
+The core idea of Hazard Pointer is very elegant: each thread holds one or a set of "hazard pointers," used to declare "I am currently accessing this node." When a thread wants to reclaim a node, it cannot `delete` it directly. Instead, it first checks all threads' hazard pointers—if someone is using this node, reclamation is deferred. Only when it is confirmed that no thread's hazard pointer points to this node can it be safely reclaimed.
 
 Simplified pseudocode is as follows:
 
 ```cpp
-// 全局的 hazard pointer 表，每个线程一个槽位
-constexpr int kMaxThreads = 64;
-std::atomic<Node*> g_hazard_pointers[kMaxThreads];
+// Each thread has an array of hazard pointers
+thread_local std::array<HazardPointer, MAX_HPS> my_hazard_pointers;
 
-// 线程在访问节点前，先"发布"自己的 hazard pointer
-void publish_hazard(int slot, Node* node)
-{
-    g_hazard_pointers[slot].store(node, std::memory_order_release);
+void publish_hazard(HazardPointer& hp, void* ptr) {
+    hp.store(ptr, std::memory_order_release);
 }
 
-// 释放节点前，检查是否有线程在用
-bool is_hazardous(Node* node)
-{
-    for (int i = 0; i < kMaxThreads; ++i) {
-        if (g_hazard_pointers[i].load(std::memory_order_acquire) == node) {
-            return true;
-        }
-    }
-    return false;
+void reclaim_later(Node* node) {
+    // Add to the thread's local reclaim list
+    // Periodically scan other threads' hazard pointers
+    // If no one is holding the node, delete it
 }
 ```
 
-In the lock-free stack's `pop`, the usage looks roughly like this: the thread first publishes a hazard pointer pointing to `old_head`, then executes CAS. If CAS succeeds, the thread clears its own hazard pointer and puts `old_head` into a "to-be-reclaimed list." Periodically (for example, when the to-be-reclaimed list accumulates to a certain length), the thread scans all hazard pointers and truly frees the nodes that no one is using.
+In the lock-free stack's `pop`, the usage is roughly this: the thread first publishes a hazard pointer pointing to `old_head`, then executes CAS. If CAS succeeds, the thread clears its hazard pointer and puts `old_head` into a "to-be-reclaimed list." Periodically (e.g., when the to-be-reclaimed list accumulates to a certain length), the thread scans all hazard pointers and reclaims nodes that no one is using.
 
-The advantage of Hazard Pointers is good generality, applicable to various lock-free data structures. The disadvantage is performance overhead: every `pop` requires publishing and clearing a hazard pointer, and scanning the to-be-reclaimed list also requires traversing all threads' slots. In high-contention scenarios, this overhead can be significant.
+The advantage of Hazard Pointer is its good generality, suitable for various lock-free data structures. The disadvantage is performance overhead: every `pop` needs to publish and clear hazard pointers, and scanning the to-be-reclaimed list also requires traversing all threads' slots. In high-contention scenarios, this overhead can be significant.
 
 ## Memory Reclamation: The Hardest Problem in Lock-Free Programming
 
-We've bumped into this problem repeatedly earlier, and each time we "set it aside for now." Now it's time to face it head-on. If you thought the ABA problem was already a headache, memory reclamation will give you an even bigger one—it is widely recognized as the most difficult problem in lock-free programming, and one of the biggest obstacles preventing lock-free data structures from being widely used in real projects.
+We have bumped into this problem repeatedly before, always "putting it aside." Now is the time to face it head-on. If you thought the ABA problem was already tricky enough, memory reclamation will give you an even bigger headache—it is widely recognized as the hardest problem in lock-free programming and is one of the biggest obstacles preventing the widespread use of lock-free data structures in actual projects.
 
-In lock-based data structures, memory reclamation is simple: acquire the lock, operate, free the memory, release the lock. Because the lock guarantees that only one thread is operating on the data structure at any given moment, there's no problem of "one thread is still using a node while another thread frees it."
+In lock-based data structures, memory reclamation is simple: take the lock, operate, free memory, unlock. Because the lock guarantees that only one thread operates on the data structure at a time, there is no problem of "one thread is still using a node while another thread frees it."
 
-But in lock-free data structures, multiple threads can read the same node simultaneously. Thread A has just finished reading `old_head` and is about to execute CAS, while Thread B might have already popped `old_head` off and `delete`d it. Thread A's CAS hasn't executed yet, and the `old_head` in its hands is already a dangling pointer. This problem cannot be eliminated through `std::atomic` like a data race can—it is a **logical-level lifetime issue**.
+But in lock-free data structures, multiple threads can read the same node simultaneously. Thread A just finished reading `old_head` and is preparing to execute CAS. At this moment, Thread B might have already popped `old_head` and `delete`d it. Thread A's CAS hasn't executed yet, but the `old_head` in its hand is already a dangling pointer. This problem isn't like a data race that can be eliminated by `std::atomic`—it is a **logical-level lifetime issue**.
 
-There are currently several mainstream solutions in the industry. Besides the Hazard Pointer mentioned earlier, there are **Epoch-based Reclamation** and **reference counting**.
+There are currently several mainstream solutions in the industry. Besides the Hazard Pointer mentioned earlier, there is **Epoch-based Reclamation** and **reference counting**.
 
-The idea behind Epoch-based Reclamation is to divide time into several "epochs" and maintain a global current epoch number. Each thread records the epoch it is in when entering the critical section. During reclamation, nodes from a given epoch can only be safely freed after all threads have left that epoch. This approach has lower scanning overhead than Hazard Pointers, but the implementation is more complex, and in certain extreme cases, reclamation might be delayed for a long time—if a thread gets stuck in an old epoch and doesn't come out, all nodes from old epochs will pile up and cannot be freed. Facebook's Folly library has a production-grade implementation (the `RCU` mechanism in `folly/synchronization/` uses a similar approach).
+The idea of Epoch-based Reclamation is to divide time into several "epochs," with a global current epoch number maintained. Each thread records the epoch it is in when entering the critical section. When reclaiming, nodes from an epoch can only be safely freed after all threads have left that epoch. This solution has less scanning overhead than Hazard Pointer, but is more complex to implement, and in some extreme cases, reclamation might be delayed for a long time—if a thread is stuck in an old epoch and doesn't come out, all nodes from that epoch pile up and cannot be freed. Facebook's Folly library has a production-grade implementation (the `AtomicUnorderedMap` mechanism in Folly uses similar ideas).
 
-Reference counting sounds the most intuitive: add an atomic reference count to each node, decrement it on `pop`, and free it when it reaches zero. But the problem is that incrementing and decrementing the reference count themselves also require atomic operations, and there is a window between "loading the pointer" and "incrementing the reference count"—during this window, the node might be freed by another thread. To solve this "load-increment" atomicity problem, reference counting schemes often degenerate into some form of Hazard Pointer or require double-word CAS, so the implementation complexity doesn't truly decrease. `std::shared_ptr` can be used in C++20, but its performance overhead (usually implemented with an internal spinlock) makes it unsuitable for true lock-free scenarios.
+Reference counting sounds the most intuitive: add an atomic reference count to each node, decrement when popping, and free when zero. But the problem is that incrementing and decrementing the reference count itself requires atomic operations, and there is a window between "loading the pointer" and "incrementing the reference count"—within this window, the node might be freed by another thread. To solve this "load-increment" atomicity problem, reference counting solutions often degenerate into some form of Hazard Pointer or require double-word CAS, and the implementation complexity doesn't really decrease. `std::atomic_shared_ptr` in C++20 can be used, but its performance overhead (usually implemented with an internal spinlock) makes it unsuitable for true lock-free scenarios.
 
 ## When to Use Lock-Free—And When Not To
 
-After discussing all these problems and solutions, you might ask: if lock-free programming is this complex, why bother with it? The answer is: in specific scenarios, lock-free can indeed deliver performance advantages that `mutex` cannot provide. But this "specific scenario" is much narrower than you might think. The author has seen quite a few cases where people spent a lot of effort converting a `mutex`-protected data structure to a lock-free one, only to find that the benchmark ran slower—then they stared at the data in a daze.
+Having discussed so many problems and solutions, you might ask: Since lock-free programming is so complex, why use it? The answer is: In specific scenarios, lock-free can indeed bring performance benefits that mutexes cannot. But this "specific scenario" is much narrower than you think. I have seen many cases where a lot of effort was spent converting a mutex-protected data structure to a lock-free one, only to find out from benchmarks that it became slower—then staring at the data in a daze.
 
-### Scenarios Suited for Lock-Free
+### Scenarios Suitable for Lock-Free
 
-**High contention, low latency** is the most typical scenario. When a large number of threads frequently compete for the same data structure, `mutex` causes frequent context switches (each switch is a round-trip to kernel space, costing on the order of microseconds). Lock-free algorithms turn contention from "queuing for a lock" into "CAS retries." Although retries have overhead too, they happen in user space without involving kernel scheduling, making latency more controllable and tail latency smaller. High-frequency trading systems, real-time signal processing, and the main loops of online game servers—in these scenarios, a few microseconds of latency difference might be the dividing line between acceptable and unacceptable.
+**High contention, low latency** is the most typical scenario. When a large number of threads frequently compete for the same data structure, mutexes cause frequent context switches (each switch is a round trip to kernel mode, costing microseconds). Lock-free algorithms turn contention from "queuing for a lock" to "CAS retries." Although retries have overhead, they happen in user space and don't involve kernel scheduling, making latency more controllable and tail latency smaller. High-frequency trading systems, real-time signal processing, main loops of network game servers—in these scenarios, a difference of a few microseconds in latency might be the dividing line between acceptable and unacceptable.
 
-**Single-Producer Single-Consumer (SPSC) queues** are another scenario particularly well-suited for lock-free. Because there is only one producer and one consumer, no CAS loop is needed; correct synchronization can be achieved with atomic variables using only `store`/`load` semantics. The implementation is simple, the performance is extremely high, and there is almost no contention—in this scenario, lock-free is almost the default choice. We will dedicate the next article to a detailed breakdown of SPSC queue design.
+**Single Producer-Single Consumer (SPSC) queues** are another scenario particularly well-suited for lock-free. Because there is only one producer and one consumer, no CAS loop is needed; synchronization can be achieved correctly with just atomic variables with `relaxed` semantics. Simple implementation, extremely high performance, almost no contention—in this scenario, lock-free is almost the default choice. We will dedicate the next article to the design of SPSC queues.
 
-**Communication between interrupt contexts and the main loop** is also common in embedded systems. Interrupt service routines (ISRs) cannot call functions that might block (including `mutex::lock`), making lock-free queues almost the only choice.
+**Communication between interrupt context and the main loop** is also common in embedded systems. Interrupt handlers cannot call potentially blocking functions (including `mutex::lock`), making lock-free queues almost the only choice.
 
-### Scenarios Not Suited for Lock-Free
+### Scenarios Not Suitable for Lock-Free
 
-Don't rush to replace all the `mutex` instances in your project—in these scenarios, lock-free is often a losing proposition.
+Don't rush to replace all mutexes in your project—in these scenarios, lock-free is often a losing proposition.
 
-Under **low-contention scenarios**, lock-free is often slower than `mutex`. The reason is simple: the lock/unlock overhead of `mutex` without contention is actually very low (one atomic instruction plus a branch prediction), while a CAS loop requires at least one atomic operation and one conditional check even on the success path. If your data structure encounters contention only once every 1,000 accesses on average, the total overhead of `mutex` is likely lower than lock-free.
+**Low contention scenarios** often see lock-free being slower than mutex. The reason is simple: the overhead of locking/unlocking a mutex without contention is actually very low (one atomic instruction plus a branch prediction), while a CAS loop requires at least one atomic operation and one conditional check even on the success path. If your data structure encounters contention only once every 1,000 accesses, the total overhead of mutex is likely lower than lock-free.
 
-**Complex critical sections** are not suited for lock-free. If your operation involves coordinated modifications of multiple variables (like "deleting an element from a map while simultaneously updating a size counter"), expressing such compound operations with CAS is extremely difficult. The code is hard to implement correctly and even harder to maintain. `mutex` naturally supports arbitrarily complex critical sections, and this advantage is irreplaceable in the face of complex logic.
+**Complex critical sections** are not suitable for lock-free. If your operation involves coordinated modification of multiple variables (e.g., "delete an element from a map while updating the size counter"), expressing such composite operations with CAS is extremely difficult, code is hard to implement correctly, and even harder to maintain. Mutexes natively support arbitrarily complex critical sections, and this advantage is irreplaceable in the face of complex logic.
 
-**Team maintenance cost** is also a consideration that cannot be ignored. The difficulty of reading, reviewing, and debugging lock-free code is far higher than the `mutex` version. A bug in a CAS loop might only trigger once in a million runs, and ThreadSanitizer's false positive rate for lock-free code is not low. If your team doesn't have sufficient lock-free programming experience, writing correct code with `mutex` is more valuable than writing fast but unreliable code with CAS—correct code is always better than fast incorrect code.
+**Team maintenance cost** is also a consideration that cannot be ignored. Lock-free code is far harder to read, review, and debug than mutex versions. A bug in a CAS loop might only trigger once in a million runs, and ThreadSanitizer's false positive rate for lock-free code isn't low either. If your team doesn't have enough lock-free programming experience, writing correct code with mutexes is more valuable than writing fast but unreliable code with CAS—correct code is always better than fast, broken code.
 
 ### Benchmark: Don't Guess, Measure
 
-Any assertion about "lock-free is faster" or "`mutex` is faster" is empty talk without concrete benchmark data. The author has seen too many cases where "lock-free is theoretically faster" but is actually slower due to cache coherence overhead, CAS retry storms, false sharing, and other reasons—the bottlenecks in concurrent performance often show up where you least expect them.
+Any assertion about "lock-free is faster" or "mutex is faster" without concrete benchmark data is empty talk. I have seen too many cases where "theoretically lock-free is faster" but in reality is slower due to cache coherence overhead, CAS retry storms, false sharing, etc.—the bottlenecks of concurrent performance are often where you least expect them.
 
 A basic benchmark framework should include: throughput tests under different thread counts (1, 2, 4, 8, 16), latency distribution (p50, p99, p999) under different operation ratios (pure push, pure pop, mixed), and result comparisons on different hardware. When we implement SPSC and MPMC queues in the next article, we will do a complete benchmark comparison.
 
 Here is a simple but effective benchmark template:
 
 ```cpp
-#include <atomic>
-#include <thread>
-#include <chrono>
-#include <iostream>
-#include <vector>
-
-/// 测量 N 次 push + N 次 pop 的总耗时
-template <typename Queue, typename T>
-void benchmark_queue(Queue& q, int num_items, int num_producers, int num_consumers)
-{
+template <typename Func>
+void run_benchmark(const std::string& name, Func func) {
+    constexpr int ITER = 1000000;
     auto start = std::chrono::high_resolution_clock::now();
-
-    std::vector<std::thread> producers;
-    std::vector<std::thread> consumers;
-
-    std::atomic<int> consumed_count{0};
-
-    for (int i = 0; i < num_producers; ++i) {
-        producers.emplace_back([&q, num_items, num_producers] {
-            int per_producer = num_items / num_producers;
-            for (int j = 0; j < per_producer; ++j) {
-                while (!q.push(T(j))) {
-                    // 队列满，重试
-                }
-            }
-        });
-    }
-
-    for (int i = 0; i < num_consumers; ++i) {
-        consumers.emplace_back([&q, &consumed_count, num_items] {
-            T value;
-            while (consumed_count.load(std::memory_order_relaxed) < num_items) {
-                if (q.pop(value)) {
-                    consumed_count.fetch_add(1, std::memory_order_relaxed);
-                }
-            }
-        });
-    }
-
-    for (auto& t : producers) t.join();
-    for (auto& t : consumers) t.join();
-
+    func();
     auto end = std::chrono::high_resolution_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    std::cout << "Items: " << num_items
-              << " | Producers: " << num_producers
-              << " | Consumers: " << num_consumers
-              << " | Time: " << ms << " ms"
-              << " | Throughput: " << (num_items * 1000.0 / ms) << " ops/s"
-              << "\n";
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << name << ": " << duration.count() << " us\n";
 }
 ```
 
-When running benchmarks, it's recommended to disable CPU frequency scaling (`cpupower frequency-set -g performance`), pin to CPU cores (`taskset` or `pthread_setaffinity_np`), and run multiple times taking the median. These methods of controlling variables have a significant impact on concurrent benchmark results—if you don't control them, you might get one set of data today and a completely different set tomorrow, and then stare at both sets in a daze.
+When running benchmarks, it is recommended to disable CPU frequency scaling (`cpupower frequency-set --governor performance`), bind CPU cores (`taskset` or `pthread_setaffinity_np`), and take the median of multiple runs. These means of controlling variables have a large impact on concurrent benchmark results—without them, you might run one set of data today and a completely different set tomorrow, then stare at the two groups of data in a daze.
 
 ## Where We Are
 
-In this article, we established a basic cognitive framework for lock-free programming: lock-free and wait-free are not the same thing (the former guarantees the system as a whole moves forward, while the latter guarantees every thread moves forward). The CAS loop is the core building block of lock-free algorithms ("optimistic concurrency"—retry on conflict). The lock-free stack is the most classic introductory case, but it already exposes the two core challenges of the ABA problem and memory reclamation. Tagged pointers solve the ABA problem using version numbers, and Hazard Pointers provide more universal memory protection, but both have their own performance costs and implementation complexity. Finally, we discussed when to use lock-free and when not to—this engineering judgment is more important than knowing how to write lock-free code itself.
+In this article, we established the basic cognitive framework for lock-free programming: lock-free and wait-free are not the same thing (the former guarantees the system as a whole moves forward, the latter guarantees every thread moves forward). The CAS loop is the core building block of lock-free algorithms ("optimistic concurrency"—retry on conflict). The lock-free stack is the most classic introductory case but has already exposed the two core problems of ABA and memory reclamation. Tagged pointer solves the ABA problem with version numbers, and Hazard Pointer provides more general memory protection, but both have their own performance costs and implementation complexity. Finally, we discussed when to use lock-free and when not to—this engineering judgment is more important than the ability to write lock-free code itself.
 
-But the lock-free stack we implemented in this article is just a starting point. In the next article, we will face more practical data structures: SPSC and MPMC queues. Because SPSC queues have only one producer and one consumer, they don't need CAS loops. Their implementation is concise and their performance is extremely high, making them a common choice in embedded and network programming. MPMC queues need to handle competition among multiple producers and multiple consumers, adding another level of complexity. We will use a complete benchmark to compare the performance differences between lock-free and `mutex` versions—let the data speak, not guesses.
+But the lock-free stack implemented in this article is just a starting point. In the next article, we will face more practical data structures: SPSC and MPMC queues. Because the SPSC queue has only one producer and one consumer, it doesn't need a CAS loop, has a concise implementation, and extremely high performance, making it a common choice in embedded and network programming. MPMC queues need to handle competition from multiple producers and consumers, adding another layer of complexity. We will use a complete benchmark to compare the performance differences between lock-free and mutex versions—let the data do the talking, not guesses.
 
 ## Exercises
 
@@ -422,26 +318,26 @@ But the lock-free stack we implemented in this article is just a starting point.
 
 Using the `LockFreeStack` code provided in this article, complete the following tasks:
 
-1. Implement the complete `push` and `pop` (don't handle memory reclamation for now; just let the program run for a short time during testing).
-2. Launch 4 threads to concurrently push a total of 1,000,000 integers, then use 4 threads to concurrently pop.
-3. Add a counter in the CAS loop to track the total number of CAS retries. Under high contention, this number will be very large.
-4. Compare the performance with `std::mutex` + `std::stack`. Don't rush to conclusions—try different thread counts and operation counts.
+1. Implement complete `push` and `pop` (don't handle memory reclamation for now; just let the run for a short time during testing).
+2. Start 4 threads to concurrently push 1,000,000 integers, then use 4 threads to concurrently pop.
+3. Add a counter in the CAS loop to count the total number of CAS retries. This number will be large under high contention.
+4. Compare the performance of `std::mutex` + `std::stack`. Don't rush to conclusions—try different thread counts and operation counts.
 
 ### Exercise 2: Reproduce the ABA Problem
 
-The ABA problem is hard to reproduce under normal circumstances because it requires precise scheduling timing. But we can use `std::this_thread::sleep_for` to artificially introduce delays and widen the window:
+The ABA problem is hard to reproduce under normal circumstances because it requires precise scheduling timing. But we can use `std::this_thread::sleep_for` to artificially create a delay to enlarge the window:
 
-1. Add a `std::this_thread::sleep_for(100ms)` before the CAS in `pop`.
-2. Let Thread 1 start a `pop` (it will sleep before the CAS), and have Thread 2 pop all elements off the stack and push a new node back within those 100ms.
-3. Observe whether Thread 1's CAS succeeds after it wakes up and whether the data is correct. If the allocator happens to reuse the address, you've witnessed ABA.
+1. Add a `std::this_thread::sleep_for(std::chrono::milliseconds(100))` before the CAS in `pop`.
+2. Let Thread 1 start `pop` (it will sleep before CAS), and Thread 2 pops all elements on the stack and then pushes a new node within this 100ms.
+3. Observe whether Thread 1's CAS succeeds after waking up and whether the data is correct. If the allocator happens to reuse the address, you have seen ABA.
 
 ### Exercise 3: Tagged Pointer Refactoring
 
-1. Use the `TaggedPtr` template provided in this article to refactor `LockFreeStack`, making `head_` a `TaggedPtr<Node>` type.
-2. Re-run the test from Exercise 2 and confirm that ABA no longer occurs.
-3. Think about this: what problems would the tagged pointer approach encounter on a 32-bit platform? If the pointer takes up 32 bits, how do you encode the version number in the remaining space?
+1. Use the `TaggedPtr` template provided in this article to refactor `LockFreeStack`, making `head` a `std::atomic<TaggedPtr<Node>>` type.
+2. Re-run the test from Exercise 2 to confirm ABA no longer happens.
+3. Think: What problems will the tagged pointer solution encounter on 32-bit platforms? If the pointer occupies 32 bits, how do you encode the version number in the remaining space?
 
-> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/volumn_codes/vol5/ch04-concurrent-data-structures/`.
+> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `ch04/lock_free_stack`.
 
 ## References
 

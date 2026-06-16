@@ -5,13 +5,13 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Get started with commonly used algorithms from <algorithm>, combined
-  with lambda expressions for flexible data processing
+description: Get started with common algorithms in the `<algorithm>` library, and
+  implement flexible data processing using lambda expressions.
 difficulty: beginner
 order: 3
 platform: host
 prerequisites:
-- Associative Containers Quick Start
+- 关联容器快速上手
 reading_time_minutes: 12
 tags:
 - cpp-modern
@@ -19,174 +19,188 @@ tags:
 - beginner
 - 入门
 - 基础
-title: Introduction to the Algorithm Library
+title: First Look at the Algorithms Library
+translation:
+  source: documents/vol1-fundamentals/ch11/03-algorithms-intro.md
+  source_hash: 43ec2447bcd2d7fe103638635b62a73e86937d0a724107a604e0cd79bbfe2bc6
+  translated_at: '2026-06-16T04:18:56.069452+00:00'
+  engine: anthropic
+  token_count: 2516
 ---
-# Introduction to the Algorithm Library
+# First Look at the Algorithms Library
 
-In the previous two chapters, we covered the basic operations of `vector` and associative containers. Now the question is—when you need to sort, search, filter, or aggregate a collection of data, is your first instinct to write a for loop?
+In the previous two chapters, we covered the basic operations of `std::vector` and associative containers. Now, the question arises—when you need to sort, search, filter, or count a bunch of data, is your first instinct to write a `for` loop?
 
-Honestly, many people's intuition is indeed to hand-write loops. But the C++ standard library's `<algorithm>` header contains over a hundred thoroughly optimized and tested generic algorithms. Replacing hand-written loops with STL algorithms leads to shorter code, fewer bugs, clearer intent, and often better performance. (These algorithms are battle-tested, after all.)
+Honestly, many people's intuition is indeed to write loops by hand. However, the C++ Standard Library's `<algorithm>` header contains hundreds of general-purpose algorithms that have been repeatedly optimized and tested. Replacing hand-written loops with STL algorithms results in shorter code, fewer bugs, clearer intent, and often better performance. (After all, they have stood the test of time.)
 
-In this chapter, we will take a practical approach and walk through the most commonly used algorithms hands-on. Along the way, we will frequently use lambda expressions—they are the best partner for STL algorithms, so we will spend a little time understanding them first.
+In this chapter, starting from practical requirements, we will get hands-on experience with the most commonly used algorithms. We will frequently use lambda expressions—they are the best partners for STL algorithms—so we will spend some time upfront to understand them thoroughly.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
 > - [ ] Understand the basic syntax and capture modes of lambda expressions
-> - [ ] Use `std::sort` and `std::stable_sort` to sort data
-> - [ ] Use `std::find`, `std::find_if`, `std::binary_search`, and `std::lower_bound` to search for elements
-> - [ ] Use `std::copy`, `std::transform`, `std::replace`, and `std::remove` to modify data
-> - [ ] Use `std::accumulate`, `std::count`, `std::min_element`, and `std::max_element` for aggregation
+> - [ ] Use `std::sort`, `std::stable_sort` to sort data
+> - [ ] Use `std::find`, `std::find_if`, `std::binary_search`, `std::lower_bound` to find elements
+> - [ ] Use `std::copy`, `std::transform`, `std::replace`, `std::remove` to modify data
+> - [ ] Use `std::accumulate`, `std::count`, `std::count_if`, `std::minmax_element` to perform statistics
 
-## Meet Our Partner — Lambda Expressions
+## Meet Our Partner—Lambda Expressions
 
-STL algorithms often need a "predicate" or "operation" as a parameter—for example, "what rule to sort by" or "which elements to find." Before C++11, this role was filled by function pointers or function objects, which were verbose and unintuitive. Lambda expressions changed this completely.
+STL algorithms often require a "predicate" or "operation" as a parameter—such as "what rule to sort by" or "which elements to find." Before C++11, this role was filled by function pointers or function objects (functors), which were verbose and unintuitive. Lambda expressions have completely changed this landscape.
 
-The full syntax of a lambda is `[capture](parameters) -> return_type { body }`, where the return type can be omitted (the compiler deduces it automatically), so the most common form is `[capture](params) { body }`. The `capture` in square brackets determines how the lambda accesses outer variables, and this is the part most prone to mistakes.
+The complete syntax of a lambda is `[capture](parameters) -> return_type { body }`, where the return type can be omitted (the compiler deduces it automatically), so the most common form is `[capture](parameters) { body }`. The `capture` clause in square brackets determines how the lambda accesses external variables, which is the most error-prone part.
 
-`[=]` means capture all used outer variables by value—making copies that don't affect the originals. `[&]` means capture all by reference—operations directly affect the outer variables. `[x, &y]` is a mixed capture—`x` by value, `y` by reference. In practice, the recommended approach is to explicitly list the variables you want to capture rather than using `[=]` or `[&]` as a blanket catch-all. This makes the intent clearer and reduces the risk of accidentally modifying external state.
-
-```cpp
-std::vector<int> data = {5, 3, 1, 4, 2};
-int threshold = 3;
-
-// Capture threshold by value
-auto is_above = [threshold](int x) { return x > threshold; };
-int count = std::count_if(data.begin(), data.end(), is_above);
-// count == 2
-
-// Capture by reference, accumulate into outer variable
-int sum = 0;
-std::for_each(data.begin(), data.end(), [&sum](int x) { sum += x; });
-// sum == 15
-```
-
-> **Pitfall Warning**: When a lambda captures a local variable by reference and the lambda's lifetime exceeds that of the local variable, you get a dangling reference—the referenced memory has already been freed. This situation is especially common with async callbacks and stored lambdas. If your lambda needs to be stored or passed to another thread, prefer value capture or explicitly list the variables to capture by value.
-
-## Sort It Out — std::sort and std::stable_sort
-
-Sorting is probably the most frequently used operation in the algorithm library. `std::sort` takes two iterators (or directly a container starting from C++20) and sorts in ascending order by default. Under the hood it uses Introsort—a hybrid of quicksort, heapsort, and insertion sort, with both average and worst-case time complexity of O(n log n):
+`[=]` means capturing all used external variables by value—modifying them inside the lambda does not affect the outside. `[&]` means capturing by reference—you are operating on the external variables themselves. `[a, &b]` is mixed capture—`a` is copied by value, `b` is passed by reference. In actual development, the recommended practice is to explicitly list the variables to be captured, rather than using `[=]` or `[&]` indiscriminately. This makes the code's intent clearer and avoids accidentally modifying external state.
 
 ```cpp
-std::vector<int> v = {5, 2, 8, 1, 9, 3};
+// Capture by value: a copy of 'x' is made
+int x = 10;
+auto foo = [x]() {
+    // x++; // Error: cannot modify a copy-by-value variable unless mutable
+    return x * 2;
+};
 
-// Default ascending order
-std::sort(v.begin(), v.end());
-// v: {1, 2, 3, 5, 8, 9}
+// Capture by reference: operates on the external 'y'
+int y = 20;
+auto bar = [&y]() {
+    y++;
+};
 
-// Descending — pass a third parameter, a comparison lambda
-std::sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
-// v: {9, 8, 5, 3, 2, 1}
+// Mixed capture: a by value, b by reference
+int a = 1, b = 2;
+auto baz = [a, &b]() {
+    // a = 10; // Error
+    b = 20;  // OK
+};
 ```
 
-The third parameter is a lambda—it receives two elements and returns `true` when the first should come before the second. This is the standard pattern for "custom sort rules," and you will see it repeatedly.
+> **Warning**: When a lambda captures local variables by reference, if the lambda's lifetime exceeds that of the local variable, a dangling reference is created—the referenced memory has been freed. This is particularly common in asynchronous callbacks and scenarios where lambdas are stored. If your lambda needs to be stored or passed to another thread, prioritize capturing by value or explicitly listing variables to capture by value.
 
-The difference between `std::stable_sort` and `sort` is "stability"—when two elements compare equal, `stable_sort` guarantees they maintain their original relative order. For example, if you sort by grade first and then by class, the second sort preserves the grade ordering within each class. The trade-off is slightly higher time and space overhead, but for scenarios that require sort stability, it is indispensable.
+## Sorting—`std::sort` and `std::stable_sort`
 
-> **Pitfall Warning**: The comparison function passed to `sort` must satisfy "strict weak ordering." Simply put: `comp(a, a)` must return `false`, if `comp(a, b)` is `true` then `comp(b, a)` must be `false`, and transitivity must hold. If you write `<=` instead of `<`, some standard library implementations will cause undefined behavior—possibly an infinite loop, a crash, or just incorrect sort results. So always use `<` (ascending) or `>` (descending) in your comparison functions, never `<=` or `>=`.
+Sorting is likely the most frequently used operation in the algorithms library. `std::sort` accepts two iterators (starting with C++20, you can pass the container directly) and sorts in ascending order by default. Under the hood, it uses Introsort—combining the advantages of quicksort, heapsort, and insertion sort, with an average and worst-case time complexity of O(n log n):
 
-## Find Things — The std::find Family and Binary Search
+```cpp
+std::vector<int> v = {5, 2, 9, 1, 5, 6};
+
+// Default: ascending
+std::sort(v.begin(), v.end()); // {1, 2, 5, 5, 6, 9}
+
+// Descending order using a lambda
+std::sort(v.begin(), v.end(), [](int a, int b) {
+    return a > b; // a comes before b if a is greater
+});
+```
+
+The third parameter is a lambda—it takes two elements and returns `true` if the first argument should precede the second. This is the standard way to define "custom sorting rules," a pattern you will see repeatedly.
+
+The difference between `std::sort` and `std::stable_sort` lies in "stability"—when two elements compare equally, `std::stable_sort` guarantees they maintain their original relative order. For example, if you first sort by grade, then by class, the second sort will keep students within the same class ordered by grade. `std::stable_sort` comes with slightly higher time and space overhead, but it is indispensable for scenarios requiring stable sorting.
+
+> **Warning**: The comparison function passed to `std::sort` must satisfy "strict weak ordering." Simply put: `comp(a, b)` must return `false` if `comp(b, a)` is `true`, and if `comp(a, b)` is `true` and `comp(b, c)` is `true`, then `comp(a, c)` must be `true` (transitivity). If you write `<=` instead of `<`, it may lead to undefined behavior in some standard library implementations—infinite loops, crashes, or simply incorrect sorting results. Therefore, always use `<` (ascending) or `>` (descending) in comparison functions, never `<=` or `>=`.
+
+## Finding Things—`std::find` Family and Binary Search
 
 ### Linear Search
 
-`std::find` linearly searches a range for the first element equal to a specified value, returning an iterator to it; if not found, it returns `end()`. `std::find_if` is similar, but the match condition is determined by a lambda:
+`std::find` performs a linear search within a range for the first element equal to a specific value, returning an iterator to it; if not found, it returns the end iterator. `std::find_if` is similar, but the condition is determined by a lambda:
 
 ```cpp
-std::vector<std::string> names = {"Alice", "Bob", "Charlie", "David"};
+std::vector<int> v = {1, 5, 3, 9, 2};
 
-// find: search for an element equal to the specified value
-auto it1 = std::find(names.begin(), names.end(), "Charlie");
-// it1 points to "Charlie"
+// Find the first element equal to 5
+auto it1 = std::find(v.begin(), v.end(), 5);
 
-// find_if: find the first element satisfying a condition
-auto it2 = std::find_if(names.begin(), names.end(),
-    [](const std::string& s) { return s.size() > 4; });
-// it2 points to "Alice"
+// Find the first element greater than 4
+auto it2 = std::find_if(v.begin(), v.end(), [](int x) {
+    return x > 4;
+});
 ```
 
-Linear search has O(n) time complexity and works regardless of whether the data is sorted.
+Linear search has a time complexity of O(n) and works regardless of whether the data is sorted.
 
 ### Binary Search
 
-If your data is already sorted, binary search is much more efficient—O(log n). `std::binary_search` returns a `bool` telling you whether the value exists, but not where it is. If you need to know the exact position, use `std::lower_bound`, which returns an iterator to the first element greater than or equal to the target value:
+If your data is already sorted, binary search is much more efficient—O(log n). `std::binary_search` returns a `bool`, telling you if the value exists, but not where it is. If you need the specific location, use `std::lower_bound`, which returns an iterator to the first element that is greater than or equal to the target value:
 
 ```cpp
-std::vector<int> v = {1, 3, 5, 7, 9, 11};
+std::vector<int> v = {1, 3, 3, 4, 7};
 
-bool found = std::binary_search(v.begin(), v.end(), 7);  // true
-auto it = std::lower_bound(v.begin(), v.end(), 6);
-// *it == 7, i.e., the first element >= 6
+// Check existence
+bool found = std::binary_search(v.begin(), v.end(), 3); // true
+
+// Find position
+auto it = std::lower_bound(v.begin(), v.end(), 3);
+// it points to the first '3'
 ```
 
-Calling `lower_bound` or `binary_search` on unsorted data won't produce an error, but the result is undefined—the kind of bug where "it compiles, it runs, it doesn't crash, but the results are untrustworthy." These are especially painful to debug.
+Calling `std::binary_search` or `std::lower_bound` on unsorted data won't cause a compile error, but the result is undefined—this falls into the category of bugs that "compile fine, don't crash, but give untrustworthy results," which are exceptionally painful to debug.
 
-## Make Some Changes — Copy, Transform, Replace, Remove
+## Making Changes—Copy, Transform, Replace, Remove
 
-`std::copy` copies elements from one range to a destination. `std::transform` is more powerful—it applies a transformation function to each element while copying. `std::replace` replaces all elements equal to a certain value with another value:
+`std::copy` copies elements from a source range to a destination. `std::transform` is more powerful—it applies a transformation function to each element while copying. `std::replace` replaces elements equal to a specific value with another value within a range:
 
 ```cpp
-std::vector<int> src = {1, 2, 3, 4, 5};
-
-// copy
+std::vector<int> src = {1, 2, 3, 4};
 std::vector<int> dst;
+
+// Copy
 std::copy(src.begin(), src.end(), std::back_inserter(dst));
-// dst: {1, 2, 3, 4, 5}
 
-// transform: multiply each element by 10
-std::vector<int> multiplied;
-std::transform(src.begin(), src.end(), std::back_inserter(multiplied),
-    [](int x) { return x * 10; });
-// multiplied: {10, 20, 30, 40, 50}
+// Transform: multiply each element by 2
+std::vector<int> transformed;
+std::transform(src.begin(), src.end(), std::back_inserter(transformed),
+               [](int x) { return x * 2; });
 
-// replace: replace all 3s with 99
-std::vector<int> v = {1, 3, 5, 3, 7};
-std::replace(v.begin(), v.end(), 3, 99);
-// v: {1, 99, 5, 99, 7}
+// Replace: replace all 2s with 20
+std::replace(src.begin(), src.end(), 2, 20);
 ```
 
-Here we see a new face: `std::back_inserter`—it is an insert iterator where assigning to it is equivalent to calling the container's `push_back`. This way, `copy` and `transform` don't need the destination container to be pre-allocated.
+Here we see a new face: `std::back_inserter`—it is an insert iterator. Assigning to it is equivalent to calling the container's `push_back`. This way, `std::copy` and `std::transform` don't require the destination container to have pre-allocated space.
 
-### Revisiting Remove-Erase
+### Remove-Erase Revisited
 
-In the previous chapter on `vector`, we used the remove-erase idiom. Now let's understand the mechanics more deeply. `std::remove` moves all elements not equal to the target value to the front, then returns an iterator pointing to the "new logical end"—this process does not change the container's size or call destructors; it purely moves elements around in known memory. After that, you use the container's `erase` to actually delete everything from the new end to the old end. It takes two steps to complete the job:
+In the previous chapter on `std::vector`, we used the remove-erase idiom. Now let's explain the principle more thoroughly. `std::remove` moves all elements *not* equal to the target value to the front and returns an iterator pointing to the "new logical end"—this process does not change the container's size, nor does it call destructors; it purely moves elements within existing memory. Afterward, you use the container's `erase` method to actually delete the elements from the new end to the old end. These two steps complete the operation:
 
 ```cpp
-std::vector<int> v = {1, 2, 3, 2, 4, 2, 5};
+std::vector<int> v = {1, 2, 3, 2, 4};
 
+// Step 1: Shift non-2 elements to the front
 auto new_end = std::remove(v.begin(), v.end(), 2);
-// v's contents might be: {1, 3, 4, 5, ?, ?, ?}
-//                         ^new_end         ^v.end()
+// v is now {1, 3, 4, ?, ?} (logical size 3, physical size 5)
 
+// Step 2: Erase the "garbage" at the tail
 v.erase(new_end, v.end());
-// v: {1, 3, 4, 5}
+// v is now {1, 3, 4}
 ```
 
-`std::remove_if` follows the same pattern, but the condition is determined by a lambda. Starting from C++20, `std::erase(v, value)` and `std::erase_if(v, pred)` do it in one step. If your compiler supports C++20, just use the new syntax.
+`std::remove_if` follows the same pattern, but the condition is determined by a lambda. Starting with C++20, `std::erase` and `std::erase_if` combine these steps into one. If your compiler supports C++20, just use the new syntax.
 
-## Crunch the Numbers — Accumulate, Count, Min/Max
+## Calculating—Accumulate, Count, Extremes
 
-The last group of commonly used algorithms is about "reducing a collection of data to a single value." `std::accumulate` (requires the `<numeric>` header) accumulates elements in a range one by one, starting from an initial value you specify—it can also accept a custom binary operation to compute products, concatenate strings, and so on. `std::count` / `std::count_if` count elements equal to a value or satisfying a condition. `std::min_element` / `std::max_element` return iterators to the smallest and largest elements, respectively:
+The last set of common algorithms performs "reducing a bunch of data into a single value." `std::accumulate` (requires the `<numeric>` header) accumulates elements in a range sequentially, with an initial value specified by you—it can also accept a custom binary operation to calculate products, concatenate strings, etc. `std::count` / `std::count_if` count the number of elements equal to a value or satisfying a condition. `std::minmax_element` returns a pair of iterators pointing to the minimum and maximum elements:
 
 ```cpp
-std::vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6};
+std::vector<int> v = {1, 2, 3, 4, 5};
 
-int sum = std::accumulate(v.begin(), v.end(), 0);          // 31
-int product = std::accumulate(v.begin(), v.end(), 1,       // 6480
-    std::multiplies<int>());
-int ones = std::count(v.begin(), v.end(), 1);               // 2
-int above_4 = std::count_if(v.begin(), v.end(),             // 3
-    [](int x) { return x > 4; });
+// Sum: 1 + 2 + ... + 5 = 15
+int sum = std::accumulate(v.begin(), v.end(), 0); // Init with 0
 
-auto min_it = std::min_element(v.begin(), v.end());  // *min_it == 1
-auto max_it = std::max_element(v.begin(), v.end());  // *max_it == 9
+// Product: 1 * 2 * ... * 5 = 120
+int product = std::accumulate(v.begin(), v.end(), 1, std::multiplies<int>());
+
+// Count evens
+int evens = std::count_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
+
+// Find min and max
+auto [min_it, max_it] = std::minmax_element(v.begin(), v.end());
 ```
 
-Note that the type of `accumulate`'s initial value determines the return type of the entire computation. Passing `0` gives `int`, `0.0` gives `double`, and `0LL` gives `long long`. If your vector holds large integers and you pass `0` as the initial value, there is an overflow risk—this is a classic pitfall.
+Note that the type of the initial value passed to `std::accumulate` determines the return type of the entire calculation. Passing `0` yields `int`, `0.0` yields `double`, and `0LL` yields `long long`. If your vector stores large integers, passing `0` risks overflow—this is a classic pitfall.
 
-## Let's Go — Hands-On: Student Grade Processing
+## Game On—Comprehensive Practice: Student Grade Processing
 
-Now let's combine all the algorithms and lambda expressions from this chapter into a practical program. The scenario is straightforward: process a batch of student grade data, performing sorting, finding top students, calculating averages, and filtering failing grades.
+Now let's combine all the algorithms and lambda expressions from this chapter into a practical program. The scenario is simple: process a batch of student grade data to perform sorting, find top students, calculate average scores, and filter out failing grades.
 
 ```cpp
 #include <algorithm>
@@ -197,60 +211,45 @@ Now let's combine all the algorithms and lambda expressions from this chapter in
 
 struct Student {
     std::string name;
-    double score;
+    int score;
 };
 
-void print_student(const Student& s)
-{
-    std::cout << "  " << s.name << ": " << s.score << "\n";
-}
-
-int main()
-{
+int main() {
     std::vector<Student> students = {
-        {"Alice",   92.5},
-        {"Bob",     58.0},
-        {"Charlie", 76.0},
-        {"Diana",   88.5},
-        {"Eve",     45.0},
-        {"Frank",   95.0},
-        {"Grace",   71.5},
-    };
+        {"Alice", 85}, {"Bob", 58}, {"Charlie", 92}, {"David", 45}, {"Eve", 78}};
 
-    // --- 1. Sort by score, high to low ---
-    std::sort(students.begin(), students.end(),
-        [](const Student& a, const Student& b) { return a.score > b.score; });
+    // 1. Sort by score descending
+    std::sort(students.begin(), students.end(), [](const Student& a, const Student& b) {
+        return a.score > b.score;
+    });
 
-    std::cout << "=== Ranking (high to low) ===\n";
-    for (const auto& s : students) { print_student(s); }
+    // 2. Find the first student with a score >= 90 (Top student)
+    auto top_student = std::find_if(students.begin(), students.end(), [](const Student& s) {
+        return s.score >= 90;
+    });
 
-    // --- 2. Find the top student ---
-    auto top = std::max_element(students.begin(), students.end(),
-        [](const Student& a, const Student& b) { return a.score < b.score; });
-    std::cout << "\nTop student: " << top->name
-              << " (" << top->score << ")\n";
+    if (top_student != students.end()) {
+        std::cout << "Top Student: " << top_student->name << " (" << top_student->score << ")\n";
+    }
 
-    // --- 3. Calculate the average score ---
-    double sum = std::accumulate(students.begin(), students.end(), 0.0,
-        [](double acc, const Student& s) { return acc + s.score; });
-    std::cout << "Average score: "
-              << sum / static_cast<double>(students.size()) << "\n";
+    // 3. Calculate average score
+    int total_score = std::accumulate(students.begin(), students.end(), 0, [](int sum, const Student& s) {
+        return sum + s.score;
+    });
+    double average = static_cast<double>(total_score) / students.size();
+    std::cout << "Average Score: " << average << "\n";
 
-    // --- 4. Count passing and failing students ---
-    int passing = std::count_if(students.begin(), students.end(),
-        [](const Student& s) { return s.score >= 60.0; });
-    std::cout << "Passing: " << passing
-              << ", Failing: " << static_cast<int>(students.size()) - passing
-              << "\n";
+    // 4. Remove failing students (score < 60)
+    auto new_end = std::remove_if(students.begin(), students.end(), [](const Student& s) {
+        return s.score < 60;
+    });
+    students.erase(new_end, students.end());
 
-    // --- 5. Filter out failing students (remove-erase) ---
-    std::vector<Student> filtered = students;
-    auto it = std::remove_if(filtered.begin(), filtered.end(),
-        [](const Student& s) { return s.score < 60.0; });
-    filtered.erase(it, filtered.end());
-
-    std::cout << "\n=== Passing students ===\n";
-    for (const auto& s : filtered) { print_student(s); }
+    // 5. Print remaining students
+    std::cout << "Passing Students:\n";
+    std::for_each(students.begin(), students.end(), [](const Student& s) {
+        std::cout << s.name << ": " << s.score << "\n";
+    });
 
     return 0;
 }
@@ -259,40 +258,28 @@ int main()
 Compile and run:
 
 ```bash
-g++ -std=c++17 -Wall -Wextra -o algo_demo algo_demo.cpp && ./algo_demo
+g++ -std=c++20 student_grades.cpp -o student_grades
+./student_grades
 ```
 
 Expected output:
 
 ```text
-=== Ranking (high to low) ===
-  Frank: 95
-  Alice: 92.5
-  Diana: 88.5
-  Charlie: 76
-  Grace: 71.5
-  Bob: 58
-  Eve: 45
-
-Top student: Frank (95)
-Average score: 75.2143
-Passing: 5, Failing: 2
-
-=== Passing students ===
-  Frank: 95
-  Alice: 92.5
-  Diana: 88.5
-  Charlie: 76
-  Grace: 71.5
+Top Student: Charlie (92)
+Average Score: 71.6
+Passing Students:
+Charlie: 92
+Alice: 85
+Eve: 78
 ```
 
-The entire program—from sorting to aggregation to filtering—uses no hand-written for loops for data manipulation. That is the power of STL algorithms. The intent of each operation is immediately clear: `sort` means sorting, `max_element` means finding the maximum, `count_if` means conditional counting, and `remove_if` + `erase` means conditional deletion. Compared to hand-written loops, the intent is expressed far more clearly.
+Throughout the entire program—from sorting to statistics to filtering—there is no hand-written `for` loop for data manipulation. This is the power of STL algorithms. The intent of each operation is clear at a glance: `std::sort` is sorting, `std::max_element` is finding the maximum, `std::count_if` is conditional counting, and `std::remove_if` + `erase` is conditional deletion. Compared to hand-written loops, the intent is expressed much more clearly.
 
-## Try It Yourself — Exercises
+## Your Turn—Exercises
 
-### Exercise 1: Multi-Field Sorting
+### Exercise 1: Multi-field Sorting
 
-Define a struct `Employee` with `name` (`std::string`), `department` (`std::string`), and `salary` (`int`). Create a vector of employees and sort them first by department name in lexicographic order, then by salary in descending order within each department. Hint: in the lambda, compare departments first, then compare salaries when departments are equal.
+Define a struct `Employee`, containing `name` (`std::string`), `department` (`std::string`), and `salary` (`int`). Create a `vector` containing several employees and implement sorting first by department name in lexicographical order, and within the same department, by salary in descending order. Hint: compare departments first in the lambda, then compare salaries if departments are equal.
 
 ```cpp
 struct Employee {
@@ -300,25 +287,29 @@ struct Employee {
     std::string department;
     int salary;
 };
+
+// TODO: Implement sorting
 ```
 
 ### Exercise 2: Text Processing Pipeline
 
-Given a `std::vector<std::string>` representing lines of text, use STL algorithms to implement a simple text processing pipeline: remove all empty lines (`remove_if`), convert each line to lowercase (`std::transform` processing character by character), then sort lexicographically and deduplicate (`std::unique` + `erase`). Each step should be a single algorithm call—no manual for loops.
+Given a `std::vector<std::string>` representing several lines of text, use STL algorithms to implement a simple text processing pipeline: remove all empty lines (`std::remove_if`), convert every line to lowercase (`std::transform` processing character by character), then sort lexicographically and remove duplicates (`std::sort` + `std::unique`). Complete each step with a separate algorithm call; do not write manual `for` loops.
 
 ```cpp
 std::vector<std::string> lines = {
-    "Hello World", "", "hello world", "Goodbye", "GOODBYE", "", "Alice"
+    "Hello World", "", "C++ Programming", "HELLO WORLD", "STL Algorithms"
 };
+
+// TODO: Implement pipeline
 ```
 
 ## Summary
 
-In this chapter, we walked through the most commonly used algorithms from `<algorithm>` and `<numeric>`. For sorting, use `std::sort`, or `std::stable_sort` when stability is needed. Searching follows two paths: linear search with `std::find` / `std::find_if` for unsorted data, and binary search with `std::binary_search` / `std::lower_bound` for sorted data. For modifying sequences, rely on `std::copy`, `std::transform`, and `std::replace`. For deleting elements, use the remove-erase idiom. For aggregation, there are `std::accumulate`, `std::count` / `std::count_if`, and `std::min_element` / `std::max_element`.
+In this chapter, we went through the most commonly used algorithms in `<algorithm>` and `<numeric>`. Use `std::sort` for sorting, and `std::stable_sort` when stability is required. Finding elements splits into two paths: for unsorted data, use `std::find` / `std::find_if` for linear search; for sorted data, use `std::binary_search` / `std::lower_bound` for binary search. Modifying sequences relies on `std::copy`, `std::transform`, `std::replace`, and deleting elements uses the remove-erase idiom. For statistics and reduction, we have `std::accumulate`, `std::count` / `std::count_if`, and `std::minmax_element`.
 
-The core philosophy running through all these algorithms is: don't write loops to express "what to do"—instead, use the algorithm's name to declare your intent directly. Combined with lambda expressions, we can flexibly customize comparison rules, filter conditions, and transformation logic while keeping code readable.
+Running through all these algorithms is a core concept: don't write loops to express "what to do"; instead, declare intent directly using algorithm names. Combined with lambda expressions, we can flexibly customize comparison rules, filter conditions, and transformation logic while maintaining code readability.
 
-In the next chapter, we will continue our deep dive into the STL, looking at classic patterns for combining containers and algorithms.
+In the next chapter, we will continue to dive deeper into the STL and explore more classic patterns of combining containers with algorithms.
 
 ---
 

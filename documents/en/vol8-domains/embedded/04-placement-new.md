@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Placement new Application Strategies
+description: Placement New Application Strategies
 difficulty: intermediate
 order: 4
 platform: stm32f1
@@ -16,23 +16,23 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: Using Placement New
+title: Usage of Placement New
 translation:
-  engine: anthropic
   source: documents/vol8-domains/embedded/04-placement-new.md
-  source_hash: 25977c6db8c7cc7dc3e3caaec03250bb09393d7cd6df958d853d7b48c33c178a
+  source_hash: 62724799e9d21e68c1235f75c8d0c818239e849964c1900aba791dfe25895079
+  translated_at: '2026-06-16T04:12:38.331640+00:00'
+  engine: anthropic
   token_count: 1817
-  translated_at: '2026-05-26T12:20:27.066187+00:00'
 ---
 # Embedded C++ Tutorial: placement new
 
-In the embedded world, `malloc` / `free` are often not a silver bullet. Some target platforms have no free heap at all (bare-metal, certain RTOSes), some scenarios require **disabling the heap** for predictability and real-time performance, and in some cases you need to control the memory layout down to the byte — that's where *placement new* comes in.
+In the embedded world, `malloc` / `free` are often not a "magic bullet". Some target platforms have no free heap at all (bare-metal, certain RTOSes), some scenarios require **disabling the heap** for predictability and real-time performance, and in other cases, you need to control memory layout with pixel-level precision—this is where *placement new* comes into play.
 
-So, this time we'll discuss this handy little feature called placement new.
+So, this time let's discuss this little thing called placement new.
 
 ## So what is placement new? How do we use it?
 
-The simplest example — placing an object into a buffer on the stack:
+The simplest example—putting an object into a buffer on the stack:
 
 ```cpp
 #include <new>      // for placement new
@@ -60,15 +60,15 @@ int main() {
 
 ```
 
-See that `new`? In reality, `new(buffer) Foo(args...)` here simply invokes the constructor, constructing the object at the location specified by `buffer`. Notice that this area actually resides on the stack, and you **cannot** use `delete` on a placement-new object; you must explicitly call the destructor. Of course, to satisfy alignment requirements, the buffer should use `alignas` or `std::aligned_storage`.
+See that `new`? Actually, the `new (buffer) Foo(args...)` here simply calls the constructor to construct the object at the location specified by `buffer`. Note that this area is physically on the stack, so you **cannot** use `delete` on a placement-new object; you must explicitly call the destructor. Of course, to satisfy alignment requirements, the buffer should use `alignas(T)` or `std::aligned_storage`.
 
-This is just a demo usage, though — nobody would actually use it this way in practice...
+However, this is just a demonstration usage; no one would actually use it this way...
 
 ------
 
-## Alignment and Memory Layout — Don't Let UB Come Knocking
+## Alignment and Memory Layout—Don't Let UB Knock on Your Door
 
-Alignment is a top priority in embedded development. Before constructing `T`, the buffer must satisfy `alignof(T)`. A common approach:
+Alignment is a top priority in embedded systems. Before constructing a `T`, the buffer must satisfy `alignof(T)`. A common approach:
 
 ```cpp
 // C++11/14 风格（仍可用）
@@ -82,13 +82,13 @@ Foo* q = new (storage2) Foo(2);
 
 ```
 
-If you are writing your own allocator, you need to implement `allocate`, rounding the returned address up to a multiple of `alignment` (using `uintptr_t` arithmetic).
+If you are writing your own allocator and need to implement `allocate`, round the return address up to a multiple of `alignof(std::max_align_t)` (using `uintptr_t` arithmetic).
 
 ------
 
 ## Exception Safety and Construction Failure
 
-When a constructor might throw an exception, exception handling with placement new requires care — if construction fails, no object requiring explicit destruction is produced (because it wasn't successfully constructed). However, if you are constructing multiple objects in multiple steps during a complex initialization, you must correctly roll back the successfully constructed parts in the `catch` block.
+When the constructor might throw exceptions, handling placement new exceptions requires care—if construction fails, no object that needs explicit destruction is produced (because it wasn't successfully constructed). However, if you construct multiple objects in multiple steps during a complex initialization, you must correctly roll back the successfully constructed parts in the `catch` block.
 
 ```cpp
 // 伪代码：在一段连续缓冲区中构造多个对象
@@ -111,13 +111,13 @@ try {
 
 ```
 
-In short: **construction failure interrupts the flow but does not automatically clean up already-constructed objects** — that's your responsibility.
+In short: **Construction failure interrupts the flow but does not automatically clean up constructed objects**—you are responsible for this.
 
 ------
 
 ## Bump (Linear) Allocator + placement new
 
-The most common alternative in embedded systems is an arena / bump allocator: pre-allocate a large block of memory, then allocate linearly on demand; destruction is typically done all at once when the entire arena is reset. It is perfectly suited for objects that are allocated at startup and live for a long time, such as drivers, initialization data, and so on. We'll dive into arena / bump allocators in a dedicated future discussion; for now, we're just taking a look.
+The most common alternative in embedded systems is an arena / bump allocator: pre-allocate a large block of memory, then allocate linearly on demand; destruction is usually done uniformly when the entire arena is reset. It is perfect for "allocate-once, live-long" objects, such as drivers, initialization data, etc. We will discuss arena / bump allocators in detail later; here, we just take a look.
 
 ```cpp
 #include <cstdint>
@@ -166,13 +166,13 @@ int main() {
 
 ```
 
-Note: `reset()` **does not** automatically call destructors — if objects hold important resources (files, mutexes, heap memory), you must explicitly destroy them first.
+Note: `std::vector::clear` **does not** automatically call destructors—if objects hold important resources (files, mutexes, heap), you must explicitly destroy them first.
 
 ------
 
-## Object Pools (Free-List) — Supporting Deallocation/Reuse
+## Object Pool (Free-List)—Supporting Deallocation/Reuse
 
-Remember our object pool? When you need to control memory while still allowing dynamic deallocation, the most common pattern is an object pool (free-list) + placement new. This is ideal for high-frequency allocation/deallocation of fixed-size objects (e.g., network packets, task structures).
+Remember our object pool? When you need to control memory and also allow dynamic deallocation, the most common pattern is an object pool (free-list) + placement new. It is suitable for high-frequency allocation/deallocation of fixed-size objects (e.g., network packets, task structures).
 
 ```cpp
 #include <cstddef>
@@ -220,14 +220,14 @@ public:
 
 Key points:
 
-- `reinterpret_cast<char*>(p) - offset` is used to calculate back to the start of the slot (be mindful of portability — this is a common trick);
-- If you need multi-threaded access, remember to add locks to the pool or use a lock-free structure.
+- `offsetof` is used to calculate the start of the slot (be careful with portability—this is a common trick);
+- If you need multi-threaded access, remember to lock the pool or use lock-free structures.
 
 ------
 
-## To Keep Pointers Intact — What's the Point of `std::launder`?
+## To Avoid Messing Up Pointers—What is `std::launder` Used For?
 
-When you repeatedly use placement new to construct objects of the same type at the same memory location, certain situations require `std::launder` to obtain a "valid" pointer, avoiding issues caused by compiler optimizations. A simple illustration (added in C++17):
+When you repeatedly placement new objects of the same type at the same memory location, `std::launder` is sometimes needed to obtain a "valid" pointer and avoid issues caused by compiler optimizations. Simple illustration (C++17 addition):
 
 ```cpp
 #include <new>
@@ -244,19 +244,19 @@ Foo* safe_b = std::launder(reinterpret_cast<Foo*>(buf));
 
 ```
 
-Usually in embedded code, simply storing the pointer in a local variable and carefully managing its lifetime is sufficient. But when you face potential subtle bugs from aliasing or compiler optimizations, `std::launder` can come in handy.
+Usually in embedded code, storing the pointer in a local variable and carefully managing its lifecycle is sufficient; but when facing potential bugs from aliasing or compiler optimization, `std::launder` can come in handy.
 
 ------
 
 ## Run Online
 
-Run the `InPlace<T>` RAII wrapper example online to observe the safe use of placement new:
+Run the `InPlace` RAII wrapper example online to observe the safe use of placement new:
 
 <OnlineCompilerDemo
-  title="placement new RAII 封装：InPlace<T>"
+  title="placement new RAII Wrapper: InPlace<T>"
   source-path="code/examples/compiler_explorer/placement_new_inplace_host.cpp"
   arm-source-path="code/examples/compiler_explorer/placement_new_inplace_arm.cpp"
-  description="在线运行并观察 InPlace<T> 如何在无堆环境下安全构造与析构对象。"
+  description="Run online and observe how InPlace<T> safely constructs and destructs objects in a heap-less environment."
   allow-run
   allow-x86-asm
   allow-arm-asm
@@ -264,7 +264,7 @@ Run the `InPlace<T>` RAII wrapper example online to observe the safe use of plac
 
 ## Making the Tedious Usable: Writing a Small InPlace RAII Wrapper
 
-Repeatedly writing placement new + explicit destruction is error-prone; a small wrapper can make your code much cleaner:
+Repeatedly writing placement + explicit destruction is error-prone; a small wrapper can make the code cleaner:
 
 ```cpp
 #include <new>
@@ -298,23 +298,23 @@ public:
 
 ```
 
-With `InPlace<T>`, you can bind the lifetime to a function or object, preventing forgotten destruction (RAII FTW).
+With `InPlace`, you can bind the lifecycle to a function/object, preventing you from forgetting to destroy it (RAII FTW).
 
 ------
 
-## When NOT to Use placement new?
+## When NOT to use placement new?
 
-- You need complex memory allocation strategies (defragmentation, reclamation policies) — a more complete allocator (TLSF, slab, buddy) would be more appropriate;
-- Objects are very large or expensive to construct but are frequently created/destroyed — unless you have a compelling reason, using dynamic memory or a mature pool is less of a headache;
-- Scenarios where you cannot guarantee proper destruction of resources under exceptions or interrupts.
+- You need complex memory allocation strategies (defragmentation, reclamation strategies)—a more complete allocator (TLSF, slab, buddy) would be more suitable;
+- Objects are very large or construction is expensive but they are created/destroyed frequently—unless there is a compelling reason, using dynamic memory or a mature pool is less worrisome;
+- Scenarios where you cannot guarantee resources are correctly destructed during exceptions or interrupts.
 
 ------
 
-## Wrapping Up
+## Conclusion
 
-In a world without a heap, placement new is like a "small and beautiful" toolbox: where you place objects, when you construct them, and when you tear them down are all up to you. This brings immense controllability, but it also hands back some details originally handled by the runtime — you must responsibly manage lifetimes, alignment, and exceptions.
+In a world without a heap, placement new is like a "small and beautiful" toolbox: you decide where to put objects, when to construct them, and when to tear them down. This brings immense control, but also returns some details originally managed by the runtime to you—you are responsible for managing lifecycles, alignment, and exceptions.
 
-If you're the type who likes to "draw memory into grids," placement new will make you very happy. If you don't want to manage lifetimes manually, then you either put on RAII armor (write it yourself or use a framework), or you accept a slightly larger runtime (a controlled heap). Ultimately, there are no perfect solutions in embedded — only suitable ones. Placement new is a sharp, reliable little knife; used well, it yields twice the result with half the effort, but used poorly, it will cut your fingers.
+If you are the type who likes to "draw memory in grids," placement new will make you happy; if you don't want to manage lifecycles manually, then either put on RAII armor (write it yourself or use a framework) or accept a slightly larger runtime (a managed heap). In short, there is no perfect solution in embedded, only suitable ones—placement new is a sharp, reliable little knife; use it well and it works wonders, use it poorly and you'll cut your fingers.
 
 ------
 

@@ -2,15 +2,15 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Master C conditional branches, loops, switch fallthrough behavior, and
-  the state machine pattern, and understand the correct usage of break, continue,
+description: Master C language conditional branches, loops, switch fall-through behavior,
+  and state machine patterns, and understand the correct usage of break, continue,
   and goto.
 difficulty: beginner
 order: 6
 platform: host
 prerequisites:
 - 位运算与求值顺序
-reading_time_minutes: 12
+reading_time_minutes: 11
 tags:
 - host
 - cpp-modern
@@ -19,409 +19,383 @@ tags:
 - 基础
 title: 'Control Flow: Teaching Programs to Choose and Repeat'
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/04-control-flow.md
-  source_hash: c432d40382b92c1c4b36dd849d5878805f1a742c101a18c77d32a5a8e659aaa9
+  source_hash: 2d926a553c6e10f3f52f9db044e51bd5b33710b39bc55f75c39d55da8846baeb
+  translated_at: '2026-06-16T03:33:43.831031+00:00'
+  engine: anthropic
   token_count: 2594
-  translated_at: '2026-05-26T10:28:47.698969+00:00'
 ---
 # Control Flow: Teaching Programs to Choose and Repeat
 
-So far, every program we've written runs straight from the first line to the last. But real-world logic doesn't work that way—"if the temperature exceeds the threshold, turn on the fan," "keep reading sensor data until a stop command is received." Control flow statements do exactly this: they let programs choose different execution paths based on conditions (branching), or repeat a block of logic (looping).
+So far, the programs we have written run straight from the first line to the last. However, real-world logic doesn't work that way—"if the temperature exceeds the threshold, turn on the fan," or "keep reading sensor data until a stop command is received." Control flow statements are designed for this: they allow programs to choose different execution paths (branching) based on conditions, or to repeat a specific block of logic (looping).
 
-These statements look simple, but they hide plenty of pitfalls. In this chapter, we'll walk through C's control flow from start to finish, focusing on those "you thought it worked one way, but it actually doesn't" moments.
+These statements look simple, but they hide many potential pitfalls. In this article, we will go through C language control flow from start to finish, focusing on those "you thought it worked this way, but it actually doesn't" moments.
 
 > **Learning Objectives**
 > After completing this chapter, you will be able to:
 >
-> - [ ] Understand the dangling else problem in if/else and its solution
-> - [ ] Master the fall-through behavior of switch and the limitations of case labels
-> - [ ] Proficiently use three loop structures and their applicable scenarios
-> - [ ] Understand the behavior and limitations of break/continue
-> - [ ] Implement a practical state machine using switch
+> - [ ] Understand the dangling else problem in if/else and how to solve it.
+> - [ ] Master the fall-through behavior of switch and the limitations of case labels.
+> - [ ] Proficiently use the three loop structures and their applicable scenarios.
+> - [ ] Understand the behavior and limitations of break/continue.
+> - [ ] Implement a practical state machine using switch.
 
 ## Environment Setup
 
-We will run all of the following experiments in this environment:
+We will conduct all subsequent experiments in the following environment:
 
-- Platform: Linux x86\_64 (WSL2 is also fine)
+- Platform: Linux x86\_64 (WSL2 is also acceptable)
 - Compiler: GCC 13+ or Clang 17+
-- Compiler flags: `-Wall -Wextra -std=c17`
+- Compiler flags: `-std=c23 -Wall -Wextra -pedantic`
 
 ## Step 1 — Conditional Branching: if/else
 
 ### Basic Syntax
 
-`if/else` is the most fundamental and frequently used conditional branching statement. If the condition is true (non-zero), the `if` branch executes; otherwise, the `else` branch executes:
+`if` is the most basic and most frequently used conditional branching statement. If the condition is true (non-zero), the `if` branch is executed; otherwise, the `else` branch is executed:
 
 ```c
-if (temperature > kTempHighThreshold) {
-    activate_cooling();
-} else if (temperature < kTempLowThreshold) {
-    activate_heating();
+if (x > 0) {
+    printf("Positive\n");
 } else {
-    maintain_temperature();
+    printf("Non-positive\n");
 }
 ```
 
-Here's a fun fact: `else if` is not an independent keyword in C—it's actually an `else` followed by a new `if` statement. So in the compiler's eyes, the code above is a nested `else { if (...) { } else { } }` structure. While thinking of it as a "multi-way branch" is more intuitive, the compiler sees a nested binary branch tree.
+Here is a bit of trivia: `else` is not an independent keyword in the C language—it is actually an `else` attached to a new `if` statement. So, in the compiler's eyes, the code above is a nested structure of `if` statements. While understanding it as a "multi-way branch" is more intuitive, the compiler sees a nested binary branch tree.
 
 ### Dangling Else — A Classic Pitfall
 
 Look at this code:
 
 ```c
-if (a > 0)
-    if (b > 0)
-        result = 1;
+if (x > 0)
+    if (y > 0)
+        printf("x and y are positive\n");
 else
-    result = -1;
+    printf("x is non-positive\n");
 ```
 
-The indentation makes it look like `else` pairs with the first `if`, but it doesn't. The rule in C is: **`else` always binds to the nearest unpaired `if`**. So this code is actually equivalent to:
+The indentation suggests that `else` is paired with the first `if`, but it isn't. The rule in C is: **`else` always binds to the nearest, unpaired `if`**. So, this code is actually equivalent to:
 
 ```c
-if (a > 0) {
-    if (b > 0) {
-        result = 1;
+if (x > 0) {
+    if (y > 0) {
+        printf("x and y are positive\n");
     } else {
-        result = -1;
+        printf("x is non-positive\n");
     }
 }
 ```
 
-If our intention was for `else` to pair with the outer `if`, this code is wrong. The solution is simple—**always use curly braces to explicitly define the scope of each branch**.
+If our intention was to pair `else` with the outer `if`, this code is wrong. The solution is simple—**always use curly braces to explicitly define the scope of each branch**.
 
 > ⚠️ **Pitfall Warning**
-> Even if a branch has only one line of code, add curly braces. It's not about typing a few extra characters—it's about preventing ambiguity and bugs during future maintenance. If you add a line of code and forget to add the braces, the logic changes completely. Many coding standards (including the Linux kernel style) strictly enforce this.
+> Even if a branch has only one line of code, add curly braces. This isn't just about typing a few extra characters; it's about preventing ambiguity and bugs during future maintenance—when you add a line of code and forget to add the braces, the logic changes completely. Many coding standards (including the Linux kernel style) enforce this rule.
 
 ### `=` vs `==` — Another Classic Typo
 
-`if (x = 5)` is always true (because the value of an assignment expression is 5, and non-zero means true), and `x` gets accidentally modified. A good compiler will warn you about this, so make sure to enable `-Wall` to let the compiler watch your back. Some programmers prefer putting the constant on the left side: `if (5 == x)`. That way, if you accidentally write `if (5 = x)`, the compiler will throw an error directly.
+```c
+if (x = 5) { ... }
+```
+
+This is always true (because the value of the assignment expression is 5, and non-zero is true), and `x` is accidentally modified. Good compilers will warn you about this, so make sure to enable `-Wextra` to let the compiler watch your back. Some programmers prefer putting the constant on the left: `if (5 == x)`, so that if you accidentally write `if (5 = x)`, the compiler will report an error directly.
 
 ## Step 2 — Multi-way Branching: The switch Statement
 
-When the branching condition involves comparing a single expression against discrete values, `switch` is clearer than an `if/else if` chain. Additionally, compilers typically optimize `switch` into a jump table, making the lookup time complexity close to O(1).
+When the branching condition involves comparing discrete values of the same expression, `switch` is clearer than an `if`/`else` chain, and compilers usually optimize `switch` into a jump table, which has a time complexity close to O(1).
 
 ```c
-typedef enum {
-    kCmdStart  = 0x01,
-    kCmdStop   = 0x02,
-    kCmdPause  = 0x03,
-    kCmdResume = 0x04
-} Command;
-
-void handle_command(Command cmd) {
-    switch (cmd) {
-        case kCmdStart:
-            start_operation();
-            break;
-        case kCmdStop:
-            stop_operation();
-            break;
-        case kCmdPause:
-            pause_operation();
-            break;
-        case kCmdResume:
-            resume_operation();
-            break;
-        default:
-            handle_unknown_command();
-            break;
-    }
-}
-```
-
-### Fall-Through: Forgetting break Causes "Leaks"
-
-The `break` at the end of each `case` branch is used to break out of the `switch`. If you forget to write `break`, execution won't stop after the current case's code—it will "fall through" to the next case and keep going. This is known as **fall-through**.
-
-```c
-switch (cmd) {
-    case kCmdStart:
-        start_operation();
-        // 忘了 break！会穿透到 kCmdStop 的逻辑
-    case kCmdStop:
-        stop_operation();
+switch (status_code) {
+    case 0:
+        // Handle success
+        break;
+    case 1:
+        // Handle specific error
+        break;
+    default:
+        // Handle unknown error
         break;
 }
 ```
 
-When `cmd` is `kCmdStart`, execution doesn't stop after `start_operation()` finishes. Instead, it continues to execute `stop_operation()`—it starts up and immediately shuts down, which is frustrating.
+### Fall-Through: Forgetting `break` Causes "Leaks"
 
-> ⚠️ **Pitfall Warning**
-> However, consciously leveraging fall-through can lead to very elegant code—by merging multiple cases into the same handling logic:
+The `break` at the end of each `case` branch is used to jump out of the `switch`. If you forget to write `break`, the code won't stop after executing the current case—it will "fall through" to the next case and continue executing. This is known as **fall-through**.
 
 ```c
-int days_in_month(int month, int is_leap_year) {
-    switch (month) {
-        case 1: case 3: case 5: case 7:
-        case 8: case 10: case 12:
-            return 31;
-        case 4: case 6: case 9: case 11:
-            return 30;
-        case 2:
-            return is_leap_year ? 29 : 28;
-        default:
-            return -1;
-    }
+switch (motor_state) {
+    case START:
+        printf("Motor starting...\n");
+        // Oops, forgot break!
+    case STOP:
+        printf("Motor stopping...\n");
+        break;
 }
 ```
 
-If you do intend to use fall-through, it's a good idea to add a `/* fall through */` comment to clarify your intent. Otherwise, someone maintaining the code later might think it's a bug.
+When `motor_state` is `START`, after printing "Motor starting...", it won't stop; instead, it continues to print "Motor stopping..."—it starts and immediately stops, which is frustrating.
+
+> ⚠️ **Pitfall Warning**
+> However, consciously using the fall-through feature can lead to elegant code—merging multiple cases into the same handling logic:
+
+```c
+switch (day) {
+    case MON:
+    case TUE:
+    case WED:
+    case THU:
+    case FRI:
+        printf("Workday\n");
+        break;
+    case SAT:
+    case SUN:
+        printf("Weekend\n");
+        break;
+}
+```
+
+If you do intend to use fall-through, it is recommended to add a `// fallthrough` comment to clarify your intent; otherwise, future maintainers might think it's a bug.
 
 ### Limitations of Case Labels
 
-Case labels in `switch` must be **integer constant expressions**—integers whose values can be determined at compile time. This means you can't use variables, floating-point numbers, or strings. Literals (`42`), `enum` members, and `#define` macros are all fine.
+`case` labels in `switch` must be **integer constant expressions**—integers whose values can be determined at compile time. This means you cannot use variables, floating-point numbers, or strings. Literals (`1`), `enum` members, and `#define` macros are all acceptable.
 
-Make it a habit: **always write a `default` when you write a `switch`, even if it's just to log a message**. This is especially important when a new member is added to your `enum` but you forget to update the `switch`—the `default` acts as your safety net.
+Make it a habit: **when writing `switch`, always write `default`**, even if it's just to log a message. This is especially important when your `enum` later adds new members but you forget to update the `switch`—`default` is your safety net.
 
-## Step 3 — Three Types of Loops: for, while, and do-while
+## Step 3 — Three Types of Loops: for, while, do-while
 
 ### The for Loop — Repeating a Known Number of Times
 
-The three-part design of the `for` loop centralizes initialization, condition checking, and stepping into a single line, making it ideal for scenarios with a known number of iterations:
+The three-part design of the `for` loop concentrates initialization, condition checking, and stepping operations into one line, making it ideal for scenarios where the number of iterations is known:
 
 ```c
-for (int i = 0; i < count; i++) {
-    process_item(items[i]);
+for (int i = 0; i < 10; i++) {
+    printf("%d ", i);
 }
 ```
 
-All three parts can be omitted. If you omit all of them, you get an infinite loop—which is extremely common in the main loop of embedded systems:
+All three parts can be omitted. If all are omitted, we get an infinite loop—very common in the main loop of embedded systems:
 
 ```c
 for (;;) {
-    read_sensors();
-    process_data();
-    update_outputs();
+    // Main application loop
 }
 ```
 
-The comma operator allows you to manipulate multiple variables simultaneously in the `for` section:
+The comma operator allows manipulating multiple variables in the `for` header:
 
 ```c
-for (int i = 0, j = length - 1; i < j; i++, j--) {
-    int temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
+for (int i = 0, j = 10; i < j; i++, j--) {
+    printf("%d %d\n", i, j);
 }
 ```
 
-### while — Check First, Then Decide
+### while — Check Before Deciding
 
-The `while` loop checks the condition first. If it's false from the start, the loop body never executes. This suits scenarios where "processing is only needed when the condition is met":
+The `while` loop checks the condition first; if it's false from the start, the loop body never executes. It fits scenarios where "processing is only needed if the condition is met":
 
 ```c
-while (!uart_data_available()) {
-    // 空转等待——实际项目中要加超时机制
+while (queue_is_empty()) {
+    // Wait for data
 }
 ```
 
-### do-while — Act First, Ask Later
+### do-while — Act First, Check Later
 
-`do-while` executes the loop body at least once before checking the condition. This suits "try at least once" logic:
+`do-while` executes the loop body at least once, then checks the condition. It fits "try at least once" logic:
 
 ```c
 do {
-    result = attempt_communication();
-    retry_count++;
-} while (result != kSuccess && retry_count < kMaxRetries);
+    retry = send_packet();
+} while (retry == RETRY_ERROR);
 ```
 
-No matter the condition, the communication is attempted at least once. Implementing the same logic with a regular `while` would require writing the `attempt_communication()` twice, which isn't as elegant.
+Regardless of the condition, the communication is attempted at least once. Implementing the same logic with a regular `while` would require writing `send_packet()` twice, which isn't elegant.
 
-Let's verify the behavioral differences between the three loops:
+Let's verify the behavioral differences of the three loops:
 
 ```c
 #include <stdio.h>
 
-int main(void)
-{
-    int count = 0;
-
-    // while：条件一开始就是假，不执行
-    while (count > 0) {
-        printf("while: 不会打印这行\n");
-        count--;
+int main(void) {
+    // while: condition false initially
+    printf("while loop: ");
+    int i = 10;
+    while (i < 5) {
+        printf("%d ", i);
+        i++;
     }
+    printf("(end)\n");
 
-    // do-while：至少执行一次
-    count = 0;
+    // do-while: runs once
+    printf("do-while loop: ");
+    i = 10;
     do {
-        printf("do-while: count = %d\n", count);
-        count++;
-    } while (count < 3);
-
-    return 0;
+        printf("%d ", i);
+        i++;
+    } while (i < 5);
+    printf("(end)\n");
 }
 ```
 
 Output:
 
 ```text
-do-while: count = 0
-do-while: count = 1
-do-while: count = 2
+while loop: (end)
+do-while loop: 10 (end)
 ```
 
-Great, the `while` loop body didn't execute at all, and the `do-while` loop executed three times.
+Great, the `while` loop body didn't execute at all, while `do-while` executed once.
 
 ## Step 4 — break, continue, and goto
 
-### break — Exit the Innermost Layer
+### break — Jump Out of the Innermost Layer
 
-`break` is used to immediately exit the current loop or `switch` statement. It only affects the **innermost** loop or `switch`, and won't penetrate multiple levels of nesting:
+`break` is used to immediately exit the current loop or `switch` statement. It only affects the **innermost** loop or `switch`, and does not penetrate multiple layers of nesting:
 
 ```c
-for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
-        if (matrix[i][j] == target) {
-            printf("Found at [%d][%d]\n", i, j);
-            break;  // 只跳出内层 j 循环，外层 i 循环继续
-        }
+for (int i = 0; i < 10; i++) {
+    if (i == 5) {
+        break; // Exits the for loop
     }
+    printf("%d ", i);
 }
+// Output: 0 1 2 3 4
 ```
 
-### continue — Skip the Current Iteration
+### continue — Skip This Iteration
 
-`continue` skips the remaining statements in the loop body and jumps directly to the next iteration:
+`continue` skips the remaining statements in the loop body and proceeds directly to the next iteration:
 
 ```c
-for (int i = 0; i < count; i++) {
-    if (data[i] == kInvalidMarker) {
-        continue;  // 跳过无效数据
+for (int i = 0; i < 10; i++) {
+    if (i % 2 == 0) {
+        continue; // Skip even numbers
     }
-    process_valid_data(data[i]);
+    printf("%d ", i);
 }
+// Output: 1 3 5 7 9
 ```
 
-### goto — Use Sparingly, But Don't Demonize It
+### goto — Use with Caution, Don't Demonize It
 
-`goto` has a bad reputation in the programming world, but in C there is one widely accepted, reasonable use case: **resource cleanup during error handling**. When you have a series of resources that need to be initialized in order, and any step failing requires cleaning up all previously successful steps, `goto` can make the code very clear:
+`goto` has a bad reputation in the programming world, but in C, there is one widely accepted reasonable use case: **resource cleanup in error handling**. When you have a series of resources that need to be initialized in sequence, and any failure requires cleaning up all previously successful parts, `goto` makes the code very clear:
 
 ```c
-int initialize_system(void) {
-    if (!init_hardware()) {
-        goto error_hardware;
-    }
-    if (!init_peripherals()) {
-        goto error_peripherals;
-    }
-    if (!init_communication()) {
-        goto error_communication;
-    }
-    return kSuccess;
+int init_device(void) {
+    int *buffer = malloc(1024);
+    if (!buffer) goto err_buffer;
 
-error_communication:
-    shutdown_peripherals();
-error_peripherals:
-    shutdown_hardware();
-error_hardware:
-    return kError;
+    int *handle = open_device();
+    if (!handle) goto err_handle;
+
+    return 0; // Success
+
+err_handle:
+    free(buffer);
+err_buffer:
+    return -1; // Error
 }
 ```
 
 > ⚠️ **Pitfall Warning**
-> The principle for using `goto`: **only jump forward (down to a later label), and only for error handling or breaking out of nesting**. Jumping backward (back to earlier code to form a loop) should be strictly avoided—that's the job of `for`/`while`.
+> Principles for using `goto`: **only jump backwards (down to a later label), and only for error handling or breaking out of nesting**. Jumping forwards (jumping back to previous code to form a loop) should be strictly avoided—that is the job of `for`/`while`.
 
-## Step 5 — Hands-On: Implementing a State Machine with switch
+## Step 5 — Practice: Implementing a State Machine with switch
 
-The state machine is one of the most common design patterns in embedded development—communication protocol parsing, peripheral control sequences, and user interface flows are all full of state machines. The `switch` statement is the most direct tool for implementing them.
+State Machines are one of the most common design patterns in embedded development—communication protocol parsing, peripheral control sequences, user interface flows, state machines are everywhere. The `switch` statement is the most direct tool for implementing state machines.
 
-Let's implement a simple communication protocol parser. Suppose the protocol format is: frame header `0xAA` + length + payload data + checksum.
-
-```c
-typedef enum {
-    kStateIdle,
-    kStateHeader,
-    kStatePayload,
-    kStateChecksum,
-    kStateDone,
-    kStateError
-} ParseState;
-
-typedef struct {
-    ParseState state;
-    unsigned char payload[64];
-    unsigned char payload_len;
-    unsigned char index;
-} Parser;
-
-void parser_init(Parser* p) {
-    p->state = kStateIdle;
-    p->payload_len = 0;
-    p->index = 0;
-}
-
-ParseState parser_feed(Parser* p, unsigned char byte) {
-    switch (p->state) {
-        case kStateIdle:
-            if (byte == 0xAA) {
-                p->state = kStateHeader;
-            }
-            break;
-
-        case kStateHeader:
-            p->payload_len = byte;
-            if (p->payload_len > 64) {
-                p->state = kStateError;
-            } else {
-                p->index = 0;
-                p->state = kStatePayload;
-            }
-            break;
-
-        case kStatePayload:
-            p->payload[p->index++] = byte;
-            if (p->index >= p->payload_len) {
-                p->state = kStateChecksum;
-            }
-            break;
-
-        case kStateChecksum: {
-            unsigned char calc = 0;
-            for (int i = 0; i < p->payload_len; i++) {
-                calc ^= p->payload[i];
-            }
-            p->state = (calc == byte) ? kStateDone : kStateError;
-            break;
-        }
-
-        case kStateDone:
-        case kStateError:
-            break;
-    }
-    return p->state;
-}
-```
-
-Let's verify this by simulating the reception of a data frame:
+Let's implement a simple communication protocol parser. Assume the protocol format is: Frame Header `0xAA` + Length + Payload Data + Checksum.
 
 ```c
 #include <stdio.h>
+#include <stdint.h>
 
-int main(void)
-{
+typedef enum {
+    STATE_IDLE,
+    STATE_HEADER,
+    STATE_LENGTH,
+    STATE_PAYLOAD,
+    STATE_CHECKSUM,
+    STATE_DONE,
+    STATE_ERROR
+} State;
+
+typedef struct {
+    State state;
+    uint8_t length;
+    uint8_t payload[16];
+    uint8_t checksum;
+    uint8_t index;
+} Parser;
+
+void parser_init(Parser *p) {
+    p->state = STATE_IDLE;
+    p->index = 0;
+    p->checksum = 0;
+}
+
+void parser_feed(Parser *p, uint8_t byte) {
+    switch (p->state) {
+        case STATE_IDLE:
+            if (byte == 0xAA) {
+                p->state = STATE_LENGTH;
+                p->checksum = byte;
+            }
+            break;
+        case STATE_LENGTH:
+            p->length = byte;
+            p->index = 0;
+            p->checksum += byte;
+            p->state = (byte > 0) ? STATE_PAYLOAD : STATE_CHECKSUM;
+            break;
+        case STATE_PAYLOAD:
+            p->payload[p->index++] = byte;
+            p->checksum += byte;
+            if (p->index >= p->length) {
+                p->state = STATE_CHECKSUM;
+            }
+            break;
+        case STATE_CHECKSUM:
+            if (byte == p->checksum) {
+                p->state = STATE_DONE;
+            } else {
+                p->state = STATE_ERROR;
+            }
+            break;
+        case STATE_DONE:
+        case STATE_ERROR:
+            // Reset to IDLE on next byte
+            p->state = STATE_IDLE;
+            parser_feed(p, byte); // Re-process the byte
+            break;
+    }
+}
+```
+
+Let's verify this by simulating receiving a frame of data:
+
+```c
+int main(void) {
     Parser p;
     parser_init(&p);
 
-    // 帧头 0xAA，长度 3，负载 {0x01, 0x02, 0x03}，校验 0x00
-    unsigned char frame[] = {0xAA, 0x03, 0x01, 0x02, 0x03, 0x00};
-    for (int i = 0; i < (int)sizeof(frame); i++) {
-        ParseState s = parser_feed(&p, frame[i]);
-        printf("Byte 0x%02X → State %d\n", frame[i], s);
-        if (s == kStateDone) {
-            printf("Frame OK, payload: ");
-            for (int j = 0; j < p.payload_len; j++) {
-                printf("0x%02X ", p.payload[j]);
-            }
-            printf("\n");
-            break;
-        } else if (s == kStateError) {
-            printf("Parse error at byte %d\n", i);
-            break;
+    // Simulate receiving: 0xAA 0x03 0x11 0x22 0x33 [Checksum]
+    // Checksum = 0xAA + 0x03 + 0x11 + 0x22 + 0x33 = 0x143 -> 0x43
+    uint8_t data[] = {0xAA, 0x03, 0x11, 0x22, 0x33, 0x43};
+
+    for (int i = 0; i < 6; i++) {
+        printf("Feeding 0x%02X, State: ", data[i]);
+        parser_feed(&p, data[i]);
+
+        switch (p.state) {
+            case STATE_IDLE: printf("IDLE\n"); break;
+            case STATE_LENGTH: printf("LENGTH\n"); break;
+            case STATE_PAYLOAD: printf("PAYLOAD\n"); break;
+            case STATE_CHECKSUM: printf("CHECKSUM\n"); break;
+            case STATE_DONE: printf("DONE\n"); break;
+            case STATE_ERROR: printf("ERROR\n"); break;
         }
     }
     return 0;
@@ -431,73 +405,62 @@ int main(void)
 Compile and run:
 
 ```bash
-gcc -Wall -Wextra -std=c17 parser.c -o parser && ./parser
+gcc -std=c23 -Wall -Wextra state_machine.c -o state_machine
+./state_machine
 ```
 
 Output:
 
 ```text
-Byte 0xAA → State 1
-Byte 0x03 → State 2
-Byte 0x01 → State 2
-Byte 0x02 → State 2
-Byte 0x03 → State 3
-Byte 0x00 → State 4
-Frame OK, payload: 0x01 0x02 0x03
+Feeding 0xAA, State: LENGTH
+Feeding 0x03, State: PAYLOAD
+Feeding 0x11, State: PAYLOAD
+Feeding 0x22, State: PAYLOAD
+Feeding 0x33, State: CHECKSUM
+Feeding 0x43, State: DONE
 ```
 
-Great, the state machine correctly transitions from Idle all the way to Done, and each state transition matches our expectations. This byte-driven state machine pattern is extremely practical in serial communication and network protocol parsing.
+Excellent, the state machine correctly transitions from Idle all the way to Done, and each state transition meets our expectations. This byte-driven state machine pattern is very practical in serial communication and network protocol parsing.
 
-## Bridging to C++
+## C++ Transition
 
-C++ makes several important extensions to control flow. C++11 introduced the **range-based for loop**, making container traversal very concise:
+C++ makes several important extensions to control flow. C++11 introduced the **range-based for loop**, making traversing containers very concise:
 
 ```cpp
-int arr[] = {1, 2, 3, 4, 5};
-for (int x : arr) {
-    std::cout << x << " ";
+std::array<int, 5> arr = {1, 2, 3, 4, 5};
+for (int val : arr) {
+    std::cout << val << " ";
 }
-// 不需要手动管理索引、判断边界、递增计数器
 ```
 
-C++17 introduced `if constexpr`, which evaluates conditions at compile time and directly strips out unmet branches from the code. There's also `std::variant` + `std::visit`, which provides a type-safe way to replace traditional `switch`—the compiler checks whether you've handled all types, and will throw a compilation error if you miss one.
+C++17 introduced `if constexpr`, which evaluates conditions at compile time and directly removes branches that don't meet the condition from the code. There's also `std::variant` + `std::visit`, which provides a type-safe way to replace traditional `switch`—the compiler checks if you have handled all types, and if you miss one, it will result in a compilation error.
 
 ## Summary
 
-Control flow is the skeleton of program logic. `if/else` handles conditional branching—add curly braces to eliminate dangling else ambiguity. `switch` suits multi-way branching, fall-through behavior needs `break` to stop it, and don't forget to add `default`. The three loop types, `for`/`while`/`do-while`, each have their own applicable scenarios. `break` and `continue` only affect the innermost layer. `goto` is a reasonable choice for resource cleanup in error handling. Implementing state machines with `switch` is a fundamental skill in embedded development.
+Control flow is the skeleton of program logic. `if` handles conditional branching; add curly braces to eliminate dangling else ambiguity. `switch` is suitable for multi-way branching; the fall-through feature requires `break` to stop it, and don't forget `default`. `for`/`while`/`do-while` each have their scenarios. `break` and `continue` only affect the innermost layer. `goto` is a reasonable choice for resource cleanup in error handling. Using `switch` to implement state machines is a fundamental skill in embedded development.
 
-Next, we'll learn about functions—how to organize code into reusable modules.
+Next, we will learn about functions—how to organize code into reusable modules.
 
 ## Exercises
 
 ### Exercise 1: Days in a Month
 
-Use `switch` to implement a function that returns the number of days in a given month, accounting for leap years. Use fall-through to merge months with the same number of days.
+Use `switch` to implement a function that returns the number of days in a month based on the month and whether it is a leap year. You are required to use the fall-through feature to merge months with the same number of days.
 
 ### Exercise 2: Safe Matrix Search
 
-Search for a target value in a two-dimensional matrix. After finding it, break out of the nested loops in two different ways: one using a flag variable, and one using `goto`.
+Search for a target value in a 2D matrix. Once found, break out of the multi-level loop in two ways: one using a flag variable, and one using `goto`.
 
 ```c
-typedef struct {
-    int row;
-    int col;
-    int found;
-} SearchResult;
-
-SearchResult matrix_search(int** matrix, int rows, int cols, int target);
+// TODO: Implement search_matrix_flag and search_matrix_goto
 ```
 
-### Exercise 3: Waiting with a Timeout
+### Exercise 3: Waiting with Timeout
 
-Implement a wait function with a timeout mechanism to avoid deadlocks caused by bare `while` waiting:
+Implement a waiting function with a timeout mechanism to avoid deadlocks caused by naked `while` waiting:
 
 ```c
-/// @brief 等待某个条件满足或超时
-/// @param check 条件检查函数，返回非零表示条件满足
-/// @param timeout_ms 超时时间（毫秒）
-/// @return 0 表示条件满足，-1 表示超时
-int wait_with_timeout(int (*check)(void), unsigned int timeout_ms);
+// TODO: Implement wait_with_timeout
 ```
 
 ## References

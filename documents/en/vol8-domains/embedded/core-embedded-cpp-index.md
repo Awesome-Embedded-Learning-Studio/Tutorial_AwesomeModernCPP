@@ -9,36 +9,36 @@ tags:
 - intermediate
 - stm32f1
 title: Table of Contents
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/core-embedded-cpp-index.md
-  source_hash: 43e930e53edd7d6ea7e44a71ba3dfb77736cff0ea3fdb04c87141b5e9e4c11d7
-  token_count: 858
-  translated_at: '2026-06-15T09:31:47.242094+00:00'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/core-embedded-cpp-index.md
+  source_hash: 7daaa02127b4788db41483c69a7e2b6c46f6460611fc6c1fc81269f846a7eb24
+  translated_at: '2026-06-16T04:12:38.688967+00:00'
+  engine: anthropic
+  token_count: 864
 ---
 # Table of Contents
 
-This is the table of contents for "Modern C++ Tutorial for Embedded Systems". Click here to jump directly to the corresponding chapter.
+This is the table of contents for "Modern C++ for Embedded Systems Tutorial". Click on a link to jump directly to the corresponding chapter.
 
 ## Chapter 0 - Preface and Fundamentals
 
 - [Preface](../../vol1-fundamentals/00-preface.md)
-- [Resource and Real-time Constraints in Embedded Systems](./01-resource-and-realtime-constraints.md)
-- [Crash Course on C Language](../../vol1-fundamentals/02-c-language-crash-course.md)
-- [C++98 Introduction: Namespaces, References, and Scope Resolution](../../vol1-fundamentals/03A-cpp98-namespace-reference.md)
+- [Resource and Real-Time Constraints in Embedded Systems](./01-resource-and-realtime-constraints.md)
+- [C Language Crash Course](../../vol1-fundamentals/02-c-language-crash-course.md)
+- [C++98 Intro: Namespaces, References, and Scope Resolution](../../vol1-fundamentals/03A-cpp98-namespace-reference.md)
 - [C++98 Function Interfaces: Overloading and Default Arguments](../../vol1-fundamentals/03B-cpp98-function-overload-default-args.md)
 - [C++98 OOP: Deep Dive into Classes and Objects](../../vol1-fundamentals/03C-cpp98-classes-and-objects.md)
 - [C++98 OOP: Inheritance and Polymorphism](../../vol1-fundamentals/03D-cpp98-inheritance-polymorphism.md)
 - [C++98 Operator Overloading](../../vol1-fundamentals/03E-cpp98-operator-overloading.md)
 - [C++98 Advanced: Type Casting, Dynamic Memory, and Exception Handling](../../vol1-fundamentals/03F-cpp98-casts-memory-exceptions.md)
 - [When to Use C++ and Which Features (Trade-offs and Disabled Features)](../../vol1-fundamentals/04-when-to-use-cpp.md)
-- [Language Selection Principles: The Real Trade-off between Performance vs. Maintainability](../../vol1-fundamentals/05-language-choice-performance-vs-maintainability.md)
+- [Language Selection Principles: The Real Trade-off Between Performance and Maintainability](../../vol1-fundamentals/05-language-choice-performance-vs-maintainability.md)
 - [Does C++ Necessarily Lead to Code Bloat?](../../vol6-performance/06-evaluating-performance-and-size.md)
 
 ## Chapter 1 - Build Toolchain
 
-- [A Casual Chat on Cross-compilation and a Simple CMake Guide](../../vol7-engineering/01-cross-compilation-and-cmake.md)
+- [Cross-Compilation and a Simple CMake Guide](../../vol7-engineering/01-cross-compilation-and-cmake.md)
 - [Common Compiler Options Guide](../../vol7-engineering/02-compiler-options.md)
 - [Linker and Linker Scripts](../../vol7-engineering/03-linker-and-linker-scripts.md)
 

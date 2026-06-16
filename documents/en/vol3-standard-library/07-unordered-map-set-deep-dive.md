@@ -5,15 +5,16 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 'A Deep Dive into `std::unordered_map/set` Internals: Buckets and Chaining,
-  Load Factor and Rehashing, Average O(1) vs. Worst-case O(n), Writing Custom Hash
-  Functions, Reference Stability Since C++14, and Choosing Between `map` and `unordered_map`'
+description: 'Deep dive into the underlying mechanics of `std::unordered_map/set`:
+  buckets and chaining, load factor and rehash, average O(1) vs. worst-case O(n),
+  writing custom hash functions, non-invalidating references on rehash since C++14,
+  and decision-making between `map` and `unordered_map`.'
 difficulty: intermediate
 order: 7
 platform: host
 prerequisites:
 - map 与 set 深入：红黑树、异构查找与节点句柄
-reading_time_minutes: 11
+reading_time_minutes: 10
 related:
 - 容器选择指南
 tags:
@@ -25,302 +26,242 @@ tags:
 title: 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and
   Custom Hash'
 translation:
-  engine: anthropic
   source: documents/vol3-standard-library/07-unordered-map-set-deep-dive.md
-  source_hash: a3cf49fa7d4ccc305a644f57d65bf38e1eb602ff03fcc39d5d129439c485fc0b
-  token_count: 2065
-  translated_at: '2026-06-15T09:15:13.512469+00:00'
+  source_hash: 99e24b989cc0f15825bfe5b0f3939f6caad91139a9602606db0a3454dff0789d
+  translated_at: '2026-06-16T06:11:33.805063+00:00'
+  engine: anthropic
+  token_count: 2060
 ---
 # Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and Custom Hashing
 
-## A Relative of map, but a Different World Underneath
+## It's related to map, but the underlying implementation is a whole new world
 
-In the last post, we discussed `map`, which uses a red-black tree underneath for $O(\log n)$ lookups. This time, we look at `unordered_map` and `unordered_set`. The name "unordered" tells the story—they don't sort, trading that for something much faster: average $O(1)$ lookups. But there is no free lunch. The cost of $O(1)$ is swapping the tree for a hash table, introducing a whole new mechanism: buckets, load factors, rehashing, and custom hash functions. In this post, we will break down `unordered_map` and `unordered_set` from the underlying hash table to practical engineering usage.
+In the previous post, we discussed `map`, which is backed by a red-black tree and offers logarithmic $O(\log n)$ lookup. In this post, we look at `unordered_map`. As the name implies, it is "unordered"—it sacrifices sorting for something more aggressive: average $O(1)$ lookup. But there is no such thing as a free lunch. The cost of $O(1)$ is swapping the underlying tree for a hash table, introducing a whole new set of mechanisms: buckets, load factor, rehashing, and custom hashing. In this post, we will cover `unordered_map` and `unordered_set` from the low-level hash table implementation to practical engineering usage.
 
-Let's put them side-by-side with `map` to see the differences clearly:
+Let's compare it with `map` side-by-side to see the differences clearly:
 
 | | `map` / `set` | `unordered_map` / `unordered_set` |
 |---|---|---|
 | Underlying Structure | Red-black tree | Hash table |
 | Ordered | Yes (sorted by key) | No |
-| Lookup/Insert/Erase | $O(\log n)$ | Average $O(1)$, Worst $O(n)$ |
-| Custom Key Requires | `operator<` | `hash` + `operator==` |
-| Does Insertion Invalidate Iterators? | No | Possible (on rehash) |
+| Lookup/Insert/Delete | $O(\log n)$ | Average $O(1)$, Worst case $O(n)$ |
+| Custom Key Requirement | `operator<` | hash + `operator==` |
+| Insertion Invalidates Iterators? | No | Possible (when rehash triggers) |
 
-In short: if you need ordered traversal or range operations like "predecessor/successor," stay with `map`. If you care about pure lookups, insertions, and erasures, and don't care about order, `unordered_map` is usually faster. This choice isn't absolute, and we'll discuss the nuances later.
+In a nutshell: if you need ordered traversal or range operations like "predecessor/successor," stick with `map`. If you purely need lookup, insertion, or deletion and don't care about order, `unordered` is usually faster. This choice isn't absolute, and we will discuss the nuances later.
 
-## Underneath is a Hash Table: Buckets, Chaining, and Load Factor
+## The Underlying Hash Table: Buckets, Linked Lists, and Load Factor
 
-`unordered_map` is built on a hash table. Most implementations use **separate chaining**: an array of buckets, where each bucket holds a linked list (or a similar structure). When inserting an element, we use a hash function to compute the key's hash value, then take the modulus of the bucket count to decide which bucket it lands in. If the bucket already has elements, we append it to the chain; when looking up, we perform a linear scan on this short chain.
+Under the hood, `unordered_map` is a hash table. Most implementations use **separate chaining**: an array of buckets, where each bucket holds a linked list (or a similar structure). When inserting an element, we use a hash function to calculate the key's hash value, then take the modulus of the bucket count to determine which bucket it falls into. If the bucket already contains elements, the new element is appended to the list; during lookup, we perform a linear scan on this short list.
 
 ```cpp
-#include <iostream>
-#include <unordered_map>
-#include <string>
-
-int main() {
-    std::unordered_map<std::string, int> ages;
-
-    // Insertion triggers hashing and bucket selection
-    ages["Alice"] = 30;
-    ages["Bob"] = 25;
-    ages["Charlie"] = 35;
-
-    // Lookup: hash "Bob" -> find bucket -> traverse chain
-    if (ages.contains("Bob")) {
-        std::cout << "Bob is " << ages["Bob"] << " years old.\n";
-    }
-
-    return 0;
-}
+// 链地址法哈希表的简化骨架（标准库内部，各厂细节不同）
+struct HashTable {
+    std::vector<Bucket> buckets;   // bucket 数组，每个桶内部是同 hash 元素的链表
+};
+// 插入/查找定位：bucket_index = hash(key) % buckets.size();
 ```
 
-Here is a key concept: the **load factor**. It equals $\text{size} / \text{bucket\_count}$, representing the average number of elements per bucket. The more crowded the buckets, the longer the chains, and the slower the lookup. The standard library sets an upper limit called `max_load_factor`, defaulting to 1.0. When the load factor exceeds this limit, the container **rehashes**: it allocates a larger bucket array (usually roughly double the size) and re-hashes every element into the new buckets.
+Here is a key concept: the **load factor**. It equals `size() / bucket_count()`, representing the average number of elements in each bucket. The more crowded the buckets are, the longer the linked lists become, and the slower lookups become. The standard library sets a limit via `max_load_factor()`, which defaults to 1.0. When the load factor exceeds this limit, the container will **rehash**: it allocates a larger bucket array (usually expanding to about twice the size), and re-hashes and redistributes all elements into the new buckets.
 
-Rehashing is the most expensive operation in `unordered_map`: it moves every element, with a complexity of $O(n)$. Although amortized over insertions it remains constant time, a single rehash can cause a noticeable pause. This is why, in engineering, if you can estimate the number of elements, it is best to call `reserve` before inserting. This allocates enough buckets upfront, avoiding repeated rehashing.
+Rehashing is the most expensive operation for `unordered_map`: it moves every single element, resulting in O(n) complexity. Although the cost is amortized to a constant time per insertion, a single rehash event causes a noticeable pause. This is why, in production code, if you can estimate the number of elements, it is best to call `reserve(n)` before inserting. This allocates sufficient buckets upfront, avoiding repeated rehashing later.
 
 ```cpp
-#include <iostream>
-#include <unordered_map>
-
-int main() {
-    std::unordered_map<int, std::string> m;
-
-    // Best practice: reserve buckets if you know the approximate size
-    // This prevents rehashing during insertion.
-    m.reserve(1000);
-
-    for (int i = 0; i < 1000; ++i) {
-        m[i] = "value_" + std::to_string(i);
-    }
-
-    std::cout << "Bucket count: " << m.bucket_count() << "\n";
-    std::cout << "Load factor:  " << m.load_factor() << "\n";
-
-    return 0;
-}
+std::unordered_map<int, std::string> m;
+m.reserve(10000);   // 提前开好桶，避免逐个插入时的多次 rehash
 ```
 
-Let's run an experiment to see how `load_factor` triggers rehashing:
+Let's run this to see how `load_factor` triggers a rehash:
 
 ```cpp
 #include <iostream>
 #include <unordered_map>
 
-int main() {
+int main()
+{
     std::unordered_map<int, int> m;
-
-    // We observe the bucket count and load factor as we insert
-    for (int i = 0; i < 130; ++i) {
+    std::size_t prev = m.bucket_count();
+    std::cout << "初始 bucket_count = " << prev << "\n";
+    for (int i = 0; i < 100; ++i) {
         m[i] = i;
-
-        // Print status when bucket count changes
-        static int old_buckets = -1;
-        if (m.bucket_count() != old_buckets) {
-            std::cout << "Size: " << m.size()
-                      << ", Buckets: " << m.bucket_count()
-                      << ", Load Factor: " << m.load_factor() << "\n";
-            old_buckets = m.bucket_count();
+        if (m.bucket_count() != prev) {
+            std::cout << "size=" << m.size()
+                      << " rehash: " << prev << " -> " << m.bucket_count()
+                      << " (load_factor=" << m.load_factor() << ")\n";
+            prev = m.bucket_count();
         }
     }
-
     return 0;
 }
 ```
 
-Possible output:
-
-```text
-Size: 1, Buckets: 1, Load Factor: 1
-Size: 2, Buckets: 5, Load Factor: 0.4
-Size: 6, Buckets: 11, Load Factor: 0.545455
-Size: 12, Buckets: 23, Load Factor: 0.521739
-Size: 24, Buckets: 47, Load Factor: 0.510638
-Size: 48, Buckets: 97, Load Factor: 0.494845
-...
+```bash
+g++ -std=c++20 -O2 -o /tmp/lf_rehash /tmp/lf_rehash.cpp && /tmp/lf_rehash
 ```
 
-Notice the jump sequence in `bucket_count`: 1 → 13 → 29 → 59 → 127. **These are all prime numbers**—this is a deliberate choice in libstdc++ (using prime bucket counts helps `hash` values distribute more evenly). Each jump happens exactly when `size` exceeds `bucket_count * max_load_factor` (when `load_factor` breaks 1.0). When size hits 14, $14/13 > 1.0$ triggers expansion to 29; when size hits 30, $30/29 > 1.0$ triggers expansion to 59, and so on. This is the intuitive process of "load factor limit exceeded → rehash and expand."
+```text
+初始 bucket_count = 1
+size=1 rehash: 1 -> 13 (load_factor=0.0769231)
+size=14 rehash: 13 -> 29 (load_factor=0.482759)
+size=30 rehash: 29 -> 59 (load_factor=0.508475)
+size=60 rehash: 59 -> 127 (load_factor=0.472441)
+```
 
-## Complexity and Iterator Invalidation: Different from map Again
+Pay close attention to the jump sequence of `bucket_count`: 1 → 13 → 29 → 59 → 127. **These are all prime numbers**—this is the specific choice made by libstdc++ (using a prime number of buckets ensures a more uniform distribution for `hash % bucket_count`). Each jump occurs the moment `size` exceeds `bucket_count` (meaning the load factor breaks 1.0): when `size` reaches 14, 14/13 > 1.0 triggers an expansion to 29; when `size` reaches 30, 30/29 > 1.0 triggers an expansion to 59, and so on. This visually demonstrates the process of "load factor limit exceeded → rehash and expand buckets."
 
-Let's clarify complexity: lookup, insertion, and erasure in `unordered_map` are **$O(1)$ on average**, but **$O(n)$ in the worst case**. When does the worst case happen? When a massive number of keys collide (land in the same bucket), the hash table degrades into a long linked list, and lookups become linear scans. A good hash function combined with a reasonable load factor makes collision probability extremely low, so in practice, it is almost always $O(1)$. However, the standard honestly marks the worst case as $O(n)$ because it is theoretically possible.
+## Complexity and Iterator Invalidation: Different from `map` Again
 
-Iterator invalidation is where `unordered_map` and `map` differ again, and `unordered_map` is a bit more "aggressive." The rules are:
+Let's clarify complexity first: lookup, insertion, and deletion in `unordered_map` are **O(1) on average**, but **O(n) in the worst case**. When does the worst case happen? When a large number of keys hash collide (landing in the same bucket), the hash table degenerates into a long linked list, and lookups become linear scans. A good hash function combined with a reasonable load factor makes the probability of collision extremely low, so in practice it is almost always O(1); however, the standard honestly specifies the worst case as O(n) because it is theoretically possible.
 
-- **Rehash** (triggered by insertion, or manual `rehash` / `reserve`): **Invalidates all iterators**. However, since C++14, **references and pointers to elements are NOT invalidated by rehash**.
-- **Erase**: Only invalidates iterators/references pointing to the erased element itself; everything else is unaffected.
+Regarding iterator invalidation, `unordered_map` differs from `map` again, and it is a bit more "aggressive." The rules are:
 
-Pay close attention to this. In the last post, we mentioned that `map` insertion never invalidates iterators. With `unordered_map`, insertion can trigger a rehash, which invalidates iterators. Interestingly, since C++14, the standard guarantees that rehashing does not move the elements in memory—meaning the references and pointers you hold to elements remain valid even after a rehash; only the iterators get scrapped. This is a practical guarantee: you can safely hold long-term references to `unordered_map` elements even if rehashing happens in the background.
+- **rehash** (triggered by insertion, or manual `reserve` / `rehash`): **invalidates all iterators**; however, since C++14, **references and pointers to elements are not invalidated by rehash**.
+- **erase**: only invalidates the iterator/reference of the erased element itself; others are unaffected.
+
+Pay special attention to this rule. In the previous article, we mentioned that `map` insertion never invalidates iterators; however, `unordered_map` iterators can be invalidated because insertion might trigger a rehash. Interestingly, since C++14, the standard provides an extra guarantee that rehashing does not invalidate references and pointers to elements. This means that the `value_type&` and element pointers you hold remain valid even after a rehash, while only the iterators are废弃. This is a practical guarantee: you can safely hold references to `unordered_map` elements for a long time, even if rehashing occurs in the meantime.
 
 ```cpp
 #include <iostream>
 #include <unordered_map>
 #include <string>
 
-int main() {
-    std::unordered_map<std::string, int> m;
-    m.reserve(5); // Start small to force rehash later
+int main()
+{
+    std::unordered_map<int, std::string> m;
+    m[1] = "alpha";
+    std::string& ref = m.at(1);   // 持有元素引用
 
-    // Insert some data
-    m["apple"] = 1;
-    m["banana"] = 2;
-
-    // Get a reference and an iterator
-    int& ref = m["apple"];
-    auto it = m.find("apple");
-
-    std::cout << "Before rehash: *it = " << it->second << ", ref = " << ref << "\n";
-
-    // Force a rehash by inserting enough elements
-    for (int i = 0; i < 100; ++i) {
-        m["key_" + std::to_string(i)] = i;
+    m.reserve(1000);              // 触发 rehash，迭代器全失效
+    for (int i = 100; i < 200; ++i) {
+        m[i] = "x";               // 大量插入可能再次 rehash
     }
 
-    // Check status
-    // Iterator 'it' is INVALIDATED (undefined behavior to use)
-    // Reference 'ref' is still VALID (guaranteed since C++14)
-    std::cout << "After rehash: ref = " << ref << "\n";
-
-    // Uncommenting the next line is UB (Use-After-Free/Invalidation)
-    // std::cout << "Iterator: " << it->second << "\n";
-
+    std::cout << ref << '\n';     // C++14 起，引用仍然有效
     return 0;
 }
+```
+
+```bash
+g++ -std=c++20 -O2 -o /tmp/umap_ref /tmp/umap_ref.cpp && /tmp/umap_ref
+```
+
+```text
+alpha
 ```
 
 ## Custom Hash: Using Custom Types as Keys
 
-By default, `std::hash` is only defined for built-in types and common standard library types (like `string` and integer types). If you want to use a custom type as a key in `unordered_map`, you need to tell it two things: **how to hash** and **how to judge equality**.
+By default, `std::hash<T>` is only defined for built-in types and common standard library types (like `string` or integer types). If we want to use a custom type as a key in `unordered_map`, we need to specify two things: **how to calculate the hash** and **how to determine equality**.
 
-Equality defaults to `operator==` (via `std::equal_to`). There are two ways to provide a hash: specialize `std::hash`, or pass a custom Hash type directly as a template parameter to `unordered_map`. Let's look at an example using a 2D point as a key, using the `std::hash` specialization approach:
+Equality checking defaults to `operator==` (via `std::equal_to`). There are two ways to provide the hash logic: specialize `std::hash`, or pass a custom Hash type directly as a template parameter to `unordered_map`. Let's look at an example using a 2D point as a key, using the `std::hash` specialization approach:
 
 ```cpp
 #include <iostream>
 #include <unordered_map>
-#include <string>
 
-// Custom type
 struct Point {
     int x, y;
-    bool operator==(const Point& other) const {
-        return x == other.x && y == other.y;
-    }
+    bool operator==(Point const& o) const { return x == o.x && y == o.y; }
 };
 
-// Specialize std::hash for Point
+// 特化 std::hash<Point>
+namespace std {
 template <>
-struct std::hash<Point> {
-    std::size_t operator()(const Point& p) const noexcept {
-        // A simple hash combination: mix x and y
-        // Note: This is a basic example.
-        // For production, consider a stronger mixing function.
-        return std::hash<int>{}(p.x) ^ (std::hash<int>{}(p.y) << 1);
+struct hash<Point> {
+    std::size_t operator()(Point const& p) const noexcept
+    {
+        // 把两个 int 组合成一个 size_t；这是简化版，生产里用更好的混合
+        return static_cast<std::size_t>(p.x) * 31 + static_cast<std::size_t>(p.y);
     }
 };
+}  // namespace std
 
-int main() {
-    std::unordered_map<Point, std::string> location_names;
+int main()
+{
+    std::unordered_map<Point, std::string> grid;
+    grid[{1, 2}] = "A";
+    grid[{3, 4}] = "B";
 
-    location_names[{10, 20}] = "Treasure";
-    location_names[{5, 5}] = "Start";
-
-    Point p{10, 20};
-    if (location_names.contains(p)) {
-        std::cout << "Found at (" << p.x << ", " << p.y << "): "
-                  << location_names[p] << "\n";
-    }
-
+    auto it = grid.find({1, 2});
+    std::cout << (it != grid.end() ? it->second : "not found") << '\n';
     return 0;
 }
 ```
 
-Here is an iron rule: **`hash` and `operator==` must be consistent**. This means if `a == b` is true, then `hash(a)` must equal `hash(b)`—otherwise, equal elements will land in different buckets, and lookups will fail. The reverse is not required (if `hash(a) == hash(b)`, `a` does not have to equal `b`; that is just a collision, which is normal). The `operator()` above is a simple mix for demonstration; in production, you might use `boost::hash_combine` or a more sophisticated mixing function to further reduce collision probability.
+```bash
+g++ -std=c++20 -O2 -o /tmp/custom_hash /tmp/custom_hash.cpp && /tmp/custom_hash
+```
 
-## Hash Collisions and DoS: Why libstdc++ Adds Randomness to Hash
+```text
+A
+```
 
-Hash tables have a famous attack surface called **hash flooding**: an attacker constructs a batch of keys with identical hash values to feed into your program. All elements squeeze into the same bucket, degrading lookup from $O(1)$ to $O(n)$ and maxing out the CPU. This was one of the reasons many web services were taken down in the past.
+Here is an ironclad rule: **hash and `==` must be consistent**. This means that if `a == b` is true, then `hash(a)` must equal `hash(b)`—otherwise, equal elements would land in different buckets, and lookups would fail. The converse is not required (when `hash(a) == hash(b)`, `a` does not necessarily have to equal `b`; this is just a collision, which is a normal phenomenon). The `x*31 + y` above is a simple mix for demonstration purposes; in production, we can use `boost::hash_combine` or more sophisticated mixing functions to further reduce the probability of collisions.
 
-libstdc++'s countermeasure is to seed its `std::hash` with a random seed at program startup (based on a high-quality seeded hash function). This means the same input will land in different bucket positions in different processes, making it impossible for an attacker to pre-calculate inputs that "perfectly collide." This is libstdc++'s implementation strategy (libc++ and MSVC STL have their own methods), and the standard does not mandate it. However, this is worth knowing in practice: if you use custom type keys, and those keys might come from untrusted input, the quality of your hash function directly relates to your ability to resist DoS attacks.
+## Hash Collisions and DoS: Why libstdc++ Adds Randomness to Your Hash
 
-## Hands-on: How Much Faster is unordered_map Than map?
+Hash tables have a well-known attack surface called **hash flooding**: an attacker carefully constructs a massive number of keys with identical hash values and feeds them to your program. All elements cram into a single bucket, degrading lookups from O(1) to O(n) and maxing out the CPU—this was one of the reasons many web services were taken down in the early days.
 
-Saying "average $O(1)$ is faster than $O(\log n)$" is too abstract. Let's measure it directly. We will prepare a `map` and an `unordered_map` with one hundred thousand elements and perform one million lookups on each:
+libstdc++'s countermeasure is that its `std::hash<std::string>` uses a random seed for hashing every time the program starts (based on a high-quality seeded hash function). This way, the same input lands in different buckets across different processes, making it impossible for an attacker to pre-calculate inputs that "just happen to collide completely." This is libstdc++'s implementation strategy (libc++ and MSVC STL have their own approaches), and the standard does not mandate it—but in practice, this is worth knowing: if you use a custom type as a key, and that key might come from untrusted input, the quality of your hash function directly impacts your resistance to DoS attacks.
+
+## Hands-on: How Much Faster Is unordered_map Than map
+
+Simply saying "average O(1) is faster than O(log n)" is too abstract, so let's measure it directly. We'll prepare a `map` and an `unordered_map` with one hundred thousand elements and perform one million lookups on each:
 
 ```cpp
 #include <iostream>
 #include <map>
 #include <unordered_map>
 #include <chrono>
-#include <string>
-#include <vector>
 
-int main() {
-    const int n_elements = 100000;
-    const int n_lookups = 1000000;
-
-    std::vector<std::string> keys;
-    for (int i = 0; i < n_elements; ++i) {
-        keys.push_back("key_" + std::to_string(i));
+int main()
+{
+    std::map<int, int> om;
+    std::unordered_map<int, int> um;
+    for (int i = 0; i < 100000; ++i) {
+        om[i] = i;
+        um[i] = i;
     }
+    volatile int sink = 0;
 
-    // 1. Test std::map (Red-black tree)
-    std::map<std::string, int> m;
-    for (const auto& k : keys) {
-        m[k] = i;
-    }
+    auto bench = [&](auto& m) {
+        auto t0 = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < 1000000; ++i) {
+            sink += m.find(i % 100000)->second;
+        }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration<double, std::milli>(t1 - t0).count();
+    };
 
-    auto start_map = std::chrono::high_resolution_clock::now();
-    volatile int sink; // prevent optimization
-    for (int i = 0; i < n_lookups; ++i) {
-        // Lookup random key
-        sink = m.at(keys[i % n_elements]);
-    }
-    auto end_map = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_map = end_map - start_map;
-
-
-    // 2. Test std::unordered_map (Hash table)
-    std::unordered_map<std::string, int> um;
-    for (const auto& k : keys) {
-        um[k] = i;
-    }
-
-    auto start_unordered = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < n_lookups; ++i) {
-        sink = um.at(keys[i % n_elements]);
-    }
-    auto end_unordered = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff_unordered = end_unordered - start_unordered;
-
-    std::cout << "map time:         " << diff_map.count() * 1000 << " ms\n";
-    std::cout << "unordered_map time: " << diff_unordered.count() * 1000 << " ms\n";
-
+    std::cout << "map:           " << bench(om) << " ms\n";
+    std::cout << "unordered_map: " << bench(um) << " ms\n";
     return 0;
 }
 ```
 
-Possible output:
-
-```text
-map time:         48.23 ms
-unordered_map time: 2.15 ms
+```bash
+g++ -std=c++20 -O2 -o /tmp/uvm /tmp/uvm.cpp && /tmp/uvm
 ```
 
-The results above are from GCC 16.1.1 on a local machine: `map` took about 48 ms, while `unordered_map` took about 2 ms. **`unordered_map` is nearly an order of magnitude faster**. The exact milliseconds vary by machine, but this magnitude of difference is stable. With one hundred thousand elements, a `map` lookup requires about $\log_2(100000) \approx 17$ comparisons, while `unordered_map` hits the target in average $O(1)$. Over one million lookups, the accumulated difference is significant. This is the core reason for `unordered_map`'s existence.
+```text
+map:           48.4 ms
+unordered_map: 2.2 ms
+```
+
+The results above are from GCC 16.1.1 running locally: `map` takes about 48 ms, while `unordered_map` takes about 2 ms—**making the unordered version nearly an order of magnitude faster**. The exact milliseconds will vary depending on your machine, but this order-of-magnitude difference is stable. With one hundred thousand elements, a single lookup in `map` requires log₂(100000) ≈ 17 comparisons, whereas `unordered_map` averages O(1) direct hits. Over a million lookups, this accumulated difference becomes stark. This is the fundamental reason for the existence of `unordered_map`.
 
 ## Wrapping Up: When to Choose It
 
-`unordered_map` and `unordered_set` trade the "ordered" property for average $O(1)$ lookups. Underneath, they use a hash table—an array of buckets with chains per bucket—controlling when to rehash and expand via the load factor. When using them, remember: insertion can trigger rehashing, which invalidates iterators (but not references to elements since C++14); custom types used as keys must provide `hash` and `operator==`, and they must be consistent; if keys come from untrusted input, the quality of your hash function relates to DoS resistance.
+`unordered_map` and `unordered_set` discard the "ordering" property in exchange for average O(1) lookups. Under the hood, they use hash tables—a bucket array where each bucket holds a linked list, relying on the load factor to control when to rehash and expand. Here are a few things to remember when using them: insertion can trigger rehashing, which invalidates iterators (though since C++14, references to elements remain valid); custom types used as keys must provide both a hash function and `==` operator, and the two must be consistent; if keys come from untrusted input, the quality of the hash function is critical for mitigating hash collision DoS attacks.
 
-As for when to choose it over `map`: if you don't care about order and focus on lookups/insertions/erasures, `unordered_map` is usually faster. If you need ordered traversal, range queries, or stable iterator ordering, stick with `map`. In the next post, we will leave associative containers behind and look at alternatives to `vector` among sequential containers—`deque` and `list`.
+As for when to choose it over `map`: if you don't care about order and your workload is primarily lookup/insertion/deletion, `unordered` is usually faster. If you need ordered traversal, range queries, or stable iterator ordering, stick with `map`. In the next article, we will move away from associative containers and explore alternatives to `vector` among sequential containers—`deque` and `list`.
 
-Want to run it yourself and see the effect? Check out the online example below (runnable and viewable assembly):
+Want to jump in and see the results in action? Check out the online example below (runnable and viewable assembly):
 
 <OnlineCompilerDemo
-  title="unordered_map: Hash Buckets, Rehash Prime Sequences, and reserve"
+  title="unordered_map: Hash Buckets, Rehash Prime Sequence, Reserve"
   source-path="code/examples/vol3/07_unordered_map_set.cpp"
-  description="Observe bucket_count jumps triggered by rehash, bucket distribution, and reserve pre-allocation"
+  description="Observe bucket count jumps triggered by rehash, bucket distribution, and bucket pre-allocation via reserve"
   allow-run
 />
 

@@ -6,8 +6,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: A placeholder that lets the compiler automatically deduce the type of
-  a variable or function return value
+description: Placeholder for the compiler to automatically deduce variable or function
+  return value types
 difficulty: beginner
 order: 3
 reading_time_minutes: 2
@@ -17,57 +17,61 @@ tags:
 - beginner
 title: auto
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/03-auto-decltype.md
-  source_hash: 75554e72bb849a782dce5de0a3a97f52d930df7ea621293962e910b358a46882
-  token_count: 387
-  translated_at: '2026-05-26T10:15:05.751748+00:00'
+  source_hash: 90651dfbcc623bb96ba4e04ffb01a7e9fda0c579f1f85b0fbfb2aa054b3f63f6
+  translated_at: '2026-06-16T03:28:48.316323+00:00'
+  engine: anthropic
+  token_count: 391
 ---
 # auto (C++11)
 
-## In a nutshell
+## In a Nutshell
 
-We use `auto` to declare variables or function return types, letting the compiler deduce the concrete type from the initialization expression, saving us the trouble of writing out lengthy or complex types by hand.
+We use `auto` to declare variables or function return types, allowing the compiler to automatically deduce the specific type from the initialization expression. This saves us the trouble of writing out lengthy or complex types manually.
 
 ## Header
 
-None needed (language keyword)
+No header required (language keyword)
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|------|------|------|
+|-----------|-----------|-------------|
 | Variable type deduction | `auto x = init;` | Deduces the type of `x` based on the initialization expression |
-| Deduction with modifiers | `const auto& x = init;` | Deduces the base type and attaches `const` or reference qualifiers |
-| Trailing return type | `auto f() -> int;` | Used with a trailing return type to declare a function |
-| Return type deduction | `auto f() { return expr; }` | Starting in C++14, deduces the return type from the return statement |
-| decltype(auto) | `decltype(auto) f() { return expr; }` | Starting in C++14, preserves the value category of the expression (reference/top-level const)|
-| Concept-constrained deduction | `Concept auto x = init;` | Starting in C++20, deduces the type and checks whether it satisfies concept constraints |
-| Functional-style cast | `auto(expr)` | Starting in C++23, equivalent to `static_cast<auto>(expr)` |
+| Deduction with modifiers | `auto&`, `const auto*` | Deduces the base type and attaches reference or `const` qualifiers |
+| Trailing return type | `auto foo() -> int` | Declares a function using a trailing return type |
+| Return type deduction | `auto foo() { ... }` | Available since C++14; deduces the return type from the `return` statement |
+| decltype(auto) | `decltype(auto)` | Available since C++14; preserves the value category (reference/top-level `const`) of the expression |
+| Concept-constrained deduction | `std::integral auto` | Available since C++20; deduces the type and checks if it satisfies concept constraints |
+| Functional cast | `auto(x)` | Available since C++23; equivalent to `static_cast<decltype(x)>(x)` |
 
 ## Minimal Example
 
 ```cpp
-// Standard: C++14
-#include <iostream>
+auto i = 42;                 // int
+auto& r = i;                 // int&
+const auto* p = &i;          // const int*
 
-auto add(int a, int b) {
-    return a + b; // 返回类型推导为 int
+// C++14: Return type deduction
+auto add(int x, int y) {
+    return x + y;            // Returns int
 }
 
-int main() {
-    auto x = 10;        // int
-    const auto& r = x;  // const int&
-    auto sum = add(x, 5);
-    std::cout << sum << "\n";
+// C++14: decltype(auto) preserves references
+decltype(auto) get_ref(int& x) {
+    return x;                // Returns int&
 }
+
+// C++20: Constrained auto
+std::integral auto num = 10; // OK, int is integral
+// std::integral auto f = 3.14; // Error, double is not integral
 ```
 
 ## Embedded Applicability: High
 
-- Zero runtime overhead; `auto` is purely compile-time type deduction and generates no extra instructions
-- Simplifies register/peripheral type declarations (e.g., `auto reg = reinterpret_cast<volatile uint32_t*>(0x40001000)`), improving readability without losing precision
-- When used with templates and STL container iterators, it avoids writing lengthy type names and reduces typos
+- Zero runtime overhead. `auto` is purely a compile-time type deduction mechanism and generates no additional instructions.
+- Simplifies register/peripheral type declarations (e.g., `auto& reg = *GPIOA->ODR`), improving readability without losing precision.
+- When working with templates and STL container iterators, it helps us avoid writing verbose type names and reduces spelling errors.
 
 ## Compiler Support
 

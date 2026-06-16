@@ -5,9 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Understand when destructors are called, and get an initial grasp of the
-  RAII (Resource Acquisition Is Initialization) principle and the design rationale
-  behind the Rule of Three.
+description: Understand when destructors are called, and get a first look at the RAII
+  principle and the design rationale behind the Rule of Three.
 difficulty: beginner
 order: 3
 platform: host
@@ -22,370 +21,310 @@ tags:
 - 基础
 title: Destructors and Resource Management
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch06/03-destructors.md
-  source_hash: b49081fc86cec87f7a867bc01e176a02572893dbadf30e468bb2f7e4b3ad28db
-  token_count: 2399
-  translated_at: '2026-05-26T10:50:48.605245+00:00'
+  source_hash: f4bedcedad2176866b3f4b5181295ecec334fc2fda367727a71e5e7817e7e89f
+  translated_at: '2026-06-16T03:44:23.507394+00:00'
+  engine: anthropic
+  token_count: 2395
 ---
 # Destructors and Resource Management
 
-Constructors bring an object into a valid state—allocating memory, opening files, initializing hardware. But all these resources share a common problem: they must be returned at some point. Memory allocated but not freed, files opened but not closed, mutexes locked but not unlocked—the program slowly leaks resources, eventually exhausting system quotas or falling into a dead lock.
+Constructors are responsible for bringing an object into a valid state—allocating memory, opening files, initializing hardware. But all these resources share a common problem: they must be returned at some point. Memory allocated without freeing, files opened without closing, mutexes locked without unlocking—the program will slowly leak resources, eventually exhausting system quotas or falling into a deadlock.
 
-C++ solves this problem with the destructor. Constructors and destructors form a perfect symmetry: one executes automatically when an object is born, and the other executes automatically when it dies. This pattern of "acquire on construction, release on destruction" has a famous name—RAII (Resource Acquisition Is Initialization), and it is the cornerstone of C++ resource management.
+C++ solves this problem with the destructor. Constructors and destructors form a perfect symmetry: one executes automatically when the object is born, the other when it dies. This pattern of "acquire at construction, release at destruction" has a famous name—RAII (Resource Acquisition Is Initialization)—and it is the cornerstone of C++ resource management.
 
-In this chapter, we break down destructors from start to finish—the syntax, invocation timing, the core idea of RAII, and a classic design guideline you cannot avoid: the Rule of Three.
+In this chapter, we will break down destructors from start to finish—syntax, timing, the core idea of RAII, and a classic design guideline we cannot avoid: the Rule of Three.
 
 ## Destructor Syntax
 
-Declaring a destructor is very simple: place a tilde `~` in front of the class name, with no parameters and no return type. A class can have only one destructor, and overloading is not supported.
+Declaring a destructor is very simple: add a tilde `~` before the class name, with no parameters and no return type. A class can have only one destructor, and overloading is not supported.
 
 ```cpp
-class FileWriter {
-private:
-    FILE* file_handle;
-
+class MyClass {
 public:
-    FileWriter(const char* path, const char* mode)
-        : file_handle(std::fopen(path, mode))
-    {
-        if (file_handle == nullptr) {
-            std::cerr << "Failed to open: " << path << std::endl;
-        }
-    }
-
-    ~FileWriter() {
-        if (file_handle != nullptr) {
-            std::fclose(file_handle);
-            std::cout << "File closed by destructor" << std::endl;
-        }
-    }
-
-    void write(const char* data) {
-        if (file_handle) { std::fputs(data, file_handle); }
+    ~MyClass() { // Destructor
+        // Cleanup code here
     }
 };
 ```
 
-A destructor cannot accept parameters, cannot be overloaded, and has no return value. These restrictions are easy to understand—the runtime calls the destructor automatically, so the caller does not need to pass anything.
+A destructor cannot accept parameters, so overloading is impossible; it also has no return value. These restrictions make sense—the runtime calls the destructor automatically, so the caller doesn't pass anything.
 
-If you do not define a destructor, the compiler generates a default version that destructs non-static members in reverse order of their declaration. Classes containing only fundamental types do not need a hand-written destructor. However, if a class manages external resources—dynamic memory, file handles, network connections—you must write your own destructor to release them. (This is completely normal, because the compiler does not know how you want to destruct your resources.)
+If you don't define a destructor, the compiler generates a default version that destructs non-static members in reverse order of their declaration. Classes containing only basic types don't need a handwritten destructor. However, if a class manages external resources—dynamic memory, file handles, network connections—you must write a destructor to release them. (This is normal, because the compiler doesn't know how you want to destroy your resources.)
 
-## When Destructors Are Called
+## When is the Destructor Called
 
-Understanding the invocation timing is a prerequisite for using RAII correctly. **Stack objects** are automatically destructed when they leave scope, whether through a normal return, an early `return`, or exception stack unwinding:
-
-```cpp
-void process() {
-    FileWriter writer("log.txt", "w");
-    writer.write("Processing started\n");
-}   // writer 在这里析构，文件自动关闭
-```
-
-**Heap objects** are only destructed when explicitly `delete`d—this is one of the main sources of memory leaks in C++:
-
-```cpp
-void leaky() {
-    FileWriter* writer = new FileWriter("log.txt", "w");
-    writer->write("Oops\n");
-    // 忘了 delete —— 析构不调用，文件永远不会关闭
-}
-```
-
-> **Pitfall Warning**: If you forget to `delete` a `new`ed object, its destructor will never execute. Even if you remember to `delete` on the normal path, an exception thrown in the middle will cause the `delete` to be skipped. Modern C++ strongly recommends using smart pointers or stack objects instead of raw `new`/`delete`.
-
-**Member objects** are destructed after the containing class's destructor body finishes executing, in the exact reverse order of construction. We write a small program to verify this:
+Understanding the timing is a prerequisite for using RAII correctly. **Stack objects** are automatically destructed when they leave scope, whether via normal return, early `return`, or exception stack unwinding:
 
 ```cpp
 #include <iostream>
 
-struct Tracer {
-    const char* name;
-    explicit Tracer(const char* n) : name(n) {
-        std::cout << "  [" << name << "] constructed" << std::endl;
+void func() {
+    int* p = new int(42);
+    std::cout << "Function start\n";
+    // ... some code ...
+    if (some_error) {
+        delete p; // Manual cleanup required before early return
+        return;
     }
-    ~Tracer() {
-        std::cout << "  [" << name << "] destructed" << std::endl;
-    }
+    delete p;
+}
+```
+
+**Heap objects** are destructed only when explicitly `delete`d—this is one of the main sources of resource leaks in C++:
+
+```cpp
+void leak() {
+    int* p = new int(42);
+    // If we return or throw here, p leaks!
+    delete p;
+}
+```
+
+> **Pitfall Warning**: For an object created with `new`, if you forget `delete`, the destructor never executes. Even if you remember to `delete` on the normal path, if an exception is thrown in between, the `delete` will be skipped. Modern C++ strongly recommends using smart pointers or stack objects instead of raw `new`/`delete`.
+
+**Member objects** are destructed after the containing class's destructor body finishes, in strictly the reverse order of construction. Let's write a small program to verify this:
+
+```cpp
+#include <iostream>
+
+class Member {
+public:
+    Member(const char* name) : name_(name) { std::cout << name_ << " constructed\n"; }
+    ~Member() { std::cout << name_ << " destructed\n"; }
+private:
+    const char* name_;
 };
 
-struct Container {
-    Tracer member_a;
-    Tracer member_b;
-    Container() : member_a("member_a"), member_b("member_b") {
-        std::cout << "  [Container] ctor body" << std::endl;
-    }
-    ~Container() {
-        std::cout << "  [Container] dtor body" << std::endl;
-    }
+class Container {
+public:
+    Container() : b_("B"), a_("A") {} // Initialization order is declaration order
+    ~Container() { std::cout << "Container destructed\n"; }
+private:
+    Member a_; // Declared first
+    Member b_; // Declared second
 };
 
 int main() {
-    std::cout << "=== begin ===" << std::endl;
-    {
-        Tracer local("local");
-        Container container;
-        Tracer* heap = new Tracer("heap");
-        delete heap;
-    }
-    std::cout << "=== end ===" << std::endl;
+    Container c;
 }
-```
-
-Running output:
-
-```text
-=== begin ===
-  [local] constructed
-  [member_a] constructed
-  [member_b] constructed
-  [Container] ctor body
-  [heap] constructed
-  [heap] destructed
-  [Container] dtor body
-  [member_b] destructed
-  [member_a] destructed
-  [local] destructed
-=== end ===
-```
-
-Construction is `A -> B -> Container`, and destruction is strictly reversed—"last constructed, first destructed" ensures resources are released at the correct layer.
-
-## RAII—The Core Idea of C++ Resource Management
-
-RAII stands for Resource Acquisition Is Initialization, and its core idea boils down to one sentence: **bind the resource's lifetime to the object's lifetime**. Acquire the resource on construction, release it on destruction. Because the destructor is guaranteed to be called when the object leaves scope (even if an exception occurs), the resource is guaranteed to be correctly released.
-
-Let's look at a practical example—a `Timer` for measuring code block execution time:
-
-```cpp
-#include <chrono>
-#include <iostream>
-
-class ScopedTimer {
-private:
-    const char* label_;
-    std::chrono::steady_clock::time_point start_;
-
-public:
-    explicit ScopedTimer(const char* label)
-        : label_(label), start_(std::chrono::steady_clock::now())
-    {
-        std::cout << "[" << label_ << "] started" << std::endl;
-    }
-
-    ~ScopedTimer() {
-        auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - start_);
-        std::cout << "[" << label_ << "] elapsed: "
-                  << us.count() << " us" << std::endl;
-    }
-
-    ScopedTimer(const ScopedTimer&) = delete;
-    ScopedTimer& operator=(const ScopedTimer&) = delete;
-};
-
-void heavy_computation() {
-    ScopedTimer timer("heavy_computation");
-    for (int i = 0; i < 1000000; ++i) {
-        volatile int x = i * i;
-    }
-}  // timer 在这里析构，自动打印耗时
-```
-
-You do not need to remember to "stop the timer" at the end of the function—the destructor does it for you automatically. Multiple `return` paths, exceptions—on every path, the timer is correctly destroyed. This is the power of RAII: **it makes "not leaking" the default behavior, rather than a "remember to do it" maintained by discipline**.
-
-> **Pitfall Warning**: The prerequisite for RAII is that the object must live on the stack (or be a global/static object), not a heap object created via raw `new`. If you `new` an RAII object but forget to `delete` it, the destructor still will not be called—RAII cannot save you. Modern C++'s advice is: **keep objects on the stack whenever possible**, and if you must use the heap, use smart pointers.
-
-## Rule of Three—A Design Warning Signal
-
-The Rule of Three is a classic design guideline: **if your class needs to customize any one of the following three, you almost certainly need to customize the other two as well**—the destructor, the copy constructor, and the copy assignment operator.
-
-These three functions collectively determine "how an object is copied" and "how it is destroyed." Writing a destructor usually means the class manages a resource that requires manual release, but the compiler-generated copy operations only perform a shallow copy—after the pointer member is copied, both objects point to the same resource, leading to a double free on destruction.
-
-```cpp
-class NaiveBuffer {
-    int* data_;
-    std::size_t size_;
-public:
-    explicit NaiveBuffer(std::size_t n) : size_(n), data_(new int[n]()) {}
-    ~NaiveBuffer() { delete[] data_; }
-    // 没有自定义拷贝——编译器生成的版本做浅拷贝
-};
-
-void bug_demo() {
-    NaiveBuffer a(10);
-    NaiveBuffer b = a;  // 浅拷贝：b.data_ == a.data_
-    // 作用域结束时 double free —— 未定义行为！
-}
-```
-
-One way to fix this is to directly forbid copying:
-
-```cpp
-class SafeBuffer {
-    int* data_;
-    std::size_t size_;
-public:
-    explicit SafeBuffer(std::size_t n) : size_(n), data_(new int[n]()) {}
-    ~SafeBuffer() { delete[] data_; }
-    SafeBuffer(const SafeBuffer&) = delete;
-    SafeBuffer& operator=(const SafeBuffer&) = delete;
-};
-```
-
-Here, we are just previewing the concept. Once we cover move semantics, the Rule of Three will expand into the Rule of Five. For now, you only need to remember: **once you hand-write a destructor, stop and think—can your class be safely copied? If not, delete the copy operations**.
-
-## Virtual Destructors—The Hidden Trap of Polymorphism
-
-If a class will be inherited, and users manipulate derived class objects through a base class pointer, then the base class's destructor must be `virtual`. Otherwise, when `delete`ing the base class pointer, the derived class's destructor will be completely skipped.
-
-```cpp
-class Base {
-public:
-    ~Base() { std::cout << "~Base" << std::endl; }  // 非 virtual！
-};
-
-class Derived : public Base {
-    int* resource_;
-public:
-    Derived() : resource_(new int[100]) {}
-    ~Derived() { delete[] resource_; std::cout << "~Derived" << std::endl; }
-};
-
-void leak_demo() {
-    Base* ptr = new Derived();
-    delete ptr;  // 只调用 ~Base()，~Derived() 被跳过 → 内存泄漏
-}
-```
-
-The output is only `~Base()`—the 400 bytes of memory pointed to by `Derived` silently leak. The fix is simply to add `virtual` in front of the base class destructor:
-
-```cpp
-class Base {
-public:
-    virtual ~Base() { std::cout << "~Base" << std::endl; }
-};
-```
-
-> **Pitfall Warning**: The condition for applying this rule is that the class will be used as a polymorphic base class. A safe rule of thumb is: **as long as your class has `virtual` functions, its destructor should be `virtual` too**. Conversely, a class without `virtual` functions does not need a virtual destructor—adding one unnecessarily increases the overhead of a virtual function table pointer for every object. This topic will be explored in depth in the next chapter on inheritance and polymorphism.
-
-## Hands-on: Destructors in Action
-
-Now let's write a complete piece of code, chaining `Timer` and `FileGuard` together to demonstrate the practical effect of RAII:
-
-```cpp
-// destructor.cpp
-// 编译：g++ -std=c++17 -o destructor destructor.cpp
-
-#include <chrono>
-#include <cstdio>
-#include <iostream>
-
-/// @brief 作用域计时器
-class ScopedTimer {
-    const char* label_;
-    std::chrono::steady_clock::time_point start_;
-public:
-    explicit ScopedTimer(const char* label)
-        : label_(label), start_(std::chrono::steady_clock::now())
-    { std::cout << "[" << label_ << "] started" << std::endl; }
-
-    ~ScopedTimer() {
-        auto us = std::chrono::duration_cast<std::chrono::microseconds>(
-            std::chrono::steady_clock::now() - start_);
-        std::cout << "[" << label_ << "] finished: "
-                  << us.count() << " us" << std::endl;
-    }
-    ScopedTimer(const ScopedTimer&) = delete;
-    ScopedTimer& operator=(const ScopedTimer&) = delete;
-};
-
-/// @brief 自动管理 FILE* 的文件写入器
-class FileWriter {
-    FILE* handle_;
-    const char* path_;
-public:
-    FileWriter(const char* path, const char* mode)
-        : handle_(std::fopen(path, mode)), path_(path)
-    {
-        if (!handle_) std::cerr << "Error: cannot open " << path << std::endl;
-    }
-
-    ~FileWriter() {
-        if (handle_) {
-            std::fclose(handle_);
-            std::cout << "[" << path_ << "] closed" << std::endl;
-        }
-    }
-
-    void write_line(const char* text) {
-        if (handle_) { std::fputs(text, handle_); std::fputc('\n', handle_); }
-    }
-
-    FileWriter(const FileWriter&) = delete;
-    FileWriter& operator=(const FileWriter&) = delete;
-};
-
-int main() {
-    std::cout << "--- RAII demo ---" << std::endl;
-    ScopedTimer total("total");
-
-    {
-        ScopedTimer phase("phase 1: file writing");
-        FileWriter writer("raii_demo.txt", "w");
-        writer.write_line("Hello from RAII!");
-        writer.write_line("No manual fclose needed.");
-    }
-
-    {
-        ScopedTimer phase("phase 2: computation");
-        volatile int sum = 0;
-        for (int i = 0; i < 1000000; ++i) { sum += i; }
-    }
-
-    std::cout << "--- end of main ---" << std::endl;
-    return 0;
-}
-```
-
-Compile and run:
-
-```bash
-g++ -std=c++17 -o destructor destructor.cpp && ./destructor
 ```
 
 Output:
 
 ```text
---- RAII demo ---
-[total] started
-[phase 1: file writing] started
-[raii_demo.txt] closed
-[phase 1: file writing] finished: 123 us
-[phase 2: computation] started
-[phase 2: computation] finished: 4567 us
---- end of main ---
-[total] finished: 4789 us
+A constructed
+B constructed
+Container destructed
+B destructed
+A destructed
 ```
 
-The inner `FileGuard` and `Timer` are destructed first, and the outer `Timer` is destructed last. You can verify the file contents:
+Construction is "first declared, first constructed"; destruction is strictly the reverse—"last constructed, first destructed"—ensuring resources are released at the correct levels.
+
+## RAII—The Core Idea of C++ Resource Management
+
+RAII stands for Resource Acquisition Is Initialization. The core concept is simple: **bind the resource lifecycle to the object lifecycle**. Acquire resources in the constructor, release them in the destructor. Because the destructor is guaranteed to be called when the object leaves scope (even if exceptions occur), the resource is guaranteed to be released correctly.
+
+Let's look at a practical example—a `ScopedTimer` for measuring code block execution time:
+
+```cpp
+#include <iostream>
+#include <chrono>
+
+class ScopedTimer {
+public:
+    ScopedTimer(const char* name)
+        : name_(name), start_(std::chrono::high_resolution_clock::now()) {}
+
+    ~ScopedTimer() {
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start_);
+        std::cout << name_ << " took " << duration.count() << " us\n";
+    }
+private:
+    const char* name_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_;
+};
+
+void complex_task() {
+    ScopedTimer t("complex_task");
+    // ... do work ...
+} // Timer stops automatically here
+```
+
+You don't need to remember to "stop the timer" at the end of the function—the destructor does it for you automatically. Multiple `return` paths, exceptions—on every path, the timer is correctly destroyed. This is the power of RAII: **it makes "not leaking" the default behavior, rather than a "remember to do it" maintained by discipline**.
+
+> **Pitfall Warning**: RAII relies on the object living on the stack (or as a global/static object), not a heap object created with raw `new`. If you `new` a RAII object but forget to `delete`, the destructor won't be called—RAII can't save you. Modern C++ advice: **keep objects on the stack whenever possible**; if you must use the heap, use smart pointers.
+
+## Rule of Three—A Design Warning Signal
+
+The Rule of Three is a classic design guideline: **if your class needs to customize any one of the following three, you almost certainly need to customize the other two as well**—destructor, copy constructor, copy assignment operator.
+
+These three functions together determine "how an object is copied" and "how an object is destroyed." Writing a destructor usually means the class manages resources requiring manual release. The compiler-generated copy operations perform a shallow copy—after pointer members are copied, two objects point to the same resource, leading to double free upon destruction.
+
+```cpp
+class BadBuffer {
+public:
+    BadBuffer(size_t size) : data_(new int[size]), size_(size) {}
+    ~BadBuffer() { delete[] data_; } // Manages memory
+
+    // Compiler-generated copy constructor and assignment do shallow copy!
+    // BadBuffer other = buf; // Disaster: both share data_
+private:
+    int* data_;
+    size_t size_;
+};
+```
+
+One fix is to simply forbid copying:
+
+```cpp
+class GoodBuffer {
+public:
+    GoodBuffer(const GoodBuffer&) = delete;
+    GoodBuffer& operator=(const GoodBuffer&) = delete;
+    // ... rest of the class ...
+};
+```
+
+Here we are just previewing the concept. Once we cover move semantics, the Rule of Three expands to the Rule of Five. For now, just remember: **once you write a destructor, stop and think—can your class be safely copied? If not, delete it**.
+
+## Virtual Destructors—The Invisible Trap of Polymorphism
+
+If a class is to be inherited, and users manipulate derived class objects via base class pointers, the base class destructor must be `virtual`. Otherwise, when `delete`ing a base class pointer, the derived class destructor is completely skipped.
+
+```cpp
+class Base {
+public:
+    ~Base() { std::cout << "Base destroyed\n"; } // Not virtual!
+};
+
+class Derived : public Base {
+public:
+    Derived() : data_(new int[100]) {}
+    ~Derived() {
+        delete[] data_;
+        std::cout << "Derived destroyed\n";
+    }
+private:
+    int* data_;
+};
+
+int main() {
+    Base* p = new Derived();
+    delete p; // Undefined Behavior: Derived destructor not called
+}
+```
+
+Output is only `Base destroyed`—the 400 bytes of memory pointed to by `data_` are silently leaked. The fix is simply adding `virtual` to the base class destructor:
+
+```cpp
+class Base {
+public:
+    virtual ~Base() { std::cout << "Base destroyed\n"; }
+};
+```
+
+> **Pitfall Warning**: This rule applies when the class is used as a polymorphic base class. A safe rule of thumb: **as long as your class has `virtual` functions, the destructor should be `virtual`**. Conversely, a class without `virtual` functions doesn't need a virtual destructor—adding one only adds the overhead of a vtable pointer to every object. This topic will be expanded in the next chapter on inheritance and polymorphism.
+
+## Practice: Destructors in Action
+
+Now let's write a complete piece of code to combine `ScopedTimer` and `ScopedFile` to demonstrate the practical effect of RAII:
+
+```cpp
+#include <iostream>
+#include <fstream>
+#include <chrono>
+
+class ScopedTimer {
+public:
+    ScopedTimer(const std::string& name)
+        : name_(name), start_(std::chrono::steady_clock::now()) {}
+
+    ~ScopedTimer() {
+        auto end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_);
+        std::cout << "[" << name_ << "] took " << duration.count() << " ms\n";
+    }
+private:
+    std::string name_;
+    std::chrono::time_point<std::chrono::steady_clock> start_;
+};
+
+class ScopedFile {
+public:
+    ScopedFile(const std::string& filename) : file_(filename) {
+        if (!file_.is_open()) {
+            throw std::runtime_error("Failed to open file");
+        }
+        std::cout << "File " << filename << " opened\n";
+    }
+
+    ~ScopedFile() {
+        if (file_.is_open()) {
+            file_.close();
+            std::cout << "File closed\n";
+        }
+    }
+
+    std::ofstream& get_stream() { return file_; }
+
+    // Disable copy (Rule of Three)
+    ScopedFile(const ScopedFile&) = delete;
+    ScopedFile& operator=(const ScopedFile&) = delete;
+
+private:
+    std::ofstream file_;
+};
+
+int main() {
+    ScopedFile file("demo.txt");
+    {
+        ScopedTimer t("inner_block");
+        auto& out = file.get_stream();
+        out << "Hello RAII!\n";
+        for (int i = 0; i < 1000; ++i) {
+            out << "Number: " << i << "\n";
+        }
+    } // Timer ends here
+
+    // Outer scope work
+    file.get_stream() << "Done.\n";
+} // File closes here
+```
+
+Compile and run:
 
 ```bash
-cat raii_demo.txt
-# Hello from RAII!
-# No manual fclose needed.
+g++ -std=c++20 raii_demo.cpp -o raii_demo
+./raii_demo
 ```
 
-The content is correct, and we did not hand-write `fclose`—the destructor completed all the cleanup for us.
+Output:
+
+```text
+File demo.txt opened
+[inner_block] took 15 ms
+File closed
+```
+
+The inner `ScopedTimer` and `ScopedFile`'s internal stream buffer are destructed first, and the outer `ScopedFile` is destructed last. You can verify the file content:
+
+```bash
+cat demo.txt
+```
+
+The content is correct; we didn't manually write `file.close()`—the destructor handled all the cleanup for us.
 
 ## Exercises
 
-**Exercise 1: Scoped Log Timer**. Write a `ScopedTimer` class that records a timestamp on construction (format `[%Y-%m-%d %H:%M:%S]`) and prints "elapsed X seconds" on destruction. Hint: use `std::chrono`'s `steady_clock` and `duration_cast`.
+**Exercise 1: Scope Log Timer**. Write a `LogTimer` class that records a timestamp upon construction (format `HH:MM:SS`) and prints "elapsed X seconds" upon destruction. Hint: Use `std::chrono` and `std::ctime`.
 
-**Exercise 2: Simple File Handle**. Implement a `FileHandle` class that opens a file on construction and automatically closes it on destruction. Provide a `get()` method (returning `FILE*`) and a `write()` method. Think about this from the Rule of Three perspective: does this class need to disable copying? Why?
+**Exercise 2: Simple File Handle**. Implement a `FileHandle` class that opens a file in the constructor and closes it automatically in the destructor. Provide a `get()` method (returning `FILE*`) and a `write()` method. Think about the Rule of Three: does this class need to disable copying? Why?
 
 ## Summary
 
-In this chapter, we focused on destructors, covering the syntax, invocation timing, and their core role in resource management. Destructors are automatically called when an object leaves scope or is `delete`d. RAII binds resource acquisition and release to the object's lifetime, making "not leaking" the default behavior. The Rule of Three reminds us to re-examine copy semantics when hand-writing a destructor. Virtual destructors are a hard requirement in polymorphic scenarios.
+In this chapter, we covered syntax, timing, and the central role of destructors in resource management. Destructors are called automatically when an object leaves scope or is `delete`d. RAII binds resource acquisition and release to the object lifecycle, making "no leaks" the default behavior. The Rule of Three reminds us to reconsider copy semantics when writing destructors. Virtual destructors are a hard requirement in polymorphic scenarios.
 
-In the next article, we will look at another important mechanism of classes—static members.
+Next, we will look at another important class mechanism—static members.
