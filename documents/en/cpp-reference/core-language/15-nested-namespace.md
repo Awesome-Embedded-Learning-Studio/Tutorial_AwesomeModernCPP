@@ -7,7 +7,7 @@ cpp_standard:
 description: Use `A::B::C` syntax instead of nested namespace braces
 difficulty: beginner
 order: 15
-reading_time_minutes: 2
+reading_time_minutes: 1
 tags:
 - host
 - cpp-modern

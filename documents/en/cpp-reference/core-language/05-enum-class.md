@@ -10,7 +10,7 @@ description: Scoped enums, preventing enum values from polluting the external na
   and prohibiting implicit type conversions.
 difficulty: beginner
 order: 5
-reading_time_minutes: 2
+reading_time_minutes: 1
 tags:
 - host
 - cpp-modern

@@ -10,7 +10,7 @@ prerequisites:
 - '卷五 ch07: Actor 与 Channel'
 - 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
 - 'Lab 4: Coroutine Scheduler and Event Loop'
-reading_time_minutes: 10
+reading_time_minutes: 6
 tags:
 - host
 - cpp-modern
