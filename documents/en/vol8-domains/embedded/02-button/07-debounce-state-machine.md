@@ -9,23 +9,23 @@ tags:
 - intermediate
 - stm32f1
 title: 'Part 25: 7-State Debounce State Machine — The Core of This Series'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/02-button/07-debounce-state-machine.md
-  source_hash: 105b11e7d7d22ab9859d953c12c557cb4ea19c1f0acfb7e058f1315261c60efd
-  token_count: 1974
-  translated_at: '2026-05-26T12:12:26.917508+00:00'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/02-button/07-debounce-state-machine.md
+  source_hash: 78c598eb8eb0fc70e55fea7e6bc3dfda880bddc5bc566000858241fb95bbf8b8
+  translated_at: '2026-06-16T04:42:23.955715+00:00'
+  engine: anthropic
+  token_count: 1980
 ---
-# Part 25: The 7-State Debounce State Machine — The Core of This Series
+# Part 25: 7-State Debounce State Machine — The Core of This Series
 
-> Following up on the previous article: non-blocking debounce works, but state variables are scattered, there is no concept of events, and startup edge cases are unhandled. This article uses a 7-state finite state machine to solve all these problems. This is a complete breakdown of the `poll_events()` method in `button.hpp`.
+> Following up the previous part: Non-blocking debounce works, but state variables are scattered, there is no concept of events, and startup boundaries are not handled. This part solves all problems with a 7-state finite state machine. This is a complete breakdown of the `update` method in `Debouncer`.
 
 ---
 
 ## Why We Need a State Machine
 
-The core logic of the non-blocking debounce code from the previous article looks like this:
+The core logic of the non-blocking debounce code from the previous part looked like this:
 
 ```c
 if (current != last_raw) {
@@ -40,15 +40,15 @@ if ((HAL_GetTick() - last_change_time) >= debounce_ms) {
 }
 ```
 
-It works, but it has problems. This `if-else` structure mixes "debounce waiting," "state confirmation," and "event triggering" together without clear boundaries. As requirements grow—needing to distinguish between press and release, handling a button held at startup, and correctly handling signal bounce during debounce—`if-else` will become increasingly tangled.
+It works, but it has issues. This `if-else` structure mixes "debounce waiting," "state confirmation," and "event triggering" together without clear boundaries. As requirements increase—needing to distinguish between press and release, handling buttons held during startup, correctly handling signal bounce during debounce—these `if-else` blocks will pile up and become messy.
 
-A state machine breaks this logic into discrete states and explicit transition rules. Each state only cares about "I am here, what is the input, and where do I go next." Instead of "a bunch of intertwined conditional checks," we get "a clear state transition diagram."
+A state machine breaks this logic into discrete states and clear transition rules. Each state only cares about "I am here, the input is this, where do I go next?" It is no longer "a bunch of conditional judgments tangled together," but "a clear state transition diagram."
 
 ---
 
-## The 7 States
+## 7 States
 
-Our state machine has 7 states, defined in a private `enum class State` within `button.hpp`:
+Our state machine has 7 states, defined in the private `State` `enum class` of `Debouncer`:
 
 ```cpp
 enum class State {
@@ -62,7 +62,7 @@ enum class State {
 };
 ```
 
-Don't let the 7 states intimidate you. The core flow only has 4 states: `Idle → DebouncingPress → Pressed → DebouncingRelease → Idle`, which map one-to-one with the non-blocking logic from the previous article. The extra 3 states (`BootSync`, `BootPressed`, `BootReleaseDebouncing`) exist solely to handle the edge case where "the button is already held at startup."
+Don't be scared by 7 states. The core flow consists of only 4 states: `Idle`, `DebouncingPress`, `Pressed`, and `DebouncingRelease`. These correspond one-to-one with the non-blocking logic from the previous part. The additional 3 states (`BootSync`, `BootPressed`, `BootReleaseDebouncing`) are specifically for handling the edge case where "the button is already held at startup."
 
 ### State Transition Diagram
 
@@ -101,9 +101,9 @@ stateDiagram-v2
 
 ---
 
-## A State-by-State Breakdown
+## State-by-State Breakdown
 
-### State::BootSync — Startup Synchronization
+### State::BootSync — Startup Sync
 
 ```cpp
 case State::BootSync:
@@ -115,15 +115,15 @@ case State::BootSync:
     return;
 ```
 
-This is the initial state of the state machine (the default value of `state_` is `State::BootSync`). It only executes once—during the first call to `poll_events()`.
+This is the initial state of the state machine (the default value of `state_` is `BootSync`). It executes only once—the first time `update` is called.
 
 It does three things:
 
-1. Initializes `raw_pressed_` and `stable_pressed_` with the first sample value
-2. If the button is already pressed, sets `boot_locked_ = true`—entering "boot lock"
-3. Transitions to `BootPressed` or `Idle` based on the sample result
+1. Initializes `stable_level_` and `last_level_` using the first sampled value.
+2. If the button is already in the pressed state, sets `boot_locked_`—entering "startup lock."
+3. Jumps to `Idle` or `BootPressed` based on the sampling result.
 
-Why do we need this step? Because the state machine needs to know "what the initial state is." If the button is already held at power-on, we cannot trigger a `Pressed` event—the user didn't "press" the button; it was held from the very beginning.
+Why do we need this step? Because the state machine needs to know "what the initial state is." If the button is already held when powered on, we cannot trigger a `Pressed` event—the user didn't "press" the button; it was held from the very beginning.
 
 ### State::Idle — Idle
 
@@ -137,11 +137,11 @@ case State::Idle:
     return;
 ```
 
-The idle state means the button is currently released. It only cares about one thing: was a press signal detected? If so, it records the timestamp and enters the debounce state.
+The idle state means the button is currently released. It only cares about one thing: was a press signal detected? If so, record the timestamp and enter the debouncing state.
 
-This state outputs nothing and triggers no events. It is simply "waiting."
+This state produces no output and triggers no events. It is just "waiting."
 
-### State::DebouncingPress — Press Debounce
+### State::DebouncingPress — Press Debouncing
 
 ```cpp
 case State::DebouncingPress:
@@ -162,21 +162,21 @@ case State::DebouncingPress:
     return;
 ```
 
-This is the core of the debounce logic. Three checks correspond to three scenarios:
+This is the core of debouncing. Three judgments correspond to three situations:
 
-**Scenario 1: Signal bounced back.** `sample != raw_pressed_` means the signal bounced back during the jitter. We update `raw_pressed_` and reset the timer—starting the count over.
+**Situation 1: Signal bounced back.** `current_level == false` means the signal jumped back during the jitter. Update `last_level_` and reset the timer—restart the timing.
 
-**Scenario 2: Signal clearly returned to low.** `!sample` means the button was released again—this press was a false signal, so we return to `Idle`.
+**Situation 2: Signal clearly returned to low.** `current_level == false` means the button was released again—this press was a false signal, return to `Idle`.
 
-**Scenario 3: Signal remains high and has been stable for `debounce_ms`.** Press confirmed! We update the stable state, transition to `Pressed`, and trigger the `Pressed` event.
+**Situation 3: Signal remains high, and has been stable for `debounce_time_`.** Press confirmed! Update the stable state, jump to `Pressed`, and trigger the `Pressed` event.
 
-The order of these three checks is critical. We first check for bounce (Scenario 1), then check for returning to low (Scenario 2), and finally check for timeout confirmation (Scenario 3). This order ensures:
+The order of these three judgments is critical. Check for bounce (Situation 1) first, then check for return to low (Situation 2), and finally check for timeout confirmation (Situation 3). This order ensures that:
 
-- Every bounce during the jitter period resets the timer
-- If the signal clearly returns to the initial level, we abort immediately (without waiting for a timeout)
-- Confirmation only happens when the signal remains stable
+- The timer is reset on every bounce during jitter.
+- If the signal clearly returns to the initial level, we give up immediately (without waiting for timeout).
+- Confirmation happens only when it remains stable.
 
-### State::Pressed — Confirmed Press
+### State::Pressed — Confirmed Pressed
 
 ```cpp
 case State::Pressed:
@@ -188,11 +188,11 @@ case State::Pressed:
     return;
 ```
 
-After the button press is confirmed, it only cares about one thing: was a release signal detected? If so, it enters the release debounce state.
+After the button is confirmed as pressed, it only cares about one thing: was a release signal detected? If so, enter the release debouncing state.
 
-Note that the `Pressed` state does not trigger the `Pressed` event again—events are only triggered once upon state transition. This guarantees that no matter how long the user holds the button, the `Pressed` event fires exactly once.
+Note that the `Pressed` state will not trigger the `Pressed` event again—events are triggered only once during state transitions. This ensures that no matter how long the user holds the button, the `Pressed` event fires only once.
 
-### State::DebouncingRelease — Release Debounce
+### State::DebouncingRelease — Release Debouncing
 
 ```cpp
 case State::DebouncingRelease: {
@@ -222,15 +222,15 @@ case State::DebouncingRelease: {
 }
 ```
 
-This is structurally symmetric to `DebouncingPress`, but in the opposite direction. Three core checks:
+This is structurally symmetric to `DebouncingPress`, but in the opposite direction. Three core judgments:
 
-**Scenario 1: Signal bounced.** Reset the timer. If it bounced back to high (`sample` is true), return to the `Pressed` state.
+**Situation 1: Signal bounced.** Reset the timer. If it bounced back to high (`current_level == true`), return to the `Pressed` state.
 
-**Scenario 2: Signal clearly returned to high.** Return to `Pressed`; this release was a false signal.
+**Situation 2: Signal clearly returned to high.** Return to `Pressed`; this release was a false signal.
 
-**Scenario 3: Timeout confirmed.** The stable value is low, so the release is confirmed. But there is an additional check here: `boot_locked_`.
+**Situation 3: Timeout confirmation.** The stable value is low, release confirmed. But here there is an extra check: `boot_locked_`.
 
-### Boot-Lock Check
+### Boot-lock Check
 
 ```cpp
 if (boot_locked_) {
@@ -242,11 +242,11 @@ cb(Released{});
 
 If `boot_locked_` is true, it means this "release" is the first release after the button was held at startup. In this case, we **do not trigger the `Released` event**—because the user never "pressed" the button while the system was running. We simply clear `boot_locked_` and let the state machine enter normal operation mode.
 
-This is an easily overlooked edge case. If your code doesn't handle `boot_locked_` specially, and the button happens to be held at power-on (for example, the button is stuck, or the user is holding it down), releasing the button will trigger a "baffling Released event"—the user did nothing, yet the LED turns off.
+This is an edge case easily overlooked. If your code doesn't handle `boot_locked_` specially, and the button happens to be held during power-up (e.g., the button is stuck, or the user is holding it down), releasing the button will trigger a "baffling Released event"—the user did nothing, yet the LED turns off.
 
 ### State::BootPressed and BootReleaseDebouncing
 
-These two states are "silent versions" of `Pressed` and `DebouncingRelease`—the logic is identical, but they do not trigger any events:
+These two states are "silent versions" of `Pressed` and `DebouncingRelease`—the logic is identical, but they trigger no events:
 
 ```cpp
 case State::BootPressed:
@@ -262,7 +262,7 @@ case State::BootReleaseDebouncing:
     return;
 ```
 
-Why not let `Pressed` and `DebouncingRelease` handle the boot lock functionality at the same time? Because that would require adding an `if (boot_locked_)` check in every state, making the logic more complex. By factoring out two separate states, we add one extra pair of states, but the logic within each state remains pure—either it only handles the normal flow, or it only handles the startup flow.
+Why not let `Pressed` and `DebouncingRelease` handle the startup lock function simultaneously? Because that would require adding a `boot_locked_` judgment in every state, making the logic more complex. Separating out two states adds a pair of states, but the logic of each state remains purer—either handling only the normal flow or only the startup flow.
 
 ---
 
@@ -280,38 +280,38 @@ Why not let `Pressed` and `DebouncingRelease` handle the boot lock functionality
 | DebouncingPress | High | Time reached | **Pressed** | **Trigger Pressed event** |
 | Pressed | High | — | Pressed | Nothing happens |
 | Pressed | Low | — | DebouncingRelease | Record timestamp |
-| DebouncingRelease | Bounce | Returned to high | Pressed | False signal |
+| DebouncingRelease | Bounce | Back to high | Pressed | False signal |
 | DebouncingRelease | High | — | Pressed | False signal |
 | DebouncingRelease | Low | Time not reached | DebouncingRelease | Keep waiting |
 | DebouncingRelease | Low | Time reached + boot_locked | Idle | Clear lock, no event |
 | DebouncingRelease | Low | Time reached + normal | **Idle** | **Trigger Released event** |
 
-The state transitions for the startup path are symmetric to the above, but they do not trigger any events.
+The state transitions for the startup path are symmetric to the above, but trigger no events.
 
 ---
 
-## Comparison with the Previous Non-Blocking Code
+## Comparison with the Previous Non-blocking Code
 
-The `if-else` code from the previous article was about 15 lines and accomplished basic debouncing. The state machine version is about 80 lines, adding startup handling and the concept of events. Does this look like over-engineering?
+The `update` code from the previous part was about 15 lines and accomplished basic debouncing. The state machine version is about 80 lines, adding startup handling and the concept of events. Does this look like over-complication?
 
-It isn't. The 15-line version will run into problems in the following scenarios:
+It is not. The 15-line version will fail in the following scenarios:
 
-1. **Distinguishing press from release**: You need debouncing in both directions—press needs debouncing, and release needs debouncing too. The `if-else` version only performs one "stability check" without distinguishing direction.
-2. **Signal bounce during debounce**: Jitter isn't as simple as "wait 20ms and it's stable." The signal might bounce at 5ms, then bounce again at 10ms. Each bounce needs to reset the timer. The state machine handles this scenario explicitly.
-3. **Startup edge cases**: The button state is uncertain at power-on. The state machine's `BootSync` + `BootPressed` path handles this edge case elegantly.
-4. **Extensibility**: If we need to add "long-press detection" or "double-click detection" in the future, we just add a few states to the state machine. Adding these to `if-else` would make the code much harder to maintain.
+1. **Distinguishing press and release**: You need debouncing in both directions—pressing needs debouncing, and releasing needs debouncing. The `update` version only performed one "stability check" and did not distinguish direction.
+2. **Signal bounce during debounce**: Jitter is not simply "wait 20ms and it's stable." The signal might bounce once at 5ms and again at 10ms. Every bounce requires resetting the timer. The state machine explicitly handles this situation.
+3. **Startup boundary**: Button state is uncertain at power-up. The state machine's `BootSync` + `BootPressed` path handles this gracefully.
+4. **Extensibility**: If you want to add "long press detection" or "double-click detection" in the future, just add a few states to the state machine. Adding them to `update` would make the code harder to maintain.
 
-The essence of a state machine is trading space for time—we write a few more lines of code, but the responsibility of each state is clear, the logic is simple, and states don't interfere with one another.
+The essence of a state machine is trading space for time—writing more lines of code, but the responsibility of each state is clear, the logic is simple, and they do not interfere with each other.
 
 ---
 
 ## Looking Back
 
-This article is the core of the entire button tutorial. We provided a detailed breakdown of the 7-state state machine in the `poll_events()` method of `button.hpp`:
+This part is the core of the entire button tutorial. We broke down the 7-state state machine of the `update` method in `Debouncer` in detail:
 
-- **Core path**: `Idle → DebouncingPress → Pressed → DebouncingRelease → Idle`, handling normal press and release
-- **Startup path**: `BootSync → BootPressed → BootReleaseDebouncing → Idle`, handling the edge case where the button is held at power-on
-- **Debounce mechanism**: Every signal bounce resets the timer, and state changes are confirmed only after sustained stability
-- **boot-lock**: The startup lock ensures that a button held at power-on does not trigger false events
+- **Core path**: `Idle` -> `DebouncingPress` -> `Pressed` -> `DebouncingRelease` -> `Idle`, handling normal presses and releases.
+- **Startup path**: `BootSync` -> `BootPressed` -> `BootReleaseDebouncing` -> `Idle`, handling the edge case where the button is held at power-up.
+- **Debounce mechanism**: Reset the timer on every signal bounce; confirm state changes only when it remains stable.
+- **boot-lock**: The startup lock ensures that a button held at power-up does not trigger false events.
 
-Once you understand this state machine, the rest of `button.hpp` (template parameters, Concepts callbacks, `std::variant` events) are simply wrapper layers built on top of it. The next few articles will gradually explain these C++ features.
+Understanding this state machine reveals that the rest of `Debouncer` (template parameters, Concepts callbacks, `ButtonEvent`) are just wrapper layers on top of it. The next few parts will gradually explain these C++ features.

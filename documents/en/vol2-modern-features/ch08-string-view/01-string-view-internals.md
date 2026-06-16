@@ -9,7 +9,7 @@ order: 1
 platform: host
 prerequisites:
 - 'Chapter 0: 右值引用'
-reading_time_minutes: 17
+reading_time_minutes: 18
 related:
 - string_view 性能分析
 - string_view 陷阱与最佳实践
@@ -17,386 +17,348 @@ tags:
 - host
 - cpp-modern
 - intermediate
-title: 'Internal Mechanics of string_view: Non-Owning String Views'
+title: 'Internal Principles of `string_view`: Non-owning String View'
 translation:
-  engine: anthropic
   source: documents/vol2-modern-features/ch08-string-view/01-string-view-internals.md
-  source_hash: a0a009491524531a04cdff6ea62afb12d4c912b1e84bdd34e505dba244a64269
-  token_count: 3346
-  translated_at: '2026-05-26T11:32:43.964326+00:00'
+  source_hash: a42c6cd426510f24a6086f27cf5b83b7bc11664d0756b35032dd0f07269161e8
+  translated_at: '2026-06-16T03:58:50.102597+00:00'
+  engine: anthropic
+  token_count: 3341
 ---
-# string_view Internals: A Non-Owning String View
+# string_view Internals: Non-owning String View
 
-While working on an IniParser project recently, I dealt with so much string manipulation that I nearly lost my mind—split, trim, substr, operations flying everywhere. Every time I used `std::string` for substring operations, it meant a heap allocation. After parsing a single config file, the heap fragmentation was worse than my desk. Later, when I dug into `std::string_view`, I realized that C++17 gave us such a handy tool. But using it well requires truly understanding its internal mechanisms—otherwise, it is easy to fall into lifetime pitfalls. We will save those details for the next article on common traps.
+While working on an IniParser project recently, I dealt with strings so much I almost got sick of it—split, trim, substr, operations flying everywhere. Every substring operation using `std::string` meant a heap allocation. After parsing a single configuration file, the heap was more fragmented than my desk. Later, when I seriously studied `std::string_view`, I realized that C++17 gave us such a handy tool. However, using it well requires truly understanding its internal mechanism; otherwise, it is easy to fall into traps regarding lifecycles—we will discuss this in detail in the next article on pitfalls.
 
-In this article, we focus on the internals of `std::string_view`: what it actually looks like, why it is so lightweight, what the essential difference is between it and `std::string`, and what operations it provides.
+In this article, we focus on the internal principles of `std::string_view`: what it looks like, why it is so lightweight, the essential differences from `std::string`, and the operations it provides.
 
 > **Learning Objectives**
 >
 > - After completing this chapter, you will be able to:
 > - [ ] Understand the internal representation of `std::string_view` (pointer + length)
-> - [ ] Distinguish between "view" and "owning" semantics
+> - [ ] Distinguish between "view" and "ownership" semantics
 > - [ ] Master the construction sources and core member functions of `std::string_view`
 > - [ ] Understand the essential differences from `const std::string&` parameters
 
-## What Exactly Is string_view
+## What exactly is string_view
 
-`std::string_view` (C++17) is a lightweight, immutable "string view" type. The key word is "view"—it **does not own** the character buffer. It only holds two things: a pointer to the start of the character sequence, and the length of that sequence. So you see, the name is very straightforward: it is a "view," an observation window, not the owner of the data.
+`std::string_view` (C++17) is a lightweight, immutable "string view" type. The keyword is "view"—it **does not own** the character buffer; it only holds two things: a pointer to the start of the character sequence and the length of that sequence. As you can see, the name is very straightforward: it is just a "view," an observation window, not the owner of the data.
 
 > Reference: [cppreference -- std::basic_string_view](https://en.cppreference.com/w/cpp/string/basic_string_view.html)
 
-### Internal Representation: Two Fields Handle Everything
+### Internal Representation: Two fields handle everything
 
-Although the C++ standard does not mandate a specific internal structure, all mainstream implementations (libstdc++, libc++, MSVC STL) use the same approach—a simple structure with two fields:
+Although the C++ standard does not mandate a specific internal structure, all mainstream implementations (libstdc++, libc++, MSVC STL) use the same scheme—a simple structure of two fields:
 
 ```cpp
-template<class CharT, class Traits = std::char_traits<CharT>>
+template <typename CharT>
 class basic_string_view {
-    const CharT* _ptr;   // 指向底层字符序列（不拥有）
-    size_t       _len;   // 长度（不含 '\0'）
+    const CharT* _data;   // Pointer to the start of the character sequence
+    size_t _size;         // Length of the sequence
 };
 ```
 
-Just these two fields: one pointer, one length. Copying a `std::string_view` simply copies these two words—16 bytes on a 64-bit system. No heap allocation, no reference counting, no destruction logic. This is the fundamental reason it is lightweight.
+Just these two fields: one pointer, one length. Copying a `std::string_view` is just copying these two words—16 bytes on a 64-bit system. No heap allocation, no reference counting, no destructor logic. This is the fundamental reason why it is lightweight.
 
 ### Relationship with std::string: View vs. Ownership
 
-The most critical step in understanding `std::string_view` is grasping the difference between "view" and "ownership." `std::string` is an owner: it allocates memory on the heap to store characters, manages the lifetime of that memory, including construction, copying, moving, and eventual deallocation. You can think of it as "I bought this house, and my name is on the deed."
+The most critical step in understanding `std::string_view` is grasping the difference between "view" and "ownership." `std::string` is an owner: it allocates memory on the heap to store characters, manages the lifecycle of that memory, including construction, copying, moving, and ultimately freeing it. You can think of it as "I bought this house, and my name is on the deed."
 
-`std::string_view`, on the other hand, is an observer: it does not allocate any memory, it simply points to someone else's data and says "I will take a look at this." It is like a friend buying a house and you visiting with a key—you can use the living room and kitchen, but the house is not yours. If your friend sells the house one day (the underlying `std::string` is destroyed), the key in your hand becomes useless.
+`std::string_view`, on the other hand, is an observer: it does not allocate any memory; it just points to someone else's data and says "I'm looking at this." It is like a friend buying a house and you holding the key to visit—you can use the living room and kitchen, but the house isn't yours. If one day the friend sells the house (the underlying `std::string` is destroyed), the key in your hand becomes useless.
 
-The direct benefit of this design is that any "substring operation" requires no new memory. For example, `substr` simply advances the pointer and shortens the length, with O(1) complexity. In contrast, `std::string::substr` needs to allocate new memory and copy characters, resulting in O(n) complexity. This difference becomes very noticeable in scenarios with frequent substring operations, such as parsers and protocol handlers.
+The direct benefit of this design is that any "substring operation" does not require allocating new memory. For example, `remove_prefix` just moves the pointer forward and shortens the length, with a complexity of O(1). In contrast, `std::string::substr` needs to allocate new memory and copy characters, with a complexity of O(n). This difference is very significant in scenarios that involve frequent substring operations, such as parsers and protocol handling.
 
-Let us compare the behavioral differences between `std::string_view` and `std::string` in substring operations with some code. The implementation of `std::string_view::substr` is roughly equivalent to:
+Let's use code to visually compare the behavioral difference between `std::string_view` and `std::string` in substring operations. The implementation of `std::string_view::remove_prefix` is roughly equivalent to:
 
 ```cpp
-string_view substr(size_t pos, size_t count) const {
-    return string_view(_ptr + pos, min(count, _len - pos));
+void remove_prefix(size_t n) {
+    _data += n;  // Move pointer forward
+    _size -= n;  // Decrease length
 }
 ```
 
-No new memory is allocated at all; only the pointer and length are adjusted. Meanwhile, `std::string::substr` must go through a full allocation-and-copy process. Suppose we need to process a 1 MB config file and perform `substr` on each field—there could be thousands of calls. Using `std::string` means thousands of heap allocations, whereas using `std::string_view` means thousands of pointer adjustments. The difference speaks for itself.
+It allocates absolutely no new memory, only adjusting the pointer and length. Meanwhile, `std::string::substr` must go through a full allocate-and-copy process. Suppose we need to process a 1MB configuration file and perform `substr` on every field—thousands of calls. Using `std::string` means thousands of heap allocations, while using `std::string_view` means thousands of pointer adjustments. The difference speaks for itself.
 
-Beyond `substr`, query operations like `find`, `rfind`, `compare`, and `starts_with` also directly traverse the memory pointed to by the `data` pointer (relying on `traits_type::compare`), without creating new memory. The design philosophy of `std::string_view` can be summarized in one sentence: it is a lightweight facade that turns any character sequence into an "operable read-only string object," but it never takes responsibility for memory. This is both its greatest advantage and the root of all risks—after all, if it does not clean up, someone else must, and that someone is you, the programmer.
+Besides `remove_prefix`, query operations like `find`, `compare`, and `starts_with` also directly traverse the memory pointed to by `data()` (relying on `size()`), without involving new memory creation. The design philosophy of `std::string_view` can be summarized in one sentence: it is a lightweight facade that turns any character sequence into an "operable read-only string object," but never takes responsibility for the memory. This is its greatest advantage, and the source of all risks—since it doesn't clean up, someone else has to, and that person is you, the programmer.
 
 ### SSO: Small String Optimization
 
-When discussing the overhead of `std::string`, we have to mention SSO (Small String Optimization). Mainstream `std::string` implementations all use the SSO strategy: when a string is short enough (typically 15–22 bytes, depending on the implementation), the character data is stored directly in an internal buffer within the object, requiring no heap allocation. Only when the string exceeds this threshold does it switch to heap allocation mode.
+Speaking of `std::string` overhead, we must mention SSO (Small String Optimization). Mainstream `std::string` implementations adopt the SSO strategy: when the string is short enough (usually 15-22 bytes, depending on the implementation), the character data is stored directly in an internal buffer within the object, requiring no heap allocation. Only when the string exceeds this threshold does it switch to heap allocation mode.
 
-SSO is a great optimization—copying short strings becomes very cheap. But it does not eliminate all overhead. A `std::string` object itself is usually 24–32 bytes in size (implementation-dependent, including the SSO buffer, length, capacity, and other information), and its copy semantics mean that even when SSO is triggered, the character data must still be copied byte by byte. In contrast, `std::string_view` is only 16 bytes (on 64-bit systems), and copying is always a two-word `memcpy`, regardless of string length.
+SSO is a great optimization—copying short strings becomes cheap. But it doesn't eliminate all overhead. A `std::string` object itself is typically 24-32 bytes in size (implementation-dependent, including SSO buffer, length, capacity, etc.), and its copy semantics mean that even if SSO is triggered, the character data must be copied byte-by-byte. In comparison, `std::string_view` is only 16 bytes (on 64-bit systems), and copying is always just a `memcpy` of two words, regardless of the string length.
 
-This comparison is not to say that `std::string_view` is better than `std::string`—they solve different problems. `std::string` manages ownership, while `std::string_view` provides a read-only view. In scenarios where you need to modify a string or hold a copy of it, `std::string` remains the only choice.
+This comparison isn't to say `std::string_view` is better than `std::string`—they solve different problems. `std::string` manages ownership; `std::string_view` provides a read-only view. In scenarios where you need to modify a string or hold a copy of the string, `std::string` remains the only choice.
 
-### Essential Comparison with const char*
+### Essential comparison with const char*
 
-If we zoom out a bit further, the design of `std::string_view` is conceptually a wrapper around `const char*`. If `std::string` wraps `char*` (with ownership), then `std::string_view` wraps `const char*` (without ownership, but with added length information). This "added length information" may seem like a small change, but its practical impact is enormous.
+If we zoom out a bit, the design of `std::string_view` is conceptually a wrapper around `const char*`. If `std::string` wraps `char*` (with ownership), then `std::string_view` wraps `const char*` (without ownership, but with added length information). This "added length information" looks like a small change, but it has a huge impact.
 
-Getting the length of a `const char*` requires calling `strlen`, which is an O(n) traversal. Worse, if your function uses the string length multiple times internally without actively caching it, you end up calling `strlen` repeatedly, unknowingly slipping into an O(n²) performance pattern. `std::string_view`, on the other hand, stores the length directly in the object, making `size()` O(1)—it is simply reading a member variable.
+Getting the length of a `const char*` requires calling `strlen`, which is an O(n) traversal. Worse, if your function uses the string length multiple times and doesn't actively cache it, you end up calling `strlen` repeatedly, unknowingly turning into an O(n^2) performance pattern. `std::string_view` stores the length directly in the object, so `size()` is O(1)—just a member variable read.
 
-Another often-overlooked issue is that `const char*` can only represent strings terminated by `'\0'`. This means it cannot correctly handle binary data containing null bytes, nor can it represent substrings without modifying the original data (because the end of a substring is not necessarily `'\0'`). `std::string_view` solves both problems with an explicit length: it can point to arbitrary byte sequences (including those with `'\0'` in the middle) and can safely represent any sub-range.
+Another often overlooked issue is that `const char*` can only represent strings terminated by a `'\0'`. This means it cannot correctly handle binary data containing null bytes, nor can it represent substrings without modifying the original data (because the end of a substring might not have a `'\0'`). `std::string_view` solves both problems with an explicit length: it can point to any byte sequence (including those with `'\0'` in the middle) and safely represent any sub-range.
 
 | Feature | `std::string_view` | `const char*` |
-|------|---------------------|---------------|
-| Includes length | Has `size()`, O(1) | No, requires `strlen`, O(n) |
-| Safe to represent substrings | Fully supported (has length) | Only by temporarily modifying `'\0'` or passing an extra length |
-| Supports sequences containing null characters | Yes (length is independent) | No, relies on NUL termination |
-| Advanced interfaces (find, compare) | Rich set of member functions | Almost none, limited to C functions |
-| Literal syntax | `"abc"sv` | `"abc"` |
+|---------|-------------------|---------------|
+| Contains length? | Has `size()`, O(1) | No, needs `strlen`, O(n) |
+| Safe to represent substrings? | Fully supported (has length) | Only by temporarily modifying `'\0'` or passing extra length |
+| Supports sequences with null chars? | Yes (length is independent) | No, relies on NUL termination |
+| Advanced interfaces (find, compare) | Rich member functions | Almost none, only C functions |
+| Literal syntax | `"text"sv` | `"text"` |
 
-The core difference can be summarized in one sentence: `string_view = (指针, 长度)`, `const char* = 指针 + 隐含以 '\0' 终止`. The explicit length of `std::string_view` is a huge advantage, because in many scenarios, NUL termination is not our intent.
+The core difference can be summarized in one sentence: `std::string_view` is a "fat pointer" (pointer + length), `const char*` is a "thin pointer" (pointer only). The explicit length of `std::string_view` is a huge advantage, because in many scenarios, NUL termination is not our intent.
 
-## Construction Sources: Where It Comes From
+## Construction Sources: Where does it come from
 
-Our experimental environment for today is as follows: Linux system, GCC 13 or Clang 17 and above, with the compiler flag `std=c++17`. All code examples can be compiled and run directly.
+Our experimental environment today is: Linux system, GCC 13 or Clang 17 or later, compiler flag `-std=c++17`. All code examples can be compiled and run directly.
 
-`std::string_view` can be constructed from multiple sources. The three most common are:
+`std::string_view` can be constructed from multiple sources. The most common ones are these three:
 
-`std::string_view` can be constructed from multiple sources. The three most common are:
-
-The first is from C-style string literals. String literals are stored statically (usually in the `.rodata` section of the executable), so it is safe for `std::string_view` to point to them—their lifetime covers the entire program's execution:
+The first is from C-style string literals. The storage for string literals is static (usually placed in the .rodata section of the executable), so `std::string_view` pointing to it is safe, and the lifetime covers the entire program run:
 
 ```cpp
-std::string_view sv = "hello, world";
-// sv 指向静态存储区的字符串字面量，永远有效
+// 1. From string literal
+std::string_view sv1 = "Hello, world";
 ```
 
-The second is from `std::string`. `std::string` provides an implicit conversion operator to `std::string_view`, so you can pass it directly by value:
+The second is from `std::string`. `std::string` provides a conversion operator to `std::string_view`, so you can pass it directly:
 
 ```cpp
-std::string str = "hello";
-std::string_view sv = str;  // 隐式转换
-// sv 指向 str 的内部缓冲区，只要 str 还活着就安全
+// 2. From std::string
+std::string s = "Hello";
+std::string_view sv2 = s; // Implicit conversion
 ```
 
-⚠️ There is a classic trap here: if the `std::string` is a temporary object, the `std::string_view` will point to destroyed memory—a dangling reference. For example, `func(std::string("hello"))` is undefined behavior. We will discuss this problem in detail in the traps article.
+⚠️ Here is a classic trap: if `s` is a temporary object, then `sv2` will point to destroyed memory—a dangling reference. For example, `func(std::string_view("tmp"))` is undefined behavior. We will discuss this issue in detail in the pitfalls article.
 
 The third is from a specified range, manually passing a pointer and length:
 
 ```cpp
-const char* buf = "hello, world";
-std::string_view sv(buf, 5);  // 只看前 5 个字符："hello"
+// 3. From pointer and length
+char buffer[] = "Data\0WithNull"; // Contains '\0' in the middle
+std::string_view sv3(buffer, 14); // Explicitly specify length to include '\0'
 ```
 
-This approach offers the highest flexibility and is the construction method used internally by many parsers. You can even point to a segment in the middle of a buffer containing `'\0'`—because `std::string_view` uses length to define boundaries, it does not rely on `'\0'` termination.
+This method offers the highest flexibility and is the construction method used inside many parsers. You can even point to a segment in the middle of a buffer containing `'\0'`—because `std::string_view` uses length to define boundaries, it doesn't rely on a `'\0'` ending.
 
-C++17 also provides the literal suffix `""sv`, allowing you to write `"hello"sv` directly to get a `std::string_view`. This suffix is defined in the `std::string_view_literals` namespace:
+C++17 also provides the literal suffix `""sv`, allowing you to write `"text"sv` to get a `std::string_view`. This suffix is defined in the `std::string_view_literals` namespace:
 
 ```cpp
-using namespace std::literals::string_view_literals;
-auto sv = "hello"sv;  // std::string_view
+using namespace std::string_view_literals;
+std::string_view sv4 = "Hello, world"sv; // Literal suffix
 ```
 
-## Differences from const std::string& Parameters
+## Difference from const std::string& parameters
 
-Many tutorials will tell you to "use `std::string_view` instead of `const std::string&` for function parameters." This is generally correct, but we need to understand the specific differences between the two in order to make the right choice in the right scenario.
+Many tutorials will tell you to "use `std::string_view` instead of `const std::string&` for function parameters." This is mostly correct, but we need to understand the specific differences between the two to make the right choice in the right scenario.
 
-When using `const std::string&` as a parameter, the caller must provide a `std::string` object. If the caller only has a `const char*` or a string literal, the compiler will implicitly construct a temporary `std::string`—which involves a potential heap allocation and copy. When using `std::string_view` as a parameter, whether the source is `std::string`, `const char*`, or a string literal, a `std::string_view` can be constructed directly at the cost of copying only a pointer and a length.
-
-```cpp
-// 方式一：const string& 参数
-void process_old(const std::string& s);
-
-process_old(std::string("temp"));  // 构造 string → 传引用
-process_old("literal");            // 隐式构造临时 string → 传引用 → 临时对象析构
-process_old(some_c_string);        // 隐式构造临时 string → strlen + 可能的分配
-
-// 方式二：string_view 参数
-void process_new(std::string_view sv);
-
-process_new(std::string("temp"));  // 从 string 隐式构造 view → 无额外分配
-process_new("literal");            // 直接构造 view → 零分配
-process_new(some_c_string);        // 直接构造 view → 需要 strlen (O(n))，但不分配堆内存
-```
-
-You will notice that the `std::string_view` version avoids unnecessary temporary `std::string` construction. In frequently called hot-path functions, this difference accumulates into noticeable performance gains. However, there is a counter-difference: `const std::string&` guarantees that the data is `'\0'`-terminated (because the source must be a `std::string`), while `std::string_view` does not. If your function internally needs to call a C API (such as `printf`), `std::string_view` might actually set you up for a pitfall.
-
-## Core Member Functions Overview
-
-Now that we understand the principles, let us look at what operations `std::string_view` provides.
-
-### Element Access
-
-`operator[]` and `at` are used to access characters by index. `operator[]` performs no bounds checking (in release mode), while `at` performs bounds checking and throws `std::out_of_range` on out-of-bounds access. `data()` returns a pointer to the underlying character sequence. `size()` and `length()` return the character count, and `empty()` checks whether it is empty.
+When using `const std::string&` as a parameter, the caller must provide a `std::string` object. If the caller only has a `const char*` or a string literal, the compiler will implicitly construct a temporary `std::string`—involving a possible heap allocation and copy. When using `std::string_view` as a parameter, whether it is `std::string`, `const char*`, or a string literal, `std::string_view` can be constructed directly, at the cost of just copying a pointer and a length.
 
 ```cpp
-std::string_view sv = "hello";
+// Old way: const std::string&
+void print_string(const std::string& str) {
+    std::cout << str << std::endl;
+}
 
-char c = sv[1];         // 'e'，无边界检查
-char d = sv.at(1);      // 'e'，有边界检查
-const char* p = sv.data();  // 指向 'h' 的指针
-std::size_t n = sv.size();  // 5
-bool e = sv.empty();        // false
-```
-
-⚠️ The return value of `data()` is **not guaranteed** to be `'\0'`-terminated. If the `std::string_view` was created via `substr` or by specifying a pointer and length, the end of the buffer pointed to by `data()` likely has no `'\0'`. Passing `data()` directly to a C API that requires NUL termination is a common source of bugs. If you truly need a NUL-terminated string, you must explicitly construct a `std::string`.
-
-### Modifying the View Itself
-
-`std::string_view` provides three operations that modify itself—note that what is modified is the "view" itself (i.e., the pointer and length), not the underlying data. These operations are all O(1) because they simply adjust two fields:
-
-```cpp
-std::string_view sv = "hello, world";
-
-// remove_prefix：把视图的起始位置向后移动 n 个字符
-sv.remove_prefix(7);   // sv 变成 "world"
-
-// remove_suffix：把视图的末尾向前缩短 n 个字符
-std::string_view sv2 = "hello, world";
-sv2.remove_suffix(7);  // sv2 变成 "hello"
-
-// swap：交换两个 string_view 的内容
-std::string_view a = "first";
-std::string_view b = "second";
-a.swap(b);  // a -> "second", b -> "first"
-```
-
-`remove_prefix` and `remove_suffix` are particularly useful in parsers. For example, if you need to skip a fixed prefix or strip a trailing delimiter, you can simply call these two functions without creating a new `std::string_view` object.
-
-Let us look at a slightly more complete parsing scenario: extracting a key and value from a string in `key=value` format. This is very common in config file parsing and HTTP header parsing.
-
-```cpp
-#include <string_view>
-#include <iostream>
-#include <optional>
-#include <utility>
-
-/// @brief 从 "key=value" 格式的字符串中提取键值对
-/// @param entry 输入字符串视图，如 "host=localhost"
-/// @return 成功返回 (key, value) pair，失败返回 std::nullopt
-std::optional<std::pair<std::string_view, std::string_view>>
-parse_kv(std::string_view entry) {
-    auto pos = entry.find('=');
-    if (pos == std::string_view::npos) {
-        return std::nullopt;
-    }
-    auto key = entry.substr(0, pos);
-    auto value = entry.substr(pos + 1);
-    // 去掉前后空白
-    while (!key.empty() && key.front() == ' ') {
-        key.remove_prefix(1);
-    }
-    while (!key.empty() && key.back() == ' ') {
-        key.remove_suffix(1);
-    }
-    while (!value.empty() && value.front() == ' ') {
-        value.remove_prefix(1);
-    }
-    while (!value.empty() && value.back() == ' ') {
-        value.remove_suffix(1);
-    }
-    if (key.empty()) {
-        return std::nullopt;
-    }
-    return std::make_pair(key, value);
+// New way: std::string_view
+void print_view(std::string_view sv) {
+    std::cout << sv << std::endl;
 }
 
 int main() {
-    const char* raw = "  host = localhost ; port = 8080 ";
-    std::string_view input(raw);
-    // 手动按 ';' 分割，逐个解析键值对
-    while (!input.empty()) {
-        auto semi = input.find(';');
-        auto segment = (semi == std::string_view::npos)
-                           ? input
-                           : input.substr(0, semi);
-        auto result = parse_kv(segment);
-        if (result) {
-            std::cout << "key=[" << result->first << "] "
-                      << "value=[" << result->second << "]\n";
-        }
-        if (semi == std::string_view::npos) {
-            break;
-        }
-        input.remove_prefix(semi + 1);
+    const char* cstr = "Hello";
+
+    print_string(cstr); // (1) Constructs a temporary std::string
+    print_view(cstr);   // (2) No heap allocation, just pointer + length
+}
+```
+
+You will find that the `std::string_view` version avoids unnecessary temporary `std::string` construction. In frequently called hot-path functions, this difference accumulates into significant performance gains. However, there is a counter-difference: `const std::string&` guarantees the data is terminated by `'\0'` (because the source must be `std::string`), while `std::string_view` does not. If your function needs to call a C API internally (like `strtol`), then `std::string_view` might actually dig a hole for you.
+
+## Overview of Core Member Functions
+
+Now that we understand the principles, let's look at the operations `std::string_view` provides.
+
+### Element Access
+
+`operator[]` and `at()` are used to access characters by index. `operator[]` performs no bounds checking (in release mode), while `at()` performs bounds checking and throws `std::out_of_range` on overflow. `data()` returns a pointer to the underlying character sequence. `size()` and `length()` return the character count, and `empty()` checks if it is empty.
+
+```cpp
+std::string_view sv = "Hello";
+char c1 = sv[0];        // 'H', no bounds check
+char c2 = sv.at(0);     // 'H', with bounds check
+const char* ptr = sv.data(); // Pointer to 'H'
+std::cout << sv.size(); // 5
+```
+
+⚠️ The return value of `data()` is **not guaranteed** to be terminated by `'\0'`. If `sv` was generated via `substr(pointer, length)` or constructed from a non-null-terminated buffer, the end of the buffer pointed to by `data()` likely lacks a `'\0'`. Passing `data()` directly to a C API requiring NUL termination is a common source of bugs. If you truly need a NUL-terminated string, you must explicitly construct a `std::string`.
+
+### Modifying the View Itself
+
+`std::string_view` provides three operations to modify itself—note that it modifies the "view" itself (i.e., the pointer and length), not the underlying data. These operations are all O(1) because they just adjust two fields:
+
+```cpp
+sv.remove_prefix(1); // Remove first character
+sv.remove_suffix(1); // Remove last character
+```
+
+`remove_prefix` and `remove_suffix` are particularly useful in parsers. For example, if you want to skip a fixed prefix or remove a trailing separator, just call these functions; there is no need to create a new `std::string_view` object.
+
+Let's look at a slightly more complete parsing scenario: extracting key and value from a string in `key=value` format. This is very common in configuration file parsing and HTTP header parsing.
+
+```cpp
+#include <iostream>
+#include <string_view>
+
+void parse_kv(std::string_view input) {
+    size_t pos = input.find('=');
+    if (pos != std::string_view::npos) {
+        auto key = input.substr(0, pos);
+        auto value = input.substr(pos + 1);
+
+        // Simple trim (remove spaces)
+        key.remove_prefix(std::min(key.find_first_not_of(" "), key.size()));
+        value.remove_suffix(std::min(value.size() - value.find_last_not_of(" ") - 1, value.size()));
+
+        std::cout << "Key: [" << key << "], Value: [" << value << "]" << std::endl;
     }
+}
+
+int main() {
+    parse_kv("  username  =  admin  ");
     return 0;
 }
 ```
 
-Output:
+Result:
 
 ```text
-key=[host] value=[localhost]
-key=[port] value=[8080]
+Key: [username], Value: [admin]
 ```
 
-Note the key operations here: we use `remove_prefix` to consume the input string segment by segment, `substr` to extract fragments that do not include the delimiter, and `remove_prefix` / `remove_suffix` for trimming. The entire process is zero-copy on the original data—`std::string_view` simply adjusts the pointer and length repeatedly. On a parser's hot path, this pattern can significantly reduce the number of memory allocations.
+Note the key operations here: we use `find` to consume the input string segment by segment, use `substr` to extract fragments without separators, and use `remove_prefix` / `remove_suffix` to trim. The entire process is zero-copy on the original data—`std::string_view` just repeatedly adjusts pointers and lengths. On the hot path of a parser, this pattern can significantly reduce the number of memory allocations.
 
-But again, be careful: in this example, `input` is a `const char*` literal whose lifetime covers the entire program. If `input` came from a local `std::string` variable, all the `std::string_view`s would dangle after the function returned. This is what I keep emphasizing—understanding lifetimes is the cardinal rule of using `std::string_view`.
+But again, note: in this example, the input is a `std::string_view` literal whose lifetime covers the entire program. If the input came from a `std::string` local variable, all views would dangle after the function returns. This is what I emphasize repeatedly—understanding lifecycles is the first priority of using `std::string_view`.
 
-## Hands-On: Writing a Simple Token Splitter
+## Practice: Write a simple token splitter manually
 
-After discussing all these principles, let us use a practical example to experience how `std::string_view` is used. Below is a function that splits a string by a delimiter:
+Having talked about so many principles, let's use a practical example to experience the usage of `std::string_view`. Below is a function that splits a string by a delimiter:
 
 ```cpp
+#include <iostream>
 #include <string_view>
 #include <vector>
-#include <iostream>
 
-std::vector<std::string_view> split(std::string_view input, char delim) {
+std::vector<std::string_view> split(std::string_view text, char delim) {
     std::vector<std::string_view> tokens;
-    while (true) {
-        auto pos = input.find(delim);
-        if (pos == std::string_view::npos) {
-            if (!input.empty()) {
-                tokens.push_back(input);
-            }
-            break;
-        }
-        tokens.push_back(input.substr(0, pos));
-        input.remove_prefix(pos + 1);  // 跳过分隔符
+    size_t start = 0;
+    size_t end = 0;
+
+    while ((end = text.find(delim, start)) != std::string_view::npos) {
+        tokens.push_back(text.substr(start, end - start));
+        start = end + 1;
     }
+    // Add the last segment
+    tokens.push_back(text.substr(start));
+
     return tokens;
 }
 
 int main() {
-    std::string line = "name=Alice;age=30;city=Beijing";
-    auto tokens = split(line, ';');
-    for (auto tk : tokens) {
-        std::cout << "[" << tk << "]\n";
+    std::string_view text = "one,two,three";
+    auto tokens = split(text, ',');
+
+    for (auto t : tokens) {
+        std::cout << "[" << t << "]" << std::endl;
     }
     return 0;
 }
 ```
 
-Output:
+Result:
 
 ```text
-[name=Alice]
-[age=30]
-[city=Beijing]
+[one]
+[two]
+[three]
 ```
 
-Notice the logic inside the `split` function: we repeatedly call `remove_prefix` to advance the view's starting position, and use `substr` to extract each token. Throughout this process, there is no heap allocation (aside from the growth of the `std::vector` itself), and all operations are O(1) pointer adjustments. If implemented with `std::string`, each `substr` would allocate new memory—for a simple INI file parser, this overhead is completely unnecessary.
+Pay attention to the logic inside the `split` function: we repeatedly call `find` to advance the starting position of the view, and use `substr` to extract each token. Throughout the process, there is no heap allocation (except for the growth of the `vector` itself), and all operations are O(1) pointer adjustments. If implemented with `std::string`, every `substr` would allocate new memory—for a simple INI file parser, this overhead is completely unnecessary.
 
-⚠️ The returned `std::string_view` vector points to the internal buffer of the original `std::string`. If the `std::string` is destroyed, all these `std::string_view`s become dangling. In real projects, you may need to use `std::string` to copy these tokens, or clearly document the lifetime constraints of the return values in your documentation.
+⚠️ The returned `std::vector<std::string_view>` points to the internal buffer of the original `text`. If `text` is destroyed, all these views will dangle. In an actual project, you might need to use `std::string` to copy these tokens, or clearly document the lifetime constraints of the return value.
 
 ## Embedded Practice: Command Parsing
 
-`std::string_view` is equally useful in embedded scenarios. Many embedded systems need to receive text commands via a serial port (such as the AT command set or custom debug commands). Using `std::string_view` to parse these commands avoids unnecessary string copies, which is especially valuable on MCUs with limited heap memory.
+`std::string_view` is equally useful in embedded scenarios. Many embedded systems need to receive text commands via serial port (such as AT command sets, custom debug commands). Using `std::string_view` to parse these commands can avoid unnecessary string copies, which is especially valuable on MCUs with limited heap memory.
 
 ```cpp
+#include <iostream>
 #include <string_view>
-#include <cstring>
+#include <array>
 
-/// @brief 简单的串口命令解析器
-/// @param cmd 输入命令视图，如 "LED ON" 或 "PWM 128"
-void handle_command(std::string_view cmd) {
-    // 去掉末尾的换行符
-    while (!cmd.empty() && (cmd.back() == '\r' || cmd.back() == '\n')) {
+// Simulate receiving data from a serial buffer
+std::array<char, 128> uart_rx_buffer;
+size_t uart_rx_len = 0;
+
+void process_command(std::string_view cmd) {
+    // Remove trailing newline characters
+    while (!cmd.empty() && (cmd.back() == '\n' || cmd.back() == '\r')) {
         cmd.remove_suffix(1);
     }
 
-    // 按空格分割命令和参数
-    auto space = cmd.find(' ');
-    auto verb = (space == std::string_view::npos) ? cmd : cmd.substr(0, space);
+    // Find space to separate verb and arguments
+    size_t space_pos = cmd.find(' ');
+    std::string_view verb = (space_pos != std::string_view::npos)
+                             ? cmd.substr(0, space_pos)
+                             : cmd;
+    std::string_view args = (space_pos != std::string_view::npos)
+                             ? cmd.substr(space_pos + 1)
+                             : "";
 
     if (verb == "LED") {
-        auto arg = (space == std::string_view::npos)
-                       ? std::string_view{}
-                       : cmd.substr(space + 1);
-        if (arg == "ON") {
-            hal_gpio_write(kLedPin, true);
-        } else if (arg == "OFF") {
-            hal_gpio_write(kLedPin, false);
+        if (args == "ON") {
+            std::cout << "Turning LED ON" << std::endl;
+        } else if (args == "OFF") {
+            std::cout << "Turning LED OFF" << std::endl;
         }
-    } else if (verb == "PWM") {
-        auto arg = cmd.substr(space + 1);
-        // 将 string_view 转为整数
-        int value = 0;
-        for (char c : arg) {
-            if (c >= '0' && c <= '9') {
-                value = value * 10 + (c - '0');
-            }
-        }
-        hal_pwm_set_duty(value);
+    } else if (verb == "RESET") {
+        std::cout << "System Reset" << std::endl;
     }
+}
+
+int main() {
+    // Simulate receiving "LED ON\n"
+    uart_rx_buffer = {'L', 'E', 'D', ' ', 'O', 'N', '\n'};
+    uart_rx_len = 7;
+
+    // Parse directly from buffer, zero copy
+    process_command(std::string_view(uart_rx_buffer.data(), uart_rx_len));
+
+    return 0;
 }
 ```
 
-This example demonstrates the typical usage of `std::string_view` in embedded scenarios: receiving a command fragment sliced from a serial buffer, using `remove_suffix` to strip newline characters, splitting the verb and arguments by spaces, and then performing simple string matching. The entire process is zero heap allocation—all operations are pointer and length adjustments. For an MCU with only a few dozen KB of RAM, this "zero-allocation" string processing approach is often the only viable option.
+This example demonstrates the typical usage of `std::string_view` in embedded scenarios: receiving a command segment cut from a serial buffer, using `remove_suffix` to strip newlines, splitting verbs and arguments by spaces, and then performing simple string matching. The entire process is zero heap allocation—all operations are pointer and length adjustments. For an MCU with only a few dozen KB of RAM, this "zero-allocation" string processing method is almost the only viable choice.
 
 ## Run Online
 
 Run the string_view example online to experience zero-copy string operations:
 
 <OnlineCompilerDemo
-  title="string_view：零拷贝字符串分割与解析"
+  title="string_view: Zero-copy String Splitting and Parsing"
   source-path="code/examples/vol2/12_string_view.cpp"
-  description="在线运行并观察 string_view 的 split 分割和 key-value 解析的零拷贝特性。"
+  description="Run online and observe the zero-copy characteristics of string_view split and key-value parsing."
   allow-run
 />
 
 ## Summary
 
-The essence of `std::string_view` is a non-owning view of "pointer + length." It does not allocate memory, copying is extremely cheap (16 bytes), and substring operations are all O(1). It can be constructed from `std::string`, `const char*`, literals, and other sources, making it an ideal choice for function parameters. But it does not guarantee NUL termination, and it does not manage data lifetimes—these "non-responsibilities" are exactly what we need to be extra careful about when using it.
+The essence of `std::string_view` is a "pointer + length" non-owning view. It allocates no memory, has a very low copy cost (16 bytes), and substring operations are all O(1). It can be constructed from `std::string`, `const char*`, literals, and other sources, making it an ideal choice for function parameters. However, it does not guarantee NUL termination and does not manage data lifecycles—these "irresponsible" aspects are exactly what we need to be extra careful about when using it.
 
-Now that we understand these internals, the next article will look at the actual performance benefits of `std::string_view`, letting benchmark data do the talking.
+Once you understand these internal principles, in the next article we will look at the actual performance benefits of `std::string_view` using benchmark data.
 
 ## References
 
 - [cppreference: std::basic_string_view](https://en.cppreference.com/w/cpp/string/basic_string_view.html)
-- [cppreference: basic_string_view 构造函数](https://en.cppreference.com/w/cpp/string/basic_string_view/basic_string_view.html)
-- [cppreference: data() 说明（不保证 NUL）](https://en.cppreference.com/w/cpp/string/basic_string_view/data.html)
+- [cppreference: basic_string_view constructor](https://en.cppreference.com/w/cpp/string/basic_string_view/basic_string_view.html)
+- [cppreference: data() description (no NUL guarantee)](https://en.cppreference.com/w/cpp/string/basic_string_view/data.html)
 - [cppreference: operator""sv](https://en.cppreference.com/w/cpp/string/basic_string_view/operator%22%22sv.html)
 - [cppreference: remove_prefix](https://en.cppreference.com/w/cpp/string/basic_string_view/remove_prefix.html)

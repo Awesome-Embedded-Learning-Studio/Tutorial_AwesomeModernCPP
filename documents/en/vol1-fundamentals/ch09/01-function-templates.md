@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the syntax, template instantiation mechanism, and type deduction
-  of `template<typename T>`, and learn to write generic functions.
+description: Master the syntax of `template<typename T>`, instantiation mechanisms,
+  and type deduction, and learn how to write generic functions.
 difficulty: intermediate
 order: 1
 platform: host
@@ -20,336 +20,334 @@ tags:
 - 进阶
 title: Function Template
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch09/01-function-templates.md
-  source_hash: 7d983cf1353eb7e3443a37ac7ee3aa1a8ac068ac54acabaa5ee03aefc9b756e2
-  token_count: 2879
-  translated_at: '2026-05-26T10:56:40.722448+00:00'
+  source_hash: fe91740ae144c93cd244068e786b5e136c862f0a4d83f8442533a27c3bc1a72e
+  translated_at: '2026-06-16T03:47:17.921514+00:00'
+  engine: anthropic
+  token_count: 2875
 ---
 # Function Templates
 
-Suppose we want to write a `max` function that takes two values and returns the larger one. The logic is straightforward—we can do it in two lines of code. But if our program needs to compare `int`, `double`, and `std::string` at the same time, we would need to write three versions: one `max(int, int)`, one `max(double, double)`, and one `max(std::string, std::string)`. The logic of all three versions is exactly the same—just `(a > b) ? a : b`—with the only difference being the parameter types.
+Let's say we want to write a `max` function that accepts two values and returns the larger one. The logic is straightforward—just two lines of code. But if our program needs to compare `int`, `double`, and `float` simultaneously, we would need to write three versions: one `max_int`, one `max_double`, and one `max_float`. The logic of all three versions is identical—`return a > b ? a : b`—and the only difference is the parameter type.
 
-This kind of repetitive code—"same logic, different types"—is everywhere in real-world projects: sorting, searching, swapping, printing arrays, almost every generic operation encounters it. C++ provides a mechanism that lets us write the logic only once, and then the compiler automatically generates the corresponding function versions for different types. This is the function template. Starting with this chapter, we officially enter the world of C++ generic programming.
+This kind of repetitive code—"same logic, different types"—is everywhere in real-world projects. Sorting, searching, swapping, printing arrays—almost every generic operation encounters this. C++ provides a mechanism that allows us to write the logic only once, and then the compiler automatically generates the corresponding function versions for different types. This is the function template. Starting from this chapter, we officially enter the world of C++ generic programming.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Use `template<typename T>` syntax to write generic functions
+> - [ ] Write generic functions using `template <typename T>` syntax
 > - [ ] Understand the template instantiation mechanism—the difference between implicit and explicit instantiation
 > - [ ] Master type deduction rules, knowing when deduction fails and how to resolve it
 > - [ ] Understand the basic concept of template specialization
 > - [ ] Make reasonable choices between function overloading and templates
 
-## template\<typename T\>—The Starting Point of Generics
+## `template<typename T>`—The Start of Generic Programming
 
-Let's start with the simplest example and write a generic `max_value` function (the reason we don't call it `max` is that `std::max` already exists in the standard library, and using the same name can easily cause conflicts on certain compilers—especially on Windows, where `<windows.h>` defines a `max` macro, which is the real blood-pressure booster).
+Let's start with the simplest example and write a generic `my_max` function (we don't call it `max` because `max` already exists in the standard library; using the same name can easily cause conflicts on some compilers—especially on Windows where `windows.h` defines a `max` macro, which is truly blood-pressure-raising).
 
 ```cpp
+#include <iostream>
+
+// Define a simple function template
 template <typename T>
-T max_value(T a, T b)
-{
+T my_max(T a, T b) {
     return (a > b) ? a : b;
+}
+
+int main() {
+    int a = 10, b = 20;
+    std::cout << my_max(a, b) << std::endl; // Output: 20
+
+    double x = 3.14, y = 2.71;
+    std::cout << my_max(x, y) << std::endl; // Output: 3.14
+    return 0;
 }
 ```
 
-`template <typename T>` tells the compiler: this is a template, and `T` is a type parameter. In the function definition that immediately follows, everywhere `T` appears will be replaced with the actual type during instantiation. When we call `max_value(3, 5)`, the compiler deduces that `T` is `int`, and thus generates a `int max_value(int, int)` version of the function. Calling `max_value(1.0, 2.0)` generates the `double max_value(double, double)` version. The entire process is transparent to the caller.
+`template <typename T>` tells the compiler: this is a template, and `T` is a type parameter. In the function definition that follows, every occurrence of `T` will be replaced by an actual type upon instantiation. When we call `my_max(int, int)`, the compiler deduces `T` as `int` and generates an `int` version of the function. Calling `my_max(double, double)` generates a `double` version. The entire process is transparent to the caller.
 
-### What Is the Difference Between typename and class
+### What is the difference between `typename` and `class`
 
-In a template parameter list, `typename` and `class` are completely equivalent—`template <typename T>` and `template <class T>` express the same meaning, with no semantic difference. Early C++ only supported the `class` keyword; `typename` was introduced later to eliminate the misconception that "T must be a class." `T` can be any type—built-in types (`int`, `double`, pointers), custom classes, or even function pointers. Modern C++ style prefers `typename` because its semantics are more accurate and it reads more clearly.
+In a template parameter list, `typename` and `class` are completely equivalent—`template <typename T>` and `template <class T>` express the same meaning with no semantic difference. Early C++ only supported the `class` keyword; later, `typename` was introduced to eliminate the misconception that "T must be a class." `T` can be any type—built-in types (`int`, `double`, pointers), custom classes, or even function pointers. Modern C++ style prefers `typename` as it is semantically more accurate and clearer to read.
 
 ### Multiple Type Parameters
 
-In some scenarios, one type parameter is not enough. For example, if we want to write a function that converts a value of one type to another type:
+In some scenarios, one type parameter isn't enough. For example, if we want to write a function that converts a value of one type to another:
 
 ```cpp
-template <typename Dest, typename Source>
-Dest cast_to(Source value)
-{
-    return static_cast<Dest>(value);
+template <typename To, typename From>
+To cast_to(From f) {
+    return static_cast<To>(f);
+}
+
+int main() {
+    double d = 3.14;
+    int i = cast_to<int>(d); // Explicitly specify To as int, From is deduced as double
+    std::cout << i << std::endl;
 }
 ```
 
-There is no upper limit to the number of template parameters, but in real-world projects, having more than two or three is quite rare—with each additional type parameter, the likelihood that the caller needs to specify it explicitly increases, and the code's readability decreases.
+There is no upper limit on the number of template parameters, but in real projects, having more than two or three is rare. The more type parameters you add, the more likely the caller will need to specify them explicitly, and code readability decreases.
 
-## Template Instantiation—The Compiler "Writes Code" for You
+## Template Instantiation—The Compiler "Writes Code" For You
 
-A template itself is not code—it is a "code recipe." Only when you actually call the template function does the compiler "expand" the template into a concrete function definition based on the types of the call arguments. This process is called template instantiation. (Feels a bit like a macro, doesn't it? If the author remembers correctly, that was indeed its very original purpose!)
+A template itself is not code—it is a "code recipe." Only when you actually call the template function does the compiler "expand" the template into a specific function definition based on the types of the arguments passed. This process is called template instantiation. (It feels a bit like a macro, doesn't it? If I recall correctly, its original purpose was exactly that!)
 
 ```cpp
-int x = max_value(3, 5);       // T = int, 生成 int max_value(int, int)
-double y = max_value(1.0, 2.0); // T = double, 生成 double max_value(double, double)
+my_max<int>(10, 20);   // Generates void my_max(int, int)
+my_max<double>(1.5, 2.5); // Generates void my_max(double, double)
 ```
 
-With the two calls above, the compiler generates two completely independent functions. They each exist in the compiled binary file, with the same effect as hand-writing two overloaded functions. This is also the core cost of templates—code bloat. If you instantiate the same template with 20 different types, the compiler will generate 20 copies of the function code. For small functions, this is not a problem, but for large templates (like the full specializations of certain STL algorithms), the code size can increase significantly.
+With the two calls above, the compiler generates two completely independent functions. They exist separately in the compiled binary file, just like hand-writing two overloaded functions. This is also the core cost of templates—code bloat. If you instantiate the same template with 20 different types, the compiler will generate 20 copies of the function code. For small functions, this isn't an issue, but for large templates (like full specializations of certain STL algorithms), the code size can increase significantly.
 
 ### Implicit Instantiation vs Explicit Instantiation
 
-The approach we just saw, where "the compiler automatically deduces types from the call arguments and generates code," is called implicit instantiation, and it is the most common way. But sometimes we need to explicitly tell the compiler which type to use—this is explicit instantiation:
+The method described above, where "the compiler automatically deduces types based on call arguments and generates code," is called implicit instantiation, and it is the most common way. However, sometimes we need to explicitly tell the compiler which type to use; this is explicit instantiation:
 
 ```cpp
-int result = max_value<double>(3, 5.0);  // 显式指定 T = double
+int main() {
+    int a = 10;
+    double b = 3.14;
+
+    // Error! Deduction conflict: T cannot be both int and double
+    // std::cout << my_max(a, b) << std::endl;
+
+    // OK: Explicitly specify T as double, 'a' is converted to double
+    std::cout << my_max<double>(a, b) << std::endl;
+}
 ```
 
-Here, `3` is `int`, and `5.0` is `double`; the two types are different, so the compiler cannot deduce `T` as both `int` and `double` at the same time—we will discuss this deduction conflict in detail in the next section. By adding `<double>` after the function name, we explicitly specify the type of `T`, and the compiler will implicitly convert `3` to `double` and then call the `max_value<double>` version.
+Here `a` is `int`, and `b` is `double`. The types differ, so the compiler cannot deduce `T` as both `int` and `double` simultaneously—we will discuss this deduction conflict in detail in the next section. By adding `<double>` after the function name, we explicitly specify the type of `T`. The compiler will implicitly convert `a` to `double` and then call the `double` version.
 
-There is also a rarer syntax—the explicit instantiation definition, which forces the compiler to generate code for a specific version right here, even if the current translation unit doesn't use it:
+There is also a rarer syntax—explicit instantiation definition—which forces the compiler to generate code for a specific version here, even if the current compilation unit doesn't use it:
 
 ```cpp
-template int max_value<int>(int, int);           // 显式实例化定义
-template double max_value(double, double);       // 同上，省略模板参数列表
+template int my_max(int, int); // Explicitly instantiate the int version
 ```
 
-This syntax is occasionally used in library development: put the template implementation in a `.cpp` file, then explicitly instantiate the type versions that the library needs to export, so that user code doesn't need to see the template implementation. However, in day-to-day application development, we almost never need to write explicit instantiation definitions by hand.
+This syntax is occasionally used in library development: putting the template implementation in a `.cpp` file and then explicitly instantiating the type versions the library needs to export. This way, user code doesn't need to see the template implementation. However, in daily application development, we almost never need to write explicit instantiation definitions manually.
 
-## Type Deduction—How the Compiler Guesses T
+## Type Deduction—How the Compiler Guesses `T`
 
-When calling `max_value(3, 5)`, the compiler sees that the arguments `3` and `5` are both `int`, so it deduces `T = int`. This process is called template argument deduction. Deduction happens at compile time and has no runtime overhead.
+When calling `my_max(a, b)`, the compiler sees that the arguments `a` and `b` are both `int`, so it deduces `T` as `int`. This process is called template argument deduction. Deduction happens at compile time and incurs no runtime overhead.
 
-The rules of deduction are simple to state: every template parameter must be uniquely determined. If the same `T` appears in multiple parameters, then the types of those parameters—after stripping references and top-level `const`—must be exactly the same, otherwise deduction fails.
+The rules for deduction are simple to state: every template parameter must be uniquely determined. If the same `T` appears in multiple parameters, the types of these parameters—after removing references and top-level `const`—must be exactly the same, otherwise deduction fails.
 
-### Typical Scenarios of Deduction Failure
+### Typical Scenarios for Deduction Failure
 
 ```cpp
-auto r = max_value(3, 5.0);  // 编译错误！
+template <typename T>
+T my_max(T a, T b) {
+    return (a > b) ? a : b;
+}
+
+int main() {
+    int a = 10;
+    double b = 3.14;
+
+    // Error: Deduction failed
+    // T deduced as int from 'a', but deduced as double from 'b'
+    auto val = my_max(a, b);
+}
 ```
 
-This code will directly report an error. The reason is that the type of `3` is `int`, so the compiler deduces `T = int`; the type of `5.0` is `double`, so the compiler deduces `T = double`. The same `T` cannot equal both `int` and `double` at the same time—a deduction contradiction.
+This code will error directly. The reason is that `a`'s type is `int`, so the compiler deduces `T` as `int`. `b`'s type is `double`, so the compiler deduces `T` as `double`. The same `T` cannot be equal to both `int` and `double` simultaneously; the deduction contradicts itself.
 
-> **Pitfall Warning**: Error messages when template deduction fails are usually very long. The compiler will list all the overloads and template candidates it tried, and then tell you "none of them match." For beginners, this kind of dozens-of-lines error message is quite discouraging. The solution is to locate the last line of the error message—it will usually point out exactly which parameter's type doesn't match. Then trace back from the call site and check whether the type of each argument is consistent.
+> **Pitfall Warning**: Error messages for template deduction failures are usually very long. The compiler will list all overloads and template candidates it tried, then tell you "none matched." For beginners, this dozens-of-lines error message is quite discouraging. The solution is to locate the last line of the error message—it usually points out exactly which parameter's type doesn't match. Then trace back from the call site and check if the types of each argument are consistent.
 
-There are three ways to resolve a deduction conflict. The first is to explicitly specify the template argument, just like the `max_value<double>(3, 5.0)` we saw earlier, forcing `T = double`, and `3` will be implicitly converted. The second is to manually convert the argument type: `max_value(static_cast<double>(3), 5.0)`. The third is to modify the template itself to use two independent type parameters—but this approach requires caution, as we will discuss shortly.
+There are three ways to resolve deduction conflicts. The first is to explicitly specify the template argument, like `my_max<double>(a, b)` we just saw, forcing `T` to be `double`, and `a` will be implicitly converted. The second is to manually convert the argument type: `my_max(a, static_cast<int>(b))`. The third is to modify the template itself to use two independent type parameters—though this approach requires care, which we will discuss shortly.
 
-### The Pitfall of Two Type Parameters
+### The Trap of Two Type Parameters
 
-Someone might think: since `int` and `double` cause a deduction conflict, let's just use two type parameters.
+One might think: since `my_max(a, b)` with `int` and `double` causes a deduction conflict, let's just use two type parameters.
 
 ```cpp
 template <typename T, typename U>
-???.??? max_value_two(T a, U b)
-{
+// auto my_max(T a, U b) { // Problem: What is the return type?
+//     return (a > b) ? a : b;
+// }
+
+// Better approach: use 'auto' for return type deduction
+auto my_max(T a, U b) {
     return (a > b) ? a : b;
 }
 ```
 
-The problem lies in the return type—if `T` is `int` and `U` is `double`, should the return value be `int` or `double`? Using `auto` lets the compiler deduce it itself; `(a > b) ? a : b` in C++ follows the type deduction rules of the ternary operator, where `int` and `double` will be promoted to `double`, so the return value is `double`. But this only works for simple cases. In more complex scenarios, you might need `std::common_type_t<T, U>` to obtain the common type of the two types:
+The problem lies with the return type—if `T` is `int` and `U` is `double`, is the return value `int` or `double`? Using `auto` lets the compiler deduce it itself. In C++, the ternary operator follows specific type deduction rules: `a` and `b` will be promoted to a common type, so the return value is `double`. However, this only works for simple cases. In more complex scenarios, you might need `std::common_type` to get the common type of two types:
 
 ```cpp
+#include <type_traits>
+
 template <typename T, typename U>
-auto max_value_two(T a, U b) -> std::common_type_t<T, U>
-{
+typename std::common_type<T, U>::type my_max(T a, U b) {
     return (a > b) ? a : b;
 }
 ```
 
-`std::common_type_t` is defined in `<type_traits>`, and it selects the most appropriate common type based on the implicit conversion rules of the two types. But honestly, when encountering mixed-type comparisons in daily use, the simplest approach is still to explicitly specify one type or manually cast—there's no need to make it this complicated.
+`std::common_type` is defined in `<type_traits>` and selects the most appropriate common type based on the implicit conversion rules of the two types. However, honestly, in daily use, when encountering mixed-type comparisons, the simplest way is still to explicitly specify one type or manually cast; no need to make it so complex.
 
 ## Template Specialization—When the Generic Solution Doesn't Fit
 
-Our `max_value` works fine for most types, but for `const char*` (C-style strings), it compares the addresses of two pointers rather than the contents of the strings. This behavior is obviously not what we want.
+The `my_max` we wrote works fine for most types, but for `const char*` (C-style strings), it compares the addresses of the two pointers, not the content of the strings. This behavior is obviously not what we want.
 
-Template specialization allows us to provide a dedicated implementation for a specific type:
+Template specialization allows us to provide a specific implementation for a particular type:
 
 ```cpp
-// 通用模板
+// Generic version
 template <typename T>
-T max_value(T a, T b)
-{
+T my_max(T a, T b) {
     return (a > b) ? a : b;
 }
 
-// const char* 的特化版本
+// Full specialization for const char*
 template <>
-const char* max_value<const char*>(const char* a, const char* b)
-{
-    return (std::strcmp(a, b) > 0) ? a : b;
+const char* my_max<const char*>(const char* a, const char* b) {
+    return (strcmp(a, b) > 0) ? a : b;
 }
 ```
 
-`template <>` indicates that this is a full specialization—all template parameters have been determined. When calling `max_value("hello", "world")`, if the compiler deduces `T = const char*`, it will prefer the specialized version over the generic version.
+`template <>` indicates this is a full specialization—all template parameters are determined. When calling `my_max`, if the compiler deduces `T` as `const char*`, it will prioritize using the specialized version over the generic version.
 
-Specialization is a fairly large topic, involving partial specialization, SFINAE (Substitution Failure Is Not An Error), `concept` constraints, and more. Here we only need to know of its existence and basic syntax—we will dive deeper into it in the class templates chapter.
+Specialization is a large topic involving partial specialization, SFINAE, C++20 `concepts`, and more. Here we only need to know of its existence and basic syntax—we will discuss it in depth in the class templates chapter.
 
 ## Function Overloading vs Templates—When to Use Which
 
-Both function overloading and function templates can achieve "same-named functions handling different types," but the mechanisms are completely different. Function overloading means manually writing a version for each type, and the compiler selects the best match based on the argument types. Function templates mean writing a generic "recipe," and the compiler automatically generates the corresponding version based on the call.
+Function overloading and function templates can both achieve "same function name handling different types," but their mechanisms are completely different. Function overloading involves manually writing a version for each type, and the compiler selects the best match based on argument types. Function templates involve writing a generic "recipe," and the compiler automatically generates the corresponding version based on the call.
 
-The principle for choosing is actually quite intuitive: if the processing logic for all types is exactly the same and only the types differ, use a template—one `max_value` template is much cleaner than 20 hand-written overloaded functions. If the processing logic for different types has fundamental differences—for example, `print(int)` directly outputs a number, while `print(std::string)` needs quotes—then use overloading, where each version's logic is independent and clear.
+The principle of choice is actually quite intuitive: if the processing logic for all types is exactly the same, and only the types differ, use a template—one `my_max` template is much cleaner than 20 manually written overloaded functions. If the processing logic for different types differs fundamentally—for example, printing an `int` outputs the number directly, while printing a `char*` requires quotes—then use overloading, where each version's logic is independent and clear.
 
-### Overload Resolution When Mixed
+### Overload Resolution When Mixing Them
 
-Templates and overloading can coexist, and the compiler has a well-defined set of overload resolution rules: first, it collects all candidate functions (including ordinary overloads and the instantiated versions of templates), then ranks them by the precision of the type match, and selects the best match. If multiple candidates have the same degree of match, an ambiguity error occurs.
+Templates and overloading can coexist. The compiler has a set of deterministic overload resolution rules: first, it collects all candidate functions (including normal overloads and template-instantiated versions), then sorts them based on the precision of type matching, and selects the best match. If multiple candidates have the same match score, an ambiguity error occurs.
 
 ```cpp
+void print(int i) {
+    std::cout << "Int: " << i << std::endl;
+}
+
 template <typename T>
-T max_value(T a, T b)
-{
-    return (a > b) ? a : b;
+void print(T t) {
+    std::cout << "Generic: " << t << std::endl;
 }
 
-// 普通重载：int 版本
-int max_value(int a, int b)
-{
-    std::cout << "int overload\n";
-    return (a > b) ? a : b;
-}
-
-int main()
-{
-    max_value(3, 5);       // 调用普通重载（精确匹配优先于模板）
-    max_value(1.0, 2.0);   // 调用模板实例化（double 无重载版本）
-    max_value<>(3, 5);     // 强制使用模板，跳过普通重载
+int main() {
+    print(100);      // Calls void print(int) - non-template is preferred
+    print<>(100);    // Calls template version - empty <> forces template usage
+    print(3.14);     // Calls template version (no int overload exists)
 }
 ```
 
-When both an ordinary overload and a template instantiation exist, if their match precision is the same, the ordinary function takes priority over the template instantiation. If you want to force the use of the template, you can use empty angle brackets `max_value<>(...)`.
+When both a normal overload and a template instantiation exist, if the match degree is the same, the non-template function takes precedence over the template instantiation version. If you want to force the use of the template, you can use empty angle brackets `<>`.
 
-> **Pitfall Warning**: When mixing overloading and templates, the easiest pitfall to fall into is ambiguity. Suppose you write a template `template <typename T> T max_value(T, T)` and an overload `double max_value(double, int)`, and then call `max_value(1.0, 2)`—the compiler will find that the template can be deduced as `T = double` (the second argument `2` is implicitly converted to `double`), while the overloaded version is also an exact match (`double` and `int`). The two have similar match precision, so it reports an ambiguity error. The solution is to keep interfaces as simple as possible—if you use a template, don't add overloads with subtly different parameter types for the same interface.
+> **Pitfall Warning**: When mixing overloads and templates, the easiest pitfall is ambiguity. Suppose you write a template `template <typename T> void foo(T, int)` and an overload `void foo(int, int)`, then call `foo(10, 10)`. The compiler will find that the template can be deduced as `foo<int, int>` (the second parameter `int` matches exactly), while the overload version is also an exact match (`int` and `int`). The match degrees are similar, so it reports an ambiguity error. The solution is to keep interfaces simple—if you use a template, don't add overloads for the same interface with subtly different parameter types.
 >
-> **Pitfall Warning**: Another common pitfall is the interaction between templates and C-style strings. When calling `max_value("hello", "world")`, `T` is deduced as `const char*`. If you haven't written a specialization for `const char*`, it compares pointer addresses rather than string contents. The result depends entirely on where the strings are located in memory—it might be different every time you run the program, and it's almost certainly not the result you expect.
+> **Pitfall Warning**: Another common pitfall is the interaction between templates and C-style strings. When calling `my_max("hello", "world")`, `T` is deduced as `const char*`. If you haven't written a specialized version for `const char*`, it compares pointer addresses rather than string content. The result depends entirely on where the strings are located in memory—it might differ every run, and it's almost certainly not the result you expect.
 
-## Hands-On Practice—func_template.cpp
+## Practical Exercise—func_template.cpp
 
-Now let's combine all the knowledge we've learned so far and write a complete example program. It includes three generic functions: `max_value`, `swap_value`, and `print_array`, instantiated with `int`, `double`, and `std::string` respectively.
+Now let's synthesize all the knowledge we learned and write a complete example program. It includes generic `my_max`, `swap`, and `print_array` functions, instantiated with `int`, `double`, and `const char*`.
 
 ```cpp
-// func_template.cpp
-// 编译: g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template
-
-#include <cstring>
 #include <iostream>
-#include <string>
-// ============================================================
-// max_value：返回两个值中较大的一个
-// ============================================================
+#include <cstring> // For strcmp
+#include <algorithm> // For std::swap (though we will write our own)
+
+// Generic max function
 template <typename T>
-T max_value(T a, T b)
-{
+T my_max(T a, T b) {
     return (a > b) ? a : b;
 }
 
-// const char* 特化：按字典序比较字符串内容
+// Specialization for C-style strings
 template <>
-const char* max_value<const char*>(const char* a, const char* b)
-{
-    return (std::strcmp(a, b) > 0) ? a : b;
+const char* my_max<const char*>(const char* a, const char* b) {
+    return (strcmp(a, b) > 0) ? a : b;
 }
-// ============================================================
-// swap_value：交换两个值
-// ============================================================
+
+// Generic swap function
 template <typename T>
-void swap_value(T& a, T& b)
-{
+void my_swap(T& a, T& b) {
     T temp = a;
     a = b;
     b = temp;
 }
-// ============================================================
-// print_array：打印数组内容
-// ============================================================
-template <typename T, std::size_t kSize>
-void print_array(const T (&arr)[kSize])
-{
-    std::cout << "[";
-    for (std::size_t i = 0; i < kSize; ++i) {
+
+// Generic print array function
+// Uses array reference to deduce size automatically
+template <typename T, std::size_t N>
+void print_array(const T (&arr)[N]) {
+    for (std::size_t i = 0; i < N; ++i) {
         std::cout << arr[i];
-        if (i + 1 < kSize) {
+        if (i < N - 1) {
             std::cout << ", ";
         }
     }
-    std::cout << "]";
+    std::cout << std::endl;
 }
-// ============================================================
-// main
-// ============================================================
-int main()
-{
-    // --- max_value ---
-    std::cout << "=== max_value ===\n";
-    std::cout << "max_value(3, 7) = " << max_value(3, 7) << "\n";
-    std::cout << "max_value(2.5, 1.3) = " << max_value(2.5, 1.3)
-              << "\n";
-    std::cout << "max_value(\"banana\", \"apple\") = "
-              << max_value("banana", "apple") << "\n";
 
-    // 显式实例化：混合类型
-    std::cout << "max_value<double>(3, 5.7) = "
-              << max_value<double>(3, 5.7) << "\n";
+int main() {
+    // 1. Test my_max
+    int i1 = 10, i2 = 20;
+    std::cout << "Max int: " << my_max(i1, i2) << std::endl;
 
-    // --- swap_value ---
-    std::cout << "\n=== swap_value ===\n";
-    int a = 10, b = 20;
-    std::cout << "before: a=" << a << ", b=" << b << "\n";
-    swap_value(a, b);
-    std::cout << "after:  a=" << a << ", b=" << b << "\n";
+    double d1 = 1.1, d2 = 2.2;
+    std::cout << "Max double: " << my_max(d1, d2) << std::endl;
 
-    double x = 1.5, y = 2.5;
-    std::cout << "before: x=" << x << ", y=" << y << "\n";
-    swap_value(x, y);
-    std::cout << "after:  x=" << x << ", y=" << y << "\n";
+    const char* s1 = "Apple";
+    const char* s2 = "Banana";
+    std::cout << "Max string: " << my_max(s1, s2) << std::endl;
 
-    std::string s1 = "hello", s2 = "world";
-    std::cout << "before: s1=\"" << s1 << "\", s2=\"" << s2 << "\"\n";
-    swap_value(s1, s2);
-    std::cout << "after:  s1=\"" << s1 << "\", s2=\"" << s2 << "\"\n";
+    // 2. Test my_swap
+    std::cout << "Before swap: " << i1 << ", " << i2 << std::endl;
+    my_swap(i1, i2);
+    std::cout << "After swap: " << i1 << ", " << i2 << std::endl;
 
-    // --- print_array ---
-    std::cout << "\n=== print_array ===\n";
-    int nums[] = {3, 1, 4, 1, 5, 9};
-    std::cout << "int[]:    ";
-    print_array(nums);
-    std::cout << "\n";
+    // 3. Test print_array
+    int ints[] = {1, 2, 3};
+    double doubles[] = {1.1, 2.2, 3.3};
+    const char* strings[] = {"A", "B", "C"};
 
-    double vals[] = {1.1, 2.2, 3.3};
-    std::cout << "double[]: ";
-    print_array(vals);
-    std::cout << "\n";
+    std::cout << "Int array: ";
+    print_array(ints);
 
-    std::string names[] = {"Alice", "Bob", "Charlie"};
-    std::cout << "string[]: ";
-    print_array(names);
-    std::cout << "\n";
+    std::cout << "Double array: ";
+    print_array(doubles);
+
+    std::cout << "String array: ";
+    print_array(strings);
 
     return 0;
 }
 ```
 
-Let's break down a few key points. `print_array` uses an array reference parameter `const T (&arr)[kSize]`, which not only allows the compiler to deduce the array element type `T`, but also deduce the array length `kSize`, so there's no need to pass an additional length argument.
+Let's break down a few key points. `print_array` uses an array reference parameter `const T (&arr)[N]`. This not only allows the compiler to deduce the array element type `T` but also deduces the array length `N`, so there's no need to pass an extra length argument.
 
-The parameters of `swap_value` are references `T&`, so that we can modify the caller's variables. If the parameters were passed by value as `T a, T b`, only copies would be swapped, and the caller would be completely unaware.
+`my_swap`'s parameters are references `T&`, which is necessary to modify the caller's variables. If the parameters were passed by value as `T`, only copies would be swapped, leaving the caller completely unaffected.
 
-### Verifying the Output
+### Verify Execution
+
+Compile and run the program:
 
 ```bash
-g++ -Wall -Wextra -std=c++17 func_template.cpp -o func_template && ./func_template
+g++ -std=c++20 func_template.cpp -o func_template
+./func_template
 ```
 
 Expected output:
 
 ```text
-=== max_value ===
-max_value(3, 7) = 7
-max_value(2.5, 1.3) = 2.5
-max_value("banana", "apple") = banana
-max_value<double>(3, 5.7) = 5.7
-
-=== swap_value ===
-before: a=10, b=20
-after:  a=20, b=10
-before: x=1.5, y=2.5
-after:  x=2.5, y=1.5
-before: s1="hello", s2="world"
-after:  s1="world", s2="hello"
-
-=== print_array ===
-int[]:    [3, 1, 4, 1, 5, 9]
-double[]: [1.1, 2.2, 3.3]
-string[]: [Alice, Bob, Charlie]
+Max int: 20
+Max double: 2.2
+Max string: Banana
+Before swap: 10, 20
+After swap: 20, 10
+Int array: 1, 2, 3
+Double array: 1.1, 2.2, 3.3
+String array: A, B, C
 ```
 
-Let's verify a few key results: `max_value(3, 7)` correctly returns `7`; `max_value("banana", "apple")` goes through the `const char*` specialization, compares lexicographically, `"banana"` is greater than `"apple"` so it returns `"banana"`; the values before and after `swap_value` are correctly swapped; `print_array` correctly prints the contents of three different type arrays without any trailing commas.
+Check a few key results: `my_max` correctly returns `20`; `my_max("Apple", "Banana")` takes the `const char*` specialization path, compares lexicographically, "Banana" is greater than "Apple" so it returns "Banana"; `my_swap` correctly swaps the values before and after; `print_array` correctly prints the contents of three different type arrays without extra trailing commas.
 
 ## Exercises
 
@@ -358,24 +356,26 @@ Let's verify a few key results: `max_value(3, 7)` correctly returns `7`; `max_va
 Implement a generic function `find_index` that searches for a value in an array and returns its index; if not found, return `-1`. The function signature is roughly:
 
 ```cpp
-template <typename T, std::size_t kSize>
-int find_index(const T (&arr)[kSize], const T& target);
+template <typename T, std::size_t N>
+int find_index(const T (&arr)[N], T value) {
+    // Your code here
+}
 ```
 
-Requirement: test with `int`, `double`, and `std::string` types respectively. Think about it: if `T` is a custom class, can this function work properly? What conditions must the custom class satisfy?
+Test with `int`, `double`, and `const char*` types. Think about it: if `T` is a custom class, can this function work normally? What conditions must the custom class satisfy?
 
-### Exercise 2: Generic Sorting
+### Exercise 2: Generic Sort
 
-Implement a simple generic bubble sort function `bubble_sort` that sorts an array in place. You don't need to implement the comparison logic yourself—just use `operator>` or `operator<`. Requirement: be able to sort and print the results of `int`, `double`, and `std::string` arrays respectively.
+Implement a simple generic bubble sort function `bubble_sort` to sort an array in place. You don't need to implement comparison logic yourself—directly use `my_max` or the `>` operator. It should be able to sort `int`, `double`, and `const char*` arrays and print the results.
 
 ### Exercise 3: Generic Accumulator
 
-Implement a generic function `accumulate_all` that calculates the sum of all elements in an array. Think about the return type issue: if the array elements are `int`, the sum might exceed the range of `int`—how should you handle this? Hint: you can add a template parameter to serve as the accumulator type.
+Implement a generic function `accumulate` that calculates the sum of all elements in an array. Think about the return type issue: if the array elements are `int`, the sum might exceed the `int` range, how should this be handled? Hint: You can add a template parameter as the accumulator type.
 
 ## Summary
 
-In this chapter, we learned the core mechanism of C++ function templates. `template <typename T>` lets us write the logic only once, and the compiler automatically generates the corresponding function versions for different types based on the calls. Template instantiation happens at compile time with no runtime overhead, but it produces code bloat. Type deduction requires that the same template parameter be deduced as the same type in all positions where it appears, otherwise deduction fails—at this point, you can use explicit template arguments, type conversions, or multiple type parameters to resolve it. Template specialization allows us to provide dedicated implementations for specific types, making up for the shortcomings of the generic solution.
+In this chapter, we learned the core mechanism of C++ function templates. `template <typename T>` allows us to write logic only once, and the compiler automatically generates corresponding function versions for different types based on calls. Template instantiation happens at compile time with no runtime overhead, but it produces code bloat. Type deduction requires that the same template parameter be deduced as the same type in all positions where it appears; otherwise, deduction fails—at this point, you can use explicit template arguments, type conversion, or multiple type parameters to resolve it. Template specialization allows us to provide specialized implementations for specific types, making up for the shortcomings of the generic solution.
 
-A few key takeaways: `typename` and `class` are equivalent in a template parameter list, but `typename` has clearer semantics; when mixing overloading and templates, watch out for ambiguity; `const char*` compares pointer addresses rather than string contents, so either write a specialization or use `std::string`.
+A few key takeaways: `typename` and `class` are equivalent in template parameter lists, but `typename` is semantically clearer; pay attention to ambiguity when mixing overloads and templates; `my_max` compares pointer addresses rather than string content for C-style strings, so either write a specialization or use `std::string`.
 
-In the next chapter, we move on to class templates—extending generic capabilities from functions to entire classes. Function templates let us write "type-independent functions," while class templates let us write "type-independent classes." Containers (`vector`, `map`), smart pointers (`unique_ptr`, `shared_ptr`), and even `std::string` are essentially class templates. Once you understand function templates, learning class templates will go much more smoothly—the core idea is the same, it's just that the scope expands from functions to classes.
+In the next chapter, we enter class templates—extending generic capabilities from functions to entire classes. Function templates let us write "type-independent functions," while class templates let us write "type-independent classes." Containers (`std::vector`, `std::list`), smart pointers (`std::unique_ptr`, `std::shared_ptr`), and even `std::array` are essentially class templates. Understanding function templates makes learning class templates much smoother—the core idea is the same, just the scope expands from functions to classes.

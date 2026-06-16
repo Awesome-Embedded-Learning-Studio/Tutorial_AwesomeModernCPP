@@ -4,7 +4,7 @@ cpp_standard:
 - 20
 - 23
 description: A C++20 language feature that automatically generates all six comparison
-  operators from a single definition.
+  operators with a single definition
 difficulty: intermediate
 order: 12
 reading_time_minutes: 2
@@ -14,74 +14,74 @@ tags:
 - intermediate
 title: Three-way comparison operator (<=>)
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/12-spaceship-operator.md
-  source_hash: d03fa35b82ab836a64c86a85a4be50a942b81f56abe5f67e35aac9a54dc17b6c
-  token_count: 523
-  translated_at: '2026-05-26T10:16:16.396663+00:00'
+  source_hash: 8c37ae14058b22b1bd43e8f33a489597996c81c26ca0abf88a5dc7a623ad473d
+  translated_at: '2026-06-16T03:29:22.185214+00:00'
+  engine: anthropic
+  token_count: 526
 ---
 <!--
 Reference Card Template
 Used for feature cheat sheets under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
+Unlike article-template.md, reference cards use a concise, structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
-3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+1. Must include 1 platform tag (use 'host' for reference cards)
+2. Must include 1 difficulty tag
+3. Include at least 1 topic tag
+4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
-# Spaceship Operator <=> (C++20)
+# Three-Way Comparison Operator <=> (C++20)
 
 ## In a Nutshell
 
-Defining `operator<=>` lets the compiler automatically generate all six comparison operators: `<`, `<=`, `>`, `>=`, `==`, and `!=`. Say goodbye to boilerplate comparison code.
+Defining `operator<=>` allows the compiler to automatically generate `<`, `>`, `<=`, `>=`, `==`, and `!=`. Say goodbye to writing comparison code manually.
 
 ## Header
 
-`#include <compare>` (when using predefined comparison categories)
+`<compare>` (when using predefined comparison categories)
 
 ## Core API Cheat Sheet
 
 | Operation | Signature | Description |
 |------|------|------|
-| Three-way comparison | `auto operator<=>(const T&) const = default;` | Compiler auto-generates comparison logic |
-| Manual three-way comparison | `std::strong_ordering operator<=>(const T& rhs) const;` | Custom comparison semantics |
+| Three-way comparison | `auto operator<=>(const T&) const = default;` | Compiler automatically generates comparison logic |
+| Manual three-way comparison | `std::strong_ordering operator<=>(const T&) const;` | Custom comparison semantics |
 | Strong ordering | `std::strong_ordering` | Equivalent elements are indistinguishable (e.g., `int`) |
 | Weak ordering | `std::weak_ordering` | Equivalent elements are distinguishable but compare equal (e.g., case-insensitive strings) |
-| Partial ordering | `std::partial_ordering` | Incomparable cases exist (e.g., NaN) |
-| Equality operator | `bool operator==(const T&) const = default;` | Defaulting it alone auto-generates `!=` |
+| Partial ordering | `std::partial_ordering` | Incomparable values exist (e.g., `NaN`) |
+| Equality operator | `bool operator==(const T&) const = default;` | Defaulting this alone automatically generates `!=` |
 
 ## Minimal Example
 
 ```cpp
-// Standard: C++20
 #include <compare>
 #include <iostream>
 
 struct Point {
     int x, y;
-    auto operator<=>(const Point&) const = default;
+
+    // Compiler auto-generates <, <=, >, >=, ==, !=
+    std::strong_ordering operator<=>(const Point&) const = default;
 };
 
 int main() {
-    Point a{1, 2}, b{1, 3};
-    std::cout << (a < b)  << "\n"; // true  (自动生成)
-    std::cout << (a == b) << "\n"; // false (自动生成)
-    std::cout << (a != b) << "\n"; // true  (自动生成)
+    Point p1{1, 2}, p2{1, 5};
 
-    auto cmp = a <=> b;
-    std::cout << (cmp < 0) << "\n"; // true (strong_ordering::less)
+    if (p1 < p2) {
+        std::cout << "p1 is less than p2\n";
+    }
+    // p1 == p1, p2 != p1 also work
 }
 ```
 
 ## Embedded Applicability: Medium
 
-- Compile-time feature with zero runtime overhead — default-generated comparison code is equivalent to hand-written code
-- Suitable for structs requiring lexicographical comparison, such as sensor data and protocol headers
-- Requires C++20 support (GCC 10+); some embedded toolchains are not fully ready yet
-- Comparison categories (strong/weak/partial) are abstract concepts that require team-wide alignment
+- Compile-time feature, zero runtime overhead—defaulted comparison code is equivalent to handwritten code.
+- Suitable for structs requiring lexicographical comparison, such as sensor data or protocol headers.
+- Requires C++20 support (GCC 10+); some embedded toolchains are not yet fully ready.
+- Comparison categories (strong/weak/partial) are abstract concepts; teams need a unified understanding.
 
 ## Compiler Support
 
@@ -96,4 +96,4 @@ int main() {
 
 ---
 
-*Some content adapted from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*

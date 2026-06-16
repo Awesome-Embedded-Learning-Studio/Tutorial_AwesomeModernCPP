@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Analyzing dynamic memory issues in embedded systems
+description: Analyzing Embedded Dynamic Memory Issues
 difficulty: intermediate
 order: 1
 platform: stm32f1
@@ -18,50 +18,50 @@ tags:
 - stm32f1
 title: Dynamic Allocation Issues
 translation:
-  engine: anthropic
   source: documents/vol8-domains/embedded/01-dynamic-allocation-issues.md
-  source_hash: 2576910a33d419a77e06cb69a15f53c465165bceaf93afa51db63827e973309b
+  source_hash: ec7bbcad3c84325e7d7c98ca54fac346dd3497f1aebc24e116714dcaf54a45b3
+  translated_at: '2026-06-16T04:08:58.299801+00:00'
+  engine: anthropic
   token_count: 770
-  translated_at: '2026-05-26T11:59:52.455732+00:00'
 ---
-# The Cost of Dynamic Memory: Fragmentation and Non-Determinism (Memory Layout, Fragmentation, and Alignment)
+# The Cost of Dynamic Memory: Fragmentation and Uncertainty (Memory Layout, Fragmentation, and Alignment)
 
 ## Introduction
 
-In embedded systems, dynamic memory seems convenient, but its costs are often underestimated—fragmentation, timing non-determinism, and alignment or structure padding issues quietly consume resources and reliability.
+In embedded systems, dynamic memory seems convenient, but its costs are often underestimated—fragmentation, timing uncertainty, and alignment and structure padding issues can silently consume resources and reliability.
 
-We all know that embedded environments have extremely limited resources, and even minor memory allocation decisions can affect stability, real-time performance, and power consumption. Understanding the cost of dynamic memory helps us avoid catastrophic design errors—or at least minimize risk when dynamic memory is unavoidable.
+We all know that in embedded systems, resources are extremely limited. Tiny decisions in memory allocation can affect stability, real-time performance, and power consumption. Understanding the cost of dynamic memory allows us to avoid catastrophic errors during design—or minimize risks when dynamic memory is unavoidable.
 
 ------
 
 ## A Quick Review of Memory Layout: Static, Heap, and Stack
 
-Before we dive in, let's review the basics:
+Before we start, let's review the concepts:
 
-- **Static region (.data/.bss/.rodata)**: Sizes are determined at compile or link time for global variables, constants, and read-only data. Their lifetime matches the program's, fragmentation risk is nearly zero, but flexibility is low.
-- **Stack (stack)**: Stores local variables and automatic objects for function calls. Allocation and deallocation are extremely fast (typically just pointer increments and decrements), highly regular, and lifetimes are controlled by scope. The downside is limited capacity, inability to share across tasks, and unsuitability for large objects or objects with variable lifetimes.
-- **Heap (heap)**: Dynamically allocated at runtime (`malloc` / `new` / `operator new`, etc.). Flexible but with obvious costs: allocation and deallocation times are non-deterministic, it generates fragmentation, and the memory layout is non-linear.
+- **Static Area (.data/.bss/.rodata)**: Size is determined at compile time or link time. Includes global variables, constants, and read-only data. Lifetime matches the program, fragmentation risk is almost zero, but flexibility is low.
+- **Stack**: Local variables and automatic objects for function calls. Allocation/deallocation is very fast (usually just pointer increments), highly regular, and lifetime is controlled by scope. Drawbacks include limited capacity, inability to share across tasks, and unsuitability for large objects or objects with variable lifetimes.
+- **Heap**: Runtime dynamic allocation (`malloc` / `new` / `std::make_unique` etc.). Flexible but with obvious costs: allocation and deallocation time is non-deterministic, generates fragmentation, and memory layout is non-linear.
 
-In embedded systems, the general preference order is: stack (if size permits) → static (pre-allocated) → heap (use cautiously, preferably controlled).
+In embedded development, the general preference order is: Stack (if size allows) → Static (pre-allocatable) → Heap (use cautiously, preferably controlled).
 
 ------
 
 ## Fragmentation: What, Why, and How It Affects the System
 
-### Internal Fragmentation
+### Internal fragmentation
 
-When an allocator assigns a larger block than actually requested to satisfy alignment or minimum allocation unit requirements, this unused space becomes **internal fragmentation**. For example:
+When an allocator allocates a larger block than the actual request to satisfy alignment or minimum allocation unit constraints, this unused space is **internal fragmentation**. Examples:
 
-- If an allocator uses a 16-byte granularity, a 20-byte object will occupy 32 bytes (16×2). The extra 12 bytes are internal fragmentation.
-- Frequent allocation of small objects with a large allocation unit leads to decreased memory utilization.
+- The allocator allocates in 16-byte granularity. A 20-byte object will occupy 32 bytes (16×2), and the extra 12 bytes is internal fragmentation.
+- Frequent allocation of small objects with large allocation units leads to decreased memory utilization.
 
-### External Fragmentation
+### External fragmentation
 
-The heap contains many free blocks, but these blocks are scattered and non-contiguous, making it impossible to merge them into a large enough contiguous space to satisfy a larger allocation request. The result can be a situation where the total memory is sufficient but allocation still fails ("available memory fragmentation"). What we observe is—
+There are many free blocks in the heap, but they are scattered and discontinuous, unable to merge into a large enough contiguous space to satisfy a larger allocation request. The result can be a situation where total memory is sufficient but allocation fails ("available memory fragmentation"). The symptoms we observe are:
 
-- As runtime increases, available large blocks of memory decrease, leading to occasional `new`/`malloc` failures.
-- The system exhibits intermittent crashes, memory leak-like symptoms, and degraded stability after long-term operation.
-- Real-time tasks experience long-tail latency (sporadic long allocation/deallocation operations).
+- As runtime increases, available large blocks decrease, causing occasional `malloc`/`new` failures.
+- The system exhibits intermittent crashes, memory leak-like symptoms, and degraded stability after long runs.
+- Real-time tasks experience long-tail latency (occasional long allocation/deallocation operations).
 
 ------
 
@@ -79,78 +79,77 @@ Run the struct alignment example online to observe how member arrangement affect
 
 ## Alignment and Padding
 
-### Why Alignment Is Needed
+### Why Alignment is Needed
 
-CPUs typically expect certain data to be aligned to its natural boundary (for example, 4-byte or 8-byte alignment); otherwise, access becomes slower or triggers hardware exceptions on some architectures. Alignment also affects DMA, peripheral access, and cache coherency.
+CPUs typically expect certain data to be aligned on their natural boundaries (e.g., 4-byte alignment, 8-byte alignment); otherwise, access is slower or causes hardware exceptions on some architectures. Alignment also affects DMA, peripheral access, and cache coherency.
 
 ### Struct Padding Example
 
 ```cpp
-// 假设：sizeof(char)=1, sizeof(int32_t)=4
-struct A {
-    char c;      // offset 0
-    int32_t x;   // 如果按照 4 字节对齐，x 的 offset 通常是 4
-};              // sizeof(A) 通常是 8（包括 3 字节填充）
-
+struct BadLayout {
+    char a;        // 1 byte
+    // 3 bytes of padding here
+    int b;         // 4 bytes
+};
 ```
 
-`char` occupies 1 byte, `int32_t` requires 4-byte alignment, so the compiler inserts 3 bytes of padding after `c`. The total struct size is aligned to a multiple of 4 (which is 8 here).
+`char` occupies 1 byte, `int` requires 4-byte alignment, so the compiler inserts 3 bytes of padding after `a`. The total struct size is aligned to a multiple of 4 (8 in this case).
 
 Placing members with larger alignment requirements first can reduce padding:
 
 ```cpp
-struct B {
-    int32_t x;
-    char c;
-}; // sizeof(B) 通常是 8，但如果有更多小成员，将更紧凑
-
+struct GoodLayout {
+    int b;         // 4 bytes
+    char a;        // 1 byte
+    // 1 byte of padding here to align struct size to 4 bytes
+};
 ```
 
-Alternatively, we can use `#pragma pack` or `__attribute__((packed))` to forcibly remove padding, but note:
+Or use `#pragma pack(1)` or `[[no_unique_address]]` to forcibly remove padding, but note:
 
-- After removing padding, reading unaligned members can cause severe performance degradation or hardware exceptions on some architectures.
-- Only use this when we clearly understand the consequences and must save space.
+- Accessing unaligned members after removing padding can significantly degrade performance or cause hardware exceptions on some architectures.
+- Use only when the consequences are clear and saving space is absolutely necessary.
 
-#### Relationship with DMA / Cachelines
+#### Relationship with DMA / Cache Line
 
-- DMA requires buffers to be aligned to peripheral requirements (for example, 32 bytes). Misalignment can cause hardware rejection or severe performance degradation.
-- Aligning to a cacheline (typically 32/64 bytes) helps avoid false sharing and cache thrashing, which is especially important in multi-core systems or when concurrently accessing memory with DMA.
+- DMA requires buffers to be aligned to peripheral requirements (e.g., 32 bytes). Misalignment can lead to hardware refusal or severe performance degradation.
+- Aligning to cache lines (usually 32/64 bytes) helps avoid false sharing and cache thrashing, which is especially important in multi-core systems or when accessing concurrently with DMA.
 
 ------
 
-## The Non-Determinism of Dynamic Memory: Time and Repeatability Issues
+## Uncertainty of Dynamic Memory: Time and Reproducibility Issues
 
-- **Non-deterministic allocation/deallocation time**: General-purpose heap implementations use complex data structures (free lists, trees, bitmaps), making the execution time of `malloc`/`free` unpredictable, potentially with long-tail latency.
-- **Concurrency and lock contention**: In multi-threaded environments, the heap typically requires locks or thread-local caches (TLC); lock contention impacts real-time performance.
-- **Irrecoverable fragmentation**: For standard C/C++ heaps, once fragmentation forms, it is difficult to recover in linear time. We must resolve it through a reboot or specialized compaction strategies (which are usually impractical).
+- **Non-deterministic allocation/deallocation time**: General heap implementations involve complex data structures (free lists, trees, bitmaps), causing the execution time of `malloc`/`free` to be unpredictable, potentially leading to long-tail latency.
+- **Concurrency and lock contention**: In multi-threaded environments, the heap usually requires locks or thread-local caching (TLC); lock contention affects real-time performance.
+- **Unrecoverable fragmentation**: For standard C/C++ heaps, once fragmentation forms, it is difficult to recover in linear time. It must be resolved by restarting or using specialized compaction strategies (usually unrealistic).
 
-Embedded systems are especially sensitive to this: long-tail latency can lead to dropped frames, control timeouts, or safety issues.
+Embedded systems are particularly sensitive: long-tail latency can lead to dropped frames, control timeouts, or security issues.
 
 ------
 
 ## Common Embedded Alternatives and Hybrid Strategies
 
-So what do we do? Let's quickly cover a few common strategies:
+So, what can we do? Here are several common strategies:
 
 #### Memory Pool (Pool / Slab)
 
-- Divide memory into fixed-size blocks (for example, 32B, 64B, 256B). Allocation returns a block index or pointer, and deallocation returns the block to a free list.
-- Pros: Allocation and deallocation in constant time (O(1)), no external fragmentation (as long as all object sizes match a specific pool).
-- Cons: Requires multiple pools for different object sizes, memory utilization depends on allocation granularity, and it generates internal fragmentation.
+- Divide memory into fixed-size blocks (e.g., 32B, 64B, 256B). Allocation returns a block index or pointer, and deallocation returns the block to the free list.
+- Pros: Allocation/deallocation is constant time (O(1)), no external fragmentation (as long as all objects match a pool size).
+- Cons: Requires multiple pools for different object sizes, memory utilization depends on allocation granularity, and internal fragmentation can occur.
 
 #### Bump / Arena Allocator (Linear Allocator)
 
-- Allocates linearly from a contiguous buffer; deallocation is typically all-at-once (the entire arena resets).
-- Extremely fast with no fragmentation; suitable for objects with consistent lifetimes (for example, temporary objects during a single task or initialization phase).
-- Not suitable for objects that require arbitrary deallocation.
+- Allocates linearly from a contiguous buffer; deallocation is usually all-at-once (entire arena reset).
+- Very fast and fragmentation-free; suitable for objects with consistent lifetimes (e.g., temporary objects during a single task or initialization phase).
+- Not suitable for objects requiring arbitrary deallocation.
 
-#### Slab Allocation (Linux Style)
+#### Slab Allocation (Linux style)
 
-- Suitable for caching identical object types (kernel objects). It can reuse already-initialized objects upon deallocation, reducing construction and destruction overhead.
+- Suitable for caching objects of the same type (kernel objects), allowing reuse of initialized objects upon deallocation to reduce construction/destruction overhead.
 
-#### Object Pool + RAII (C++ Style)
+#### Object Pool + RAII (C++ style)
 
-- Combine a memory pool with `std::unique_ptr<T, Deleter>` or custom smart pointers to guarantee exception safety and automatic deallocation.
+- Use `std::unique_ptr` or custom smart pointers combined with memory pools to guarantee exception safety and automatic release.
 
 ------
 

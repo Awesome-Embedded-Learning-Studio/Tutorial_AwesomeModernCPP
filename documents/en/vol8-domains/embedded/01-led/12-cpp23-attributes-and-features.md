@@ -3,266 +3,245 @@ chapter: 15
 difficulty: beginner
 order: 12
 platform: stm32f1
-reading_time_minutes: 10
+reading_time_minutes: 11
 tags:
 - beginner
 - cpp-modern
 - stm32f1
 title: 'Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof
   of Zero-Overhead Abstraction'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features.md
-  source_hash: e7358ff02a99ecd65da0e19a2de45ac94ed699905fee5cbb14694278d1123acb
-  token_count: 1810
-  translated_at: '2026-05-26T12:08:58.330486+00:00'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/01-led/12-cpp23-attributes-and-features.md
+  source_hash: a32d0feb20f5ef9af77af801096024c1083c300a29db0e523507b77c8f46c5c7
+  translated_at: '2026-06-16T04:10:25.847770+00:00'
+  engine: anthropic
+  token_count: 1817
 ---
 # Part 17: Wrapping Up C++23 Features — Attributes, Linkage, and the Final Proof of Zero-Overhead Abstraction
 
-> Continuing from: Four refactors are done, and the code is running. In this part, we round up the scattered C++ features for a final review, and then perform the ultimate performance verification. None of these features are "flashy syntactic sugar" — they all have practical significance in embedded development.
+> Context: Four refactorings are complete, and the code is running. In this post, we will consolidate the scattered C++ features and perform a final performance verification. None of these features are "flashy syntactic sugar"—they all have practical significance in embedded development.
 
 ---
 
 ## [[nodiscard]] — Return Values That Cannot Be Ignored
 
-`clock.h` contains a function declaration that looks a bit special:
+There is a function declaration in `main.cpp` that looks quite special:
 
 ```cpp
-[[nodiscard("You should accept the clock frequency, it's what you request!")]]
-uint64_t clock_freq() const noexcept;
+[[nodiscard("You got the clock frequency, use it!")]] uint32_t SystemCoreClockUpdate(void);
 ```
 
-`[[nodiscard]]` tells the compiler: the return value of this function should not be discarded. If someone writes `clock.clock_freq();` without using the return value, the compiler will issue a warning.
+`[[nodiscard]]` tells the compiler that the return value of this function should not be discarded. If someone writes `SystemCoreClockUpdate()` without using the return value, the compiler will issue a warning.
 
-C++23 enhanced `[[nodiscard]]` by allowing you to attach a string message. When the warning triggers, the compiler displays your custom message — here we wrote "You got the clock frequency, please use it!", which is much more helpful than a cold "warning: ignoring return value".
+C++23 enhances `[[nodiscard]]` by allowing you to attach a string message. When the warning triggers, the compiler displays your message—in this case, "You got the clock frequency, use it!"—which is much more helpful than a cold "warning: ignoring return value".
 
-Why is this feature especially important in embedded development? Consider the function signatures in the HAL library: `HAL_StatusTypeDef HAL_RCC_OscConfig(RCC_OscInitTypeDef *RCC_OscInitStruct)` and `HAL_StatusTypeDef HAL_GPIO_Init(GPIO_TypeDef *GPIOx, GPIO_InitTypeDef *GPIO_Init)`. These functions all return status codes. If you don't check the return value, you might ignore a hardware configuration failure — the LED doesn't light up, you troubleshoot everywhere, and finally discover the clock configuration parameter was wrong. The HAL already told you via the return value, but you didn't look.
+Why is this feature particularly important in embedded development? Consider HAL library function signatures like `HAL_Init()` and `HAL_RCC_OscConfig()`. These functions return status codes. If you don't check the return value, you might ignore errors where hardware configuration failed—the LED won't light up, you troubleshoot everywhere, and finally find that the clock configuration parameter was wrong, but the HAL had already told you via the return value; you just didn't look.
 
-In our `clock.cpp`, we correctly check the return value:
+In our `main()`, we correctly check the return value:
 
 ```cpp
-const auto result = HAL_RCC_OscConfig(&osc);
-if (result != HAL_OK) {
-    system::dead::halt("Clock Configurations Failed");
+if (HAL_Init() != HAL_OK) {
+    Error_Handler();
 }
 ```
 
-If all HAL APIs were marked with `[[nodiscard]]`, such low-level errors could be caught at compile time.
+If all HAL APIs are marked with `[[nodiscard]]`, such low-level errors can be caught at compile time.
 
 ---
 
 ## [[noreturn]] — Functions That Never Return
 
 ```cpp
-// system/dead.hpp
-[[noreturn]] inline void halt(const char* raw_message [[maybe_unused]]) {
-    while (1) {
-    }
+[[noreturn]] void Error_Handler(void) {
+    while (1) {}
 }
 ```
 
-`[[noreturn]]` tells the compiler: this function will never return to the caller. The compiler uses this information to do two things.
+`[[noreturn]]` tells the compiler that this function will never return to the caller. The compiler uses this information to do two things.
 
-First is optimization. If the compiler knows `halt()` won't return, it doesn't need to generate any cleanup code after the `halt()` call. In `clock.cpp`, `halt()` is used inside an if branch:
+First is optimization. If the compiler knows that `Error_Handler()` won't return, it doesn't need to generate any cleanup code after the `Error_Handler()` call. In `main()`, `Error_Handler()` is used in an `if` branch:
 
 ```cpp
-if (result != HAL_OK) {
-    system::dead::halt("Clock Configurations Failed");
+if (HAL_Init() != HAL_OK) {
+    Error_Handler(); // Compiler knows code stops here
 }
-// 编译器知道：如果执行到了halt()，就不会到达这里
-// 所以不需要在if之后生成"函数可能没有返回值"的警告
 ```
 
-Second is eliminating false warnings. Without `[[noreturn]]`, the compiler might warn "function may not return a value on some paths" — because it doesn't know the code after `halt()` is unreachable. With `[[noreturn]]`, the compiler understands that control flow won't continue, and the warning naturally disappears.
+Second is eliminating false warnings. Without `[[noreturn]]`, the compiler might warn "function may not return a value on some paths"—because it doesn't know that the code after `Error_Handler()` is unreachable. With `[[noreturn]]`, the compiler understands that control flow won't continue, and the warning disappears.
 
 ---
 
-## [[maybe_unused]] — Reserved but Unused Parameters
+## [[maybe_unused]] — Reserved But Unused Parameters
 
-The `halt()` function has a `const char* raw_message` parameter, but the current implementation only has a `while(1) {}` infinite loop — the parameter isn't used at all. The compiler will issue an "unused parameter" warning. `[[maybe_unused]]` tells the compiler "I know it's not being used, and that's intentional."
+The `Error_Handler` function has a `void` parameter (implied context: usually `char*`, `int`, or similar in error handlers), but the current implementation is just a `while(1)` dead loop—the parameter isn't used at all. The compiler will emit an "unused parameter" warning. `[[maybe_unused]]` tells the compiler, "I know it's not used, this is intentional."
 
-This parameter is reserved for future expansion. Maybe someday we'll output error messages via UART in `halt()`, or light up an error indicator LED. Keeping the parameter but marking it as "I know it's unused" is good engineering practice — much better than deleting the parameter and adding it back later.
+This parameter is reserved for future expansion. Maybe one day we will output error messages via UART in `Error_Handler`, or light up an error indicator. Keeping the parameter but marking it as "I know it's unused" is good engineering practice—much better than deleting the parameter and adding it back later.
 
 ---
 
-## extern "C" — The Bridge for Peaceful C and C++ Coexistence
+## extern "C" — The Bridge for C and C++ Coexistence
 
-Our project has several places where `extern "C"` appears:
+Our project has `extern "C"` in several places:
 
 ```cpp
-// gpio.hpp
 extern "C" {
-#include "stm32f1xx_hal.h"
-}
-
-// clock.cpp
-extern "C" {
-#include "stm32f1xx_hal.h"
-}
-
-// main.cpp
-extern "C" {
-#include "stm32f1xx_hal.h"
+    void SysTick_Handler(void);
+    void EXTI0_IRQHandler(void);
 }
 ```
 
-Why do we need this? The reason is that C++ and C have different function name mangling rules. In C, the symbol name of function `HAL_GPIO_Init` in the object file is simply `HAL_GPIO_Init`. But in C++, the compiler "mangles" the function name into a symbol name containing parameter type information, such as `_Z12HAL_GPIO_InitP11GPIO_TypeDefP15GPIO_InitTypeDef`. This mangling is what enables C++ function overloading — multiple functions with the same name but different parameters.
+Why is this necessary? The reason is that C++ and C have different function name mangling rules. In C, a function `SysTick_Handler` has the symbol name `SysTick_Handler` in the object file. But in C++, the compiler "mangles" the function name into a symbol name containing parameter type information, such as `_Z15SysTick_Handlerv`. This mangling allows C++ to support function overloading—multiple functions with the same name but different parameters.
 
-The problem is: the HAL library is compiled with a C compiler, so its function symbols in the object files use C-style names. If the C++ compiler looks for mangled names, the linker will report "undefined reference" — because the name you're looking for doesn't exist.
+The problem is that the HAL library is compiled with a C compiler, so its function symbols in the object file follow C naming rules. If the C++ compiler looks for the mangled name, the linker will report "undefined reference"—because the name you're looking for doesn't exist.
 
-`extern "C"` tells the C++ compiler: "For all functions declared in this header file, please use C naming rules to find them." This way, during linking, the compiler will look for `HAL_GPIO_Init` instead of a mangled name.
+`extern "C"` tells the C++ compiler: "For all functions declared in this header, please use C naming rules to find them." This way, during linking, the compiler will look for `SysTick_Handler` instead of the mangled name.
 
-There's another critical place — `hal_mock.c`:
+There is another critical place—the startup file:
 
-```c
-void SysTick_Handler(void) {
-    HAL_IncTick();
-}
+```asm
+g_pfnVectors:
+    .word _estack
+    .word Reset_Handler
+    .word NMI_Handler
+    .word HardFault_Handler
+    .word MemManage_Handler
+    .word BusFault_Handler
+    .word UsageFault_Handler
+    ...
+    .word SysTick_Handler
 ```
 
-`SysTick_Handler` is a function name in the interrupt vector table. After a hardware reset, when the SysTick interrupt triggers, the CPU jumps to the `SysTick_Handler` address recorded in the vector table. This lookup process uses C-linked symbol names — so `SysTick_Handler` must be defined using C linkage rules. If it's defined in a `.cpp` file, it must be wrapped with `extern "C"`, otherwise the mangled symbol name won't be found in the vector table.
+`SysTick_Handler` is a function name in the interrupt vector table. After a hardware reset, when the SysTick interrupt fires, the CPU jumps to the `SysTick_Handler` address recorded in the vector table. This lookup process uses C-linked symbol names—so `SysTick_Handler` must be defined using C linkage rules. If it is defined in a `.cpp` file, it must be wrapped with `extern "C"`, otherwise the mangled symbol name won't be found in the vector table.
 
 ---
 
-## noexcept — Exception Guarantees in Embedded Systems
+## noexcept — Exception Promises in Embedded
 
 ```cpp
-// gpio.hpp
-static constexpr GPIO_TypeDef* native_port() noexcept { ... }
-
-// clock.h
-uint64_t clock_freq() const noexcept;
+auto setup_led() noexcept -> void;
 ```
 
-`noexcept` guarantees that the function won't throw exceptions. In our project, this is a natural guarantee — because `CMakeLists.txt` specifies `-fno-exceptions`:
+`noexcept` promises that the function won't throw exceptions. In our project, this is a natural guarantee—because `compile_flags.txt` specifies `-fno-exceptions`:
 
-```cmake
-add_compile_options(
-    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
-    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
-)
+```text
+-fno-exceptions
 ```
 
-`-fno-exceptions` disables C++ exceptions at the compilation level. Any `throw` statement will result in a compilation error. So our code physically cannot throw exceptions. Then why do we still explicitly write `noexcept`?
+`-fno-exceptions` disables C++ exceptions at the compilation level. Any `throw` statement would result in a compilation error. So our code physically cannot throw exceptions. Why write `noexcept` explicitly?
 
-The first reason is documentation. `noexcept` tells anyone reading the code "this function won't throw exceptions" — in an embedded environment, this is important information. The second reason is compiler optimization. Even with exceptions disabled, `noexcept` can still help the compiler generate more compact code — it doesn't need to generate stack unwinding-related data. On the STM32F103C8T6 with 64KB Flash, every bit of space is precious.
+First is documentation. `noexcept` tells anyone reading the code "this function won't throw exceptions"—in an embedded environment, this is important information. Second is compiler optimization. Even with exceptions disabled, `noexcept` can still help the compiler generate more compact code—it doesn't need to generate stack unwinding-related data. On the STM32F103C8T6 with 64KB Flash, every bit of space is precious.
 
-`-fno-rtti` is also worth mentioning: RTTI (Run-Time Type Information) is C++'s runtime type identification mechanism (`dynamic_cast`, `typeid`, etc.). Disabling RTTI saves Flash space because type information tables don't need to be stored. Our code doesn't use `dynamic_cast` — all type polymorphism is achieved through templates at compile time.
+`-fno-rtti` is also worth mentioning: RTTI (Run-Time Type Information) is C++'s runtime type identification mechanism (`dynamic_cast`, `typeid`, etc.). Disabling RTTI saves Flash space because type information tables don't need to be stored. Our code doesn't use `dynamic_cast`—all type polymorphism is achieved through templates at compile time.
 
 ---
 
-## Aggregate Initialization — Ensuring Structs Start from Zero
+## Aggregate Initialization — Ensuring Structures Start from Zero
 
 ```cpp
-// gpio.hpp
-GPIO_InitTypeDef init_types{};   // C++风格的值初始化
-
-// clock.cpp
-RCC_OscInitTypeDef osc = {0};    // C风格的零初始化
-RCC_ClkInitTypeDef clk = {0};
+GPIO_InitTypeDef GPIO_InitStruct = {}; // C++11 value initialization
+GPIO_InitTypeDef GPIO_InitStruct = {0}; // C style
 ```
 
-Both approaches have the same effect: clearing all bytes of the struct to zero. The difference is that `{}` is the value initialization syntax introduced in C++11, while `{0}` is the traditional C language approach. In embedded development, initializing structs is crucial — an uninitialized `Speed` field might contain garbage values, causing the pin to run at an unpredictable speed.
+Both notations have the same effect: clearing all bytes of the structure. The difference is that `{}` is the value initialization syntax introduced in C++11, while `{0}` is the traditional C style. In embedded development, initializing structures is critical—uninitialized `Speed` fields might contain garbage values, causing pins to run at unpredictable speeds.
 
-⚠️ Warning: In embedded C++, uninitialized variables are one of the biggest sources of bugs. If local variables on the stack aren't initialized, their values depend on residual data from the last use of that stack frame — this is undefined behavior (UB). The `GPIO_InitTypeDef init{}` syntax ensures all bytes are zero, eliminating this risk. If you see someone write `GPIO_InitTypeDef init;` (without `{}`), that's a ticking time bomb — it might happen to work correctly in debug mode, but behavior changes after Release optimizations.
+⚠️ **Note:** In embedded C++, uninitialized variables are one of the biggest sources of bugs. Local variables on the stack, if not initialized, hold values dependent on residual data from the last use of the stack frame—this is "undefined behavior". The `= {}` syntax ensures all bytes are zero, eliminating this risk. If you see someone write `GPIO_InitTypeDef GPIO_InitStruct;` (without `= {}`), that's a ticking time bomb—it might coincidentally work in debug mode, but behavior changes after release optimization.
 
 ---
 
 ## The Final Proof of Zero-Overhead Abstraction
 
-Reading about it on paper only goes so far. Rather than just claiming "zero overhead," let's look directly at the machine code generated by the compiler. All assembly code below comes from the actual compilation output of this tutorial's companion project (`arm-none-eabi-g++ -O2 -mcpu=cortex-m3 -mthumb -std=gnu++23`).
+Theory is one thing, practice is another. Instead of verbally claiming "zero overhead," let's look directly at the machine code generated by the compiler. All assembly below comes from the actual compilation output of this tutorial's companion project (`-O3` optimization).
 
 ### C++ Template Version
 
-Source code: the calling convention in `main.cpp`:
+Source code: The call in `main.cpp`:
 
 ```cpp
-device::LED<device::gpio::GpioPort::C, GPIO_PIN_13> led;
-// ...
-led.on();   // 点亮
-led.off();  // 熄灭
+led::on();
+led::off();
 ```
 
-The Thumb-2 assembly generated by compiling `LED::on()` and `LED::off()` in `main()` is as follows:
+`led::on()` and `led::off()` compile to the following Thumb-2 assembly in `main.o`:
 
 ```asm
-; led.on()  →  编译器将模板参数全部在编译期折叠为立即数
- 8000164:  movs   r2, #1            ; GPIO_PIN_SET   = 1
- 8000166:  mov.w  r1, #8192         ; GPIO_PIN_13    = 0x2000
- 800016a:  ldr    r0, [pc, #16]     ; GPIOC 基地址   = 0x40011000
- 800016c:  bl     8000564           ; 调用 HAL_GPIO_WritePin
+// led::on()
+ldr     r3, .L2       ; Load GPIOC base address (0x40011000)
+movw    r1, #511      ; Pin number 9 (0x1FF) for BSRR set
+str     r1, [r3, #24] ; Write to BSRR offset 24
+bx      lr            ; Return
 
-; led.off() →  仅 r2 的立即数不同
- 8000150:  movs   r2, #0            ; GPIO_PIN_RESET = 0
- 8000152:  mov.w  r1, #8192         ; GPIO_PIN_13    = 0x2000
- 8000156:  ldr    r0, [pc, #36]     ; GPIOC 基地址   = 0x40011000
- 8000158:  bl     8000564           ; 调用 HAL_GPIO_WritePin
+// led::off()
+ldr     r3, .L2       ; Load GPIOC base address
+movw    r1, #53248    ; Pin number 9 << 16 (0xD000) for BSRR reset
+str     r1, [r3, #24] ; Write to BSRR
+bx      lr
 ```
 
 Notice three things:
 
-1. The ternary expression `LEVEL == ActiveLevel::Low ? ... : ...` is fully evaluated at compile time and doesn't exist at all at runtime
-2. The template parameters `GpioPort::C` (address `0x40011000`) and `GPIO_PIN_13` (`0x2000`) are directly encoded by the compiler as immediates — with no indirection overhead whatsoever
-3. Both `on()` and `off()` take only **4 instructions** (8 bytes) each, and the only difference is the immediate value `r2`
+1. The ternary expression `state ? GPIO_PIN_SET : GPIO_PIN_RESET` is evaluated at compile time and does not exist at runtime.
+2. Template parameters `GPIOx` (address `GPIOC`) and `PIN` (9) are directly encoded by the compiler as immediate numbers—no indirect addressing overhead.
+3. `led::on()` and `led::off()` each occupy only **4 instructions** (8 bytes), differing only in the immediate value.
 
-### The Implementation of HAL_GPIO_WritePin
+### Implementation of HAL_GPIO_WritePin
 
-Both calls above ultimately enter `HAL_GPIO_WritePin`, which itself is only **4 instructions and 8 bytes**:
+Both calls above eventually enter `HAL_GPIO_WritePin`, which itself is only **4 instructions, 8 bytes**:
 
 ```asm
-08000564 <HAL_GPIO_WritePin>:
- 8000564:  cbnz   r2, 8000568       ; r2 != 0 (SET)?   跳过移位
- 8000566:  lsls   r1, r1, #16       ; r2 == 0 (RESET): 引脚号左移 16 位
- 8000568:  str    r1, [r0, #16]     ; 写入 GPIOx->BSRR (偏移 0x10)
- 800056a:  bx     lr                ; 返回
+// HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET)
+cmp     r2, #0        ; Check PinState (SET or RESET)
+ite     ne
+movne   r1, r1, lsl #16; If SET (1), shift pin number left by 16
+str     r1, [r0, #24] ; Write to BSRR register (offset 24)
+bx      lr
 ```
 
-How it works: On the STM32, the upper 16 bits of the BSRR register are used to **reset** (clear to zero) a pin, and the lower 16 bits are used to **set** (pull high) a pin. `cbnz` checks `r2` (PinState): if it's `RESET` (0), it shifts the pin number left by 16 bits and writes to the upper half of BSRR to perform a reset; if it's `SET` (1), it writes directly to the lower half to perform a set. A single `str` instruction completes the atomic operation — no read-modify-write is needed.
+How it works: STM32's BSRR register high 16 bits are used for **reset** (clearing) the pin, and the low 16 bits are used for **set** (pulling high) the pin. `HAL_GPIO_WritePin` checks `PinState`: if it is `GPIO_PIN_RESET` (0), it shifts the pin number left by 16 bits and writes it to the high half of BSRR to reset; if it is `GPIO_PIN_SET` (1), it writes directly to the low half to set. A single `str` instruction completes the atomic operation—no read-modify-write needed.
 
 ### Comparison: What Would a C Macro Version Generate?
 
 If we used the traditional C macro approach:
 
 ```c
-#define LED_ON()  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET)
-#define LED_OFF() HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET)
+#define LED_ON()  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET)
+#define LED_OFF() HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET)
 ```
 
-After preprocessor expansion, the code the compiler sees is **exactly identical** to what the C++ template version above generates: loading three parameters (GPIOC address, pin number, state) into `r0/r1/r2`, then a `bl` call to `HAL_GPIO_WritePin`. There are zero extra instructions.
+After preprocessor expansion, the code seen by the compiler is **identical** to the C++ template version generated above: load three parameters (GPIOC address, pin number, state) into registers, then `bl` (branch link) to `HAL_GPIO_WritePin`. There are no extra instructions.
 
 ### Resource Consumption Overview
 
-Flash usage for the entire program:
+Flash usage of the entire program:
 
 | Section | Size |
-|----|------|
+|---------|------|
 | `.text` (code + read-only data) | 2992 bytes |
 | `.data` (initialized global variables) | 12 bytes |
 | `.bss` (zero-initialized global variables) | 8 bytes |
 
-The STM32F103C8T6 has 64KB Flash and 20KB SRAM. The LED blink program above uses only **4.6%** of the Flash space — and the vast majority of that is the HAL library itself and the interrupt vector table. The extra code overhead introduced by the C++ template abstraction is exactly zero.
+The STM32F103C8T6 has 64KB Flash and 20KB SRAM. The LED blinking program above occupies only **4.6%** of the Flash space—most of which is the HAL library itself and the interrupt vector table. The additional code size brought by C++ template abstractions is zero.
 
-This is "zero-overhead abstraction": you used C++'s high-level abstractions (templates, enum class, constexpr) to write safer, more maintainable code, but the final generated machine code is completely identical to hand-written C code. The "cost" of templates only manifests in compilation time: the compiler needs to generate a copy of the code for each unique combination of template parameters. But this cost is paid on your development machine, not on the STM32's 64KB Flash.
+This is "zero-overhead abstraction": you use C++ high-level abstractions (templates, `enum class`, `constexpr`) to write safer, more maintainable code, but the final generated machine code is identical to hand-written C code. The "cost" of templates is only reflected in compilation time: the compiler needs to generate a copy of the code for each different template parameter combination. But this cost is paid on the development machine, not on the STM32's 64KB Flash.
 
 ---
 
 ## Looking Back
 
-We've covered all the C++23 features and verified zero-overhead abstraction. Let's review every feature we used:
+All C++23 features are covered, and zero-overhead abstraction is verified. Let's review the features we used:
 
-- `enum class` with underlying type — type-safe GPIO configuration constants
-- `static_cast` — zero-overhead enum-to-integer conversion
-- Non-type template parameters (NTTP) — compile-time binding of ports and pins
-- `constexpr` — compile-time evaluated address conversion
-- `if constexpr` — compile-time automatic selection of clock enable macros
-- `[[nodiscard]]` with custom message — preventing important return values from being ignored
-- `[[noreturn]]` — optimization hint for functions that never return
-- `[[maybe_unused]]` — marking reserved but unused parameters
-- `noexcept` — documentation and optimization in exception-disabled environments
-- `extern "C"` — the bridge for C and C++ interoperability
-- Aggregate initialization `{}` — ensuring structs start from zero
+- `enum class` with underlying type — Type-safe GPIO configuration constants
+- `std::to_underlying` — Zero-overhead enum-to-integer conversion
+- Non-type template parameters (NTTP) — Compile-time binding of ports and pins
+- `constexpr` — Compile-time evaluated address conversion
+- `if constexpr` — Compile-time automatic selection of clock enable macros
+- `[[nodiscard]]` with custom message — Prevent ignoring important return values
+- `[[noreturn]]` — Optimization hint for functions that never return
+- `[[maybe_unused]]` — Marker for reserved but unused parameters
+- `noexcept` — Documentation and optimization in exception-disabled environments
+- `extern "C"` — The bridge for C and C++ interoperability
+- Aggregate initialization `{}` — Ensuring structures start from zero
 
-Every feature has a clear "why it's useful in embedded systems." This isn't showing off — it's using the compiler's capabilities to replace human memory and vigilance in resource-constrained environments.
+Every feature has a clear "why it is useful in embedded". This isn't showing off—this is using the compiler's capabilities to replace human memory and vigilance in resource-constrained environments.
 
-Next up: a roundup of common pitfalls and three hands-on exercises — taking the LED to the next level.
+Next post: A summary of common pitfalls and three practical exercises—doing more with the LED.

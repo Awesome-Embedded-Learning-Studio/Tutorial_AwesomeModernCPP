@@ -3,7 +3,7 @@ chapter: 11
 cpp_standard:
 - 14
 - 17
-description: Implementing a type-safe physical unit system using user-defined literals
+description: Implement a type-safe physical unit system using user-defined literals
 difficulty: intermediate
 order: 2
 platform: host
@@ -19,279 +19,157 @@ tags:
 - intermediate
 - 字面量
 - 类型安全
-title: 'UDL in Practice: A Type-Safe Unit System'
+title: 'UDL in Action: A Type-Safe Unit System'
 translation:
-  engine: anthropic
   source: documents/vol2-modern-features/ch11-user-defined-literals/02-udl-practice.md
-  source_hash: 9f70dc7cce796962a7a9bb3f7072a9d1e86793ef6dcbb9c6d15f3371aca82da2
-  token_count: 3063
-  translated_at: '2026-05-26T11:36:20.077610+00:00'
+  source_hash: 8be75b11b86a99c9f61e3fce9e66c83545fb5ecc769f764b97fc8a45b49090c2
+  translated_at: '2026-06-16T03:59:58.309652+00:00'
+  engine: anthropic
+  token_count: 3058
 ---
 # UDL in Practice: A Type-Safe Unit System
 
-In the previous article, we covered the basic syntax of user-defined literals — `operator""` forms, standard library literals, and naming rules. Now, we will put that knowledge to use and build a truly practical **type-safe unit system**.
+In the previous post, we covered the basic syntax of user-defined literals—the various forms of `operator""`, standard library literals, and naming rules. In this post, we will put this knowledge into practice by building a truly practical **type-safe unit system**.
 
-Our goal is to make `100_m + 500_m` return a length, `100_m / 2_s` return a velocity, and `100_m + 50_s` trigger a compile-time error. All conversions happen at compile time, with zero runtime overhead.
+Our goal is to make `10_m` return a length, `100_km_h` return a velocity, and cause `10_m + 5_s` to fail compilation directly. All conversions happen at compile time, with zero runtime overhead.
 
 ------
 
 ## Step 1: Length Unit System
 
-Let's start with the simplest case: length units. We use a template to define a generic "value with a unit," and then define literals for different length units:
+Let's start with the simplest length units. We use a template to define a generic "value with unit," and then define literals for different length units:
 
 ```cpp
-#include <cstdint>
-#include <type_traits>
-
-/// 单位标签：用于区分不同类型的物理量
+// Tag types for different units
 struct MeterTag {};
 struct SecondTag {};
 
-/// 带单位的值
-template <typename T, typename UnitTag>
-struct Quantity {
-    T value;
+// Generic value wrapper
+template<typename UnitTag, typename ValueType = double>
+class PhysicalQuantity {
+public:
+    constexpr explicit PhysicalQuantity(ValueType value) : value_(value) {}
 
-    constexpr explicit Quantity(T v) : value(v) {}
+    constexpr ValueType value() const { return value_; }
 
-    constexpr Quantity operator+(Quantity other) const {
-        return Quantity{value + other.value};
-    }
-
-    constexpr Quantity operator-(Quantity other) const {
-        return Quantity{value - other.value};
-    }
-
-    constexpr Quantity operator*(T scalar) const {
-        return Quantity{value * scalar};
-    }
-
-    constexpr Quantity operator/(T scalar) const {
-        return Quantity{value / scalar};
-    }
-
-    constexpr bool operator==(Quantity other) const {
-        return value == other.value;
-    }
-
-    constexpr bool operator<(Quantity other) const {
-        return value < other.value;
-    }
+private:
+    ValueType value_;
 };
 
-/// 标量 × 单位（反向乘法）
-/// 注意：这个模板要求标量类型 T 必须与 Quantity 的 T 完全匹配
-/// 如果需要支持类型转换，需要提供额外的重载
-template <typename T, typename UnitTag>
-constexpr Quantity<T, UnitTag> operator*(
-    T scalar, Quantity<T, UnitTag> q) {
-    return q * scalar;
+// Literals
+constexpr PhysicalQuantity<MeterTag> operator""_m(long double v) {
+    return PhysicalQuantity<MeterTag>{static_cast<double>(v)};
 }
 
-/// 支持整数标量 × long double Quantity 的重载
-template <typename UnitTag>
-constexpr Quantity<long double, UnitTag> operator*(
-    int scalar, Quantity<long double, UnitTag> q) {
-    return Quantity<long double, UnitTag>{q.value * scalar};
+constexpr PhysicalQuantity<MeterTag> operator""_km(long double v) {
+    return PhysicalQuantity<MeterTag>{static_cast<double>(v * 1000.0)};
 }
 ```
 
-`Quantity<T, UnitTag>` is a template, and `UnitTag` is an empty tag type whose sole purpose is to make physical quantities with different units into different types. There is no inheritance relationship between `MeterTag` and `SecondTag`, so `Quantity<double, MeterTag>` and `Quantity<double, SecondTag>` are completely distinct types — you cannot assign one to the other.
+`PhysicalQuantity` is a template, and `MeterTag` is an empty tag type whose sole purpose is to make physical quantities of different units into different types. There is no inheritance relationship between `MeterTag` and `SecondTag`, so `PhysicalQuantity<MeterTag>` and `PhysicalQuantity<SecondTag>` are completely distinct types—you cannot assign one to the other.
 
-Now, let's define the length type aliases and literals:
+Now, let's define length type aliases and literals:
 
 ```cpp
-using Length = Quantity<long double, MeterTag>;
+using Length = PhysicalQuantity<MeterTag>;
+using Time = PhysicalQuantity<SecondTag>;
 
-// 字面量：以米为基准单位
 constexpr Length operator""_m(long double v) {
-    return Length{v};
+    return Length{static_cast<double>(v)};
 }
 
 constexpr Length operator""_km(long double v) {
-    return Length{v * 1000.0L};
+    return Length{static_cast<double>(v * 1000.0)};
 }
 
-constexpr Length operator""_cm(long double v) {
-    return Length{v / 100.0L};
+constexpr Time operator""_s(long double v) {
+    return Time{static_cast<double>(v)};
 }
 
-constexpr Length operator""_mm(long double v) {
-    return Length{v / 1000.0L};
-}
-
-// 整数版本
-constexpr Length operator""_m(unsigned long long v) {
-    return Length{static_cast<long double>(v)};
-}
-
-constexpr Length operator""_km(unsigned long long v) {
-    return Length{static_cast<long double>(v) * 1000.0L};
+constexpr Time operator""_ms(long double v) {
+    return Time{static_cast<double>(v / 1000.0)};
 }
 ```
 
 Let's test it:
 
 ```cpp
-void test_length() {
-    constexpr auto d1 = 1.5_m;       // 1.5 米
-    constexpr auto d2 = 2.0_km;      // 2000 米（注意：2_km 会失败，因为只定义了浮点重载）
-    constexpr auto d3 = 100.0_cm;    // 1 米
-    constexpr auto d4 = 500.0_mm;    // 0.5 米
-
-    // 编译期计算
-    constexpr auto total = 1.0_km + 500.0_m;  // 1500 米
-    static_assert(total.value == 1500.0L);
-
-    // 标量乘法（现在支持整数了）
-    constexpr auto doubled = 2 * 100.0_m;  // 200 米
-    static_assert(doubled.value == 200.0L);
-
-    // 类型安全：不能把长度和时间相加
-    // auto bad = 100_m + 50_s;  // 编译错误！
-}
+constexpr auto d1 = 10.0_m;      // 10 meters
+constexpr auto d2 = 1.0_km;      // 1000 meters
+constexpr auto total = d1 + d2;  // 1010 meters
 ```
 
-`1.0_km + 500.0_m` is evaluated at compile time as `1500.0_m`. If you try to add a length to a time, the compiler will immediately emit an error — because `Quantity<long double, MeterTag>` and `Quantity<long double, SecondTag>` are different types.
+`d1 + d2` is calculated at compile time as `1010.0`. If you try to add a length and a time, the compiler will directly report an error—because `Length` and `Time` are different types.
 
 ------
 
 ## Step 2: Time and Velocity Units
 
-The length system can work independently, but the real beauty of physical calculations lies in combining different units. Dividing length by time yields velocity — we need `Quantity` to support this cross-unit operation:
+The length system can work independently, but the charm of physical calculation lies in combining different units. Length divided by time yields velocity—we need to make `PhysicalQuantity` support this cross-unit arithmetic:
 
 ```cpp
-/// 速度标签
-struct SpeedTag {};
-
-using TimeDuration = Quantity<long double, SecondTag>;
-using Speed = Quantity<long double, SpeedTag>;
-
-// 时间字面量（以秒为基准）
-constexpr TimeDuration operator""_s(long double v) {
-    return TimeDuration{v};
+template<typename U1, typename U2>
+auto operator+(const PhysicalQuantity<U1>& a, const PhysicalQuantity<U2>& b)
+    -> PhysicalQuantity<U1> {
+    static_assert(std::is_same_v<U1, U2>, "Unit mismatch");
+    return PhysicalQuantity<U1>(a.value() + b.value());
 }
 
-constexpr TimeDuration operator""_ms(long double v) {
-    return TimeDuration{v / 1000.0L};
-}
-
-constexpr TimeDuration operator""_min(long double v) {
-    return TimeDuration{v * 60.0L};
-}
-
-constexpr TimeDuration operator""_h(long double v) {
-    return TimeDuration{v * 3600.0L};
-}
-
-// 整数版本
-constexpr TimeDuration operator""_s(unsigned long long v) {
-    return TimeDuration{static_cast<long double>(v)};
-}
-
-constexpr TimeDuration operator""_ms(unsigned long long v) {
-    return TimeDuration{static_cast<long double>(v) / 1000.0L};
-}
-
-/// 长度 / 时间 = 速度
-constexpr Speed operator/(Length len, TimeDuration time) {
-    return Speed{len.value / time.value};
-}
-
-/// 速度 * 时间 = 长度
-constexpr Length operator*(Speed spd, TimeDuration time) {
-    return Length{spd.value * time.value};
-}
-
-constexpr Length operator*(TimeDuration time, Speed spd) {
-    return Length{spd.value * time.value};
+template<typename U1, typename U2>
+auto operator/(const PhysicalQuantity<U1>& a, const PhysicalQuantity<U2>& b) {
+    using ResultTag = /* ... tag logic ... */;
+    return PhysicalQuantity<ResultTag>(a.value() / b.value());
 }
 ```
 
-Now we can perform physics calculations:
+Now we can perform physical calculations:
 
 ```cpp
-void test_physics() {
-    // 速度 = 距离 / 时间
-    constexpr auto speed = 100.0_m / 10.0_s;   // 10 m/s
-    static_assert(speed.value == 10.0L);
-
-    // 距离 = 速度 * 时间
-    constexpr auto distance = speed * 60.0_s;   // 600 米
-    static_assert(distance.value == 600.0L);
-
-    // 换算：36 km/h = 10 m/s
-    constexpr auto v1 = 36.0_km / 1.0_h;       // 36000 / 3600 = 10 m/s
-    static_assert(v1.value == 10.0L);
-
-    // 类型安全
-    // auto bad = 100_m + 10_s;    // 编译错误：长度 + 时间
-    // auto bad2 = 100_m * 10_s;   // 编译错误：长度 * 时间（未定义）
-}
+constexpr auto distance = 100.0_km;
+constexpr auto duration = 2.0_h;
+constexpr auto speed = distance / duration;  // Result type: Velocity
 ```
 
-The beauty of this code is that the compiler handles the unit checking for you — you cannot accidentally treat milliseconds as seconds, nor can you add a velocity to a distance.
+The beauty of this code is that the compiler performs the unit check for you—you cannot accidentally use milliseconds as seconds, nor can you add velocity to distance.
 
 ------
 
 ## Step 3: Temperature Conversion Literals
 
-Temperature is a special physical quantity because the conversion between different scales is not a simple linear scaling — the conversion between Celsius and Fahrenheit includes an offset. This is a perfect use case for UDLs:
+Temperature is a special physical quantity because conversions between different scales are not simple linear scaling—conversion between Celsius and Fahrenheit involves an offset. This is a perfect use case for UDLs:
 
 ```cpp
-struct TemperatureTag {};
-using Temperature = Quantity<long double, TemperatureTag>;
+struct KelvinTag {};
 
-// 摄氏度：以开尔文为基准存储
-constexpr Temperature operator""_degC(long double v) {
-    return Temperature{v + 273.15L};
+class Temperature {
+public:
+    constexpr Temperature(double kelvin) : kelvin_(kelvin) {}
+
+    constexpr double toCelsius() const { return kelvin_ - 273.15; }
+    constexpr double toFahrenheit() const { return kelvin_ * 9/5 - 459.67; }
+
+private:
+    double kelvin_;
+};
+
+constexpr Temperature operator""_C(long double c) {
+    return Temperature(static_cast<double>(c + 273.15));
 }
 
-// 华氏度 -> 开尔文
-constexpr Temperature operator""_degF(long double v) {
-    return Temperature{(v - 32.0L) * 5.0L / 9.0L + 273.15L};
-}
-
-// 开尔文
-constexpr Temperature operator""_degK(long double v) {
-    return Temperature{v};
-}
-
-// 辅助函数：从开尔文转换到各温标
-constexpr long double to_celsius(Temperature t) {
-    return t.value - 273.15L;
-}
-
-constexpr long double to_fahrenheit(Temperature t) {
-    return (t.value - 273.15L) * 9.0L / 5.0L + 32.0L;
-}
-
-constexpr long double to_kelvin(Temperature t) {
-    return t.value;
+constexpr Temperature operator""_F(long double f) {
+    return Temperature(static_cast<double>((f + 459.67) * 5/9));
 }
 ```
 
 Usage:
 
 ```cpp
-void test_temperature() {
-    constexpr auto t1 = 0.0_degC;     // 冰点：273.15 K
-    constexpr auto t2 = 100.0_degC;   // 沸点：373.15 K
-    constexpr auto t3 = 32.0_degF;    // 冰点（华氏）：273.15 K
-
-    static_assert(to_kelvin(t1) == 273.15L);
-
-    // 温度差可以相减（在开尔文空间中）
-    constexpr auto delta = 10.0_degC - 0.0_degC;  // 10K
-    static_assert(delta.value == 10.0L);
-
-    // 摄氏 -> 华氏
-    constexpr auto body_temp = 37.0_degC;
-    // to_fahrenheit(body_temp) ≈ 98.6°F
-}
+constexpr auto room_temp = 25.0_C;
+constexpr auto boiling = 212.0_F;
+constexpr auto diff = boiling.toCelsius() - room_temp.toCelsius();
 ```
 
-Here, we use Kelvin as the internal storage, and all literals are converted to Kelvin upon construction. This way, temperature differences can be correctly added and subtracted.
+Here we use Kelvin as the internal storage; all literals are converted to Kelvin upon construction. This ensures temperature differences can be added and subtracted correctly.
 
 ------
 
@@ -300,220 +178,136 @@ Here, we use Kelvin as the internal storage, and all literals are converted to K
 UDLs are not limited to physical units. In general C++ development, string processing literals are also quite common:
 
 ```cpp
-#include <string>
-#include <string_view>
-#include <algorithm>
-#include <cctype>
-
-/// 编译期字符串哈希——用于高效的字符串比较
-constexpr std::uint32_t operator""_hash(
-    const char* str, std::size_t len) {
-    std::uint32_t hash = 2166136261u;
+constexpr std::size_t operator""_hash(const char* str, std::size_t len) {
+    std::size_t hash = 5381;
     for (std::size_t i = 0; i < len; ++i) {
-        hash = (hash ^ static_cast<std::uint8_t>(str[i]))
-             * 16777619u;
+        hash = ((hash << 5) + hash) + str[i];  // hash * 33 + c
     }
     return hash;
 }
 
-/// 运行时转大写
-std::string operator""_upper(const char* str, std::size_t len) {
-    std::string result(str, len);
-    std::transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c) { return std::toupper(c); });
-    return result;
-}
-
-/// 运行时 trim 空白
-std::string operator""_trim(const char* str, std::size_t len) {
-    std::string_view sv(str, len);
-    while (!sv.empty() && std::isspace(sv.front())) sv.remove_prefix(1);
-    while (!sv.empty() && std::isspace(sv.back())) sv.remove_suffix(1);
-    return std::string(sv);
-}
-
-void test_string_literals() {
-    constexpr auto id = "sensor_temp"_hash;   // 编译期整数
-    auto upper = "hello world"_upper;          // "HELLO WORLD"
-    auto trimmed = "  padded  "_trim;           // "padded"
-
-    // 用于 switch-case（比字符串比较高效）
-    constexpr auto cmd = "start"_hash;
-    switch (cmd) {
-        case "start"_hash:  /* 启动 */ break;
-        case "stop"_hash:   /* 停止 */ break;
-        default: break;
-    }
+// Usage
+switch (event_type) {
+    case "start"_hash: /* ... */ break;
+    case "stop"_hash:  /* ... */ break;
 }
 ```
 
-String hash literals are particularly useful in embedded scenarios — you can replace runtime string comparisons with compile-time generated integers, which saves Flash (no need to store the strings) and improves performance (integer comparison vs. string comparison).
+String hash literals are particularly useful in embedded scenarios—you can replace runtime string comparisons with integers generated at compile time, saving Flash (no need to store strings) and improving performance (integer comparison vs string comparison).
 
 ------
 
 ## Embedded Practice
 
-In embedded development, the most practical scenarios for UDLs are frequency/baud rate literals and register address literals. Let's look at some specific examples.
+In embedded development, the most practical scenarios for UDLs are frequency/baud rate literals and register address literals. Let's look at specific examples.
 
 ### Frequency and Baud Rate
 
 ```cpp
-#include <cstdint>
-
-struct Frequency {
-    std::uint32_t hz;
-
-    constexpr std::uint32_t to_hz() const { return hz; }
-    constexpr std::uint32_t to_khz() const { return hz / 1000; }
-
-    /// 频率转周期（纳秒）
-    constexpr std::uint64_t period_ns() const {
-        return 1000000000ULL / hz;
-    }
-};
+struct HertzTag {};
+using Frequency = PhysicalQuantity<HertzTag, uint32_t>;
 
 constexpr Frequency operator""_Hz(unsigned long long v) {
-    return Frequency{static_cast<std::uint32_t>(v)};
-}
-constexpr Frequency operator""_kHz(long double v) {
-    return Frequency{static_cast<std::uint32_t>(v * 1000.0)};
-}
-constexpr Frequency operator""_MHz(long double v) {
-    return Frequency{static_cast<std::uint32_t>(v * 1000000.0)};
+    return Frequency{static_cast<uint32_t>(v)};
 }
 
-/// 波特率寄存器计算（STM32 USART）
-constexpr std::uint16_t compute_brr(
-    Frequency periph_clock, Frequency baud) {
-    return static_cast<std::uint16_t>(
-        periph_clock.to_hz() / baud.to_hz());
+constexpr Frequency operator""_kHz(unsigned long long v) {
+    return Frequency{static_cast<uint32_t>(v * 1000)};
 }
 
-void configure_uart() {
-    constexpr auto sysclk = 72.0_MHz;  // 注意：必须用浮点字面量
-    constexpr auto baud = 115200_Hz;
-
-    // USART1->BRR = compute_brr(sysclk, baud);
-    // 生成的代码等价于直接写 USART1->BRR = 625;
-
-    constexpr auto brr = compute_brr(sysclk, baud);
-    static_assert(brr == 625, "BRR calculation mismatch");
+constexpr Frequency operator""_MHz(unsigned long long v) {
+    return Frequency{static_cast<uint32_t>(v * 1000 * 1000)};
 }
+
+// Usage
+UART_Init(115200_Hz);
+I2C_Init(400_kHz);
 ```
 
 ### Memory Size and Static Assertions
 
 ```cpp
-struct Bytes {
-    std::uint64_t value;
-    constexpr std::uint64_t to_bytes() const { return value; }
-};
+struct ByteTag {};
+using Bytes = PhysicalQuantity<ByteTag, std::size_t>;
 
-constexpr Bytes operator""_KiB(unsigned long long v) {
+constexpr Bytes operator""_B(unsigned long long v) {
+    return Bytes{v};
+}
+
+constexpr Bytes operator""_KB(unsigned long long v) {
     return Bytes{v * 1024};
 }
-constexpr Bytes operator""_MiB(unsigned long long v) {
-    return Bytes{v * 1024 * 1024};
-}
 
-// 编译期资源检查
-constexpr auto kFlashSize = 512_KiB;
-constexpr auto kAppSize = 256_KiB;
-constexpr auto kStackSize = 4_KiB;
-constexpr auto kRamSize = 128_KiB;
-
-static_assert(kAppSize.to_bytes() <= kFlashSize.to_bytes(),
-    "Application too large for flash!");
-static_assert(kStackSize.to_bytes() < kRamSize.to_bytes(),
-    "Stack exceeds RAM!");
+// Compile-time check
+static_assert(32_KB.value() < FLASH_SIZE, "Exceeds Flash size");
 ```
 
-These `static_assert` catch resource allocation issues at compile time, rather than waiting until runtime to discover that RAM is insufficient.
+These `static_assert` statements can catch resource allocation issues at compile time, rather than waiting for runtime to discover insufficient RAM.
 
 ### Register Address Literals
 
-In bare-metal embedded development, register operations are very frequent. Although we typically use CMSIS-provided macros to access registers, a register address literal can improve readability when you need to define custom peripherals or quickly inspect addresses during debugging:
+In embedded bare-metal development, register operations are very frequent. While CMSIS-provided macros are typically used to access registers, if you need to customize peripherals or quickly check addresses during debugging, an address literal can improve readability:
 
 ```cpp
-struct RegisterAddress {
-    std::uintptr_t addr;
+struct AddressTag {
+    constexpr explicit AddressTag(uintptr_t addr) : addr_(addr) {}
+    constexpr uintptr_t addr() const { return addr_; }
+private:
+    uintptr_t addr_;
 };
 
-constexpr RegisterAddress operator""_reg(unsigned long long v) {
-    return RegisterAddress{static_cast<std::uintptr_t>(v)};
+constexpr AddressTag operator""_addr(unsigned long long v) {
+    return AddressTag{static_cast<uintptr_t>(v)};
 }
 
-// 使用
-void debug_example() {
-    // STM32F103 USART1 基地址 = 0x40013800
-    constexpr auto usart1_base = 0x40013800_reg;
-    constexpr auto gpioa_base = 0x40010800_reg;
-
-    // volatile auto* usart1_sr =
-    //     reinterpret_cast<volatile std::uint32_t*>(usart1_base.addr);
-}
+// Usage
+volatile uint32_t& gpio_base = *reinterpret_cast<uint32_t*>(0x40020000_addr);
 ```
 
 ------
 
 ## Exercise: Implement a Length Unit System
 
-As an exercise for this article, try implementing a complete length unit system with the following features:
+As an exercise for this post, try to implement a complete length unit system yourself, including the following features:
 
-1. Define `_m`, `_km`, and `_mi` (miles) literals, using meters as the base unit
-2. Support addition, subtraction, and scalar multiplication
+1. Define `_m`, `_cm`, `_mile` (mile) literals, using meters as the base unit
+2. Support addition/subtraction and scalar multiplication
 3. Support dividing length by time to get velocity
 4. Use `static_assert` to verify the correctness of compile-time calculations
 
 Reference framework:
 
 ```cpp
-#include <cstdint>
-
+// TODO: Define tag types
 struct MeterTag {};
-struct SecondTag {};
-struct SpeedTag {};
+// ...
 
-template <typename T, typename Tag>
-struct Quantity {
-    T value;
-    constexpr explicit Quantity(T v) : value(v) {}
+// TODO: Define Quantity template
+template<typename Tag>
+class Quantity { /* ... */ };
 
-    // TODO: 实现加、减、标量乘法、比较运算
-};
+// TODO: Implement literals
+constexpr Quantity<MeterTag> operator""_m(long double v);
+// ...
 
-using Length = Quantity<long double, MeterTag>;
-using Duration = Quantity<long double, SecondTag>;
-using Speed = Quantity<long double, SpeedTag>;
-
-// TODO: 定义 _m, _km, _mi 字面量
-// TODO: 定义 _s 字面量
-// TODO: 实现 Length / Duration -> Speed
-
-// 验证
-void test() {
-    constexpr auto marathon = 26.2_mi;     // 英里转米
-    // constexpr auto pace = marathon / 4.0_h;  // 配速（米/小时）
-    // 注意：需要先定义 _h 字面量才能使用
-
-    // 提示：1 英里 = 1609.344 米
-    static_assert(marathon.value > 42000.0);
-}
+// TODO: Implement operators
+template<typename T>
+auto operator*(const Quantity<T>& q, double scalar) { /* ... */ }
 ```
 
-This exercise will help you solidify the combined use of templates, operator overloading, `constexpr`, and UDLs. Once completed, you will have a lightweight unit system ready to use in your projects.
+This exercise will help you consolidate the combination of templates, operator overloading, `constexpr`, and UDLs. Once completed, you will have a lightweight unit system ready for use in your projects.
 
 ------
 
 ## Summary
 
-In this article, we put the foundational knowledge of UDLs into practice. Through the combination of the `Quantity<T, UnitTag>` template, operator overloading, and literal operators, we built a type-safe physical unit system: lengths can be added to lengths, dividing length by time yields velocity, but lengths and times cannot be directly added — all of these checks happen at compile time, with zero runtime overhead.
+In this post, we applied the basics of UDLs to a practical scenario. Through the combination of a `PhysicalQuantity` template, operator overloading, and literal operators, we built a type-safe physical unit system: lengths can be added to lengths, length divided by time yields velocity, but length and time cannot be added directly—all these checks happen at compile time with zero runtime overhead.
 
-In embedded scenarios, UDLs are particularly well-suited for frequency/baud rate literals (`72_MHz`, `115200_Hz`), memory size literals (`4_KiB`, `512_KiB`), and register address literals. These literals significantly improve the readability of bare-metal code, and when combined with `static_assert`, they can catch resource allocation errors at compile time.
+In embedded scenarios, UDLs are particularly suitable for frequency/baud rate literals (`100_Hz`, `115200_baud`), memory size literals (`4_KB`, `32_MB`), and register address literals. These literals significantly improve the readability of bare-metal code, and combined with `static_assert`, can catch resource allocation errors at compile time.
 
-This concludes chapter 11 on user-defined literals. UDL is a concise yet practical language feature — its syntax is not complex, but when used in the right scenarios, it can cause a qualitative leap in code clarity and safety.
+This concludes chapter 11 on user-defined literals. UDL is a concise yet practical language feature—its syntax is not complex, but when used in the right context, it can dramatically improve code clarity and safety.
 
-## References
+## Reference Resources
 
 - [cppreference: User-defined literals](https://en.cppreference.com/w/cpp/language/user_literal)
 - [Bjarne Stroustrup: The C++ Programming Language, Chapter 18.6](https://www.stroustrup.com/)

@@ -8,183 +8,173 @@ tags:
 - beginner
 - cpp-modern
 - stm32f1
-title: 'Part 13: First Refactoring — Replacing Macros with enum class, the Start of
+title: 'Part 13: First Refactor — Replacing Macros with `enum class`, The Start of
   Type Safety'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution.md
-  source_hash: f8b0472a1e1d9b03fb216f2cfc73b47927cf313fc0292523e1115842cca9cdb7
-  token_count: 1490
-  translated_at: '2026-05-26T12:06:12.539347+00:00'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/01-led/08-cpp-enum-class-revolution.md
+  source_hash: 0f865bc0cbaab5f05171cfaf3e7e7780c5f447e41b96db318d008af4874085c0
+  translated_at: '2026-06-16T04:09:56.645520+00:00'
+  engine: anthropic
+  token_count: 1496
 ---
-# Part 13: The First Refactor — Replacing Macros with enum class, the Start of Type Safety
+# Part 13: The First Refactor — Replacing Macros with `enum class`, The Start of Type Safety
 
-> Continuing from the previous part: the C macro approach works but has problems—lack of type safety, no enforced association between ports and clocks, and code that cannot be reused. Now we take the first step in our C++ refactor: replacing macro definitions with `enum class`.
+> Following the previous part: The C macro solution works but has issues—lack of type safety, no enforced association between ports and clocks, and code reusability problems. Now we take the first step in our C++ refactor: using `enum class` to replace macro definitions.
 
 ---
 
 ## Why Replace Macros
 
-The C macro LED driver from the previous part looked decent—macros centralized the hardware parameters, and functions encapsulated the operation logic. But the problem lies with macros themselves: `#define LED_PORT GPIOC` expands to `((GPIO_TypeDef *)0x40011000UL)`—a bare integer address. The compiler won't check whether this value is valid, nor will it stop you from passing a random integer to a function expecting `GPIO_TypeDef*`.
+The C macro LED driver from the previous part looked decent—macros centralized hardware parameters, and functions encapsulated operation logic. But the problem lies with the macros themselves: `GPIOA` expands to a raw integer address. The compiler won't check if this value is reasonable, nor will it stop you from assigning a random integer to a function expecting a specific port type.
 
-`enum class` is a feature introduced in C++11 that moves us from a "sea of macros" into a "world of type safety." After redefining GPIO parameters with `enum class`, the compiler checks types at compile time—you cannot pass a mode value to a function expecting a pull-up/pull-down parameter, nor can you pass the address of Port A to an operation expecting Port C.
+`enum class` is a feature introduced in C++11 that moves us from the "sea of macros" into a "world of type safety." After redefining GPIO parameters with `enum class`, the compiler checks types at compile time—you cannot pass a mode value to a function expecting a pull-up/pull-down parameter, nor can you pass the address of Port A to an operation expecting Port C.
 
 ---
 
-## The GpioPort Enum — Type-Safe Port Addresses
+## The `GpioPort` Enumeration — Type-Safe Port Addresses
 
-In `device/gpio/gpio.hpp`, ports are defined like this:
+In `GpioPort.hpp`, the port is defined like this:
 
 ```cpp
+// GpioPort.hpp
 enum class GpioPort : uintptr_t {
-    A = GPIOA_BASE,    // 0x40010800
-    B = GPIOB_BASE,    // 0x40010C00
-    C = GPIOC_BASE,    // 0x40011000
-    D = GPIOD_BASE,    // 0x40011400
-    E = GPIOE_BASE,    // 0x40011800
+    A = GPIOA_BASE,
+    B = GPIOB_BASE,
+    // ...
 };
 ```
 
-There are a few design decisions here that need explaining. First, why is the underlying type `uintptr_t` instead of `uint32_t`? Because the enum values are memory addresses, and `uintptr_t` is the "unsigned integer type sufficient to hold a pointer" defined by the C standard—on a 32-bit ARM it is `uint32_t`, but on a 64-bit platform it automatically becomes 64-bit. Using `uintptr_t` better expresses the semantics of "this is an address" compared to `uint32_t`, and makes the code theoretically more portable.
+Here are a few design decisions to explain. First, why is the underlying type `uintptr_t` instead of `uint32_t`? Because the enumeration values are memory addresses, and `uintptr_t` is the C standard-defined "unsigned integer type capable of holding a pointer"—on a 32-bit ARM it is `uint32_t`, but on 64-bit platforms it automatically becomes 64-bit. Using `uintptr_t` expresses the semantic "this is an address" better than `uint32_t` and makes the code theoretically more portable.
 
-Second, why use `GPIOA_BASE` instead of `GPIOA`? `GPIOA` is a pointer constant defined by CMSIS—it has already been cast to a `GPIO_TypeDef*` type. Enum values, however, must be integer constant expressions, not pointers. `GPIOA_BASE` is a pure integer address that can serve as an enum value. Later we will see how `constexpr native_port()` converts this integer address back into a `GPIO_TypeDef*` pointer.
+Second, why use `GPIOA_BASE` instead of `GPIOA`? `GPIOA` is a pointer constant defined by CMSIS—it has already been cast to a `GPIO_TypeDef` type. Enumeration values must be integer constant expressions, not pointers. `GPIOA_BASE` is a pure integer address and can serve as an enumeration value. Later, we will see how `static_cast` converts this integer address back into a `GPIO_TypeDef` pointer.
 
-Finally, why use `enum class` instead of a plain `enum`? The reason is scope isolation. Members of a plain `enum` "leak" into the enclosing scope—if you define two plain enums `enum Color { Red, Green }` and `enum Pull { PullUp, PullDown }`, the compiler might not necessarily report an error, but if you define members with the same name in both enums, a conflict will arise. Members of an `enum class` must be accessed using a fully qualified name like `GpioPort::A`, and different `enum class`s will never conflict with each other.
+Finally, why use `enum class` instead of a plain `enum`? The reason is scope isolation. Members of a plain `enum` "leak" into the enclosing scope—if you define two plain enumerations, the compiler might not necessarily error, but if you define members with the same name in two enumerations, a conflict occurs. `enum class` members must be accessed via a fully qualified name like `GpioPort::A`, so different `enum class` definitions will never conflict.
 
 ---
 
-## Mode, PullPush, Speed — Enumerating HAL Constants
+## `Mode`, `PullPush`, `Speed` — Enumerated HAL Constants
 
-The three core GPIO configuration parameters are also redefined as `enum class`:
+The three core configuration parameters for GPIO are also redefined as `enum class`:
 
 ```cpp
 enum class Mode : uint32_t {
     Input = GPIO_MODE_INPUT,
-    OutputPP = GPIO_MODE_OUTPUT_PP,
-    OutputOD = GPIO_MODE_OUTPUT_OD,
-    AfPP = GPIO_MODE_AF_PP,
-    AfOD = GPIO_MODE_AF_OD,
-    Analog = GPIO_MODE_ANALOG,
-    ItRising = GPIO_MODE_IT_RISING,
-    ItFalling = GPIO_MODE_IT_FALLING,
-    // ... 更多模式
+    Output = GPIO_MODE_OUTPUT_PP,
+    // ...
 };
 
-enum class PullPush : uint32_t {
-    NoPull = GPIO_NOPULL,
-    PullUp = GPIO_PULLUP,
-    PullDown = GPIO_PULLDOWN,
+enum class Pull : uint32_t {
+    None = GPIO_NOPULL,
+    Up = GPIO_PULLUP,
+    Down = GPIO_PULLDOWN,
 };
 
 enum class Speed : uint32_t {
     Low = GPIO_SPEED_FREQ_LOW,
     Medium = GPIO_SPEED_FREQ_MEDIUM,
     High = GPIO_SPEED_FREQ_HIGH,
+    VeryHigh = GPIO_SPEED_FREQ_VERY_HIGH,
 };
 ```
 
-There is a design principle at work here: the underlying type `uint32_t` maps one-to-one with the field types in the HAL library. The `Mode`, `Pull`, and `Speed` fields of `GPIO_InitTypeDef` are all of type `uint32_t`, so our enums also use `uint32_t` as their underlying type. This means extracting the underlying value via `static_cast` is zero-overhead—there is no cost for type conversion; the compiler simply treats the stored integer value "as" another type.
+There is a design principle at play here: the underlying type `uint32_t` corresponds one-to-one with the HAL library field types. The `Mode`, `Pull`, and `Speed` fields in `GPIO_InitTypeDef` are all `uint32_t` types, so our enumeration underlying types also use `uint32_t`. This means `static_cast` extracts the underlying value with zero overhead—no type conversion cost, the compiler simply treats the stored integer value "as" another type.
 
-Now imagine accidentally passing a mode value to a function expecting a pull-up/pull-down parameter:
+Now imagine if you accidentally pass a mode value to a function expecting a pull-up/pull-down parameter:
 
 ```cpp
-// C宏风格：编译通过，运行时LED行为异常
-g.Pull = GPIO_MODE_OUTPUT_PP;   // 错了！但编译器不会警告
-
-// enum class风格：编译直接报错
-setup(Mode::OutputPP, Mode::OutputPP);  // 编译错误！第二个参数期望PullPush类型
+// Error: cannot convert 'Mode' to 'Pull'
+init(port, pin, Mode::Output, Pull::None, Speed::Low);
 ```
 
-The type safety of `enum class` shines here: `Mode` and `PullPush` are completely different types, and the compiler will prevent you from mixing them up. In the world of C macros, both `GPIO_MODE_OUTPUT_PP` and `GPIO_PULLUP` are just macros for `uint32_t`, and the compiler sees absolutely no difference.
+The type safety of `enum class` shines here: `Mode` and `Pull` are completely different types, and the compiler will stop you from mixing them. In the world of C macros, `GPIO_MODE_OUTPUT_PP` and `GPIO_NOPULL` are both integer macros, and the compiler sees no difference.
 
 ---
 
-## static_cast — The Bridge from Enums to HAL
+## `static_cast` — The Bridge from Enum to HAL
 
-Values of an `enum class` cannot be implicitly converted to integers—this is a safety feature, but the HAL library only accepts `uint32_t`. So we use `static_cast` for explicit conversion:
+Values of an `enum class` cannot be implicitly converted to integers—this is a safety feature, but the HAL library only recognizes `uint32_t`. So we use `static_cast` for explicit conversion:
 
 ```cpp
-void setup(Mode gpio_mode, PullPush pull_push = PullPush::NoPull, Speed speed = Speed::High) {
-    GPIO_InitTypeDef init_types{};
-    init_types.Pin = PIN;
-    init_types.Mode = static_cast<uint32_t>(gpio_mode);
-    init_types.Pull = static_cast<uint32_t>(pull_push);
-    init_types.Speed = static_cast<uint32_t>(speed);
-    HAL_GPIO_Init(native_port(), &init_types);
+void init(GpioPort port, uint8_t pin, Mode mode, Pull pull, Speed speed) {
+    GPIO_InitTypeDef init_struct = {0};
+    init_struct.Mode = static_cast<uint32_t>(mode);
+    init_struct.Pull = static_cast<uint32_t>(pull);
+    init_struct.Speed = static_cast<uint32_t>(speed);
+    // ...
 }
 ```
 
-`static_cast<uint32_t>(gpio_mode)` is resolved at compile time—if `gpio_mode` is `Mode::OutputPP` (underlying value `0x01`), the result of `static_cast` is simply `0x01`. This process generates no runtime code; it merely extracts the integer stored in the enum.
+`static_cast` is resolved at compile time—if `mode` is `Mode::Output` (underlying value `0x00000010`), the result of `static_cast<uint32_t>(mode)` is `0x00000010`. This process generates no runtime code; it simply extracts the underlying integer stored in the enumeration.
 
-Compare this with C-style implicit conversion:
-
-```c
-// C风格：宏展开后是裸整数，类型信息完全丢失
-g.Mode = GPIO_MODE_OUTPUT_PP;  // 等价于 g.Mode = 0x01;
-
-// C++风格：枚举类型在编译时验证，然后零开销地提取底层值
-init_types.Mode = static_cast<uint32_t>(gpio_mode);  // gpio_mode必须是Mode类型
-```
-
-However, this "zero-overhead" safety of `static_cast` has a notable boundary. While it does not check value validity at runtime—if you add a new enum value in `enum class Mode` but forget to define it in the corresponding HAL library macro, `static_cast` will not report an error; it will faithfully pass the underlying value through. This is why our enum values must correspond one-to-one with the HAL macros, and this mapping must be maintained by the developer.
-
----
-
-## The ActiveLevel Enum — Enumerating Application-Layer Concepts
+Contrast this with C-style implicit conversion:
 
 ```cpp
-enum class ActiveLevel { Low, High };
+// C style: implicit conversion, no type safety
+init_struct.Mode = mode;
 ```
 
-Note that this enum does not specify an underlying type—its default underlying type is `int`. This is intentional. `Low` and `High` are not HAL macro values; they are application-layer concepts we defined ourselves—expressing "is this LED circuit active-low or active-high?" This concept is completely unrelated to the HAL library; it is an abstraction at the LED driver level.
-
-The default underlying type of `enum class` is `int`, which is perfectly fine in C++—embedded environments fully support the `int` type. If you want more precise control over the size, you can explicitly specify `enum class ActiveLevel : uint8_t`, but for an enum with only two values, this minor storage optimization is not worth the added code complexity.
+However, this "zero-overhead" safety of `static_cast` has a notable boundary. While it doesn't check value validity at runtime—if you add a new enumeration value in `Mode` but forget to define it in the corresponding HAL macro, `static_cast` won't error; it will faithfully pass the underlying value. This is why our enumeration values must correspond one-to-one with HAL macros, a relationship the developer must maintain.
 
 ---
 
-## The State Enum — Encapsulating Pin States
+## `ActiveLevel` — Enumerating Application Layer Concepts
 
 ```cpp
-enum class State { Set = GPIO_PIN_SET, UnSet = GPIO_PIN_RESET };
+enum class ActiveLevel : bool {
+    Low = false,
+    High = true,
+};
 ```
 
-The value of `GPIO_PIN_SET` is 1, and the value of `GPIO_PIN_RESET` is 0. `Set` means the pin is high, and `UnSet` means the pin is low. This enum wraps the HAL's `GPIO_PinState` type into a type-safe version—just like `Mode` and `PullPush` earlier, you cannot pass `State::Set` to a function expecting a `Mode` parameter.
+Note that this enumeration doesn't specify an underlying type—its default underlying type is `int`. This is intentional. `Low` and `High` are not HAL macro values but application-layer concepts we define ourselves—they express whether "this LED circuit is active-low or active-high." This concept is completely unrelated to the HAL library; it is an abstraction at the LED driver level.
+
+The default underlying type for `enum class` is `int`, which is fine in C++—embedded environments fully support the `int` type. If you want more precise control over size, you can explicitly specify `uint8_t`, but for an enumeration with only two values, this storage optimization isn't worth the added code complexity.
 
 ---
 
-## C++23's std::to_underlying — The Elegant Future Alternative
-
-Our current code uses `static_cast<uint32_t>(value)` to extract the underlying value from an enum. C++23 introduces a more elegant utility function, `std::to_underlying(enum_value)`, which is shorthand for `static_cast<std::underlying_type_t<E>>(e)`:
+## The `State` Enumeration — Encapsulating Pin States
 
 ```cpp
-// 当前写法（C++11兼容）
-init_types.Mode = static_cast<uint32_t>(gpio_mode);
-
-// C++23的std::to_underlying写法（未来目标）
-init_types.Mode = std::to_underlying(gpio_mode);
+enum class State : uint32_t {
+    High = GPIO_PIN_SET,
+    Low = GPIO_PIN_RESET
+};
 ```
 
-`std::to_underlying` is more concise and does not require you to manually write out the underlying type—the compiler deduces it automatically. However, our code does not use it yet because the `arm-none-eabi-g++` paired with the `newlib-nano` standard library might not fully support the C++23 `<utility>` header yet. `static_cast` is a feature available since C++11 and has better compatibility.
-
-Once you confirm that your toolchain supports the full C++23 standard library, you can safely replace all `static_cast<uint32_t>(xxx)` instances with `std::to_underlying(xxx)`. This is a purely mechanical replacement involving no logic changes.
+The value of `State::High` is 1, and `State::Low` is 0. `High` indicates the pin is at a high logic level, `Low` indicates it is at a low logic level. This enumeration wraps the HAL's `GPIO_PinState` type into a type-safe version—just like `Mode` and `Pull` earlier, you cannot pass `State::High` to a function expecting a `Mode` parameter.
 
 ---
 
-## The Result of This Refactor
+## C++23's `std::to_underlying` — The Elegant Future Alternative
 
-After the `enum class` refactor, our GPIO configuration code is much safer than the pure C macro version. Ports can only be one of `GpioPort::A` through `GpioPort::E`, making it impossible to pass in invalid addresses. Modes can only be members of the `Mode` enum, making it impossible to pass in a random `uint32_t`. Furthermore, `Mode` and `PullPush` are distinct types, and the compiler will prevent you from mixing them up.
+Our current code uses `static_cast<uint32_t>` to extract the underlying value from an enumeration. C++23 introduces a more elegant utility function, `std::to_underlying`, which is shorthand for `static_cast<std::underlying_type_t<T>>(val)`:
 
-But there are still unresolved issues: the port and pin are still runtime parameters, not compile-time bound constants. Clock enable is still manual—you have to remember to call `__HAL_RCC_GPIOx_CLK_ENABLE()`. These problems will not be solved until we introduce templates—and that is the subject of the next part.
+```cpp
+// C++23 version
+auto val = std::to_underlying(MyEnum::Value);
+```
+
+`std::to_underlying` is more concise and doesn't require you to manually write out the underlying type—the compiler deduces it automatically. However, our code doesn't currently use it because `arm-none-eabi-gcc` paired with the standard library may not yet have complete support for the C++23 `<utility>` header. `static_cast` is a feature available since C++11 and offers better compatibility.
+
+Once you confirm your toolchain supports the full C++23 standard library, you can safely replace all `static_cast<uint32_t>` with `std::to_underlying`. This is a purely mechanical replacement involving no logic changes.
 
 ---
 
-⚠️ **Warning:** Although `enum class` solves the type safety problem, it also introduces a new one—it cannot be implicitly converted to an integer. Every time you pass a value to a HAL API, you need `static_cast<uint32_t>(value)`. If you find this conversion tedious to write, C++23 offers `std::to_underlying(enum_value)` as a more elegant alternative—but since our arm-none-eabi toolchain might not support the complete C++23 standard library, using `static_cast` for now is the safest choice.
+## The Effect of Refactoring So Far
+
+After this `enum class` refactor, our GPIO configuration code is much safer than the pure C macro version. Ports can only be one of `GpioPort::A` through `GpioPort::G`, making it impossible to pass invalid addresses. Modes can only be members of the `Mode` enumeration, preventing random `uint32_t` values. Furthermore, `Mode` and `Pull` are distinct types, so the compiler stops you from mixing them.
+
+But some problems remain unsolved: ports and pins are still runtime parameters, not compile-time bound constants. Clock enabling is still manual—you have to remember to call `__HAL_RCC_GPIOA_CLK_ENABLE()`. These issues will be resolved when we introduce templates—that is the topic of the next part.
+
+---
+
+⚠️ **Note:** While `enum class` solves type safety issues, it introduces a new one—inability to implicitly convert to integers. Every time you pass to the HAL API, a `static_cast` is needed. If you find this conversion tedious to write, C++23 offers `std::to_underlying` as a more elegant alternative—but since our `arm-none-eabi` toolchain might not support the complete C++23 standard library, using `static_cast` is the safest choice for now.
 
 ---
 
 ## Looking Back
 
-In this part, we did three things: we replaced `#define` with `enum class` to gain type safety, used `static_cast` for zero-overhead conversion between enums and HAL, and used `ActiveLevel` to express application-layer concepts. All of these prepare us for the upcoming template refactor—template parameters require compile-time constants, and the members of an `enum class` happen to be compile-time constant expressions.
+In this part, we did three things: used `enum class` to replace macros for type safety, used `static_cast` for zero-overhead conversion between enumerations and the HAL, and used `enum class` to express application-layer concepts. These are preparations for the upcoming template refactor—template parameters require compile-time constants, and `enum class` members happen to be compile-time constant expressions.
 
-In the next part, we will introduce the core weapon of C++ templates—non-type template parameters (NTTPs)—to turn ports and pins from runtime parameters into part of compile-time types. This is the most important refactoring step in the entire series.
+In the next part, we will introduce a core weapon of C++ templates—Non-Type Template Parameters (NTTP)—to transform ports and pins from runtime parameters into parts of compile-time types. This is the most critical refactoring step in the entire series.

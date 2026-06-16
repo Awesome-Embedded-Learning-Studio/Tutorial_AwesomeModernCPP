@@ -6,7 +6,7 @@ cpp_standard:
 - 20
 - 23
 description: Allows lambda expression parameters to use the `auto` placeholder, with
-  the compiler automatically performing type deduction.
+  the compiler automatically deducing the type.
 difficulty: intermediate
 order: 9
 reading_time_minutes: 1
@@ -16,17 +16,17 @@ tags:
 - intermediate
 title: Generic Lambda
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/09-generic-lambda.md
-  source_hash: 725b3b370ef68b22088d8557c658b5cff4775a13f1dfa0d1c93c2e6719956625
-  token_count: 360
-  translated_at: '2026-05-26T10:16:06.394850+00:00'
+  source_hash: c84f4a3a2415c50821a89447dc615af436635d1ea4b2d2d831b10db864b45e60
+  translated_at: '2026-06-16T03:29:02.629051+00:00'
+  engine: anthropic
+  token_count: 364
 ---
-# Generic Lambda (C++14)
+# Generic Lambdas (C++14)
 
-## One-Liner
+## In a Nutshell
 
-Allows lambda expression parameters to use `auto`, eliminating the need to write multiple overloads for different types, effectively generating a templated `operator()`.
+Allows lambda expression parameters to support `auto`, eliminating the hassle of writing multiple overloads for different types. It effectively generates a templated `operator()`.
 
 ## Header
 
@@ -36,28 +36,41 @@ None (language feature)
 
 | Operation | Signature | Description |
 |------|------|------|
-| Generic parameter | `[captures](auto a, auto b) { ... }` | Uses `auto` to declare parameters, generating a template `operator()` based on deduced types |
-| Forwarding reference parameter | `[captures](auto&&... ts) { ... }` | Combines with `auto&&` to perfectly forward the parameter pack |
-| Explicit template parameters (C++20) | `[captures]<class T>(T a) { ... }` | Explicitly declares template parameters using angle brackets after the square brackets, supporting constraints |
-| Captureless conversion to function pointer | `using F = ret(*)(params); operator F() const;` | A captureless generic lambda can implicitly convert to a function pointer (constexpr since C++17) |
+| Generic parameters | `[](auto x) {}` | Use `auto` to declare parameters; generates a templated `operator()` based on deduced types |
+| Forwarding reference parameters | `[](auto&& x) {}` | Combine with `std::forward` to perfectly forward parameter packs |
+| Explicit template parameters (C++20) | `[]<typename T>(T x) {}` | Explicitly declare template parameters using angle brackets after the square brackets; supports constraints |
+| No-capture function pointer conversion | `[](auto x) {}` | No-capture generic lambdas can be implicitly converted to function pointers (since C++17, `constexpr`) |
 
 ## Minimal Example
 
 ```cpp
+#include <algorithm>
+#include <vector>
 #include <iostream>
-// Standard: C++14
+
 int main() {
-    auto compare = [](auto a, auto b) { return a < b; };
-    std::cout << compare(3, 4) << "\n";       // int vs int
-    std::cout << compare(3.14, 2.72) << "\n"; // double vs double
+    std::vector<int> v{5, 2, 8, 1, 9};
+
+    // Generic lambda: works with int, double, or custom types supporting comparison
+    auto greater = [](auto a, auto b) {
+        return a > b;
+    };
+
+    // Sort in descending order
+    std::sort(v.begin(), v.end(), greater);
+
+    for (const auto& x : v) {
+        std::cout << x << " ";
+    }
+    // Output: 9 8 5 2 1
 }
 ```
 
 ## Embedded Applicability: High
 
-- Zero runtime overhead; `auto` is deduced only at compile time, and the generated code is identical to hand-written templates
-- Ideal for writing generic callback functions (such as sort comparators, timer callbacks), reducing template code redundancy
-- The C++14 `auto` syntax is widely supported by GCC 5+ / Clang 3.4+, and can be used with mainstream embedded toolchains
+- Zero runtime overhead; `auto` is deduced at compile-time only, and the generated code is identical to hand-written templates.
+- Ideal for writing generic callback functions (e.g., sorting comparators, timer callbacks), reducing template code redundancy.
+- The C++14 `auto` syntax is widely supported by GCC 5+ and Clang 3.4+, making it usable with mainstream embedded toolchains.
 
 ## Compiler Support
 
@@ -71,4 +84,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

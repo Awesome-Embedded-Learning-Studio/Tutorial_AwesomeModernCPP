@@ -2,7 +2,7 @@
 chapter: 1
 cpp_standard:
 - 23
-description: Starting from a real asynchronous callback bug, we break down the three
+description: Starting from a real asynchronous callback bug, we analyze the three
   major shortcomings of `std::function` in asynchronous scenarios, and design the
   complete target API for `OnceCallback`.
 difficulty: beginner
@@ -24,190 +24,159 @@ tags:
 - 函数对象
 title: 'OnceCallback in Practice (Part 1): Motivation and Interface Design'
 translation:
-  engine: anthropic
   source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-1-once-callback-motivation-and-api-design.md
-  source_hash: b99ecb8050d929f2402dba605c6cfbedd93411dc4adebcb9f49ab7dca10337b9
-  token_count: 1732
-  translated_at: '2026-05-26T12:24:43.140050+00:00'
+  source_hash: 97ef56eda9b4d5cd69a586a7360b4c24a83c826da6e674bdd24307e5d313c908
+  translated_at: '2026-06-16T04:13:11.873850+00:00'
+  engine: anthropic
+  token_count: 1724
 ---
-# OnceCallback in Practice (Part 1): Motivation and Interface Design
+# OnceCallback in Action (Part 1): Motivation and Interface Design
 
 ## Introduction
 
-Honestly, the most common pitfall I've hit in async programming is callbacks being invoked multiple times. The scenario is classic—you register a callback for a file I/O completion, expecting it to run exactly once and be done. But due to a logic slip somewhere, it gets triggered an extra time. The resources freed inside the callback are accessed a second time, and you are promptly rewarded with a segfault. A major characteristic of this kind of bug is that it is extremely hard to reproduce in tests, because the normal async path usually only invokes the callback once. The real trigger is some race condition or error retry path.
+Honestly, the most common pitfall I've encountered while doing asynchronous programming is callbacks being invoked multiple times. The scenario is classic—you register a callback for file I/O completion, expecting it to run once and be done with it. But due to a logic slip-up somewhere, it gets triggered one extra time. The resources released in the callback are accessed a second time, and boom—you get a segmentation fault. A major characteristic of this type of bug is that it is very hard to reproduce in tests, because normal asynchronous paths usually only trigger the callback once; the real trigger is often some race condition or error retry path.
 
-`std::function` can't help us. It allows multiple invocations, allows copy propagation, and the callback object can end up everywhere. What we need is a mechanism that **constrains the callback semantics at the type system level**—making the "can only be called once" rule a compiler check, rather than a matter of programmer memory.
+`std::function` can't help us here. It allows multiple invocations, allows copy propagation, and callback objects can end up flying everywhere. We need a mechanism that **constrains callback semantics at the type system level**—making the "invoke only once" rule a compiler check, not a test of the programmer's memory.
 
-In this article, we start from the motivation, break down exactly what is wrong with `std::function`, and then design our target API. We will start writing code in the next article.
+In this article, we will start from the motivation, analyze exactly what is wrong with `std::function`, and then design our target API. We will start writing code in the next article.
 
 > **Learning Objectives**
 >
-> - Understand the three major flaws of `std::function` in callback scenarios through a real async bug
-> - Grasp the design philosophy of Chromium's OnceCallback: move-only + rvalue-qualified + single consumption
-> - Design the complete public interface of OnceCallback
+> - Understand the three major flaws of `std::function` in callback scenarios through a real-world asynchronous bug.
+> - Grasp the design philosophy of Chromium's OnceCallback: move-only + rvalue-qualified + single-shot consumption.
+> - Design the complete public interface for OnceCallback.
 
 ---
 
-## Starting from a Bug
+## Starting with a Bug
 
-### Scenario: Async File Read
+### Scenario: Asynchronous File Reading
 
-Suppose we are writing a wrapper for async file reading. The user calls `read_file_async(path, callback)`, and when the I/O completes, `callback` is triggered once, passing in the file contents.
+Suppose we are writing an asynchronous file reading wrapper. The user calls `async_read`, and when I/O completes, `on_complete` is triggered once, passing in the file content.
 
 ```cpp
-void read_file_async(const std::string& path,
-                     std::function<void(std::string)> callback);
-
-// 使用
-void on_file_read(std::string content) {
-    process(content);        // 处理内容
-    release_resources();     // 释放相关资源
-}
-
-read_file_async("data.txt", on_file_read);
+void async_read(const std::string& path, std::function<void(std::string)> on_complete);
 ```
 
-This looks fine. But if the I/O subsystem triggers a retry due to some error—the callback gets invoked twice. `release_resources()` executes twice, and the second time it accesses already-freed memory. Segfault. In a test environment, this retry path is never triggered; only under high-concurrency conditions in production does this bug surface with extremely low probability.
+Looks fine. But if the I/O system triggers a retry due to some error—the callback gets invoked twice. `on_complete` executes twice, and the second time it accesses already freed memory. Segmentation fault. In a test environment, this retry path might never be triggered; only in a high-concurrency production environment does this bug appear with a very low probability.
 
-### std::function Doesn't Help
+### std::function Doesn't Help Us
 
-Where does the problem lie? The type signature of `std::function<void(std::string)>` contains no information telling us "how many times this callback should be invoked." The type system provides no constraints, so we can only rely on runtime assertions—if we even have them—or on programmer discipline to guarantee correctness.
+Where is the problem? The type signature of `std::function<void(std::string)>` contains no information telling us "how many times this callback should be called". The type system provides no constraint; we can only rely on runtime assertions—if you have them—or programmer discipline to guarantee it.
 
-Even worse, the characteristics of `std::function` make this problem harder to spot. It is copyable, meaning the callback can be duplicated to multiple places. If multiple execution paths hold copies of the same callback simultaneously, race conditions are lurking within. Its `operator()` is `const`-qualified—invoking it does not change the state of the `std::function` object itself, so we cannot use the calling interface to express the "invoke to consume" semantics.
+Even worse, `std::function`'s characteristics make this problem harder to detect. It is copyable, meaning the callback can be copied to multiple places. If multiple execution paths hold copies of the same callback simultaneously, race conditions are lurking. Its `operator()` is `const`-qualified—calling it does not change the state of the `std::function` object itself—so you cannot express the "invoke is consume" semantic through the calling interface.
 
 ---
 
-## The Three Major Flaws of std::function
+## Three Major Flaws of std::function
 
-Let's systematize the problem. `std::function`, as a general-purpose callable object wrapper, is a design success—but in the specific scenario of async callbacks, it has three fatal flaws.
+Let's systematize the problem. `std::function`, as a general-purpose callable object container, is successful in its design—but in the specific scenario of asynchronous callbacks, it has three fatal flaws.
 
 ### Flaw 1: Copyable
 
-`std::function` natively supports copying. When you copy a `std::function`, its internal type-erasure mechanism copies the stored callable object as well. In an async system, this means a single callback can be copied to any number of places—one copy in the task queue, one in the timer, one in the error handler—and each copy can be invoked independently.
+`std::function` natively supports copying. When you copy a `std::function`, its internal type-erasure mechanism copies the stored callable object as well. In an asynchronous system, this means a callback can be copied to any number of places—one in the task queue, one in the timer, one in the error handler—and each copy can be invoked independently.
 
-If the callback captures move-only resources (like a `std::unique_ptr`), copying fails at compile time. If it captures raw pointers or references, multiple copies executing simultaneously will produce race conditions. The Chrome team's thinking is straightforward: since async task callbacks fundamentally should not be copied, make them non-copyable at the type level.
+If the callback captures move-only resources (like `std::unique_ptr`), copying fails directly at compile time. If it captures raw pointers or references, multiple copies executing simultaneously will produce races. The Chrome team's approach is straightforward: since asynchronous task callbacks fundamentally shouldn't be copied, make them uncopyable at the type level.
 
-### Flaw 2: Repeatedly Invocable
+### Flaw 2: Repeatedly Callable
 
-`std::function::operator()` places no constraints on the number of invocations. You can call the same `std::function` a thousand times, and it will happily run every time. But in async callback scenarios, invoking a file-read-completion callback twice is a logic error—it might trigger two resource frees, two state transitions, or two message sends. This kind of error is completely undetectable within the type system.
+`std::function` has no constraint on the number of calls. You can invoke the same `std::function` a thousand times, and it will run without complaint. But in an asynchronous callback scenario, invoking a file-read completion callback twice is a logical error—it might trigger double resource release, double state transitions, or double message sending. This error is completely undetectable by the type system.
 
-### Flaw 3: Inability to Express Consumption Semantics
+### Flaw 3: Unable to Express Consumption Semantics
 
-In Chrome's task posting model, once a `PostTask(FROM_HERE, callback)` is invoked, the `callback` should no longer be used—its ownership has been transferred to the task system. The `operator()` of `std::function` is `const`-qualified; invoking it does not change the state of the `std::function` object itself, so we cannot use the calling interface to express the "invoke to consume" semantics.
+In Chrome's task posting model, once a `OnceCallback` is called, it should not be used again—its ownership has been transferred to the task system. `std::function`'s `operator()` is `const`-qualified; calling it does not change the state of the `std::function` object itself, so you cannot express the "invoke is consume" semantic through the calling interface.
 
-These three problems boil down to one point: the interface design of `std::function` cannot express the constraint that "this callback can only be invoked once, and becomes invalid afterward." Our OnceCallback is designed precisely to fill this semantic gap.
+These three problems boil down to one point: `std::function`'s interface design cannot express the constraint "this callback can only be invoked once, and becomes invalid after invocation". Our OnceCallback is designed to fill this semantic gap.
 
 ---
 
-## Chromium's Answer: The OnceCallback Design Philosophy
+## Chromium's Answer: OnceCallback Design Philosophy
 
-Chrome's callback system is built on a core principle: **message passing over locks, serialization over threads**. Under this principle, every callback posted to the task system is an independent, one-time message. After posting, the callback's ownership transfers from the caller to the task system; after execution, the callback is destroyed. No sharing, no reuse, no ambiguity.
+Chrome's callback system is built on a core principle: **message passing over locks, serialization over threads**. Under this principle, every callback posted to the task system is an independent, one-shot message. After posting, ownership of the callback transfers from the caller to the task system; after execution, the callback is destroyed. No sharing, no reuse, no ambiguity.
 
-This philosophy is directly reflected in the type design of `OnceCallback`, with three key constraints:
+This philosophy is directly reflected in `base::OnceCallback`'s type design, with three key constraints:
 
-**Move-only**: `OnceCallback` deletes copy construction and copy assignment, retaining only move operations. This guarantees at the type level that the callback has exactly one owner at any given time.
+**Move-only**: `OnceCallback` deletes copy construction and copy assignment, retaining only move operations. This guarantees at the type level that a callback has only one owner at any moment.
 
-**Rvalue-qualified Run()**: `OnceCallback::Run()` can only be invoked via an rvalue reference. Invoking on an lvalue triggers a compile error. This serves as a syntactic reminder to the caller: "You are consuming this callback; don't use it afterward."
+**Rvalue-qualified Run()**: `OnceCallback` can only be invoked via an rvalue reference. Invoking via an lvalue triggers a compile error. This syntactically reminds the caller: "You are consuming this callback, don't use it again."
 
-**Single consumption**: Internally, `Run()` destroys `BindState` through a reference counting mechanism, making any subsequent access to the same object a safe no-op.
+**Single-shot consumption**: Internally, `OnceCallback` uses a reference counting mechanism to destroy the stored object after the first call, making any subsequent access to the same object a safe no-op.
 
-### Overview of Chromium's Internal Architecture
+### Chromium Internal Architecture Overview
 
-Chromium's callback system consists of three layers. The bottom layer is `BindStateBase`—a type-erased base class with reference counting, using function pointer members instead of virtual functions to implement polymorphism. The middle layer is `BindState<Functor, BoundArgs...>`—a templated concrete class that stores the actual callable object and bound arguments. The top layer is `OnceCallback<Signature>`—the type users directly interact with, which is essentially a smart pointer wrapper around `BindState`, with a size of only 8 bytes.
+Chromium's callback system consists of three layers. The bottom layer is `base::InternalCallbackBase`—a type-erased base class with reference counting, using function pointer members instead of virtual functions for polymorphism. The middle layer is `base::InternalCallback`—a templated concrete class storing the actual callable object and bound arguments. The top layer is `base::OnceCallback`—the type users directly interact with, essentially a smart pointer wrapper to `base::InternalCallbackBase`, only 8 bytes in size.
 
-Our implementation will retain the layered approach of "outer interface + internal storage + type erasure," but we will use `std::move_only_function` to replace Chromium's hand-rolled `BindState` + reference counting combo, and use deducing this to replace the dual overload + `!sizeof` hack.
+Our implementation will retain the layered approach of "outer interface + internal storage + type erasure", but we will use `std::move_only_function` to replace Chromium's hand-rolled `base::InternalCallbackBase` + reference counting combo, and use deducing this to replace the double overload + `std::enable_if` hack.
 
 ---
 
 ## Designing the Target API
 
-Let's nail down the target API first, and then circle back to discuss each design decision. This is how engineers work—first figure out "what I want," then figure out "how to do it."
+Let's define the target API first, then discuss each design decision. This is how engineers work—figure out "what I want" first, then "how to do it".
 
 ### Construction and Invocation
 
 ```cpp
-#include "once_callback/once_callback.hpp"
+// Construction from lambdas/function pointers
+OnceCallback<void()> cb = [] { /* ... */ };
 
-using namespace tamcpp::chrome;
-
-// 从 lambda 构造
-auto cb = OnceCallback<int(int, int)>([](int a, int b) {
-    return a + b;
-});
-
-// 调用：必须通过右值
-int result = std::move(cb).run(3, 4);  // result == 7
-
-// 调用后 cb 被消费
-// std::move(cb).run(1, 2);  // 运行时断言失败
+// Invocation (must be rvalue)
+std::move(cb).run();
 ```
 
 ### Argument Binding
 
 ```cpp
-// bind_once：预绑定部分参数，返回一个新的 OnceCallback
-auto bound = bind_once<int(int)>(
-    [](int x, int y, int z) { return x + y + z; },
-    10, 20  // 预绑定前两个参数
-);
-
-int r = std::move(bound).run(30);  // r == 60
+// Binding arguments (Currying)
+auto add = [](int a, int b) { return a + b; };
+auto add_five = OnceCallback<int(int)>(add).bind(5);
+int result = std::move(add_five).run(10); // Returns 15
 ```
 
 ### Cancellation Checks
 
 ```cpp
-auto cb = OnceCallback<void(int)>([](int x) { /* ... */ });
+// Check if cancelled
+if (cb.is_cancelled()) { /* ... */ }
 
-// 检查回调是否仍然有效
-if (!cb.is_cancelled()) {
-    std::move(cb).run(42);
-}
-
-// maybe_valid：乐观检查
-if (cb.maybe_valid()) {
-    std::move(cb).run(42);
-}
+// Check validity (optimistic)
+if (cb.maybe_valid()) { /* ... */ }
 ```
 
-### Chained Composition
+### Chaining
 
 ```cpp
-auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
-    return a + b;
-}).then([](int sum) {
-    return sum * 2;
-});
-
-int final_result = std::move(pipeline).run(3, 4);
-// final_result == 14，因为 (3+4)*2 = 14
+// Chaining (then)
+auto task = OnceCallback<void()>([] { /* task A */ })
+    .then([] { /* task B */ });
+std::move(task).run();
 ```
 
 ---
 
 ## Interface Design Decision Analysis
 
-### Why run() Instead of operator()
+### Why use run() instead of operator()?
 
-Chromium uses `Run()` (Google style requires capitalized first letter). We use `run()` to conform to snake_case naming conventions. The deeper reason is semantic distinction—`operator()` is too generic; any callable object has `operator()`. `run()` explicitly expresses the "execute task" semantics. During code review, you can tell at a glance that this is consuming a OnceCallback, not invoking a regular function.
+Chromium uses `Run()` (Google style requires capitalization). We use `run()` to conform to snake_case naming conventions. The deeper reason is semantic distinction—`operator()` is too generic, any callable object has it; `run()` explicitly expresses the "execute task" semantic. During code review, you can see at a glance that this is consuming a OnceCallback, not just calling a normal function.
 
-### Why run() Must Be Called via an Rvalue
+### Why must run() be invoked via an rvalue?
 
-This is the most critical point in the entire design. We use deducing this to let the compiler intercept lvalue calls for us—if we write `cb.run(args)` instead of `std::move(cb).run(args)`, the compiler directly reports an error, and the error message clearly tells us what to do. This mechanism was explained in detail in the prerequisite knowledge (Part 6).
+This is the most critical point in the entire design. We use deducing this to let the compiler intercept lvalue calls for us—if you write `cb.run()` instead of `std::move(cb).run()`, the compiler will directly error out, and the error message explicitly tells you what to do. This mechanism was explained in detail in the Prerequisites (Part 6).
 
-### Why Distinguish is_cancelled() and maybe_valid()
+### Why distinguish between is_cancelled() and maybe_valid()?
 
-The difference lies in the strength of the safety guarantee. `is_cancelled()` provides a deterministic answer—it can only be called on the sequence to which the callback is bound, guaranteeing an accurate result. `maybe_valid()` provides an optimistic estimate—it can be called from any thread, but the result might be stale. In Chromium's full implementation, this distinction is related to thread safety guarantees. Our simplified version temporarily makes the two semantically identical, but we reserve the interface for future extension.
+The difference lies in the strength of the safety guarantee. `is_cancelled()` provides a definitive answer—can only be called on the sequence where the callback is bound, guaranteeing an accurate result. `maybe_valid()` provides an optimistic estimate—can be called from any thread, but the result might be stale. In Chromium's full implementation, this distinction relates to thread safety guarantees. Our simplified version temporarily makes the semantics of both identical, but retains the interface for future expansion.
 
-### Why then() Consumes *this
+### Why does then() consume *this?
 
-The semantics of `then()` are "pass the execution result of the current callback to the next callback." This requires the current callback to be fully captured inside the new callback returned by `then()`. If `then()` does not consume `*this`, the same callback would exist in two places simultaneously—violating the move-only semantic constraint. Therefore, `then()` is declared as an rvalue-qualified member function, and after invocation, the original callback object enters a consumed state.
+The semantic of `then()` is "pass the execution result of the current callback to the next callback". This requires the current callback to be fully captured in the new callback returned by `then()`. If `then()` does not consume `*this`, the same callback would exist in two places simultaneously—violating the move-only semantic constraint. Therefore, `then()` is declared as an rvalue-qualified member function; after invocation, the original callback object enters a consumed state.
 
 ---
 
 ## Environment Setup
 
-Before we start writing code, let's confirm the toolchain. OnceCallback depends on `std::move_only_function` and deducing this, both of which are C++23 features.
+Before writing code, let's confirm the toolchain. OnceCallback relies on `std::move_only_function` and deducing this, both C++23 features.
 
 ### Compiler Requirements
 
@@ -216,47 +185,36 @@ GCC 13+ or Clang 17+ fully supports the above features. Add `-std=c++23` when co
 ### Verification Code
 
 ```cpp
+// test_env.cpp
 #include <functional>
 
-// 验证 std::move_only_function 可用
-static_assert(__cpp_lib_move_only_function >= 202110L);
-
-// 验证 deducing this 可用
-struct Check {
-    void test(this auto&& self) {}
-};
-
 int main() {
-    Check c;
-    c.test();
-    return 0;
+    std::move_only_function<void()> f = [] {};
+    std::move(f)(); // Compile check
 }
 ```
 
-If this code compiles successfully, the environment is good to go.
+If this code compiles, the environment is set.
 
 ### Minimal CMake Configuration
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
-project(once_callback_demo LANGUAGES CXX)
+project(OnceCallback LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(once_callback INTERFACE)
-target_include_directories(once_callback INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
+add_executable(test_env test_env.cpp)
 ```
 
 ---
 
 ## Summary
 
-In this article, starting from the motivation, we clarified three things. `std::function` has three major flaws in async callback scenarios—it is copyable, repeatedly invocable, and unable to express consumption semantics. The root cause is that the type system cannot constrain "can only be invoked once." Chromium's OnceCallback fills this semantic gap through move-only + rvalue-qualified Run() + single consumption. We designed a target API covering four core features: construction and invocation, argument binding (`bind_once`), cancellation checks (`is_cancelled`/`maybe_valid`), and chained composition (`then()`).
+In this article, starting from motivation, we clarified three things. `std::function` has three major flaws in asynchronous callback scenarios—copyable, repeatedly callable, unable to express consumption semantics—the root cause is that the type system cannot constrain "invoke only once". Chromium's OnceCallback fills this semantic gap through move-only + rvalue-qualified Run() + single-shot consumption. We designed a set of target APIs, covering four core features: construction and invocation, argument binding (`bind`), cancellation checks (`is_cancelled`/`maybe_valid`), and chaining (`then`).
 
-In the next article, we will start building the core skeleton—from template partial specialization to tri-state management, we will erect the class skeleton of OnceCallback.
+In the next article, we will start building the core skeleton—from template specialization to state management, we will set up the class skeleton for OnceCallback.
 
 ## References
 

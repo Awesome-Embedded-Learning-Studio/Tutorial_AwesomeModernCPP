@@ -8,68 +8,68 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'In-Depth Introduction to the AVX Instruction Set Series: Domains, Significance,
-  and Basic Usage and Examples of AVX / AVX2'
-translation:
-  engine: anthropic
-  source: documents/vol6-performance/avx-avx2-deep-dive.md
-  source_hash: 39da2b3a5a4d6ba1a0e593a1c2fa35355eb91e856ad3d137db96413557586496
-  token_count: 1205
-  translated_at: '2026-05-26T11:50:35.783290+00:00'
+title: 'In-Depth Introduction to the AVX Instruction Set Series: Scope, Significance,
+  and Basic Usage with Examples for AVX and AVX2'
 description: ''
+translation:
+  source: documents/vol6-performance/avx-avx2-deep-dive.md
+  source_hash: d341ba0e6c0726e775647342afe12bd486dcbbc43b83486cbf4aa3b3bdd567ec
+  translated_at: '2026-06-16T04:07:38.687428+00:00'
+  engine: anthropic
+  token_count: 1211
 ---
-# An In-Depth Look at the AVX Instruction Set Family: Domains, Significance, and Basic Usage and Examples of AVX / AVX2
+# In-Depth Introduction to the AVX Instruction Set Family: Scope, Significance, and Basic Usage with Examples for AVX/AVX2
 
 ## Preface
 
-As a side note, I don't specialize in this field. The topic came up in a conversation, and I realized how unfamiliar this domain was to me, so I decided to put together some notes and talk it through. Because of this, I can't guarantee that the information I've gathered is 100% accurate. Readers should exercise their own judgment.
+PS: I am not a specialist in this field. The topic came up during a chat, and I realized how unfamiliar this area was to me, so I decided to write a proper note to sort it out. Therefore, I cannot guarantee that the information I have gathered is 100% accurate. Reader discretion is advised.
 
 ------
 
-## Why Care About AVX? — The Domain and Significance of Vectorized Computing
+## Why Care About AVX? — The Scope and Significance of Vectorized Computing
 
-I became interested in this partly because of high-definition video rendering (a project I worked on involved this area, which is how I learned this domain even existed). After all, in modern computing tasks—whether it's HD video rendering, AI model training, or complex scientific simulations—data volumes are growing exponentially. The traditional **SISD (Single Instruction, Single Data)** processing model, where each operation handles only one data item, has gradually become a bottleneck for computational efficiency.
+I care about this partly because of high-definition video rendering (yes, the projects I participate in involve this, which is how I became aware of this field). In modern computing tasks, whether it is HD video rendering, AI model training, or complex scientific simulations, data volumes are growing exponentially. The traditional **SISD (Single Instruction, Single Data)** processing model—where a single data item is processed per operation—has increasingly become a bottleneck for computational efficiency.
 
-To break through this bottleneck, the concept of **SIMD (Single Instruction, Multiple Data)** emerged. It allows the CPU to process a set of data with a single instruction. This "batch processing" technique is known as **vectorization**. **AVX (Advanced Vector Extensions)** is one of the most important vectorization instruction sets in the x86 architecture.
+To break through this bottleneck, the concept of **SIMD (Single Instruction, Multiple Data)** emerged. It allows the CPU to process a set of data with a single instruction. This "batch processing" technique is known as **vectorization**. **AVX (Advanced Vector Extensions)** is one of the most important vector instruction sets in the x86 architecture.
 
-We naturally have to ask: how exactly does it optimize things? Inside a CPU, **registers** act as the "temporary staging areas" where data must reside before participating in calculations. In the early SSE era, the width of this staging area was 128 bits. If we were processing "single-precision floating-point numbers" (each taking up 32 bits), we could only fit four of them side-by-side for calculation in a single cycle.
+We naturally ask, how is it optimized? Inside the CPU, **registers** are the "temporary platforms" where data must reside before participating in operations. In the era of early SSE technology, this platform was 128 bits wide. If we were processing "single-precision floating-point numbers" (32 bits per data item), only 4 data items could be arranged side-by-side for calculation in one cycle.
 
-AVX technology doubled this staging area's width to **256 bits**. This means a qualitative change occurred in the CPU's hardware channels: now, in a single instant, it can simultaneously ingest and process **eight** single-precision floating-point numbers, or **four** larger, more precise double-precision floating-point numbers. This doubling of bit width essentially builds a wider highway for data flow, doubling the computational "appetite" of the processor.
+AVX technology doubles the width of this platform to **256 bits**. This means a qualitative change in the CPU's hardware channels: it can now ingest and process **8** single-precision floating-point numbers, or **4** larger, more precise double-precision floating-point numbers in the same instant. This doubling of bit width essentially builds a wider highway for data flow, doubling the computational "appetite."
 
-In traditional computing instructions, the CPU's operational logic is usually quite "coarse." For example, to perform an A + B operation, the result must forcibly overwrite the original data A. This design is known as the "two-operand" mode, which is somewhat destructive—if you need the original data A later, you must spend extra time backing it up somewhere else before performing the calculation.
+In traditional computing instructions, the CPU's operation logic is usually quite "coarse." For example, to execute A + B, the calculation result must forcibly overwrite the original data A. This design is known as the "two-operand" mode, which is somewhat destructive—if you need the original data A later, you must spend extra time backing it up elsewhere before the calculation.
 
-AVX introduced the more advanced **VEX encoding**, enabling a "three-operand" mode. It allows programs to issue more fine-grained instructions: "take data A, take data B, and store the result in C." This way, the original data A and B are both perfectly preserved. This evolution eliminates a massive amount of redundant work, reducing the overhead of repeatedly moving and backing up data in memory, and making the overall program logic much leaner and more efficient.
+AVX introduces the more advanced **VEX encoding**, implementing a "three-operand" mode. It allows programs to issue more fine-grained instructions: "Take data A, take data B, store the result in C." This way, the original data A and B are preserved intact. This evolution streamlines a significant amount of repetitive labor, reducing the overhead of moving and backing up data in memory, making the entire program logic lighter and more efficient.
 
-AVX brings more than just minor speed tweaks; it represents a fundamental evolution in processing logic. It transforms "serial" tasks that originally had to execute one by one into batched "vectorized" tasks. In ideal compute-intensive scenarios (such as scientific model calculations or high-quality rendering), this transformation can yield a manifold leap in CPU work efficiency.
+AVX brings not just a speed tweak, but an underlying evolution in processing logic. It transforms "serial" tasks that used to execute one by one into batch "vectorized" tasks. In ideal compute-intensive scenarios (like scientific modeling or high-quality rendering), this transformation can leapfrog CPU efficiency by several times.
 
-This progress means that when facing massive numerical operations, the CPU can unleash its arithmetic throughput to a tremendous degree. Clock cycles that previously required repetitive spinning can now be completed in a single powerful "vectorized strike," achieving a leap in performance without solely relying on increasing the clock frequency.
+This progress means that when facing massive numerical computations, the CPU can maximize its arithmetic throughput. Clock cycles that previously required repeated spinning can now be completed in one powerful "vectorized strike," achieving a leap in performance without solely relying on increasing the clock frequency.
 
-### AVX2: A Leap in Integer Operations and Flexibility
+### AVX2: The Leap in Integer Operations and Flexibility
 
-**AVX2**, released in 2013, further refined this system. If AVX solved the problem of "computing fast," then AVX2 solved the problem of "computing broadly":
+Released in 2013, **AVX2** further refined this system. If AVX solved the problem of "calculating fast," then AVX2 solved the problem of "calculating broadly":
 
-1. **Comprehensive Integer Support**: AVX2 extended the existing 256-bit parallel computing capabilities from floating-point numbers into the **integer** domain. This is crucial for scenarios that rely on integer arithmetic, such as data compression, image processing, and database searches.
-2. **Non-Contiguous Data Processing (Gather/Permute)**: In practical applications, data is often scattered across memory. AVX2 introduced "Gather" instructions, allowing the CPU to fetch data in bulk from non-contiguous memory addresses, significantly enhancing the ability to handle complex data structures.
+1. **Full Integer Support**: AVX2 extends the existing 256-bit parallel computing capability from floating-point numbers to the **integer** domain. This is crucial for scenarios relying on integer arithmetic, such as data compression, image processing, and database retrieval.
+2. **Non-Contiguous Data Handling (Gather/Permute)**: In practical applications, data is often scattered in memory. AVX2 introduced "Gather" instructions, allowing the CPU to fetch data from non-contiguous memory addresses in batches, significantly enhancing the ability to handle complex data structures.
 
 ------
 
 ## Using AVX / AVX2 in Code
 
-#### Compiler Flags
+#### Compiler Switches
 
 - GCC/Clang:
   - AVX: `-mavx`
   - AVX2: `-mavx2`
   - FMA (if needed): `-mfma`
-  - For optimal targeting of the current CPU: `-march=native` (but this generates code dependent on the current CPU)
+  - To optimize for the target CPU: `-march=native` (but this generates code dependent on the current CPU)
 - MSVC:
-  - `/arch:AVX` or `/arch:AVX2` (depending on the VS version)
-- Recommended practice: We can generate dedicated files with AVX/AVX2 at compile time, or compile multiple versions and select at runtime (runtime dispatch).
+  - `/arch:AVX` or `/arch:AVX2` (depending on VS version)
+- Recommended practice: You can generate dedicated files with AVX/AVX2 during compilation, or compile multiple versions and select at runtime (runtime dispatch).
 
 #### Intrinsics (Example APIs)
 
-- Floating-point (AVX): `__m256` (float32 ×8) and `__m256d` (double ×4)
-  - load/store: `_mm256_loadu_ps`, `_mm256_storeu_ps` (unaligned)
+- Floating Point (AVX): `__m256` (float32 ×8) and `__m256d` (double ×4)
+  - load/store: `_mm256_load_ps`, `_mm256_loadu_ps` (unaligned)
   - add/mul: `_mm256_add_ps`, `_mm256_mul_ps`
   - fused: `_mm256_fmadd_ps` (requires FMA)
 - Integer (AVX2): `__m256i`
@@ -79,97 +79,133 @@ This progress means that when facing massive numerical operations, the CPU can u
 
 ------
 
-## Basic Examples (C/C++ Intrinsics)
+## Basic Examples (C/C++ intrinsics)
 
-The small examples below give a fairly intuitive feel for AVX.
+The following small examples provide an intuitive experience of AVX.
 
 #### Floating-Point Array Addition (AVX)
 
 ```cpp
 #include <immintrin.h>
-#include <stddef.h>
+#include <stdio.h>
 
-void add_float_arrays_avx(const float* a, const float* b, float* out, size_t n) {
-    size_t i = 0;
-    const size_t stride = 8; // 8 floats per __m256
-    for (; i + stride <= n; i += stride) {
-        __m256 va = _mm256_loadu_ps(a + i); // unaligned load
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 vr = _mm256_add_ps(va, vb);
-        _mm256_storeu_ps(out + i, vr);
+int main() {
+    // Prepare source data (must be aligned or use loadu)
+    float a[8] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    float b[8] = {8.0f, 7.0f, 6.0f, 5.0f, 4.0f, 3.0f, 2.0f, 1.0f};
+    float c[8];
+
+    // Load data into 256-bit registers
+    __m256 va = _mm256_load_ps(a); // Assumes 32-byte alignment
+    __m256 vb = _mm256_load_ps(b);
+
+    // Perform parallel addition
+    __m256 vc = _mm256_add_ps(va, vb);
+
+    // Store result back to memory
+    _mm256_store_ps(c, vc);
+
+    // Print result
+    for(int i = 0; i < 8; i++) {
+        printf("%.1f ", c[i]);
     }
-    // tail
-    for (; i < n; ++i) out[i] = a[i] + b[i];
+    // Output: 9.0 9.0 9.0 9.0 9.0 9.0 9.0 9.0
+    return 0;
 }
-
 ```
 
-Compilation:
+Compile:
 
-```cpp
-
-g++ -O3 -mavx -std=c++17 avx_samples.cpp -o avx_samples
-
+```bash
+gcc -mavx example.c -o example
 ```
 
-#### Floating-Point Dot Product (AVX + Reduction)
+#### Floating-Point Dot Product (AVX + reduction)
 
 ```cpp
 #include <immintrin.h>
-#include <stddef.h>
+#include <stdio.h>
 
-float dot_product_avx(const float* a, const float* b, size_t n) {
-    size_t i = 0;
-    const size_t stride = 8;
-    __m256 acc = _mm256_setzero_ps();
-    for (; i + stride <= n; i += stride) {
-        __m256 va = _mm256_loadu_ps(a + i);
-        __m256 vb = _mm256_loadu_ps(b + i);
-        __m256 prod = _mm256_mul_ps(va, vb);
-        acc = _mm256_add_ps(acc, prod);
+float dot_product_avx(const float* x, const float* y, size_t size) {
+    __m256 sum_vec = _mm256_setzero_ps();
+
+    // Process 8 floats at a time
+    for (size_t i = 0; i < size; i += 8) {
+        __m256 vx = _mm256_loadu_ps(x + i); // Use loadu if alignment is uncertain
+        __m256 vy = _mm256_loadu_ps(y + i);
+
+        // Multiply and accumulate
+        __m256 v_mul = _mm256_mul_ps(vx, vy);
+        sum_vec = _mm256_add_ps(sum_vec, v_mul);
     }
-    // horizontal sum of acc
-    __attribute__((aligned(32))) float tmp[8];
-    _mm256_store_ps(tmp, acc);
-    float sum = tmp[0] + tmp[1] + tmp[2] + tmp[3] + tmp[4] + tmp[5] + tmp[6] + tmp[7];
-    for (; i < n; ++i) sum += a[i] * b[i];
-    return sum;
+
+    // Horizontal reduction (extract elements from the vector and sum them)
+    // Note: AVX horizontal operations are slightly complex, here is a simple method
+    alignas(32) float temp[8];
+    _mm256_store_ps(temp, sum_vec);
+
+    float result = 0.0f;
+    for (int i = 0; i < 8; i++) {
+        result += temp[i];
+    }
+
+    // Handle remaining tail elements (if size is not a multiple of 8)
+    for (size_t i = (size / 8) * 8; i < size; i++) {
+        result += x[i] * y[i];
+    }
+
+    return result;
 }
 
+int main() {
+    float a[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    float b[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    printf("Dot Product: %f\n", dot_product_avx(a, b, 8));
+    return 0;
+}
 ```
 
-#### Try It Out: AVX2 Integer Parallel Addition and Gather Example
+#### Try It: AVX2: Integer Parallel Addition and Gather Example
 
 ```cpp
 #include <immintrin.h>
-#include <stddef.h>
+#include <stdio.h>
+#include <stdint.h>
 
-// add 8 32-bit ints in parallel
-void add_int32_avx2(const int32_t* a, const int32_t* b, int32_t* out, size_t n) {
-    size_t i = 0;
-    const size_t stride = 8; // 8 x int32 in 256 bits
-    for (; i + stride <= n; i += stride) {
-        __m256i va = _mm256_loadu_si256((const __m256i*)(a + i));
-        __m256i vb = _mm256_loadu_si256((const __m256i*)(b + i));
-        __m256i vr = _mm256_add_epi32(va, vb);
-        _mm256_storeu_si256((__m256i*)(out + i), vr);
+int main() {
+    // Define a sparse array (indices)
+    int32_t indices[8] = {0, 10, 20, 30, 40, 50, 60, 70};
+    // Define a large data array
+    int32_t data[100];
+
+    // Initialize data: data[i] = i
+    for(int i=0; i<100; i++) data[i] = i;
+
+    // 1. Gather: Load 8 integers from non-contiguous addresses based on indices
+    // This is much faster than loading individually in a loop
+    __m256i v_data = _mm256_i32gather_epi32(data, indices, 4); // Scale 4 (sizeof int)
+
+    // 2. Vector Addition: Add a constant vector (e.g., 100) to the gathered data
+    __m256i v_offset = _mm256_set1_epi32(100);
+    __m256i v_result = _mm256_add_epi32(v_data, v_offset);
+
+    // 3. Store result
+    int32_t result[8];
+    _mm256_storeu_si256((__m256i*)result, v_result);
+
+    // Print result
+    printf("Gathered and Added Result:\n");
+    for(int i=0; i<8; i++) {
+        printf("%d ", result[i]); // Expected: 100, 110, 120...
     }
-    for (; i < n; ++i) out[i] = a[i] + b[i];
-}
+    printf("\n");
 
-// gather example: gather int32_t at indices array idx from base pointer base
-void gather_example(const int32_t* base, const int32_t* idx, int32_t* out) {
-    __m256i vindex = _mm256_loadu_si256((const __m256i*)idx); // indices
-    __m256i gathered = _mm256_i32gather_epi32(base, vindex, 4);
-    _mm256_storeu_si256((__m256i*)out, gathered);
+    return 0;
 }
-
 ```
 
-Compilation:
+Compile:
 
-```cpp
-
-g++ -O3 -mavx2 -std=c++17 avx_samples.cpp -o avx2_samples
-
+```bash
+gcc -mavx2 avx2_gather_example.c -o avx2_example
 ```

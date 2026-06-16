@@ -80,7 +80,10 @@ def setup_logging(cache_dir: Path, verbose: bool = False) -> None:
 SUPPORTED_ENGINES = {'openai', 'anthropic', 'deepl'}
 MAX_TOKENS_PER_RUN = 100_000
 CHARS_PER_TOKEN = 4  # rough estimate for mixed CJK/English
-MAX_SINGLE_FILE_CHARS = 60_000  # ~15K tokens; split files larger than this
+# Keep chunks small enough that the EN output stays under the 8192-token
+# request cap (glm-4.6). English ≈ 1.8× CN chars, so ~0.45× CN chars in output
+# tokens → must stay under ~16K CN chars/chunk. 60K caused silent tail truncation.
+MAX_SINGLE_FILE_CHARS = 14_000
 
 # VitePress i18n paths (relative to project root)
 DOCS_DIR = 'documents'
@@ -583,6 +586,50 @@ class TranslationPipeline:
             return False
         return True
 
+    # Fenced code blocks (``` / ~~~) and display math ($$…$$) are preserved
+    # verbatim; everything between them is prose sent to the model.
+    _PRESERVE_RE = re.compile(r'(`{3,}|~{3,})[\s\S]*?\1|\$\$[\s\S]*?\$\$')
+
+    def _translate_body_prose_only(self, body: str) -> str:
+        """Translate a document body, keeping fenced code & display math verbatim.
+
+        Splits the body into alternating prose and code/math segments. Code and
+        math are stitched back unchanged; each prose run is translated as a
+        coherent unit (so glm-4.6 doesn't hallucinate fences or meta-commentary,
+        which it does on tiny fragments). A prose run larger than the chunk
+        limit is further split at ## heading boundaries first, keeping each
+        request under the output-token cap.
+        """
+        segments: List[Tuple[str, str]] = []
+        last = 0
+        for m in self._PRESERVE_RE.finditer(body):
+            if m.start() > last:
+                segments.append(('prose', body[last:m.start()]))
+            segments.append(('code', m.group(0)))
+            last = m.end()
+        if last < len(body):
+            segments.append(('prose', body[last:]))
+
+        out: List[str] = []
+        for seg_type, seg in segments:
+            if seg_type == 'code':
+                out.append(seg)
+                continue
+            if not seg.strip():
+                continue  # whitespace-only glue; the '\n\n' join re-adds spacing
+            chunks = (split_body_by_headings(seg)
+                      if len(seg) > MAX_SINGLE_FILE_CHARS else [seg])
+            for chunk in chunks:
+                try:
+                    # strip(): the model drops the leading/trailing newlines that
+                    # separated this prose from adjacent code; re-join with blank
+                    # lines below so fences open/close on their own lines.
+                    out.append(self.client.translate(chunk, self.system_prompt).strip())
+                except Exception as e:
+                    logger.error('FAILED translating prose segment: %s', e)
+                    raise
+        return '\n\n'.join(out)
+
     def translate_file(self, input_path: Path,
                        project_root: Path) -> Optional[str]:
         """Translate a single file. Returns translated content or None."""
@@ -629,40 +676,13 @@ class TranslationPipeline:
         # Parse frontmatter
         fm, fm_str, body = parse_frontmatter(content)
 
-        # Extract preserved blocks (code, mermaid, math, inline code)
-        body_modified, placeholders = self.preprocessor.extract_all(body)
-
-        # Split large files into chunks at ## heading boundaries
-        chunks = split_body_by_headings(body_modified)
-        if len(chunks) > 1:
-            logger.info('Translating %s in %d chunks...', rel_path, len(chunks))
-
-        # Translate body (possibly chunked)
-        translated_parts: List[str] = []
-        for i, chunk in enumerate(chunks):
-            if len(chunks) > 1:
-                logger.info('  Chunk %d/%d (%d chars)...',
-                            i + 1, len(chunks), len(chunk))
-            try:
-                translated = self.client.translate(chunk, self.system_prompt)
-                translated_parts.append(translated)
-            except Exception as e:
-                logger.error('FAILED %s chunk %d/%d: %s',
-                             rel_path, i + 1, len(chunks), e)
-                raise
-
-        translated_body = '\n'.join(translated_parts)
-
-        # Restore preserved blocks
-        translated_body = self.preprocessor.restore_all(
-            translated_body, placeholders)
-
-        # Validate no leftover placeholders
-        leftover = re.findall(r'__PRESERVED_\d+__', translated_body)
-        if leftover:
-            logger.warning(
-                '%s: %d leftover placeholders in translation output',
-                rel_path, len(leftover))
+        # Translate body, preserving fenced code & display math verbatim.
+        # glm-4.6 strips __PRESERVED_N__ placeholders and regenerates code
+        # (often dropping or altering blocks in code-heavy files), so instead
+        # we split the body at code/math boundaries and translate only the
+        # prose runs — each kept coherent (no mid-sentence fragmentation) —
+        # and stitch code back unchanged.
+        translated_body = self._translate_body_prose_only(body)
 
         # Translate frontmatter title and description
         translated_fm: Dict[str, str] = {}

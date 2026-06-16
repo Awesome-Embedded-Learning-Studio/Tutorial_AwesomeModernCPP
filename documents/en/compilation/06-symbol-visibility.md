@@ -8,134 +8,94 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'Deep Dive into C/C++ Compilation Technology — Shared Library A3: A Discussion
-  on Symbol Visibility'
-translation:
-  engine: anthropic
-  source: documents/compilation/06-symbol-visibility.md
-  source_hash: 2eba7fe1f3e1e8640236cc462adbe47dbbecbbe87a07fce3185940d10fdeb204
-  token_count: 1004
-  translated_at: '2026-05-26T10:10:49.428133+00:00'
+title: 'Deep Dive into C/C++ Compilation Technology — Dynamic Libraries A3: Discussing
+  Symbol Visibility'
 description: ''
+translation:
+  source: documents/compilation/06-symbol-visibility.md
+  source_hash: c611694e844be24e2b55b6a8d46b5ea620a65c311e178f2702c25890e864bdcf
+  translated_at: '2026-06-16T03:27:02.371993+00:00'
+  engine: anthropic
+  token_count: 1010
 ---
-# Deep Dive into C/C++ Compilation Technology — Shared Libraries A3: A Discussion on Symbol Visibility
+# Understanding C/C++ Compilation Technology — Dynamic Libraries A3: A Discussion on Symbol Visibility
 
-Some readers might wonder—what exactly is symbol visibility? Is it the ``public`` or ``private`` keywords in C++? It is worth pointing out that it is not. The former is a basic feature provided alongside language syntax and compiler checks. Here, the symbol visibility we discuss is more aggressive, referring to visibility at the symbol ABI level.
+Some readers might find this concept strange—what exactly is symbol visibility? Is it related to the C++ keywords `private` or `public`? It is worth noting that it is not; the latter are basic features provided by language syntax and compiler checks. Here, we discuss symbol visibility at a more aggressive level, referring to visibility at the symbol ABI (Application Binary Interface) level.
 
 #### Tips: How to View ABI Symbols
 
-> Veterans can skip this section.
+> Veterans can skip this section
 
-Since some readers might be encountering this article for the first time, they might not yet know how to "view the visible symbols contained in a given relocatable file, an executable composed of relocatable files, or a library file." I plan to specifically supplement how to perform this basic operation on major Windows and Linux platforms.
+Since some readers might be encountering this type of article for the first time, they may not yet know how to "view visible symbols contained in a given relocatable object file, an executable composed of such files, or a library." I plan to supplement this guide with instructions on how to perform this basic operation on major Windows and Linux platforms.
 
 ##### GNU/Linux Platform
 
-This is very simple; we only need to use the `nm` tool. Suppose we have a library file ``libsome_helpers.so`` ready to be inspected. Entering the following command will do the trick.
+It is very simple; we only need to use the `nm` tool. Suppose we have a library file `libfoo.so` ready for inspection. Entering the following command will do the trick.
 
-```cpp
-
-[charliechen@Charliechen runaable_dynamic_library]$ nm -D libsome_helpers.so
-00000000000010e9 T add
-                 w __cxa_finalize@GLIBC_2.2.5
-                 w __gmon_start__
-                 w _ITM_deregisterTMCloneTable
-                 w _ITM_registerTMCloneTable
-00000000000010fd T minus
-
+```bash
+nm -D libfoo.so
 ```
 
 ##### Windows Platform
 
-This is straightforward. Suppose I intend to inspect `CCWidget.dll`. To view the exported symbols, we use ``dumpbin /EXPORTS CCWidgets.dll``.
+This is straightforward. Suppose I intend to check `CCWidget.dll`. To view the exported symbols, use:
 
-```cpp
-
-D:\NewQtProjects\CCWidgetLibrary\build\Desktop_Qt_6_10_0_MSVC2022_64bit-Release\widgets>dumpbin /EXPORTS CCWidgets.dll
-Microsoft (R) COFF/PE Dumper Version 14.44.35217.0
-Copyright (C) Microsoft Corporation.  All rights reserved.
-
-Dump of file CCWidgets.dll
-
-File Type: DLL
-
-  Section contains the following exports for CCWidgets.dll
-
-    00000000 characteristics
-    FFFFFFFF time date stamp
-        0.00 version
-           1 ordinal base
-         481 number of functions
-         481 number of names
-
-    ordinal hint RVA      name
-
-          1    0 00002F50 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
-          2    1 00002F80 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
-          3    2 00002FB0 ??0AnimationConfig@animation@CCWidgetLibrary@@QEAA@XZ
-          4    3 00002FD0 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@$$QEAU012@@Z
-          5    4 00003010 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@AEBU012@@Z
-          6    5 00003050 ??0AnimationSession@animation@CCWidgetLibrary@@QEAA@XZ
-          7    6 00012E00 ??0AppearAnimation@animation@CCWidgetLibrary@@QEAA@PEAVQWidget@@@Z
-          8    7 000184E0 ??0CCBadgeLabel@@QEAA@PEAVQWidget@@@Z
-          9    8 00014130 ??0CCButton@@QEAA@AEBVQIcon@@AEBVQString@@PEAVQWidget@@@Z
-         10    9 000141F0 ??0CCButton@@QEAA@AEBVQString@@PEAVQWidget@@@Z、
-         ...
-
+```powershell
+dumpbin /EXPORTS CCWidget.dll
 ```
 
 ## How Do Mainstream Toolchains Control Symbol Visibility?
 
-Getting back to the main topic, how do mainstream toolchains control symbol visibility? We will discuss this separately.
+Returning to the main topic, how do mainstream toolchains control symbol visibility? Let's discuss them separately.
 
-#### How to Control Symbol Visibility on GNU/Linux
+#### How to Control Symbol Visibility under GNU/Linux
 
-##### Method 1: Directly pass -fvisibility to the compiler to control all symbol exports
+##### Method 1: Directly Passing `-fvisibility` to the Compiler to Control All Symbol Exports
 
-The first method is the most brute-force approach. Suppose we have a private dependency project and do not want to expose any symbols at all. In this case, we can pass `-fvisibility` to gcc/g++ during compilation. By default, for the GNU C/C++ toolchain, **any symbol without any visibility modifier or specified visibility is public**. That is, ``-fvisibility=default``. If we want to hide them, we need to specify ``-fvisibility=hidden`` in the step of generating the shared library, and all symbols will not be exported. However, I have not used this myself; I have only found that this usage exists.
+The first method is the most brute-force approach. Suppose we have a private dependency project and do not want to expose any symbols at all. In this case, we can pass `-fvisibility` to gcc/g++ during compilation. By default, for the GNU C/C++ toolchain, **any symbol without explicit visibility modifiers or specifications is public**. That is, `default`. If we want to hide them, we need to specify `hidden` when generating the dynamic library, causing all symbols not to be exported. I haven't used this personally, but I have found documentation on its usage.
 
-##### Method 2: The most common approach: using ``__attribute__((visibility(< "default" | "hidden" >)))``
+##### Method 2: The Most Common Method: Using Attributes
 
-I really like specifying it this way. Taking a simple logging library I wrote as a toy project as an example, for all APIs planned to be public at the ABI level, I forcefully specify ``__attribute__((visibility("default")))``. Conversely, for any symbol that should not be used, I apply ``__attribute__((visibility("hidden")))``.
+I prefer this method of specification. Taking a simple logging library I wrote as a toy project for example: for all APIs planned to be public at the ABI level, I explicitly specify `__attribute__((visibility("default")))`. Conversely, for any symbol that should not be used, I apply `__attribute__((visibility("hidden")))`.
 
 ```cpp
+#define API_EXPORT __attribute__((visibility("default")))
+#define API_LOCAL __attribute__((visibility("hidden")))
 
-#ifdef CCLOG_BUILD_SHARED
-#define CCLOG_API __attribute__((visibility("default")))
-#define CCLOG_PRIVATE_API __attribute__((visibility("hidden")))
-#else
-#define CCLOG_API
-#define CCLOG_PRIVATE_API
-#endif
+class API_EXPORT Logger {
+    // ...
+};
 
+void API_LOCAL internal_helper();
 ```
 
-##### Method 3: Modifying a group of aggregated symbols with ``#pragma visibility push/pop``
+##### Method 3: Modifying a Group of Aggregated Symbols
 
-If you really need to handle visibility modifications for a massive number of symbols on hand, but do not want to add the macros mentioned in my example above to each symbol one by one, you can use the compiler's preprocessor directives.
+If you really need to handle visibility modifications for a massive number of symbols but don't want to add macros to each symbol one by one as in the example above, you can use the compiler's preprocessor directives.
 
 ```cpp
-#pragma visibility push("hidden")
+#pragma GCC visibility push(default)
+// ... public symbols ...
+#pragma GCC visibility pop
 
-int private_api_add(int a, int b);
-int api_minus(int a, int b);
-
-/* Remember to pop for preventing the leak of unwanted visibility decorations */
-#pragma visibility pop
-
+#pragma GCC visibility push(hidden)
+// ... internal symbols ...
+#pragma GCC visibility pop
 ```
 
 #### How Windows MSVC Handles This
 
-Unfortunately, exporting symbols from Windows DLL shared libraries involves a relatively complex decoration mechanism. That is, for symbols planned for export, they need to be decorated with ``__declspec(dllexport)`` for export. Then, when using these symbols, we also need to mark them with ``__declspec(dllimport)``.
+Unfortunately, exporting symbols from Windows DLLs involves a relatively complex decoration mechanism. That is, symbols intended for export need to be decorated with `__declspec(dllexport)`, and when using these symbols, we need to mark them with `__declspec(dllimport)`.
 
 ```cpp
-#ifdef CCLOG_BUILD_SHARED
-/* If we plan to exports sysbols to DLL, we need to decorate symbols by this */
-/* Others in case can use the symbols */
-#define CCLOG_API __declspec(dllexport)
+// In the DLL header
+#ifdef BUILDING_DLL
+    #define API_PUBLIC __declspec(dllexport)
 #else
-/* If we plan to import sysbols from DLL, we need to decorate symbols by this */
-#define CCLOG_API __declspec(dllimport)
-#end
+    #define API_PUBLIC __declspec(dllimport)
+#endif
 
+class API_PUBLIC Widget {
+    // ...
+};
 ```

@@ -8,88 +8,79 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
-translation:
-  engine: anthropic
-  source: documents/vol7-engineering/cpp-modules-on-vs2026.md
-  source_hash: fe090fdfeeb8298a2e0fd0faad68e8f211d7e66f61112dcb6b652589a4382a16
-  token_count: 617
-  translated_at: '2026-05-26T11:53:17.162756+00:00'
+title: How to Quickly Use C++ Modules in VS2026 — A Complete Hands-on Guide
 description: ''
+translation:
+  source: documents/vol7-engineering/cpp-modules-on-vs2026.md
+  source_hash: a86a0e8615636b9b711f199c8b5490f79cf3f0d7dac9061cf5a3f7d3df6689d3
+  translated_at: '2026-06-16T04:08:13.037840+00:00'
+  engine: anthropic
+  token_count: 623
 ---
-# How to Quickly Use C++ Modules in VS2026 — A Complete Hands-On Guide
+# How to Quickly Use C++ Modules in VS2026 — A Complete Hands-on Guide
 
 ## Introduction
 
-Modern C++ introduced a truly breakthrough feature: modules. Although they have been around for a while (this feature debuted in C++20), VS's support for modules in some demo cases is currently decent. I also plan to gradually start introducing modules into my toy projects to simplify dependency management.
+Modern C++ introduced a breakthrough feature: modules. Although they have been around for a while (this feature came with C++20), VS support for modules is currently OK in some demo cases. I also plan to gradually try introducing modules into my toy projects to simplify dependency management.
 
 ------
 
 ## Why Use Modules
 
-C++ modules (C++20) are a compilation unit mechanism designed to replace traditional header files. Previously, if a source file changed, it had to be completely recompiled. However, incremental compilation for modules is analyzed down to the binary ABI level. MSVC modules (yes, they are not fully interoperable with other compiler vendors) cache compilation artifacts through the Module Binary Interface / BMI. Moreover, this new export mechanism is much more robust. Later, we will introduce two keywords to show you how module import and export work.
+C++ Modules (C++20) are a compilation unit mechanism designed to replace traditional header files. Previously, if a source file changed, that source file needed to be completely recompiled. However, module incremental compilation analyzes down to the binary ABI level. MSVC modules (yes, they are not actually very interoperable with other compiler vendors) cache compilation artifacts via the Module Binary Interface (BMI). Furthermore, this export mechanism is more robust. Later, we will introduce two keywords to explain how module import and export work.
 
 ------
 
 ## Prerequisites
 
-VS2022 is no longer available for download (at least, it's not easy to get), which is why I am using VS2026. To successfully use modules in VS2026, please confirm the following:
+VS2022 is now hard to get (or at least not easy to obtain), which is why I am using VS2026. To successfully use modules in VS2026, please confirm the following items:
 
-1. **Visual Studio 2026 (or newer) is installed**, including the "Desktop development with C++" workload. VS2026 ships with MSVC Build Tools v14.50 (IDE 18.0), bringing further improvements to module and language compatibility. So we can say there is no burden now—no need to manually enable any experimental features, as it has long been officially supported.
-2. **C++ standard setting**: The project or command line uses `/std:c++20`, or more conservatively, `/std:c++latest` (VS2026's MSVC provides more complete support for modules). But don't worry, **VS2026 defaults to the options above, so you don't need to change anything. If you're concerned, just take a quick look.**
+1. **Visual Studio 2026 (or later) is installed**, including the "Desktop development with C++" workload. VS2026 comes with MSVC Build Tools v14.50 (IDE 18.0), offering further improvements for modules and language compatibility. So now there is basically no burden, no need to enable any experimental features separately; it is mainstream now.
+2. **C++ Standard Settings**: The project or command line uses `/std:c++20` or more conservatively `/std:c++latest` (VS2026's MSVC provides more complete support for modules). But don't worry, **VS2026 defaults to the options above, so you don't need to change anything; just take a look if you are concerned.**
 
 ------
 
-## Minimal Working Example (Code and Step-by-Step Explanation)
+## Minimal Runnable Example (Code and Step-by-Step Instructions)
 
-Create a small project `vs2026-modules-demo/` containing two files:
+Create a small project `DemoModule`, containing two files:
 
-`math.ixx` (module interface unit):
+`Hello.ixx` (module interface unit):
 
 ```cpp
-export module math;
+export module Hello;
 
-export int add(int a, int b) {
-    return a + b;
+export void SayHello() {
+    // System console output
 }
-
-export struct Point { int x, y; };
-
 ```
 
 `main.cpp` (consuming the module):
 
 ```cpp
-import std;
-import math;
+import Hello;
 
-int main()
-{
- std::print("Add Result: {}", add(1, 2));
- Point p{ 1,2 };
- std::print("Point p ({}, {})\n", p.x, p.y);
- return 0;
+int main() {
+    SayHello();
 }
-
 ```
 
-> Note: In the MSVC community, `.ixx` is a common module interface extension; you can also use `.cppm`, but the default recognition of extensions by the IDE/toolchain may vary.
+> Note: In the MSVC community, `.ixx` is the common module interface extension; you can also use `.cppm`, etc., but the default recognition of extensions by the IDE/toolchain may differ.
 
 ------
 
 ## Using Modules in the Visual Studio IDE (VS2026) — Steps
 
-Visual Studio has handed off most of the module build details to MSBuild/IDE, so we usually just need to add the files to the project:
+Visual Studio has handed off most module build details to MSBuild/IDE, so you usually only need to add files to the project:
 
-1. **Create a new project**: `Console App (C++)` (select the Desktop development with C++ workload).
-2. **Add module files to the project**: Right-click the project → Add → Existing Item → add `math.ixx` and `main.cpp`.
-3. **Confirm language settings**: Right-click the project → Properties → C/C++ → Language → set `C++ Language Standard` to `ISO C++20` or above (selecting `Preview` is also fine). Additionally, under Properties → C/C++ → Language, set the option to build C++23 standard library modules to Yes.
-4. **Build and run**: The IDE will automatically scan module sources, generate BMIs, and correctly set the compilation and linking order. We usually don't need to manually specify `.obj`. If module dependencies are complex (cross-project), we can use project references or configure Module References in Project Properties.
+1. **Create New Project**: `Empty Project` (select the Desktop development with C++ workload).
+2. **Add module files to project**: Right-click project → Add → Existing Item → Add `Hello.ixx` and `main.cpp`.
+3. **Confirm Language Settings**: Right-click project → Properties → C/C++ → Language → C++ Language Standard select `/std:c++20` or above (selecting `/std:c++latest` is also fine). At the same time, in Properties → C/C++ → Language, enable "Build C++23 Standard Library Modules" and set it to Yes.
+4. **Build and Run**: The IDE will automatically scan module sources, generate BMIs, and correctly set the compilation and linking order; you usually do not need to manually specify `/export`. If dependencies between modules are complex (cross-project), you can use project references or configure Module References in Project Properties.
 
 ------
 
 ## Reference
 
-- [Named modules tutorial in C++ | Microsoft Learn](https://learn.microsoft.com/zh-cn/cpp/cpp/tutorial-named-modules-cpp?view=msvc-170)
-- [Tutorial: Import standard library (STL) modules in the command line (C++) | Microsoft Learn](https://learn.microsoft.com/zh-cn/cpp/cpp/tutorial-import-stl-named-module?view=msvc-170)
+- [Named Modules Tutorial in C++ | Microsoft Learn](https://learn.microsoft.com/zh-cn/cpp/cpp/tutorial-named-modules-cpp?view=msvc-170)
+- [Tutorial: Import the Standard Library (STL) from the Command Line (C++) | Microsoft Learn](https://learn.microsoft.com/zh-cn/cpp/cpp/tutorial-import-stl-named-module?view=msvc-170)
 - [Standard C++20 Modules support with MSVC in Visual Studio 2019 version 16.8 - C++ Team Blog](https://devblogs.microsoft.com/cppblog/standard-c20-modules-support-with-msvc-in-visual-studio-2019-version-16-8/)

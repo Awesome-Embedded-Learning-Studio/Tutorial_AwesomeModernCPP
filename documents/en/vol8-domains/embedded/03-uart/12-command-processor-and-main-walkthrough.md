@@ -8,25 +8,25 @@ tags:
 - cpp-modern
 - intermediate
 - stm32f1
-title: 'Part 42: Command Processor and Full Code Walkthrough — From Serial Input to
-  LED Control'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/03-uart/12-command-processor-and-main-walkthrough.md
-  source_hash: 45f223049477b1ca1c04f47775f0dbd144d88c025c01458534238c6d8009ad4d
-  token_count: 1789
-  translated_at: '2026-05-26T12:18:15.934277+00:00'
+title: 'Part 42: Command Processor and Complete Code Walkthrough — From Serial Input
+  to LED Control'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/03-uart/12-command-processor-and-main-walkthrough.md
+  source_hash: 14ff0b497b42484943c700b9eeb6b3ac98454ae0df6d522ddf603611f1f50538
+  translated_at: '2026-06-16T04:12:07.484098+00:00'
+  engine: anthropic
+  token_count: 1793
 ---
-# Part 42: Command Handler and Full Code Walkthrough — From Serial Input to LED Control
+# Part 42: Command Processor and Complete Code Walkthrough — From Serial Input to LED Control
 
-> All the pieces are in place. In this part, we do a complete walkthrough of `main.cpp` to see how they work together.
+> All the parts are ready. In this post, we will do a complete walkthrough of the `main.cpp` to see how they work together.
 
 ---
 
-## The Full main.cpp
+## The Full Picture of main.cpp
 
-Here is our final code. You have seen its individual fragments in previous articles; now let us piece them together into a complete picture:
+This is our final code. You have seen its individual segments in previous articles; now let's piece them together into a complete picture:
 
 ```cpp
 // 来源: code/stm32f1-tutorials/3_uart_logger/main.cpp
@@ -140,15 +140,15 @@ The first half of `main()` is initialization, executed in a strict order:
 
 ![main() initialization flow](./12-main-flow.drawio)
 
-The order of each step cannot be swapped. Calling HAL functions before configuring the clock will cause a hard fault. If GPIO is not configured, USART signals will not reach the pins. If interrupts are not enabled before starting reception, incoming bytes will not trigger the ISR. Placing `send_string` before `uart_start_receive` is intentional — we first send a welcome message to confirm the transmit path is working, then start receiving.
+The order of every step cannot be swapped. Calling HAL functions before configuring the clock will cause a hard fault. If GPIO is not configured, USART signals won't reach the pins. If interrupts are not enabled before starting reception, incoming bytes won't trigger the ISR. Placing `send_string` before `uart_start_receive` is intentional—we first send a welcome message to confirm the transmission link works, then start reception.
 
 ---
 
-## The Two Tasks in the Main Loop
+## Two Tasks in the Main Loop
 
-The main loop does two things: handling button events and processing UART reception. Neither blocks.
+The main loop does two things: handles button events and processes UART reception. Neither blocks.
 
-### Task 1: Button Polling → UART Log
+### Task One: Button Polling → UART Logging
 
 ```cpp
 button.poll_events(
@@ -169,11 +169,11 @@ button.poll_events(
     HAL_GetTick());
 ```
 
-This code is identical to the final version in the button tutorial — `poll_events()` samples the pin level, runs the debounce state machine, and invokes the callback upon confirming an event. The callback handles both `Pressed` and `Released` events via `std::visit` and a generic lambda. The only new addition is `Logger::driver().send_string(...)` — sending the button event to the PC over UART.
+This code is identical to the final version of the button tutorial—`poll_events()` samples pin levels, runs the debounce state machine, and calls the callback upon confirming an event. The callback handles `Pressed` and `Released` events via `std::visit` and a generic lambda. The only new element is `Logger::driver().send_string(...)`—sending button events to the PC via UART.
 
-This means that when you press the button, "Button pressed!" appears in the terminal, and when you release it, "Button released!" appears. The button event flows from the chip to the PC — the direction is chip → PC.
+This means: when you press the button, "Button pressed!" appears in the terminal; when released, "Button released!" appears. Button events flow from the chip to the PC—direction is Chip → PC.
 
-### Task 2: UART Reception → Command Parsing
+### Task Two: UART Reception → Command Parsing
 
 ```cpp
 auto& rx = uart_rx_buffer();
@@ -191,11 +191,11 @@ while (rx.pop(b)) {
 }
 ```
 
-This is the UART reception handling in the main loop. `rx.pop(b)` pops a byte from the ring buffer — the ISR continuously pushes bytes into it in the background, and the main loop consumes them here. `while (rx.pop(b))` pops all available bytes at once, ensuring none are missed.
+This is the UART reception handling in the main loop. `rx.pop(b)` pops a byte from the ring buffer—the ISR pushes into it in the background, while the main loop consumes it here. `while (rx.pop(b))` pops all available bytes at once, ensuring none are missed.
 
-The line parsing logic is straightforward: appended popped bytes one by one into `line_buf`, treating `\r` or `\n` as the end of a line, passing the complete line to `handle_command()` for processing, and then resetting the line buffer. `line_len < line_buf.size() - 1` ensures no overflow — anything exceeding 127 characters is discarded.
+The line parsing logic is straightforward: append popped bytes one by one into `line_buf`. When `\r` or `\n` is encountered, the line is considered complete; the full line is handed to `handle_command()` for processing, and the line buffer is reset. `line_len < line_buf.size() - 1` ensures no overflow—parts exceeding 127 characters are discarded.
 
-The direction is the opposite of the button: PC → chip. When you type "LED ON" in the terminal and press Enter, this string travels from the PC to the chip via UART, the ISR pushes the bytes one by one into the ring buffer, the main loop pops them out to assemble a line, recognizes it as the "LED ON" command, and turns on the LED.
+The direction is opposite to the button: PC → Chip. You type "LED ON" in the terminal and press Enter; this string travels from the PC to the chip via UART. The ISR pushes bytes into the ring buffer one by one; the main loop pops them, assembles a line, recognizes it as the "LED ON" command, and lights up the LED.
 
 ---
 
@@ -218,36 +218,36 @@ static void handle_command(std::string_view cmd,
 }
 ```
 
-The `cmd` parameter is a `std::string_view` — a pointer to the raw data in `line_buf`, zero-copy. `==` performs a direct, character-by-character match. Supported commands are: `LED ON` (turn on), `LED OFF` (turn off), and `HELP` (show help). Unknown commands return an error message. Empty lines (consecutive presses of Enter) are ignored.
+The `cmd` parameter is `std::string_view`—pointing to raw data in `line_buf`, zero-copy. `==` compares by direct character matching. Supported commands are: `LED ON` (light on), `LED OFF` (light off), and `HELP` (show help). Unknown commands return an error message. Empty lines (consecutive enters) are ignored.
 
-After each command executes, a confirmation message is returned via `send_string` — the PC side can immediately see the command's result. This is a simple request-response pattern: the PC sends a command, and the chip executes and acknowledges it.
-
----
-
-## The Zero-Copy Advantage of std::string_view
-
-The line `handle_command({line_buf.data(), line_len}, led)` creates a `std::string_view` — it only contains a pointer and a length, without copying any character data. The raw characters in `line_buf` are compared directly, with no intermediate `std::string` construction, memory allocation, or deallocation.
-
-In a bare-metal environment, dynamic memory allocation (`new`/`malloc`) can lead to fragmentation and non-determinism. `std::string_view` lets you manipulate strings without allocating memory — it is simply a view pointing to existing data. Paired with the `std::array<char, 128>` line buffer (allocated on the stack), the entire command parsing process involves zero heap operations.
+After each command executes, a confirmation is returned via `send_string`—the PC sees the result immediately. This is a simple request-response pattern: PC sends command, chip executes and confirms.
 
 ---
 
-## The Bidirectional Communication Architecture
+## Zero-Copy Advantage of std::string_view
 
-Drawing all the data flows together, the overall system architecture looks like this:
+The line `handle_command({line_buf.data(), line_len}, led)` creates `std::string_view`—it contains only a pointer and a length, copying no character data. Raw characters in `line_buf` are compared directly, with no intermediate `std::string` construction, memory allocation, or deallocation.
 
-![Overall system data flow architecture](./12-system-architecture.drawio)
+In a bare-metal environment, dynamic memory allocation (`new`/`malloc`) can lead to fragmentation and non-determinism. `std::string_view` allows you to manipulate strings without allocating memory—it is just a view into existing data. Combined with the `std::array<char, 128>` line buffer (stack-allocated), the entire command parsing process involves no heap operations.
 
-Chip → PC direction: Button events and command responses are sent out via `send_string()`. These calls use blocking transmission (`HAL_UART_Transmit`) because the send volume is small (a few dozen bytes), the blocking time is predictable (less than one millisecond), and there is no impact on system responsiveness.
+---
 
-PC → Chip direction: Commands entered in the terminal enter the ring buffer via interrupt-driven reception, and the main loop consumes and parses them. This is completely non-blocking — the ISR enqueues bytes in microseconds, and the main loop processes them at its own pace.
+## Two-Way Communication Architecture
 
-The LED and Button components come from the previous two tutorials and are fully reused without any modifications. This is the power of good abstractions — the LED template and Button template have no knowledge of UART's existence, yet they naturally work in concert with the UART command handler.
+Drawing all data flows together, the system architecture looks like this:
+
+![System overall data flow architecture](./12-system-architecture.drawio)
+
+Chip → PC direction: Button events and command responses are sent via `send_string()`. These calls use blocking transmission (`HAL_UART_Transmit`) because the data volume is small (tens of bytes), blocking time is controllable (less than 1 millisecond), and system responsiveness is unaffected.
+
+PC → Chip direction: Commands entered in the terminal enter the ring buffer via interrupt reception, and the main loop consumes and parses them. It is fully non-blocking—the ISR finishes byte queuing in microseconds, and the main loop processes at its own pace.
+
+The LED and Button components come from the previous two tutorials and are fully reused without modification. This is the power of good abstraction—the LED template and Button template don't know about the UART, but they naturally work with the UART command processor.
 
 ---
 
 ## Summary
 
-In this part, we did a complete walkthrough of `main.cpp`, assembling all the pieces into a complete architecture diagram. The system has two independent data flows: button events flow from the chip to the PC (via blocking transmission), and UART commands flow from the PC to the chip (via interrupt reception + ring buffer + line parsing). The LED and Button components are perfectly reused — zero modifications, zero coupling.
+This post provided a complete walkthrough of `main.cpp`, assembling all parts into a complete architecture diagram. The system has two independent data flows: button events flow from the chip to the PC (via blocking transmission), and UART commands flow from the PC to the chip (via interrupt reception + ring buffer + line parsing). LED and Button components are perfectly reused—zero modification, zero coupling.
 
-The next part is the finale of this series: a roundup of common pitfalls and three progressive exercises.
+The next post is the finale of this series: a summary of common pitfalls and three progressive exercises.

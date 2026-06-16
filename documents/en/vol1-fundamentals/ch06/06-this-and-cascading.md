@@ -19,288 +19,222 @@ tags:
 - beginner
 - 入门
 - 基础
-title: '`this` Pointer and Method Chaining'
+title: this Pointer and Chaining
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch06/06-this-and-cascading.md
-  source_hash: a8aa1a6a4a9b014bfc0998aaf6c183d3228f8811cb4f3772d2cd2868c4f4cee1
-  token_count: 2234
-  translated_at: '2026-05-26T10:51:40.177155+00:00'
+  source_hash: 488556a2a6418b386f097378b368cbffa1269d0bf37d0bf3e1d142abab8e6e71
+  translated_at: '2026-06-16T04:38:48.451432+00:00'
+  engine: anthropic
+  token_count: 2230
 ---
 # The `this` Pointer and Method Chaining
 
-So far, the classes we have written share an unspoken understanding—member functions "know" which object they are operating on. Calling `led.on()` operates on `led`; calling `other_led.on()` operates on `other_led`. The same function behaves differently depending on the object calling it. This might seem obvious, but the underlying mechanism is worth exploring: how exactly does the compiler let a function "know" who the caller is?
+Until now, the classes we have written have shared an implicit understanding: member functions "know" which object they are operating on. Calling `uart.init()` operates on `uart`; calling `spi.send()` operates on `spi`. The same function behaves differently depending on the object calling it. This might seem obvious, but the underlying mechanism is worth exploring: how exactly does the compiler ensure a function "knows" who called it?
 
-The answer is the `this` pointer. Every non-static member function has a hidden parameter at the lower level, pointing to the object that called the function. In this chapter, we will thoroughly understand what `this` is, how it works, and how to use it to write elegant method chaining code.
+The answer is the `this` pointer. Every non-static member function has a hidden parameter at the low level, pointing to the object that invoked the function. In this chapter, we will thoroughly clarify what `this` is, how it works, and how to leverage it to write elegant method chaining code.
 
 ## Every Member Function Has a Hidden Parameter
 
 When we write code like this:
 
 ```cpp
-class Point {
-    int x_;
-    int y_;
-public:
-    void set_x(int x) { x_ = x; }
-};
-
-Point p;
-p.set_x(42);
+uart.init(115200);
 ```
 
-The compiler doesn't just see `set_x(42)`. It actually translates this call into something like the following form (pseudocode for understanding):
+The compiler sees more than just a simple `init` call. It actually translates this invocation into a form similar to this (pseudo-code for understanding):
 
 ```cpp
-// 伪代码：编译器的内部视角
-Point::set_x(&p, 42);  // 把 p 的地址作为第一个参数传入
-```
-
-Inside the body of `set_x`, this hidden parameter is `this`—a pointer to the current object. Therefore, `x_ = x` is essentially equivalent to `this->x_ = x`, except that the compiler usually omits the `this->` prefix for us. Once you understand this, many seemingly "magical" behaviors make perfect sense. When the same `set_x` function is called by `p` versus `q`, the fundamental difference is the `this` passed in—one points to `p`, and the other points to `q`.
-
-## The Type of `this` and Explicit Usage
-
-The type of `this` is `ClassName* const`—a constant pointer to the current object. The `const` qualifier modifies the pointer itself, not the object it points to, meaning you cannot change where `this` points (for example, `this = &other_obj` is illegal), but you can modify the object's members through `this`.
-
-In most cases, we do not need to explicitly write `this` because the compiler automatically resolves member names to `this->成员名`. However, in two scenarios, explicitly using `this` is necessary or helpful.
-
-The first scenario is when **parameter names conflict with member variable names**. Frankly, this practice is quite common in C++—many engineers prefer to give constructor parameters the same names as member variables, relying on position to distinguish them in the initializer list. But if you are assigning values inside the function body, you must use `this` to resolve the ambiguity:
-
-```cpp
-class Point {
-    int x_;
-    int y_;
-public:
-    // 初始化列表中，括号外的 x_ 是成员，括号内的 x_ 是参数
-    Point(int x_, int y_) : x_(x_), y_(y_) {}
-
-    void set_x(int x_) {
-        this->x_ = x_;  // this->x_ 是成员，裸 x_ 是参数
-    }
-};
-```
-
-> **Pitfall Warning**: If you write `x_ = x_` in a member function without adding `this->`, some compilers might not issue a warning—it will assume both `x_` refer to the parameter itself, turning the assignment into "assigning a value to itself." A safer approach is to add a consistent suffix or prefix to member variables (such as `x_` or `m_x`) to avoid naming conflicts from the root.
-
-The second scenario is **returning `*this`**—which is exactly the foundation of method chaining, and we will focus on this next.
-
-## The Relationship Between `const` Member Functions and `this`
-
-Before diving into method chaining, we must clarify the relationship between `const` member functions and `this`, because this is a pitfall where beginners easily trip up. When we declare a `const` member function, the compiler internally changes the type of `this` from `Point* const` to `const Point* const`—not only is the pointer itself immutable, but the object it points to is also immutable. So if you try to modify a member variable inside a `const` member function, the compiler will directly throw an error.
-
-This leads to a very important consequence: **a `const` object can only call `const` member functions**. If you pass an object to a function via a `const` reference, you can only call its methods marked with `const`:
-
-```cpp
-void print_point(const Point& p)
-{
-    std::cout << p.get_x() << std::endl;  // OK，get_x() 是 const 的
-    // p.set_x(10);  // 编译错误！set_x() 不是 const 的
+// What the compiler actually does:
+// uart.init(&uart, 115200);
+void init(Uart* this, int baudrate) {
+    this->configure(baudrate);
 }
 ```
 
-> **Pitfall Warning**: Forgetting to add `const` to a getter is one of the most frequent mistakes made by C++ newcomers. You write a `int get_x() { return x_; }` that "looks like it just reads data," but without the `const` qualifier, the compiler assumes it might modify the object. The result is that anyone holding the object through a `const` reference cannot call this getter, and the error message is usually nonsense like "discards qualifiers," leaving beginners completely baffled. My advice is: after writing each member function, ask yourself, "Does it need to modify the object?" If the answer is no, add `const` immediately.
+Inside the function body of `init`, this hidden parameter is `this`—a pointer to the current object. Therefore, `configure(baudrate)` is actually equivalent to `this->configure(baudrate)`, though most of the time the compiler omits the `this->` prefix for us. Once we understand this, many seemingly "magical" behaviors become reasonable. The same `init` function, when called by `uart1` versus `uart2`, essentially differs only in the passed `this` pointer—one pointing to `uart1`, the other pointing to `uart2`.
+
+## The Type of `this` and Explicit Usage
+
+The type of `this` is `ClassName* const`—a constant pointer to the current object. The `const` qualifier applies to the pointer itself, not the object it points to. This means you cannot change where `this` points (e.g., `this = &other;` is illegal), but you can modify the object's members through `this`.
+
+In most cases, we do not need to explicitly write `this`, because the compiler automatically resolves member names as `this->member`. However, in two scenarios, explicitly using `this` is either necessary or helpful.
+
+The first scenario is when **parameter names conflict with member variable names**. Honestly, this style is quite common in C++—many engineers like to give constructor parameters the same names as member variables, relying on position in the initialization list to distinguish them. However, if assigning inside the function body, we must use `this` to disambiguate:
+
+```cpp
+class Uart {
+    int baudrate;
+public:
+    // 'baudrate' is the parameter, 'this->baudrate' is the member
+    void setBaudrate(int baudrate) {
+        this->baudrate = baudrate; // Explicit 'this' required here
+    }
+};
+```
+
+> **Warning**: If you write `baudrate = baudrate;` in a member function without adding `this->`, some compilers might not issue a warning—it will assume both `baudrate` references refer to the parameter itself, making the assignment a "self-assignment." A safer approach is to add a uniform suffix or prefix to member variables (like `_baudrate` or `m_baudrate`) to fundamentally avoid naming conflicts.
+
+The second scenario is **returning `*this`**—this is precisely the foundation of method chaining, which we will focus on next.
+
+## The Relationship Between `const` Member Functions and `this`
+
+Before discussing method chaining, we must clarify the relationship between `const` member functions and `this`, as this is a pitfall where beginners often stumble. When we declare a `const` member function, the compiler internally changes the type of `this` from `ClassName* const` to `const ClassName* const`—not only is the pointer itself immutable, but the object it points to is also immutable. Therefore, if you try to modify a member variable inside a `const` member function, the compiler will directly report an error.
+
+This leads to a very important consequence: **`const` objects can only call `const` member functions**. If you pass an object to a function via a `const` reference, you can only call methods marked with `const` on it:
+
+```cpp
+void printStatus(const Uart& uart) {
+    uart.send("Status"); // Error! 'send' is not const
+    uart.getBaudrate();  // OK, 'getBaudrate' is const
+}
+```
+
+> **Warning**: Forgetting to add `const` to getters is one of the most frequent mistakes for C++ newcomers. You write a `getBaudrate()` that "looks like it just reads data," but without the `const` modifier, the compiler assumes it might modify the object. The result is that anyone holding the object via a `const` reference cannot call this getter. The error message usually involves nonsense like "discards qualifiers," which leaves beginners completely puzzled. The author's advice is: after writing every member function, ask yourself, "Does it need to modify the object?" If the answer is no, add `const` immediately.
 
 ## Method Chaining—Making Interfaces Flow
 
-The core idea of method chaining is simple: a member function returns a reference to `*this`, allowing the caller to consecutively call multiple methods in a single statement.
+The core idea of method chaining is simple: member functions return a reference to `this`, allowing the caller to continuously call multiple methods in a single statement.
 
-Let's first look at a `Point` class without method chaining to feel the pain point:
-
-```cpp
-class Point {
-    int x_;
-    int y_;
-public:
-    Point() : x_(0), y_(0) {}
-
-    void set_x(int x) { x_ = x; }
-    void set_y(int y) { y_ = y; }
-};
-
-// 每个 setter 都是独立的语句
-Point p;
-p.set_x(3);
-p.set_y(4);
-```
-
-Four lines of code do four things, which looks okay. But if the number of setters increases—for example, a `Config` class has over a dozen configuration options—repeatedly writing the object name becomes pure manual labor. Switching to method chaining requires only one change: change the return type from `void` to `ClassName&`, and `return *this;` at the end of the function:
+Let's first look at a `Config` class that does not use method chaining to feel the pain:
 
 ```cpp
-class Point {
-    int x_;
-    int y_;
-public:
-    Point() : x_(0), y_(0) {}
-
-    Point& set_x(int x)
-    {
-        x_ = x;
-        return *this;
-    }
-
-    Point& set_y(int y)
-    {
-        y_ = y;
-        return *this;
-    }
-
-    Point& print()
-    {
-        std::cout << "(" << x_ << ", " << y_ << ")" << std::endl;
-        return *this;
-    }
-};
-
-// 现在一行搞定
-Point p;
-p.set_x(3).set_y(4).print();
+Config cfg;
+cfg.setBaudrate(115200);
+cfg.setTimeout(100);
+cfg.setParity('N');
+cfg.apply();
 ```
 
-Let's break down the principle: `p.set_x(3)` returns a reference to `p`, so the immediately following `.set_y(4)` is equivalent to calling `set_y` on `p`; `set_y` also returns a reference to `p`, so `.print()` is still called on `p`. The entire chain is strung together, with each step operating on the same object.
-
-In practice, this pattern is used extensively in real-world engineering. The `std::cout` in the C++ standard library is the most classic example—`operator<<` returns `std::ostream&`, so we can write `std::cout << "a" << "b" << "c";`. Hardware configuration interfaces and logging systems in embedded development also frequently use method chaining to make code more compact.
-
-> **Pitfall Warning**: In method chaining, if a method returns a value instead of a reference (for example, accidentally writing `StringBuilder append(...)` instead of `StringBuilder& append(...)`), the chain will still compile—but each step in the chain will operate on a new copy, not the original object. The result is that all preceding calls are completely wasted, and only the result of the last method is preserved. This bug is very subtle because the code "looks" correct, the compiler doesn't complain, but the runtime results are just wrong. Remember: method chaining must return a **reference**.
-
-## Hands-on Practice: StringBuilder and Config Builder
-
-Now let's combine everything we discussed above and write a complete, compilable file. It contains two classes—a `StringBuilder` that concatenates strings through method chaining, and a `Config` that constructs configurations using the Builder pattern.
-
-```cpp
-#include <cstdio>
-#include <cstring>
-
-class StringBuilder {
-    char buffer_[256];
-    std::size_t length_;
-
-public:
-    StringBuilder() : length_(0) { buffer_[0] = '\0'; }
-
-    StringBuilder& append(const char* str)
-    {
-        while (*str && length_ < 255) {
-            buffer_[length_++] = *str++;
-        }
-        buffer_[length_] = '\0';
-        return *this;
-    }
-
-    StringBuilder& append_char(char c)
-    {
-        if (length_ < 255) {
-            buffer_[length_++] = c;
-            buffer_[length_] = '\0';
-        }
-        return *this;
-    }
-
-    // const 成员函数：只读取，不修改
-    const char* c_str() const { return buffer_; }
-    std::size_t length() const { return length_; }
-};
-```
-
-Both `append` and `append_char` return `StringBuilder&`, so they can be chained. Meanwhile, `c_str()` and `length()` are read-only operations, marked with `const`, so they can also be called through a `const` reference. Next is the `Config` and its Builder—the Builder pattern is one of the most classic applications of method chaining. When we need to construct a configuration object with many options, it keeps the code both clear and compact:
+Four lines of code do four things, which looks okay. But if the number of setters increases—for example, a `SystemConfig` class has over a dozen configuration items—repeating the object name becomes pure manual labor. Changing to method chaining requires only one modification: change the return type from `void` to `Config&`, and return `*this` at the end of the function:
 
 ```cpp
 class Config {
-    char name_[64];
-    int baudrate_;
-    bool use_parity_;
-    int timeout_ms_;
-
-    // 私有构造，强制通过 Builder 创建
-    Config(const char* name, int baud, bool parity, int timeout)
-        : baudrate_(baud), use_parity_(parity), timeout_ms_(timeout)
-    {
-        std::strncpy(name_, name, 63);
-        name_[63] = '\0';
-    }
-
 public:
-    class Builder {
-        char name_[64];
-        int baudrate_;
-        bool use_parity_;
-        int timeout_ms_;
-
-    public:
-        Builder() : baudrate_(9600), use_parity_(false), timeout_ms_(1000)
-        {
-            name_[0] = '\0';
-        }
-
-        Builder& set_name(const char* name)
-        {
-            std::strncpy(name_, name, 63);
-            name_[63] = '\0';
-            return *this;
-        }
-
-        Builder& set_baudrate(int baud)
-        {
-            baudrate_ = baud;
-            return *this;
-        }
-
-        Builder& set_parity(bool parity)
-        {
-            use_parity_ = parity;
-            return *this;
-        }
-
-        Builder& set_timeout(int ms)
-        {
-            timeout_ms_ = ms;
-            return *this;
-        }
-
-        Config build() const
-        {
-            return Config(name_, baudrate_, use_parity_, timeout_ms_);
-        }
-    };
-
-    void print() const
-    {
-        std::printf("Config: name=%s, baud=%d, parity=%s, timeout=%dms\n",
-                    name_, baudrate_,
-                    use_parity_ ? "yes" : "no",
-                    timeout_ms_);
+    Config& setBaudrate(int rate) {
+        baudrate = rate;
+        return *this; // Return reference to current object
     }
+    Config& setTimeout(int ms) {
+        timeout = ms;
+        return *this;
+    }
+    // ... other setters
+};
+
+// Usage:
+cfg.setBaudrate(115200).setTimeout(100).setParity('N').apply();
+```
+
+Let's break down the principle: `setBaudrate` returns a reference to `cfg`, so the subsequent `setTimeout` is equivalent to calling `setTimeout` on `cfg`; `setTimeout` again returns a reference to `cfg`, so `setParity` is still called on `cfg`. The whole chain is strung together, with every step operating on the same object.
+
+In fact, this pattern is used very widely in actual engineering. `std::cout` in the C++ standard library is the most classic example—`operator<<` returns `std::ostream&`, so we can write `std::cout << a << b << c`. Hardware configuration interfaces in embedded development and logging systems also frequently use method chaining to make code more compact.
+
+> **Warning**: In method chaining, if a method returns a value instead of a reference (e.g., accidentally writing `return *this` where the return type is `Config` instead of `Config&`), the method chaining will still compile—but every step in the chain will operate on a new copy, not the original object. The result is that all previous calls are wasted, and only the result of the last method is preserved. This bug is very subtle because the code "looks" right, the compiler doesn't complain, but the runtime result is just wrong. Remember: method chaining must return a **reference**.
+
+## Hands-on: StringBuilder and Config Builder
+
+Now let's synthesize what we discussed and write a complete, compilable file. It contains two classes—a `StringBuilder` that concatenates strings via method chaining, and a `ConfigBuilder` that constructs configurations using the Builder pattern.
+
+```cpp
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <memory>
+
+class StringBuilder {
+public:
+    StringBuilder& append(const std::string& str) {
+        buffer << str;
+        return *this;
+    }
+
+    StringBuilder& appendLine(const std::string& str) {
+        buffer << str << "\n";
+        return *this;
+    }
+
+    // Read-only operation, marked const
+    std::string toString() const {
+        return buffer.str();
+    }
+
+    // Read-only operation, marked const
+    size_t length() const {
+        return buffer.str().length();
+    }
+
+private:
+    std::ostringstream buffer;
 };
 ```
 
-Note that the `Config` constructor is `private`—external code cannot directly create a `Config` object; it must be built step by step through a `Config::Builder()`. Each setter returns `Builder&`, and finally calling `build()` produces a complete `Config`. Let's run it:
+`append` and `appendLine` both return `StringBuilder&`, so they can be chained. `toString` and `length` are read-only operations, so they are marked `const` and can be called via a `const` reference. Next is `SystemConfig` and its Builder—the Builder pattern is one of the classic applications of method chaining. When we need to construct a configuration object with many items, it makes the code both clear and compact:
 
 ```cpp
-int main()
-{
-    // StringBuilder 链式调用
+class SystemConfig {
+    int baudrate = 9600;
+    int timeout = 1000;
+    bool parity = false;
+
+    // Constructor is private, external code cannot create directly
+    SystemConfig() = default;
+
+public:
+    // Static factory method
+    static SystemConfig create() { return SystemConfig(); }
+
+    // Getters
+    int getBaudrate() const { return baudrate; }
+    int getTimeout() const { return timeout; }
+    bool hasParity() const { return parity; }
+
+    // Builder class
+    class Builder {
+        SystemConfig config;
+    public:
+        Builder& setBaudrate(int rate) {
+            config.baudrate = rate;
+            return *this;
+        }
+        Builder& setTimeout(int ms) {
+            config.timeout = ms;
+            return *this;
+        }
+        Builder& enableParity(bool enable = true) {
+            config.parity = enable;
+            return *this;
+        }
+        SystemConfig build() {
+            return config;
+        }
+    };
+};
+```
+
+Note that `SystemConfig`'s constructor is `private`—external code cannot directly create `SystemConfig` objects; they must be built step-by-step via `Builder`. Each setter returns `Builder&`, and finally calling `build()` produces a complete `SystemConfig`. Let's run it:
+
+```cpp
+int main() {
+    // 1. StringBuilder example
     StringBuilder sb;
-    sb.append("Hello")
-          .append(", ")
-          .append("this ")
-          .append("is ")
-          .append("a ")
-          .append("chain!")
-          .append_char('\n');
+    std::string result = sb.append("Hello ")
+                          .append("World ")
+                          .appendLine("from C++")
+                          .append("Method Chaining!")
+                          .toString();
+    std::cout << result << std::endl;
+    std::cout << "Length: " << sb.length() << std::endl;
 
-    std::printf("--- StringBuilder ---\n");
-    std::printf("%s", sb.c_str());
-    std::printf("Total length: %zu\n\n", sb.length());
+    // 2. Builder pattern example
+    SystemConfig cfg = SystemConfig::Builder()
+                           .setBaudrate(115200)
+                           .setTimeout(500)
+                           .enableParity(true)
+                           .build();
 
-    // Config Builder 链式调用
-    Config cfg = Config::Builder()
-                     .set_name("UART1")
-                     .set_baudrate(115200)
-                     .set_parity(false)
-                     .set_timeout(500)
-                     .build();
-
-    std::printf("--- Config Builder ---\n");
-    cfg.print();
+    std::cout << "Baudrate: " << cfg.getBaudrate() << "\n";
+    std::cout << "Timeout: " << cfg.getTimeout() << "\n";
+    std::cout << "Parity: " << (cfg.hasParity() ? "ON" : "OFF") << "\n";
 
     return 0;
 }
@@ -309,43 +243,40 @@ int main()
 Compile and run:
 
 ```bash
-g++ -std=c++17 -Wall -Wextra -o this_demo this_demo.cpp && ./this_demo
+g++ -std=c++11 -o main main.cpp && ./main
 ```
 
 Expected output:
 
 ```text
---- StringBuilder ---
-Hello, this is a chain!
-Total length: 24
-
---- Config Builder ---
-Config: name=UART1, baud=115200, parity=no, timeout=500ms
+Hello World from C++
+Method Chaining!
+Length: 35
+Baudrate: 115200
+Timeout: 500
+Parity: ON
 ```
 
-You can compile and run it yourself to confirm that every link in the chain is indeed operating on the same object. If you want to verify further, you can add a line of `std::printf("this = %p\n", (void*)this);` in each method, and you will find that the addresses printed throughout the chain are completely identical—they are operating on the exact same object.
+You can compile and run this yourself to confirm that every link in the chain is indeed operating on the same object. If you want to verify further, you can add a line like `std::cout << "this: " << this << std::endl;` in each method. You will find that the addresses printed throughout the chain are completely consistent—they are operating on the exact same object.
 
 ## The Difference Between `*this` and `this`
 
-Finally, let's clarify a question that beginners often confuse. `this` is a pointer, while `*this` is a reference to the current object. If you want a function to return the current object itself, the way to write it is:
+Finally, let's clarify a question beginners often confuse. `this` is a pointer, while `*this` is a reference to the current object. If you want a function to return the current object itself, the syntax is:
 
 ```cpp
-// 返回对当前对象的引用
-Point& set_x(int x)
-{
-    x_ = x;
-    return *this;  // 解引用 this 指针，得到对象的引用
+ClassName& func() {
+    return *this; // Returns a reference
 }
 ```
 
-If you write `return this;`, the return type must be `Point*`—the caller receives a pointer, and subsequent calls must use `->` instead of `.`, completely destroying the fluid feel of method chaining. Although `p.set_x(3)->set_y(4)->print()` can also work, the style is inconsistent and clashes with standard library conventions (e.g., `std::cout` uses `.`, not `->`). Therefore, the standard method chaining pattern is always `return *this;` paired with the return type `ClassName&`.
+If you write `return this;`, the return type must be `ClassName*`—the caller gets a pointer, and subsequent calls must use `->` instead of `.`, destroying the fluidity of method chaining. Although returning a pointer can work, the style is inconsistent and does not align with standard library conventions (e.g., `std::cout` uses `&` not `*`). Therefore, the standard method chaining pattern is always `*this` paired with the return type `ClassName&`.
 
 ## Exercises
 
-1. **Implement a `Rectangle` class with chained setters**. Requirements: provide two chained methods, `set_width(int)` and `set_height(int)`, and a `area() const` that returns the area. Write a test snippet to verify that the result of `rect.set_width(3).set_height(4).area()` is 12.
+1. **Implement a `Rectangle` class with chained setters**. Requirements: provide `setWidth` and `setHeight` chainable methods, and a `getArea` method that returns the area. Write a test snippet to verify that a `3x4` `Rectangle` yields an area of 12.
 
-2. **Implement a simple `QueryBuilder`**. Requirements: build a SQL query string through method chaining—`select("id, name").from("users").where("age > 18").build()` should return `"SELECT id, name FROM users WHERE age > 18"`. Hint: use the `StringBuilder` approach internally to maintain a character buffer, and have each chained method append the corresponding SQL fragment to it.
+2. **Implement a simple `SqlBuilder`**. Requirements: build a SQL query string via method chaining—`select`, `where`, `orderBy` should return `SqlBuilder&`. Hint: maintain a character buffer internally using the `StringBuilder` approach, where each chainable method appends the corresponding SQL fragment.
 
 ## Summary
 
-In this chapter, we broke down the underlying mechanism of the `this` pointer—every non-static member function has a hidden `this` parameter pointing to the object that called the function. A `const` member function turns `this` into a pointer to a constant, thereby prohibiting object modification at compile time. The method chaining pattern links multiple method calls together by returning a reference to `*this`, and this pattern is heavily used in the Builder pattern and operator overloading. At this point, we have covered all the basics of OOP. In the next chapter, we will dive into operator overloading—seeing how to make custom types support operators like `+`, `==`, and `<<` just like built-in types.
+In this chapter, we dissected the underlying mechanism of the `this` pointer—every non-static member function has a hidden `this` parameter pointing to the object invoking the function. `const` member functions turn `this` into a pointer to a constant, thereby prohibiting object modification at compile time. The method chaining pattern links multiple method calls together by returning a reference to `*this`. This pattern is heavily used in the Builder pattern and operator overloading. At this point, we have covered all the basics of OOP. In the next chapter, we will enter operator overloading—let's see how to make custom types support operators like `+`, `-`, `[]`, just like built-in types.

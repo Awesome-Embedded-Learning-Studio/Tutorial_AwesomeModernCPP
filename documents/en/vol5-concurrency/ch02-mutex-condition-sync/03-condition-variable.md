@@ -5,8 +5,8 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the wait/notify mechanism of condition variables, and understand
-  spurious wakeups, predicate patterns, and lost wakeups.
+description: Master the condition variable's wait/notify mechanism, and understand
+  spurious wakeups, predicate usage, and the lost wakeup problem.
 difficulty: intermediate
 order: 3
 platform: host
@@ -24,27 +24,27 @@ tags:
 - 异步编程
 title: condition_variable and Wait Semantics
 translation:
-  engine: anthropic
   source: documents/vol5-concurrency/ch02-mutex-condition-sync/03-condition-variable.md
-  source_hash: 55180d919c132785b2b2ff56ff781820c74bc4d65ba0ea80520055cc1e8f4327
-  token_count: 3161
-  translated_at: '2026-05-20T04:36:55.732540+00:00'
+  source_hash: a89b45f907b2e767bbea20d33049c7d22c6db0af463c53daa985e27a20f4a703
+  translated_at: '2026-06-16T04:03:41.061985+00:00'
+  engine: anthropic
+  token_count: 3155
 ---
-# condition_variable and Wait Semantics
+# Condition Variables and Wait Semantics
 
-In the previous article, we discussed mutex and RAII locks—covering how to protect a critical section and how to avoid dead lock. But one problem remains unsolved: if a thread needs to "wait for a condition to become true" before continuing, how do we achieve this with just a mutex? The most naive approach is to write a loop that repeatedly locks, checks the condition, unlocks, and sleeps for a short while before trying again—this is known as **busy-wait** or **polling**. It works, but the cost is wasted CPU cycles, and the "sleep duration" parameter is hard to tune: too short wastes CPU, too long makes the response sluggish.
+In the previous post, we discussed mutexes and RAII locks—covering how to protect critical sections and avoid deadlocks. However, one problem remains unsolved: what if a thread needs to "wait for a condition to become true" before continuing? A mutex alone isn't enough. The most naive approach is a loop that repeatedly locks, checks the condition, unlocks, and sleeps for a short while before trying again—this is known as **busy-waiting** or **polling**. While it works, it wastes CPU cycles, and tuning the "sleep duration" is difficult: too short wastes CPU, too long results in sluggish response.
 
-`std::condition_variable` is the standard library's answer. It provides a "wait-notify" mechanism: Thread A can **wait** on a condition variable, and Thread B can **notify** the condition variable after changing the condition, waking up the waiting thread. This mechanism is far more efficient than polling because the waiting thread is suspended by the operating system, consuming no CPU time, until it is notified and rescheduled. However, using condition variables comes with some very subtle pitfalls—spurious wakeups, lost wakeups, and predicate writing—these are the real focus of this article.
+`std::condition_variable` is the standard library's answer. It provides a "wait-notify" mechanism: Thread A can **wait** on a condition variable, and Thread B can **notify** the condition variable after changing the state, waking the waiting thread. This mechanism is far more efficient than polling because the waiting thread is suspended by the OS, consuming no CPU time until it is rescheduled upon notification. However, condition variables have some subtle pitfalls—spurious wakeups, lost wakeups, and predicate usage—which are the real focus of this post.
 
-## std::condition_variable and std::condition_variable_any
+## std::condition_variable vs. std::condition_variable_any
 
-The C++ standard library provides two condition variable classes, defined in the `<condition_variable>` header. `std::condition_variable` is the primary one; it can only be used with `std::unique_lock<std::mutex>`. `std::condition_variable_any` is a more general version that can work with any lock type satisfying the Lockable requirements—such as `std::shared_mutex` or a custom lock wrapper. The trade-off is that `std::condition_variable_any`'s internal implementation is typically heavier (possibly using an additional internal mutex or dynamic allocation), so in most scenarios we prefer `std::condition_variable`. Unless otherwise stated, "condition variable" in the rest of this article refers to `std::condition_variable`.
+The C++ standard library provides two condition variable classes in the `<condition_variable>` header. `std::condition_variable` is the primary choice, designed to work exclusively with `std::unique_lock<std::mutex>`. `std::condition_variable_any` is a more general version that works with any lock type satisfying the *Lockable* requirement—such as `std::shared_mutex` or custom lock wrappers. The tradeoff is that `condition_variable_any` usually has a heavier internal implementation (potentially using extra internal mutexes or dynamic allocation), so in most scenarios, we prefer `std::condition_variable`. Unless stated otherwise, "condition variable" refers to `std::condition_variable`.
 
-The core API of a condition variable is very concise, with only three groups of operations: the `wait` series (`wait`, `wait_for`, `wait_until`) for waiting on notifications, `notify_one` to wake up one waiting thread, and `notify_all` to wake up all waiting threads. Let's break them down one by one.
+The core API is concise, consisting of three groups of operations: the `wait()` series (`wait`, `wait_for`, `wait_until`) for waiting, `notify_one` to wake a single waiting thread, and `notify_all` to wake all waiting threads. Let's break them down one by one.
 
-## wait(): The Most Basic Wait
+## wait(): The Basic Wait
 
-Let's start with the simplest example. Suppose we have a flag `ready`, which the main thread sets and the worker thread waits to become `true`:
+Let's look at a simple example. Suppose we have a flag `ready`, where the main thread sets it and a worker thread waits for it to become `true`:
 
 ```cpp
 #include <iostream>
@@ -56,146 +56,108 @@ std::mutex mtx;
 std::condition_variable cv;
 bool ready = false;
 
-void worker()
-{
+void worker() {
     std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock);  // 释放锁，进入等待；被唤醒时重新获取锁
-    std::cout << "Worker: proceeding after wakeup\n";
-    // lock 在此处析构时释放 mtx
+    // Wait until ready is true
+    cv.wait(lock, [&] { return ready; });
+    std::cout << "Worker is running\n";
 }
 
-int main()
-{
+int main() {
     std::thread t(worker);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     {
         std::lock_guard<std::mutex> lock(mtx);
         ready = true;
-    }
+    } // Release lock before notifying
     cv.notify_one();
 
     t.join();
-    return 0;
 }
 ```
 
-There are a few key details to unpack here. First, the behavior of `cv.wait(lock)` happens in three steps: Step one, atomically release the mutex associated with `lock` and add the current thread to the condition variable's wait queue; Step two, the thread is suspended and enters a blocked state, consuming no CPU; Step three, when notified (or spuriously woken up), the thread is rescheduled, re-acquires the mutex, and `wait` returns. Note that "atomically releasing the mutex and joining the wait queue" is crucial—it guarantees there is no gap between releasing the mutex and starting to wait, so a notification cannot be missed in that gap (we will discuss this in detail later).
+There are key details to examine here. First, `cv.wait` behavior involves three steps:
 
-Second, after `wait` returns, the current thread **holds the mutex again**. This means the caller of `cv.wait(lock)` can safely access the shared state protected by the mutex after `wait` returns, without needing to lock again. This is also why `wait` requires a `std::unique_lock<std::mutex>` to be passed in rather than a bare mutex—the ownership of `lock` is transferred out and then transferred back during `wait`, and the entire lifetime management is automatic.
+1. Atomically release the associated mutex and add the current thread to the condition variable's wait queue.
+2. Suspend the thread (blocked state), consuming no CPU.
+3. Upon notification (or spurious wakeup), the thread is rescheduled, reacquires the mutex, and `wait` returns.
 
-But the code above has a serious problem. Did you spot it? The worker thread continues executing directly after `wait` returns, but it **completely fails to check the value of `ready`**. What if this wakeup is spurious? What if the notification was sent before the worker called `wait`? The program's behavior becomes unpredictable. These are the two core problems we will discuss next.
+The "atomic release and enqueue" is crucial—it ensures no gap exists between releasing the mutex and starting to wait, preventing notifications from being missed in that gap (discussed in detail later).
 
-## Spurious Wakeups: Why wait Must Be Used with a Predicate
+Second, after `wait` returns, the current thread **holds the mutex again**. This means the caller can safely access shared state protected by the mutex immediately after `wait` returns, without additional locking. This is why `wait` requires a `unique_lock`—the lock's ownership is transferred out and back in during `wait`, managing the lifecycle automatically.
 
-A **spurious wakeup** means a thread returns from `wait` without having received a `notify_one` or `notify_all` call. This is not a bug, nor a quality-of-implementation issue—both the POSIX standard and the C++ standard explicitly allow this behavior. Why? The reason lies in the underlying implementation of condition variables.
+However, the code above has a serious flaw. Did you spot it? The worker thread continues execution immediately after `wait` returns, but it **never checks the value of `ready`**. If this was a spurious wakeup? If the notification was sent before the worker called `wait`? The behavior becomes unpredictable. This leads us to the two core issues discussed next.
 
-On Linux, `std::condition_variable` is implemented based on the `futex` (fast user-space mutex) system call. The internal state of a condition variable typically uses an atomic counter to track the number of waiters and notifiers. To efficiently implement `notify_one` and `notify_all`, the condition variable implementation adopts a "scatter-gather" strategy: `notify_one` only needs to increment the counter and wake one waiting futex, while `wait` needs to atomically decrement the counter and check for unprocessed notifications. Under certain boundary conditions—for example, if a `notify_all` just woke up a batch of threads that haven't had time to re-check the internal state—the kernel might wake up extra threads. After weighing implementation efficiency against semantic strictness, the POSIX standards committee chose to allow spurious wakeups—this way, condition variables can be implemented with lighter-weight kernel primitives without needing an exact one-to-one mapping for every notification.
+## Spurious Wakeups: Why wait Must Use a Predicate
 
-The practical consequence is: if you call `wait` and it returns, you **cannot assume** someone called `notify_one`. You must re-check the wait condition after `wait` returns. The standard approach is to put `wait` inside a while loop:
+A **spurious wakeup** occurs when a thread returns from `wait` without receiving a `notify_one` or `notify_all` call. This isn't a bug or a quality issue—both POSIX and C++ standards explicitly allow this. Why? It lies in the underlying implementation.
+
+On Linux, `condition_variable` is implemented using the `futex` (Fast Userspace muTEX) system call. Internal state is usually tracked by an atomic counter. To efficiently implement `wait` and `notify`, a "scatter-gather" strategy is used: `notify_one` only increments the counter and wakes one futex, while `wait` must atomically decrement the counter and for pending notifications. Under certain boundary conditions—like a `notify_all` waking a batch of threads that haven't rechecked internal state yet—the kernel might wake extra threads. The POSIX standards committee, weighing implementation efficiency against semantic strictness, chose to allow spurious wakeups. This allows condition variables to be implemented with lighter kernel primitives without requiring precise one-to-one mapping for every notification.
+
+The consequence is: if you write `wait` and it returns, you **cannot assume** someone called `notify`. You must recheck the condition after `wait` returns. The standard practice is to wrap `wait` in a `while` loop:
 
 ```cpp
 std::unique_lock<std::mutex> lock(mtx);
 while (!ready) {
     cv.wait(lock);
 }
-// ready == true，安全地继续执行
 ```
 
-The logic here is: check the condition first, and if it's not met, call `wait`; after `wait` returns, check again, looping until the condition is true. This makes spurious wakeups harmless—even if spuriously woken up, the loop will check `ready` again, find it's still `false`, and continue to `wait`.
+The logic is: check the condition; if not met, `wait`. When `wait` returns, check again, looping until the condition holds. This renders spurious wakeups harmless—even if woken spuriously, the loop rechecks `ready`, finds it `false`, and waits again.
 
-The C++ standard library encapsulates this pattern into a more convenient overload: **`wait` with a predicate**:
+The C++ standard library encapsulates this pattern in a convenient overload: **`wait` with a predicate**:
 
 ```cpp
-std::unique_lock<std::mutex> lock(mtx);
-cv.wait(lock, [] { return ready; });
-// 这里 ready 一定为 true
+cv.wait(lock, [&] { return ready; });
 ```
 
-The semantics of `wait(lock, pred)` are equivalent to `while (!pred()) wait(lock);`, but it can be more efficient than a hand-written loop—because the standard allows implementations to use more optimized waiting strategies on certain platforms (such as using the bit-aware features of `futex` on Linux). To sum it up in one sentence: **always use `wait` with a predicate, never use the version without one**. This is not a suggestion; it is a rule.
+The semantics of `wait(lock, pred)` are equivalent to `while (!pred()) wait(lock);`, but it may be more efficient than a manual loop—implementations can use optimized wait strategies on certain platforms (like `futex`'s bit-aware features on Linux). In short: **always use the predicate version of `wait`, never the version without one**. This isn't advice; it's a rule.
 
-Looking back at our earlier example, the correct way to write it is:
+Looking back at our example, the correct way is:
 
 ```cpp
-void worker()
-{
-    std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [] { return ready; });
-    // 到达这里时，ready 一定为 true，且 lock 被持有
-    std::cout << "Worker: proceeding after condition met\n";
-}
+cv.wait(lock, [&] { return ready; });
 ```
 
-## Lost Wakeups: The Disaster of Notifying Before Waiting
+## Lost Wakeups: The "Notify Before Wait" Disaster
 
-Spurious wakeups mean "waking up without a notification," while a **lost wakeup** is the exact opposite—"notified but nobody received it." This happens when the notification is sent before `wait` is called.
+Spurious wakeups are "waking without a notify," while **lost wakeups** are the opposite—"notified but no one received it." This happens when the notification is sent before `wait`.
 
 Let's construct a lost wakeup scenario:
 
 ```cpp
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
-std::mutex mtx;
-std::condition_variable cv;
-bool ready = false;
-
-void worker()
+// Main thread
 {
-    // 假设 worker 线程在这里被调度延迟了
-    // 主线程先执行了 notify_one()
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    std::unique_lock<std::mutex> lock(mtx);
-    // 如果这里用不带谓词的 wait，就会永远阻塞！
-    cv.wait(lock, [] { return ready; });
-    std::cout << "Worker: condition met\n";
+    std::lock_guard<std::mutex> lock(mtx);
+    ready = true;
 }
+cv.notify_one();
 
-int main()
-{
-    std::thread t(worker);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    {
-        std::lock_guard<std::mutex> lock(mtx);
-        ready = true;
-    }
-    cv.notify_one();  // 此时 worker 还没开始 wait
-
-    t.join();  // 等待 worker（带谓词版本不会死锁）
-    return 0;
-}
+// Worker thread (starts slightly later)
+std::unique_lock<std::mutex> lock(mtx);
+cv.wait(lock, [&] { return ready; }); // Returns immediately because ready is true
 ```
 
-In this example, the main thread calls `notify_one` before the worker thread calls `cv.wait(lock)`. If we were using a bare `wait` without a predicate, this notification would be lost forever—the condition variable does not "store" notifications for you to pick up later. But because we used the predicate version `wait(lock, ...)`, the worker thread checks the value of `ready` (which is already `true`) upon waking up, passes the check directly, and doesn't need anyone to notify it. This is another huge advantage of `wait` with a predicate: it simultaneously guards against both spurious wakeups and lost wakeups.
+In this example, the main thread calls `notify_one` before the worker calls `wait`. If we used the raw `wait` without a predicate, the notification would be lost forever—the condition variable doesn't "store" notifications. However, because we used the predicate version, the worker thread checks `ready` upon waking (which is now `true`) and proceeds without needing a notification. This is another huge advantage of the predicate `wait`: it guards against both spurious and lost wakeups.
 
-However, a more fundamental strategy to prevent lost wakeups is to ensure that "check condition-wait" and "modify condition-notify" are protected by **the same mutex**. When the waiting thread holds the mutex to check the condition, the notifying thread cannot simultaneously modify the condition; conversely, when the notifying thread holds the mutex to modify the condition, the waiting thread cannot have already passed the condition check but not yet started `wait`. This is why `wait` requires a `std::unique_lock<std::mutex>` to be passed in—it's not just to release the lock during the wait, but more importantly to ensure the synchronization relationship between waiting and notifying.
+More fundamentally, the strategy to prevent lost wakeups is ensuring "check-wait" and "modify-notify" use the **same mutex** for protection. When the waiting thread holds the mutex to check the condition, the notifying thread cannot modify it simultaneously; conversely, when the notifying thread holds the mutex to modify the condition, the waiting thread cannot have passed the check but not yet started `wait`. This is why `wait` requires a `unique_lock`—it's not just for releasing the lock during the wait, but for ensuring synchronization between waiting and notification.
 
 ## wait_for() and wait_until(): Timed Waits
 
-Sometimes we don't want to wait indefinitely—such as a network request timeout, a user action cancellation, or a periodic state check scenario. `wait_for` and `wait_until` provide wait semantics with a timeout.
+Sometimes we don't want to wait indefinitely—like a network request timeout, a user cancellation, or a periodic state check. `wait_for` and `wait_until` provide waiting semantics with timeouts.
 
-`wait_for` waits for a specified duration. `wait_until` waits until a specified time point. Both support a predicate version and a bare version (again, prefer the predicate version). The predicate version returns `bool`, indicating whether the predicate is `true` (it might have been notified or it might have timed out, but it only returns `true` if the predicate is `true`). The bare version returns a `cv_status`, which could be `no_timeout` (notified or spuriously woken up) or `timeout` (timed out).
+`wait_for` waits for a specific duration. `wait_until` waits until a specific time point. Both support predicate and non-predicate versions (prefer the predicate version). The predicate version returns `bool`, indicating if the predicate is `true` (notified or timeout, but only returns `true` if the predicate is satisfied). The non-predicate version returns `cv_status`, which can be `no_timeout` (notified or spurious wakeup) or `timeout` (timed out).
 
-Let's look at a practical example: we want to wait for a task to complete, but for at most 5 seconds:
+Here's a practical example: waiting for a task to complete, but for a maximum of 5 seconds:
 
 ```cpp
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <chrono>
-
 std::mutex mtx;
 std::condition_variable cv;
 bool task_done = false;
 
-void long_task()
-{
-    std::this_thread::sleep_for(std::chrono::seconds(3));  // 模拟耗时操作
+void worker() {
+    // Simulate work
+    std::this_thread::sleep_for(std::chrono::seconds(3));
     {
         std::lock_guard<std::mutex> lock(mtx);
         task_done = true;
@@ -203,66 +165,55 @@ void long_task()
     cv.notify_one();
 }
 
-int main()
-{
-    std::thread t(long_task);
+int main() {
+    std::thread t(worker);
 
     std::unique_lock<std::mutex> lock(mtx);
-    bool success = cv.wait_for(lock, std::chrono::seconds(5),
-                                [] { return task_done; });
-
-    if (success) {
-        std::cout << "Task completed within timeout\n";
+    if (cv.wait_for(lock, std::chrono::seconds(5), [&] { return task_done; })) {
+        std::cout << "Task completed\n";
     } else {
-        std::cout << "Task timed out after 5 seconds\n";
-        // 注意：t 还在运行，需要决定如何处理
+        std::cout << "Timeout waiting for task\n";
     }
 
-    lock.unlock();
-    t.join();  // 无论超时与否，最终都要 join
-    return 0;
+    t.join();
 }
 ```
 
-The internal implementation of the predicate version of `wait_for` is essentially a loop: each time it wakes up (whether due to a notification or a spurious wakeup), it checks the predicate, and if it's `true`, it returns `true`; if it times out and the predicate is still `false`, it returns `false`. Note that returning `false` does not mean a notification will never arrive—it just means the condition was not satisfied within the specified time. The handling logic after a timeout needs to be designed according to your business requirements.
+The predicate version of `wait_for` is essentially a loop internally: every time it wakes (notification or spurious), it checks the predicate. If `true`, it returns `true`; if it times out and the predicate is still `false`, it returns `false`. Note that returning `false` doesn't mean a notification will never arrive—just that the condition wasn't met within the specified time. Handling logic after a timeout depends on your business requirements.
 
-The usage of `wait_until` is similar, except it accepts an absolute time point (a template parameter of type `Clock::time_point` in `std::chrono`), rather than a relative duration. This is more convenient in scenarios where you need to "complete before a certain deadline"—you don't need to calculate `duration` yourself; just pass a deadline in directly. However, be aware that system clock adjustments might affect the accuracy of `wait_until`, so if you care about clock monotonicity, prefer `wait_for`.
+`wait_until` is similar but accepts an absolute time point (a template parameter of `Clock` and `Duration` in `std::chrono`), rather than a relative duration. This is more convenient for "complete before a deadline" scenarios—you don't calculate `duration`, just pass a deadline. Note that system clock adjustments can affect `wait_until` accuracy, so if you care about monotonicity, prefer `wait_for` with a steady clock.
 
 ## Producer-Consumer Pattern: Bounded Queue
 
-The most classic application scenario for condition variables is the Producer-Consumer Pattern. Let's write a complete bounded blocking queue—producers push data into the queue and block when full; consumers pop data from the queue and block when empty. This example comprehensively uses the wait-notify mechanism and predicate writing of mutex and condition_variable.
+The classic use case for condition variables is the Producer-Consumer Pattern. Let's implement a complete bounded blocking queue—producers push data, blocking if full; consumers pop data, blocking if empty. This example combines mutexes, condition variables, and predicates.
 
-First, let's define the basic structure of the queue:
+First, define the basic queue structure:
 
 ```cpp
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
-#include <iostream>
-#include <thread>
+#include <optional>
 
 template <typename T>
 class BoundedQueue {
 public:
-    explicit BoundedQueue(std::size_t capacity)
-        : capacity_(capacity)
-    {}
+    explicit BoundedQueue(size_t capacity) : capacity_(capacity) {}
 
-    // 生产者调用：向队列放入元素，满了就阻塞等待
-    void push(T value)
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_full_.wait(lock, [this] { return queue_.size() < capacity_; });
+    void push(T value) {
+        std::unique_lock<std::mutex> lock(mtx_);
+        // Wait until there is space
+        not_full_.wait(lock, [&] { return queue_.size() < capacity_; });
+
         queue_.push(std::move(value));
         not_empty_.notify_one();
     }
 
-    // 消费者调用：从队列取出元素，空了就阻塞等待
-    T pop()
-    {
-        std::unique_lock<std::mutex> lock(mutex_);
-        not_empty_.wait(lock, [this] { return !queue_.empty(); });
+    std::optional<T> pop() {
+        std::unique_lock<std::mutex> lock(mtx_);
+        // Wait until queue is not empty
+        not_empty_.wait(lock, [&] { return !queue_.empty(); });
+
         T value = std::move(queue_.front());
         queue_.pop();
         not_full_.notify_one();
@@ -271,97 +222,94 @@ public:
 
 private:
     std::queue<T> queue_;
-    std::size_t capacity_;
-    std::mutex mutex_;
-    std::condition_variable not_full_;   // 队列不满时通知生产者
-    std::condition_variable not_empty_;  // 队列不空时通知消费者
+    size_t capacity_;
+    std::mutex mtx_;
+    std::condition_variable not_full_;
+    std::condition_variable not_empty_;
 };
 ```
 
-Let's break down this implementation step by step. The queue internally maintains two condition variables: `not_full` for producers to wait on (wait when full, notify when someone consumes), and `not_empty` for consumers to wait on (wait when empty, notify when someone produces). This dual-condition-variable design is more precise than a single condition variable—it avoids unnecessary wakeups: producers only wake consumers (`notify_one` on `not_empty`), and consumers only wake producers (`notify_one` on `not_full`), each managing their own.
+Let's break this down. The queue maintains two condition variables: `not_full_` for producers (wait if full, notify when consumed), and `not_empty_` for consumers (wait if empty, notify when produced). This dual-condition design is more precise than a single variable—it avoids unnecessary wakeups: producers only wake consumers (`notify_one` on `not_empty_`), consumers only wake producers (`notify_one` on `not_full_`).
 
-The logic of the `push` method is: first acquire the mutex, then use `wait` with a predicate to wait until the queue is not full. When `wait` returns, we are guaranteed that the queue is not full (because the predicate is `true`), so we can safely push. After pushing, we call `notify_one` on `not_empty` to notify one waiting consumer. The logic of the `pop` method is symmetric: wait until the queue is not empty, take out the element, and notify the producer.
+The `push` logic: acquire mutex, wait with predicate until not full. When `wait` returns, we guarantee `size < capacity_` (predicate is `true`), so we can safely push. After pushing, call `notify_one` on `not_empty_` to wake a waiting consumer. The `pop` logic is symmetric: wait until not empty, take element, notify producer.
 
-Note that in `push` and `pop`, the lock is still held when we call notify—this is fine, and sometimes it's even an optimization. Notify itself doesn't need to wait for a response from the other side; it simply moves threads from the condition variable's wait queue to the mutex's wait queue. The woken threads can only acquire the lock and continue executing after the current thread releases the lock (when `lock` is destructed). So whether you hold the lock during notify makes no difference for correctness, but on certain platforms, notifying while holding the lock can reduce an unnecessary context switch.
+Note that in `push` and `pop`, we call `notify` while holding the lock. This is fine and sometimes an optimization. `notify` doesn't wait for a response; it just moves threads from the condition variable queue to the mutex queue. The awakened thread can only acquire the lock and proceed after the current thread releases it (via `unique_lock` destructor). So holding the lock during `notify` makes no difference to correctness, but on some platforms, it reduces an unnecessary context switch.
 
-Now let's use this queue:
+Now, let's use this queue:
 
 ```cpp
-int main()
-{
-    constexpr std::size_t kQueueCapacity = 10;
-    BoundedQueue<int> queue(kQueueCapacity);
+int main() {
+    BoundedQueue<int> queue(10);
 
-    // 生产者线程
-    std::thread producer([&queue]() {
-        for (int i = 1; i <= 20; ++i) {
+    std::thread producer([&] {
+        for (int i = 0; i < 20; ++i) {
             queue.push(i);
             std::cout << "Produced: " << i << "\n";
         }
     });
 
-    // 消费者线程
-    std::thread consumer([&queue]() {
-        for (int i = 1; i <= 20; ++i) {
-            int value = queue.pop();
-            std::cout << "Consumed: " << value << "\n";
+    std::thread consumer([&] {
+        for (int i = 0; i < 20; ++i) {
+            auto val = queue.pop();
+            if (val) {
+                std::cout << "Consumed: " << *val << "\n";
+            }
         }
     });
 
     producer.join();
     consumer.join();
-    return 0;
 }
 ```
 
-The queue capacity is 10, and the producer wants to produce 20 elements, so it will inevitably become full in the middle—the producer blocks at the 11th element and can only continue after the consumer has taken elements away. The consumer's pace depends on the producer's output speed—if the producer can't keep up, the consumer will wait in `pop`. The two threads coordinate their pacing through the condition variable like this.
+Capacity is 10, producing 20 elements, so it will fill up—the producer blocks at the 11th element until the consumer makes space. The consumer's pace depends on the producer—if the producer lags, the consumer waits in `pop`. The two threads coordinate their pace via the condition variables.
 
 ## Choosing Between notify_all and notify_one
 
-In the bounded queue example above, we used `notify_one`—waking up only one waiting thread each time. But in certain scenarios, we need `notify_all` to wake up all waiting threads. Which one to choose depends on "the nature of the condition change."
+In the bounded queue example, we used `notify_one`—waking only one waiting thread. However, some scenarios require `notify_all` to wake everyone. The choice depends on the "nature of the condition change."
 
-`notify_one` is suitable for scenarios where "each notification only lets one thread continue." The producer-consumer queue is a typical example—each push only needs to wake one consumer to take an item; waking multiple consumers is pointless (there's only one item to take, and the others would fail the check and go back to sleep). The advantage of `notify_one` is reducing unnecessary wakeups: only waking one thread while the others continue to sleep, saving the overhead of context switches.
+`notify_one` fits scenarios where "one notification lets one thread continue." The producer-consumer queue is typical—each `push` only needs to wake one consumer to take one item; waking multiple is pointless (only one item available, others go back to sleep). `notify_one` reduces unnecessary wakeups and context switches.
 
-`notify_all` is suitable for scenarios where "a condition change might satisfy the condition for multiple waiting threads simultaneously." A classic example is **thread pool shutdown**: when you set a `stop` flag and call `notify_all`, all threads waiting for tasks need to wake up, check this flag, and exit individually. Another example is the **barrier** pattern—all threads need to wait until a certain condition is true before continuing together, and when the condition changes, everyone needs to be notified.
+`notify_all` fits scenarios where "a condition change might satisfy multiple waiting threads simultaneously." A classic example is **thread pool shutdown**: when you set a `stop` flag and call `notify_all`, all threads waiting for tasks need to wake up, check the flag, and exit. Another is the **barrier pattern**—all threads must wait for a condition, then proceed together, requiring notifying everyone.
 
-A common misconception is that `notify_all` is always safe so we should always use it. Indeed, `notify_all` is no worse than `notify_one` in terms of correctness—all waiting threads will eventually wake up and check the condition. But the performance difference is significant: if 10 threads are waiting, `notify_all` will wake all 10, they will compete for the same mutex, and ultimately only 1 can acquire the lock and pass the condition check, while the other 9 made a wasted trip. Therefore, "use `notify_one` if you can, avoid `notify_all`" is a reasonable performance optimization principle—provided you are certain the notification is only related to one waiting thread.
+A common misconception is that `notify_all` is always safe. While `notify_all` is no less "correct" than `notify_one`—all threads eventually wake and check—the performance difference is significant. If 10 threads are waiting, `notify_all` wakes all 10. They compete for the same mutex, but only one passes the check; the other 9 wasted their time. So "use `notify_one` unless you must" is a valid optimization principle—provided you know the notification relates to only one waiter.
 
 ## std::condition_variable_any: The Generic Condition Variable
 
-So far we've been using `std::condition_variable`, which only accepts `std::unique_lock<std::mutex>`. But sometimes we might need to pair it with other lock types—such as `std::shared_mutex` (which we'll cover in detail in the next article). This is where `std::condition_variable_any` comes in.
+So far, we've used `std::condition_variable`, which only accepts `std::unique_lock<std::mutex>`. Sometimes we need other lock types—like `std::shared_mutex` (detailed in the next post). This is where `std::condition_variable_any` comes in.
 
-Its interface is completely consistent with `std::condition_variable`, except the templated `wait` can accept any lock satisfying the Lockable requirements. There's almost no learning curve—just replace `std::condition_variable` with `std::condition_variable_any`. What's the trade-off? Its internal implementation typically requires an additional mutex to protect the internal wait queue (because `std::condition_variable` can leverage the internal structure of `std::mutex` for optimization, whereas `std::condition_variable_any` doesn't understand the internal implementation of external locks), so it's slightly inferior in performance. If your scenario only requires `std::unique_lock<std::mutex>`, stick with `std::condition_variable`.
+Its interface is identical to `condition_variable`, but the templated `wait` accepts any lock satisfying the *Lockable* requirement. Usage is straightforward—just swap `condition_variable` for `condition_variable_any`. The cost? Its internal implementation usually needs an extra mutex to protect the internal wait queue (because `condition_variable` can leverage `std::mutex` internals for optimization, while `condition_variable_any` doesn't know the external lock's internals). Thus, it performs slightly worse. If you only need `std::mutex`, stick with `std::condition_variable`.
 
-> 💡 The complete example code is available in [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), visit `code/volumn_codes/vol5/ch02-mutex-condition-sync/`.
+> 💡 Complete example code is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP), specifically in `demo/condition_variable`.
 
 ## Exercises
 
 ### Exercise 1: Thread-Safe Countdown Latch
 
-Implement a `CountdownLatch` class that behaves similarly to C#'s `CountdownEvent` or Java's `CountDownLatch`. It has an internal counter initialized to N. Threads can call `wait` to block until the counter reaches zero, while other threads call `count_down` to decrement the counter by one. When the counter reaches 0, all waiting threads should be woken up.
+Implement a `CountdownLatch` class, similar to C#'s `CountdownEvent` or Java's `CountDownLatch`. It has an internal counter initialized to N. Threads can call `wait` to block until the counter reaches zero, while other threads call `count_down` to decrement it. When the counter hits zero, all waiting threads should wake.
 
 Requirements:
 
-- Use `std::mutex` and `std::condition_variable`
-- Use the predicate version of `wait`
-- In `count_down`, consider whether to use `notify_one` or `notify_all`
+- Use `std::condition_variable` and `std::mutex`.
+- `wait` must use the predicate version.
+- In `count_down`, consider whether to use `notify_one` or `notify_all`.
 
-Hint: The moment the counter changes from 1 to 0, the conditions of all threads blocked on `wait` are simultaneously satisfied—this is a typical scenario for `notify_all`.
+Hint: When the counter transitions from 1 to 0, all threads blocked on `wait` satisfy their condition simultaneously—this is a classic `notify_all` scenario.
 
-### Exercise 2: Extend the Bounded Queue to Support try_pop_for
+### Exercise 2: Extend Bounded Queue with try_pop_for
 
-Building on the `BoundedQueue` in this article, add a `try_pop_for` method: attempt to pop an element from the queue within a specified time. If successfully popped before timeout, return an `std::optional` containing the value; if timed out, return an empty `std::optional`.
+Extend the `BoundedQueue` from this article by adding a `try_pop_for` method: try to pop an element within a specified time. If successful, return `std::optional<T>` containing the value; if timed out, return `std::nullopt`.
 
-Hint: Use the predicate version of `wait_for`, and check the return value to determine if it timed out or succeeded. Note whether the thread is safe after a timeout return—because `try_pop_for`'s empty `std::optional` explicitly tells the caller "nothing was popped," the caller can decide whether to retry or give up.
+Hint: Use the predicate version of `wait_for` and check the return value to determine success or timeout. Note that after a timeout, the thread is safe—because `try_pop_for`'s return value explicitly tells the caller "nothing was popped," allowing the caller to decide whether to retry or abort.
 
-### Exercise 3: Reproduce a Lost Wakeup
+### Exercise 3: Reproduce Lost Wakeup
 
-Write a program that deliberately constructs a timing where "notify happens before wait." Use `wait` without a predicate, and observe whether the program blocks permanently (it most likely will, depending on scheduling). Then add a predicate to `wait` and confirm that even if the notification is sent first, the program can exit normally. The purpose of this exercise is to let you personally experience the danger of lost wakeups, and why the predicate version of `wait` is mandatory.
+Write a program that intentionally forces a "notify before wait" sequence. Use the raw `wait` (no predicate) and observe if the program hangs permanently (likely, depending on scheduling). Then, add the predicate to `wait` and confirm that even if the notification comes first, the program exits normally. The goal is to experience the danger of lost wakeups firsthand and understand why the predicate `wait` is mandatory.
 
-## Reference Resources
+## References
 
 - [std::condition_variable -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable)
 - [std::condition_variable::wait -- cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/wait)
-- [Condition variable -- Wikipedia (POSIX standard discussion on spurious wakeups)](https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables)
+- [Condition variable -- Wikipedia (Spurious wakeup POSIX discussion)](https://en.wikipedia.org/wiki/Monitor_(synchronization)#Condition_variables)
 - [Why do spurious wakeups happen? -- StackOverflow](https://stackoverflow.com/questions/8594591/why-does-pthreads-cond-wait-have-spurious-wakeups)
 - [C++ Concurrency in Action (2nd Edition) -- Anthony Williams, Chapter 4](https://www.oreilly.com/library/view/c-concurrency-in/9781617294643/)

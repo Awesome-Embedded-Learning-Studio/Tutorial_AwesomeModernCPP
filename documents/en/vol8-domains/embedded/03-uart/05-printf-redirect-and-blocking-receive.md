@@ -8,165 +8,156 @@ tags:
 - beginner
 - cpp-modern
 - stm32f1
-title: 'Part 35: `printf` Redirection and Blocking Receive — Making the Chip Speak
-  with `printf`, and Listen Too'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/03-uart/05-printf-redirect-and-blocking-receive.md
-  source_hash: bfc84034896ca641ead87b2adc1105cac3d20bae8a305e95f3f2c0a7b13b2f2d
-  token_count: 1226
-  translated_at: '2026-05-26T12:15:52.556018+00:00'
+title: 'Part 35: printf Redirection and Blocking Receive — Making the Chip Speak via
+  printf, and Learning to Listen'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/03-uart/05-printf-redirect-and-blocking-receive.md
+  source_hash: 3ea45b20a32cd5ec816b8290e0f0154998fc5478d49ba1c6924b305eecc0a0ef
+  translated_at: '2026-06-16T04:11:50.594570+00:00'
+  engine: anthropic
+  token_count: 1230
 ---
-# Part 35: printf Retargeting and Blocking Receive — Making the Chip Speak with printf, and Learning to Listen
+# Part 35: printf Redirection and Blocking Receive — Making the Chip Speak with printf, and Learning to Listen
 
-> In the previous part, we made the chip speak its first words. In this part, we do two things: redirect `printf` output directly to the serial port, and then try blocking receive — after which you will understand exactly why blocking receive does not work.
-
----
-
-## printf Retargeting: The Principle
-
-If you have used `printf` in an embedded project, you might have noticed that by default, it outputs nothing. This is because `printf` itself does not know where the data should go — it only formats the string and hands the formatted result to a low-level I/O function. On a PC, this low-level function writes data to the terminal; on bare-metal STM32, you need to provide this low-level function yourself.
-
-newlib (the C standard library implementation used by the ARM toolchain) provides a set of retargetable system calls. Among them, `_write` is responsible for writing `len` bytes pointed to by `ptr` to the file descriptor `fd`. When `printf` is called, the formatted string ultimately goes out through `_write`. If we override `_write` to send data to the UART, all `printf` output automatically goes to the serial port.
-
-This mechanism is called "retargeting" — redirecting standard I/O to a custom hardware interface.
+> The previous part made the chip utter its first words. In this part, we will do two things: make `printf` output directly to the serial port, and then attempt blocking receive—after which you will understand why blocking receive doesn't work.
 
 ---
 
-## Line-by-Line Walkthrough of printf_redirect.cpp
+## printf Redirection: The Principle
 
-Here is the complete implementation in our code, only 11 lines:
+If you have used `printf` in an embedded project, you may have noticed that, by default, it outputs nothing. This is because `printf` itself doesn't know where the data should go—it is only responsible for formatting the string, and then handing the formatted result to the underlying I/O functions. On a PC, this underlying function writes data to the terminal; on bare-metal STM32, you need to provide this underlying function yourself.
+
+newlib (the C standard library implementation used by the ARM toolchain) provides a set of system calls that can be redirected. Among them, `_write` is responsible for writing `len` bytes pointed to by `ptr` to the file descriptor `fd`. When `printf` is called, the formatted string is ultimately output through `_write`. If we override `_write` to make it send data to the UART, then all `printf` output will automatically go to the serial port.
+
+This mechanism is called "retargeting"—redirecting standard I/O to custom hardware interfaces.
+
+---
+
+## Line-by-Line Explanation of printf_redirect.cpp
+
+This is our complete implementation in the code, only 11 lines:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/system/printf_redirect.cpp
-#include "device/uart/uart_manager.hpp"
+#include <unistd.h>
+#include <uart.hpp>
 
 extern "C" {
-
-int _write(int fd [[maybe_unused]], char* ptr, int len) {
-    auto* huart = device::uart::UartManager<device::uart::UartInstance::Usart1>::handle();
-    HAL_UART_Transmit(huart, reinterpret_cast<uint8_t*>(ptr), len, HAL_MAX_DELAY);
-    return len;
+    int _write(int fd, const char *ptr, int len) {
+        (void)fd; // Suppress unused parameter warning
+        auto huart = UART::get_handle<1>();
+        HAL_UART_Transmit(huart, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+        return len;
+    }
 }
-
-} // extern "C"
 ```
 
-Line-by-line breakdown:
+Let's break it down line by line:
 
 ### `extern "C"` Block
 
-The function signature of `_write` must appear as a C function in the linker's eyes. This is because newlib uses C linkage to look up this symbol — it expects `_write` to have the exact name `_write` in the symbol table, not something mangled by the C++ compiler like `__Z5_writePvii`. `extern "C"` tells the C++ compiler: "Use C linkage rules for this function, do not perform name mangling."
+The function signature of `_write` must appear to the linker as a C function. This is because newlib uses C linkage to find this symbol—it expects the name of `_write` in the symbol table to be exactly `_write`, not something like `_Z6_write...` after the C++ compiler mangles it. `extern "C"` tells the C++ compiler: "Use C linkage rules for this function, do not perform name mangling."
 
-### `int _write(int fd, char* ptr, int len)`
+### `int _write(int fd, const char *ptr, int len)`
 
-Three parameters: `fd` is the file descriptor (1 = stdout, 2 = stderr), `ptr` points to the data to be sent, and `len` is the data length. We do not need to differentiate the `fd` parameter — whether it is stdout or stderr, everything goes to the same UART.
+Three parameters: `fd` is the file descriptor (1 = stdout, 2 = stderr), `ptr` points to the data to be sent, and `len` is the data length. We don't need to distinguish the `fd` parameter—whether it is stdout or stderr, it is sent to the same UART.
 
-The `[[maybe_unused]]` attribute tells the compiler "I know `fd` is not being used, do not warn." This is a C++17 attribute that expresses the intent much more clearly than the old-style `(void)fd;` approach.
+The `(void)fd;` attribute tells the compiler, "I know `fd` is not being used, don't warn me." This is a C++17 attribute that expresses intent more clearly than old-style comments like `// unused`.
 
-### `auto* huart = UartManager<UartInstance::Usart1>::handle()`
+### `auto huart = UART::get_handle<1>();`
 
-We get the HAL handle pointer for USART1. `handle()` is a static method that returns `UART_HandleTypeDef*` — the parameter required by all UART functions in the HAL library. We obtain the handle through `handle()` rather than using the global variable `huart1`. The benefit of this approach is that the handle's lifetime and access permissions are entirely managed by the C++ type system, with zero global state leakage.
+Get the HAL handle pointer for USART1. `get_handle<1>` is a static method that returns a `UART_HandleTypeDef*`—this is the parameter required by all UART functions in the HAL library. We obtain the handle through `get_handle` instead of using a global variable `huart1`. The benefit of this is that the lifetime and access permissions of the handle are entirely managed by the C++ type system, with no global state leakage.
 
-### `HAL_UART_Transmit(huart, ...)`
+### `HAL_UART_Transmit(...)`
 
-Blocking send. This is exactly the same as what we discussed in the previous part — it sends out `len` bytes one by one and only returns when finished. Because we use `HAL_MAX_DELAY`, it will never time out.
+Blocking transmission. Exactly the same as discussed in the previous part—it sends `len` bytes one by one and returns only after completion. Because `HAL_MAX_DELAY` is used, it will never time out.
 
-### `return len`
+### `return len;`
 
-Return the number of bytes actually written. This tells the C library "all data was successfully written." If you return -1 or 0, the C library might assume an error occurred.
+Return the number of bytes actually written. Tell the C library "all data was successfully written." If -1 or 0 is returned, the C library might assume an error occurred.
 
 ---
 
 ## The Power of printf
 
-With this retargeting in place, any `printf` call in your code will automatically output to the serial port:
+With this redirection, any `printf` call in your code will automatically output to the serial port:
 
-```c
-printf("System initialized at %lu Hz\r\n", SystemCoreClock);
-printf("Button pressed! Count: %d\r\n", count);
-printf("Temperature: %d.%d C\r\n", temp / 10, temp % 10);
+```cpp
+printf("System started!\r\n");
+printf("ADC Value: %d\r\n", adc_result);
+printf("Status: %s\r\n", error ? "FAIL" : "OK");
 ```
 
-This is far more convenient than manually concatenating strings and calling `HAL_UART_Transmit`. This is especially true for formatted output — format specifiers like `%d`, `%x`, and `%s` let you directly output numbers, hexadecimal values, and strings without writing your own `itoa` and string concatenation routines.
+This is much more convenient than manually splicing strings and then calling `HAL_UART_Transmit`. Especially for formatted output—format specifiers like `%d`, `%x`, and `%s` allow you to directly output numbers, hexadecimal values, and strings without writing `itoa` and string concatenation yourself.
 
-However, there is one thing to note: our CMakeLists.txt uses the `-specs=nano.specs` linker option. This option uses a stripped-down C library to save Flash space, but the tradeoff is that **it does not support floating-point `printf`**. In other words, `printf("%f", 3.14)` will not output the correct result. If you need to output floating-point numbers, you can either simulate it with integers (`printf("%d.%02d", 3, 14)`), or switch to the full `newlib` implementation (remove `-specs=nano.specs`, but Flash usage will increase significantly).
+However, there is one caveat: our CMakeLists.txt uses the `-specs=nano.specs` linker option. This option uses a reduced version of the C library to save Flash space, at the cost of **not supporting floating point `printf`**. This means that `printf("%f", 3.14)` will not output the correct result. If you need to output floating point numbers, either simulate with integers (e.g., output 314 as an integer), or switch to the full `newlib` implementation (remove `-specs=nano.specs`, but Flash usage will increase significantly).
 
 ---
 
 ## Blocking Receive: HAL_UART_Receive
 
-With sending sorted out, let us look at receiving. The HAL library provides a blocking receive function that is symmetric to `HAL_UART_Transmit`:
+With sending sorted, let's look at receiving. The HAL library provides a blocking receive function symmetric to `HAL_UART_Transmit`:
 
-```c
-uint8_t byte;
-HAL_StatusTypeDef result = HAL_UART_Receive(&huart1, &byte, 1, HAL_MAX_DELAY);
-if (result == HAL_OK) {
-    printf("Received: 0x%02X\r\n", byte);
+```cpp
+uint8_t rx_data;
+HAL_UART_Receive(&huart1, &rx_data, 1, HAL_MAX_DELAY);
+printf("Received: %c\r\n", rx_data);
+```
+
+`HAL_UART_Receive` waits to receive the specified number of bytes. The code above waits to receive 1 byte, and prints it after receipt. If it times out (never with `HAL_MAX_DELAY`), it returns `HAL_TIMEOUT`.
+
+Sounds reasonable, right? But let's put this receive into a complete main loop and see what happens:
+
+```cpp
+while (true) {
+    uint8_t rx_data;
+    // This line blocks forever!
+    HAL_UART_Receive(&huart1, &rx_data, 1, HAL_MAX_DELAY);
+    printf("Received: %c\r\n", rx_data);
+
+    // Button polling, LED blinking...
+    // None of this code runs until data arrives!
+    button.poll();
+    led.toggle();
+    osDelay(100);
 }
 ```
 
-`HAL_UART_Receive` waits to receive the specified number of bytes. The code above waits to receive one byte, and prints it after it arrives. If it times out (which will never happen with `HAL_MAX_DELAY`), it returns `HAL_TIMEOUT`.
+The problem is obvious: `HAL_UART_Receive` will **block forever** until a byte is received. If the PC side doesn't send any data, none of the code after this line will execute. Button polling stops, the LED stops flashing, the whole system "freezes," waiting for a byte that may never come.
 
-Sounds reasonable, right? But let us put this receive into a complete main loop and see what happens:
+This is the same essential problem as `HAL_GPIO_ReadPin` blocking the system in the button tutorial—your main loop is stuck on a call that might not return for a long time. In the button tutorial, the solution was non-blocking debouncing (using `millis()` for timestamp management). For UART receive, the solution is—interrupts.
 
-```c
-while (1) {
-    uint8_t byte;
-    HAL_UART_Receive(&huart1, &byte, 1, HAL_MAX_DELAY);
-    // 处理接收到的字节...
-    process_byte(byte);
+You might think: "Can't I just set the timeout shorter? Like 100 milliseconds."
 
-    // 检查按钮
-    button_poll();  // <-- 这行永远不会执行，直到收到下一个字节！
-
-    // 闪烁 LED
-    led_toggle();   // <-- 同上
+```cpp
+// Receive with 100ms timeout
+if (HAL_OK == HAL_UART_Receive(&huart1, &rx_data, 1, 100)) {
+    printf("Received: %c\r\n", rx_data);
 }
 ```
 
-The problem is obvious: `HAL_UART_Receive` will **block forever** until it receives a byte. If the PC side does not send any data, none of the code after this line will execute. Button polling stops, the LED stops blinking, and the entire system "freezes," waiting for a byte that might never come.
+This does allow the main loop to keep running, but it introduces new problems. A 100-millisecond timeout means your button polling interval becomes, at worst, 100 milliseconds—which might be too slow for fast button presses. Also, every call to `HAL_UART_Receive` reconfigures the receive registers, and frequent configuration/timeout/reconfiguration wastes CPU time. This is not an elegant solution.
 
-This is the same fundamental issue as `HAL_Delay` blocking the system in the button tutorial — your main loop gets stuck on a call that might not return for a long time. In the button tutorial, the solution was non-blocking debounce (using timestamps managed by `HAL_GetTick`). For UART receive, the solution is — interrupts.
-
-You might think: "Could I just set a shorter timeout? Like 100 milliseconds."
-
-```c
-while (1) {
-    uint8_t byte;
-    HAL_StatusTypeDef result = HAL_UART_Receive(&huart1, &byte, 1, 100);
-    if (result == HAL_OK) {
-        process_byte(byte);
-    }
-    // 即使没收到数据，100ms 后也会返回
-    button_poll();
-    led_toggle();
-}
-```
-
-This does let the main loop continue running, but it introduces new problems. A 100-millisecond timeout means your button polling interval becomes 100 milliseconds in the worst case — which might be too slow for fast button presses. Furthermore, every call to `HAL_UART_Receive` reconfigures the receive registers, and frequent configure/timeout/reconfigure cycles waste CPU time. This is not an elegant solution.
-
-The correct approach is to let the hardware proactively notify the CPU when data arrives, rather than having the CPU actively wait. This is interrupt-driven receive — the core theme of this series.
+The correct solution is to let the hardware actively notify the CPU when data arrives, rather than the CPU actively waiting. This is interrupt-driven receive—the core theme of this series.
 
 ---
 
 ## From Blocking to Interrupt: The Essence of the Problem
 
-Let us take a step back and see the essence of the problem clearly.
+Let's take a step back and see the essence of the problem clearly.
 
-Blocking send is actually not a big issue. You actively send data, you decide how fast to send it, and you move on to other things once it is done. The blocking time is predictable — at 115200 baud, one byte takes 87 microseconds, and sending a 100-byte log message takes only 8.7 milliseconds. This is perfectly acceptable in debugging scenarios.
+Blocking transmission isn't actually a big issue. You actively send data, you decide how fast, and when you're done, you continue with other tasks. The blocking time is predictable—at 115200 baud, one byte is 87 microseconds, and sending a 100-byte log takes just 8.7 milliseconds. This is perfectly acceptable in debugging scenarios.
 
-Blocking receive is completely different. Receiving is a passive behavior — you do not know when the data will arrive. It might come in the next millisecond, or it might not come for ten minutes. If you choose to wait (block), the system can do nothing during the wait. If you choose not to wait (timeout), there is a contradiction between the check frequency and system responsiveness — checking too frequently wastes CPU, and checking too slowly causes you to miss data.
+Blocking receive is completely different. Receiving is a passive behavior—you don't know when data will come, it might be in the next millisecond, or it might not come for ten minutes. If you choose to wait (block), the system can't do anything during the wait. If you choose not to wait (timeout), there is a conflict between checking frequency and system response—checking too frequently wastes CPU, checking too slowly misses data.
 
-The general solution to this problem is to change receiving from "the main loop actively asking" to "the hardware proactively notifying." When data arrives, the hardware generates an interrupt signal, the CPU pauses its current task to handle this byte, and then returns to what it was doing. The main loop does not need to wait, does not need to poll, and does not need to trade off between "timely response" and "not wasting CPU."
+The universal solution to this problem is: make the act of receiving change from "main loop actively asking" to "hardware actively notifying". When data arrives, the hardware generates an interrupt signal, the CPU pauses the current task to handle this byte, and then returns. The main loop doesn't need to wait, doesn't need to poll, and doesn't need to trade off between "timely response" and "not wasting CPU."
 
-This is what the next three parts will cover. Part 36 discusses the Cortex-M3 interrupt mechanism and NVIC configuration. Part 37 designs a lock-free ring buffer to safely connect the ISR and the main loop. Part 38 strings the complete callback chain together.
+This is what the next three parts will cover. Part 36 discusses the Cortex-M3 interrupt mechanism and NVIC configuration. Part 37 designs a lock-free ring buffer to safely connect the ISR and the main loop. Part 38 strings together the complete callback chain.
 
 ---
 
 ## Summary
 
-In this part, we did two things. printf retargeting allows us to use the familiar `printf` for formatted output to the serial port, significantly improving the debugging experience. Blocking receive let us see with our own eyes the fatal problem of "waiting for data" — the main loop freezes. The existence of this problem is not a bug, but a fundamental limitation of blocking I/O.
+In this part, we did two things. printf redirection allows us to use the familiar `printf` for formatted output to the serial port, greatly improving the debugging experience. Blocking receive showed us the fatal problem of "waiting for data"—the main loop freezes. The existence of this problem is not a bug, but a fundamental limitation of blocking I/O.
 
-In the next part, we enter the core phase of this series: interrupts. We will first clarify how the Cortex-M3 interrupt hardware works, and then gradually build a complete interrupt-driven receive system.
+In the next part, we enter the core stage of this series: interrupts. First, we clarify how the Cortex-M3 interrupt hardware works, and then we gradually build a complete interrupt-driven receive system.

@@ -4,7 +4,7 @@ cpp_standard:
 - 20
 - 23
 description: Non-owning view of a contiguous sequence, a zero-overhead alternative
-  to passing pointer and length
+  to passing pointer and length arguments
 difficulty: beginner
 order: 1
 reading_time_minutes: 2
@@ -14,17 +14,17 @@ tags:
 - beginner
 title: std::span
 translation:
-  engine: anthropic
   source: documents/cpp-reference/containers/01-span.md
-  source_hash: 08998f44d647e2c9ee6712ca4342ea677f4175754905abfb5e8db85473ef2cd7
-  token_count: 472
-  translated_at: '2026-06-15T09:06:03.340062+00:00'
+  source_hash: eaaf5fb818f874e391db98bc97b1e7e222554259ccfceb053bbf630629b64702
+  translated_at: '2026-06-16T03:28:09.929344+00:00'
+  engine: anthropic
+  token_count: 475
 ---
 # std::span (C++20)
 
-## In a nutshell
+## In a Nutshell
 
-A lightweight, non-owning view that safely references a contiguous sequence of memory, replacing the traditional method of passing pointers alongside length parameters.
+A lightweight, non-owning view for safely referencing a contiguous sequence of memory, serving as a modern replacement for passing traditional pointer-plus-length arguments.
 
 ## Header
 
@@ -36,14 +36,14 @@ A lightweight, non-owning view that safely references a contiguous sequence of m
 |-----------|-----------|-------------|
 | Constructor | `template<class T, size_t E = dynamic_extent> class span` | Template class supporting static or dynamic extent |
 | Get pointer | `T* data() const` | Access underlying contiguous storage |
-| Element count | `size_t size() const` | Returns the number of elements |
-| Byte size | `size_t size_bytes() const` | Returns the size of the sequence in bytes |
+| Element count | `size_t size() const` | Returns number of elements |
+| Byte size | `size_t size_bytes() const` | Returns size in bytes of the sequence |
 | Is empty | `bool empty() const` | Checks if the sequence is empty |
 | Subscript | `reference operator[](size_t idx) const` | Access specified element (no bounds checking) |
 | First element | `reference front() const` | Access the first element |
 | Last element | `reference back() const` | Access the last element |
 | Take first N | `template<size_t C> constexpr span<element_type, C> first() const` | Get a sub-view of the first N elements |
-| Take sub-view | `template<size_t O, size_t C> constexpr span<element_type, C> subspan() const` | Get a sub-view with specified offset and length |
+| Subspan | `template<size_t O, size_t C> constexpr span<element_type, C> subspan() const` | Get a sub-view with specified offset and length |
 
 ## Minimal Example
 
@@ -68,16 +68,16 @@ int main() {
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: Only contains a pointer and a size (or compile-time constant extent), with no heap allocation.
-- Perfect replacement for raw pointer parameters: Unifies interfaces for arrays, `std::array`, and `std::vector`, improving safety.
-- `TriviallyCopyable` type (explicitly required in C++23, met by mainstream implementations prior), making it safe for use with ISRs and DMA buffers.
-- `size_bytes()` and `as_bytes()` greatly simplify hardware register mapping and low-level byte-level data processing.
+- Zero-overhead abstraction: Contains only a pointer and a size (or compile-time constant size), with no heap allocation.
+- Perfect replacement for raw pointer arguments: Unifies interfaces for arrays, `std::array`, and `std::vector`, enhancing safety.
+- Trivially copyable type (explicitly required since C++23, though mainstream implementations already satisfied this), making it safe for use with ISRs and DMA buffers.
+- `std::as_bytes` and `std::as_writable_bytes` significantly simplify hardware register mapping and low-level byte-oriented data processing.
 
 ## Compiler Support
 
 | GCC | Clang | MSVC |
 |-----|-------|------|
-| TBD | TBD | TBD |
+| TBA | TBA | TBA |
 
 ## See Also
 

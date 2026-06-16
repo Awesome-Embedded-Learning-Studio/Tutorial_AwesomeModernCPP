@@ -2,8 +2,8 @@
 chapter: 99
 cpp_standard:
 - 23
-description: A type-safe wrapper holding either a normal value or error information,
-  replacing exceptions and dual-return-value patterns
+description: Type-safe wrapper for holding normal values or error information, replacing
+  exceptions and dual return value patterns
 difficulty: intermediate
 order: 5
 reading_time_minutes: 2
@@ -14,84 +14,84 @@ tags:
 - expected
 title: std::expected
 translation:
-  engine: anthropic
   source: documents/cpp-reference/memory/05-expected.md
-  source_hash: 445e0cacc91a4636be0b4f70b6fc5b25b3a02e2deae1173b09406670529226c7
-  token_count: 634
-  translated_at: '2026-05-26T10:18:10.339930+00:00'
+  source_hash: 216bd3947b36d90ef096a54181bcad6d17d952bf40ca92fdc8bb27b6f92b1d66
+  translated_at: '2026-06-16T03:30:07.197098+00:00'
+  engine: anthropic
+  token_count: 637
 ---
 <!--
 Reference Card Template
-Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
+For feature cheat sheets under documents/cpp-reference/.
+Unlike article-template.md, reference cards use a refined, structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
+1. Must include 1 platform tag (use 'host' for reference cards)
+2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
 # std::expected (C++23)
 
-## In a Nutshell
+## In a nutshell
 
-Either holds an expected normal value `T`, or an unexpected error `E`—a type-safe, zero-overhead error propagation mechanism that replaces exceptions and the `std::pair<T, Error>` pattern.
+Either holds an expected value `T` or an unexpected error `E`—a type-safe, zero-overhead error propagation mechanism that replaces exceptions and the `error_code` pattern.
 
 ## Header
 
-`#include <expected>`
+```cpp
+#include <expected>
+```
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|------|------|------|
-| Construct (success value) | `expected(T value)` | Wraps a normal value |
-| Construct (error) | `expected(unexpect_t, E err)` | Wraps an error (`std::unexpected{err}`) |
-| Check for success | `bool has_value() const noexcept` | Whether it holds a normal value |
-| Implicit bool conversion | `explicit operator bool() const noexcept` | Same as has_value |
-| Get value | `T& value()` | Gets a reference to the normal value (throws on failure) |
-| Get error | `const E& error() const` | Gets a reference to the error |
-| Dereference | `T& operator*()` | Gets the normal value (unchecked, undefined behavior if error) |
-| Chained transform | `auto transform(F&& f)` | If it has a value, applies f to the value and wraps the result |
-| Chained error handling | `auto and_then(F&& f)` | If it has a value, calls f and returns its expected result |
-| Error branch | `auto or_else(F&& f)` | If it has an error, calls f to handle the error |
-| Error transform | `auto transform_error(F&& f)` | If it has an error, applies f to the error |
-| Create success value | `std::expected<T, E>(value)` | Factory: directly constructs a success |
-| Create error value | `std::unexpected{err}` | Factory: constructs unexpected for implicit conversion to expected |
+|-----------|-----------|-------------|
+| Construct (success) | `expected(T)` | Wraps a normal value |
+| Construct (error) | `expected(unexpected<E>)` | Wraps an error (`std::unexpected`) |
+| Check success | `has_value()` | Whether it holds a normal value |
+| Implicit bool conversion | `operator bool()` | Same as `has_value` |
+| Get value | `value()` | Gets reference to normal value (throws exception on failure) |
+| Get error | `error()` | Gets reference to the error |
+| Dereference | `operator*()` | Gets normal value (unchecked, undefined behavior if error) |
+| Chain transform | `transform(f)` | If has value, applies `f` to value and wraps result |
+| Chain error handling | `and_then(f)` | If has value, calls `f` and returns its `expected` result |
+| Error branch | `or_else(f)` | If has error, calls `f` to handle error |
+| Error transform | `transform_error(f)` | If has error, applies `f` to error |
+| Create success value | `make_expected(T)` | Factory: directly constructs success |
+| Create error value | `make_unexpected(E)` | Factory: constructs `unexpected` for implicit conversion to `expected` |
 
 ## Minimal Example
 
 ```cpp
-// Standard: C++23
 #include <expected>
 #include <iostream>
 #include <string>
 
-std::expected<int, std::string> divide(int a, int b) {
-    if (b == 0) return std::unexpected{"division by zero"};
-    return a / b;
+std::expected<int, std::string> parse_int(std::string_view str) {
+    if (str.empty()) return std::unexpected("Empty string");
+    // ... parsing logic ...
+    return 42; // Success
 }
 
 int main() {
-    auto r1 = divide(10, 3);
-    if (r1) std::cout << *r1 << "\n"; // 3
-
-    auto r2 = divide(10, 0);
-    if (!r2) std::cout << r2.error() << "\n"; // division by zero
-
-    // 链式调用
-    auto r3 = divide(20, 4).transform([](int v) { return v * 2; });
-    std::cout << *r3 << "\n"; // 10
+    auto result = parse_int("123");
+    if (result) {
+        std::cout << "Value: " << result.value() << "\n";
+    } else {
+        std::cerr << "Error: " << result.error() << "\n";
+    }
+    return 0;
 }
 ```
 
 ## Embedded Applicability: High
 
-- Zero-overhead abstraction: size equals `sizeof(T) + sizeof(E)` plus a discriminant flag, no heap allocation
-- Replaces exception handling mechanisms, suitable for embedded environments with exceptions disabled (`-fno-exceptions`)
-- More type-safe than the error code + output parameter pattern, forcing the caller to handle errors
-- Chained operations (transform/and_then) can compose complex business flows while keeping the code linearly readable
+- Zero-overhead abstraction: size equals `max(sizeof(T), sizeof(E))` plus a discriminator flag, no heap allocation.
+- Replaces exception handling mechanisms, suitable for embedded environments with exceptions disabled (`-fno-exceptions`).
+- More type-safe than the `error_code` + output parameter pattern, forcing the caller to handle errors.
+- Chaining operations (`transform`/`and_then`) allows composing complex workflows while keeping code linear and readable.
 
 ## Compiler Support
 
@@ -106,4 +106,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*

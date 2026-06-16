@@ -2,9 +2,9 @@
 chapter: 1
 cpp_standard:
 - 11
-description: Master the declaration and use of function pointers, understand the application
-  of the callback function pattern in event-driven programming, and compare C++ lambda
-  expressions and `std::function`.
+description: Master the declaration and usage of function pointers, understand the
+  application of the callback function pattern in event-driven programming, and compare
+  C++ lambda expressions and std::function.
 difficulty: beginner
 order: 13
 platform: host
@@ -20,79 +20,70 @@ tags:
 - 入门
 title: Function Pointers and the Callback Pattern
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/c_tutorials/09-function-pointers-and-callbacks.md
-  source_hash: 7d2e4310adaaf99e9b72ad2e76c4ca8f701f2e7dffeadfd149b69579480fa86b
+  source_hash: 72179d3582f6fc37c0503f4cc3cce524bab303a276cc4fc8c1852dc5436e6519
+  translated_at: '2026-06-16T04:37:47.353631+00:00'
+  engine: anthropic
   token_count: 1866
-  translated_at: '2026-05-26T10:31:21.790654+00:00'
 ---
 # Function Pointers and the Callback Pattern
 
-If pointers are the most powerful feature in C, then function pointers are the part of the pointer world most likely to send your blood pressure through the roof. But honestly, once you grasp them, you will find they are one of the few mechanisms in C that let you write code "so flexible it doesn't feel like C"—callbacks, event-driven design, the strategy pattern; these concepts sound like they belong to high-level languages, but in C, they all rely on function pointers to make things happen.
+If pointers are the most powerful feature of C, then function pointers are arguably the most blood-pressure-raising aspect of the pointer world. But honestly, once you master them, you will find they are one of the few mechanisms in C that allow you to write code that is "flexible enough to not feel like C"—callbacks, event-driven programming, the strategy pattern; these concepts that sound like they belong in high-level languages are all supported in C thanks to function pointers.
 
-In previous tutorials, we systematically covered various uses of pointers. Now, we will tackle the tough nut that is function pointers. We will start with declaration syntax and basic usage, move on to arrays of function pointers and the callback pattern, and finally look at the comfortable improvements C++ has made in this direction.
+We have systematically covered various pointer usages in previous tutorials. In this chapter, we will tackle this hard nut: function pointers. We will start with declarations and basic usage, move on to arrays of function pointers and the callback pattern, and finally look at the comfortable improvements C++ has made in this area.
 
 > **Learning Objectives**
 >
 > - After completing this chapter, you will be able to:
-> - [ ] Understand function pointer declaration syntax and use it correctly
-> - [ ] Use typedef to simplify complex function pointer types
-> - [ ] Implement a callback-based sorting interface similar to qsort
-> - [ ] Build a simple event dispatch system
-> - [ ] Understand the C++ equivalents: std::function, lambda expressions, and function objects
+> - [ ] Understand function pointer declaration syntax and use it correctly.
+> - [ ] Use `typedef` to simplify complex function pointer types.
+> - [ ] Implement a callback-based sorting interface similar to `qsort`.
+> - [ ] Build a simple event dispatch system.
+> - [ ] Understand the corresponding relationships in C++ regarding `std::function`, lambdas, and function objects.
 
 ## Environment Setup
 
-All code in this article has been verified under the following environment:
+All code in this chapter has been verified in the following environment:
 
 - **Operating System**: Linux (Ubuntu 22.04+) / WSL2 / macOS
-- **Compiler**: GCC 11+ (confirm version via `gcc --version`)
-- **Compiler flags**: `gcc -Wall -Wextra -std=c11` (enable warnings, specify C11 standard)
-- **Verification**: All code can be compiled and run directly
+- **Compiler**: GCC 11+ (Confirm version via `gcc --version`)
+- **Compiler Flags**: `gcc -Wall -Wextra -std=c11` (Enable warnings, specify C11 standard)
+- **Verification**: All code can be compiled and run directly.
 
-## Step 1 — Treating Functions as Data
+## Step 1 — Using Functions as Data
 
-In C, a compiled function is just a sequence of machine instructions residing in the code segment of memory. Since it lives in memory, it has an address—the function name itself (when not followed by call parentheses) is a pointer to this address. We can store this address and use it to call the function when needed.
+In C, a function compiles into a segment of machine instructions residing in the code section of memory. Since it resides in memory, it has an address—the function name itself (when not followed by invocation parentheses) is a pointer to this address. We can store this address and use it to invoke the function when needed.
 
-### Learning to Declare Function Pointers
+### Learn to Declare Function Pointers First
 
-Function pointer declaration syntax is widely regarded as one of C's most "anti-human" designs. Let's bite the bullet and take a look:
+The declaration syntax for function pointers is notoriously one of C's "anti-human" designs. Let's grit our teeth and look at it:
 
-```c
-// 假设有一个函数：int add(int a, int b)
-// 它的函数指针类型声明如下：
-int (*op_ptr)(int, int);
+```cpp
+// Declaration: ptr is a pointer to a function taking two ints and returning an int
+int (*ptr)(int, int);
 ```
 
-Let's break down this declaration: `op_ptr` is a pointer (because `*op_ptr` is enclosed in parentheses), and it points to a function that takes two `int` parameters and returns an `int`. Those parentheses cannot be omitted—if written as `int *op_ptr(int, int)`, the compiler interprets it as "a function named `op_ptr` that returns a `int*`", which is a completely different thing.
+Let's break down this declaration: `ptr` is a pointer (because `*ptr` is enclosed in parentheses). It points to a function that accepts two `int` parameters and returns an `int`. Those parentheses cannot be omitted—if you write `int *ptr(int, int)`, the compiler interprets it as "a function named `ptr` that returns an `int pointer`," which is completely different.
 
-> ⚠️ **Pitfall Warning**: When declaring a function pointer, the parentheses around `(*op_ptr)` **must never be omitted**. Omitting them turns the declaration into a function returning a pointer. The compiler will not raise an error, but the behavior will be completely different. This is one of the most common mistakes beginners make.
+> ⚠️ **Warning**: When declaring a function pointer, the parentheses around `(*ptr)` **must never be omitted**. Omitting them turns it into a declaration of a function returning a pointer. The compiler might not error, but the behavior will be completely different. This is one of the most common mistakes for newcomers.
 
-Once we have the pointer, assignment and invocation are straightforward:
+Once we have the pointer, assignment and invocation are natural:
 
-```c
+```cpp
 #include <stdio.h>
 
-int add(int a, int b)
-{
+int add(int a, int b) {
     return a + b;
 }
 
-int subtract(int a, int b)
-{
-    return a - b;
-}
+int main() {
+    // ptr points to the function 'add'
+    int (*ptr)(int, int) = add;
 
-int main(void)
-{
-    int (*op_ptr)(int, int) = add;     // 函数名就是地址，不需要 &
-    printf("%d\n", op_ptr(10, 5));      // 15
+    // Call the function via the pointer
+    int result = ptr(10, 20);
+    printf("Result: %d\n", result);
 
-    op_ptr = subtract;                  // 指向另一个函数
-    printf("%d\n", op_ptr(10, 5));      // 5
-
-    // 通过指针调用也可以显式解引用，两种写法等价
-    printf("%d\n", (*op_ptr)(20, 8));   // 12
     return 0;
 }
 ```
@@ -100,51 +91,60 @@ int main(void)
 Output:
 
 ```text
-15
-5
-12
+Result: 30
 ```
 
-In most contexts, a function name implicitly converts to a function pointer, just as an array name decays into a pointer to its first element, so `op_ptr = add` does not need the address-of operator. When calling, `op_ptr(10, 5)` and `(*op_ptr)(10, 5)` are completely equivalent—the C standard states that function pointers are automatically dereferenced.
+In most contexts, a function name implicitly converts to a function pointer, just like an array name "decays" into a pointer to its first element. Therefore, `add` does not need the address-of operator `&`. When calling, `ptr(10, 20)` and `(*ptr)(10, 20)` are completely equivalent—the C standard states that function pointers are automatically dereferenced.
 
-### Making Declarations Readable with typedef
+### Use `typedef` to Make Declarations Readable
 
-Function pointer declaration syntax is not very friendly. Once types get complex or need to be used in multiple places, a screen full of `int (*)(int, int)` is pure torture. `typedef` is our savior—it does not create a new type, it simply gives an alias to an existing one:
+The syntax for declaring function pointers is unfriendly. Once types get complex or need to be used in multiple places, a screen full of `int (*)(int, int)` is torture. `typedef` is our savior—it doesn't create a new type but gives an alias to an existing one:
 
-```c
-// 给"接受两个int、返回int的函数指针"起个别名
-typedef int (*BinaryOp)(int, int);
+```cpp
+// Define an alias named 'Operation' for 'int (*)(int, int)'
+typedef int (*Operation)(int, int);
 
-// 现在声明变量就像普通类型一样自然
-BinaryOp op = add;
-printf("%d\n", op(3, 4));  // 7
+int add(int a, int b) { return a + b; }
+int sub(int a, int b) { return a - b; }
+
+int main() {
+    // Now the declaration is much cleaner
+    Operation op = add;
+    printf("10 + 20 = %d\n", op(10, 20));
+
+    op = sub;
+    printf("10 - 20 = %d\n", op(10, 20));
+
+    return 0;
+}
 ```
 
-We strongly recommend using typedef to manage function pointers whenever they appear in a project. Especially in API design for callback interfaces, typedef not only simplifies writing function signatures but also significantly improves the self-documenting nature of header files.
+It is highly recommended to use `typedef` to manage function pointers whenever they appear in a project. Especially in API design for callback interfaces, `typedef` not only simplifies writing function signatures but also improves the self-documenting nature of header files.
 
-## Step 2 — Batch Dispatch with Arrays of Function Pointers
+## Step 2 — Batch Dispatching with Arrays of Function Pointers
 
-Function pointers can do more than just store a single function address—by packing multiple function pointers into an array, we can use an index to select which function to call. This pattern is extremely practical in scenarios like command dispatch and state machine jump tables:
+Function pointers can do more than just store a single function address—by stuffing multiple function pointers into an array, we can use an index to select which function to invoke. This pattern is very useful in scenarios like command dispatching or state machine jump tables:
 
-```c
+```cpp
 #include <stdio.h>
 
-typedef int (*BinaryOp)(int, int);
+int add(int a, int b) { return a + b; }
+int sub(int a, int b) { return a - b; }
+int mul(int a, int b) { return a * b; }
+int div(int a, int b) { return a / b; }
 
-int add(int a, int b)      { return a + b; }
-int subtract(int a, int b) { return a - b; }
-int multiply(int a, int b) { return a * b; }
-int divide(int a, int b)   { return b != 0 ? a / b : 0; }
+// Array of function pointers
+int (*operations[])(int, int) = { add, sub, mul, div };
 
-int main(void)
-{
-    BinaryOp operations[] = { add, subtract, multiply, divide };
-    const char* op_names[] = { "+", "-", "*", "/" };
+int main() {
+    int a = 10, b = 5;
 
-    int x = 20, y = 4;
+    // Iterate through the operation table
     for (int i = 0; i < 4; i++) {
-        printf("%d %s %d = %d\n", x, op_names[i], y, operations[i](x, y));
+        int result = operations[i](a, b);
+        printf("Operation %d result: %d\n", i, result);
     }
+
     return 0;
 }
 ```
@@ -152,52 +152,46 @@ int main(void)
 Output:
 
 ```text
-20 + 4 = 24
-20 - 4 = 16
-20 * 4 = 80
-20 / 4 = 5
+Operation 0 result: 15
+Operation 1 result: 5
+Operation 2 result: 50
+Operation 3 result: 2
 ```
 
-This "operation table" pattern is very common in embedded firmware—for example, if we have a set of serial port commands where each command corresponds to a handler function, we can organize these function pointers into an array by command ID. Upon receiving a command, a single `handlers[cmd_id](args)` call handles the dispatch.
+This "operation table" pattern is common in embedded firmware. For example, if you have a set of serial commands, each corresponding to a handler function, you can index these function pointers by command ID. When a command is received, dispatching is done in a single line: `handlers[cmd_id](data)`.
 
-> ⚠️ **Pitfall Warning**: When using an array of function pointers for dispatch, we must always check whether the index is out of bounds. If `cmd_id` exceeds the array range, we will access either a garbage address or NULL—calling it directly results in a segmentation fault.
+> ⚠️ **Warning**: When using an array of function pointers for dispatching, always check if the index is out of bounds. If `cmd_id` exceeds the array range, you will access either a garbage address or `NULL`—calling it directly will cause a segmentation fault.
 
-## Step 3 — Mastering the Callback Function Pattern
+## Step 3 — Master the Callback Pattern
 
-Where function pointers truly shine is in **callbacks**. The core idea of a callback is simple: we pass the address of a function to you, and you call it on our behalf at the right time. In plain terms, it means "call back later"—the caller does not directly execute a certain piece of logic, but instead "registers" this logic with the callee, who triggers it when needed.
+Where function pointers truly shine is in **callbacks**. The core idea of a callback is simple: I pass you a function's address, and you call it on my behalf at the appropriate time. In plain English, it means "call me back"—the caller does not execute a piece of logic directly, but instead "registers" this logic with the callee, who triggers it when needed.
 
-### Understanding Callbacks through qsort
+### Understanding Callbacks via `qsort`
 
-The `qsort` function from the C standard library is the most classic, textbook-level example of the callback pattern:
+The C standard library's `qsort` function is a textbook example of the callback pattern:
 
-```c
-void qsort(void* base, size_t nmemb, size_t size,
-           int (*compar)(const void*, const void*));
-```
-
-The first three parameters are the starting address of the array, the number of elements, and the size of each element. The last parameter is a comparison function pointer—whenever `qsort` needs to compare the relative size of two elements during the sorting process, it calls this function.
-
-```c
+```cpp
 #include <stdio.h>
 #include <stdlib.h>
 
-int compare_asc(const void* a, const void* b)
-{
-    int ia = *(const int*)a;
-    int ib = *(const int*)b;
-    return ia - ib;
+// Comparison function: returns <0, 0, or >0
+int compare_ints(const void *a, const void *b) {
+    int arg1 = *(const int *)a;
+    int arg2 = *(const int *)b;
+    return (arg1 > arg2) - (arg1 < arg2);
 }
 
-int main(void)
-{
-    int numbers[] = { 42, 12, 7, 89, 23, 55, 3 };
-    size_t count = sizeof(numbers) / sizeof(numbers[0]);
+int main() {
+    int data[] = { 5, 2, 9, 1, 5, 6 };
+    int n = sizeof(data) / sizeof(data[0]);
 
-    qsort(numbers, count, sizeof(int), compare_asc);
-    for (size_t i = 0; i < count; i++) {
-        printf("%d ", numbers[i]);
-    }
+    // Pass the function pointer to qsort
+    qsort(data, n, sizeof(int), compare_ints);
+
+    for (int i = 0; i < n; i++)
+        printf("%d ", data[i]);
     printf("\n");
+
     return 0;
 }
 ```
@@ -205,120 +199,154 @@ int main(void)
 Output:
 
 ```text
-3 7 12 23 42 55 89
+1 2 5 5 6 9
 ```
 
-The sorting logic itself (the implementation of `qsort`) did not change at all; we simply swapped in a different comparison function, and the sorting result was completely different. This is the power of callbacks—**decoupling algorithms from strategies**.
+The first three parameters are the array start address, the number of elements, and the size of each element. The last parameter is a pointer to a comparison function—whenever `qsort` needs to compare two elements during the sorting process, it calls this function.
 
-> ⚠️ **Pitfall Warning**: The comparison function of `qsort` receives `const void*`, and its return value follows the convention "return negative if left is less than right, zero if equal, positive if left is greater than right." If we write the comparison logic backwards, the sorted result will be out of order—and there will be no compile-time warnings.
+```cpp
+int compare_desc(const void *a, const void *b) {
+    return compare_ints(b, a); // Reverse order
+}
 
-## Step 4 — Building an Event Dispatch System
+// ... inside main ...
+qsort(data, n, sizeof(int), compare_desc);
+```
 
-Let's combine the function pointers, typedefs, and arrays of function pointers we learned earlier to build a simple event dispatch system:
+Output:
 
-```c
+```text
+9 6 5 5 2 1
+```
+
+The sorting logic itself (the implementation of `qsort`) remains completely unchanged. We simply swapped the comparison function, and the sorting result is completely different. This is the power of callbacks—**decoupling algorithms from strategies**.
+
+> ⚠️ **Warning**: `qsort`'s comparison function receives `const void*`. The return value follows the convention: "left less than right returns negative, equal returns 0, left greater than right returns positive." If you write the comparison logic backwards, the result will be unsorted—and there will be no compile-time warnings.
+
+## Step 4 — Build an Event Dispatch System
+
+Let's combine function pointers, `typedef`, and arrays of function pointers to build a simple event dispatch system:
+
+```cpp
 #include <stdio.h>
+#include <stdbool.h>
 
-typedef enum {
-    kEventButtonPress,
-    kEventTimerTick,
-    kEventDataReceived,
-    kEventCount
-} EventType;
+// Define callback type: event ID and user data
+typedef void (*EventHandler)(int event_id, void *user_data);
 
-typedef void (*EventHandler)(EventType event, void* context);
-
+// Event handler table
+#define MAX_EVENTS 10
 typedef struct {
-    EventHandler handlers[kEventCount];
-    void* contexts[kEventCount];
-} EventDispatcher;
+    int id;
+    EventHandler callback;
+    void *user_data;
+} EventEntry;
 
-void dispatcher_init(EventDispatcher* dispatcher)
-{
-    for (int i = 0; i < kEventCount; i++) {
-        dispatcher->handlers[i] = NULL;
-        dispatcher->contexts[i] = NULL;
+EventEntry event_table[MAX_EVENTS];
+int event_count = 0;
+
+// Register an event
+void subscribe(int id, EventHandler handler, void *user_data) {
+    if (event_count < MAX_EVENTS) {
+        event_table[event_count].id = id;
+        event_table[event_count].callback = handler;
+        event_table[event_count].user_data = user_data;
+        event_count++;
     }
 }
 
-void dispatcher_register(EventDispatcher* dispatcher,
-                          EventType event,
-                          EventHandler handler,
-                          void* context)
-{
-    if (event >= 0 && event < kEventCount) {
-        dispatcher->handlers[event] = handler;
-        dispatcher->contexts[event] = context;
-    }
-}
-
-void dispatcher_dispatch(EventDispatcher* dispatcher, EventType event)
-{
-    if (event >= 0 && event < kEventCount) {
-        EventHandler handler = dispatcher->handlers[event];
-        if (handler != NULL) {
-            handler(event, dispatcher->contexts[event]);
+// Trigger an event
+void publish(int id) {
+    for (int i = 0; i < event_count; i++) {
+        if (event_table[i].id == id && event_table[i].callback != NULL) {
+            event_table[i].callback(id, event_table[i].user_data);
         }
     }
 }
+
+// --- User Code ---
+
+void on_led_on(int event_id, void *user_data) {
+    printf("LED ON event triggered! User data: %d\n", *(int*)user_data);
+}
+
+void on_led_off(int event_id, void *user_data) {
+    printf("LED OFF event triggered!\n");
+}
+
+int main() {
+    int context = 42;
+
+    subscribe(1, on_led_on, &context);
+    subscribe(2, on_led_off, NULL);
+
+    printf("Publishing event 1...\n");
+    publish(1);
+
+    printf("Publishing event 2...\n");
+    publish(2);
+
+    return 0;
+}
 ```
 
-This is a minimal viable event system. `void* context` acts as the "universal glue" here—whatever additional state information the callback function needs, the caller passes it in via the `context` pointer. This design is everywhere in embedded SDKs; for example, the callback registration interfaces in the STM32 HAL library are essentially built on this exact pattern.
+This is a minimal viable event system. `void* user_data` acts as the "universal glue" here—whatever extra state information the callback needs, the caller passes it in via this `void*` pointer. This design is ubiquitous in embedded SDKs. For example, the callback registration interfaces in the STM32 HAL library are essentially this pattern.
 
-## Bridging to C++
+## C++ Connection
 
-C++ has made multi-layered improvements in this direction, ranging from basic function objects to modern lambda expressions and `std::function`.
+C++ has made multi-level improvements in this direction, from basic function objects to modern lambdas and `std::function`.
 
-**Function Objects (Functors)**: Overload `operator()` for a class so its instances can be called like functions. Compared to C function pointers, the biggest advantage of function objects is that they can carry state.
+**Function Objects (Functors)**: Overload `operator()` for a class so its instances can be called like functions. Compared to C's function pointers, the biggest advantage of function objects is that they can carry state.
 
-**Lambda Expressions** (C++11): Anonymous function objects defined inline at the call site, supporting the capture of external variables (closures). This is impossible in the world of C function pointers.
+**Lambda Expressions** (C++11): Anonymous function objects defined inline at the call site, supporting capture of external variables (closures). This is impossible to achieve in the world of C function pointers.
 
-**std::function** (C++11): A generic, type-safe function wrapper that can hold any callable target, including function pointers, function objects, and lambdas. It unifies the interface for all callable objects.
+**std::function** (C++11): A generic, type-safe function wrapper that can hold any callable target: function pointers, function objects, lambdas, etc. It unifies the interface of all callable objects.
 
-**Template Strategy Pattern**: Determines the strategy at compile time with zero runtime overhead, but increases compilation time.
+**Template Strategy Pattern**: Strategies are determined at compile time, resulting in zero runtime overhead, but increasing compilation time.
 
-From C function pointers to C++ lambdas and `std::function`, the core idea runs in a straight line—parameterizing "behavior". C achieved the most basic version with function pointers, while C++ added type safety, closures, and a unified callable object interface on top of that foundation.
+From C's function pointers to C++'s lambdas and `std::function`, the core idea is consistent—parameterizing "behavior". C achieved the most basic version with function pointers, while C++ added type safety, closures, and a unified callable object interface on top of that.
 
 ## Summary
 
-Function pointers are the core mechanism for implementing callbacks and the strategy pattern in C. The declaration syntax is admittedly unfriendly, but once managed with `typedef`, they become highly practical. Arrays of function pointers enable table-driven dispatch logic, and the callback pattern is crystal clear through the classic example of `qsort`—the algorithm framework and the concrete strategy are decoupled via function pointers. The event dispatch system is the direct application of callbacks in event-driven programming.
+Function pointers are the core mechanism for implementing callbacks and the strategy pattern in C. The declaration syntax is indeed unfriendly, but once managed with `typedef`, they are very practical. Arrays of function pointers enable table-driven dispatch logic. The callback pattern is clearly illustrated through the classic case of `qsort`—the algorithm framework and specific strategy are decoupled via function pointers. The event dispatch system is a direct application of callbacks in event-driven programming.
 
 ### Key Takeaways
 
-- [ ] A function name implicitly converts to a function pointer in most contexts
-- [ ] Parentheses in declaration syntax cannot be omitted: `int (*p)(int)` not `int *p(int)`
-- [ ] `typedef` is the best practice for managing complex function pointer types
-- [ ] Arrays of function pointers enable table-driven command/state dispatch
-- [ ] The core of callbacks is "algorithm remains unchanged, strategy is replaceable"
-- [ ] `void*` provides genericity but sacrifices type safety; C++ templates and `std::function` solve this problem
+- [ ] Function names implicitly convert to function pointers in most contexts.
+- [ ] Parentheses in declaration syntax cannot be omitted: `int (*ptr)(int)` vs `int *ptr(int)`.
+- [ ] `typedef` is the best practice for managing complex function pointer types.
+- [ ] Arrays of function pointers can implement table-driven command/state dispatch.
+- [ ] The core of callbacks is "algorithm invariant, strategy replaceable."
+- [ ] `void*` provides generic capabilities at the cost of type safety; C++ templates and `std::function` solve this issue.
 
 ## Exercises
 
 ### Exercise 1: Generic Sorting Interface
 
-Following the interface design of `qsort`, implement your own generic insertion sort function. Use it to sort an array of `int` (in ascending and descending order) and an array of strings (in lexicographical order):
+Following the interface design of `qsort`, implement your own generic insertion sort function. Use it to sort an `int` array (ascending and descending) and a string array (lexicographical order):
 
-```c
-void insertion_sort(void* base, size_t nmemb, size_t size,
-                    int (*compar)(const void*, const void*));
+```cpp
+// TODO: Implement this function
+void my_isort(void *base, size_t n, size_t size,
+              int (*compar)(const void *, const void *));
 ```
 
 ### Exercise 2: Event Dispatch System Extension
 
-Based on the event dispatch system in this article, add support for registering multiple callbacks for the same event (a callback chain) and support for unregistering callbacks. Think about it: what happens if a handler in the callback chain modifies the linked list structure while it is being executed?
+Based on the event dispatch system in this chapter, support registering multiple callbacks for the same event (a callback chain) and support unregistering callbacks. Think about this: what happens if a handler in the chain modifies the linked list structure during execution?
 
 ### Exercise 3: Simple Command-Line Calculator
 
-Use an array of function pointers to implement a command-line calculator that supports addition, subtraction, multiplication, division, and modulo operations, selecting the corresponding function based on the operator entered by the user.
+Use an array of function pointers to implement a command-line calculator supporting addition, subtraction, multiplication, division, and modulo operations. Select the corresponding function based on the user-inputted operator.
 
-```c
-typedef int (*BinaryOp)(int, int);
-// 请自行设计映射表和主循环
+```cpp
+// Hint: Define a function pointer array and index it by operator type
+// double (*operations[])(double, double) = { ... };
 ```
 
 ## References
 
-- [Function pointer declarations - cppreference](https://en.cppreference.com/w/c/language/pointer)
+- [Function Pointer Declaration - cppreference](https://en.cppreference.com/w/c/language/pointer)
 - [qsort - cppreference](https://en.cppreference.com/w/c/algorithm/qsort)
 - [std::function - cppreference](https://en.cppreference.com/w/cpp/utility/functional/function)
-- [Lambda expressions - cppreference](https://en.cppreference.com/w/cpp/language/lambda)
+- [Lambda Expressions - cppreference](https://en.cppreference.com/w/cpp/language/lambda)

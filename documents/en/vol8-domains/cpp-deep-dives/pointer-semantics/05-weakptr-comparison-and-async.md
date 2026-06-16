@@ -3,8 +3,8 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: 'Comparing `std::weak_ptr` with Chrome WeakPtr: a safety analysis of
-  six asynchronous callback capture patterns'
+description: 'Comparison between `std::weak_ptr` and Chrome WeakPtr: Security analysis
+  of six asynchronous callback capture modes'
 difficulty: advanced
 order: 5
 platform: host
@@ -21,29 +21,29 @@ tags:
 - 智能指针
 - 异步编程
 - 回调机制
-title: '`std::weak_ptr` Comparison and Practical Async Callbacks'
+title: '`std::weak_ptr` Comparison and Asynchronous Callback Practice'
 translation:
-  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/05-weakptr-comparison-and-async.md
-  source_hash: e71aa17f860345c3ebdc18ef482f08e7eec3aa5e6fc918fc53381f07184bd56d
-  token_count: 1619
-  translated_at: '2026-05-26T11:56:10.444261+00:00'
+  source_hash: c0377cb04e5d3a14032743c75fcd1bc3a744dbaab75f7af56d983f7815b61c22
+  translated_at: '2026-06-16T04:08:29.468353+00:00'
+  engine: anthropic
+  token_count: 1612
 ---
-# std::weak_ptr vs. Chrome WeakPtr and Async Callback Patterns in Practice
+# std::weak_ptr Comparison and Async Callback Practice
 
 ## Introduction
 
-In the previous four articles, we built a non-owning pointer type from scratch—ranging from Borrowed to ObserverPtr to various WeakPtr implementations. Now it is time to bring everything together for a side-by-side comparison.
+In the previous four articles, we hand-rolled a non-owning pointer type from scratch—from Borrowed to ObserverPtr to various WeakPtr implementations. Now it is time to bring everything together for a comparison.
 
-In this article, we will do two things: first, we will place `std::weak_ptr<T>` and Chrome-like `WeakPtr<T>` side by side to clarify their core differences; second, we will use six async callback capture patterns for a practical comparison, giving you an intuitive feel for the difference between "incorrect capture" and "correct capture."
+In this article, we will do two things: first, we will put `std::weak_ptr` and Chrome-like `WeakPtr` together to clarify their core differences; second, we will use six asynchronous callback capture modes for a practical comparison, so you can intuitively feel the difference between "incorrect capture" and "correct capture."
 
 ## Core Differences Between std::weak_ptr and Chrome WeakPtr
 
-Let us start with a frequently overlooked fact: **`std::weak_ptr<T>` and Chrome-like `WeakPtr<T>` do not solve the same problem.**
+First, a frequently overlooked fact: **`std::weak_ptr` and Chrome-like `WeakPtr` do not solve the same problem.**
 
-`std::weak_ptr<T>` solves the problem of "weak references in a shared ownership model." It relies on the `std::shared_ptr<T>` control block. After a successful call to `lock()`, you obtain a `shared_ptr<T>`, thereby **temporarily extending the object's lifetime**. This means that as long as your `lock()` succeeds, the object is guaranteed not to be destroyed while your `shared_ptr` is alive.
+`std::weak_ptr` solves the problem of "weak references in a shared ownership model." It relies on the control block of `std::shared_ptr`. After successfully calling `lock()`, it obtains a `std::shared_ptr`, thereby **temporarily extending the object's lifetime**. This means that as long as your `lock()` succeeds, the object will definitely not be destructed while your `shared_ptr` is alive.
 
-Chrome-like `WeakPtr<T>` solves the problem of "weak references on objects not managed by shared_ptr." It does not rely on `shared_ptr`. Calling `get()` does not extend the object's lifetime—it simply returns a pointer. The object might be destroyed at any time, and the pointer you receive might be invalid before you even use it. It only guarantees that you can **safely detect invalidation**, not that the object will still be alive after you obtain the pointer.
+Chrome-like `WeakPtr` solves the problem of "weak references on objects not managed by `shared_ptr`." It does not depend on `shared_ptr`. Calling `get()` does not extend the object's lifetime—it simply returns a pointer. The object may be destructed at any time, and the pointer you obtained may be invalid before you use it. It only guarantees that you can **safely detect invalidation**, not that the object is still alive after you get the pointer.
 
 These are two completely different lifetime strategies:
 
@@ -53,169 +53,120 @@ These are two completely different lifetime strategies:
 | Extends lifetime when acquiring reference | **No** | **Yes** (lock returns shared_ptr) |
 | Safe null check after object destruction | Yes | Yes |
 | Suitable for non-shared_ptr managed objects | **Yes** | No |
-| Naturally thread-safe | No (sequence-bound) | Partial (lock() is atomic, but accessing T requires synchronization) |
+| Naturally thread-safe | No (sequence-bound) | Partial (lock() is atomic, but access to T needs synchronization) |
 | Control block overhead | Small (custom ref count) | Larger (shared_ptr control block) |
 
-**When should we use `std::weak_ptr`?** When the object is already managed by `shared_ptr`, and you need to safely observe it in asynchronous scenarios, potentially requiring a temporary lifetime extension.
+**When to use `std::weak_ptr`?** When the object is already managed by `std::shared_ptr`, you need to observe it safely in asynchronous scenarios, and you might need to temporarily extend its lifetime.
 
-**When should we use Chrome-like WeakPtr?** When the object is not managed by `shared_ptr` (stack objects, `unique_ptr`, framework-managed objects), and you need to safely detect invalidation in asynchronous callbacks.
+**When to use Chrome-like WeakPtr?** When the object is not managed by `std::shared_ptr` (stack objects, `unique_ptr`, framework-managed objects), and you need to safely detect invalidation in asynchronous callbacks.
 
-**When should we NOT use `std::weak_ptr`?** When you forcibly change an object to `shared_ptr` management just to use `weak_ptr`. This introduces unnecessary reference counting overhead and easily causes performance bottlenecks in multithreaded environments (atomic reference count contention).
+**When should you NOT use `std::weak_ptr`?** Forcibly changing object management to `std::shared_ptr` just to use `std::weak_ptr`. This introduces unnecessary reference counting overhead and can easily cause performance bottlenecks in multi-threaded environments (atomic reference counting contention).
 
-## Six Async Callback Capture Patterns
+## Six Asynchronous Callback Capture Modes
 
-Next, we will use actual code to compare six ways of capturing object references in asynchronous callbacks. For each pattern, we will analyze: where the danger lies, what happens after the object is destroyed, and whether it constitutes UB.
+Next, we will use actual code to compare six ways to capture object references in asynchronous callbacks. For each method, we will analyze: where the danger lies, what happens after the object is destroyed, and whether it is UB.
 
-### Pattern 1: Capturing a raw `this` — Dangerous
-
-```cpp
-class NetworkClient {
-public:
-    void start_request()
-    {
-        // 错误！lambda 捕获了裸 this
-        timer_.schedule(1000ms, [this]() {
-            process_response();  // 如果 NetworkClient 已析构，this 是悬垂指针
-        });
-    }
-
-    void process_response() { /* ... */ }
-
-private:
-    Timer timer_;
-};
-
-// 使用场景
-void test()
-{
-    auto client = std::make_unique<NetworkClient>();
-    client->start_request();
-    // client 在这里析构
-}  // 1 秒后回调执行 → this 悬垂 → UB
-```
-
-**Problem**: `this` is just a raw pointer that carries no lifetime information. After the object is destroyed, the `this` in the callback is a dangling pointer, and any member access is UB. This is the most common crash source in C++ asynchronous programming.
-
-### Pattern 2: Capturing `T*` — Equally Dangerous
+### Mode 1: Capturing Raw `this` — Dangerous
 
 ```cpp
-void start_request()
-{
-    auto* raw_ptr = this;
-    timer_.schedule(1000ms, [raw_ptr]() {
-        raw_ptr->process_response();  // 同样的悬垂问题
-    });
-}
-```
-
-**Problem**: There is no fundamental difference from capturing a raw `this`. `T*` does not provide any lifetime guarantees. The only difference is that it "looks" like a conscious decision to capture a pointer, but it is practically no safer than a raw `this`.
-
-### Pattern 3: Capturing `ObserverPtr<T>` — Still Dangerous
-
-```cpp
-void start_request()
-{
-    auto obs = make_observer(this);
-    timer_.schedule(1000ms, [obs]() {
-        if (obs) {
-            obs->process_response();  // ObserverPtr::operator bool 只检查是否为 nullptr
-        }                            // 对象销毁后 obs.get() 仍非 nullptr → 悬垂解引用
-    });
-}
-```
-
-**Problem**: The `operator bool()` of `ObserverPtr` only checks whether the internal pointer is `nullptr`. After the object is destroyed, the internal pointer is not `nullptr` (it is dangling), so `if (obs)` will pass, and then the dangling pointer gets dereferenced. UB.
-
-### Pattern 4: Capturing `UnsafeWeakPtr<T>` — UB
-
-```cpp
-void start_request()
-{
-    auto weak = get_unsafe_weak_ptr();
-    timer_.schedule(1000ms, [weak]() {
-        if (weak.is_valid()) {  // 访问已销毁的 Flag → UB！
-            // ...
-        }
-    });
-}
-```
-
-**Problem**: As analyzed in detail in the second article, the `Flag*` accessed by `is_valid()` might already be a dangling pointer. The null-check action itself is UB. This is the most insidious danger among the six patterns—it appears to have a "liveness check" mechanism, but even the check itself is unsafe.
-
-### Pattern 5: Capturing Chrome-like `WeakPtr<T>` — Correct
-
-```cpp
-class NetworkClient {
-public:
-    void start_request()
-    {
-        auto weak = factory_.get_weak_ptr();
-        timer_.schedule(1000ms, [weak]() {
-            if (auto* self = weak.get()) {
-                self->process_response();  // 安全：get() 先检查 control block
-            }                             // 失效时返回 nullptr，不会解引用
-        });
-    }
-
-private:
-    Timer timer_;
-    WeakPtrFactory<NetworkClient> factory_{this};
+// Capturing raw this
+auto callback = [this]() {
+    // If the object is destroyed before callback runs, `this` is dangling.
+    this->doSomething(); // UB
 };
 ```
 
-**Analysis**: `weak.get()` first checks `WeakFlag::is_valid()`. Since `WeakFlag` is reference-counted, as long as `weak` is alive, `WeakFlag` is guaranteed to exist, so `is_valid()` will not be UB. After the object is destroyed, the Factory's destructor will invalidate `WeakFlag`, `get()` returns `nullptr`, and the callback safely skips execution.
+**Problem**: `this` is just a raw pointer and carries no lifetime information. After the object is destructed, `this` in the callback is a dangling pointer, and any member access is UB. This is the most common source of crashes in C++ asynchronous programming.
 
-**But there is a prerequisite**: The callback's execution and the object's destruction must be on the same sequence. If crossing sequences, after `get()` returns non-null but before actually using `self`, another sequence might be destroying the object—this is a TOCTOU race condition.
-
-### Pattern 6: Capturing `std::weak_ptr<T>` — Correct
+### Mode 2: Capturing Raw `T*` — Equally Dangerous
 
 ```cpp
-class NetworkClient : public std::enable_shared_from_this<NetworkClient> {
-public:
-    void start_request()
-    {
-        auto weak = weak_from_this();  // C++17
-        timer_.schedule(1000ms, [weak]() {
-            if (auto self = weak.lock()) {
-                self->process_response();  // lock() 成功 → shared_ptr 延长生命周期
-            }                             // 在 self 的作用域内，对象不会被析构
-        });
-    }
-
-private:
-    Timer timer_;
+// Capturing raw T*
+T* raw_ptr = getPointer();
+auto callback = [raw_ptr]() {
+    raw_ptr->doSomething(); // UB if object destroyed
 };
-
-// 使用时必须用 shared_ptr 管理
-auto client = std::make_shared<NetworkClient>();
-client->start_request();
 ```
 
-**Analysis**: `weak.lock()` is an atomic operation—it either returns a valid `shared_ptr` (while incrementing the reference count by one) or returns empty. If it returns a valid `shared_ptr`, the object is guaranteed not to be destroyed while your `self` variable is alive. This is safer than Chrome WeakPtr—it not only detects invalidation but also prevents the object from being destroyed between the check and actual use.
+**Problem**: There is no essential difference from capturing `this`. `T*` provides no lifetime guarantees. The only difference is that it "looks" like a conscious capture of a pointer, but it is actually no safer than a raw `this`.
 
-**But the cost is**: The object must be managed by `shared_ptr`, and `lock()` introduces atomic reference count operations. In high-frequency asynchronous scenarios, these atomic operations can become a performance bottleneck.
+### Mode 3: Capturing `ObserverPtr` — Still Dangerous
 
-## Summary of the Six Patterns
+```cpp
+// Capturing ObserverPtr
+auto callback = [observer]() {
+    if (observer) { // Check passes
+        observer->doSomething(); // UB
+    }
+};
+```
 
-| Pattern | Liveness Check | Behavior After Object Destruction | UB? | Suitable Scenario |
-|---------|----------------|-----------------------------------|-----|-------------------|
-| Raw `this` | None | Dangling pointer access | Yes | None—never capture a raw this in async callbacks |
-| `T*` | None | Dangling pointer access | Yes | None—same as above |
-| `ObserverPtr<T>` | None | `operator bool` passes but pointer is dangling | Yes | Synchronous observation, not for async callbacks |
-| `UnsafeWeakPtr<T>` | Fake | Null check itself is UB | Yes | None—should not be used |
-| Chrome `WeakPtr<T>` | Yes (control block) | Safely returns nullptr | No (single sequence) | Async callbacks for non-shared_ptr objects |
-| `std::weak_ptr<T>` | Yes (shared_ptr control) | Safely returns empty shared_ptr | No | Async callbacks for shared_ptr managed objects |
+**Problem**: `ObserverPtr`'s `operator bool` only checks if the internal pointer is `nullptr`. After the object is destructed, the internal pointer is not `nullptr` (it is dangling), so the check passes, and then the dangling pointer is dereferenced. UB.
 
-## Summary
+### Mode 4: Capturing `WeakPtr` (Custom) — UB
 
-- `std::weak_ptr<T>` relies on `shared_ptr`, and `lock()` temporarily extends the object's lifetime
-- Chrome-like `WeakPtr<T>` does not rely on `shared_ptr`, does not extend the object's lifetime, and only detects invalidation
-- Do not forcibly change an object to `shared_ptr` management just to use `weak_ptr`
-- Never capture a raw `this`, raw `T*`, `ObserverPtr`, or `UnsafeWeakPtr` in asynchronous callbacks
-- Chrome `WeakPtr` is suitable for non-`shared_ptr` scenarios, but be mindful of sequence binding
-- `std::weak_ptr` is suitable for `shared_ptr` scenarios, and `lock()` provides stronger safety guarantees
+```cpp
+// Capturing custom WeakPtr
+auto callback = [weak]() {
+    if (weak.get() != nullptr) { // UB here!
+        weak.get()->doSomething();
+    }
+};
+```
 
-## Resources
+**Problem**: As analyzed in detail in the second article, the control block accessed by `weak.get()` may already be a dangling pointer. The null check itself is UB. This is the most insidious danger of the six modes—it looks like there is a "liveness" check mechanism, but even the check itself is unsafe.
+
+### Mode 5: Capturing Chrome-like `WeakPtr` — Correct
+
+```cpp
+// Capturing Chrome-like WeakPtr
+auto callback = [weak]() {
+    if (weak.get() != nullptr) { // Safe check
+        weak.get()->doSomething();
+    }
+};
+```
+
+**Analysis**: `weak.get()` first checks the control block. Since the control block is reference-counted, as long as the `Factory` is alive, the control block must exist, so the check won't be UB. After the object is destructed, the Factory's destructor invalidates the `WeakPtr`, `get()` returns `nullptr`, and the callback safely skips.
+
+**But there is a premise**: The execution of the callback and the destruction of the object are on the same sequence. If crossing sequences, after `get()` returns non-null but before actually using the pointer, another sequence might be destructing the object—this is a TOCTOU race.
+
+### Mode 6: Capturing `std::weak_ptr` — Correct
+
+```cpp
+// Capturing std::weak_ptr
+auto callback = [weak]() {
+    if (auto shared = weak.lock()) { // Atomic operation
+        shared->doSomething(); // Safe
+    }
+};
+```
+
+**Analysis**: `lock()` is an atomic operation—it either returns a valid `std::shared_ptr` (with reference count +1) or returns empty. If it returns a valid `std::shared_ptr`, the object will definitely not be destructed during the lifetime of your `shared` variable. This is safer than Chrome WeakPtr—it not only detects invalidation but also prevents the object from being destructed between detection and use.
+
+**But the cost is**: The object must be managed by `std::shared_ptr`, and `lock()` adds atomic reference counting operations. In high-frequency asynchronous scenarios, these atomic operations can become a performance bottleneck.
+
+## Summary of Six Modes
+
+| Mode | Liveness Check | Behavior After Object Destruction | UB? | Suitable Scenario |
+|------|----------------|-----------------------------------|-----|-------------------|
+| Raw `this` | None | Dangling pointer access | Yes | None—never capture raw `this` in async callbacks |
+| Raw `T*` | None | Dangling pointer access | Yes | None—same as above |
+| `ObserverPtr` | None | Check passes but pointer is dangling | Yes | Synchronous observation, not for async callbacks |
+| Custom `WeakPtr` | Fake | Null check itself is UB | Yes | None—should not be used |
+| Chrome `WeakPtr` | Yes (control block) | Safely returns nullptr | No (single sequence) | Async callbacks for non-shared_ptr objects |
+| `std::weak_ptr` | Yes (shared_ptr control) | Safely returns empty shared_ptr | No | Async callbacks for shared_ptr managed objects |
+
+## Conclusion
+
+- `std::weak_ptr` depends on `std::shared_ptr`, and `lock()` temporarily extends the object's lifetime.
+- Chrome-like `WeakPtr` does not depend on `std::shared_ptr`, does not extend the object's lifetime, and only detects invalidation.
+- Do not forcibly change object management to `std::shared_ptr` just to use `std::weak_ptr`.
+- Never capture raw `this`, raw `T*`, `ObserverPtr`, or custom `WeakPtr` in asynchronous callbacks.
+- Chrome `WeakPtr` is suitable for non-`shared_ptr` scenarios, but be aware of sequence binding.
+- `std::weak_ptr` is suitable for `shared_ptr` scenarios; `lock()` provides stronger safety guarantees.
+
+## References
 
 - [std::weak_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/weak_ptr)
 - [std::enable_shared_from_this - cppreference](https://en.cppreference.com/w/cpp/memory/enable_shared_from_this)

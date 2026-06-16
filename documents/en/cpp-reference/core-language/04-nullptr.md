@@ -16,11 +16,11 @@ tags:
 - beginner
 title: nullptr
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/04-nullptr.md
-  source_hash: 7c82ab55e4e0fa53aa7febb6b442da6f96212e7148e77f9c8a010c0063f650df
-  token_count: 312
-  translated_at: '2026-05-26T10:15:37.088681+00:00'
+  source_hash: 029b188e3461d3df1a7d4207784a11c9135b2ab22946c041fbd4fd3aaf05cf82
+  translated_at: '2026-06-16T03:28:47.642339+00:00'
+  engine: anthropic
+  token_count: 316
 ---
 # nullptr (C++11)
 
@@ -32,35 +32,40 @@ A null pointer literal of type `std::nullptr_t` that safely distinguishes intege
 
 No header required (language keyword); the type is defined in `<cstddef>`.
 
-## Quick API Reference
+## Core API Quick Reference
 
 | Operation | Signature | Description |
 |------|------|------|
 | Null pointer literal | `nullptr` | A prvalue of type `std::nullptr_t` |
-| Implicit conversion | → any pointer type | Converts to a null pointer value of the corresponding type |
-| Implicit conversion | → any pointer-to-member type | Converts to a null pointer-to-member value of the corresponding type |
+| Implicit conversion | → Any pointer type | Converts to a null pointer value of the corresponding type |
+| Implicit conversion | → Any member pointer type | Converts to a null member pointer value of the corresponding type |
 
 ## Minimal Example
 
 ```cpp
-#include <iostream>
-void f(int) { std::cout << "int\n"; }
-void f(int*) { std::cout << "int*\n"; }
+void f(int* p) {
+    // Handle pointer
+}
+
+void f(int i) {
+    // Handle integer
+}
 
 int main() {
-    f(0);        // 调用 f(int)，可能非预期
-    f(nullptr);  // 调用 f(int*)，精确匹配
-    int* p = nullptr;
-    if (p == nullptr) { std::cout << "null\n"; }
+    // Calls f(int*)
+    f(nullptr);
+
+    // Calls f(int)
+    f(0);
 }
 ```
 
 ## Embedded Applicability: High
 
-- A zero-overhead abstraction; the compiler directly generates a null pointer value at compile time, producing the same instructions as `0` or `NULL`
-- Avoids overload ambiguity between integers and pointers in register manipulation functions (such as overloads that operate on hardware registers)
-- Behaves correctly in template metaprogramming (such as static assertions and type traits), whereas `NULL` and `0` would fail
-- Fully compatible with C-style low-level hardware manipulation code, allowing for a risk-free, gradual replacement
+- A zero-overhead abstraction; the compiler directly generates a null pointer value, producing the same instructions as `0` or `NULL`.
+- Avoids ambiguity between integer and pointer overloads in register manipulation functions (e.g., overloads for hardware registers).
+- Behaves correctly in template metaprogramming (e.g., static assertions, type traits), whereas `NULL` and `0` would fail.
+- Fully compatible with C-style low-level hardware manipulation code, allowing for risk-free, gradual replacement.
 
 ## Compiler Support
 
@@ -74,4 +79,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*部分内容参考自 [cppreference.com](https://en.cppreference.com/)，采用 [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可*

@@ -20,327 +20,264 @@ tags:
 - 进阶
 title: Introduction to Template Specialization
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch09/03-specialization-basics.md
-  source_hash: 5ce521703b4e50bccd5cc43f1e2e84edef5c7afe6aa2a68221aede393c4ab37d
-  token_count: 2546
-  translated_at: '2026-05-26T10:56:06.820013+00:00'
+  source_hash: 787dd92fbcdb8119f87b06d89df5b75f9652cc58dbfd1fb13bfb6513bc49051c
+  translated_at: '2026-06-16T03:46:15.031952+00:00'
+  engine: anthropic
+  token_count: 2543
 ---
 # Introduction to Template Specialization
 
-The power of templates lies in "one code, many types." But in real-world engineering, we often run into a situation where the generic version works well for most types, yet a few specific types—due to different semantics or performance requirements—need a custom implementation. For example, if we write a generic `max` function template, it correctly compares the values of `int` and `double`, but when passed two `const char*` arguments, it compares pointer addresses instead of string contents. That is clearly not what we want.
+The power of templates lies in "one code, multiple types." However, in real-world engineering, we often encounter a situation where the generic version works well for most types, but a few specific types—due to different semantics or performance requirements—need a custom implementation. For example, if we write a generic function template, it might correctly compare sizes for integers and floats, but when passed two C-style strings (`const char*`), it compares pointer addresses rather than string content, which is clearly not what we want.
 
-Template specialization is the customization channel C++ provides: it allows us to supply a separate implementation for a specific combination of template parameters while leaving the generic version unaffected. In this chapter, we start with full specialization, move on to partial specialization, and finally discuss when to use specialization and when to take a different approach.
+Template specialization is the customization channel provided by C++: it allows us to provide a separate implementation for a specific combination of template parameters while keeping the generic version unaffected. In this chapter, we start with full specialization, move to partial specialization, and finally discuss when to use specialization and when to consider a different approach.
 
-> **Pitfall Warning**: Function template specialization and class template specialization behave subtly differently, especially when interacting with overload resolution. Explicit specializations of function templates do not participate in overload resolution—meaning if you expect to change function selection behavior through specialization, you will likely fall into a trap. We will dive into this later, but keep it in mind for now.
+> **Warning**: There are subtle behavioral differences between function template specialization and class template specialization, especially regarding overload resolution. Explicit specialization of function templates does not participate in overload resolution. This means if you expect to change function selection behavior via specialization, you will likely run into issues. We will expand on this later, but keep it in mind for now.
 
-## Step One — Full Specialization: Pinning Down All Template Parameters
+## Step 1 — Full Specialization: Locking Down All Template Parameters
 
-Full specialization (full specialization / explicit specialization) is the most straightforward customization tool. We tell the compiler: "When the template parameters are exactly these concrete types, do not use the generic version; use this implementation I am giving you."
+Full specialization (explicit specialization) is the most direct means of customization. We tell the compiler: "When the template parameters are exactly these specific types, do not use the generic version; use this implementation I provided."
 
-Let's first look at the full specialization of a class template. Suppose we have a generic `BitSet` template:
+Let's first look at the full specialization of a class template. Suppose we have a generic `Container` template:
 
 ```cpp
 template <typename T>
-class Stack {
+class Container {
+    std::vector<T> data;
 public:
-    void push(const T& value) { data_.push_back(value); }
-    void pop() { data_.pop_back(); }
-    T top() const { return data_.back(); }
-    bool empty() const { return data_.empty(); }
-private:
-    std::vector<T> data_;
+    void add(const T& item) { data.push_back(item); }
+    // ... other methods
 };
 ```
 
-This implementation uses `std::vector<bool>` to store elements, which works fine for most types. But if `T` is `bool`, we might want to optimize for space—after all, a single `bool` only needs one bit, and `std::vector<bool>` already does this compression (though it is controversial, it happens to be useful here). We can provide a full specialization for `bool`:
+This implementation uses `std::vector` to store elements, which works fine for most types. However, if `T` is `bool`, we might want to optimize for space—after all, a `bool` only needs one bit, and `std::vector` already implements this compression (although controversial, it fits perfectly here). We can provide a full specialization for `bool`:
 
 ```cpp
 template <>
-class Stack<bool> {
+class Container<bool> {
+    std::vector<bool> data;
 public:
-    void push(bool value) { bits_.push_back(value); }
-    void pop() { bits_.pop_back(); }
-    bool top() const { return bits_[bits_.size() - 1]; }
-    bool empty() const { return bits_.empty(); }
-private:
-    std::vector<bool> bits_;   // 空间优化的 bit 容器
+    void add(bool item) { data.push_back(item); }
+    // ... other methods
 };
 ```
 
-Note the syntax: `template<>` tells the compiler this is a full specialization—all template parameters have been specified, and there are no parameters left inside the angle brackets. The following `<bool>` is the target type of the specialization. There is no code reuse between the specialized version and the generic version—a specialized class is a completely independent class. It can have different data members, different member functions, and even a different interface design. To the compiler, it is simply an ordinary class named `BitSet<bool>`.
+Note the syntax: `template <>` tells the compiler this is a full specialization—all template parameters have been specified, and there are no parameters left inside the angle brackets. The immediately following `<bool>` is the target type of the specialization. There is no code reuse relationship between the specialized version and the generic version—the specialized class is a completely independent class. It can have different data members, different member functions, and even a different interface design. To the compiler, this is just a normal class named `Container<bool>`.
 
-One of the most common use cases for full specialization is handling C-style strings. A generic comparison or printing template often behaves unexpectedly when facing `const char*`, because the default semantics operate on pointer addresses. Let's write a `Printer` template as a running example throughout this chapter, starting with the generic version:
+One of the most common scenarios for full specialization is handling C-style strings. A generic comparison or print template often behaves unexpectedly when facing `const char*`, because the default semantics operate on pointer addresses. Let's write a `Printer` template as an example throughout this chapter, starting with the generic version:
 
 ```cpp
 template <typename T>
-struct Printer {
-    static void print(const T& value)
-    {
-        std::cout << value;
-    }
-};
-```
-
-For types like `int`, `double`, and `float`, we simply output the value and we are done. But `bool` will only print 0 or 1 by default, which is not very user-friendly. Let's create a full specialization for `bool`:
-
-```cpp
-template <>
-struct Printer<bool> {
-    static void print(bool value)
-    {
-        std::cout << (value ? "true" : "false");
-    }
-};
-```
-
-Similarly, `const char*` needs special handling to ensure we print the string contents rather than the address:
-
-```cpp
-template <>
-struct Printer<const char*> {
-    static void print(const char* value)
-    {
-        std::cout << (value ? value : "(null)");
-    }
-};
-```
-
-When using it, there is no difference from an ordinary template—the compiler automatically selects the corresponding version based on the argument types:
-
-```cpp
-Printer<int>::print(42);            // 通用版本
-Printer<bool>::print(true);         // bool 特化版本，输出 "true"
-Printer<const char*>::print("hi");  // const char* 特化版本，输出 "hi"
-```
-
-## Function Template Specialization — A Trap Easy to Fall Into
-
-The semantics of class template full specialization are very clear, but function template full specialization is a bit more subtle. Syntactically, the two look similar:
-
-```cpp
-// 通用版本
-template <typename T>
-T my_max(T a, T b) { return (a > b) ? a : b; }
-
-// 全特化：const char* 版本，按字符串内容比较
-template <>
-const char* my_max<const char*>(const char* a, const char* b)
-{
-    return (std::strcmp(a, b) > 0) ? a : b;
+void print(const T& value) {
+    std::cout << value << std::endl;
 }
 ```
 
-The syntax is fine, and it compiles. But there is a very easy-to-overlook problem here: **explicit specializations of function templates do not participate in overload resolution**.
-
-What does this mean? Consider this scenario:
+For types like `int`, `double`, or `std::string`, simply outputting the value works. However, `bool` defaults to printing `0` or `1`, which isn't very user-friendly. Let's create a full specialization for `bool`:
 
 ```cpp
-// 通用版本
-template <typename T>
-T my_max(T a, T b) { return (a > b) ? a : b; }
-
-// 全特化
 template <>
-const char* my_max<const char*>(const char* a, const char* b)
-{
-    return (std::strcmp(a, b) > 0) ? a : b;
-}
-
-// 一个普通重载
-const char* my_max(const char* a, const char* b)
-{
-    std::cout << "[overload] ";
-    return (std::strcmp(a, b) > 0) ? a : b;
+void print<bool>(const bool& value) {
+    std::cout << (value ? "true" : "false") << std::endl;
 }
 ```
 
-Now call `print(3.14)`. During overload resolution, the compiler considers the generic template and the ordinary overloaded function—the specialized version is not on the candidate list at all. Since the compiler prefers non-template functions over template functions (exact match takes priority), the ordinary overloaded version is ultimately called.
-
-What if we remove the ordinary overload? The compiler selects the generic template, and only after making that selection does it check whether a corresponding specialization exists—if so, it uses the specialized version. In other words, the specialized version is a "post-selection replacement," not a "competing candidate."
-
-This mechanism leads to a very practical problem: if you later add a more matching overload elsewhere, the specialized version gets quietly bypassed without you even knowing. Therefore, the C++ community has a widely recognized convention—**for function templates, prefer overloading over explicit specialization**.
-
-For the code above, the recommended approach is to provide an ordinary overloaded function directly:
+Similarly, `const char*` needs special handling to ensure the string content is printed rather than the address:
 
 ```cpp
-// 通用模板
-template <typename T>
-T my_max(T a, T b) { return (a > b) ? a : b; }
-
-// 普通重载——比特化更安全、更直观
-const char* my_max(const char* a, const char* b)
-{
-    return (std::strcmp(a, b) > 0) ? a : b;
-}
-```
-
-> **Pitfall Warning**: If you truly need to customize behavior through function template specialization (for example, in a generic programming framework), remember that it is a "post-selection replacement" mechanism. A common failure scenario is: you think the specialization will be selected, but overload resolution actually picks another candidate, and the specialization never gets a chance to appear. Debugging this kind of bug is extremely painful because the code looks completely correct. My advice is: unless you are writing the internal implementation of a template library, prefer function overloading in day-to-day coding.
-
-## Step Two — Partial Specialization: Pinning Down Only Some Parameters
-
-Full specialization fixes all template parameters, but sometimes we only want to customize for a category of types—such as "all pointer types" or "all array types"—rather than one specific type. This is where partial specialization comes in.
-
-Partial specialization only applies to class templates and variable templates; function templates do not support partial specialization. Syntactically, the `template<...>` angle brackets of a partial specialization still retain the unfixed parameters:
-
-```cpp
-// 通用版本
-template <typename T>
-struct Printer {
-    static void print(const T& value)
-    {
-        std::cout << value;
+template <>
+void print<const char*>(const char* const& value) {
+    if (value) {
+        std::cout << value << std::endl;
+    } else {
+        std::cout << "(null)" << std::endl;
     }
-};
-
-// 偏特化：匹配所有指针类型 T*
-template <typename T>
-struct Printer<T*> {
-    static void print(T* ptr)
-    {
-        if (ptr) {
-            std::cout << "*";
-            Printer<T>::print(*ptr);   // 递归调用指向类型的 Printer
-        } else {
-            std::cout << "(null)";
-        }
-    }
-};
+}
 ```
 
-When the compiler sees `Printer<int*>`, it finds that `int*` can match the partial specialization `Printer<T*>` (with `T` being `int`), so it selects the partial specialization. In the partial specialization, we do something very natural: first check if the pointer is null, and if it is not, dereference it and recursively call `Printer<T>` to print the actual value.
-
-Let's look at another typical use of partial specialization—customizing based on a compile-time constant. Suppose we have a `FixedArray` template that accepts a type parameter and a size parameter:
+Using them is no different from a normal template—the compiler automatically selects the corresponding version based on the argument type:
 
 ```cpp
-// 通用版本
-template <typename T, std::size_t N>
+int x = 10;
+print(x);              // Uses generic version
+
+bool flag = true;
+print(flag);           // Uses bool specialization
+
+const char* str = "Hello";
+print(str);            // Uses const char* specialization
+```
+
+## Function Template Specialization — A Trap to Avoid
+
+The semantics of full specialization for class templates are clear, but full specialization for function templates is a bit more subtle. Syntactically, they look similar:
+
+```cpp
+// Generic version
+template <typename T>
+void print(const T& value) {
+    std::cout << value << std::endl;
+}
+
+// Full specialization
+template <>
+void print<const char*>(const char* const& value) {
+    if (value) std::cout << value << std::endl;
+    else std::cout << "(null)" << std::endl;
+}
+```
+
+The syntax is fine, and it compiles. But there is a very easy-to-ignore problem here: **explicit specialization of function templates does not participate in overload resolution**.
+
+What does this mean? Let's look at this scenario:
+
+```cpp
+// Generic version
+template <typename T>
+void print(const T& value);
+
+// Full specialization
+template <>
+void print<const char*>(const char* const& value);
+
+// Ordinary overload
+void print(const char* value);
+```
+
+Now call `print("hello")`. During overload resolution, the compiler considers the generic template and the ordinary overload function—the specialized version is not in the candidate list at all. Since the compiler prefers a non-template function over a template function (exact match takes precedence), the ordinary overload version is ultimately selected.
+
+If we remove the ordinary overload? The compiler selects the generic template, and only after it is selected does it check for a corresponding specialized version—if one exists, it uses the specialized version. In other words, the specialized version is a "post-selection replacement," not a "participant in the competition."
+
+This mechanism leads to a very practical problem: if you later add a more matching overload elsewhere, the specialized version is quietly bypassed without you knowing. Therefore, the C++ community has a widely recognized convention—**for function templates, prefer overloading over explicit specialization**.
+
+For the code above, the recommended approach is to provide an ordinary overload function directly:
+
+```cpp
+void print(const char* value) {
+    if (value) std::cout << value << std::endl;
+    else std::cout << "(null)" << std::endl;
+}
+```
+
+> **Warning**: If you do need to customize behavior via function template specialization (e.g., in generic programming frameworks), remember it is a "post-substitution" mechanism. A common failure mode is: you think the specialization will be selected, but overload resolution picks another candidate, and the specialization never gets a chance to appear. Debugging this kind of bug is very painful because the code looks completely correct. My advice is: unless you are writing the internal implementation of a template library, prioritize function overloading in daily coding.
+
+## Step 2 — Partial Specialization: Fixing Only Some Parameters
+
+Full specialization fixes all template parameters, but sometimes we only want to customize for a certain category of types—such as "all pointer types" or "all array types"—rather than a specific type. This is where partial specialization comes in.
+
+Partial specialization applies only to class templates and variable templates; function templates do not support partial specialization. Syntactically, partial specialization retains the unfixed parameters in the `template <...>` angle brackets:
+
+```cpp
+// Generic version
+template <typename T>
+void print(const T& value);
+
+// Partial specialization for pointers
+template <typename T>
+void print<T*>(T* value) {
+    if (value) {
+        std::cout << "*" << *value << std::endl;
+    } else {
+        std::cout << "(null)" << std::endl;
+    }
+}
+```
+
+When the compiler sees `print(&x)`, it finds that `int*` can match the partial specialization `Printer<T*>` (where `T` is `int`), so it selects the partially specialized version. In the partial specialization, we do something very natural: first check if the pointer is null, and if not, dereference it and recursively call `print` to output the actual value.
+
+Let's look at another typical use of partial specialization—customization based on compile-time constants. Suppose we have a `Buffer` template that accepts a type parameter and a size parameter:
+
+```cpp
+template <typename T, int N>
 class Buffer {
-    T data_[N];
+    T data[N];
 public:
-    constexpr std::size_t size() const { return N; }
-    T& operator[](std::size_t i) { return data_[i]; }
-    const T& operator[](std::size_t i) const { return data_[i]; }
+    T& operator[](int index) { return data[index]; }
 };
 ```
 
-Now if `N` is 0, this template generates a zero-length array `T data[0]`, which is not allowed in C++. We can provide a partial specialization for the case where `N` is 0:
+Now if `N` is `0`, this template generates a zero-length array `T data[0]`, which is not allowed in C++. We can provide a partial specialization for the case where `N` is `0`:
 
 ```cpp
-// 偏特化：零大小缓冲区
 template <typename T>
 class Buffer<T, 0> {
 public:
-    constexpr std::size_t size() const { return 0; }
-    T& operator[](std::size_t) { throw std::out_of_range("empty buffer"); }
-    const T& operator[](std::size_t) const { throw std::out_of_range("empty buffer"); }
+    T& operator[](int index) {
+        throw std::out_of_range("Cannot access zero-size buffer");
+    }
 };
 ```
 
-The `template<...>` angle brackets only have one parameter left—meaning `T` is still generic, but `N` has been fixed to `0`. The interface of the partial specialization remains consistent with the generic version (both have `get` and `set`), but the internal implementation is completely different—there is no array, and access operations simply throw an exception.
+The `template <...>` angle brackets now have only one parameter left—indicating that `T` is still generic, but `N` is fixed to `0`. The interface of the partial specialization remains consistent with the generic version (both have `operator[]`), but the internal implementation is completely different—there is no array, and the access operation throws an exception directly.
 
-The matching rules for partial specialization can be summed up in one principle: **the compiler selects the most specialized version among all matching candidates**. The generic version is the "most general," a partial specialization is more specialized than the generic version, and a full specialization is more specialized than a partial specialization. If multiple matching partial specializations exist and the compiler cannot determine which is more specialized, it will report an ambiguity error.
+The matching rules for partial specialization can be summarized by one principle: **the compiler selects the most specialized version among all matchable candidates**. The generic version is the "most generic," partial specialization is more specific than the generic version, and full specialization is more specific than partial specialization. If multiple matchable partial specializations exist and it is impossible to determine which is more specific, the compiler reports an ambiguity error.
 
 ## When Should You Use Specialization?
 
-Specialization is a powerful tool, but not every scenario calls for it. Let's sort through reasonable and unreasonable motivations for using it.
+Specialization is a powerful tool, but it shouldn't be used in every scenario. Let's sort out reasonable and unreasonable motivations.
 
-Cases where you should use specialization: Performance optimization is the most common and most legitimate reason. The standard library's `std::vector<bool>` is a typical example—the generic version uses one byte per `bool`, but the specialized version uses bit-packing to reduce space to one-eighth. You also need specialization when type semantics differ, such as when comparing `const char*` should use `strcmp` instead of comparing pointers. Another category of cases involves handling boundary conditions, like the zero-size issue with `FixedArray` earlier.
+**Cases where specialization should be used**: Performance optimization is the most common and legitimate reason. `std::vector<bool>` in the standard library is a typical example—the generic version takes up one byte per `bool`, but the specialized version uses bit compression to reduce space to one-eighth. When type semantics differ, specialization is also needed, such as `std::string` comparison needing `strcmp` rather than pointer comparison. Another class of cases involves handling boundary conditions, like the zero-size issue with `Buffer` earlier.
 
-Cases where you should not use specialization: If you simply want a function to behave differently for certain types, function overloading is usually clearer and safer than template specialization—especially since the "post-selection replacement" mechanism of function template specialization often leads to unexpected behavior. Premature optimization is another trap to watch out for—if the generic version's performance is already sufficient, adding a specialization just for "possibly being faster" only increases code complexity. Additionally, if the specialized version's interface is inconsistent with the generic version (for example, having an extra function or missing one), users can easily get confused, and maintenance becomes a nightmare.
+**Cases where specialization should not be used**: If you just want a function to behave differently for certain types, function overloading is usually clearer and safer than template specialization—especially since the "post-substitution" mechanism of function template specialization often leads to unexpected behavior. Premature optimization is also a trap to watch out for—if the generic version's performance is sufficient, adding specialization just for "potentially faster" code only increases complexity. Additionally, if the specialized version's interface is inconsistent with the generic version (e.g., missing a function or having an extra one), users can easily get confused, and maintenance becomes a nightmare.
 
-Summarized in one sentence: **specialization provides a customized implementation for a specific instance of an existing template, not a new interface**.
+To sum it up in one sentence: **Specialization is for providing custom implementations for specific instances of an existing template, not for designing new interfaces**.
 
-## Hands-On Practice — A Complete Printer Template
+## Live Practice — A Complete Printer Template
 
-Now let's integrate the previous pieces into a complete, compilable, and runnable program. This `Printer` template includes a generic version, a `bool` full specialization, a `const char*` full specialization, and a pointer-type partial specialization.
+Now let's integrate the previous fragments into a complete, compilable program. This `Printer` template includes a generic version, a `bool` full specialization, a `const char*` full specialization, and a partial specialization for pointer types.
 
 ```cpp
-// specialize.cpp
-#include <cstring>
 #include <iostream>
 #include <string>
 
-/// @brief 通用打印器——直接输出值
+// Generic version
 template <typename T>
-struct Printer {
-    static void print(const T& value, const char* name = "")
-    {
-        if (name[0] != '\0') {
-            std::cout << name << " = ";
-        }
-        std::cout << value << "\n";
-    }
-};
+void print(const T& value) {
+    std::cout << value << std::endl;
+}
 
-/// @brief bool 全特化——输出 "true" / "false"
+// Full specialization for bool
 template <>
-struct Printer<bool> {
-    static void print(bool value, const char* name = "")
-    {
-        if (name[0] != '\0') {
-            std::cout << name << " = ";
-        }
-        std::cout << (value ? "true" : "false") << "\n";
-    }
-};
+void print<bool>(const bool& value) {
+    std::cout << (value ? "true" : "false") << std::endl;
+}
 
-/// @brief const char* 全特化——安全打印字符串
+// Full specialization for const char*
 template <>
-struct Printer<const char*> {
-    static void print(const char* value, const char* name = "")
-    {
-        if (name[0] != '\0') {
-            std::cout << name << " = ";
-        }
-        std::cout << (value ? value : "(null)") << "\n";
+void print<const char*>(const char* const& value) {
+    if (value) {
+        std::cout << value << std::endl;
+    } else {
+        std::cout << "(null)" << std::endl;
     }
-};
+}
 
-/// @brief 指针偏特化——打印解引用后的值
+// Partial specialization for pointers
 template <typename T>
-struct Printer<T*> {
-    static void print(T* ptr, const char* name = "")
-    {
-        if (name[0] != '\0') {
-            std::cout << name << " = ";
-        }
-        if (ptr) {
-            std::cout << "*";
-            Printer<T>::print(*ptr);
-        } else {
-            std::cout << "(null)\n";
-        }
+void print<T*>(T* value) {
+    if (value) {
+        std::cout << "Ptr: ";
+        print(*value); // Recursively call the generic version
+    } else {
+        std::cout << "(null)" << std::endl;
     }
-};
+}
 
-int main()
-{
-    // 通用版本
-    Printer<int>::print(42, "int_val");
-    Printer<double>::print(3.14, "double_val");
-    Printer<std::string>::print(std::string("hello"), "str_val");
+int main() {
+    print(42);                    // Generic: int
+    print(3.14);                  // Generic: double
+    print(std::string("ABC"));    // Generic: std::string
 
-    std::cout << "\n";
+    print(true);                  // Specialization: bool
+    print(false);                 // Specialization: bool
 
-    // bool 全特化
-    Printer<bool>::print(true, "flag");
-    Printer<bool>::print(false, "is_empty");
+    const char* hello = "Hello, World!";
+    print(hello);                 // Specialization: const char*
+    print(static_cast<const char*>(nullptr)); // Specialization: const char* (null)
 
-    std::cout << "\n";
-
-    // const char* 全特化
-    Printer<const char*>::print("world", "cstr");
-    Printer<const char*>::print(nullptr, "null_str");
-
-    std::cout << "\n";
-
-    // 指针偏特化
     int x = 100;
-    int* ptr = &x;
-    int* null_ptr = nullptr;
-    Printer<int*>::print(ptr, "int_ptr");
-    Printer<int*>::print(null_ptr, "null_ptr");
+    print(&x);                    // Partial specialization: int*
+    print(static_cast<int*>(nullptr));        // Partial specialization: int* (null)
 
     return 0;
 }
@@ -349,57 +286,55 @@ int main()
 Compile and run:
 
 ```bash
-g++ -Wall -Wextra -std=c++17 specialize.cpp -o specialize && ./specialize
+g++ -std=c++20 printer.cpp -o printer
+./printer
 ```
 
 Verify the output:
 
 ```text
-int_val = 42
-double_val = 3.14
-str_val = hello
-
-flag = true
-is_empty = false
-
-cstr = world
-null_str = (null)
-
-int_ptr = *100
-null_ptr = (null)
+42
+3.14
+ABC
+true
+false
+Hello, World!
+(null)
+Ptr: 100
+(null)
 ```
 
-Let's verify section by section. The three calls to the generic version—`print(42)`, `print(3.14)`, `print(100)`—all go through the generic template and output the values directly, as expected. The `bool` specialization correctly outputs "true" and "false" instead of 1 and 0. The `const char*` specialization prints the string contents and can also safely handle `nullptr`. The pointer partial specialization is the most interesting: for a non-null pointer, it first prints `ptr =` and then recursively calls `Printer<T>`; for a null pointer, it prints "(null)". This recursive mechanism means if we pass a `int**` (a pointer to a pointer), it dereferences twice—peeling off one layer of pointer at a time until it reaches a non-pointer type.
+Let's verify section by section. The three calls to the generic version—`42`, `3.14`, `std::string`—all went through the generic template and output the values directly, as expected. The `bool` specialization correctly outputs "true" and "false" instead of 1 and 0. The `const char*` specialization prints the string content and safely handles `nullptr`. The pointer partial specialization is the most interesting: for a non-null pointer, it first prints "Ptr: " and then recursively calls `print` to output the value; for a null pointer, it prints "(null)". This recursive mechanism means if we pass an `int**` (pointer to a pointer), it will dereference twice—peeling off one layer of pointer at a time until it reaches a non-pointer type.
 
-## Exercise Time
+## Practice Time
 
 ### Exercise 1: Specialize the Serializer Template
 
-Implement a `Serializer` template that provides a `serialize` method. The generic version uses `std::to_string` or `std::ostringstream` to convert the value to a string. Then provide full specializations for `bool` and `const char*`—the `bool` version directly calls the appropriate string conversion, and the `const char*` version wraps the string in quotes.
+Implement a `Serializer` template that provides a `serialize` method. The generic version uses `std::to_string` or `std::ostringstream` to convert the value to a string. Then provide full specializations for `bool` and `const char*`—the `bool` version directly returns "true" or "false", and the `const char*` version adds quotes around the string.
 
 ```cpp
-// 通用版本
 template <typename T>
-struct Serializer {
-    static std::string serialize(const T& value)
-    {
+class Serializer {
+public:
+    std::string serialize(const T& value) {
         return std::to_string(value);
     }
 };
 
-// 你需要补充 int 全特化和 std::string 全特化
+// TODO: Add full specialization for bool
+// TODO: Add full specialization for const char*
 ```
 
-Verification method: `Serializer<bool>::serialize(true)` should return `"true"`, and `Serializer<const char*>::serialize("hello")` should return `"\"hello\""`.
+Verification method: `Serializer<bool>{}.serialize(true)` should return `"true"`, and `Serializer<const char*>{}.serialize("test")` should return `"\"test\""`.
 
 ### Exercise 2: Pointer-Aware Container
 
-Design a simple `Holder` class template that stores a value and provides a `get` method. Then write a partial specialization `Holder<T*>` that stores a pointer, where `get` returns the dereferenced value, and provides an additional `empty` method to check whether the pointer is null. This exercise will help you become familiar with the syntax of partial specialization and interface consistency.
+Design a simple `Box` class template that stores a value and provides a `get` method. Then write a partial specialization `Box<T*>` that stores a pointer, where `get` returns the dereferenced value, and provides an additional `is_empty` method to check if the pointer is null. This exercise will help you familiarize yourself with partial specialization syntax and interface consistency.
 
 ## Summary
 
-In this chapter, we learned about three forms of template specialization. Full specialization uses `template<>` to fix all template parameters to concrete types, providing a completely independent implementation. Although function templates also support full specialization, since explicit specializations do not participate in overload resolution, function overloading is recommended in practice as a replacement. Partial specialization fixes only some parameters and can match an entire family of types (such as all pointer types, or combinations where a certain parameter has a specific value), but it only applies to class templates.
+In this chapter, we learned the three forms of template specialization. Full specialization uses `template <>` to fix all template parameters to specific types, providing a completely independent implementation. Although function templates support full specialization, because explicit specialization does not participate in overload resolution, function overloading is recommended in practice. Partial specialization fixes only some parameters, allowing it to match an entire family of types (like all pointer types, or a combination where a specific parameter has a specific value), but it only applies to class templates.
 
-The core principle of using specialization is: specialization provides a customized implementation for a specific instance of an existing template, and the interface should remain consistent with the generic version. If the generic version's performance is already sufficient, or if function overloading can solve the problem, there is no need to introduce specialization.
+The core principle of using specialization is: specialization provides a custom implementation for a specific instance of an existing template, and the interface should remain consistent with the generic version. If the generic version's performance is sufficient, or if function overloading solves the problem, there is no need to introduce specialization.
 
-With this, the chapter on templates is fully covered. From function templates to class templates, from variadic templates to specialization, we have built the basic framework of C++ generic programming. In the next chapter, we move on to exception handling—discussing C++'s error reporting mechanism, the relationship between RAII and exception safety, and the trade-offs of exceptions in embedded scenarios.
+This concludes the chapter on templates. From function templates to class templates, from variadic templates to specialization, we have built the basic framework for C++ generic programming. In the next chapter, we enter exception handling—discussing C++ error reporting mechanisms, the relationship between RAII and exception safety, and the trade-offs of exceptions in embedded scenarios.

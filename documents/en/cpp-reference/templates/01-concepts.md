@@ -14,59 +14,71 @@ tags:
 - 模板
 title: Constraints and Concepts
 translation:
-  engine: anthropic
   source: documents/cpp-reference/templates/01-concepts.md
-  source_hash: 863a07dfc69e39d779e7f20666cb954b8f24f117a900fc82c971e8464ee496e6
-  token_count: 423
-  translated_at: '2026-05-26T10:18:09.108361+00:00'
+  source_hash: 4aa373e06d3ae09a4d5618df99378f708fc92fdf655983bfaae3c71839ba4ab3
+  translated_at: '2026-06-16T03:29:53.028445+00:00'
+  engine: anthropic
+  token_count: 427
 ---
 # Constraints and Concepts (C++20)
 
 ## In a Nutshell
 
-A mechanism for specifying semantic requirements on template parameters (such as "hashable" or "iterator"), which intercepts incorrect types at compile time and produces readable error messages.
+A mechanism for specifying semantic requirements for template parameters (such as "hashable" or "iterator"), which intercepts incorrect types at compile time and produces readable error messages.
 
-## Header
+## Header File
 
-`#include <concepts>`
+```cpp
+<concepts>
+```
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|------|------|------|
-| Concept definition | `template<...> concept Name = constraint-expression;` | Defines a named set of constraints |
-| requires expression | `requires { /* 表达式 */ }` | Checks if an expression is valid |
-| Nested requirement | `{ expr } -> std::convertible_to<T>;` | Requires an expression to be valid and its result convertible to T |
-| Abbreviated function template | `void f(Concept auto param)` | Uses concept constraints directly in the parameter list |
-| requires clause | `template<typename T> requires Concept<T> void f(T);` | Appends constraints after a template declaration |
-| Trailing requires | `template<typename T> void f(T) requires Concept<T>;` | Appends constraints after a function parameter list |
-| Logical AND | `Concept1 && Concept2` | Combines multiple constraints (conjunction) |
-| Logical OR | `Concept1 \|\| Concept2` | Combines multiple constraints (disjunction) |
+|-----------|-----------|-------------|
+| Concept definition | `template <...> concept Name = ...;` | Defines a named set of constraints |
+| requires expression | `requires { expression; }` | Checks if an expression is valid |
+| Nested requirement | `requires expression;` | Requires expression validity and result convertible to T |
+| Abbreviated function template | `void func(C auto& x)` | Uses concept constraints directly in parameter list |
+| requires clause | `template<...> requires ...` | Appends constraints after template declaration |
+| Trailing requires | `void func(...) requires ...` | Appends constraints after function parameter list |
+| Logical AND | `C1 && C2` | Combines multiple constraints (conjunction) |
+| Logical OR | `C1 \|\| C2` | Combines multiple constraints (disjunction) |
 
 ## Minimal Example
 
 ```cpp
 #include <concepts>
-#include <iostream>
+#include <vector>
+#include <print>
 
+// Define a concept: 'T' must be an integral type
 template<typename T>
-concept Addable = requires(T a, T b) { a + b; };
+concept Integral = std::is_integral_v<T>;
 
-template<Addable T>
-T add(T a, T b) { return a + b; }
+// Use concept to constrain function template
+// Only accepts types satisfying the Integral concept
+auto add(Integral auto a, Integral auto b) {
+    return a + b;
+}
 
 int main() {
-    std::cout << add(1, 2) << '\n';     // OK: int 满足 Addable
-    // add("a", "b");                   // Error: const char* 不满足 Addable
+    // OK: int satisfies Integral
+    std::println("{}", add(1, 2));
+
+    // Compile Error: double does not satisfy Integral
+    // std::println("{}", add(1.0, 2.0));
+
+    return 0;
 }
 ```
 
 ## Embedded Applicability: High
 
-- A pure compile-time feature with zero runtime overhead, making it ideal for resource-constrained environments
-- Constraint-driven design intercepts type errors at compile time, preventing undefined behavior (UB) from triggering on the target board
-- Standard library concepts (such as `std::integral`, `std::same_as`) can be used directly to constrain the interfaces of hardware register wrapper types
-- Error messages are significantly shortened, greatly accelerating the development and debugging cycle of low-level template libraries
+- Pure compile-time feature with zero runtime overhead, suitable for resource-constrained environments.
+- Constraint-driven design intercepts type errors at compile time, avoiding undefined behavior on the target board.
+- Standard library concepts (such as `std::integral`, `std::floating_point`) can directly constrain interfaces of hardware register wrapper types.
+- Significantly shortens error messages, accelerating the development and debugging cycle of low-level template libraries.
 
 ## Compiler Support
 
@@ -80,4 +92,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

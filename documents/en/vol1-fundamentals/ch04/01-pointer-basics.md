@@ -5,14 +5,14 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 'Understanding pointers from scratch: taking addresses, dereferencing,
-  pointer types, and null pointers, mastering the core mechanisms of C++ memory access.'
+description: 'Understanding pointers from scratch: address-of, dereferencing, pointer
+  types, and null pointers, mastering the core mechanisms of C++ memory access.'
 difficulty: beginner
 order: 1
 platform: host
 prerequisites:
 - inline 与 constexpr 函数
-reading_time_minutes: 12
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
@@ -21,21 +21,21 @@ tags:
 - 基础
 title: Pointer Basics
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch04/01-pointer-basics.md
-  source_hash: 77f7dcd7558781b1323aff07abc4b16765db0922fe21a387686c9bfcba9254d6
-  token_count: 2000
-  translated_at: '2026-05-26T10:47:33.444483+00:00'
+  source_hash: 94f13fa343b86d0a5f8257d6e7a4804c90e3a68fbb786ca8859a9593d4d15035
+  translated_at: '2026-06-16T05:57:55.527780+00:00'
+  engine: anthropic
+  token_count: 1996
 ---
 # Pointer Basics
 
-Pointers are probably the most notorious feature in C++, and the one most likely to scare off newcomers. If you have a background in Python or Java, you are probably used to thinking that "a variable is the object itself"—the variable holds the data, and you just use it. But C++ is different. It gives us the ability to directly manipulate memory addresses, and pointers are the gateway to that ability.
+Pointers are likely the most famous, yet intimidating, feature in C++ that often discourages beginners. If you are coming from Python or Java, you might be used to the mindset that "a variable is the object itself"—the variable holds the data, and you just use it. However, C++ is different; it grants us the ability to manipulate memory addresses directly, and pointers are the gateway to this power.
 
-Honestly, many people start feeling nervous the moment they hear the word "pointer." But in reality, a pointer is simply a variable that stores a memory address—nothing more. Understanding its essence means understanding how C++ views memory—every variable resides at some location in memory, that location has a number (an address), and pointers are how we record and manipulate those numbers. In this chapter, we will thoroughly cover the fundamentals—taking addresses, dereferencing, pointer types, and null pointers—laying a solid foundation for the pointer arithmetic, arrays, and dynamic memory management that come later.
+Honestly, many people start feeling nervous the moment they hear the word "pointer." But in reality, a pointer is simply a variable that stores a memory address, nothing more. Understanding its essence is key to understanding how C++ views memory—every variable resides at a specific location in memory, that location has a number (an address), and pointers are used to record and manipulate these numbers. In this chapter, we will thoroughly cover the basics: taking addresses, dereferencing, pointer types, and null pointers, laying a solid foundation for pointer arithmetic, arrays, and dynamic memory management later on.
 
-## Understanding "Address" First — The House Numbers of Memory
+## First, Understand "Addresses"—The Numbers of Memory
 
-Imagine program memory as a row of storage lockers, each with a number, holding data inside. When you declare a variable, the compiler allocates a few consecutive lockers for you, and the variable name is the label. You can use the `&` (address-of) operator to get a variable's address number:
+Imagine a program's memory as a row of storage lockers, where each locker has a number and holds data inside. When we declare a variable, the compiler allocates several consecutive lockers for us, and the variable name acts as a label. We can use the `&` (address-of) operator to obtain the address number of a variable:
 
 ```cpp
 // address_demo.cpp
@@ -54,16 +54,16 @@ int main()
 g++ -std=c++17 -Wall -Wextra -o address_demo address_demo.cpp && ./address_demo
 ```
 
-The output looks something like this:
+The output is roughly:
 
 ```text
 x 的值:   42
 x 的地址: 0x7ffd4a3b2c5c
 ```
 
-The hexadecimal number starting with `0x` is the address of `x` in memory. The address may differ each time you run the program, but one thing is certain: **every variable has a unique address, and `&` is the operator to get it**. If we declare a few more variables and print their addresses, we will find that the addresses of adjacent `int`s differ by 4—exactly the size of one `int`, because the stack grows toward lower addresses.
+Hexadecimal numbers starting with `0x` represent the address of `x` in memory. The address may vary between runs, but one thing is certain: **every variable has a unique address, and `&` is the operator used to obtain it**. If we declare several variables and print their addresses, we will notice that the addresses of adjacent `int` variables differ by four—which is exactly the size of an `int`—because the stack grows towards lower memory addresses.
 
-## Pointer Variables — Variables That Store Addresses
+## Pointer Variables — Variables that Store Addresses
 
 Since an address is just a number, we can naturally store it in a variable. This is a **pointer**—a variable that stores a memory address:
 
@@ -72,9 +72,9 @@ int x = 42;
 int* p = &x;   // p 存储 x 的地址
 ```
 
-The `*` in the declaration means "this is a pointer," and `int*` is read as "pointer to int." You can think of a pointer as a sticky note with a house number written on it—the note itself is the variable `p`, the house number is `&x`, and the value 42 lives inside the house as `x`.
+The `*` in the declaration indicates "this is a pointer", and `int*` is read as "pointer to int". We can think of a pointer like a slip of paper with an address written on it—the slip of paper itself is the variable `p`, the address is `&x`, and the value 42 lives inside the house at `x`.
 
-Let us verify the relationship between the pointer and the original variable:
+Let's verify the relationship between the pointer and the original variable:
 
 ```cpp
 int x = 42;
@@ -86,13 +86,17 @@ std::cout << "p 的值:   " << p << std::endl;     // 和 &x 一样
 std::cout << "&p 的值:  " << &p << std::endl;    // 不同的地址
 ```
 
-The value of `p` is exactly the same as `&x`—it truly stores the address of `x`. And `p` has its own address too (`&p`), because the pointer itself is also a variable and occupies memory.
+The value of `p` is exactly the same as `&x`—it indeed stores the address of `x`. However, `p` has its own address (`&p`), because a pointer itself is a variable and occupies memory.
 
-> **Pitfall Warning**: The result of `int* p1, p2;` is that `p1` is a `int*` while `p2` is a `int`—`*` only modifies the variable immediately following it. To declare two pointers, you must write `int *p1, *p2;`. The best practice is to declare only one pointer per line.
+> **Warning**: The result of `int* p1, p2;` is that `p1` is an `int*` while `p2` is an `int`—the `*` only modifies the variable immediately following it. To declare two pointers, we must write `int *p1, *p2;`. The best practice is to declare only one pointer per line.
 
-## Dereferencing — Following the Address to Find the Data
+## Dereferencing—Following the Address to Find Data
 
-`*` means "this is a pointer" in a declaration, but in an expression it means "follow this address to get the data"—the meaning changes depending on the context. Through `*p`, you can read or even modify the variable the pointer points to:
+In a declaration, `*` indicates "this is a pointer," whereas in an expression, it means "fetch the data at this address"—the context changes the meaning. Through `*p`, we can read or even modify the variable pointed to:
+
+```cpp
+*p = 10;  // Modify the value of x via the pointer
+```
 
 ```cpp
 int x = 42;
@@ -103,11 +107,11 @@ std::cout << *p << std::endl;  // 42，读取
 std::cout << x << std::endl;   // 100
 ```
 
-We did not write `x = 100` directly; instead, we indirectly modified `x` through a pointer. This is the core capability of pointers—**indirect access**. `&` (address-of) and `*` (dereference) are inverse operations: `*&x` is just `x`, and `&*p` is just `p`.
+Instead of writing `x = 100` directly, we modified `x` indirectly via a pointer. This is the core capability of pointers—**indirect access**. `&` (address-of) and `*` (dereference) are inverse operations: `*&x` is `x`, and `&*p` is `p`.
 
-## Pointer Types — Why `int*` and `double*` Are Not the Same Thing
+## Pointer Types — Why `int*` and `double*` Are Not the Same
 
-An address is indeed just a number, but the type information tells the compiler "what type of data lives at this address"—how many bytes to read and how to interpret the binary content.
+While an address is indeed just a number, the type information tells the compiler "what kind of data lives at this address"—specifically, how many bytes to read and how to interpret the binary content.
 
 ```cpp
 // pointer_types.cpp
@@ -130,13 +134,13 @@ int main()
 }
 ```
 
-Two conclusions: different pointer types yield different value types when dereferenced, because the compiler interprets the binary data according to the pointer type. But regardless of what type they point to, the pointers themselves are all 8 bytes on a 64-bit system—an address is just an address, a number used for recording.
+Two conclusions: dereferencing pointers of different types yields different value types, because the compiler interprets the binary data based on the pointer type. However, regardless of the target type, the pointer itself occupies 8 bytes on a 64-bit system—an address is just an address, merely recording a number.
 
-> **Pitfall Warning**: `int* p = &d;` (assigning the address of a `double` to a `int*`) will cause a direct compilation error—the compiler is protecting you. If you use a C-style cast to bypass this—`int* p = (int*)&d;`—then `*p` will read out as a completely meaningless number.
+> **Warning**: `int* p = &d;` (assigning the address of a `double` to an `int*`) will cause a compilation error; the compiler is protecting you. If you bypass this with a C-style cast—`int* p = (int*)&d;`—then `*p` will read out a meaningless number.
 
-## Null Pointers — Pointing to Nothing
+## Null Pointers—Pointing to Nothing
 
-Sometimes we need a pointer but do not know where it should point yet, or a function needs to return a "not found" signal when a lookup fails. This is where **null pointers** come in—pointers that explicitly indicate "pointing to nothing." In C++98 and C, we used NULL. Anyone who has looked at stdlib.h knows that this is just a cast of (void*)0. The `nullptr` introduced in C++11 is the only correct way to represent a null pointer in modern C++:
+Sometimes we need a pointer but don't know where to point it yet, or a function needs to return a "not found" signal when a lookup fails. This requires a **null pointer**—a pointer that explicitly indicates "points to nothing." In C++98 and C, we used `NULL`. Anyone who has looked inside `stdlib.h` knows that this is just a cast of `(void*)0`. The `nullptr` introduced in C++11 is the only correct way to represent a null pointer in modern C++:
 
 ```cpp
 int* p = nullptr;  // 不指向任何有效地址
@@ -148,15 +152,15 @@ if (p != nullptr) { // 也有朋友喜欢if(p)，这个是习惯，笔者只有�
 }
 ```
 
-> **Pitfall Warning**: Dereferencing a null pointer is **undefined behavior** (UB). The program might crash immediately (Segmentation Fault), output garbage, or appear to work "fine" while data has been silently corrupted. The syntax is perfectly legal, and the compiler will not stop you—so build the habit: **always check for null before dereferencing**.
+> **Warning**: Dereferencing a null pointer results in **undefined behavior** (UB). The program might crash immediately (Segmentation Fault), output garbage data, or appear "normal" while data is silently corrupted. The syntax is perfectly legal, so the compiler won't catch it for you—make it a habit: **always check for null before dereferencing**.
 
-In older code, you might see `NULL` or `0`, but `nullptr` has a key advantage: its type is `std::nullptr_t`, so it will not be confused with integers and will not cause incorrect matches in function overloading. Always use `nullptr`, and leave `NULL` to history.
+In older code, you might see `NULL` or `0`, but `nullptr` has a key advantage: its type is `std::nullptr_t`, so it won't be confused with integers or cause incorrect matches during function overloading. Always use `nullptr`, and leave `NULL` to history.
 
-## Pointers and const — A Quick Review
+## Pointers and const—A Quick Refresher
 
-In earlier chapters, we learned about the three combinations of `const` and pointers. Here is a quick recap:
+In previous chapters, we covered the three combinations of `const` and pointers. Let's do a quick review:
 
-`const int* p`—pointer to const, you cannot modify data through `p`, but you can change where it points:
+`const int* p` — A pointer to a constant. We cannot modify the data through `p`, but we can change where `p` points to:
 
 ```cpp
 int x = 10, y = 20;
@@ -165,7 +169,7 @@ const int* p = &x;
 p = &y;       // 没问题
 ```
 
-`int* const p`—const pointer, you cannot change where it points, but you can modify the data:
+`int* const p` — a constant pointer; we cannot change where it points, but we can modify the data:
 
 ```cpp
 int x = 10;
@@ -174,19 +178,19 @@ int* const p = &x;
 // p = &y;     // 编译错误
 ```
 
-`const int* const p`—double const, neither can be changed. Reading tip: read from right to left, `const int* const p` reads as "p is a const pointer, pointing to const int."
+`const int* const p` — double `const`, neither can be changed. Reading tip: read from right to left. `const int* const p` reads as "p is a `const` pointer pointing to a `const int`".
 
 ## Common Pitfalls
 
-The power of pointers comes with danger. The following traps are almost guaranteed to catch beginners; recognizing them early will save you a lot of debugging time.
+The power of pointers comes with danger. Beginners almost inevitably fall into the following traps. Recognizing them early will save you significant debugging time.
 
 ### Uninitialized Pointers
 
-If you declare a pointer without assigning a value, it contains a garbage address—dereferencing it is undefined behavior, and it can be even worse than a null pointer (a null pointer will at least crash immediately, while a garbage address might point to a valid area and cause data to be silently tampered with). **Initialize pointers immediately upon declaration**—even if you do not know where to point yet, assign `nullptr` first.
+Declaring a pointer without assigning a value leaves it with a garbage address. Dereferencing it is undefined behavior, and it can be even worse than a null pointer (a null pointer at least causes an immediate crash, whereas a garbage address might point to a valid memory area, leading to silent data corruption). **Initialize pointers immediately upon declaration**. If we don't know where it should point yet, assign `nullptr` for now.
 
-### Returning the Address of a Local Variable
+### Returning Addresses of Local Variables
 
-Local variables inside a function are allocated on the stack, and the stack space is reclaimed when the function returns. Returning a pointer to a local variable gives the caller a **dangling pointer**—the address is still there, but the data is no longer reliable:
+Local variables inside a function are allocated on the stack. After the function returns, the stack space is reclaimed. Returning a pointer to a local variable gives the caller a **dangling pointer** — the address still exists, but the data is no longer valid:
 
 ```cpp
 int* get_value()
@@ -196,17 +200,17 @@ int* get_value()
 }
 ```
 
-The compiler with `-Wall` will issue a `warning: address of local variable 'local' returned`; take it seriously.
+Compiling with `-Wall` will issue `warning: address of local variable 'local' returned`, which we must take seriously.
 
-### Double Free and Use After Free
+### Double Free and Use-After-Free
 
-These fall under the category of dynamic memory management, which we will cover in detail later. The core principle: memory allocated via `new` should be freed via `delete` exactly once. Freeing twice (double free) or continuing to use after freeing (use after free) are both serious undefined behavior.
+These fall under the scope of dynamic memory management, which we will cover in detail later. The core principle is that memory allocated via `new` should be `delete`d exactly once. Freeing twice (double free) or continuing to use memory after it has been freed (use-after-free) are both serious forms of undefined behavior (UB).
 
-> **Pitfall Warning**: The three pitfalls above share a common root cause—pointers give you the ability to directly manipulate memory, but the compiler cannot check whether your usage is correct in all scenarios. As a result, pointer-related issues often only surface at runtime, and the symptoms can be highly unstable (sometimes it runs perfectly fine, but crashes with a different compiler flag). Building good pointer habits is far more efficient than troubleshooting problems after they occur.
+> **Warning**: The three pitfalls above share a common root cause—pointers give you the ability to manipulate memory directly, but the compiler cannot verify correct usage in all scenarios. Consequently, pointer-related issues often only manifest at runtime, and the symptoms can be highly unstable (sometimes it runs fine, but crashes with different compiler options). Developing good pointer usage habits is far more efficient than debugging issues after they arise.
 
-## Comprehensive Example — pointers.cpp
+## Comprehensive Practice — pointers.cpp
 
-Now let us put everything together:
+Now, let's put everything together:
 
 ```cpp
 // pointers.cpp —— 指针基础操作综合演示
@@ -291,28 +295,28 @@ x = 100
 空指针:   (空指针)
 ```
 
-The addresses may differ each time you run it, but the value of `p` will always match `&x`, the values are swapped after the swap, and the null pointer is handled correctly. We recommend copying this to your local machine, compiling, and running it to observe the address changes yourself.
+The address may vary with each run, but the value of `p` always matches `&x`. After the swap, the values are exchanged, and the null pointer is handled correctly. We recommend copying the code locally to compile and run it, so you can observe the address changes firsthand.
 
 ## Run Online
 
-Run the comprehensive pointer basics example online to observe taking addresses, dereferencing, pointer swaps, and null pointer checks:
+Run this comprehensive pointer basics example online to observe address-of operations, dereferencing, pointer swapping, and null pointer checks:
 
 <OnlineCompilerDemo
-  title="指针基础综合演练：取地址、解引用、swap、空指针"
+  title="Comprehensive Pointer Basics: Address-of, Dereference, Swap, and Null"
   source-path="code/examples/vol1/10_pointer_basics.cpp"
-  description="在线运行并观察指针的基本操作。试着修改指针指向的值，观察原变量的变化。"
+  description="Run online and observe basic pointer operations. Try modifying the value pointed to by the pointer and observe the changes in the original variable."
   allow-run
 />
 
 ## Try It Yourself
 
-### Exercise 1: Write a swap by Hand and Observe Addresses
+### Exercise 1: Implement swap Manually and Observe Addresses
 
-Declare two `int` variables, `a` and `b`, print their values and addresses, swap the values through pointers, and print again. Did the values change? Did the addresses change? Why?
+Declare two `int` variables, `a` and `b`. Print their values and addresses. Swap their values using pointers, then print again. Did the values change? Did the addresses change? Why?
 
 ### Exercise 2: Trace Pointer Values
 
-Without running it first, trace the result on paper, then compile to verify:
+Before running the code, trace the execution on paper to predict the results, then compile and verify:
 
 ```cpp
 #include <iostream>
@@ -333,11 +337,11 @@ int main()
 }
 ```
 
-Many people trip up on the difference between `*p = *q` and `p = q` the first time they do this—the former assigns data, while the latter changes where the pointer points.
+Many developers stumble over the difference between `*p = *q` and `p = q` when doing this for the first time—the former assigns data, while the latter changes the pointer's target.
 
-### Exercise 3: Fix the Null Pointer Bug
+### Exercise 3: Fix Null Pointer Bugs
 
-The following code has three pointer-related bugs. Find and fix them:
+The code below contains three pointer-related bugs. Find and fix them:
 
 ```cpp
 #include <iostream>
@@ -362,6 +366,6 @@ int main()
 
 ## Summary
 
-Starting from memory addresses, this chapter walked through the core concepts of pointers. `&` gets the address, a pointer is a variable that stores an address, and `*` dereferences a pointer to read or write data; a pointer's type determines how memory is interpreted when dereferenced, but the pointer itself is always 8 bytes on a 64-bit system; `nullptr` is the correct way to represent a null pointer in modern C++, and dereferencing a null pointer is undefined behavior; the three combinations of `const` and pointers control whether the data and the pointer itself are mutable; uninitialized pointers, dangling pointers, and double frees are the three most common traps.
+This chapter started with memory addresses and reviewed the core concepts of pointers. `&` obtains an address, a pointer is a variable that stores an address, and `*` dereferences a pointer to read or write data. The pointer's type determines how memory is interpreted during dereferencing, but the pointer itself is always 8 bytes on a 64-bit system. `nullptr` is the correct way to represent a null pointer in modern C++, and dereferencing a null pointer results in undefined behavior (UB). The three combinations of `const` and pointers control whether the data and the pointer itself are mutable. Uninitialized pointers, dangling pointers, and double frees are the three most common pitfalls.
 
-In the next chapter, we will enter the world of pointer arithmetic and arrays—what adding 1 to a pointer actually means, and what the real relationship is between an array name and a pointer. This knowledge will elevate pointers from "variables that store addresses" to "tools for traversing memory."
+In the next chapter, we will dive into the world of pointer arithmetic and arrays—what does adding 1 to a pointer actually mean, and what is the true relationship between an array name and a pointer? This knowledge will upgrade pointers from "variables storing addresses" to "tools for traversing memory."

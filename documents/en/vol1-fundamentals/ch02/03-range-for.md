@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Master the range-for loop introduced in C++11, and iterate over arrays
+description: Master the range-for loop introduced in C++11 to iterate over arrays
   and containers in the most concise way.
 difficulty: beginner
 order: 3
@@ -19,50 +19,49 @@ tags:
 - beginner
 - 入门
 - 基础
-title: range-for loop
+title: Range-based for loop
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch02/03-range-for.md
-  source_hash: 5ae7af74c4fa44a5ebd49d2cf24dc9d2f2fa544d4602bd9f591bf50080165813
-  token_count: 1667
-  translated_at: '2026-05-26T10:47:26.587859+00:00'
+  source_hash: 399e2ba0a566a4cb892c681cc1605e6bc02cbe7382406f1c67a5b5c6645a8fb4
+  translated_at: '2026-06-16T03:41:44.949015+00:00'
+  engine: anthropic
+  token_count: 1663
 ---
-# The range-for Loop
+# Range-based for Loops
 
-When writing traditional for loops to iterate over arrays, we always have to do one thing—manage that index variable. `for (int i = 0; i < n; ++i)`, we've written this line countless times, but we've also gotten it wrong countless times: writing `<` as `<=` causing out-of-bounds access, forgetting to increment `i` causing an infinite loop, changing the array length but forgetting to update the loop condition... Frankly, bugs introduced by simple typos are the most frustrating because they aren't logic errors—they're just sloppy manual work.
+When writing traditional for loops to iterate over arrays, we always have to do one thing—manage that index variable. Honestly, we've all written this line countless times, and we've all gotten it wrong countless times: writing `i < n` as `i <= n` causing an out-of-bounds access, forgetting `i++` causing an infinite loop, or changing the array length but forgetting to update the loop condition... Frankly, bugs introduced by these slips are the most frustrating because they aren't logic errors; they are purely a failure of manual bookkeeping.
 
-C++11 gives us an elegant solution: the **range-for loop**. Its core idea is simple—stop making the programmer manage indices, and just tell the compiler "iterate through every element in this collection." In this chapter, we'll thoroughly understand how to use range-for.
+C++11 offers an elegant solution: the **range-based for loop**. The core idea is simple—stop making the programmer manage the index. Just tell the compiler, "iterate over every element in this collection." In this chapter, we will thoroughly master the usage of range-based for loops.
 
-## Step One — Understanding the Basic Syntax of range-for
+## Step One — Understanding Basic Syntax
 
-The syntax of range-for looks like this:
+The syntax for a range-based for loop looks like this:
 
 ```cpp
-for (类型 变量名 : 集合) {
-    // 使用变量
+for (element_declaration : collection) {
+    // loop body
 }
 ```
 
-Let's compare the two approaches with a simple example. Suppose we have an array and want to print each element:
+Let's compare this with a simple example. Suppose we have an array and want to print every element:
 
 ```cpp
-#include <iostream>
+#include <cstdio>
 
-int main()
-{
-    int scores[] = {90, 85, 78, 92, 88};
+int main() {
+    int arr[] = {1, 2, 3, 4, 5};
 
-    // 传统 for 循环
+    // Traditional for loop
     for (int i = 0; i < 5; ++i) {
-        std::cout << scores[i] << " ";
+        printf("%d ", arr[i]);
     }
-    std::cout << std::endl;
+    printf("\n");
 
-    // range-for 循环
-    for (int score : scores) {
-        std::cout << score << " ";
+    // Range-based for loop
+    for (int x : arr) {
+        printf("%d ", x);
     }
-    std::cout << std::endl;
+    printf("\n");
 
     return 0;
 }
@@ -71,181 +70,218 @@ int main()
 Output:
 
 ```text
-90 85 78 92 88
-90 85 78 92 88
+1 2 3 4 5
+1 2 3 4 5
 ```
 
-The output of both versions is exactly the same, but the range-for version eliminates the index variable `i`, the array length `5`, and the `scores[i]` subscript access—in other words, it removes all the places where a typo could cause a bug. The compiler handles all the calculations for you. range-for isn't picky; it supports C-style arrays, `std::array`, `std::vector`, `std::string`, and brace-enclosed initializer lists—basically anything you can "traverse from beginning to end."
+The output is identical, but the range-based for version eliminates the index variable `i`, the array length `5`, and the `arr[i` indexing access—meaning it removes all the places where a slip-up could occur. The compiler handles all the calculations for you. The range-based for loop isn't picky; it supports C-style arrays, `std::vector`, `std::list`, `std::map`, brace-enclosed initializer lists—basically anything you can "traverse from beginning to end."
 
-## Step Two — Three Ways to Use auto
+## Step Two — Three Ways to Use `auto`
 
-The `auto` keyword saves us the trouble of writing types manually, but in a range-for there are three forms with distinctly different behaviors. Understanding them is an important piece of the puzzle for grasping C++ value semantics versus reference semantics.
+The `auto` keyword saves us the trouble of writing out types, but in a range-based for loop, there are three forms with drastically different behaviors. Understanding them is a crucial piece of the puzzle for grasping C++ value semantics versus reference semantics.
 
-**By value** `for (auto x : arr)` copies the element to `x` on each iteration. Modifying `x` does not affect the original collection. For small types like `int`, this is fine, but iterating over large objects wastes performance.
+**By value** `auto x`: Each iteration copies the element to `x`. Modifying `x` does not affect the original collection. For small types like `int`, this is fine, but it wastes performance when iterating over large objects.
 
-**By reference** `for (auto& x : arr)` makes `x` a reference to the original element, avoiding copy overhead and allowing direct modification of the original element.
+**By reference** `auto& x`: Makes `x` a reference to the original element. There is no copying overhead, and we can modify the original element directly.
 
-**By const reference** `for (const auto& x : arr)` is a read-only reference that avoids copying while preventing accidental modification. This is the best practice for iterating over large objects and the recommended default choice in generic code.
+**By const reference** `const auto& x`: This is a read-only reference. It avoids copying and prevents accidental modification. It is the best practice for traversing large objects and the recommended default choice in generic code.
 
-Let's use a brief example to feel the differences between the three:
-
-```cpp
-int nums[] = {1, 2, 3};
-
-// 按值：改副本，原数组不变
-for (auto x : nums) { x *= 2; }
-// nums 仍是 {1, 2, 3}
-
-// 按引用：直接改原数组
-for (auto& x : nums) { x *= 2; }
-// nums 变成 {2, 4, 6}
-
-// const 引用：只读遍历，编译器会阻止修改
-for (const auto& x : nums) {
-    std::cout << x << " ";  // 2 4 6
-}
-```
-
-> ⚠️ **Watch Out**
-> Never use `for (auto x : arr)` when you need to modify elements, otherwise you're only modifying a copy and the original array remains untouched. The hallmark of this bug is "compiles fine, no runtime errors, but wrong results"—making it one of the hardest to track down. If you need to modify elements inside the loop, you must use `auto&`. This is a reference, which we covered in the previous chapter.
-
-## Step Three — The Pitfall of range-for with C-Style Arrays
-
-range-for natively supports C-style arrays, but there is an important limitation: when an array is passed as a function parameter, it decays into a pointer, and range-for stops working.
+Let's use a brief example to see the difference between the three:
 
 ```cpp
-void print_array(int arr[])  // arr 在这里其实是指针
-{
-    // 编译错误！编译器不知道 arr 指向多少个元素
-    // for (int x : arr) { ... }
-}
-```
+#include <iostream>
+#include <vector>
 
-The reason is that range-for needs to know the beginning and end of the collection. Once the array decays into a pointer, the compiler loses the "number of elements" information and cannot determine where the end is.
+int main() {
+    std::vector<int> nums = {1, 2, 3};
 
-> ⚠️ **Watch Out**
-> range-for cannot be used with bare pointers. If you receive a `int*` plus a length `size_t n`, you have to use a traditional for loop. Later, when we learn about `std::span` (C++20), there will be a more elegant solution.
-
-We recommend using `std::array` instead of C-style arrays—it has the same performance as C arrays but provides standard `begin()`/`end()` interfaces, working seamlessly with range-for:
-
-```cpp
-std::array<int, 5> scores = {90, 85, 78, 92, 88};
-for (const auto& s : scores) {
-    std::cout << s << " ";
-}
-```
-
-## Step Four — Iterating Over Strings with range-for
-
-`std::string` can also be iterated over with range-for, yielding a single character on each iteration. For example, counting vowels:
-
-```cpp
-std::string text = "Hello C++ World";
-int vowel_count = 0;
-for (char c : text) {
-    char lower = (c >= 'A' && c <= 'Z') ? (c + 32) : c;
-    if (lower == 'a' || lower == 'e' || lower == 'i'
-        || lower == 'o' || lower == 'u') {
-        ++vowel_count;
+    // 1. By value: Copy, modification doesn't affect original
+    for (auto x : nums) {
+        x = 10;
     }
+    // nums is still {1, 2, 3}
+
+    // 2. By reference: No copy, modification affects original
+    for (auto& x : nums) {
+        x *= 2;
+    }
+    // nums becomes {2, 4, 6}
+
+    // 3. By const reference: Read-only, efficient for large objects
+    for (const auto& x : nums) {
+        std::cout << x << " ";
+    }
+    // Output: 2 4 6
 }
-std::cout << "元音字母个数: " << vowel_count << std::endl;
-// 输出: 元音字母个数: 3
 ```
 
-Using the reference version, we can also modify the string in place, such as converting to uppercase:
+> ⚠️ **Warning**
+> Never use `auto x` when you need to modify elements; otherwise, you are only modifying a copy, and the original array remains untouched. Bugs of this nature—"compiles successfully, runs without error, but produces incorrect results"—are among the hardest to track down. If you need to modify elements in the loop, you must use `auto& x`. This refers to references, which we covered in the previous chapter.
+
+## Step Three — The Trap with C-Style Arrays
+
+The range-based for loop natively supports C-style arrays, but there is a significant limitation: when an array is passed as a function parameter, it decays into a pointer, causing the range-based for loop to fail.
 
 ```cpp
-for (auto& c : text) {
-    c = static_cast<char>(
-        std::toupper(static_cast<unsigned char>(c)));
-}
-```
-
-The `static_cast<unsigned char>` here isn't redundant. The parameter of `std::toupper` is `int`, and in C++, `char` might be signed—passing a negative character value directly is undefined behavior (UB). Converting to `unsigned char` first before promoting to `int` is the standard practice when working with character functions.
-
-> ⚠️ **Watch Out**
-> Calling `std::toupper` directly on a `char` without first converting it to `unsigned char` produces undefined behavior (UB) when encountering extended ASCII or Chinese characters. The compiler won't warn you, but the results may be completely wrong. Make it a habit to always perform this conversion before calling character functions.
-
-## Looking Ahead to C++17: Structured Bindings
-
-Structured bindings introduced in C++17 work beautifully with range-for. While a full explanation will have to wait for the container chapters, we can take a quick peek:
-
-```cpp
-// C++17：遍历键值对容器时直接拆开 key 和 value
-// for (const auto& [key, value] : my_map) {
-//     std::cout << key << " -> " << value << std::endl;
-// }
-```
-
-The `[key, value]` inside the brackets "destructures" an object containing multiple fields into independent variables, which is much more intuitive than manually writing `pair.first` and `pair.second`. Don't worry if you don't fully understand it yet—just know this capability exists.
-
-## Under the Hood — What range-for Actually Does
-
-Why can range-for work with both arrays and completely different types like `std::vector` and `std::string`? The answer is simple: the compiler translates range-for into an equivalent traditional loop.
-
-```cpp
-// for (auto x : coll) 大致等价于：
-{
-    auto&& __range = coll;
-    for (auto __it = __range.begin(); __it != __range.end(); ++__it) {
-        auto x = *__it;
-        // 循环体
+// ❌ Error: range-based for loop needs an array, not a pointer
+void print_array(int arr[]) {  // equivalent to int* arr
+    for (int x : arr) {        // Compiler error here
+        printf("%d ", x);
     }
 }
 ```
 
-What the compiler does is call `begin()` to get the beginning, call `end()` to get the end, and then step through one by one. For C-style arrays, the compiler knows the length and uses the pointer to the first element plus the length to serve as the start and end positions. This means any type that provides `begin()` and `end()` can use range-for—which also explains why `std::array` is more convenient to use than C-style arrays.
+The reason is that the range-based for loop needs to know the start and end of the collection. Once the array decays into a pointer, the compiler loses the "number of elements" information and cannot determine where the end is.
 
-## Hands-On Practice — range_for.cpp
+> ⚠️ **Warning**
+> The range-based for loop cannot be used with raw pointers. If you are given a `T*` pointer and a length `n`, you must use a traditional for loop. Later, when we learn about `std::span` (C++20), there will be a more elegant solution.
 
-Let's integrate the usages we've covered into a complete program, demonstrating summation, counting, and in-place modification:
+We recommend using `std::array` instead of C-style arrays. It has the same performance as C arrays but provides standard `begin()`/`end()` interfaces, working seamlessly with range-based for loops:
 
 ```cpp
-// range_for.cpp
-// Platform: host
-// Standard: C++17
+#include <array>
+#include <iostream>
 
+void print_array(const std::array<int, 5>& arr) {
+    for (int x : arr) {  // ✅ Works perfectly
+        std::cout << x << " ";
+    }
+}
+```
+
+## Step Four — Iterating Over Strings
+
+`std::string` can also be traversed with a range-based for loop, yielding one character per iteration. For example, counting vowels:
+
+```cpp
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string text = "Hello World";
+    int vowel_count = 0;
+
+    for (char ch : text) {
+        if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u' ||
+            ch == 'A' || ch == 'E' || ch == 'I' || ch == 'O' || ch == 'U') {
+            ++vowel_count;
+        }
+    }
+
+    std::cout << "Vowels: " << vowel_count << std::endl;
+    return 0;
+}
+```
+
+Using the reference version allows for in-place modification of the string, such as converting to uppercase:
+
+```cpp
+#include <cctype>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string str = "hello";
+
+    for (char& ch : str) {
+        ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
+    }
+
+    std::cout << str << std::endl; // Output: HELLO
+    return 0;
+}
+```
+
+Here, `static_cast<unsigned char>` is not redundant. `std::toupper`'s parameter is `int`, and `char` in C++ can be signed—passing a negative character value directly is undefined behavior. Casting to `unsigned char` first and then promoting to `int` is the standard way to handle character functions.
+
+> ⚠️ **Warning**
+> Calling `std::toupper` directly on a `char` without first casting to `unsigned char` can produce undefined behavior when encountering extended ASCII or Chinese characters. The compiler won't warn you, but the results might be completely wrong. Make it a habit to always perform this conversion before calling character functions.
+
+## C++17 Preview: Structured Bindings
+
+C++17 introduced structured bindings, which work excellently with range-based for loops. While a full explanation waits for the container chapters, let's take a quick look:
+
+```cpp
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> items = {
+        {1, "One"},
+        {2, "Two"}
+    };
+
+    // C++17 structured binding
+    for (const auto& [key, value] : items) {
+        std::cout << key << ": " << value << std::endl;
+    }
+    // Output:
+    // 1: One
+    // 2: Two
+}
+```
+
+The `[key, value]` inside the brackets "deconstructs" an object containing multiple fields into independent variables, which is much more intuitive than manually writing `it->first` and `it->second`. Don't worry if you don't fully understand it yet; just know this capability exists.
+
+## Under the Hood — What Range-Based For Actually Does
+
+Why can the range-based for loop work for arrays, `std::vector`, and `std::map`, which are completely different types? The answer is simple: the compiler translates a range-based for loop into an equivalent traditional loop.
+
+```cpp
+// Compiler transforms this:
+for (auto x : collection) {
+    // body
+}
+
+// Into roughly this (conceptually):
+auto&& __range = collection;
+for (auto __begin = __range.begin(), __end = __range.end();
+     __begin != __end; ++__begin) {
+    auto x = *__begin;
+    // body
+}
+```
+
+The compiler's job is to call `begin()` to get the start and `end()` to get the finish, then step through one by one. For C-style arrays, the compiler knows the length and uses the pointer to the first element plus the length to act as start and stop positions. This means any type that provides `begin()` and `end()` can use a range-based for loop—this also explains why `std::array` is more convenient to use than C-style arrays.
+
+## Practice — range_for.cpp
+
+Let's integrate the previous usage into a complete program, demonstrating summation, counting, and in-place modification:
+
+```cpp
 #include <array>
 #include <cctype>
 #include <iostream>
 #include <string>
 
-int main()
-{
-    // 求和
-    std::array<int, 6> data = {3, 7, 1, 9, 4, 6};
+int main() {
+    // 1. Summation
+    std::array<int, 5> nums = {1, 2, 3, 4, 5};
     int sum = 0;
-    for (const auto& x : data) {
+    for (int x : nums) {
         sum += x;
     }
-    std::cout << "总和: " << sum << std::endl;
+    std::cout << "Sum: " << sum << std::endl;
 
-    // 计数
-    int target = 6;
+    // 2. Counting
+    std::string text = "Embedded C++";
     int count = 0;
-    for (const auto& x : data) {
-        if (x == target) { ++count; }
+    for (char ch : text) {
+        if (ch == 'e' || ch == 'E') {
+            ++count;
+        }
     }
-    std::cout << "值 " << target << " 出现了 " << count
-              << " 次" << std::endl;
+    std::cout << "Count of 'e': " << count << std::endl;
 
-    // 原地修改：每个元素翻倍
-    std::array<int, 6> doubled = data;
-    for (auto& x : doubled) { x *= 2; }
-    std::cout << "翻倍后: ";
-    for (const auto& x : doubled) {
+    // 3. In-place modification
+    for (int& x : nums) {
+        x *= 2; // Double each element
+    }
+    std::cout << "Modified array: ";
+    for (int x : nums) {
         std::cout << x << " ";
     }
     std::cout << std::endl;
-
-    // 字符串转大写
-    std::string message = "range-for is elegant";
-    for (auto& c : message) {
-        c = static_cast<char>(
-            std::toupper(static_cast<unsigned char>(c)));
-    }
-    std::cout << "转大写: " << message << std::endl;
 
     return 0;
 }
@@ -254,61 +290,57 @@ int main()
 Compile and run:
 
 ```bash
-g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
+g++ -std=c++17 range_for.cpp -o range_for
 ./range_for
 ```
 
 Output:
 
 ```text
-总和: 30
-值 6 出现了 1 次
-翻倍后: 6 14 2 18 8 12
-转大写: RANGE-FOR IS ELEGANT
+Sum: 15
+Count of 'e': 3
+Modified array: 2 4 6 8 10
 ```
 
 ## Run Online
 
-Run the range-for comprehensive example online to observe summation, counting, in-place modification, and string operations:
+Run the comprehensive range-for example online to observe summation, counting, in-place modification, and string operations:
 
 <OnlineCompilerDemo
-  title="range-for Comprehensive Demo: Summation, Counting, Modification, Strings"
+  title="Range-for Comprehensive Drill: Sum, Count, Modify, Strings"
   source-path="code/examples/vol1/07_range_for.cpp"
-  description="Run online and observe four typical usages of range-for. Try modifying the array contents or the target value."
+  description="Run online and observe four typical usages of range-for. Try modifying the array content or the target value."
   allow-run
 />
 
 ## Try It Yourself
 
-### Exercise 1: Find the Maximum Value
+### Exercise 1: Find the Maximum
 
-Given a `std::array<int, 8>`, use range-for to find the maximum value and print it. Hint: declare `max_val` initialized to the first element, then iterate and compare.
+Given a `std::array<int, 5>`, use a range-based for loop to find the maximum value and print it. Hint: Declare a variable `max_val` initialized to the first element, then iterate and compare.
 
-```text
-数组: 12 3 45 7 23 56 8 19
-最大值: 56
+```cpp
+// Write your code here
 ```
 
 ### Exercise 2: Count Vowels
 
-Use range-for to count the number of vowels (a/e/i/o/u, case-insensitive) in a `std::string`.
+Use a range-based for loop to count the number of vowels (a/e/i/o/u, case-insensitive) in a `std::string`.
 
-```text
-字符串: "Beautiful C++"
-元音个数: 5
+```cpp
+// Write your code here
 ```
 
 ### Exercise 3: In-Place Modification
 
-Use the reference version of range-for to take the absolute value of all negative numbers in an array.
+Use the reference version of the range-based for loop to take the absolute value of all negative numbers in an array.
 
-```text
-修改前: 3 -7 1 -9 4 -6
-修改后: 3 7 1 9 4 6
+```cpp
+// Write your code here
 ```
 
 ## Summary
 
-In this chapter, starting from the pain points of traditional for loops, we learned about range-for, a C++11 syntactic sugar. `for (类型 变量 : 集合)` lets the compiler take over index management, so we no longer need to manually write boundary conditions. When paired with `auto`, we need to distinguish three forms: `auto` makes a value copy, `auto&` makes a modifiable reference, and `const auto&` makes a read-only reference. range-for cannot be used with bare pointers because pointers lose the element count information. Under the hood, it's simply a wrapper around `begin()` and `end()`, and any type providing these two interfaces can use it.
+In this chapter, starting from the pain points of traditional for loops, we learned about the range-based for loop, a C++11 syntactic sugar. The range-based for loop lets the compiler take over index management, so we no longer need to write boundary conditions manually. When paired with `auto`, we must distinguish between three forms: `auto x` for value copying, `auto& x` for modifiable references, and `const auto& x` for read-only references. The range-based for loop cannot be used with raw pointers because pointers lose the information about the number of elements. Mechanically, it is just a wrapper for `begin()` and `end()`, and any type providing these two interfaces can use it.
 
-With this, we have covered the entire control flow section of Chapter two. if/else branching, switch multi-way selection, the three classic loops, plus range-for—combined, these tools are sufficient to handle the vast majority of execution flows in a program. In the next chapter, we'll enter the world of functions—encapsulating repetitive code to make the program structure much clearer.
+With this, we have finished covering control flow in Chapter 2. `if`/`else` branches, `switch` multi-way selection, the three classic loops, and the range-based for loop—combined, these tools are sufficient for programs to handle the vast majority of execution flows. In the next chapter, we enter the world of functions—encapsulating repetitive code to make the program structure clearer.

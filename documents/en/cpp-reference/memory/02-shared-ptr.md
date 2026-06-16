@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: A smart pointer that shares object ownership through reference counting
+description: smart pointer that shares object ownership via reference counting
 difficulty: intermediate
 order: 0
 reading_time_minutes: 2
@@ -15,47 +15,47 @@ tags:
 - intermediate
 title: std::shared_ptr
 translation:
-  engine: anthropic
   source: documents/cpp-reference/memory/02-shared-ptr.md
-  source_hash: 6cec67a026ce1ebd9297fcf8392b64779e8384676f1fd13bacb0b6c140263115
-  token_count: 492
-  translated_at: '2026-05-26T10:17:21.281251+00:00'
+  source_hash: 3252b3a305fa4aa9ed0a548616f96cae11805003b299ed0d20c374ebbcb7fb42
+  translated_at: '2026-06-16T03:29:35.690924+00:00'
+  engine: anthropic
+  token_count: 496
 ---
 <!--
 Reference Card Template
-Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
+Used for feature quick reference pages under documents/cpp-reference/.
+Unlike article-template.md, reference cards follow a refined, structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
+1. Must include 1 platform tag (use 'host' for all reference cards)
+2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
-# std::shared_ptr（C++11）
+# std::shared_ptr (C++11)
 
 ## In a Nutshell
 
-Multiple smart pointers can jointly own the same object. The object is automatically released only when the last owner is destroyed or reset.
+Multiple smart pointers can share ownership of the same object. The object is automatically released only when the last owner is destroyed or reset.
 
 ## Header
 
 `#include <memory>`
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
 |-----------|-----------|-------------|
-| Construction | `shared_ptr()` | Construct a null pointer (default) |
-| Construction (factory) | `template<class T, class... Args> shared_ptr<T> make_shared(Args&&... args)` | Allocate and construct an object (C++11) |
-| Reset | `void reset()` | Release ownership of the currently managed object |
-| Get raw pointer | `T* get() const noexcept` | Return the stored pointer |
-| Dereference | `T& operator*() const noexcept` | Dereference the stored pointer |
-| Arrow operator | `T* operator->() const noexcept` | Access members through the pointer |
-| Reference count | `long use_count() const noexcept` | Return the number of shared_ptrs sharing the object |
-| Boolean conversion | `explicit operator bool() const noexcept` | Check if it manages a non-null object |
-| Swap | `void swap(shared_ptr& r) noexcept` | Swap the objects managed by two shared_ptrs |
+| Constructor | `shared_ptr()` | Constructs an empty pointer (default) |
+| Constructor (Factory) | `template<class T, class... Args> shared_ptr<T> make_shared(Args&&... args)` | Allocates and constructs an object (C++11) |
+| Reset | `void reset()` | Releases ownership of the currently managed object |
+| Get Raw Pointer | `T* get() const noexcept` | Returns the stored pointer |
+| Dereference | `T& operator*() const noexcept` | Dereferences the stored pointer |
+| Arrow Operator | `T* operator->() const noexcept` | Access members via pointer |
+| Reference Count | `long use_count() const noexcept` | Returns the number of shared_ptr owners sharing the object |
+| Boolean Conversion | `explicit operator bool() const noexcept` | Checks if a non-null object is managed |
+| Swap | `void swap(shared_ptr& r) noexcept` | Swaps objects managed by two shared_ptr instances |
 
 ## Minimal Example
 
@@ -72,17 +72,17 @@ int main() {
 }
 ```
 
-## Embedded Applicability: Medium
+## Embedded Suitability: Medium
 
-- Internally maintains a control block and atomic reference count, incurring extra memory and CPU overhead
-- Copy operations are inherently thread-safe, making it suitable for sharing resources across multiple tasks
-- Use with caution on MCUs with extremely limited RAM and Flash; prefer unique_ptr
+- Maintains an internal control block and atomic reference counts, incurring extra memory and CPU overhead.
+- Copy operations are thread-safe, making it suitable for sharing resources between multiple tasks.
+- Use with caution on MCUs with extremely limited RAM and Flash; prefer `unique_ptr` where possible.
 
 ## Compiler Support
 
 | GCC | Clang | MSVC |
 |-----|-------|------|
-| TBA | TBA | TBA |
+| TBD | TBD | TBD |
 
 ## See Also
 
@@ -90,4 +90,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

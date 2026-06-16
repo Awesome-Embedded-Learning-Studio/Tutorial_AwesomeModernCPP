@@ -3,195 +3,191 @@ chapter: 17
 difficulty: intermediate
 order: 7
 platform: stm32f1
-reading_time_minutes: 10
+reading_time_minutes: 9
 tags:
 - cpp-modern
 - intermediate
 - stm32f1
 title: 'Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISRs and the Main
   Loop'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/03-uart/07-circular-buffer-lock-free-spsc.md
-  source_hash: 8de84062a51802cb9a09dbbdaeff32ad8bcf8001044a2ed2a2ff603fd4841d6c
-  token_count: 1532
-  translated_at: '2026-05-26T12:17:01.081291+00:00'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/03-uart/07-circular-buffer-lock-free-spsc.md
+  source_hash: cbb09c125582ac93535fca1337b0c45e271bde964eaf3a2328a615828f71d884
+  translated_at: '2026-06-16T04:12:22.710497+00:00'
+  engine: anthropic
+  token_count: 1536
 ---
-# Part 37: Lock-Free Ring Buffer — A Safe Channel Between ISR and Main Loop
+# Post 37: Lock-Free Ring Buffer — A Safe Channel Between ISR and Main Loop
 
-> Following up on the previous part: each time the ISR receives a byte, it needs to pass it to the main loop for processing. In this part, we design a dedicated data structure to accomplish this task — the lock-free ring buffer.
-
----
-
-## The Problem: Passing Data Between the ISR and the Main Loop
-
-At the end of the previous part, we left an open question: after the ISR receives a byte, how do we safely pass it to the main loop?
-
-The most intuitive approach might be a global variable. The ISR writes bytes into a global array, and the main loop reads from it. But there is a fundamental contradiction here — the ISR and the main loop are two independent execution flows. The ISR might be triggered while the main loop is reading the array (the reverse is impossible because the ISR interrupts the main loop, not the other way around). If the ISR is writing to a specific position in the array while the main loop happens to be reading from that exact same position, the data read might be incomplete.
-
-You might think of using a flag to solve this: the ISR sets a `data_ready` flag, and the main loop checks the flag before reading. But if data arrives quickly — at 115200 baud, there are only 87 microseconds between two bytes — the ISR might write the first byte and set the flag, but before it can write the second byte, the main loop might have already read out incomplete data.
-
-We need a data structure that allows the ISR to continuously write and the main loop to continuously read, without interfering with each other, without locks, and without complex synchronization mechanisms. This data structure is the ring buffer (Circular Buffer / Ring Buffer).
+> Following the previous post: The ISR receives one byte at a time that needs to be passed to the main loop for processing. In this post, we design a dedicated data structure to accomplish this task—the lock-free ring buffer.
 
 ---
 
-## The Core Idea of the Ring Buffer
+## The Problem: Data Transfer Between ISR and Main Loop
+
+We left off with a question at the end of the last post: How do we safely pass bytes received by the ISR to the main loop?
+
+The most intuitive solution might be a global variable. The ISR writes bytes into a global array, and the main loop reads from the array. However, there is a fundamental contradiction here—the ISR and the main loop are two independent execution flows. The ISR can be triggered while the main loop is in the middle of reading the array (the reverse is impossible, since the ISR interrupts the main loop, not the other way around). If the ISR is writing data to a specific location in the array while the main loop happens to be reading that same location, the data read might be incomplete.
+
+You might think of using a flag to solve this: The ISR sets a `data_ready` flag, and the main loop checks the flag and reads only if data is present. But if data arrives quickly—at 115200 baud, there are only 87 microseconds between two bytes—the ISR might write the first byte and set the flag, but before it can write the second byte, the main loop might have already read away incomplete data.
+
+We need a data structure that allows the ISR to write continuously and the main loop to read continuously, without interfering with each other, without locks, and without complex synchronization mechanisms. This data structure is the ring buffer (Circular Buffer).
+
+---
+
+## Core Concept of the Ring Buffer
 
 The underlying structure of a ring buffer is a fixed-size array. The key lies in two index pointers: `head` and `tail`.
 
-- **`head`**: The next write position. Only the ISR can advance the head (push operation).
-- **`tail`**: The next read position. Only the main loop can advance the tail (pop operation).
+- **`head`**: The next write position. Only the ISR can advance `head` (push operation).
+- **`tail`**: The next read position. Only the main loop can advance `tail` (pop operation).
 
-Data flows in from the head end and flows out from the tail end. When the head reaches the end of the array, it wraps around to the beginning — this is the meaning of "ring." Imagine a circular conveyor belt: the producer (ISR) places products at one end, and the consumer (main loop) picks them up at the other end. Both ends work independently without interfering with each other.
+Data flows in from the `head` end and flows out from the `tail` end. When `head` reaches the end of the array, it wraps around to the beginning—this is the meaning of "ring". Imagine a circular conveyor belt: a producer (ISR) places products at one end, and a consumer (main loop) takes products from the other end. The two ends work independently without interfering.
 
-A few key states:
+Several key states:
 
-- **Empty**: `head == tail`, meaning there is no data.
-- **Full**: The next position after `head` equals `tail`. Note that we cannot use `head == tail` to check for fullness — because `head == tail` is already used to represent "empty." We leave one position unwritten to distinguish between empty and full: if the buffer has N positions, it can store at most N-1 bytes.
-- **Data count**: `head - tail` (handling the result after wrapping).
+- **Empty**: `head == tail`, no data available.
+- **Full**: The next position of `head` equals `tail`. Note that we cannot use `head == tail` to determine full—because `head == tail` is already used to represent "empty". We leave one slot unwritten to distinguish between empty and full: if a buffer has N slots, it stores at most N-1 bytes.
+- **Data Count**: `(head - tail) & (N - 1)` (result after handling wrap-around).
 
-This "Single-Producer Single-Consumer" (SPSC) access pattern guarantees a crucial property: head and tail are each modified by only one party. The ISR only modifies head, and the main loop only modifies tail. There is no situation where two execution flows modify the same variable simultaneously — therefore, no locks are needed.
+This "Single-Producer Single-Consumer" (SPSC) access pattern guarantees a key property: `head` and `tail` are each modified by only one party. The ISR only modifies `head`, and the main loop only modifies `tail`. There is no situation where two execution flows modify the same variable simultaneously—therefore, no locks are needed.
 
 ---
 
-## The Power-of-Two Trick: Zero-Overhead Wrapping
+## The Power-of-Two Trick: Zero-Overhead Wrap-Around
 
-When head or tail reaches the end of the array, it needs to wrap back to the beginning. The most intuitive approach is to use the modulo operator: `index = index % N`. However, on an ARM Cortex-M3, the modulo operation requires multiple instructions (division instructions take many cycles).
+When `head` or `tail` reaches the end of the array, it needs to wrap around to the beginning. The most intuitive approach is to use the modulo operator: `index % N`. However, modulo operations require multiple instructions on ARM Cortex-M3 (division instructions take many cycles).
 
-If N is a power of two (2, 4, 8, 16, 32, ..., 128), the modulo can be replaced with a bitwise AND operation: `index & (N - 1)`. One AND instruction, one clock cycle.
+If N is a power of two (2, 4, 8, 16, 32, ..., 128), modulo can be replaced by a bitwise AND operation: `index & (N - 1)`. One AND instruction, one clock cycle.
 
-Why? Because when N = 2^k, the binary representation of N - 1 is k ones (for example, N=8 is 1000b, N-1=0111b). The effect of `x & 0111b` is to keep only the lower 3 bits of x — which is equivalent to `x % 8`.
+Why? Because when N = 2^k, the binary representation of N - 1 is k ones (e.g., N=8 is 1000b, N-1=0111b). The effect of `x & 0111b` is to retain only the lower 3 bits of x—which is equivalent to `x % 8`.
 
-In our code, N = 128 (2^7), so `mask(v) = v & 127`.
+In our code, N = 128 (2^7), so `index & 127`.
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/base/circular_buffer.hpp
-template <size_t N>
+template <typename T, uint32_t N>
 class CircularBuffer {
-    static_assert(N > 0 && (N & (N - 1)) == 0, "N must be a power of 2");
+    static_assert((N & (N - 1)) == 0, "Buffer size must be a power of 2");
     // ...
-    static constexpr size_t mask(size_t v) noexcept { return v & (N - 1); }
-    static constexpr size_t next(size_t v) noexcept { return (v + 1) & (2 * N - 1); }
+};
 ```
 
-`static_assert` enforces a compile-time check that N must be a power of two. If you write `CircularBuffer<100>`, the compilation will fail directly. This is much better than a runtime check — you won't discover that you chose the wrong buffer size only after flashing it to the board.
+`static_assert` forces a compile-time check that N must be a power of two. If you write `CircularBuffer<char, 100>`, compilation fails directly. This is much better than a runtime check—you won't discover the buffer size was wrong after flashing the board.
 
-`next(v)` also uses a clever design. Instead of directly adding 1 to v and then taking the modulo, it uses `(v + 1) & (2 * N - 1)`. This means the actual range of values for head and tail is 0 to 2N-1, rather than 0 to N-1. The benefit of this approach is that the `size()` calculation becomes simpler: `head - tail` doesn't need to handle wrapping, because head and tail never "pass" each other (they are monotonically increasing, and are merely mapped to actual array indices via `mask()`).
+`next()` also uses a clever design. It doesn't simply add 1 to `v` and then take the modulo, but uses `(v + 1) & (N - 1)`. This means the actual range of values for `head` and `tail` is 0 to 2N-1, rather than 0 to N-1. The benefit of this is that `size()` calculation is simpler: `(head - tail)` doesn't need to handle wrap-around, because `head` and `tail` won't "cross" each other (they are monotonically increasing, just mapped to actual array indices via `& (N - 1)`).
 
 ---
 
-## Complete Walkthrough of the CircularBuffer Template
+## Full Explanation of the CircularBuffer Template
 
 Let's walk through the complete implementation of this template method by method:
 
 ```cpp
-// 来源: code/stm32f1-tutorials/3_uart_logger/base/circular_buffer.hpp
-template <size_t N>
+template <typename T, uint32_t N>
 class CircularBuffer {
-    static_assert(N > 0 && (N & (N - 1)) == 0, "N must be a power of 2");
+    static_assert((N & (N - 1)) == 0, "Buffer size must be a power of 2");
 
-  public:
-    bool push(std::byte b) noexcept {
-        if (full()) {
-            return false;
-        }
-        buf_[mask(head_)] = b;
-        head_              = next(head_);
+    T buffer[N];
+    volatile uint32_t head = 0; // Next write index
+    volatile uint32_t tail = 0; // Next read index
+
+    constexpr uint32_t next(uint32_t v) const {
+        return (v + 1) & (N - 1);
+    }
+
+public:
+    bool push(T val) {
+        uint32_t h = head;
+        uint32_t n = next(h);
+        if (n == tail) return false; // Full
+
+        buffer[h] = val;
+        head = n;
         return true;
     }
 
-    bool pop(std::byte& out) noexcept {
-        if (empty()) {
-            return false;
-        }
-        out   = buf_[mask(tail_)];
-        tail_ = next(tail_);
+    bool pop(T& val) {
+        uint32_t t = tail;
+        if (t == head) return false; // Empty
+
+        val = buffer[t];
+        tail = next(t);
         return true;
     }
 
-    bool   empty() const noexcept { return head_ == tail_; }
-    bool   full()  const noexcept { return next(head_) == tail_; }
-    size_t size()  const noexcept {
-        return head_ >= tail_ ? head_ - tail_ : N - tail_ + head_;
-    }
-
-  private:
-    static constexpr size_t mask(size_t v) noexcept { return v & (N - 1); }
-    static constexpr size_t next(size_t v) noexcept { return (v + 1) & (2 * N - 1); }
-
-    std::array<std::byte, N> buf_{};
-    volatile size_t head_ = 0;
-    volatile size_t tail_ = 0;
+    bool empty() const { return head == tail; }
+    bool full() const { return next(head) == tail; }
+    uint32_t size() const { return (head - tail) & (N - 1); }
 };
 ```
 
-### push() — Called by the ISR
+### push() — Called by ISR
 
-`push()` is called by the ISR (producer side). The flow is: check if the buffer is full → if not full, write the byte to the `mask(head_)` position → advance head → return true. If full, return false (data lost).
+`push()` is called by the ISR (producer side). The flow is: check if the buffer is full → if not full, write the byte to the `head` position → advance `head` → return true. If full, return false (data lost).
 
-`push()` is `noexcept` — exceptions cannot be thrown in an ISR (and our project disables exceptions entirely). The entire operation is O(1): one comparison, one array write, one addition, and one AND.
+`push()` is `noexcept`—exceptions cannot be thrown in an ISR (our project disables exceptions entirely). The entire operation is O(1): one comparison, one array write, one addition, and one AND.
 
-### pop() — Called by the Main Loop
+### pop() — Called by Main Loop
 
-`pop()` is called by the main loop (consumer side). The flow is: check if empty → if not empty, read the byte from the `mask(tail_)` position → advance tail → return true. If empty, return false.
+`pop()` is called by the main loop (consumer side). The flow is: check if empty → if not empty, read the byte from the `tail` position → advance `tail` → return true. If empty, return false.
 
-This is also an O(1) `noexcept` operation.
+It is also an O(1) `noexcept` operation.
 
 ### empty() and full()
 
-- `empty()`: `head_ == tail_`. Simple and straightforward — if head and tail are equal, there is no data.
-- `full()`: `next(head_) == tail_`. If the next position after head is tail, it means writing a new byte would overwrite data that hasn't been read yet — so it's full.
+- `empty()`: `head == tail`. Simple and direct—if head and tail are equal, there is no data.
+- `full()`: `next(head) == tail`. If the next position of `head` is `tail`, it means writing a new byte would overwrite data that hasn't been read yet—so it's full.
 
 ### size()
 
-The current amount of data in the buffer. When `head_ >= tail_` (no wrapping has occurred), it's directly `head_ - tail_`. When `head_ < tail_` (head has wrapped past tail), the data count is the part before head plus the part after tail.
+The amount of data currently in the buffer. When `head >= tail` (no wrap-around has occurred), it is simply `head - tail`. When `head < tail` (head has wrapped past tail), the data amount is the part before head plus the part after tail.
 
-However, because we used the `next()` design (the range of head and tail is 0 to 2N-1), in practice `head_ - tail_` is sufficient in most cases — but for defensive programming, the code still handles both scenarios.
+However, due to our `next()` design (where head and tail range from 0 to 2N-1), `(head - tail)` is sufficient in most cases—but for defensive programming, the code handles both cases.
 
 ---
 
 ## The Role of volatile
 
-You might have noticed that `head_` and `tail_` are declared as `volatile`:
+You may have noticed that `head` and `tail` are declared as `volatile`:
 
 ```cpp
-volatile size_t head_ = 0;
-volatile size_t tail_ = 0;
+volatile uint32_t head = 0;
+volatile uint32_t tail = 0;
 ```
 
-Why do we need `volatile`? Because the compiler's optimizer doesn't know about the existence of the ISR.
+Why do we need `volatile`? Because the compiler's optimizer is unaware of the existence of the ISR.
 
-Consider the `pop()` function in the main loop. The compiler sees that `pop()` is called repeatedly, and might perform this optimization: read `head_` from memory the first time, cache it in a register — and for subsequent calls, use the value in the register directly without reading from memory again. The compiler's logic is: "Nothing in this function modifies `head_`, so the value won't change, and there's no need to read it repeatedly."
+Consider the `empty()` function in the main loop. The compiler sees `head` being accessed repeatedly and might optimize like this: read `head` from memory the first time, then cache it in a register—subsequent calls use the value in the register directly, no longer reading from memory. The compiler's logic is: "There is no code in this function that modifies `head`, so the value won't change, no need to re-read."
 
-But the compiler is wrong. `head_` is modified by `push()` in the ISR — and the compiler can't see the ISR's calling context. If the compiler caches the value of `head_`, the main loop will never see the new data pushed by the ISR.
+But the compiler is wrong. `head` is modified by `push()` in the ISR—and the compiler cannot see the calling context of the ISR. If the compiler caches the value of `head`, the main loop will never see new data pushed by the ISR.
 
-The `volatile` keyword tells the compiler: "This variable might be modified in ways the compiler cannot see; every read must be reloaded from memory, and it cannot be cached in a register." This way, every time the main loop calls `pop()`, it will reload `head_` from memory, ensuring it can see the ISR's modifications.
+The `volatile` keyword tells the compiler: "This variable may be modified in ways the compiler cannot see; every read must be reloaded from memory and cannot be cached in a register." This ensures that every time the main loop calls `empty()`, it re-reads `head` from memory, ensuring it sees modifications made by the ISR.
 
-⚠️ `volatile` does not guarantee atomicity — it only guarantees "read from memory every time." If an operation requires multiple steps (such as read-modify-write), `volatile` alone cannot guarantee that these steps won't be interrupted. But in our SPSC pattern, `push()` only modifies head and `pop()` only modifies tail, each being a single-step assignment, so there is no atomicity issue. 32-bit aligned reads and writes on the ARM Cortex-M3 are inherently atomic (on a single core), and combined with the SPSC pattern, this is safe enough.
+⚠️ `volatile` does not guarantee atomicity—it only guarantees "always read from memory". If an operation requires multiple steps (like read-modify-write), `volatile` itself cannot guarantee those steps won't be interrupted. However, in our SPSC pattern, `push()` only modifies `head` and `pop()` only modifies `tail`, each being a single-step assignment operation, so there is no atomicity issue. 32-bit aligned reads and writes on ARM Cortex-M3 are atomic (on a single core), and combined with the SPSC pattern, it is sufficiently safe.
 
-### Why Not Use a Mutex?
+### Why not use mutex?
 
-`std::mutex` requires operating system support (an RTOS or the C++ thread library). We don't have these on our bare-metal STM32. Furthermore, an ISR cannot block — if the ISR tries to acquire a mutex held by the main loop, the ISR will get stuck (because the main loop is currently being interrupted by the ISR and cannot possibly release the mutex), and the system will immediately deadlock.
+`mutex` requires operating system support (RTOS or C threading library). We don't have these on our bare-metal STM32. Furthermore, blocking is not allowed in an ISR—if an ISR attempts to acquire a `mutex` held by the main loop, the ISR will stall (because the main loop is being interrupted by the ISR and cannot release the `mutex`), leading to an immediate system deadlock.
 
-Lock-free SPSC is the standard approach for ISR-to-main communication in bare-metal systems. It requires no operating system support, no dynamic memory allocation, and no blocking — pushing a byte in the ISR is deterministic, O(1), and won't fail (unless the buffer is full).
+Lock-free SPSC is the standard solution for ISR-to-main communication in bare-metal systems. It requires no OS support, no dynamic memory allocation, and no blocking—pushing a byte in the ISR is deterministic, O(1), and won't fail (unless the buffer is full).
 
 ---
 
 ## Is N = 128 Enough?
 
-The buffer size we chose is 128 bytes. Where does this number come from?
+We chose a buffer size of 128 bytes. Where does this number come from?
 
-At 115200 baud, we can receive a maximum of 11520 bytes per second (10 bits/byte). The interval between each byte is 87 microseconds. If the main loop can process a byte within 87 microseconds (read + check + append to the line buffer), a 128-byte buffer is more than sufficient — the buffer will only ever hold a few bytes at a time.
+At 115200 baud, we receive at most 11520 bytes per second (10 bits/byte). The interval between bytes is 87 microseconds. If the main loop can process one byte (read + judge + splice into line buffer) within 87 microseconds, a 128-byte buffer is more than sufficient—the buffer will only hold a few bytes at a time.
 
-But if the main loop is performing a time-consuming operation (such as processing a complex command), there might be dozens of bytes queued up in the buffer. 128 bytes can buffer approximately 1.1 milliseconds of data. For the vast majority of interactive scenarios (a person typing, a terminal sending commands), 1.1 milliseconds of buffering is plenty.
+However, if the main loop is performing time-consuming operations (like processing a complex command), dozens of bytes might be queued in the buffer. 128 bytes can buffer approximately 1.1 milliseconds of data. For the vast majority of interactive scenarios (human typing, terminal sending commands), 1.1 millisecond of buffering is sufficient.
 
-If it really isn't enough, just change the template parameter — `CircularBuffer<256>` or `CircularBuffer<512>`. As long as it's still a power of two, the compile-time `static_assert` will pass, and there will be no change in performance.
+If it's really not enough, just change the template parameter—`CircularBuffer<char, 256>` or `CircularBuffer<char, 512>`. As long as it remains a power of two, the compile-time `static_assert` will pass, and performance will not change at all.
 
 ---
 
 ## Summary
 
-In this part, we designed and implemented a data bridge between the ISR and the main loop: the lock-free ring buffer. The core design includes: the SPSC pattern (single writer, single reader, no locks needed), power-of-two sizing (bitwise AND replaces modulo for zero overhead), `volatile` to ensure visibility across execution flows, and `static_assert` to constrain buffer size at compile time.
+In this post, we designed and implemented the data bridge between the ISR and the main loop: a lock-free ring buffer. The core design includes: SPSC mode (single writer, single reader, no locks needed), power-of-two size (bitwise AND replaces modulo, zero overhead), `volatile` to ensure visibility across execution flows, and `static_assert` to constrain buffer size at compile time.
 
-In the next part, we'll tie everything together: the ISR's callback chain from `USART1_IRQHandler` to `HAL_UART_RxCpltCallback` to the ring buffer's push and restart, forming a complete pipeline of "interrupt generates byte → buffer temporarily stores → main loop consumes."
+In the next post, we will string everything together: the ISR's callback chain goes from `UART1_IRQHandler` to `RxEvent` to the ring buffer's `push` and `restart`, forming a complete pipeline of "interrupt generates byte → buffer temporarily stores → main loop consumes".

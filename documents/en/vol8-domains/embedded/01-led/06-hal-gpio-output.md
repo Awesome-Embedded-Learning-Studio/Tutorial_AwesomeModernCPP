@@ -3,43 +3,43 @@ chapter: 15
 difficulty: beginner
 order: 6
 platform: stm32f1
-reading_time_minutes: 69
+reading_time_minutes: 9
 tags:
 - beginner
 - cpp-modern
 - stm32f1
-title: 'Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move'
-translation:
-  engine: anthropic
-  source: documents/vol8-domains/embedded/01-led/06-hal-gpio-output.md
-  source_hash: 9029ec886405ec08b786bcb253e720291383e378eaf2f18822358253ea877431
-  token_count: 1542
-  translated_at: '2026-05-26T12:08:11.905578+00:00'
+title: '**Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move**'
 description: ''
+translation:
+  source: documents/vol8-domains/embedded/01-led/06-hal-gpio-output.md
+  source_hash: bdbcf6d8feb6a72b6a1e056ee0ea9473e30501ced12d46750a4f9486bec547d8
+  translated_at: '2026-06-16T10:15:24.099197+00:00'
+  engine: anthropic
+  token_count: 1548
 ---
 # Part 11: HAL_GPIO_WritePin and TogglePin — Making Pins Move
 
-> Picking up from the previous article: the pin is configured, the clock is enabled, and push-pull output is ready. Now we need the final step — telling the pin to "output high" or "output low." That is the job of `HAL_GPIO_WritePin()` and `HAL_GPIO_TogglePin()`.
+> Following up on the previous part: the pins are configured, the clock is enabled, and push-pull output is ready. Now we need the final step—telling the pin to "output high" or "output low." This is the job of `HAL_GPIO_WritePin()` and `HAL_GPIO_TogglePin()`.
 
 ---
 
 ## Our Goal
 
-After our efforts in the previous articles, the GPIOC clock is enabled and PC13 is configured for push-pull output. The pin is now at attention, waiting for orders. But we haven't issued any commands yet — so the LED is still off. In this article, we tackle that final step: how to make the pin output the level we want.
+Thanks to the efforts in the previous parts, the GPIOC clock is enabled, and PC13 is configured for push-pull output mode. The pin is now "standing at attention" waiting for commands. However, we haven't issued any instructions yet—so the LED remains off. In this part, we will solve this final step: how to make the pin output the logic level we want.
 
 ---
 
-## HAL_GPIO_WritePin — Direct Pin Level Control
+## HAL_GPIO_WritePin — Directly Controlling Pin Levels
 
-This is the most basic pin control function provided by the HAL library. Let's look at its full signature:
+This is the most basic pin control function provided by the HAL library. Let's first look at its full signature:
 
 ```c
 void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
 ```
 
-We have seen all three parameters in earlier articles. Now let's understand them together. The first parameter, `GPIO_TypeDef *GPIOx`, is the port pointer, telling HAL which port to operate on — GPIOA, GPIOB, or GPIOC. The second parameter, `uint16_t GPIO_Pin`, is the pin bit mask, specifying the exact pin. The third parameter, `GPIO_PinState PinState`, has only two possible values: `GPIO_PIN_SET` (high level, value 1) and `GPIO_PIN_RESET` (low level, value 0).
+We have encountered all three parameters in previous articles. Now, let's examine them together. The first parameter, `GPIO_TypeDef *GPIOx`, is the port pointer that tells the HAL which port to operate on—GPIOA, GPIOB, or GPIOC. The second parameter, `uint16_t GPIO_Pin`, is the pin bit mask that specifies the exact pin. The third parameter, `GPIO_PinState PinState`, has only two possible values: `GPIO_PIN_SET` (high level, value is 1) and `GPIO_PIN_RESET` (low level, value is 0).
 
-For our Blue Pill onboard LED (PC13, active-low), turning on the LED requires a low level, and turning it off requires a high level:
+For the on-board LED on our Blue Pill (PC13, active low), turning the LED on requires a low level output, while turning it off requires a high level output:
 
 ```c
 // 点亮LED —— PC13输出低电平
@@ -49,13 +49,13 @@ HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
 ```
 
-Note an easy point of confusion here: "turning on the LED" corresponds to `GPIO_PIN_RESET` (low level), not the intuitive `GPIO_PIN_SET`. This is because the Blue Pill's PC13 LED circuit is active-low — we analyzed this in detail in Part 3 (Push-Pull, Open-Drain, and PC13). If you accidentally swap SET and RESET, the LED behavior will be completely inverted — "on" becomes "off," and "off" becomes "on." That said, this doesn't affect program execution; it is simply a logical inversion.
+One point of confusion here: "turning on the LED" corresponds to `GPIO_PIN_RESET` (low level), not `GPIO_PIN_SET` as intuition might suggest. This is because the PC13 LED circuit on the Blue Pill is active-low, a detail we analyzed in depth in Part 3 (Push-Pull, Open-Drain, and PC13). If you accidentally swap SET and RESET, the LED behavior will be completely inverted—"on" becomes "off," and "off" becomes "on." That said, this doesn't affect program execution; it's just a logical inversion.
 
 ---
 
-## The BSRR Register — The Unsung Hero of Atomic Operations
+## BSRR Register — The Hero Behind Atomic Operations
 
-The underlying implementation of `HAL_GPIO_WritePin` is quite elegant and worth a closer look. It doesn't operate on the ODR (Output Data Register), but rather on the BSRR (Bit Set/Reset Register). The BSRR design is a major highlight of the ARM Cortex-M series:
+The underlying implementation of `HAL_GPIO_WritePin` is quite elegant and worth a closer look. It doesn't operate on the ODR (Output Data Register), but rather on the BSRR (Bit Set/Reset Register). The design of the BSRR is a major highlight of the ARM Cortex-M series:
 
 ```c
 // HAL_GPIO_WritePin 的实现（简化版）
@@ -69,23 +69,23 @@ void HAL_GPIO_WritePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState Pin
 }
 ```
 
-BSRR is a 32-bit write-only register with a very clever design. The lower 16 bits (bit0 to bit15) set the corresponding ODR bits — writing 1 to bit13 sets ODR's bit13 to 1 (output high). The upper 16 bits (bit16 to bit31) clear the corresponding ODR bits — writing 1 to bit29 (that is, bit13 shifted left by 16) clears ODR's bit13 to 0 (output low).
+BSRR is a 32-bit write-only register with a very clever design. The lower 16 bits (bit 0 to bit 15) are used to set the corresponding ODR bits—writing 1 to bit 13 sets ODR bit 13 to 1 (output high). The upper 16 bits (bit 16 to bit 31) are used to clear the corresponding ODR bits—writing 1 to bit 29 (which is bit 13 shifted left by 16) clears ODR bit 13 to 0 (output low).
 
-Taking PC13 as an example, the value of `GPIO_PIN_13` is `0x2000` (bit 13 is 1). When we need to output a high level, we write `GPIOC->BSRR = 0x2000`, which sets ODR's bit 13 to 1. When we need to output a low level, we write `GPIOC->BSRR = 0x2000 << 16 = 0x20000000`, which clears ODR's bit 13 to 0.
+Taking PC13 as an example, the value of `GPIO_PIN_13` is `0x2000` (bit 13 is 1). When we need to output a high level, we write `GPIOC->BSRR = 0x2000`, which sets ODR bit 13 to 1. When we need to output a low level, we write `GPIOC->BSRR = 0x2000 << 16 = 0x20000000`, which clears ODR bit 13 to 0.
 
-Why not write to ODR directly? Because ODR is a 16-bit read-write register. If we use a "read-modify-write" approach to change a single bit, an interrupt might occur between the read and the write-back. The interrupt service routine (ISR) might modify another bit on the same port — and the write-back would overwrite the interrupt's changes. BSRR avoids this problem through its "write-1-to-actuate" design: setting and clearing are two independent bit fields, and the write operation is atomic, requiring no read-modify-write three-step sequence. This means that even if multiple interrupts simultaneously operate on different pins of the same port, they will not interfere with each other.
+Why not write to ODR directly? Because ODR is a 16-bit read-write register. If we modify a specific bit using a "read-modify-write" sequence, an interrupt might occur between the read and write operations. The interrupt service routine (ISR) could modify another bit on the same port, and our subsequent write-back would overwrite the interrupt's changes. BSRR avoids this problem through its "write-1-to-activate" design: setting and clearing are two independent bit fields, and the write operation is atomic, eliminating the need for the read-modify-write sequence. This means that even if multiple interrupts operate on different pins of the same port simultaneously, they will not interfere with each other.
 
 ---
 
-## HAL_GPIO_TogglePin — Toggling the Pin Level
+## HAL_GPIO_TogglePin — Toggling Pin Levels
 
-Sometimes we don't care about the current level; we just want to flip it — high to low, low to high. In these cases, `HAL_GPIO_TogglePin` is more convenient:
+Sometimes we do not need to care about the current level; we simply want to toggle it—high to low, or low to high. In such cases, using `HAL_GPIO_TogglePin` is more convenient:
 
 ```c
 void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
 ```
 
-It takes only two parameters — port and pin — with no need to specify a target level. The underlying implementation is also straightforward:
+It takes only two parameters—the port and the pin—without needing to specify the target logic level. The underlying implementation is also straightforward:
 
 ```c
 void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
@@ -94,29 +94,29 @@ void HAL_GPIO_TogglePin(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
 }
 ```
 
-The XOR operation has a useful property: XOR with 0 keeps the bit unchanged, while XOR with 1 flips it. So `ODR ^= GPIO_PIN_13` only flips bit 13 of the ODR, leaving all other bits unaffected.
+The XOR operation has the property that XORing with 0 leaves a bit unchanged, while XORing with 1 flips it. Therefore, `ODR ^= GPIO_PIN_13` only flips bit 13 of the ODR, leaving other bits unaffected.
 
-⚠️ Warning: Unlike BSRR, TogglePin's "read-modify-write" operation is not atomic. If an interrupt occurs between reading the ODR and writing it back, and the ISR also modifies another pin on the same port, problems could theoretically arise. However, for a simple scenario like LED blinking, there is no need to worry — LEDs don't require atomicity guarantees.
+⚠️ **Note:** Unlike BSRR, the "read-modify-write" operation of `TogglePin` is not atomic. If an interrupt occurs between the read and write of the ODR, and the interrupt service routine (ISR) modifies other pins on the same port, issues could theoretically arise. However, for simple scenarios like LED blinking, there is no need to worry—LEDs do not require atomicity guarantees.
 
 ---
 
 ## HAL_Delay — The Source of Time
 
-LED blinking requires a delay, and we use `HAL_Delay()`:
+LED blinking requires a delay, so we use `HAL_Delay()`:
 
 ```c
 HAL_Delay(500);   // 延时500毫秒
 ```
 
-The implementation of `HAL_Delay` relies on the SysTick timer. SysTick is a 24-bit down-counting timer built into the Cortex-M3 core, clocked by HCLK (64 MHz in our configuration). `HAL_Init()` configures SysTick to generate an interrupt every 1 ms, and a global counter named `uwTick` is incremented on each interrupt. `HAL_Delay()` simply polls this counter to determine whether the specified number of milliseconds has elapsed.
+The implementation of `HAL_Delay` relies on the SysTick timer. SysTick is a built-in 24-bit decrementing counter in the Cortex-M3 core, clocked by HCLK (64 MHz in our configuration). `HAL_Init()` configures SysTick to generate an interrupt every 1 ms, incrementing a global counter named `uwTick` on each interrupt. `HAL_Delay()` determines if the specified number of milliseconds has elapsed by polling this counter.
 
-This is why we must call `HAL_Init()` first in `main.cpp` — without it, SysTick is not configured, `HAL_Delay()` won't work at all, and your program will be stuck in the delay function forever.
+This is why we must call `HAL_Init()` first in `main.cpp`—without it, SysTick is not configured, `HAL_Delay()` will not work at all, and your program will hang inside the delay function forever.
 
 ---
 
-## The Complete C-Style LED Blink Program
+## Complete C-Style LED Blinking Program
 
-Now let's combine all the HAL APIs we've covered and write a complete C-style LED blink program. This is the full "pure HAL approach" demonstration in the entire series, and it serves as the starting point for our upcoming C++ refactoring:
+Now, let's combine all the HAL APIs we discussed and write a complete C-style LED blinking program. This serves as a full demonstration of the "pure HAL approach" in this series and acts as the starting point for our subsequent C++ refactoring:
 
 ```c
 #include "stm32f1xx_hal.h"
@@ -177,19 +177,19 @@ int main(void) {
 }
 ```
 
-Let's understand this program section by section. First is `SystemClock_Config()`, which configures the system clock to 64 MHz — the HSI (8 MHz internal oscillator) is multiplied by the PLL (/2 × 16 = 64 MHz) to serve as SYSCLK, then the AHB is undivided, APB1 is divided by two to 32 MHz, and APB2 remains undivided at 64 MHz. This code corresponds to the `setup_system_clock()` method in `system/clock.cpp` in our project.
+Let's walk through this program section by section. First, `SystemClock_Config()` configures the system clock to 64 MHz. The HSI (8 MHz internal oscillator) is multiplied by the PLL (/2 × 16 = 64 MHz) to serve as SYSCLK. Then, the AHB bus runs without division, APB1 is divided by two to 32 MHz, and APB2 remains undivided at 64 MHz. This code corresponds to the `setup_system_clock()` method in `system/clock.cpp` in our project.
 
-Next is `led_init()`, which does two things: it first calls `__HAL_RCC_GPIOC_CLK_ENABLE()` to enable the GPIOC clock (the first major pitfall we discussed in Part 4), and then configures PC13 as push-pull output, with no pull-up or pull-down, at low speed. This function does exactly the same thing as the `setup()` method in `gpio.hpp` in our project.
+Next is `led_init()`, which does two things: first, it calls `__HAL_RCC_GPIOC_CLK_ENABLE()` to enable the clock for GPIOC (this is the first major pitfall discussed in Article 4), and then it configures PC13 as push-pull output, without pull-up or pull-down resistors, and at low speed. This function does exactly the same thing as the `setup()` method in `gpio.hpp` in our project.
 
-Finally, we have `led_on()` and `led_off()`, which call `HAL_GPIO_WritePin` to output a low level and a high level, respectively. Note that `led_on()` passes `GPIO_PIN_RESET` (low level) because the Blue Pill's PC13 LED is active-low.
+Finally, `led_on()` and `led_off()` call `HAL_GPIO_WritePin` to output a low level and a high level, respectively. Note that `led_on()` passes `GPIO_PIN_RESET` (low level) because the PC13 LED on the Blue Pill is active-low.
 
-The logic in the main function `main()` is straightforward: initialize the HAL library and clocks, initialize the LED pin, and then alternately turn the LED on and off in an infinite loop, with a 500 ms interval between each change.
+The logic of the `main()` function is straightforward: initialize the HAL library and the clock, initialize the LED pin, and then toggle the LED on and off in an infinite loop with a 500 ms interval.
 
 ---
 
 ## Compiling and Flashing
 
-If you have been following along with the env_setup series, compiling and flashing should be quite familiar by now:
+If you have followed the env_setup series, compiling and flashing should be very familiar by now:
 
 ```bash
 mkdir build && cd build
@@ -198,23 +198,23 @@ make
 make flash
 ```
 
-If you are using the CMakeLists.txt from our project, the firmware size will be displayed automatically after a successful build:
+If you use the `CMakeLists.txt` from our project, the firmware size will be displayed automatically after compilation:
 
 ```text
    text    data     bss     dec     hex filename
    1234     120       4    1358     54e stm32_demo.elf
 ```
 
-After flashing successfully, you should see the LED on the Blue Pill board blinking steadily with a one-second period (500 ms on + 500 ms off).
+After flashing successfully, you should see the LED on the Blue Pill board blinking steadily with a period of one second (500 ms on + 500 ms off).
 
-If the LED shows no response at all, the troubleshooting order is: first, confirm the ST-Link connection is normal (the three wires: SWDIO, SWCLK, and GND); second, confirm the clock configuration is correct (use the debugger to read the RCC_CFGR register); third, confirm the GPIOC clock is enabled (read bit 4 of RCC_APB2ENR); fourth, confirm PC13 is configured as output (read bits [23:20] of GPIOC_CRH).
+If the LED does not respond at all, follow this troubleshooting sequence: first, verify that the ST-Link connection is normal (SWDIO, SWCLK, and GND lines); second, confirm that the clock configuration is correct (use the debugger to read the `RCC_CFGR` register); third, ensure that the GPIOC clock is enabled (read bit 4 of `RCC_APB2ENR`); and fourth, verify that PC13 is configured as an output (read bits [23:20] of `GPIOC_CRH`).
 
 ---
 
 ## Where We Are Now
 
-At this point, we have mastered the three core GPIO APIs of the HAL library: `__HAL_RCC_GPIOx_CLK_ENABLE()` to enable the clock, `HAL_GPIO_Init()` to configure the pin, and `HAL_GPIO_WritePin()`/`HAL_GPIO_TogglePin()` to control the level. These three APIs are already sufficient for controlling an LED blink.
+At this point, we have mastered the three core GPIO APIs of the HAL library: `__HAL_RCC_GPIOx_CLK_ENABLE()` to enable the clock, `HAL_GPIO_Init()` to configure the pin, and `HAL_GPIO_WritePin()`/`HAL_GPIO_TogglePin()` to control the logic level. These three APIs are sufficient to control the LED blinking.
 
-But if you look back at the code above, you will notice a problem: this code is hard-bound to PC13. The three constants `GPIOC`, `GPIO_PIN_13`, and `__HAL_RCC_GPIOC_CLK_ENABLE()` are scattered across three different functions. If we want to move the LED to PA0, we need to change three places — and all three must be changed correctly; missing even one will break things.
+However, if you look back at the code above, you will notice a problem: this code is hard-bound to PC13. The constants `GPIOC`, `GPIO_PIN_13`, and `__HAL_RCC_GPIOC_CLK_ENABLE()` are scattered across three different functions. If you want to move the LED to PA0, you need to modify three places—and you must get all three right; missing just one will cause it to fail.
 
-In the next article, we will analyze the problems with this C-style approach, see how it一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步一步步
+In the next article, we will analyze the problems with this C-style coding approach, see how it gradually leads to "unmaintainable" code, and lay the groundwork for the subsequent C++ refactoring.

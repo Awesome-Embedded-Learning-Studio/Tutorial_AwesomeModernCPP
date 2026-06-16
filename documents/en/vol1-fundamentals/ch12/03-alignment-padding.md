@@ -20,343 +20,326 @@ tags:
 - 进阶
 title: Memory Alignment and Padding
 translation:
-  engine: anthropic
   source: documents/vol1-fundamentals/ch12/03-alignment-padding.md
-  source_hash: 6f1478d6dc0607248ffff63fc6dc72bd6c98609b6de76c8d8e3888474775e17c
-  token_count: 2720
-  translated_at: '2026-05-26T11:00:46.630169+00:00'
+  source_hash: f5779c0df5ea4bac139d11868f2e85136d50e6fb26821880b9f7ae7cbba12c37
+  translated_at: '2026-06-16T03:48:22.485506+00:00'
+  engine: anthropic
+  token_count: 2716
 ---
 # Memory Alignment and Padding
 
-In the previous chapter, we divided a program's memory space into four major regions: the stack, the heap, the static storage, and the code segment, clarifying where data "lives" and how long it "survives." Now let's look one level deeper—even when data resides in the same memory region, it can't just be arranged arbitrarily. If you've written C++ for a while, you've probably encountered this puzzle: a struct clearly has only three members, but the `sizeof` result is significantly larger than the sum of their sizes. What in the world happened to those extra bytes?
+In the previous chapter, we divided the program's memory space into four major areas: the stack, heap, static area, and code segment, clarifying where data "lives" and how long it "survives." Now, let's look one layer deeper—even if data resides in the same memory area, it cannot be arranged arbitrarily. If you have written C++ for a while, you have likely encountered this confusion: a struct clearly has only three members, but the result of `sizeof` is significantly larger than the sum of the sizes of those three members. What on earth happened to those extra bytes?
 
-Ta-da! The answer is the theme of this chapter: **alignment and padding**. To satisfy the CPU's memory access efficiency requirements, the compiler inserts "blank" bytes between struct members, aligning each member to a specific address boundary. These blank bytes store no valid data, but they genuinely occupy memory space. Understanding alignment rules not only allows you to accurately predict `sizeof` results, but also enables you to reduce struct sizes by adjusting member order in performance-sensitive scenarios. This optimization requires no changes to your logic code—simply rearranging the member declarations can save a considerable amount of memory.
+Ta-da! The answer is the theme of this chapter: **alignment and padding**. To satisfy CPU memory access efficiency requirements, the compiler inserts "blank" bytes between struct members to align each member to specific address boundaries. These blank bytes store no valid data, but they genuinely occupy memory space. Understanding alignment rules not only allows you to accurately predict `sizeof` results but also enables you to reduce struct size in performance-sensitive scenarios by adjusting member order—this optimization requires no changes to logic code, simply reordering member declarations can save considerable memory.
 
 > **Learning Objectives**
 >
 > After completing this chapter, you will be able to:
 >
-> - [ ] Explain why CPUs require memory alignment, and what happens when data is unaligned
-> - [ ] Manually calculate the `sizeof` result for any struct
-> - [ ] Use `alignas` and `alignof` to control and query alignment requirements
-> - [ ] Optimize struct memory layout by adjusting member order
-> - [ ] Understand the purpose and potential risks of `#pragma pack`
+> - [ ] Explain why CPUs need memory alignment and what happens when data is misaligned.
+> - [ ] Manually calculate the `sizeof` result for any struct.
+> - [ ] Use `alignas` and `alignof` (or `alignof`) to control and query alignment requirements.
+> - [ ] Optimize struct memory layout by adjusting member order.
+> - [ ] Understand the purpose and potential risks of `#pragma pack`.
 
-## Alignment — The Unspoken Contract Between CPU and Memory
+## Alignment—The Secret Agreement Between CPU and Memory
 
-To understand alignment, we first need to look at how the CPU accesses memory. Many people assume the CPU can freely read and write data at any address on a byte-by-byte basis—from a programmer's perspective, this seems true, but the underlying hardware doesn't actually work this way. When a modern CPU accesses memory via a bus, it typically transfers data in units of a word. A 32-bit CPU can read or write 4 bytes at a time, and a 64-bit CPU can read or write 8 bytes at a time. Furthermore, the hardware often requires the starting address of such an access to be an integer multiple of the word size.
+To understand alignment, we must first look at how the CPU accesses memory. Many people assume the CPU can freely read and write data at any address on a byte-by-byte basis—from a programmer's perspective, this seems true, but the underlying hardware doesn't actually work that way. When modern CPUs access memory via the bus, they typically perform transfers in units of words. A 32-bit CPU can read or write 4 bytes at a time, and a 64-bit CPU can read or write 8 bytes at a time. Furthermore, hardware often requires that the starting address of this read/write operation be an integer multiple of the word size.
 
-You can think of memory as a row of storage lockers, each 4 compartments wide. If you need to retrieve an item that takes up 4 compartments (i.e., a `int`), the fastest way is to have it start exactly at the beginning of a locker, so you can get it all in one open. But if this `int` straddles the boundary between two lockers—the first two compartments in the first locker, the last two in the second—the CPU has to open two lockers, extract parts from each, and stitch them together before returning the result. Certain architectures (like ARM) will even outright refuse such cross-boundary accesses and throw a hardware exception.
+You can imagine memory as a row of lockers, each 4 slots wide. If you want to retrieve an item occupying 4 slots (a 4-byte `int`), the fastest way is to have it start exactly at the beginning of a locker, so you can get it all in one go. But if this `int` straddles the boundary of two lockers—the first two slots in the first locker, the last two in the second—the CPU has to open two lockers, extract parts separately, and then stitch them together before returning them to you. Some architectures (like ARM) will simply refuse such cross-boundary access and throw a hardware exception.
 
-This is the underlying reason for alignment: **CPUs access data most efficiently at aligned addresses; accessing unaligned addresses either slows things down or triggers an immediate error**. Therefore, when arranging a struct's memory layout, the compiler proactively places each member at a position that satisfies its alignment requirement, and the extra space in between becomes padding bytes.
+This is the underlying reason for alignment: **CPU access to aligned data is most efficient; accessing misaligned addresses is either slower or results in a direct error**. Therefore, when arranging a struct's memory layout, the compiler actively places each member at a position satisfying its alignment requirements. The extra space in between is padding bytes.
 
-## Alignment Rules — How the Compiler Fills in the Blanks
+## Alignment Rules—How the Compiler Fills the Blanks
 
-Every fundamental type has a **natural alignment requirement**, which usually equals its size. `char` has 1-byte alignment (can go anywhere), `int` has 4-byte alignment (the address must be a multiple of 4), and `double` has 8-byte alignment (the address must be a multiple of 8). Pointers have 8-byte alignment on 64-bit systems and 4-byte alignment on 32-bit systems.
+Every fundamental type has a **natural alignment requirement**, which usually equals the size of that type. `char` is 1-byte aligned (can go anywhere), `int` is 4-byte aligned (address must be a multiple of 4), and `double` is 8-byte aligned (address must be a multiple of 8). Pointers are 8-byte aligned on 64-bit systems and 4-byte aligned on 32-bit systems.
 
-For a struct, the compiler follows three rules:
+For a given struct, the compiler follows three rules:
 
-First, each member of the struct must be placed at an address that is an integer multiple of its natural alignment requirement. If the end position of the previous member doesn't satisfy the next member's alignment requirement, the compiler inserts padding bytes between them until the address meets the condition.
+First, each member of the struct must be placed at an address that is an integer multiple of its own natural alignment requirement. If the position where the previous member ends does not satisfy the next member's alignment requirement, the compiler inserts padding bytes between them until the address satisfies the condition.
 
-Second, the overall size of the struct itself must be an integer multiple of its largest member's alignment requirement. In other words, if a struct contains a `double` (8-byte alignment), the total size of the struct must be a multiple of 8—even if there is leftover space after the last member, padding bytes must be added to fill it.
+Second, the total size of the struct itself must be an integer multiple of the alignment requirement of its largest member. In other words, if the struct contains a `double` (8-byte alignment), the total size of the struct must be a multiple of 8—even if there is empty space after the last member, padding bytes must be added to fill it.
 
-Third, the struct's own alignment requirement equals the alignment requirement of its largest member. This rule affects "where this struct should be placed when it acts as a member of another struct."
+Third, the struct's own alignment requirement equals the alignment requirement of its largest member. This rule affects "where this struct should be placed when it becomes a member of another struct."
 
-This sounds a bit abstract, so let's jump straight into the code.
+This sounds a bit abstract, so let's look at the code directly.
 
-## The Truth About sizeof — Where Padding Bytes Hide
+## The Truth About sizeof—Where Padding Bytes Hide
 
-Let's look at a classic example, the kind you might have seen in interview questions:
+Let's look at a classic example, the kind you might see in an interview:
 
 ```cpp
-struct BadLayout {
-    char a;   // 1 字节
-    int  b;   // 4 字节
-    char c;   // 1 字节
+struct Bad {
+    char a;    // 1 byte
+    int b;     // 4 bytes
+    char c;    // 1 byte
 };
 ```
 
-The three members add up to `1 + 4 + 1 = 6` bytes, but `sizeof(BadLayout)` is **12** on most platforms. The extra 6 bytes are all padding. Let's analyze member by member to see exactly what the compiler did.
+The three members add up to 6 bytes, but `sizeof(Bad)` is **12** on most platforms. The extra 6 bytes are all padding. Let's analyze member by member to see exactly what the compiler did.
 
-`a` is a `char` with 1-byte alignment, placed at offset 0, taking up 1 byte. Next comes `b`, which is a `int` requiring 4-byte alignment—meaning its starting offset must be a multiple of 4. But `a` only reaches offset 1, so the compiler inserts 3 padding bytes at offsets 1, 2, and 3, placing `b` at offset 4, where it occupies offsets 4, 5, 6, and 7. Then comes `c`; `char` only needs 1-byte alignment, so following right after `b` is fine, placing it at offset 8 and taking up 1 byte.
+`a` is `char`, 1-byte aligned, placed at offset 0, occupying 1 byte. Next comes `b`. It is `int`, requiring 4-byte alignment—meaning its starting offset must be a multiple of 4. But `a` only occupies offset 1, so the compiler inserts 3 padding bytes at offsets 1, 2, and 3, placing `b` at offset 4, occupying offsets 4, 5, 6, and 7. Then comes `c`. `char` only needs 1-byte alignment, so following `b` is fine. It is placed at offset 8, occupying 1 byte.
 
-So far, 9 bytes have been used. But don't forget the second rule—the overall size of the struct must be an integer multiple of the largest member's alignment requirement. Here, the maximum alignment is the 4-byte requirement of `int`, so the struct size must be a multiple of 4. Since 9 is not a multiple of 4, the compiler adds 3 more bytes of padding at the end to round it up to 12. If we draw it as a diagram, it looks like this:
+So far, 9 bytes are used. But don't forget the second rule—the total size of the struct must be an integer multiple of the largest member's alignment requirement. Here, the maximum alignment is the 4 bytes of `int`, so the struct size must be a multiple of 4. 9 is not a multiple of 4, so the compiler adds 3 more bytes of padding at the end to round up to 12. If drawn as a diagram, it looks like this:
 
-```text
-偏移量:  0   1   2   3   4   5   6   7   8   9  10  11
-         +---+---+---+---+---+---+---+---+---+---+---+---+
-BadLayout| a | pad   pad   pad |   b (4 bytes)   | c | pad   pad   pad |
-         +---+---+---+---+---+---+---+---+---+---+---+---+
+```mermaid
+flowchart LR
+    subgraph Struct [Struct Bad (12 bytes)]
+        direction LR
+        A["a (1 byte)"]
+        Pad1["Padding (3 bytes)"]
+        B["b (4 bytes)"]
+        C["c (1 byte)"]
+        Pad2["Padding (3 bytes)"]
+    end
 ```
 
-> **Pitfall Warning**: Member declaration order directly affects the amount of padding and the struct's size. This is a common interview topic, and an even more common trap in practice—especially in scenarios like network protocols and file formats where precise control over memory layout is required. Failing to pay attention to member order can cause data to be misaligned. More critically, if you `memcpy` a struct directly and send it out, the receiving end might parse it with a different compiler where the padding rules differ, causing the data to be completely out of sync.
+> **Warning**: Member declaration order directly impacts padding amount and struct size. This is a common interview topic and an even more common pitfall in practice—especially in scenarios like network protocols or file formats where precise control over memory layout is required. Not paying attention to member order can lead to data misalignment. Crucially, if you `memcpy` this struct directly for transmission, and the receiving end parses it with a different compiler, the padding rules might differ, causing data to be misaligned immediately.
 
-Now let's rearrange the member order, putting the larger ones first:
+Now let's adjust the member order, putting the large ones first:
 
 ```cpp
-struct GoodLayout {
-    int  b;   // 4 字节
-    char a;   // 1 字节
-    char c;   // 1 字节
+struct Good {
+    int b;     // 4 bytes
+    char a;    // 1 byte
+    char c;    // 1 byte
 };
 ```
 
-`b` is at offset 0, taking 4 bytes. `a` is at offset 4, with 1-byte alignment, no problem. `c` follows immediately at offset 5. That's 6 bytes used so far, and the overall size needs to be a multiple of 4—so we pad 2 bytes to reach 8. `sizeof(GoodLayout)` is **8**, a third less than the previous 12.
+`b` is at offset 0, occupying 4 bytes. `a` is at offset 4, 1-byte aligned, no problem. `c` follows immediately at offset 5. So far, 6 bytes are used. The total size needs to be a multiple of 4—pad 2 bytes to reach 8. `sizeof(Good)` is **8**, one-third less than the previous 12.
 
-```text
-偏移量:  0   1   2   3   4   5   6   7
-         +---+---+---+---+---+---+---+---+
-GoodLayout|   b (4 bytes)   | a | c | pad  pad |
-         +---+---+---+---+---+---+---+---+
+```mermaid
+flowchart LR
+    subgraph Struct [Struct Good (8 bytes)]
+        direction LR
+        B["b (4 bytes)"]
+        A["a (1 byte)"]
+        C["c (1 byte)"]
+        Pad1["Padding (2 bytes)"]
+    end
 ```
 
-Simply by changing the member declaration order, without altering any logic, the struct shed 4 bytes. If your program has a million such objects, that saves 4 MB of memory. So a practical rule of thumb is: **arrange members in descending order of alignment requirements**—put `double` and `int64_t` first, then `int` and `float`, and finally `char` and `bool`.
+Just by changing the member declaration order, without modifying any logic, the struct lost 4 bytes. If your program has millions of such objects, that saves 4 MB of memory. Therefore, a practical rule of thumb is: **Arrange members in descending order of alignment requirements**—put `double` and `long long` at the front, then `int` and pointers, and finally `char` and `bool`.
 
-## alignas and alignof — Manually Controlling Alignment
+## alignas and alignof—Manual Alignment Control
 
-The compiler's default alignment rules are sufficient in the vast majority of cases, but some scenarios require manual intervention. C++11 introduced two keywords, `alignas` and `alignof`, used to specify and query alignment requirements, respectively.
+The compiler's default alignment rules are sufficient in the vast majority of cases, but some scenarios require manual intervention. C++11 introduced the keywords `alignas` and `alignof` (or `alignof` in C++11 syntax) to specify and query alignment requirements respectively.
 
-The usage of `alignof` is simple—give it a type, and it returns that type's alignment requirement (in bytes). `alignof(int)` is 4, `alignof(double)` is 8, and `alignof(char)` is 1. You can even use it on structs: `alignof(GoodLayout)` returns 4, because its largest member, `int`, has 4-byte alignment.
+The usage of `alignof` is simple—give it a type, and it returns that type's alignment requirement (in bytes). `alignof(int)` is 4, `alignof(double)` is 8, `alignof(char)` is 1. You can even use it on structs: `alignof(Bad)` returns 4, because its largest member `int` is 4-byte aligned.
 
-`alignas`, on the other hand, is used to forcefully specify alignment. It can be applied to variable declarations or type definitions:
+`alignas` is used to force a specific alignment. It can be used on variable declarations or type definitions:
 
 ```cpp
-// 强制单个变量按 16 字节对齐
-alignas(16) char buffer[1024];
-
-// 强制结构体类型按 64 字节对齐（一个缓存行的大小）
-struct alignas(64) CacheLine {
-    int data[14];  // 56 字节 + 编译器自动补齐到 64
+struct alignas(16) AlignedStruct {
+    int a;
+    char b;
 };
+
+alignas(64) char cache_line_buffer[64];
 ```
 
-There are three typical use cases for `alignas`. The first is SIMD instructions—SSE requires 16-byte aligned operands, AVX requires 32-byte alignment, and AVX-512 requires 64-byte alignment. If your data isn't aligned to the required boundary, SIMD load instructions will throw a hardware exception, crashing the program on the spot. The second is cache line optimization—modern CPU cache lines are typically 64 bytes. If your data structure spans two cache lines, a single read will trigger two cache misses. Aligning hot data to cache line boundaries avoids this "false sharing." The third is hardware interaction—certain DMA (Direct Memory Access) controllers or peripherals require the physical address of a buffer to have specific alignment, which is where `alignas` comes in.
+`alignas` has three typical application scenarios. The first is SIMD instructions—SSE requires operands to be 16-byte aligned, AVX requires 32-byte alignment, and AVX-512 requires 64-byte alignment. If your data is not aligned to the required boundary, SIMD load instructions will throw a hardware exception, crashing the program immediately. The second is cache line optimization—modern CPU cache lines are typically 64 bytes. If your data structure spans two cache lines, a single read triggers two cache misses. Aligning hot data to cache line boundaries avoids this "false sharing." The third is hardware interaction—certain DMA controllers or peripherals require the physical address of a buffer to be specifically aligned, necessitating the use of `alignas` to guarantee this.
 
-> **Pitfall Warning**: `alignas` can only increase alignment requirements, not decrease them. `alignas(1) int x;` won't actually make `int` 1-byte aligned—the compiler will ignore this request because the natural alignment of `int` is 4. If you try to write a value that isn't a power of two, like `alignas(3)`, the compiler will throw an error directly.
+> **Warning**: `alignas` can only increase alignment requirements, not decrease them. `alignas(1) int` won't actually make `int` 1-byte aligned—the compiler will ignore this request because `int`'s natural alignment is 4. If you try to write a value like `alignas(3)` that isn't a power of two, the compiler will error directly.
 
-Additionally, C++17 introduced `std::aligned_storage` (deprecated as of C++23; it's recommended to use `alignas` directly), as well as the `std::align` function in `<memory>`, which is used to find an address within a given buffer at runtime that satisfies an alignment requirement. These tools are extremely useful when implementing custom allocators or type-erased containers (like the underlying storage of `std::any`).
+Additionally, C++17 introduced `std::align` (deprecated since C++23, recommend using `std::assume_aligned` instead), and the `std::align` function in `<memory>` is used to find an address satisfying alignment requirements within a given buffer at runtime. These tools are very useful when implementing custom allocators or type-erased containers (like the underlying storage of `std::any`).
 
-## Packing Structs — The Double-Edged Sword of pragma pack
+## Packing Structs—The Double-Edged Sword of pragma pack
 
-Sometimes you genuinely don't want any padding—such as for network protocol header structs, binary file formats, or structs that map one-to-one with hardware registers. In these cases, you can use `#pragma pack` to tell the compiler: don't add any padding.
+Sometimes you truly want no padding—such as in network protocol headers, binary file formats, or structs that map one-to-one to hardware registers. In these cases, you can use `#pragma pack` to tell the compiler: don't add padding.
 
 ```cpp
-#pragma pack(push, 1)  // 保存当前对齐设置，然后设为 1 字节对齐
-struct RawHeader {
-    uint8_t  version;   // 偏移 0
-    uint16_t length;    // 偏移 1（不再是 2 的倍数！）
-    uint32_t checksum;  // 偏移 3（不再是 4 的倍数！）
+#pragma pack(push, 1)
+struct PackedStruct {
+    char a;
+    int b;
+    char c;
 };
-#pragma pack(pop)       // 恢复之前的对齐设置
+#pragma pack(pop)
 ```
 
-`sizeof(RawHeader)` is now `1 + 2 + 4 = 7`, with absolutely no padding. Each member sits snugly against the previous one, resulting in a completely compact memory layout. This pattern is extremely common in network programming and binary file parsing.
+`sizeof(PackedStruct)` is now `6`, with absolutely no padding. Every member sits immediately next to the previous one, and the memory layout is completely compact. This is very common in network programming and binary file parsing.
 
-But `#pragma pack` is a true double-edged sword, and the cost of using it improperly can be quite severe.
+But `#pragma pack` is a true double-edged sword, and the cost of using it poorly can be steep.
 
-> **Pitfall Warning**: Taking a reference to a member of a packed struct is undefined behavior (UB). Consider `uint32_t& ref = header.checksum;`—`checksum` is at offset 3, which is not a multiple of 4, yet `uint32_t&` requires the address it points to to be 4-byte aligned. The compiler might generate SIMD instructions assuming the address is aligned, causing the program to crash on certain architectures or silently return incorrect data on others. If you need to read a member from a packed struct, copy its value to a local variable first before using it; do not bind a reference directly.
+> **Warning**: Taking a reference to a member of a packed struct is undefined behavior. Consider `PackedStruct`—`b` is at offset 3, not a multiple of 4, yet `int&` requires the address it points to be 4-byte aligned. The compiler might generate SIMD instructions assuming the address is aligned, causing the program to crash on some architectures or silently return incorrect data on others. If you need to read a member from a packed struct, copy its value to a local variable first; do not bind a reference directly.
 >
-> **Pitfall Warning**: Accessing unaligned members in a packed struct can trigger a bus error on certain platforms. Although x86 hardware handles unaligned accesses, there is a performance penalty. If your goal is simply to reduce struct size, prioritize adjusting member order over using `#pragma pack`. `#pragma pack` should only be used in scenarios where "the memory layout must precisely match an external format."
+> **Warning**: Accessing misaligned members in packed structs can trigger bus errors on some platforms. While x86 hardware handles misaligned access, performance suffers. If you just want to reduce struct size, prioritize adjusting member order over using `#pragma pack`. `#pragma pack` should only be used for scenarios where "the memory layout must strictly match an external format."
 
-## Hands-on Verification — alignment.cpp
+## Hands-on Verification—alignment.cpp
 
-Now let's combine the knowledge above and write a complete program to verify various alignment behaviors. This program defines multiple structs, prints their `sizeof` and member offsets, lets you visually see where the padding bytes are, and demonstrates how to optimize layout by rearranging members.
+Now let's synthesize the knowledge above and write a complete program to verify various alignment behaviors. This program defines multiple structs, prints their `sizeof` and member offsets, giving you an intuitive view of where padding bytes are located, while demonstrating how to optimize layout by reordering members.
 
 ```cpp
-// alignment.cpp
-// 编译: g++ -std=c++17 -O0 alignment.cpp -o alignment && ./alignment
-
-#include <cstddef>
-#include <cstdint>
 #include <iostream>
+#include <cstddef>
 
-// --- 结构体定义 ---
-
-struct BadLayout {
-    char  a;
-    int   b;
-    char  c;
+// Standard layout: likely to have padding
+struct Standard {
+    char a;     // 1 byte
+    // 3 bytes padding
+    int b;      // 4 bytes
+    char c;     // 1 byte
+    // 3 bytes padding
 };
 
-struct GoodLayout {
-    int   b;
-    char  a;
-    char  c;
+// Optimized layout: minimal padding
+struct Optimized {
+    int b;      // 4 bytes
+    char a;     // 1 byte
+    char c;     // 1 byte
+    // 2 bytes padding
 };
 
-struct alignas(16) AlignedBuffer {
-    int data[3];  // 12 字节，补齐到 16
+// Extreme case: double + char
+struct Extreme {
+    char a;     // 1 byte
+    // 7 bytes padding
+    double d;   // 8 bytes
+    char c;     // 1 byte
+    // 7 bytes padding
+};
+
+// Optimized extreme case
+struct ExtremeOptimized {
+    double d;   // 8 bytes
+    char a;     // 1 byte
+    char c;     // 1 byte
+    // 6 bytes padding
 };
 
 #pragma pack(push, 1)
-struct PackedHeader {
-    uint8_t  version;
-    uint16_t length;
-    uint32_t crc;
+struct Packed {
+    char a;
+    int b;
+    char c;
 };
 #pragma pack(pop)
 
-struct MixedTypes {
-    char    flag;
-    double  value;
-    int     count;
-    short   id;
+struct alignas(16) OverAligned {
+    int a;
+    int b;
+    int c;
 };
 
-struct ReorderedMixed {
-    double  value;
-    int     count;
-    short   id;
-    char    flag;
-};
+int main() {
+    std::cout << "Standard: " << sizeof(Standard) << " bytes\n";
+    std::cout << "  a: " << offsetof(Standard, a) << "\n";
+    std::cout << "  b: " << offsetof(Standard, b) << "\n";
+    std::cout << "  c: " << offsetof(Standard, c) << "\n\n";
 
-// --- 工具函数 ---
+    std::cout << "Optimized: " << sizeof(Optimized) << " bytes\n";
+    std::cout << "  b: " << offsetof(Optimized, b) << "\n";
+    std::cout << "  a: " << offsetof(Optimized, a) << "\n";
+    std::cout << "  c: " << offsetof(Optimized, c) << "\n\n";
 
-/// 打印结构体信息和成员偏移量
-template <typename T>
-void print_struct_info(const char* name)
-{
-    std::cout << name << ":\n";
-    std::cout << "  sizeof = " << sizeof(T)
-              << ", alignof = " << alignof(T) << "\n";
-}
+    std::cout << "Extreme: " << sizeof(Extreme) << " bytes\n";
+    std::cout << "  a: " << offsetof(Extreme, a) << "\n";
+    std::cout << "  d: " << offsetof(Extreme, d) << "\n";
+    std::cout << "  c: " << offsetof(Extreme, c) << "\n\n";
 
-int main()
-{
-    std::cout << "=== sizeof 和 alignof 对比 ===\n\n";
+    std::cout << "ExtremeOptimized: " << sizeof(ExtremeOptimized) << " bytes\n";
+    std::cout << "  d: " << offsetof(ExtremeOptimized, d) << "\n";
+    std::cout << "  a: " << offsetof(ExtremeOptimized, a) << "\n";
+    std::cout << "  c: " << offsetof(ExtremeOptimized, c) << "\n\n";
 
-    print_struct_info<BadLayout>("BadLayout");
-    std::cout << "  偏移量: a=" << offsetof(BadLayout, a)
-              << ", b=" << offsetof(BadLayout, b)
-              << ", c=" << offsetof(BadLayout, c) << "\n\n";
+    std::cout << "Packed: " << sizeof(Packed) << " bytes\n";
+    std::cout << "  a: " << offsetof(Packed, a) << "\n";
+    std::cout << "  b: " << offsetof(Packed, b) << "\n";
+    std::cout << "  c: " << offsetof(Packed, c) << "\n\n";
 
-    print_struct_info<GoodLayout>("GoodLayout");
-    std::cout << "  偏移量: b=" << offsetof(GoodLayout, b)
-              << ", a=" << offsetof(GoodLayout, a)
-              << ", c=" << offsetof(GoodLayout, c) << "\n\n";
-
-    print_struct_info<AlignedBuffer>("AlignedBuffer");
-    std::cout << "  偏移量: data=" << offsetof(AlignedBuffer, data) << "\n\n";
-
-    print_struct_info<PackedHeader>("PackedHeader");
-    std::cout << "  偏移量: version=" << offsetof(PackedHeader, version)
-              << ", length=" << offsetof(PackedHeader, length)
-              << ", crc=" << offsetof(PackedHeader, crc) << "\n\n";
-
-    print_struct_info<MixedTypes>("MixedTypes");
-    std::cout << "  偏移量: flag=" << offsetof(MixedTypes, flag)
-              << ", value=" << offsetof(MixedTypes, value)
-              << ", count=" << offsetof(MixedTypes, count)
-              << ", id=" << offsetof(MixedTypes, id) << "\n\n";
-
-    print_struct_info<ReorderedMixed>("ReorderedMixed");
-    std::cout << "  偏移量: value=" << offsetof(ReorderedMixed, value)
-              << ", count=" << offsetof(ReorderedMixed, count)
-              << ", id=" << offsetof(ReorderedMixed, id)
-              << ", flag=" << offsetof(ReorderedMixed, flag) << "\n\n";
-
-    std::cout << "=== 优化效果 ===\n";
-    std::cout << "BadLayout  -> GoodLayout: "
-              << sizeof(BadLayout) << " -> " << sizeof(GoodLayout)
-              << " (节省 " << sizeof(BadLayout) - sizeof(GoodLayout)
-              << " 字节)\n";
-    std::cout << "MixedTypes -> ReorderedMixed: "
-              << sizeof(MixedTypes) << " -> " << sizeof(ReorderedMixed)
-              << " (节省 " << sizeof(MixedTypes) - sizeof(ReorderedMixed)
-              << " 字节)\n";
-
-    return 0;
+    std::cout << "OverAligned: " << sizeof(OverAligned) << " bytes\n";
+    std::cout << "  alignof: " << alignof(OverAligned) << "\n";
 }
 ```
 
-After compiling and running, you'll see output similar to this:
+After compiling and running, you will see output similar to this:
 
 ```text
-=== sizeof 和 alignof 对比 ===
+Standard: 12 bytes
+  a: 0
+  b: 4
+  c: 8
 
-BadLayout:
-  sizeof = 12, alignof = 4
-  偏移量: a=0, b=4, c=8
+Optimized: 8 bytes
+  b: 0
+  a: 4
+  c: 5
 
-GoodLayout:
-  sizeof = 8, alignof = 4
-  偏移量: b=0, a=4, c=5
+Extreme: 24 bytes
+  a: 0
+  d: 8
+  c: 16
 
-AlignedBuffer:
-  sizeof = 16, alignof = 16
-  偏移量: data=0
+ExtremeOptimized: 16 bytes
+  d: 0
+  a: 8
+  c: 9
 
-PackedHeader:
-  sizeof = 7, alignof = 1
-  偏移量: version=0, length=1, crc=3
+Packed: 6 bytes
+  a: 0
+  b: 1
+  c: 5
 
-MixedTypes:
-  sizeof = 24, alignof = 8
-  偏移量: flag=0, value=8, count=16, id=20
-
-ReorderedMixed:
-  sizeof = 16, alignof = 8
-  偏移量: value=0, count=8, id=12, flag=14
-
-=== 优化效果 ===
-BadLayout  -> GoodLayout: 12 -> 8 (节省 4 字节)
-MixedTypes -> ReorderedMixed: 24 -> 16 (节省 8 字节)
+OverAligned: 16 bytes
+  alignof: 16
 ```
 
-`BadLayout` has 6 bytes of padding (3 bytes after `a`, 3 bytes after `c`), while `GoodLayout` only has 2 bytes of tail padding. The situation with `MixedTypes` is even more extreme—7 bytes of padding are stuffed between a `char` and a `double`, bloating the total size to 24 bytes, whereas `ReorderedMixed` only needs 16 bytes. This is the power of member sorting: the same data, arranged differently, can lead to a memory footprint difference of 33% or more.
+`Standard` has 6 bytes of padding (3 bytes after `a`, 3 bytes after `c`), while `Optimized` has only 2 bytes of tail padding. The `Extreme` case is even more dramatic—7 bytes of padding are stuffed between a `char` and a `double`, inflating the total size to 24 bytes, whereas `ExtremeOptimized` only needs 16 bytes. This is the power of member ordering: the same data, different arrangements, can result in a memory footprint difference of 33% or more.
 
-`PackedHeader` demonstrates the effect of packing: there is no padding at all, and the size is exactly the sum of all members. Note, however, that its alignment requirement becomes 1—meaning if it appears inside another struct, it can be placed anywhere. `AlignedBuffer` showcases the effect of `alignas(16)`: although the data is only 12 bytes, the entire struct is forcefully aligned to a 16-byte boundary, and its size is also 16.
+`Packed` demonstrates the effect of packing: no padding, size exactly equal to the sum of all members, but note its alignment requirement became 1—meaning if it appears inside another struct, it can be placed anywhere. `OverAligned` shows the effect of `alignas(16)`: although the data is only 12 bytes, the entire struct is forced to align to a 16-byte boundary, and the size is also 16.
 
 ## Exercises
 
-### Exercise 1: Manually Calculate sizeof
+### Exercise 1: Manual sizeof Calculation
 
-Without compiling, predict the `sizeof` and the offset of each member for the following structs:
+Without compiling, predict the `sizeof` and offset of each member for the following structs:
 
 ```cpp
-struct X {
-    char   a;
-    double b;
-    int    c;
-};
-
-struct Y {
-    double a;
-    int    b;
-    char   c;
-};
-
-struct Z {
+struct A {
     char a;
+    short b;
+    int c;
+};
+
+struct B {
+    double a;
     char b;
-    int  c;
-    int  d;
+    int c;
+    short d;
+};
+
+struct C {
+    char a;
+    double b;
+    char c[5];
+    int d;
 };
 ```
 
-Then use code to verify your predictions.
+Then verify your predictions with code.
 
 ### Exercise 2: Optimize Struct Layout
 
-What is the `sizeof` of the following struct on a 64-bit system? Rearrange the members to make it as small as possible:
+What is the `sizeof` of the following struct on a 64-bit system? Reorder the members to make it as small as possible:
 
 ```cpp
-struct Monster {
-    bool     is_alive;
-    double   health;
-    char     name[16];
-    int      level;
-    float    speed;
-    uint64_t experience;
+struct Heavy {
+    char a;
+    void* ptr;
+    int b;
+    char c;
+    double d;
+    short e;
 };
 ```
 
-### Exercise 3: Allocate an Aligned Buffer for SIMD
+### Exercise 3: Allocate Aligned Buffers for SIMD
 
-Write a function that allocates a 32-byte aligned `float` array (at least 8 elements), loads data using AVX's `_mm256_load_ps`, and prints the result. Hint: you can use `alignas(32)` to declare an array on the stack, or use `std::aligned_alloc` to allocate on the heap.
+Write a function that allocates a 32-byte aligned `double` array (at least 8 elements), loads data using AVX's `_mm256_load_pd`, and prints the result. Hint: you can use `alignas(32)` to declare a stack array, or use `aligned_alloc` to allocate on the heap.
 
 ## Summary
 
-In this chapter, we uncovered the secrets behind `sizeof`. CPUs access data most efficiently at aligned addresses, so the compiler inserts padding bytes between struct members to satisfy alignment requirements. Every type has a natural alignment value (usually equal to its size), a struct's alignment equals that of its largest member, and its overall size must be a multiple of this alignment value. Member declaration order directly affects the amount of padding—putting members with larger alignment requirements first and those with smaller requirements last can significantly reduce the struct's size. `alignas` allows us to manually specify stricter alignment requirements, making it indispensable for SIMD, cache line optimization, and hardware interaction scenarios. `#pragma pack` can eliminate padding to achieve a compact layout, but the trade-off is the potential risk of unaligned access.
+In this chapter, we revealed the secrets behind `sizeof`. CPUs access data most efficiently at aligned addresses, so compilers insert padding bytes between struct members to satisfy alignment requirements. Every type has a natural alignment value (usually equal to its size), a struct's alignment equals that of its largest member, and its total size must be a multiple of that alignment value. Member declaration order directly impacts padding amount—placing members with larger alignment requirements first and those with smaller requirements later can significantly reduce struct size. `alignas` allows us to manually specify stricter alignment requirements, which is indispensable for SIMD, cache line optimization, and hardware interaction. `#pragma pack` can eliminate padding for compact layouts, but at the cost of potential unaligned access risks.
 
-With this, the content of Volume One is fully complete. We've journeyed from C++'s basic types, control flow, and functions all the way to pointers, arrays, memory layout, and alignment, covering the very foundation of C++ programming. This knowledge will recur repeatedly in later studies—by understanding memory layout and alignment, you'll grasp why the overhead of `unique_ptr` is nearly zero when you learn about move semantics and smart pointers in Volume Two. By understanding the difference between the stack and the heap, you'll immediately see why RAII can cure memory leaks when you study it. In Volume Two, we will dive into the core features of Modern C++: RAII, move semantics, smart pointers, lambda expressions, and constexpr—these are the key forces that transform C++ from "C with classes" into a modern systems programming language. See you in Volume Two.
+With this, the content of Volume 1 is fully concluded. We have journeyed from C++ basic types, control flow, and functions to pointers, arrays, memory layout, and alignment, covering the foundation of C++ programming. This knowledge will recur repeatedly in subsequent studies—understanding memory layout and alignment allows you to grasp why `std::unique_ptr` overhead is almost zero when learning move semantics and smart pointers in Volume 2; understanding the difference between stack and heap allows you to immediately appreciate how RAII can cure memory leaks. In Volume 2, we will enter the core features of Modern C++: RAII, move semantics, smart pointers, lambdas, constexpr—these are the key forces that transform C++ from "C with Classes" into a modern system programming language. See you in Volume 2.

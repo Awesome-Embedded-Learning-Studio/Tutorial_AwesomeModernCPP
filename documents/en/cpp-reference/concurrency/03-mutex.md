@@ -17,32 +17,32 @@ tags:
 - beginner
 title: std::mutex
 translation:
-  engine: anthropic
   source: documents/cpp-reference/concurrency/03-mutex.md
-  source_hash: 4ead663492b3c9476a9f944cea6cfe2f15537db116ef192cac3f171e0c305602
-  token_count: 362
-  translated_at: '2026-05-26T10:12:30.711864+00:00'
+  source_hash: e75c1e68c58c38974751ac83a869d9a5fd51ad23f14eec19de01158150c75d7f
+  translated_at: '2026-06-16T03:27:55.403416+00:00'
+  engine: anthropic
+  token_count: 366
 ---
 # std::mutex (C++11)
 
-## One-Liner
+## In a Nutshell
 
-The most basic mutex, allowing only one thread to hold it at a time, used to protect shared data across multiple threads.
+The most basic mutex, allowing only one thread to hold it at any given time, used to protect shared data between threads.
 
-## Header File
+## Header
 
 `#include <mutex>`
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Operation | Signature | Description |
-|------|------|------|
-| Construction | `mutex()` | Constructs the mutex |
-| Destruction | `~mutex()` | Destroys the mutex |
+|-----------|-----------|-------------|
+| Construct | `mutex()` | Constructs the mutex |
+| Destruct | `~mutex()` | Destroys the mutex |
 | Lock | `void lock()` | Locks the mutex, blocks if unavailable |
-| Try Lock | `bool try_lock()` | Tries to lock the mutex, returns false immediately if unavailable |
+| Try Lock | `bool try_lock()` | Tries to lock, returns false immediately if unavailable |
 | Unlock | `void unlock()` | Unlocks the mutex |
-| Native Handle | `native_handle_type native_handle()` | Returns the underlying implementation-defined native handle |
+| Native Handle | `native_handle_type native_handle()` | Returns the implementation-defined native handle |
 
 ## Minimal Example
 
@@ -68,12 +68,12 @@ int main() {
 }
 ```
 
-## Embedded Applicability: High
+## Embedded Suitability: High
 
-- Typically a zero-overhead abstraction, incurring only atomic operation overhead when uncontested
-- Non-copyable and non-movable, with a clear and controllable memory layout
-- We recommend using it with `lock_guard` to avoid deadlocks in exception paths
-- Note: In an RTOS environment, we must ensure that the underlying pthread or OS primitives are available
+- Usually a zero-overhead abstraction; incurs only atomic operation overhead when uncontended.
+- Non-copyable and non-movable, with a deterministic memory layout.
+- Recommended to use with `lock_guard` to prevent deadlocks caused by exception paths.
+- Note: In RTOS environments, ensure that the underlying pthread or OS primitives are available.
 
 ## Compiler Support
 

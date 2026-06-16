@@ -4,8 +4,8 @@ cpp_standard:
 - 17
 - 20
 - 23
-description: Compile-time conditional branching that selectively compiles code paths
-  based on template parameters.
+description: Compile-time conditional branching, selectively compiling code paths
+  at compile time based on template parameters.
 difficulty: intermediate
 order: 13
 reading_time_minutes: 2
@@ -16,81 +16,75 @@ tags:
 - if_constexpr
 title: if constexpr
 translation:
-  engine: anthropic
   source: documents/cpp-reference/core-language/13-if-constexpr.md
-  source_hash: b9d65858e0b0e11f0c5703f6edda87e6d191cf5cb61b1f3ecf4f69cb48b28ce5
-  token_count: 483
-  translated_at: '2026-05-26T10:16:40.695003+00:00'
+  source_hash: 4cdd84329ae7e6fba7dab0ea967917b81762ed907660997df3e07f8513376605
+  translated_at: '2026-06-16T03:29:21.303888+00:00'
+  engine: anthropic
+  token_count: 486
 ---
 <!--
 Reference Card Template
-Used for feature quick-reference pages under documents/cpp-reference/.
-Unlike article-template.md, reference cards use a concise, structured format without a narrative style.
+Used for feature cheat sheets under documents/cpp-reference/.
+Unlike article-template.md, reference cards use a refined structured format and do not require a narrative style.
 
 Tag usage rules:
-1. Must include exactly 1 platform tag (reference cards uniformly use host)
-2. Must include exactly 1 difficulty tag
+1. Must include 1 platform tag (use 'host' for reference cards)
+2. Must include 1 difficulty tag
 3. Must include at least 1 topic tag
-4. Selected from the VALID_TAGS set in scripts/validate_frontmatter.py
+4. Select from the VALID_TAGS set in scripts/validate_frontmatter.py
 -->
 
 # if constexpr (C++17)
 
-## In a Nutshell
+## One-Liner
 
-Selectively compiles a branch within a template based on a compile-time condition. Discarded branches do not even need to pass syntax checking — a powerful tool for compile-time polymorphism.
+Selectively compiles a branch based on compile-time conditions within templates; discarded branches are not even syntactically checked—a powerful tool for compile-time polymorphism.
 
 ## Header
 
 None (language feature)
 
-## Core API Quick Reference
+## Core API Cheat Sheet
 
 | Syntax Form | Description |
 |-------------|-------------|
-| `if constexpr (cond) { ... }` | If `cond` is `true`, compiles the then branch |
-| `if constexpr (cond) { ... } else { ... }` | Compiles one of two branches |
-| `if constexpr (cond1) { ... } else if constexpr (cond2) { ... } else { ... }` | Multi-branch chain |
-| `if constexpr` with concepts | `if constexpr (std::integral\<T\>)` type traits check |
-| `if constexpr` with `requires` | (C++20) Concepts-based overloading is preferred instead |
+| `if constexpr ( condition )` | Compiles the `then` branch if `condition` is `true` |
+| `if constexpr ( condition ) statement else statement` | Compile-time binary selection |
+| `if constexpr` chain | Multi-branch chain |
+| `if constexpr` with Concepts | `requires` type trait checking |
+| `if constexpr` with `auto` | (C++20) Concepts overloading is preferred instead |
 
 ## Minimal Example
 
 ```cpp
-// Standard: C++17
-#include <iostream>
-#include <type_traits>
-
 template <typename T>
-auto print_type(const T& val) {
-    if constexpr (std::is_integral_v<T>) {
-        std::cout << "integral: " << val << "\n";
-    } else if constexpr (std::is_floating_point_v<T>) {
-        std::cout << "float: " << val << "\n";
+auto get_value(T t) {
+    if constexpr (std::is_pointer_v<T>) {
+        return *t; // Deduces return type to underlying type
     } else {
-        std::cout << "other\n";
+        return t;  // Deduces return type to T
     }
 }
 
-int main() {
-    print_type(42);     // integral: 42
-    print_type(3.14);   // float: 3.14
-    print_type("hi");   // other
+void usage() {
+    int x = 10;
+    get_value(x);   // Instantiates with T=int
+    get_value(&x);  // Instantiates with T=int*
 }
 ```
 
 ## Embedded Applicability: High
 
-- Zero runtime overhead: the condition is evaluated at compile time, and unmet branches generate no code at all
-- Replaces SFINAE and tag dispatch, significantly improving the readability of template metaprogramming
-- Ideal for selecting different code paths based on compile-time constants such as hardware platform or peripheral type
-- Available since C++17, supported by GCC 7+ and ARM Clang 6+
+- Zero runtime overhead: conditions are evaluated at compile time, and unmet branches generate no code.
+- Replaces SFINAE and tag dispatching, significantly improving template metaprogramming readability.
+- Ideal for selecting different code paths based on compile-time constants like hardware platforms or peripheral types.
+- Available since C++17; supported by GCC 7+ and ARM Clang 6+.
 
 ## Compiler Support
 
 | GCC | Clang | MSVC |
 |-----|-------|------|
-| 7 | 3.9 | 19.1 |
+| 7   | 3.9   | 19.1 |
 
 ## See Also
 
@@ -98,4 +92,4 @@ int main() {
 
 ---
 
-*Some content referenced from [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*
+*Part of the content references [cppreference.com](https://en.cppreference.com/), licensed under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)*

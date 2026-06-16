@@ -3,8 +3,8 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: Building a control block with `shared_ptr<Flag>` to safely check for
-  null after object destruction.
+description: Use `shared_ptr<Flag>` to construct a control block, enabling safe null
+  checks after object destruction.
 difficulty: intermediate
 order: 3
 platform: host
@@ -19,27 +19,27 @@ tags:
 - intermediate
 - 智能指针
 - 引用计数
-title: 'SimpleWeakPtr: A Safe Improvement Over T* + shared_ptr<Flag>'
+title: 'SimpleWeakPtr: A Safety Improvement over T* + shared_ptr<Flag>'
 translation:
-  engine: anthropic
   source: documents/vol8-domains/cpp-deep-dives/pointer-semantics/03-simple-weakptr.md
-  source_hash: ac358386b001141f476aeef7ffc56fa795fb26b8f4e3dbceaeb6b057bf488327
-  token_count: 1438
-  translated_at: '2026-05-26T11:55:45.485895+00:00'
+  source_hash: eb6fadf56b9a959b37ba02903853a9322280d71c01a9799bf062c8f78eb617cc
+  translated_at: '2026-06-16T04:08:24.580087+00:00'
+  engine: anthropic
+  token_count: 1433
 ---
-# SimpleWeakPtr: Safe Improvements with T* + shared_ptr\<Flag\>
+# SimpleWeakPtr: Safe Improvements via T* + shared_ptr\<Flag\>
 
 ## Introduction
 
-In the previous article, we dissected the fatal flaw in `T* + raw Flag*`: the Flag's lifetime is bound to the Owner. When the Owner is destroyed, the Flag goes away with it, and the `flag_` held by external WeakPtrs becomes a dangling pointer — accessing `is_valid()` is undefined behavior (UB) in its own right.
+In the previous post, we broke down the fatal flaw in `SimpleWeakPtr`: the `Flag`'s lifetime was bound to the `Owner`. Once the `Owner` was destroyed, the `Flag` vanished with it, leaving the `Flag*` held by external `WeakPtr` instances as dangling pointers—dereferencing it was undefined behavior (UB) in itself.
 
-The fix is straightforward: decouple the Flag's lifetime from the Owner. How? Use a `std::shared_ptr<Flag>` to hold it — the Factory and all WeakPtrs share ownership of the same Flag. When the Owner is destroyed, it only invalidates the Flag (sets `alive = false`), but the Flag object itself stays alive until the last WeakPtr holding it is also destroyed.
+The solution is straightforward: decouple the `Flag`'s lifetime from the `Owner`. How? We use a `shared_ptr` to hold it—the `Factory` and all `WeakPtr` instances share ownership of the same `Flag`. When the `Owner` destructs, it only invalidates the `Flag` (sets `alive` to `false`), but the `Flag` object itself continues to live until the last `WeakPtr` holding it is destroyed.
 
-This way, `is_valid()` never accesses freed memory, because the Flag object it accesses is guaranteed to still be alive.
+This way, `lock()` never accesses freed memory, because the `Flag` object it accesses is guaranteed to still exist.
 
 ## Core Design
 
-Let's look at the implementation first, and then we'll explain the design rationale section by section.
+Let's look at the implementation first, then we'll explain why we designed it this way.
 
 ```cpp
 // simple_weak_ptr.h
@@ -118,15 +118,15 @@ private:
 };
 ```
 
-## Why This Is Safe Now
+## Why This Is Safe
 
-The problem in the previous article was that `Flag*` was a raw pointer — it didn't own the Flag and couldn't guarantee the Flag was still alive. Now that we've switched to `std::shared_ptr<Flag>`, the situation is completely different.
+The problem with the previous version was that `Flag*` was a raw pointer—it didn't own the `Flag` and couldn't guarantee the `Flag` was still alive. Now that we've switched to `shared_ptr<Flag>`, the situation is completely different.
 
-A `std::shared_ptr` maintains an internal reference count. When the Factory creates a `SimpleWeakPtr`, it copies its `flag_` to the WeakPtr, incrementing the reference count by one. At this point, two `shared_ptr` instances point to the same Flag: one held by the Factory, and one held by the WeakPtr.
+`shared_ptr` maintains an internal reference count. When the `Factory` creates a `WeakPtr`, it copies its `shared_ptr<Flag>` to the `WeakPtr`, incrementing the reference count. At this point, two `shared_ptr<Flag>` instances point to the same `Flag`: one held by the `Factory`, and one by the `WeakPtr`.
 
-When the Owner is destroyed, the Factory's destructor calls `invalidate()` to set `flag_->alive` to `false`. Then the Factory's `shared_ptr<Flag>` is destroyed, and the reference count drops from two to one. However, the Flag object is **not** destroyed, because there is still one `shared_ptr` (the one held by the WeakPtr) referencing it.
+When the `Owner` destructs, the `Factory`'s destructor calls `flag->alive = false`. Then the `Factory`'s `shared_ptr<Flag>` destructs, dropping the reference count from two to one. However, the `Flag` object is **not** destroyed, because there is still one `shared_ptr<Flag>` (the one held by the `WeakPtr`) referencing it.
 
-The Flag is only destroyed when the last `shared_ptr` holding it is also destroyed. This means that as long as any `SimpleWeakPtr` is alive, `is_valid()` is accessing a Flag object that genuinely exists — not a dangling pointer.
+Only when the last `shared_ptr<Flag>` holding the `Flag` destructs is the `Flag` finally destroyed. This means that as long as any `WeakPtr` is alive, `lock()` is accessing a `Flag` object that definitely exists—rather than a dangling pointer.
 
 Lifetime diagram:
 
@@ -163,19 +163,19 @@ graph TD
 
 ## shared_ptr\<Flag\> Does Not Mean Owning T
 
-There is an easily confused point here that we need to emphasize: `shared_ptr<Flag>` only owns the Flag as a control block; it does **not** own T.
+There is a subtle point here that needs emphasis: `shared_ptr<Flag>` only owns the control block (the `Flag`), **it does not own T**.
 
-The Flag only contains a `bool alive`. It doesn't hold a pointer to T, it doesn't participate in T's destruction, and it doesn't extend T's lifetime. T's lifetime is entirely managed by the Owner itself (it could be a stack object, a heap object managed by a `unique_ptr`, or something else). The only thing the Flag does is record the status of "is T still alive?"
+The `Flag` only contains a `bool`. It doesn't hold a pointer to `T`, participate in `T`'s destruction, or extend `T`'s lifetime. `T`'s lifetime is entirely managed by the `Owner` itself (it might be a stack object, a heap object managed by `unique_ptr`, or something else). The only thing the `Flag` does is record the state of "is T still alive".
 
-This distinction is crucial — if you interpret `shared_ptr<Flag>` as "the shared pointer owns T," you're conflating it with `std::shared_ptr<T>`. The latter owns T, while the former only owns the control block.
+This distinction is crucial—if you understand `shared_ptr<Flag>` as "shared_ptr owns T", you would confuse it with `std::shared_ptr<T>`. The latter owns `T`, while the former only owns the control block.
 
 ## Thread Safety Discussion
 
-At this point, we've solved the lifetime safety issue. But if you use `SimpleWeakPtr` in a multithreaded scenario, there are new pitfalls waiting.
+At this point, we have solved the lifetime safety issue. However, if you use `SimpleWeakPtr` in a multi-threaded environment, there are new pitfalls waiting.
 
-**Problem one: data race on `bool alive`.** If one thread writes to `alive = false` in `invalidate()`, and another thread reads from `alive` in `is_valid()`, without any synchronization mechanism, this is a textbook data race — UB.
+**Problem 1: Data race on `Flag::alive`.** If one thread writes to `flag->alive` in `~Owner()`, and another thread reads `flag->alive` in `lock()`, without any synchronization mechanism, this is a textbook data race—UB.
 
-The fix is simple: replace `bool` with `std::atomic<bool>`:
+The fix is simple: swap `bool` for `atomic<bool>`:
 
 ```cpp
 #include <atomic>
@@ -188,7 +188,7 @@ struct Flag {
 };
 ```
 
-**Problem two: even if the Flag is atomic, concurrent access to T is still unsafe.** This is the most easily overlooked point. Suppose thread A calls `is_valid()` and gets `true`, then prepares to call `get()` to get a T* and access T's members. But between `is_valid()` and the actual access to T, thread B might be destroying T. This is the classic TOCTOU (Time-of-check-to-time-of-use) race condition.
+**Problem 2: Even if `Flag` is atomic, concurrent access to `T` is still unsafe.** This is the most easily overlooked point. Suppose Thread A calls `lock()` and returns `true`, then prepares to call `get()` to retrieve the `T*` and access `T`'s members. But between the `lock()` check and the actual access to `T`, Thread B might be destructing `T`. This is the classic TOCTOU (Time-of-check-to-time-of-use) race.
 
 ```mermaid
 sequenceDiagram
@@ -203,20 +203,20 @@ sequenceDiagram
     Note over A,B: T 已经被析构，线程 A 持有的是悬垂指针
 ```
 
-`atomic<bool>` solves the data race on the Flag itself, not the concurrent access safety issue for T. We will dive into this in detail later in the fifth article when we discuss asynchronous callbacks.
+`atomic<bool>` solves the data race for the `Flag` itself, not the concurrent access safety for `T`. We will discuss this in detail later when we cover asynchronous callbacks in Part 5.
 
 ## Summary
 
-- `shared_ptr<Flag>` decouples the control block's lifetime from the Owner, solving the dangling pointer problem of `raw Flag*`
-- `is_valid()` is now always safe — as long as the WeakPtr is alive, the Flag is guaranteed to be alive
-- `shared_ptr<Flag>` only owns the control block, does not own T, and does not extend T's lifetime
-- Thread safety requires two steps: use `atomic<bool>` for the Flag to resolve data races, but concurrent access to T requires additional synchronization mechanisms
-- `atomic<bool>` solves "reading the Flag won't cause UB," not "accessing T is safe after reading alive=true"
+- `shared_ptr<Flag>` decouples the control block's lifetime from the `Owner`, solving the dangling pointer issue of `SimpleWeakPtr`.
+- `lock()` is now always safe—as long as the `WeakPtr` is alive, the `Flag` is guaranteed to be alive.
+- `shared_ptr<Flag>` only owns the control block, not `T`, and does not extend `T`'s lifetime.
+- Thread safety requires two steps: use `atomic<bool>` for the `Flag` to solve data races, but concurrent access to `T` requires additional synchronization mechanisms.
+- `atomic<bool>` ensures "reading the Flag won't trigger UB", not "accessing `T` is safe after reading alive=true".
 
-This is a crucial step from "unsafe weak reference" to "safe weak reference." However, `shared_ptr` introduces the overhead of heap allocation and atomic reference counting. Is there a lighter-weight way to achieve the same safety guarantees? Yes — the Chrome-style reference-counted control block. We'll implement it in the next article.
+This is the key step from "unsafe weak reference" to "safe weak reference". However, `SimpleWeakPtr` introduces the overhead of heap allocation and atomic reference counting. Is there a lighter way to achieve the same safety guarantees? Yes—the Chrome-style reference counting control block. In the next post, we will implement it.
 
 ## Reference Resources
 
 - [std::shared_ptr - cppreference](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 - [std::atomic - cppreference](https://en.cppreference.com/w/cpp/atomic/atomic)
-- [C++ Memory Order 详解](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — Volume five of this tutorial provides an in-depth discussion of memory order
+- [C++ Memory Order 详解](../../../vol5-concurrency/ch03-atomic-memory-model/02-memory-ordering.md) — Volume 5 of this tutorial discusses memory order in depth
