@@ -32,6 +32,12 @@ tags:
   <ChapterLink href="13-custom-allocators">自定义分配器</ChapterLink>
 </ChapterNav>
 
+## 迭代器与算法
+
+<ChapterNav variant="sub">
+  <ChapterLink href="40-iterator-basics-and-categories">迭代器基础与 category</ChapterLink>
+</ChapterNav>
+
 ## 字符串与文本
 
 <ChapterNav variant="sub">

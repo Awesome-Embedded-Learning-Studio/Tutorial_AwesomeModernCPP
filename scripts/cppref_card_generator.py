@@ -48,7 +48,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent
 DEFAULT_CACHE_DIR = SCRIPT_DIR / "cppref_cache"
 DEFAULT_MANIFEST = SCRIPT_DIR / "cppref_manifest.json"
 TEMPLATE_PATH = None  # 模板已内联，见 REFERENCE_CARD_TEMPLATE
-WRITING_STYLE_PATH = PROJECT_ROOT / ".claude" / "writting_style.md"
+WRITING_STYLE_PATH = PROJECT_ROOT / ".claude" / "style" / "writing-style.md"
 
 REFERENCE_CARD_TEMPLATE = """\
 ---

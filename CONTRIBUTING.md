@@ -106,6 +106,8 @@ documents/vol2-modern-features/     # 卷二目录
 4. **标题层级**：不超过 4 级（`####`）
 5. **篇幅**：每篇文章控制在 1500-3000 字
 
+> 完整的写作人格、语气规则、文章骨架与代码风格见 [`.claude/style/writing-style.md`](.claude/style/writing-style.md)(项目作者的真实写作声音,贡献时尽量贴合)。
+
 ## 自定义 Vue 组件
 
 文档站注册了若干自定义 Vue 组件，可在 Markdown 中直接使用。
@@ -370,6 +372,14 @@ QA 不替代正文，只负责解答常见分叉问题和高频误区。
 
 - [CONTRIBUTORS.md](./CONTRIBUTORS.md) — 完整贡献者列表
 - [文档站贡献者页面](https://awesome-embedded-learning-studio.github.io/Tutorial_AwesomeModernCPP/team/) — 在线展示
+
+## 使用 AI / Agent 辅助(可选)
+
+用不用 AI 都欢迎贡献。如果你或你的 AI agent 想辅助开发、写教程或验证技术概念,把 agent 指向仓库根的 [`AGENTS.md`](AGENTS.md) —— 它是跨工具(Claude Code / Cursor / Copilot 等)的通用入口,包含项目结构、构建校验命令,以及一条核心纪律:**断言 C++ 行为前先编译实测或查 cppreference,并标注标准版本**。
+
+- 写作人格与风格:[`.claude/style/writing-style.md`](.claude/style/writing-style.md)
+- 文章审查(事实核查 / 编译验证)的 prompt 在 `.claude/prompts/`
+- 这些资产本身就是我们开发流程的一部分,公开供参考与复用。
 
 ## 行为准则
 
