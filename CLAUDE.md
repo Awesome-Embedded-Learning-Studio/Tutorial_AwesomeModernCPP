@@ -18,7 +18,7 @@ Claude Code 在本项目的**专属补充**。通用项目信息(架构 / 命令
 - [`/patch`](.claude/commands/patch.md) —— 小迭代规划(开发原子单位,累积制)
 - [`/minor`](.claude/commands/minor.md) —— 发版打包规划(攒够后手工判定触发)
 
-确认讨论后产出【总结 + 迭代 Issue】到聊天框,套 [`.claude/templates/iteration-issue.md`](.claude/templates/iteration-issue.md)。不调 `gh`、不开 issue。
+确认讨论后产出【总结 + 迭代 Issue】到聊天框,套本地 `.claude/templates/iteration-issue.md`。不调 `gh`、不开 issue。
 
 ## 实用命令(skills,执行型)
 
@@ -30,7 +30,7 @@ Claude Code 在本项目的**专属补充**。通用项目信息(架构 / 命令
 
 ## 记忆系统
 
-持久记忆在 `~/.claude/projects/-home-charliechen-Tutorial-AwesomeModernCPP/memory/`,每条一个文件 + `MEMORY.md` 索引,跨会话保留用户偏好 / 项目进展 / 踩坑。
+Claude Code 有持久记忆(跨会话保留用户偏好、项目进展、踩坑),由 `MEMORY.md` 索引;具体存储位置在本地 Claude 配置,因人而异。
 
 ## 添加贡献者
 

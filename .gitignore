@@ -5,6 +5,7 @@
 .claude/prompts/produce-vol5-labs.md
 .claude/prompts/vol5-code-verification.md
 .claude/chapter-projects-outline.md
+.claude/templates/
 
 # Build directories
 build/
