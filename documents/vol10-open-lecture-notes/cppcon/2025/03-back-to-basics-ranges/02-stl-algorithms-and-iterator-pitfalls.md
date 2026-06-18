@@ -33,7 +33,7 @@ video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 
 ## STL 的三大支柱
 
-标准模板库（STL）的设计哲学，是把三样东西解耦开：**容器（containers）**负责存数据，**迭代器（iterators）**负责遍历数据，**算法（algorithms）**负责处理数据<RefLink :id="1" preview="cppreference, Standard library algorithms — containers, iterators, algorithms" />。三者通过迭代器这个「胶水」连接起来——算法不直接认识任何具体容器，它只认迭代器；容器只要能吐出符合要求的迭代器，就能被所有算法复用。这个解耦是 STL 能用一个 `std::sort` 通吃 `vector`、`array`、`deque` 的根本原因。
+标准模板库（STL）的设计哲学，是把三样东西解耦开：**容器**（containers）负责存数据，**迭代器**（iterators）负责遍历数据，**算法**（algorithms）负责处理数据<RefLink :id="1" preview="cppreference, Standard library algorithms — containers, iterators, algorithms" />。三者通过迭代器这个「胶水」连接起来——算法不直接认识任何具体容器，它只认迭代器；容器只要能吐出符合要求的迭代器，就能被所有算法复用。这个解耦是 STL 能用一个 `std::sort` 通吃 `vector`、`array`、`deque` 的根本原因。
 
 那算法到底在哪几个头文件里？
 

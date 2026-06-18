@@ -75,7 +75,7 @@ std::ranges::find_if(v, [](int i) { return i > 4; });
 
 ## views：惰性求值，Ranges 的灵魂
 
-受约束算法只是开胃菜，Ranges 真正的杀手锏是 **views（视图）**。一个 view 是一种**惰性（lazy）**访问 range 的方式——它不拷贝数据、不预先计算结果，而是在你遍历它的时候，**一次处理一个元素**<RefLink :id="5" preview="cppreference, Ranges library — views are lazy" />。
+受约束算法只是开胃菜，Ranges 真正的杀手锏是 **views（视图）**。一个 view 是一种**惰性**（lazy）访问 range 的方式——它不拷贝数据、不预先计算结果，而是在你遍历它的时候，**一次处理一个元素**<RefLink :id="5" preview="cppreference, Ranges library — views are lazy" />。
 
 对比一下两种风格。`std::ranges::sort(v)` 是**急切求值（eager）**——它立刻、当场把整个区间排好序，跑完才返回。而 `std::views::filter(...)` 是**惰性求值（lazy）**——它只是搭好一个「过滤管道」，什么计算都不做，直到你真正去遍历它，每遍历到符合条件的一个元素，才把它交给你。
 

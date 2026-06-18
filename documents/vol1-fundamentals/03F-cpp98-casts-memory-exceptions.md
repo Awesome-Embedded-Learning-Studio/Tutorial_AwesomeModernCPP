@@ -166,7 +166,7 @@ int* modifiable = const_cast<int*>(&const_value);
 
 首先问自己：需要移除 `const` 或 `volatile` 吗？如果需要，用 `const_cast`。其次，需要做底层的内存重新解释（如整数地址到指针、不相关指针类型之间）吗？如果需要，用 `reinterpret_cast`——但要格外小心。再次，需要在有虚函数的继承层次中做运行时类型检查吗？如果需要，用 `dynamic_cast`——但要注意 RTTI 开销。如果以上都不是，那就用 `static_cast`——它覆盖了绝大部分日常的类型转换需求。
 
-**一个实用的原则是：优先用 `static_cast`，只有在明确知道为什么需要其他三种的时候才使用它们。**如果你发现自己在大量使用 `reinterpret_cast` 或 `const_cast`，那可能说明你的设计存在问题，值得重新审视。
+**一个实用的原则是：优先用 `static_cast`，只有在明确知道为什么需要其他三种的时候才使用它们**。如果你发现自己在大量使用 `reinterpret_cast` 或 `const_cast`，那可能说明你的设计存在问题，值得重新审视。
 
 ## 2. 动态内存管理
 

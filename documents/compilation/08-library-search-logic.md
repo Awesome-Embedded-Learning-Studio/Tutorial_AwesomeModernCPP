@@ -113,9 +113,9 @@ Windows 的可执行/装载器与 API（`LoadLibrary` / `LoadLibraryEx` / 自动
 
 一般而言，Windows的方式有两种：隐式（导入表）与显式（运行时 API）
 
-**隐式加载（implicit）**指的是可执行文件的导入表（Import Table）在进程启动或模块加载时由系统装载器解析，系统会为每个 `DLL` 尝试找到并映射到进程地址空间。开发者在链接阶段指定依赖（例如 `kernel32.dll`、`mydll.dll`），加载由系统在进程启动时期自动完成。
+**隐式加载**（implicit）指的是可执行文件的导入表（Import Table）在进程启动或模块加载时由系统装载器解析，系统会为每个 `DLL` 尝试找到并映射到进程地址空间。开发者在链接阶段指定依赖（例如 `kernel32.dll`、`mydll.dll`），加载由系统在进程启动时期自动完成。
 
-**显式加载（explicit）**指的是代码在运行时使用 `LoadLibrary` / `LoadLibraryEx` 等 API 手工加载 DLL，然后用 `GetProcAddress` 取得函数指针。显式加载能通过参数控制搜索行为（例如使用 `LOAD_LIBRARY_SEARCH_USER_DIRS` 等标志）。
+**显式加载**（explicit）指的是代码在运行时使用 `LoadLibrary` / `LoadLibraryEx` 等 API 手工加载 DLL，然后用 `GetProcAddress` 取得函数指针。显式加载能通过参数控制搜索行为（例如使用 `LOAD_LIBRARY_SEARCH_USER_DIRS` 等标志）。
 
 #### 默认搜索顺序（概念化顺序）
 

@@ -36,7 +36,7 @@ video_youtube: https://www.youtube.com/watch?v=szU5b972F7E
 
 ## 移动构造函数：偷指针的艺术
 
-上一篇我们已经有了完整的 `MyString` 拷贝操作。现在给它加上移动构造函数。这个函数做的事情，用 Ben Saks 的话说，是一种**"破坏性拷贝"（destructive copy）**——我们把源对象的数据"偷"过来，然后让源对象进入一种无害的状态。
+上一篇我们已经有了完整的 `MyString` 拷贝操作。现在给它加上移动构造函数。这个函数做的事情，用 Ben Saks 的话说，是一种"**破坏性拷贝**"（destructive copy）——我们把源对象的数据"偷"过来，然后让源对象进入一种无害的状态。
 
 ```cpp
 class MyString
@@ -310,7 +310,7 @@ $ g++ -std=c++20 -O2 -fno-elide-constructors test.cpp && ./a.out
 
 ## moved-from 状态：有效但不可知
 
-移动操作完成之后，源对象处于一种标准称为**"有效但未指定的状态"（valid but unspecified state）**<RefLink :id="6" preview="C++ Standard, [lib.types.movedfrom] — moved-from objects are in a valid but unspecified state" />的状态。这几个字值得逐个拆解。
+移动操作完成之后，源对象处于一种标准称为"**有效但未指定的状态**"（valid but unspecified state）<RefLink :id="6" preview="C++ Standard, [lib.types.movedfrom] — moved-from objects are in a valid but unspecified state" />的状态。这几个字值得逐个拆解。
 
 "有效"意味着：不会内存泄漏、不会资源泄漏、不会触发未定义行为。你可以安全地让这个对象析构——它的析构函数会正常执行，不会 double free，不会 crash。对于我们的 `MyString` 来说，移动后 `actual_str_` 被置成了 `nullptr`，`stored_length_` 变成了 0，所以析构时 `delete[] nullptr` 什么也不做。
 

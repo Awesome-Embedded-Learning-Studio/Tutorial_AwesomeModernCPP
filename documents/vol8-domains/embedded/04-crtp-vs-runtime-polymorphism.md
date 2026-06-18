@@ -30,7 +30,7 @@ title: CRTP vs 运行时多态
 
 所以您就能看到，运行时的多态，有函数转发操作。
 
-**编译期多态（static polymorphism）**则是通过模板、重载、`constexpr`、CRTP（Curiously Recurring Template Pattern）以及代数数据类型（`std::variant`/`std::visit`）等，在编译阶段就把不同实现分派、内联、优化掉。函数调用在编译期能被决定并展开为直接调用或内联，从而消除了运行时间接调用的代价。
+**编译期多态**（static polymorphism）则是通过模板、重载、`constexpr`、CRTP（Curiously Recurring Template Pattern）以及代数数据类型（`std::variant`/`std::visit`）等，在编译阶段就把不同实现分派、内联、优化掉。函数调用在编译期能被决定并展开为直接调用或内联，从而消除了运行时间接调用的代价。
 
 从实现角度看，运行时多态会产生一张或多张 vtable、每个对象携带 vptr（占用 RAM），每次虚函数调用是一次间接跳转（可能影响分支预测），而编译期多态通常会生成多个具体函数实例（模板实例化），这些可以被内联与优化，调用开销可接近普通函数调用，甚至为零开销抽象。
 

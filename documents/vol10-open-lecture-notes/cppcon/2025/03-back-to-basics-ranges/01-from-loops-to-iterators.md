@@ -260,7 +260,7 @@ for (char c : message) {
 
 这就解释了一个常见的疑惑：**range-based for 是怎么知道去调 `begin`/`end` 的？** 答案是编译器在背后帮你插了这两句。它先拿 `__range`，再取首尾迭代器，然后就是普通迭代器循环。所以 range-based for 对迭代器类别没有任何额外要求——只要你的类型能提供 `begin`/`end`（成员或自由函数都行），它就能用。这也是为什么后面我们自定义类型只要实现这两个函数，就能直接塞进 range-based for。
 
-如果遍历的是 `std::map` 这种键值对容器，C++17 的**结构化绑定（structured binding）**配合 range-based for 会非常顺手：
+如果遍历的是 `std::map` 这种键值对容器，C++17 的**结构化绑定**（structured binding）配合 range-based for 会非常顺手：
 
 ```cpp
 const std::map<std::string, int> scores{
