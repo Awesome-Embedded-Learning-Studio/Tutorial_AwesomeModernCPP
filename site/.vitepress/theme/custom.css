@@ -1,35 +1,128 @@
+/* ================================================================
+   正文字号五档(超小/小/正常/大/超大)—— 由 FontSizeSwitcher 切 documentElement 的 data-font-size。
+   默认「正常」(zoom 1);往下为小/超小,往上为大/超大。
+   用 CSS zoom 整页缩放:rem + 所有 px 字号(自定义组件 + VitePress 默认)一并跟随,
+   等同浏览器 Ctrl+/- 原生缩放,避免「只有正文跳动、组件不动」的割裂感。
+   首屏由 config head 内联脚本提前设 data-font-size(默认 normal),避免刷新闪烁。
+   注:zoom 连尺寸/间距一起按比例缩放(2023 起全主流浏览器支持,含 Firefox 109+)。
+   ================================================================ */
+html[data-font-size='xxsmall'] {
+  zoom: 0.85;
+}
+
+html[data-font-size='small'] {
+  zoom: 0.92;
+}
+
+html[data-font-size='normal'] {
+  zoom: 1;
+}
+
+html[data-font-size='large'] {
+  zoom: 1.08;
+}
+
+html[data-font-size='xxlarge'] {
+  zoom: 1.16;
+}
+
 /* Chinese Typography */
 .vp-doc {
   line-height: 1.85;
-  font-size: 0.82rem;
+  font-size: 1.05rem;
+  /* 正文 0.82rem≈13px 偏小 → 0.95rem≈15px,1080p+ 屏阅读更舒适 */
 }
 
-.vp-doc h1 { line-height: 1.4; }
-.vp-doc h2 { line-height: 1.45; }
-.vp-doc h3 { line-height: 1.5; }
-.vp-doc h4 { line-height: 1.55; }
+.vp-doc h1 {
+  line-height: 1.4;
+}
+
+.vp-doc h2 {
+  line-height: 1.45;
+}
+
+.vp-doc h3 {
+  line-height: 1.5;
+}
+
+.vp-doc h4 {
+  line-height: 1.55;
+}
 
 .vp-doc p {
   margin-bottom: 1.2em;
 }
 
-/* Content Width */
+/* Content Width —— 整体布局宽度,它决定文档正文区的最终宽度。
+   VitePress 用它算 VPContent 的左右 padding,正文区天花板 ≈
+   layout − 272(目录栏) − 256(大纲栏) − 128(各层 padding)。
+   取 1560 → 天花板 ≈ 904px(中文 ~53 字/行,舒适),正文撑满即无缝;
+   1920 屏两侧留白 ~180px(仍小于 VitePress 默认 1440 的留白)。
+   想让正文更宽就调大此值,代价是正文行变长。 */
 :root {
-  --vp-layout-max-width: 90rem;
+  --vp-layout-max-width: 1560px;
+}
+
+/* 文档正文列:让它撑满父级 content 区,从而无缝。
+   父级天花板 ≈ layout(1560) − 272(目录栏) − 256(大纲栏) − 128(padding) ≈ 904px,
+   所以 max-width 只要 ≥ 904 就会撑满;实际正文宽度由父级链决定,这里给 1380 留足余量。
+   (之前设 1300 / 1700 看着一样,正是因为都 ≥ 天花板,渲染都卡在父级宽度上。)
+   三类选择器叠加特异性,稳压 VitePress 默认的 has-aside / 无 aside 规则。 */
+.VPDoc .content-container,
+.VPDoc.has-aside .content-container,
+.VPDoc:not(.has-aside) .content-container {
+  max-width: 1380px;
+}
+
+/* ================================================================
+   侧栏 / 大纲 / 首页卡片 —— 字号随正文整体放大
+   正文 1.05rem(≈16.8px);侧栏、大纲、卡片按层级略小,避免全局偏小。
+   ================================================================ */
+
+/* 左侧目录栏:略小于正文,作为导航层级(默认 14px 偏小) */
+.VPSidebar .link {
+  font-size: 1.2rem;
+}
+
+/* 右侧大纲:辅助导航,再小一档(默认 14px) */
+.VPDocAsideOutline .outline-link {
+  font-size: 1.1rem;
+}
+
+/* 首页 feature 卡片:标题比正文醒目,描述对齐正文档(默认 16/14px 偏小) */
+.VPFeature .title {
+  font-size: 1.125rem;
+}
+
+.VPFeature .details {
+  font-size: 0.95rem;
+}
+
+/* ================================================================
+   移动端代码块:取消 VitePress 默认 margin:16px -24px 的出血
+   (<640px 时代码块左右各扩 24px 顶到视口边缘,长代码右侧被遮)。
+   改为不出血 + 恢复四角圆角,长行靠 overflow-x:auto 横滚。
+   ================================================================ */
+@media (max-width: 639px) {
+  .vp-doc div[class*='language-'] {
+    margin: 16px 0;
+    border-radius: 8px;
+  }
 }
 
 /* Code Blocks */
 .vp-doc div[class*='language-'] {
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.96rem;
+  /* 代码块 0.75rem→0.86rem≈13.8px,随正文等比放大 */
   line-height: 1.6;
 }
 
 .vp-doc div[class*='language-'] code {
-  font-size: 0.75rem;
+  font-size: 0.96rem;
 }
 
-.vp-doc :not(pre) > code {
+.vp-doc :not(pre)>code {
   font-size: 0.78em;
   padding: 0.15em 0.35em;
   border-radius: 4px;
@@ -37,7 +130,8 @@
 
 /* Tables */
 .vp-doc table {
-  font-size: 0.78rem;
+  font-size: 0.88rem;
+  /* 表格 0.78rem→0.88rem≈14px,随正文等比放大 */
   line-height: 1.6;
   border-radius: 8px;
   overflow: hidden;
@@ -541,23 +635,19 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(
-    135deg,
-    var(--vp-c-brand-soft) 0%,
-    transparent 50%,
-    var(--vp-c-indigo-soft) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      transparent 50%,
+      var(--vp-c-indigo-soft) 100%);
   opacity: 0.5;
   pointer-events: none;
 }
 
 .VPHero .name.clip {
-  background: linear-gradient(
-    135deg,
-    var(--vp-c-brand-1) 0%,
-    var(--vp-c-indigo-1) 50%,
-    var(--vp-c-purple-1) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-1) 0%,
+      var(--vp-c-indigo-1) 50%,
+      var(--vp-c-purple-1) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -602,6 +692,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 }
 
 @media (min-width: 960px) {
+
   /* Desktop two-column hero: image column fills remaining width, card centered. */
   .VPHero .image {
     flex-grow: 1;
@@ -622,12 +713,26 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 /* ── Proof 条:移动端(<960,hero 堆叠)夹在标题与终端之间;桌面端(≥960)仍在 hero 下方 ──
    两个实例按视口切换显隐。移动端那条放在 home-hero-actions-after(标题块末尾、终端之前),
    底边距归零——终端的 margin-top 提供 proof→终端 的间隙。 */
-.proof-on-mobile { display: none; }
-.proof-on-desktop { display: block; }
-.proof-on-mobile .proof-strip { margin-bottom: 0 !important; }
+.proof-on-mobile {
+  display: none;
+}
+
+.proof-on-desktop {
+  display: block;
+}
+
+.proof-on-mobile .proof-strip {
+  margin-bottom: 0 !important;
+}
+
 @media (max-width: 959px) {
-  .proof-on-mobile { display: block; }
-  .proof-on-desktop { display: none; }
+  .proof-on-mobile {
+    display: block;
+  }
+
+  .proof-on-desktop {
+    display: none;
+  }
 }
 
 /* ── Feature Card Entrance Animation ────────────────────────── */
@@ -637,25 +742,64 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.VPFeatures .item { animation: feature-fade-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-.VPFeatures .item:nth-child(1)  { animation-delay: 0ms; }
-.VPFeatures .item:nth-child(2)  { animation-delay: 78ms; }
-.VPFeatures .item:nth-child(3)  { animation-delay: 156ms; }
-.VPFeatures .item:nth-child(4)  { animation-delay: 234ms; }
-.VPFeatures .item:nth-child(5)  { animation-delay: 312ms; }
-.VPFeatures .item:nth-child(6)  { animation-delay: 390ms; }
-.VPFeatures .item:nth-child(7)  { animation-delay: 468ms; }
-.VPFeatures .item:nth-child(8)  { animation-delay: 546ms; }
-.VPFeatures .item:nth-child(9)  { animation-delay: 624ms; }
-.VPFeatures .item:nth-child(10) { animation-delay: 702ms; }
-.VPFeatures .item:nth-child(11) { animation-delay: 780ms; }
-.VPFeatures .item:nth-child(12) { animation-delay: 858ms; }
+.VPFeatures .item {
+  animation: feature-fade-up 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.VPFeatures .item:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.VPFeatures .item:nth-child(2) {
+  animation-delay: 78ms;
+}
+
+.VPFeatures .item:nth-child(3) {
+  animation-delay: 156ms;
+}
+
+.VPFeatures .item:nth-child(4) {
+  animation-delay: 234ms;
+}
+
+.VPFeatures .item:nth-child(5) {
+  animation-delay: 312ms;
+}
+
+.VPFeatures .item:nth-child(6) {
+  animation-delay: 390ms;
+}
+
+.VPFeatures .item:nth-child(7) {
+  animation-delay: 468ms;
+}
+
+.VPFeatures .item:nth-child(8) {
+  animation-delay: 546ms;
+}
+
+.VPFeatures .item:nth-child(9) {
+  animation-delay: 624ms;
+}
+
+.VPFeatures .item:nth-child(10) {
+  animation-delay: 702ms;
+}
+
+.VPFeatures .item:nth-child(11) {
+  animation-delay: 780ms;
+}
+
+.VPFeatures .item:nth-child(12) {
+  animation-delay: 858ms;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .VPFeatures .item {
@@ -677,16 +821,16 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   border-radius: 14px !important;
   background-color: var(--vp-c-bg) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
-              0 1px 2px rgba(0, 0, 0, 0.06);
+    0 1px 2px rgba(0, 0, 0, 0.06);
   transition: border-color 0.39s ease,
-              box-shadow 0.39s ease,
-              transform 0.39s ease;
+    box-shadow 0.39s ease,
+    transform 0.39s ease;
 }
 
 .VPFeature.link:hover {
   border-color: var(--vp-c-brand-1) !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1),
-              0 4px 8px rgba(0, 0, 0, 0.06);
+    0 4px 8px rgba(0, 0, 0, 0.06);
   transform: translateY(-4px);
 }
 
@@ -700,16 +844,14 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   width: 48px !important;
   height: 48px !important;
   border-radius: 12px !important;
-  background: linear-gradient(
-    135deg,
-    var(--vp-c-brand-soft) 0%,
-    var(--vp-c-indigo-soft) 100%
-  ) !important;
+  background: linear-gradient(135deg,
+      var(--vp-c-brand-soft) 0%,
+      var(--vp-c-indigo-soft) 100%) !important;
   color: var(--vp-c-brand-1) !important;
   font-size: 22px !important;
   transition: background 0.39s ease,
-              color 0.39s ease,
-              transform 0.39s ease;
+    color 0.39s ease,
+    transform 0.39s ease;
 }
 
 .VPFeature.link:hover .icon {
@@ -807,12 +949,12 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   background-color: var(--vp-c-bg-elv) !important;
   border-color: var(--vp-c-border) !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2),
-              0 1px 2px rgba(0, 0, 0, 0.15);
+    0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .dark .VPFeature.link:hover {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3),
-              0 4px 8px rgba(0, 0, 0, 0.2);
+    0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* ── Responsive ──────────────────────────────────────────────── */

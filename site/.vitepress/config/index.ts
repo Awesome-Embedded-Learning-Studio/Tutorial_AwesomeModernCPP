@@ -2,10 +2,7 @@ import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navEn } from './nav'
 import { buildSidebar } from './sidebar'
-import { sharedThemeConfig } from './shared'
-import { kbdPlugin } from '../plugins/kbd-plugin'
-import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
-import { mermaidPlugin } from '../plugins/mermaid-plugin'
+import { sharedThemeConfig, sharedMarkdown } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
 import { join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -85,21 +82,16 @@ export default withDrawio(defineConfig({
 
   head: [
     ['link', { rel: 'icon', href: '/Tutorial_AwesomeModernCPP/favicon.ico' }],
+    // 首屏立即应用字号档(从 localStorage 读,默认 medium),防刷新闪烁。
+    // 与 FontSizeSwitcher.vue 的 STORAGE_KEY('vp-font-size')保持一致。
+    [
+      'script',
+      {},
+      `(function(){try{var s=localStorage.getItem('vp-font-size')||'normal';if(s!=='xxsmall'&&s!=='small'&&s!=='normal'&&s!=='large'&&s!=='xxlarge'){s='normal';}document.documentElement.dataset.fontSize=s;}catch(e){}})()`,
+    ],
   ],
 
-  markdown: {
-    lineNumbers: true,
-    math: true,
-    theme: {
-      light: 'github-light',
-      dark: 'github-dark',
-    },
-    config(md) {
-      cppTemplateEscapePlugin(md)
-      md.use(kbdPlugin)
-      md.use(mermaidPlugin)
-    },
-  },
+  markdown: sharedMarkdown,
 
   themeConfig: {
     ...sharedThemeConfig(),

@@ -13,6 +13,7 @@ import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
 import HomeHeroVisual from './components/HomeHeroVisual.vue'
 import ProofStrip from './components/ProofStrip.vue'
 import HomeRoadmap from './components/HomeRoadmap.vue'
+import FontSizeSwitcher from './components/FontSizeSwitcher.vue'
 import { setupMermaid } from './mermaid-client'
 import './custom.css'
 
@@ -26,6 +27,8 @@ export default {
       'home-features-before': () =>
         h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel), h(HomeTipBanner)]),
       'home-features-after': () => h(HomeRoadmap),
+      'nav-bar-content-after': () => h(FontSizeSwitcher),
+      'nav-screen-content-after': () => h(FontSizeSwitcher),
     })
   },
   setup() {
