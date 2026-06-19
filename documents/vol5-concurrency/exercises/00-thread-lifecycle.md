@@ -1,116 +1,96 @@
 ---
+title: "Lab 0: Thread Lifecycle Lab"
+description: "通过并行文件扫描器，训练线程创建、RAII 包装、参数生命周期和线程局部统计的实战能力"
 chapter: 10
-cpp_standard:
-- 17
-- 20
-description: 通过并行文件扫描器，训练线程创建、RAII 包装、参数生命周期和 thread_local 统计的实战能力
-difficulty: intermediate
 order: 0
-prerequisites:
-- '卷五 ch00: 并发思维与基础'
-- '卷五 ch01: 线程生命周期与 RAII'
-reading_time_minutes: 23
 tags:
-- host
-- cpp-modern
-- atomic
-- beginner
-title: 'Lab 0: Thread Lifecycle Lab'
+  - host
+  - cpp-modern
+  - intermediate
+  - atomic
+difficulty: intermediate
+platform: host
+reading_time_minutes: 25
+cpp_standard: [17]
+prerequisites:
+  - "卷五 ch00: 并发思维与基础"
+  - "卷五 ch01: 线程生命周期与 RAII"
+related:
+  - "并发基本问题"
+  - "std::thread 基础"
+  - "线程所有权与 RAII"
 ---
+
 # Lab 0: Thread Lifecycle Lab
+
+> 本 Lab 配套可运行工程在 [`code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/)。动手工作量约 **4–6 小时**（`reading_time_minutes` 是纯阅读分钟数，不是动手时间）。
 
 ## 目标
 
 读完了 ch01 的四篇文章，我们现在已经知道 `std::thread` 怎么创建、参数怎么传、`JoiningThread` 怎么写、`thread_local` 怎么用。但"知道"和"写过"之间的距离，说实话，比很多朋友想象的要大。一个很典型的经历是：你看了 RAII 包装的代码觉得"这我懂了"，然后自己写一个多线程程序，一跑 TSan 就发现 data race 满天飞，或者某个异常路径把线程给忘了。
 
-这个 Lab 的目标很直白：我们要写一个**并行文件扫描器**——主线程把一个目录下的文件分片，分发给 N 个 worker 线程去扫描，每个 worker 统计自己负责的文件的信息（大小、扩展名分布等），最后主线程汇总所有 worker 的统计结果。项目不大，但它会逼你直面四个核心问题：怎么创建和管理多个线程、怎么用 RAII 保证异常路径不泄漏线程、怎么安全地给线程传递参数、以及怎么用 `thread_local` 做线程安全的统计。
+这个 Lab 的目标很直白：我们要写一个**并行文件扫描器**——主线程把一个目录下的文件分片，分发给 N 个 worker 线程去扫描，每个 worker 统计自己负责的文件信息（大小、扩展名分布），最后主线程汇总。项目不大，但它会逼你直面四个核心问题：怎么创建和管理多个线程、怎么用 RAII 保证异常路径不泄漏线程、怎么安全地给线程传参数、怎么用线程局部统计做无竞争的汇总。
 
-完成这个 Lab 之后，你应该能拿出一套可以复用的 `JoiningThread` 包装器和 `thread_local` 统计模式，在后续的 Lab 里直接拿来用。
+完成这个 Lab 后，你应该能拿出一套可以复用的 `JoiningThread` 包装器和"每 worker 局部统计 + 主线程汇总"的模式，在后续的 Lab 里直接拿来用。
 
 ## 前置知识
 
-在开始之前，确保你已经读完以下章节：
+开始前确保你读完以下章节：
 
-- **ch00-01**：为什么需要并发 — 并发 vs 并行、Amdahl 定律
-- **ch00-02**：并发基本问题 — data race、race condition、死锁
-- **ch00-03**：CPU cache 与 OS 线程 — cache line、false sharing
-- **ch01-01**：std::thread 基础 — 创建、join/detach、hardware_concurrency
-- **ch01-02**：线程参数与生命周期 — decay-copy、悬空引用、move-only
-- **ch01-03**：线程所有权与 RAII — thread_guard、joining_thread、异常安全
-- **ch01-04**：thread_local 与 call_once — 线程局部存储、一次性初始化
+- **ch00-01** 为什么需要并发 — 并发 vs 并行、Amdahl 定律
+- **ch00-02** 并发基本问题 — data race、race condition、死锁
+- **ch00-03** CPU cache 与 OS 线程 — cache line、false sharing
+- **ch01-01** std::thread 基础 — 创建、join/detach、hardware_concurrency
+- **ch01-02** 线程参数与生命周期 — decay-copy、悬空引用、move-only
+- **ch01-03** 线程所有权与 RAII — thread_guard、joining_thread、异常安全
+- **ch01-04** thread_local 与 call_once — 线程局部存储
 
 这个 Lab 没有前置 Lab 依赖。
 
-## 环境准备
+## 工程脚手架（先把这个跑起来）
 
-我们需要 C++17（因为要用 `<filesystem>`），一个还算现代的编译器，以及 Catch2 v3 来跑测试。具体的版本要求如下：
+这一节是本 Lab 和旧版最大的不同：**我们不在文章里贴一堆零散的代码片段让你自己拼**，而是给你一个能直接构建的工程。所有测试已经写好，你只需要补全实现。
 
-- **编译器**：GCC 12+ 或 Clang 15+（需要完整的 `<filesystem>` 支持），笔者当时设计的时候使用的是GCC 16.1，如果
-- **CMake**：3.14+（FetchContent 需要）
-- **Catch2**：v3.x，header-only 模式，通过 FetchContent 拉取
+每个 Lab 在 [vol5-labs/] 下有两份：**`templates/lab0_thread_lifecycle/`** 是空实现骨架（你拷贝去做），**`examples/lab0_thread_lifecycle/`** 是参考实现（卡住可对照，别先抄）。两份都是 standalone 工程。你要做的是 templates 那份，结构如下：
 
-TSan 在这个 Lab 里是我们的主要诊断工具。每次实现完一个 milestone 之后，都应该在 TSan 下跑一遍测试，确认没有 data race。编译选项是 `-fsanitize=thread -g`。
-
-下面是一个最小可用的 CMakeLists.txt：
-
-```cmake
-cmake_minimum_required(VERSION 3.14)
-project(lab0_thread_lifecycle LANGUAGES CXX)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Catch2 v3
-include(FetchContent)
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v3.7.1
-)
-FetchContent_MakeAvailable(Catch2)
-
-# 你的源文件
-add_executable(lab0_tests
-    tests/main.cpp
-)
-target_link_libraries(lab0_tests PRIVATE Catch2::Catch2WithMain)
-
-# TSan 配置（Debug 模式下自动启用）
-target_compile_options(lab0_tests PRIVATE
-    $<$<CONFIG:Debug>:-fsanitize=thread -g>
-)
-target_link_options(lab0_tests PRIVATE
-    $<$<CONFIG:Debug>:-fsanitize=thread>
-)
+```text
+templates/lab0_thread_lifecycle/
+├── CMakeLists.txt       # standalone: FetchContent 拉 Catch2 + INTERFACE 库 + test
+├── include/lab0/        ← 你在这里补全实现
+│   ├── file_info.h      #   数据结构（已给全，不用改）
+│   ├── worker_stats.h   #   数据结构（已给全，不用改）
+│   ├── joining_thread.h  #   Milestone 2 实现
+│   └── file_scanner.h   #   Milestone 1/3/4 实现
+└── test/                # 教程提供的测试（不用改，可选补边界测试）
+    ├── test_helpers.h
+    └── test_milestone1.cpp … test_milestone4.cpp
 ```
 
-测试文件的骨架长这样：
+整个 `vol5-labs/` 目录的构建说明和 dogfooding 反馈流程见 [`vol5-labs/README.md`](../../../code/volumn_codes/vol5-labs/README.md)。先把它读一遍。
 
-```cpp
-// tests/main.cpp
-#include <catch2/catch_test_macros.hpp>
-
-TEST_CASE("Lab 0 sanity check", "[lab0]")
-{
-    REQUIRE(1 + 1 == 2);
-}
-```
-
-编译和运行：
+第一次构建（需要联网，FetchContent 会拉取 Catch2 v3）：
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cd code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle
+cmake -B build -DCMAKE_BUILD_TYPE=Debug   # Debug 默认开 ThreadSanitizer
 cmake --build build
-./build/lab0_tests
 ```
 
-如果一切正常，你应该看到一个绿色的测试通过输出。
+**预期：构建会停在链接阶段，报 `undefined reference to lab0::FileScanner::scan()`** —— 这是故意的。`file_scanner.h` 和 `joining_thread.h` 现在只有声明没有实现，链接器在提醒你"该动手了"。这就是 TDD 式练习的起点：测试已经写好等着你，你一步步把实现补上，对应 milestone 的测试就会从红变绿。
+
+> 为什么用 Debug 配置？因为并发代码的正确性不能靠"跑通了就行"——TSan 是我们的主诊断工具，它在 Debug 构建里通过 `-fsanitize=thread` 自动开启。注意：**Catch2 没有 `--tsan` 这种运行参数**，TSan 是编译期开的，直接运行测试就在 TSan 下。想跑单个 milestone：
+
+```bash
+./build/test/test_milestone1                          # 跑 milestone 1
+./build/test/test_milestone2 "[lab0][milestone2]"     # Catch2 标签过滤
+ctest --test-dir build --output-on-failure                                  # 跑全部
+```
 
 ## 最终接口
 
-在开始写代码之前，我们先明确最终产物的形状。不急着写实现，先看清楚目标。
+动手前先把目标形状看清楚。这些接口和工程里 `include/lab0/` 的头文件完全一致——你可以随时打开头文件对照。
 
-### `FileInfo` — 单文件扫描结果
+### `FileInfo` — 单文件扫描结果（已提供，数据结构）
 
 | 类型 | 成员 | 语义 |
 |------|------|------|
@@ -118,7 +98,7 @@ cmake --build build
 | `std::uintmax_t` | `file_size` | 文件大小（字节） |
 | `std::string` | `extension` | 扩展名（含点号，如 `.cpp`） |
 
-### `WorkerStats` — 单 worker 统计汇总（Milestone 4 用 `thread_local` 维护，主线程汇总）
+### `WorkerStats` — 单 worker 统计汇总（已提供，数据结构）
 
 | 类型 | 成员 | 语义 |
 |------|------|------|
@@ -126,637 +106,271 @@ cmake --build build
 | `std::uintmax_t` | `total_bytes` | 已扫描总字节数 |
 | `std::unordered_map<std::string, std::size_t>` | `ext_counts` | 扩展名 → 出现次数 |
 
-### `JoiningThread` — RAII 线程包装器（Milestone 2，move-only，不可复制）
+`worker_stats.h` 还提供了 `operator+=`，主线程汇总各 worker 结果时直接用。
 
-成员变量：
+### `JoiningThread` — RAII 线程包装器（Milestone 2 你来实现）
 
-| 类型 | 成员 | 语义 |
-|------|------|------|
-| `std::thread` | `thread_` | 被管理的底层线程对象 |
+move-only，不可复制。接口（见 `include/lab0/joining_thread.h`）：
 
-接口：
+| 方法 | 签名 | Milestone |
+|------|------|-----------|
+| 模板构造 | `JoiningThread(Callable&&, Args&&...)` | MS2（已给实现） |
+| 接管 thread | `JoiningThread(std::thread) noexcept` | MS2 |
+| move 构造/赋值 | `JoiningThread(JoiningThread&&)` / `operator=(JoiningThread&&)` | MS2 |
+| 析构 | `~JoiningThread()` — joinable 则 join | MS2 |
+| join / joinable | `void join()` / `bool joinable() const noexcept` | MS2 |
 
-| 方法 | 签名 | 说明 | Milestone |
-|------|------|------|-----------|
-| 构造（可调用对象） | `JoiningThread(Callable&&, Args&&...)` | 接受任意可调用对象和参数 | MS2 |
-| 构造（接管 thread） | `JoiningThread(std::thread) noexcept` | 从 `std::thread` move 构造 | MS2 |
-| move 构造/赋值 | `JoiningThread(JoiningThread&&)` | 转移线程所有权 | MS2 |
-| 析构 | `~JoiningThread()` | 如果 `joinable()` 则自动 join | MS2 |
-| join | `void join()` | 等待线程完成 | MS2 |
-| joinable | `bool joinable() const noexcept` | 是否持有活跃线程 | MS2 |
+### `FileScanner` — 文件扫描器（主载体，Milestone 1/3/4 演进）
 
-### `FileScanner` — 文件扫描器
+| 方法 | 签名 | Milestone |
+|------|------|-----------|
+| 构造 | `FileScanner(path root, size_t num_workers)` | MS1 |
+| scan | `WorkerStats scan()` | MS1→MS4（接口不变，内部实现逐步替换） |
 
-成员变量：
-
-| 类型 | 成员 | 语义 |
-|------|------|------|
-| `std::filesystem::path` | `root_path_` | 扫描的根目录 |
-| `std::size_t` | `num_workers_` | worker 线程数量 |
-
-接口：
-
-| 方法 | 签名 | 说明 | Milestone |
-|------|------|------|-----------|
-| 构造 | `FileScanner(path, size_t num_workers)` | 指定扫描目录和 worker 数量 | MS1 |
-| scan | `WorkerStats scan()` | 启动扫描并返回汇总结果 | MS1–4 |
-
-接下来我们按 milestone 拆解，一步一步实现。
+接下来按 milestone 拆解，一步一步实现。
 
 ## Milestone 1: 并行任务分发
 
 ### 目标
 
-用 `std::thread` 启动固定数量的 worker，每个 worker 负责扫描一部分文件。主线程等待所有 worker 完成后，输出汇总信息。这个 milestone 先不追求完美——手工 `join()`、不用 RAII、用全局的 `std::atomic` 做简单统计就行。我们先把多线程的骨架搭起来。
+实现 `FileScanner::scan()` 的第一版：用裸 `std::thread` 启动固定数量 worker，每个 worker 扫描一段文件，用一组全局 `std::atomic` 累计文件数和总字节数。先把"多个线程同时工作"这件事跑通，不追求完美。
 
 ### 为什么先做这一步
 
-在整体设计中，这是最基本的一层：先把"多个线程同时工作"这件事跑通。后面的 milestone 会在这个基础上逐步改进——RAII 包装、参数安全、thread_local 统计，每一步只引入一个新的工程问题。如果一开始就追求完美的架构，很容易陷入"什么都还没跑起来就在纠结接口设计"的困境。
+这是最基本的一层。后面的 milestone 在这个基础上逐步改进——RAII 包装、参数安全、线程局部统计，每一步只引入一个新的工程问题。如果一开始就追求完美架构，很容易陷入"什么都还没跑起来就在纠结接口设计"的困境。
 
 ### 实现指引
 
-整体思路分三步：先用 `std::filesystem::recursive_directory_iterator` 收集根目录下所有文件路径到一个 `std::vector`；然后按 worker 数量分片，每个 worker 拿到一段文件列表；最后创建 N 个 `std::thread`，每个线程遍历自己那份文件列表，统计文件数和总大小。
+整体思路分四步：
 
-分片策略上，简单的等分就好——假设有 100 个文件、4 个 worker，那每个 worker 负责 25 个文件。最后一个 worker 可能会多拿到几个（因为除法不一定整除）。核心伪代码如下：
+1. 用 `std::filesystem::recursive_directory_iterator` 在**主线程**收集所有 `regular_file` 路径到一个 `std::vector`；
+2. 按 worker 数量等分（最后一个 worker 兜底拿余数）；
+3. 创建 N 个 `std::thread`，每个线程遍历自己那段，统计文件数和总大小；
+4. 手工 `join()` 所有线程，返回汇总结果。
+
+第 1 步那个 `recursive_directory_iterator` 名字里的 **"recursive" 是关键**：它会**深度优先递归进入所有子目录**，所以你收到的是 `root` 整棵目录树里的普通文件，不是只有当前目录一层。`is_regular_file()` 只负责把遍历到的条目里"子目录、符号链接、特殊文件"过滤掉，它跟递不递归没关系——递归是 **iterator 的属性**。想只扫顶层目录、不进子目录，得换成 `std::filesystem::directory_iterator`（没有 `recursive_` 前缀）。另外 `recursive_directory_iterator` 默认 `directory_options::none`，**不跟随指向目录的符号链接**，只递归真实子目录——本 Lab 要扫整棵树，用 recursive、保持默认即可。
+
+伪代码：
 
 ```text
-// 1. 收集所有文件路径
-all_files = []
-for (entry in recursive_directory_iterator(root)):
-    if (entry.is_regular_file()):
-        all_files.push(entry.path())
+// 1. 主线程收集（iterator 非线程安全，不能并发递增）
+all_files = [p for p in recursive_directory_iterator(root) if p.is_regular_file()]
 
-// 2. 分片
-chunk_size = all_files.size() / num_workers
+// 2. 等分
+chunk = all_files.size() / num_workers
 for i in [0, num_workers):
-    start = i * chunk_size
-    end = (i == num_workers - 1) ? all_files.size() : start + chunk_size
-    worker_files = all_files[start..end]  // 这是一个切片视图
+    start = i * chunk
+    end   = (i == num_workers-1) ? all_files.size() : start + chunk
 
 // 3. 启动 worker
-for i in [0, num_workers):
-    threads[i] = thread(worker_function, worker_files[i])
-    // 注意：这里直接把分片的 vector 传给线程
+threads[i] = thread(worker, all_files[start:end])   // 按值传，decay-copy 给 worker 一份副本
 
-// 4. 等待完成
-for t in threads:
-    t.join()
+// 4. join
+for t in threads: t.join()
+return 汇总
 ```
 
-对于统计结果的收集，这个 milestone 先用最简单的方式——一组全局的 `std::atomic<std::size_t>` 来累计文件数和总字节数。每个 worker 扫描完一个文件就 `fetch_add` 一次。这种方式有性能开销（所有 worker 竞争同一个 atomic），但对于理解多线程的基本骨架来说已经足够了，后面 Milestone 4 会用 `thread_local` 替代它。
+统计先用最简单的全局 `std::atomic<std::size_t>` 和 `std::atomic<std::uintmax_t>`，每个 worker 扫到一个文件就 `fetch_add`。这种方式有竞争开销（所有 worker 抢同一个 atomic），但对跑通骨架足够了，Milestone 4 会换掉它。
 
-踩坑预警有几个地方。第一，`std::filesystem::recursive_directory_iterator` 本身不是线程安全的——不能多个线程同时递增同一个迭代器。所以收集文件路径这一步必须在主线程完成，worker 只负责处理已经收集好的路径列表。第二，传递给 `std::thread` 的参数会被 decay-copy——如果你传了一个 `std::vector<std::filesystem::path>` 的切片引用，它会被复制一份。对于这个 milestone 来说这完全可以接受，但后面的 milestone 我们要思考怎么避免不必要的拷贝。第三，如果你的测试目录里文件特别少（比如只有 3 个文件但你开了 8 个 worker），部分 worker 会拿到空列表——你的 `worker_function` 需要正确处理这种情况。
+> **踩坑预警**：`recursive_directory_iterator` **不是线程安全的**——不能多个线程同时递增同一个迭代器。所以收集路径这步必须在主线程做完，worker 只处理已经收集好的 `vector`。另外传给 `std::thread` 的参数会被 decay-copy，按值传 `vector` 切片是安全的（worker 拿到独立副本）；这个 milestone 这么做完全 OK，Milestone 3 我们再细究捕获方式。还有：如果测试目录文件特别少（比如 3 个文件开了 8 个 worker），部分 worker 会拿到空列表——你的 worker 函数要正确处理空输入。
 
 ### 验证
 
-下面是 Catch2 测试代码。先创建一些临时文件，然后验证扫描结果是否正确。
+对应测试在 [`test/test_milestone1.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone1.cpp)，覆盖三个场景：扫描收集到全部文件、空目录不崩溃、总字节数正确。关键断言：
 
 ```cpp
-#include <catch2/catch_test_macros.hpp>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-#include <thread>
-#include <atomic>
-
-// 测试辅助：在临时目录下创建 N 个文件
-std::filesystem::path create_test_files(
-    const std::filesystem::path& dir, int count,
-    const std::string& ext = ".txt")
-{
-    std::filesystem::create_directories(dir);
-    for (int i = 0; i < count; ++i) {
-        std::ofstream(dir / (std::string("file_") + std::to_string(i) + ext))
-            << std::string(100, 'x');  // 每个 100 字节
-    }
-    return dir;
-}
-
-TEST_CASE("Milestone 1: parallel scan collects all files",
-          "[lab0][milestone1]")
-{
-    namespace fs = std::filesystem;
-    fs::path test_dir = fs::temp_directory_path() / "lab0_test_ms1";
-
-    // 清理可能残留的旧测试数据
-    fs::remove_all(test_dir);
-    const int kFileCount = 20;
-    create_test_files(test_dir, kFileCount);
-
-    // 收集所有文件路径
-    std::vector<fs::path> all_files;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(test_dir)) {
-        if (entry.is_regular_file()) {
-            all_files.push_back(entry.path());
-        }
-    }
-
-    // 分片并启动 4 个 worker
-    const std::size_t kWorkers = 4;
-    std::atomic<std::size_t> total_scanned{0};
-
-    auto worker = [&](std::vector<fs::path> files) {
-        for (const auto& f : files) {
-            // 简单统计：计数
-            total_scanned.fetch_add(1, std::memory_order_relaxed);
-        }
-    };
-
-    std::vector<std::thread> threads;
-    std::size_t chunk = all_files.size() / kWorkers;
-    for (std::size_t i = 0; i < kWorkers; ++i) {
-        auto start = all_files.begin() + i * chunk;
-        auto end = (i == kWorkers - 1)
-                       ? all_files.end()
-                       : start + chunk;
-        threads.emplace_back(worker,
-                             std::vector<fs::path>(start, end));
-    }
-
-    for (auto& t : threads) {
-        t.join();
-    }
-
-    REQUIRE(total_scanned.load() == kFileCount);
-
-    // 清理
-    fs::remove_all(test_dir);
-}
-
-TEST_CASE("Milestone 1: handles empty directory",
-          "[lab0][milestone1]")
-{
-    namespace fs = std::filesystem;
-    fs::path empty_dir = fs::temp_directory_path() / "lab0_test_empty";
-    fs::remove_all(empty_dir);
-    fs::create_directories(empty_dir);
-
-    std::vector<fs::path> all_files;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(empty_dir)) {
-        if (entry.is_regular_file()) {
-            all_files.push_back(entry.path());
-        }
-    }
-
-    REQUIRE(all_files.empty());
-
-    // 即使文件列表为空，worker 也不应该崩溃
-    std::atomic<std::size_t> total{0};
-    auto worker = [&](std::vector<fs::path> files) {
-        for (const auto& f : files) {
-            total.fetch_add(1);
-        }
-    };
-
-    std::thread t(worker, std::vector<fs::path>{});
-    t.join();
-
-    REQUIRE(total.load() == 0);
-    fs::remove_all(empty_dir);
+TEST_CASE("MS1: scan collects all files", "[lab0][milestone1]") {
+    // ... 创建 20 个测试文件 ...
+    lab0::FileScanner scanner(dir, 4);
+    lab0::WorkerStats stats = scanner.scan();
+    REQUIRE(stats.files_scanned == 20);
 }
 ```
 
-这两个测试覆盖了基本场景：正常情况下的文件收集和空目录的边界情况。用 TSan 跑一下确认没有 data race：
+补全 `scan()` 的 MS1 实现后，跑：
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-./build/lab0_tests "[lab0][milestone1]"
+./build/test/test_milestone1
 ```
+
+测试变绿即通过。**记得用 TSan 跑一遍**（Debug 构建直接跑就是 TSan 下），确认没有 data race。
 
 ## Milestone 2: RAII 包装
 
 ### 目标
 
-实现 `JoiningThread`——一个在析构时自动 `join()` 的 RAII 包装器。用 `JoiningThread` 替换 Milestone 1 中的裸 `std::thread`，然后验证异常路径下线程仍然被正确回收。
+实现 `JoiningThread`——一个析构时自动 `join()` 的 RAII 包装器。然后用它替换 Milestone 1 里 `scan()` 的裸 `std::thread`，删掉手工 join 循环，验证异常路径下线程仍被正确回收。
 
 ### 为什么
 
-Milestone 1 的代码有一个很明显的工程问题：手工 `join()`。我们写了一个 `for` 循环来逐个 join 线程，看起来没什么问题——但如果在 join 循环之前的某个地方抛了异常呢？或者其中一个 `join()` 本身就抛了异常（虽然罕见但标准允许）？剩下的线程就成了无主线程，析构时 `std::terminate()`。ch01-03 已经讲过这个问题的根源和 RAII 的解决方案，这个 milestone 就是把它从"理解"推进到"实现并在实战中使用"。
+Milestone 1 的手工 `join()` 有个明显问题：如果在 join 循环之前某处抛了异常，剩下的线程就成了无主线程，析构时 `std::terminate()`。ch01-03 讲过这个根源和 RAII 的解法，这个 milestone 把它从"理解"推进到"实现并实战使用"。
 
 ### 实现指引
 
-`JoiningThread` 的核心思路是接管 `std::thread` 的所有权，在析构函数里自动调用 `join()`。ch01-03 已经给出了完整的实现代码，所以这里不重复——但有几个关键设计点需要你自己想清楚：
+`JoiningThread` 的核心是接管 `std::thread` 所有权，析构里自动 `join()`。模板构造（接受任意 Callable + 参数）工程里已经给你了（用 `std::forward` 完美转发），你来实现其余成员。有三个设计点必须想清楚：
 
-第一，move 赋值运算符里，接收新线程之前必须先处理当前持有的线程。如果当前线程还是 `joinable()` 的，必须先 join 它，否则就是 UB。这个"先清理旧的再接手新的"的模式，跟 `std::unique_ptr` 的赋值运算符是一个道理。
+**第一，move 赋值里，接收新线程前必须先处理当前持有的线程。** 如果当前 `thread_` 还 `joinable()`，必须先 join 它，否则旧线程被覆盖丢弃、析构时 `std::terminate`。这个"先清理旧的再接手新的"的模式，和 `std::unique_ptr` 的赋值是一个道理。
 
-第二，析构函数里 `join()` 可能抛异常（`std::system_error`）。在析构函数里抛异常会触发 `std::terminate()`。务实的做法是用 `try-catch` 包住，吞掉异常并记录日志。不要觉得"join 不可能失败"就跳过这一步——工业级代码的区别往往就体现在这些看似多余的防御上。
+**第二，析构里的 `join()` 可能抛 `std::system_error`。** 在析构函数里抛异常会触发 `std::terminate`。务实的做法是 `try/catch` 包住、吞掉异常。别觉得"join 不可能失败"就跳过——工业级代码的区别往往就体现在这些看似多余的防御上。
 
-第三，构造函数要支持从 `std::thread` move 构造、从另一个 `JoiningThread` move 构造、以及直接接受可调用对象和参数。前两个是 move 语义，第三个是模板构造函数，需要用 `std::forward` 完美转发。
+**第三，`joinable()` 直接返回 `thread_.joinable()`。**
 
-用 `JoiningThread` 改造 Milestone 1 的代码非常简单——把 `std::vector<std::thread>` 换成 `std::vector<JoiningThread>`，删掉手动 join 的循环，就完事了。当 `vector` 析构时，每个 `JoiningThread` 的析构函数会自动被调用。
+> **关于头文件内定义**：`JoiningThread` 不是模板类（只有构造函数是模板），所以其余成员可以类内定义（隐式 `inline`，多个翻译单元 include 不会重复定义）。直接在 `joining_thread.h` 的类体内把声明改成定义 `{ ... }` 即可，不需要单独的 `.cpp`。
+
+实现完 `JoiningThread` 后，回到 `file_scanner.h` 把 `scan()` 里的 `std::vector<std::thread>` 换成 `std::vector<lab0::JoiningThread>`，删掉手工 join 循环——`vector` 析构时每个 `JoiningThread` 自动 join。
 
 ### 验证
 
+> **别被测试骗了**：`test_milestone2` 只测 `JoiningThread` 类本身（和 `FileScanner` 解耦），**不检查 `scan()` 有没有真的用它**。所以哪怕你实现了 `JoiningThread`、测试全绿，但 `scan()` 里还是裸 `std::thread` + 手工 `join()` 循环——这个 milestone 就没真正完成。**真正的验收标准：`scan()` 里看不到手工 `join()` 循环，线程容器是 `std::vector<lab0::JoiningThread>`。**
+
+[`test/test_milestone2.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone2.cpp) 只测 `JoiningThread` 本身（和 `FileScanner` 解耦），覆盖四个场景：作用域结束自动 join、异常路径仍 join 全部 worker、move 转移所有权、`vector` 析构 join 全部。重点看异常路径这个：
+
 ```cpp
-TEST_CASE("Milestone 2: JoiningThread auto-joins on destruction",
-          "[lab0][milestone2]")
-{
-    std::atomic<bool> thread_ran{false};
-
-    {
-        // 在作用域内创建 JoiningThread
-        JoiningThread t([&]() {
-            thread_ran.store(true, std::memory_order_relaxed);
-        });
-        // 离开作用域时，t 的析构函数应该自动 join
-    }
-
-    // 如果析构函数正确 join 了，thread_ran 一定是 true
-    REQUIRE(thread_ran.load());
-}
-
-TEST_CASE("Milestone 2: JoiningThread handles exception path",
-          "[lab0][milestone2]")
-{
+TEST_CASE("MS2: exception path still joins all workers", "[lab0][milestone2]") {
     std::atomic<int> counter{0};
-
-    auto make_scanner = [&]() {
-        // 用 JoiningThread 管理 worker
-        std::vector<JoiningThread> workers;
-        for (int i = 0; i < 4; ++i) {
+    auto make_workers = [&]() {
+        std::vector<lab0::JoiningThread> workers;
+        for (int i = 0; i < 4; ++i)
             workers.emplace_back([&counter]() {
                 counter.fetch_add(1, std::memory_order_relaxed);
             });
-        }
-        // 模拟一个异常
-        throw std::runtime_error("simulated failure");
-        // workers 在这里析构，应该自动 join
+        throw std::runtime_error("simulated failure");  // workers 在栈展开时析构 → 自动 join
     };
-
-    REQUIRE_THROWS_AS(make_scanner(), std::runtime_error);
-    // 即使抛了异常，所有 worker 都应该已经完成
-    REQUIRE(counter.load() == 4);
-}
-
-TEST_CASE("Milestone 2: move semantics transfer ownership",
-          "[lab0][milestone2]")
-{
-    std::atomic<bool> ran{false};
-
-    JoiningThread t1([&]() { ran.store(true); });
-    REQUIRE(t1.joinable());
-
-    JoiningThread t2 = std::move(t1);
-    REQUIRE(!t1.joinable());
-    REQUIRE(t2.joinable());
-
-    // t2 析构时 join
-}
-
-TEST_CASE("Milestone 2: vector of JoiningThread",
-          "[lab0][milestone2]")
-{
-    std::atomic<int> counter{0};
-    {
-        std::vector<JoiningThread> workers;
-        for (int i = 0; i < 8; ++i) {
-            workers.emplace_back([&counter]() {
-                counter.fetch_add(1, std::memory_order_relaxed);
-            });
-        }
-        // 离开作用域，vector 析构 → 所有 JoiningThread 析构 → 自动 join
-    }
-    REQUIRE(counter.load() == 8);
+    REQUIRE_THROWS_AS(make_workers(), std::runtime_error);
+    REQUIRE(counter.load() == 4);   // 异常后 4 个 worker 都已完成
 }
 ```
 
-这组测试覆盖了四个关键场景：正常析构自动 join、异常路径下自动 join、move 语义转移所有权、以及在 `vector` 中使用 `JoiningThread`。特别关注第二个测试——它模拟了一个在创建线程之后、手动 join 之前就抛异常的场景。没有 RAII 的话，这种情况会直接导致 `std::terminate()`。
+没有 RAII 的话，这种场景会直接 `std::terminate`。
 
 ## Milestone 3: 参数生命周期修复
 
 ### 目标
 
-审视 Milestone 1 中的参数传递方式，识别并修复所有可能的悬空引用和生命周期问题。具体来说，我们要把 lambda 捕获中的引用改成安全的值捕获或 move，确保线程不会访问已经销毁的变量。
+审视 `scan()` 里的参数传递方式，识别并修复所有可能的悬空引用和生命周期问题。核心是：确保每个 worker 拿到独立的文件列表副本（值捕获或 move），不捕获可能悬空的引用。
 
 ### 为什么
 
-ch01-02 讲过 `std::thread` 的 decay-copy 语义和引用悬空的风险，但在小例子中这些问题往往不会暴露——因为小例子里的变量生命周期恰好够长。在真实的并行文件扫描器中，情况会更复杂：主线程可能在 worker 还没跑完就开始清理临时数据了，或者 lambda 捕获了一个局部 `vector` 的引用。这类 bug 在开发时可能偶然不触发，但在生产环境的高并发压力下会以不可预测的方式出现。
+ch01-02 讲过 `std::thread` 的 decay-copy 语义和引用悬空风险，但小例子里这些问题往往不暴露——因为变量生命周期恰好够长。真实扫描器里情况更复杂：主线程可能在 worker 没跑完就开始清理临时数据，或者 lambda 捕获了局部 `vector` 的引用。这类 bug 开发时可能偶然不触发，高并发压力下才以不可预测的方式出现。
 
 ### 实现指引
 
-Milestone 1 的代码里，我们把文件路径列表按值传给了 `worker`——这实际上是安全的，因为 `std::thread` 的构造函数会对参数做 decay-copy，所以 worker 拿到的是路径列表的一份独立副本。但问题往往藏在更微妙的地方。考虑以下几种容易翻车的场景。
+MS1 我们把文件路径列表按值传给 worker——这其实已经是安全的（decay-copy 给了独立副本）。但问题藏在更微妙的地方，有三种容易翻车的写法你要会识别：
 
-第一种：lambda 捕获了局部变量的引用。假设你把 `worker` 改成了这样：
+**引用捕获局部变量**。如果你贪图省事写 `[&all_files, start, end]`，一旦 `all_files` 在 worker 执行期间被销毁或修改就是悬空引用。在本 Lab 里 `all_files` 生命周期够长，但这种写法让正确性依赖调用者对生命周期的隐式理解——不是好习惯。
 
-```cpp
-auto worker = [&all_files, start_idx, end_idx]() {
-    for (size_t i = start_idx; i < end_idx; ++i) {
-        process(all_files[i]);  // 引用捕获，有风险
-    }
-};
-```
+**用 `std::ref` 传参**。如果想避免拷贝用引用：`threads.emplace_back(worker, std::ref(chunk_files))`。如果 `chunk_files` 是循环体内的局部变量、下一轮迭代被改了，前一个 worker 就读到被改的数据——data race。修法是值捕获或 `std::move`。
 
-如果 `all_files` 在 worker 还在执行时被销毁或修改，这里就是悬空引用。在我们的代码里 `all_files` 的生命周期足够长（在 `main` 的栈上），但这种写法让正确性依赖于调用者对生命周期的隐式理解——不是个好习惯。
+**`this` 隐式捕获**。如果你把扫描逻辑放进 `FileScanner` 的成员函数、lambda 里用了成员变量，`[this]` 就隐含了对 `FileScanner` 对象生命周期的依赖。这个坑在 Lab 3（线程池）特别容易踩——线程池生命周期往往比调用者预期的长。
 
-第二种：通过 `std::ref` 传递参数。如果你觉得复制整个 `vector` 太浪费，想用引用来避免拷贝：
-
-```cpp
-threads.emplace_back(worker, std::ref(chunk_files));
-```
-
-这把 `chunk_files` 的引用传给了线程。如果 `chunk_files` 是一个在循环体内声明的局部变量，而下一次循环迭代时它被修改了，前一个 worker 就会读到被修改的数据——这是 data race。修复方案是用值捕获（让 decay-copy 给每个 worker 一份独立的副本）或者用 `std::move` 把所有权转移给线程。
-
-第三种：`this` 指针的隐式捕获。如果你把 `FileScanner` 做成了类，lambda 里用了成员变量，那么 `[this]` 的捕获就隐含了对 `FileScanner` 对象生命周期的依赖——如果 `FileScanner` 对象在 worker 还没跑完时被析构了，`this` 就悬空了。这个 bug 在 Lab 3（线程池）里特别容易踩到，因为线程池的生命周期往往比调用者预期的要长。
-
-这个 milestone 的核心任务是：审查你 Milestone 1 和 2 的代码，找出所有引用捕获和 `std::ref` 的使用，判断它们是否安全。对于不安全的捕获，改成值捕获或 `std::move`。验证方式是 TSan——一个正确的实现在 TSan 下不应该有任何 data race 报告。
+> **修法很简单**：worker 的文件列表用值捕获或 `std::move`（init-capture `files = std::move(worker_files)`），`worker_id` 用值捕获 `[worker_id = i]`。然后用 TSan 跑——正确实现下 TSan 不该有任何 data race 报告。
 
 ### 验证
 
+[`test/test_milestone3.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone3.cpp) 验证：非整除分片也覆盖所有文件（30 文件 / 8 worker）、素数文件数（17 文件）任何分片都不丢、move-only 类型（`unique_ptr`）能安全传入线程。比如素数那个：
+
 ```cpp
-TEST_CASE("Milestone 3: no dangling reference in value capture",
-          "[lab0][milestone3]")
-{
-    namespace fs = std::filesystem;
-    fs::path test_dir = fs::temp_directory_path() / "lab0_test_ms3";
-    fs::remove_all(test_dir);
-    create_test_files(test_dir, 10);
-
-    // 收集文件路径
-    std::vector<fs::path> all_files;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(test_dir)) {
-        if (entry.is_regular_file()) {
-            all_files.push_back(entry.path());
-        }
-    }
-
-    std::atomic<std::size_t> total{0};
-
-    // 关键：用值捕获，确保每个 worker 拿到独立副本
-    {
-        std::vector<JoiningThread> workers;
-        const std::size_t kWorkers = 4;
-        std::size_t chunk = all_files.size() / kWorkers;
-
-        for (std::size_t i = 0; i < kWorkers; ++i) {
-            auto start = all_files.begin() + i * chunk;
-            auto end = (i == kWorkers - 1)
-                           ? all_files.end()
-                           : start + chunk;
-
-            // 每个 worker 拿到自己的文件列表副本
-            std::vector<fs::path> worker_files(start, end);
-
-            workers.emplace_back(
-                [&total, files = std::move(worker_files)]() {
-                    for (const auto& f : files) {
-                        total.fetch_add(1,
-                            std::memory_order_relaxed);
-                    }
-                });
-        }
-        // workers 析构 → 自动 join
-    }
-
-    REQUIRE(total.load() == 10);
-    fs::remove_all(test_dir);
-}
-
-TEST_CASE("Milestone 3: move-only parameter passing",
-          "[lab0][milestone3]")
-{
-    // 验证 move-only 类型（如 unique_ptr）可以安全地传入线程
-    std::atomic<bool> processed{false};
-
-    auto ptr = std::make_unique<int>(42);
-    JoiningThread t([&processed, p = std::move(ptr)]() {
-        // p 在线程内部持有，生命周期安全
-        if (p && *p == 42) {
-            processed.store(true);
-        }
-    });
-    // t 析构 → join
-    REQUIRE(processed.load());
+TEST_CASE("MS3: prime file count covered by any worker count", "[lab0][milestone3]") {
+    // ... 创建 17 个文件（素数，任何分片都非整除）...
+    lab0::FileScanner scanner(dir, 4);
+    REQUIRE(scanner.scan().files_scanned == 17);   // 一个都不能丢
 }
 ```
 
-跑一下 TSan 确认：
+如果你的分片逻辑在 `start..end` 边界上算错，素数文件数最容易暴露。
 
-```bash
-./build/lab0_tests "[lab0][milestone3]" --tsan
-```
-
-如果一切正常，TSan 不应该输出任何 data race 报告。
-
-## Milestone 4: thread_local 统计与汇总
+## Milestone 4: 线程局部统计与汇总
 
 ### 目标
 
-把 Milestone 1 中全局 `std::atomic` 的统计方式替换为 `thread_local` 统计。每个 worker 维护自己的 `WorkerStats` 对象，扫描完毕后将结果汇总到主线程。
+把 Milestone 1 的全局 `std::atomic` 统计换成"每 worker 一个局部 `WorkerStats`、写回预分配的结果槽位、主线程汇总"。消除全局 atomic 的竞争，并支持扩展名分布这种复杂数据。
 
-### 为什么
+### 关于 `thread_local`：先想清楚再决定用不用
 
-Milestone 1 用了一个全局的 `std::atomic<std::size_t>` 来累计统计——这种方式有两个问题。第一，所有 worker 竞争同一个 atomic 变量，造成不必要的缓存行失效（false sharing 的近亲）。第二，它只能统计简单的计数，一旦你想统计"每个扩展名各出现了多少次"这样的分布数据，全局 atomic 就不够用了——你不能用一个 atomic 来保护一个 `unordered_map`（除非加锁，但那又回到了 ch02 的范畴）。
+这里有个容易绕进去的点。很多朋友一看到"线程局部统计"就条件反射地写 `thread_local WorkerStats local;`——但**在本 Lab 的场景下，普通局部变量 `WorkerStats local;` 和 `thread_local` 行为完全等价**，因为每个 worker 只执行一次。
 
-`thread_local` 给了一种更干净的方案：每个 worker 线程有自己的 `WorkerStats` 实例，各算各的，完全无竞争。算完之后，主线程收集所有 worker 的结果做汇总。这个模式不仅是这个 Lab 的核心设计，也是后续 Lab 的基础——Lab 2 的 atomic metrics 和 Lab 3 的线程池都会用到类似的"线程本地统计 → 汇总"结构。
+`thread_local` 的真正价值在于：**同一个线程多次进入同一个函数时，状态会被复用和累积**。比如一个线程池里的 worker 线程反复从队列取任务执行，每次执行都想往同一份统计里累加——这时候 `thread_local` 才有意义。本 Lab 每 worker 一次性扫描，用普通局部变量就够了，代码也更简单。
+
+所以 milestone 的要求不是"必须用 `thread_local` 关键字"，而是：**统计正确、TSan 干净**。你用普通局部变量实现完全没问题。想清楚这两者的区别，比硬背关键字重要得多。
 
 ### 实现指引
 
-核心思路是：在 `worker_function` 内部声明一个 `thread_local WorkerStats stats;`，每个 worker 在扫描过程中往自己的 `stats` 里累加数据，扫描结束后把 `stats` 通过某种方式返回给主线程。
-
-返回统计结果的方式有几种选择。最简单的是让 `worker_function` 返回 `WorkerStats`，然后主线程通过 `std::future` 来收集。但 `std::future` 是 ch05 的内容，我们在这个 Lab 里不应该提前引入。所以更合适的做法是给每个 worker 一个指向输出区域的指针——主线程预先分配一个 `std::vector<WorkerStats>`，每个 worker 通过索引写入自己的位置。
+核心思路：主线程预分配 `std::vector<WorkerStats> results(num_workers)`，每个 worker 把自己的局部统计 `results[worker_id] = local;` 写回对应槽位（不同 worker 写不同槽位，无竞争），最后主线程遍历 `results` 汇总：
 
 ```cpp
-// 主线程预分配
-std::vector<WorkerStats> results(num_workers);
+// scan() 里
+std::vector<WorkerStats> results(num_workers_);
 
-// worker 函数
-auto worker = [&results, worker_id](std::vector<fs::path> files) {
-    thread_local WorkerStats local_stats;
-
-    for (const auto& f : files) {
-        local_stats.files_scanned++;
-        local_stats.total_bytes += fs::file_size(f);
-        local_stats.ext_counts[f.extension().string()]++;
-    }
-
-    // 把本地统计写入自己的位置
-    results[worker_id] = local_stats;
-};
-```
-
-这里有一个微妙的地方值得注意：`thread_local WorkerStats local_stats` 在多次调用同一个 worker 函数时会**复用**同一个实例。在我们的场景中每个 worker 只被调用一次，所以这不是问题。但如果你不小心让同一个线程多次进入 worker 函数，就需要在函数开头手动重置 `local_stats`。
-
-汇总逻辑就很简单了——遍历 `results`，把所有 `WorkerStats` 加起来：
-
-```cpp
-WorkerStats final;
-for (const auto& s : results) {
-    final.files_scanned += s.files_scanned;
-    final.total_bytes += s.total_bytes;
-    for (const auto& [ext, count] : s.ext_counts) {
-        final.ext_counts[ext] += count;
-    }
+{
+    std::vector<lab0::JoiningThread> workers;
+    // ... 每个 worker:
+    //   WorkerStats local;
+    //   for (f : files) { local.files_scanned++; local.total_bytes += ...; local.ext_counts[...]++; }
+    //   results[worker_id] = std::move(local);
 }
+// ← 见下方踩坑：必须在这里之前 join 完所有 worker
+
+WorkerStats total;
+for (auto& s : results) total += s;   // operator+= 已提供
+return total;
 ```
 
-踩坑预警：`results[worker_id] = local_stats` 这行代码中，`worker_id` 必须是每个 worker 独有的，不能有重复。如果你用循环变量 `i` 的引用来传递 `worker_id`，而 lambda 捕获了 `i` 的引用——恭喜，你刚刚在 Milestone 3 修过的问题又回来了。用值捕获 `[&results, worker_id = i]` 来避免这个问题。
+> **踩坑预警（这个坑真的会咬人）**：注意上面那个 `{ }` 作用域——它不是装饰。`workers` 的析构（也就是 `join`）发生在**作用域结束**时；而汇总循环 `for (s : results)` 在作用域**之后**执行。如果你图省事把 `workers` 和汇总写在同一层（让 `workers` 等函数返回时才析构），那汇总读 `results` 的时候 worker 可能还在写——**data race**。
+>
+> 这个坑不是我编的：写这本手册时，我用一个"看起来对"的实现（断言全过）跑 TSan，直接被它抓出来——主线程在 join 之前读 `results`，`operator+=` 那行报 data race。教训很硬：**汇总结果前，必须确保所有 worker 已经 join**。用 `{ }` 把 `workers` 的生命周期限制在汇总之前，是最干净的写法。别依赖"函数返回时自然析构"——那时候汇总早就读完了。
 
-另一个要注意的是 `WorkerStats` 的拷贝开销。如果扩展名种类特别多，`ext_counts` 这个 `unordered_map` 的拷贝可能不便宜。对于这个 Lab 的规模来说完全不是问题，但如果你在写生产代码，可以考虑 `std::move(results[worker_id])` 来避免不必要的拷贝。
+另一个小点：`results[worker_id]` 里的 `worker_id` 必须每 worker 独有、用值捕获 `[worker_id = i]`，别用 `i` 的引用（你在 Milestone 3 刚修过的问题别让它回来）。
 
 ### 验证
 
+> **别被测试骗了**：`test_milestone4` 只验结果数值对不对（和单线程一致），**不检查统计是不是真的"每 worker 局部"**。所以哪怕测试全绿，但 `scan()` 里还在用共享 `mutex`/`atomic` 统计——你其实停在 MS1，这个 milestone 没真正完成。**真正的验收标准：`scan()` 里没有锁、没有共享 atomic，统计走 `results[worker_id]` 独立槽位 + 主线程汇总。**
+
+[`test/test_milestone4.cpp`](../../../code/volumn_codes/vol5-labs/templates/lab0_thread_lifecycle/test/test_milestone4.cpp) 验证：多线程扫描结果与单线程逐一扫描**完全一致**（文件数、字节数、扩展名分布三项都对），外加一个 200 文件 / 8 worker 的压力测试。关键断言：
+
 ```cpp
-TEST_CASE("Milestone 4: thread_local stats match single-threaded result",
-          "[lab0][milestone4]")
-{
-    namespace fs = std::filesystem;
-    fs::path test_dir =
-        fs::temp_directory_path() / "lab0_test_ms4";
-    fs::remove_all(test_dir);
-
-    // 创建多种类型的文件
-    create_test_files(test_dir, 10, ".cpp");
-    create_test_files(test_dir, 5, ".h");
-    create_test_files(test_dir, 3, ".txt");
-
-    // 先用单线程统计"正确答案"
-    WorkerStats expected;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(test_dir)) {
-        if (entry.is_regular_file()) {
-            expected.files_scanned++;
-            expected.total_bytes += entry.file_size();
-            expected.ext_counts[entry.path().extension().string()]++;
-        }
-    }
-
-    // 多线程扫描
-    std::vector<fs::path> all_files;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(test_dir)) {
-        if (entry.is_regular_file()) {
-            all_files.push_back(entry.path());
-        }
-    }
-
-    const std::size_t kWorkers = 4;
-    std::vector<WorkerStats> results(kWorkers);
-
-    {
-        std::vector<JoiningThread> workers;
-        std::size_t chunk = all_files.size() / kWorkers;
-
-        for (std::size_t i = 0; i < kWorkers; ++i) {
-            auto start = all_files.begin() + i * chunk;
-            auto end = (i == kWorkers - 1)
-                           ? all_files.end()
-                           : start + chunk;
-
-            workers.emplace_back(
-                [&results, worker_id = i,
-                 files = std::vector<fs::path>(start, end)]() {
-                    WorkerStats local_stats;
-
-                    for (const auto& f : files) {
-                        local_stats.files_scanned++;
-                        local_stats.total_bytes +=
-                            fs::file_size(f);
-                        local_stats
-                            .ext_counts[f.extension().string()]++;
-                    }
-
-                    results[worker_id] = local_stats;
-                });
-        }
-    }
-
-    // 汇总
-    WorkerStats actual;
-    for (const auto& s : results) {
-        actual.files_scanned += s.files_scanned;
-        actual.total_bytes += s.total_bytes;
-        for (const auto& [ext, count] : s.ext_counts) {
-            actual.ext_counts[ext] += count;
-        }
-    }
-
+TEST_CASE("MS4: multi-threaded stats match single-threaded baseline", "[lab0][milestone4]") {
+    // 创建 .cpp×10, .h×5, .txt×3；先单线程算 expected
+    lab0::FileScanner scanner(dir, 4);
+    lab0::WorkerStats actual = scanner.scan();
     REQUIRE(actual.files_scanned == expected.files_scanned);
-    REQUIRE(actual.total_bytes == expected.total_bytes);
     REQUIRE(actual.ext_counts[".cpp"] == 10);
-    REQUIRE(actual.ext_counts[".h"] == 5);
-    REQUIRE(actual.ext_counts[".txt"] == 3);
-
-    fs::remove_all(test_dir);
-}
-
-TEST_CASE("Milestone 4: thread_local avoids data race on stats",
-          "[lab0][milestone4]")
-{
-    // 压力测试：大量 worker 并发统计，不应出现 data race
-    namespace fs = std::filesystem;
-    fs::path test_dir =
-        fs::temp_directory_path() / "lab0_test_ms4_stress";
-    fs::remove_all(test_dir);
-    create_test_files(test_dir, 100);
-
-    std::vector<fs::path> all_files;
-    for (const auto& entry :
-         fs::recursive_directory_iterator(test_dir)) {
-        if (entry.is_regular_file()) {
-            all_files.push_back(entry.path());
-        }
-    }
-
-    const std::size_t kWorkers = 8;
-    std::vector<WorkerStats> results(kWorkers);
-
-    {
-        std::vector<JoiningThread> workers;
-        std::size_t chunk = all_files.size() / kWorkers;
-
-        for (std::size_t i = 0; i < kWorkers; ++i) {
-            auto start = all_files.begin() + i * chunk;
-            auto end = (i == kWorkers - 1)
-                           ? all_files.end()
-                           : start + chunk;
-
-            workers.emplace_back(
-                [&results, worker_id = i,
-                 files = std::vector<fs::path>(start, end)]() {
-                    WorkerStats local_stats;
-                    for (const auto& f : files) {
-                        local_stats.files_scanned++;
-                        local_stats.total_bytes +=
-                            fs::file_size(f);
-                    }
-                    results[worker_id] = local_stats;
-                });
-        }
-    }
-
-    std::size_t total = 0;
-    for (const auto& s : results) {
-        total += s.files_scanned;
-    }
-
-    REQUIRE(total == 100);
-    // 这个测试在 TSan 下应该没有任何报告
-
-    fs::remove_all(test_dir);
+    // ...
 }
 ```
 
-用 TSan 跑全部测试，确认从 Milestone 1 到 4 都没有 data race：
-
-```bash
-./build/lab0_tests "[lab0]" --tsan
-```
+压力测试在 TSan 下跑，应该零报告。如果你踩了上面那个 join 时机的坑，这个压力测试的 TSan 输出会明确指向 `worker_stats.h` 的 `operator+=`——看到那个就回去检查汇总前有没有 join。
 
 ## 自查清单
 
-在提交之前，逐项确认以下内容：
+提交前逐项确认：
 
-- [ ] Milestone 1 的测试全部通过——并行扫描不遗漏文件
-- [ ] Milestone 2 的测试全部通过——`JoiningThread` 在正常路径和异常路径都能自动 join
-- [ ] Milestone 3 的测试全部通过——无悬空引用，move-only 参数正确传递
-- [ ] Milestone 4 的测试全部通过——`thread_local` 统计结果与单线程结果一致
-- [ ] 全部测试在 TSan 下无 data race 报告
+- [ ] Milestone 1 测试通过——并行扫描不遗漏文件、空目录不崩、字节数正确
+- [ ] Milestone 2 测试通过——`JoiningThread` 正常路径和异常路径都能自动 join，move 语义正确
+- [ ] Milestone 3 测试通过——素数/非整除分片不丢文件，move-only 参数安全传递
+- [ ] Milestone 4 测试通过——多线程统计与单线程完全一致（含扩展名分布）
+- [ ] **MS2 真验收**：`scan()` 里用的是 `std::vector<lab0::JoiningThread>`，没有手工 `join()` 循环（不只是 `test_milestone2` 绿——那个测试不查 `scan`）
+- [ ] **MS4 真验收**：`scan()` 里没有锁/共享 atomic，统计走 `results[worker_id]` 独立槽位 + 主线程汇总（不只是 `test_milestone4` 绿——那个测试不查实现）
+- [ ] **全部测试在 TSan 下无 data race 报告**（Debug 构建直接跑）
 - [ ] 不存在 `joinable()` 为 true 的 `std::thread` 被析构的情况
-- [ ] 没有使用 `detach()` 来逃避生命周期管理
-- [ ] 能口头解释 `JoiningThread` 析构函数中 `try-catch` 的必要性
-- [ ] 能解释 lambda 捕获 `[&]` vs `[=]` vs `[x = std::move(y)]` 在多线程场景下的区别
-- [ ] 能解释 `thread_local` 统计模式相比全局 atomic 的两个优势（无竞争 + 支持复杂结构）
+- [ ] 没有用 `detach()` 逃避生命周期管理
+- [ ] 汇总 worker 结果前，已确保所有 worker join（用 `{ }` 作用域，别依赖函数返回析构）
+- [ ] 能口头解释 `JoiningThread` 析构里 `try/catch` 的必要性
+- [ ] 能解释 `[&]` vs `[=]` vs `[x = std::move(y)]` 在多线程下的区别
+- [ ] 能解释"每 worker 局部统计 + 汇总"相比全局 atomic 的两个优势（无竞争 + 支持复杂数据结构）
+- [ ] 能解释 `thread_local` 在本场景与"worker 反复取任务"场景下的差异
+
+## 扩展（bonus）
+
+主线完成后，可选挑战：
+
+- 把扫描结果按扩展名排序输出，练一下对 `unordered_map` 的遍历和排序
+- 加一个 `--recursive=false` 选项，只扫顶层目录（不递归），练接口设计
+- 用 `std::jthread` + `stop_token` 改造 `JoiningThread`，体会 C++20 的协作式取消（这是 ch05 的预告）
+
+这些都不在测试覆盖范围内，做出来你自己爽就行。
+
+## 参考资源
+
+- [std::thread — cppreference](https://en.cppreference.com/w/cpp/thread/thread)
+- [ThreadSanitizer — Clang 文档](https://clang.llvm.org/docs/ThreadSanitizer.html)
+- [`std::filesystem::recursive_directory_iterator` — cppreference](https://en.cppreference.com/w/cpp/filesystem/recursive_directory_iterator)

@@ -75,6 +75,13 @@ def discover_projects(code_root: Path, target: str) -> list[Path]:
         if 'build' in cmake_file.parts or '.cache' in cmake_file.parts:
             continue
 
+        # vol5-labs 练习手册特殊结构:
+        #   templates/ 是空实现骨架(给初学者拷贝,不该 CI build);
+        #   examples/ 是 standalone 参考实现(由顶层 vol5-labs/CMakeLists.txt 统一 add_subdirectory)。
+        # 跳过这两类 standalone CMakeLists, 只 build 顶层 vol5-labs/(它编译已完成的 example)。
+        if 'vol5-labs' in cmake_file.parts and ('templates' in cmake_file.parts or 'examples' in cmake_file.parts):
+            continue
+
         project_dir = cmake_file.parent
 
         # Skip projects that are subdirectories of other CMake projects
