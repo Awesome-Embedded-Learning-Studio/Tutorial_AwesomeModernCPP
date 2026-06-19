@@ -15,9 +15,10 @@ argument-hint: "[可选: 目标文件或目录;留空则检查已暂存文件]"
 
 1. **frontmatter 校验**:`.venv/bin/python scripts/validate_frontmatter.py`(**必须用 venv**,系统 python 缺 PyYAML 会全量误报)。
 2. **markdownlint**:`markdownlint <目标 .md 文件>`。
-3. **内部链接**:运行项目的 link check(若有,如 CI 用的脚本),或人工抽检新增 / 改动链接是否可达、`ChapterLink` 的 `href` 不以 `.md` 结尾等。
-4. **索引检查**:若新增或移动了文章,对应卷 `index.md` 是否已更新链接。
-5. **代码示例**(若涉及 `code/`):提醒确认可独立编译(无根 CMakeLists,逐目录构建)。
+3. **粗体渲染**:`tsx scripts/check_bold_rendering.ts`(扫 `documents/` 检测 `**` 因标点边界未渲染成 `<strong>` 而字面残留的行;典型是 `**术语（英文）**` 这类。发现即修:让 `**` 边界落在文字上,标点移到 `**` 外)。
+4. **内部链接**:运行项目的 link check(若有,如 CI 用的脚本),或人工抽检新增 / 改动链接是否可达、`ChapterLink` 的 `href` 不以 `.md` 结尾等。
+5. **索引检查**:若新增或移动了文章,对应卷 `index.md` 是否已更新链接。
+6. **代码示例**(若涉及 `code/`):提醒确认可独立编译(无根 CMakeLists,逐目录构建)。
 
 ## 输出
 
@@ -25,6 +26,7 @@ argument-hint: "[可选: 目标文件或目录;留空则检查已暂存文件]"
 ## Preflight 报告
 - [ ] frontmatter: pass / fail（细节）
 - [ ] markdownlint: pass / fail
+- [ ] 粗体渲染: pass / fail（N 行 ** 残留）
 - [ ] 内部链接: pass / 待检
 - [ ] 索引更新: 已更新 / 待补
 - [ ] 代码示例: 不涉及 / 待编译确认
