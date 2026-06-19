@@ -10,7 +10,7 @@ tags:
   - intermediate
 difficulty: intermediate
 platform: host
-reading_time_minutes: 30
+reading_time_minutes: 20
 cpp_standard: [17, 20]
 prerequisites:
   - "卷五 ch02: 互斥量、条件变量与同步原语"
@@ -60,8 +60,6 @@ templates/lab1_bounded_queue/
 ```
 
 **注意 lab1 是 C++20**（不是 lab0 的 C++17），因为 MS6 要用 `std::latch/barrier/counting_semaphore`。
-
-构建说明和 dogfooding 反馈流程见 [`vol5-labs/README.md`](../../../code/volumn_codes/vol5-labs/README.md)。第一次构建（需要联网，FetchContent 拉 Catch2 v3）：
 
 ```bash
 cd code/volumn_codes/vol5-labs/templates/lab1_bounded_queue
