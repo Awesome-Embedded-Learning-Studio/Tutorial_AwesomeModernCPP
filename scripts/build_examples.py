@@ -163,6 +163,25 @@ def build_project(project_dir: Path) -> BuildResult:
         success = False
         all_output.append('Build timed out (300s)')
 
+    # 跑测试(仅当工程配了 CTest: build_dir 里有 CTestTestfile.cmake)。
+    # 没配 CTest 的工程(大多数纯示例)直接跳过, 不算失败。
+    if success and (build_dir / 'CTestTestfile.cmake').exists():
+        ctest_cmd = ['ctest', '--test-dir', str(build_dir),
+                     '--output-on-failure', '--timeout', '60']
+        try:
+            ct = subprocess.run(ctest_cmd, cwd=str(project_dir),
+                                capture_output=True, text=True, timeout=180)
+            all_output.append('--- ctest ---')
+            all_output.append(ct.stdout)
+            all_output.append(ct.stderr)
+            if ct.returncode != 0:
+                success = False
+        except subprocess.TimeoutExpired:
+            all_output.append('ctest timed out (180s)')
+            success = False
+        except FileNotFoundError:
+            pass  # 环境没 ctest, 跳过
+
     duration = time.time() - start
 
     # Cleanup build dir
