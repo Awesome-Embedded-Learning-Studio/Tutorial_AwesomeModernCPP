@@ -66,21 +66,32 @@ int main()
 
 第二个是 `std::inplace_vector<T, N>`，C++26 进的标准（提案 P0843）。它填的是 `array` 和 `vector` 中间的缝：`array<T, N>` 大小编译期定死、不能变；`vector<T>` 能变长但要堆分配（扩容时 new 新块、拷贝、释放旧块）。很多时候你要的是「容量上限编译期知道、运行期 size 可变、但绝不碰堆」——`inplace_vector` 就是干这个的。它的元素**直接存在对象内部**（对象本身占 `sizeof(T) * N` 那块空间，放栈上或静态区），运行期可以在 0 到 N 之间增删，不 new、不扩容、不拷贝搬移。
 
-最讨喜的一个性质是：**当 `T` 是 trivially copyable 时，`inplace_vector<T, N>` 本身也是 trivially copyable**。这意味着它可以整体 `memcpy`、可以放进寄存器、可以安全交给 DMA——这些对嵌入式和系统编程极重要，[array 深入](02-array.md) 讲过的「连续内存 + trivially copyable」红利，inplace_vector 同样吃到，而 `std::vector` 因为持有一个堆指针、不是 trivially copyable，是吃不到的。容量超限时的行为也设计得克制：`push_back` 超过 N 会抛 `std::bad_alloc`（异常关闭时退化为 terminate），而想避免异常可以用 C++26 的 `try_push_back`/`try_emplace_back`，它们超限时不抛、返回一个错误指示，适合 `-fno-exceptions` 环境。
+最讨喜的一个性质是：**当 `T` 是 trivially copyable 时，`inplace_vector<T, N>` 本身也是 trivially copyable**。这意味着它可以整体 `memcpy`、可以放进寄存器、可以安全交给 DMA——这些对嵌入式和系统编程极重要，[array 深入](02-array.md) 讲过的「连续内存 + trivially copyable」红利，inplace_vector 同样吃到，而 `std::vector` 因为持有一个堆指针、不是 trivially copyable，是吃不到的。容量超限时的行为也设计得克制：`push_back` 超过 N 会抛 `std::bad_alloc`（异常关闭时退化为 terminate），而想避免异常可以用 C++26 的 `try_push_back`/`try_emplace_back`，它们超限时不抛、返回类型是std::optional<T&>, 空值来代表失败，适合 `-fno-exceptions` 环境。
 
 ```cpp
 #include <cstdio>
 #include <inplace_vector>
+#include <type_traits>
 
 int main()
 {
     std::inplace_vector<int, 4> v;     // 容量上限 4，绝不堆分配
+    static_assert(std::is_trivially_copyable_v<decltype(v)::value_type>); // 由于存储类型int是trivially copyable
+    static_assert(std::is_trivially_copyable_v<decltype(v)>);             // 整个inplace_vector都会是trivially copyable
+
     v.push_back(1);
     v.push_back(2);
-    v.push_back(3);                     // size 现在 3，还能再塞一个
-    std::printf("size = %zu, capacity = %zu\n", v.size(), v.capacity());
-    // 再 push 到满：v.push_back(4) 成功；v.push_back(5) 超容量，抛 bad_alloc
-    // 想避免异常用 try_push_back / try_emplace_back——超限不抛，返回失败指示
+    v.push_back(3);
+    v.push_back(4);    // size 现在 4，无法再塞了
+    std::printf("size = %zu, max_size = %zu, capacity = %zu\n", v.size(), v.max_size(), v.capacity());
+    // 此时如果 v.push_back(5) 超容量，抛 bad_alloc
+    // 想避免异常用 try_push_back / try_emplace_back——超限不抛，返回std::optional<T&>, 空值来代表失败
+    std::optional<int&> res = v.try_push_back(5);
+    if (res.has_value()) {
+        std::printf("successfully pushed the fifth element %d", res.value());
+    } else {
+        std::printf("failed to push the fifth element due to out of fixed capacity");
+    }
     return 0;
 }
 ```
@@ -90,7 +101,8 @@ g++ -std=c++26 -O2 -o /tmp/ipv_demo /tmp/ipv_demo.cpp && /tmp/ipv_demo
 ```
 
 ```text
-size = 3, capacity = 4
+size = 4, max_size = 4, capacity = 4
+failed to push the fifth element due to out of fixed capacity
 ```
 
 `inplace_vector` 和 `array` 的边界要拎清：`array<T, N>` 的 size 恒等于 N，是定长；`inplace_vector<T, N>` 的容量上限是 N，但 size 在 0 到 N 之间运行期可变。要定长用 array，要「上限已知 + 运行期可变 + 不堆分配」用 inplace_vector。
