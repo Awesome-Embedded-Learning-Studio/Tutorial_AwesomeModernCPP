@@ -3,6 +3,7 @@ import { navZh, navEn } from './nav'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
+import { codeFoldPlugin } from '../plugins/code-fold-plugin'
 import { getBuildInfo } from './build-info'
 
 // 模块加载时算一次,两个 themeConfig 函数共用;同一构建进程内一致。
@@ -28,6 +29,7 @@ export const sharedMarkdown = {
     cppTemplateEscapePlugin(md)
     md.use(kbdPlugin)
     md.use(mermaidPlugin)
+    md.use(codeFoldPlugin)
   },
 }
 
