@@ -24,7 +24,7 @@ tags:
   <ChapterLink href="vol1-basics-cpp11-14/">模板基础（C++11-14）</ChapterLink>
   <ChapterLink href="vol2-modern-cpp17/">现代模板技术（C++17）</ChapterLink>
   <ChapterLink href="vol3-metaprogramming-cpp20-23/">元编程精要（C++20-23）</ChapterLink>
-  <ChapterLink href="vol4-generics-patterns/">泛型设计模式实战</ChapterLink>
+  <ChapterLink href="vol4-generics-patterns/">设计模式</ChapterLink>
 </ChapterNav>
 
 ### 协程

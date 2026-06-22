@@ -1,0 +1,8 @@
+# 这是一个注释行（应被跳过）
+username = admin
+password 123456
+server_ip=192.168.1.100
+port : 8080
+debug_mode=true
+max_connections=50
+timeout 30
