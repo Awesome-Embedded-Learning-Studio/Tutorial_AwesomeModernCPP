@@ -38,6 +38,11 @@ VALID_TAGS = {
     'concepts', 'coroutine', 'if_constexpr', '模板', '泛型',
     '对象池', '状态机', '工厂模式', '策略模式', '单例模式',
     '观察者模式', 'RAII守卫', '回调机制',
+    # GoF 设计模式(创造型 / 结构型 / 行为型)—— 须与 validate_frontmatter.py 同步
+    '构建器模式', '原型模式', '适配器模式', '桥接模式', '组合模式',
+    '装饰器模式', '外观模式', '享元模式', '代理模式', '命令模式',
+    '备忘录模式', '访问者模式', '迭代器模式', '责任链模式',
+    '解释器模式', '中介者模式', '模板方法模式',
     'array', 'span', 'vector', 'map', 'unordered_map',
     '循环缓冲区', '侵入式容器', '容器',
     'unique_ptr', 'shared_ptr', 'weak_ptr', 'intrusive_ptr',
