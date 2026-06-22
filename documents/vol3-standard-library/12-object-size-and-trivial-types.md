@@ -80,7 +80,11 @@ struct alignas(16) Vec4 {
 C++ 标准把一组「类型属性」拆开来，精确表达「这个类型的对象在内存里怎么行为」。这是 C++11 的设计（把历史上的 POD 拆成几件事）。先把几个常被混淆的词摆清楚：
 
 - **trivial（平凡）类型**：特殊成员（默认构造、拷贝/移动构造、赋值、析构）都是编译器生成的、没有自定义逻辑。换句话说，构造/拷贝/析构不产生任何运行时代码——对象的比特位就是它的全部，没有隐藏动作。
-- **trivially_copyable（可平凡拷贝）类型**：可以安全地用 `memcpy` 按字节拷贝（拷完目标有同样的对象表示，且能正常析构）。**这是能否用 `memcpy` 的判据**。
+- **trivially_copyable（可平凡拷贝）类型**：可以安全地用 `memcpy` 按字节拷贝（拷完目标有同样的对象表示，且能正常析构）。**这是能否用 `memcpy` 的判据**。根据C++23草案:
+<https://eel.is/c++draft/class.prop#11>, 大致有三个要求:
+  1. 至少有一个拷贝/移动构造或赋值操作不是 deleted
+  2. 所有存在的（eligible）拷贝/移动构造函数和拷贝/移动赋值运算符都是 trivial.
+  3. 析构函数是 trivial.
 - **standard-layout（标准布局）类型**：有可预测的内存布局规则（成员按声明顺序排布、没有复杂的访问控制 / 虚继承 / 多重基类导致的不确定布局）。**这是能否和 C struct 布局兼容的判据**。
 
 一个关键事实：老概念 `POD`（Plain Old Data）在 C++11 被拆成了 `trivial` 和 `standard-layout`，`POD` 在语义上就是「既 trivial 又 standard-layout」。所以那些和 ABI、C 互操作相关的安全假设，现在用 `std::is_standard_layout_v<T>` 和 `std::is_trivially_copyable_v<T>` 分别检查。
@@ -101,12 +105,29 @@ static_assert(std::is_standard_layout_v<S>);
 对比一个非平凡的：
 
 ```cpp
-struct T {
-    T() { /* 自定义构造 */ }
+struct T_0 {
     int x;
 };
-// T 不是 trivial（用户定义了构造），通常也不是 trivially_copyable
-static_assert(!std::is_trivial_v<T>);
+// T_0 是 trivial且trivially_copyable
+static_assert(std::is_trivial_v<T_0>);
+static_assert(std::is_trivially_copyable_v<T_0>);
+
+struct T_1 {
+    T_1() { /* 自定义构造 */ }
+    int x;
+};
+// T 不是 trivial（用户定义了构造），但在这个例子中是trivially_copyable
+// 注意，默认构造函数完全不在检查范围内。
+static_assert(!std::is_trivial_v<T_1>);
+static_assert(std::is_trivially_copyable_v<T_1>);
+
+struct T_2 {
+    T_2() {}
+    T_2(const T_2&) { /* 自定义拷贝构造 */ }
+    int x;
+};
+static_assert(!std::is_trivial_v<T_2>);
+static_assert(!std::is_trivially_copyable_v<T_2>);
 ```
 
 再强调一条易错的：**trivial ≠ trivially_copyable**，前者强调特殊成员（尤其默认构造）的「平凡性」，后者强调按字节复制是否安全。判断能不能 `memcpy`，用 `std::is_trivially_copyable_v<T>`，别用 `is_trivial`。
