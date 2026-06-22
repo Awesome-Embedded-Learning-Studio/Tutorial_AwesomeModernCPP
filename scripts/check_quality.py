@@ -28,35 +28,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 # ---------------------------------------------------------------------------
-# Re-use VALID_TAGS from validate_frontmatter.py (avoid duplication)
+# VALID_TAGS 单一数据源在 scripts/tags.py(与 validate_frontmatter.py 共享,补 tag 只改一处)
 # ---------------------------------------------------------------------------
-
-VALID_TAGS = {
-    'RAII', '移动语义', '零开销抽象', '编译期计算', '类型安全',
-    '内存管理', '异步编程', '模板元编程',
-    'constexpr', 'consteval', 'constinit', 'lambda', 'CRTP',
-    'concepts', 'coroutine', 'if_constexpr', '模板', '泛型',
-    '对象池', '状态机', '工厂模式', '策略模式', '单例模式',
-    '观察者模式', 'RAII守卫', '回调机制',
-    # GoF 设计模式(创造型 / 结构型 / 行为型)—— 须与 validate_frontmatter.py 同步
-    '构建器模式', '原型模式', '适配器模式', '桥接模式', '组合模式',
-    '装饰器模式', '外观模式', '享元模式', '代理模式', '命令模式',
-    '备忘录模式', '访问者模式', '迭代器模式', '责任链模式',
-    '解释器模式', '中介者模式', '模板方法模式',
-    'array', 'span', 'vector', 'map', 'unordered_map',
-    '循环缓冲区', '侵入式容器', '容器',
-    'unique_ptr', 'shared_ptr', 'weak_ptr', 'intrusive_ptr',
-    '智能指针', '引用计数',
-    'enum', 'enum_class', 'variant', 'optional', 'expected',
-    '类型别名', '字面量',
-    '函数对象', 'std_function', 'std_invoke', 'Ranges',
-    'atomic', 'memory_order', 'mutex', '无锁',
-    '嵌入式', '单片机', '外设管理', '寄存器', '链接器',
-    '交叉编译', '工具链', 'CMake',
-    '基础', '入门', '进阶', '实战', '优化', '工程实践',
-    'host', 'stm32f1',
-    'beginner', 'intermediate', 'advanced', 'cpp-modern',
-}
+from tags import VALID_TAGS
 
 VALID_DIFFICULTY = {'beginner', 'intermediate', 'advanced'}
 
