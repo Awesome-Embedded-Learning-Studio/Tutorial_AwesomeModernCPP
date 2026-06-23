@@ -17,6 +17,14 @@ function extractTitle(filePath: string): string | null {
   return null
 }
 
+function extractSidebarOrder(indexPath: string): number | undefined {
+  try {
+    const content = readFileSync(indexPath, 'utf-8')
+    const m = content.match(/^sidebar_order:\s*(\d+)/m)
+    return m ? parseInt(m[1], 10) : undefined
+  } catch { /* ignore */ }
+}
+
 function humanize(name: string): string {
   return name
     .replace(/^\d+[-]?/, '')
@@ -47,7 +55,26 @@ function scanDir(dir: string, urlPrefix: string, depth = 0): SidebarItem[] {
     )
   } catch { return [] }
 
-  entries.sort(sortEntries)
+  // 子目录优先按其 index.md 的 sidebar_order 排序;文件按文件名开头数字;否则字母序
+  const ordered = entries.map(name => {
+    const full = join(dir, name)
+    let order: number | undefined
+    try {
+      if (statSync(full).isDirectory()) {
+        order = extractSidebarOrder(join(full, 'index.md'))
+      } else if (/^\d+/.test(name)) {
+        order = parseInt(name.match(/^(\d+)/)![1], 10)
+      }
+    } catch { /* ignore */ }
+    return { name, order }
+  })
+  ordered.sort((a, b) => {
+    if (a.order !== undefined && b.order !== undefined) return a.order - b.order
+    if (a.order !== undefined) return -1
+    if (b.order !== undefined) return 1
+    return a.name.localeCompare(b.name, 'zh-CN')
+  })
+  entries = ordered.map(e => e.name)
   const items: SidebarItem[] = []
 
   for (const name of entries) {

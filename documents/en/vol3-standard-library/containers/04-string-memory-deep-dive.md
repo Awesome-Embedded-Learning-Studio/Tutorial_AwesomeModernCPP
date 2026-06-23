@@ -21,7 +21,7 @@ tags:
 - 内存管理
 title: 'Deep Dive into std::string: SSO, COW, and resize_and_overwrite'
 translation:
-  source: documents/vol3-standard-library/04-string-memory-deep-dive.md
+  source: documents/vol3-standard-library/containers/04-string-memory-deep-dive.md
   source_hash: 5e262f612cdb548a69522897f17a1bc4e5882e021c79817b3703604c012939ab
   translated_at: '2026-06-16T06:09:41.105262+00:00'
   engine: anthropic
@@ -31,7 +31,7 @@ translation:
 
 `std::string` is likely the most heavily used yet least understood type in the standard library. We happily write `std::string s = "hello";` all day long, but when pressed—*"Why is `sizeof(std::string)` 32 bytes on my machine?"*, *"Why do strings in legacy code share the same buffer?"*, *"What exactly does C++23's `resize_and_overwrite` save us?"*—most of us are stumped. The roots of these questions lie deep within `string`'s memory model and its long history.
 
-In this article, we will focus specifically on `string`'s memory and buffering story: the historical entanglement between SSO and COW, SSO implementation thresholds, and the buffer reuse API `resize_and_overwrite` introduced in C++23. (C++20's `char8_t` is a separate topic, covered in Volume III: [char8_t and UTF-8 Strings](./30-char8-t-utf8.md).)
+In this article, we will focus specifically on `string`'s memory and buffering story: the historical entanglement between SSO and COW, SSO implementation thresholds, and the buffer reuse API `resize_and_overwrite` introduced in C++23. (C++20's `char8_t` is a separate topic, covered in Volume III: [char8_t and UTF-8 Strings](../strings/30-char8-t-utf8.md).)
 
 ------
 

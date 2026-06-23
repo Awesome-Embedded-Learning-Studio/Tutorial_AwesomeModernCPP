@@ -225,7 +225,7 @@ Good question. SSO means: if the string is short enough (libstdc++ threshold is 
 
 But once the string exceeds the SSO threshold, `std::string` falls back to heap allocation, and the advantage of move semantics is fully realized—one pointer swap vs one `malloc` + `memcpy`. Moreover, even for short strings, move semantics allows the compiler to omit unnecessary copies in more scenarios.
 
-For a complete analysis of SSO, we previously discussed this in detail in vol3's [Deep Dive into string: SSO, COW, and resize_and_overwrite](../../../../vol3-standard-library/04-string-memory-deep-dive.md), so we won't expand on it here.
+For a complete analysis of SSO, we previously discussed this in detail in vol3's [Deep Dive into string: SSO, COW, and resize_and_overwrite](../../../../vol3-standard-library/containers/04-string-memory-deep-dive.md), so we won't expand on it here.
 
 ## What We've Cleared Up So Far
 

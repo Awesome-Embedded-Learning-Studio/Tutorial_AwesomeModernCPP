@@ -24,7 +24,7 @@ tags:
 - Ranges
 title: 'Iterator Basics and Categories: How Containers and Algorithms Interconnect'
 translation:
-  source: documents/vol3-standard-library/40-iterator-basics-and-categories.md
+  source: documents/vol3-standard-library/iterators-algorithms/40-iterator-basics-and-categories.md
   source_hash: 71258af1cf6dad2060c013b74c1b4d2d7355575642e6fd4da0b2fc5dc353b672
   translated_at: '2026-06-16T04:01:42.182467+00:00'
   engine: anthropic

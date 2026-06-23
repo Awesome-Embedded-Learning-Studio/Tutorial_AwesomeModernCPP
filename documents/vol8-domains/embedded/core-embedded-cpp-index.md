@@ -44,9 +44,9 @@ description: ''
 
 ## Chapter 3 - 内存与对象管理
 
-- [初始化列表](../../vol3-standard-library/11-initializer-lists.md)
+- [初始化列表](../../vol3-standard-library/containers/11-initializer-lists.md)
 - [空基类优化（EBO）](../../vol4-advanced/03-empty-base-optimization.md)
-- [对象大小，平凡类型](../../vol3-standard-library/12-object-size-and-trivial-types.md)
+- [对象大小，平凡类型](../../vol3-standard-library/containers/12-object-size-and-trivial-types.md)
 
 ## Chapter 4 - 编译期计算
 
@@ -62,12 +62,12 @@ description: ''
 
 ## Chapter 7 - 容器与数据结构
 
-- [array](../../vol3-standard-library/02-array.md)
-- [span](../../vol3-standard-library/08-span.md)
+- [array](../../vol3-standard-library/containers/02-array.md)
+- [span](../../vol3-standard-library/containers/08-span.md)
 - [循环缓冲区](./03-circular-buffer.md)
 - [侵入式容器设计](./04-intrusive-containers.md)
 - [ETL](./05-etl.md)
-- [自定义的分配器](../../vol3-standard-library/13-custom-allocators.md)
+- [自定义的分配器](../../vol3-standard-library/containers/13-custom-allocators.md)
 
 ## Chapter 8 - 类型安全与工具类型
 

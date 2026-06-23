@@ -23,7 +23,7 @@ tags:
 - 容器
 title: 'deque, list, and forward_list: Three Alternatives to vector'
 translation:
-  source: documents/vol3-standard-library/05-deque-list-forward-list.md
+  source: documents/vol3-standard-library/containers/05-deque-list-forward-list.md
   source_hash: 62d31793dc2e51e2e7d56aba00cb2f0511f210d0a7714c8fdc80b4c19a77a080
   translated_at: '2026-06-16T06:10:16.927377+00:00'
   engine: anthropic

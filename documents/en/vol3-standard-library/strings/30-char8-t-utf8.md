@@ -19,7 +19,7 @@ tags:
 - 类型安全
 title: char8_t and UTF-8 Strings
 translation:
-  source: documents/vol3-standard-library/30-char8-t-utf8.md
+  source: documents/vol3-standard-library/strings/30-char8-t-utf8.md
   source_hash: f760ef1b86320bdcc9c9a2df93770803de55d842bdc6bc2180090a29649ddf21
   translated_at: '2026-06-16T06:14:58.209869+00:00'
   engine: anthropic

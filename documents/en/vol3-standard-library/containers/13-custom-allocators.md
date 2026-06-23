@@ -26,7 +26,7 @@ tags:
 - 容器
 title: 'Custom Allocators & PMR: Managing Memory Yourself'
 translation:
-  source: documents/vol3-standard-library/13-custom-allocators.md
+  source: documents/vol3-standard-library/containers/13-custom-allocators.md
   source_hash: c7a1da24b0d9d6a7fbfa5dccbd29e3c5b2513eced131f027cf5a54c478d84293
   translated_at: '2026-06-16T04:01:25.767452+00:00'
   engine: anthropic

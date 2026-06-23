@@ -23,7 +23,7 @@ tags:
 - 容器
 title: Object Size, Alignment, and Trivial Types
 translation:
-  source: documents/vol3-standard-library/12-object-size-and-trivial-types.md
+  source: documents/vol3-standard-library/containers/12-object-size-and-trivial-types.md
   source_hash: 3ca268f268e28766e688401c6a11c4f3cb581927bdf8432bf2e7689d9afe9c7e
   translated_at: '2026-06-16T06:14:07.042774+00:00'
   engine: anthropic

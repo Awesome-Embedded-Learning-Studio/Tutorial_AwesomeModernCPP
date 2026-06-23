@@ -72,7 +72,7 @@ int main() {
 
 ## 另见
 
-- [教程：std::array 详解](../../vol3-standard-library/02-array.md)
+- [教程：std::array 详解](../../vol3-standard-library/containers/02-array.md)
 - [cppreference: std::array](https://en.cppreference.com/w/cpp/container/array)
 
 ---

@@ -30,7 +30,7 @@ tags:
 title: 'Container Selection Guide: Choosing the Right Container by Operation, Memory,
   and Invalidation Rules'
 translation:
-  source: documents/vol3-standard-library/01-container-selection-guide.md
+  source: documents/vol3-standard-library/containers/01-container-selection-guide.md
   source_hash: d6c0140e79cd61f1773cd5c372b8cbdc497fc918f70e60e3fa0b64f75a7169f2
   translated_at: '2026-06-16T06:08:43.136945+00:00'
   engine: anthropic

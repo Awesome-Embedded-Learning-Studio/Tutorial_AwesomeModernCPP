@@ -50,9 +50,9 @@ This is the table of contents for "Modern C++ for Embedded Systems Tutorial". Cl
 
 ## Chapter 3 - Memory and Object Management
 
-- [Initializer Lists](../../vol3-standard-library/11-initializer-lists.md)
+- [Initializer Lists](../../vol3-standard-library/containers/11-initializer-lists.md)
 - [Empty Base Optimization (EBO)](../../vol4-advanced/03-empty-base-optimization.md)
-- [Object Size and Trivial Types](../../vol3-standard-library/12-object-size-and-trivial-types.md)
+- [Object Size and Trivial Types](../../vol3-standard-library/containers/12-object-size-and-trivial-types.md)
 
 ## Chapter 4 - Compile-Time Computation
 
@@ -68,12 +68,12 @@ This is the table of contents for "Modern C++ for Embedded Systems Tutorial". Cl
 
 ## Chapter 7 - Containers and Data Structures
 
-- [array](../../vol3-standard-library/02-array.md)
-- [span](../../vol3-standard-library/08-span.md)
+- [array](../../vol3-standard-library/containers/02-array.md)
+- [span](../../vol3-standard-library/containers/08-span.md)
 - [Circular Buffer](./03-circular-buffer.md)
 - [Intrusive Container Design](./04-intrusive-containers.md)
 - [ETL](./05-etl.md)
-- [Custom Allocators](../../vol3-standard-library/13-custom-allocators.md)
+- [Custom Allocators](../../vol3-standard-library/containers/13-custom-allocators.md)
 
 ## Chapter 8 - Type Safety and Utility Types
 

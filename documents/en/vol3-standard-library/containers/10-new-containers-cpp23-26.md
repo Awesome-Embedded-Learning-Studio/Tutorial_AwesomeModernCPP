@@ -26,7 +26,7 @@ tags:
 - 容器
 title: 'New Standard Containers: flat_map, inplace_vector, and mdspan'
 translation:
-  source: documents/vol3-standard-library/10-new-containers-cpp23-26.md
+  source: documents/vol3-standard-library/containers/10-new-containers-cpp23-26.md
   source_hash: c3192046cdc4932a2a256eb7c71bea29e2a7bee2fc04c51c5674b9ba09d6c2ce
   translated_at: '2026-06-16T06:14:10.498720+00:00'
   engine: anthropic

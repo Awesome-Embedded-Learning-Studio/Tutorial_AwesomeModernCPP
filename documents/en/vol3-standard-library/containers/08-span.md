@@ -22,7 +22,7 @@ tags:
 - 容器
 title: 'span: Non-owning Contiguous View'
 translation:
-  source: documents/vol3-standard-library/08-span.md
+  source: documents/vol3-standard-library/containers/08-span.md
   source_hash: a47d4d2cce1ffad567eddb40f82d56fb2ee0c7a8fc99c9681b3bf988f7f99a3b
   translated_at: '2026-06-16T06:13:04.857832+00:00'
   engine: anthropic

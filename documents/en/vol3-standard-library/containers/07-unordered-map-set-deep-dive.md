@@ -26,7 +26,7 @@ tags:
 title: 'Deep Dive into unordered_map and unordered_set: Hash Tables, Buckets, and
   Custom Hash'
 translation:
-  source: documents/vol3-standard-library/07-unordered-map-set-deep-dive.md
+  source: documents/vol3-standard-library/containers/07-unordered-map-set-deep-dive.md
   source_hash: 99e24b989cc0f15825bfe5b0f3939f6caad91139a9602606db0a3454dff0789d
   translated_at: '2026-06-16T06:11:33.805063+00:00'
   engine: anthropic

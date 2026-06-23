@@ -25,7 +25,7 @@ tags:
 title: 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and Node
   Handles'
 translation:
-  source: documents/vol3-standard-library/06-map-set-deep-dive.md
+  source: documents/vol3-standard-library/containers/06-map-set-deep-dive.md
   source_hash: 2a8c7d7f183542ad3514ba8de981bf4081655fa1bc3db3ce1ae08e4147f09ba4
   translated_at: '2026-06-16T06:11:25.804151+00:00'
   engine: anthropic

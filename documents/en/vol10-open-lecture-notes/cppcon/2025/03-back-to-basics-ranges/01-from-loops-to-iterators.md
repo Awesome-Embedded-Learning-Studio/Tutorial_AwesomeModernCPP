@@ -359,7 +359,7 @@ Starting from the most primitive indexed `for`, we saw how "traversal" was abstr
 
 The core is one sentence: **a pair of iterators (one `begin`, one `end`) defines a range, and STL algorithms are built on this pair of iterators.**
 
-In the next part, we will hand this pair of iterators to STL algorithms—seeing how `std::sort`, `std::partition`, and `std::transform`, these "loop replacements," are used, and what hard requirements they have for iterator categories (e.g., why `std::sort` cannot be used on `std::list`). There are also classic iterator pitfalls waiting for us: iterator invalidation, mismatched `begin`/`end`, and reversed parameter order. If you want to review the memory layout of containers first, vol3's [span: A View that Doesn't Own Data](../../../../vol3-standard-library/08-span.md) and related container articles are good prerequisite reading.
+In the next part, we will hand this pair of iterators to STL algorithms—seeing how `std::sort`, `std::partition`, and `std::transform`, these "loop replacements," are used, and what hard requirements they have for iterator categories (e.g., why `std::sort` cannot be used on `std::list`). There are also classic iterator pitfalls waiting for us: iterator invalidation, mismatched `begin`/`end`, and reversed parameter order. If you want to review the memory layout of containers first, vol3's [span: A View that Doesn't Own Data](../../../../vol3-standard-library/containers/08-span.md) and related container articles are good prerequisite reading.
 
 <ReferenceCard title="References">
   <ReferenceItem

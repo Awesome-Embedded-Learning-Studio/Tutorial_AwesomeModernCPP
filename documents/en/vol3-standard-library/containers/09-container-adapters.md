@@ -25,7 +25,7 @@ tags:
 - 容器
 title: 'Container Adapters: How stack, queue, and priority_queue Are "Wrapped'
 translation:
-  source: documents/vol3-standard-library/09-container-adapters.md
+  source: documents/vol3-standard-library/containers/09-container-adapters.md
   source_hash: 408ba324d603586059e2a72f5f9c08bc4ae2ed73b4cbabc735ff569d1855f30e
   translated_at: '2026-06-16T06:13:05.073345+00:00'
   engine: anthropic

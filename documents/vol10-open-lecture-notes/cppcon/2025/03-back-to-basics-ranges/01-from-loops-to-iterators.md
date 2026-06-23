@@ -352,7 +352,7 @@ int sum_rangefor(const std::vector<int>& v)
 
 核心就一句话：**一对迭代器（一个 `begin`、一个 `end`）定义了一个 range，而 STL 算法就建立在这对迭代器之上。**
 
-下一篇我们就把这对迭代器交给 STL 算法——看 `std::sort`、`std::partition`、`std::transform` 这些「循环的替代品」怎么用，以及它们对迭代器类别有什么硬性要求（比如 `std::sort` 为什么不能用在 `std::list` 上）。那里还有几个迭代器的经典陷阱等着我们：迭代器失效、配错 `begin`/`end`、参数顺序写反。如果你想先复习一下容器本身的内存布局，vol3 的 [span：不拥有数据的视图](../../../../vol3-standard-library/08-span.md) 和容器相关文章是很好的前置阅读。
+下一篇我们就把这对迭代器交给 STL 算法——看 `std::sort`、`std::partition`、`std::transform` 这些「循环的替代品」怎么用，以及它们对迭代器类别有什么硬性要求（比如 `std::sort` 为什么不能用在 `std::list` 上）。那里还有几个迭代器的经典陷阱等着我们：迭代器失效、配错 `begin`/`end`、参数顺序写反。如果你想先复习一下容器本身的内存布局，vol3 的 [span：不拥有数据的视图](../../../../vol3-standard-library/containers/08-span.md) 和容器相关文章是很好的前置阅读。
 
 <ReferenceCard title="参考文献">
   <ReferenceItem

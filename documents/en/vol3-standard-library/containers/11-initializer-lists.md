@@ -22,7 +22,7 @@ tags:
 - 容器
 title: 'std::initializer_list: The Lightweight Sequence Behind Curly Braces'
 translation:
-  source: documents/vol3-standard-library/11-initializer-lists.md
+  source: documents/vol3-standard-library/containers/11-initializer-lists.md
   source_hash: 42799cf6df7141670397ceb4407ba82559b071934f878db2ec4421e84c738ef7
   translated_at: '2026-06-16T04:01:04.560997+00:00'
   engine: anthropic

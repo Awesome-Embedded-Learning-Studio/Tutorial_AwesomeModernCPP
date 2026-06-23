@@ -22,7 +22,7 @@ tags:
 - vector
 title: 'vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation'
 translation:
-  source: documents/vol3-standard-library/03-vector-deep-dive.md
+  source: documents/vol3-standard-library/containers/03-vector-deep-dive.md
   source_hash: 73e9956ffcdbd2ae6c16f9a56629dbdeb32fc210b4670bf2cdb22e803fe05c3d
   translated_at: '2026-06-16T04:00:34.009764+00:00'
   engine: anthropic

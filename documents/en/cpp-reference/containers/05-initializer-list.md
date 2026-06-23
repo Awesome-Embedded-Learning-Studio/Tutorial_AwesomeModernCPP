@@ -106,7 +106,7 @@ int main() {
 
 ## See Also
 
-- [Tutorial: Initializer Lists](../../vol3-standard-library/11-initializer-lists.md)
+- [Tutorial: Initializer Lists](../../vol3-standard-library/containers/11-initializer-lists.md)
 - [cppreference: std::initializer_list](https://en.cppreference.com/w/cpp/utility/initializer_list)
 
 ---

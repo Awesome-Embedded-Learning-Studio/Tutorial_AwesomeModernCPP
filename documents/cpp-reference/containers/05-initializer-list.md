@@ -86,7 +86,7 @@ int main() {
 
 ## 另见
 
-- [教程：初始化列表](../../vol3-standard-library/11-initializer-lists.md)
+- [教程：初始化列表](../../vol3-standard-library/containers/11-initializer-lists.md)
 - [cppreference: std::initializer_list](https://en.cppreference.com/w/cpp/utility/initializer_list)
 
 ---

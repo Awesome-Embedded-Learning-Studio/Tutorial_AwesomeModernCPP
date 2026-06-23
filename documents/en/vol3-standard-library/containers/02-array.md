@@ -23,7 +23,7 @@ tags:
 - 容器
 title: 'array: A fixed-size aggregate container determined at compile time'
 translation:
-  source: documents/vol3-standard-library/02-array.md
+  source: documents/vol3-standard-library/containers/02-array.md
   source_hash: 7c61645f47239ac6cb379c18978d92de85382501523cd72c6e30c51e6cec442d
   translated_at: '2026-06-16T05:47:46.107496+00:00'
   engine: anthropic
