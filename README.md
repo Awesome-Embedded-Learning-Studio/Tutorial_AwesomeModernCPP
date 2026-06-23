@@ -161,7 +161,6 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 |------|------|------|
 | `main` | 主开发分支 | Active |
 | `archive/legacy_20260415` | 重构前存档 | Read-only |
-| `gh-pages` | 自动部署的文档站 | Auto-generated |
 
 </details>
 
