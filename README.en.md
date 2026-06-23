@@ -158,7 +158,6 @@ See [changelogs/](changelogs/) for full release history.
 |--------|---------|--------|
 | `main` | Primary development branch | Active |
 | `archive/legacy_20260415` | Pre-restructuring archive | Read-only |
-| `gh-pages` | Auto-deployed documentation site | Auto-generated |
 
 </details>
 

@@ -1,5 +1,7 @@
 name: Deploy VitePress
 
+# 推到 main 即自动构建,产物作为一次性 artifact 部署到 GitHub Pages(不提交进任何分支)。
+# 首次使用前:仓库 Settings → Pages → Source 必须选「GitHub Actions」(非 Deploy from a branch)。
 on:
   push:
     branches:
@@ -7,27 +9,34 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write   # deploy-pages 经 OIDC 验证部署来源,必需
+
+# 同一时间只跑一个部署,排队中的不取消,保证最新一次一定部署成功
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+          fetch-depth: 0   # lastUpdated: true 需要完整 git 历史
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -41,14 +50,27 @@ jobs:
             vitepress-build-${{ runner.os }}-
             vitepress-build-
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Build
         run: pnpm build
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          NODE_OPTIONS: --max-old-space-size=6144   # 分卷并行构建仍需较大堆,防 OOM
           BUILD_CONCURRENCY: 8
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site/.vitepress/dist
+          path: site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
