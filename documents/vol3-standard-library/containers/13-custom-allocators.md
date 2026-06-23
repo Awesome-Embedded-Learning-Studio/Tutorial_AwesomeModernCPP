@@ -201,6 +201,9 @@ int main()
         v.push_back(i);
     }
     std::cout << "v.size() = " << v.size() << "\n";
+    std::cout << "v.data() address = " << std::hex << v.data() << "\n";
+    std::cout << "The range of stack buffer is [" << (void*)buffer << ","
+              << (void*)(buffer + sizeof(buffer)) << "]\n";
     std::cout << "vector 的内存来自栈上 buffer，零全局堆分配\n";
     return 0;
 }
@@ -212,8 +215,14 @@ g++ -std=c++20 -O2 -o /tmp/pmr_test /tmp/pmr_test.cpp && /tmp/pmr_test
 
 ```text
 v.size() = 100
+v.data() address = 0x7fff303c500c
+The range of stack buffer is [0x7fff303c4e10,0x7fff303c5e10]
 vector 的内存来自栈上 buffer，零全局堆分配
 ```
+
+`v.data()` 的地址 `0x7fff303c500c` 正落在 stack buffer 范围 `[0x7fff303c4e10, 0x7fff303c5e10]` 内——这就是“零全局堆分配”的硬证。栈地址每次运行会变，但 `v.data()` 总落在 buffer 区间里。
+
+> 这段打印 `v.data()` 与栈 buffer 范围、用地址坐实“零堆分配”的证明，由 [@YukunJ](https://github.com/YukunJ) 在 [PR #77](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/pull/77) 补充。
 
 这个 vector 的元素全来自栈上那块 4096 字节 buffer，没有一次全局 `new`。这就是 pmr + monotonic 的典型用法：把一块预分配内存（栈、静态区、或自管的堆块）喂给容器，获得确定的分配行为、零碎片、零全局堆开销。换个 resource（比如 pool）就换策略，容器代码一行不改。
 
