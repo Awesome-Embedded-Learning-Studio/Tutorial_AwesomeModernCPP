@@ -12,7 +12,7 @@ prerequisites:
 - 迭代器基础与 category
 - 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
 - 容器适配器：stack、queue、priority_queue 是怎么「包」出来的
-reading_time_minutes: 13
+reading_time_minutes: 28
 related:
 - 容器选择指南：按操作、内存与失效规则挑对容器
 tags:

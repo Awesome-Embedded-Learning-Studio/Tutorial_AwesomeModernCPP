@@ -15,7 +15,7 @@ platform: host
 prerequisites:
 - <numeric>：累加、填充、内积与相邻差
 - 迭代器适配器：反向、插入与流，把现成迭代器改出新行为
-reading_time_minutes: 16
+reading_time_minutes: 42
 related:
 - <numeric>：累加、填充、内积与相邻差
 tags:
