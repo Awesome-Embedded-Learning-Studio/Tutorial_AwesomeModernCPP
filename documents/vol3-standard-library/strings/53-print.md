@@ -168,6 +168,16 @@ print                  176044 us
 cout (sync=false)      171143 us
 ```
 
+想自己跑一遍？点开下面这个在线示例（用 `-std=c++23` 编译，耗时打到 stderr）：
+
+<OnlineCompilerDemo
+  title="cout / printf / std::print 格式化性能对比"
+  source-path="code/examples/vol3/53_print_benchmark.cpp"
+  description="200 万条短行写 /dev/null，对比 cout(sync 开/关)、printf、std::print 的格式化耗时——print 不动 sync 就拿到类型安全的一档速度"
+  allow-run
+  run-options="-O2 -std=c++23"
+/>
+
 把数量级结论捋清楚：
 
 - `printf` 最快（约 130 ms），但代价是 C 风格的可变参数——类型不安全、格式串和参数对不上只能运行期崩。

@@ -455,6 +455,15 @@ binary_search (O(log n)) 1  耗时 1 us
 倍数差距: 5891x
 ```
 
+想跑一遍看量级差距？点开下面这个在线示例：
+
+<OnlineCompilerDemo
+  title="二分 vs 线性查找：O(log n) 的红利"
+  source-path="code/examples/vol3/42_binary_vs_linear.cpp"
+  description="一千万个有序元素、最坏情况（目标在末尾）：std::find 要扫到底（毫秒级），std::binary_search 几次比较搞定（微秒级），量级差几千倍——前提是真的有序"
+  allow-run
+/>
+
 一千万个元素，线性 `find` 在最坏情况下要扫到底，落在毫秒级；二分几次比较就定位到，落在微秒级，量级上差了几千倍。这就是「有序」带来的红利——前提是你确实保持有序。
 
 ### 真正的坑：在没排序的区间上用二分

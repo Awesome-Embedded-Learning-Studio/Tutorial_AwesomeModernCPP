@@ -161,6 +161,15 @@ string_view  path (char* arg): 1360 ms
 ratio (ref/sv): 1.34x
 ```
 
+想自己跑一遍看比率？点开下面这个在线示例（在线运行约 2 秒，会打印两段耗时和比值）：
+
+<OnlineCompilerDemo
+  title="零拷贝传参：const string& vs string_view"
+  source-path="code/examples/vol3/50_string_view_benchmark.cpp"
+  description="90 字节 payload、5000 万次调用：const string& 每次构造临时 string，string_view 零分配——实测 string_view 快约 35%"
+  allow-run
+/>
+
 `const string&` 比 `string_view` 慢约 34%。微秒绝对值会随机器波动，但"省掉临时 string 的分配/释放"带来的这档差距是稳健的——payload 越长（越容易超 SSO）、调用越频繁，差距越明显。需要提醒的是：如果调用方手里本来就是 `std::string`，`const string&` 直接绑上去不会构造临时量，两者就扯平了。`string_view` 的传参优势**专门**兑现给"只读、来源异构、来源是 `char*` / 字面量 / 子串"的场景。
 
 也正是这个原因，现代 API 接受只读字符串时越来越倾向于写 `string_view`：它同时能接 `std::string`、`char*`、字面量、另一个 `string_view`，调用方都不用改。这正是当年 `span` 想统一"一段 T"传参时，字符这边早已被 `string_view` 提前办妥的事。

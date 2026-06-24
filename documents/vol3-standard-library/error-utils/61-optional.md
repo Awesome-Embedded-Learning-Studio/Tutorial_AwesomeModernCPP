@@ -377,6 +377,15 @@ empty.value_or(99) = 99
 C++20 constexpr optional: OK
 ```
 
+想跑一遍看 optional 编译期求值？点开下面这个在线示例：
+
+<OnlineCompilerDemo
+  title="C++20 constexpr optional：编译期求值"
+  source-path="code/examples/vol3/61_optional_constexpr.cpp"
+  description="optional 的 emplace/reset/value_or 都是 constexpr：compute() 和 empty.value_or(99) 能塞进 static_assert 编译期验证，运行也打印同样结果"
+  allow-run
+/>
+
 这一点在模板元编程、编译期查表、`consteval` 函数里非常有用——你需要一个「可能没值」的盒子时，C++20 起编译期也能用 optional 了，不用再自己手搓 union。
 
 ## 一点性能直觉：optional 在热路径上有多少开销

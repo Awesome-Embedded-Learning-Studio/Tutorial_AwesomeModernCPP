@@ -293,21 +293,37 @@ def compute_source_hash(content: str) -> str:
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
 
+def normalize_translated_title(title: str) -> str:
+    r"""Strip angle brackets the LLM re-adds around header names (<numeric> → numeric).
+
+    VitePress renders sidebar titles via v-html, so raw < > get eaten as HTML
+    tags and the title's left side vanishes. The repo convention is bracket-free
+    titles (chrono / functional / optional are all bare), so drop < > entirely
+    and tidy any double spaces left behind.
+    """
+    cleaned = re.sub(r'[<>]', '', title)
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned).strip()
+    return cleaned
+
+
 def reconstruct_frontmatter(fm: Dict, translated_fm: Dict,
                             metadata: Optional[TranslationMetadata] = None) -> str:
     """Reconstruct frontmatter with translated fields and metadata."""
     merged = dict(fm)
     # Overlay translated fields
     if 'title' in translated_fm:
-        merged['title'] = translated_fm['title']
+        merged['title'] = normalize_translated_title(translated_fm['title'])
     if 'description' in translated_fm:
         merged['description'] = translated_fm['description']
     # Embed translation metadata
     if metadata:
         merged['translation'] = metadata.to_dict()
 
+    # width=large keeps long scalars (especially the title) on a single line.
+    # The default (80) folds long titles across lines, and the sidebar title
+    # extractor only reads the first line — silently truncating the rest.
     return yaml.dump(merged, allow_unicode=True, sort_keys=False,
-                     default_flow_style=False).strip()
+                     default_flow_style=False, width=1_000_000).strip()
 
 
 # ---------------------------------------------------------------------------

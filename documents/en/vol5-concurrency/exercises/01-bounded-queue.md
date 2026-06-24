@@ -1,386 +1,327 @@
 ---
+title: 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+description: Implement a fixed-capacity blocking queue, shutdown semantics, timeouts,
+  and sharded locking cache; train with mutex, condition variable, and C++20 synchronization
+  primitives.
 chapter: 10
-cpp_standard:
-- 17
-- 20
-description: Master mutex, condition variable, shutdown semantics, and backpressure
-  strategies through blocking queues, sharded caching, and C++20 synchronization primitives
-difficulty: intermediate
 order: 1
-prerequisites:
-- '卷五 ch00: 并发思维与基础'
-- '卷五 ch01: 线程生命周期与 RAII'
-- '卷五 ch02: 互斥量、条件变量与同步原语'
-- 'Lab 0: Thread Lifecycle Lab'
-reading_time_minutes: 21
 tags:
 - host
 - cpp-modern
 - mutex
 - intermediate
-title: 'Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives'
+difficulty: intermediate
+platform: host
+reading_time_minutes: 20
+cpp_standard:
+- 17
+- 20
+prerequisites:
+- '卷五 ch02: 互斥量、条件变量与同步原语'
+- 'Lab 0: Thread Lifecycle Lab'
+related:
+- mutex 与 RAII 守卫
+- condition_variable
+- latch/barrier/semaphore
 translation:
   source: documents/vol5-concurrency/exercises/01-bounded-queue.md
-  source_hash: fae391d05750bbd87df486d4a0c8221e4930dc5886264dce0f96a098f95a3cf3
-  translated_at: '2026-06-16T04:07:18.983555+00:00'
+  source_hash: f0432a2c8a3b5959638580be863a5fc5d48ba9f04af3af4ea8cc658ee33ad9e9
+  translated_at: '2026-06-24T01:09:32.446803+00:00'
   engine: anthropic
-  token_count: 5609
+  token_count: 3110
 ---
-# Lab 1: Bounded Queue, Concurrent Cache and Sync Primitives
+# Lab 1: Bounded Queue, Concurrent Cache, and Sync Primitives
+
+> The runnable project for this Lab is located at [`code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/`](../../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/). Estimated hands-on time is **8–12 hours** (note: `reading_time_minutes` refers to reading time only, not coding time).
 
 ## Objectives
 
-Lab 0 got us up and running with the basic skeleton of multithreading—creating threads, RAII wrappers, and safe parameter passing. However, those code samples shared a common characteristic: all threads were "doing their own thing," and the main thread simply waited for them to finish. Real-world concurrent systems are far different—threads need to collaborate. Producers push data into queues, consumers pull data out, queues apply backpressure when full, and systems shut down gracefully when queues close.
+Lab 0 got the multithreading skeleton working—creating threads, RAII wrappers, and passing parameters safely. However, those threads were all "doing their own thing," with the main thread simply waiting for them to finish. Real concurrent systems don't work like that: threads must collaborate. Producers push data into queues, consumers take it, queues apply backpressure when full, and systems exit gracefully when shut down.
 
-The core deliverables of this lab are three components: a `BoundedQueue` with shutdown semantics, a `ShardedCache` using sharded locking, and classic concurrency patterns implemented using C++20's `latch`, `barrier`, and `semaphore`. These three components are not isolated exercises—the thread pool in Lab 3 will directly reuse `BoundedQueue` as its task queue, and the Capstone project will combine all these components.
+The core deliverables for this Lab are three components:
 
-After completing this lab, you should have muscle memory for the `mutex` + `condition_variable` combo. You will be able to correctly handle four waiting scenarios: predicate waiting, spurious wakeups, lost wakeups, and shutdown wakeups. You will also understand the performance trade-offs between coarse-grained locks and fine-grained locks.
+1. **`BoundedBlockingQueue<T>`**—A fixed-capacity blocking queue with shutdown semantics (evolving through MS1-4). **The ThreadPool in Lab 3 will directly reuse this as its task queue**, so we need to nail the interface design now.
+2. **`ConcurrentCache<K, V>`**—A sharded lock concurrent cache (MS5), to practice the trade-offs between "coarse-grained locking vs fine-grained locking."
+3. **C++20 Sync Primitive Practice** (MS6)—Using `std::latch`, `std::barrier`, and `std::counting_semaphore` to implement three classic concurrency patterns.
+
+Upon completion, you should have muscle memory for the mutex + condition_variable combo. You will be able to correctly handle four waiting scenarios: **predicate waiting, spurious wakeups, lost wakeups, and shutdown wakeups**, and understand the performance trade-offs of lock granularity.
 
 ## Prerequisites
 
-Before starting, ensure you have read the following chapters:
+- **ch02-01** Mutex and RAII guards — `std::mutex`, `lock_guard`, `unique_lock`
+- **ch02-03** condition_variable — Predicate waiting, spurious wakeups, `notify_one` vs `notify_all`
+- **ch02-05** latch / barrier / semaphore — C++20 synchronization primitives
+- **Lab 0** — `JoiningThread` (used in this Lab's tests and examples)
 
-- **ch02-01**: mutex and RAII locks — `std::mutex`, `std::scoped_lock`, `std::unique_lock`, lock guard
-- **ch02-02**: Deadlock and lock ordering — deadlock prevention, `std::scoped_lock` for acquiring multiple locks simultaneously
-- **ch02-03**: `condition_variable` and waiting semantics — predicate waiting, spurious wakeups, `notify_one` vs `notify_all`
-- **ch02-04**: `shared_mutex` and read-write locks — shared locks, read-write separation scenarios
-- **ch02-05**: `latch`, `barrier`, and `semaphore` — C++20 synchronization primitives
-- **Lab 0**: Implementation and usage of `SafeThread`
+## Project Scaffold (Get this running first)
 
-This lab directly depends on the `SafeThread` component from Lab 0.
+Each Lab has two versions under `vol5-labs/`: **`templates/lab1_bounded_queue/`** is the empty implementation skeleton (copy this one to work on), and **`examples/lab1_bounded_queue/`** is the reference implementation (use this to compare if you get stuck, but don't copy it upfront). Both are standalone projects. You will be working on the `templates` version:
 
-## Environment Setup
-
-Use the same compiler and Catch2 configuration as Lab 0. New requirements:
-
-- **C++20**: Milestone 6 requires `latch`, `barrier`, and `semaphore`. You need GCC 12+ or Clang 15+ with the `-std=c++20` flag enabled.
-- **pthread**: Link against `pthread` on Linux.
-
-In `CMakeLists.txt`, change `CMAKE_CXX_STANDARD` from Lab 0's setting to `20` and ensure `pthread` is linked:
-
-```cmake
-set(CMAKE_CXX_STANDARD 20)
-find_package(Threads REQUIRED)
-target_link_libraries(your_target PRIVATE Threads::Threads)
+```text
+templates/lab1_bounded_queue/
+├── CMakeLists.txt       # standalone: FetchContent Catch2 + INTERFACE 库 + test
+├── include/lab1/        ← 你在这里补全实现
+│   ├── bounded_blocking_queue.h   #   MS1-4
+│   ├── concurrent_cache.h         #   MS5
+│   └── sync_practice.h            #   MS6
+└── test/                # 教程提供的测试（不用改）
+    └── test_milestone1.cpp … test_milestone6.cpp
 ```
 
-## Final Interfaces
+**Note that lab1 uses C++20** (not C++17 like lab0), because MS6 requires `std::latch/barrier/counting_semaphore`.
 
-### `BoundedQueue` — Bounded blocking queue with shutdown semantics
+```bash
+cd code/volumn_codes/vol5-labs/templates/lab1_bounded_queue
+cmake -B build -DCMAKE_BUILD_TYPE=Debug   # Debug 默认开 ThreadSanitizer
+cmake --build build
+```
 
-Member variables:
+**Expected:** The build stops at the linking stage, reporting `undefined reference to lab1::BoundedBlockingQueue<...>::push(...)`. This is intentional; the files in `include/lab1/*.h` contain declarations only. Complete the implementation in milestone order to turn the corresponding tests from red to green.
 
-| Type | Member | Semantics |
-|------|--------|-----------|
-| `std::deque<T>` | `queue_` | Internal data storage |
-| `std::mutex` | `mutex_` | Mutex protecting queue state |
-| `std::condition_variable` | `cv_not_full_` | Producer wait condition (queue not full) |
-| `std::condition_variable` | `cv_not_empty_` | Consumer wait condition (queue not empty) |
-| `size_t` | `capacity_` | Queue capacity upper limit |
-| `bool` | `closed_` | Shutdown flag |
+## Final Interface
 
-Interface:
+Before starting, let's clarify the target shape (identical to the headers in `include/lab1/`).
 
-| Method | Signature | Description | Milestone |
-|--------|-----------|-------------|-----------|
-| Constructor | `BoundedQueue(size_t capacity)` | Set queue capacity | MS1 |
-| push | `bool push(T value)` | Blocking write; returns `false` after close | MS1 |
-| pop | `std::optional<T> pop()` | Blocking read; returns `nullopt` if closed and empty | MS1 |
-| close | `void close()` | Close queue, wake all waiting threads | MS2 |
-| is_closed | `bool is_closed()` | Query closed status | MS2 |
-| try_push_for | `bool try_push_for(T value, std::chrono::milliseconds timeout)` | Write with timeout | MS3 |
-| try_pop_for | `std::optional<T> try_pop_for(std::chrono::milliseconds timeout)` | Read with timeout | MS3 |
-| size | `size_t size()` | Current queue length | MS1 |
+### `BoundedBlockingQueue<T>` — Evolution across MS1-4 (Interface remains constant, internals are filled in step-by-step)
 
-### `ShardedCache` — Sharded lock cache (Milestone 5)
+| Method | Signature | Milestone |
+|------|------|-----------|
+| Constructor | `explicit BoundedBlockingQueue(std::size_t capacity)` | MS1 |
+| Blocking push | `void push(T value)` — waits if full; throws `std::runtime_error` after close | MS1/MS2 |
+| Blocking pop | `std::optional<T> pop()` — waits if empty; returns `nullopt` if closed and empty | MS1/MS2 |
+| Close | `void close()` — wakes all blocking threads | MS2 |
+| Check closed | `bool is_closed() const noexcept` | MS2 |
+| Timed push | `bool try_push_for(T, std::chrono::nanoseconds)` — true on success; false on timeout or close | MS3 |
+| Timed pop | `std::optional<T> try_pop_for(std::chrono::nanoseconds)` | MS3 |
+| Approximate size | `std::size_t size() const noexcept` | MS4 |
 
-Internal definition of `Shard` struct, containing `std::mutex` + `std::shared_mutex`.
+### `ConcurrentCache<K, V, Hash>` — MS5 (Sharded Locking)
 
-Member variables:
+| Method | Signature |
+|------|------|
+| Constructor | `explicit ConcurrentCache(std::size_t shard_count = 16)` |
+| Get | `std::optional<V> get(const K&) const` |
+| Put | `void put(K key, V value)` |
+| Erase | `bool erase(const K&)` |
+| Size | `std::size_t size() const noexcept` |
 
-| Type | Member | Semantics |
-|------|--------|-----------|
-| `std::vector<Shard>` | `shards_` | Shard array, default 16 shards |
-| `size_t` | `num_shards_` | Used for hashing key to shard |
+### `sync_practice` — MS6 (Three free functions, each using a C++20 primitive)
 
-Interface:
+| Function | Primitive used | Why this one? |
+|------|----------|-----------|
+| `fork_join_sum(n, task)` | `std::latch` | One-time "wait for N tasks to finish" (countdown to 0) |
+| `two_phase_sum(n, val)` | `std::barrier` | Multi-phase, synchronization between phases (reusable) |
+| `measure_max_concurrency(n, max)` | `std::counting_semaphore` | Counting semaphore for "allow N concurrent" operations |
 
-| Method | Signature | Description | Milestone |
-|------|------|------|-----------|
-| Constructor | `ShardedCache(size_t num_shards = 16)` | Set shard count | MS5 |
-| put | `void put(K key, V value)` | Write key-value pair (exclusive lock) | MS5 |
-| get | `std::optional<V> get(K key)` | Query value (shared lock) | MS5 |
-| erase | `void erase(K key)` | Delete key | MS5 |
-| size | `size_t size()` | Total entry count | MS5 |
+Next, we break it down by milestone.
 
-## Milestone 1: Fixed-Capacity Blocking Queue
+## Milestone 1: Blocking push / pop
 
 ### Goal
 
-Implement the `push` and `pop` methods for `BoundedQueue`—fixed capacity, blocking writes, blocking reads. For this milestone, ignore shutdown semantics and timeouts; focus only on the basic `mutex` + `condition_variable` collaboration.
+Implement `push` (blocks waiting for space when the queue is full) and `pop` (blocks waiting for data when the queue is empty). Let's get "passing data between threads via a queue" working first; closing and timeouts come later.
 
-### Why
+### Why start here
 
-The blocking queue is the most classic synchronization component in concurrent programming and the most intuitive application scenario for `mutex` and `condition_variable`. It turns the abstract "producer-consumer" model into a concrete, testable data structure. All subsequent milestones add features on top of this foundation—shutdown, timeouts, backpressure—so we need to get it right first.
+This is the most basic form of the mutex + condition_variable combo. All subsequent milestones (waking on close, timed waits) add branches to this structure, so we need to get the skeleton right here.
 
 ### Implementation Guide
 
-The core data structure is simple: a `std::deque`, a `std::mutex`, two `std::condition_variable`s (one `cv_not_full` for producers, one `cv_not_empty` for consumers), and a capacity limit.
+The core is a fixed-capacity circular buffer (or just `std::queue<T>`) + one `mutex` + two `condition_variable`s (`not_full_` for producers, `not_empty_` for consumers). Two design points:
 
-The logic for `push` is: lock → check if queue is full → if full, `wait` on `cv_not_full` → push element into queue → `notify_one` to wake a consumer. `pop` is the mirror operation: lock → check if queue is empty → if empty, `wait` on `cv_not_empty` → pop element → `notify_one` to wake a producer.
+**First, waiting must use a predicate; do not use bare `wait()`.** The producer needs to "wait until there is space":
 
-There are several places here where you must use predicated waiting. The wait in `push` cannot be written as `cv_not_full.wait(lock)`, it must be `cv_not_full.wait(lock, [this]{ return size() < capacity_ || closed_; })`. Why? Because `condition_variable` has two annoying characteristics—spurious wakeups (waking up without a `notify`) and lost wakeups (`notify` happening before `wait`). Predicated waiting solves both problems simultaneously: every time it wakes up (whether real or spurious), it rechecks the condition; if the condition isn't met, it continues to wait.
+```cpp
+std::unique_lock lock(m_);
+not_full_.wait(lock, [this] { return queue_.size() < capacity_; });  // ← 谓词
+queue_.push(std::move(value));
+not_empty_.notify_one();
+```
 
-Pitfall warning: If you use `notify_one` instead of `notify_all`, ensure the awakened thread can actually proceed. In our scenario, one `push` operation releases at most one consumer (queue transitions from not empty to empty), so `notify_one` is correct. However, if you change to batch operations somewhere (like `push_all`), you might need `notify_all`.
+That lambda predicate is critical. If we write `not_full_.wait(lock)` (without a predicate), we fall victim to **spurious wakeups** and **lost wakeups**: the OS allows `wait` to return for no apparent reason (spurious wakeup), or a notify might occur before we enter wait (lost wakeup). In both cases, we would proceed when "there is actually no space," overflowing the queue. The predicate wait **re-checks the condition** upon return, plugging both of these holes.
+
+**Second, `notify_one` or `notify_all`?** For the MS1 single-producer, single-consumer scenario, `notify_one` is sufficient (it only wakes one waiter). However, for MS2's `close`, we must use `notify_all` (to wake all blocked consumers so they can exit). We use `notify_one` for now and will change it in MS2.
+
+> **Pitfall Warning**: Never `notify` while holding the lock — not because it's wrong, but because "unlock then notify" avoids the unnecessary context switch of "the woken thread immediately fails to contend for the lock and goes back to sleep." However, the standard pattern for predicate wait (still holding lock when `wait` returns, releasing lock when the function returns and the lock destructs) already implies the correct order. Don't gild the lily by manually unlocking before notifying and then re-locking.
 
 ### Verification
 
-```cpp
-// Test basic push/pop
-BoundedQueue<int> q(2);
-q.push(1);
-q.push(2);
-REQUIRE(q.size() == 2);
-REQUIRE(q.pop() == 1);
-REQUIRE(q.pop() == 2);
-```
+> **Don't be fooled by the tests**: `test_milestone1` checks "can push/pop, FIFO, blocking behavior, and multi-producer integrity without loss or duplication" — **it checks behavior, not whether you used a predicate wait**. You could completely get away with using a bare `wait()` (no predicate) and pass the tests (by luck, not triggering spurious wakeups). But that is a ticking time bomb: it will inevitably crash under high concurrency or specific scheduling. **The real acceptance criteria: `push`/`pop` waiting must use predicate wait (`cv.wait(lock, predicate)`), with no bare `wait()`.** Run the MS4 stress tests with TSan; a bare wait will eventually expose itself via a data race or out-of-bounds access.
 
-## Milestone 2: Shutdown Semantics
+[`test/test_milestone1.cpp`](../../../../code/volumn_codes/vol5-labs/templates/lab1_bounded_queue/test/test_milestone1.cpp) covers four scenarios: single push/pop, FIFO, pop blocks until push, and concurrent multi-producer without loss or duplication.
+
+## Milestone 2: close Semantics
 
 ### Goal
 
-Add the `close` method to `BoundedQueue`. After closing, no more `push` operations are allowed (returns `false`), but existing elements in the queue can still be `pop`ped (draining remaining data). `pop` returns `nullopt` when the queue is empty and closed. All currently blocking `push` and `pop` operations must be woken up.
+Implement `close()`: wake up all currently blocked push/pop operations; after close, push throws an exception, and pop returns `nullopt` after remaining elements are consumed.
 
 ### Why
 
-A blocking queue without shutdown semantics is a ticking time bomb. Consider a typical producer-consumer scenario: the producer thread has finished (file read complete, data generation done), but the consumer is still blocked on `cv_not_empty`—waiting for data that will never arrive. The program hangs indefinitely. `close` is the tool to tell the consumer "no more data, you can go now." It is not just an API method, but a critical link in the lifecycle management of the entire concurrent component—the thread pool shutdown in Lab 3 and the Channel close in Lab 5 follow this same pattern.
+The MS1 queue has no way to "end" — the consumer `while (auto v = q.pop())` would wait forever. Real-world producer-consumer systems must have a "production finished" signal for the consumer to exit. `close()` is this signal: it causes `pop` to return `nullopt` once the queue is exhausted, allowing the consumer loop to terminate naturally.
 
 ### Implementation Guide
 
-The implementation idea for `close` is: lock → set `closed_` to true → `notify_all` to wake all waiting producers and consumers. The key is adding the `closed_` check to the wait loops in `push` and `pop`.
+Inside `close`, we need to: acquire the lock, set `closed_ = true`, **`notify_all()` on both condition variables** (to wake all blocked producers and consumers). Then, the predicates for both push and pop must include the `closed_` condition:
 
-The wait in `push` becomes: `cv_not_full.wait(lock, [this]{ return size() < capacity_ || closed_; })`. After waking, check `closed_` first; if closed, return `false` immediately without pushing data. The wait in `pop` becomes: `cv_not_empty.wait(lock, [this]{ return size() > 0 || closed_; })`. After waking, if the queue is empty AND `closed_`, return `nullopt`; if the queue is not empty (possibly closed but with data), pop the element normally.
+```cpp
+// push: 既等"有空位"，也要在 close 时立刻失败（抛）
+not_full_.wait(lock, [this] { return queue_.size() < capacity_ || closed_; });
+if (closed_) throw std::runtime_error("push on closed queue");
+// ...
 
-There is a subtle detail easy to overlook: `push` returns `false` after checking `closed_`, which means the element was not inserted. However, if you happen to have a `pop` waiting on `cv_not_empty` before `close`, `notify_all` will wake it. It checks `closed_` and returns `nullopt`. This behavior is reasonable—the caller knows the queue is closed and won't try again.
+// pop: 既等"有数据"，close 后队列空了也要立刻返回 nullopt
+not_empty_.wait(lock, [this] { return !queue_.empty() || closed_; });
+if (queue_.empty()) return std::nullopt;   // 一定是 closed_ && 空
+// ...
+```
 
-Pitfall warning: `close` must use `notify_all` instead of `notify_one`. Because `close` is a "global event"—all waiting threads need to know the state changed. Using `notify_one` might only wake one thread, leaving others blocked.
+**Crucial:** `close` **must** call `notify_all` (not `notify_one`). Since multiple consumers might be blocked in `pop`, we need to wake them all up—`notify_one` only wakes one, leaving the rest stuck forever (deadlock).
+
+> **Gotcha Warning**: The post-`close` `pop` semantics are "drain remaining → nullopt", not "immediately nullopt". Consumers must still be able to retrieve elements enqueued before the close. Therefore, the `pop` predicate is `!queue_.empty() || closed_`—prioritize satisfying data retrieval first, and only check `closed_` when empty.
 
 ### Verification
 
-```cpp
-BoundedQueue<int> q(2);
-q.close();
-REQUIRE(q.is_closed() == true);
-REQUIRE(q.push(1) == false); // push rejected
-REQUIRE(q.pop() == std::nullopt); // pop returns nullopt
-```
+> **Don't be fooled by the test**: `test_milestone2` checks that push throws after close, pop drains and returns nullopt, and close wakes consumers to exit. However, it **does not verify that close actually wakes *all* blocked waiters**—if you slip up and write `notify_one`, the test still passes because it only uses one consumer. **The real acceptance criteria: use `notify_all()` for both condition variables in `close()`.** Multi-consumer scenarios in the MS4 stress tests will expose the deadlock caused by `notify_one`.
 
-## Milestone 3: Timeout Waiting
+## Milestone 3: Timeout try_push_for / try_pop_for
 
 ### Goal
 
-Implement `try_push_for` and `try_pop_for` to support waiting with a timeout. If the queue state doesn't change within the specified time, return failure instead of waiting indefinitely.
+Add timeout versions for push/pop: give up if the wait times out, return failure (push returns `false`, pop returns `nullopt`), without throwing or blocking indefinitely.
 
 ### Why
 
-In real systems, waiting indefinitely is dangerous—if the consumer suddenly slows down (e.g., downstream service timeout), the producer might get stuck on `push` with a whole group of threads. Timeout waiting gives the caller a chance to adopt other strategies if the wait takes too long: retry, drop, log an alert, or degrade. The backpressure strategy in Milestone 4 will use timeout waiting directly.
+Blocking versions could wait forever—a breeding ground for deadlocks (e.g., producer and consumer waiting on each other). Timeout versions provide an "exit strategy" to give up and continue, used in real-world systems for health checks, graceful degradation, and avoiding permanent blocking.
 
 ### Implementation Guide
 
-The difference between `try_push_for` and `push` is simply swapping `wait` for `wait_for`. `wait_for` checks the predicate when it times out or is woken up; if the predicate isn't met and it has timed out, it returns `false`.
-
-Pseudocode is as follows:
+Use `condition_variable::wait_for(lock, timeout, predicate)`. Just like in MS1, a **predicate is mandatory**—`wait_for` is also subject to spurious wakeups; without a predicate, you might return incorrectly before the timeout expires. The return value indicates whether it returned "because the predicate was satisfied" (`true`) or "due to timeout" (`false`):
 
 ```cpp
-bool try_push_for(T value, std::chrono::milliseconds timeout) {
-    std::unique_lock lock(mutex_);
-    // Wait for queue not full or closed, but respect timeout
-    if (!cv_not_full_.wait_for(lock, timeout, [this] {
-        return size() < capacity_ || closed_;
-    })) {
-        return false; // Timeout
-    }
-    if (closed_) return false;
-    queue_.push_back(std::move(value));
-    cv_not_empty_.notify_one();
+bool try_push_for(T value, std::chrono::nanoseconds timeout) {
+    std::unique_lock lock(m_);
+    bool ok = not_full_.wait_for(lock, timeout,
+        [this] { return queue_.size() < capacity_ || closed_; });
+    if (!ok || closed_) return false;   // 超时或已关闭
+    queue_.push(std::move(value));
+    not_empty_.notify_one();
     return true;
 }
 ```
 
-Pitfall warning: `wait_for` returning `false` doesn't necessarily mean a timeout occurred—it could also mean it was woken up but the predicate still isn't satisfied. You need to distinguish between "timed out" and "woken by spurious wakeup but condition not met." Actually, when using the predicate version of `wait_for`, the return value indicates "whether the predicate was satisfied"—`true` means satisfied, `false` means not satisfied (could be timeout or other reasons). In your logic, if it returns `false`, it means the operation failed within the timeout period.
+Note that `wait_for` returning `false` does not mean closed—it only means a timeout. Therefore, we must still check `closed_` separately afterwards.
 
 ### Verification
 
-```cpp
-BoundedQueue<int> q(1);
-q.push(1); // Queue is now full
-// Try push with short timeout, should fail
-REQUIRE(q.try_push_for(2, std::chrono::milliseconds(10)) == false);
-```
+> **Don't be fooled by the tests**: `test_milestone3` checks the timeout return value and timing, but **it does not verify whether your `wait_for` includes a predicate**. A bare `wait_for(lock, timeout)` (without a predicate) might return early upon spurious wakeups before the time is up, but the test's time assertion has a 10ms tolerance, so it might slip through. **The real acceptance criteria: `wait_for` takes a predicate, and after it returns, we use the return value + `closed_` for a dual check.**
 
-## Milestone 4: Backpressure Strategy
+## Milestone 4: Backpressure and Concurrency Stress
 
 ### Goal
 
-Implement two backpressure strategies based on `BoundedQueue`: **Blocking Wait** (already implemented) and **Caller-Runs**. Write a producer-consumer pipeline to compare the behavior of these two strategies under different production/consumption speed ratios.
+Run a real MPMC (Multi-Producer Multi-Consumer) stress test with a small-capacity queue to verify that capacity limits are effective, no data is lost or duplicated, and TSan is clean.
 
 ### Why
 
-Backpressure is a core engineering problem in concurrent systems. When producers are faster than consumers, without a backpressure mechanism, the queue will grow indefinitely (if unbounded) or producers will block (if bounded). Blocking is the simplest backpressure, but it occupies a thread—if all producers block, the system deadlocks. The caller-runs strategy is an alternative: when the queue is full, instead of blocking the producer, let the producer execute the consumer's work itself—reducing queue pressure without wasting threads.
+The first three milestones were about "point correctness," whereas MS4 is about "system correctness"—when multiple producers and consumers are truly concurrent, will your locks, condition variables, and predicates reveal flaws under pressure? This is the hard threshold for a BoundedBlockingQueue to be "usable."
 
 ### Implementation Guide
 
-The blocking strategy is already implemented in Milestone 1. The core idea of the caller-runs strategy is: if the queue is full, don't call `push`, but execute the consumer logic directly on the current thread (producer thread).
+You basically don't need to add new code—the implementation from MS1-3 should be sufficient. The focus here is **understanding capacity limits**: `capacity_` is a hard upper limit. Producers **must block** when the queue is full (backpressure), rather than expanding indefinitely. If your `push` doesn't block and you change it to dynamic resizing, it's no longer a "bounded" queue—the test's `size()` assertions and the backpressure semantics of MS4 will fail.
 
-Pseudocode:
-
-```cpp
-void caller_runs_push(BoundedQueue<Task>& q, Task t) {
-    if (!q.try_push_for(t, std::chrono::milliseconds(0))) {
-        // Queue full, run directly
-        t.execute();
-    }
-}
-```
-
-You need to write a simple benchmark to compare the two strategies: fix the production rate (e.g., 1000 tasks per second), make the consumer processing speed adjustable (simulated by `std::this_thread::sleep_for`), and observe how queue length and throughput change under different speed ratios. Don't aim for precise numbers; the focus is on using data to illustrate the applicable scenarios for each strategy.
+Before running the tests, clarify the exit sequence for multiple consumers: all producers finish pushing → main thread calls `close()` → consumers' `while (auto v = q.pop())` loops exit after consuming remaining items and receiving `nullopt`. This chain relies on the `notify_all` + `nullopt` semantics from MS2, which couldn't be tested with the single consumer in MS1.
 
 ### Verification
 
-```cpp
-// Simple test: verify caller-runs doesn't block
-BoundedQueue<int> q(1);
-q.push(0); // Fill queue
-bool executed = false;
-auto task = [&]() { executed = true; };
-caller_runs_push(q, task); // Should run immediately
-REQUIRE(executed == true);
-```
+> **Don't be fooled by the tests**: The MPMC stress test in `test_milestone4` checks "no loss/duplication + size tracking". If you secretly change the queue to unbounded (where `push` never blocks), the "no loss/duplication" property still holds and the test passes—but you lose backpressure capability, and Lab 3's ThreadPool will cause an OOM (Out Of Memory) when using it. **The real acceptance criteria: queue size is always ≤ capacity (`push` actually blocks when full), and multiple consumers exit via MS2's close mechanism.** This stress test must be race-free under TSan.
 
-## Milestone 5: Sharded Lock Cache
+## Milestone 5: ConcurrentCache (Sharded Locking)
 
 ### Goal
 
-Implement `ShardedCache` using sharded locking to reduce lock contention. Compare the throughput of a single-lock cache and observe the impact of shard count on performance.
+Implement a sharded locking concurrent cache: keys are hashed into `shard_count` shards, where each shard holds its own independent mutex, allowing different shards to operate in parallel.
 
 ### Why
 
-`BoundedQueue` uses a single `mutex` to protect the entire queue—in high-concurrency multi-threaded scenarios, this lock can become a bottleneck. Sharded locking is a common optimization strategy: split data into N shards, each with its own lock. Different shards can be accessed in parallel. A hash function determines which shard a key belongs to, and only that shard is locked during operation. This way, operations on different keys no longer compete for the same lock. ch02-04 discussed read-write separation with `std::shared_mutex`; here we can go further by using `std::shared_mutex` to implement read-write sharding—read operations use shared locks, write operations use exclusive locks.
+This is a classic trade-off between "coarse-grained locking" and "fine-grained locking." The naive approach uses a single lock for the entire cache—all threads access serially, and throughput is choked by lock contention. After sharding, different keys land in different shards, allowing reads and writes to truly parallelize, increasing throughput linearly with the shard count (until hitting other bottlenecks).
 
 ### Implementation Guide
 
-The core data structure of `ShardedCache` is `std::vector<Shard>`, where each `Shard` contains a `std::unordered_map` and a `std::shared_mutex`. `put` and `erase` operations first calculate the hash of the key, then modulo the shard count to get the target shard, then lock that shard for operation.
-
-Pseudocode for `put`:
+Internally use `std::vector<Shard>`, where each Shard holds its own `mutex` + `unordered_map`. To locate a shard: `shard_idx = hash(key) % shard_count` (if `shard_count` is a power of two, you can use `& (shard_count - 1)` bitwise operation for speed). A `shard_count` of 16 is recommended (sufficiently dispersed, manageable overhead).
 
 ```cpp
-void put(K key, V value) {
-    size_t shard_index = std::hash<K>{}(key) % num_shards_;
-    auto& shard = shards_[shard_index];
-    std::unique_lock lock(shard.mutex); // Exclusive lock
-    shard.map[key] = value;
-}
+template <typename K, typename V, typename Hash = std::hash<K>>
+class ConcurrentCache {
+    struct Shard {
+        mutable std::mutex m;
+        std::unordered_map<K, V> map;
+    };
+    std::vector<Shard> shards_;
+    Hash hash_{};
+    // get/put/erase: hash(key) % shards_.size() 定位 shard, 只锁那一个
+};
 ```
 
-Pseudocode for `get`:
-
-```cpp
-std::optional<V> get(K key) {
-    size_t shard_index = std::hash<K>{}(key) % num_shards_;
-    auto& shard = shards_[shard_index];
-    std::shared_lock lock(shard.mutex); // Shared lock
-    auto it = shard.map.find(key);
-    if (it != shard.map.end()) return it->second;
-    return std::nullopt;
-}
-```
-
-The shard count is usually chosen as a power of two (16, 32, 64) for efficient modulo via bit operations. Too few (e.g., 1) degenerates to a single lock; too many (e.g., 1024) wastes memory. 16 is a good starting point.
+> **About `mutable`**: `get` is a `const` method (it logically does not modify the cache), but it needs to acquire a lock (locking modifies the mutex state). Therefore, the shard's mutex is `mutable`—it can be modified even within `const` methods. This is the standard pattern for combining `const` with concurrency, not a hack.
 
 ### Verification
 
-```cpp
-ShardedCache<std::string, int> cache(16);
-cache.put("key1", 100);
-REQUIRE(cache.get("key1") == 100);
-cache.erase("key1");
-REQUIRE(cache.get("key1") == std::nullopt);
-```
+> **Don't be fooled by the tests**: `test_milestone5` checks that concurrent `put` operations do not lose data, `get` returns correct values, and `size` is accurate. **However, it does not verify if you actually implemented sharding**—you could pass all tests with a "single global lock" (the results would be equally correct). The difference lies only in throughput: a single lock is significantly slower under high concurrency. **The real acceptance criteria: the internals must use multiple shards, each with an independent mutex, so that accesses to different keys lock different shards.** You can write a micro-benchmark yourself (single lock vs. sharding) to compare throughput and experience the difference—this is the whole point of MS5.
 
 ## Milestone 6: C++20 Synchronization Primitives Practice
 
-### Goal
+### Objective
 
-Use `latch`, `barrier`, and `semaphore` to implement three classic concurrency patterns: fork-join, phased parallel processing, and resource pooling.
+Implement a classic concurrency pattern using each of the following: `std::latch`, `std::barrier`, and `std::counting_semaphore` (specifically `fork_join_sum`, `two_phase_sum`, and `measure_max_concurrency`).
 
 ### Why
 
-ch02-05 introduced the APIs for these three C++20 synchronization primitives, but using them in real scenarios cements understanding better than just reading the API. Each primitive solves a specific class of synchronization problems—`latch` solves "wait for a set of tasks to complete," `barrier` solves "multi-phase synchronization," and `semaphore` solves "limiting concurrent access count." In actual engineering, they are more concise and less error-prone than hand-rolled `mutex` + `condition_variable` combinations.
+Chapters 02-05 covered the concepts of these three primitives, but there is a big gap between "knowing" and "choosing the right one". The core of this milestone is not writing a lot of code, but **judging "which primitive fits this scenario"**—each function corresponds to a typical use case, so think clearly about *why* it is the correct choice while implementing.
 
 ### Implementation Guide
 
-**Fork-Join Pattern** (`latch`): The main thread dispatches N tasks to a thread pool and uses a latch to wait for all to complete before aggregating results.
+**`fork_join_sum` (latch)**: Dispatch N tasks to threads; the main thread must wait for all to complete. Initialize `std::latch` with N, call `count_down()` when each task finishes, and have the main thread call `wait()`. Why a latch and not a barrier? Because this is a one-time "wait for N completions" (countdown to 0), whereas a barrier is for reusable phase synchronization.
 
-```cpp
-std::latch done(10);
-for (int i = 0; i < 10; ++i) {
-    threads.emplace_back([&done, i] {
-        do_work(i);
-        done.count_down();
-    });
-}
-done.wait(); // Main thread waits
-```
+**`two_phase_sum` (barrier)**: Multiple workers perform phase 1 independently (writing their own contributions), synchronize at a barrier (no one enters phase 2 until all finish phase 1), and then aggregate. `std::barrier` allows specifying a completion function (executed by the last arriving thread), which fits "aggregation between phases". Why not a latch? Because there might be multiple rounds (barrier is reusable), and we need to perform actions at the phase boundary.
 
-**Phased Parallel Processing** (`barrier`): Multi-round map-reduce, where a barrier synchronizes at the end of each round, ensuring the output of the previous phase is the input to the next.
+**`measure_max_concurrency` (semaphore)**: N threads want to enter a critical section, but at most `max_concurrent` are allowed. Initialize `std::counting_semaphore<max>` with `max`; each thread calls `acquire()` to enter and `release()` to exit, using an atomic variable to record the peak count inside. Why a semaphore? Because this is the classic scenario of "allowing N concurrent access", which is wrong for both latch and barrier.
 
-```cpp
-std::barrier sync_point(4); // 4 threads
-for (int round = 0; round < 5; ++round) {
-    map_phase();
-    sync_point.arrive_and_wait();
-    reduce_phase();
-    sync_point.arrive_and_wait();
-}
-```
-
-**Resource Pool** (`semaphore`): Simulate a database connection pool with a max of 5 connections, competed for by multiple threads.
-
-```cpp
-std::counting_semaphore<5> pool(5);
-void access_db() {
-    pool.acquire();
-    // use connection
-    pool.release();
-}
-```
-
-Pitfall warning: The callback function for `barrier` must be `noexcept`. If your callback throws an exception, compilation will fail. `semaphore`'s acquire/release do not need to be on the same thread—a producer can release and a consumer can acquire, unlike `mutex` lock/unlock which must be on the same thread.
+> **Pitfall Warning**: The template parameter of `counting_semaphore` is the maximum value, while the constructor parameter is the initial value. `std::counting_semaphore<4>` + constructor `(4)` means an initial count of 4 permits and a maximum of 4. In `measure_max_concurrency`, observing the peak value requires `compare_exchange` on the `atomic`; don't use a plain `int++` (multiple threads writing to the same variable is a data race).
 
 ### Verification
 
-```cpp
-// Latch test
-std::latch work_done(3);
-std::atomic<int> counter{0};
-auto job = [&] { counter++; work_done.count_down(); };
-std::thread t1(job);
-std::thread t2(job);
-std::thread t3(job);
-work_done.wait();
-REQUIRE(counter == 3);
-```
+> **Don't be fooled by the tests**: `test_milestone6` checks the return values of the three functions (the sum of `fork_join_sum`, the product of `two_phase_sum`, the limit of `max_concurrency`). **But it doesn't verify if you actually used the corresponding primitives**—you could completely simulate the same results with mutexes (e.g., `fork_join` using a mutex + atomic counter to mimic a latch). **The real acceptance criteria: the three functions must genuinely use `std::latch` / `std::barrier` / `std::counting_semaphore`**, not hand-rolled equivalents. Appreciate that "the standard library gives you the right tools; don't reinvent the wheel".
 
-## Self-Check List
+## Self-Checklist
 
-- [ ] Milestone 1: `push` and `pop` use predicated waiting, no spurious wakeups or lost wakeups
-- [ ] Milestone 2: Cannot `push` after `close`, existing data can be `pop`ed, blocking threads are woken
-- [ ] Milestone 3: `try_push_for` and `try_pop_for` return correctly after timeout
-- [ ] Milestone 4: Behavior of both backpressure strategies matches expectations, with simple performance comparison data
-- [ ] Milestone 5: Sharded cache data is correct under multi-threaded stress test, TSan reports no data race
-- [ ] Milestone 6: Usage scenarios for `latch`, `barrier`, and `semaphore` are correct, tests pass
-- [ ] All tests pass with no data race reports under TSan
-- [ ] Can explain when to use `notify_one` vs `notify_all`
-- [ ] Can explain why `close` must use `notify_all`
-- [ ] Can explain the performance benefits and costs of sharded locking vs single locking (extra memory, hash calculation overhead)
-- [ ] Can verbally describe how `BoundedQueue` will be reused in the Lab 3 thread pool
+Confirm each item before submission:
+
+- [ ] MS1 tests pass — push/pop, FIFO, blocking behavior, multi-producer correctness (no loss or duplication)
+- [ ] MS2 tests pass — push throws after close, pop returns `nullopt` after consuming remaining items, close wakes consumers
+- [ ] MS3 tests pass — timeout return values and timing are correct
+- [ ] MS4 tests pass — MPMC stress test (no loss or duplication), `size` tracks capacity
+- [ ] MS5 tests pass — concurrent `put` does not lose data, `get` is correct, `size` is accurate
+- [ ] MS6 tests pass — results of the three synchronization primitive functions are correct
+- [ ] **MS1 Real Acceptance**: `push`/`pop` waiting uses predicate wait (`cv.wait(lock, predicate)`), no bare `wait()`
+- [ ] **MS2 Real Acceptance**: `close()` calls `notify_all()` on both condition variables (not `notify_one`)
+- [ ] **MS4 Real Acceptance**: Queue size is always ≤ capacity (backpressure works), relying on `close` to signal multiple consumers to exit
+- [ ] **MS5 Real Acceptance**: Internals use multiple shards, each holding an independent mutex (not a single global lock)
+- [ ] **MS6 Real Acceptance**: The three functions genuinely use `std::latch` / `std::barrier` / `std::counting_semaphore`
+- [ ] **All tests pass under TSan with no data race reports** (run directly on Debug build)
+- [ ] Can explain why predicate wait prevents both spurious wakeups and lost wakeups
+- [ ] Can explain the semantics of "consume remaining then return nullopt" for `pop` after `close` (as opposed to immediately returning `nullopt`)
+- [ ] Can explain the throughput advantage of sharded locks vs. a single lock, and the trade-offs in choosing `shard_count`
+
+## Extensions (Bonus)
+
+- Add `try_push`/`try_pop` to `BoundedBlockingQueue` (non-blocking versions, returning success/failure immediately)
+- Use `std::shared_mutex` to create a read-write lock version of `ConcurrentCache` (better than sharded mutexes for read-heavy workloads), and compare throughput
+- Implement "strict == max" verification for `measure_max_concurrency` (requires enough callers + synchronized start)
+
+## References
+
+- [`std::condition_variable` — cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable)
+- [`std::condition_variable::wait` predicate overload — cppreference](https://en.cppreference.com/w/cpp/thread/condition_variable/wait)
+- [`std::latch` / `std::barrier` / `std::counting_semaphore — cppreference`](https://en.cppreference.com/w/cpp/thread)
+- [ThreadSanitizer — Clang documentation](https://clang.llvm.org/docs/ThreadSanitizer.html)

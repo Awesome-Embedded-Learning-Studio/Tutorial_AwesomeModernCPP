@@ -19,7 +19,7 @@ tags:
 - cpp-modern
 - intermediate
 - 基础
-title: '<cmath>：数学函数、浮点分类与精度陷阱'
+title: 'cmath：数学函数、浮点分类与精度陷阱'
 ---
 
 # `<cmath>`：数学函数、浮点分类与精度陷阱
@@ -124,6 +124,15 @@ int main()
 NaN == NaN?   false
 NaN != NaN?   true
 ```
+
+想跑一遍看 NaN 的坑？点开下面这个在线示例：
+
+<OnlineCompilerDemo
+  title="NaN 不等于自己：浮点比较的经典坑"
+  source-path="code/examples/vol3/59_cmath_nan.cpp"
+  description="NaN == NaN 是 false、NaN != NaN 反而 true——IEEE 754 规定 NaN 与任何值比较都返回 false，判 NaN 只能用 std::isnan"
+  allow-run
+/>
 
 `NaN == NaN` 是 `false`，`NaN != NaN` 反而是 `true`。这是 IEEE 754 在标准层面定死的语义：`NaN` 代表「没有意义的运算结果」（`0/0`、`sqrt(-1)`、`inf - inf`），「相等」对它没有定义，所以一律判不等。这就直接带来了一个写法陷阱——**想判 `NaN` 永远只能用 `std::isnan`，绝不能用 `==`**：
 

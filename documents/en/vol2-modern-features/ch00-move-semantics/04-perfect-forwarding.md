@@ -514,9 +514,9 @@ This set of output perfectly confirms the reference collapsing rules: when an lv
 Run the reference collapsing example online to verify the type deduction rules of universal references:
 
 <OnlineCompilerDemo
-  title="完美转发：万能引用与引用折叠"
+  title="Perfect Forwarding: Universal References and Reference Collapsing"
   source-path="code/examples/vol2/04_perfect_forwarding.cpp"
-  description="在线运行并观察传入左值和右值时模板参数 T 的推导结果。"
+  description="Run online and observe how the template parameter T is deduced when passing an lvalue vs an rvalue."
   allow-run
 />
 

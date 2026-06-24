@@ -123,6 +123,15 @@ $ grep -c "current" constexpr.s
 
 `current` 在汇编里一次都没出现——它被编译器在编译期完全求值、折叠成常量了。传 `source_location` 参数的开销，和传几个 `int` / `string_view` 一样，没有额外的运行时调用。这就是「零开销」的实证含义：不是「开销很小」，是「在 `-O2` 下根本不存在」。
 
+想自己看 `current` 被编译期折叠掉？点开下面这个在线示例看汇编（`allow-x86-asm`），会发现 `current` 一次都没调用——位置被编译期「焊」进常量：
+
+<OnlineCompilerDemo
+  title="source_location 的零开销：current 在汇编里消失"
+  source-path="code/examples/vol3/68_source_location.cpp"
+  description="static_assert 证明 current() 编译期求值；看 x86-64 汇编会发现 current 一次都没调用——位置被编译期焊进常量，运行时零开销"
+  allow-x86-asm
+/>
+
 ## 默认参数注入：最常用的模式
 
 `source_location` 真正的杀手锏，是「作函数默认参数，自动注入调用点」。这就是开头 `print_loc` 里那个写法：

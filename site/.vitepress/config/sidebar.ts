@@ -6,13 +6,19 @@ type SidebarItem = DefaultTheme.SidebarItem
 
 const DOCS_ROOT = join(import.meta.dirname, '../../../documents')
 
+// 侧边栏标题经 v-html 渲染（见 VPSidebarItem.vue），裸的 < > 会被浏览器当成 HTML
+// 标签吃掉（例如标题 `<numeric>：...` 的左侧会凭空消失）。先转义，v-html 再还原成字面量。
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 function extractTitle(filePath: string): string | null {
   try {
     const content = readFileSync(filePath, 'utf-8')
     const fmMatch = content.match(/^---[\s\S]*?^title:\s*['"]?(.+?)['"]?\s*$/m)
-    if (fmMatch) return fmMatch[1]
+    if (fmMatch) return escapeHtml(fmMatch[1])
     const h1 = content.match(/^#\s+(.+)$/m)
-    if (h1) return h1[1].replace(/\{.*?\}/g, '').trim()
+    if (h1) return escapeHtml(h1[1].replace(/\{.*?\}/g, '').trim())
   } catch { /* ignore */ }
   return null
 }

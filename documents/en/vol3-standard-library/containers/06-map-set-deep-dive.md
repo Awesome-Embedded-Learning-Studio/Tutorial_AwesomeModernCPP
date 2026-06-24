@@ -5,9 +5,10 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 'Deep dive into `std::map` and `set` via their red-black tree implementation:
-  O(log n) complexity and stable iterators, heterogeneous lookup with C++14 transparent
-  comparators, and the only correct way to change keys using C++17 node handles (`extract`/`merge`).'
+description: 'Deep dive into the underlying implementation of Red-Black Trees: `std::map`
+  and `set` with O(log n) complexity and stable iterators, heterogeneous lookup with
+  C++14 transparent comparators, and the only correct way to modify keys using C++17
+  node handles (`extract`/`merge`).'
 difficulty: intermediate
 order: 6
 platform: host
@@ -27,7 +28,7 @@ title: 'Deep Dive into map and set: Red-Black Trees, Heterogeneous Lookup, and N
 translation:
   source: documents/vol3-standard-library/containers/06-map-set-deep-dive.md
   source_hash: 2a8c7d7f183542ad3514ba8de981bf4081655fa1bc3db3ce1ae08e4147f09ba4
-  translated_at: '2026-06-16T06:11:25.804151+00:00'
+  translated_at: '2026-06-24T00:36:01.891773+00:00'
   engine: anthropic
   token_count: 2715
 ---
@@ -35,9 +36,9 @@ translation:
 
 ## Family Portrait: map, set, and Their Siblings
 
-We use `std::map` and `std::set` countless times, mostly for `insert`, `find`, and iteration, so they might seem unremarkable. But if we peel back a single layer, we find a red-black tree hiding underneath. Interestingly, the Standard never actually mandates a red-black tree—it just happens to be the unanimous choice of the three major standard library implementations. Furthermore, C++14 added heterogeneous lookup, and C++17 introduced node handles, allowing us to move nodes with zero-copy overhead and even modify keys that are supposed to be `const`. In this article, we will thoroughly cover map and set, from their underlying mechanics to modern usage patterns.
+We use `std::map` and `std::set` countless times. Usually, we just `insert`, `find`, and iterate, so they might seem unremarkable. But if you peel back a layer, you'll find a red-black tree hiding underneath. What's more, the Standard never actually mandates a red-black tree—it's just that the three major standard library implementations all converged on it. Not to mention, C++14 added heterogeneous lookup, and C++17 stuffed in node handles, allowing zero-copy moves and even letting you modify a key that is supposed to be const. In this article, we will clarify map and set from the bottom up to modern usage.
 
-First, let's meet the whole family. There are four siblings in the ordered associative container family, all growing from the same red-black tree:
+First, let's recognize the whole family. There are four siblings in the ordered associative container family, all growing on the same red-black tree:
 
 | Container | What it stores | Key Uniqueness |
 |------|--------|-----------|
@@ -46,27 +47,27 @@ First, let's meet the whole family. There are four siblings in the ordered assoc
 | `set` | key only | Unique |
 | `multiset` | key only | Duplicates allowed |
 
-The relationship between map and set is actually quite simple: a set is just a map that throws away the value and keeps only the key. The underlying node structure, balancing logic, and iterator rules are identical. Therefore, we will use map as the main thread for this discussion; everything that applies to map applies to set, with the only difference being that "set doesn't store a value."
+The relationship between map and set is actually quite simple: a set is just a map that threw away the value and kept only the key. The underlying node structure, balancing logic, and iterator rules are all identical. So, in this article, we will focus on map as the main thread; set has everything map has, with the only difference being "set doesn't store a value."
 
-As for distinguishing them from their neighbors, one sentence suffices: if you need "ordered + logarithmic lookup," use `map`/`set` (red-black tree); if you need "unordered + amortized constant lookup," use `unordered_map`/`unordered_set` (hash table); if you need "ordered + contiguous storage (cache-friendly)," look to C++23's `flat_map`. These three paths cover distinct use cases, and this article focuses exclusively on the red-black tree path.
+As for boundaries with neighbors, one sentence is enough: if you want "ordered + logarithmic lookup," use `map`/`set` (red-black tree); if you want "unordered + amortized constant lookup," use `unordered_map`/`unordered_set` (hash table); if you want "ordered + contiguous storage (cache-friendly)," go for C++23's `flat_map`. These three routes cover their respective domains; this article only covers the red-black tree path.
 
-## Hiding a Red-Black Tree: The Standard Doesn't Specify, But All Three Chose It
+## Hiding a Red-Black Tree: The Standard Doesn't Mandate It, But the Big Three Chose It
 
-The Standard's requirements for map are actually quite restrained: elements must be sorted by key, and lookup, insertion, and deletion must have logarithmic complexity, O(log n). As for what data structure you use to achieve this, the Standard is vague—roughly "balanced binary search tree," without specifying the specific type. The interesting part is this: libstdc++ (GCC), libc++ (Clang), and MSVC STL all ultimately chose the red-black tree.
+The Standard's requirements for map are actually quite restrained: elements are sorted by key, and lookup, insertion, and deletion all have logarithmic complexity O(log n). As for what data structure you use to achieve this, the Standard is vague—roughly "balanced binary search tree," but not specifying which kind. The interesting part is here: libstdc++ (GCC), libc++ (Clang), and MSVC STL all ultimately chose the red-black tree.
 
-Why a red-black tree and not the more "strictly balanced" AVL tree? The key is deletion. AVL trees require the height difference between left and right subtrees to be no more than 1. This strict balance means that during deletion, you might have to rotate all the way from the bottom to the top, making the number of rotations hard to control. Red-black trees are looser; they only guarantee that "the longest path is no more than twice the length of the shortest path." In exchange, insertion requires at most 2 rotations and deletion at most 3 rotations—having a clear upper bound on rotations is more cost-effective for maps with frequent modifications.
+Why a red-black tree and not the more "strictly balanced" AVL tree? The key is deletion. AVL trees require the height difference between left and right subtrees to be no more than one. The balance is tight, but the cost is that deletion might require rotations all the way from the bottom to the top, with an uncontrollable number of rotations. Red-black trees are looser; they only guarantee "the longest path is no more than twice the shortest path." In exchange, insertion requires at most two rotations, and deletion at most three—there is a clear upper bound on rotation counts, which is a better deal for maps with frequent additions and deletions.
 
-The rules of a red-black tree are few; let's quickly review them (no need to memorize, just understand how they guarantee O(log n)):
+The rules of red-black trees are few; let's quickly run through them (no need to memorize, just understand how they guarantee O(log n)):
 
-- Every node is either red or black.
-- The root node is black.
-- Nil leaves (empty sentinels) are black.
-- Children of red nodes must be black (no two reds can be adjacent).
-- The number of black nodes passed through from any node to all its leaf nodes is the same (this is called "black height").
+- Every node is either red or black
+- The root is black
+- Nil leaves (empty sentinels) are black
+- Children of a red node must be black (no two reds can be adjacent)
+- The number of black nodes passed from any node to all its leaf nodes is the same (this is called "black height")
 
-The combination of the last two rules means you can't have a path that is both long and entirely red, because reds can't be adjacent, and the black height must be consistent. Thus, the longest alternating red-black path is at most twice the length of the shortest all-black path—the tree height is suppressed to O(log n), so lookup is naturally O(log n).
+The last two rules combined result in this: you can't have a path that is both long and entirely red, because reds can't be adjacent, and the black height must be consistent. Thus, the longest alternating red-black path is at most twice the shortest all-black path—the tree height is suppressed to O(log n), so lookup is naturally O(log n).
 
-What does a node look like? Compared to a standard binary search tree, it just has one extra color bit and three pointers:
+What does a node look like? Compared to a normal binary search tree, it just has one extra color bit and three pointers:
 
 ```cpp
 // 红黑树节点的简化骨架（标准库内部实现，各厂细节不同，这里只看结构）
@@ -79,11 +80,11 @@ struct TreeNode {
 };
 ```
 
-That `parent` pointer deserves a closer look. Lookups in a standard binary search tree only go downwards, so they don't need to know about the parent node. However, red-black tree insertions and deletions require bottom-up adjustments to colors and rotations, which means we must be able to backtrack to the parent. This is why every node carries a `parent` pointer. This also explains why red-black tree nodes are "heavier" than standard linked list nodes—they are ternary (three-way). The structure of `set` here is completely isomorphic to `map`; the only difference is whether or not the node payload contains the `Value`. So, for all the mechanisms discussed next regarding `map`, you can simply remove the `Value` to get `set`.
+That `parent` pointer deserves a closer look. In a standard binary search tree, lookups only go down, so we don't need to know the parent. However, red-black trees require bottom-up adjustments during insertion and deletion—recoloring and rotating—so we must be able to backtrack to the parent. This is why every node carries a `parent` pointer. This also explains why red-black tree nodes are "heavier" than standard linked list nodes—they are ternary (three-way). `set` is isomorphic to `map` here; the only difference is whether the node payload contains that `Value`. So, for every mechanism we discuss about `map` next, just erase the `Value` and you have `set`.
 
-## Complexity and Iterator Invalidation: A Completely Different Set of Rules than `vector`
+## Complexity and Iterator Invalidation: A Completely Different Rulebook than `vector`
 
-Let's get the complexity calculations straight first. The height of a red-black tree is $O(\log n)$, so lookups, insertions, and deletions all involve traversing down the tree once, plus potential rotations (which are local $O(1)$ operations). The complexity of common operations is:
+Let's get the complexity calculations straight first. A red-black tree has a height of $O(\log n)$, so lookup, insertion, and deletion all traverse down the tree once, plus potential rotations (which are local $O(1)$ operations). Here is the complexity for common operations:
 
 | Operation | Complexity |
 |-----------|------------|
@@ -91,16 +92,16 @@ Let's get the complexity calculations straight first. The height of a red-black 
 | `insert` / `emplace` / `erase` | $O(\log n)$ |
 | Ordered traversal | $O(n)$ |
 
-What we really need to highlight here isn't the complexity—it's normal for red-black trees to be a bit slower—but rather **iterator invalidation**. The invalidation rules for `map` are completely different from those of `vector`, and this is actually a solid technical reason to choose `map` over `vector` in engineering.
+What specifically needs to be highlighted here isn't the complexity—it's normal for red-black trees to be a bit slower—but **iterator invalidation**. The invalidation rules for `map` are completely different from `vector`, and this is actually a solid technical reason to choose `map` over `vector` in engineering.
 
-As we discussed in the [article on `vector`](03-vector-deep-dive.md): once a reallocation occurs, all iterators, references, and pointers are invalidated because the underlying memory is contiguous and moved as a whole. `map` is different; its elements are stored in individual tree nodes:
+As we discussed in the [article on `vector`](03-vector-deep-dive.md), once a `vector` reallocates, all iterators, references, and pointers are invalidated because the underlying memory is contiguous and moves as a whole. `map` is different; its elements are stored on individual tree nodes:
 
 - **Insertion**: Does not invalidate any existing iterators, references, or pointers.
-- **Deletion**: Only invalidates the iterator/reference of the deleted element itself; all other elements remain untouched.
+- **Deletion**: Only invalidates the iterator/reference pointing to the deleted element itself; all other elements remain untouched.
 
-What does this imply? It implies that the memory addresses of elements in a `map` are stable. You can pass a pointer or reference to a `map` element around anywhere, and as long as you don't delete that specific element, the pointer remains valid forever. Even if you insert thousands of new elements or delete hundreds of others, that pointer in your hand will still point to the original element.
+What does this imply? It implies that the memory addresses of elements in a `map` are stable. You can pass a pointer or reference to a `map` element around to other subsystems, and as long as you don't delete that specific element, that pointer remains valid forever. Even if you insert thousands of new elements or delete hundreds of others, that pointer in your hand still points to the original element.
 
-This property is extremely valuable in real-world engineering. For example, suppose you are writing an event registry. After a callback is registered in the `map`, you might want to hand its pointer to another subsystem for reference or deregistration. If you used a `vector`, a single reallocation would turn all those pointers into dangling pointers (wild pointers). Using `map` keeps things safe and sound.
+This property is incredibly valuable in engineering. For example, if you write an event registry where each callback is registered into a `map`, and you want to hand out its pointer to other subsystems for reference or unregistration—using a `vector` risks turning all those pointers into dangling pointers during a reallocation; using a `map` keeps things safe and sound.
 
 Let's run a small example to see this stability in action:
 
@@ -145,11 +146,11 @@ ref = alpha
 it = alpha
 ```
 
-No matter how many elements are inserted or erased in between (as long as element 1 itself isn't deleted), the references and iterators remain valid. This stability stems from the fact that red-black tree nodes are independently allocated on the heap, and it is one of the core engineering values that distinguish `map` from `vector`.
+No matter how many elements are inserted or erased in between (as long as element 1 itself isn't deleted), the references and iterators remain valid. This stability stems from the fact that red-black tree nodes are independently allocated on the heap, and it represents one of the core engineering values that distinguish `map` from `vector`.
 
-## Heterogeneous Lookup (C++14): Stop Creating Temporary Strings Just to Look Up
+## Heterogeneous Lookup (C++14): Stop Creating Temporary Strings Just to Look Things Up
 
-The following pitfall is one that most developers who have written maps with string keys have stepped into, perhaps without realizing it. Take a look at this code:
+The pitfall below is one that most developers who have written maps with string keys have stumbled into, even if they didn't realize it at the time. Take a look at this code:
 
 ```cpp
 std::map<std::string, int> scores;
@@ -158,11 +159,11 @@ scores["alice"] = 90;
 auto it = scores.find("alice");   // "alice" 是 const char*
 ```
 
-The signature of `find` is `find(const key_type&)`, where `key_type` is `std::string`. However, we are passing a `const char*`. Consequently, the compiler helpfully constructs a temporary `std::string` from `"alice"` to perform the lookup. One lookup, wasted on a string construction—and if Small String Optimization (SSO) doesn't apply, this temporary string even triggers a heap allocation, only to be destroyed immediately after the search. If we perform such lookups frequently on a hot path, the overhead is entirely spent on manufacturing temporary strings.
+The signature of `find` is `find(const key_type&)`, where `key_type` is `std::string`. However, you are passing a `const char*`. Consequently, the compiler helpfully constructs a temporary `std::string` from `"alice"` to perform the lookup. One lookup results in a wasted string construction. Furthermore, if SSO (Small String Optimization) fails, this temporary string triggers a heap allocation, only to be destroyed immediately after the lookup. If you perform such lookups frequently on a hot path, the overhead is entirely spent on creating temporary strings.
 
 C++14 provides the solution: **transparent comparators**.
 
-By default, a map's comparator is `std::less<std::string>`, which only accepts strings. However, the standard library provides a specialization, `std::less<void>` (written as `std::less<>`), which does not bind to a specific type. Instead, it uses `operator<` to compare any two types passed to it—provided they are comparable. As long as we declare the map's comparator as `std::less<>`, it gains heterogeneous lookup capabilities:
+By default, a map's comparator is `std::less<std::string>`, which only accepts strings. However, the standard library provides a specialization, `std::less<void>` (written as `std::less<>`), which does not bind to a specific type. Instead, it uses `operator<` to compare any two types passed to it—provided they are comparable. By declaring the map's comparator as `std::less<>`, we enable heterogeneous lookup:
 
 ```cpp
 #include <map>
@@ -178,19 +179,19 @@ scores.find("alice");                    // const char* 直接比
 scores.find(std::string_view("alice"));  // string_view 直接比
 ```
 
-The mechanism behind this is the nested type `is_transparent`. `std::less<>` internally typedefs `is_transparent`. When the map's lookup overloads detect this marker on the comparator, they enable the heterogeneous version, directly using the native type you provided to compare against the `string` inside the tree. Since `string` can be compared directly with `const char*` and `string_view`, the process proceeds smoothly without constructing a single temporary object.
+The mechanism behind this is the nested type `is_transparent`. `std::less<>` internally typedefs `is_transparent`. When the map's lookup overloads detect this marker on the comparator, they enable the heterogeneous versions, taking the native type you provided and comparing it directly against the `string` inside the tree. Since `string` supports comparison with `const char*` and `string_view`, the process goes smoothly without constructing a single temporary object.
 
-There are two caveats to keep in mind. First, this requires that your key type and the lookup type are directly comparable—`string` and `const char*` work out of the box, but if you have a custom key type that doesn't implement comparison with `string_view`, you won't benefit from this. Second, heterogeneous lookup primarily applies to search operations like `find`, `count`, and `contains`. While it definitely saves temporary objects, "saving objects means faster" isn't always true—using `const char*` as the lookup type might actually be slower (since it lacks a cached length, forcing repeated `strlen` calls during red-black tree comparisons). Using `string_view` is the real way to gain speed, and we will demonstrate this with a benchmark shortly.
+There are two caveats to note. First, this requires that your key type and the lookup type are directly comparable—`string` and `const char*` work, but if your custom key type doesn't provide a comparison operator with `string_view`, you can't benefit from this. Second, heterogeneous lookup primarily takes effect in lookup operations like `find`, `count`, and `contains`. While it's true that temporaries are saved, "saving temporaries" doesn't automatically mean "faster"—using `const char*` as the lookup type might actually be slower (since it lacks a cached length, requiring repeated `strlen` calls during red-black tree comparisons). You need to use `string_view` to get a real speed boost, and we will demonstrate this for you shortly.
 
-## extract and merge (C++17): Node Handles, Moving House and Changing the Key
+## `extract` and `merge` (C++17): Node Handles, Moving House and Changing the Key
 
-C++17 introduced a feature called "node handle" to associative containers. The name sounds abstract, but it actually solves three very practical problems.
+C++17 introduced something called "node handles" to associative containers. The name sounds mysterious, but it actually solves three very practical problems.
 
-First, let's understand what a node handle is. Since C++11, `map` has had a specific rule: the key is `const`. If you obtain an element from a map, you cannot directly modify its key—code like `m.begin()->first = 100` won't even compile (the `first` member, which is the key, is `const`). The reason is straightforward: the map relies on keys for sorting to maintain its red-black tree structure; if you could arbitrarily modify a key, the tree's ordering would be immediately broken.
+First, let's look at what a node handle is. Since C++11, `map` has had a rule: the key is `const`. Once you have a map element, you cannot directly modify its key—code like `m.begin()->first = 100` won't even compile (the `first` field, which is the key, is `const`). The reason is understandable: the map relies on keys for sorting to maintain the red-black tree structure. If you could arbitrarily change keys, the tree's ordering would immediately break.
 
-Node handles bypass this limitation. `extract` allows you to "pluck" a node entirely out of the tree, returning an independent node handle (of type `std::map<K, V>::node_type`). This handle owns the node's resources; it exists outside of any map (removing it doesn't affect other elements), and it doesn't copy the value—it is the original node itself. Once extracted, you can modify its key (because it is now detached from the tree, so changing the key doesn't violate any ordering invariants), and then `insert` it back.
+Node handles bypass this limitation. `extract` can "pluck" a node entirely out of the tree, returning a standalone node handle (of type `std::map<K, V>::node_type`). This handle owns the node; it exists outside of any map (removing it doesn't affect other elements), and it doesn't copy the value—it is the original node itself. Once extracted, you can modify its key (because it is now detached from the tree, so changing the key won't break any ordering), and then `insert` it back.
 
-Therefore, since C++17, there is only one legitimate way to "change a map element's key": **extract → modify key → insert**.
+Therefore, since C++17, there is only one legitimate way to "change a map element's key": **extract → change key → insert**.
 
 ```cpp
 #include <iostream>
@@ -228,7 +229,7 @@ count(100) = 1
 value      = alpha
 ```
 
-Notice that `value` is still `"alpha"`—throughout the entire process, `value` was never copied or moved; we simply moved the original node. This is "zero-copy relocation."
+Notice that `value` is still `"alpha"`—throughout this process, `value` was never copied or moved; we simply moved the original node itself. This is "zero-copy relocation."
 
 The second use case is migrating nodes between containers. If we have two maps and want to move specific nodes from one to the other, we can just use `extract` + `insert`. Again, this does not copy the `value`:
 
@@ -242,7 +243,7 @@ auto node = a.extract(1);
 b.insert(std::move(node));
 ```
 
-The third use case is `merge`, which handles everything in one go. `m1.merge(m2)` moves all nodes from `m2` whose keys do not conflict with those in `m1` into `m1` entirely. This is also zero-copy:
+The third use case is `merge`, which handles everything in one go. `m1.merge(m2)` moves all nodes from `m2` whose keys do not conflict with those in `m1` into `m1`, again with zero copying:
 
 ```cpp
 std::map<int, std::string> m1{{1, "a"}, {2, "b"}};
@@ -252,15 +253,15 @@ m1.merge(m2);
 // m1: {1, 2, 3}；m2 里只剩下 key=2 那个（因为 m1 已有 2，冲突没搬走）
 ```
 
-The complexity of `merge` is O(n·log n) (where n is the number of elements moved), but there is absolutely no copying of `value` elements. This saves significant overhead when migrating large objects (for example, when `value` is a large `vector` or a long string).
+The complexity of `merge` is O(n·log n) (where n is the number of elements moved), but there are no copies of `value` throughout the process. When migrating large objects (for example, if `value` is a large vector or a long string), the overhead saved is substantial.
 
 ## Are Transparent Comparators Actually Faster? Let's Run a Benchmark
 
-First, a quick side note: the underlying `map` implementation in libstdc++, libc++, and MSVC STL is a red-black tree in all three cases. The behavior is identical (as mandated by the standard), though the details of node layout and memory allocation differ. In daily engineering work, we don't need to worry about this; just knowing that "behavior is consistent, implementation varies" is enough.
+First, a quick aside: the underlying `map` implementation in libstdc++, libc++, and the MSVC STL is a red-black tree in all three cases. The behavior is identical (as mandated by the standard), but the details of node layout and memory allocation differ. In daily engineering work, we don't need to stress over this; knowing that "behavior is consistent, implementations vary" is enough.
 
-However, there is a more interesting question worth verifying ourselves: transparent comparators claim to save temporary objects, but are they actually faster? Many people (myself included, before writing this) might assume that "saving construction must be faster." Instead of guessing, let's just run the code and see.
+However, there is a more important question worth verifying ourselves: transparent comparators claim to save temporary objects, but are they actually faster? Many people (myself included before writing this) might assume that "saving construction must be faster." Instead of guessing, let's just run it and see.
 
-We will prepare a map with a string key, using a long string (44 characters, exceeding the Small String Optimization (SSO) limit, so temporary construction will hit the heap), and then compare three lookup methods: A uses the default comparator with a `const char*` lookup (which constructs a temporary string); B uses a transparent comparator with `const char*`; and C uses a transparent comparator with `string_view`.
+We prepare a map with string keys, using long strings (44 characters, exceeding the Small String Optimization (SSO) limit, so temporary construction hits the heap), and compare three lookup methods: A uses the default comparator with `const char*` (constructs a temporary string); B uses a transparent comparator with `const char*`; and C uses a transparent comparator with `string_view`.
 
 ```cpp
 #include <iostream>
@@ -316,17 +317,17 @@ C transparent find(string_view): 8.7 ms
 
 (GCC 16.1.1, native; the exact milliseconds will vary by machine, but the relative ranking remains consistent.)
 
-The results likely contradict your intuition—**B is actually the slowest**, while C is the fastest. Why? The key is that `const char*` does not cache the length. A red-black tree lookup requires `log(n)` comparisons (about 14 here). In B, every comparison involves a raw `const char*` against a `std::string` inside the tree, necessitating a scan to the terminating `'\0'` to calculate the length (`strlen`) each time. With 14 comparisons, that's 14 `strlen` calls. In A, although we pay the cost of constructing a temporary `std::string` (heap allocation) once, the subsequent 14 comparisons are string-to-string, using the cached lengths for `memcmp`, making it faster overall. C uses `string_view`, which calculates and caches the length once upon construction. Subsequent comparisons reuse this length, avoiding repeated `strlen` calls and temporary string construction, making it the fastest.
+The result likely contradicts your intuition—**B is actually the slowest**, while C is the fastest. Why? The key is that `const char*` does not cache the length. A red-black tree lookup requires `log(n)` comparisons (about 14 here). In B, every time the raw `const char*` is compared against a `string` in the tree, it must scan to `'\0'` to calculate the length (`strlen`), so 14 comparisons mean 14 `strlen` calls. In A, although we pay the cost of constructing a temporary `string` once (which involves the heap), the subsequent 14 comparisons are string-to-string, using the cached lengths for `memcmp`, which is faster. C uses `string_view`, which calculates and caches the length once upon construction, and reuses it for subsequent comparisons. It avoids both repeated `strlen` calls and temporary string construction, making it the fastest.
 
-So, remember this common pitfall: **heterogeneous lookup needs to be paired with `string_view` to actually improve performance; pairing it with `const char*` can actually be slower**. Simply slapping `std::less<>` in there while using the wrong lookup type can cause performance to degrade instead of improve.
+So, remember this common pitfall: **heterogeneous comparators should be paired with `string_view` for real speed gains; using `const char*` can actually be slower**. Simply slapping `std::less<>` in there while using the wrong lookup type can degrade performance instead of improving it.
 
 ## Wrapping Up
 
-The `map` and `set` family of containers may look like simple containers that "sort by key and offer O(log n) lookup," but underneath, they rely on a red-black tree, an implementation chosen by all three major standard libraries. Keep these key properties in mind, and you'll use `map` with confidence: element addresses are stable (insertion does not invalidate iterators, and deletion only invalidates the erased element), making them suitable for registries or observer-like structures that require stable handles. C++14 heterogeneous comparators allow you to avoid creating temporary objects when looking up string keys (but remember to use `string_view` for the lookup type to actually speed things up; using `const char*` can be slower). C++17 node handles provide the only legal way to move keys with zero-copy and to modify keys. As for `set`, it's just the version where the value is omitted, but all the rules remain the same.
+The `map` and `set` family appears to be just containers that "sort by key and support O(log n) lookup," but underneath, they all rely on a red-black tree. Keep these key properties in mind, and you'll be confident when using maps: element addresses are stable (insertion doesn't invalidate iterators, and deletion only invalidates the erased element), making them suitable for registries and observer-like structures that require stable handles. C++14 heterogeneous comparators let you look up string-keyed maps without creating temporary objects (but remember, use `string_view` for the lookup type to actually speed it up; `const char*` can be slower). C++17 node handles provide the only legal way to move keys with zero-copy and modify keys. As for `set`, it's just the version where the value is removed from the mechanism, and all the rules apply.
 
-In the next article, we will follow this thread to look at map's "unordered sibling," `unordered_map`—swapping the red-black tree's logarithmic lookup for a hash table's amortized constant-time lookup represents a completely different set of trade-offs.
+In the next article, we will follow this thread to look at map's "unordered sibling," `unordered_map`—swapping the red-black tree's logarithmic search for a hash table's amortized constant-time search represents a completely different trade-off.
 
-Want to try it out yourself? Check out the online example below (you can run it and view the assembly):
+Want to run it and see the effect immediately? Open the online example below (runnable and viewable assembly):
 
 <OnlineCompilerDemo
   title="map / set: Red-black Tree Ordering, Heterogeneous Lookup, extract"
@@ -341,5 +342,5 @@ Want to try it out yourself? Check out the online example below (you can run it 
 - [std::set — cppreference](https://en.cppreference.com/w/cpp/container/set)
 - [std::less\<void\> transparent comparator — cppreference](https://en.cppreference.com/w/cpp/utility/functional/less_void)
 - [map::extract / merge node handle — cppreference](https://en.cppreference.com/w/cpp/container/map/extract)
-- [Container Iterator Invalidation Rules — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
+- [Container iterator invalidation rules summary — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
 - [N3657: C++14 Heterogeneous Lookup Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3657.htm)

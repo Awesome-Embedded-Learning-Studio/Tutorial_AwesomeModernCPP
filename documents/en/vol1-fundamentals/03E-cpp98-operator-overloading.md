@@ -5,9 +5,9 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Make custom types behave like built-in types—the design philosophy of
+description: Make custom types behave like built-in ones—the design philosophy of
   operator overloading, how to overload common operators, choosing between member
-  and non-member overloads, and which operators to avoid.
+  and non-member functions, and which operators to avoid.
 difficulty: beginner
 order: 3
 platform: host
@@ -26,236 +26,298 @@ tags:
 title: C++98 Operator Overloading
 translation:
   source: documents/vol1-fundamentals/03E-cpp98-operator-overloading.md
-  source_hash: fe924011f46470a99613f3713fd167203b2acb4c60fa3e55070742b4c26e459a
-  translated_at: '2026-06-16T03:31:30.183971+00:00'
+  source_hash: c571c20b7995836c38182d758571d98df22a1522fee518d825e9f90e177ab330
+  translated_at: '2026-06-24T00:28:36.561914+00:00'
   engine: anthropic
   token_count: 1909
 ---
 # C++98 Operator Overloading
 
-> The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to visit, and if you like it, give the author a Star to show your support.
+> The complete repository is available at [Tutorial_AwesomeModernCPP](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP). Feel free to check it out and give it a Star if you like it to motivate the author.
 
-Operator overloading is one of C++'s most controversial yet captivating features. It allows **custom types to participate in expression calculations just like built-in types**, thereby significantly enhancing code readability and expressiveness. Would you rather see two vectors stuffed into a method named something awkward like `addVectors()` (a gentle jab at Java here), or would you prefer the readability of `v1 + v2`? I trust you have your own answer.
+Operator overloading is one of C++'s most controversial yet captivating features. It allows **custom types to participate in expression calculations just like built-in types**, thereby significantly enhancing code readability and expressiveness. Would you prefer to see two vectors stuffed into an awkwardly named `VectorAdd` method (a subtle dig at Java—just kidding), or is the direct `a + b` approach more readable? I believe you have your own answer.
 
-However, operator overloading is a feature that requires restraint. I suggest a guideline: **Only overload an operator when it is "natural" to read the code using that operator.** This applies naturally to non-built-in vector math, physical quantity calculations, time and date handling, container manipulation, and so on. If your operator overload leaves readers scratching their heads—for example, using `operator-` to mean "delete element from container"—it is better to honestly write a function named `remove()`.
+However, operator overloading is a feature that requires restraint. I suggest the following guideline: **only overload an operator if you would "naturally" use it to read the code**. For example, it is natural to handle non-built-in vector math, physical quantity calculations, time and date, or container manipulation. If your operator overload leaves readers scratching their heads—for instance, using `+` to mean "remove an element from a container"—it is better to stick to writing a function named `remove`.
 
 ## 1. Arithmetic Operator Overloading
 
-The most classic and reasonable scenario for operator overloading comes from **mathematical and physical models**. Take a 3D vector, for instance; it is essentially a set of values participating in addition, subtraction, and multiplication. Without operator overloading, code usually degenerates into this:
+The most classic and reasonable scenario for operator overloading comes from **mathematical and physical models**. For example, a three-dimensional vector is essentially a set of values involved in addition, subtraction, and multiplication. Without operator overloading, the code typically degenerates into this:
 
 ```cpp
-// Without operator overloading
-Vector3 result = vec1.add(vec2);
-Vector3 scaled = vec3.multiply(2.5f);
+v3 = v1.add(v2);
+v4 = v1.scale(2.0f);
 ```
 
-By using operator overloading, we can make the code **directly mirror the mathematical expression itself**:
+By using operator overloading, we can make the code **closely resemble the mathematical expressions themselves**:
 
 ```cpp
-// With operator overloading
-Vector3 result = vec1 + vec2;
-Vector3 scaled = vec3 * 2.5f;
+v3 = v1 + v2;
+v4 = v1 * 2.0f;
 ```
 
-Let's look at a complete `Vector3` implementation:
+Let's look at a complete `Vector3D` implementation:
 
 ```cpp
-class Vector3 {
+class Vector3D {
+private:
+    int x, y, z;
+
 public:
-    float x, y, z;
+    Vector3D(int x = 0, int y = 0, int z = 0)
+        : x(x), y(y), z(z) {}
 
-    Vector3(float x = 0, float y = 0, float z = 0) : x(x), y(y), z(z) {}
+    // 二元加法：返回新对象，不修改原对象
+    Vector3D operator+(const Vector3D& other) const {
+        return Vector3D(x + other.x, y + other.y, z + other.z);
+    }
 
-    // Compound assignment (+=)
-    Vector3& operator+=(const Vector3& other) {
+    // 二元减法
+    Vector3D operator-(const Vector3D& other) const {
+        return Vector3D(x - other.x, y - other.y, z - other.z);
+    }
+
+    // 标量乘法（向量 * 标量）
+    Vector3D operator*(int scalar) const {
+        return Vector3D(x * scalar, y * scalar, z * scalar);
+    }
+
+    // 复合赋值：就地修改，避免不必要的临时对象
+    Vector3D& operator+=(const Vector3D& other) {
         x += other.x;
         y += other.y;
         z += other.z;
         return *this;
     }
 
-    // Binary addition (+) implemented as a non-member friend
-    friend Vector3 operator+(Vector3 lhs, const Vector3& rhs) {
-        lhs += rhs;
-        return lhs;
+    // 一元负号：向量取反
+    Vector3D operator-() const {
+        return Vector3D(-x, -y, -z);
+    }
+
+    // 相等比较
+    bool operator==(const Vector3D& other) const {
+        return x == other.x && y == other.y && z == other.z;
+    }
+
+    bool operator!=(const Vector3D& other) const {
+        return !(*this == other);
     }
 };
 ```
 
-The usage feels very natural:
+The user experience is very natural:
 
 ```cpp
-Vector3 v1(1, 2, 3);
-Vector3 v2(4, 5, 6);
-Vector3 sum = v1 + v2; // Easy to read
+Vector3D v1(1, 2, 3);
+Vector3D v2(4, 5, 6);
+
+Vector3D v3 = v1 + v2;   // (5, 7, 9)
+Vector3D v4 = v1 * 2;    // (2, 4, 6)
+
+v1 += v2;                // v1 变为 (5, 7, 9)
 ```
 
-Regarding the relationship between binary operators and compound assignment operators, there is a good implementation guideline: **Implement the compound assignment (`+=`) first, then implement the binary operation (`+`) based on it.** This way, the binary operation doesn't need to be a member function—it can be a non-member function implemented by calling `+=`. We will discuss the benefits of this approach in the "Member vs. Non-Member" section later.
+Here is a good implementation guideline regarding the relationship between binary operators and compound assignment operators: **implement the compound assignment (`+=`) first, and then implement the binary operation (`+`) based on it.** This way, the binary operator does not need to be a member function—it can be a non-member function implemented by calling `+=`. We will discuss the benefits of this approach later in the "Member vs. Non-Member" section.
 
-## 2. Subscript Operator `[]`
+## 2. Subscript Operator `operator[]`
 
-`operator[]` is the **"facade interface" of container classes**. Overloading it is a standard operation for almost any custom container. Its core value lies in making custom types accessible like arrays:
+The `operator[]` is the **"face" of a container class**, and overloading it is a standard operation for custom containers. Its core value lies in making custom types accessible just like arrays:
 
 ```cpp
-MyContainer<int> container;
-// ...
-int value = container[5]; // Read
-container[5] = 10;        // Write
+buffer[3] = 0xFF;
+auto x = buffer[10];
 ```
 
-A key point is: **You must provide both `const` and non-`const` versions.** The non-`const` version returns a modifiable reference, allowing element modification via the subscript; the `const` version returns a read-only reference, ensuring `const` objects are not accidentally modified.
+One key point is that **we must provide both `const` and non-`const` versions**. The non-`const` version returns a modifiable reference, allowing element modification via subscript; the `const` version returns a read-only reference, ensuring that `const` objects are not accidentally modified.
 
 ```cpp
-class MyContainer {
-    int data[100];
+class ByteBuffer {
+private:
+    uint8_t data[256];
+    size_t size;
+
 public:
-    // Non-const version: allows read/write
-    int& operator[](size_t index) {
+    ByteBuffer() : size(0) {}
+
+    // 非 const 版本：可写
+    uint8_t& operator[](size_t index) {
         return data[index];
     }
 
-    // Const version: allows read-only access
-    const int& operator[](size_t index) const {
+    // const 版本：只读
+    const uint8_t& operator[](size_t index) const {
         return data[index];
     }
+
+    size_t get_size() const { return size; }
 };
 ```
 
-Usage effect:
+Usage:
 
 ```cpp
-void process(const MyContainer& container) {
-    int x = container[10]; // OK: calls const version
-    // container[10] = 5; // Error: cannot assign to const reference
-}
+ByteBuffer buffer;
+buffer[0] = 0xFF;              // 调用非 const 版本
+uint8_t value = buffer[0];
+
+const ByteBuffer& const_buffer = buffer;
+uint8_t val = const_buffer[0]; // 调用 const 版本
+// const_buffer[0] = 0xAA;     // 编译错误！const 版本返回 const 引用
 ```
 
-The existence of the `const` version is very important—if there were only the non-`const` version, one could not use `[]` to read data when holding a `const` reference to the object. We mentioned this pitfall in the previous chapter when discussing `const` member functions, and we emphasize it again here: **Providing both `const` and non-`const` versions is standard practice for `operator[]`.**
+The existence of the `const` version is critical—if only the non-`const` version existed, we would be unable to use `[]` to read data when holding a `ByteBuffer` via a `const` reference. We mentioned this pitfall in the previous chapter when discussing `const` member functions, but it is worth reiterating: **providing both `const` and non-`const` versions is standard practice for `operator[]`.**
 
-## 3. Function Call Operator `()`
+## 3. Function Call Operator `operator()`
 
-The function call operator `operator()` allows objects to be invoked like functions. Objects implementing this operator are known as **function objects (functors)**. Compared to ordinary functions, function objects have a unique advantage: **they can carry state**.
+The function call operator `operator()` allows an object to be invoked like a function. Objects that implement this operator are known as **function objects (functors)**. Compared to ordinary functions, function objects have a unique advantage: **they can maintain state**.
 
 ```cpp
 class Accumulator {
-    int sum = 0;
+private:
+    int sum;
+
 public:
-    int operator()(int value) {
+    Accumulator() : sum(0) {}
+
+    void operator()(int value) {
         sum += value;
-        return sum;
     }
+
+    int get_sum() const { return sum; }
+    void reset() { sum = 0; }
 };
 
+// 使用
 Accumulator acc;
-int a = acc(10); // Returns 10
-int b = acc(20); // Returns 30
+acc(10);
+acc(20);
+acc(30);
+
+int total = acc.get_sum();  // 60
 ```
 
-A typical application of function objects in embedded development is the **callback mechanism**. You can register a function object carrying context information as a callback, rather than being limited to bare function pointers. This became even more convenient with the introduction of lambdas in C++11 (lambdas are function objects under the hood), but even in C++98, hand-writing function objects was a very useful pattern.
+A typical application of function objects in embedded development is the **callback mechanism**. You can register a function object carrying context information as a callback, rather than being limited to raw function pointers. This became even more convenient with the introduction of lambdas in C++11 (since lambdas are function objects under the hood), but even in C++98, manually writing function objects was a very useful pattern.
 
 ## 4. Increment and Decrement Operators `++`/`--`
 
-Increment and decrement operators can be overloaded separately for the prefix version (`++i`) and the postfix version (`i++`). C++ distinguishes between the two by a convention: **the postfix version accepts an extra `int` parameter** (the compiler automatically passes 0), while the prefix version has no extra parameter.
+Increment and decrement operators can be overloaded for both the prefix version (`++x`) and the postfix version (`x++`). C++ distinguishes between the two by a convention: **the postfix version accepts an extra `int` parameter** (which the compiler automatically passes as 0), while the prefix version takes no extra arguments.
 
 ```cpp
 class Counter {
-    int value = 0;
+private:
+    int value;
+
 public:
-    // Prefix ++ (++i): returns the modified value
+    Counter(int v = 0) : value(v) {}
+
+    // 前缀 ++：返回修改后的引用
     Counter& operator++() {
         ++value;
         return *this;
     }
 
-    // Postfix ++ (i++): returns the value before modification
+    // 后缀 ++：返回修改前的副本
     Counter operator++(int) {
         Counter temp = *this;
         ++value;
         return temp;
     }
+
+    int get() const { return value; }
 };
+
+Counter c(5);
+Counter c1 = ++c;  // 前缀：c 变为 6，c1 是 6
+Counter c2 = c++;  // 后缀：c 变为 7，c2 是 6（修改前的值）
 ```
 
-Note the difference in return types between prefix and postfix. Prefix `++` returns a reference (because the object has been modified, returning the modified self is logical), while postfix `++` returns a value (because it needs to return a copy of the pre-modified state). This difference also explains why **prefix `++` is generally more efficient than postfix `++`**—the postfix version requires constructing an extra temporary object. For built-in types, this doesn't matter much, but for complex iterator types, prefix `++` can save a copy operation.
+Note the difference in return types between the prefix and postfix versions. The prefix `++` returns a reference (since the object has already been modified, returning the modified object itself is logical), while the postfix `++` returns a value (because it needs to return a copy of the state before modification). This difference also explains why **prefix `++` is generally more efficient than postfix `++`**—the postfix version requires the construction of a temporary object. This doesn't matter for built-in types, but for complex iterator types, the prefix `++` can save a copy operation.
 
-Therefore, if you don't need the postfix semantics (which is most of the time), it is a good idea to cultivate the habit of using prefix `++`.
+Therefore, unless you specifically need the postfix semantics (which is rarely the case), it is a good habit to use the prefix `++`.
 
 ## 5. Type Conversion Operators
 
 Type conversion operators allow objects to be explicitly or implicitly converted to other types, but this is **the type of overload most prone to pitfalls**.
 
 ```cpp
-class MyString {
+class Temperature {
+private:
+    float celsius;
+
 public:
-    // Implicit conversion to const char*
-    operator const char*() const { return data_; }
-    // ...
+    Temperature(float c) : celsius(c) {}
+
+    // 转换为 float：摄氏度
+    operator float() const {
+        return celsius;
+    }
+
+    float to_fahrenheit() const {
+        return celsius * 9.0f / 5.0f + 32.0f;
+    }
 };
 
-void log(const char* str);
-
-MyString str;
-log(str); // Implicit conversion happens here
+Temperature temp(25.5f);
+float c = temp;      // 隐式转换：25.5
+float f = temp.to_fahrenheit();  // 显式接口：77.9
 ```
 
-The problem with implicit type conversion is that **you cannot control when it happens**. The compiler will automatically invoke the conversion operator whenever it deems it "necessary," even if you had no intention of doing so. If your class has both a conversion operator to Type A and an overloaded constructor taking Type A, confusing ambiguities can arise during overload resolution—the compiler will hesitate between two conversion paths.
+The problem with implicit type conversion is that **you cannot control when it happens**. The compiler will automatically invoke conversion operators whenever it deems it "necessary," even if you had no intention of doing so. If your class defines both `operator float()` and `operator int()`, confusing ambiguities can arise during overload resolution—the compiler will hesitate between the two conversion paths.
 
-My advice is: **Prefer explicit member functions (like `c_str()`, `toInt()`) over type conversion operators**, unless the semantics are extremely clear. If you must use a type conversion operator, C++11's `explicit` keyword can restrict it to take effect only during explicit casting, which is a safer approach.
+Our recommendation is to **prefer explicit member functions (like `to_fahrenheit()`) over type conversion operators**, unless the semantics are crystal clear. If you must use a type conversion operator, C++11's `explicit operator T()` restricts it to explicit conversions only, which is a much safer approach.
 
-## 6. Member vs. Non-Member: A Guide to Choosing Overload Location
+## 6. Member vs. Non-member: A Guide to Choosing Overload Location
 
-Operators can be overloaded in two ways: **member functions** and **non-member functions** (usually friends). The choice affects not only syntax but also type conversion behavior.
+Operators can be overloaded in two ways: as **member functions** or **non-member functions** (typically friends). The choice affects not only syntax but also type conversion behavior.
 
-For **member functions**, the left-hand operand must be an object of the current class (or implicitly convertible to it). This means that if you implement `operator+` as a member function, `obj + scalar` will work, but `scalar + obj` will not—because `scalar` is a `float`, it is not a `Vector3` object, and the compiler will not look for `operator+` in `float`.
+For **member functions**, the left-hand operand must be an object of the current class (or implicitly convertible to it). This means that if you implement `operator*` as a member function, `vec * 2` will work, but `2 * vec` will not—because `2` is an `int`, not a `Vector3D` object, and the compiler will not look for `operator*` inside `int`.
 
-For **non-member functions**, the left and right operands are symmetric. The compiler will attempt implicit conversions on both operands, so both `obj + scalar` and `scalar + obj` will work.
+For **non-member functions**, the left and right operands are symmetric. The compiler will attempt implicit conversions on both operands, so both `2 * vec` and `vec * 2` will work.
 
 A widely accepted rule of thumb is:
 
 - **Symmetric binary operators** (`+`, `-`, `*`, `/`, `==`, `!=`, etc.) should preferably be implemented as **non-member functions**.
-- **Assignment-like operators** (`=`, `+=`, `-=`, `*=`, `/=`, `%=`, etc.) must be implemented as **member functions** (the language dictates that certain operators can only be members).
-- **Unary operators** (`-`, `!`, `~`, etc.) are usually implemented as **member functions**.
+- **Assignment-like operators** (`=`, `+=`, `-=`, `[]`, `()`, `->`, etc.) must be implemented as **member functions** (the language mandates that certain operators can only be members).
+- **Unary operators** (`-`, `!`, `~`, etc.) are typically implemented as **member functions**.
 
-For `Vector3`, a better approach might be to implement `operator+` and `operator*` as non-member friend functions:
+For `Vector3D`, a better approach would be to implement `operator+` and `operator*` as non-member friend functions:
 
 ```cpp
-class Vector3 {
-    // ...
-    friend Vector3 operator+(Vector3 lhs, const Vector3& rhs);
-    friend Vector3 operator*(Vector3 v, float scalar);
+class Vector3D {
+    // ... 成员变量和构造函数
+
+    friend Vector3D operator+(const Vector3D& lhs, const Vector3D& rhs) {
+        return Vector3D(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z);
+    }
+
+    friend Vector3D operator*(const Vector3D& v, int scalar) {
+        return Vector3D(v.x * scalar, v.y * scalar, v.z * scalar);
+    }
+
+    friend Vector3D operator*(int scalar, const Vector3D& v) {
+        return v * scalar;  // 复用上面的版本
+    }
 };
-
-Vector3 operator+(Vector3 lhs, const Vector3& rhs) {
-    lhs += rhs;
-    return lhs;
-}
-
-Vector3 operator*(Vector3 v, float scalar) {
-    v.x *= scalar;
-    v.y *= scalar;
-    v.z *= scalar;
-    return v;
-}
 ```
 
-This way, both `vec + vec` and `scalar * vec` (if you overload for that order too) can work correctly.
+This way, both `2 * v` and `v * 2` work correctly.
 
 ## 7. Which Operators Should Not Be Overloaded
 
 Not all operators are suitable for overloading. Overloading some operators can lead to confusing behavior or even break fundamental guarantees of the language.
 
-**Logical operators `&&` and `||`** are the most typical counter-examples. In C++, the built-in `&&` and `||` have a very important characteristic—**short-circuit evaluation**. For `a && b`, if `a` is `false`, `b` is not evaluated. But once you overload `&&`, it becomes a normal function call—**both parameters are evaluated before the function is called**, and the short-circuit evaluation characteristic is completely lost. This not only violates the intuitive expectations of all C++ programmers regarding `&&` and `||`, but can also produce completely different behavior if `b` has side effects.
+The **logical operators `&&` and `||`** are the most typical counter-examples. In C++, the built-in `&&` and `||` have a very important feature—**short-circuit evaluation**. For `a && b`, if `a` is `false`, `b` will not be evaluated. However, once you overload `operator&&`, it becomes a normal function call—**both parameters are evaluated before the function is called**, and the feature of short-circuit evaluation is completely lost. This not only violates the intuitive expectations of all C++ programmers regarding `&&` and `||`, but can also produce completely different behavior if `b` has side effects.
 
-**The comma operator `,`** has a similar problem. The built-in comma operator guarantees a left-to-right evaluation order, but the overloaded version cannot provide this guarantee.
+The **comma operator `,`** has a similar problem. The built-in comma operator guarantees a left-to-right evaluation order, but the overloaded version cannot provide this guarantee.
 
-**The address-of operator `&`** should almost never be overloaded—it returns the address of the object, which is one of the fundamental operations of C++. Changing its semantics will cause almost all code to fail.
+The **address-of operator `&`** should, in the vast majority of cases, not be overloaded—it returns the address of an object, which is one of the fundamental operations of C++. Changing its semantics will cause almost all code to fail to work correctly.
 
-My advice is: **Only overload operators with natural semantics that do not violate intuitive expectations.** Specifically, arithmetic operators, comparison operators, subscript operators, function call operators, and stream operators—these can be overloaded safely. As for logical operators, the comma operator, and the address-of operator—stay away from them.
+My advice is: **only overload operators that have natural semantics and do not violate intuitive expectations**. Specifically, arithmetic operators, comparison operators, the subscript operator, the function call operator, and stream operators—these can all be safely overloaded. As for logical operators, the comma operator, and the address-of operator—stay away from them.
 
 ## Summary
 
-Operator overloading allows custom types to participate in expression calculations like built-in types, greatly enhancing code readability and expressiveness. We learned how to overload arithmetic operators, subscript operators, function call operators, increment/decrement operators, and type conversion operators, as well as strategies for choosing between member and non-member overloads.
+Operator overloading allows custom types to participate in expression calculations just like built-in types, greatly enhancing code readability and expressiveness. We learned how to overload arithmetic operators, the subscript operator, the function call operator, increment and decrement operators, and type conversion operators, as well as the selection strategy between member and non-member overloading.
 
-There is only one core principle of operator overloading: **Make the code read naturally.** If your overloaded operator confuses the reader, it is a bad overload. Keeping this guideline in mind will help you make the right choice in most situations.
+There is only one core principle of operator overloading: **make the code read naturally**. If the operator you overload confuses the reader, it is a bad overload. Keeping this guideline in mind will help us make the right choices in most situations.
 
 In the next article, we will learn about C++'s four type conversion operators, dynamic memory management mechanisms, and exception handling—these are more "advanced" features in C++98 and are also the foundation for understanding the direction of modern C++ improvements.

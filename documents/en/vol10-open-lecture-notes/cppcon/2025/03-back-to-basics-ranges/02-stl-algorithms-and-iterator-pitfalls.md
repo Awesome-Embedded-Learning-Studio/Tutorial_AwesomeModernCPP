@@ -7,8 +7,8 @@ cpp_standard:
 - 17
 - 20
 description: 'CppCon 2025 Talk Notes — Mike Shah: STL Algorithms in Practice, Hard
-  Constraints on Iterator Categories, Algorithm Cheat Sheet & Invalidations Table,
-  and Live GCC Testing of Silent UB from Iterator Invalidation vs. `_GLIBCXX_DEBUG`'
+  Constraints on Iterator Categories, Algorithm Cheat Sheet & Invalidatation Rules,
+  Measuring Silent UB from Iterator Invalidation with GCC and Capturing It with _GLIBCXX_DEBUG'
 difficulty: beginner
 order: 2
 platform: host
@@ -25,346 +25,332 @@ title: STL Algorithms in Practice and Iterator Pitfalls
 video_youtube: https://www.youtube.com/watch?v=Q434UHWRzI0
 translation:
   source: documents/vol10-open-lecture-notes/cppcon/2025/03-back-to-basics-ranges/02-stl-algorithms-and-iterator-pitfalls.md
-  source_hash: a66535ad275c54ac65c9aa048add0681def32921d539f79c79d44d11022c6073
-  translated_at: '2026-06-16T03:53:05.252545+00:00'
+  source_hash: 1f066da2ba88ebe5dee5f23cbaa2cd4af1b2b83e513a4069ab2f42c7ade2bd52
+  translated_at: '2026-06-24T00:33:14.607364+00:00'
   engine: anthropic
   token_count: 3895
 ---
 # STL Algorithms in Action and Iterator Pitfalls
 
 :::tip
-This is the second article in the "Back to Basics: C++ Ranges" series by Mike Shah from CppCon 2025. In the previous post, we abstracted "traversal" from index loops all the way up to iterators, concluding that: **a pair of `begin`/`end` iterators defines a range**. In this post, we feed that pair of iterators into STL algorithms—seeing how they write loops for us and what hard requirements they impose on iterators. We will also dissect classic iterator pitfalls, all tested with GCC 16.1.1. The environment remains the same: Arch Linux WSL, `-std=c++26`.
+This is the second article in the CppCon 2025 "Back to Basics: C++ Ranges" series by Mike Shah. In the previous post, we abstracted "traversal" from index loops all the way up to iterators, concluding that: **a pair of `begin`/`end` iterators defines a range**. In this post, we feed that pair of iterators into STL algorithms—to see how they write loops for us, and what hard requirements they impose on iterators. We will also dissect classic iterator pitfalls, all verified with GCC 16.1.1. The environment remains the same: Arch Linux WSL, `-std=c++20`.
 :::
 
-At the end of the last post, we mentioned that algorithms are built on top of that pair of iterators. To make this concrete, we first need to understand exactly what pieces compose the STL.
+At the end of the last post, we mentioned that algorithms are built on top of that pair of iterators. To make this concrete, we first need to understand exactly what components make up the STL.
 
 ## The Three Pillars of the STL
 
-The design philosophy of the Standard Template Library (STL) decouples three things: **containers** are responsible for storing data, **iterators** are responsible for traversing data, and **algorithms** are responsible for processing data<RefLink :id="1" preview="cppreference, Standard library algorithms — containers, iterators, algorithms" />. These three are connected by iterators as the "glue"—algorithms don't know about specific containers directly, they only recognize iterators; as long as a container can spit out compliant iterators, it can be reused by all algorithms. This decoupling is the fundamental reason why the STL can use one set of algorithms to dominate `std::vector`, `std::list`, and `std::map`.
+The design philosophy of the Standard Template Library (STL) is to decouple three things: **containers** are responsible for storing data, **iterators** are responsible for traversing data, and **algorithms** are responsible for processing data <RefLink :id="1" preview="cppreference, Standard library algorithms — containers, iterators, algorithms" />. These three are connected by iterators, which act as the "glue"—algorithms don't know about specific containers directly, they only recognize iterators; as long as a container can spit out iterators that meet the requirements, it can be reused by all algorithms. This decoupling is the fundamental reason why STL can use a single `std::sort` to handle `vector`, `array`, and `deque`.
 
-So, which headers contain these algorithms?
+So, which header files do these algorithms actually live in?
 
 :::warning Shah's "Two Headers" is a Bit Narrow
-In his talk, Shah says "algorithms are mainly in `<algorithm>` and `<numeric>`"—which is fine for an introductory understanding, but it actually **misses several pieces**. The complete picture is this: general algorithms (`sort`, `copy`, `find`, etc.) are in `<algorithm>`; numeric algorithms (`accumulate`, `reduce`, `inner_product`, etc.) are in `<numeric>`; **parallel algorithms** (like `sort` with execution policies) require `<execution>` (C++17); C++20 ranges algorithms and views are in `<ranges>`; and there are even scattered ones—`std::for_each` is in `<algorithm>`, but C++23's folding algorithms `fold_left`/`fold_right` are in `<algorithm>` (Wait, actually `fold` was added to `<algorithm>` in C++23, let me check... yes). So don't memorize "algorithms = two headers"; it's more accurate to remember "algorithms are scattered across several headers, with `<algorithm>` being the main force."
+In his talk, Shah says "algorithms are mainly in `<algorithm>` and `<numeric>`"—this is fine for an introductory understanding, but it actually **misses several pieces**. The complete picture is this: general algorithms (`sort`, `find`, `copy`, `transform`, etc.) are in `<algorithm>`; numeric algorithms (`accumulate`, `reduce`, `inner_product`, etc.) are in `<numeric>`; **parallel algorithms** (like `sort(std::execution::par, ...)` with execution policies) require `<execution>` (C++17); C++20 ranges algorithms and views are in `<ranges>`; and there are even scattered ones—`std::midpoint` is in `<numeric>`, but C++23's folding algorithm `std::fold_left` is in `<algorithm>`. So don't rote memorize "algorithms = two headers"; it's more accurate to remember "algorithms are scattered across several headers, with `<algorithm>` being the main one."
 :::
 
 ## Algorithm Cheat Sheet: Categories and Iterator Requirements
 
-There are over a hundred STL algorithms; rote memorization is meaningless. A better way to remember them is to **categorize them**, and to remember the **hard requirements on iterator categories for each category**—because this directly determines whether you can use a specific algorithm on a given container. The table below is a key contribution of this post, which Shah didn't expand on in his talk:
+There are over a hundred STL algorithms, so rote memorization is meaningless. A better way is to **categorize them**, and remember the **hard requirements each category has on iterator categories**—because this directly determines whether you can use a specific algorithm on a given container. The table below is a key contribution of this post, which Shah didn't expand on in the talk:
 
 | Category | Representative Algorithms | Required Iterator Category |
-|----------|---------------------------|-----------------------------|
-| Read-only Search | `find` / `count` / `search` / `binary_search` | input (weakest is fine) |
-| Modifying/Copying | `copy` / `move` / `transform` / `replace` | forward / output |
+|----------|---------------------------|----------------------------|
+| Read-only search | `find` / `find_if` / `count` / `accumulate` | input (weakest is fine) |
+| Modifying copy | `copy` / `transform` / `replace` / `fill` | forward / output |
 | Partitioning | `partition` / `stable_partition` | forward (stable version requires bidirectional) |
-| Sorting | `sort` / `nth_element` / `partial_sort` | **random_access** (hard requirement) |
-| Binary Search | `lower_bound` / `upper_bound` / `equal_range` | forward (**and range must be sorted**) |
-| Numeric Reduction | `accumulate` / `reduce` / `inner_product` | input |
-| Heap Operations | `push_heap` / `pop_heap` / `make_heap` | random_access |
+| Sorting | `sort` / `stable_sort` / `partial_sort` | **random_access** (hard requirement) |
+| Binary search | `lower_bound` / `upper_bound` / `binary_search` | forward (**and range must be sorted**) |
+| Numeric reduction | `reduce` / `transform_reduce` / `inner_product` | input |
+| Heap operations | `push_heap` / `pop_heap` / `sort_heap` | random_access |
 
-The most important rule to remember here is: **Sorting algorithms require random access iterators**. This means they can only be used on contiguous or random-access containers like `std::vector`, `std::array`, or `std::string`—**using them on `std::list` won't compile**. This isn't a suggestion; it's a hard constraint. Let's test this.
+The most important rule to remember here is: **sorting algorithms require random access iterators**. This means they can only be used on containers with contiguous or random access like `vector`, `array`, and `deque`. **Using them on `std::list` will fail to compile outright**. This isn't a suggestion; it's a hard constraint. Let's test this.
 
-## Experiment: `std::sort` Cannot Be Used on `std::list`
+## Experiment: std::sort cannot be used on std::list
 
-`std::list` provides bidirectional iterators, which do not support `operator[]` or subtraction between two iterators. Internally, `std::sort` requires random access (it uses subtraction to estimate recursion depth). What happens if we feed a list iterator into it?
+`std::list` has bidirectional iterators, which do not support `it + n` or subtraction between two iterators. Meanwhile, `std::sort` internally requires random access (it needs to calculate `__last - __first` to estimate recursion depth). What happens if we feed a list's iterator into it?
 
 ```cpp
 #include <algorithm>
 #include <list>
-#include <iostream>
 
-int main() {
-    std::list<int> l = {3, 1, 4, 1, 5, 9};
-    // std::sort(l.begin(), l.end()); // Error!
+int main()
+{
+    std::list<int> l{3, 1, 2};
+    std::sort(l.begin(), l.end());  // 编不过！
 }
 ```
 
-GCC 16.1.1 error output (key lines selected):
+Here are the key lines from the GCC 16.1.1 error output:
 
-```text
-error: no match for 'operator-' (operand types are 'std::_List_iterator<int>' and 'std::_List_iterator<int>')
-   94 |       std::__iterator_traits<_It>::iterator_category::__value;
-      |       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-...
-note: candidate: 'template<class _Tp> std::__detail::_Node_iterator_base<_Tp>::difference_type std::operator-(const std::__detail::_Node_iterator_base<_Tp>&, const std::__detail::_Node_iterator_base<_Tp>&)' [with _Tp = int]
-note:   template argument deduction/substitution failed:
-note:   couldn't deduce template parameter '_Tp'
+```bash
+❯ g++ -std=c++20 list_sort.cpp -o list_sort
+/usr/include/c++/16.1.1/bits/stl_algo.h:1914:50: error: no match for ‘operator-’
+   (operand types are ‘std::_List_iterator<int>’ and ‘std::_List_iterator<int>’)
+ 1914 |                                 std::__lg(__last - __first) * 2,
+   |                                           ~~~~~~~^~~~~~~~~
 ```
 
-See— the error occurs at the subtraction step: `std::sort` tries to use iterator subtraction to calculate the distance, but `std::_List_iterator` simply doesn't define `operator-` (bidirectional iterators only recognize `++`/`--`, not subtraction). This is a classic case of "iterator category does not satisfy algorithm requirements." If you really need to sort a `std::list`, use its member function `list::sort`—it's a merge sort tailored for linked lists with O(n log n) complexity that doesn't rely on random access.
+See? The error occurs right at `__last - __first`: `std::sort` attempts to use iterator subtraction to calculate the range length, but `_List_iterator` simply doesn't define `operator-` (bidirectional iterators only understand `++` and `--`, not subtraction). This is a classic case of "iterator category not meeting algorithm requirements." If you really need to sort a `list`, use its member function `l.sort()`. That's a merge sort tailored specifically for linked lists; it retains the O(n log n) complexity but doesn't rely on random access.
 
-## `sort`, `partition`, `copy`, `transform`: What Do Common Algorithms Look Like?
+## sort, partition, copy, transform: What do common algorithms look like?
 
-Let's quickly review the most commonly used algorithms to build intuition. Their parameter patterns are surprisingly uniform— the vast majority take **a pair of iterators `[first, last)` plus an optional predicate or destination**.
+Let's quickly run through the most commonly used algorithms to build some intuition. Their parameter patterns are surprisingly consistent—most of them take **a pair of iterators `(first, last)` plus an optional predicate or destination**.
 
 ```cpp
 #include <algorithm>
 #include <vector>
-#include <iostream>
-#include <random> // C++11 random engines
+#include <iterator>
+#include <random>
 
-int main() {
-    std::vector<int> src(10);
-    std::mt19937 rng(std::random_device{}()); // Use mt19937, not rand()
-    std::ranges::iota(src, 0); // Fill 0..9
+void demo(std::vector<int>& v, const std::vector<int>& src)
+{
+    // 排序整个区间
+    std::sort(v.begin(), v.end());
 
-    // 1. copy: copy src to dest
-    std::vector<int> dest;
-    std::copy(src.begin(), src.end(), std::back_inserter(dest));
+    // 局部排序：只排 [begin, begin+3)，后面元素顺序不定但都 >= 前 3 个
+    // std::partial_sort(v.begin(), v.begin() + 3, v.end());
 
-    // 2. sort: sort in ascending order
-    std::sort(src.begin(), src.end());
+    // 分区：把满足谓词的元素挪到前面，返回分界点
+    auto it = std::partition(v.begin(), v.end(), [](int x) { return x < 4; });
 
-    // 3. partition: move evens to the front
-    auto is_even = [](int x) { return x % 2 == 0; };
-    auto mid = std::partition(src.begin(), src.end(), is_even);
+    // 拷贝：用 back_inserter 自动 push_back，不用预先算大小
+    std::copy(src.begin(), src.end(), std::back_inserter(v));
 
-    // 4. transform: square each number
-    std::transform(src.begin(), src.end(), dest.begin(), [](int x) { return x * x; });
+    // 打乱：必须传一个随机数引擎（C++11 起 rand() 不推荐）
+    std::shuffle(v.begin(), v.end(), std::mt19937{std::random_device{}()});
 }
 ```
 
-Two details here are worth mentioning. `std::copy` returns an **output iterator**—as you write to it, it automatically calls `push_back` (or `insert`), avoiding the hassle of "reserving space beforehand." It is the most common partner for `std::vector`. The code also reminds us: **since C++11, random numbers should use engines from `<random>` (like `mt19937`), not the old `rand()`**—`rand()` has poor quality and thread-safety issues.
+There are two details worth mentioning. `std::back_inserter(v)` returns an **output iterator**. When we write to it, it automatically calls `v.push_back()`. This avoids the hassle of pre-calculating the element count to `reserve` space, making it the most common partner for `copy`. `std::shuffle` reminds us that **since C++11, we should use the engines from the `<random>` header (like `std::mt19937`) for random numbers, instead of the old `rand()`**—`rand()` has poor quality and thread-safety issues.
 
-Now look at `std::transform`. It encapsulates the logic of "applying a function to every element." Note the use of `cbegin`/`cend`—**const iterators**—indicating "I only read the source range, I don't modify it":
-
-```cpp
-std::vector<int> src = {1, 2, 3, 4, 5};
-std::vector<int> dest(5);
-
-// Apply lambda to src, store in dest
-std::transform(src.cbegin(), src.cend(), dest.begin(), [](int x) {
-    return x * x;
-});
-```
-
-`cbegin`/`cend` return `const_iterator`, while `begin`/`end` return regular iterators. A common pitfall: **these iterators must be used in matching pairs**—you cannot pair `begin` (non-const) with `cend` (const) because the types don't match. Since C++20, the status of `const_iterator` has been elevated in the standard library (proposals like P0896), as the ranges system relies heavily on it.
-
-## `rotate`: Parameter Order is the Biggest Trap
-
-`std::rotate` is a very useful but particularly error-prone algorithm. It rotates elements in a range such that the element pointed to by `middle` becomes the new first element. Its signature takes three iterators: `first, middle, last`.
+Next, let's look at `std::transform`, which encapsulates the logic of "applying a function to each element." Note that we use `cbegin` and `cend` here—**const versions of iterators**—to indicate that "we only read from the source range and do not modify it":
 
 ```cpp
 #include <algorithm>
-#include <vector>
-#include <iostream>
+#include <string>
+#include <iterator>
 
-int main() {
-    std::vector<int> v = {1, 2, 3, 4, 5};
+std::string s = "hello";
+std::string out;
+std::transform(s.cbegin(), s.cend(), std::back_inserter(out),
+               [](char c) { return std::toupper(static_cast<unsigned char>(c)); });
+// out == "HELLO"
+```
 
-    // Rotate left by 2: {3, 4, 5, 1, 2}
-    // first = v.begin(), middle = v.begin() + 2, last = v.end()
-    std::rotate(v.begin(), v.begin() + 2, v.end());
+`cbegin`/`cend` return a `const_iterator`, while `rbegin`/`rend` return reverse iterators. A common pitfall is that **these iterators must be used in pairs**—you cannot pair `cbegin()` with `end()` (one is const, the other is non-const, resulting in a type mismatch). Since C++20, the status of `const_iterator` in the standard library has been elevated (via proposals like P0896), because the ranges library relies heavily on it.
 
-    for (int i : v) std::cout << i << ' '; // Output: 3 4 5 1 2
-    std::cout << '\n';
-}
+## rotate: The parameter order is the biggest pitfall
+
+`std::rotate` is a very useful algorithm, but it is particularly easy to get wrong. Its function is to "cyclically shift elements within a range so that the element pointed to by `middle` becomes the new first element." Its signature takes three iterators: `std::rotate(first, middle, last)`.
+
+```cpp
+std::vector<int> v{1, 2, 3, 4, 5};
+std::rotate(v.begin(), v.begin() + 2, v.end());
+// 结果：{3, 4, 5, 1, 2}  —— middle(begin+2，即 3) 变成了新首元素
 ```
 
 Actual output:
 
-```text
-3 4 5 1 2
+```bash
+❯ g++ -std=c++20 rot_ok.cpp -o rot_ok && ./rot_ok
+rotate(begin, begin+2, end) on {1,2,3,4,5} -> { 3 4 5 1 2 }
 ```
 
-The trap here is: **most algorithms take two iterators `[first, last)`, but `std::rotate` (and `rotate_copy`, `shuffle`, etc.) takes three**. Once you develop muscle memory for "two parameters," it's very easy to mix up the positions of `middle` and `last` when writing `std::rotate`. Shah himself complained that using `std::lower_bound` to find an insertion point and then `std::rotate` to manually implement insertion sort is "too clever, ugly."
+The trap here is that **most algorithms take two iterators `(first, last)`, while `rotate` (along with `partial_sort`, `nth_element`, etc.) takes three `(first, middle, last)`**. Once we develop the muscle memory for "two arguments," it is very easy to reverse the positions of `middle` and `last` when writing `rotate`. Shah himself has complained about this; he used `upper_bound` to find an insertion point and then `rotate` to manually implement insertion sort, describing the result as "too clever, ugly."
 
-What happens if you swap them? I swapped `middle` and `last`, writing `std::rotate(v.begin(), v.end(), v.begin() + 2)`:
+What happens if we get them mixed up? I swapped `middle` and `last` to write `rotate(first, last, middle)`:
 
 ```cpp
-std::rotate(v.begin(), v.end(), v.begin() + 2);
+std::vector<int> w{1, 2, 3, 4, 5};
+std::rotate(w.begin(), w.end(), w.begin() + 2);  // 参数顺序错了
 ```
 
-Result:
-
-```text
-Segmentation fault (core dumped)
+```bash
+❯ g++ -std=c++20 rot_bad.cpp -o rot_bad && ./rot_bad
+about to call rotate(begin, end, begin+2)...
+[程序崩溃，退出码 139 — SIGSEGV]
 ```
 
-Direct segfault (exit code 139 = SIGSEGV). The reason is straightforward: `std::rotate` requires that `[first, middle)` and `[middle, last)` are both valid sub-ranges. In other words, the three iterators must satisfy the order `first <= middle <= last`. After writing `std::rotate(v.begin(), v.end(), v.begin() + 2)`, the second sub-range `[end, begin+2)` becomes an illegal range (end before start), and the algorithm dereferences an out-of-bounds position, causing a crash.
+Direct segmentation fault (exit code 139 = SIGSEGV). The reason is straightforward: `std::rotate` requires that both `[first, middle)` and `[middle, last)` are valid sub-ranges. In other words, the three iterators must satisfy the order `first <= middle <= last`. Once written as `(first, last, middle)`, the second sub-range `[middle_arg=last, last_arg=middle)` becomes an illegal range (the end is before the start). The algorithm dereferences an out-of-bounds position and crashes.
 
-:::warning Check Docs for 3-Iterator Algorithms
-Algorithms like `std::rotate`, `std::random_shuffle`, `std::sample`, and `std::nth_element` don't take simple `[first, last)` parameters, but rather three segments like `[first, n_last)` or `[first, middle, last)`. Before using them, confirm exactly what `middle` or `n_last` refers to. This improves in the ranges version covered in the next post—because ranges versions often take fewer parameters (passing the container directly), reducing the chance of pairing errors.
+:::warning Check documentation for three-iterator algorithms
+For algorithms like `rotate`, `partial_sort`, `nth_element`, and `stable_partition`, the parameters are not simply `(first, last)`, but rather three-part sequences like `(first, middle, last)`. Before using them, confirm exactly what `middle` refers to. This improves with the ranges version covered in Part Three—because ranges versions often require fewer arguments (passing the container directly), reducing the chance of pairing errors.
 :::
 
-## How Many Algorithms Are There? The "200+" Figure Needs Discounting
+## How Many Algorithms Are There Really? "Over 200" Needs a Discount
 
-Shah mentions a widely circulated number in his talk: "A 2018 CppCon talk said there are at least 105 algorithms, now there are over 200." Is this accurate? Let's be precise<RefLink :id="2" preview="cppreference, Standard library header <algorithm> — function template count" />.
+In his talk, Shah mentions a widely circulated number: "A 2018 CppCon talk said there were at least 105 algorithms, now there are over 200." Is this accurate? Let's fact-check this <RefLink :id="2" preview="cppreference, Standard library header <algorithm> — function template count" />.
 
-First, the origin of "105": It comes from Jonathan Boccara's CppCon 2018 talk "105 STL Algorithms in Less Than an Hour"<RefLink :id="3" preview="Jonathan Boccara, CppCon 2018 — 105 STL Algorithms" />. That used a **very loose counting criteria**—it counted `_if` variants (`find` vs `find_if`), `*_copy` variants (`reverse` vs `reverse_copy`), and `*_if_*` variants (`replace_if`, `copy_if`) as separate algorithms, mostly for memorability and presentation flow.
+First, the origin of "105": It comes from Jonathan Boccara's CppCon 2018 talk, "105 STL Algorithms in Less Than an Hour" <RefLink :id="3" preview="Jonathan Boccara, CppCon 2018 — 105 STL Algorithms" />. That used a **very loose counting criteria**—it counted `_if` variants (`find` / `find_if`), `_n` variants (`copy` / `copy_n`), and `_copy` variants (`remove` / `remove_copy`) as separate algorithms. The purpose was to make them memorable and easy to explain during the talk.
 
-So what is the strict number? I checked cppreference, as of C++23:
+So, what is the strict number? I checked cppreference, and as of C++23:
 
-- The `<algorithm>` header contains about **91** function templates (excluding ranges versions).
-- The `<numeric>` header contains **14** numeric algorithms (`accumulate`, `reduce`, `adjacent_difference`, etc.; C++26 will add 5 more saturated arithmetic ones, making 19).
-- The `std::ranges` namespace contains about **100** "constrained algorithms" (niebloids, i.e., ranges versions of algorithms).
-- Plus about 14 uninitialized memory algorithms in `<memory>`.
+- The `<algorithm>` header contains approximately **91** `std::` function templates (excluding ranges versions).
+- The `<numeric>` header contains **14** numeric algorithms (`accumulate`, `reduce`, `inner_product`, etc.; C++26 will add 5 more saturated arithmetic ones, making it 19).
+- Under the `std::ranges::` namespace, there are approximately **100** "constrained algorithms" (niebloids, which are the ranges versions of algorithms).
+- Additionally, there are about 14 uninitialized memory algorithms in `<memory>`.
 
-So the claim of "over 200" **only holds if you count both classic and ranges APIs as separate entries, plus various overloads and variants**. If you count by "unique algorithm names," the actual number is around **110 to 120**.
+Therefore, the claim of "over 200" **only holds true if we count both the `std::` and `std::ranges::` API sets separately, plus various variant overloads.** If we count by "unique algorithm names," the actual number is approximately **110 to 120**.
 
-:::tip How to Phrase It Accurately
-Instead of saying "STL has over 200 algorithms," a more rigorous statement is: **STL has over 100 unique algorithms; if you count both classic and ranges interfaces as entries, there are indeed over 200 API entry points.** This distinction is important in interviews or technical writing—"over 200" sounds impressive, but many are just variants and ranges mirrors of the same algorithm.
+:::tip How to state it accurately
+Rather than saying "STL has over 200 algorithms," a more rigorous statement is: **STL has over 100 unique algorithms; if we count both `std::` and `std::ranges::` interfaces as entries, there are indeed over 200 API entry points.** This distinction is quite important in interviews or technical writing—"over 200" sounds impressive, but many are simply variants and ranges mirrors of the same algorithm.
 :::
 
-## Trap 1: Iterator Invalidation—The Most Insidious Killer
+## Trap #1: Iterator Invalidation—The Most Insidious Killer
 
-Using algorithms itself isn't hard once you're familiar; the real pitfall is **coordinating iterator and container lifecycles**. The number one trap is **iterator invalidation**.
+Using the algorithms themselves isn't hard once you are familiar with them; the real pitfall is **coordinating the lifecycles of iterators and containers**. The number one trap is **iterator invalidation**.
 
-Look at this harmless-looking code:
+Let's look at a snippet of code that seems harmless enough:
+
+```cpp
+std::vector<int> v{1, 2, 3};
+auto it = v.begin();        // it 指向 v 的第一个元素
+v.push_back(4);             // 如果触发扩容，it 就悬空了！
+std::cout << *it << '\n';   // 解引用悬空迭代器 —— UB
+```
+
+The problem lies with `push_back`. Internally, a `vector` is a contiguous dynamic array. When capacity is exceeded, it **reallocates a larger block of memory**, moves the old elements over, and then frees the old memory. However, your `it` still points to that **freed old memory**—it has become a dangling pointer (standard terminology calls this a "singular iterator"). Dereferencing `*it` at this point is undefined behavior (UB).
+
+The scary part is: **UB doesn't always crash immediately**. It often manifests as "reading a value that looks perfectly normal," leading you to believe everything is fine. You merge the code into the main branch, and then one day, it crashes inexplicably on a customer's machine. Let's test this with a normal compilation (debugging disabled):
 
 ```cpp
 #include <vector>
-#include <algorithm>
-
-int main() {
-    std::vector<int> v = {1, 2, 3};
-    auto it = v.begin(); // it points to 1
-
-    v.push_back(4); // Potential reallocation!
-
-    // *it = 10; // UB: Accessing invalidated iterator
-    std::cout << *it << '\n'; // UB
-}
-```
-
-The problem lies in `push_back`. Internally, `std::vector` is a contiguous dynamic array. When capacity is insufficient, it **reallocates a larger block of memory**, moves old elements, and frees the old memory. But your `it` still points to that **freed old memory**—it becomes a dangling pointer (standard term: "singular iterator"). Dereferencing `it` here is undefined behavior.
-
-The scary part is: **UB doesn't always crash immediately**. It often manifests as "reading a seemingly normal value," leading you to think it's fine, merge the code, and then it mysteriously crashes on a customer's machine. Let's test this with a normal compile (no debug flags):
-
-```bash
-g++ -std=c++20 test.cpp && ./a.out
-```
-
-Output:
-
-```text
-1606426328
-```
-
-See— the program **exits normally (exit code 0) with no errors**, but the value read is garbage like `1606426328`. After `push_back`, the capacity grew from 3 to 12, old memory was freed, and the memory `it` points to now holds random data. This is UB at its most insidious: **silent corruption**.
-
-How do we catch this? GCC/Clang provide a debug macro `_GLIBCXX_DEBUG`. When enabled, the standard library's iterators carry bounds and validity checks. If you dereference an invalidated iterator, it aborts immediately and prints diagnostics. Let's compile the same code with debug mode:
-
-```bash
-g++ -D_GLIBCXX_DEBUG -std=c++20 test.cpp && ./a.out
-```
-
-Output:
-
-```text
-/usr/include/c++/11.2.0/debug/vector:407:
-Error: attempt to dereference iterator that does not exist.
-Aborted (core dumped)
-```
-
-Caught red-handed: `_GLIBCXX_DEBUG` explicitly tells you the iterator is invalidated and points out exactly what you did. One macro turns "silent UB" into "immediate crash + precise location"—use it in development, disable it in release (it has performance overhead). The MSVC equivalent is `_HAS_ITERATOR_DEBUGGING`; Release defaults to 0 or 1, Debug is 2.
-
-:::tip Iterator Invalidation Rules Cheat Sheet (Verified with cppreference)
-Invalidation rules vary greatly by container; just remember the general idea, check the table for specifics<RefLink :id="4" preview="cppreference, Iterator invalidation — rules per container" />:
-
-- **`std::vector` / `std::string`**: `push_back` invalidates **all** iterators only when reallocation triggers (capacity changes); otherwise only `end` changes. After `reserve`, iterators won't invalidate as long as you don't exceed the capacity.
-- **`std::deque`**: Insertion at either end invalidates **all iterators** (even without reallocation), but **references and pointers remain valid**—so be careful traversing deques; storing references is safer than iterators.
-- **`std::list` / `std::forward_list`**: Insertion and `erase` **do not invalidate** any other existing iterators (nodes don't move), only the iterator pointing to the erased node is invalidated.
-- **`std::map` / `std::set`**: `rehash` (triggered by insertion causing bucket count change) invalidates iterators, but **references and pointers remain valid**.
-
-Remember a general principle: **if the container might "move house" (contiguous containers reallocating, hash tables rehashing), iterators can be invalidated; node-based containers (list, tree nodes) don't move, so iterators are stable.**
-:::
-
-## Trap 2: Mismatched Iterator Pairs—`begin` and `end` Must Come from the Same Object
-
-The second trap relates to "pairing." Algorithms require `begin` and `end` to come from **the same container**, but C++ cannot enforce this at runtime. If you pass iterators from two different containers, the compiler accepts them, and you get UB.
-
-The classic crash scenario comes from Jason Turner's C++ Weekly (which Shah cited in the talk): a function returns a temporary `std::vector`, and you chain `begin` and `end` calls directly to save space:
-
-```cpp
-#include <algorithm>
-#include <vector>
-
-auto get_data() {
-    return std::vector<int>{1, 2, 3, 4, 5};
-}
-
-int main() {
-    // WRONG: begin and end come from different temporary objects!
-    std::for_each(get_data().begin(), get_data().end(), [](int x) {
-        std::cout << x << ' ';
-    });
-}
-```
-
-:::warning Shah Understates This
-Shah's comment on this code was "maybe it works sometimes, maybe we get lucky"—**this might mislead beginners** because it implies "there is a legitimate path where this works." **There isn't.** This is undefined behavior. There is no "legitimately working" path, only the illusion of "UB behaving normally."
-
-Reason: The two `get_data()` calls are **two independent function calls**, returning **two different temporary `std::vector` objects**. Their `begin` and `end` point to two unrelated memory blocks. Pairing `begin` from one temporary with `end` from another creates an illegal range. Worse, these temporaries are destroyed at the end of the statement, so the algorithm holds dangling iterators from the start. **The correct way is to store the result in a named variable first**, so `begin` and `end` come from the same living object:
-
-```cpp
-auto data = get_data(); // One object
-std::for_each(data.begin(), data.end(), [](int x) { // Safe
-    std::cout << x << ' ';
-});
-```
-
-This illusion of "same function name implies same object" is a high-risk area for pairing errors.
-:::
-
-## Trap 3: Insufficient Space—Stuffing Too Much into a Fixed Size
-
-The third trap relates to the output destination. When you use `std::copy` to write to a **fixed-size** destination (like a raw array or a container without `reserve`), if the source range is larger than the destination space, you **write out of bounds**—again UB, potentially silently corrupting adjacent memory.
-
-```cpp
-#include <algorithm>
 #include <iostream>
-
-int main() {
-    int src[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    int dest[3]; // Only 3 slots!
-
-    // UB: Writing 10 ints into a 3-int array
-    std::copy(std::begin(src), std::end(src), std::begin(dest));
-
-    for (int i : dest) std::cout << i << ' '; // Might print garbage or crash later
+int main()
+{
+    std::vector<int> v{1, 2, 3};
+    auto it = v.begin();
+    std::cout << "before push_back: *it=" << *it << ", cap=" << v.capacity() << "\n";
+    v.push_back(4); v.push_back(5); v.push_back(6); v.push_back(7);  // 必然扩容
+    std::cout << "after  push_back: cap=" << v.capacity() << "\n";
+    std::cout << "deref stale it: " << *it << "\n";   // UB：读已释放内存
 }
 ```
 
-This code compiles, runs, and might not error immediately, but you wrote 7 values into memory following `dest`. This bug can be caught with AddressSanitizer (`-fsanitize=address`), which will report a heap/stack buffer overflow.
-
-The solution is straightforward: either use `std::back_inserter` (let the destination container grow automatically), or `reserve` enough space before copying and ensure the source range isn't larger than the capacity. Returning to the first point: **letting the container manage its own size (using inserters) is much safer than manually calculating sizes.**
-
-## Error Quality: Are Ranges Really More Friendly?
-
-Shah concludes by saying "Ranges uses concepts, giving you better error messages." This is true, but with a discount. Let's compare the error outputs of the two interfaces when "passing wrong parameters."
-
-First, classic `std::sort` with wrong parameters—pairing `begin` of a `std::list` with `end` of a `std::vector` (type mismatch):
-
-```cpp
-std::list<int> l = {1, 2, 3};
-std::vector<int> v = {4, 5, 6};
-std::sort(l.begin(), v.end()); // Type mismatch
+```bash
+❯ g++ -std=c++20 -O0 inval.cpp -o inval && ./inval; echo "退出码=$?"
+before push_back: *it=1, cap=3
+after  push_back: cap=12
+deref stale it: -40771459
+退出码=0
 ```
 
-Now, the ranges version with a wrong parameter—passing something that isn't a range to `std::ranges::sort`:
+See what happened? The program **exits normally (exit code 0) without any errors**, but the value read is garbage like `-40771459`. After the `vector` reallocated, its capacity grew from three to 12, the old memory was freed, and the memory `it` pointed to now contains random data. This is the most insidious form of **undefined behavior (UB)**: **silent failure**.
 
-```cpp
-std::list<int> l = {1, 2, 3};
-std::ranges::sort(l); // std::list is not a random_access_range
+So how do we catch it? GCC and Clang provide a debug macro `-D_GLIBCXX_DEBUG`. When enabled, standard library iterators carry bounds and validity checks. If you dereference an invalid iterator, it will immediately abort and print diagnostics. Let's compile the same code with debugging enabled:
+
+```bash
+❯ g++ -std=c++20 -O0 -g -D_GLIBCXX_DEBUG inval.cpp -o inval_dbg && ./inval_dbg; echo "退出码=$?"
+before push_back: *it=1, cap=3
+after  push_back: cap=12
+/usr/include/c++/16.1.1/debug/safe_iterator.h:352:
+Error: attempt to dereference a singular iterator.
+Objects involved in the operation:
+    iterator "this" @ 0x7fff6bd63820 {
+      type = gnu_cxx::normal_iterator<int*, std::vector<int>>(mutable iterator);
+      state = singular;   ← 迭代器已失效
+      references sequence with type 'std::debug::vector<int>' @ 0x7fff6bd63850
+    }
+退出码=134   ← 134 = SIGABRT，被调试库主动 abort
 ```
 
-GCC 16.1.1 error line counts:
+Now we've caught it red-handed: `state = singular` explicitly tells you that this iterator is invalid, and `attempt to dereference a singular iterator` precisely points out what you just did. A single `-D_GLIBCXX_DEBUG` macro turns "silent UB" into "instant crash + precise location" — enable it during development, disable it for release (it incurs a performance overhead). The corresponding switch for MSVC is `_ITERATOR_DEBUG_LEVEL=2`; Release configurations default to 0 or 1, while Debug configurations use 2.
 
-- Classic `std::sort` error: ~32 lines
-- Ranges `std::ranges::sort` error: ~69 lines
+:::tip Quick Reference for Iterator Invalidation Rules (Verified against cppreference)
+Invalidation rules vary significantly between containers, so just remember the general principles and check the specific table <RefLink :id="4" preview="cppreference, Iterator invalidation — rules per container" />:
 
-Interestingly—**in this specific case, the ranges error (69 lines) is actually longer than the classic one (32 lines)**. This is because passing a `std::list` to `std::ranges::sort` forces the compiler to unfold the entire concept constraint chain (`sortable` -> `permutable` -> `forward_range` -> ...) to show you why it failed. The longer the chain, the more verbose the error. So I must honestly correct a common impression: **"ranges errors are always shorter and friendlier" is not true**; readability depends heavily on compiler version and scenario (GCC 10+ / Clang 12+ are much better, older compilers still spew template gibberish).
+- **`vector` / `string`**: `push_back` invalidates **all** iterators only when a reallocation is triggered (capacity changes); otherwise, only `end()` changes. After `reserve`, iterators remain valid as long as you don't exceed the reserved capacity.
+- **`deque`**: Inserting at either end invalidates **all iterators** (even without reallocation), but **references and pointers remain valid** — so be careful when traversing a deque; storing references is safer than storing iterators.
+- **`list` / `forward_list`**: Insertion and `splice` do **not** invalidate any existing iterators (list nodes don't move); only the iterator corresponding to the node removed by `erase` becomes invalid.
+- **`unordered_*`**: `rehash` (triggered when insertion changes the bucket count) invalidates **iterators, but references and pointers remain valid**.
 
-So what is the real advantage of ranges regarding "errors"? It's not line count, but **it prevents certain bugs from being written in the first place**. Recall Trap 2 above—classic `std::sort` accepts two iterators, so you can mismatch `begin`/`end` from different containers (like `get_data().begin(), get_data().end()`), and the compiler only errors at instantiation. `std::ranges::sort` **accepts only one container**, so you literally cannot express the error of "begin from A, end from B". **Eliminating an opportunity for error is far more practical than having a friendlier error.** This is the core safety benefit of ranges, which we will expand on in the next post.
+Remember one overarching principle: **If the container internals might "move house" (contiguous containers reallocating, hash tables rehashing), iterators may become invalid; node-based containers (list, tree nodes) don't move, so their iterators are stable.**
+:::
 
-## Transition: Must Iterators Die?
+## Pitfall 2: Mismatched Iterator Pairs — `begin` and `end` Must Come from the Same Object
 
-At this point, Shah showed a rather exaggerated slide: "Iterators must die." Exaggeration aside, the sentiment is real: **the iterator interface is powerful but full of pitfalls**—easy to mismatch, parameter order (for 3-iterator algorithms) is easy to reverse, and partial sorting code is ugly.
+The second pitfall relates to "pairing." Algorithms require that `first` and `last` come from **the same container**, but C++ cannot enforce this check at runtime — if you pass iterators from two different containers, the compiler accepts them without complaint, leading straight to UB.
 
-The good news is that C++20 Ranges addresses these pain points. It doesn't abandon iterators (iterators remain the underlying mechanism, even C++26 relies on them), but wraps them in a safer, more composable interface: **passing containers directly instead of iterator pairs, using concepts to catch type errors early at compile time, and using views for lazy composition**. These are the main topics of the next post.
+The classic failure scenario comes from Jason Turner's C++ Weekly (which Shah specifically cited in his talk): a function returns a temporary `vector`, and to save a line of code, you chain `.begin()` and `.end()` calls directly:
 
-In the next post, we will officially dive into Ranges—starting from "why `std::ranges::sort` takes one fewer parameter," moving to lazy evaluation of views, the pipe operator `|`, `std::views::filter`, and a eye-opening feature: **infinite ranges**. If you are interested in parallel versions of numeric algorithms (`std::reduce`, `std::transform_reduce`), check out the content on execution policies and parallel reduction in the Concurrency volume (vol5)—that's where algorithms meet concurrency.
+```cpp
+std::vector<int> download_data();  // 每次调用返回一个全新的临时 vector
+
+// 危险写法：
+// process(download_data().begin(), download_data().end());
+```
+
+:::warning Shah is being too mild here
+Shah commented on this code snippet saying it "might work sometimes, if we are lucky"—this statement **might mislead beginners**, as it implies "there are legitimate scenarios where this works." **No.** This is undefined behavior; there is no legitimate path where it works, only the illusion of "UB coincidentally behaving as expected."
+
+The reason: the two `download_data()` calls are **two independent function calls**, returning **two different temporary `vector`s**. Their `.begin()` and `.end()` point to two completely unrelated memory blocks. Pairing the `begin` of one temporary with the `end` of another to feed into an algorithm results in an invalid range. Even worse, these temporaries are destroyed at the end of this statement, so the iterators held by the algorithm are dangling from the very start. **The correct approach is to store the result in a named variable first**, ensuring `begin` and `end` come from the same living object:
+
+```cpp
+auto data = download_data();          // 一个具名变量，一份内存
+process(data.begin(), data.end());    // begin/end 来自同一个 data —— 安全
+```
+
+This illusion that "functions with the same name refer to the same object" is a common hotspot for pairing errors.
+:::
+
+## Trap Three: Insufficient Space—Cramming Too Much into a Fixed Size
+
+The third trap relates to the output destination. When you use `std::copy` to write data to a **fixed-size** destination (such as a raw array, or a container without a `back_inserter`), if the source range is larger than the destination space, it results in an **out-of-bounds write**—which is also undefined behavior (UB) and can silently corrupt adjacent memory.
+
+```cpp
+int src[10] = {0,1,2,3,4,5,6,7,8,9};
+int dst[3];   // 只有 3 个位置！
+std::copy(std::begin(src), std::end(src), std::begin(dst));  // 越界写 —— UB
+```
+
+This code compiles, runs, and doesn't crash immediately, but you have written seven out-of-bounds values into the memory following `dst`. AddressSanitizer (`-fsanitize=address`) can catch this bug, reporting a heap or stack buffer overflow.
+
+The fix is straightforward: either use `std::back_inserter` (letting the target container grow automatically), or `reserve` enough space before copying and ensure the source range does not exceed the destination's capacity. This brings us back to our first rule of thumb: **letting the container manage its own size (using an inserter) is much safer than manually calculating sizes.**
+
+## Error Quality: Do Ranges Really Provide Better Error Messages?
+
+Shah mentioned in his summary that "Ranges uses concepts, which gives you better error messages." This is true, but with a caveat. Let's compare the error messages from both interfaces when we pass incorrect arguments.
+
+First, let's look at passing the wrong arguments to the classic `std::sort`—mixing the `begin` of a `vector` with the `end` of a `list` (type mismatch):
+
+```cpp
+std::vector<int> v{1,2,3};
+std::list<int>   l{4,5,6};
+std::sort(v.begin(), l.end());   // 两个不同容器的迭代器
+```
+
+Let's look at what happens when we pass something that isn't a range to `std::ranges::sort`:
+
+```cpp
+int not_a_range = 42;
+std::ranges::sort(not_a_range);
+```
+
+Both are error line numbers from GCC 16.1.1:
+
+```bash
+❯ # 经典版
+❯ g++ -std=c++20 err_classic.cpp 2>err_c.txt; wc -l < err_c.txt
+32
+❯ head -3 err_c.txt
+err_classic.cpp:7:14: error: no matching function for call to
+  'sort(std::vector<int>::iterator, std::__cxx11::list<int>::iterator)'
+
+❯ # ranges 版
+❯ g++ -std=c++20 err_ranges.cpp 2>err_r.txt; wc -l < err_r.txt
+69
+```
+
+Here comes the interesting part—**in this specific case, the error message for the ranges version (line 69) is actually longer than the classic version (line 32)**. This is because when you pass an `int` to `ranges::sort`, the compiler has to unfold the entire chain of concept constraints (`sortable` → `random_access_iterator` → ...) for you to see. The longer the chain, the more verbose the error. So, I must honestly correct a common misconception: **"ranges errors are always shorter and friendlier" does not hold true**. Its readability depends heavily on the compiler version and the specific scenario (it only became relatively mature after GCC 10+ / Clang 12+, and older compilers still spit out a screenful of template gibberish).
+
+So, what is the *real* advantage of ranges when it comes to "errors"? It's not the line count, but **that it prevents you from writing certain bugs in the first place**. Recall Trap #2 above—the classic `std::sort` takes two iterators, and you can easily mismatch the `begin`/`end` of two different containers (like in `err_classic`). The compiler doesn't report the error until instantiation. However, `std::ranges::sort` **accepts only one range**. You simply cannot express the error where "begin comes from A and end comes from B". **Eliminating an opportunity for error is far more practical than a friendlier error message.** This is the core safety benefit of ranges, which we will expand on in Part 3.
+
+## Transition: Must Iterators Go Away?
+
+At this point, Shah showed a rather provocative slide—"Iterators must die". Hyperbole aside, the sentiment he expressed is real: **while the iterator interface is powerful, it is full of pitfalls**—easy to mismatch pairs, easy to reverse argument order (for three-iterator algorithms), and ugly syntax for partial sorting.
+
+The good news is that C++20 Ranges directly addresses these pain points. It doesn't discard iterators (iterators remain the underlying mechanism, even C++26 can't do without them), but wraps a safer, more composable interface layer on top of them: **passing containers directly instead of iterator pairs, using concepts to intercept type errors early at compile-time, and using views for lazy composition**. These are the main threads of Part 3.
+
+In the next post, we will formally dive into Ranges—starting from "why `ranges::sort` takes one fewer argument," all the way to the lazy evaluation of views, the pipe operator, `ranges::to`, and a feature that is truly eye-opening: **infinite ranges**. If you are interested in parallel versions of numeric algorithms (`reduce`, `transform_reduce`), you can check out the content regarding `<execution>` policies and `std::reduce` parallel reduction in vol5 (Concurrency)—that is where algorithms and concurrency intersect.
 
 <ReferenceCard title="References">
   <ReferenceItem
@@ -373,7 +359,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="Algorithms library"
     :year="2026"
     url="https://en.cppreference.com/w/cpp/algorithm"
-    chapter="containers / iterators / algorithms 三大支柱"
+    chapter="The three pillars: containers / iterators / algorithms"
   />
   <ReferenceItem
     :id="2"
@@ -381,7 +367,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="Standard library header &lt;algorithm&gt;"
     :year="2024"
     url="https://en.cppreference.com/w/cpp/header/algorithm"
-    chapter="截至 C++23 约 91 个函数模板"
+    chapter="Approx. 91 function templates as of C++23"
   />
   <ReferenceItem
     :id="3"
@@ -389,7 +375,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="105 STL Algorithms in Less Than an Hour — CppCon 2018"
     :year="2018"
     url="https://www.youtube.com/watch?v=2olsGf6JIkU"
-    chapter="宽松计数口径下 105 个"
+    chapter="105 algorithms under loose counting criteria"
   />
   <ReferenceItem
     :id="4"
@@ -397,7 +383,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="Iterator invalidation rules"
     :year="2026"
     url="https://en.cppreference.com/w/cpp/container"
-    chapter="各容器 insert/erase 后的失效规则"
+    chapter="Invalidation rules after insert/erase for various containers"
   />
   <ReferenceItem
     :id="5"
@@ -405,7 +391,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="std::rotate"
     :year="2026"
     url="https://en.cppreference.com/w/cpp/algorithm/rotate"
-    chapter="参数顺序 first, middle, last"
+    chapter="Parameter order: first, middle, last"
   />
   <ReferenceItem
     :id="6"
@@ -413,7 +399,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="std::vector — Iterator invalidation"
     :year="2026"
     url="https://en.cppreference.com/w/cpp/container/vector"
-    chapter="push_back 扩容导致迭代器失效"
+    chapter="Iterator invalidation caused by push_back reallocation"
   />
   <ReferenceItem
     :id="7"
@@ -421,7 +407,7 @@ In the next post, we will officially dive into Ranges—starting from "why `std:
     title="Standard library header &lt;numeric&gt;"
     :year="2023"
     url="https://en.cppreference.com/w/cpp/header/numeric"
-    chapter="数值算法约 14 个"
+    chapter="Approx. 14 numeric algorithms"
   />
   <ReferenceItem
     :id="8"

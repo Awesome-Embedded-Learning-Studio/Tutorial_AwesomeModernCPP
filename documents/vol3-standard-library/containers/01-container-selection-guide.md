@@ -105,6 +105,15 @@ int main()
 g++ -std=c++20 -O2 -o /tmp/cache_bench /tmp/cache_bench.cpp && /tmp/cache_bench
 ```
 
+不想配环境？直接点开下面的在线示例跑这段 benchmark，看连续内存到底快多少：
+
+<OnlineCompilerDemo
+  title="连续 vs 节点：vector 与 list 遍历性能实测"
+  source-path="code/examples/vol3/01_container_cache_benchmark.cpp"
+  description="同样是 O(n) 遍历，连续内存的 vector 吃满 cache，节点式的 list 每个元素都要单独访存——实测两边耗时差几倍"
+  allow-run
+/>
+
 跑下来 `vector` 遍历会比 `list` 快好几倍（具体倍数跟机器和 cache 大小有关，量级是数倍而不是百分之几）——两者遍历都是 O(n)、每次加法都是 O(1)，但 `vector` 的连续内存吃满 cache，`list` 的每个节点都要单独访存。这就是「为什么默认用 vector」的底层理由：在绝大多数「存一坨数据然后遍历」的场景里，连续内存带来的 cache 红利，远超过链表省下的那点搬移开销。**只有当你真的需要在已知位置频繁增删、且增删代价明显高于遍历代价时，list 才可能赢**——这个条件比直觉里苛刻得多。
 
 ## 迭代器失效速查：改了容器，手里的引用还能不能用

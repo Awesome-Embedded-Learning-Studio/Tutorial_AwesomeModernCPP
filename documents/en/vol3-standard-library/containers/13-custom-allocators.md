@@ -4,14 +4,10 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: 'Here is the translation, formatted as a description suitable for documentation
-  or a course syllabus:
-
-
-  An in-depth look at custom allocators: mechanisms and trade-offs of Bump, Pool,
-  and Stack strategies; placement new and object construction/destruction; the C++17
-  `std::pmr` `memory_resource` hierarchy (`monotonic`/`pool`) and PMR containers;
-  and when to manage memory manually.'
+description: 'Deep dive into custom allocators: mechanisms and trade-offs of Bump/Pool/Stack
+  strategies, placement new and object construction/destruction, the C++17 `std::pmr`
+  `memory_resource` system (`monotonic`/`pool`) and `pmr` containers, and when to
+  manage memory yourself.'
 difficulty: advanced
 order: 13
 platform: host
@@ -27,24 +23,24 @@ tags:
 title: 'Custom Allocators & PMR: Managing Memory Yourself'
 translation:
   source: documents/vol3-standard-library/containers/13-custom-allocators.md
-  source_hash: c7a1da24b0d9d6a7fbfa5dccbd29e3c5b2513eced131f027cf5a54c478d84293
-  translated_at: '2026-06-16T04:01:25.767452+00:00'
+  source_hash: 3d6f35e9607d6d59e654176774a067b00942b0b84c8d013328c78c3e05e31382
+  translated_at: '2026-06-24T00:37:18.709278+00:00'
   engine: anthropic
-  token_count: 1662
+  token_count: 1820
 ---
 # Custom Allocators & PMR: Managing Your Own Memory
 
 ## Why We Need Custom Allocators
 
-Default `new`/`malloc` are convenient, but they have several weaknesses: indeterminate allocation timing (potentially blocking real-time tasks), heap fragmentation, poor locality, and a one-size-fits-all approach. When you encounter these requirements, default allocators fall short—real-time tasks cannot be stalled by sporadic `malloc` calls, you might want to allocate everything at startup to avoid runtime allocation, you need high-frequency allocation of fixed-size small objects, or you want to dedicate a large block of memory to a specific module for easier tracking. In these scenarios, managing your own memory becomes an essential skill for engineers.
+The default `new` / `malloc` are convenient, but they have some weaknesses: allocation timing is non-deterministic (potentially blocking real-time tasks), they cause heap fragmentation, they suffer from poor locality, and they apply a "one size fits all" approach. When you encounter requirements like these, the default allocators fall short—real-time tasks cannot be stalled by sporadic malloc calls, you might want to allocate everything once during startup to avoid runtime allocation, you need high-frequency allocation of small fixed-size objects, or you want to dedicate a large block of memory to a specific module for easier tracking. In these scenarios, managing your own memory becomes an essential skill for engineers.
 
-Allocators essentially do two things: **allocate** (provide unused memory) and **deallocate** (return it). In C++, you also handle alignment and object construction/destruction. First, let's look at three classic strategies to understand the mechanisms, then we'll look at the C++17 standard library solution: `std::pmr`.
+Allocators essentially do two things: **allocate** (hand out unused memory) and **deallocate** (reclaim it). In C++, we also need to handle alignment and object construction/destruction. We will first look at three classic strategies to understand the mechanisms, and then examine the C++17 standard library solution: `std::pmr`.
 
 ## Three Classic Allocation Strategies
 
 ### Bump (Linear) Allocator
 
-The simplest allocator: maintain a pointer, move it up to allocate, and do not support individual deallocation (only a global reset). Allocation is O(1), making it suitable for startup or short-cycle tasks.
+The simplest allocator: maintain a pointer, move it up to allocate, and do not support individual deallocation (only a global reset). Allocation is O(1), making it suitable for startup phases or short-lived tasks.
 
 ```cpp
 #include <cstddef>
@@ -79,11 +75,11 @@ public:
 };
 ```
 
-It cannot deallocate individual objects (unless you add tagging/rollback), but the implementation is extremely simple and fast. It fits scenarios where you "allocate a bunch, use them, and reset everything at once."
+Cannot deallocate individual objects (unless we add bookkeeping/rollback), but the implementation is extremely simple and fast. Ideal for "allocate a batch, use it, then reset everything at once" scenarios.
 
-### Fixed-Size Memory Pool (Free-list)
+### Fixed-size Memory Pool (Free-list)
 
-For a large number of small objects of the same size (message nodes, connection objects), use a fixed-size pool: each slot has a fixed size, and when deallocated, the slot is hooked back onto the free list. Allocation/deallocation are both O(1) with minimal fragmentation.
+For many small objects of the same size (message nodes, connection objects), use a fixed-size pool: each slot has a fixed size, and upon deallocation, we link the slot back to the free list. Both allocation and deallocation are O(1), with minimal fragmentation.
 
 ```cpp
 class SimpleFixedPool {
@@ -119,11 +115,11 @@ public:
 };
 ```
 
-`slot_size` must include alignment and control information; thread safety requires locks or lock-free mechanisms.
+`slot_size` must include padding and control information; to achieve thread safety, we must add locks or make it lock-free.
 
 ### Stack (LIFO) Allocator
 
-When allocation/deallocation follows a Last-In-First-Out (LIFO) pattern, this is fastest. It supports "mark + rollback to mark." Ideal for frame allocation (allocate per frame, reclaim uniformly at frame end) or short-lived chains. Its `allocate` is similar to Bump (move pointer up + align), adding `mark`/`rollback`:
+Allocation and deallocation are fastest when they follow a Last-In-First-Out (LIFO) pattern, supporting "mark + rollback to mark". This is suitable for frame allocation (allocate per frame, reclaim uniformly at frame end) and short-lived chains. Its `allocate` behaves like Bump (move pointer up + align), adding `mark` and `rollback`:
 
 ```cpp
 class StackAllocator {
@@ -140,11 +136,11 @@ public:
 };
 ```
 
-The trade-off between the three strategies: Bump is simplest but lacks single deallocation; Pool fits fixed-size high-frequency usage; Stack fits LIFO lifecycles. They all solve the problem of "how to efficiently manage a pre-allocated block of memory."
+Trade-offs among the three strategies: Bump is the simplest but does not support individual deallocation; Pool is suitable for fixed-size, high-frequency allocations; Stack fits LIFO lifecycles. They all solve the problem of "how to efficiently manage a pre-allocated memory block."
 
-## Placement New & Object Construction/Destruction
+## Placement new and object construction/destruction
 
-Allocators only provide raw memory (bytes); object construction/destruction is your responsibility—use placement new to construct and explicitly call the destructor:
+Allocators only provide raw memory (bytes); object construction and destruction are your responsibility—use placement new for construction and explicitly call the destructor:
 
 ```cpp
 #include <new>
@@ -167,19 +163,19 @@ void destroy_with(Alloc& a, T* obj) noexcept
 }
 ```
 
-Remember: **Allocation ≠ Construction**. `allocate` gives memory, `new` constructs; `destroy` destructs, `deallocate` returns memory. This four-step process of "allocate / construct / destroy / deallocate" is the core of both hand-written allocators and the standard library allocator concept.
+Remember: **allocation is not construction**. `allocate` provides memory, while `new (mem) T(...)` constructs the object; `obj->~T()` destroys it, and `deallocate` returns the memory. This four-step process of "allocate / construct / destroy / deallocate" is the core concept behind custom allocators and the standard library allocator.
 
 ## The Standard Library Solution: std::pmr (C++17)
 
-Writing allocators by hand helps you understand the mechanisms, but if you really want to use "your own allocation strategy" in STL containers, writing a full `std::allocator` compatible type (a bunch of typedefs, `allocate`) is tedious. C++17 offers a better solution: **std::pmr (polymorphic memory resource)**.
+Writing a custom allocator helps you understand the underlying mechanisms, but actually using "your own allocation strategy" within STL containers by implementing a fully `std::allocator`-compatible type (with a bunch of typedefs and `rebind`) is tedious. C++17 offers a better solution: **std::pmr (polymorphic memory resource)**.
 
-The core of pmr is `std::pmr::memory_resource`—an abstract base class providing `do_allocate`/`do_deallocate` interfaces (you inherit from it to implement your own strategy). The standard library comes with several ready-made implementations:
+The core of pmr is `std::pmr::memory_resource`—an abstract base class that provides `allocate` and `deallocate` interfaces (which you inherit to implement your own strategy). The standard library includes several ready-made implementations:
 
-- `std::pmr::monotonic_buffer_resource`: The Bump allocator mentioned earlier, allocating linearly on a stack/static buffer. Extremely fast, no individual deallocation, suitable for frame allocation or one-off tasks.
-- `std::pmr::unsynchronized_pool_resource` / `synchronized_pool_resource`: Fixed-size pools, suitable for large numbers of same-size small objects (use the synchronized version for multithreading).
-- `std::pmr::null_memory_resource`: Borrows but never returns, used for "prohibit allocation from here on" scenarios.
+- `monotonic_buffer_resource`: This is the Bump allocator mentioned earlier. It performs linear allocation on a stack or static buffer. It is extremely fast, does not free individual blocks, and is suitable for frame allocation or one-off tasks.
+- `synchronized_pool_resource` / `unsynchronized_pool_resource`: Fixed-size pools suitable for large numbers of small objects of the same size (use the synchronized version in multi-threaded contexts).
+- `null_memory_resource`: Borrows memory but never returns it, used for scenarios where "allocation is prohibited thereafter."
 
-Then there are **pmr containers**: `std::pmr::vector`, `std::pmr::string`, `std::pmr::list`, etc. Internally they use `std::pmr::polymorphic_allocator`, and you pass a `memory_resource`* upon construction. You can change the allocation strategy without changing the container type (they are all `std::pmr::vector`), just swap the resource. This is pmr's biggest advantage over hand-written allocator templates: **type erasure, runtime strategy switching**.
+Then there are **pmr containers**: `std::pmr::vector<T>`, `std::pmr::string`, `std::pmr::map`, and so on. Internally, they use `polymorphic_allocator` and accept a `memory_resource*` upon construction. You can change the allocation strategy without changing the container type (they are all `pmr::vector`); you simply swap the resource. This is the biggest advantage of pmr compared to handwritten allocator templates: **type erasure and runtime strategy switching**.
 
 ```cpp
 #include <memory_resource>
@@ -191,9 +187,9 @@ std::pmr::monotonic_buffer_resource mbr(buffer, sizeof(buffer));
 std::pmr::vector<int> v(&mbr);   // v 的内存来自 buffer，不走全局堆
 ```
 
-## Let's Run It: pmr::vector with monotonic buffer
+## Let's Run It: `pmr::vector` with a Monotonic Buffer
 
-Let's run this to confirm that `pmr::vector` actually allocates from a stack buffer:
+Let's run this to verify that `pmr::vector` actually allocates from the stack buffer:
 
 ```cpp
 #include <memory_resource>
@@ -213,6 +209,9 @@ int main()
         v.push_back(i);
     }
     std::cout << "v.size() = " << v.size() << "\n";
+    std::cout << "v.data() address = " << std::hex << v.data() << "\n";
+    std::cout << "The range of stack buffer is [" << (void*)buffer << ","
+              << (void*)(buffer + sizeof(buffer)) << "]\n";
     std::cout << "vector 的内存来自栈上 buffer，零全局堆分配\n";
     return 0;
 }
@@ -224,25 +223,31 @@ g++ -std=c++20 -O2 -o /tmp/pmr_test /tmp/pmr_test.cpp && /tmp/pmr_test
 
 ```text
 v.size() = 100
+v.data() address = 0x7fff303c500c
+The range of stack buffer is [0x7fff303c4e10,0x7fff303c5e10]
 vector 的内存来自栈上 buffer，零全局堆分配
 ```
 
-This vector's elements come entirely from that 4096-byte stack buffer; there isn't a single global `new`/`malloc`. This is the typical usage of pmr + monotonic: feed a block of pre-allocated memory (stack, static area, or self-managed heap block) to a container to gain deterministic allocation behavior, zero fragmentation, and zero global heap overhead. Swap the resource (e.g., to a pool) to swap strategies without changing a single line of container code.
+The address of `v.data()`, `0x7fff303c500c`, falls squarely within the stack buffer range `[0x7fff303c4e10, 0x7fff303c5e10]`—this is hard proof of "zero global heap allocation." While stack addresses change between runs, `v.data()` always lands within the buffer interval.
+
+> This printout, which verifies "zero heap allocation" by comparing `v.data()` against the stack buffer range, was contributed by [@YukunJ](https://github.com/YukunJ) in [PR #77](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/pull/77).
+
+All elements of this vector originate from that 4096-byte stack buffer, without a single global `new`. This is the typical usage of pmr + monotonic: feeding a pre-allocated memory block (stack, static memory, or a self-managed heap block) to containers yields deterministic allocation behavior, zero fragmentation, and zero global heap overhead. Swapping the resource (e.g., to a pool) changes the strategy without altering a single line of container code.
 
 ## Wrapping Up
 
-The core of custom allocators is "managing the allocation/deallocation of a block of memory yourself." Three classic strategies—Bump (fast, no single deallocation), Pool (fixed-size high-frequency), and Stack (LIFO)—each have their use cases. Once you understand them, the preferred way to use them in the STL is C++17's `std::pmr`: `memory_resource` abstraction + standard implementations (monotonic/pool) + pmr containers for runtime strategy switching and type explosion avoidance. Hand-written allocators are useful for understanding mechanisms or for special needs not covered by pmr; for常规 scenarios, pmr is sufficient. This concludes our container arc; in the next article, we will shift to the standard library's iterator and algorithms system.
+The core of custom allocators is "managing the allocation and deallocation of a memory block yourself." Three classic strategies—Bump (fast, no single free), Pool (fixed size, high frequency), and Stack (LIFO)—each have their use cases. Once we understand them, the preferred way to use them in the STL is C++17's `std::pmr`: the `memory_resource` abstraction combined with standard implementations (monotonic/pool) and pmr containers allows for runtime strategy switching without type explosion. Hand-writing allocators is useful for understanding the mechanism or for specific needs not covered by pmr; for general scenarios, pmr is sufficient. This concludes our deep dive into containers. In the next article, we will shift our focus to the standard library's iterator and algorithm architecture.
 
-Want to run it and see the results immediately? Open the online example below (you can run it and view the assembly):
+Want to run it and see the effect immediately? Open the online example below (you can run it and view the assembly):
 
 <OnlineCompilerDemo
   title="Custom Allocators: Bump Arena & std::pmr"
   source-path="code/examples/vol3/13_custom_allocators.cpp"
-  description="Hand-written linear allocator prototype, std::pmr::monotonic_buffer_resource makes vector allocate on stack buffer"
+  description="Hand-written linear allocator prototype, using std::pmr::monotonic_buffer_resource to make vector allocate on a stack buffer"
   allow-run
 />
 
-## Reference Resources
+## References
 
 - [std::pmr (memory_resource) — cppreference](https://en.cppreference.com/w/cpp/memory/resource)
 - [monotonic_buffer_resource — cppreference](https://en.cppreference.com/w/cpp/memory/monotonic_buffer_resource)

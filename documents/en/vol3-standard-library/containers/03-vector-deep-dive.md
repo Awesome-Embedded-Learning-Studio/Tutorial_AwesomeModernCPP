@@ -5,10 +5,9 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Based on the three-pointer internal representation, we provide a thorough
-  explanation of `std::vector`'s reallocation costs, the full picture of iterator
-  invalidation, `move_if_noexcept` exception safety, and C++20 `constexpr vector`
-  with `erase`/`erase_if`.
+description: Based on the three-pointer internal representation, we dive deep into
+  `std::vector`'s reallocation costs, the full picture of iterator invalidation, `move_if_noexcept`
+  exception safety, and C++20 `constexpr vector` with `erase`/`erase_if`.
 difficulty: intermediate
 order: 3
 platform: host
@@ -20,298 +19,262 @@ tags:
 - cpp-modern
 - intermediate
 - vector
-title: 'vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation'
+title: 'Deep Dive into std::vector: Three Pointers, Reallocation, and Iterator Invalidation'
 translation:
   source: documents/vol3-standard-library/containers/03-vector-deep-dive.md
   source_hash: 73e9956ffcdbd2ae6c16f9a56629dbdeb32fc210b4670bf2cdb22e803fe05c3d
-  translated_at: '2026-06-16T04:00:34.009764+00:00'
+  translated_at: '2026-06-24T01:21:08.816533+00:00'
   engine: anthropic
   token_count: 2819
 ---
-# Deep Dive into vector: Three Pointers, Reallocation, and Iterator Invalidation
+# Vector Deep Dive: Three Pointers, Reallocation, and Iterator Invalidation
 
-In this article, I want to have a thorough discussion with you about the implementation layer of `std::vector`.
+In this article, we will take a deep dive into the implementation details of `std::vector`.
 
-In Volume 1, we've been using `std::vector` quite smoothly as a "self-growing array," with `push_back`, `emplace_back`, `size`, and `capacity` at our fingertips. But I must be honest—being able to use it smoothly and truly understanding it are two different things. Have you ever encountered these weird situations: calling `push_back` continuously in a loop, where it's blazingly fast most of the time, but inexplicably stutters horribly on one specific iteration; or you carefully cache an iterator or a pointer, and one day it points to a piece of garbage; or you thought you wrote strong exception safety code, but a reallocation quietly tore a hole in it?
+In Volume One, we have comfortably used `vector` as a "self-growing array," utilizing `push_back`, `size()`, `capacity()`, and `reserve()` with ease. However, there is a difference between using it fluently and truly understanding it. Have you ever encountered these bizarre situations: a loop with continuous `push_back` runs incredibly fast most of the time, but inexplicably stutters on a specific iteration; or you carefully cache an iterator or a pointer, only to find it pointing to garbage one day; or perhaps your supposedly strong exception safety is silently undermined by a reallocation.
 
-These pitfalls have their roots entirely in the implementation layer of `std::vector`. So, in this article, we won't repeat how to call those APIs from Volume 1 (you surely know that by now). Instead, we will break `std::vector` down into three pointers, a reallocation strategy, and a table of invalidation rules, and then conveniently connect the two new doors C++20 opened for it—`constexpr` and `std::erase_if`.
+These pitfalls are rooted in the implementation layer of `vector`. Therefore, instead of repeating how to call the APIs covered in Volume One (which you surely know by now), we will break down `vector` into three pointers, a growth strategy, and a set of invalidation rules. We will also look at the two new doors C++20 has opened—`constexpr` and `erase/erase_if`.
 
 ------
 
-## Three Pointers Hold Up the Entire vector
+## Three Pointers Hold Up the Entire Vector
 
-In mainstream standard library implementations (libstdc++, libc++, MSVC STL), the body of a `std::vector` is actually just three pointers. Not an array, not a linked list, just three pointers: `_M_start` pointing to the first element, `_M_finish` pointing to the position "after" the last valid element, and `_M_end_of_storage` pointing to the end of the allocated buffer. (I remember there was a question on Zhihu about this, and mainstream implementations are indeed like this.)
+In mainstream standard library implementations (libstdc++, libc++, MSVC STL), the body of a `vector` essentially consists of three pointers. It is not an array, nor a linked list, but rather: `begin` points to the first element, `end` points to the position "after" the last valid element, and `end_of_storage` points to the end of the allocated buffer. (I recall there was a question regarding this on Zhihu, and mainstream implementations indeed follow this pattern.)
 
 ```mermaid
 flowchart LR
-    subgraph Buffer
-        direction LR
-        A[Start] --> B[Finish]
-        B --> C[End of Storage]
-    end
+    BEGIN(["begin<br/>首元素"]) --> S0["v[0]"]
+    TAIL(["end<br/>size 边界"]) --> S3["空闲槽"]
+    CAP(["end_of_storage<br/>capacity 边界"]) --> S5["缓冲末尾"]
+    S0 --- S1["v[1]"] --- S2["v[2]"] --- S3 --- S4["空闲槽"] --- S5
 ```
 
-Once you follow this diagram, everything makes sense: `size()` is just `_M_finish - _M_start`, `capacity()` is `_M_end_of_storage - _M_start`, and the "capacity" is precisely the number of elements you can still stuff in without reallocation. The standard text doesn't actually mandate that `std::vector` must look like this (it only requires contiguous storage plus a bunch of interface behaviors), but once you know the underlying layer is these three pointers, all subsequent features become logical:
+Once you grasp this diagram, everything clicks: `size()` is simply `end - begin`, `capacity()` is `end_of_storage - begin`, and `capacity() - size()` tells you exactly how many elements you can insert before triggering a reallocation. The standard doesn't strictly mandate this specific three-pointer implementation (it only requires contiguous storage and specific interface behaviors), but once you know the underlying structure is just these three pointers, all the other characteristics make perfect sense:
 
-1. Reallocation is nothing more than moving this chunk of `_M_start` to `_M_end_of_storage` to a new buffer;
-2. Iterator invalidation is nothing more than the buffer being swapped out;
-3. `data()` can feed directly into C APIs simply because `_M_start` points to a whole chunk of contiguous raw memory.
+1. Reallocation is simply moving the chunk `[begin, end)` to a new buffer.
+2. Iterator invalidation is simply the result of the buffer being swapped out.
+3. `data()` can be passed directly to C APIs because `begin` points to a single contiguous block of raw memory.
 
-## Reallocation: Amortized Constant, but Single Call Can Be O(n)
+## Reallocation: Amortized Constant Time, but Individual Steps Can Be O(n)
 
-So what happens when you `push_back` into a `std::vector` that is already full? It triggers a *reallocation*—applying for a new buffer, moving old elements over, and releasing the old buffer. The standard's guarantee for this step is **amortized constant time complexity** for `push_back`. Please hold onto the word "amortized"; it is not "constant."
+So, what happens when we `push_back` into a `vector` where `capacity` is already full? It triggers a *reallocation*—allocating a new buffer, moving the old elements over, and freeing the old buffer. The standard guarantees **amortized constant time complexity** for `push_back`. It is crucial to latch onto the word "amortized"; it does not mean "constant."
 
-This is too easily misread as "`push_back` is O(1) every time," so some friends confidently put `push_back` in hot loops, only to see one specific reallocation result in an O(n) move, causing a sharp spike in the performance curve. Why does amortized analysis hold? The key is that during each reallocation, the capacity grows by a geometric factor greater than 1, so the cost of that one expensive move is spread (amortized) over the previous several cheap `push_back` calls.
+This is often misread as "every `push_back` is O(1)," leading some developers to confidently place `push_back` inside hot loops. The result is that one specific reallocation becomes an O(n) move operation, causing a sharp spike in the performance curve. Why does amortized analysis hold? The key is that during reallocation, the capacity grows by a geometric factor (greater than 1). This spreads the cost of that one expensive move operation across the preceding sequence of cheap `push_back` calls.
 
-(PS: I've been incredibly busy lately. If you find this topic interesting, try profiling it locally!)
-
-```mermaid
-gantt
-    title Vector Capacity Growth Strategy
-    dateFormat s
-    axisFormat %s
-
-    section Cheap Operations
-    push_back (O(1))    :active, 0, 1
-    push_back (O(1))    :active, 1, 2
-    push_back (O(1))    :active, 2, 3
-
-    section Expensive Operation
-    Reallocation (O(n)) :crit, 3, 5
-```
-
-So what is this multiplier exactly? Well, **the standard doesn't specify** (strictly speaking, it's *unspecified*, which is looser than *implementation-defined*; the latter at least requires the implementation to document it). So the three big players chose their own paths: libstdc++ and libc++ are both approximately 2× (formulas are `capacity() * 2` and `capacity() + capacity() / 2` respectively), while MSVC STL uses 1.5× (`capacity() * 3 / 2`). If you don't believe me, `push_back` 16 elements in a row and print `capacity()`—libstdc++/libc++ follow the sequence 1, 2, 4, 8, 16, while MSVC follows 1, 2, 3, 4, 6, 9, 13, 19...
-
-MSVC choosing 1.5× wasn't a random decision. When the multiplier is strictly less than 2, the free blocks released earlier have a chance to be reused by a later allocation—mathematically:
-
-$$ \text{prev\_size} \times \text{growth\_factor} \le \text{prev\_size} + \text{block\_size} $$
-
-This means a previously released block might be large enough to satisfy the current request, allowing the allocator to reuse it, reduce fragmentation, and keep RSS (Resident Set Size) from staying too high. With strict 2×, `prev_size * 2 > prev_size + block_size`, so no previously released block can fit the current request, making reuse impossible. The cost, of course, is that 1.5× involves more moves. This is a trade-off between "memory reuse" and "number of moves," and each vendor has their own calculation. (There's a small boundary case: the very first `push_back` jumps capacity from 0 to 1 directly, all three agree on this. It's purely a special case of "initially 0," don't use this to verify the 2×/1.5× rule.)
-
-> ⚠️ Let me say it again: when writing performance conclusions, please use "amortized constant." Don't write "constant" just to save space. The single `push_back` that triggers reallocation is genuinely O(n).
-
-## Iterator Invalidation: A Table Covers All Rules
-
-Probably no container makes it easier to trip over "iterator invalidation" than `std::vector`—you store an iterator or a pointer, and after some operation, it quietly becomes a dangling pointer. The rules can actually be summarized in a table:
-
-| Operation | When Invalidated | Scope of Invalidation |
-|------|---------|---------|
-| `push_back` / `emplace_back` | Only when reallocation is triggered | If triggered: **All** invalidated; if not (space remains): **None** invalidated |
-| `resize` | When `resize` triggers reallocation | If triggered: All invalidated; otherwise: Not invalidated |
-| `reserve` | If reallocation occurs | All invalidated |
-| `insert` | `insert` triggers reallocation | If triggered: All invalidated; otherwise references/pointers not invalidated, only past-the-end iterators invalidated |
-| `pop_back` / `erase` | Always | **Deleted element and those after it** are all invalidated |
-| `assign` | If reallocation | If triggered: All invalidated; otherwise `begin()` and after are invalidated |
-| `clear` | Always | All invalidated |
-| `operator=` / `swap` | Always | All invalidated |
-| `swap` (member) | —— | **Not invalidated**: Iterators/pointers/references remain valid, but they now point to elements in the "other" container |
-
-Think the table is too dense? Compress it into a decision tree and it's easier to remember:
+(PS: The author has been extremely busy lately. If you find this topic interesting, try running a profiler locally!)
 
 ```mermaid
 flowchart TD
-    A[Operation on vector] --> B{Does it change size?}
-    B -- No --> C[swap member function]
-    C --> D[No Invalidation]
-
-    B -- Yes --> E{Is it reallocation?}
-    E -- Yes --> F[push_back, insert, resize, reserve, assign]
-    F --> G[All Iterators Invalidated]
-
-    E -- No --> H{Is it deletion?}
-    H -- Yes --> I[erase, pop_back]
-    I --> J[Erased and subsequent elements invalidated]
-
-    H -- No --> K[Non-reallocation insert/resize]
-    K --> L[Only past-the-end iterators invalidated]
+    A["push_back(x)"] --> Q{"size &lt; capacity?"}
+    Q -- "是" --> C["就地构造 x<br/>end++ · O(1)"]
+    Q -- "否" --> D["申请新缓冲<br/>2x / 1.5x"]
+    D --> E["搬运旧元素<br/>move 或 copy · O(n)"]
+    E --> F["释放旧缓冲"]
+    F --> G["构造 x · end++"]
+    C --> H["摊还常数 ✓"]
+    G --> H
 ```
 
-The easiest one to remember backwards in the table is the last one, `swap`. It doesn't invalidate—you swapped the contents of the containers, but the iterators remain pinned to their original memory blocks, so they now point to the container that was swapped in. Once you understand this, you can see why some libraries like to write weird code like `std::vector<T>().swap(x)` to "truly release" memory: it swaps in an empty temporary object, taking the original buffer and capacity away to be destructed, leaving things squeaky clean.
+So, what exactly is this growth factor? Well, the **Standard doesn't specify** (strictly speaking, it is *unspecified*, which is even looser than *implementation-defined*, as the latter at least requires the implementation to document it). Consequently, the three major implementations made their own choices: both libstdc++ and libc++ use approximately 2× (their formulas are `size()+max(size(),n)` and `max(2*capacity(),n)` respectively), while MSVC STL uses 1.5× (`capacity()+capacity()/2`). If you don't believe it, try `push_back`ing 16 elements and printing `capacity()` yourself—libstdc++/libc++ follow the sequence `0 → 1 → 2 → 4 → 8 → 16 → 32`, while MSVC follows `0 → 1 → 2 → 3 → 4 → 6 → 9 → 13 → 19`.
 
-## move_if_noexcept During Reallocation
+MSVC didn't choose 1.5× arbitrarily. When the growth factor is strictly less than 2, the free blocks released earlier can potentially be reused by later allocations—mathematically speaking
 
-The strong exception guarantee requires that an operation either succeeds completely or leaves the state unchanged. When `std::vector` triggers reallocation, it must move old elements to the new buffer one by one. This step itself is a potential exception throwing point. To achieve "can rollback if moving fails halfway," the standard library makes a critical judgment on each element during reallocation: **if the element's move constructor is `noexcept`, move; otherwise, honestly fall back to copy.**
+$$\sum_{i=0}^{k-1} 1.5^i = 2(1.5^k - 1) > 1.5^k$$
 
-The basis for this judgment is `std::is_nothrow_move_constructible_v`. Translating this—if you wrote a move constructor for your type but didn't mark it `noexcept`, `std::vector` won't feel safe during reallocation and would rather take the slower copy path. Why? If a copy fails, the old buffer is still there, so we can rollback. If a move fails, the source element might have been gutted already, making recovery impossible. So my advice is simple: if you can add `noexcept` to a move constructor, definitely do it. It directly decides whether reallocation in `std::vector` is a "move" or a "copy raid." The standard library specifically prepared a `std::move_if_noexcept` tool for this, though its real stage is exactly this kind of job inside containers "choosing between move/copy based on exception safety."
+This means that if a previously freed block is large enough to satisfy the current request, the allocator can reuse it. This reduces fragmentation and keeps the RSS (Resident Set Size) from staying too high. With strict 2× growth, however, $\sum_{i=0}^{k-1} 2^i = 2^k - 1 < 2^k$. No previously freed block can ever hold the current request, so reuse is impossible. There is a trade-off, of course: 1.5× growth involves more moving of elements. This is a trade-off between "memory reuse" and "number of moves," and each approach has its own calculation. (There is a minor edge case: the very first `push_back` jumps capacity from 0 to 1. This is consistent across all three implementations and is simply a special case of "starting from 0," so don't use this example to verify the 2×/1.5× rules.)
 
-## Two New Doors C++20 Opened for vector
+> ⚠️ Let me reiterate: when discussing performance conclusions, please use "amortized constant time" instead of just "constant time" for brevity. The single `push_back` that triggers reallocation is genuinely O(n).
 
-### One Door is Called constexpr vector
+## Iterator Invalidation: All the Rules in One Table
 
-C++20 finally allows `std::vector` to be used at compile time. Behind this are two proposals接力: **P0784R7** "More constexpr containers" first laid the mechanism—making `std::vector`'s `allocator`/`deallocator` and `construct`/`destroy` `constexpr`, plus a model called *transient constexpr allocation*; **P1004R2** "Making std::vector constexpr" then built on this mechanism to mark `std::vector` (and `std::string` by the way) member functions as `constexpr` one by one. To detect support, check the `__cpp_lib_constexpr_vector` feature test macro.
+Perhaps no container causes more "iterator invalidation" pitfalls than `vector`—you store an iterator or a pointer, perform an operation, and it silently becomes a dangling pointer. The rules can actually be summarized in a single table:
 
-There is a **must-clarify** limitation here: the transient allocation model requires that *memory allocated during constant evaluation must be released before the end of that same constant evaluation*, otherwise the program is ill-formed. In plain English—you can't define a persistent `constexpr` variable and "bring out" its buffer containing heap objects from compile time to runtime. So how exactly do you use `std::vector` at compile time? The correct posture is: temporarily create it inside a `constexpr` function, do a bunch of operations, and finally **only return a scalar result** (sum of elements, count of elements, value of a certain element are all fine), letting the buffer destruct itself before the function returns. This fits embedded and lookup table scenarios perfectly—use `std::vector` as a temporary workspace at compile time to calculate a constant, then move the result into a `std::array` or `constexpr` variable, saving all runtime initialization.
+| Operation | When Invalidated | Scope of Invalidation |
+|------|---------|---------|
+| `push_back` / `emplace_back` | Only when reallocation is triggered | **All** if triggered; **none** if not triggered (space remains) |
+| `reserve(n)` | When `n > current capacity()` triggers reallocation | All if triggered; otherwise none |
+| `shrink_to_fit` | If reallocation occurs | All |
+| `resize(n)` | `n > capacity()` triggers reallocation | All if triggered; otherwise references/pointers remain valid, only past-the-end iterators are invalidated |
+| `erase(p)` / `erase(first, last)` | Always | **Erased elements and all after them** |
+| `insert` / `emplace` | If reallocation occurs | All if triggered; otherwise `pos` and all after it |
+| `clear` | Always | All |
+| `assign` / `assign_range` | Always | All |
+| `swap` | —— | **None**: iterators/pointers/references remain valid, but they now refer to elements in the "other" container |
 
-### The Other Door is Called erase / erase_if
+Find the table too dense? Compress it into a decision tree to make it easier to remember:
 
-In old C++, to delete all elements satisfying a condition from a `std::vector`, you had to hand-write the famous erase-remove idiom: `v.erase(std::remove(v.begin(), v.end(), value), v.end());`. It's long and error-prone—I've seen accident sites where people forgot the second parameter's `.end()`, or forgot to wrap the outer `erase`. C++20 incorporated this with a pair of free functions: `std::erase` deletes all elements equal to `value`, `std::erase_if` deletes all elements satisfying a predicate, and both return the number of elements deleted.
+```mermaid
+flowchart TD
+    OP["修改操作"] --> T{"触发 reallocation?"}
+    T -- "是" --> ALL["全部引用/指针/迭代器失效"]
+    T -- "否" --> K{"操作类型"}
+    K -- "push_back / resize / reserve<br/>（未超容量）" --> NONE["都不失效<br/>（past-the-end 除外）"]
+    K -- "erase" --> AFTER["被删及之后失效"]
+    K -- "insert" --> POS["pos 及之后失效"]
+    K -- "swap" --> SWAP["不失效 · 指向对方容器"]
+```
 
-These functions come from proposal **P1209R0**, titled "Adopt Consistent Container Erasure from Library Fundamentals 2 for C++20"—just looking at the title you understand their intent: to officially land the unified erasure API that was originally in the Library Fundamentals TS into C++20. cppreference has a crisp definition for them: they *"erase all elements that compare equal to value / satisfy the predicate from the container"*, replacing that error-prone erase-remove. A detail not to mix up: sequence containers (`vector`, `deque`, `forward_list`, `list`, `string`) get both `std::erase` and `std::erase_if`, while associative/unordered associative containers only have `std::erase_if`—because their member `erase` was already doing "delete by key," and stuffing another `std::erase` in would cause semantic conflict. To detect support, look at `__cpp_lib_erase_if` (C++20, value `202002L`).
+The one in the table that is easiest to mix up is the last entry, `swap`. It does not invalidate—what you swap away is the content inside the container, but the iterator remains pinned to that original memory address. Consequently, it now points to the container that was swapped in. Once you understand this, you will see why some libraries love to write code like `vector<T>().swap(v)` to "truly release" memory: it swaps in an empty temporary object, taking the original buffer along with its capacity to be destructed, leaving nothing behind.
+
+## `move_if_noexcept` during Reallocation
+
+The strong exception guarantee requires that an operation either succeeds completely or leaves the state unchanged. When `push_back` triggers a reallocation, it must move old elements to a new buffer one by one. This step is a potential point where an exception might be thrown. To achieve "rollback if moving halfway fails," the standard library makes a critical judgment on each element during reallocation: **if the element's move constructor is `noexcept`, move; otherwise, fall back to copying.**
+
+The basis for this decision is `std::is_nothrow_move_constructible_v<T>`. In other words—if you wrote a move constructor for your type but didn't mark it `noexcept`, `vector` will get nervous during reallocation and prefer the slower copy path. Why? If a copy fails, the old buffer is still intact and can be used for rollback. If a move fails, the source elements might have already been gutted, making recovery impossible. Therefore, my advice is simple: if you can add `noexcept` to a move constructor, definitely do it. It directly determines whether reallocation is a "move" or a "copy" inside `vector`. The standard library specifically provides a `std::move_if_noexcept` tool for this, though its real stage is precisely this kind of internal container logic where "exception safety dictates a choice between move and copy."
+
+## Two New Doors C++20 Opened for `vector`
+
+### One is `constexpr vector`
+
+C++20 finally enabled `vector` to be used at compile time. Behind this are two proposals working in tandem: **P0784R7** "More constexpr containers" first laid the groundwork—`constexpr` `new`/`delete`, `std::construct_at`/`std::destroy_at`, plus a model called *transient constexpr allocation*; **P1004R2** "Making std::vector constexpr" then built on this mechanism to mark `vector`'s (and `string`'s) member functions as `constexpr`. To check for support, look for the feature macro `__cpp_lib_constexpr_vector`.
+
+There is a limitation here that **must be made clear**: the transient allocation model requires that *memory allocated during constant evaluation must be released before the end of that same constant evaluation*, otherwise the program is ill-formed. In plain English—you cannot define a persistent `constexpr std::vector` variable and "carry" its buffer of heap objects out of compile time into runtime. So, how do we actually use `vector` at compile time? The correct approach is: inside a `constexpr` function, create it temporarily, perform a series of operations, and finally **return only a scalar result** (sum of elements, element count, or a specific element value), allowing the buffer to destruct before the function returns. This fits embedded systems and lookup table scenarios perfectly—use `vector` at compile time as a temporary workspace to calculate a constant, then move the result into a `std::array` or `constexpr` variable, saving all runtime initialization costs.
+
+### The Other is `erase` / `erase_if`
+
+In old C++, to remove all elements satisfying a condition from a `vector`, you had to hand-write the famous erase-remove idiom: `v.erase(std::remove_if(v.begin(), v.end(), pred), v.end());`. It's long and error-prone—I've seen accident scenes where people forgot the second `v.end()` or the outer `erase`. C++20 corralled this mess with a pair of free functions: `std::erase(v, value)` removes all elements equal to `value`, and `std::erase_if(v, pred)` removes all satisfying the predicate. Both return the number of elements removed.
+
+These functions come from proposal **P1209R0**, titled "Adopt Consistent Container Erasure from Library Fundamentals 2 for C++20"—the title tells you the intent: to formally bring the unified erasure API, originally in the Library Fundamentals TS, into C++20. cppreference has a crisp definition for them: they *"erase all elements that compare equal to value / satisfy the predicate from the container"*, replacing that error-prone erase-remove idiom. Don't get this detail mixed up: sequence containers (`vector`, `deque`, `list`, `forward_list`, `string`) get both `erase` and `erase_if`, while associative/unordered associative containers only get `erase_if`—because their member `erase(key)` already handles "delete by key," so adding another `erase(c, value)` would cause semantic conflicts. Check for support via `__cpp_lib_erase_if` (C++20, value `202002`).
 
 ------
 
 ## Let's Run It
 
-Talk is cheap. The sections below are marked with platform and standard and can be compiled standalone. We will run through the previous concepts one by one.
+Talk is cheap. The following sections are marked with platform and standard, and can be compiled standalone. We will run through the concepts discussed above one by one.
 
-First, observe reallocation. Print a line every time capacity changes, so you can intuitively see whether yours is 2× or 1.5×.
+First, observing reallocation. We print a line every time the capacity changes, so you can intuitively see whether your implementation uses 2× or 1.5× growth.
 
 ```cpp
-// g++ -std=c++20 ./demo_reallocation.cpp -o demo
-#include <vector>
+// Standard: C++17  | Platform: host
 #include <iostream>
+#include <vector>
 
-int main() {
+void trace_growth(std::vector<int>& v, int value)
+{
+    std::size_t cap_before = v.capacity();
+    v.push_back(value);
+    if (v.capacity() != cap_before) {
+        std::cout << "push " << value << ": size=" << v.size()
+                  << " capacity " << cap_before << " -> " << v.capacity() << '\n';
+    }
+}
+
+int main()
+{
     std::vector<int> v;
-    std::size_t last_cap = 0;
-
-    // Push 16 elements to observe capacity jumps
-    for (int i = 0; i < 16; ++i) {
-        v.push_back(i);
-        if (v.capacity() != last_cap) {
-            std::cout << "Size: " << v.size()
-                      << ", New Capacity: " << v.capacity() << std::endl;
-            last_cap = v.capacity();
-        }
+    for (int i = 0; i < 17; ++i) {
+        trace_growth(v, i);
     }
     return 0;
 }
 ```
 
-Second, compare the two scenarios of iterator invalidation. `push_back` doesn't invalidate when there is room, but invalidates all once reallocation triggers; `reserve` inevitably swaps buffers once it exceeds current capacity.
+Second, we compare the two scenarios of iterator invalidation. `push_back` does not invalidate iterators while spare capacity remains, but triggers a full invalidation once reallocation occurs; `reserve`, on the other hand, inevitably swaps the buffer once the current capacity is exceeded.
 
 ```cpp
-// g++ -std=c++20 ./demo_invalidation.cpp -o demo
-#include <vector>
+// Standard: C++17  | Platform: host
 #include <iostream>
+#include <vector>
 
-int main() {
-    std::vector<int> v(5, 100); // size 5, capacity 5
-    auto it = v.begin();        // Points to first element
+int main()
+{
+    std::vector<int> v{1, 2, 3};
+    v.reserve(3);  // 预留：当前已有 3，不触发扩容
 
-    // Scenario 1: push_back without reallocation
-    // v.push_back(1); // If uncommented, 'it' is still valid (capacity > size)
+    const int* p = &v[1];
+    v.push_back(4);  // 还有 1 个余量，不扩容
+    std::cout << "no realloc, p valid? " << (p == &v[1]) << '\n';  // 1
 
-    // Scenario 2: push_back with reallocation
-    v.push_back(1); // Triggers reallocation (size 6 > capacity 5)
-
-    if (it == v.begin()) {
-        std::cout << "Iterator valid" << std::endl;
-    } else {
-        std::cout << "Iterator invalidated (dangling)" << std::endl;
-    }
-
+    v.reserve(100);  // 超过 capacity，必然换缓冲
+    std::cout << "after reserve, p valid? " << (p == &v[1]) << '\n';  // 0，已失效
     return 0;
 }
 ```
 
-Third, `move_if_noexcept`. For a type with a move constructor marked `noexcept`, reallocation moves; without it, it falls back to copy.
+Third, `move_if_noexcept`. For a type with a move constructor marked as `noexcept`, we use move during reallocation; otherwise, we fall back to copy.
 
 ```cpp
-// g++ -std=c++20 ./demo_move_if_noexcept.cpp -o demo
-#include <vector>
+// Standard: C++17  | Platform: host
 #include <iostream>
-#include <string>
+#include <vector>
 
-struct CopyOnly {
-    std::string data;
-    CopyOnly(const std::string& s) : data(s) {}
-    // Move constructor NOT noexcept (or not defined)
-    CopyOnly(CopyOnly&& other) noexcept(false) : data(std::move(other.data)) {}
-    CopyOnly(const CopyOnly& other) : data(other.data) {}
+class Tracked {
+public:
+    int id;
+    static int move_count;
+    static int copy_count;
+
+    explicit Tracked(int i) : id(i) {}
+    Tracked(const Tracked& o) : id(o.id) { ++copy_count; }
+    // 故意不标 noexcept：扩容时不放心，退回 copy
+    Tracked(Tracked&& o) noexcept(false) : id(o.id) { ++move_count; }
 };
+int Tracked::move_count = 0;
+int Tracked::copy_count = 0;
 
-struct MoveOnly {
-    std::string data;
-    MoveOnly(const std::string& s) : data(s) {}
-    // Move constructor IS noexcept
-    MoveOnly(MoveOnly&& other) noexcept(true) : data(std::move(other.data)) {}
-    MoveOnly(const MoveOnly& other) = delete;
-};
+int main()
+{
+    std::vector<Tracked> v;
+    v.reserve(2);
+    v.emplace_back(1);
+    v.emplace_back(2);
+    v.emplace_back(3);  // 触发扩容
 
-int main() {
-    std::cout << "Testing CopyOnly (fallback to copy)..." << std::endl;
-    std::vector<CopyOnly> v1;
-    v1.reserve(1);
-    v1.emplace_back("A"); // No reallocation
-    // Trigger reallocation: will use Copy Constructor because Move is not noexcept
-    v1.emplace_back("B");
-
-    std::cout << "Testing MoveOnly (use move)..." << std::endl;
-    std::vector<MoveOnly> v2;
-    v2.reserve(1);
-    v2.emplace_back("A"); // No reallocation
-    // Trigger reallocation: will use Move Constructor
-    v2.emplace_back("B");
-
+    std::cout << "moves=" << Tracked::move_count
+              << " copies=" << Tracked::copy_count << '\n';
+    // 未标 noexcept 时多半走 copy；把 noexcept(false) 改成 noexcept 再跑，会变成 move
     return 0;
 }
 ```
 
-Fourth, `constexpr vector`. Use it as a temporary workspace at compile time, only bringing out scalar results.
+Fourth, `constexpr vector`. We use it as a temporary workspace at compile time, and only bring out the scalar results.
 
 ```cpp
-// g++ -std=c++20 ./demo_constexpr_vector.cpp -o demo
+// Standard: C++20  | Platform: host
 #include <vector>
-#include <cassert>
 
-// Compile-time calculation using vector
-constexpr int sum_range(int n) {
-    std::vector<int> v; // Transient allocation
-    v.reserve(n);
-
-    int sum = 0;
+constexpr int sum_first_n(int n)
+{
+    std::vector<int> v;
     for (int i = 0; i < n; ++i) {
-        v.push_back(i);
-        sum += v.back();
+        v.push_back(i + 1);  // 常量求值期分配，函数返回前必须释放
     }
-    // v is destroyed here, memory released
-    return sum;
+    int sum = 0;
+    for (int x : v) {
+        sum += x;
+    }
+    return sum;  // 只返回标量，缓冲在函数内自然析构
 }
 
-int main() {
-    // Result is computed at compile time
-    constexpr int s = sum_range(10);
-    static_assert(s == 45, "Sum check");
+static_assert(sum_first_n(100) == 5050);  // 全程编译期完成
 
-    std::cout << "Sum of 0..9 is " << s << std::endl;
-    return 0;
-}
+int main() { return 0; }
 ```
 
-Fifth, `std::erase_if`, one line to replace erase-remove.
+Fifth, `erase_if`, which handles erase-remove in a single line.
 
 ```cpp
-// g++ -std=c++20 ./demo_erase_if.cpp -o demo
-#include <vector>
-#include <algorithm>
+// Standard: C++20  | Platform: host
 #include <iostream>
+#include <vector>
 
-int main() {
-    std::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-
-    // Old way (C++98)
-    // v.erase(std::remove(v.begin(), v.end(), 5), v.end());
-
-    // New way (C++20)
-    std::erase(v, 5); // Remove all elements equal to 5
-
-    // Remove all even numbers
-    std::erase_if(v, [](int x) { return x % 2 == 0; });
-
-    for (auto x : v) {
-        std::cout << x << " ";
+int main()
+{
+    std::vector<int> v{1, 2, 3, 4, 5, 6};
+    std::size_t removed = std::erase_if(v, [](int x) { return x % 2 == 0; });
+    std::cout << "removed " << removed << ", left:";
+    for (int x : v) {
+        std::cout << ' ' << x;
     }
-    std::cout << std::endl;
-
+    std::cout << '\n';  // removed 3, left: 1 3 5
     return 0;
 }
 ```
 
-Of course, you can also click here to see the phenomenon!
+Of course, feel free to click this to see the behavior in action!
 
 <OnlineCompilerDemo
-  title="Deep Dive into vector Implementation: Reallocation, Invalidation, constexpr, erase_if"
+  title="vector Implementation Deep Dive: Reallocation, Invalidation, constexpr, erase_if"
   source-path="code/examples/vol3/03_vector_deep_dive.cpp"
   description="Observe vector capacity jumps, iterator invalidation, move_if_noexcept, and C++20 constexpr/erase_if"
   allow-run
@@ -320,11 +283,11 @@ Of course, you can also click here to see the phenomenon!
 
 ------
 
-## Final Thoughts
+## Wrapping Up
 
-Piecing these back into engineering practice, my advice usually boils down to a few points. First, **if you can estimate the scale, `reserve` it**—right after constructing the `std::vector`, `reserve` it based on the known or estimated final size, compressing several reallocations into a single allocation, which is immediately effective in hot paths. Second, **use `std::erase_if` for deleting elements**, stop hand-writing erase-remove, it's shorter and less likely to miss that `.end()`. Third, **for compile-time table generation, use `std::vector` as a temporary area**, calculate it, and only hand the scalar result to `std::array` or stuff it into a `constexpr` variable, comfortably enjoying the compile-time dynamic capabilities given by transient allocation without crossing the line.
+Translating the previous concepts into engineering practice, my advice boils down to a few key points. First, **`reserve` whenever you can estimate the scale**—immediately after constructing a `vector`, call `reserve` with the known or estimated final size. This collapses multiple reallocations into a single allocation, which yields immediate results on hot paths. Second, **use `erase_if` for deletion**; stop hand-writing the erase-remove idiom. It is shorter and less prone to forgetting the `v.end()` iterator. Third, **use `vector` as a temporary buffer for compile-time table generation**. Calculate the data, then pass only the scalar results to `static_assert` or store them in `constexpr` variables. This allows us to comfortably enjoy the dynamic capabilities of transient allocation at compile time without crossing the line.
 
-Finally, leave an impression: the body of `std::vector` is roughly three pointers `_M_start`, `_M_finish`, `_M_end_of_storage`, and `size()`/`capacity()` are calculated from them; `push_back` is amortized constant, not constant, and the growth factor isn't specified by the standard (libstdc++/libc++ use 2×, MSVC uses 1.5×); invalidation rules are just one table—"reallocation-type operations invalidate all only if triggered," `erase` invalidates "deleted and subsequent," `swap` doesn't invalidate at all; whether elements move during reallocation depends on if the move constructor is marked `noexcept`; C++20 makes `std::vector` `constexpr` (P0784R7 + P1004R2), but limited by transient allocation to be a compile-time temporary area only; in the same year `std::erase`/`std::erase_if` (P1209R0) took care of erase-remove for you. Keep these in your pocket, and you'll basically avoid all `std::vector` pitfalls.
+Finally, here are a few key takeaways: a `vector` essentially consists of three pointers `{begin, end, end_of_storage}`, where `size` and `capacity` are derived from them; `push_back` has amortized constant complexity, not constant complexity, and the growth factor is not specified by the standard (libstdc++/libc++ use 2×, MSVC uses 1.5×); the rules for invalidation boil down to one table—reallocation operations "invalidate all on trigger," `erase` "invalidates the erased element and those after it," and `swap` "invalidates nothing"; whether elements are moved during reallocation depends on whether the move constructor is marked `noexcept`; C++20 makes `vector` `constexpr` (P0784R7 + P1004R2), but limited by transient allocation, it can only serve as a compile-time temporary buffer; in the same year, `erase`/`erase_if` (P1209R0) replaced the erase-remove idiom for you. Keep these in your pocket, and you will avoid most `vector` pitfalls.
 
 ------
 

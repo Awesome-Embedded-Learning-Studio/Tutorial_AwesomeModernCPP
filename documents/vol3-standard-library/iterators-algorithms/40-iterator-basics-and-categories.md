@@ -47,47 +47,16 @@ title: 迭代器基础与 category：容器和算法靠什么对接
 
 另外还有个 **output**，专门只写不读，单列在外。
 
-光说层级有点虚，我们直接拿 C++20 的 concept 在编译期判一下，各种容器的迭代器到底落在哪一档。concept 是 C++20 给的编译期谓词，`std::random_access_iterator<T>` 为真，就说明 `T` 满足随机访问迭代器的全部要求，跑不了题：
+光说层级有点虚，我们直接拿 C++20 的 concept 在编译期判一下，各种容器的迭代器到底落在哪一档。concept 是 C++20 给的编译期谓词，`std::random_access_iterator<T>` 为真，就说明 `T` 满足随机访问迭代器的全部要求，跑不了题。思路很直白：写一个 `print_row` 模板，对每个容器的迭代器依次查 `input_iterator` / `forward_iterator` / `bidirectional_iterator` / `random_access_iterator` / `contiguous_iterator` 五个谓词，把是/否打印成一行——点开下面这个在线示例直接运行，看真实的判定结果：
 
-```cpp
-// Standard: C++20
-#include <array>
-#include <forward_list>
-#include <iostream>
-#include <iterator>
-#include <list>
-#include <set>
-#include <string>
-#include <vector>
+<OnlineCompilerDemo
+  title="用 C++20 concept 给迭代器量等级"
+  source-path="code/examples/vol3/40_iterator_categories.cpp"
+  description="print_row 对 vector/array/string/裸指针/list/set/forward_list 的迭代器逐一查五个 concept 谓词，是/否打印成表，强弱一目了然"
+  allow-run
+/>
 
-static const char* yn(bool v) { return v ? "是" : "否"; }
-
-template <class It>
-void print_row(const char* lbl)
-{
-    std::cout << lbl
-              << "  " << yn(std::input_iterator<It>)
-              << "   " << yn(std::forward_iterator<It>)
-              << "    " << yn(std::bidirectional_iterator<It>)
-              << "   " << yn(std::random_access_iterator<It>)
-              << "   " << yn(std::contiguous_iterator<It>) << '\n';
-}
-```
-
-`main` 里依次对每种容器的迭代器调一遍 `print_row`，用 `g++ -std=c++20 -O2`（本机 GCC 16.1.1）跑出来是这样：
-
-```text
-类型                    input forward bidi  rand  contig
-vector<int>::iterator   是   是    是   是   是
-array<int,4>::iterator   是   是    是   是   是
-string::iterator         是   是    是   是   是
-int* (裸指针)            是   是    是   是   是
-list<int>::iterator      是   是    是   否   否
-set<int>::iterator       是   是    是   否   否
-forward_list::iterator   是   是    否   否   否
-```
-
-这张表把层级关系讲得很直白：`vector`、`array`、`string` 还有裸指针五项全亮，是能在内存里随机跳转、还连续存放的最强一类（contiguous）；`list` 和 `set` 到 bidirectional 为止——能前后走，但不能 `it + 5` 一下跳过去；`forward_list` 最弱，只能单向往前。强弱不是「谁写得更好」，而是数据结构本身决定的：链表的节点在内存里东一个西一个，你压根没法 `it + n` 直接算出第 n 个节点的地址。
+运行结果把层级关系讲得很直白：`vector`、`array`、`string` 还有裸指针五项全亮，是能在内存里随机跳转、还连续存放的最强一类（contiguous）；`list` 和 `set` 到 bidirectional 为止——能前后走，但不能 `it + 5` 一下跳过去；`forward_list` 最弱，只能单向往前。强弱不是「谁写得更好」，而是数据结构本身决定的：链表的节点在内存里东一个西一个，你压根没法 `it + n` 直接算出第 n 个节点的地址。
 
 ## 为什么 category 重要：它决定能用哪些算法
 
@@ -132,7 +101,7 @@ category 不光管「能不能用」，还管「用起来多快」。看 `std::d
 
 最后说一句 C++20 带来的变化。在 concept 出现之前，算法对迭代器的要求只能写在文档里（"requires ForwardIterator"），编译器不检查——你要是传了个达不到要求的迭代器，报出来的是一长串模板实例化错误，很难看出到底哪不对。
 
-C++20 用 concept 把这些要求搬进了类型系统：`std::forward_iterator`、`std::random_access_iterator` 这些本身就是编译期可判定的谓词。前面那张表之所以能用代码打出来，正因为 concept 把「文档里的要求」变成了「编译期就能查的事实」。我们甚至能在自己的代码里直接 `static_assert(std::random_access_iterator<It>);` 卡住模板参数，传错类型在调用点就报错，信息清楚得多——上面那个 `print_row` 模板，其实就是在用 concept 给迭代器「量等级」。
+C++20 用 concept 把这些要求搬进了类型系统：`std::forward_iterator`、`std::random_access_iterator` 这些本身就是编译期可判定的谓词。前面那张表之所以能用代码打出来，正因为 concept 把「文档里的要求」变成了「编译期就能查的事实」。我们甚至能在自己的代码里直接 `static_assert(std::random_access_iterator<It>);` 卡住模板参数，传错类型在调用点就报错，信息清楚得多——上面在线示例里那个 `print_row` 模板，其实就是在用 concept 给迭代器「量等级」。
 
 ## 小结
 

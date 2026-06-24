@@ -275,9 +275,9 @@ You can uncomment the "compilation error" lines one by one to see what error mes
 Run `const_demo.cpp` online and observe the actual output of various `const` usages:
 
 <OnlineCompilerDemo
-  title="const 初探：变量、指针、引用与 constexpr"
+  title="First Look at const: Variables, Pointers, References, and constexpr"
   source-path="code/examples/vol1/04_const_demo.cpp"
-  description="在线运行并观察 const 指针、const 引用和 constexpr 的实际行为。"
+  description="Run online and observe the actual behavior of const pointers, const references, and constexpr."
   allow-run
 />
 

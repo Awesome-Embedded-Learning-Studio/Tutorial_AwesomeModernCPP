@@ -378,7 +378,6 @@ while (iss >> x) sum += x;   // >> 返回流本身，流再转 bool
 
 - [cppreference: iostream](https://en.cppreference.com/w/cpp/header/iostream) —— 标准流对象 `cin` / `cout` / `cerr` / `clog` 与头文件总览
 - [cppreference: std::ios_base::sync_with_stdio](https://en.cppreference.com/w/cpp/io/ios_base/sync_with_stdio) —— 同步开关的语义与"关掉后不保证顺序"
-- [cppreference: std::ios::tie](https://en.cppreference.com/w/cpp/io/ios/tie) —— `tie` 的"读前 flush"语义
 - [cppreference: std::basic_streambuf](https://en.cppreference.com/w/cpp/io/basic_streambuf) —— 底层缓冲抽象
 - [cppreference: std::basic_istream::sentry](https://en.cppreference.com/w/cpp/io/basic_istream/sentry) —— 每次 `>>` 构造的 sentry 对象
 - [cppreference: std::basic_ios](https://en.cppreference.com/w/cpp/io/basic_ios) —— `fail` / `bad` / `eof` / `clear` / `operator bool` 状态机

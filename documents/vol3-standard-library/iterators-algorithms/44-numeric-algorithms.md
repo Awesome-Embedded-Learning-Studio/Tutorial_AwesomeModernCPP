@@ -19,7 +19,7 @@ tags:
 - cpp-modern
 - intermediate
 - 容器
-title: '<numeric>：累加、填充、内积与相邻差'
+title: 'numeric：累加、填充、内积与相邻差'
 ---
 
 # `<numeric>`：累加、填充、内积与相邻差
@@ -53,6 +53,15 @@ int main()
 accumulate(v, 0):    10
 accumulate(v, 0.0):  12
 ```
+
+想跑一遍看截断？点开下面这个在线示例：
+
+<OnlineCompilerDemo
+  title="accumulate 的截断坑：初始值类型决定返回类型"
+  source-path="code/examples/vol3/44_accumulate_truncation.cpp"
+  description="同一个 double 向量（数学和 12.0）：accumulate(v, 0) 返回 10（int 截断），accumulate(v, 0.0) 返回 12——返回类型由初始值决定"
+  allow-run
+/>
 
 区别只在初始值一个是 `0`（`int`），一个是 `0.0`（`double`），结果一个 `10` 一个 `12`。这正是 `accumulate` 最坑的地方，也是它后面被 C++23 的 `std::fold`（下一篇专门讲）专门修掉的缺陷。
 

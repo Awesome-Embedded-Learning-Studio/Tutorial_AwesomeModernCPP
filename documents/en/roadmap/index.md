@@ -15,7 +15,7 @@ Whether you're starting from zero, already have a C / embedded background, or al
 
 The whole tutorial is organized along one progressive spine:
 
-```
+```text
 Fundamentals → Modern Features → Standard Library → Advanced → Concurrency → Performance → Engineering → Domain Practice
 ```
 

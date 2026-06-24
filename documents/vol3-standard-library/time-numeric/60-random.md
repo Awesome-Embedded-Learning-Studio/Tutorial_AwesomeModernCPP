@@ -235,6 +235,15 @@ bernoulli(0.7) 1000000 样本: true 占比=0.7008
 uniform_real(0,1) 1000000 样本: 均值=0.5000 (期望 0.5)
 ```
 
+想跑一遍看分布统计？点开下面这个在线示例（0.04 秒跑完）：
+
+<OnlineCompilerDemo
+  title="<random> 分布演示：normal / bernoulli / uniform"
+  source-path="code/examples/vol3/60_random_distributions.cpp"
+  description="mt19937 喂给三种分布各跑一百万样本：正态看钟形直方图、bernoulli(0.7) 看 true 占比、uniform_real(0,1) 看均值逼近 0.5——这些是 rand()%N 做不到的"
+  allow-run
+/>
+
 几件事一眼就能看出来。正态分布的直方图是一根漂亮的钟形曲线，中间 `[-1,+1)` 两桶各 34 万、往外对称衰减，均值 `-0.0005`、标准差 `1.0002`，几乎就是标称的 `(0, 1)`。伯努利 `0.7` 的 true 占比 `0.7008`。均匀实数 `[0, 1)` 的均值 `0.5000`。这些都是你用 `rand()` 要自己实现、自己验证的活，`<random>` 替你做完了，而且做得对。
 
 最关键的差别在 `uniform_int_distribution`。你大概会想：均匀整数不就是 `eng() % N` 吗？真这么写就踩了取模偏差。原因是：引擎吐的值域是 `[0, 2^32-1]`，一共 `2^32` 个值，而 `2^32` 不一定能被你的 `N` 整除。比如 `N=3`，`2^32 = 4294967296 = 3 * 1431655765 + 1`，余 1，那 bucket 0 会比 bucket 1、2 多一个候选值，分布就不是均匀的了（偏差很小，但客观存在）。`uniform_int_distribution` 内部用拒绝采样（rejection sampling）把这一段"多出来的尾巴"丢弃重抽，保证每个 bucket 概率严格相等。这件事在 `RAND_MAX` 只有 15 bit 的平台上偏差会很显眼，在 glibc 31 bit 的 `rand()` 上小到几乎测不出来——但"依赖平台给的面子"本来就是要退役 `rand()` 的理由之一。
