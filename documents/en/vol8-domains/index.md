@@ -35,7 +35,6 @@ An estimated 80 to 100 articles.
 
 <ChapterNav variant="sub">
   <ChapterLink href="embedded/">Embedded Development</ChapterLink>
-  <ChapterLink href="networking/">Network Programming — Planned</ChapterLink>
   <ChapterLink href="gui-graphics/">GUI and Graphics — Planned</ChapterLink>
   <ChapterLink href="data-storage/">Data Storage — Planned</ChapterLink>
   <ChapterLink href="algorithms/">Algorithms and Data Structures — Planned</ChapterLink>
