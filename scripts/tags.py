@@ -48,6 +48,9 @@ VALID_TAGS = {
     # General
     '基础', '入门', '进阶', '实战', '优化', '工程实践',
 
+    # Domains / engineering practices (notebook-migration batch)
+    '网络编程', '内存安全', '调试', '测试',
+
     # Platforms
     'host', 'stm32f1',
 
