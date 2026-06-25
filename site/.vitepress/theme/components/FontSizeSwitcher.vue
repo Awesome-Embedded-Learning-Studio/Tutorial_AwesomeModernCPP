@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
-// 正文字号五档:超小 / 小 / 正常 / 大(默认) / 超大,用 A- / A+ 步进切换。
+// 正文字号五档:超小 / 小 / 正常(默认) / 大 / 超大,用 A- / A+ 步进切换。
 // 写 documentElement.dataset.fontSize → custom.css 的 html[data-font-size] 用 zoom 整页缩放。
-// 存 localStorage,首屏由 config head 内联脚本提前应用(默认 large),避免刷新闪烁。
+// 存 localStorage,首屏由 config head 内联脚本提前应用(默认 normal),避免刷新闪烁。
 type Size = 'xxsmall' | 'small' | 'normal' | 'large' | 'xxlarge'
 const STORAGE_KEY = 'vp-font-size'
 const order: Size[] = ['xxsmall', 'small', 'normal', 'large', 'xxlarge']

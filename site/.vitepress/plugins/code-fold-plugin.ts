@@ -25,8 +25,8 @@ import type MarkdownIt from 'markdown-it'
  *   - code-group 内的 fence 不折叠(tab 本身已是折叠语义):core ruler 用独立 depth 计数
  *     打 token.meta.inCodeGroup 标记 —— 不依赖 render 期才追加的 " active" info。
  *
- * 阈值 30 依据全站实测(7732 个代码块):>30 行占 ~12%,即 Issue #71 所指「一大坨」;
- * 20-30 行可正常阅读的中等块不误伤。改这一处常量即可全局调档。
+ * 阈值 20 依据全站实测:20 行以内的中等块保持原样、不误伤阅读,超过的(多为演示性
+ * 大段输出或完整工程,即 Issue #71 所指「一大坨」)才折叠。改这一处常量即可全局调档。
  */
 const FOLD_THRESHOLD = 20
 

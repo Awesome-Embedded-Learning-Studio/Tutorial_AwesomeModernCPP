@@ -98,6 +98,15 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <p class="card-desc">Reported compilation failure in the expected example</p>
   </div>
 </a>
+<a href="https://github.com/Nyuudoukumo" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Nyuudoukumo.png?size=96" alt="Nyuudoukumo" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Nyuudoukumo <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported an inconsistency between the example and explanation in Vol.1 "Cache and Memory Hierarchy" (#67), leading to a units fix</p>
+  </div>
+</a>
 </div>
 
 ## How to Become a Contributor

@@ -93,6 +93,15 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">报告 expected 示例编译失败问题</p>
   </div>
 </a>
+<a href="https://github.com/Nyuudoukumo" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Nyuudoukumo.png?size=96" alt="Nyuudoukumo" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Nyuudoukumo <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈 · 内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈卷一「Cache 机制与内存层次」示例与解释不一致的问题（#67），促成量纲修正</p>
+  </div>
+</a>
 </div>
 
 ## 如何成为贡献者
