@@ -20,7 +20,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-99%25-green.svg) 491/494 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 494/494 docs translated
 <!-- COVERAGE_END -->
 
 ## 这是什么项目
@@ -103,12 +103,12 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 |----|------|:----:|--------|
 | 卷一 | 基础入门（含 C 速通） | 87 | ✅ 成型 |
 | 卷二 | 现代特性（RAII / 智能指针 / 移动 / lambda） | 44 | ✅ 成型 |
-| 卷三 | 标准库深入 | 8 | 🔨 在建 |
-| 卷四 | 高级主题（concepts / 协程 / 模板） | 8 | 🔨 在建 |
+| 卷三 | 标准库深入 | 40 | ✅ 成型 |
+| 卷四 | 高级主题（concepts / 协程 / 模板 / 设计模式） | 29 | 🔨 在建 |
 | 卷五 | 并发编程 | 44 | ✅ 成型 |
-| 卷六 | 性能优化 | 3 | 🔨 在建 |
+| 卷六 | 性能优化 | 6 | 🔨 在建 |
 | 卷七 | 工程实践（CMake / 工具链 / 调试） | 8 | 🔨 在建 |
-| 卷八 | 领域应用（嵌入式 / 网络 / GUI / 存储） | 63 | ✅ 成型 |
+| 卷八 | 领域应用（嵌入式 / GUI / 存储等） | 63 | ✅ 成型 |
 | 卷九 | 开源项目研读（Chromium 等） | 16 | 📚 持续更新 |
 | 卷十 | 课程与演讲笔记（CppCon 等） | 17 | 📚 持续更新 |
 

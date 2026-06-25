@@ -46,7 +46,7 @@ Lab 0 跑通了多线程骨架——创建线程、RAII 包装、参数安全传
 
 ## 工程脚手架（先把这个跑起来）
 
-每个 Lab 在 vol5-labs/ 下有两份：**`templates/lab1_bounded_queue/`** 是空实现骨架（你拷贝去做），**`examples/lab1_bounded_queue/`** 是参考实现（卡住可对照，别先抄）。两份都是 standalone 工程。你要做的是 templates 那份：
+每个 Lab 在 vol5-labs/ 下有两份：**`templates/lab1_bounded_queue/`** 是空实现骨架（你拷贝去做），**`examples/lab1_bounded_queue/`** 是参考实现（⚠️ 正在开发中，目前只有空声明，暂未提供完整参考；完成后卡住可对照，别先抄）。两份都是 standalone 工程。你要做的是 templates 那份：
 
 ```text
 templates/lab1_bounded_queue/

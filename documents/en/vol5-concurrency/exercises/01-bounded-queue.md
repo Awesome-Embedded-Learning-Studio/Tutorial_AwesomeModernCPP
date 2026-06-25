@@ -55,7 +55,7 @@ Upon completion, you should have muscle memory for the mutex + condition_variabl
 
 ## Project Scaffold (Get this running first)
 
-Each Lab has two versions under `vol5-labs/`: **`templates/lab1_bounded_queue/`** is the empty implementation skeleton (copy this one to work on), and **`examples/lab1_bounded_queue/`** is the reference implementation (use this to compare if you get stuck, but don't copy it upfront). Both are standalone projects. You will be working on the `templates` version:
+Each Lab has two versions under `vol5-labs/`: **`templates/lab1_bounded_queue/`** is the empty implementation skeleton (copy this one to work on), and **`examples/lab1_bounded_queue/`** is the reference implementation (⚠️ under development — currently only empty declarations, no complete reference yet; once complete, use it to compare if you get stuck, but don't copy it upfront). Both are standalone projects. You will be working on the `templates` version:
 
 ```text
 templates/lab1_bounded_queue/
