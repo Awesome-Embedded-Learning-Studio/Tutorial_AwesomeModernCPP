@@ -9,6 +9,14 @@ description: "社区来稿、初刊文章与已审阅收录内容"
 
 社区文章不强制进入主线教程卷。它提供一个更开放的入口：投稿者可以先提交 Markdown，维护者做基础检查后上线展示，再根据讨论和审阅结果决定是否长期收录，或进一步整理进主线章节。
 
+## 最新来稿
+
+社区最新一篇投稿,讲透「为什么 C++ 至今没有一个统一顺手的包管理器」——从下载、ABI、构建系统碎片化一路聊到 C++20 modules。作者 CharlieChen114514。
+
+<ChapterNav variant="main">
+  <ChapterLink num="1" href="incoming/why-cpp-package-manager-hard">为什么 C++ 包管理这么难?</ChapterLink>
+</ChapterNav>
+
 ## 内容状态
 
 <ChapterNav variant="main">

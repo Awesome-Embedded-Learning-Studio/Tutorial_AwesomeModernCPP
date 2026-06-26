@@ -38,4 +38,8 @@ documents/community/incoming/my-first-modern-cpp-note.md
 
 ## 当前文章
 
-暂无初刊文章。
+从下载、ABI、构建系统碎片化到 C++20 modules,讲透为什么 C++ 至今没有一个像 Cargo、npm、pip 那样统一顺手的包管理器。作者 CharlieChen114514。
+
+<ChapterNav variant="sub">
+  <ChapterLink href="why-cpp-package-manager-hard">为什么 C++ 包管理这么难?</ChapterLink>
+</ChapterNav>

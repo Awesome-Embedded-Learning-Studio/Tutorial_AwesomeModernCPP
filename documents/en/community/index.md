@@ -14,6 +14,14 @@ This section hosts articles, notes, source code readings, engineering experience
 
 Community articles are not automatically merged into the main tutorial volumes. This section provides a more open entry point: contributors can submit Markdown files, maintainers will perform a basic review before publishing them for display, and then decide whether to include them permanently or integrate them into main chapters based on discussion and feedback.
 
+## Latest Submission
+
+The newest community submission — a thorough take on why C++ still has no unified, smooth package manager, walking from downloading, ABI, and build-system fragmentation all the way to C++20 modules. By CharlieChen114514.
+
+<ChapterNav variant="main">
+  <ChapterLink num="1" href="incoming/why-cpp-package-manager-hard">Why Is C++ Package Management So Hard?</ChapterLink>
+</ChapterNav>
+
 ## Content Status
 
 <ChapterNav variant="main">

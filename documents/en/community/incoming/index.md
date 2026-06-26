@@ -44,4 +44,8 @@ We suggest specifying the following at the beginning of the article:
 
 ## Current Articles
 
-There are no articles in this first issue yet.
+From downloading, ABI, and build-system fragmentation to C++20 modules — why C++ still has no unified, smooth package manager like Cargo, npm, or pip. By CharlieChen114514.
+
+<ChapterNav variant="sub">
+  <ChapterLink href="why-cpp-package-manager-hard">Why Is C++ Package Management So Hard?</ChapterLink>
+</ChapterNav>
