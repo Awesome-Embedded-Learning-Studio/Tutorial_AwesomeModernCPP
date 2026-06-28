@@ -29,6 +29,7 @@ tags:
 
 <ChapterNav variant="sub">
   <ChapterLink href="embedded/">嵌入式开发</ChapterLink>
+  <ChapterLink href="networking/">网络编程</ChapterLink>
   <ChapterLink href="gui-graphics/">GUI 与图形 — 规划中</ChapterLink>
   <ChapterLink href="data-storage/">数据存储 — 规划中</ChapterLink>
   <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
