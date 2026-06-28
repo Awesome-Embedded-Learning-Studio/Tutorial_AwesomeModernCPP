@@ -1253,6 +1253,89 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 }
 
 /* ================================================================
+   Resizable Sidebar(可拖拽侧栏宽度)
+   组件: theme/components/ResizableSidebar.vue
+   左 handle 在组件模板内(fixed),右 handle 运行时注入 .aside(absolute)。
+   宽度由 --vp-sidebar-width(VitePress 原生,全链路消费)与 --vp-aside-width(本站自定义)驱动。
+   ================================================================ */
+
+:root {
+  --vp-aside-width: 256px; /* 右大纲栏宽度变量,默认与 VitePress 原值一致 */
+}
+
+/* 右栏宽度由变量驱动,覆盖 VitePress 的固定 max-width / width */
+.VPDoc.has-aside .aside {
+  max-width: var(--vp-aside-width);
+  position: relative; /* 给注入的 absolute handle 提供锚点 */
+}
+.VPDoc .aside-container {
+  width: calc(var(--vp-aside-width) - 32px); /* 保持原 32px 内边距逻辑(原 max-width 256 → container 224) */
+}
+
+/* 手柄公共态:常显一条 1px 淡灰细线(::before),悬浮 / 拖拽时变品牌色加粗。
+   命中热区 8px(透明本体),避免过窄扫不到。z-index 压在 sidebar 之上,防止被侧栏盖住。 */
+.rs-handle {
+  z-index: calc(var(--vp-z-index-sidebar) + 1);
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+}
+.rs-handle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--vp-c-divider);
+  transition: width 0.15s ease, background-color 0.15s ease;
+}
+.rs-handle:hover::before,
+.rs-handle.is-active::before {
+  width: 2px;
+  background: var(--vp-c-brand-1);
+}
+
+/* 左手柄:fixed。left 仅作 SSR 首屏 fallback,onMounted 后由 JS 读取 .VPSidebar 右边缘精确
+   覆盖 —— 宽屏(≥1440px)布局居中,右缘带 (vw-maxW)/2 偏移且受滚动条影响,CSS 公式推算
+   总有小偏差,改读 getBoundingClientRect 根治(与右 handle 同策略)。 */
+.rs-handle--left {
+  position: fixed;
+  left: var(--vp-sidebar-width);
+  margin-left: -4px;
+  top: var(--vp-nav-height, 64px);
+  bottom: 0;
+}
+
+/* 右手柄:absolute 注入 .aside 内,居中压在其左边缘(默认隐藏,仅大屏显示见下方媒体查询) */
+.rs-handle--right {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  display: none;
+}
+
+/* 拖拽进行中:禁选中文,全屏 col-resize 光标 */
+body.rs-resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* 响应式:左栏 <960px 沉为抽屉;右栏 aside 仅 ≥1280px 显示 */
+@media (max-width: 959px) {
+  .rs-handle--left {
+    display: none;
+  }
+}
+@media (min-width: 1280px) {
+  .rs-handle--right {
+    display: block;
+  }
+}
+
+/* ================================================================
    Content Page Enhancements
    ================================================================ */
 

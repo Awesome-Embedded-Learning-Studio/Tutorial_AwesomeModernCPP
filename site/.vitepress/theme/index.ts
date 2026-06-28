@@ -14,6 +14,7 @@ import HomeHeroVisual from './components/HomeHeroVisual.vue'
 import ProofStrip from './components/ProofStrip.vue'
 import HomeRoadmap from './components/HomeRoadmap.vue'
 import FontSizeSwitcher from './components/FontSizeSwitcher.vue'
+import ResizableSidebar from './components/ResizableSidebar.vue'
 import { setupMermaid } from './mermaid-client'
 import './custom.css'
 
@@ -21,6 +22,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
+      'layout-top': () => h(ResizableSidebar),
       'home-hero-image': () => h(HomeHeroVisual),
       'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(ProofStrip)]),
       'home-hero-after': () => h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
