@@ -1,5 +1,6 @@
-import type { DefaultTheme } from 'vitepress'
+import type { DefaultTheme, PageData } from 'vitepress'
 import { navZh, navEn } from './nav'
+import { getGitTimestampMs } from './git-timestamp'
 import { kbdPlugin } from '../plugins/kbd-plugin'
 import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
@@ -37,6 +38,16 @@ export const sharedBase = {
   base: '/Tutorial_AwesomeModernCPP/',
   cleanUrls: true,
   lastUpdated: true,
+
+  // 分卷构建(scripts/build.ts)把 md 复制到 gitignored 的临时目录再交给 VitePress,
+  // VitePress 默认对副本跑 `git log` 拿不到历史,"Last Updated" 渲染不出来。这里改用
+  // documents/ 下真实源文件的提交时间覆盖 pageData.lastUpdated。详见 git-timestamp.ts。
+  async transformPageData(pageData: PageData) {
+    const ms = getGitTimestampMs(pageData.relativePath)
+    if (ms) {
+      pageData.lastUpdated = ms
+    }
+  },
 
   vite: {
     build: {
