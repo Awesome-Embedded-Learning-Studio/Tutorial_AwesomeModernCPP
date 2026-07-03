@@ -66,6 +66,9 @@ export const sharedBase = {
 
   head: [
     ['link', { rel: 'icon', href: '/Tutorial_AwesomeModernCPP/favicon.ico' }],
+    // 浏览器地址栏/壁纸融合(明暗双值,与站点暖中性底一致)
+    ['meta', { name: 'theme-color', content: '#F7F3EC' }],
+    ['meta', { name: 'theme-color', content: '#17120E', media: '(prefers-color-scheme: dark)' }],
     // 首屏立即应用字号档(从 localStorage 读,默认 medium),防刷新闪烁。
     // 与 FontSizeSwitcher.vue 的 STORAGE_KEY('vp-font-size')保持一致。
     [

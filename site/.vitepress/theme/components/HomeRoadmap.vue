@@ -166,7 +166,7 @@ const t = computed(() =>
 }
 
 .rm-chip--done .rm-chip__mark { color: var(--vp-c-green-1); }
-.rm-chip--doing .rm-chip__mark { color: #ffc107; }
+.rm-chip--doing .rm-chip__mark { color: var(--vp-c-yellow-1, #f59e0b); }
 .rm-chip--todo .rm-chip__mark { color: var(--vp-c-text-3); }
 
 .home-roadmap__next {

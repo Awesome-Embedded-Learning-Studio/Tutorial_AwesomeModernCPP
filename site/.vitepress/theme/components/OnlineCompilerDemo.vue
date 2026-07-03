@@ -27,7 +27,76 @@
       </a>
     </div>
 
-    <div class="online-compiler-demo__split">
+    <!-- 默认态:只读源码 + "动手试一试" CTA。源码占满正文宽,不再两栏挤压 -->
+    <div class="online-compiler-demo__inline">
+      <div v-if="armSourcePath" class="online-compiler-demo__source-tabs">
+        <button
+          type="button"
+          class="online-compiler-demo__button online-compiler-demo__button--secondary online-compiler-demo__button--tab"
+          :class="{ 'is-active': displayKind !== 'arm' }"
+          @click="switchSourceKind('default')"
+        >
+          源码
+        </button>
+        <button
+          type="button"
+          class="online-compiler-demo__button online-compiler-demo__button--secondary online-compiler-demo__button--tab"
+          :class="{ 'is-active': displayKind === 'arm' }"
+          @click="switchSourceKind('arm')"
+        >
+          ARM 精简源码
+        </button>
+      </div>
+
+      <div class="online-compiler-demo__source-view">
+        <div
+          v-if="highlightedHtml"
+          class="online-compiler-demo__source-highlight"
+          v-html="highlightedHtml"
+        />
+        <pre v-else class="online-compiler-demo__source-code"><code>{{ displaySource }}</code></pre>
+      </div>
+
+      <p
+        v-if="sourceLoadState === 'loading' || sourceLoadState === 'error'"
+        class="online-compiler-demo__source-hint"
+      >
+        {{ sourceLoadState === 'error' ? '源码加载失败，可点上方源码链接查看' : '加载源码中…' }}
+      </p>
+
+      <button class="online-compiler-demo__cta" type="button" @click="openModal">
+        <span class="online-compiler-demo__cta-text">动手试一试</span>
+        <span class="online-compiler-demo__cta-arrow" aria-hidden="true">→</span>
+      </button>
+    </div>
+
+    <!-- 浮层态:Teleport 到 body,灰色遮罩 + 比页面小一圈的卡片,完整 IDE -->
+    <Teleport to="body">
+      <div
+        v-if="modalOpen"
+        class="online-compiler-demo__overlay"
+        @click.self="closeModal"
+      >
+        <div
+          class="online-compiler-demo__modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ocd-modal-title"
+        >
+          <div class="online-compiler-demo__modal-header">
+            <div>
+              <p class="online-compiler-demo__eyebrow">Compiler Explorer</p>
+              <strong id="ocd-modal-title">{{ title }}</strong>
+            </div>
+            <button
+              class="online-compiler-demo__modal-close"
+              type="button"
+              aria-label="关闭"
+              @click="closeModal"
+            >✕</button>
+          </div>
+
+          <div class="online-compiler-demo__split">
       <div class="online-compiler-demo__source-pane">
         <div v-if="armSourcePath" class="online-compiler-demo__source-tabs">
           <button
@@ -56,15 +125,23 @@
           />
           <pre v-else class="online-compiler-demo__source-code"><code>{{ displaySource }}</code></pre>
         </div>
-        <textarea
-          v-else
-          v-model="editorSource"
-          class="online-compiler-demo__textarea"
-          spellcheck="false"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-        />
+        <div v-else class="online-compiler-demo__editor-wrap">
+          <div
+            ref="editorBackdropRef"
+            class="online-compiler-demo__source-highlight online-compiler-demo__editor-backdrop"
+            v-html="editorHighlightedHtml"
+          />
+          <textarea
+            ref="editorTextareaRef"
+            v-model="editorSource"
+            class="online-compiler-demo__textarea online-compiler-demo__editor-textarea"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            @scroll="onEditorScroll"
+          />
+        </div>
 
         <p
           v-if="!editorOpen && (sourceLoadState === 'loading' || sourceLoadState === 'error')"
@@ -195,8 +272,26 @@
           </div>
           <pre><code>{{ result.text }}</code></pre>
         </div>
+        <!-- 编译进行中（activeAction 置位、result 尚未返回）：shimmer 骨架，避免结果区整块消失干等 -->
+        <div v-else-if="activeAction" class="online-compiler-demo__result online-compiler-demo__result--skeleton">
+          <div class="online-compiler-demo__result-header">
+            <span class="skel skel--title" />
+            <span class="skel skel--meta" />
+          </div>
+          <div class="online-compiler-demo__skel-lines">
+            <span
+              v-for="(w, i) in [92, 78, 86, 58, 90, 72, 95, 48]"
+              :key="i"
+              class="skel skel--line"
+              :style="{ width: w + '%' }"
+            />
+          </div>
+        </div>
       </div>
     </div>
+        </div>
+      </div>
+    </Teleport>
 
     <p v-if="error" class="online-compiler-demo__error">
       {{ error }}
@@ -280,6 +375,10 @@ const error = ref('')
 const result = ref<CompileResult | null>(null)
 const editorOpen = ref(false)
 const highlightedHtml = ref('')
+// 编辑态高亮(overlay 技巧):编辑框背后垫一层 shiki 高亮,文字透明,光标/选区由 textarea 接管
+const editorHighlightedHtml = ref('')
+const editorBackdropRef = ref<HTMLElement | null>(null)
+const editorTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const optionsOpen = ref(false)
 const editorSourceKind = ref<SourceKind>('default')
 const editorSource = ref('')
@@ -311,6 +410,26 @@ watch(displaySource, async (code) => {
     highlightedHtml.value = ''
   }
 })
+
+// 编辑态:边打边重新高亮(overlay backdrop 跟随 editorSource)
+watch(editorSource, async (code) => {
+  editorHighlightedHtml.value = ''
+  if (!code) return
+  try {
+    editorHighlightedHtml.value = await highlightCpp(code)
+  } catch {
+    editorHighlightedHtml.value = ''
+  }
+})
+
+// textarea 与 backdrop 滚动同步(两层重叠,滚动必须一致,否则错位)
+function onEditorScroll() {
+  const ta = editorTextareaRef.value
+  const bd = editorBackdropRef.value
+  if (!ta || !bd) return
+  bd.scrollTop = ta.scrollTop
+  bd.scrollLeft = ta.scrollLeft
+}
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
@@ -423,6 +542,33 @@ function closeEditor(): void {
   editorOpen.value = false
 }
 
+// ── 浮层(模态):默认只显源码,点"动手试一试"弹完整 IDE ──
+const modalOpen = ref(false)
+
+function onModalEsc(e: KeyboardEvent) {
+  if (e.key === 'Escape' && modalOpen.value) closeModal()
+}
+
+async function openModal(): Promise<void> {
+  modalOpen.value = true
+  document.body.style.overflow = 'hidden'
+  window.addEventListener('keydown', onModalEsc)
+  await openEditor()  // 加载可编辑源码、置 editorOpen=true
+}
+
+function closeModal(): void {
+  // closeEditor 把编辑内容回写源码缓存 + editorOpen=false
+  closeEditor()
+  modalOpen.value = false
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onModalEsc)
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onModalEsc)
+  if (modalOpen.value) document.body.style.overflow = ''
+})
+
 async function resetEditor(): Promise<void> {
   activeAction.value = 'source'
   error.value = ''
@@ -472,33 +618,43 @@ function stripAnsi(value: string): string {
 
 function extractExecutionText(payload: any): string {
   const exec = payload.execResult ?? payload.executionResult ?? payload
-  const chunks = [
-    linesToText(exec.stdout),
-    linesToText(exec.stderr),
-    linesToText(payload.stdout),
-    linesToText(payload.stderr),
-    linesToText(payload.buildResult?.stdout),
-    linesToText(payload.buildResult?.stderr),
-  ].filter(Boolean)
+  // godbolt executor 响应常把程序输出同时放在 execResult 和顶层（此时 exec===payload），
+  // 每路只取第一份非空的，避免把同一份输出拼两遍。（对齐 C-Journey f85300b 修复）
+  if (isCompilationFailure(payload, linesToText(payload.asm))) {
+    const diag = gatherDiagnostics(payload)
+    return diag
+      ? `❌ 编译失败：\n${diag}`
+      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
+  }
+  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+  const chunks = [out, err].filter(Boolean)
 
-  if (exec.code !== undefined) chunks.push(`exit code: ${exec.code}`)
-  return chunks.join('\n').trim()
+  if (exec.code !== undefined && exec.code !== 0) chunks.push(`exit code: ${exec.code}`)
+  else if (payload.code !== undefined && payload.code !== 0) chunks.push(`exit code: ${payload.code}`)
+  return chunks.join('\n').trim() || '(程序无输出)'
+}
+
+// 收集编译/运行诊断(execResult → 顶层 → buildResult，stderr 优先再 stdout)，每路第一份非空避免重复
+function gatherDiagnostics(payload: any): string {
+  const exec = payload.execResult ?? payload.executionResult ?? payload
+  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+  return [err, out].filter(Boolean).join('\n')
 }
 
 function extractAsmText(payload: any): string {
   const asm = linesToText(payload.asm)
-  const diagnostics = [
-    linesToText(payload.stdout),
-    linesToText(payload.stderr),
-    linesToText(payload.buildResult?.stdout),
-    linesToText(payload.buildResult?.stderr),
-  ].filter(Boolean).join('\n')
-
   if (isCompilationFailure(payload, asm)) {
-    return (diagnostics || asm || '编译失败，但 Compiler Explorer 没有返回诊断信息。').trim()
+    // 顶层与 buildResult 可能同源，每路只取第一份非空。
+    const err = linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
+    const out = linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
+    const diag = [err, out].filter(Boolean).join('\n')
+    return diag
+      ? `❌ 编译失败：\n${diag}`
+      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
   }
-
-  return (asm || diagnostics || 'Compiler Explorer 没有返回可显示的输出。').trim()
+  return (asm || 'Compiler Explorer 没有返回可显示的汇编输出。').trim()
 }
 
 function isCompilationFailure(payload: any, asm: string): boolean {

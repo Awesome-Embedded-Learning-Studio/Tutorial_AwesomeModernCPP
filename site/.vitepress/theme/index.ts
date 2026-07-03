@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import type { Theme } from 'vitepress'
 import HomeTipBanner from './components/HomeTipBanner.vue'
+import ReadingProgress from './components/ReadingProgress.vue'
 import ScreenshotCarousel from './components/ScreenshotCarousel.vue'
 import ChapterNav from './components/ChapterNav.vue'
 import ChapterLink from './components/ChapterLink.vue'
@@ -22,7 +23,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'layout-top': () => h(ResizableSidebar),
+      'layout-top': () => [h(ReadingProgress), h(ResizableSidebar)],
       'home-hero-image': () => h(HomeHeroVisual),
       'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(ProofStrip)]),
       'home-hero-after': () => h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),

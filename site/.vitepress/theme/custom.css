@@ -1,4 +1,111 @@
 /* ================================================================
+   品牌色系统 · 钢蓝(Steel Blue) + 暖中性底
+   强调色:钢蓝 brand-1 #2563EB(亮)/ #60A5FA(暗提亮)——现代/类型安全/性能/工程
+   中性底:骨白 #F7F3EC(亮)/ 暖炭 #17120E(暗),暖偏黄底调利长篇中文+代码阅读
+   钢蓝只作强调(边/进度/hover/link),不通篇蓝底。暖中性底+字体栈 1:1 镜像 C-Journey。
+   ================================================================ */
+:root {
+  /* ── 品牌色 · 钢蓝(亮)── */
+  --vp-c-brand-1: #2563EB;
+  --vp-c-brand-2: #1E40AF;
+  --vp-c-brand-3: #3B82F6;
+  --vp-c-brand-soft:   rgba(37, 99, 235, 0.10);
+  --vp-c-brand-soft-2: rgba(37, 99, 235, 0.16);
+  --vp-c-brand: var(--vp-c-brand-1);
+
+  /* ── 背景 · 骨白(与 C-Journey 一致,品牌色无关)── */
+  --vp-c-bg: #F7F3EC;
+  --vp-c-bg-soft: #EFE8DC;
+  --vp-c-bg-soft-up: #FBF8F2;
+  --vp-c-bg-elv: #FFFCF7;
+
+  /* ── 文字 · 深炭 ── */
+  --vp-c-text-1: #2A2420;
+  --vp-c-text-2: #5C524A;
+  --vp-c-text-3: #8A7E72;
+
+  /* ── 分隔 / 边框 ── */
+  --vp-c-divider: #E0D8CC;
+  --vp-c-border: #D6CDBF;
+
+  /* ── CJK 字体栈 ── */
+  --vp-font-family: system-ui, -apple-system, 'Segoe UI', Roboto,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑',
+    'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
+
+  /* ── HomeTipBanner(原 Material 蓝 #3f51b5,统一到品牌色)── */
+  --vp-tip-bg: rgba(37, 99, 235, 0.08);
+  --vp-tip-border: rgba(37, 99, 235, 0.22);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: var(--vp-c-brand-1);
+  --vp-tip-accent-hover: var(--vp-c-brand-2);
+
+  /* ── 终端调色板(终端始终深色,不随站点明暗切换;与钢蓝同系)── */
+  --term-bg-from: #0f172a;     /* slate-900 */
+  --term-bg-to:   #1e3a5f;     /* 深钢蓝(替代原紫蓝 #0f3460) */
+  --term-border: rgba(96, 165, 250, 0.30);  /* brand-3,替代 indigo */
+  --term-shadow: rgba(15, 23, 42, 0.45);
+  --term-glow:   rgba(96, 165, 250, 0.26);  /* brand-3 光晕,替代 indigo */
+  --term-title:  rgba(226, 232, 240, 0.55);
+  --term-code:   #cbd5e1;
+  --term-cmd:    var(--vp-c-brand-3);  /* 与品牌统一(原 #42a5f5) */
+  --term-ok:     #34D399;              /* 成功绿(语义,与 brand 区分) */
+  --term-save:   #fbbf24;              /* 保存琥珀(状态语义) */
+  --term-out:    #e2e8f0;
+}
+
+.dark {
+  /* ── 品牌色 · 钢蓝(暗色提亮)── */
+  --vp-c-brand-1: #60A5FA;
+  --vp-c-brand-2: #93C5FD;
+  --vp-c-brand-3: #BFDBFE;
+  --vp-c-brand-soft:   rgba(96, 165, 250, 0.16);
+  --vp-c-brand-soft-2: rgba(96, 165, 250, 0.22);
+
+  /* ── 背景 · 暖炭 ── */
+  --vp-c-bg: #17120E;
+  --vp-c-bg-soft: #1F1812;
+  --vp-c-bg-soft-up: #241C15;
+  --vp-c-bg-elv: #241C15;
+
+  /* ── 文字 · 暖灰 ── */
+  --vp-c-text-1: #E8D8CA;
+  --vp-c-text-2: #B5A89E;
+  --vp-c-text-3: #7F756C;
+
+  /* ── 分隔 / 边框 ── */
+  --vp-c-divider: #33291F;
+  --vp-c-border: #3D3225;
+
+  /* ── HomeTipBanner(暗色)── */
+  --vp-tip-bg: rgba(96, 165, 250, 0.10);
+  --vp-tip-border: rgba(96, 165, 250, 0.24);
+  --vp-tip-text: var(--vp-c-text-2);
+  --vp-tip-accent: var(--vp-c-brand-1);
+  --vp-tip-accent-hover: var(--vp-c-brand-2);
+
+  /* 终端调色板不随暗色变(终端本就深色) */
+}
+
+/* ── 选区配色(soft tint,明暗双模式都可读)── */
+::selection {
+  background: var(--vp-c-brand-soft-2);
+}
+
+/* ── 滚动条美化(WebKit + Firefox)── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-divider);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--vp-c-text-3); }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+/* ================================================================
    正文字号五档(超小/小/正常/大/超大)—— 由 FontSizeSwitcher 切 documentElement 的 data-font-size。
    默认「正常」(zoom 1);往下为小/超小,往上为大/超大。
    用 CSS zoom 整页缩放:rem + 所有 px 字号(自定义组件 + VitePress 默认)一并跟随,
@@ -84,13 +191,24 @@ html[data-font-size='xxlarge'] {
   font-size: 1.2rem;
 }
 
+/* sidebar item 标题:超大字体(zoom 1.16)下长标题省略号截断,不溢出 sidebar/视口。
+   .text 是 .item(flex) 的子项,VitePress 默认 min-width:auto 不收缩 + 无 overflow/ellipsis,
+   抬字号后 nowrap 长标题撑爆 .text→.item→溢出。补 min-width:0 + ellipsis 优雅收口。 */
+.VPSidebar .text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 右侧大纲:辅助导航,再小一档(默认 14px) */
 .VPDocAsideOutline .outline-link {
   font-size: 1.1rem;
 }
 
-/* 首页 feature 卡片:标题比正文醒目,描述对齐正文档(默认 16/14px 偏小) */
-.VPFeature .title {
+/* 首页 feature 卡片:标题字号温和默认(:where 零特异性,不与 Home 区 .VPFeature .title 打架;
+   Home 区规则在下方,普通特异性即可覆盖此默认,无需 !important) */
+:where(.VPFeature .title) {
   font-size: 1.125rem;
 }
 
@@ -147,41 +265,57 @@ html[data-font-size='xxlarge'] {
 .vp-doc .vp-code-fold > details > summary {
   list-style: none;
   cursor: pointer;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--vp-c-text-2);
   user-select: none;
-  background: var(--vp-code-block-bg);
-  transition: color 0.2s ease;
+  background: linear-gradient(90deg, var(--vp-c-brand-soft) 0%, var(--vp-code-block-bg) 45%);
+  border-left: 3px solid var(--vp-c-brand-1);
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
 .vp-doc .vp-code-fold > details > summary:hover {
-  color: var(--vp-c-text-1);
+  color: var(--vp-c-brand-1);
+  background: linear-gradient(90deg, var(--vp-c-brand-soft-2) 0%, var(--vp-code-block-bg) 45%);
 }
 
 .vp-doc .vp-code-fold > details > summary::-webkit-details-marker {
   display: none;
 }
 
-/* 展开三角:放大到 1rem,醒目;hover 变品牌色,展开时旋转 */
+/* 展开三角:放进 brand-soft 圆角容器(通知条式 icon badge);展开时旋转 */
 .vp-doc .vp-code-fold > details > summary::before {
   content: '▶';
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 0.62rem;
   line-height: 1;
-  color: var(--vp-c-text-3);
-  transition: transform 0.2s ease, color 0.2s ease;
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-radius: 5px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
 }
 
 .vp-doc .vp-code-fold > details > summary:hover::before {
-  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft-2);
 }
 
 .vp-doc .vp-code-fold:has(details[open]) > details > summary::before {
   transform: rotate(90deg);
+}
+
+/* 展开态:summary 底加分隔线,与代码块不糊一起 */
+.vp-doc .vp-code-fold:has(details[open]) > details > summary {
+  border-bottom: 1px solid var(--vp-c-divider);
 }
 
 /* 展开/收起文案随 details[open] 切换(:has 全浏览器 2023+ 支持) */
@@ -199,8 +333,14 @@ html[data-font-size='xxlarge'] {
 
 .vp-doc .vp-code-fold > details > summary em {
   font-style: normal;
-  color: var(--vp-c-text-3);
-  margin-left: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  white-space: nowrap;
 }
 
 /* 代码块:收起态完全隐藏(不预览);展开态默认显示。margin/圆角由外层 .vp-code-fold 统一裁 */
@@ -249,7 +389,7 @@ html[data-font-size='xxlarge'] {
 .vp-doc blockquote {
   border-left: 4px solid var(--vp-c-brand-1);
   border-radius: 0 4px 4px 0;
-  background: rgba(81, 107, 232, 0.04);
+  background: var(--vp-c-brand-soft);
 }
 
 /* Links */
@@ -640,10 +780,261 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   white-space: pre;
 }
 
+/* ── 编译进行中骨架屏(shimmer):result 尚未返回时占位,避免结果区整块消失干等 ──
+   result--skeleton 复用 .online-compiler-demo__result 的边框/圆角/底;header 内的 strong/span
+   换成 .skel 条,pre 区换成 .skel-lines 多行条。shimmer 靠 background-position 扫光。 */
+.online-compiler-demo__skel-lines {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skel {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+      var(--vp-c-divider) 0%,
+      var(--vp-c-bg-soft) 50%,
+      var(--vp-c-divider) 100%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+
+.skel--title { width: 40%; height: 12px; }
+.skel--meta  { width: 28%; height: 12px; }
+.skel--line  { height: 10px; }
+
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+    background: var(--vp-c-bg-soft);
+  }
+}
+
 .online-compiler-demo__noscript {
   margin: 12px 0 0 !important;
   color: var(--vp-c-text-2);
   font-size: 13px;
+}
+
+/* ── 默认态 CTA("动手试一试")── */
+.online-compiler-demo__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--vp-c-brand-1);
+  border-radius: 8px;
+  background: var(--vp-c-brand-1);
+  color: var(--vp-c-white);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover {
+  background: var(--vp-c-brand-2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+}
+
+.online-compiler-demo__cta:active {
+  transform: translateY(0);
+}
+
+.online-compiler-demo__cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.online-compiler-demo__cta:hover .online-compiler-demo__cta-arrow {
+  transform: translateX(4px);
+}
+
+/* ── 浮层:灰色遮罩 + 比页面小一圈的卡片(cap 1280px) ── */
+.online-compiler-demo__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 5vw;          /* 比页面小一圈:纵向 3vh/横向 5vw 视口边距 */
+  overflow: auto;
+  animation: ocd-fade-in 0.2s ease;
+}
+
+.online-compiler-demo__modal {
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 1280px;
+  min-height: 80vh;          /* 内容少也至少 80vh 挺着,不缩成一小块 */
+  max-height: 94vh;          /* 留 3vh×2 边距,不顶满 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ocd-pop-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.online-compiler-demo__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.online-compiler-demo__modal-header strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  color: var(--vp-c-text-1);
+}
+
+.online-compiler-demo__modal-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.online-compiler-demo__modal-close:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+}
+
+/* 浮层里的 split:占满剩余高度,两栏各自滚动(textarea 撑满源码栏) */
+.online-compiler-demo__modal .online-compiler-demo__split {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);  /* 行填满 split 的 flex 高度 */
+  align-items: stretch;                /* 覆盖原 split 的 align-items:start,让 pane 拉满行高 */
+}
+
+.online-compiler-demo__modal .online-compiler-demo__source-pane {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__control-pane {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__textarea {
+  flex: 1;
+  min-height: 320px;
+}
+
+/* ── 编辑态高亮 overlay:shiki backdrop + 透明文字 textarea,两层重叠对齐 ──
+   textarea 文本透明(看背后高亮)、光标/选区仍由 textarea 接管;两层 font/padding/行高一致
+   (均 padding 14 / mono / 12px / 1.55)保证字符位置完全重合。滚动靠 onEditorScroll 同步。 */
+.online-compiler-demo__editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  overflow: hidden;
+  background: var(--vp-code-block-bg);
+  border-radius: 8px;
+}
+
+.online-compiler-demo__editor-backdrop {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  pointer-events: none;        /* 鼠标穿透到上层 textarea */
+  scrollbar-width: none;       /* 滚动条隐藏(滚动由 textarea 接管) */
+}
+
+.online-compiler-demo__editor-backdrop::-webkit-scrollbar {
+  display: none;
+}
+
+.online-compiler-demo__editor-backdrop .shiki {
+  margin: 0 !important;          /* 压掉 <pre> UA 的 margin-block-start(会顶下一行) */
+  min-height: auto !important;
+  max-height: none !important;
+  padding: 14px;                 /* 与 textarea 完全一致 → 字符位置重合 */
+  background: transparent !important;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;           /* 像素级,与 textarea 确定性一致(避免 unitless 在块/表单控件间渲染差) */
+  tab-size: 4;                   /* 与 textarea 的 tab-size 一致,Tab 字符宽度对齐 */
+  white-space: pre;
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.online-compiler-demo__modal .online-compiler-demo__editor-textarea {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 14px;                       /* 与 backdrop pre 完全一致 */
+  border: 0;
+  background: transparent;
+  color: transparent;                  /* 文本透明,看背后高亮 */
+  -webkit-text-fill-color: transparent; /* Safari 兼容 */
+  caret-color: var(--vp-c-text-1);     /* 光标仍可见 */
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  line-height: 18.6px;                 /* 像素级,与 backdrop 确定性一致 */
+  tab-size: 4;
+  white-space: pre;
+  letter-spacing: 0;
+  word-spacing: 0;
+  box-sizing: border-box;
+  resize: none;                        /* overlay 下尺寸由 wrap 决定 */
+  flex: none;
+  min-height: 0;
+}
+
+.online-compiler-demo__editor-textarea::selection {
+  background: var(--vp-c-brand-soft-2); /* 选区可见(brand soft 色) */
+}
+
+@keyframes ocd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ocd-pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-compiler-demo__overlay,
+  .online-compiler-demo__modal {
+    animation: none;
+  }
 }
 
 @media (max-width: 911px) {
@@ -916,6 +1307,8 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 /* ── Individual Card ─────────────────────────────────────────── */
 
 .VPFeature {
+  position: relative;        /* 给 rail ::before 提供定位上下文 */
+  overflow: hidden;          /* 圆角裁 rail 左上/左下角,与卡片轮廓贴合 */
   border: 1px solid var(--vp-c-divider) !important;
   border-radius: 14px !important;
   background-color: var(--vp-c-bg) !important;
@@ -926,6 +1319,30 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
     transform 0.39s ease;
 }
 
+/* ── 卡片左侧 rail(anatomy OrganCard 手法,用 CSS ::before 模拟,不改 VitePress 默认 DOM)──
+   默认 3px 半透明,hover 加粗到 5px 并提亮;底色按 tier 分层(镜像 icon tier 系统)。 */
+.VPFeature::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--vp-c-brand-1);
+  opacity: 0.35;
+  transition: opacity 0.39s ease, width 0.39s ease;
+}
+
+.VPFeature.link:hover::before {
+  opacity: 1;
+  width: 5px;
+}
+
+/* 三档 tier rail 着色:卷1-4 brand(钢蓝)/卷5-7 green/卷8-12 purple */
+.VPFeatures .item:nth-child(-n+4) .VPFeature::before { background: var(--vp-c-brand-1); }
+.VPFeatures .item:nth-child(n+5):nth-child(-n+7) .VPFeature::before { background: var(--vp-c-green-1); }
+.VPFeatures .item:nth-child(n+8) .VPFeature::before { background: var(--vp-c-purple-1); }
+
 .VPFeature.link:hover {
   border-color: var(--vp-c-brand-1) !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1),
@@ -934,20 +1351,22 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 }
 
 .VPFeature .box {
-  padding: 28px 24px !important;
+  padding: 28px 24px;
 }
 
 /* ── Icon Container ──────────────────────────────────────────── */
+/* !important 已去除:.VPFeature .icon(0,2,0)与 VitePress scoped .icon[data-v](0,2,0)等特异性,
+   custom.css 源序在后即覆盖。tier 规则特异性更高(0,4,0)、仍带 !important,叠加不受影响。 */
 
 .VPFeature .icon {
-  width: 48px !important;
-  height: 48px !important;
-  border-radius: 12px !important;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   background: linear-gradient(135deg,
       var(--vp-c-brand-soft) 0%,
-      var(--vp-c-indigo-soft) 100%) !important;
-  color: var(--vp-c-brand-1) !important;
-  font-size: 22px !important;
+      var(--vp-c-indigo-soft) 100%);
+  color: var(--vp-c-brand-1);
+  font-size: 22px;
   transition: background 0.39s ease,
     color 0.39s ease,
     transform 0.39s ease;
@@ -960,24 +1379,24 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 /* ── Card Title ──────────────────────────────────────────────── */
 
 .VPFeature .title {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  line-height: 1.5 !important;
-  color: var(--vp-c-text-1) !important;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--vp-c-text-1);
   transition: color 0.39s ease;
 }
 
 .VPFeature.link:hover .title {
-  color: var(--vp-c-brand-1) !important;
+  color: var(--vp-c-brand-1);
 }
 
 /* ── Card Details ────────────────────────────────────────────── */
 
 .VPFeature .details {
-  font-size: 13px !important;
-  line-height: 1.7 !important;
-  color: var(--vp-c-text-2) !important;
-  font-weight: 400 !important;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+  font-weight: 400;
 }
 
 /* ── Link Arrow ──────────────────────────────────────────────── */
@@ -1358,7 +1777,7 @@ body.rs-resizing {
 /* ── Content Dark Mode ─────────────────────────────────────────── */
 
 .dark .vp-doc blockquote {
-  background: rgba(81, 107, 232, 0.08);
+  background: var(--vp-c-brand-soft-2);
 }
 
 .dark .vp-doc table tr:nth-child(even) {
