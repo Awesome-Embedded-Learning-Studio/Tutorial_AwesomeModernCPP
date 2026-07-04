@@ -1,77 +1,54 @@
 import { nextTick, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 
-declare global {
-  interface Window {
-    mermaid?: {
-      initialize: (config: Record<string, unknown>) => void
-      render: (id: string, text: string) => Promise<{ svg: string; bindFunctions?: (el: Element) => void }>
-    }
-    __mermaidLoadingPromise__?: Promise<void>
-    __mermaidInitialized__?: boolean
-  }
+// mermaid 的 API 形状(只取我们用到的两个方法),避免依赖整包类型
+type MermaidApi = {
+  initialize: (config: Record<string, unknown>) => void
+  render: (id: string, text: string) => Promise<{ svg: string; bindFunctions?: (el: Element) => void }>
 }
 
-const MERMAID_CDN = 'https://cdn.jsdelivr.net/npm/mermaid@10.9.6/dist/mermaid.min.js'
+// 模块级缓存:整个应用生命周期只 initialize 一次。
+let mermaidPromise: Promise<MermaidApi> | null = null
 
-function loadMermaid(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve()
-
-  if (window.mermaid) {
-    initMermaid()
-    return Promise.resolve()
+function loadMermaid(): Promise<MermaidApi> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('SSR 环境不加载 mermaid'))
+  if (!mermaidPromise) {
+    // 动态 import → Vite 把 mermaid 打进客户端异步 chunk(同源 + hash 缓存,离线/被墙都能渲染);
+    // config 里的 ssr.external: ['mermaid'] 让 SSR build 不求值 mermaid,运行时 onMounted 才取。
+    mermaidPromise = import('mermaid').then((mod) => {
+      const mermaid = ((mod as { default?: MermaidApi }).default ?? (mod as unknown as MermaidApi))
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'loose',
+        theme: 'default',
+        flowchart: {
+          htmlLabels: true,
+          nodeSpacing: 50,
+          rankSpacing: 50,
+          padding: 15,
+        },
+        themeVariables: {
+          fontSize: '15px',
+        },
+      })
+      return mermaid
+    })
   }
-
-  if (window.__mermaidLoadingPromise__) return window.__mermaidLoadingPromise__
-
-  window.__mermaidLoadingPromise__ = new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>('script[data-mermaid-runtime]')
-    if (existing) {
-      existing.addEventListener('load', () => { initMermaid(); resolve() })
-      existing.addEventListener('error', () => reject(new Error('Failed to load Mermaid')))
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = MERMAID_CDN
-    script.async = true
-    script.dataset.mermaidRuntime = 'true'
-    script.onload = () => { initMermaid(); resolve() }
-    script.onerror = () => reject(new Error(`Failed to load Mermaid from ${MERMAID_CDN}`))
-    document.head.appendChild(script)
-  })
-
-  return window.__mermaidLoadingPromise__
-}
-
-function initMermaid() {
-  if (!window.mermaid || window.__mermaidInitialized__) return
-  window.mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'loose',
-    theme: 'default',
-    flowchart: {
-      htmlLabels: true,
-      nodeSpacing: 50,
-      rankSpacing: 50,
-      padding: 15,
-    },
-    themeVariables: {
-      fontSize: '15px',
-    },
-  })
-  window.__mermaidInitialized__ = true
+  return mermaidPromise
 }
 
 async function renderMermaidDiagrams() {
   if (typeof window === 'undefined') return
 
-  await loadMermaid()
+  let mermaid: MermaidApi
+  try {
+    mermaid = await loadMermaid()
+  } catch (e) {
+    console.error('[mermaid] 运行时加载失败', e)
+    return
+  }
   await nextTick()
   await new Promise<void>((r) => requestAnimationFrame(() => r()))
-
-  const mermaid = window.mermaid
-  if (!mermaid) return
 
   const nodes = Array.from(
     document.querySelectorAll<HTMLElement>('.mermaid-diagram[data-rendered="false"]')
@@ -104,6 +81,7 @@ function escapeHtml(s: string) {
 export function setupMermaid() {
   const router = useRouter()
 
-  onMounted(() => renderMermaidDiagrams())
-  router.onAfterRouteChange = () => renderMermaidDiagrams()
+  // .catch 治「静默失败」:之前 onMounted 调用没接住 reject,加载失败时图直接消失无痕。
+  onMounted(() => renderMermaidDiagrams().catch((e) => console.error('[mermaid] onMounted 渲染失败', e)))
+  router.onAfterRouteChange = () => renderMermaidDiagrams().catch((e) => console.error('[mermaid] 路由切换渲染失败', e))
 }
