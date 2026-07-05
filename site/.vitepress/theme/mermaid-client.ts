@@ -1,5 +1,5 @@
 import { nextTick, onMounted } from 'vue'
-import { useRouter } from 'vitepress'
+import { subscribeAfterRouteChange } from './router-hooks'
 
 // mermaid 的 API 形状(只取我们用到的两个方法),避免依赖整包类型
 type MermaidApi = {
@@ -79,9 +79,9 @@ function escapeHtml(s: string) {
 }
 
 export function setupMermaid() {
-  const router = useRouter()
-
+  // 用订阅器而非直接赋值 router.onAfterRouteChange:后者是单值属性,
+  // 会被 ReadingProgress 等组件覆盖,导致 SPA 跳转后 mermaid 不渲染。
   // .catch 治「静默失败」:之前 onMounted 调用没接住 reject,加载失败时图直接消失无痕。
   onMounted(() => renderMermaidDiagrams().catch((e) => console.error('[mermaid] onMounted 渲染失败', e)))
-  router.onAfterRouteChange = () => renderMermaidDiagrams().catch((e) => console.error('[mermaid] 路由切换渲染失败', e))
+  subscribeAfterRouteChange(() => renderMermaidDiagrams().catch((e) => console.error('[mermaid] 路由切换渲染失败', e)))
 }

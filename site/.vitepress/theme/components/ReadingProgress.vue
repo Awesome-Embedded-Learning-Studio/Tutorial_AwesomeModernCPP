@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vitepress'
+import { subscribeAfterRouteChange } from '../router-hooks'
 
 // 顶部阅读进度条：滚动时按 scrollTop / (scrollHeight - clientHeight) 算百分比。
 // brand 渐变 + 钢蓝微光，固定在视口顶部。路由切换 rAF+300ms 双重重算（短页归零坑）。
 // scroll/resize 用 rAF 合并，一帧最多算一次（比 anatomy 原版无节流更省，审计点名的性能债）。
 const progress = ref(0)
-const router = useRouter()
 let raf: number | null = null
 
 function update() {
@@ -28,11 +27,11 @@ onMounted(() => {
   window.addEventListener('resize', scheduleUpdate, { passive: true })
 })
 
-router.onAfterRouteChange = () => {
+subscribeAfterRouteChange(() => {
   // 路由切换：新页 DOM 立即可测 + 300ms 后（图片/mermaid 撑高）再补一次，防短页/异步内容归零失败
   requestAnimationFrame(update)
   setTimeout(update, 300)
-}
+})
 
 onBeforeUnmount(() => {
   if (raf !== null) cancelAnimationFrame(raf)
