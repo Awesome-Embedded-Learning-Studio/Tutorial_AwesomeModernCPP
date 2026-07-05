@@ -91,10 +91,10 @@ sudo apt update
 Then install all the packages we need in one go:
 
 ```bash
-sudo apt install gcc-arm-none-eabi gdb-arm-none-eabi openocd cmake build-essential
+sudo apt install gcc-arm-none-eabi gdb-multiarch openocd cmake build-essential
 ```
 
-Let me explain what these packages do. `gcc-arm-none-eabi` is a big gift pack containing the cross-compiler, linker, `objcopy`, `size`, and a whole set of tools. `gdb-arm-none-eabi` is the ARM version of GDB for debugging embedded programs. `openocd` we mentioned earlier, for flashing and GDB Server. `cmake` and `build-essential` are build tools, with the latter containing basic compilation tools like `make`.
+Let me explain what these packages do. `gcc-arm-none-eabi` is a big gift pack containing the cross-compiler, linker, `objcopy`, `size`, and a whole set of tools. `gdb-multiarch` is the multi-architecture GDB—it can debug ARM as well as RISC-V and other architectures. Note that the executable it installs is called `gdb-multiarch`, not `arm-none-eabi-gdb` (Ubuntu removed the legacy `gdb-arm-none-eabi` package from the repos a while ago). So wherever this tutorial says `arm-none-eabi-gdb`, Ubuntu users should substitute `gdb-multiarch` at the command line; Arch users keep `arm-none-eabi-gdb`. `openocd` we mentioned earlier, for flashing and GDB Server. `cmake` and `build-essential` are build tools, with the latter containing basic compilation tools like `make`.
 
 After installation, we can verify if the toolchain is actually installed:
 
@@ -125,7 +125,7 @@ The installation command is a bit shorter than Ubuntu's:
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-gdb openocd cmake
 ```
 
-Here is a difference from Ubuntu: Arch splits the tools into multiple packages. `arm-none-eabi-gcc` is the compiler itself, `arm-none-eabi-binutils` contains `ld`, `objcopy`, `size`, and other tools, and `arm-none-eabi-gdb` is the debugger. Ubuntu packs all of these into `gcc-arm-none-eabi`, so fewer packages need to be installed.
+Here is a difference from Ubuntu: Arch splits the tools into multiple packages. `arm-none-eabi-gcc` is the compiler itself, `arm-none-eabi-binutils` contains `ld`, `objcopy`, `size`, and other tools, and `arm-none-eabi-gdb` is the debugger. Ubuntu bundles the compiler and binutils into `gcc-arm-none-eabi`, while the debugger is the separate multi-architecture package `gdb-multiarch`—so the debugger command differs between the two distros (Arch: `arm-none-eabi-gdb`, Ubuntu: `gdb-multiarch`), as noted in the Ubuntu section above.
 
 Verify if the installation was successful:
 

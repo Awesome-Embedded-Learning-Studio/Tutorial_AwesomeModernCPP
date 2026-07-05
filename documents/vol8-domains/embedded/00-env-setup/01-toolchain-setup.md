@@ -86,13 +86,13 @@ sudo apt update
 ```bash
 sudo apt install -y \
     gcc-arm-none-eabi \
-    gdb-arm-none-eabi \
+    gdb-multiarch \
     openocd \
     cmake \
     build-essential
 ```
 
-让我解释一下这几个包都干嘛的。`gcc-arm-none-eabi` 是个大礼包，里面包含了交叉编译器、链接器、objcopy、size 等一整套工具。`gdb-arm-none-eabi` 是 ARM 版本的 GDB，用来调试嵌入式程序。`openocd` 我们前面说过了，是烧录和 GDB Server。`cmake` 和 `build-essential` 则是构建工具，后者包含了 make 等基础编译工具。
+让我解释一下这几个包都干嘛的。`gcc-arm-none-eabi` 是个大礼包，里面包含了交叉编译器、链接器、objcopy、size 等一整套工具。`gdb-multiarch` 是多架构版的 GDB，能调 ARM 也能调 RISC-V 之类的其他架构——注意它装出来的可执行文件就叫 `gdb-multiarch`，不是 `arm-none-eabi-gdb`（Ubuntu 早就把 `gdb-arm-none-eabi` 这个老包从源里移除了）。所以本教程里凡是写到 `arm-none-eabi-gdb` 的地方，Ubuntu 用户在命令行里替换成 `gdb-multiarch` 即可；Arch 用户保持 `arm-none-eabi-gdb`。`openocd` 我们前面说过了，是烧录和 GDB Server。`cmake` 和 `build-essential` 则是构建工具，后者包含了 make 等基础编译工具。
 
 安装完成之后，我们可以验证一下工具链是不是真的装上了：
 
@@ -122,7 +122,7 @@ This is free software; see the source for copying conditions.  There is no warra
 sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-gdb openocd cmake make
 ```
 
-这里有个和 Ubuntu 不同的地方：Arch 把工具拆分成了多个包。`arm-none-eabi-gcc` 是编译器本身，`arm-none-eabi-binutils` 包含了 ld、objcopy、size 这些工具，`arm-none-eabi-gdb` 是调试器。Ubuntu 把这些都打包进了 `gcc-arm-none-eabi`，所以需要装的包更少。
+这里有个和 Ubuntu 不同的地方：Arch 把工具拆分成了多个包。`arm-none-eabi-gcc` 是编译器本身，`arm-none-eabi-binutils` 包含了 ld、objcopy、size 这些工具，`arm-none-eabi-gdb` 是调试器。Ubuntu 那边把编译器和 binutils 合在了 `gcc-arm-none-eabi` 里，调试器则是单独的多架构包 `gdb-multiarch`——所以两边调试器命令名不一样（Arch 是 `arm-none-eabi-gdb`，Ubuntu 是 `gdb-multiarch`），见前面 Ubuntu 段的说明。
 
 验证一下安装是否成功：
 
