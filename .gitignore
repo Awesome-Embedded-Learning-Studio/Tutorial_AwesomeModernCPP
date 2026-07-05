@@ -7,6 +7,7 @@
 .claude/prompts/vol5-code-verification.md
 .claude/chapter-projects-outline.md
 .claude/templates/
+.claude/tools/
 
 # Build directories
 build/
@@ -27,9 +28,6 @@ __pycache__/
 
 # cppreference crawler cache (contains API keys in env)
 scripts/cppref_cache/
-
-# Environment variables
-.env
 
 # Ignore Any Caches brought from local
 .cache/

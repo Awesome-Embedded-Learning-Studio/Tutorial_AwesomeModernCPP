@@ -21,7 +21,6 @@ globs: documents/**/*.md
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `description` | string | 一句话摘要，缺失时由 `documents/hooks/meta.py` 自动生成，但建议手动填写以控制质量 |
 | `description` | string | 一句话摘要，建议手动填写以控制质量 |
 | `tags` | list[string] | 分类标签，必须来自下方 VALID_TAGS 集合 |
 

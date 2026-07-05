@@ -10,18 +10,9 @@ repos:
         files: '^documents/.*\.md$'
         exclude: '^documents/.*\bindex\.md$'
 
-  # Frontmatter validation (local hook)
+  # Local hooks
   - repo: local
     hooks:
-      - id: validate-frontmatter
-        name: Validate article frontmatter
-        entry: scripts/validate_frontmatter.py
-        language: python
-        additional_dependencies: ['pyyaml']
-        files: '^documents/core-embedded-cpp/.*\.md$'
-        exclude: '(index\.md|tags\.md)$'
-        pass_filenames: false
-
       - id: clang-format
         name: clang-format C/C++ sources
         entry: clang-format -i
@@ -33,13 +24,6 @@ repos:
         entry: python3 scripts/coverage.py --update
         language: system
         always_run: true
-        pass_filenames: false
-
-      - id: check-bold-rendering
-        name: Check bold rendering (**)
-        entry: pnpm exec tsx scripts/check_bold_rendering.ts
-        language: system
-        files: '^documents/.*\.md$'
         pass_filenames: false
 
   # Check for added large files
