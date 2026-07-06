@@ -19,7 +19,7 @@ Performance is the one area in C++ engineering where it's easiest to be confiden
 
 One thesis runs through the whole volume: **efficiency (algorithmic complexity) ≠ performance (real behavior on hardware).** Don't stare at big-O — watch how the data actually flows on the hardware.
 
-> Status: the EN translation of the rewritten eight-chapter CN volume is in progress. ch00–ch02 are translated; ch03–ch07 are pending EN translation. The legacy single-file articles (02-inline / 06-evaluating / avx) have been removed; the sanitizer articles (10/11/12) have been relocated into ch00 as 03/04/05 in both CN and EN.
+> Status: the rewritten eight-chapter CN volume is now translated in full (ch00–ch07). The legacy single-file articles (02-inline / 06-evaluating / avx) have been removed; the sanitizer articles (10/11/12) have been relocated into ch00 as 03/04/05 in both CN and EN.
 
 ## Chapter navigation
 
@@ -27,6 +27,9 @@ One thesis runs through the whole volume: **efficiency (algorithmic complexity) 
   <ChapterLink href="ch00-performance-mindset">ch00 · Performance mindset and correctness first</ChapterLink>
   <ChapterLink href="ch01-benchmark-methodology">ch01 · Benchmark methodology (volume anchor)</ChapterLink>
   <ChapterLink href="ch02-cpu-microarchitecture">ch02 · CPU microarchitecture and the memory hierarchy</ChapterLink>
+  <ChapterLink href="ch03-attribution-methodology">ch03 · Attribution methodology: from measurement to bottleneck</ChapterLink>
+  <ChapterLink href="ch04-tuning-by-bottleneck">ch04 · Tuning by bottleneck site (technical core)</ChapterLink>
+  <ChapterLink href="ch05-multicore-performance">ch05 · Multicore performance (continuing vol5)</ChapterLink>
+  <ChapterLink href="ch06-cpp-abstraction-cost">ch06 · The performance cost of C++ abstractions</ChapterLink>
+  <ChapterLink href="ch07-compiler-and-size">ch07 · Compiler optimization bounds and size evaluation</ChapterLink>
 </ChapterNav>
-
-> ch03–ch07 — attribution methodology, tuning by bottleneck, multicore, abstraction cost, compiler & size — CN done, EN pending.

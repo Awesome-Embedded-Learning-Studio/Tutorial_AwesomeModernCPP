@@ -25,7 +25,7 @@ title: 前端优化:代码布局、PGO 与 BOLT
 
 ## Frontend Bound:取指/译码跟不上
 
-ch04 前面六篇都在治 Backend(内存、计算)和 Bad Speculation(分支)。最后一种瓶颈是 **Frontend Bound**——CPU 前端(取指、译码)跟不上后端的执行速度,slot 因为「指令没及时喂进来」而空转。这种瓶颈在大代码库里很常见,表现为:
+ch04 前面六篇都在治 Backend(内存、计算)和 Bad Speculation(分支)。最后一种瓶颈是 **Frontend Bound**:CPU 前端(取指、译码)跟不上后端的执行速度,slot 因为「指令没及时喂进来」而空转。这种瓶颈在大代码库里很常见,表现为:
 
 - **icache miss**:代码体积太大,指令 cache 装不下,频繁去 L2/L3 取指令。
 - **iTLB miss**:指令页表翻译也miss,尤其代码页很多时。
@@ -43,7 +43,7 @@ Frontend 优化的第一招是「别让代码无谓变大」:
 
 ## 第二招:PGO(按真实剖面布局代码)
 
-**PGO(Profile-Guided Optimization)** 是 Frontend 优化的重头戏。思路:先跑一遍程序收集「哪些代码真的热、哪些分支怎么走」的剖面(profile),编译器据此重新布局——把热路径的代码物理上聚到一起(改善 icache)、优化分支预测布局、更聪明的 inline 决策。
+**PGO(Profile-Guided Optimization)** 是 Frontend 优化的重头戏。思路:先跑一遍程序收集「哪些代码真的热、哪些分支怎么走」的剖面(profile),编译器据此重新布局,把热路径的代码物理上聚到一起(改善 icache)、优化分支预测布局、做更聪明的 inline 决策。
 
 PGO 是三阶段流程:
 
@@ -71,9 +71,9 @@ g++ -O2 -fprofile-use app.cpp -o app_pgo
 
 - 这个小函数只有 2 个分支、几行代码,**编译器 -O2 已经把它优化得很好**(hot path 内联、分支预测器对 99/1 的分支命中 99%)。
 - PGO 的真正价值是**大型代码库的代码布局**:把分散在几千个函数里的热路径物理聚到一起、让 icache 命中率显著提升。对一个几十行的小函数,没什么可布局的。
-- 业界 PGO 的公开收益都来自**大项目**:Chrome、Firefox、各大数据库,报告个位数到十几个百分点的提速——前提是代码库大到 icache/分支布局真的成为瓶颈。
+- 业界 PGO 的公开收益都来自**大项目**:Chrome、Firefox、各大数据库,报告个位数到十几个百分点的提速,前提是代码库大到 icache/分支布局真的成为瓶颈。
 
-> 我第一遍跑这个实验时,「PGO 版」看起来快了 4 倍,激动了一下——后来发现那个 4 倍全是**仪器化二进制的计数器开销**(阶段 1 的 `app_gen` 自带性能计数器,慢得多),不是 PGO 的功劳。修正方法:用**纯 `-O2` 无仪器化**的基线对照,且确保阶段 3 的 profile 真的被应用(编译器会 warning `profile count data file not found` 如果没找到)。这个翻车经历我写在这里,是想再次强调 ch01 的纪律:**你以为测的是 PGO 收益,可能测的是仪器化开销**。基线必须干净。
+> 我第一遍跑这个实验时,「PGO 版」看起来快了 4 倍,激动了一下。后来发现那个 4 倍全是**仪器化二进制的计数器开销**(阶段 1 的 `app_pgo` 自带性能计数器,慢得多),不是 PGO 的功劳。修正方法:用**纯 `-O2` 无仪器化**的基线对照,且确保阶段 3 的 profile 真的被应用(编译器会 warning `profile count data file not found` 如果没找到)。这个翻车经历我写在这里,是想再次强调 ch01 的纪律:**你以为测的是 PGO 收益,可能测的是仪器化开销**。基线必须干净。
 
 所以 PGO 的实战建议:**别期望它在微基准上有效**;在你的真实大型项目 release 构建里开(`-fprofile-generate` → 跑代表性负载 → `-fprofile-use`),用生产级的 workload 采样,才有意义。PGO 的工程接入(怎么选 workload、CI 怎么集成)是 ch07-02 的事。
 
@@ -81,26 +81,21 @@ g++ -O2 -fprofile-use app.cpp -o app_pgo
 
 **BOLT(Binary Optimization and Layout Tool)** 是 LLVM 项目里的工具,做的是 PGO 的进阶版:**直接在已经链接好的二进制上做代码布局优化**,不需要重新编译。它读 perf 采集的 profile,重新排列二进制里的代码块(把热基本块连续摆、冷块扔到末尾),对**大型二进制**效果显著(社区报告个位数到十几百分点)。
 
-BOLT 的优势:**不需要重新编译整个项目**(这对大项目极有价值——重编一次几十分钟到几小时),只在最终二进制上操作。代价:构建流程复杂度上升、需要 profile 数据。适合**已经用了 LTO + PGO 还想再榨一点**的极致优化场景,普通项目不必上。
+BOLT 的优势:**不需要重新编译整个项目**(这对大项目极有价值,重编一次几十分钟到几小时),只在最终二进制上操作。代价:构建流程复杂度上升、需要 profile 数据。适合**已经用了 LTO + PGO 还想再榨一点**的极致优化场景,普通项目不必上。
 
 ## Frontend 优化的实战优先级
 
 把三招排个优先级:
 
-1. **控制膨胀**(别过度 inline、模板抽公共、gc-sections)——免费、低风险,先做。
-2. **PGO**(大项目 release 构建开)——大代码库有实打实收益,接入成本中等。
-3. **BOLT**(极致优化)——已用 LTO+PGO 还想再榨的场景,接入成本高。
+1. **控制膨胀**(别过度 inline、模板抽公共、gc-sections),免费、低风险,先做。
+2. **PGO**(大项目 release 构建开),大代码库有实打实收益,接入成本中等。
+3. **BOLT**(极致优化),已用 LTO+PGO 还想再榨的场景,接入成本高。
 
-但**先确认你真的是 Frontend Bound**——用 TMAM 看 Frontend 桶占比高不高(ch03-02)。不先 profile 就上 PGO/BOLT 是「拿着锤子找钉子」,可能辛苦半天,真瓶颈在别处(往往在 Backend Memory)。
+但**先确认你真的是 Frontend Bound**,用 TMAM 看 Frontend 桶占比高不高(ch03-02)。不先 profile 就上 PGO/BOLT 是「拿着锤子找钉子」,可能辛苦半天,真瓶颈在别处(往往在 Backend Memory)。
 
-## 小结
+回头看这一篇:Frontend Bound 就是取指/译码跟不上,大代码库常见,对策是让热代码紧凑、布局到一起;三招分别是控制膨胀(别过度 inline、模板抽公共、gc-sections)、PGO(按剖面布局)、BOLT(链接后布局);**PGO 对微基准无收益**(实测 ~3.7 vs ~3.9 ms),价值在大型代码库(Chrome/Firefox 级,公开收益个位数到十几百分点),**那个一度出现的 4× 是仪器化开销,不是 PGO,基线必须干净**;最后,**先 profile 确认 Frontend 真是瓶颈**,再上 PGO/BOLT,别拿锤子找钉子。
 
-- **Frontend Bound** = 取指/译码跟不上,大代码库常见,对策是让热代码紧凑、布局到一起。
-- **三招**:控制膨胀(别过度 inline、模板抽公共、gc-sections)、PGO(按剖面布局)、BOLT(链接后布局)。
-- **PGO 对微基准无收益**(实测 ~3.7 vs ~3.9 ms),价值在大型代码库(Chrome/Firefox 级,公开收益个位数到十几百分点)。**那个一度出现的 4× 是仪器化开销,不是 PGO**——基线必须干净。
-- **先 profile 确认 Frontend 真是瓶颈**,再上 PGO/BOLT,别拿锤子找钉子。
-
-到这一篇,ch04 按瓶颈部位优化就讲完了——四个桶(Backend Memory / Backend Core / Bad Speculation / Frontend)各有对策。下一篇我们换个视角:多核性能(ch05),那里有新的瓶颈类型(伪共享、NUMA)。
+到这一篇,ch04 按瓶颈部位优化就讲完了。四个桶(Backend Memory / Backend Core / Bad Speculation / Frontend)各有对策。下一篇我们换个视角:多核性能(ch05),那里有新的瓶颈类型(伪共享、NUMA)。
 
 ## 参考资源
 
