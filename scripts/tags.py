@@ -39,7 +39,7 @@ VALID_TAGS = {
     '函数对象', 'std_function', 'std_invoke', 'Ranges',
 
     # Concurrency
-    'atomic', 'memory_order', 'mutex', '无锁',
+    'atomic', 'memory_order', 'mutex', '无锁', '并发',
 
     # Embedded specific
     '嵌入式', '单片机', '外设管理', '寄存器', '链接器',
