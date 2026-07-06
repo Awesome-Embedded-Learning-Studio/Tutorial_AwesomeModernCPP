@@ -679,4 +679,4 @@ At this point, we have completely mastered the RISC-V register naming system. Lo
 ## Further Reading
 
 - To understand what assembly the compiler actually spits out at different optimization levels (`-O0` / `-O2` / `-O3`), see [Volume 7: Compiler Options](../../../../vol7-engineering/02-compiler-options.md).
-- To dive deeper into how SIMD/AVX reshapes assembly output, see [Volume 6: AVX/AVX2 Deep Dive](../../../../vol6-performance/avx-avx2-deep-dive.md).
+- To dive deeper into how SIMD/AVX reshapes assembly output, see [Volume 6: AVX/AVX2 Deep Dive](../../../../vol6-performance/ch04-tuning-by-bottleneck/04-05-simd.md).

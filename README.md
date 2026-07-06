@@ -20,7 +20,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-84%25-green.svg) 494/588 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-87%25-green.svg) 506/582 docs translated
 <!-- COVERAGE_END -->
 
 ## 这是什么项目

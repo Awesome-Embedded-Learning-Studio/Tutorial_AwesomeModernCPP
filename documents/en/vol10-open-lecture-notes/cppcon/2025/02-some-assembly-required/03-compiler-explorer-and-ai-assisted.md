@@ -425,4 +425,4 @@ The following content will temporarily set aside assembly and move up a layer fr
 ## Further Reading
 
 - Compiler Explorer is the best window for observing compiler behavior. For a systematic look at the effects of various GCC/Clang options, see [Volume 7: Compiler Options](../../../../vol7-engineering/02-compiler-options.md).
-- To see how auto-vectorization enables AVX/AVX2 in CE, see [Volume 6: AVX/AVX2 Deep Dive](../../../../vol6-performance/avx-avx2-deep-dive.md).
+- To see how auto-vectorization enables AVX/AVX2 in CE, see [Volume 6: AVX/AVX2 Deep Dive](../../../../vol6-performance/ch04-tuning-by-bottleneck/04-05-simd.md).

@@ -1,30 +1,32 @@
 ---
-title: "Benchmark 方法论参考卡"
-description: "ch01 全章的速查页——后续每篇性能文章和 Lab 开头引用它。一张卡浓缩:环境就绪、可信 microbenchmark 写法、报告与比较、micro vs 生产/CI 的边界、perf 速查"
 chapter: 1
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 优化
-  - 测试
+cpp_standard:
+- 11
+- 17
+description: ch01 全章的速查页——后续每篇性能文章和 Lab 开头引用它。一张卡浓缩:环境就绪、可信 microbenchmark 写法、报告与比较、micro
+  vs 生产/CI 的边界、perf 速查
 difficulty: intermediate
+order: 6
 platform: host
-reading_time_minutes: 6
-cpp_standard: [11, 17]
 prerequisites:
-  - "怎么写一个可信的 microbenchmark"
+- 怎么写一个可信的 microbenchmark
+reading_time_minutes: 4
 related:
-  - "为什么 microbenchmark 会骗你"
-  - "测量陷阱与环境就绪:16 条 checklist"
-  - "统计与报告:把分布变成结论"
-  - "生产测量与 CI 性能回归检测"
+- 为什么 microbenchmark 会骗你
+- 测量陷阱与环境就绪:16 条 checklist
+- 统计与报告:把分布变成结论
+- 生产测量与 CI 性能回归检测
+tags:
+- host
+- cpp-modern
+- intermediate
+- 优化
+- 测试
+title: Benchmark 方法论参考卡
 ---
-
 # Benchmark 方法论参考卡
 
-> 这是 ch01 全章的**速查页**。本卷后续每一篇性能文章和性能 Lab,开头都会回引这一页讲的那套规矩——就像 vol5 用 TSan 贯穿并发正确性。这不是教程(教程是 ch01-01 到 ch01-05),是 reference card,贴墙上看的那种。
+> 这是 ch01 全章的**速查页**。本卷后续每一篇性能文章和性能 Lab,开头都会回引这一页讲的那套规矩,就像 vol5 用 TSan 贯穿并发正确性。这不是教程(教程是 ch01-01 到 ch01-05),是 reference card,贴墙上看的那种。
 
 ## §0 前提(一句话)
 
@@ -42,7 +44,7 @@ related:
 | 编译选项 | `RelWithDebInfo`(`-O2 -g`)+ profiling 加 `-fno-omit-frame-pointer` |
 | 体检 | `bash perf-env-check.sh`(见 ch01-03,只查不改) |
 
-> ⚠️ **这些只在 micro A/B 场景做**。评估生产性能时**全部不做**——要复刻真实(保留 DFS、邻居、ASLR),用统计处理噪声。见 ch01-05。
+> ⚠️ **这些只在 micro A/B 场景做**。评估生产性能时**全部不做**:要复刻真实(保留 DFS、邻居、ASLR),用统计处理噪声。见 ch01-05。
 
 ## §2 写可信 microbenchmark
 

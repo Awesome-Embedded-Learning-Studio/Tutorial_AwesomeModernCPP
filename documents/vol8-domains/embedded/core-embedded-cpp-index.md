@@ -28,7 +28,7 @@ description: ''
 - [C++98进阶：类型转换、动态内存与异常处理](../../vol1-fundamentals/03F-cpp98-casts-memory-exceptions.md)
 - [何时用 C++、用哪些 C++ 特性（折中与禁用项）](../../vol1-fundamentals/04-when-to-use-cpp.md)
 - [语言选择原则：性能 vs 可维护性的真实取舍](../../vol1-fundamentals/05-language-choice-performance-vs-maintainability.md)
-- [C++一定导致代码膨胀嘛？](../../vol6-performance/06-evaluating-performance-and-size.md)
+- [C++一定导致代码膨胀嘛？](./01-zero-overhead-abstraction.md)
 
 ## Chapter 1 - 构建工具链
 
@@ -39,7 +39,7 @@ description: ''
 ## Chapter 2 - 零开销抽象
 
 - [零开销抽象](./01-zero-overhead-abstraction.md)
-- [内联与编译器优化](../../vol6-performance/02-inline-and-compiler-optimization.md)
+- [内联与编译器优化](../../vol6-performance/ch04-tuning-by-bottleneck/04-04-inline-devirt-compiler.md)
 - [CRTP VS 运行时多态，你们知道吗？](./04-crtp-vs-runtime-polymorphism.md)
 
 ## Chapter 3 - 内存与对象管理
