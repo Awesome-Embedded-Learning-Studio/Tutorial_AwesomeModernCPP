@@ -43,7 +43,7 @@ stage0/
 The actual `CMakeLists.txt` looks like this, broken down in functional order:
 
 ```cmake
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.20)
 project(tamcpp_mlinfra LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)

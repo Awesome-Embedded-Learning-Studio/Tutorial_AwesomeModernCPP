@@ -43,7 +43,7 @@ stage0/
 实际的 `CMakeLists.txt` 长这样,顺着功能顺序拆:
 
 ```cmake
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.20)
 project(tamcpp_mlinfra LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)

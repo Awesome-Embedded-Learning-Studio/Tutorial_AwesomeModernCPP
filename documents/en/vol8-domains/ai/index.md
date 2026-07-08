@@ -10,7 +10,7 @@ tags:
 
 # AI & TinyML
 
-This subdomain collects TAMCPP's AI / TinyML hands-on labs. Like [Embedded Development](../embedded/) and [Networking](../networking/), this isn't the place for concept reference cards — it's for "build a working thing from scratch" projects. The goal is to express neural-network inference in modern C++ in a way that's clear, controllable, and explainable, while pulling `std::array` / `std::span` / `constexpr` / template dimension constraints / exception-free error handling / no heap allocation / static weights into one coherent piece.
+This subdomain collects TAMCPP's AI / TinyML hands-on labs. Like [Embedded Development](../embedded/) and Networking, this isn't the place for concept reference cards — it's for "build a working thing from scratch" projects. The goal is to express neural-network inference in modern C++ in a way that's clear, controllable, and explainable, while pulling `std::array` / `std::span` / `constexpr` / template dimension constraints / exception-free error handling / no heap allocation / static weights into one coherent piece.
 
 ## Projects
 
