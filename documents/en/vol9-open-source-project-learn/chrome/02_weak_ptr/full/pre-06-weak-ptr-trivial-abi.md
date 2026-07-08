@@ -11,7 +11,7 @@ platform: host
 prerequisites:
 - 'WeakPtr prerequisite (I): intrusive refcount and scoped_refptr'
 - 'WeakPtr prerequisite (V): template friend and uintptr_t type erasure'
-reading_time_minutes: 11
+reading_time_minutes: 7
 related:
 - 'weak_ptr design guide (I): motivation, API, and the control block'
 - 'weak_ptr design guide (III): test strategy and performance'

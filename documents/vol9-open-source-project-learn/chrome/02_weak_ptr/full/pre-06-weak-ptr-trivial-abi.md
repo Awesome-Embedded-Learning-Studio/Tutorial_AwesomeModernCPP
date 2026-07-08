@@ -12,7 +12,7 @@ platform: host
 prerequisites:
 - WeakPtr 前置知识（一）：侵入式引用计数与 scoped_refptr
 - WeakPtr 前置知识（五）：模板友元与 uintptr_t 类型擦除
-reading_time_minutes: 11
+reading_time_minutes: 7
 related:
 - WeakPtr 实战（一）：动机与接口设计
 - WeakPtr 实战（六）：测试与性能对比

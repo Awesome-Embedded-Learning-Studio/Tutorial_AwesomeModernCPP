@@ -126,7 +126,7 @@ The entire difference is the line after invalidating the old Flag. `invalidate_w
 
 `invalidate_weak_ptrs_and_doom()` is the meaner sibling. After invalidating the old Flag it does not mint a new one, and it zeroes `ptr_` for good measure. The factory enters a doomed state, and any `get_weak_ptr()` you call after that hands back an invalid result. It is cheaper than the first option by exactly one Flag allocation. The name says it: doom is for the "this object is being retired" cleanup path.
 
-These two show up again in the [02-6](./02-6-weak-ptr-sequence-affinity-and-lazy-binding.md) performance comparison. Truth is, in nine out of ten day-to-day cases you never call either one explicitly. The factory's destructor-time auto-invalidation we are about to cover is enough on its own.
+These two show up again in the [02-6](./02-6-weak-ptr-testing-and-perf.md) performance comparison. Truth is, in nine out of ten day-to-day cases you never call either one explicitly. The factory's destructor-time auto-invalidation we are about to cover is enough on its own.
 
 ---
 

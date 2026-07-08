@@ -127,7 +127,7 @@ void WeakReferenceOwner::InvalidateAndDoom() {
 
 `invalidate_weak_ptrs_and_doom()` 就狠一点,作废旧 Flag 之后不铸新的,还顺手把 `ptr_` 清零——factory 直接进入"已死"状态,之后您再调 `get_weak_ptr()` 拿到的就是无效结果。它比上一个更省事,连一次 Flag 分配都省了。顾名思义 doom,这是给"这对象彻底不再用了"的收尾场景准备的。
 
-这俩的差别在 [02-6](./02-6-weak-ptr-sequence-affinity-and-lazy-binding.md) 性能对比里还会再露一次脸。不过说句实在话,日常九成的场景,您根本不会显式调这俩——光靠下面要讲的 factory 析构自动失效就够用了。
+这俩的差别在 [02-6](./02-6-weak-ptr-testing-and-perf.md) 性能对比里还会再露一次脸。不过说句实在话,日常九成的场景,您根本不会显式调这俩——光靠下面要讲的 factory 析构自动失效就够用了。
 
 ---
 
