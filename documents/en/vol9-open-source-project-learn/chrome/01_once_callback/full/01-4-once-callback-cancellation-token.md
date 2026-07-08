@@ -2,19 +2,17 @@
 chapter: 1
 cpp_standard:
 - 23
-description: Deep dive into the design of CancelableToken—implementing a lightweight
-  cancellation mechanism using `shared_ptr` + `atomic<bool>`, and how it integrates
-  into the execution flow of `OnceCallback`.
+description: "A close look at CancelableToken's design: a lightweight cancellation mechanism built from shared_ptr + atomic<bool>, and how it slots into OnceCallback's execution flow"
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- 'OnceCallback in Practice (II): the core skeleton'
+- 'OnceCallback prerequisites: a refresher on C++11/14/17 essentials'
 reading_time_minutes: 8
 related:
-- OnceCallback 实战（五）：then 链式组合
-- OnceCallback 实战（六）：测试与性能对比
+- 'OnceCallback in Practice (V): then chaining'
+- 'OnceCallback in Practice (VI): tests and performance'
 tags:
 - host
 - cpp-modern
@@ -23,189 +21,167 @@ tags:
 - atomic
 - 智能指针
 - 引用计数
-title: 'OnceCallback in Practice (Part 4): Designing a Cancellation Token'
-translation:
-  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/01-4-once-callback-cancellation-token.md
-  source_hash: c84ec06e9d73d6d11a77f352e48074daa2488703747abdb92727d138e24a1de2
-  translated_at: '2026-06-16T04:13:09.609635+00:00'
-  engine: anthropic
-  token_count: 1517
+title: 'OnceCallback in Practice (IV): the cancellation token'
 ---
-# OnceCallback in Practice (Part 4): Cancellation Token Design
+# OnceCallback in Practice (IV): the cancellation token
 
-## Introduction
+A callback usually gets bound at one moment and actually runs at another, with a task queue sitting in between. A lot can happen in that gap: the bound object is gone, the upper layer cancels the task, the user has already closed the tab. When the callback finally gets its turn, that "do I still need to run?" check at the front is the cancellation token, and it is what this post builds.
 
-A very common requirement in asynchronous programming is that external conditions change after a callback is created but before it is executed, rendering the callback meaningless—for example, the object bound to the callback is destroyed, or the task is cancelled. In these cases, we want the callback to check "should I still execute?" before running, rather than blindly executing.
+Chromium turns this into the whole `WeakPtr` machinery under `//base`: when the object destructs, every callback hanging off it is voided at once. That system is a lot to take in at once, so here we build a minimum viable version first: a lightweight flag that several parties can share, that one invalidate drops for everyone, and that you can check across threads. Once this one runs, going back to Chromium's `WeakPtr` will feel a lot smoother.
 
-This is the purpose of a cancellation token. In this post, we will implement a simplified cancellation token and see how it integrates into the execution flow of OnceCallback.
+## One flag, shared how
 
-> **Learning Objectives**
->
-> - Understand the concept and motivation behind cancellation tokens.
-> - Understand the implementation of `CancelableToken` line by line.
-> - Understand how the cancellation mechanism integrates into `OnceCallback`.
-> - Understand the different behaviors of void and non-void callbacks upon cancellation.
+The core tension a cancellation token has to solve is one sentence: invalidation happens outside the callback, the check happens inside it, and the two sides are probably not in the same place, maybe not even on the same thread. So the token itself has to be something both sides can each hold a copy of, while pointing at the same shared state.
 
----
+That means two things have to hold at once. The token has to be copyable, so the callback holds one copy internally and the code that wants to cancel it holds another, both pointing at the same state. And the reads and writes of that shared state have to be thread-safe: an external thread calling `invalidate()` and the callback thread checking `is_valid()` must not collide into a torn read.
 
-## The Concept of Cancellation Tokens
+Let us look at the implementation first, then come back to why it is shaped this way.
 
-You can think of a cancellation token as a "pass." When a callback is created, we give it a pass marked "valid." At some point, external conditions change (e.g., the bound object is destroyed), and external code says "the pass is voided" (calling `Invalidate()`). Afterward, all callbacks holding this pass will find it "invalid" upon checking before execution and skip the run.
+## The full CancelableToken
 
-In Chromium, this "pass" is the control block inside `WeakPtr`—when the object pointed to by `WeakPtr` is destroyed, the flag in the control block is cleared, and all callbacks bound to this `WeakPtr` are automatically cancelled. Our simplified version doesn't need to be as complex as `WeakPtr`; we only need a simple "valid/invalid" flag.
-
-### Core Requirements
-
-A cancellation token needs to meet three conditions: multiple callbacks can share the same token (one `Invalidate()` invalidates all callbacks simultaneously), the token must be copyable and movable (convenient for holding a copy inside `OnceCallback` and one outside), and the invalidation check must be thread-safe (an external thread might call `Invalidate()` in one thread while the callback checks `IsValid()` in another).
-
----
-
-## Complete Implementation of CancelableToken
-
-The entire cancellation token is only 18 lines of code, but every line has its purpose.
+The whole cancellation token is 18 lines, but every line earns its keep.
 
 ```cpp
+#pragma once
+#include <atomic>
+#include <memory>
+
+namespace tamcpp::chrome {
 class CancelableToken {
- public:
-  CancelableToken() : flag_(std::make_shared<Flag>()) {}
+    struct Flag {
+        std::atomic<bool> valid{true};
+    };
+    std::shared_ptr<Flag> flag_;
 
-  void Invalidate() {
-    flag_->valid.store(false, std::memory_order_release);
-  }
+public:
+    CancelableToken() : flag_(std::make_shared<Flag>()) {}
 
-  bool IsValid() const {
-    return flag_->valid.load(std::memory_order_acquire);
-  }
-
- private:
-  struct Flag {
-    std::atomic<bool> valid{true};
-  };
-
-  std::shared_ptr<Flag> flag_;
-};
-```
-
-### Why Use a Nested `Flag` Struct?
-
-You might wonder—why not just put an `atomic<bool>` directly in `CancelableToken`? The reason is that `shared_ptr` manages a heap object. If we put `atomic<bool>` directly in `CancelableToken`, `shared_ptr` would manage the `CancelableToken` itself—but `CancelableToken` has its own `shared_ptr` member, which creates a cycle where `shared_ptr` contains a `shared_ptr`.
-
-By using a nested `Flag` struct to isolate the state that needs to be shared, `shared_ptr` directly manages `Flag`. The copying and moving of `CancelableToken` are automatically handled through the reference counting of `shared_ptr`—simple and correct. Another benefit is that the `Flag` struct is easy to extend later—if we need to add more atomic flags (like a cancellation reason code), we can just add them to `Flag`.
-
-### The Sharing Mechanism of `shared_ptr`
-
-The copy constructor and copy assignment of `CancelableToken` are compiler-generated defaults—they simply copy the `shared_ptr<Flag>`, incrementing the reference count. All token copies created via copying share the same `Flag` object. When any copy calls `Invalidate()`, it modifies the same `Flag`, and all copies will see `false` on their next call to `IsValid()`.
-
-```cpp
-// Copying a token shares the underlying Flag
-CancelableToken token2 = token1; // Both point to the same Flag
-token1.Invalidate();             // Modifies the shared Flag
-assert(!token2.IsValid());       // token2 sees the change
-```
-
-### `memory_order_acquire`/`release` Pairing
-
-`Invalidate()` uses `memory_order_release` to store `false`, and `IsValid()` uses `memory_order_acquire` to load. This is a pair of memory orders. The release store guarantees that all writes before the store (including any state modifications before calling `Invalidate()`) are visible to other threads. The acquire load guarantees that all reads after the load see the writes preceding the release store.
-
-In our scenario, this means if one thread calls `Invalidate()`, another thread subsequently calling `IsValid()` is guaranteed to see `false`—there will be no "I just invalidated it but `is_valid` still returns true" situation. This is the guarantee of thread safety.
-
----
-
-## Integration into OnceCallback
-
-The cancellation token is set into `OnceCallback` via the `set_cancel_token` method:
-
-```cpp
-void set_cancel_token(CancelableToken token) {
-  cancel_token_ = std::move(token);
-}
-```
-
-`cancel_token_` is of type `CancelableToken`, defaulting to an empty value (cancellation disabled). After setting, ownership of the cancellation token is transferred into `OnceCallback`.
-
-### Complete Logic of `is_cancelled()`
-
-```cpp
-bool is_cancelled() const {
-  if (state_ != State::kValid) {
-    return true;
-  }
-  if (cancel_token_ && !cancel_token_->IsValid()) {
-    return true;
-  }
-  return false;
-}
-```
-
-Two layers of checks. First layer: if the state is not `kValid`, return true—empty callbacks (`kEmpty`) and consumed callbacks (`kConsumed`) both count as "cancelled." This makes sense—empty callbacks have nothing to execute, and consumed callbacks have already run. Second layer: if there is a cancellation token and the token is invalid, also return true.
-
-### Cancellation Check in `impl_run()`
-
-```cpp
-ReturnType impl_run(Args&&... args) {
-  if (is_cancelled()) {
-    state_ = State::kConsumed;
-    func_.reset(); // Release resources
-    if constexpr (std::is_void_v<ReturnType>) {
-      return;
-    } else {
-      throw CallbackCancelledException("Callback was cancelled");
+    void invalidate() {
+        flag_->valid.store(false, std::memory_order_release);
     }
-  }
-  // ... execute the callable
+
+    bool is_valid() const {
+        return flag_->valid.load(std::memory_order_acquire);
+    }
+};
+} // namespace tamcpp::chrome
+```
+
+### Why a nested Flag struct at all
+
+The first time I wrote this, my hand moved faster than my head: I dropped an `std::atomic<bool> valid` straight into `CancelableToken` and figured that was it. The moment it compiled and I went to share it, the problem jumped out. `shared_ptr` cannot manage that `valid` on its own. To share it, you need the `shared_ptr` to point at an object that *contains* `valid`. If that object is `CancelableToken` itself, then `CancelableToken` has a `shared_ptr` member, and you are staring at a `shared_ptr<CancelableToken>` wrapping `shared_ptr<Flag>` nesting doll.
+
+The window paper only tears once you peel out the bit of state you actually want to share, drop it into a `Flag` struct, and let `shared_ptr` manage that directly. At that point you do not have to think about `CancelableToken`'s copy and move semantics anymore: the compiler-generated copy constructor just shallow-copies the inner `shared_ptr<Flag>`, the reference count ticks up, and every copy naturally lands on the same `Flag`. Thinking about it later, the struct has a side benefit: the day you want to add something to it, a cancellation reason code say, you just add a field to `Flag` and nothing outside moves.
+
+### How the sharing actually lands
+
+Saying "shared on copy" can still feel abstract. Look at this snippet. `token2` is a copy of `token1`, and the `shared_ptr<Flag>` inside both points at the same memory. When `token1` calls `invalidate()`, it mutates the `valid` in that shared memory, and the next time `token2` reads `is_valid()` it reads the same cell and naturally sees `false`:
+
+```cpp
+auto token1 = std::make_shared<CancelableToken>();
+auto token2 = token1;  // shares the same Flag
+
+token1->invalidate();
+assert(!token2->is_valid());  // token2 sees the invalidation too
+```
+
+One caution here: the example wraps the outer layer in another `shared_ptr<CancelableToken>` purely to keep the snippet short. In real use you copy `CancelableToken` by value, since it already shares state through its internal `shared_ptr`. No need to wrap it in another smart pointer.
+
+### The acquire/release pair
+
+`invalidate()` stores `false` with `memory_order_release`, and `is_valid()` loads with `memory_order_acquire`. That is not a random pick. The release store guarantees that every write before it, say the mutations to object state that happened before invalidation, becomes visible to any thread that reads the new value through this store. The acquire load guarantees that after reading that new value, every subsequent read sees the writes that preceded the release.
+
+Dropping that into our scenario: one thread calls `invalidate()`, another thread checks `is_valid()` right after, and as long as the latter reads `false`, every bit of work the former did before invalidating is visible to it. You will not get hit with "I just called invalidate, why does is_valid still say true." That is the confidence that lets it be used across threads. Flip both to `memory_order_relaxed` and the visibility guarantee evaporates; whether the flag flipped and when other threads see it becomes a coin flip, and that is the spot where beginners most often slip.
+
+## Slotting it into OnceCallback
+
+The cancellation token only earns its keep once it is attached to a callback. The attachment point is a `set_token()`:
+
+```cpp
+void set_token(std::shared_ptr<CancelableToken> token) {
+    token_ = std::move(token);
 }
 ```
 
-The cancellation check happens **before** executing the callable object. If cancelled, the callback is consumed directly without execution—`state_` is set to `kConsumed`, and `func_` is reset to `nullptr` (destroying the internal callable object and releasing resources).
+`token_` defaults to an empty `shared_ptr`, which reads as "this callback does not participate in cancellation." The moment `set_token` is called, the token moves inside the callback and lives and dies with it. Note that we deliberately use `shared_ptr<CancelableToken>` rather than a bare `CancelableToken` here. OnceCallback is move-only, so whatever it holds either has to move wholesale or be a cheaply copyable handle, and `shared_ptr` is exactly the latter.
 
----
-
-## Difference in Cancellation Behavior Between void and Non-void Callbacks
-
-There is a design decision here worth expanding on—when a void callback is cancelled, it simply returns (no execution, no error), whereas when a non-void callback is cancelled, it throws a `CallbackCancelledException`.
-
-The reason is the caller's expectations differ. The caller of a void callback does not expect a return value—after calling `Run()`, it's done, regardless of whether the callback actually executed. So, skipping execution of a cancelled void callback is transparent to the caller.
-
-The caller of a non-void callback expects a return value—`Run()` returns something. If the callback is cancelled, we cannot provide a meaningful return value. Returning a default value (like 0) might mask errors—the caller thinks the callback executed normally, but actually nothing was done. Throwing an exception seems aggressive, but it explicitly tells the caller "something went wrong," which is safer than silently returning an error value.
-
-Chromium chooses to terminate the program directly (`CHECK` failure) here, reasoning that in Chrome's architecture, cancelled callbacks should not be called—the caller should check `IsCancelled()` before calling. We chose exceptions to make it easier to catch and verify in tests, rather than crashing the program directly.
-
----
-
-## Usage Example
+### is_cancelled() looks at two places
 
 ```cpp
-// Example 1: Normal execution
-auto token = std::make_shared<CancelableToken>();
-OnceCallback<void()> cb = [token]() {
-  if (token->IsValid()) {
-    std::cout << "Executing task..." << std::endl;
-  }
-};
-cb(); // Prints "Executing task..."
-
-// Example 2: Cancellation
-auto token2 = std::make_shared<CancelableToken>();
-OnceCallback<void()> cb2 = [token2]() {
-  std::cout << "This will not print" << std::endl;
-};
-token2->Invalidate();
-cb2.set_cancel_token(*token2);
-cb2(); // Lambda does not execute, callback consumed
+[[nodiscard]] bool is_cancelled() const noexcept {
+    if (status_ != Status::kValid) return true;
+    if (token_ && !token_->is_valid()) return true;
+    return false;
+}
 ```
 
-Note in the second example—`Run()` is called, but the lambda inside the callback does not execute. `impl_run()` detects the token is invalid before execution, consumes the callback, and returns.
+This check does not look at the token alone. It first glances at the callback's own `status_`: an empty callback (`kEmpty`) and an already-run callback (`kConsumed`) both count as "cancelled" outright. That is reasonable, since an empty callback has nothing inside to execute and a consumed callback must not run again. Only after the `status_` gate passes does the token get its turn: if there is a token and it has been invalidated, that also counts as cancelled. Both gates have to be there. Look at the token alone and the empty and consumed callbacks slip through.
 
----
+### The gate inside impl_run()
 
-## Summary
+```cpp
+ReturnType impl_run(FuncArgs... args) {
+    assert(status_ == Status::kValid);
 
-In this post, we implemented a cancellation token and integrated it into `OnceCallback`. `CancelableToken` uses `shared_ptr` + `atomic` to implement a lightweight cancellation mechanism—all token copies share the same `Flag` object, and one `Invalidate()` invalidates all copies simultaneously. The integration checks the token status before `impl_run()` executes—if cancelled, the callback is consumed without execution. Void callbacks return directly, while non-void callbacks throw `CallbackCancelledException`, a difference stemming from the caller's different expectations regarding return values.
+    // Cancellation check before execution
+    if (token_ && !token_->is_valid()) {
+        status_ = Status::kConsumed;
+        func_ = nullptr;
+        if constexpr (std::is_void_v<ReturnType>) {
+            return;
+        } else {
+            throw std::bad_function_call{};
+        }
+    }
 
-In the next post, we will look at `ThenCallback` chaining—the most intricate ownership design among the four `OnceCallback` features.
+    // Normal consumption flow...
+}
+```
+
+The cancellation check sits **before** the callable is executed, and the position matters. The moment the check hits, the callback is marked `kConsumed` on the spot. `func_` is nulled along with it, and the lambda inside it, plus whatever it captured, gets released right away. From the outside, this `run()` looks like it consumed the callback, except the function body never actually ran. That "consumed but not executed" semantics is the root of the void versus non-void split below.
+
+## Why void and non-void callbacks differ on cancellation
+
+This is the one spot in the whole design I think is worth stopping on. Both hit the cancellation check, but a void callback just `return`s and reports nothing, while a non-void callback throws `std::bad_function_call`. At first glance that looks inconsistent. Sit with it a second and you see it is forced.
+
+The caller of a void callback is not expecting a return value at all. They write `std::move(cb).run();` and walk away; they have no idea whether you executed or not. So skipping on cancel is fully transparent to them, no problem.
+
+A non-void callback is the awkward one. The caller wrote `int result = std::move(cb).run();` and they are staring at that return value. The callback got cancelled, so what do you hand back? Pick 0 at random? Then the caller gets a 0, assumes the callback ran cleanly and handed them a 0, and the downstream logic just keeps rolling on 0. That kind of "looks like success, did nothing" bug is harder to chase than a crash. So here we would rather throw, and tell the caller plainly: this one did not run, deal with it.
+
+Chromium's choice is rougher still: it `CHECK`-fails and terminates the process outright. The reasoning is that under their architecture, the caller is supposed to check `is_cancelled()` themselves before calling `run()`. If you checked, then charged in anyway, that is a bug, and they crash it in your face. We take the exception path here mostly so tests stay writable; a unit test can assert with `REQUIRE_THROWS` instead of taking the whole process down with it. Neither choice is right or wrong. It depends on how harsh the environment you are targeting with this callback is.
+
+## A usage example
+
+```cpp
+using namespace tamcpp::chrome;
+
+// Create the token and the callback
+auto token = std::make_shared<CancelableToken>();
+bool executed = false;
+
+OnceCallback<void()> cb([&executed] { executed = true; });
+cb.set_token(token);
+
+// With a valid token, the callback runs normally
+assert(!cb.is_cancelled());
+std::move(cb).run();
+assert(executed);  // the callback ran
+
+// Build another callback, this time invalidate the token first
+executed = false;
+auto cb2 = OnceCallback<void()>([&executed] { executed = true; });
+cb2.set_token(token);
+token->invalidate();  // void the token
+
+assert(cb2.is_cancelled());
+std::move(cb2).run();  // a cancelled void callback does not run and does not throw
+assert(!executed);     // the callback did not run
+```
+
+Read the second example carefully. `cb2.run()` does get called, but the lambda inside never executes a single line. `impl_run()` sees the invalidated token before execution, consumes the callback on the spot, and `return`s. `executed` is still `false`. That is the transparent semantics of a cancelled void callback.
 
 ## References
 
 - [cppreference: std::shared_ptr](https://en.cppreference.com/w/cpp/memory/shared_ptr)
 - [cppreference: std::atomic](https://en.cppreference.com/w/cpp/atomic/atomic)
-- [Chromium WeakPtr Documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/memory_model/weak_ptr.md)
+- [Chromium WeakPtr documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/memory_model/weak_ptr.md)

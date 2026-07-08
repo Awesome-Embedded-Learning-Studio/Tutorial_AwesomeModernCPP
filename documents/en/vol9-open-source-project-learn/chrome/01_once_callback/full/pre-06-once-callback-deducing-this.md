@@ -2,232 +2,204 @@
 chapter: 0
 cpp_standard:
 - 23
-description: Deep dive into how C++23 explicit object parameters (deducing this) allow
-  `OnceCallback::run()` to elegantly intercept lvalue calls at compile time, replacing
-  Chromium's double-overload hack.
+description: "How C++23 explicit object parameters (deducing this) let OnceCallback::run() intercept lvalue calls at compile time, replacing Chromium's double-overload hack"
 difficulty: intermediate
 order: 6
 platform: host
 prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- OnceCallback prerequisites recap: a tour of the core C++11/14/17 features
 reading_time_minutes: 8
 related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 前置知识（四）：Concepts 与 requires 约束
+- 'OnceCallback hands-on (II): the core skeleton'
+- 'OnceCallback prerequisites (IV): concepts and requires constraints'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 模板
-title: 'OnceCallback Prerequisites (Part 6): Deducing this (C++23)'
-translation:
-  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-06-once-callback-deducing-this.md
-  source_hash: 953b2e8cc557c7021354212b0dda82e5d95ec9dcb024ad800bb9f1173d768016
-  translated_at: '2026-06-16T04:14:03.100115+00:00'
-  engine: anthropic
-  token_count: 1658
+title: 'OnceCallback Prerequisites (VI): Deducing this (C++23)'
 ---
-# Prerequisites for OnceCallback (Part 6): Deducing this (C++23)
+# OnceCallback Prerequisites (VI): Deducing this (C++23)
 
-## Introduction
+## First, that one line of declaration
 
-The `OnceCallback::run` method is the soul of the entire component and is the most feature-dense method in terms of C++23 features. Its declaration looks like this:
-
-```cpp
-template <typename... Args>
-auto operator()(Args&&... args) -> decltype(auto) requires /* ... */;
-```
-
-If you haven't seen the syntax like `this auto&& self`—don't panic, this post is specifically about it. This is the "explicit object parameter" feature introduced in C++23, officially known as **deducing this**. It allows `OnceCallback` to use a single function template to achieve the effect of "compile-time error for lvalue calls, normal execution for rvalue calls," which is much cleaner than Chromium's approach.
-
-> **Learning Objectives**
->
-> - Understand the syntax and deduction rules of deducing this
-> - Master how `OnceCallback::run` uses it to implement compile-time lvalue/rvalue interception
-> - Understand the role of lazy instantiation in `static_assert`
-> - Compare the applicable scenarios of deducing this and traditional ref-qualifiers
-
----
-
-## Problem: How to make `cb.run()` fail to compile
-
-The core semantic of `OnceCallback` is "can only be called once, and must be called via an rvalue." Expressed in code:
+`OnceCallback::run()` is the most counter-intuitive method in the whole component, and the densest spot for C++23 features. Its declaration looks like this:
 
 ```cpp
-OnceCallback cb = ...;
-// cb.run();       // Compile error: lvalue call
-std::move(cb).run(); // OK: rvalue call
+template<typename Self>
+auto run(this Self&& self, FuncArgs&&... args) -> ReturnType;
 ```
 
-We need a mechanism that allows `run()` to distinguish between "called via an lvalue" and "called via an rvalue" at compile time, and provides a clear error message for lvalue calls.
+That `this Self&& self` made us pause for a couple seconds the first time we saw it. A member function that writes `this` explicitly as a parameter? This is C++23's *explicit object parameter*, officially known as deducing this. It's just one line, but it lets OnceCallback pull off "lvalue call fails to compile, rvalue call runs fine" with a single function template, far cleaner than what Chromium does. This piece takes the thing apart: the syntax, the deduction rules, and how OnceCallback leans on it for compile-time interception.
 
-### Chromium's Old Approach
+## Stating the problem clearly: why `cb.run()` must not compile
 
-Chromium didn't have the benefit of C++23, so it used a rather hacky approach—two overloads:
+OnceCallback's core semantic is one sentence: call it once, and only on an rvalue. Translated to code:
 
 ```cpp
-// Rvalue overload (actual implementation)
-ReturnType operator()(Args&&... args) &&;
+OnceCallback<int(int)> cb([](int x) { return x * 2; });
 
-// Lvalue overload (deleted to prevent calls)
-template <typename... Args>
-void operator()(Args&&... args) & = delete;
+cb.run(5);                  // must fail to compile: cb is an lvalue
+std::move(cb).run(5);       // must compile: std::move(cb) is an rvalue
 ```
 
-Why use `= delete` instead of directly writing `static_assert(false)`? Because prior to C++23, `static_assert(false)` in a template would trigger the assertion on all code paths—even if the function was never called. C++23 relaxed this restriction. The `= delete` approach leverages the fact that `sizeof` must be evaluated on a complete type—it is a dependent expression that is only evaluated during template instantiation, thus achieving the effect of "triggering only when actually called."
+What we want is a compile-time dispatch mechanism: an lvalue call blows up immediately with an error message that actually reads like English; an rvalue call goes through.
 
-It works, but it's certainly not elegant—requiring two overloaded functions to handle the same thing, and the `sizeof` hack has poor readability.
+### Chromium had no C++23, so it wrote two overloads
+
+Back then Chromium didn't have C++23, so it had to hack it: two overloads for the same thing.
+
+```cpp
+// Rvalue version: the actual execution
+R Run() && {
+    // execute the callback...
+}
+
+// Lvalue version: compile error
+R Run() const& {
+    static_assert(!sizeof(*this),
+        "OnceCallback::Run() may only be invoked on a non-const rvalue, "
+        "i.e. std::move(callback).Run().");
+}
+```
+
+One detail we got stuck on for a while: why not just `static_assert(false, "...")`? Because before C++23, writing a literal `false` inside a template fires unconditionally: even if this overload is never called once, the compiler blows up at the point of template definition. `!sizeof(*this)` is the workaround. It depends on the type of `*this`, so it's a dependent expression and only gets evaluated at template instantiation. In other words, it only blows up if someone actually wrote `cb.Run()`; if nobody did, it's as if it doesn't exist.
+
+It works, but it's not elegant. Two overloads doing one job, and the `!sizeof` hack takes a second to parse each time you read it. Once C++23 landed deducing this, there was a proper answer.
 
 ---
 
-## Syntax and Deduction Rules of deducing this
+## deducing this: writing `this` as a parameter
 
-C++23's deducing this allows us to explicitly write the implicit `this` object parameter as the first parameter of a member function, and use a template parameter to deduce its type and value category.
+What deducing this does is one sentence: it takes the `this` that's normally implicit inside a member function, drags it out, and writes it explicitly as the first parameter, with template deduction bolted on.
 
-### Basic Syntax
+### Syntax
 
 ```cpp
-struct Widget {
-    void name(this auto&& self);
+struct MyStruct {
+    void f(this auto&& self) {
+        // self is this — but its type is deduced
+    }
 };
 ```
 
-`this auto&& self` is the declaration of the explicit object parameter. The keyword `this` appearing before the type tells the compiler "this is not a normal parameter, but an explicit object parameter." `auto&&` is the deduction placeholder—the compiler will deduce the specific type of `self` based on the value category of the object at the call site.
+The `this` keyword placed before the type is a hint to the compiler: what follows isn't a normal parameter, it's an explicit object parameter. `auto&&` is the deduction placeholder; whoever calls it and how they call it decides what the deduced type looks like.
 
-### Deduction Rules
+### Deduction rules: identical to a forwarding reference
 
-The type deduction rules for `self` are exactly the same as for forwarding references—because the deduction context of `auto&&` is equivalent to a template parameter:
+The deduction rule for `self` is the exact same mold as the forwarding reference you hit when writing templates, because `self`'s deduction context is equivalent to a template parameter. This point matters; the lvalue interception later hinges on it.
 
-- **Lvalue call** `w.name()`:
-  - The type of `self` is deduced as `Widget&` (lvalue reference)
-- **Rvalue call** `std::move(w).name()` or `Widget{}.name()`:
-  - The type of `self` is deduced as `Widget` (non-reference, pure type)
-- **const lvalue call** (assuming `Widget` is const):
-  - The type of `self` is deduced as `const Widget&`
+Take an lvalue call like `obj.f()`: `self` deduces to `MyStruct&`, an lvalue reference. Switch to an rvalue call like `std::move(obj).f()` or `MyStruct{}.f()`: `self` deduces to `MyStruct`, the bare type, no reference. And a const lvalue call like `std::as_const(obj).f()`: `self` dutifully deduces to `const MyStruct&`. Hard to keep in your head? Just run it and see.
 
-### Verifying Deduction Results
+### Run it to verify
 
 ```cpp
-struct Test {
-    void check(this auto&& self) {
-        std::cout << __PRETTY_FUNCTION__ << '\n';
+#include <iostream>
+#include <type_traits>
+
+struct Check {
+    void test(this auto&& self) {
+        using Self = decltype(self);
+        if constexpr (std::is_lvalue_reference_v<Self>) {
+            std::cout << "lvalue reference\n";
+        } else {
+            std::cout << "rvalue (not a reference)\n";
+        }
     }
 };
 
 int main() {
-    Test t;
-    t.check();       // Deduced as: void check(Test &)
-    std::move(t).check(); // Deduced as: void check(Test)
-    const Test ct;
-    ct.check();      // Deduced as: void check(const Test &)
+    Check c;
+    c.test();                  // prints: lvalue reference
+    std::move(c).test();       // prints: rvalue (not a reference)
+    std::as_const(c).test();   // prints: lvalue reference (const)
 }
 ```
 
 ---
 
-## Application in `OnceCallback::run`
+## Onto `run()`: how deducing this actually works
 
-Now let's look at the full implementation of `OnceCallback::run` to understand how it uses deducing this to intercept lvalue calls.
+With the syntax in hand, let's look at `run()`'s full implementation and see how it pins lvalue calls down at compile time.
 
 ```cpp
-template <typename R, typename... Args>
-class OnceCallback<R(Args...)> {
-public:
-    // ...
-    template <typename Self>
-    decltype(auto) operator()(this Self&& self, Args&&... args) {
-        // 1. Intercept lvalue calls
-        static_assert(
-            !std::is_lvalue_reference_v<Self>,
-            "OnceCallback::run() must be called on an rvalue. "
-            "Use std::move(cb).run(...) instead."
-        );
-
-        // 2. Forward to impl_run
-        return std::forward<Self>(self).impl_run(
-            std::forward<Args>(args)...
-        );
-    }
-};
+template<typename Self>
+auto run(this Self&& self, FuncArgs&&... args) -> ReturnType {
+    static_assert(!std::is_lvalue_reference_v<Self>,
+        "OnceCallback::run() must be called on an rvalue. "
+        "Use std::move(cb).run(...) instead.");
+    return std::forward<Self>(self).impl_run(std::forward<FuncArgs>(args)...);
+}
 ```
 
-This code does three things; let's break them down one by one.
+Three interlocking mechanisms are crammed into these few lines. We'll take them one at a time.
 
-### Intercepting Lvalue Calls
+### Intercepting lvalue calls
 
-`std::is_lvalue_reference_v<Self>` checks whether `Self` is an lvalue reference type. When the caller writes `cb.run()`, `cb` is an lvalue, `Self` is deduced as `OnceCallback&`—this is an lvalue reference type, `is_lvalue_reference` returns `true`, negated it becomes `false`, `static_assert` fails, and the compiler reports the error message we wrote: "OnceCallback::run() must be called on an rvalue. Use std::move(cb).run(...) instead."
+`std::is_lvalue_reference_v<Self>` is asking: is `Self` an lvalue reference? The caller writes `cb.run(args)`; `cb` is an lvalue, so `Self` deduces to `OnceCallback&`, an lvalue reference. `is_lvalue_reference_v` returns `true`, the negation turns it to `false`, the `static_assert` fires on the spot, and the human-readable error message we wrote gets thrown in the caller's face: `OnceCallback::run() must be called on an rvalue. Use std::move(cb).run(...) instead.`
 
-When the caller writes `std::move(cb).run()`, `cb` is an rvalue (strictly speaking, an xvalue), `Self` is deduced as `OnceCallback`—not a reference type, `is_lvalue_reference` returns `false`, negated it becomes `true`, `static_assert` passes, and code execution continues.
+Flip it around. Write `std::move(cb).run(args)`: `std::move(cb)` is an rvalue (strictly, an xvalue), `Self` deduces to `OnceCallback`, not a reference. `is_lvalue_reference_v` returns `false`, negation flips it to `true`, the assert passes, and code marches on. One deduction, one negation, and lvalue versus rvalue part ways at compile time.
 
-### Forwarding to `impl_run`
+### Forwarding to impl_run
 
-`std::forward<Self>(self)` determines whether to return an lvalue reference or an rvalue reference based on the type of `Self`. Since the `static_assert` has already excluded the lvalue case, `Self` reaching this point must be a non-reference type (rvalue), so `std::forward<Self>(self)` returns an rvalue reference—ensuring `impl_run` is called on an rvalue.
+Past the assert, `std::forward<Self>(self)` hands `self` off to the real execution function, `impl_run`, unchanged. Because the `static_assert` has already sealed the lvalue path, any `Self` that reaches this point has to be a non-reference rvalue, so `std::forward<Self>(self)` honestly returns an rvalue reference and guarantees `impl_run` gets an rvalue. It looks unremarkable, but it's the baton pass between "intercept" and "execute"; drop it and the semantics leak.
 
-### Lazy Instantiation
+### A word on lazy instantiation
 
-There is a nuanced detail here—the condition of `static_assert` depends on the template parameter `Self`, so it is only evaluated when the template is instantiated. This means:
+There's a detail we chewed on for a good while here. The `static_assert` condition carries the template parameter `Self`, so it's only evaluated at the moment of template instantiation. The other way around: if `run()` is never called at all, that `static_assert` just sits there doing nothing, regardless of whether the `OnceCallback` object itself is an lvalue or an rvalue. Only when somebody actually writes `cb.run(...)` on some line, forcing the compiler to instantiate this template, does `Self`'s concrete type get pinned down, and only then does the assert bother to look up and compute.
 
-- If `run()` is never called, `static_assert` will not trigger—regardless of whether the `OnceCallback` object itself is an lvalue or an rvalue.
-- Only at a specific call point, when the compiler needs to instantiate this template, is the specific type of `Self` determined, and `static_assert` evaluated.
-
-This is called "lazy instantiation," a fundamental characteristic of C++ templates. Function templates are only instantiated when used—no usage means no instantiation and no checks. This is why Chromium had to use `= delete` instead of directly writing `static_assert(false)`—prior to C++23, `static_assert(false)` did not depend on template parameters and would trigger at template definition time, rather than waiting for instantiation.
+This is template lazy instantiation: a function template that isn't used isn't instantiated, and isn't checked. It also explains why Chromium had to reach for `!sizeof(*this)`: before C++23, `static_assert(false)` had no dependency on a template parameter, so it would blow up at the template definition point, well before instantiation ever happened.
 
 ---
 
-## Comparison with Traditional Ref-qualifiers
+## Versus the traditional ref-qualifier: when to pick which
 
-In `OnceCallback`, there are two methods that express the "callable only via rvalue" semantic—`run` uses deducing this, while `then` uses the traditional ref-qualifier `&&`. Why not unify the approach?
+Two methods in OnceCallback express the same idea of "rvalue-only call": `run()` uses deducing this, while `then()` uses the traditional ref-qualifier `&&`. We puzzled over this at first: if deducing this is so great, why not go all in and use it everywhere? It clicked once we laid the two scenarios side by side. The granularity they need isn't the same at all.
 
-### `then()` uses Ref-qualifier
+### then() is fine with just a ref-qualifier
 
 ```cpp
-template <typename F>
-auto then(F&& f) && -> OnceCallback<...>;
+template<typename Next>
+auto then(Next&& next) && -> OnceCallback<...>;
 ```
 
-`then`'s requirement is simple—it only accepts rvalues, rejects lvalues, and doesn't need to distinguish between them to give different error messages. If the caller writes `cb.then(...)` (lvalue call), the compiler directly reports "no matching overloaded function." Although the error message is less instructive than deducing this, it is sufficient. The ref-qualifier is also more concise to write—just one `&&` and you're done.
+`then()`'s needs are plain: take rvalues, slam the door on lvalues, and don't bother explaining why. If the caller writes `cb.then(next)` (an lvalue call), the compiler just shrugs "no matching overload" and moves on. The error message is rougher and less instructive than what deducing this gives you, but it's enough. The ref-qualifier is also less to write: tack `&&` on the end, one character, done.
 
-### `run()` uses Deducing this
+### run() really needs deducing this
 
-`run`'s requirement is more refined—it not only needs to reject lvalue calls, but also needs to provide an **instructive error message**, telling the caller "you should use `std::move(cb).run(...)` instead." Deducing this makes this requirement natural—`static_assert` can output our custom error message instead of the compiler's default "no matching function."
+`run()` is much pickier. Just refusing lvalues isn't enough; it also has to tell the caller "what you should write is `std::move(cb).run(...)`, not `cb.run(...)`", a human-readable error that lets them fix it on the spot. Deducing this paired with `static_assert` happens to do this very naturally: the error message is one we get to write ourselves, not the compiler's "no matching function" template.
 
-### Selection Strategy
+### How to choose
 
-To summarize: If you only need the constraint of "accept rvalues only," the `&&` qualifier is more concise. If you also need to provide a custom error message for lvalue calls, deducing this combined with `static_assert` is more appropriate.
+Our call: if all you want is the "rvalues only" constraint, `&&` is enough and cleaner. If you also owe the caller a custom, human-readable error for lvalue calls, reach for deducing this plus `static_assert`. Which tool you pick comes down to whether you need to explain.
 
 ---
 
-## Pitfall Warning
+## Pitfall warnings
 
-### Explicit Object Parameters Cannot Coexist with cv-qualifiers or Ref-qualifiers
+Here are the potholes we hit, so you can steer around them.
 
-Member functions with an explicit object parameter cannot simultaneously be declared `const`, `volatile`, or with a ref-qualifier (`&`/`&&`). This is because the explicit object parameter has already taken over the deduction of the object type and value category—`const`/`volatile` and ref-qualifiers become redundant or even contradictory.
+Explicit object parameters come with a hard rule: they cannot coexist with a cv-qualifier or a ref-qualifier. The reasoning is straightforward enough. The object type and value category are already handled by the explicit parameter, so stacking a `const` on top or tacking on `&&` confuses the compiler about who's in charge. The following won't compile:
 
 ```cpp
 struct Bad {
-    void foo(this auto&& self) const; // Error: conflicts with explicit object parameter
-    void bar(this auto&& self) &;     // Error: conflicts with explicit object parameter
+    void f(this auto&& self) const;   // error: explicit object parameter cannot also be const
+    void g(this auto&& self) &&;      // error: explicit object parameter cannot also have &&
 };
 ```
 
-### Explicit Object Parameters Cannot Be Static Functions
+One more thing people trip on: an explicit-object-parameter function looks like a static function, but it isn't. You still need an object instance to call it. The `this` parameter is deduced by the compiler from the call expression; it isn't something the caller hands in manually. Don't get that backwards.
 
-Explicit object parameter functions are not static functions—they still require an object instance to invoke. The `self` parameter is deduced by the compiler from the call expression, not manually passed by the caller.
-
-### Compiler Support
-
-Deducing this is a C++23 feature. GCC 14+, Clang 18+, and MSVC 19.34+ support this feature. If your compiler does not support it, you must fall back to Chromium's double overload approach.
+Finally, toolchain. deducing this is a C++23 feature, and only GCC 14+, Clang 18+, and MSVC 19.34+ recognize it. If you're still on an older compiler, you fall back to Chromium's double-overload approach. It's a hack, but at least it runs.
 
 ---
 
-## Summary
+That covers deducing this as a tool. With one function template, `OnceCallback::run()` splits lvalue and rvalue at compile time, and the grim days of Chromium's two overloads plus the `!sizeof` hack are finally over. `then()` doesn't need any of that; a `&&` on the end keeps it simple. How you pick between the tools comes down to whether you owe the caller a human-readable error.
 
-In this post, we clarified the ins and outs of deducing this. It allows `OnceCallback::run` to use a single function template to implement compile-time lvalue/rvalue interception—by judging whether the caller passed an lvalue or rvalue based on the deduced type of `Self`, combined with `static_assert` to provide an instructive error message. Compared to Chromium's two overloads + `sizeof` hack, the deducing this solution is more concise and aligns better with C++ design philosophy. Since `then()` does not need custom error messages, the traditional `&&` qualifier is more concise.
-
-At this point, all prerequisites have been covered. In the next post, we will officially enter the practical implementation of OnceCallback—starting with motivation analysis and designing our target API.
+That wraps up the prerequisites. Next piece, we start actually building OnceCallback's skeleton.
 
 ## References
 
-- [P0847R7 - Deducing this Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html)
+- [P0847R7 - Deducing this proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0847r7.html)
 - [C++23's Deducing this (Microsoft C++ Blog)](https://devblogs.microsoft.com/cppblog/cpp23-deducing-this/)
 - [cppreference: Explicit object parameter](https://en.cppreference.com/w/cpp/language/member_functions#Explicit_object_parameter)

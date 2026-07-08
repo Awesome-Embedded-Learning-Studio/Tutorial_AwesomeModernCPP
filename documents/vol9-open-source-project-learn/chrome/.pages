@@ -1,3 +1,6 @@
 title: Chromium
 nav:
   - 01_once_callback/
+  - 02_weak_ptr/
+  - 03_flat_map/
+  - 04_no_destructor/

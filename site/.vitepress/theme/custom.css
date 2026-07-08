@@ -987,6 +987,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   line-height: 18.6px;           /* 像素级,与 textarea 确定性一致(避免 unitless 在块/表单控件间渲染差) */
   tab-size: 4;                   /* 与 textarea 的 tab-size 一致,Tab 字符宽度对齐 */
   white-space: pre;
+  font-variant-ligatures: none;  /* 关连字(==/!= 等),与 textarea 字符等宽对齐 */
   letter-spacing: 0;
   word-spacing: 0;
   box-sizing: border-box;
@@ -1008,6 +1009,7 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   line-height: 18.6px;                 /* 像素级,与 backdrop 确定性一致 */
   tab-size: 4;
   white-space: pre;
+  font-variant-ligatures: none;        /* 关连字,与 backdrop 字符等宽对齐 */
   letter-spacing: 0;
   word-spacing: 0;
   box-sizing: border-box;

@@ -24,24 +24,30 @@ title: OnceCallback 实战（五）：then 链式组合
 ---
 # OnceCallback 实战（五）：then 链式组合
 
-## 引言
+`then()` 把两个回调串成一根管道，上一个的输出喂给下一个。Unix 管道的老把戏，您肯定不陌生：
 
-`then()` 允许我们把两个回调串联成一个管道——第一个回调的输出是第二个回调的输入。听起来简单，但它是 OnceCallback 四个功能中所有权设计最精巧的一个。因为 OnceCallback 是 move-only 的，`then()` 必须把原回调的所有权完整地转移到新回调中，不能有任何共享或泄露。
+```bash
+# Unix 管道：cmd1 的输出是 cmd2 的输入
+echo "hello" | tr 'h' 'H' | wc -c
+```
 
-这一篇我们从管道思维出发，逐行拆解 `then()` 的实现，重点理解所有权链和 void/非 void 分支的处理。
+落到回调上，就是同一回事——回调 A 的输出交给回调 B：
 
-> **学习目标**
->
-> - 理解 `then()` 的管道语义和所有权链设计
-> - 逐行理解 `then()` 的完整实现
-> - 理解 void 前缀回调的特殊处理
-> - 对比 `then()` 用 `&&` 限定和 `run()` 用 deducing this 的选择理由
+```cpp
+auto pipeline = OnceCallback<int(int, int)>([](int a, int b) {
+    return a + b;          // 第一步：3 + 4 = 7
+}).then([](int sum) {
+    return sum * 2;        // 第二步：7 * 2 = 14
+});
 
----
+int result = std::move(pipeline).run(3, 4);  // result == 14
+```
 
-## 管道思维：then() 的语义
+咱们一开始想得轻巧，`then()` 不就是把俩回调缝一块嘛。可 OnceCallback 是 move-only 的，原回调的所有权得整副家当搬进新回调里——少了 `func_`、少了 `token_`、少了 `status_`，哪一样都不行。这一篇笔者就带您逐行把 `then()` 拆开，重点盯两件事：所有权链是怎么一节一节接上的，void 和非 void 两套返回类型又是怎么分叉处理的。
 
-如果你用过 Unix 管道，`then()` 的语义就很直觉了：
+## 所有权：then() 的真问题
+
+如果您用过 Unix 管道，`then()` 的语义就很直觉了：
 
 ```bash
 # Unix 管道：cmd1 的输出是 cmd2 的输入
@@ -64,18 +70,16 @@ int result = std::move(pipeline).run(3, 4);  // result == 14
 
 ---
 
-## 所有权是 then() 的核心挑战
+串联后的新回调得把原回调和后续回调都攥在自己手里。这事儿在普通 `std::function` 上不算难——拷一份就完事——可 OnceCallback 偏偏是 move-only 的，`func_`、`status_`、`token_` 一样都不许复制。`then()` 只能消费 `*this` 和 `next`，把两副家当整个搬进一个新的 lambda 闭包。
 
-串联后的新回调需要持有原回调和后续回调的**所有权**——否则原回调可能在外部被提前消费掉，管道就断了。而 OnceCallback 是 move-only 的，这意味着 `then()` 必须消费 `*this`（原回调）和 `next`（后续回调），把两者的所有权转移到一个新的 lambda 闭包里。
-
-整个所有权链条是这样的：
+所有权链条画出来就一根线：
 
 ```mermaid
 graph LR
     A["新 OnceCallback"] --> B["move_only_function"] --> C["lambda 闭包"] --> D["原回调 + 后续回调"]
 ```
 
-每一层都通过移动语义传递所有权，没有任何共享或拷贝。这就是 move-only 语义在 `then()` 中的完整体现。
+每一节都是移动语义在接力，没有拷贝、没有共享。move-only 这套约束在 `then()` 里的完整长相，就是这根线。
 
 ---
 
@@ -115,7 +119,7 @@ auto OnceCallback<ReturnType(FuncArgs...)>::then(Next&& next) && {
 auto then(Next&& next) &&
 ```
 
-末尾的 `&&` 使其成为右值限定的成员函数——只能通过 `std::move(cb).then(next)` 或临时对象 `.then(next)` 调用。如果调用方写了 `cb.then(next)`（左值调用），编译器直接报"没有匹配的重载函数"。这是表达消费语义的另一种方式——和 `run()` 用 deducing this 不同，`then()` 不需要区分左值和右值给出不同的错误信息，直接用 ref-qualifier 更简洁。
+末尾那个 `&&` 把它做成了右值限定的成员函数，意思是 `then()` 只接受 `std::move(cb).then(next)` 或者临时对象上的 `.then(next)`。谁要是不小心写了 `cb.then(next)` 这种左值调用，编译器当场就甩一句"没有匹配的重载函数"，连错都报得直白。这跟 `run()` 走 deducing this 那一套是两条路——`run()` 得在左值和右值上分别给出不同的错误信息，麻烦些；`then()` 不用区分，一个 ref-qualifier 就够了，干净。
 
 ### std::decay_t\<Next\>：退化去掉引用
 
@@ -123,36 +127,32 @@ auto then(Next&& next) &&
 using NextType = std::decay_t<Next>;
 ```
 
-`Next` 可能是 `SomeLambda&&`（右值引用）或 `SomeLambda&`（左值引用），`std::decay_t` 把引用去掉，得到裸的 lambda 类型。后续用 `NextType` 做类型查询。
+`Next` 进来的时候可能是 `SomeLambda&&`，也可能是 `SomeLambda&`，沾着引用就不好做后续的类型推导。`std::decay_t` 把引用扒掉，留下裸的 lambda 类型，后面 `std::invoke_result_t` 就拿这个 `NextType` 去查返回。
 
 ### if constexpr 的两个分支
 
-`then()` 的核心区别在于原回调的返回类型是不是 void。
+真正让 `then()` 分叉的，是原回调返回类型到底是不是 void。这一刀切下去，两边长得很不一样。
 
-**非 void 分支**：原回调返回一个值，这个值需要传给后续回调。
+原回调返回一个值的情况——也就是非 void 分支——这个值得接着往下喂给后续回调：
 
 ```cpp
 using NextRet = std::invoke_result_t<NextType, ReturnType>;
 ```
 
-`std::invoke_result_t<NextType, ReturnType>` 在编译期推导"把 `ReturnType` 类型的值传给 `NextType` 类型的可调用对象，返回什么类型"。这就是新回调的返回类型。
-
-lambda 内部的执行流程：先调用原回调拿到中间结果 `mid`，再把 `mid` 传给后续回调。
+`std::invoke_result_t<NextType, ReturnType>` 在编译期替咱们问一句：把一个 `ReturnType` 类型的值递给 `NextType` 这种可调用对象，它吐回来的又是什么类型？这便是新管道对外的返回类型。lambda 体内的活儿也好讲，先把原回调跑起来拿到中间结果 `mid`，再原样递给后续回调：
 
 ```cpp
 auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
 return std::invoke(std::move(cont), std::move(mid));
 ```
 
-**void 分支**：原回调没有返回值，后续回调不接受参数。
+void 分支则换了个长相。原回调啥也不返回，后续回调自然也就不收参数：
 
 ```cpp
 using NextRet = std::invoke_result_t<NextType>;
 ```
 
-`std::invoke_result_t<NextType>` 推导的是"不带参数调用 `NextType`，返回什么类型"。
-
-lambda 内部的执行流程：先执行原回调（不拿返回值），再执行后续回调（不传参数）。
+这里 `std::invoke_result_t<NextType>` 推导的是"空着参数列表调 `NextType`，得到啥"。lambda 体内就两步：先跑原回调，结果扔掉不管；再把后续回调掏出来执行，也不传参：
 
 ```cpp
 std::move(self).run(std::forward<FuncArgs>(args)...);
@@ -165,17 +165,15 @@ return std::invoke(std::move(cont));
 [self = std::move(*this), cont = std::forward<Next>(next)]
 ```
 
-`self = std::move(*this)` 是整个所有权链的关键——它把当前 OnceCallback 对象的**所有内容**（`func_`、`status_`、`token_`）移动到 lambda 的闭包对象里。移动之后，当前对象进入"被移走"的状态——`func_` 和 `token_` 已经被搬走了。
+`self = std::move(*this)` 是整条所有权链的要害。它把当前 OnceCallback 的全部家当——`func_`、`status_`、`token_`，一个不落——搬进 lambda 的闭包里。搬完之后，当前对象就是个被掏空的壳，`func_` 和 `token_` 都不归它了。`cont = std::forward<Next>(next)` 把后续回调也接进来，`std::forward` 守着 `next` 本来的值类别：右值就移动，左值就拷贝。
 
-`cont = std::forward<Next>(next)` 把后续回调也搬进 lambda 闭包。`std::forward` 保持 `next` 的值类别——右值就移动，左值就拷贝。
-
-这个 lambda 又被传给一个新的 `OnceCallback<NextRet(FuncArgs...)>` 构造函数，存入新回调的 `std::move_only_function` 里。`move_only_function` 的类型擦除能力保证了不管 lambda 的实际类型是什么，都能被统一存储。
+这个 lambda 最终被递给一个新的 `OnceCallback<NextRet(FuncArgs...)>` 构造函数，塞进它的 `std::move_only_function`。类型擦除那套机制，使得不管外头这个 lambda 长成什么样，都能被收编进同一个壳子。
 
 ---
 
 ## 多级管道
 
-`then()` 可以链式调用，形成多级管道：
+`then()` 自然可以一节一节接下去，接成多级管道：
 
 ```cpp
 using namespace tamcpp::chrome;
@@ -191,33 +189,23 @@ std::string result = std::move(pipeline).run(5);
 // 5 * 2 = 10, 10 + 10 = 20, to_string(20) = "20"
 ```
 
-每次 `then()` 都会创建一个新的 OnceCallback，内部嵌套捕获了前一步的回调。调用最外层的 `run()` 时，执行过程是递归展开的：最外层回调被 `run()` → 执行其 lambda → lambda 内部对上一层调用 `std::move(self).run()` → 再对更上一层调用 → 直到底层。
+每调一次 `then()` 都会新铸一个 OnceCallback，里头嵌着捕获了前一步回调的闭包。最外层那次 `run()` 一动，执行就像套娃一样层层展开：最外层被 `run()` → 跑它自己的 lambda → lambda 里头对上一层再 `std::move(self).run()` → 再往上一层 → 一路钻到底。
 
-性能上，每一层 `then()` 增加一次 `std::move_only_function` 的间接调用。对于 2-3 级的管道来说完全可接受。如果管道层级超过 10 级，可能需要考虑扁平化的管道结构来避免过深的嵌套——但这已经超出我们当前的讨论范围了。
-
----
+代价也有。每多一级 `then()`，就多一次 `std::move_only_function` 的间接调用。两三级管道这点开销完全可以忽略；真要堆到十级以上，嵌套深了恐怕得换扁平化的管道结构——不过那已经离咱们眼下的题目太远，先按下不表。
 
 ## 几个容易踩坑的地方
 
 ### mutable 不可省略
 
-lambda 内部需要调用 `std::move(self).run()`——这个操作会修改 `self` 的状态（把 status 从 kValid 改为 kConsumed）。如果 lambda 是 const 的（没加 `mutable`），`self` 在内部就是 const 引用，没法在 const 对象上调用修改状态的操作，编译直接失败。
+lambda 里头要调 `std::move(self).run()`，这一下是真改 `self` 的状态——把 status 从 kValid 拨到 kConsumed。lambda 不加 `mutable`，`self` 在里头就是个 const 引用，对 const 对象动手脚这种事编译器见一次拦一次，直接报错。
 
 ### self = std::move(*this) 的状态
 
-移动之后，当前 OnceCallback 对象的 `func_` 和 `token_` 都已经被 move 走了——它们处于"被移走"的状态。`status_` 没有被显式设为 kEmpty，而是保持原来的值。但因为 `func_` 已经被 move 走了，当前对象实际上已经不可用了——任何对它的操作都是未定义的。`then()` 的 `&&` 限定保证了调用方没法在调用 `then()` 之后继续使用原对象。
+搬完之后，原 OnceCallback 的 `func_` 和 `token_` 都已经离家出走了，落得个"被移走"的下场。`status_` 没人显式把它拨回 kEmpty，原值还挂着。可 `func_` 都空了，这壳子实际已经废了，谁再去碰它一下都是未定义行为。好在 `then()` 那个 `&&` 限定把门守死了，调用方压根没机会在 `then()` 之后接着用原对象。
 
 ### 为什么用 std::invoke 而不是直接调用
 
-`cont` 是一个普通可调用对象（通常是 lambda），直接 `cont(mid)` 也能工作。但 `std::invoke` 是防御性编程——如果有人传进来一个成员函数指针作为后续回调，直接调用语法会失败，`std::invoke` 不会。统一使用 `std::invoke` 保证了无论传什么可调用对象都能正确工作。
-
----
-
-## 小结
-
-这一篇我们拆解了 `then()` 的完整实现。它的核心挑战是所有权管理——通过 `self = std::move(*this)` 把整个原回调搬进 lambda 闭包，建立完整的所有权链。`if constexpr` 处理 void 和非 void 返回类型的不同语义——void 回调不传参数给后续回调，非 void 回调传递中间结果。`then()` 用 `&&` 限定表达消费语义（比 `run()` 的 deducing this 更简洁，因为不需要自定义错误信息），`mutable` 关键字不可省略（因为内部需要修改 `self` 的状态）。
-
-下一篇是系列的最后一篇——我们用系统化的测试用例来验证整个实现，并对比与 Chromium 原版的性能差异。
+`cont` 多半就是个 lambda，您直接写 `cont(mid)` 也跑得动。可万一哪天有人递进来一个成员函数指针当后续回调，直接调用的语法当场就废了，`std::invoke` 不会。统一走 `std::invoke`，就是图个无论对方使什么家伙式儿，咱们这一套都接得住。
 
 ## 参考资源
 

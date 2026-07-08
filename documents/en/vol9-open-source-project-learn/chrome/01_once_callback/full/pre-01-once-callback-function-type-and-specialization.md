@@ -5,188 +5,179 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: Deep dive into what the function type `int(int,int)` is, and the template
-  partial specialization techniques behind `OnceCallback<R(Args...)>`—how the compiler
-  deconstructs function signatures through pattern matching.
+description: "A close look at what the function type int(int,int) actually is, and the template partial specialization trick behind OnceCallback<R(Args...)>: how the compiler pulls a function signature apart by pattern matching"
 difficulty: intermediate
 order: 1
 platform: host
 prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
+- 'OnceCallback prerequisites: a C++11/14/17 refresher'
 reading_time_minutes: 8
 related:
-- OnceCallback 前置知识（五）：std::move_only_function
-- OnceCallback 实战（二）：核心骨架搭建
+- 'OnceCallback prerequisites (V): std::move_only_function'
+- 'OnceCallback hands-on (II): the core skeleton'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 模板
 - 泛型
-title: 'OnceCallback Prerequisites (Part 1): Function Types and Template Partial Specialization'
-translation:
-  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-01-once-callback-function-type-and-specialization.md
-  source_hash: f8ae704aefb39b88443c304d6f73c02c766d7b1e1f2fb677bac6e6bbd05de009
-  translated_at: '2026-06-16T04:13:36.480668+00:00'
-  engine: anthropic
-  token_count: 1503
+title: 'OnceCallback Prerequisites (I): Function Types and Template Partial Specialization'
 ---
-# OnceCallback Prerequisites (Part 1): Function Types and Template Partial Specialization
+# OnceCallback Prerequisites (I): Function Types and Template Partial Specialization
 
-## Introduction
+The first time we ran into `OnceCallback<int(int, int)>` in the Chromium source, we stared at it for a while. `int(int, int)` looks like the wreckage of a function declaration, yet there it sits in a template parameter slot. What is this thing? And how does the compiler read "returns int, takes two ints" back out of `int(int, int)`?
 
-If this is your first time seeing `OnceCallback<void(int, double)>`, you might find it a bit strange—`void(int, double)` looks like a function declaration, yet it appears in a template parameter position. What exactly is this thing? How does the compiler break down `int(int, int)` into information like "returns int, accepts two int parameters"?
+We didn't figure it out at the time. It turns out this spelling is the shared foundation under `std::function`, `std::move_only_function`, and our entire `OnceCallback`. This piece works that foundation over. First we set the overlooked idea of a "function type" upright, then we walk through how primary template plus partial specialization pulls a signature apart by pattern matching. We will hand-roll a tiny `FuncTraits` along the way to make it run, and close on why the standard library collectively picked the signature form instead of the more obvious spelling.
 
-In this post, we will break down this seemingly quirky but actually very elegant technique. Once you understand it, you will be able to see why the template signatures of `std::is_function`, `std::coroutine_traits`, and our `OnceCallback` look the way they do.
+## Function types: a C++ type that's easy to miss
 
-> **Learning Objectives**
->
-> - Understand that a function type is a valid type in C++.
-> - Master the recurring template design pattern of "primary template + partial specialization".
-> - Be able to implement a minimal version of a function signature extraction tool.
+Let's start with the plainest question: is `int(int, int)` a type in C++?
 
----
+Yes. It has a name, a function type, and it means "a function taking two ints and returning an int." One thing worth flagging here: a function type sits lower in the stack than a function pointer. It is not the same thing as `int(*)(int, int)` (a pointer) or `int(&)(int, int)` (a reference). That "lower" position is exactly what lets partial specialization grab it, as we will see.
 
-## Function Types: An Easily Overlooked Type in C++
-
-Let's start with a basic question: Is `int(int, int)` a type in C++?
-
-The answer is: Yes. `int(int, int)` is something called a **function type**. It describes "a function that accepts two `int` parameters and returns an `int`". Note that it is not a function pointer `int(*)(int, int)`, nor a function reference `int(&)(int, int)`—the function type is a more fundamental concept than function pointers.
-
-We can verify this with `using`:
+A `static_assert` settles it:
 
 ```cpp
-using Func = int(int, int); // Define Func as a function type
+#include <type_traits>
+
+static_assert(std::is_function_v<int(int, int)>);           // passes: it's a function type
+static_assert(!std::is_pointer_v<int(int, int)>);           // passes: not a pointer
+static_assert(std::is_pointer_v<int(*)(int, int)>);         // passes: this one is a function pointer
 ```
 
-Function types appear in actual code more often than you might think. When you write a function declaration:
+Function types show up more often than you'd think. Take an ordinary declaration:
 
 ```cpp
 int add(int a, int b);
 ```
 
-The type of `add` is `int(int, int)`. You can think of it as a "signature"—it completely describes what parameters the function accepts and what type it returns, without involving where the function itself is stored.
+The type of `add` is `int(int, int)`. You can treat it as a signature: it says exactly what the function takes and what it returns, without saying where the function itself lives.
 
-There is an implicit conversion between function types and function pointers: in most expressions, a function name automatically decays into a pointer to itself. This is similar to how an array name decays into a pointer—`add` in `add(1, 2)` becomes a pointer in most contexts, just as `arr` in `arr[0]` becomes a pointer.
+There's an implicit conversion between function types and function pointers. In most expressions, a function name decays into a pointer to itself, the same way an array name decays into a pointer. The `arr` in `int arr[5]` becomes `int*` in most contexts; the `add` in `int add(int, int)` becomes `int(*)(int, int)`.
 
-However, when passed as a **template argument**, the function type does not decay—the compiler receives this type exactly as is. This is the prerequisite that allows us to deconstruct it using template partial specialization.
+But once it goes in as a template argument, the function type stops decaying. The compiler takes it as is. That is the prerequisite for taking it apart with partial specialization.
 
----
+## Primary template plus partial specialization: the recipe for breaking down a function type
 
-## Primary Template + Partial Specialization: The Pattern for Deconstructing Function Types
+Next, let's look at how `OnceCallback`'s template declaration is written. It's a two-step move: first throw out a primary template that takes a single type parameter, then open a separate partial specialization for the case where "that type parameter happens to be a function type."
 
-Now let's look at how `std::is_function`'s template declaration is written. It uses a two-step design: first, declare a primary template that accepts only one type parameter, then provide a partially specialized version for the case where "that type parameter happens to be a function type".
-
-### Step 1: Primary Template Declaration
+### Step 1: the primary template declaration
 
 ```cpp
-template <typename T>
-struct std::is_function : std::false_type {};
+template<typename FuncSignature>
+class OnceCallback;  // primary template: declaration only, no definition
 ```
 
-The primary template intentionally provides no implementation. This isn't an oversight, but a design choice—if someone accidentally writes a usage like `is_function<int>` (passing a plain `int` type instead of a function signature), the compiler will error during instantiation because it can't find a definition. This is a compile-time safety net.
+The primary template deliberately has no implementation. This isn't an oversight. It's a compile-time safety net: if someone slips and writes `OnceCallback<int>`, passing a plain int instead of a function signature, instantiation fails on the missing definition right there.
 
-### Step 2: Partial Specialization Version
-
-```cpp
-template <typename Ret, typename... Args>
-struct std::is_function<Ret(Args...)> : std::true_type {};
-```
-
-The template parameter list for this partial specialization is `template <typename Ret, typename... Args>`, while the `<Ret(Args...)>` following the class name is the **pattern matching condition** for the partial specialization. It says: "When `T` can be deconstructed into the form `Ret(Args...)`, use this version."
-
-### The Compiler's Matching Process
-
-When you write `is_function<int(int, int)>::value`, the compiler does the following:
-
-First, it sees you are instantiating `is_function`, with the template argument being `int(int, int)`. Then it looks at the primary template `is_function<T>`, binding `T` to the `int(int, int)` type as a whole. Next, it checks if a partial specialization can be used—the partial specialization requires `T` to match the pattern `Ret(Args...)`. `int(int, int)` can恰好 be broken down into `Ret=int` and `Args=int, int`, so the match succeeds! The partial specialization is selected.
-
-You can imagine this process as a type-level pattern matching—just like the regex `(\w+)\((\w+(?:,\s*\w+)*)\)` can extract return values and parameter lists from a string, template partial specialization extracts the return type and parameter pack from the type `int(int, int)`.
-
-### Uses the Exact Same Technology as `std::coroutine_traits`
-
-If you look at the standard library implementation of `std::coroutine_traits`, you will find it uses the exact same pattern:
+### Step 2: the partial specialization
 
 ```cpp
-template <typename Ret, typename... Args>
-struct coroutine_traits<Ret, Args...> {
-    using promise_type = /* ... */;
+template<typename ReturnType, typename... FuncArgs>
+class OnceCallback<ReturnType(FuncArgs...)> {
+    // all the real code lives here
 };
 ```
 
-`std::is_function` (C++23) is the same. This "primary template + function type partial specialization" pattern appears three times in the standard library and is a well-validated design.
+The template parameter list on this version is `<typename ReturnType, typename... FuncArgs>`, but the part that matters is the `OnceCallback<ReturnType(FuncArgs...)>` after the class name. That's the pattern-matching condition for the partial specialization, and it says one thing: when `FuncSignature` can be assembled into the shape `ReturnType(FuncArgs...)`, use this version.
 
----
+### How the compiler pairs things up
 
-## Hands-on Practice: Implementing a FuncTraits
+When you write `OnceCallback<int(int, int)>`, the compiler does a few things.
 
-Reading without practicing makes it hard to remember. Let's implement a minimal function signature extraction tool ourselves to solidify our understanding. The goal is: given a function type `F`, extract the return type `Ret` and the parameter pack `Args`.
+It sees you instantiating `OnceCallback` with `int(int, int)` as the template argument. It goes to the primary template and binds `FuncSignature` to `int(int, int)` as a whole. Then it turns around and checks whether a partial specialization can match. The specialization needs `FuncSignature` to fit the pattern `ReturnType(FuncArgs...)`. `int(int, int)` breaks apart cleanly: `ReturnType = int`, `FuncArgs = {int, int}`. The match lands, and the specialization gets picked.
 
-```cpp
-template <typename T>
-struct FuncTraits; // Primary template, intentionally undefined
+You can think of the whole process as pattern matching at the type level. Compare it to a regex like `(\w+)\((\w+(?:,\s*\w+)*)\)`, which digs the return value and parameter list out of the string `int(int, int)`. Partial specialization does the same job; it just operates on types instead of characters.
 
-// Partial specialization for function types
-template <typename Ret, typename... Args>
-struct FuncTraits<Ret(Args...)> {
-    using ReturnType = Ret;
-    using ArgTypes = std::tuple<Args...>;
-    static constexpr std::size_t ArgCount = sizeof...(Args);
-};
-```
+### The exact same trick as `std::function`
 
-`FuncTraits` and `OnceCallback` use the exact same partial specialization pattern. The only difference is that `FuncTraits` stores the extracted types as a `ReturnType` alias and an `ArgCount` constant, while `OnceCallback` directly uses these types inside the partial specialization class to define data members and methods.
-
-Try compiling and running this example—if all `static_assert`s pass (no compilation errors), it means the partial specialization correctly deconstructed the function type. You can try adding some more complex types to test:
+Go pull up a standard library implementation of `std::function` and you'll find the same setup:
 
 ```cpp
-// Complex function type: returns a pointer to a function taking double and returning int
-using ComplexFunc = int(*)(double);
-using TestType = ComplexFunc(double);
+// simplified std::function
+template<typename> class function; // primary template
 
-static_assert(std::is_same_v<FuncTraits<TestType>::ReturnType, ComplexFunc>);
-static_assert(FuncTraits<TestType>::ArgCount == 1);
-```
-
----
-
-## Why Not Use `OnceCallback<R, Args...>`?
-
-You might wonder, since the goal is to get the return type and parameter list, why not write it directly in the form `OnceCallback<R, Args...>`? Like this:
-
-```cpp
-template <typename R, typename... Args>
-class OnceCallback {
+template<typename R, typename... Args>
+class function<R(Args...)> {        // partial specialization
     // ...
 };
 ```
 
-This approach is technically feasible, but the user experience is not as good. Let's compare the two ways of calling it:
+`std::move_only_function` (C++23) is the same. The "primary template plus function-type partial specialization" pair shows up at least three times in the standard library. It's a design that's been validated over and over. When we write our own `OnceCallback`, there's no reason to start from scratch.
+
+## Hands-on: rolling a FuncTraits
+
+Reading alone won't stick. Let's write the smallest function-signature extraction tool ourselves and hammer the idea down. The goal: hand it a function type `R(Args...)` and have it hand back the return type `R` and the parameter pack `Args...`.
 
 ```cpp
-// Signature style (current approach)
-OnceCallback<int(int, int)> cb1;
+#include <type_traits>
 
-// Parameter list style (alternative approach)
-OnceCallback<int, int, int> cb2;
+// primary template: no definition for non-function types
+template<typename T>
+struct FuncTraits;
+
+// partial specialization: peel apart R(Args...)
+template<typename R, typename... Args>
+struct FuncTraits<R(Args...)> {
+    using ReturnType = R;
+    using ArgsTuple = std::tuple<Args...>;
+
+    static constexpr std::size_t kArity = sizeof...(Args);
+};
+
+// checks
+static_assert(std::is_same_v<FuncTraits<int(double, char)>::ReturnType, int>);
+static_assert(std::is_same_v<FuncTraits<void()>::ReturnType, void>);
+static_assert(FuncTraits<int(int, int, int)>::kArity == 3);
 ```
 
-The first one is more natural—`int(int, int)` is a complete function signature, which is clear at a glance. The second requires you to mentally interpret the first `int` as the return type and the subsequent `int, int` as the parameter list, which increases cognitive load. The standard library also chooses the signature style—`std::function<R(Args...)>` rather than `std::function<R, Args...>`.
+`FuncTraits` walks the same partial-specialization path as `OnceCallback`. There's one difference: `FuncTraits` stores the extracted types as `using` aliases and a `static constexpr` constant for outside callers, while `OnceCallback` takes those types directly and uses them inside the specialization class to define its data members and methods.
 
-The signature style also has a subtle benefit: it is more consistent with the C++ type system. `int(int, int)` is a real type, whereas "a return type plus a set of parameter types" is not a type—it is just a list of several types. Using a function type as a template parameter is operating at the level of the type system, not at the level of syntactic sugar.
+Let's compile and run the example. If the `static_assert`s all pass (no compilation errors), the specialization split the function type correctly. You can throw a few harder types at it too:
 
-Of course, the signature style has one drawback—the compiler cannot automatically deduce the complete signature from a callable object. This is why the first template parameter of `OnceCallback` must be specified manually. We will discuss this trade-off in detail in the upcoming `OnceCallback` implementation post.
+```cpp
+// harder checks
+static_assert(std::is_same_v<
+    FuncTraits<std::string(const std::string&, int)>::ReturnType,
+    std::string>);
+static_assert(std::is_same_v<
+    FuncTraits<void(int&&)>::ArgsTuple,
+    std::tuple<int&&>>);
+```
 
 ---
 
-## Summary
+## Why not write it as `OnceCallback<R, Args...>`?
 
-In this post, we figured out three things. The function type `int(int, int)` is a valid type in C++ that completely describes a function's signature; it is not a function pointer nor a function reference. The "primary template + partial specialization" pattern deconstructs the function type into a return type and a parameter pack through pattern matching. `std::is_function`, `std::coroutine_traits`, and our `OnceCallback` all use the same technique. The signature style `OnceCallback<R(Args...)>` is more natural and aligns better with C++ type system design philosophy than the parameter list style `OnceCallback<R, Args...>`.
+You might be wondering: if all we want is the return type plus the parameter list, why not just spell it `OnceCallback<R, Args...>` and be done? Something like:
 
-In the next post, we will look at `std::mem_fn`—it is the key tool that allows `OnceCallback` to uniformly handle function pointers, member function pointers, and lambdas.
+```cpp
+template<typename R, typename... Args>
+class OnceCallback {
+    // ...
+};
 
-## Reference Resources
+// usage: OnceCallback<int, int, int> cb([](int a, int b) { return a + b; });
+```
 
-- [cppreference: Function type](https://en.cppreference.com/w/cpp/language/function)
-- [cppreference: Template partial specialization](https://en.cppreference.com/w/cpp/language/template_specialization)
+This compiles fine. The ergonomics are worse, though. Let's set the two calls side by side:
+
+```cpp
+// signature form: one template argument, reads like a function signature
+OnceCallback<int(int, int)> cb1([](int a, int b) { return a + b; });
+
+// parameter-list form: return type and parameters written separately
+OnceCallback<int, int, int> cb2([](int a, int b) { return a + b; });
+```
+
+The first reads naturally. `int(int, int)` is a complete function signature, clear at a glance. The second makes you do a mental split: the first `int` is the return type, the next two `int, int` are the parameters. That's a tax on the reader for no payoff. The standard library made the same call: `std::function<int(int, int)>`, not `std::function<int, int, int>`.
+
+The signature form has a subtler benefit too. It lines up better with the C++ type system. `int(int, int)` is an actual type; "a return type plus a pile of parameter types" is not a type, it's several types sitting next to each other. Taking a function type as the template argument means we're working with the type system itself, not patching syntactic sugar on top.
+
+There's one corner where the signature form bites, though: the compiler can't deduce the full signature from a callable object on its own. That's why `bind_once`'s first template parameter, `Signature`, has to be written out by hand. We'll save that trade-off for the `bind_once` implementation piece.
+
+## References
+
+- [cppreference: function type](https://en.cppreference.com/w/cpp/language/function)
+- [cppreference: template partial specialization](https://en.cppreference.com/w/cpp/language/template_specialization)
 - [cppreference: std::is_function](https://en.cppreference.com/w/cpp/types/is_function)

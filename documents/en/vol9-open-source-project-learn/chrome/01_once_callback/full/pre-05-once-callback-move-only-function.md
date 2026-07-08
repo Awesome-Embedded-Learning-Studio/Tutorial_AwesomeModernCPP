@@ -2,228 +2,200 @@
 chapter: 0
 cpp_standard:
 - 23
-description: Gain a deep understanding of C++23's `std::move_only_function`—the core
-  storage type of `OnceCallback`. We cover the evolution from `std::function`, Small
-  Buffer Optimization (SBO) behavior, and why `OnceCallback` requires independent
-  three-state management.
+description: "A close look at C++23's std::move_only_function, the storage type behind OnceCallback's func_ member. Covers why std::function is not enough, how SBO behaves, and why OnceCallback still needs its own three-state Status enum instead of leaning on move_only_function's null check."
 difficulty: intermediate
 order: 5
 platform: host
 prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- OnceCallback prerequisites cheat sheet: a recap of C++11/14/17 core features
+- OnceCallback prerequisites (I): function types and template partial specialization
 reading_time_minutes: 9
 related:
-- OnceCallback 实战（二）：核心骨架搭建
-- OnceCallback 实战（六）：测试与性能对比
+- OnceCallback hands-on (II): scaffolding the core skeleton
+- OnceCallback hands-on (VI): tests and performance comparison
 tags:
 - host
 - cpp-modern
 - intermediate
 - 函数对象
 - 智能指针
-title: 'Prerequisites for OnceCallback (Part 5): std::move_only_function (C++23)'
-translation:
-  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-05-once-callback-move-only-function.md
-  source_hash: e0cd8cad6cee646a86f5196837ef97f53ff080452df2faf67cc0d1d398df01e9
-  translated_at: '2026-06-16T04:13:45.026070+00:00'
-  engine: anthropic
-  token_count: 1739
+title: 'OnceCallback Prerequisites (V): std::move_only_function (C++23)'
 ---
-# OnceCallback Prerequisites (Part 5): std::move_only_function (C++23)
+# OnceCallback Prerequisites (V): std::move_only_function (C++23)
 
-## Introduction
-
-`std::move_only_function` is the heart of `OnceCallback`—it handles all the heavy lifting of type erasure. The `OnceCallback::callback_` member is a `std::move_only_function` type, which wraps various forms of callable objects—lambdas, function pointers, functors—into a unified calling interface with a known signature.
-
-In this post, we will clarify three things: what exactly is the difference between `std::move_only_function` and `std::function`, how its SBO (Small Buffer Optimization) behavior works, and why `OnceCallback` cannot rely directly on its null-check mechanism and needs to implement its own three-state management.
-
-> **Learning Objectives**
->
-> - Understand the design motivation of `std::move_only_function`—why `std::function` isn't enough
-> - Master the four core operations: construction, move, invocation, and null checking
-> - Understand the principles of SBO and the allocation behavior of `std::move_only_function`
-> - Clarify why `OnceCallback` needs an independent `Status` enumeration
-
----
+The `func_` member of `OnceCallback` is typed `std::move_only_function<FuncSig>`. Its job is the dirty work of type erasure: it takes the motley crew of lambdas, function pointers, and functors and herds them into a single call entry with a fixed signature. In this post we pull it apart and look at what it actually differs from the old `std::function`, how its SBO (Small Buffer Optimization) holds up, and one pitfall we walked into ourselves: why `OnceCallback` has to keep its own `Status` enum and cannot just piggyback on the null check.
 
 ## From std::function to std::move_only_function
 
-### Limitations of std::function
+### Where std::function gets stuck
 
-`std::function` is a generic callable object container introduced in C++11. It unifies various callable objects into the same interface through type erasure. However, `std::function` has a fundamental limitation: it requires that the stored callable object **must be copyable**.
+`std::function` is the general-purpose callable container C++11 handed us. It uses type erasure to fold a pile of callable objects into one interface. But it carries one brutal constraint: whatever it stores must be copyable.
 
-The reason is that `std::function` itself is copyable—when you copy a `std::function`, it needs to copy the internally stored callable object as well. If you attempt to construct a `std::function` using a lambda that captures a `std::unique_ptr`, the compiler will error out directly on copy semantics:
-
-```cpp
-// std::function requires the stored object to be copyable
-std::function<void()> f = [up = std::make_unique<int>(42)] {
-    *up = 100;
-};
-
-// Error: std::unique_ptr is not copyable
-std::function<void()> f2 = f;
-```
-
-This limitation is fatal in the context of `OnceCallback`—the core selling point of `OnceCallback` is being move-only, and it must support lambdas that capture move-only types like `std::unique_ptr`.
-
-### The Solution: std::move_only_function
-
-`std::move_only_function` (C++23, defined in `<functional>`) is the "move-only version of `std::function`". It deletes copy operations and retains only move operations, thus no longer requiring the stored callable object to be copyable.
+The root cause is that it copies itself. When you copy a `std::function`, it has to copy the object held inside it too. So if you try to stuff in a lambda that captured a `std::unique_ptr`, a move-only type that flat-out refuses to copy, the compiler slaps the error in your face:
 
 ```cpp
-// std::move_only_function only requires the object to be movable
-std::move_only_function<void()> f = [up = std::make_unique<int>(42)] {
-    *up = 100;
-};
+#include <functional>
+#include <memory>
 
-// OK: Transfer ownership
-std::move_only_function<void()> f2 = std::move(f);
+auto ptr = std::make_unique<int>(42);
+
+// Compile error: unique_ptr is not copyable, std::function requires copyable
+std::function<int()> f = [p = std::move(ptr)]() { return *p; };
 ```
 
-The key difference in interface between the two types can be summarized as: `std::function` is copyable and movable, requiring the stored object to be copyable; `std::move_only_function` is not copyable but is movable, only requiring the stored object to be movable.
+For `OnceCallback` this is a wall. Move-only is the whole pitch, and that means it has to accept callbacks capturing a `unique_ptr`.
+
+### How std::move_only_function breaks the deadlock
+
+C++23's `std::move_only_function` (still in `<functional>`) exists to crack exactly this nut. It lops off the copy operations and keeps only the move, so the thing stored no longer has to be copyable.
+
+```cpp
+#include <functional>
+#include <memory>
+
+auto ptr = std::make_unique<int>(42);
+
+// OK: move_only_function does not require copyable
+std::move_only_function<int()> f = [p = std::move(ptr)]() { return *p; };
+
+int result = f();  // result == 42
+```
+
+The interface difference is one sentence: `std::function` copies and moves, and what it stores must be copyable; `std::move_only_function` only moves, and what it stores only needs to be movable.
 
 ---
 
-## Four Core Operations
+## Construction, move, call, null check
 
-### Construction: Creating from Callable Objects
-
-`std::move_only_function` accepts any callable object matching the signature `R(Args...)`—lambdas, function pointers, functors, and even another `std::move_only_function`:
+Construction works the same way as `std::function`: `std::move_only_function<R(Args...)>` opens its arms to anything matching the signature, a lambda, a function pointer, a functor, even another `std::move_only_function`. A default-constructed one is empty and compares equal to `nullptr`. Calling uses the familiar `f(args...)` syntax; calling an empty object throws `std::bad_function_call`, and when it should crash, let it crash.
 
 ```cpp
 // From a lambda
-std::move_only_function<void(int)> f1 = [](int x) { std::cout << x; };
+std::move_only_function<int(int, int)> f1 = [](int a, int b) { return a + b; };
 
 // From a function pointer
-void func(int x);
-std::move_only_function<void(int)> f2 = func;
+int add(int a, int b) { return a + b; }
+std::move_only_function<int(int, int)> f2 = &add;
 
-// From another move_only_function (move construction)
-std::move_only_function<void(int)> f3 = std::move(f1);
-```
-
-### Move: Transferring Ownership
-
-The move operation transfers the callable object from the source to the target. After the move, the state of the source object is **unspecified**—the standard does not guarantee that it will definitely be empty.
-
-```cpp
-std::move_only_function<void()> f = [] { /* ... */ };
-std::move_only_function<void()> g = std::move(f);
-
-// f is now in an unspecified state
-// DO NOT rely on f being empty or non-empty!
-```
-
-This is very important—and one of the reasons why `OnceCallback` needs its own `Status` enumeration. We will expand on this later.
-
-### Invocation: Executing via operator()
-
-The invocation syntax is the same as `std::function`—using the `operator()` directly:
-
-```cpp
-std::move_only_function<int(int, int)> add = [](int a, int b) {
-    return a + b;
+// From a functor
+struct Multiplier {
+    int operator()(int a, int b) { return a * b; }
 };
+std::move_only_function<int(int, int)> f3 = Multiplier{};
 
-int result = add(3, 4); // result is 7
+// Default construction: create an empty move_only_function
+std::move_only_function<int()> f4;  // f4 == nullptr
 ```
 
-If the `std::move_only_function` is empty (via default construction or `std::move`), the invocation will throw a `std::bad_function_call` exception.
-
-### Null Check: Checking if it Holds a Callable Object
-
-Use `operator bool` or compare with `nullptr`:
+The part worth pausing on is the move. The semantics are straightforward: the callable inside the source relocates wholesale to the target. But what state is the source left in? The standard gives four words: valid but unspecified. It does not promise the source ends up empty.
 
 ```cpp
-std::move_only_function<void()> f;
+std::move_only_function<int()> f = []() { return 42; };
+auto g = std::move(f);
+// f's state is unspecified — may be empty, may not be
+// Do not rely on f's post-move behavior
+```
 
+We ran it on GCC 16 and `bool(f)` after the move did return `false`. But hold onto this: that is the implementation being kind, not a promise the standard backstops for you. Switch to another implementation and a `true` tomorrow is not off the table. This tail matters. It is half the reason, in a moment, that `OnceCallback` cannot lean on the null check and has to keep its own `Status`.
+
+For the null check, use `operator bool()` or compare against `nullptr`; the two are equivalent. To clear it on purpose, assign `nullptr`, and the callable it was holding destructs:
+
+```cpp
+std::move_only_function<int()> f;
 if (!f) {
     std::cout << "f is empty\n";
 }
+// equivalent to
+if (f == nullptr) {
+    std::cout << "f is empty\n";
+}
 
-f = [] { std::cout << "Hello"; };
-if (f != nullptr) {
-    f(); // Invokes the lambda
+f = []() { return 42; };
+if (f) {
+    std::cout << "f is not empty\n";
 }
 ```
 
-You can also actively clear it by assigning `nullptr`:
-
 ```cpp
-f = nullptr; // Clears the stored callable
+f = nullptr;  // clear f, destructing the previously held callable
 ```
 
 ---
 
-## SBO: Small Object Optimization
+## SBO: Small Buffer Optimization
 
-### What is SBO
+Internally, `std::move_only_function` does SBO (Small Buffer Optimization), the same trick `std::function` uses. The recipe is not complicated: the object keeps a fixed-size buffer, usually a few pointers wide. If the callable is small enough, it goes straight into the buffer and the heap allocation is skipped. If it is too big, the heap is the fallback.
 
-`std::move_only_function` (just like `std::function`) internally implements **Small Buffer Optimization** (SBO). The idea is simple: a fixed-size buffer (usually a few pointers in size) is reserved inside the object. If the callable object is small enough, it is stored directly in this buffer, avoiding heap allocation; if it is too large, memory is allocated on the heap to store it.
+![SBO internal structure](./pre-05-sbo-structure.drawio)
 
-![SBO 小对象优化内部结构](./pre-05-sbo-structure.drawio)
+The SBO threshold is the implementation's call; it usually lands somewhere between 2 and 3 pointers wide (16 to 24 bytes). A lambda that captures little, like `[x = 42]` or `[&ref]`, almost always slides into SBO without triggering a heap allocation. But a lambda that captures a chunk, say a `std::string` plus a few `int`s, blows past the threshold and has to go to the heap at construction.
 
-The threshold for SBO is implementation-defined—typically around 2-3 pointer sizes (16-24 bytes). A lambda capturing a few arguments (e.g., a `std::unique_ptr` or a few integers) can usually fit into the SBO without triggering a heap allocation. However, if the lambda captures a large amount of data (like a `std::string` + several `std::vector`s), exceeding the SBO threshold, construction will allocate on the heap.
+### sizeof in practice
 
-### sizeof Comparison
+Talking about it is cheap; let us measure the real thing. GCC 16 prints this:
 
 ```cpp
-std::cout << sizeof(std::function<void()>) << "\n";   // e.g., 32 bytes
-std::cout << sizeof(std::move_only_function<void()>) << "\n"; // e.g., 32 bytes
+#include <functional>
+#include <iostream>
+
+int main() {
+    std::cout << "sizeof(std::function<void()>):           "
+              << sizeof(std::function<void()>) << "\n";
+    std::cout << "sizeof(std::move_only_function<void()>): "
+              << sizeof(std::move_only_function<void()>) << "\n";
+}
 ```
 
-On GCC, typical values are `std::function` at about 32 bytes, and `std::move_only_function` also at about 32 bytes. They are similar in size because they use similar SBO strategies.
+```text
+sizeof(std::function<void()>):           32
+sizeof(std::move_only_function<void()>): 40
+```
+
+`std::function<void()>` is 32 bytes; `std::move_only_function<void()>` is 8 bytes more, at 40. The SBO strategy underneath is similar, but the move-only side has its own overhead (dropping the work the copy path would have done, leaving a move vtable, and so on), and that is roughly where the extra bytes go.
 
 ---
 
-## Why OnceCallback Needs an Independent Status Enumeration
+## Why OnceCallback still needs its own Status enum
 
-You may have noticed a detail—`OnceCallback` adds its own `Status` enumeration to track state, separate from `std::move_only_function`. Why not just use `std::move_only_function`'s null-check mechanism?
+Reading this far you might be wondering: since `std::move_only_function` can already check for null, why does `OnceCallback` go to the trouble of wrapping a `Status` enum around it? We tried taking the shortcut too, using its null check directly. It is not enough once you actually sit down to write it.
 
-The reason is that `std::move_only_function`'s null check cannot distinguish between three different states:
+The root problem is that it does not have enough states. `operator bool()` only separates "empty" from "non-empty", but `OnceCallback` has to tell three states apart:
 
 ```cpp
-enum class Status {
-    kEmpty,    // Never assigned a value
-    kValid,    // Has a value, can be invoked
-    kConsumed  // Was valid, but has been moved out or invoked
+enum class Status : uint8_t {
+    kEmpty,     // never assigned (default constructed)
+    kValid,     // holds a valid callable
+    kConsumed   // run() has already been called
 };
 ```
 
-`std::move_only_function`'s `operator bool` can only distinguish between "empty" and "non-empty" states. However, `OnceCallback` needs to know whether a callback is "never been assigned" (`kEmpty`) or "had a value but has already been invoked" (`kConsumed`). These two scenarios have completely different meanings during debugging—`kEmpty` implies "you forgot to assign a callback", while `kConsumed` implies "the callback was correctly invoked, and you should not use it again".
+"Never assigned" (`kEmpty`) and "assigned, run, and already digested" (`kConsumed`) look identical to `operator bool()`, both empty, but the meaning is poles apart. When debugging, `kEmpty` is usually a reminder that you forgot to assign the callback, a genuine bug; `kConsumed` is the expected state after the callback has run normally, nothing wrong at all. Smear the two together and `DCHECK` cannot say anything sensible about it.
 
-There is a more subtle issue: the state of a moved-from `std::move_only_function` is **unspecified**—the standard does not guarantee that `operator bool` of the source object returns `false` after a move. Some implementations might still return `true`, even though the internal data is invalid. If `OnceCallback` relied on `std::move_only_function`'s null check to determine state, it might get incorrect results after move operations. The independent `Status` enumeration is entirely under our control—the move constructor explicitly sets the source object to `kEmpty`, leaving no ambiguity.
+Then there is the sneakier one: the "unspecified post-move state" from the last section. The standard does not guarantee that `operator bool()` returns `false` after a move. Some implementation is free to return `true` even though the goods inside have already been hauled out. If `OnceCallback` really relied on it for state, the moment a move happened it could misjudge. Owning its own `Status` is steadier. It is fully in our hands; on move construction we explicitly mark the source object `kEmpty`, clean and unambiguous.
 
 ---
 
-## Comparison with Chromium's BindState
+## Next to Chromium's BindState
 
-Chromium does not use the standard library's type erasure facilities—it hand-writes a `BindState` system. Let's compare the core differences between the two approaches.
+Chromium does not touch the standard library's type erasure. It hand-rolls its own `BindState`. Put the two side by side and the differences are worth a look.
 
-Chromium's `BindState` is a heap-allocated object that stores the callable object and all bound parameters. `OnceCallback` itself only holds a smart pointer (`std::unique_ptr`) to the `BindState`, making it only 8 bytes in size—the size of a pointer. All state is placed in the heap-allocated `BindState`, and the callback object itself is just a "thin proxy".
+Chromium's `BindState<Functor, BoundArgs...>` is a heap object that takes in the callable and every bound argument. `OnceCallback` itself just holds a smart pointer (`scoped_refptr`) to the `BindState`, 8 bytes total, one pointer wide. All the state lives over on the `BindState` side; the callback is just a thin proxy.
 
-Our approach replaces the entire `BindState` layer with `std::move_only_function`—it implements type erasure and SBO internally, saving us the work of hand-writing function pointer tables, SBO buffers, and move/destructor operations. The cost is that the object size expands from 8 bytes to about 32 bytes (the size of `std::move_only_function` itself), plus the `Status` enumeration and an optional `std::unique_ptr` pointer, making the whole `OnceCallback` about 56-64 bytes.
+Our version replaces the entire `BindState` layer with `std::move_only_function`. Type erasure and SBO are handled for it internally, and the hand-written work of function pointer tables, SBO buffers, and move/destructor bookkeeping all gets dropped. The price is size: it grows from 8 bytes to 40 bytes (`std::move_only_function` on its own), then piles on the `Status` enum and an optional `CancelableToken` pointer, putting one `OnceCallback` at roughly 56 to 64 bytes.
 
 | Metric | Chromium BindState | Our std::move_only_function |
-|--------|-------------------|-------------------------------|
-| Callback Object Size | 8 bytes (one pointer) | 56-64 bytes |
-| Heap Allocation | Always (new BindState) | Only when lambda exceeds SBO threshold |
-| Move Cost | Copying one pointer | Copying 32+ bytes |
-| Implementation Complexity | High (manual ref-count + function pointer table) | Low (reuse standard library) |
+|------|-------------------|-------------------------------|
+| Callback object size | 8 bytes (one pointer) | 56-64 bytes |
+| Heap allocation | Always (new BindState) | Only when lambda exceeds SBO threshold |
+| Move cost | Copy one pointer | Copy 32+ bytes |
+| Implementation complexity | High (manual refcount + function pointer table) | Low (reuse standard library) |
 
-For educational purposes and most practical scenarios, a 56-64 byte callback object is not a bottleneck at all. If your project indeed requires extreme compactness, you can refer to Chromium's approach—we will cover the core concepts in a future practical post.
+For teaching, and for most real scenarios, a fifty- to sixty-byte callback object is not a bottleneck at all. If you genuinely need to squeeze size to the limit, take the Chromium road; we get into the core idea in a later hands-on piece.
 
----
-
-## Summary
-
-In this post, we clarified the ins and outs of `std::move_only_function`. It is the move-only version of `std::function` introduced in C++23, removing copy operations to support move-only callable objects. It implements SBO internally to optimize storage for small objects. However, its post-move state is unspecified, and it can only distinguish between "empty" and "non-empty" states—this is why `OnceCallback` needs an independent three-state `Status` enumeration. Compared to Chromium's hand-written `BindState`, we traded an increase in object size for a significant gain in implementation simplicity.
-
-In the next post, we will look at the last prerequisite for `OnceCallback`—C++23's deducing this (explicit object parameter), which is the core mechanism enabling `OnceCallback::Invoke` to intercept compile-time lvalue/rvalue dispatch.
+The next post is the last prerequisite for OnceCallback: C++23's deducing this (explicit object parameter). The reason `run()` can pull off compile-time lvalue/rvalue interception has its roots there.
 
 ## References
 
 - [cppreference: std::move_only_function](https://en.cppreference.com/w/cpp/utility/functional/move_only_function)
-- [P0288R9 - move_only_function Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p0288r9.html)
+- [P0288R9 - move_only_function proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p0288r9.html)
 - [cppreference: std::function](https://en.cppreference.com/w/cpp/utility/functional/function)

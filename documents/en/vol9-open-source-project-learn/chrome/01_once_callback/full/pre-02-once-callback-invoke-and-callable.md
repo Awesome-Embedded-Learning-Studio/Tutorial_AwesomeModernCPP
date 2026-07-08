@@ -2,245 +2,220 @@
 chapter: 0
 cpp_standard:
 - 17
-description: Gain a deep understanding of how `std::invoke` unifies the calling conventions
-  for function pointers, member function pointers, lambda expressions, and functors,
-  as well as the role of `std::invoke_result_t` in type deduction within `OnceCallback`.
+description: "How std::invoke unifies the calling convention for function pointers,
+  member function pointers, lambdas, and functors, and how std::invoke_result_t drives
+  type deduction inside OnceCallback"
 difficulty: intermediate
 order: 2
 platform: host
 prerequisites:
-- OnceCallback 前置知识速查：C++11/14/17 核心特性回顾
-- OnceCallback 前置知识（一）：函数类型与模板偏特化
+- 'OnceCallback prerequisites: a C++11/14/17 refresher'
+- 'OnceCallback prerequisites (I): function types and template partial specialization'
 reading_time_minutes: 8
 related:
-- OnceCallback 实战（三）：bind_once 实现
-- OnceCallback 实战（五）：then 链式组合
+- 'OnceCallback in practice (III): implementing bind_once'
+- 'OnceCallback in practice (V): chaining with then()'
 tags:
 - host
 - cpp-modern
 - intermediate
 - 函数对象
 - std_invoke
-title: 'OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention'
-translation:
-  source: documents/vol9-open-source-project-learn/chrome/01_once_callback/full/pre-02-once-callback-invoke-and-callable.md
-  source_hash: 6565cf61f22ee2e502e620b0d180df665832123aeb4edcf9cb0555f57898ff12
-  translated_at: '2026-06-16T04:13:39.844416+00:00'
-  engine: anthropic
-  token_count: 1598
+title: 'OnceCallback prerequisites (II): std::invoke and the uniform calling convention'
 ---
-# OnceCallback Prerequisites (Part 2): std::invoke and the Uniform Calling Convention
+# OnceCallback prerequisites (II): std::invoke and the uniform calling convention
 
-## Introduction
+In the previous post we untangled function types and template partial specialization. This one tackles a more annoying problem: the calling syntax for callable objects.
 
-Suppose you are writing a callback system—just like the OnceCallback we are building. Your system needs to accept various "callable objects": ordinary function pointers, lambdas, functors (class objects with overloaded `operator()`), and even member function pointers. The problem is that the calling syntax for these callable objects varies. Ordinary functions are called directly via `func()`, while member function pointers must be written as `(obj.*func)()`. If your code contains ten different callable objects, do you really need to write ten `if` branches to handle them separately?
+When you write a callback system, the natural wish is that whatever comes in, a function pointer, a lambda, a member function pointer, you can fire it with one syntax. C++ does not oblige. A free function is fine as `f(args...)`, but a member function pointer insists on `(obj.*pmf)(args...)`, and even a pointer to a data member has to go through `obj.*pmd`. Ten kinds of callables, ten branches in your template to figure out which family it belongs to. Do that long enough and your blood pressure goes up.
 
-`std::invoke` (C++17) was born to eliminate this fragmentation. It provides a uniform calling syntax, allowing all callable objects to be invoked in the same way. OnceCallback's `bind_once` and `then()` methods rely entirely on it to achieve the requirement of "correctly calling whatever callable object is passed in."
+`std::invoke` (C++17) is what glues this pile of syntax into one layer. OnceCallback's `bind_once` and `then()` both lean on it internally, so they can correctly call whatever you hand them.
 
-> **Learning Objectives**
->
-> - Understand why a uniform calling convention is needed—the differences in calling syntax for various callable objects.
-> - Master the complete dispatch rules of `std::invoke`.
-> - Learn to use `std::invoke_result_t` to deduce the return type of a call at compile time.
+## The problem: the calling syntax for callables is fragmented
 
----
+Let's line up the common callables side by side. The split is hard to miss.
 
-## Problem: The Fragmentation of Callable Object Syntax
-
-In C++, there are at least four common callable objects, each with its own calling syntax. Let's examine them one by one.
-
-### Ordinary Function Pointers
+A plain function pointer is the well-behaved one, anything works:
 
 ```cpp
-void free_func(int x) { /* ... */ }
+int add(int a, int b) { return a + b; }
+int (*fp)(int, int) = &add;
 
-void (*ptr)(int) = &free_func;
-ptr(42);        // Direct call
+int result = fp(3, 4);       // Direct call
+int result2 = (*fp)(3, 4);   // Dereferenced, then called (equivalent)
 ```
 
-### Lambda / Functor
+Lambdas and functors both go through `operator()`, which looks almost like a free function call, so this part is friendly:
 
 ```cpp
-auto lambda = [](int x) { /* ... */ };
-lambda(42);    // Direct call
+auto lam = [](int a, int b) { return a + b; };
+int result = lam(3, 4);  // Through operator()
+
+struct Adder {
+    int operator()(int a, int b) { return a + b; }
+};
+Adder fn;
+int result2 = fn(3, 4);  // Also through operator()
 ```
 
-### Member Function Pointers
-
-Here, the syntax starts to get weird. Member function pointers cannot be called directly like ordinary functions—you must have an object instance and use the `.*` or `->*` operators to invoke them.
+Things get ugly at the member function pointer. It can't be `()`-ed like a free function. You need an object instance first, then you bolt it on with the `.*` or `->*` operators, two of the rarer sights in the language. The first time we wrote one of these we flipped through a book for half an afternoon:
 
 ```cpp
-struct Widget {
-    void func(int x);
+struct Calculator {
+    int multiply(int a, int b) { return a * b; }
 };
 
-void (Widget::*mem_ptr)(int) = &Widget::func;
+Calculator calc;
+int (Calculator::*pmf)(int, int) = &Calculator::multiply;
 
-Widget w;
-(w.*mem_ptr)(42);  // Call via object
+// Must use the .* operator
+int result = (calc.*pmf)(3, 4);  // result == 12
 ```
 
-### Pointer to Data Member
-
-Yes, C++ allows you to get a "pointer" to a data member—it's actually an offset. Access is also done via the `.*` operator.
+There's a colder cousin: the pointer to data member. C++ lets you take a "pointer" to a data member, which is really an offset, and access goes through `.*` the same way:
 
 ```cpp
-struct Widget {
-    int value;
+struct Point {
+    double x, y;
 };
 
-int Widget::*mem_ptr = &Widget::value;
+Point p{1.0, 2.0};
+double Point::*pmx = &Point::x;
 
-Widget w;
-w.*mem_ptr = 42;    // Access via object
+double val = p.*pmx;  // val == 1.0
 ```
 
-The problem is clear: if you are writing a template function that needs to call a "callable object of an unknown type," you cannot write a single calling syntax—because you don't know if it's an ordinary function or a member function pointer. `std::invoke` is the solution to this problem.
+You see the shape of the problem. If you're writing a template that has to call "a callable of a completely unknown type," there's no single syntax that works. You don't know whether it's a function or a member pointer, and one wrong guess fails to compile. `std::invoke` is what plugs that hole.
 
 ---
 
-## Dispatch Rules of std::invoke
+## The dispatch rules of std::invoke
 
-The job of `std::invoke` is to select the correct calling syntax based on the specific types of the callable object and the arguments. The standard defines the following scenarios (referred to in the C++ standard as INVOKE expressions):
+What `std::invoke(f, args...)` does, in one sentence: it looks at the concrete types of `f` and `args`, and picks the right calling syntax. The standard calls this the INVOKE expression and splits it into three families.
 
-### Case 1: Member Function Pointer + Object
-
-When `Callable` is a pointer to a member function, and the first element of `Args` is an object (or a reference to an object, or a pointer to an object), `std::invoke` expands to calling the member function via the object.
+The thorniest, and the one worth memorizing, is the member function pointer. When `f` is a pointer to a member function and the first element of `args` is the object itself (a reference, a value, or a pointer to the object), `std::invoke` expands it into `(obj.*pmf)(rest...)`:
 
 ```cpp
-struct Widget {
-    void func(int);
+struct Calculator {
+    int multiply(int a, int b) { return a * b; }
 };
 
-Widget w;
-Widget* ptr = &w;
-void (Widget::*mem_func)(int) = &Widget::func;
+Calculator calc;
 
-// std::invoke handles both reference and pointer automatically
-std::invoke(mem_func, w, 10);      // Equivalent to (w.*mem_func)(10)
-std::invoke(mem_func, ptr, 10);   // Equivalent to ((*ptr).*mem_func)(10)
+// By reference
+std::invoke(&Calculator::multiply, calc, 3, 4);        // (calc.*multiply)(3, 4)
+// By pointer
+std::invoke(&Calculator::multiply, &calc, 3, 4);       // ((*ptr).*multiply)(3, 4)
 ```
 
-Note the second case—when the first argument is a pointer (`ptr`), `std::invoke` automatically dereferences the pointer. This behavior is crucial when binding member functions in `bind_once`.
+Note the second line, the `&calc` one. When the first argument is a pointer, `std::invoke` dereferences it for you before going through `.*`. It looks unremarkable, but it saves the day when `bind_once` binds a member function, as we'll see further down.
 
-### Case 2: Pointer to Data Member + Object
-
-When `Callable` is a pointer to a data member, `std::invoke` expands to accessing the data member via the object.
+Pointers to data members take the same route, just with "access" where "call" used to be:
 
 ```cpp
-struct Widget {
-    int value;
+struct Point { double x, y; };
+Point p{1.0, 2.0};
+
+double val = std::invoke(&Point::x, p);    // p.*&Point::x == p.x
+```
+
+The rest, function pointers, lambdas, functors, anything you can slap `()` onto, `std::invoke` faithfully calls as `f(args...)`:
+
+```cpp
+std::invoke([](int a, int b) { return a + b; }, 3, 4);  // lambda(3, 4)
+```
+
+Put the three families together and the takeaway is one line: no matter which one your `f` falls into, you always write `std::invoke(f, args...)`. Your template code no longer has to know what kind of thing `f` is. Dispatch is `std::invoke`'s problem, done for you internally.
+
+---
+
+## std::invoke_result_t: deducing the return type at compile time
+
+Unified calling alone is not enough. Sometimes you have to ask, at compile time, "what type does `std::invoke(f, args...)` return?" The chained implementation of `then()` is the textbook case. You feed the previous callback's return value into the next callback, and the compiler has to compute the final type of the chain up front, or you can't even write the type signature.
+
+That's what `std::invoke_result_t<F, Args...>` computes. Hand it a callable type `F` and a pack of argument types `Args...`, and at compile time it gives you back the return type of `std::invoke(f, args...)`:
+
+```cpp
+#include <type_traits>
+#include <functional>
+
+auto add(int a, int b) -> int { return a + b; }
+
+// Deduce the return type of add(1, 2) at compile time
+using R = std::invoke_result_t<decltype(add), int, int>;
+static_assert(std::is_same_v<R, int>);
+
+// Works for lambdas too
+auto lam = [](double x) { return std::to_string(x); };
+using R2 = std::invoke_result_t<decltype(lam), double>;
+static_assert(std::is_same_v<R2, std::string>);
+```
+
+## How the two of them show up in the OnceCallback source
+
+Reading it straight out of the OnceCallback source is clearer than any abstract explanation. `std::invoke` appears twice in there, once for `bind_once` and once for `then()`.
+
+Here's the `bind_once` piece:
+
+```cpp
+// Inside bind_once's lambda
+return std::invoke(
+    std::move(f),
+    std::move(bound)...,
+    std::forward<decltype(call_args)>(call_args)...
+);
+```
+
+That `f` accepts anything: a lambda, a member function pointer, even a pointer to a data member. If you skipped `std::invoke` and wrote `f(bound..., call_args...)` directly, the moment `f` is a member function pointer it would not compile. Member function pointers cannot be `()`-ed directly, period.
+
+The `then()` piece follows the same logic:
+
+```cpp
+// The non-void branch of then()
+auto mid = std::move(self).run(std::forward<FuncArgs>(args)...);
+return std::invoke(std::move(cont), std::move(mid));
+```
+
+Here `cont` (the continuation callback) is by design a plain callable, usually a lambda, so in theory `cont(mid)` would mostly work. So why wrap it in `std::invoke`? As a defensive habit. The day someone slips in a member function pointer as the continuation, the direct-call syntax dies on the spot, while `std::invoke` won't. Routing everything through it saves you the trouble of carving out special cases for odd types.
+
+As for how `then()` uses `std::invoke_result_t` to deduce the return type, the need is concrete: in a chain, the next callback `next` takes the previous callback's return value and produces something in turn. The code reads like this:
+
+```cpp
+// In the non-void branch of then()
+using NextRet = std::invoke_result_t<NextType, ReturnType>;
+// NextRet is "what type you get when you hand a ReturnType value to next"
+```
+
+In the `void` branch, the continuation takes no argument, so the call shape simplifies:
+
+```cpp
+// In the void branch of then()
+using NextRet = std::invoke_result_t<NextType>;
+// next takes no arguments, just call it
+```
+
+## Trap warning: the lifetime pitfall of binding a member function
+
+`std::invoke` unifies the calling syntax, but it does not manage one thing: when the object dies. This is an easy trap to fall into, because the convenience of unified calling makes you forget there's a raw pointer hiding underneath.
+
+When you bind a member function in `bind_once`, it looks like this:
+
+```cpp
+struct Calculator {
+    int multiply(int a, int b) { return a * b; }
 };
 
-Widget w;
-int Widget::*mem_data = &Widget::value;
-
-// Returns a reference to w.value
-int& res = std::invoke(mem_data, w);
+Calculator calc;
+auto bound = bind_once<int(int)>(&Calculator::multiply, &calc, 5);
 ```
 
-### Case 3: Other Callable Objects
+That `&calc` is a raw pointer, and `bind_once` stores it verbatim in the lambda's capture. If `calc` destructs before the callback actually runs, the lambda is clutching a dangling pointer. `std::invoke` still reaches through it to grope at memory, undefined behavior, segfault nine times out of ten. `std::invoke` can't help you here. It has no idea whether the pointer you handed it is even valid.
 
-When `Callable` is a function pointer, lambda, functor, or other "directly callable thing," `std::invoke` is simply `Callable(Args...)`.
+Chromium handles this carefully in `//base`: `base::Unretained` lets you explicitly declare "I vouch for this raw pointer's lifetime myself," `base::Owned` hands object ownership to the callback framework, and `base::WeakPtr` automatically voids the callback when the object destructs. Our OnceCallback here is a simplified teaching version, so we don't ship that layer of protection yet. The safety burden stays on the caller. We'll come back to this trade-off in the hands-on chapters, and then it'll be clear why Chromium felt it had to invent something like `WeakPtr`.
 
-```cpp
-auto lambda = [](int x) { return x + 1; };
-std::invoke(lambda, 42);  // Equivalent to lambda(42)
-```
+Next, we move on to advanced lambda features, especially the C++20 init-capture pack expansion, which is the trick that lets `bind_once` be written this cleanly.
 
-### Unified Interface
-
-The key is that no matter which of the above cases `Callable` falls into, the calling syntax is always `std::invoke(Callable, Args...)`. In your template code, you don't need to know the specific type of `Callable`—`std::invoke` internally dispatches to the correct calling syntax for you.
-
----
-
-## std::invoke_result_t: Compile-Time Return Type Deduction
-
-Uniform calling alone isn't enough—sometimes you also need to know at compile time what the return type of `std::invoke` will be. For example, in the implementation of `then()`, we need to deduce "what type is returned when passing the previous callback's return value to the next callback."
-
-`std::invoke_result_t` is designed for this. Given a callable object type `Callable` and argument types `Args`, it calculates the return type of `Callable(Args...)` at compile time.
-
-```cpp
-template<typename Callable, typename... Args>
-using return_type_t = typename std::invoke_result_t<Callable, Args...>;
-```
-
-### Usage in OnceCallback
-
-The implementation of `then()` uses `std::invoke_result_t` to deduce the return type of the new callback in the chain. Specifically, when `then()` accepts a subsequent callback `NextCallback`, it needs to know what type `NextCallback` will return:
-
-```cpp
-// Deduce the return type of the subsequent callback
-using NextRet = std::invoke_result_t<NextCallback, PrevRet>;
-```
-
-In the `void` branch, the subsequent callback accepts no arguments:
-
-```cpp
-using NextRet = std::invoke_result_t<NextCallback>;
-```
-
----
-
-## Specific Usage in OnceCallback Source Code
-
-Let's look at the actual source code to see the two usage scenarios of `std::invoke` in OnceCallback.
-
-### std::invoke in bind_once
-
-```cpp
-template <typename F, typename... Args>
-OnceCallback bind_once(F&& f, Args&&... args) {
-    return [f = std::forward<F>(f), ...args = std::forward<Args>(args)]() mutable {
-        std::invoke(f, args...); // <--- Uniform call here
-    };
-}
-```
-
-Here, `f` can be any callable object—an ordinary lambda, a member function pointer, or even a pointer to a data member. If we didn't use `std::invoke` and wrote `f(args...)` directly, compilation would fail when `f` is a member function pointer—because member function pointers cannot be called directly with `operator()`.
-
-### std::invoke in then()
-
-```cpp
-template <typename NextCallback>
-auto then(NextCallback&& next) && {
-    // ... (implementation details)
-    next(std::move(prev_ret)); // <--- Uniform call here
-}
-```
-
-`next` (the subsequent callback) is designed as an ordinary callable object (usually a lambda) in `then()`, not a `OnceCallback`. So theoretically, a direct `next(...)` would work—and in most cases, it does. However, using `std::invoke` is a form of defensive programming: if someone passes a member function pointer as the subsequent callback, the direct call syntax fails, but `std::invoke` won't. Uniformly using `std::invoke` ensures that whatever callable object is passed will work correctly without extra code to handle special types.
-
----
-
-## Trap Warning: The Lifetime Trap of Member Function Binding
-
-While `std::invoke` can uniformly handle member function pointers, it doesn't manage object lifetimes for you. When you bind a member function in `bind_once`:
-
-```cpp
-class Manager {
- public:
-  void OnData(int) { /* ... */ }
-};
-
-Manager* mgr = new Manager;
-// Capture raw pointer
-auto cb = base::bind_once(&Manager::OnData, mgr, 42);
-```
-
-`mgr` is a raw pointer, and `bind_once` stores it in the lambda's capture list. If `mgr` is destroyed before the callback is invoked, the lambda holds a dangling pointer. `std::invoke` accessing freed memory through a dangling pointer results in undefined behavior, likely causing a segmentation fault.
-
-Chromium uses `base::Unretained` to explicitly mark "I know this raw pointer's lifetime is safe," `base::Owned` to take ownership of the object, and `base::WeakPtr` to automatically cancel the callback when the object is destroyed. Our simplified version doesn't provide these protection mechanisms yet—safety is the caller's responsibility. This is an important design trade-off that we will mention again in the practical section.
-
----
-
-## Summary
-
-In this post, we clarified the context of `std::invoke`. The core motivation is that the calling syntax for various callable objects differs—ordinary functions are called directly via `()`, member function pointers require `.*`, and data member pointers require `.*` as well. `std::invoke` unifies all of these into a single syntax: `std::invoke(Callable, Args...)`. Combined with `std::invoke_result_t`, we can deduce the return type of a call at compile time. In OnceCallback, both `bind_once` and `then()` rely on it to achieve a generic design that "doesn't care about the specific type of the callable object, as long as it can be called."
-
-In the next post, we will look at advanced Lambda features—specifically the lambda init capture pack expansion introduced in C++20, which is the key to the concise implementation of `bind_once`.
-
-## Reference Resources
+## References
 
 - [cppreference: std::invoke](https://en.cppreference.com/w/cpp/utility/functional/invoke)
 - [cppreference: std::invoke_result](https://en.cppreference.com/w/cpp/types/result_of)

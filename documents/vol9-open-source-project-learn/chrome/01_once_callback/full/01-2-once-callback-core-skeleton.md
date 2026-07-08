@@ -27,23 +27,13 @@ title: OnceCallback 实战（二）：核心骨架搭建
 ---
 # OnceCallback 实战（二）：核心骨架搭建
 
-## 引言
+上一篇咱们把"为什么需要 OnceCallback"和目标 API 的长相捋清楚了。动机讲完,笔者就有点手痒——光看接口不过瘾,得自己一行行把它撸出来,才知道哪些设计是真金,哪些是纸面好看。
 
-上一篇我们搞清楚了"为什么需要 OnceCallback"和"目标 API 长什么样"。现在我们正式上手写代码。这一篇的任务是把 OnceCallback 的类骨架从零搭建起来——不是一口气写完所有功能，而是分五步，每一步在前一步的基础上加一层。搭完骨架之后，后续的 `bind_once`、取消令牌、`then()` 都是往这个骨架上加组件。
-
-所有前置知识我们在前面七篇文章里都已经讲透了。这一篇是纯实战——我们直接对照实际源码，把每一个设计决策落实到代码上。
-
-> **学习目标**
->
-> - 从零搭建 `OnceCallback<R(Args...)>` 的完整类骨架
-> - 理解每个数据成员和方法的职责
-> - 掌握 `run()` 的 deducing this 实现和 `impl_run()` 的消费逻辑
-
----
+这一篇咱们就动手。先把类骨架从零搭起来,分五步走,每一步只在前一步上加一层。骨架立住了,后面的 `bind_once`、取消令牌、`then()` 全都是往这套骨架上挂件,不会有伤筋动骨的改动。前置知识那七篇咱们默认您已经过完了——函数类型、模板偏特化、`requires`、`move_only_function`、deducing this,底下直接拿来用,不再回头讲。
 
 ## 第一步：主模板与偏特化
 
-前置知识（一）里我们已经讲过"函数类型 + 模板偏特化"这个模式。现在把它直接应用到 OnceCallback 上。
+前置知识(一)讲过的"函数类型 + 模板偏特化"模式,现在直接落到 OnceCallback 上。
 
 ```cpp
 namespace tamcpp::chrome {
@@ -65,13 +55,13 @@ public:
 } // namespace tamcpp::chrome
 ```
 
-当你写 `OnceCallback<int(int, int)>` 时，编译器把 `int(int, int)` 匹配到主模板的 `FuncSignature`，然后发现偏特化能把它拆成 `ReturnType = int`、`FuncArgs = {int, int}`，于是选择偏特化版本。`FuncSig` 是一个类型别名，保存了完整的函数签名——后面声明 `std::move_only_function<FuncSig>` 时会用到。
+您写 `OnceCallback<int(int, int)>` 的时候,编译器先把 `int(int, int)` 这个整体喂给主模板的 `FuncSignature`,再回头一看偏特化能把 `int` 拆成 `ReturnType`、把 `{int, int}` 拆成 `FuncArgs`,于是偏特化胜出。这个"先收成整体、再被偏特化拆开"的套路,是这类回调库的通用骨架——`std::function`、Chromium 的 `RepeatingCallback` 都是同一个模子。`FuncSig` 这个类型别名顺手存一份完整签名,后面声明 `std::move_only_function<FuncSig>` 时直接拿来用,省得再拼一遍。
 
 ---
 
 ## 第二步：数据成员——三个核心存储
 
-现在往偏特化类里添加数据成员。OnceCallback 需要三个东西来管理自己的状态。
+有了类型骨架,咱们往里头填数据成员。OnceCallback 要管住自己的状态,得靠三样东西:
 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
@@ -91,17 +81,17 @@ private:
 };
 ```
 
-`func_` 是类型擦除的核心——它把各种不同形态的可调用对象（lambda、函数指针、仿函数）统一包装成 `FuncSig` 签名的调用接口。不管你传入什么，`func_` 都能用同一个 `operator()` 调用它。
+三个成员里,`func_` 是类型擦除的核心。lambda、函数指针、仿函数,形态千差万别,`func_` 把它们统一塞进 `FuncSig` 签名的同一个 `operator()`,这就是咱们要的"一套接口接住所有可调用对象"。
 
-`status_` 是一个三态枚举，区分"从未赋值"、"随时可调用"和"已经调用过了"。为什么不能只靠 `func_` 的判空？因为 `std::move_only_function` 的 `operator bool()` 只能区分"空"和"非空"两种状态，而且移动后的状态未指定——前置知识（五）里已经详细讲过了。
+真正值得多嘴的是 `status_` 这个三态枚举。您可能会问:为什么不能只靠 `func_` 判空?因为 `std::move_only_function` 的 `operator bool()` 只能区分"空"和"非空",而 OnceCallback 的语义要求更细——"从未被赋值"和"已经被 `run()` 消费过"是两件不同的事,后者是个明确的契约违规(回调只能跑一次),它得跟"出厂就是空的"区分开。更要命的是,`move_only_function` 移动之后的状态在标准里是"未指定但有效",靠它判空本身就靠不住。所以笔者老老实实给状态位单开一个枚举,不指望底层容器替咱们管语义。前置知识(五)里讲过这个坑,这里就是落地。
 
-`token_` 是一个可选的取消令牌，用于在回调执行前检查是否应该取消执行。默认是空指针（不启用取消机制），通过 `set_token()` 方法设置。这个我们后面有专门一篇讲。
+`token_` 是可选的取消令牌,默认空指针(不启用取消机制),要靠 `set_token()` 显式挂上。这一篇笔者先把它摆在这儿占位,取消机制后面有专门一篇细讲。
 
 ---
 
 ## 第三步：构造函数与 requires 约束
 
-接下来添加构造函数。这里的关键点是模板构造函数必须用 `requires` 约束来防止它劫持移动构造函数——前置知识（四）里已经讲过这个问题了。
+数据成员就位,咱们给这个类配上构造函数。这里有个模板构造函数的老坑:它会在重载决议里抢移动构造的活儿,必须拿 `requires` 约束挡一道。前置知识(四)讲过原理,这里看它怎么落地。
 
 ```cpp
 // not_the_same_t concept：F 退化后不是 T
@@ -147,19 +137,17 @@ public:
 };
 ```
 
-让我们逐个理解这些构造函数。
+这段里最常用的是模板构造函数。您写 `OnceCallback<int(int)>([](int x) { return x; })` 的时候,走的就是它——`Functor` 被推导成 lambda 的闭包类型,`requires not_the_same_t` 把"传入的恰好是 `OnceCallback` 本身"这种情形挡在模板外面,让移动构造函数去接手。要是没这一条约束,模板构造函数会贪心地劫持拷贝/移动,编译期重载决议就乱了套。`std::move(function)` 把可调用对象移进 `func_`,`status_` 同时置为 `kValid`。
 
-**模板构造函数**是最常用的——当你写 `OnceCallback<int(int)>([](int x) { return x; })` 时调用的就是这个。`Functor` 被推导为 lambda 的闭包类型，`requires not_the_same_t` 确保当传入的是 `OnceCallback` 本身时模板被排除（让移动构造函数来处理）。`std::move(function)` 把传入的可调用对象移入 `func_`，`status_` 设为 `kValid`。
+默认构造函数就平淡多了,产出的是一个空回调:`status_` 是 `kEmpty`(成员初始化器给定的默认值),`func_` 和 `token_` 都空着。它存在主要是为了让 OnceCallback 能放进容器、能延迟赋值。
 
-**默认构造函数**创建一个空的 OnceCallback——`status_` 是 `kEmpty`（由成员初始化器的默认值决定），`func_` 和 `token_` 都是空的。
-
-**移动构造函数**从另一个 OnceCallback 那里偷走所有内容——`func_` 和 `token_` 通过 `std::move` 转移，`status_` 也一起复制过来。关键点是移动后源对象被设为 `kEmpty`——这是我们主动做的，不是依赖 `std::move_only_function` 的移动后状态。
+移动构造这边有个笔者刻意做的取舍。`func_` 和 `token_` 靠 `std::move` 转移,`status_` 直接拷过来,这些都不意外。意外的是源对象被咱们主动设回 `kEmpty`——而不是依赖 `move_only_function` 移动后那个"未指定"的状态。道理前面讲过:语义要握在自己手里,底层容器移动后是空的还是有效的,标准留着口子,咱们不能赌。移动赋值走的是同一套逻辑,多一个自赋值检查。
 
 ---
 
 ## 第四步：run() 的 deducing this 实现
 
-这一步是整个骨架的灵魂。`run()` 利用 deducing this 在编译期拦截左值调用，通过右值调用时转发到内部的 `impl_run()`。
+这一步咱们把"只能跑一次"的契约,用编译期手段卡到调用点上。`run()` 借 deducing this 在编译期拦住左值调用,只有右值(也就是 `std::move(cb).run(...)`)才放行,转发到内部的 `impl_run()`。
 
 ```cpp
 // 声明（在类体内）
@@ -178,9 +166,9 @@ auto OnceCallback<ReturnType(FuncArgs...)>::run(this Self&& self, FuncArgs&&... 
 }
 ```
 
-当调用方写 `cb.run(args)` 时，`Self` 被推导为 `OnceCallback&`（左值引用），`static_assert` 触发，报错信息直接告诉调用方该怎么做。当写 `std::move(cb).run(args)` 时，`Self` 被推导为 `OnceCallback`（非引用），编译通过，转发到 `impl_run`。
+机制其实很直白。调用方写 `cb.run(args)`(没加 `std::move`)的时候,`Self` 被推导成 `OnceCallback&`——左值引用,`static_assert` 当场炸,而且报错信息里直接把正确写法 `std::move(cb).run(...)` 甩在调用方面前,不用他自己猜。写成 `std::move(cb).run(args)`,`Self` 推导成 `OnceCallback`(非引用),编译通过,转发进 `impl_run`。
 
-`impl_run` 是真正执行回调的地方：
+`impl_run` 才是真正干活的地方:
 
 ```cpp
 template<typename ReturnType, typename... FuncArgs>
@@ -211,19 +199,19 @@ ReturnType OnceCallback<ReturnType(FuncArgs...)>::impl_run(FuncArgs... args) {
 }
 ```
 
-有几个关键细节值得注意。
+这段实现里笔者最想跟您掰扯的,是消费顺序。
 
-先看消费顺序——`impl_run` 先把 `func_` move 出来作为局部变量 `functor`，然后把 `func_` 置空、`status_` 设为 kConsumed，最后执行 `functor`。这个顺序很重要：先把可调用对象拿出去、状态标记好，再执行。即使可调用对象内部抛出异常，`status_` 也已经是 `kConsumed` 了，回调不会处于不一致的状态。
+`impl_run` 不是直接调用 `func_`,而是先把它 move 出来作为局部变量 `functor`,再把成员 `func_` 置空、`status_` 置 `kConsumed`,最后才执行 `functor`。三步的次序不是随手排的——状态先标记好,可调用对象先脱离成员、落到栈上,然后再跑。这么一来,即便 `functor` 内部抛异常往外冒,`status_` 也早就是 `kConsumed` 了,回调对象不会卡在一个"func_ 还在但状态说没消费"的中间态。异常安全就是这么抠出来的:把"已消费"这个不可逆的状态,提前到执行之前。
 
-再看 `if constexpr`——void 返回类型不能用常规方式赋值和返回。`if constexpr (std::is_void_v<ReturnType>)` 在编译期选择分支，void 的情况走"调用但不赋值"的路径，非 void 的情况走"调用并赋值给 return"的路径。这是我们速查篇里讲过的标准模式。
+取消检查挪到了执行最前面。如果令牌挂上了且已失效,回调直接消费、不执行。这里 void 返回走 `return`,非 void 返回抛 `std::bad_function_call`——后者乍看激进,但您站到调用方的角度想就通了:人家写 `auto x = std::move(cb).run(...)`,指望拿到一个值回去,您这边给不出任何有意义的返回值,与其返回个未定义的东西让人家用出花来,不如抛异常把问题摊在台面上。这是"失败要响亮"的取舍,跟 WeakPtr 里 `operator*` 失效用 `CHECK` 是一类思路。
 
-最后看取消检查——在执行前检查取消令牌。如果已取消，直接消费回调但不执行。void 返回直接 `return`，非 void 返回抛出 `std::bad_function_call`。非 void 的抛异常行为可能看起来激进，但理由很充分：调用方期望得到一个返回值，但我们无法提供一个有意义的值，所以抛异常比返回未定义值更安全。
+剩下的 `if constexpr` 是为 void 返回类型开的编译期分支。void 没法走"调用然后 return 结果"的常规路径,`if constexpr (std::is_void_v<ReturnType>)` 在编译期就选好走哪条路,void 的走"调用但不赋值",非 void 的走"调用并 return"。这是速查篇里讲过的标准模式,这里不展开了。
 
 ---
 
 ## 第五步：查询接口
 
-最后加上一组查询方法，让调用方可以在执行前检查回调的状态。
+骨架还差最后一块——一组查询接口,让调用方在执行前能探一下回调现在到底什么状态。
 
 ```cpp
 [[nodiscard]] bool is_cancelled() const noexcept {
@@ -249,15 +237,15 @@ void set_token(std::shared_ptr<CancelableToken> token) {
 }
 ```
 
-`is_cancelled()` 的逻辑是：状态不是 kValid 就返回 true（空回调和已消费回调都算"已取消"），如果有令牌且令牌失效也返回 true。`maybe_valid()` 暂时就是 `!is_cancelled()`。`is_null()` 只检查是否从未被赋值。`operator bool()` 综合了空和取消两个条件。
+`is_cancelled()` 这一段判定的口径,笔者得跟您讲清楚:只要状态不是 `kValid`,一律算作"已取消"——空回调和已消费回调在这层语义上归为一类,对调用方来说都是"别指望能跑了"。再叠一层令牌检查,令牌挂了且失效也算取消。`maybe_valid()` 现阶段就是 `!is_cancelled()`,留这个名字是为后面引入跨序列语义时做扩展。`is_null()` 只盯一件事——是否从未被赋值,跟取消是两码事。`operator bool()` 把"非空"和"未取消"两个条件合在一起,是调用点最常用的判活入口。
 
-所有查询方法都标注了 `[[nodiscard]]`——调用这些方法就是为了拿返回值做判断，忽略返回值的调用大概率是手滑写错了。`explicit` 关键字防止隐式转换到 `bool`。
+几个查询方法清一色挂了 `[[nodiscard]]`。调用方拿这些方法的返回值就是冲着做判断去的,忽略返回值的调用基本等于手滑,编译器得替咱们吼一声。`operator bool()` 那个 `explicit` 是老规矩,挡掉隐式转换,免得 `cb` 悄悄溜进本该要 `int` 的位置。
 
 ---
 
 ## 验证核心骨架
 
-骨架搭完了，我们来快速验证几个基本场景：
+骨架搭完,笔者习惯性地先跑几个最朴素的场景压一压——别上来就追求边界,先把基本盘打实:
 
 ```cpp
 #include "once_callback/once_callback.hpp"
@@ -292,15 +280,7 @@ int main() {
 }
 ```
 
-如果这四个场景都通过——构造回调能拿到正确的返回值、void 回调能正常执行、捕获 `unique_ptr` 的回调用完之后资源被释放、移动后源对象变空目标对象有效——骨架就没有问题。
-
----
-
-## 小结
-
-这一篇我们分五步搭建了 OnceCallback 的核心骨架。模板偏特化 `OnceCallback<R(Args...)>` 通过模式匹配拆解函数类型。三个数据成员各司其职——`func_` 负责类型擦除、`status_` 负责三态管理、`token_` 负责取消机制。构造函数用 `requires not_the_same_t` 保护移动构造函数不被劫持。`run()` 用 deducing this 在编译期拦截左值调用，`impl_run()` 通过"先 move 出 func_ 再执行"的顺序保证消费语义的异常安全。
-
-下一篇我们往骨架上加第一个组件——`bind_once()`，实现参数绑定。
+这四个 case 是骨架的最低门槛:非 void 回调要拿到正确的返回值、void 回调的副作用要正常触发、捕获 `unique_ptr` 的 move-only 回调用完资源得释放、移动之后源对象变空目标对象能用。全绿,骨架就能扛住后续的组件挂载;任何一个挂了,不用急着往下走,先回头查这一步。
 
 ## 参考资源
 

@@ -22,27 +22,17 @@ title: once_callback 设计指南（三）：测试策略与性能对比
 ---
 # once_callback 设计指南（三）：测试策略与性能对比
 
-## 引言
+代码写到这儿,`OnceCallback` 接口和实现都齐了。但笔者写完没急着收工——这种东西不拿测试压一遍,自己心里都没底。这一篇咱们就把测试策略和性能账一次性算清:它到底对不对、跟 Chromium 原版差多少、差的那些咱们认不认。
 
-前两篇我们完成了 `OnceCallback` 的设计和实现。这一篇做两件事：第一，系统化地梳理测试策略，给出一套完整的测试用例清单，确保我们的实现在各种边界条件下都是正确的；第二，从性能角度分析我们的实现与 Chromium 原版、标准库方案之间的差异，弄清楚我们牺牲了什么、换来了什么。
+## 按"不变量"切测试
 
-> **学习目标**
->
-> - 掌握 `OnceCallback` 的六类测试用例设计方法
-> - 理解 `sizeof`、SBO 阈值、间接调用开销等性能指标的含义
-> - 清楚我们的 `OnceCallback` 与 Chromium `OnceCallback` 的取舍关系
+测试怎么组织,笔者一开始也犯过嘀咕。按功能分容易漏,因为功能是写给自己看的——您写的时候想得到啥,就测了啥,死角天然存在。后来换了按**不变量**分,这一刀切下去舒服多了:每个不变量本身就是一句"我保证永远成立",测试干的就是把这句话按各种姿势折磨一遍,看它崩不崩。崩了就是真的错,没崩这一类就算过。
 
----
-
-## 测试策略
-
-我们把测试组织成六个类别，每个类别聚焦一个独立的设计不变量。这种按不变量组织测试的方式比按功能组织更不容易遗漏边界情况——因为每个不变量本身就是一种正确性保证，测试的目的就是验证这些保证在各种场景下都成立。
-
-我们的实际测试代码使用 Catch2 框架，配合 CMake + CPM 管理依赖。下面列出的测试用例与 `code/volumn_codes/vol9/chrome_design/test/test_once_callback.cpp` 中的实际代码一一对应。
+测试代码挂在 Catch2 上,依赖用 CMake + CPM 拉。下面列的用例跟 `code/volumn_codes/vol9/chrome_design/test/test_once_callback.cpp` 里的实际代码一一对应,您手里有那份代码就能逐条跑。
 
 ### A 类：基本调用与返回值
 
-这类测试验证 `OnceCallback` 的基本构造和调用行为。
+最基本的:构造一个回调,跑一下,看返回值对不对。
 
 ```cpp
 TEST_CASE("non-void return", "[once_callback]") {
@@ -59,11 +49,11 @@ TEST_CASE("void return", "[once_callback]") {
 }
 ```
 
-最基本的场景——构造一个回调，调用它，验证返回值。void 返回类型走的是 `if constexpr (std::is_void_v<ReturnType>)` 的另一条分支，确认我们的编译期分支逻辑是正确的。
+void 返回走的是 `if constexpr (std::is_void_v<ReturnType>)` 的另一条分支,这两条用例就是给编译期分支逻辑上保险。
 
 ### B 类：移动语义
 
-这类测试验证 move-only 约束和移动操作的正确性。
+这一类盯两件事:move-only 约束别假开、移动操作别把状态搞丢。
 
 ```cpp
 TEST_CASE("move-only capture", "[once_callback]") {
@@ -83,13 +73,13 @@ TEST_CASE("move semantics: source becomes null", "[once_callback]") {
 }
 ```
 
-move-only capture 测试（`std::make_unique<int>(42)` 被捕获进 lambda）确认了 `OnceCallback` 真正支持 move-only 的可调用对象——如果底层用的是 `std::function` 而不是 `std::move_only_function`，这段代码直接编译失败。移动语义测试验证了移动构造后源对象变为 `kEmpty` 状态（通过 `is_null()` 检查），目标对象保持有效并可以正常调用。
+move-only capture 那条用例是 `std::make_unique<int>(42)` 塞进 lambda——这玩意儿要是底层退回 `std::function` 而不是 `std::move_only_function`,直接编译都过不去,所以这条用例顺手给"咱们到底有没有真用上 move-only"兜了底。移动语义那条验证移动构造后源对象落回 `kEmpty`、`is_null()` 报真,目标对象还能照常跑。
 
-有一个容易搞混的概念点——移动操作转移了所有权，但不会触发消费。只有 `run()` 才会消费回调。这个区别在 Chromium 里也很重要：`PostTask(FROM_HERE, std::move(cb))` 只是转移所有权，回调在任务被执行之前一直处于活跃状态。
+这里笔者得拎出一个自己绕过半天的点:移动只是转交所有权,**不消费**。真正消费回调的是 `run()`。这俩看着都"动了 cb",但语义完全两码事。Chromium 那边也是同一套规矩——`PostTask(FROM_HERE, std::move(cb))` 只是把所有权搬进任务队列,回调在被真正执行之前一直活着。
 
 ### C 类：单次调用约束
 
-这类测试验证"调用一次即消费"的核心语义。在 A 类和 B 类的测试中我们已经覆盖了正常调用路径，C 类聚焦于左值调用的编译拦截。这个约束是通过 deducing this + `static_assert` 实现的——如果写 `cb.run()` 而不是 `std::move(cb).run()`，编译器会直接报错，错误信息明确告诉调用方应该用 `std::move`。这部分不需要运行时测试，编译通过本身就是验证。
+A 类、B 类已经把正常调用路径趟了一遍,C 类专盯一件事:左值调用必须编不过。这个约束咱们是用 deducing this + `static_assert` 拍在签名上的,所以它压根不归运行时管——您要是手滑写成 `cb.run()` 而不是 `std::move(cb).run()`,编译器当场就拦下来,顺手把"得用 std::move"喂到错误信息里。编译过 = 验证过,跑都不用跑。
 
 ### D 类：参数绑定
 
@@ -111,7 +101,7 @@ TEST_CASE("bind_once with member function", "[bind_once]") {
 }
 ```
 
-`bind_once` 测试覆盖了两种典型场景：普通 lambda 的部分参数绑定和成员函数绑定。成员函数绑定测试特别值得关注——`&Calc::multiply` 是成员函数指针，`&calc` 是对象指针，`std::invoke` 在内部把它展开成 `(calc.*multiply)(5, 8)` 调用。这里有一个生命周期陷阱需要注意：`&calc` 是裸指针，`bind_once` 不会管理它的生命周期。如果 `calc` 在回调被调用之前就被销毁了，`std::invoke` 会通过悬空指针访问已释放的内存。Chromium 用 `base::Unretained` 显式标记裸指针的安全性，用 `base::Owned` 接管所有权，用 `base::WeakPtr` 在对象析构时自动取消回调。我们的简化版里，这个安全责任暂时交给调用方。
+`bind_once` 蹚了两种典型场景:普通 lambda 的部分参数绑定、成员函数绑定。成员函数那条笔者得多说两句——`&Calc::multiply` 是成员函数指针,`&calc` 是对象指针,`std::invoke` 在底下把它展开成 `(calc.*multiply)(5, 8)`。坑在哪儿:`&calc` 是个裸指针,`bind_once` 不管它死活。要是 `calc` 在回调真正跑之前就先一步析构了,`std::invoke` 就会顺着悬空指针摸到一堆已经释放的内存。Chromium 在这里准备了三档保险——`base::Unretained` 显式声明"这指针安全自负"、`base::Owned` 直接接管所有权、`base::WeakPtr` 让对象析构时自动取消回调。咱们这个简化版暂时把这份责任甩给调用方,留到取消令牌那篇再回来收。
 
 ### E 类：取消机制
 
@@ -147,7 +137,7 @@ TEST_CASE("cancelled non-void callback throws", "[once_callback]") {
 }
 ```
 
-取消测试覆盖了三个关键行为：令牌有效时不取消、令牌失效后 void 回调不执行、令牌失效后非 void 回调抛出 `std::bad_function_call`。第三个测试的行为值得展开说一下——我们的实现在非 void 返回的已取消回调中抛出异常，理由是调用方期望得到一个返回值，但我们无法提供一个有意义的值，所以抛异常是比返回未定义值更安全的做法。Chromium 的实现在这里会直接终止程序（`CHECK` 失败），我们选择异常是因为它在测试中更容易捕获和验证。
+取消这一类压三个动作:令牌还活着时不取消、令牌失效后 void 回调老老实实不执行、令牌失效后非 void 回调抛 `std::bad_function_call`。第三条笔者得停一下解释——咱们对已取消的非 void 回调选择抛异常,原因是调用方眼里它要的是一个返回值,可取消态下咱们手里压根没有"有意义的值"可给。返个默认值骗它?那比抛异常更阴险,bug 会沿着这个假值往后传。Chromium 这一手更狠,直接 `CHECK` 失败把程序拉爆,咱们选异常纯粹是因为它在测试里好抓、好验证——这是教学版的取舍,不是设计上更优。
 
 ### F 类：Then 组合
 
@@ -176,11 +166,11 @@ TEST_CASE("then with void first callback", "[then]") {
 }
 ```
 
-`then()` 测试覆盖了三种组合模式：两级非 void 管道、多级管道（跨越类型边界——从 `int` 到 `std::string`）、以及 void 前缀回调。多级管道测试特别有趣——`(5*2)+10 = 20`，最终被 `std::to_string` 转换为字符串 `"20"`。这个测试验证了 `then()` 在每一级都正确地推导了返回类型，并且类型擦除（通过 `std::move_only_function`）在不同类型的 lambda 之间正确工作。void 前缀测试验证了 `if constexpr (std::is_void_v<ReturnType>)` 分支——第一个回调设置 `value = 7`，第二个回调通过引用读取 `value` 并返回 `21`。
+`then()` 这一类的三条用例各压一种姿势:两级非 void 管道、跨类型的多级管道、void 前缀回调。多级管道这条笔者觉得最能说明问题——`(5*2)+10 = 20` 这个数最后被 `std::to_string` 折成字符串 `"20"`,一路上每一级的返回类型都被 `then()` 推导对了,而 `std::move_only_function` 在几种完全不同类型的 lambda 之间做的类型擦除也没崩。void 前缀那条专门压 `if constexpr (std::is_void_v<ReturnType>)` 分支——第一个回调往外部 `value` 写 7,第二个回调靠引用把 `value` 读出来乘 3 得 21。
 
 ### 测试框架与构建配置
 
-我们使用 Catch2 v3 作为测试框架，通过 CPM（CMake Package Manager）自动拉取依赖。测试的 CMake 配置非常简洁：
+测试框架选的 Catch2 v3,依赖让 CPM(CMake Package Manager)自动拉。CMake 配置很省心:
 
 ```cmake
 # test/CMakeLists.txt
@@ -193,17 +183,17 @@ target_compile_options(test_once_callback PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME test_once_callback COMMAND test_once_callback)
 ```
 
-Catch2 的 `REQUIRE` 宏比 `assert()` 强在它会报告具体的失败表达式、文件和行号，并且在同一个 `TEST_CASE` 内继续执行后续检查（而不是像 `assert()` 那样直接终止程序）。`REQUIRE_THROWS_AS` 则专门用于验证异常类型——在取消机制的测试中，我们需要确认被取消的非 void 回调抛出的是 `std::bad_function_call`，而不是其他异常。
+笔者用 `REQUIRE` 不用 `assert`,理由很实在:`REQUIRE` 报错会甩出失败的表达式、文件、行号,而且同一个 `TEST_CASE` 里后续断言还会继续跑;`assert` 一炸整个程序就停了,您一次只能看一个错。`REQUIRE_THROWS_AS` 专门压异常类型——取消机制那条测试就靠它确认抛的是 `std::bad_function_call` 而不是别的什么。
 
-运行测试的流程很简单——在 `build/` 目录下 `cmake --build . && ctest`。
+跑测试的姿势就一句:`build/` 目录下 `cmake --build . && ctest`。
 
 ---
 
-## 性能考量：与 Chromium 原版对比
+## 性能账:跟 Chromium 原版对一对
 
 ### 对象大小
 
-这是最直观的差异。我们用一个简单的程序来测量：
+最直观的差就在 sizeof 上。咱们写个最小程序量一下:
 
 ```cpp
 #include <functional>
@@ -226,35 +216,35 @@ int main() {
 }
 ```
 
-在 GCC 上，典型值如下：`std::function<void()>` 约 32 字节，`std::move_only_function<void()>` 约 32 字节，我们的 `OnceCallback<void()>` 加上 `Status` 枚举和可选的 `CancelableToken` 指针，大约 56-64 字节。Chromium 的 `OnceCallback<void()>` 只有 8 字节——一个指向 `BindState` 的 `scoped_refptr`。
+GCC 上跑出来大致是这套数:`std::function<void()>` 约 32 字节,`std::move_only_function<void()>` 约 32 字节,咱们的 `OnceCallback<void()>` 加上 `Status` 枚举和可选的 `CancelableToken` 指针,大约 56-64 字节。Chromium 的 `OnceCallback<void()>` 就 8 字节——一个指向 `BindState` 的 `scoped_refptr`,没了。
 
-差距的根源在于存储策略。Chromium 把所有状态（可调用对象 + 绑定参数）都放在堆上的 `BindState` 里，回调对象本身只持有一个指针。我们用 `std::move_only_function` 的 SBO 把小对象直接内联存储在回调对象内部，避免了堆分配但增大了对象大小。
+差从哪儿来?根子在存储策略。Chromium 把所有东西——可调用对象也好、绑定的参数也好——全塞进堆上的 `BindState`,回调对象自己只捏一个指针。咱们这版靠 `std::move_only_function` 的 SBO 把小对象直接内联塞进回调对象,堆分配是省了,代价是对象本体胖了一圈。
 
 ### 分配行为
 
-`std::move_only_function` 的 SBO 阈值是实现定义的，通常是 2-3 个指针大小（16-24 字节）。捕获少量参数的 lambda（比如 `[x = 42]` 或 `[&ref]`）通常能放进 SBO，不会触发堆分配。但如果 lambda 捕获了大量数据（比如一个 `std::string` + 几个 `int`），就会在构造时堆分配。
+`std::move_only_function` 的 SBO 阈值是实现定义的,典型在 2-3 个指针(16-24 字节)上下。捕获很轻的 lambda,比如 `[x = 42]` 或 `[&ref]`,一般塞得进 SBO,不触发堆分配;要是 lambda 拉了一票数据进来,比如一个 `std::string` 加几个 `int`,构造时就得多分一次堆。
 
-Chromium 的方案总是堆分配（`new BindState<Functor, BoundArgs...>`），但分配只发生一次——在 `BindOnce` 时。之后 `OnceCallback` 的移动操作只是复制一个指针（8 字节），代价极低。我们的方案在小对象时不分配（SBO），但移动操作需要复制整个 `std::move_only_function`（32 字节）加上 `token_` 指针，代价稍高。
+Chromium 那一套是固定堆分配——`new BindState<Functor, BoundArgs...>` 总会跑一次,但**只跑一次**,就发生在 `BindOnce` 那一刻。之后 `OnceCallback` 的移动操作就只是复制一个 8 字节指针,极轻。咱们这版小对象时不分配(SBO 兜住),可一旦要移,就得把整个 `std::move_only_function`(32 字节)加上 `token_` 指针一起搬走,代价明显高一截。
 
-两种策略在不同场景下各有优势。对于高频投递的小回调（Chrome 浏览器的主场景），Chromium 的方案更优——移动代价低、大小一致有利于 CPU 缓存。对于低频的大回调（比如一次性初始化任务），我们的方案更优——省去一次堆分配。
+两种策略谁也没法通吃。高频投递的小回调(浏览器是 Chrome 的主战场),Chromium 那套占便宜——移得便宜、大小齐整对 CPU 缓存友好。低频的大回调(比如一次性初始化任务),咱们这套反而划算——少分一次堆。挑哪一套,看您项目的频率分布。
 
 ### 间接调用开销
 
-两种方案的调用开销是一样的：一次间接函数调用。`std::move_only_function::operator()` 内部通过函数指针或虚函数表分派到具体的可调用对象；Chromium 的 `BindState::polymorphic_invoke_` 也是函数指针分派。在 `-O2` 优化下，这个间接调用无法被内联消除，性能上两种方案等价。
+调用开销这两条路是平的:都是一次间接调用。`std::move_only_function::operator()` 底下靠函数指针或虚表派发到具体可调用对象;Chromium 的 `BindState::polymorphic_invoke_` 也是函数指针派发。`-O2` 下这一层间接编译器消不掉,所以两种方案在调用这一环上等价。
 
-### 我们牺牲了什么，换来了什么
+### 咱们让出了什么、换回了什么
 
-总结一下取舍。
+把账算明白。
 
-我们牺牲了对象的紧凑性（56-64 字节 vs 8 字节），换来了实现简洁性——不需要手写引用计数、函数指针表、`TRIVIAL_ABI` 注解。我们牺牲了移动操作的极致性能（复制 32 字节 + 指针 vs 复制 8 字节），换来了小对象的零堆分配。我们牺牲了引用计数共享（无法让多个回调共享同一份 `BindState`），但 `OnceCallback` 本身就是独占语义，不需要共享。
+让出去的是对象的紧凑性(56-64 字节对 8 字节),换回来的是实现干净——不用自己撸引用计数、函数指针表、`TRIVIAL_ABI` 注解。移动那块也付出了代价(搬 32 字节 + 指针 vs 复制 8 字节),换回来的是小对象的零堆分配。引用计数共享这块咱也让了,没法让多个回调共用同一份 `BindState`,但 `OnceCallback` 本来就是独占语义,共享这事儿它压根用不上。
 
-这些取舍对于教学目的和大多数实际场景来说都是合理的。如果你的项目确实需要 Chromium 级别的极致性能，可以参考 Chromium 的源码做进一步优化——核心思路我们已经在这三篇设计指南里讲清楚了。
+这套取舍在教学场景里、在绝大多数实际项目里都站得住。您的项目要是真压到 Chromium 那种性能要求,可以直接照着 Chromium 源码再榨一层——核心思路前三篇已经摊开了,剩下的是工程细节。
 
 ---
 
-## 完整组件文件一览
+## 文件落在哪儿
 
-到这里，`OnceCallback` 组件的设计、实现和测试策略都已完成。完整的文件清单：
+`OnceCallback` 这一组的设计、实现、测试到这儿算是收口了,完整文件清单如下,您要找对应代码照着摸就行:
 
 ```text
 documents/vol9-open-source-project-learn/chrome/hands_on/
@@ -263,7 +253,7 @@ documents/vol9-open-source-project-learn/chrome/hands_on/
 └── 03-once-callback-testing.md          # 验证篇：测试与性能
 ```
 
-对应的可编译代码（头文件 + 测试）位于项目代码目录中：
+对应的可编译代码(头文件 + 测试)在项目代码目录下:
 
 ```text
 code/volumn_codes/vol9/chrome_design/
@@ -282,11 +272,9 @@ code/volumn_codes/vol9/chrome_design/
 
 ---
 
-## 小结
+测试这一篇围着六个不变量——基本调用、移动语义、单次调用、参数绑定、取消机制、链式组合——拆出 12 条 Catch2 用例,`OnceCallback` 的核心行为差不多都压在底下了。性能那边跟 Chromium 原版一对,大小、分配、调用三环的账都摆出来了:咱们拿紧凑换简洁,这笔交易在绝大多数场景里划算,真要榨到 Chromium 那个量级,再回去啃源码也不迟。
 
-这篇验证篇我们做了两件事。测试方面，围绕六个不变量（基本调用、移动语义、单次调用、参数绑定、取消机制、链式组合）设计了 12 个 Catch2 测试用例，覆盖了 `OnceCallback` 的所有核心行为。性能方面，对比了与 Chromium `OnceCallback` 在对象大小、分配行为和调用开销上的差异——我们的实现用紧凑性换来了简洁性，对绝大多数场景来说这个取舍是值得的。
-
-下一步可以尝试的方向：实现 `RepeatingCallback`（可复制、可重复调用的版本），给 `bind_once` 添加 `Unretained` / `Owned` / `WeakPtr` 等生命周期辅助函数，或者用 Google Benchmark 做精确的性能测量。
+`OnceCallback` 这一组到这里告一段落。后面接着要碰的是 `RepeatingCallback`(可复制、可重复调用的版本),还有把 `Unretained` / `Owned` / `WeakPtr` 这套生命周期辅助函数补到 `bind_once` 上——后者恰好是下一个主题 `WeakPtr` 的入口。
 
 ## 参考资源
 

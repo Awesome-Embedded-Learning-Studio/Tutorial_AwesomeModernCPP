@@ -139,6 +139,7 @@
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"
+            wrap="off"
             @scroll="onEditorScroll"
           />
         </div>

@@ -23,9 +23,7 @@ title: OnceCallback 前置知识（四）：Concepts 与 requires 约束
 ---
 # OnceCallback 前置知识（四）：Concepts 与 requires 约束
 
-## 引言
-
-OnceCallback 的构造函数上有这么一行看起来很多余的约束：
+OnceCallback 的构造函数上有这么一行看起来很多余的约束:
 
 ```cpp
 template<typename Functor>
@@ -33,23 +31,15 @@ template<typename Functor>
 explicit OnceCallback(Functor&& function);
 ```
 
-你可能会问——为什么不直接写 `template<typename Functor>` 就完事了？多加一个 `requires not_the_same_t` 是在防什么？
+笔者第一次读到这行的时候,脑子里第一反应是:这不是多此一举吗?直接 `template<typename Functor>` 不就完事了,加个 `requires not_the_same_t` 到底在防谁?
 
-这一篇我们就来回答这个问题。答案涉及 C++ 重载决议中一个不太为人知的陷阱：**模板构造函数可能在某些情况下劫持移动构造函数的调用**。Concepts 和 `requires` 约束是 C++20 给我们的防御武器。
+后来真踩了一脚,才知道它在防一个 C++ 重载决议里相当阴损的坑——**模板构造函数会劫持移动构造函数**。Concepts 和 `requires` 约束,就是 C++20 给咱们留下的防御武器。这一篇就把这个坑从头刨一遍,顺带把 concepts 这套语法也过一遍。
 
-> **学习目标**
->
-> - 理解模板构造函数与移动构造函数之间的重载竞争问题
-> - 掌握 concept 的基本语法和 `requires` 子句的用法
-> - 能够解读 `not_the_same_t` 的设计意图和每一行代码的含义
+## 问题:模板构造函数的"越位"
 
----
+咱们先把这个坑还原一下。
 
-## 问题引入：模板构造函数的"越位"
-
-### 场景还原
-
-假设我们有一个简单的包装类，接受任意可调用对象：
+假设咱们写了个简单的包装类,接受任意可调用对象:
 
 ```cpp
 template<typename FuncSignature>
@@ -69,14 +59,11 @@ public:
 };
 ```
 
-现在我们写 `Callback cb2 = std::move(cb1);`——意图很明显，我们想调用移动构造函数。编译器面前有两条路：
+咱们随手写一行 `Callback cb2 = std::move(cb1);`,意图很直白——走移动构造。但编译器面前其实摆着两条路:一条是隐式生成的移动构造函数 `Callback(Callback&&)`,另一条是模板构造函数实例化出来的 `Callback(Callback&&)`(令 `Functor = Callback`)。
 
-1. 隐式生成的移动构造函数 `Callback(Callback&&)`
-2. 模板构造函数实例化 `Callback(Callback&&)`（令 `Functor = Callback`）
+直觉上您肯定觉得移动构造稳赢——毕竟它是"专门为这个类型设计的"。可 C++ 的重载决议不走直觉。模板构造函数那个转发引用 `Functor&&` 太贪婪了,它能完美匹配任何东西,包括 `Callback&&` 本身;而移动构造函数的参数类型是写死的 `Callback&&`。在"匹配谁更精确"这件事上,模板实例化出的版本有时候反而看起来更贴。
 
-直觉上我们会觉得移动构造函数应该优先——毕竟它是"专门为这种类型设计的"。但 C++ 的重载决议规则不是这么简单。在某些情况下，模板实例化出来的函数签名比隐式声明的特殊成员函数是"更精确"的匹配——因为模板参数 `Functor` 可以完美匹配传入参数的类型（包括 `Callback&&`），而移动构造函数的参数类型是固定的 `Callback&&`。
-
-当两个重载的匹配程度相同时，C++ 规则规定**非模板函数优先于模板函数**。所以大多数情况下移动构造函数确实会赢。但边缘情况比较微妙——特别是当涉及到转发引用和完美匹配时，有些编译器版本可能会有不同行为。更关键的是，即使移动构造函数赢了，如果模板构造函数也在候选列表中，某些 SFINAE 场景可能导致意外的编译错误。
+好在 C++ 留了条规则兜底:当模板和非模板版本匹配程度相同时,**非模板优先**。所以多数情况下移动构造还是能赢。可这事儿没那么干净——一旦牵扯到转发引用和完美匹配,不同编译器、不同版本的行为就开始飘了;更恶心的是,哪怕移动构造赢了,模板构造函数照样躺在候选列表里,某些 SFINAE 场景会冒出莫名其妙的编译错误。
 
 ### 最小复现
 
@@ -99,26 +86,26 @@ Wrapper b = std::move(a);  // 你期望输出 "move constructor"
                             // 在某些情况下可能输出 "template constructor"
 ```
 
-解决方案就是给模板构造函数加约束——让它**不要**匹配 `Wrapper` 自身的类型。
+解法就是给模板构造函数套个约束,让它别去碰 `Wrapper` 自身的类型——这就是 `requires` 子句登场的地方。
 
 ---
 
-## Concept 基础语法
+## Concepts 是个什么东西
 
-C++20 引入了 Concepts——一种命名约束的机制。你可以把 concept 想象成"带名字的编译期布尔条件"。这样说如果你感觉不好懂了——笔者认为，concept这个东西字如其名：就是概念的意思，相比之前我们要用enable_if来晦涩的表达是什么，我们可以更加容易的说出他是什么了——他是XXX，XXX就是一个concept。就这么简单。
+C++20 引入了 Concepts。官方定义很绕——"一种命名约束的机制"。笔者觉得这么说反而把人绕进去了。concept 这个词字如其名,就是"概念"的意思。
 
-### 声明 concept
+咱们退一步想:在 concepts 出来之前,您要表达“我只接受整数类型”,得用 `enable_if` 那一套——`typename std::enable_if<std::is_integral_v<T>::value, int>::type = 0`,一长串晦涩的玩意儿,读的人得先在脑子里转一圈才能明白您想说什么。而 concept 干的事儿,就是让您**直接说出这是个什么概念**:它叫 `Integral`,它就是"整数"这个概念。就这么简单。`T` 满足 `Integral`,`T` 就是整数;不满足,就别想进来。
+
+声明一个 concept 长这样:
 
 ```cpp
 template<typename T>
 concept Integral = std::is_integral_v<T>;
 ```
 
-`Integral` 是一个 concept，它检查 `T` 是否是整数类型。`std::is_integral_v<T>` 是一个编译期布尔常量。我们这里表达的意思很简单——我们就只要一个整形！拿着这个概念，就能下一步的被requires使用了。
+`Integral` 检查 `T` 是不是整数类型,`std::is_integral_v<T>` 是个编译期的布尔常量。咱们想表达的意思就这么点——我就要个整数!有了这个概念,下一步就能把它喂给 `requires` 用。
 
-### 使用 requires 子句
-
-`requires` 子句可以加在模板声明后面，用来约束模板参数必须满足某个条件：
+`requires` 子句往模板声明后面一挂,就给模板参数上了道闸:
 
 ```cpp
 template<typename T>
@@ -131,9 +118,7 @@ foo(42);    // OK：int 是整数
 foo(3.14);  // 编译错误：double 不满足 Integral
 ```
 
-### 标准库常用 concept
-
-C++20 在 `<concepts>` 头文件中提供了一批预定义的 concept：
+`<concepts>` 头文件里还备了一堆标准库现成的 concept,常用的几个长这样:
 
 ```cpp
 #include <concepts>
@@ -150,32 +135,24 @@ static_assert(std::convertible_to<int, double>);
 
 ---
 
-## not_the_same_t：逐行拆解
+## 把 not_the_same_t 拆开看
 
-现在我们来看 OnceCallback 中的这个 concept：
+现在咱们回头看 OnceCallback 里那个 concept:
 
 ```cpp
 template<typename F, typename T>
 concept not_the_same_t = !std::is_same_v<std::decay_t<F>, T>;
 ```
 
-它做的事情用一句话说就是：**F 退化后的类型不是 T**。我们逐个拆解里面的三个关键组件。
+一句话总结:`F` 退化(decay)之后,只要不是 `T`,约束就过。里头有三个零件,咱们挨个拆。
 
-### std::decay_t\<F\>：退化掉引用和 cv 限定符
+先看 `std::decay_t<F>`。它对类型干三件事:去引用(`int&` → `int`)、去顶层 const/volatile(`const int` → `int`)、把数组和函数类型退化掉(`int[5]` → `int*`、`int(int)` → `int(*)(int)`)。在 OnceCallback 这个场景里,最关键的是去引用。咱们写 `OnceCallback cb2 = std::move(cb1)` 的时候,`Functor` 被推导成 `OnceCallback`(不是 `OnceCallback&&`——转发引用的推导规则会把右值推导成非引用);但要是写成 `OnceCallback cb2 = cb1`(拷贝虽被删除,这里只作举例),`Functor` 就会被推导成 `OnceCallback&`。`std::decay_t` 的活儿,就是不管 `Functor` 推导出哪种引用形态,统统退化成裸的 `OnceCallback`,再拿去和 `T = OnceCallback` 比。
 
-`std::decay_t` 对类型做三件事：去掉引用（`int&` → `int`）、去掉顶层 const/volatile（`const int` → `int`）、数组和函数类型退化（`int[5]` → `int*`，`int(int)` → `int(*)(int)`）。
+再看 `std::is_same_v<A, B>`。它在 `A` 和 `B` 完全相同时返回 `true`。注意"完全相同"这四个字很严——`int` 和 `const int` 不算同,`int&` 和 `int` 也不算同。这就是为什么前面非得先上 `std::decay_t` 把两边的形式统一了,不然一个带引用一个不带,比出来全是噪音。
 
-在 OnceCallback 的场景里，最关键的是去掉引用。当我们写 `OnceCallback cb2 = std::move(cb1)` 时，`Functor` 被推导为 `OnceCallback`（不是 `OnceCallback&&`，因为转发引用的推导规则会把右值推导为非引用类型）。但如果是 `OnceCallback cb2 = cb1;`（虽然拷贝被删除了，这里只是举例），`Functor` 就会被推导为 `OnceCallback&`。`std::decay_t` 保证了无论 `Functor` 推导出什么引用形式，退化后都是 `OnceCallback`，和 `T = OnceCallback` 做比较。
+最后那个取反 `!` 是点睛之笔。整个 concept 的值是 `!std::is_same_v<std::decay_t<F>, T>`——`F` 退化后要是等于 `T`,取反成 `false`,约束失败,模板被踢出候选;不等于 `T`,取反成 `true`,约束通过,模板正常参与重载决议。就这么个逻辑。
 
-### std::is_same_v<...>：比较两个类型
-
-`std::is_same_v<A, B>` 在 `A` 和 `B` 完全相同时返回 `true`。注意"完全相同"是很严格的——`int` 和 `const int` 不同，`int&` 和 `int` 也不同。这就是为什么我们需要 `std::decay_t` 先统一形式。
-
-### 取反 `!`：F 不是 T 时约束通过
-
-整个 concept 的值是 `!std::is_same_v<std::decay_t<F>, T>`——取反意味着当 `F` 退化后和 `T` 相同时约束失败（模板被排除），不同时约束通过（模板参与重载决议）。
-
-### 加上约束后的效果
+把这个约束挂回去看效果:
 
 ```cpp
 template<typename Functor>
@@ -183,28 +160,26 @@ template<typename Functor>
 explicit OnceCallback(Functor&& f) : status_(Status::kValid), func_(std::move(f)) {}
 ```
 
-当传入的是 `OnceCallback` 本身时（比如移动构造的场景），`not_the_same_t<OnceCallback, OnceCallback>` 求值为 `!true = false`，约束不满足，模板被排除出候选列表，编译器只能选择移动构造函数。当传入的是 lambda、函数指针等其他类型时，约束满足，模板正常参与重载决议，被选为构造函数。
+传进来的是 `OnceCallback` 自身(比如移动构造那个场景),`not_the_same_t<OnceCallback, OnceCallback>` 求值 `!true = false`,约束不满足,模板被晾在一边,编译器只能乖乖选移动构造函数。传进来的是 lambda、函数指针这些别的类型,约束满足,模板正常接活儿,被选为构造函数。就是这么干净。
 
 ---
 
-## 这个模式在标准库中的应用
+## 这不是 OnceCallback 的专利
 
-这不仅仅是 OnceCallback 的特殊需求。`std::move_only_function` 自己的实现里也有几乎一样的约束——只不过标准库用的是标准 concept `std::constructible_from` 配合 `!std::is_same_v` 的形式。任何 move-only 的类型擦除包装器都需要这个防御——只要你的类同时有"接受任意类型的模板构造函数"和"编译器生成的移动构造函数"，就必须加约束来防止两者竞争。
+这玩意儿不是 OnceCallback 独一份的需求。`std::move_only_function` 自己的实现里挂着几乎一模一样的约束,只不过标准库走的是标准 concept `std::constructible_from` 配 `!std::is_same_v` 那一套写法。说穿了,任何 move-only 的类型擦除包装器,都得吃这记防御——只要您的类同时有"接受任意类型的模板构造函数"和"编译器生成的移动构造函数",这两者就一定会掐架,必须拿约束把它们隔开。
 
 ```text
 模式总结：
 模板构造函数 + requires 排除自身类型 = 保护移动语义的正确匹配
 ```
 
-如果你以后写类似的组件——比如自己的 `unique_function`、`any_invocable` 之类的 move-only 包装器——记住这个模式，它是一个通用的防御手段。
+笔者给您留句话:以后要是自己撸 `unique_function`、`any_invocable` 这类 move-only 包装器,记住这个套路,它是通用的防御手段,省得回头调试半天才发现移动语义被模板截胡了。
 
 ---
 
 ## 踩坑预警
 
-### 如果忘记 std::decay_t
-
-如果只写 `!std::is_same_v<F, T>` 而不加 `std::decay_t`，问题出在 `F` 的推导结果可能带引用也可能不带引用，取决于调用上下文。考虑以下场景：
+**坑一:漏掉 `std::decay_t`。** 偷懒只写 `!std::is_same_v<F, T>`,不加 `std::decay_t`,坑就埋下了——`F` 的推导结果可能带引用也可能不带,完全看您怎么调用。看下面这两个场景:
 
 ```cpp
 OnceCallback cb1([](int x) { return x; });
@@ -219,19 +194,13 @@ OnceCallback cb1([](int x) { return x; });
 // is_same_v<const OnceCallback&, OnceCallback> == false → 约束通过 ✗ 错误！
 ```
 
-场景 B 中，不加 `decay_t` 的话，`const OnceCallback&` 和 `OnceCallback` 不相同，约束通过，模板构造函数被选中——但语义上我们期望的是编译错误（拷贝已删除）或至少不是模板构造函数。加了 `decay_t` 后，`const OnceCallback&` 退化为 `OnceCallback`，和 `OnceCallback` 相同，约束正确失败。
+场景 B 要是漏了 `decay_t`,`const OnceCallback&` 跟 `OnceCallback` 压根不是同一类型,约束反而通过了,模板构造函数被选中——可语义上咱们要的是编译错误(拷贝已删除),至少也不该是模板构造。补上 `decay_t` 之后,`const OnceCallback&` 退化成 `OnceCallback`,两边对上,约束才正确失败。这个坑笔者踩过,debug 了半天才发现是 `decay_t` 漏了。
 
-### static_assert(false) 的陷阱
-
-在 C++23 之前，`static_assert(false, "...")` 在模板中会导致所有实例化都触发断言失败——即使这个模板从未被调用。这是因为 C++ 标准在 C++23 之前要求 `static_assert(false)` 在模板定义时就立即求值。Chromium 用 `static_assert(!sizeof(*this), "...")` 来绕过这个限制（`!sizeof` 总是 `false`，但依赖 `*this` 的类型所以是依赖型表达式，不会在定义时求值）。C++23 放宽了这个规则，但如果你用 C++20 编译，仍然需要注意这个问题。
+**坑二:`static_assert(false)` 在模板里会"误伤"。** C++23 之前,在模板里写 `static_assert(false, "...")`,所有实例化都会触发断言失败——哪怕这个模板从头到尾没人调用过。因为老标准要求 `static_assert(false)` 在模板定义那一刻就立即求值。Chromium 的绕法是 `static_assert(!sizeof(*this), "...")`:`!sizeof` 永远是 `false`,但它依赖 `*this` 的类型,是个依赖型表达式,定义时不会求值,得等实例化才炸。C++23 把这条规则放宽了,但您要是还在 C++20 编译,这事儿照样得留心。
 
 ---
 
-## 小结
-
-这一篇我们搞清楚了 OnceCallback 构造函数上那个看似多余的 `requires not_the_same_t` 约束。它的存在是为了防止模板构造函数在 `OnceCallback cb2 = std::move(cb1)` 这种场景下劫持移动构造函数的调用。`not_the_same_t` 通过 `std::decay_t` 去掉 `F` 上的引用和 const 修饰后与 `T` 比较，取反后确保传入自身类型时模板被排除。这个模式在所有 move-only 的类型擦除包装器中都会用到——`std::move_only_function` 也有类似的约束。
-
-下一篇我们去看 `std::move_only_function`——它是 OnceCallback 的核心存储类型，也是我们用标准库设施替代 Chromium 手写 BindState 的关键。
+下一篇咱们去看 `std::move_only_function`——它是 OnceCallback 的核心存储类型,也是咱们拿标准库设施替换 Chromium 手写 BindState 的关键拼图。
 
 ## 参考资源
 
