@@ -14,10 +14,11 @@ tags:
 
 ## 概述
 
-本卷覆盖现代 C++ 在各领域的实际应用，包含六个子领域：
+本卷覆盖现代 C++ 在各领域的实际应用，包含七个子领域：
 
 - **嵌入式开发**：资源约束、零开销抽象、外设编程、RTOS、STM32 实战
 - **网络编程**：Socket、HTTP、异步 I/O、WebSocket、RPC
+- **AI 与 TinyML**：用现代 C++ 从零手搓玩具级神经网络推理器，理解 TinyML 推理在 MCU 上怎么跑
 - **GUI 与图形**：图形基础、最小 GUI 框架、ImGui、2D/3D 渲染
 - **数据存储**：序列化、文件格式、SQLite、键值存储
 - **算法与数据结构**：复杂度分析、经典算法、高级数据结构
@@ -30,6 +31,7 @@ tags:
 <ChapterNav variant="sub">
   <ChapterLink href="embedded/">嵌入式开发</ChapterLink>
   <ChapterLink href="networking/">网络编程</ChapterLink>
+  <ChapterLink href="ai/">AI 与 TinyML</ChapterLink>
   <ChapterLink href="gui-graphics/">GUI 与图形 — 规划中</ChapterLink>
   <ChapterLink href="data-storage/">数据存储 — 规划中</ChapterLink>
   <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
