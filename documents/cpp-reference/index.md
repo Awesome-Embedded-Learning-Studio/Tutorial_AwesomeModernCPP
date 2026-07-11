@@ -21,7 +21,7 @@ difficulty: beginner
 ## 快速导航
 
 **按标准版本：**
-[C++98/03](#c9803) | [C++11](#c11) | [C++14](#c14) | [C++17](#c17) | [C++20](#c20) | [C++23](#c23)
+[C++98/03](#c9803) | [C++11](#c11) | [C++14](#c14) | [C++17](#c17) | [C++20](#c20) | [C++23](#c23) | [C++26](#c26)
 
 **按功能类别：**
 [内存管理](#内存管理) | [容器与视图](#容器与视图) | [并发](#并发) | [核心语言特性](#核心语言特性) | [模板与元编程](#模板与元编程)
@@ -169,8 +169,8 @@ C++23 对 C++20 进行打磨与补齐：std::expected、std::print、std::genera
 | [std::print / println](containers/10-print.md) | `<print>` | 格式化输出到 stdout | **高** |
 | [std::generator](containers/09-generator.md) | `<generator>` | 协程同步生成器 | **中** |
 | [std::flat_map / flat_set](containers/08-flat-map.md) | `<flat_map>` | 基于连续存储的有序容器 | **中** |
-| std::mdspan | `<mdspan>` | 多维数组非拥有视图 | **中** |
-| std::stacktrace | `<stacktrace>` | 调用栈捕获与打印 | **中** |
+| [std::mdspan](containers/11-mdspan.md) | `<mdspan>` | 多维数组非拥有视图 | **中** |
+| [std::stacktrace](core-language/19-stacktrace.md) | `<stacktrace>` | 调用栈捕获与打印 | **中** |
 | [deducing this](core-language/18-deducing-this.md) | 语言特性 | 显式对象参数推导 | **中** |
 | std::to_underlying | `<utility>` | 枚举转底层类型 | **中** |
 | std::out_ptr / inout_ptr | `<memory>` | 智能指针与 C 指针互操作 | **中** |
@@ -180,6 +180,23 @@ C++23 对 C++20 进行打磨与补齐：std::expected、std::print、std::genera
 | std::unreachable | `<utility>` | 标记不可达代码 | **低** |
 | 多维下标运算符 | 语言特性 | operator[] 接受多参数 | **低** |
 | std::is_scoped_enum | `<type_traits>` | 检测作用域枚举类型 | **低** |
+
+### C++26
+
+C++26 是正在制定中的下一版标准（ISO/IEC 14882:2026）。截至 2026 年中，多数特性仍处于工作草案阶段、编译器支持初步或仅部分实现，最终去留与措辞还可能变动。这里只列高确定性的方向，**编译器支持请以 [cppreference 最新表格](https://en.cppreference.com/w/cpp/compiler_support/26) 为准**。
+
+| 特性 | 头文件 | 简述 | 适用性 |
+|------|--------|------|--------|
+| Reflection（静态反射） | `<meta>`（草案） | 编译期类型自省与生成，C++26 旗舰特性 | **中** |
+| Contracts（契约） | `<contracts>`（草案） | precondition/postvalue/assert 运行期契约检查 | **中** |
+| std::execution / Senders | `<execution>`（草案） | scheduler/sender/receiver 异步任务图（P2300） | **中** |
+| std::linalg | `<linalg>` | 基于 BLAS 的线性代数自由函数 | **中** |
+| std::text_encoding | `<text_encoding>` | 识别运行期文本编码 | **低** |
+| Hazard pointers / RCU | `<hazard_pointer>` `<rcu>` | 无锁并发原语 | **低** |
+
+::: warning C++26 仍是草案
+上表特性编译器支持参差：GCC 16 对 reflection、contracts、linalg 有部分实现；std::execution 三大标准库均无可用实现（要用 NVIDIA/stdexec 跑）；其余多数仍实验性。生产别依赖，学习可前瞻。详见 [cppreference C++26 编译器支持](https://en.cppreference.com/w/cpp/compiler_support/26)。
+:::
 
 ## 按功能类别
 
@@ -227,11 +244,11 @@ C++23 对 C++20 进行打磨与补齐：std::expected、std::print、std::genera
 | [std::flat_map / flat_set](containers/08-flat-map.md) | C++23 | `<flat_map>` | 基于连续存储的有序容器 | **中** |
 | [std::generator](containers/09-generator.md) | C++23 | `<generator>` | 协程同步生成器 | **中** |
 | [std::print / println](containers/10-print.md) | C++23 | `<print>` | 格式化输出到 stdout | **高** |
-| std::mdspan | C++23 | `<mdspan>` | 多维数组非拥有视图 | **中** |
+| [std::mdspan](containers/11-mdspan.md) | C++23 | `<mdspan>` | 多维数组非拥有视图 | **中** |
 | Ranges 新适配器 | C++23 | `<ranges>` | zip / chunk / slide / enumerate 等 | **中** |
 
 ::: details 待补充参考卡
-以下特性尚未创建参考卡：STL 容器、STL 算法、std::string、std::tuple、std::unordered_map/set、std::function、std::any、Ranges、std::erase/erase_if、std::mdspan、Ranges 新适配器
+以下特性尚未创建参考卡：STL 容器、STL 算法、std::string、std::tuple、std::unordered_map/set、std::function、std::any、Ranges、std::erase/erase_if、Ranges 新适配器
 
 ### 并发
 
@@ -305,10 +322,10 @@ C++23 对 C++20 进行打磨与补齐：std::expected、std::print、std::genera
 | std::unreachable | C++23 | `<utility>` | 标记不可达代码 | **低** |
 | if consteval | C++23 | 语言特性 | 编译期求值条件判断 | **低** |
 | 多维下标运算符 | C++23 | 语言特性 | operator[] 多参数 | **低** |
-| std::stacktrace | C++23 | `<stacktrace>` | 调用栈捕获与打印 | **中** |
+| [std::stacktrace](core-language/19-stacktrace.md) | C++23 | `<stacktrace>` | 调用栈捕获与打印 | **中** |
 
 ::: details 待补充参考卡
-以下特性尚未创建参考卡：移动语义、static_assert、用户自定义字面量、委托/继承构造、alignas / alignof、返回类型推导、constexpr 扩展、decltype(auto)、二进制字面量、CTAD、保证拷贝消除、std::byte、if/switch 初始化语句、consteval、constinit、std::source_location、指定初始化器、std::to_underlying、std::unreachable、if consteval、多维下标运算符、std::stacktrace
+以下特性尚未创建参考卡：移动语义、static_assert、用户自定义字面量、委托/继承构造、alignas / alignof、返回类型推导、constexpr 扩展、decltype(auto)、二进制字面量、CTAD、保证拷贝消除、std::byte、if/switch 初始化语句、consteval、constinit、std::source_location、指定初始化器、std::to_underlying、std::unreachable、if consteval、多维下标运算符
 
 ### 模板与元编程
 
