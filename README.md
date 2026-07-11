@@ -20,17 +20,17 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-99%25-green.svg) 586/592 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-100%25-green.svg) 592/592 docs translated
 <!-- COVERAGE_END -->
 
 ## 这是什么项目
 
 <p align="center"><em>一套系统化的现代 C++ 教程——从语法到芯片，把现代 C++ 写进桌面、STM32 嵌入式与工业级开源项目。</em></p>
 
-10 卷、350+ 篇，从 C/C++ 基础一路讲到并发、性能、工程与领域实战；每个关键概念都配可在 CI 中编译验证的 CMake 示例，不是文章里跑不起来的孤立片段。
+10 卷、430+ 篇，从 C/C++ 基础一路讲到并发、性能、工程与领域实战；每个关键概念都配可在 CI 中编译验证的 CMake 示例，不是文章里跑不起来的孤立片段。
 
 <p align="center">
-  <img src="https://img.shields.io/badge/articles-350%2B-blue" alt="articles">
+  <img src="https://img.shields.io/badge/articles-430%2B-blue" alt="articles">
   <img src="https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-009688" alt="C++ standard">
   <img src="https://img.shields.io/badge/embedded-STM32%20F1-FFC107" alt="embedded">
   <img src="https://img.shields.io/badge/examples-CMake%20%7C%20CI%20verified-3F51B5" alt="examples">
@@ -46,7 +46,7 @@
     <td width="50%" align="center"><h4>⚡ 克隆即跑的真示例</h4>代码以 CMake 工程组织、CI 构建验证，不是文章里跑不起来的伪代码片段。</td>
   </tr>
   <tr>
-    <td align="center"><h4>📚 一条完整路径</h4>10 卷 350+ 篇，基础→现代特性→标准库→高级→并发→性能→工程→领域，层层递进、不碎片。</td>
+    <td align="center"><h4>📚 一条完整路径</h4>10 卷 430+ 篇，基础→现代特性→标准库→高级→并发→性能→工程→领域，层层递进、不碎片。</td>
     <td align="center"><h4>🚀 紧跟 C++23</h4>讲解并实践 concepts、协程、ranges 等新特性，不停在 C++11。</td>
   </tr>
   <tr>
@@ -106,10 +106,10 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 | 卷三 | 标准库深入 | 40 | ✅ 成型 |
 | 卷四 | 高级主题（concepts / 协程 / 模板 / 设计模式） | 29 | 🔨 在建 |
 | 卷五 | 并发编程 | 44 | ✅ 成型 |
-| 卷六 | 性能优化 | 6 | 🔨 在建 |
+| 卷六 | 性能优化 | 38 | ✅ 成型 |
 | 卷七 | 工程实践（CMake / 工具链 / 调试） | 8 | 🔨 在建 |
-| 卷八 | 领域应用（嵌入式 / GUI / 存储等） | 63 | ✅ 成型 |
-| 卷九 | 开源项目研读（Chromium 等） | 16 | 📚 持续更新 |
+| 卷八 | 领域应用（嵌入式 / GUI / 存储等） | 75 | ✅ 成型 |
+| 卷九 | 开源项目研读（Chromium 等） | 55 | 📚 持续更新 |
 | 卷十 | 课程与演讲笔记（CppCon 等） | 17 | 📚 持续更新 |
 
 > 另含「编译与链接」11 篇、C++ 特性参考卡 46 张。主线已成型的卷占多数，其余在持续补充。

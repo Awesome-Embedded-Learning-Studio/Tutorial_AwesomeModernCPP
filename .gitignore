@@ -14,6 +14,7 @@ build/
 **/build/
 *.build/
 **/_build_ci/
+*.o
 
 # VitePress
 node_modules/

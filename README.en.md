@@ -24,10 +24,10 @@
 
 <p align="center"><em>A systematic modern C++ tutorial — from syntax to silicon, bringing modern C++ to the desktop, STM32 embedded, and industrial open-source projects.</em></p>
 
-10 volumes, 350+ articles, from C/C++ fundamentals through concurrency, performance, engineering, and domain practice — every key concept backed by a CMake example verified in CI, not an unbuildable snippet stranded in an article.
+10 volumes, 430+ articles, from C/C++ fundamentals through concurrency, performance, engineering, and domain practice — every key concept backed by a CMake example verified in CI, not an unbuildable snippet stranded in an article.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/articles-350%2B-blue" alt="articles">
+  <img src="https://img.shields.io/badge/articles-430%2B-blue" alt="articles">
   <img src="https://img.shields.io/badge/C%2B%2B-11%20%7C%2014%20%7C%2017%20%7C%2020%20%7C%2023-009688" alt="C++ standard">
   <img src="https://img.shields.io/badge/embedded-STM32%20F1-FFC107" alt="embedded">
   <img src="https://img.shields.io/badge/examples-CMake%20%7C%20CI%20verified-3F51B5" alt="examples">
@@ -43,7 +43,7 @@
     <td width="50%" align="center"><h4>⚡ Real, runnable examples</h4>CMake projects validated in CI — not unbuildable snippets stranded in articles.</td>
   </tr>
   <tr>
-    <td align="center"><h4>📚 One complete path</h4>10 volumes, 350+ articles — fundamentals → modern features → standard library → advanced → concurrency → performance → engineering → domains.</td>
+    <td align="center"><h4>📚 One complete path</h4>10 volumes, 430+ articles — fundamentals → modern features → standard library → advanced → concurrency → performance → engineering → domains.</td>
     <td align="center"><h4>🚀 C++23 current</h4>Covers and practices concepts, coroutines, ranges and more — not stuck at C++11.</td>
   </tr>
   <tr>
@@ -100,13 +100,13 @@ Core volumes are complete, advanced ones are still being filled in — progress 
 |--------|-------|:--------:|----------|
 | Vol 1 | Fundamentals (incl. C crash-course) | 87 | ✅ Complete |
 | Vol 2 | Modern features (RAII / smart pointers / move / lambda) | 44 | ✅ Complete |
-| Vol 3 | Standard library in depth | 8 | 🔨 In progress |
-| Vol 4 | Advanced (concepts / coroutines / templates) | 8 | 🔨 In progress |
+| Vol 3 | Standard library in depth | 40 | ✅ Complete |
+| Vol 4 | Advanced (concepts / coroutines / templates / design patterns) | 29 | 🔨 In progress |
 | Vol 5 | Concurrency | 44 | ✅ Complete |
-| Vol 6 | Performance | 3 | 🔨 In progress |
+| Vol 6 | Performance | 38 | ✅ Complete |
 | Vol 7 | Engineering (CMake / toolchain / debugging) | 8 | 🔨 In progress |
-| Vol 8 | Domains (embedded / networking / GUI / storage) | 63 | ✅ Complete |
-| Vol 9 | Open-source code study (Chromium etc.) | 16 | 📚 Ongoing |
+| Vol 8 | Domains (embedded / networking / GUI / storage) | 75 | ✅ Complete |
+| Vol 9 | Open-source code study (Chromium etc.) | 55 | 📚 Ongoing |
 | Vol 10 | Talk & course notes (CppCon etc.) | 17 | 📚 Ongoing |
 
 > Plus "Compilation & Linking" (11) and C++ feature reference cards (46). Most core volumes are complete; the rest are being filled in.
