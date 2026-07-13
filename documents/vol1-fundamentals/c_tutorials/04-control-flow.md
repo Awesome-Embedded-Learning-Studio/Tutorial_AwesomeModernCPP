@@ -327,7 +327,7 @@ error_hardware:
 ```c
 typedef enum {
     kStateIdle,      // 空闲态：等待帧头 0xAA
-    kStateHeader,    // 帧头态：准备接收长度
+    kStateHeader,    // 帧头态：帧头已收完，接下来等长度字节
     kStatePayload,   // 负载态：正在接收数据
     kStateChecksum,  // 校验态：准备校验数据
     kStateDone,      // 完成态：一帧解析成功
@@ -335,10 +335,10 @@ typedef enum {
 } ParseState;
 
 typedef struct {
-    ParseState state;        // 记录当前状态
-    unsigned char payload[64]; // 仓库：存放接收到的负载数据
-    unsigned char payload_len; // 记录：这帧数据应该有多少个负载
-    unsigned char index;       // 计数器：当前已经收到了几个负载
+    ParseState state;            // 记录当前状态
+    unsigned char payload[64];   // 仓库：存放接收到的负载数据
+    unsigned char payload_len;   // 记录：这帧要收多少个字节的负载
+    unsigned char index;         // 计数器：当前已经收到了几个字节
 } Parser;
 
 void parser_init(Parser* p) {
