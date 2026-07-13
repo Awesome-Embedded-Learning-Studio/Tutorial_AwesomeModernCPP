@@ -326,19 +326,19 @@ error_hardware:
 
 ```c
 typedef enum {
-    kStateIdle,
-    kStateHeader,
-    kStatePayload,
-    kStateChecksum,
-    kStateDone,
-    kStateError
+    kStateIdle,      // 空闲态：等待帧头 0xAA
+    kStateHeader,    // 帧头态：准备接收长度
+    kStatePayload,   // 负载态：正在接收数据
+    kStateChecksum,  // 校验态：准备校验数据
+    kStateDone,      // 完成态：一帧解析成功
+    kStateError      // 错误态：数据不对（比如长度超限或校验失败）
 } ParseState;
 
 typedef struct {
-    ParseState state;
-    unsigned char payload[64];
-    unsigned char payload_len;
-    unsigned char index;
+    ParseState state;        // 记录当前状态
+    unsigned char payload[64]; // 仓库：存放接收到的负载数据
+    unsigned char payload_len; // 记录：这帧数据应该有多少个负载
+    unsigned char index;       // 计数器：当前已经收到了几个负载
 } Parser;
 
 void parser_init(Parser* p) {
@@ -350,42 +350,42 @@ void parser_init(Parser* p) {
 ParseState parser_feed(Parser* p, unsigned char byte) {
     switch (p->state) {
         case kStateIdle:
-            if (byte == 0xAA) {
-                p->state = kStateHeader;
+            if (byte == 0xAA) {       // 看到帧头了吗？
+                p->state = kStateHeader; // 看到了，进入下一个状态（等长度）
             }
             break;
 
         case kStateHeader:
-            p->payload_len = byte;
-            if (p->payload_len > 64) {
-                p->state = kStateError;
+            p->payload_len = byte;    // 把收到的这个字节当作长度存起来
+            if (p->payload_len > 64) { // 长度太大了，仓库装不下怎么办？
+                p->state = kStateError; // 报错！
             } else {
-                p->index = 0;
-                p->state = kStatePayload;
+                p->index = 0;         // 准备开始收数据，计数器清零
+                p->state = kStatePayload; // 进入接收负载的状态
             }
             break;
 
         case kStatePayload:
-            p->payload[p->index++] = byte;
-            if (p->index >= p->payload_len) {
-                p->state = kStateChecksum;
+            p->payload[p->index++] = byte; // 把字节存进仓库，并且计数器+1
+            if (p->index >= p->payload_len) { // 收够了吗？
+                p->state = kStateChecksum; // 收够了，进入校验状态
             }
             break;
 
         case kStateChecksum: {
             unsigned char calc = 0;
             for (int i = 0; i < p->payload_len; i++) {
-                calc ^= p->payload[i];
+                calc ^= p->payload[i]; // 把收到的所有数据按位异或一遍
             }
-            p->state = (calc == byte) ? kStateDone : kStateError;
+            p->state = (calc == byte) ? kStateDone : kStateError; // 算出来的和收到的校验码对比
             break;
         }
 
         case kStateDone:
         case kStateError:
-            break;
+            break; // 什么都不做
     }
-    return p->state;
+    return p->state; // 把当前状态告诉外面的人
 }
 ```
 
@@ -402,17 +402,17 @@ int main(void)
     // 帧头 0xAA，长度 3，负载 {0x01, 0x02, 0x03}，校验 0x00
     unsigned char frame[] = {0xAA, 0x03, 0x01, 0x02, 0x03, 0x00};
     for (int i = 0; i < (int)sizeof(frame); i++) {
+        // 把数组里的字节，一个一个喂给解析器
         ParseState s = parser_feed(&p, frame[i]);
         printf("Byte 0x%02X → State %d\n", frame[i], s);
+        
         if (s == kStateDone) {
+            // 如果解析器说“完成”，就把收到的数据打印出来
             printf("Frame OK, payload: ");
-            for (int j = 0; j < p.payload_len; j++) {
-                printf("0x%02X ", p.payload[j]);
-            }
-            printf("\n");
-            break;
+            // ...
+            break; // 结束循环
         } else if (s == kStateError) {
-            printf("Parse error at byte %d\n", i);
+            // 如果解析器报错，也停止
             break;
         }
     }
