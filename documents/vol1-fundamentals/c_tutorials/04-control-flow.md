@@ -402,17 +402,19 @@ int main(void)
     // 帧头 0xAA，长度 3，负载 {0x01, 0x02, 0x03}，校验 0x00
     unsigned char frame[] = {0xAA, 0x03, 0x01, 0x02, 0x03, 0x00};
     for (int i = 0; i < (int)sizeof(frame); i++) {
-        // 把数组里的字节，一个一个喂给解析器
         ParseState s = parser_feed(&p, frame[i]);
         printf("Byte 0x%02X → State %d\n", frame[i], s);
-        
         if (s == kStateDone) {
             // 如果解析器说“完成”，就把收到的数据打印出来
             printf("Frame OK, payload: ");
-            // ...
-            break; // 结束循环
+            for (int j = 0; j < p.payload_len; j++) {
+                printf("0x%02X ", p.payload[j]);
+            }
+            printf("\n");
+            break;
         } else if (s == kStateError) {
             // 如果解析器报错，也停止
+            printf("Parse error at byte %d\n", i);
             break;
         }
     }
