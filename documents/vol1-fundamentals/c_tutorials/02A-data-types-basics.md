@@ -284,6 +284,50 @@ uint8_t z{1000};    // C++ 编译错误！1000 超出 uint8_t 范围
 
 提示：可以用一个宏来减少重复代码。
 
+###练习 1 参考答案
+
+```c
+#include <stdio.h>
+#include <stdint.h>
+//#include <stddef.h>
+
+int main() {
+    // 基本类型
+    printf("sizeof(char)      = %zu bytes\n", sizeof(char));
+    printf("sizeof(short)     = %zu bytes\n", sizeof(short));
+    printf("sizeof(int)       = %zu bytes\n", sizeof(int));
+    printf("sizeof(long)      = %zu bytes\n", sizeof(long));
+    printf("sizeof(long long) = %zu bytes\n", sizeof(long long));
+
+    // 定长整数类型 (需包含 <stdint.h>)
+    printf("sizeof(int8_t)    = %zu bytes\n", sizeof(int8_t));
+    printf("sizeof(uint8_t)   = %zu bytes\n", sizeof(uint8_t));
+    printf("sizeof(int32_t)   = %zu bytes\n", sizeof(int32_t));
+    printf("sizeof(uint32_t)  = %zu bytes\n", sizeof(uint32_t));
+    printf("sizeof(int64_t)   = %zu bytes\n", sizeof(int64_t));
+
+    // size_t 类型 (需包含<stdio.h>、 <stddef.h> 或 <stdlib.h>)
+    printf("sizeof(size_t)    = %zu bytes\n", sizeof(size_t));
+
+    return 0;
+}
+
+```
+
+```终端输出
+sizeof(char)      = 1 bytes
+sizeof(short)     = 2 bytes
+sizeof(int)       = 4 bytes
+sizeof(long)      = 4 bytes
+sizeof(long long) = 8 bytes
+sizeof(int8_t)    = 1 bytes
+sizeof(uint8_t)   = 1 bytes
+sizeof(int32_t)   = 4 bytes
+sizeof(uint32_t)  = 4 bytes
+sizeof(int64_t)   = 8 bytes
+sizeof(size_t)    = 8 bytes
+```
+
 ### 练习 2：溢出观察
 
 分别对有符号 `int` 和无符号 `unsigned int` 做溢出实验：
@@ -305,6 +349,28 @@ int main(void)
 ```
 
 编译运行，观察两者的行为差异。然后加上 `-fsanitize=undefined` 选项重新编译，看看有什么变化。
+
+### 练习 2 参考答案
+
+假设该文件名为overflow.c
+
+使用 gcc overflow.c -o overflow && ./overflow 编译运行后，你大概率会看到如下输出：
+
+```终端输出
+INT_MAX  = 2147483647,  INT_MAX + 1  = -2147483648
+UINT_MAX = 4294967295, UINT_MAX + 1 = 0
+```
+
+使用 gcc -fsanitize=undefined overflow.c -o overflow_ubsan && ./overflow_ubsan 编译运行后，你会看到类似如下的输出：
+
+```终端输出
+INT_MAX  = 2147483647,  INT_MAX + 1  = -2147483648
+overflow.c:9:54: runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
+UINT_MAX = 4294967295, UINT_MAX + 1 = 0
+```
+为什么？
+实际上 C 标准其实并没有对带有符号的整数的溢出进行定义，也就是说，对INT_MAX进行+1这个操作严格意义上是一个未定义行为。
+（只不过溢出很好用，也是大部分编译器都默认支持译出的。）
 
 ## 参考资源
 
