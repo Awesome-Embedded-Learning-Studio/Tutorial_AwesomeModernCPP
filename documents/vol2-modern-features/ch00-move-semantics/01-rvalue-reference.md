@@ -10,7 +10,7 @@ order: 1
 platform: host
 prerequisites:
 - 卷一：C++ 基础入门
-reading_time_minutes: 18
+reading_time_minutes: 24
 related:
 - 移动构造与移动赋值
 - 完美转发
@@ -28,13 +28,13 @@ title: 右值引用：从拷贝到移动
 > 一些朋友会有争议，笔者自己交流的时候就被喷过C++11还算现代？嗯。。。好像也没问题，从笔者落笔文章的2026年开始，这些特性就已经存在10多年了——确实在时间上不算现代。但是它相对于C++98这些老古董C++而言，已经有了相当大的特性变更。这就是这一卷被单独拿出来的原因！
 
 
-我最开始接触C++的时候，看那本《Effective Modern C++》，就总觉得并不是很理解“右值引用”这个概念。总觉得吧，"右值引用"这四个字散发着一种不可名状的学术味——`T&&` 是什么？左值右值到底怎么分？`std::move` 是不是真的在"移动"什么东西？每次看到别人的代码里出现 `std::move`，总是似懂非懂地抄过来，祈祷编译通过就好。现在笔者跑来写东西，就要把这些内容搞明白，至少，不犯很低级的错误！
+笔者最开始接触C++的时候，看那本《Effective Modern C++》，就总觉得并不是很理解“右值引用”这个概念。总觉得吧，"右值引用"这四个字散发着一种不可名状的学术味——`T&&` 是什么？左值右值到底怎么分？`std::move` 是不是真的在"移动"什么东西？每次看到别人的代码里出现 `std::move`，总是似懂非懂地抄过来，祈祷编译通过就好。现在笔者跑来写东西，就要把这些内容搞明白，至少，不犯很低级的错误！
 
-> 依旧碎碎念：笔者挺害怕C++语言律师的。所以每一次提笔写点东西都怕被这批大佬嘲讽。不过严谨从来是好的——写C++不严谨，小心睡觉的时候被内存爆炸摇起来狠狠被你的ld艹一顿。但是作为教学，没必要一上来就死扣细节。小心一叶障目。
+> 依旧碎碎念：笔者挺害怕C++语言律师的。所以每一次提笔写点东西都怕被这批大佬嘲讽。不过严谨从来是好的——写C++不严谨，小心睡觉的时候被内存爆炸摇起来狠狠被您的ld艹一顿。但是作为教学，没必要一上来就死扣细节。小心一叶障目。
 
 ## 从一个让人血压升高的问题说起
 
-现在有一个场景，字符串处理，大家都知道对吧。不少人会觉得——欸，std::string有的时候太重了，希望来一个字符串只读视图。const char*不错，但是NULL Terminate太搞了（指定一个\0作为节点约束有时候很不靠谱），那好，我们自己做一个StringWrapper！
+现在有一个场景，字符串处理，大家都知道对吧。不少人会觉得——欸，std::string有的时候太重了，希望来一个字符串只读视图。const char*不错，但是NULL Terminate太搞了（指定一个\0作为节点约束有时候很不靠谱），那好，咱们自己做一个StringWrapper！
 
 ```cpp
 class StringWrapper {
@@ -64,7 +64,7 @@ public:
 };
 ```
 
-然后我们写一段看起来很无辜的代码：
+然后咱们写一段看起来很无辜的代码：
 
 ```cpp
 StringWrapper build_greeting(const std::string& name)
@@ -80,9 +80,9 @@ int main()
 }
 ```
 
-在没有移动语义且编译器未做 NRVO（命名返回值优化）的情况下，`build_greeting` 返回 `result` 时会触发拷贝构造——分配一块新内存，把 `result` 里的字符串逐字节复制过去。然后 `result` 自己析构，释放掉原来那块内存。当然，现实中 C++03 时代的 GCC 和 MSVC 已经普遍把 NRVO 作为编译器扩展实现了，所以这段分析讨论的是"NRVO 不生效"时的最坏情况。也就是说，我们花了一次内存分配加一次逐字节拷贝，只为了把一个马上就要销毁的对象里的数据"搬到"另一个位置上。如果字符串很长，比如一个几 KB 的 JSON 文本，这种拷贝就显得格外浪费——源对象反正马上就要死了，数据留在那块内存里也是白搭，为什么不直接把内存的控制权接管过来？
+在没有移动语义且编译器未做 NRVO（命名返回值优化）的情况下，`build_greeting` 返回 `result` 时会触发拷贝构造——分配一块新内存，把 `result` 里的字符串逐字节复制过去。然后 `result` 自己析构，释放掉原来那块内存。当然，现实中 C++03 时代的 GCC 和 MSVC 已经普遍把 NRVO 作为编译器扩展实现了，所以这段分析讨论的是"NRVO 不生效"时的最坏情况。也就是说，咱们花了一次内存分配加一次逐字节拷贝，只为了把一个马上就要销毁的对象里的数据"搬到"另一个位置上。如果字符串很长，比如一个几 KB 的 JSON 文本，这种拷贝就显得格外浪费: **源对象反正马上就要死了，数据留在那块内存里也是白搭，为什么不直接把内存的控制权接管过来？**
 
-这就是移动语义要解决的核心问题。而要理解移动语义，我们必须先理解 C++ 是如何对表达式进行分类的——也就是所谓的**值类别**（value category）。
+这就是移动语义要解决的核心问题。而要理解移动语义，咱们必须先理解 C++ 是如何对表达式进行分类的——也就是所谓的**值类别**（value category）。
 
 ## 值类别的全景图
 
@@ -95,13 +95,13 @@ int main()
 - 每个表达式恰好属于 **lvalue**、**xvalue**、**prvalue** 三者之一。
 - 这三个类别又可以两两组合成更宽泛的类别：**glvalue**（generalized lvalue）= lvalue + xvalue，**rvalue** = xvalue + prvalue。
 
-如果你觉得这个分类体系有点绕，别急，笔者一开始也绕了半天。我们可以从两个属性来理解它：**有身份**（has identity，指的是表达式有名字、能取地址）和 **可移动**（can be moved from，指的是表达式是临时的、可以被安全地"偷走"资源）。
+如果您觉得这个分类体系有点绕，别急，笔者一开始也绕了半天。咱们可以从两个属性来理解它：**有身份**（has identity，指的是表达式有名字、能取地址）和 **可移动**（can be moved from，指的是表达式是临时的、可以被安全地"偷走"资源）。
 
 有身份且不可移动的是 **lvalue**。
 
-举个例子，普通变量 `int x = 10;` 里的 `x`，它有名字、有地址、生命周期还没有结束，你当然不能随便把它的资源偷走。有身份且可移动的是 **xvalue**（expiring value）——比如 `std::move(x)` 的结果，它告诉你"这个对象有身份，但它马上就要死了，你可以安全地偷走它的资源"。没有身份但可移动的是 **prvalue**（pure rvalue）——比如字面量 `42` 或者函数返回的临时对象，它本来就没有名字，你不需要担心偷了之后谁会再访问它。
+举个例子，普通变量 `int x = 10;` 里的 `x`，它有名字、有地址、生命周期还没有结束，您当然不能随便把它的资源偷走。有身份且可移动的是 **xvalue**（expiring value）——比如 `std::move(x)` 的结果，它告诉您"这个对象有身份，但它马上就要死了，您可以安全地偷走它的资源"。没有身份但可移动的是 **prvalue**（pure rvalue）——比如字面量 `42` 或者函数返回的临时对象，它本来就没有名字，您不需要担心偷了之后谁会再访问它。
 
-我们来看一组具体的例子来把这三类区分清楚。
+咱们来看一组具体的例子来把这三类区分清楚。
 
 ```cpp
 int x = 10;            // x 是 lvalue
@@ -110,13 +110,99 @@ int y = x + 1;         // x + 1 是 prvalue
 int z = 42;            // 42 是 prvalue
 ```
 
-这里面 `x` 是最典型的 lvalue——有名字，有地址，`&x` 是合法表达式（你当然可以在栈上拿到这个变量的地址！）。`std::move(x)` 产生的是一个 xvalue，它和 `x` 指向同一块内存，但语义上标记为"即将过期"。`x + 1` 和 `42` 都是 prvalue——临时的、没有名字的值。
+这里面 `x` 是最典型的 lvalue——有名字，有地址，`&x` 是合法表达式（您当然可以在栈上拿到这个变量的地址！）。`std::move(x)` 产生的是一个 xvalue，它和 `x` 指向同一块内存，但语义上标记为"即将过期"。`x + 1` 和 `42` 都是 prvalue——临时的、没有名字的值。
 
 > ⚠️ **踩坑预警**：有一个经典的误区是"左值可以出现在赋值号左边，右值只能在右边"。这个说法在 C 语言时代基本成立，但在 C++ 里它既不充分也不必要。`const int cx = 10;` 中 `cx` 是 lvalue，但 `cx = 20;` 编译不过——const 限制了修改，但不改变值类别。反过来，`std::string("hello")` 是 prvalue，但在 C++11 之后某些情况下也能出现在赋值号左边（比如调用成员函数）。
 
+### 给任意表达式做值类别体检
+
+规则是懂了，可拿到一个陌生表达式，到底怎么确认它是 lvalue、xvalue 还是 prvalue？总不能每次都靠脑补。这里有个现成的技巧：`decltype` 对**标识符**和**加括号的表达式**求出来的类型不一样。
+
+- `decltype(x)`（不带括号的标识符）得到 `x` 的**声明类型**；
+- `decltype((x))`（带括号的表达式）则按值类别来：lvalue 得 `T&`，xvalue 得 `T&&`，prvalue 得 `T` 本身。
+
+把这个差异套进 `is_lvalue_reference_v` / `is_rvalue_reference_v`，就能给任何表达式做一个「值类别体检」：
+
+```cpp
+// value_category_probe.cpp -- 用 decltype 给任意表达式做值类别体检
+// Standard: C++17
+
+#include <iostream>
+#include <type_traits>
+#include <utility>
+
+template <class T>
+constexpr const char* value_category()
+{
+    if constexpr (std::is_lvalue_reference_v<T>) {
+        return "lvalue";
+    } else if constexpr (std::is_rvalue_reference_v<T>) {
+        return "xvalue";
+    } else {
+        return "prvalue";
+    }
+}
+
+// decltype((expr)) 按表达式的值类别求类型：lvalue 得 T&，xvalue 得 T&&，prvalue 得 T
+#define SHOW(expr) \
+    std::cout << "  " #expr "  ->  " << value_category<decltype((expr))>() << "\n"
+
+int g = 100;  // 全局变量
+
+int main()
+{
+    int x = 10;        // 普通变量
+    int& lref = x;     // 左值引用
+    int&& rref = 20;   // 右值引用（但 rref 这个名字本身是左值！）
+
+    std::cout << "--- 变量与引用 ---\n";
+    SHOW(x);
+    SHOW(lref);
+    SHOW(rref);          // 反直觉点：命名的右值引用是左值
+
+    std::cout << "\n--- 字面量与运算 ---\n";
+    SHOW(42);
+    SHOW(x + 1);
+    SHOW(std::move(x));  // std::move 的产物是 xvalue
+
+    std::cout << "\n--- 解引用与成员 ---\n";
+    SHOW(*(&x));         // 解引用得到左值
+    SHOW(g);
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -O0 -Wall -o value_category_probe value_category_probe.cpp
+./value_category_probe
+```
+
+```text
+--- 变量与引用 ---
+  x  ->  lvalue
+  lref  ->  lvalue
+  rref  ->  lvalue
+
+--- 字面量与运算 ---
+  42  ->  prvalue
+  x + 1  ->  prvalue
+  std::move(x)  ->  xvalue
+
+--- 解引用与成员 ---
+  *(&x)  ->  lvalue
+  g  ->  lvalue
+```
+
+最该盯着看的是 `rref` 那一行——它明明声明成右值引用 `int&& rref`，体检结果却是 `lvalue`。这不是 bug：`rref` 是一个**有名字**的变量，而 C++ 的规则是「有名字的表达式就是左值」。`std::move(x)` 产出的那个 xvalue，一旦您给它起了名字（赋给一个 `T&&` 变量、或当作函数参数传进去），它就「降级」回左值，再不会自动触发移动。完美转发就是来解决这个的，第四篇会专门拆。
+
+有了这个探针，任何拿不准的表达式都能跑代码确认，不用再拍脑袋。
+
 ## 右值引用的绑定规则
 
-理解了值类别，我们来看看右值引用——`T&&`——到底能绑定到什么上面。规则其实很简单：**右值引用只能绑定到右值（prvalue 或 xvalue）上，不能绑定到左值上**。
+理解了值类别，咱们来看看右值引用——`T&&`——到底能绑定到什么上面。规则其实很简单：**右值引用只能绑定到右值（prvalue 或 xvalue）上，不能绑定到左值上**。
 
 ```cpp
 int x = 10;
@@ -128,17 +214,19 @@ int&& r3 = std::move(x); // OK：std::move(x) 是 xvalue
 // int&& r4 = x;         // 编译错误：x 是 lvalue，不能绑定到右值引用
 ```
 
-如果你取消注释最后一行，GCC 会给你一个相当直接的错误信息：
+如果您取消注释最后一行，GCC 会给您一个相当直接的错误信息：
 
 ```text
 error: cannot bind rvalue reference of type 'int&&' to lvalue of type 'int'
 ```
 
-这个绑定规则背后的直觉是：右值引用的设计目的是让你能够"接管"临时对象的资源。如果一个对象是 lvalue（有名字、有地址、还在被人用），你怎么能安全地偷走它的东西呢？编译器在这里拦住你，完全是为了安全。
+这个绑定规则背后的直觉是：右值引用的设计目的是让您能够"接管"临时对象的资源。如果一个对象是 lvalue（有名字、有地址、还在被人用），您怎么能安全地偷走它的东西呢？编译器在这里拦住您，完全是为了安全。
 
-现在我们来看看右值引用和 const 左值引用在绑定行为上的对比，这对理解后续的移动构造函数至关重要。
+不过先记一笔：这条「`T&&` 只绑右值」的规则，说的是**写死类型**的右值引用，比如 `int&&`、`std::string&&`。等到第四篇讲完美转发时，咱们会碰到模板里的 `T&&`——它叫**转发引用**（forwarding reference），左值右值都能绑，是另一套规则。别拿这一篇的结论去套模板里的 `T&&`，会撞墙。
 
-const 左值引用 `const T&` 是 C++ 里的"万能接收器"——它可以绑定到任何东西上：左值、右值、const、非 const，来者不拒。而右值引用 `T&&` 是"挑剔接收器"——它只接受右值。这个差异看起来简单，但它引出了一个非常重要的实战区别：当你用 `const T&` 接收一个右值时，你承诺了"我不修改它"，所以你没法偷走它的资源；当你用 `T&&` 接收一个右值时，你有了修改它的权限，所以你可以安全地把资源转移走。
+现在咱们来看看右值引用和 const 左值引用在绑定行为上的对比，这对理解后续的移动构造函数至关重要。
+
+const 左值引用 `const T&` 是 C++ 里的"万能接收器"——它可以绑定到任何东西上：左值、右值、const、非 const，来者不拒。而右值引用 `T&&` 是"挑剔接收器"——它只接受右值。这个差异看起来简单，但它引出了一个非常重要的实战区别：当您用 `const T&` 接收一个右值时，等于承诺了不修改它，所以没法偷走它的资源；当您用 `T&&` 接收一个右值时，您有了修改它的权限，所以可以安全地把资源转移走。
 
 ```cpp
 void process_const_ref(const std::string& s)
@@ -157,13 +245,13 @@ void process_rvalue_ref(std::string&& s)
 }
 ```
 
-你可能会问：为什么不让右值引用也能绑定左值？好问题，我们知道移动语义就是表达所属权的转移。一个左值就是有自己独立地址，掌管自己资源的变量，天然的就跟“不掌管准备移走”的语义冲突。所以你根本就不会想让 `T&&` 可以绑定到任何东西上！如果这样，我们就无法说出"这个对象可以安全偷取"和"这个对象还在使用中"的能力——而这个区分恰恰是移动语义存在的根本理由。
+您可能会问：为什么不让右值引用也能绑定左值？好问题，咱们知道移动语义就是表达所属权的转移。一个左值就是有自己独立地址，掌管自己资源的变量，天然的就跟“不打算被移走”的语义冲突。所以您根本就不会想让 `T&&` 可以绑定到任何东西上！真要那样，就无法区分“这个对象可以安全偷取”和“这个对象还在使用中”——而这个区分恰恰是移动语义存在的根本理由。
 
 ## std::move 的本质——一个精心包装的类型转换
 
 `std::move` 这个名字大概是 C++ 历史上最具误导性的命名之一。它听起来像是"移动"了什么东西，但实际上它**什么都没移动**。`std::move` 只做一件事：**把它的参数转换成右值引用**，也就是 `static_cast<T&&>`。仅此而已，不多不少。
 
-我们可以自己实现一个等价的 `move`：
+咱们可以自己实现一个等价的 `move`：
 
 ```cpp
 template<typename T>
@@ -176,7 +264,7 @@ my_move(T&& t) noexcept
 
 这段代码做的事情非常直接：不管传入的 `T` 是什么类型，先用 `remove_reference` 把可能存在的引用去掉，然后 `static_cast` 成右值引用。整个过程中没有任何数据被移动、被拷贝、或者被修改——它纯粹是一个类型转换。
 
-那它到底有什么用？关键在于**移动构造函数和移动赋值运算符的签名**。当你写 `std::string a = std::move(b);` 的时候，`std::move(b)` 把 `b` 转换成 `std::string&&`，这个右值引用去匹配 `std::string` 的移动构造函数 `std::string(std::string&& other)`。移动构造函数才是真正执行"资源转移"操作的家伙——它偷走 `other` 的内部缓冲区指针，把 `other` 的指针置空。`std::move` 只是在旁边递了一把钥匙。
+那它到底有什么用？关键在于**移动构造函数和移动赋值运算符的签名**。当您写 `std::string a = std::move(b);` 的时候，`std::move(b)` 把 `b` 转换成 `std::string&&`，这个右值引用去匹配 `std::string` 的移动构造函数 `std::string(std::string&& other)`。移动构造函数才是真正执行"资源转移"操作的家伙——它偷走 `other` 的内部缓冲区指针，把 `other` 的指针置空。`std::move` 只是在旁边递了一把钥匙。
 
 ```cpp
 std::string a = "Hello";
@@ -186,7 +274,7 @@ std::string b = std::move(a);  // std::move 只是转换类型
 // 在大多数实现中 a 变成空字符串，但你不应该依赖这个行为
 ```
 
-这里有一个非常容易踩的坑：**对基本类型使用 `std::move` 在逻辑上不会带来任何性能收益**（出于对编译器优化的恐惧，我根本没法下定论）。`std::move(42)` 只是把 `int` 转换成 `int&&`，但 `int` 的"移动"和"拷贝"是同一回事——都是复制四个字节。移动语义的威力只体现在**管理了资源的类**上，比如持有动态内存、文件句柄、网络连接的类。
+这里有一个非常容易踩的坑：**对基本类型使用 `std::move` 在逻辑上不会带来任何性能收益**（出于对编译器优化的恐惧，笔者根本没法下定论）。`std::move(42)` 只是把 `int` 转换成 `int&&`，但 `int` 的"移动"和"拷贝"是同一回事——都是复制四个字节。移动语义的威力只体现在**管理了资源的类**上，比如持有动态内存、文件句柄、网络连接的类。
 
 ## 临时对象的生命周期——右值引用延长了什么
 
@@ -200,7 +288,7 @@ int&& rr = 100;            // 右值引用也延长了 100 的生命周期
 std::cout << rr << "\n";   // OK：100 还活着
 ```
 
-这两者在延长生命周期上的行为是一样的，区别在于 `rr` 是非 const 的——你可以修改它。这看起来有点怪，一个字面量 `100` 怎么能被修改？实际上编译器在幕后把这个临时值放到了一块存储空间里，`rr` 指向的就是这块空间。
+这两者在延长生命周期上的行为是一样的，区别在于 `rr` 是非 const 的——您可以修改它。这看起来有点怪，一个字面量 `100` 怎么能被修改？实际上编译器在幕后把这个临时值放到了一块存储空间里，`rr` 指向的就是这块空间。
 
 ```cpp
 int&& rr = 100;
@@ -208,11 +296,59 @@ rr = 200;                  // 合法！rr 指向的存储空间被修改了
 std::cout << rr << "\n";   // 输出 200
 ```
 
-这个特性在实战中用得不多，但理解它能帮你消除对"右值引用是不是马上就悬空了"的恐惧。当你写 `std::string&& ref = std::move(name);` 的时候，`ref` 指向的对象不会在下一行就消失——它一直活到 `ref` 的作用域结束。
+这个特性在实战中用得不多，但理解它能帮您消除对"右值引用是不是马上就悬空了"的恐惧。当您写 `std::string&& ref = std::move(name);` 的时候，`ref` 指向的对象不会在下一行就消失——它一直活到 `ref` 的作用域结束。
+
+不过这里有个边界千万盯紧——**生命周期的延长只对"直接绑定"生效，不跨函数边界**。一旦临时对象是经过函数中转的，延长规则就不管用了。最容易栽跟头的就是下面这种：
+
+```cpp
+// lifetime_dangle.cpp -- 临时对象生命周期延长的边界
+// Standard: C++17
+// 编译（开 ASan 的 use-after-scope 才能抓到悬空读）：
+//   g++ -std=c++17 -O0 -g -fsanitize=address -fsanitize-address-use-after-scope \
+//       -o lifetime_dangle lifetime_dangle.cpp
+
+#include <iostream>
+#include <string>
+
+// 把参数引用原样返回
+const std::string& pass_through(const std::string& s)
+{
+    return s;
+}
+
+int main()
+{
+    std::cout << std::unitbuf;  // 实时冲刷，确保 ASan 中断前的输出可见
+
+    // 情况 1：const& 直接绑定一个临时对象——生命周期被延长，安全
+    const std::string& safe = std::string("I am a temp");
+    std::cout << "1) 直接绑定临时对象: \"" << safe << "\"\n";
+
+    // 情况 2：const& 绑的是「函数返回的引用」，而这个引用指向一个临时对象——不延长，悬空
+    const std::string& dead = pass_through(std::string("I am passed"));
+    std::cout << "2) 经函数返回的引用: \"" << dead << "\n";  // use-after-scope
+
+    return 0;
+}
+```
+
+情况 1 没问题，`const&` 直接接住临时对象，临时对象活到 `safe` 离开作用域。情况 2 就出事了——临时对象 `"I am passed"` 是绑到函数参数 `s` 上的，按标准它只活到**这条完整表达式结束**；而 `dead` 接的是 `pass_through` 返回的引用，这种「经函数中转」的绑定不触发延长。于是表达式一结束临时对象就析构了，下一行读 `dead` 读到的就是一具「尸体」。
+
+肉眼很难看出来——不开 sanitizer 时它可能「碰巧」还打印出旧内容，因为那块内存还没被覆盖，这正是悬空引用最阴险的地方。开了 ASan 的 use-after-scope，真相立刻现形：
+
+```text
+1) 直接绑定临时对象: "I am a temp"
+2) 经函数返回的引用: "=================================================================
+==PID==ERROR: AddressSanitizer: stack-use-after-scope on address 0x... at pc 0x...
+    #2 ... in main lifetime_dangle.cpp:26
+SUMMARY: AddressSanitizer: stack-use-after-scope ... in std::__ostream_insert
+```
+
+（进程号 `PID`、地址 `0x...` 每次运行不同，省略了；错误类型、行号、SUMMARY 是固定的。）情况 1 正常打印，情况 2 在尝试读 `dead` 的瞬间被 ASan 当场按住。规则记一句话：**临时对象的生命延长，只认"直接绑定"，函数返回的引用一律不延长。**
 
 ## 通用示例——字符串拼接中的拷贝与移动
 
-让我们把前面学的东西放在一起，看一个真实的例子。假设我们在构建日志消息：
+咱们把前面学的东西放在一起，看一个真实的例子。假设咱们在构建日志消息：
 
 ```cpp
 #include <iostream>
@@ -252,17 +388,70 @@ names.push_back(std::move(name));  // 移动：name 的内部数据转移到 vec
 names.push_back("Bob");   // 先从 const char* 构造临时对象，再移动进 vector
 ```
 
-第一个 `push_back` 使用了移动语义：`std::move(name)` 把 `name` 转成右值引用，vector 调用 `std::string` 的移动构造函数来构造新元素——代价是转移一个指针和两个 `size_t`，而不是复制整个字符串内容。第二个 `push_back("Bob")` 看起来好像"直接构造"，但实际发生的事情是：`"Bob"` 先通过 `std::string` 的 `const char*` 构造函数创建一个临时对象，然后这个临时对象作为右值传入 `push_back(T&&)` 重载，被移动构造进 vector 的存储空间里。也就是说，它比 `push_back(std::move(name))` 多了一步临时对象的构造，但依然只做了一次移动而没有发生深拷贝。如果你真的想跳过临时对象的构造，实现真正的就地构造，应该用 `emplace_back("Bob")`——它会直接在 vector 的存储空间里调用 `std::string` 的构造函数。
+第一个 `push_back` 使用了移动语义：`std::move(name)` 把 `name` 转成右值引用，vector 调用 `std::string` 的移动构造函数来构造新元素——代价是转移一个指针和两个 `size_t`，而不是复制整个字符串内容。第二个 `push_back("Bob")` 看起来好像"直接构造"，但实际发生的事情是：`"Bob"` 先通过 `std::string` 的 `const char*` 构造函数创建一个临时对象，然后这个临时对象作为右值传入 `push_back(T&&)` 重载，被移动构造进 vector 的存储空间里。也就是说，它比 `push_back(std::move(name))` 多了一步临时对象的构造，但依然只做了一次移动而没有发生深拷贝。如果您真的想跳过临时对象的构造，实现真正的就地构造，应该用 `emplace_back("Bob")`——它会直接在 vector 的存储空间里调用 `std::string` 的构造函数。
 
-我们可以用带追踪的类来验证这一点：
+咱们可以用带追踪的类来验证这一点：
 
 ```cpp
-// push_back_inplace.cpp -- push_back vs emplace_back 行为对比
-// GCC 15, -O0 -std=c++17
+// push_back_vs_emplace.cpp -- push_back vs emplace_back 的构造/移动/析构追踪
+// Standard: C++17
+
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+class TrackedString
+{
+    std::string data_;
+
+public:
+    explicit TrackedString(const char* s) : data_(s)
+    {
+        std::cout << "  [ctor from const char*] \"" << data_ << "\"\n";
+    }
+
+    TrackedString(const TrackedString& other) : data_(other.data_)
+    {
+        std::cout << "  [copy ctor] \"" << data_ << "\"\n";
+    }
+
+    TrackedString(TrackedString&& other) noexcept : data_(std::move(other.data_))
+    {
+        std::cout << "  [move ctor] \"" << data_ << "\"\n";
+    }
+
+    ~TrackedString()
+    {
+        std::cout << "  [dtor] \"" << data_ << "\"\n";
+    }
+};
+
+int main()
+{
+    std::cout << "=== push_back(TrackedString(\"Bob\")) ===\n";
+    {
+        std::vector<TrackedString> v;
+        v.push_back(TrackedString("Bob"));
+        std::cout << "=== done ===\n";
+    }
+
+    std::cout << "\n=== emplace_back(\"Alice\") ===\n";
+    {
+        std::vector<TrackedString> v;
+        v.emplace_back("Alice");
+        std::cout << "=== done ===\n";
+    }
+
+    return 0;
+}
 ```
 
+编译运行：
+
 ```bash
-g++ -std=c++17 -O0 -o /tmp/push_back_inplace push_back_inplace.cpp && /tmp/push_back_inplace
+g++ -std=c++17 -O0 -Wall -o push_back_vs_emplace push_back_vs_emplace.cpp
+./push_back_vs_emplace
 ```
 
 ```text
@@ -271,17 +460,19 @@ g++ -std=c++17 -O0 -o /tmp/push_back_inplace push_back_inplace.cpp && /tmp/push_
   [move ctor] "Bob"
   [dtor] ""
 === done ===
+  [dtor] "Bob"
 
 === emplace_back("Alice") ===
   [ctor from const char*] "Alice"
 === done ===
+  [dtor] "Alice"
 ```
 
-输出很清楚：`push_back(TrackedString("Bob"))` 先构造了一个临时对象，然后移动进去，临时对象再析构——两步构造。而 `emplace_back("Alice")` 只有一行输出，它直接在 vector 的存储空间里就地构造，省掉了移动那一步。回到文章中 `std::string` 的场景，`push_back("Bob")` 的过程是一样的：`"Bob"` 先隐式转换成临时 `std::string`，再被移动进 vector。如果你追求极致的零开销，`emplace_back` 才是正确选择。
+输出很清楚：`push_back(TrackedString("Bob"))` 在 `=== done ===` 之前有三行——先构造临时对象，再移动进 vector，然后临时对象析构，两步构造。`=== done ===` 之后那行 `[dtor] "Bob"` 是 vector 离开 `{ }` 作用域时析构它持有的元素，跟构造过程无关。而 `emplace_back("Alice")` 在 `=== done ===` 之前只有一行 `ctor`，它直接在 vector 的存储空间里就地构造，连移动那一步都省了。回到文章中 `std::string` 的场景，`push_back("Bob")` 的过程是一样的：`"Bob"` 先隐式转换成临时 `std::string`，再被移动进 vector。如果您追求极致的零开销，`emplace_back` 才是正确选择。
 
 ## 动手实验——rvalue_demo.cpp
 
-我们来写一个完整的程序，把右值引用的绑定规则、`std::move` 的行为、以及临时对象的生命周期全部跑一遍。
+咱们来写一个完整的程序，把右值引用的绑定规则、`std::move` 的行为、以及临时对象的生命周期全部跑一遍。
 
 ```cpp
 // rvalue_demo.cpp -- 右值引用与值类别演示
@@ -294,7 +485,6 @@ g++ -std=c++17 -O0 -o /tmp/push_back_inplace push_back_inplace.cpp && /tmp/push_
 class Tracker
 {
     std::string name_;
-    static int kDefaultId;
 
 public:
     explicit Tracker(std::string name)
@@ -338,8 +528,6 @@ public:
 
     const std::string& name() const { return name_; }
 };
-
-int Tracker::kDefaultId = 0;
 
 /// @brief 返回临时对象（prvalue）
 Tracker make_tracker(std::string name)
@@ -416,9 +604,9 @@ g++ -std=c++17 -Wall -Wextra -o rvalue_demo rvalue_demo.cpp
   [(moved-from)] 析构
 ```
 
-我们来逐步分析这个输出。第 2 步中，`Tracker b = a;` 触发了拷贝构造——`a` 是左值，只能匹配拷贝构造函数，`b` 的名字变成了 `"A_copy"`。第 3 步中，`std::move(a)` 把 `a` 转成右值引用，匹配移动构造函数——`c` 的名字变成了 `"A"`（从 `a` 那里偷来的），而 `a` 的名字变成了 `"(moved-from)"`。
+咱们来逐步分析这个输出。第 2 步中，`Tracker b = a;` 触发了拷贝构造——`a` 是左值，只能匹配拷贝构造函数，`b` 的名字变成了 `"A_copy"`。第 3 步中，`std::move(a)` 把 `a` 转成右值引用，匹配移动构造函数——`c` 的名字变成了 `"A"`（从 `a` 那里偷来的），而 `a` 的名字变成了 `"(moved-from)"`。
 
-第 4 步是最有意思的。`make_tracker("D")` 在函数内部构造了一个 `Tracker("D")`，然后返回。注意输出里只有一次构造——没有拷贝，也没有移动。这是因为 C++17 的**保证消除**（guaranteed copy elision）：返回 prvalue 时，编译器直接在调用者的空间里构造对象，连移动都省了。这就是为什么我们在下一篇文章里要专门讲 RVO 和 NRVO。
+第 4 步是最有意思的。`make_tracker("D")` 在函数内部构造了一个 `Tracker("D")`，然后返回。注意输出里只有一次构造——没有拷贝，也没有移动。这是因为 C++17 的**保证消除**（guaranteed copy elision）：返回 prvalue 时，编译器直接在调用者的空间里构造对象，连移动都省了。这就是为什么咱们在下一篇文章里要专门讲 RVO 和 NRVO。
 
 第 5 步的移动赋值也值得注意。`d = std::move(b);` 把 `b` 的资源转移给 `d`——`d` 原来的名字 `"D"` 被覆盖成了 `"A_copy"`，`b` 变成了 `"(moved-from)"`。这个过程中 `d` 原来的资源（那块存着 `"D"` 的内存）被正确释放了，因为移动赋值运算符在覆盖之前要确保旧资源被清理。
 
@@ -433,8 +621,4 @@ g++ -std=c++17 -Wall -Wextra -o rvalue_demo rvalue_demo.cpp
   allow-run
 />
 
-## 小结
-
-这一篇我们把右值引用的地基打好了。C++ 的值类别体系分为 lvalue、xvalue、prvalue 三类，它们按"有身份"和"可移动"两个维度交叉组合。右值引用 `T&&` 只能绑定到右值（prvalue 或 xvalue）上，这保证了我们不会意外偷走一个还在使用的左值的资源。`std::move` 本质上是一个 `static_cast<T&&>`，它不做任何移动操作——真正移动资源的是移动构造函数和移动赋值运算符。临时对象绑定到右值引用时，生命周期会被延长到引用的作用域结束。
-
-这些概念看起来抽象，但它们构成了整个移动语义大厦的根基。下一篇我们就要在这个地基上盖楼——实现移动构造函数和移动赋值运算符，真正地完成零拷贝的资源转移。
+下一篇把这些规则落到代码上——给 `StringWrapper` 配上移动构造和移动赋值，让 `build_greeting` 的返回从一次拷贝变成零成本转移。
