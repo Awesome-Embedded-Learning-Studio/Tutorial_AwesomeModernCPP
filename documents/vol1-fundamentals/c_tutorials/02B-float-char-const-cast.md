@@ -316,15 +316,39 @@ C++ 在类型系统上做了大量的安全加固，很多改进直接瞄准了 
 
 int main(void)
 {
-    double a = 0.1;
-    double b = 0.2;
-    double c = 0.3;
-
-    printf("a + b == c? %s\n", (a + b == c) ? "yes" : "no");
-    printf("a + b     = %.20f\n", a + b);
-    printf("c         = %.20f\n", c);
+    double a_double = 0.1;
+    double b_double = 0.2;
+    double c_double = 0.3;
+    float  a_float  = 0.1f;
+    float  b_float  = 0.2f;
+    float  c_float  = 0.3f;
+    float  e_float  = 0.3f;
+    float  f_float  = 0.4f;
+    float  g_float  = 0.7f;
+    
+    printf("a_double + b_double == c_double? %s\n", (a_double + b_double == c_double) ? "yes" : "no");
+    printf("a_float + b_float   == c_float? %s\n", (a_float + b_float == c_float) ? "yes" : "no");
+    printf("e_float + f_float   == g_float? %s\n", (e_float + f_float == g_float) ? "yes" : "no");
+    printf("a_double + b_double   = %.20f\n", 0.1 + 0.2);
+    printf("a_float + b_float     = %.20f\n", 0.1f + 0.2f);
+    printf("e_float + f_float     = %.20f\n", 0.3f + 0.4f);
+    printf("c_double        = %.20f\n", c_double);
+    printf("c_float         = %.20f\n", c_float);
+    printf("g_float         = %.20f\n", g_float);
     return 0;
 }
+```
+
+```终端输出
+a_double + b_double   == c_double? no
+a_float + b_float     == c_float? yes
+e_float + f_float     == g_float? no
+a_double + b_double   = 0.30000000000000004441 //0.1 + 0.2
+a_float + b_float     = 0.30000001192092895508 //0.1f + 0.2f
+e_float + f_float     = 0.70000004768371582031 //0.3f + 0.4f
+c_double              = 0.29999999999999998890 //0.3
+c_float               = 0.30000001192092895508 //0.3f
+g_float               = 0.69999998807907104492 //0.7f
 ```
 
 修改代码使用 epsilon 比较来得到正确的结果。
@@ -345,6 +369,30 @@ if (target < sizeof(values) / sizeof(values[0])) {
 
 提示：`sizeof` 返回的是什么类型？
 
+
+### 练习 2 参考答案
+
+```c
+int values[] = {1, 2, 3, 4, 5};
+int target = -1;
+
+// bug 就在下面这行
+if (target < (int)sizeof(values) / (int)sizeof(values[0])) {
+    printf("target is in range\n");
+}
+```
+或者
+
+```c
+int values[] = {1, 2, 3, 4, 5};
+int target = -1;
+
+// bug 就在下面这行
+if (target < (int)(sizeof(values) / sizeof(values[0]))) {
+    printf("target is in range\n");
+}
+```
+
 ### 练习 3：const 实战
 
 写一个函数，接收一个字符串，统计其中某个字符出现的次数。函数签名中正确使用 `const`：
@@ -355,6 +403,23 @@ if (target < sizeof(values) / sizeof(values[0])) {
 /// @param ch 要查找的字符
 /// @return 出现次数
 size_t count_char(const char* str, char ch);
+```
+
+### 练习 3 参考答案
+
+```c
+size_t count_char(const char* str, char ch) {
+    if (str == NULL) {  // 警惕空指针
+        return 0;
+    }
+    size_t count = 0;
+    for (;*str;str++) {
+        if (*str == ch) {
+            count++;
+        }
+    }
+    return count;
+}
 ```
 
 ## 参考资源
