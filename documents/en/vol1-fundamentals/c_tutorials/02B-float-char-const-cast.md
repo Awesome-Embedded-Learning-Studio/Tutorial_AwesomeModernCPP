@@ -69,55 +69,68 @@ long double ld = 3.14L;      // 后缀 L 表示 long double
 
 ### Floating-point numbers are imprecise — this is not a bug
 
-The most important concept to understand about floating-point numbers is this: **floating-point numbers are approximations, not exact values**. This is because computers use a finite number of binary bits to represent decimal fractions, just as you can only represent 1/3 using a finite number of decimal places — it will always be an approximation.
+To understand floating-point numbers, accept one fact first: **they are approximations, not exact values**. It feels counterintuitive — how can the `0.1` you store not equal `0.1`? The answer is hiding inside the binary structure of a floating-point number.
 
-```c
-#include <stdio.h>
+Start with integers as a warm-up. An `int` has only 32 binary bits, so the numbers it can represent have a fixed ceiling and floor; go past them and you overflow. Yet there are infinitely many integers, and the computer just picks one finite segment to represent. Floating-point numbers face the exact same problem: there are infinitely many real numbers, many with infinitely many fractional digits, and a `float` still only gets 32 bits. How does it cover such a vast range with so few bits? The same way you would on paper — scientific notation.
 
-int main(void)
-{
-    float a = 0.1f;
-    float b = 0.2f;
-    if (a + b == 0.3f) {
-        printf("equal\n");
-    } else {
-        printf("not equal: %.9f\n", a + b);
-    }
-    return 0;
-}
-```
+Decimal scientific notation writes `0.0123` as `1.23 × 10⁻²`, a mantissa times a power of 10. A computer does the same thing, only with base 2: `number = (±1) × mantissa × 2^exponent`. The 32 bits of a `float` are split into exactly these three parts:
 
-Let's verify this by compiling and running the code:
+| 1 bit sign | 8 bits exponent | 23 bits mantissa |
+|---|---|---|
+| Positive or negative | How large or small the number can get (range) | How many significant digits you get (precision) |
 
-```bash
-gcc -Wall -Wextra -std=c17 float_demo.c -o float_demo && ./float_demo
-```
+The exponent bits control magnitude, the mantissa bits control fine detail, and both are finite. The exponent lets you reach as high as `10³⁸` and as low as `10⁻⁴⁵`; but with only 23 mantissa bits, you get roughly 7 decimal digits of precision — anything beyond that cannot be stored.
 
-**Output:**
+The real trouble lives in those 23 mantissa bits. The decimal `0.1`, written in binary, is `0.0001100110011...` — an infinitely repeating fraction. The mantissa field has only 23 bits, so it cannot hold the infinite repetition and must truncate. What gets stored is no longer `0.1`. The little program below prints out the raw 32 bits of `0.1f`; click "Try it yourself" to run it directly:
+
+<OnlineCompilerDemo
+  title="What 0.1 actually looks like inside a float"
+  source-path="code/examples/vol1/c_float_representation_en.c"
+  description="Print the 32 bits of 0.1f (sign | exponent | mantissa), then see why 0.1 + 0.2 does not equal 0.3 under double."
+  allow-run
+  run-compiler="cg132"
+  run-options="-O2 -std=c17"
+/>
+
+The key lines of output look like this:
 
 ```text
-not equal: 0.300000012
+32 bits of 0.1f in a float (sign | exponent | mantissa):
+  0 01111011 10011001100110011001101
+
+Printed at different precisions — never exactly 0.1:
+  9 digits : 0.100000001
+  20 digits: 0.10000000149011611938
+
+double: 0.1 + 0.2 == 0.3 ? no
+  a + b = 0.30000000000000004441
+  c     = 0.29999999999999998890
 ```
 
-See? `0.1 + 0.2` does not equal `0.3` in floating-point arithmetic. This is not a compiler bug; it is an inherent characteristic of the IEEE 754 floating-point standard. Therefore, **never use `==` to compare floating-point numbers**. The correct approach is to use a small epsilon value to determine "approximate equality":
+Look at the first line: the sign bit is `0` (positive), the exponent is `01111011`, and the mantissa is `10011001100110011001101` — that run of `1001 1001 1001...` is the infinite repetition truncated to 23 bits, with the final `1` left over from rounding. That is why `0.1f` prints as `0.10000000149011611938`, not `0.1`.
+
+The `double` part is even clearer: `0.1 + 0.2` comes out to `0.30000000000000004441`, while `0.3` stored is `0.29999999999999998890`. Two numbers that were never equal to begin with, compared with `==`, will of course not be equal. There is no mystery here: a finite mantissa cannot hold an infinitely repeating fraction, so this is inevitable.
+
+::: warning
+Never compare floating-point numbers with `==`. `0.1 + 0.2 != 0.3` is the norm in floating-point arithmetic, not a bug. Checking for "approximate equality" with an epsilon is the correct fix.
+:::
+
+One related trap: under `float`, `0.1f + 0.2f` happens to equal `0.3f`. Don't conclude that `float` is somehow more "accurate" — the 23-bit mantissa is simply too coarse, so the error gets rounded away. Switch to the higher-precision `double` and the error has nowhere to hide. Always use this kind of approximate comparison for equality checks:
 
 ```c
 #include <math.h>
 
-/// @brief 判断两个 float 是否近似相等
-/// @param a 第一个浮点数
-/// @param b 第二个浮点数
-/// @return 1 表示近似相等，0 表示不相等
+/// @brief Check whether two floats are approximately equal
+/// @param a the first float
+/// @param b the second float
+/// @return 1 if approximately equal, 0 otherwise
 int float_equal(float a, float b)
 {
     return fabsf(a - b) < 1e-6f;
 }
 ```
 
-> ⚠️ **Warning**
-> Never compare floating-point numbers using `==`. In floating-point arithmetic, `0.1 + 0.2 != 0.3` is the norm, not a bug. Using epsilon to check for approximate equality is the correct approach.
-
-There is one more detail: when we write `float f = 0.1;`, the literal `0.1` is first treated as a `double` and then truncated to `float`—this might introduce additional precision differences. If we intend to use `float`, we should get into the habit of adding the `f` suffix.
+One more detail: when you write `float f = 0.1;`, the `0.1` is first treated as a `double` and then truncated to `float`, which introduces an extra precision difference. If you really mean to use `float`, get into the habit of adding the `f` suffix.
 
 ### Floating-Point in Embedded Systems
 
@@ -311,9 +324,9 @@ Predict the output of the following code, then compile and run it to verify your
 
 int main(void)
 {
-    float a = 0.1f;
-    float b = 0.2f;
-    float c = 0.3f;
+    double a = 0.1;
+    double b = 0.2;
+    double c = 0.3;
 
     printf("a + b == c? %s\n", (a + b == c) ? "yes" : "no");
     printf("a + b     = %.20f\n", a + b);
