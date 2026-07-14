@@ -1,6 +1,11 @@
 # C 语言系统教程
 
-如果你是因为一些原因打算学习或重修 C 语言，发现上一级目录的 C 语言速通教程节奏太紧，可以考虑这里的教程。它比速通教程更加详细，循序渐进，同样可以根据自己的喜好挑感兴趣的方向学习。
+PS: 这部分教程不是面向0基础的朋友的，本教程的原型是笔者曾今搞嵌入式的C语言笔记，当时写笔记的时候就已经掌握了C语言，所以如果存在C语言的学习需求，左转到这个仓库：
+
+> [Github C语言的旅程](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey)
+> [网站 C Journey](https://awesome-embedded-learning-studio.github.io/C-Journey/)
+
+这里的C语言教程更偏向于曾学习过C但是忘记C长啥样的朋友看的。
 
 ## 基础篇
 

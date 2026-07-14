@@ -1,6 +1,11 @@
 # Comprehensive C Language Tutorial
 
-If you are planning to learn or revisit C for whatever reason, and find the C crash course in the parent directory too fast-paced, consider this tutorial instead. It is more detailed and gradual than the crash course, and you can still pick and choose topics based on your interests.
+PS: This part of the tutorial is not aimed at complete beginners. It grew out of a set of C notes taken back when working in embedded development, by which point C was already well in hand. So if you actually need to learn C from scratch, head over to this repo instead:
+
+> [GitHub: C Journey](https://github.com/Awesome-Embedded-Learning-Studio/C-Journey)
+> [Website: C Journey](https://awesome-embedded-learning-studio.github.io/C-Journey/)
+
+The C tutorials here are better suited for people who once learned C but have forgotten what it looks like.
 
 ## Fundamentals
 
