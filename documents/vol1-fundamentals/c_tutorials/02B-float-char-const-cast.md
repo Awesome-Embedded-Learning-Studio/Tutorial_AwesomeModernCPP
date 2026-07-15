@@ -325,7 +325,7 @@ int main(void)
     float  e_float  = 0.3f;
     float  f_float  = 0.4f;
     float  g_float  = 0.7f;
-    
+
     printf("a_double + b_double == c_double? %s\n", (a_double + b_double == c_double) ? "yes" : "no");
     printf("a_float + b_float   == c_float? %s\n", (a_float + b_float == c_float) ? "yes" : "no");
     printf("e_float + f_float   == g_float? %s\n", (e_float + f_float == g_float) ? "yes" : "no");
@@ -339,7 +339,7 @@ int main(void)
 }
 ```
 
-```终端输出
+```text
 a_double + b_double   == c_double? no
 a_float + b_float     == c_float? yes
 e_float + f_float     == g_float? no
@@ -381,6 +381,7 @@ if (target < (int)sizeof(values) / (int)sizeof(values[0])) {
     printf("target is in range\n");
 }
 ```
+
 或者
 
 ```c

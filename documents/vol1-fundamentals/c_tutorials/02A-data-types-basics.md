@@ -284,7 +284,7 @@ uint8_t z{1000};    // C++ 编译错误！1000 超出 uint8_t 范围
 
 提示：可以用一个宏来减少重复代码。
 
-###练习 1 参考答案
+### 练习 1 参考答案
 
 ```c
 #include <stdio.h>
@@ -314,7 +314,7 @@ int main() {
 
 ```
 
-```终端输出
+```text
 sizeof(char)      = 1 bytes
 sizeof(short)     = 2 bytes
 sizeof(int)       = 4 bytes
@@ -327,6 +327,8 @@ sizeof(uint32_t)  = 4 bytes
 sizeof(int64_t)   = 8 bytes
 sizeof(size_t)    = 8 bytes
 ```
+
+注意 `sizeof(long)` 这里是 4，但 `sizeof(size_t)` 已经是 8 了，说明这份输出来自 LLP64 环境（比如 64 位 Windows）：这种模型下指针 8 字节，`long` 却只有 4。换到 64 位的 Linux 或 macOS（LP64），`long` 就是 8 字节。你在自己机器上看到 `sizeof(long) = 8`，程序没写错，是数据模型的差别。
 
 ### 练习 2：溢出观察
 
@@ -356,21 +358,22 @@ int main(void)
 
 使用 gcc overflow.c -o overflow && ./overflow 编译运行后，你大概率会看到如下输出：
 
-```终端输出
+```text
 INT_MAX  = 2147483647,  INT_MAX + 1  = -2147483648
 UINT_MAX = 4294967295, UINT_MAX + 1 = 0
 ```
 
 使用 gcc -fsanitize=undefined overflow.c -o overflow_ubsan && ./overflow_ubsan 编译运行后，你会看到类似如下的输出：
 
-```终端输出
+```text
 INT_MAX  = 2147483647,  INT_MAX + 1  = -2147483648
 overflow.c:9:54: runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
 UINT_MAX = 4294967295, UINT_MAX + 1 = 0
 ```
+
 为什么？
 实际上 C 标准其实并没有对带有符号的整数的溢出进行定义，也就是说，对INT_MAX进行+1这个操作严格意义上是一个未定义行为。
-（只不过溢出很好用，也是大部分编译器都默认支持译出的。）
+（只不过溢出很好用，也是大部分编译器都默认支持溢出的。）
 
 ## 参考资源
 
