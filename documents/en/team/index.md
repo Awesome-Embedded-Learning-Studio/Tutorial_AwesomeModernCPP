@@ -66,6 +66,15 @@ A huge thank you to these friends for their PRs and various forms of support! Yo
     <p class="card-desc">Fixed typos in the shared pointer and variant chapters, improving content accuracy</p>
   </div>
 </a>
+<a href="https://github.com/owollz4" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/owollz4.png?size=96" alt="owollz4" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">owollz4 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Content Additions</p>
+    <p class="card-types">💡 📝</p>
+    <p class="card-desc">Submitted PRs adding reference answers to the C language tutorial chapters 2 & 3 (#108) and annotating the Chapter 6 state machine code (#104)</p>
+  </div>
+</a>
 </div>
 
 The valuable feedback from these folks is equally worth recording. It is your feedback that allows this project to identify real issues and pushes us to improve! (Another deep 90-degree bow!)
@@ -105,6 +114,24 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <p class="card-role">Bug Report · Content Errata</p>
     <p class="card-types">🐛 💡</p>
     <p class="card-desc">Reported an inconsistency between the example and explanation in Vol.1 "Cache and Memory Hierarchy" (#67), leading to a units fix</p>
+  </div>
+</a>
+<a href="https://github.com/Zch0" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Zch0.png?size=96" alt="Zch0" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Zch0 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported a misleading claim in Vol.1's function templates chapter about template specialization and overloading ambiguity (#109), prompting a wording fix</p>
+  </div>
+</a>
+<a href="https://github.com/HiAirman" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/HiAirman.png?size=96" alt="HiAirman" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">HiAirman <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Discussion</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Raised a discussion on the correctness of an alignas example in the Advanced C++98 chapter (#96)</p>
   </div>
 </a>
 </div>

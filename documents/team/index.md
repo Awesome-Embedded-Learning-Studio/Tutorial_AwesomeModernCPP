@@ -61,6 +61,15 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">修复 shared_ptr 和 variant 章节的文字错误，改进内容准确性</p>
   </div>
 </a>
+<a href="https://github.com/owollz4" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/owollz4.png?size=96" alt="owollz4" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">owollz4 <span class="card-badge pr">PR</span></span>
+    <p class="card-role">内容补充</p>
+    <p class="card-types">💡 📝</p>
+    <p class="card-desc">提交 PR 为 C 语言教程第二、三章补充参考答案（#108），并为第六章状态机代码补充注释（#104）</p>
+  </div>
+</a>
 </div>
 
 这些同志提出的宝贵反馈，同样值得记录，正是你们的反馈让这个项目可以知晓真实的问题，督促我们改进！（继续深鞠躬90°！）
@@ -100,6 +109,24 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-role">问题反馈 · 内容勘误</p>
     <p class="card-types">🐛 💡</p>
     <p class="card-desc">反馈卷一「Cache 机制与内存层次」示例与解释不一致的问题（#67），促成量纲修正</p>
+  </div>
+</a>
+<a href="https://github.com/Zch0" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/Zch0.png?size=96" alt="Zch0" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">Zch0 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈 · 内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈卷一函数模板章节「模板特化与重载混合使用不会产生二义性」的表述问题（#109），促成表述修正</p>
+  </div>
+</a>
+<a href="https://github.com/HiAirman" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/HiAirman.png?size=96" alt="HiAirman" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">HiAirman <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">就「C++98 进阶」章节 alignas 示例的正确性发起讨论（#96）</p>
   </div>
 </a>
 </div>
