@@ -1,22 +1,23 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 掌握 C 语言的算术运算符、自增自减、关系与逻辑运算符、条件运算符和逗号运算符，理解短路求值和赋值运算符的用法
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-- 浮点、字符、const 与类型转换
+  - 浮点、字符、const 与类型转换
 reading_time_minutes: 9
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
+  - 基础
 title: 运算符基础：让数据动起来
 ---
+
 # 运算符基础：让数据动起来
 
 上一篇里我们把 C 语言的数据类型从里到外拆了一遍——整数怎么存、小数怎么存、字符怎么存。但光有数据还不够，我们还得让数据"动起来"：做加减乘除、比较大小、判断真假。这些操作在 C 语言里由**运算符**来完成。
@@ -35,7 +36,7 @@ title: 运算符基础：让数据动起来
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -266,6 +267,16 @@ printf("%d\n", 7 % 2);
 printf("%d\n", -7 % 2);
 ```
 
+### 练习 1 参考答案
+
+```text
+ 3 // 7 / 2 得 3.5 ，正整型向下取整，得3
+-3 // -7 / 2 得 -3.5，负整型向上取整，得3
+-3 // 其实我觉得不论是正整形还是负整形，都是向0取整。比如：7 / -2 得 -3.5 ， 然后向0取整，得-3
+ 1 // 7 % 2 得 1 （这应该不用过多做解释吧）
+-1 // -7 % 2 等于 -(7 % 2) 等于 -(1)，所以，得：-7 % 2 等于 -1
+```
+
 ### 练习 2：短路求值实战
 
 写一个函数，安全地从数组中找到第一个大于指定值的元素。利用短路求值确保不越界：
@@ -277,6 +288,38 @@ printf("%d\n", -7 % 2);
 /// @param threshold 阈值
 /// @return 找到的元素的索引，未找到返回 -1
 int find_first_above(const int* arr, size_t len, int threshold);
+```
+
+### 练习 2 参考答案
+
+```c
+#include <stddef.h>
+
+int find_first_above(const int* arr, size_t len, int threshold) {
+    // 边界情况：如果数组为空指针或长度为0，直接返回 -1
+    if (arr == NULL || len == 0) {
+        return -1;
+    }
+
+    size_t i = 0;
+
+    // 核心逻辑：利用短路求值防止越界
+    // 1. 首先检查 i < len
+    // 2. 只有当 i < len 为真时，才会去访问 arr[i] (避免越界读取)
+    // 3. 如果 arr[i] <= threshold，循环继续
+    while (i < len && arr[i] <= threshold) {
+        i++;
+    }
+
+    // 循环退出有两个原因：
+    // 1. 找到了大于 threshold 的元素 (此时 i < len)
+    // 2. 遍历完了数组也没找到 (此时 i == len)
+    if (i < len) {
+        return (int)i;
+    } else {
+        return -1;
+    }
+}
 ```
 
 ## 参考资源

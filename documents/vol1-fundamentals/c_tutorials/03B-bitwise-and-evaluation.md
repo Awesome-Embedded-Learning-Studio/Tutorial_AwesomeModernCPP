@@ -1,21 +1,22 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 深入位运算的四大操作、移位注意事项、运算符优先级陷阱、求值顺序与序列点，理解未定义行为的本质
 difficulty: beginner
 order: 5
 platform: host
 prerequisites:
-- 运算符基础：让数据动起来
+  - 运算符基础：让数据动起来
 reading_time_minutes: 10
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
 title: 位运算与求值顺序
 ---
+
 # 位运算与求值顺序
 
 上一篇里我们把算术、关系、逻辑这些常用运算符过了一遍。现在我们来啃两块比较硬的骨头：位运算和求值顺序。位运算在一般的应用层编程中用得不多，但如果你以后要接触嵌入式开发或者底层系统编程，位运算就是你的日常工具——配置硬件寄存器、解析通信协议的位字段、实现标志位集合，全靠它。求值顺序和序列点则是理解"为什么有些代码在不同编译器上结果不一样"的关键。
@@ -34,7 +35,7 @@ title: 位运算与求值顺序
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -46,14 +47,14 @@ title: 位运算与求值顺序
 
 C 提供了六种位运算符：
 
-| 运算符 | 含义 | 简单理解 |
-|--------|------|---------|
-| `&` | 按位与 | 两个都是 1 才得 1 |
-| `\|` | 按位或 | 有一个 1 就得 1 |
-| `^` | 按位异或 | 不同得 1，相同得 0 |
-| `~` | 按位取反 | 0 变 1，1 变 0 |
-| `<<` | 左移 | 所有位向左移动，低位补 0 |
-| `>>` | 右移 | 所有位向右移动，高位补 0（无符号数） |
+| 运算符 | 含义     | 简单理解                             |
+| ------ | -------- | ------------------------------------ |
+| `&`    | 按位与   | 两个都是 1 才得 1                    |
+| `\|`   | 按位或   | 有一个 1 就得 1                      |
+| `^`    | 按位异或 | 不同得 1，相同得 0                   |
+| `~`    | 按位取反 | 0 变 1，1 变 0                       |
+| `<<`   | 左移     | 所有位向左移动，低位补 0             |
+| `>>`   | 右移     | 所有位向右移动，高位补 0（无符号数） |
 
 我们用 8 位无符号数来演示，这样比较直观：
 
@@ -312,6 +313,39 @@ uint32_t bit_toggle(uint32_t value, int n);
 uint32_t bit_extract(uint32_t value, int high, int low);
 ```
 
+### 练习 1 的参考答案
+
+```c
+
+/// @brief 将 value 的第 n 位置为 1
+uint32_t bit_set(uint32_t value, int n) {
+    value = value | (1U << n);
+    return value;
+}
+
+/// @brief 将 value 的第 n 位清零
+uint32_t bit_clear(uint32_t value, int n) {
+    value = value & (~(1U << n));
+    return value;
+}
+
+/// @brief 翻转 value 的第 n 位
+uint32_t bit_toggle(uint32_t value, int n) {
+    value = value ^ (1U << n);
+    return value;
+}
+
+/// @brief 提取 value 的 [high:low] 位域（包含两端）
+uint32_t bit_extract(uint32_t value, int high, int low) {
+    uint32_t width = high - low + 1;
+    value = value >> low;
+    uint64_t mask = (1ULL << width) - 1;
+    value = value & mask;
+    return value;
+}
+
+```
+
 ### 练习 2：安全的移位
 
 写一个函数，安全地执行左移操作，处理所有边界情况：
@@ -325,6 +359,20 @@ uint32_t bit_extract(uint32_t value, int high, int low);
 uint32_t safe_shift_left(uint32_t val, int n, int bits);
 ```
 
+### 练习 2 的参考答案
+
+```c
+uint32_t safe_shift_left(uint32_t val, int n, int bits) {
+    if (bits <= 0 || bits > 32) {
+        return 0;
+    }
+    if (n < 0 || n >= bits) {
+        return 0;
+    }
+    return val << n;
+}
+```
+
 ### 练习 3：表达式分析
 
 分析以下表达式的求值行为（不实际运行），标出每个是"明确定义"、"未指定行为"还是"未定义行为"：
@@ -335,6 +383,16 @@ int r1 = a++ + b;            // ?
 int r2 = a++ + ++a;          // ?
 int r3 = (a > b) ? a-- : b--; // ?
 printf("%d %d\n", a++, a++);  // ?
+```
+
+### 练习 3 的参考答案
+
+```c
+int a = 5, b = 3;
+int r1 = a++ + b;            // 明确定义
+int r2 = a++ + ++a;          // UB
+int r3 = (a > b) ? a-- : b--; // 明确定义
+printf("%d %d\n", a++, a++);  // UB
 ```
 
 ## 参考资源
