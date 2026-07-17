@@ -1,23 +1,22 @@
 ---
 chapter: 1
 cpp_standard:
-  - 11
+- 11
 description: 掌握 C 语言的算术运算符、自增自减、关系与逻辑运算符、条件运算符和逗号运算符，理解短路求值和赋值运算符的用法
 difficulty: beginner
 order: 4
 platform: host
 prerequisites:
-  - 浮点、字符、const 与类型转换
+- 浮点、字符、const 与类型转换
 reading_time_minutes: 9
 tags:
-  - host
-  - cpp-modern
-  - beginner
-  - 入门
-  - 基础
+- host
+- cpp-modern
+- beginner
+- 入门
+- 基础
 title: 运算符基础：让数据动起来
 ---
-
 # 运算符基础：让数据动起来
 
 上一篇里我们把 C 语言的数据类型从里到外拆了一遍——整数怎么存、小数怎么存、字符怎么存。但光有数据还不够，我们还得让数据"动起来"：做加减乘除、比较大小、判断真假。这些操作在 C 语言里由**运算符**来完成。
@@ -36,7 +35,7 @@ title: 运算符基础：让数据动起来
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86_64（WSL2 也可以）
+- 平台：Linux x86\_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -270,12 +269,14 @@ printf("%d\n", -7 % 2);
 ### 练习 1 参考答案
 
 ```text
- 3 // 7 / 2 得 3.5 ，正整型向下取整，得3
--3 // -7 / 2 得 -3.5，负整型向上取整，得3
--3 // 其实我觉得不论是正整形还是负整形，都是向0取整。比如：7 / -2 得 -3.5 ， 然后向0取整，得-3
- 1 // 7 % 2 得 1 （这应该不用过多做解释吧）
--1 // -7 % 2 等于 -(7 % 2) 等于 -(1)，所以，得：-7 % 2 等于 -1
+ 3    //  7 / 2 = 3.5，整数除法向零取整，砍掉小数部分 → 3
+-3    // -7 / 2 = -3.5，同样向零取整 → -3（不是 -4）
+-3    //  7 / -2 = -3.5，向零取整 → -3
+ 1    //  7 % 2 = 1：7 = 3×2 + 1
+-1    // -7 % 2 = -1：余数符号跟被除数走，-7 = (-3)×2 + (-1)
 ```
+
+关键点：C99 起 `/` 和 `%` 都向零取整（truncation toward zero），正负数规则一致，直接丢弃小数部分。所以 `-7 / 2` 得 `-3` 而不是 `-4`，`-7 % 2` 的符号随被除数取负。
 
 ### 练习 2：短路求值实战
 
@@ -296,31 +297,24 @@ int find_first_above(const int* arr, size_t len, int threshold);
 #include <stddef.h>
 
 int find_first_above(const int* arr, size_t len, int threshold) {
-    // 边界情况：如果数组为空指针或长度为0，直接返回 -1
+    // 数组为空或长度为 0，直接返回 -1
     if (arr == NULL || len == 0) {
         return -1;
     }
 
     size_t i = 0;
 
-    // 核心逻辑：利用短路求值防止越界
-    // 1. 首先检查 i < len
-    // 2. 只有当 i < len 为真时，才会去访问 arr[i] (避免越界读取)
-    // 3. 如果 arr[i] <= threshold，循环继续
+    // 利用短路求值防越界：先判 i < len，成立才访问 arr[i]
     while (i < len && arr[i] <= threshold) {
         i++;
     }
 
-    // 循环退出有两个原因：
-    // 1. 找到了大于 threshold 的元素 (此时 i < len)
-    // 2. 遍历完了数组也没找到 (此时 i == len)
-    if (i < len) {
-        return (int)i;
-    } else {
-        return -1;
-    }
+    // 退出循环后，i < len 说明找到了，否则就是遍历完没找到
+    return (i < len) ? (int)i : -1;
 }
 ```
+
+核心是 `while (i < len && arr[i] <= threshold)` 这一行：`&&` 短路求值，`i < len` 为假时根本不会去读 `arr[i]`，越界访问就被挡住了。
 
 ## 参考资源
 
