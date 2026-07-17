@@ -392,12 +392,6 @@ Run the structured-binding examples online and see unpacking for `pair`, `tuple`
   allow-run
 />
 
-## Wrapping up
-
-That's the full coverage of types structured binding handles: `pair`, `tuple`, native arrays, structs with public members, plus custom types that implement the tuple-like protocol. The semantics are entirely decided by the modifier in front of `auto`—`auto` copies, `auto&` references, `const auto&` is read-only, `auto&&` forwards.
-
-What I actually use day to day is range-based for over a map (`for (const auto& [k, v] : m)`) and catching multi-return functions. Pair it with the if/switch initializers in the next chapter and your code shrinks another size.
-
 ## References
 
 - [cppreference: Structured binding declaration](https://en.cppreference.com/w/cpp/language/structured_binding)
