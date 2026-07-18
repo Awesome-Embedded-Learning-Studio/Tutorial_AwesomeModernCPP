@@ -357,6 +357,27 @@ g_float               = 0.69999998807907104492 //0.7f
 
 修改代码使用 epsilon 比较来得到正确的结果。
 
+### 练习 1 参考答案
+
+把 `==` 换成「差的绝对值小于一个很小的阈值（epsilon）」来判断：
+
+```c
+#include <math.h>
+#include <float.h>
+
+// double 用 DBL_EPSILON
+int double_equal(double a, double b) {
+    return fabs(a - b) < DBL_EPSILON;
+}
+
+// float 用 FLT_EPSILON
+int float_equal(float a, float b) {
+    return fabsf(a - b) < FLT_EPSILON;
+}
+```
+
+替换之后，`0.1 + 0.2` 与 `0.3` 的差约 `5.5e-17`，小于 `DBL_EPSILON`（约 `2.2e-16`），`double_equal(0.1 + 0.2, 0.3)` 就会返回真。要留意，绝对 epsilon 比较在数值数量级很大时会失效，工程里更稳妥的是相对误差比较，这里先用入门写法。
+
 ### 练习 2：隐式转换陷阱
 
 下面这段代码有一个隐藏的 bug，找出它并解释原因：
