@@ -1,22 +1,23 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 理解 C 函数的声明定义调用机制、值传递本质、指针参数、返回值策略和递归原理，为 C++ 引用传递和函数重载打好基础
 difficulty: beginner
 order: 7
 platform: host
 prerequisites:
-- 指针与数组、const 和空指针
+  - 指针与数组、const 和空指针
 reading_time_minutes: 10
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
+  - 基础
 title: 函数基础与参数传递
 ---
+
 # 函数基础与参数传递
 
 到现在为止我们写的代码都塞在 `main` 函数里。但现实世界的程序不会这样——一个项目动辄几万行代码，如果全挤在一个函数里，那基本没法维护。函数就是 C 语言模块化编程的基本单元：把一段逻辑封装起来，给它起个名字，需要的时候调用就行。
@@ -35,7 +36,7 @@ title: 函数基础与参数传递
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -324,6 +325,40 @@ typedef enum { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR } LogLevel;
 void log_message(LogLevel level, const char* format, ...);
 ```
 
+### 练习 1 参考答案
+
+```c
+void log_message(LogLevel level, const char* format, ...) {
+    const char* level_str;
+    switch (level) {
+        case LOG_DEBUG:
+            level_str = "DEBUG";
+            break;
+        case LOG_INFO:
+            level_str = "INFO";
+            break;
+        case LOG_WARN:
+            level_str = "WARN";
+            break;
+        case LOG_ERROR:
+            level_str = "ERROR";
+            break;
+        default:
+            level_str = "UNKNOWN";
+            break;
+    }
+    printf("%s\n", level_str);
+
+    va_list args;
+    va_start(args, format);
+
+    vprintf(format, args);
+    printf("\n");
+
+    va_end(args);
+}
+```
+
 ### 练习 2：递归与迭代——二分查找
 
 分别用递归和迭代实现二分查找，比较两者的性能和可读性：
@@ -331,6 +366,43 @@ void log_message(LogLevel level, const char* format, ...);
 ```c
 int binary_search_recursive(const int* arr, size_t len, int target);
 int binary_search_iterative(const int* arr, size_t len, int target);
+```
+
+### 练习 2 参考答案
+
+```c
+int binary_search_recursive(const int* arr, size_t len, int target) {
+    if (len < 1) {
+        printf("%d is not found in index\n", target);
+        return -1;
+    }
+    size_t mid = (len - 1) / 2;
+
+    if (arr[mid] == target) {return mid;}
+    if (arr[mid] < target) {
+        int res = binary_search_recursive(arr + mid + 1, len - mid - 1, target);
+        return (res == -1) ? -1 : (int)(res + mid + 1);
+    }
+    if (arr[mid] > target) {return binary_search_recursive(arr, mid , target);}
+    return -1;
+}
+
+int binary_search_iterative(const int* arr, size_t len, int target) {
+    size_t lo = 0, hi = len;            // 搜索区间 [lo, hi)，左闭右开
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        if (arr[mid] == target) {
+            return mid;
+        }
+        if (arr[mid] < target) {
+            lo = mid + 1;               // 搜右半边，lo 只增不下溢
+        } else {
+            hi = mid;                   // 搜左半边，hi 收敛到 mid，不下溢
+        }
+    }
+    printf("%d is not found in index\n", target);
+    return -1;
+}
 ```
 
 ### 练习 3：多返回值实战
@@ -344,6 +416,25 @@ int binary_search_iterative(const int* arr, size_t len, int target);
 /// @param min_out 最小值输出指针
 /// @param max_out 最大值输出指针
 void find_min_max(const int* data, size_t len, int* min_out, int* max_out);
+```
+
+### 练习 3 参考答案
+
+```c
+void find_min_max(const int* data, size_t len, int* min_out, int* max_out) {
+    if (data == NULL || min_out == NULL || max_out == NULL || len < 1) {
+        return;
+    }
+    *min_out = *max_out = data[0];
+    for (size_t i = 1; i < len; i++) {
+        if (data[i] < *min_out) {
+            *min_out = data[i];
+        }
+        if (data[i] > *max_out) {
+            *max_out = data[i];
+        }
+    }
+}
 ```
 
 ## 参考资源
