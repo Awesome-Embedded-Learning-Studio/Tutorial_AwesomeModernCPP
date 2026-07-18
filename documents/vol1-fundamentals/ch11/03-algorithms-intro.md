@@ -65,7 +65,7 @@ std::for_each(data.begin(), data.end(), [&sum](int x) { sum += x; });
 
 ## 排个序——std::sort 与 std::stable_sort
 
-排序大概是算法库里出场率最高的操作了。`std::sort` 接受两个迭代器（从 C++20 开始可以直接传容器），默认按升序排列。底层是 Introsort——结合了快排、堆排和插入排序的优点，平均和最坏时间复杂度都是 O(n log n)：
+排序大概是算法库里出场率最高的操作了。`std::sort` 接受两个迭代器，默认按升序排列。想直接传整个容器？那是 `std::ranges::sort`，C++20 起才有（`std::ranges::sort(v)`）。底层是 Introsort——结合了快排、堆排和插入排序的优点，平均和最坏时间复杂度都是 O(n log n)：
 
 ```cpp
 std::vector<int> v = {5, 2, 8, 1, 9, 3};
