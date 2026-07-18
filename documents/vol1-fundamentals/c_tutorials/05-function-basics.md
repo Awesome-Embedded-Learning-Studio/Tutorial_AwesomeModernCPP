@@ -349,13 +349,13 @@ void log_message(LogLevel level, const char* format, ...) {
     }
     printf("%s\n", level_str);
 
-    va_list log;
-    va_start(log, format);
+    va_list args;
+    va_start(args, format);
 
-    vprintf(format, log);
+    vprintf(format, args);
     printf("\n");
 
-    va_end(log);
+    va_end(args);
 }
 ```
 
@@ -381,30 +381,24 @@ int binary_search_recursive(const int* arr, size_t len, int target) {
     if (arr[mid] == target) {return mid;}
     if (arr[mid] < target) {
         int res = binary_search_recursive(arr + mid + 1, len - mid - 1, target);
-        return (res == -1) ? -1 : (res + mid + 1);
+        return (res == -1) ? -1 : (int)(res + mid + 1);
     }
     if (arr[mid] > target) {return binary_search_recursive(arr, mid , target);}
     return -1;
 }
 
 int binary_search_iterative(const int* arr, size_t len, int target) {
-    if (len < 1) {
-        printf("%d is not found in index\n", target);
-        return -1;
-    }
-    size_t low = 0;
-    size_t high = len - 1;
-    size_t mid = low + (high - low) / 2;
-    while (low <= high) {
-        if (arr[mid] == target) {return mid;}
-
+    size_t lo = 0, hi = len;            // 搜索区间 [lo, hi)，左闭右开
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        if (arr[mid] == target) {
+            return mid;
+        }
         if (arr[mid] < target) {
-            low = mid + 1;
+            lo = mid + 1;               // 搜右半边，lo 只增不下溢
+        } else {
+            hi = mid;                   // 搜左半边，hi 收敛到 mid，不下溢
         }
-        else if (arr[mid] > target) {
-            high = mid - 1;
-        }
-        mid = low + (high - low) / 2;
     }
     printf("%d is not found in index\n", target);
     return -1;
