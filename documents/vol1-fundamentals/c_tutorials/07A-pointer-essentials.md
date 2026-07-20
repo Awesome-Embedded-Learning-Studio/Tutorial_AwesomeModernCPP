@@ -1,22 +1,23 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 从零开始理解 C 语言指针——内存模型直觉、声明初始化、取地址与解引用运算符、指针的加减运算和距离计算
 difficulty: beginner
 order: 9
 platform: host
 prerequisites:
-- 数据类型基础：整数与内存
-- 运算符基础：让数据动起来
+  - 数据类型基础：整数与内存
+  - 运算符基础：让数据动起来
 reading_time_minutes: 10
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
 title: 指针入门：地址的世界
 ---
+
 # 指针入门：地址的世界
 
 指针大概是 C 语言里名声最响也最容易劝退新手的特性了。如果你之前接触过 Python 或 Java，可能习惯了"变量就是对象本身"的思维——变量里存的就是数据。但到了 C 这边，多了一个关键概念：每个变量都住在内存的某个位置，这个位置有一个编号（地址）。指针就是用来存储和操作这些地址的变量。
@@ -35,7 +36,7 @@ title: 指针入门：地址的世界
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -268,6 +269,33 @@ C++ 在指针的基础上做了两个关键的改进。第一个是**引用**（
 
 写一个程序，声明三个不同类型的变量（`int`、`double`、`char`），打印它们的值、地址和 `sizeof` 结果。观察地址之间的间隔是否符合各类型的大小。
 
+### 练习 1 参考答案
+
+```c
+#include <stdio.h>
+
+int main(void) {
+
+    int value_int = 0;
+    double value_double = 0.0;
+    char value_char = '0';
+
+    printf("(int) value:%d         address:%p    size:%d\n", value_int, &value_int, sizeof(int));
+    printf("(double) value:%.2f    address:%p    size:%d\n", value_double, &value_double, sizeof(double));
+    printf("(char) value:%d        address:%p    size:%d\n", value_char, &value_char, sizeof(char));
+    return 0;
+}
+
+```
+
+输出结果可能为：
+
+```text
+(int) value:0        address:00000000005ffe8c      size:4
+(double) value:0.00  address:00000000005ffe80      size:8
+(char) value:48      address:00000000005ffe7f      size:1
+```
+
 ### 练习 2：指针遍历数组
 
 用指针算术遍历一个 `int` 数组并打印所有元素。要求不使用 `[]` 运算符，只用指针加减和解引用：
@@ -277,6 +305,37 @@ C++ 在指针的基础上做了两个关键的改进。第一个是**引用**（
 /// @param data 数组首元素地址
 /// @param count 元素个数
 void print_int_array(const int* data, size_t count);
+```
+
+### 练习 1 参考答案
+
+```c
+#include <stdio.h>
+
+void print_int_array(const int* data, size_t count);
+
+int main(void) {
+    int arr[] = {1, 2, 3, 4, 5};
+    print_int_array(arr, 5);
+    return 0;
+}
+
+void print_int_array(const int* data, size_t count) {
+    for (size_t i = 0; i < count;i++) {
+        printf("data[%d] = %d\n", i, *(data + i));
+    }
+}
+
+```
+
+输出结果应当为：
+
+```text
+data[0] = 1
+data[1] = 2
+data[2] = 3
+data[3] = 4
+data[4] = 5
 ```
 
 ## 参考资源
