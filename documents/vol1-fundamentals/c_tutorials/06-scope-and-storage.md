@@ -1,22 +1,23 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 深入理解 C 语言的作用域规则、存储类别和链接性，掌握 static 的三种用法
 difficulty: beginner
 order: 8
 platform: host
 prerequisites:
-- 控制流：让程序学会选择和重复
+  - 控制流：让程序学会选择和重复
 reading_time_minutes: 20
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
+  - 基础
 title: 作用域与存储类别
 ---
+
 # 作用域与存储类别
 
 如果你写过超过两个源文件的项目，大概率已经踩过这样的坑：两个文件里都定义了一个叫 `count` 的全局变量，编译的时候链接器一脸懵逼地告诉你 `multiple definition`。或者更隐蔽的情况——你在某个 `.c` 文件里定义了一个辅助函数，结果别的文件不小心也调用了它，后来你改了那个函数的实现，调用方毫无预警地崩了。
@@ -261,13 +262,13 @@ extern int kValue = 42;  // 千万别这么干！
 
 这三者的关系可以用一个表格来总结：
 
-| 声明位置 | 关键字 | 链接性 | 作用域 | 生命周期 |
-| --- | --- | --- | --- | --- |
-| 函数内 | （无） | 无 | 块 | 自动 |
-| 函数内 | `static` | 无 | 块 | 静态 |
-| 函数外 | （无） | 外部 | 文件 | 静态 |
-| 函数外 | `static` | 内部 | 文件 | 静态 |
-| 函数外 | `extern` | （取决于首次声明） | 文件 | 静态 |
+| 声明位置 | 关键字   | 链接性             | 作用域 | 生命周期 |
+| -------- | -------- | ------------------ | ------ | -------- |
+| 函数内   | （无）   | 无                 | 块     | 自动     |
+| 函数内   | `static` | 无                 | 块     | 静态     |
+| 函数外   | （无）   | 外部               | 文件   | 静态     |
+| 函数外   | `static` | 内部               | 文件   | 静态     |
+| 函数外   | `extern` | （取决于首次声明） | 文件   | 静态     |
 
 这个表格值得多看几眼——注意函数外的 `static` 改变的是链接性（从外部变成内部），而不是作用域或生命周期。
 
@@ -455,6 +456,58 @@ void counter_reset(void);
 
 请自行实现 `counter.c`。
 
+### 练习 1 参考答案
+
+main.c
+
+```c
+#include <stdio.h>
+#include "counter.h"
+
+int main(void) {
+    printf("%d\n",counter_get());   //输出应当是0
+    counter_increment();
+    printf("%d\n",counter_get());   //输出应当是1
+    counter_increment();
+    printf("%d\n",counter_get());   //输出应当是2
+    counter_reset();
+    printf("%d\n",counter_get());   //输出应当是0
+    return 0;
+}
+```
+
+counter.h
+
+```c
+#ifndef MODERNCPP_PRE8_1_COUNTER_H
+#define MODERNCPP_PRE8_1_COUNTER_H
+
+void counter_increment(void);
+int counter_get(void);
+void counter_reset(void);
+
+#endif //MODERNCPP_PRE8_1_COUNTER_H
+```
+
+counter.c
+
+```c
+#include "counter.h"
+
+static int counter = 0;
+void counter_increment(void) {
+    counter++;
+}
+
+void counter_reset(void) {
+    counter = 0;
+}
+
+int counter_get(void) {
+    return counter;
+}
+```
+
 ### 练习 2：多文件符号可见性
 
 创建三个文件 `a.c`、`b.c`、`main.c`。要求：
@@ -471,11 +524,96 @@ void counter_reset(void);
 // 各 .c 文件的实现留给你
 ```
 
+### 练习 2 参考答案
+
+main.c
+
+```c
+#include <stdio.h>
+#include "a.h"
+#include "b.h"
+
+int main(void) {
+
+    printf("%d\n",kSharedValue);    //输出应当是0
+    set_kSharedValue(100);
+    printf("%d\n",kSharedValue);    //输出应当是100
+
+    return 0;
+}
+```
+
+a.h
+
+```c
+#ifndef MODERNCPP_PRE8_2_A_H
+#define MODERNCPP_PRE8_2_A_H
+
+extern int kSharedValue;
+
+#endif //MODERNCPP_PRE8_2_A_H
+```
+
+b.h
+
+```c
+#ifndef MODERNCPP_PRE8_2_B_H
+#define MODERNCPP_PRE8_2_B_H
+
+void set_kSharedValue(int value);
+
+#endif //MODERNCPP_PRE8_2_B_H
+```
+
+a.c
+
+```c
+#include <stdio.h>
+#include "a.h"
+
+int kSharedValue = 0;
+static void helper_a(void) {
+    printf("need help?");
+}
+```
+
+b.c
+
+```c
+#include <stdio.h>
+#include "b.h"
+#include "a.h"
+
+
+static void helper_a(void) {
+    printf("need help?");
+}
+void set_kSharedValue(int value) {
+    kSharedValue = value;
+}
+```
+
 ### 练习 3：延迟初始化
 
 用 `static` 局部变量实现一个 `get_config` 函数：第一次调用时执行初始化（打印 "Initializing..." 并设置默认值），后续调用直接返回已初始化的值，不再重新初始化。
 
 ```c
+typedef struct {
+    int max_connections;        //建议设为5
+    int timeout_ms;             //建议设为500
+    const char* server_name;    //建议设为localhost
+} Config;
+
+const Config* get_config(void);
+```
+
+> 提示：`static` 局部变量只在第一次进入函数时被初始化——正好可以用来实现"只初始化一次"的语义。
+
+### 练习 3 参考答案
+
+```c
+#include <stdio.h>
+
 typedef struct {
     int max_connections;
     int timeout_ms;
@@ -483,9 +621,26 @@ typedef struct {
 } Config;
 
 const Config* get_config(void);
-```
 
-> 提示：`static` 局部变量只在第一次进入函数时被初始化——正好可以用来实现"只初始化一次"的语义。
+int main(void) {
+    get_config();   //应当输出"Initializing..."
+    printf("%d %d %s\n",get_config()->max_connections, get_config()->timeout_ms, get_config()->server_name);  //应当输出"5 500 localhost"
+    return 0;
+}
+
+const Config* get_config(void) {
+    static Config config;
+    static int initialized = 0;
+    if (!initialized) {
+        printf("Initializing...\n");
+        config.max_connections = 5;
+        config.timeout_ms = 500;
+        config.server_name = "localhost";
+        initialized = 1;
+    }
+    return &config;
+}
+```
 
 ## 参考资源
 
