@@ -307,7 +307,7 @@ int main(void) {
 void print_int_array(const int* data, size_t count);
 ```
 
-### 练习 1 参考答案
+### 练习 2 参考答案
 
 ```c
 #include <stdio.h>
