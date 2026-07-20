@@ -1,5 +1,6 @@
 import { nextTick, onMounted } from 'vue'
 import { subscribeAfterRouteChange } from './router-hooks'
+import { openMermaidLightbox } from './mermaid-lightbox'
 
 // mermaid 的 API 形状(只取我们用到的两个方法),避免依赖整包类型
 type MermaidApi = {
@@ -66,6 +67,7 @@ async function renderMermaidDiagrams() {
       const { svg } = await mermaid.render(id, source)
       el.innerHTML = svg
       el.dataset.rendered = 'true'
+      attachMaximize(el, source)
     } catch {
       el.dataset.rendered = 'error'
       el.innerHTML = `<pre class="mermaid-error">${escapeHtml(source)}</pre>`
@@ -76,6 +78,32 @@ async function renderMermaidDiagrams() {
 function escapeHtml(s: string) {
   return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#39;')
+}
+
+// ── maximize 按钮:每张图都挂(跟 GitHub 一样,所有图都可缩放),点开进全屏模态 ──
+
+// Feather maximize-2 图标(四角向外箭头),currentColor 随主题。
+const MAXIMIZE_ICON =
+  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" ' +
+  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>' +
+  '<line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>'
+
+function attachMaximize(el: HTMLElement, source: string) {
+  const svg = el.querySelector('svg')
+  if (!svg) return
+  el.classList.add('mermaid-diagram--zoomable')
+
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.className = 'mermaid-maximize-btn'
+  btn.setAttribute('aria-label', '放大查看图表')
+  btn.title = '放大查看图表'
+  btn.innerHTML = MAXIMIZE_ICON
+  btn.addEventListener('click', () => {
+    openMermaidLightbox({ svg, source, trigger: btn })
+  })
+  el.appendChild(btn)
 }
 
 export function setupMermaid() {

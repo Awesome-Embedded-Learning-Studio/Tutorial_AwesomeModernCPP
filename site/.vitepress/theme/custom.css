@@ -1673,6 +1673,123 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   font-size: 0.85em;
 }
 
+/* ── maximize 按钮:图被容器挤窄时浮现,点开进全屏模态 ── */
+
+.mermaid-diagram--zoomable {
+  position: relative;
+}
+
+.mermaid-maximize-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* hover 图 / 键盘聚焦图内 → 按钮完全显形并高亮 */
+.mermaid-diagram--zoomable:hover .mermaid-maximize-btn,
+.mermaid-diagram--zoomable:focus-within .mermaid-maximize-btn {
+  opacity: 1;
+}
+
+.mermaid-maximize-btn:hover,
+.mermaid-maximize-btn:focus-visible {
+  opacity: 1;
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+/* ── 全屏查看模态(MermaidLightbox.vue,Teleport 到 body) ── */
+
+.mermaid-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 12, 8, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.mermaid-lightbox__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-border);
+  color: var(--vp-c-text-2);
+}
+
+.mermaid-lightbox__btn {
+  appearance: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 6px;
+  background: var(--vp-c-bg-elv);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  line-height: 1;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mermaid-lightbox__btn:hover,
+.mermaid-lightbox__btn:focus-visible {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+.mermaid-lightbox__close {
+  margin-left: auto;
+}
+
+.mermaid-lightbox__hint {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin-left: 8px;
+}
+
+.mermaid-lightbox__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 32px;
+}
+
+.mermaid-lightbox__target {
+  display: inline-block;
+  touch-action: none; /* panzoom 自己管 pointer,关掉浏览器默认触摸手势 */
+  user-select: none;
+}
+
+.mermaid-lightbox__target svg {
+  display: block;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  background: var(--vp-c-bg-elv);
+  border-radius: 4px;
+}
+
 /* ================================================================
    Resizable Sidebar(可拖拽侧栏宽度)
    组件: theme/components/ResizableSidebar.vue

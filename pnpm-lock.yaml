@@ -15,6 +15,9 @@ importers:
       '@dhlx/vitepress-plugin-drawio':
         specifier: ^0.0.10
         version: 0.0.10
+      '@panzoom/panzoom':
+        specifier: ^4.6.2
+        version: 4.6.2
       '@types/node':
         specifier: ^25.6.2
         version: 25.6.2
@@ -463,6 +466,9 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@panzoom/panzoom@4.6.2':
+    resolution: {integrity: sha512-Zn3B5/hwa6eYIPRSKX0xf2clv8nviTX8AnAU5kU/EugiTDhG41ya2wlBqYrZJYCWQROr/5XkWObZhIkepi89qw==}
 
   '@rollup/rollup-android-arm-eabi@4.60.3':
     resolution: {integrity: sha512-x35CNW/ANXG3hE/EZpRU8MXX1JDN86hBb2wMGAtltkz7pc6cxgjpy1OMMfDosOQ+2hWqIkag/fGok1Yady9nGw==}
@@ -1834,6 +1840,8 @@ snapshots:
   '@iconify/types@2.0.0': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@panzoom/panzoom@4.6.2': {}
 
   '@rollup/rollup-android-arm-eabi@4.60.3':
     optional: true
