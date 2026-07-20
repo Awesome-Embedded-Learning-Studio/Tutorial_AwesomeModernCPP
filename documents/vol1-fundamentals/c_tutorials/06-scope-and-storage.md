@@ -535,8 +535,9 @@ main.c
 
 int main(void) {
 
+    a_greet();                      // 调用 a 模块的公共函数，触发它内部的 helper_a
     printf("%d\n",kSharedValue);    //输出应当是0
-    set_kSharedValue(100);
+    set_kSharedValue(100);          // 内部会调用 b 模块自己的 helper_a
     printf("%d\n",kSharedValue);    //输出应当是100
 
     return 0;
@@ -550,6 +551,7 @@ a.h
 #define MODERNCPP_PRE8_2_A_H
 
 extern int kSharedValue;
+void a_greet(void);
 
 #endif //MODERNCPP_PRE8_2_A_H
 ```
@@ -573,7 +575,12 @@ a.c
 
 int kSharedValue = 0;
 static void helper_a(void) {
-    printf("need help?");
+    printf("need help?\n");
+}
+
+// a.c 暴露的公共函数，内部调用文件私有的 helper_a
+void a_greet(void) {
+    helper_a();
 }
 ```
 
@@ -586,9 +593,10 @@ b.c
 
 
 static void helper_a(void) {
-    printf("need help?");
+    printf("need help?\n");
 }
 void set_kSharedValue(int value) {
+    helper_a();
     kSharedValue = value;
 }
 ```
@@ -629,13 +637,14 @@ int main(void) {
 }
 
 const Config* get_config(void) {
-    static Config config;
+    // config 用 static 初始化器：程序加载时一次性初始化，正好呼应题目说的
+    // "static 局部变量只在第一次进入函数时被初始化"
+    static Config config = {5, 500, "localhost"};
+    // 但题目还要求第一次调用时打印 "Initializing..."——静态初始化器本身
+    // 没有运行时钩子去打印，所以再用一个 static flag 控制只打印一次
     static int initialized = 0;
     if (!initialized) {
         printf("Initializing...\n");
-        config.max_connections = 5;
-        config.timeout_ms = 500;
-        config.server_name = "localhost";
         initialized = 1;
     }
     return &config;

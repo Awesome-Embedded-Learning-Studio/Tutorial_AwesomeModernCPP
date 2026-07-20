@@ -280,21 +280,26 @@ int main(void) {
     double value_double = 0.0;
     char value_char = '0';
 
-    printf("(int) value:%d         address:%p    size:%d\n", value_int, &value_int, sizeof(int));
-    printf("(double) value:%.2f    address:%p    size:%d\n", value_double, &value_double, sizeof(double));
-    printf("(char) value:%d        address:%p    size:%d\n", value_char, &value_char, sizeof(char));
+    printf("(int) value:%d         address:%p    size:%zu\n", value_int, (void*)&value_int, sizeof(int));
+    printf("(double) value:%.2f    address:%p    size:%zu\n", value_double, (void*)&value_double, sizeof(double));
+    printf("(char) value:%d        address:%p    size:%zu\n", value_char, (void*)&value_char, sizeof(char));
     return 0;
 }
 
 ```
 
-输出结果可能为：
+输出结果可能为（地址每次运行都会变）：
 
 ```text
-(int) value:0        address:00000000005ffe8c      size:4
-(double) value:0.00  address:00000000005ffe80      size:8
-(char) value:48      address:00000000005ffe7f      size:1
+(int) value:0        address:0x7ffd8cecdbec    size:4
+(double) value:0.00  address:0x7ffd8cecdbf0    size:8
+(char) value:48      address:0x7ffd8cecdbeb    size:1
 ```
+
+两点值得留意：
+
+- `char` 的 `value` 显示成 `48`，因为 `'0'` 的 ASCII 码就是 48。C 语言里 `char` 本质上是一个小整数，用 `%d` 打印看到的就是它的整数值（想直接看到字符 `'0'`，把格式符换成 `%c` 即可）。
+- 三个地址的间隔并不等于各自的类型大小。按声明顺序是 `int`(4) → `double`(8) → `char`(1)，但实际地址排列成了 `char` → `int` → `double`，相邻差值也不是 4、8、1。原因有两个：编译器会为了内存对齐给局部变量重排位置、插入填充字节；而且栈布局根本不保证按声明顺序排列变量。所以"地址间隔正好等于类型大小"这个直觉，在真实编译器里通常不成立——这正是这道题想让你亲眼看到的。
 
 ### 练习 2：指针遍历数组
 
@@ -311,6 +316,7 @@ void print_int_array(const int* data, size_t count);
 
 ```c
 #include <stdio.h>
+#include <stddef.h>   // size_t
 
 void print_int_array(const int* data, size_t count);
 
@@ -322,7 +328,7 @@ int main(void) {
 
 void print_int_array(const int* data, size_t count) {
     for (size_t i = 0; i < count;i++) {
-        printf("data[%d] = %d\n", i, *(data + i));
+        printf("data[%zu] = %d\n", i, *(data + i));
     }
 }
 
