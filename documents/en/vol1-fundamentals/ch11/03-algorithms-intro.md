@@ -79,7 +79,7 @@ auto baz = [a, &b]() {
 
 ## Sorting—`std::sort` and `std::stable_sort`
 
-Sorting is likely the most frequently used operation in the algorithms library. `std::sort` accepts two iterators (starting with C++20, you can pass the container directly) and sorts in ascending order by default. Under the hood, it uses Introsort—combining the advantages of quicksort, heapsort, and insertion sort, with an average and worst-case time complexity of O(n log n):
+Sorting is likely the most frequently used operation in the algorithms library. `std::sort` accepts two iterators and sorts in ascending order by default. To pass the whole container directly, use `std::ranges::sort` (C++20): `std::ranges::sort(v)`. Under the hood, it uses Introsort—combining the advantages of quicksort, heapsort, and insertion sort, with an average and worst-case time complexity of O(n log n):
 
 ```cpp
 std::vector<int> v = {5, 2, 9, 1, 5, 6};
