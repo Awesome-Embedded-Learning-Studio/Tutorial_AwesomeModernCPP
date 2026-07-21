@@ -1,25 +1,28 @@
 ---
-title: "模板导论:从一份代码配方说起"
-description: "把模板说回它本来样子:一份带占位符的代码配方。讲清它和宏、和虚函数多态的区别,以及 C++ 里函数、类、变量、别名四种模板实体各管什么"
 chapter: 12
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 把模板说回它本来样子:一份带占位符的代码配方。讲清它和宏、和虚函数多态的区别,以及 C++ 里函数、类、变量、别名四种模板实体各管什么
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "卷一 · 函数模板"
+- 卷一 · 函数模板
+reading_time_minutes: 11
 related:
-  - "函数模板深化:编译模型与 extern template"
-  - "类模板:成员、依赖名与惰性实例化"
+- 函数模板深化:编译模型与 extern template
+- 类模板:成员、依赖名与惰性实例化
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 模板导论:从一份代码配方说起
 ---
-
 # 模板导论:从一份代码配方说起
 
 咱们在卷一已经写过函数模板,知道 `template <typename T> T max_value(T a, T b)` 这么一写,编译器就能照着给 `int`、给 `double`、给 `std::string` 各生成一份代码。这一卷咱们不再停留在「怎么用」,而是想搞明白另外几件事:模板到底是个什么东西,它凭什么能做到「写一遍、套多种类型」,以及这套机制背后的代价是什么。把这些底层细节吃透,后面无论是读 STL 源码、读 Chromium 那种重模板的工业代码,还是自己动手写库,心里都不会发虚。

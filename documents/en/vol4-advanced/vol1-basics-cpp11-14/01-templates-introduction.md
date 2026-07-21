@@ -1,25 +1,30 @@
 ---
-title: "Templates, From Scratch: A Code Recipe with Placeholders"
-description: "Strip templates back to what they really are: a code recipe with placeholders. How they differ from macros and virtual dispatch, and the four kinds of template entities in C++ (functions, classes, variables, aliases)."
 chapter: 12
-order: 1
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 'Strip templates back to what they really are: a code recipe with placeholders.
+  How they differ from macros and virtual dispatch, and the four kinds of template
+  entities in C++ (functions, classes, variables, aliases).'
 difficulty: intermediate
+order: 1
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "Volume 1 · Function Templates"
+- Volume 1 · Function Templates
+reading_time_minutes: 11
 related:
-  - "Function Templates, In Depth: Compilation Model and extern template"
-  - "Class Templates: Members, Dependent Names, Lazy Instantiation"
+- 'Function Templates, In Depth: Compilation Model and extern template'
+- 'Class Templates: Members, Dependent Names, Lazy Instantiation'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Templates, From Scratch: A Code Recipe with Placeholders'
 ---
-
 # Templates, From Scratch: A Code Recipe with Placeholders
 
 We already wrote function templates back in Volume 1. We know that `template <typename T> T max_value(T a, T b)` lets the compiler stamp out a version for `int`, for `double`, for `std::string`. This volume stops at "how to use them" and asks different questions. What is a template, really? How does it pull off "write once, fit any type"? And what does that mechanism cost? Get the under-the-hood details straight, and reading the STL source, reading template-heavy industrial code like Chromium, or writing a library of your own stops feeling intimidating.

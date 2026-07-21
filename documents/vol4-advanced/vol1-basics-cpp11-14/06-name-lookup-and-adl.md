@@ -1,26 +1,29 @@
 ---
-title: "名字查找与 ADL:两阶段查找是怎么回事"
-description: "模板里的名字查找跟普通代码完全不同,它分两个阶段。讲清两阶段查找、依赖名与非依赖名、ADL(实参依赖查找),以及为什么前面几篇的 typename、this->、隐藏友元那些看似奇怪的规则必须存在"
 chapter: 12
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 模板里的名字查找跟普通代码完全不同,它分两个阶段。讲清两阶段查找、依赖名与非依赖名、ADL(实参依赖查找),以及为什么前面几篇的 typename、this->、隐藏友元那些看似奇怪的规则必须存在
 difficulty: intermediate
+order: 6
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 20
 prerequisites:
-  - "类模板:成员、依赖名与惰性实例化"
-  - "非类型模板参数:从整数到 C++20 的浮点与类类型"
+- 类模板:成员、依赖名与惰性实例化
+- 非类型模板参数:从整数到 C++20 的浮点与类类型
+reading_time_minutes: 9
 related:
-  - "模板友元与 Barton-Nackman:隐藏友元技巧"
-  - "模板特化与偏特化:模式匹配的艺术"
+- 模板友元与 Barton-Nackman:隐藏友元技巧
+- 模板特化与偏特化:模式匹配的艺术
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 名字查找与 ADL:两阶段查找是怎么回事
 ---
-
 # 名字查找与 ADL:两阶段查找是怎么回事
 
 写普通代码时,您用一个名字,编译器在当前位置查一查,找到就用。模板里这一套不灵。模板的名字查找分两个阶段进行,一个在模板定义的时候,一个在模板实例化的时候。这套机制叫两阶段查找(two-phase lookup),它直接解释了前面几篇里那些看起来很奇怪的规则:`typename` 为什么不能省、`this->` 为什么必须有、隐藏友元为什么有用。这一篇把两阶段查找、依赖名和非依赖名、ADL 一次讲透,讲完之后,模板里那些「莫名其妙」的报错,您都能找到根源。

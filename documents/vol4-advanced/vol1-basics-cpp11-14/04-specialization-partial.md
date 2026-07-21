@@ -1,26 +1,29 @@
 ---
-title: "模板特化与偏特化:模式匹配的艺术"
-description: "特化是模板最有表达力的部分。讲清全特化与偏特化的区别、编译器选「最特化」版本的优先级规则,以及两个经典应用:标准库 vector<bool> 为什么是偏特化、type_traits 整套 is_pointer/is_const 是怎么靠偏特化搭起来的"
 chapter: 12
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 特化是模板最有表达力的部分。讲清全特化与偏特化的区别、编译器选「最特化」版本的优先级规则,以及两个经典应用:标准库 vector<bool>
+  为什么是偏特化、type_traits 整套 is_pointer/is_const 是怎么靠偏特化搭起来的
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "类模板:成员、依赖名与惰性实例化"
-  - "函数模板深化:编译模型与那个不能偏特化的坑"
+- 类模板:成员、依赖名与惰性实例化
+- 函数模板深化:编译模型与那个不能偏特化的坑
+reading_time_minutes: 10
 related:
-  - "非类型模板参数:从整数到 C++20 的浮点与类类型"
-  - "名字查找与 ADL:两阶段查找是怎么回事"
+- 非类型模板参数:从整数到 C++20 的浮点与类类型
+- 名字查找与 ADL:两阶段查找是怎么回事
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 模板特化与偏特化:模式匹配的艺术
 ---
-
 # 模板特化与偏特化:模式匹配的艺术
 
 模板最厉害的地方,不是「写一份套多种类型」,而是**给某些特定的类型或某一类类型,单独写一份不一样的实现**。这个机制叫特化(specialization)。特化分两种:全特化针对一个具体类型,偏特化针对一类类型模式。上一篇咱们提过函数模板不能偏特化,只有类模板和变量模板能偏特化,这一篇就把类模板的特化彻底讲透:全特化、偏特化、编译器选哪个版本的优先级规则,以及两个把偏特化用到极致的经典案例,标准库的 `std::vector<bool>` 和整个 `<type_traits>`。

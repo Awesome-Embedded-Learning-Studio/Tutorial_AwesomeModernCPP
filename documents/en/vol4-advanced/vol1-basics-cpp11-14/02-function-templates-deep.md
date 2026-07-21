@@ -1,26 +1,32 @@
 ---
-title: "Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap"
-description: "Re-reading function templates from a library writer's angle: why the inclusion model forces templates into headers, how explicit instantiation and extern template control code bloat, and the classic trap that function templates cannot be partially specialized."
 chapter: 12
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 'Re-reading function templates from a library writer''s angle: why the
+  inclusion model forces templates into headers, how explicit instantiation and extern
+  template control code bloat, and the classic trap that function templates cannot
+  be partially specialized.'
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Volume 1 · Function Templates"
-  - "Templates, From Scratch: A Code Recipe with Placeholders"
+- Volume 1 · Function Templates
+- 'Templates, From Scratch: A Code Recipe with Placeholders'
+reading_time_minutes: 11
 related:
-  - "Class Templates: Members, Dependent Names, Lazy Instantiation"
-  - "Template Specialization and Partial Specialization: The Art of Pattern Matching"
+- 'Class Templates: Members, Dependent Names, Lazy Instantiation'
+- 'Template Specialization and Partial Specialization: The Art of Pattern Matching'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Function Templates, In Depth: Compilation Model and the No-Partial-Specialization
+  Trap'
 ---
-
 # Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap
 
 Volume 1 already covered function templates: the syntax, instantiation, deduction, specialization, and overloading. This piece shifts perspective to "I want to build a library with templates," where three things are unavoidable. Why the compilation model for templates differs from ordinary functions. How explicit instantiation and `extern template` help you control code bloat. And a trap that can leave you staring at the screen for half an hour: function templates cannot be partially specialized. Get these three straight, and reading the source of STL or template-heavy libraries like Eigen starts to make sense, why they organize the code the way they do.

@@ -1,26 +1,29 @@
 ---
-title: "类模板:成员、依赖名与惰性实例化"
-description: "类模板是 STL 的基石。这一篇讲它写起来和函数模板的三个关键差异:成员函数类内还是类外定义、惰性实例化的脾气(没用到就不报错)、依赖名为什么要 typename 和 this-> 消歧义"
 chapter: 12
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 类模板是 STL 的基石。这一篇讲它写起来和函数模板的三个关键差异:成员函数类内还是类外定义、惰性实例化的脾气(没用到就不报错)、依赖名为什么要
+  typename 和 this-> 消歧义
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "模板导论:从一份代码配方说起"
-  - "函数模板深化:编译模型与那个不能偏特化的坑"
+- 模板导论:从一份代码配方说起
+- 函数模板深化:编译模型与那个不能偏特化的坑
+reading_time_minutes: 10
 related:
-  - "模板特化与偏特化:模式匹配的艺术"
-  - "名字查找与 ADL:两阶段查找是怎么回事"
+- 模板特化与偏特化:模式匹配的艺术
+- 名字查找与 ADL:两阶段查找是怎么回事
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 类模板:成员、依赖名与惰性实例化
 ---
-
 # 类模板:成员、依赖名与惰性实例化
 
 类模板是 STL 的基石,`std::vector`、`std::map`、`std::string`(其实是 `std::basic_string<char>`)全是类模板。会写函数模板不等于会写类模板,这两者有几个关键差异,正好是新手写类模板时反复栽跟头的地方。这一篇聚焦三个差异:成员函数写在类内还是类外、惰性实例化带来的「藏错」脾气、以及依赖名为什么需要 `typename` 和 `this->` 来消歧义。把这三个吃透,您写自己的容器、写策略类、读 STL 源码就不会卡在这些细节上。

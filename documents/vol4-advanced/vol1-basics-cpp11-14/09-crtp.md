@@ -1,29 +1,34 @@
 ---
-title: "CRTP:用奇递归模板做静态多态"
-description: "CRTP 让派生类把自己作为模板参数传给基类,做出编译期的静态多态,避开虚函数的 vtable 和运行时分派。这一篇讲清它的结构、零开销的汇编证据、mixin 等典型用途,以及它的坑和 C++23 deducing this 这个现代替代"
 chapter: 12
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - CRTP
-  - 泛型
-  - 零开销抽象
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: CRTP 让派生类把自己作为模板参数传给基类,做出编译期的静态多态,避开虚函数的 vtable 和运行时分派。这一篇讲清它的结构、零开销的汇编证据、mixin
+  等典型用途,以及它的坑和 C++23 deducing this 这个现代替代
 difficulty: intermediate
+order: 9
 platform: host
-cpp_standard: [11, 14, 17, 20, 23]
-reading_time_minutes: 22
 prerequisites:
-  - "类模板:成员、依赖名与惰性实例化"
-  - "名字查找与 ADL:两阶段查找是怎么回事"
-  - "别名模板与 using 声明:给类型起个短名字"
+- 类模板:成员、依赖名与惰性实例化
+- 名字查找与 ADL:两阶段查找是怎么回事
+- 别名模板与 using 声明:给类型起个短名字
+reading_time_minutes: 9
 related:
-  - "综合项目:fixed_vector<T, N>"
-  - "模板友元与 Barton-Nackman:隐藏友元技巧"
+- 综合项目:fixed_vector<T, N>
+- 模板友元与 Barton-Nackman:隐藏友元技巧
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- CRTP
+- 泛型
+- 零开销抽象
+title: CRTP:用奇递归模板做静态多态
 ---
-
 # CRTP:用奇递归模板做静态多态
 
 CRTP,全称 Curiously Recurring Template Pattern,奇递归模板模式。它的结构乍一看很怪:派生类在继承基类时,把自己作为模板参数传给基类。`struct Derived : Base<Derived>`。这种「自己引用自己」的奇巧写法,能做出编译期的**静态多态**,在不需要运行时确定具体类型时,完全避开虚函数的 vtable 和分派开销。Eigen 的表达式模板、很多高性能库的 mixin 机制,都建立在 CRTP 上。这一篇讲清它的结构、零开销的汇编证据、几个典型用途,以及它绕不开的坑。

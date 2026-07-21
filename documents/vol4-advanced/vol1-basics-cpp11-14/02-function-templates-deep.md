@@ -1,26 +1,28 @@
 ---
-title: "函数模板深化:编译模型与那个不能偏特化的坑"
-description: "从写库的视角重看函数模板:包含模型为什么逼着模板写进头文件、显式实例化和 extern template 怎么控制代码膨胀,以及那个经典坑——函数模板不能偏特化,得用重载绕"
 chapter: 12
-order: 2
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 从写库的视角重看函数模板:包含模型为什么逼着模板写进头文件、显式实例化和 extern template 怎么控制代码膨胀,以及那个经典坑——函数模板不能偏特化,得用重载绕
 difficulty: intermediate
+order: 2
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "卷一 · 函数模板"
-  - "模板导论:从一份代码配方说起"
+- 卷一 · 函数模板
+- 模板导论:从一份代码配方说起
+reading_time_minutes: 12
 related:
-  - "类模板:成员、依赖名与惰性实例化"
-  - "模板特化与偏特化:模式匹配的艺术"
+- 类模板:成员、依赖名与惰性实例化
+- 模板特化与偏特化:模式匹配的艺术
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 函数模板深化:编译模型与那个不能偏特化的坑
 ---
-
 # 函数模板深化:编译模型与那个不能偏特化的坑
 
 卷一咱们写过函数模板,知道语法、实例化、推导、特化、重载那一套。这一篇换个视角,从「想拿模板写个库」的角度重新看函数模板,有三件事绕不开:模板的编译模型为什么跟普通函数不一样,显式实例化和 `extern template` 怎么帮您控制代码膨胀,以及一个能让人盯屏幕半天的坑——函数模板不能偏特化。把这三件讲透,您再看 STL、看 Eigen 那种重模板库的源码,就能看懂他们为什么那么组织代码。

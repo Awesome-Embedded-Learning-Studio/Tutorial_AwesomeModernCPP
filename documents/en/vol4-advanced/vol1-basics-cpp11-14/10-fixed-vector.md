@@ -1,28 +1,34 @@
 ---
-title: "Project: fixed_vector<T, N>"
-description: "String together everything from the first 9 pieces and implement a compile-time fixed-capacity, contiguous, zero-allocation vector. Full code with tests, then compare it against C++26 std::inplace_vector and EASTL/Boost/Folly counterparts."
 chapter: 12
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 容器
-  - vector
-  - 零开销抽象
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 26
+description: String together everything from the first 9 pieces and implement a compile-time
+  fixed-capacity, contiguous, zero-allocation vector. Full code with tests, then compare
+  it against C++26 std::inplace_vector and EASTL/Boost/Folly counterparts.
 difficulty: intermediate
+order: 10
 platform: host
-cpp_standard: [11, 14, 17, 20, 26]
-reading_time_minutes: 20
 prerequisites:
-  - "CRTP: Static Polymorphism with the Curiously Recurring Template Pattern"
-  - "Non-Type Template Parameters: From Integers to C++20 Floats and Class Types"
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
+- 'CRTP: Static Polymorphism with the Curiously Recurring Template Pattern'
+- 'Non-Type Template Parameters: From Integers to C++20 Floats and Class Types'
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+reading_time_minutes: 8
 related:
-  - "Templates, From Scratch: A Code Recipe with Placeholders"
+- 'Templates, From Scratch: A Code Recipe with Placeholders'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 容器
+- vector
+- 零开销抽象
+title: 'Project: fixed_vector<T, N>'
 ---
-
 # Project: fixed_vector&lt;T, N&gt;
 
 We have reached the point where the concepts from the first 9 pieces should work together. Let us implement a `fixed_vector<T, N>`: a compile-time fixed-capacity, contiguous, **zero-allocation** vector. It pulls together class templates, non-type template parameters, and iterators, and if you like, CRTP for an iterator interface. This is not a thought experiment. The standard library's `std::inplace_vector` (C++26) is its "official" version, and industry had EASTL's `fixed_vector`, Boost's `static_vector`, and Folly's `small_vector` using the same idea long before. We will write a teaching-simplified version, explain each design choice, and compare it against the standard library at the end.

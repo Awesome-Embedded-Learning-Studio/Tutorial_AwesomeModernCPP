@@ -1,26 +1,30 @@
 ---
-title: "模板友元与 Barton-Nackman:隐藏友元技巧"
-description: "上一篇讲了 ADL,这一篇讲它最漂亮的搭档:隐藏友元和 Barton-Nackman 技巧。在类模板里把 operator== 定义成友元,每个实例化自动获得专属于该类型的运算符,既不污染全局重载池,又能被 ADL 精确发现"
 chapter: 12
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 上一篇讲了 ADL,这一篇讲它最漂亮的搭档:隐藏友元和 Barton-Nackman 技巧。在类模板里把 operator== 定义成友元,每个实例化自动获得专属于该类型的运算符,既不污染全局重载池,又能被
+  ADL 精确发现
 difficulty: intermediate
+order: 7
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "名字查找与 ADL:两阶段查找是怎么回事"
-  - "类模板:成员、依赖名与惰性实例化"
+- 名字查找与 ADL:两阶段查找是怎么回事
+- 类模板:成员、依赖名与惰性实例化
+reading_time_minutes: 7
 related:
-  - "别名模板与 using 声明:给类型起个短名字"
-  - "CRTP:用奇递归模板做静态多态"
+- 别名模板与 using 声明:给类型起个短名字
+- CRTP:用奇递归模板做静态多态
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 模板友元与 Barton-Nackman:隐藏友元技巧
 ---
-
 # 模板友元与 Barton-Nackman:隐藏友元技巧
 
 上一篇咱们讲了 ADL,这一篇讲它最漂亮的搭档:**隐藏友元**(hidden friends)和 **Barton-Nackman 技巧**。核心想法一句话:把运算符(比如 `operator==`、`operator<<`)定义成类模板的**友元,并且直接在类内部给出定义**。这样每个实例化会自动生成一个专属于该类型的非模板运算符函数,它既不污染全局重载池,又能被 ADL 在精确类型匹配时发现。这是现代 C++ 给自定义类型配运算符的推荐姿势,标准库自己也大量这么用。

@@ -1,26 +1,32 @@
 ---
-title: "Template Friends and Barton-Nackman: The Hidden Friends Trick"
-description: "The previous piece covered ADL. This one covers its most elegant partner: hidden friends and the Barton-Nackman trick. Define operator== as a friend inside a class template, and each instantiation gets an operator dedicated to its own type, without polluting the global overload pool, discoverable by ADL on exact match."
 chapter: 12
-order: 7
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 'The previous piece covered ADL. This one covers its most elegant partner:
+  hidden friends and the Barton-Nackman trick. Define operator== as a friend inside
+  a class template, and each instantiation gets an operator dedicated to its own type,
+  without polluting the global overload pool, discoverable by ADL on exact match.'
 difficulty: intermediate
+order: 7
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+reading_time_minutes: 7
 related:
-  - "Alias Templates and using Declarations: Short Names for Types"
-  - "CRTP: Static Polymorphism with the Curiously Recurring Template Pattern"
+- 'Alias Templates and using Declarations: Short Names for Types'
+- 'CRTP: Static Polymorphism with the Curiously Recurring Template Pattern'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
 ---
-
 # Template Friends and Barton-Nackman: The Hidden Friends Trick
 
 The previous piece covered ADL. This one covers its most elegant partner: **hidden friends** and the **Barton-Nackman trick**. The core idea in one sentence: define operators (like `operator==`, `operator<<`) as **friends of a class template, with the definition directly inside the class**. Each instantiation then gets a non-template operator function dedicated to that type. It neither pollutes the global overload pool, and it is discoverable by ADL on exact type match. This is the recommended way to give operators to a custom type in modern C++, and the standard library uses it heavily.

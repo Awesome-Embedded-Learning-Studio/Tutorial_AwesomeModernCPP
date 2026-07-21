@@ -1,29 +1,36 @@
 ---
-title: "CRTP: Static Polymorphism with the Curiously Recurring Template Pattern"
-description: "CRTP has a derived class pass itself as a template argument to its base, achieving compile-time static polymorphism that avoids the vtable and runtime dispatch of virtual functions. This piece covers its structure, the assembly proof of zero overhead, typical uses like mixins, its pitfalls, and the C++23 deducing-this alternative."
 chapter: 12
-order: 9
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - CRTP
-  - 泛型
-  - 零开销抽象
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 23
+description: CRTP has a derived class pass itself as a template argument to its base,
+  achieving compile-time static polymorphism that avoids the vtable and runtime dispatch
+  of virtual functions. This piece covers its structure, the assembly proof of zero
+  overhead, typical uses like mixins, its pitfalls, and the C++23 deducing-this alternative.
 difficulty: intermediate
+order: 9
 platform: host
-cpp_standard: [11, 14, 17, 20, 23]
-reading_time_minutes: 22
 prerequisites:
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
-  - "Alias Templates and using Declarations: Short Names for Types"
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+- 'Alias Templates and using Declarations: Short Names for Types'
+reading_time_minutes: 9
 related:
-  - "Project: fixed_vector<T, N>"
-  - "Template Friends and Barton-Nackman: The Hidden Friends Trick"
+- 'Project: fixed_vector<T, N>'
+- 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- CRTP
+- 泛型
+- 零开销抽象
+title: 'CRTP: Static Polymorphism with the Curiously Recurring Template Pattern'
 ---
-
 # CRTP: Static Polymorphism with the Curiously Recurring Template Pattern
 
 CRTP, the Curiously Recurring Template Pattern. Its structure looks odd at first: a derived class passes itself as a template argument to its base. `struct Derived : Base<Derived>`. This "self-reference" trick achieves compile-time **static polymorphism**. When you do not need to decide the concrete type at runtime, it fully avoids the vtable and dispatch cost of virtual functions. Expression templates in Eigen, and the mixin mechanisms in many high-performance libraries, are built on CRTP. This piece covers its structure, the assembly proof of zero overhead, several typical uses, and the pitfalls you cannot avoid.

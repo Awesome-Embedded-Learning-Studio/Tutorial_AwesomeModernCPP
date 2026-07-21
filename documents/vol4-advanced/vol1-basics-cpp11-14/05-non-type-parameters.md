@@ -1,27 +1,31 @@
 ---
-title: "非类型模板参数:从整数到 C++20 的浮点与类类型"
-description: "非类型模板参数让一个「值」也能被参数化,array<T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20 把它放宽到浮点和满足 structural 条件的类类型,以及哪些实参算「同一个」实例化"
 chapter: 12
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
-  - 编译期计算
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: 非类型模板参数让一个「值」也能被参数化,array<T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20
+  把它放宽到浮点和满足 structural 条件的类类型,以及哪些实参算「同一个」实例化
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "模板特化与偏特化:模式匹配的艺术"
-  - "类模板:成员、依赖名与惰性实例化"
+- 模板特化与偏特化:模式匹配的艺术
+- 类模板:成员、依赖名与惰性实例化
+reading_time_minutes: 9
 related:
-  - "名字查找与 ADL:两阶段查找是怎么回事"
-  - "模板友元与 Barton-Nackman:隐藏友元技巧"
+- 名字查找与 ADL:两阶段查找是怎么回事
+- 模板友元与 Barton-Nackman:隐藏友元技巧
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+- 编译期计算
+title: 非类型模板参数:从整数到 C++20 的浮点与类类型
 ---
-
 # 非类型模板参数:从整数到 C++20 的浮点与类类型
 
 前面几篇咱们参数化的都是「类型」,`typename T` 占位一个类型。模板还能参数化另一种东西:**一个编译期已知的值**。`std::array<T, N>` 里的 `N`、`std::bitset<N>` 里的 `N`,都是这种参数,叫非类型模板参数(non-type template parameter)。这一篇讲它能接受什么类型的值,C++17 的 `auto` 怎么让它更灵活,C++20 又怎么大刀阔斧地把它从「只能用整数和指针」放宽到「浮点甚至类类型」,以及哪些实参算「同一个」实例化。C++20 这次放宽是非类型参数诞生以来最大的一次升级,直接催生了 fixed_string、编译期常量对象这些新玩法。

@@ -1,28 +1,33 @@
 ---
-title: "综合项目:fixed_vector<T, N>"
-description: "把本卷前 9 篇学的全串起来,实现一个编译期定长、连续存储、零动态分配的 vector。完整代码 + 实测,再和 C++26 的 std::inplace_vector 以及 EASTL/Boost/Folly 的同类实现对比"
 chapter: 12
-order: 10
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 容器
-  - vector
-  - 零开销抽象
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+- 26
+description: 把本卷前 9 篇学的全串起来,实现一个编译期定长、连续存储、零动态分配的 vector。完整代码 + 实测,再和 C++26 的 std::inplace_vector
+  以及 EASTL/Boost/Folly 的同类实现对比
 difficulty: intermediate
+order: 10
 platform: host
-cpp_standard: [11, 14, 17, 20, 26]
-reading_time_minutes: 20
 prerequisites:
-  - "CRTP:用奇递归模板做静态多态"
-  - "非类型模板参数:从整数到 C++20 的浮点与类类型"
-  - "类模板:成员、依赖名与惰性实例化"
+- CRTP:用奇递归模板做静态多态
+- 非类型模板参数:从整数到 C++20 的浮点与类类型
+- 类模板:成员、依赖名与惰性实例化
+reading_time_minutes: 9
 related:
-  - "模板导论:从一份代码配方说起"
+- 模板导论:从一份代码配方说起
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 容器
+- vector
+- 零开销抽象
+title: 综合项目:fixed_vector<T, N>
 ---
-
 # 综合项目:fixed_vector&lt;T, N&gt;
 
 走到这里,本卷前 9 篇的概念该一起练手了。咱们实现一个 `fixed_vector<T, N>`:一个编译期固定容量、连续存储、**零动态分配**的 vector。它综合用到类模板、非类型模板参数、迭代器,如果您愿意还能用 CRTP 给迭代器加接口。这个练习不是空想,标准库的 `std::inplace_vector`(C++26)就是它的「官方版」,工业界早有 EASTL 的 `fixed_vector`、Boost 的 `static_vector`、Folly 的 `small_vector` 在用同一套思路。咱们写一个教学简化版,讲清每一块设计,最后和标准库对照。

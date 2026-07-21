@@ -1,26 +1,32 @@
 ---
-title: "Name Lookup and ADL: How Two-Phase Lookup Works"
-description: "Name lookup inside templates works nothing like ordinary code. It happens in two phases. This piece covers two-phase lookup, dependent vs non-dependent names, ADL (argument-dependent lookup), and why the typename, this->, and hidden-friends rules from earlier pieces have to exist."
 chapter: 12
-order: 6
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: Name lookup inside templates works nothing like ordinary code. It happens
+  in two phases. This piece covers two-phase lookup, dependent vs non-dependent names,
+  ADL (argument-dependent lookup), and why the typename, this->, and hidden-friends
+  rules from earlier pieces have to exist.
 difficulty: intermediate
+order: 6
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 20
 prerequisites:
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
-  - "Non-Type Template Parameters: From Integers to C++20 Floats and Class Types"
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+- 'Non-Type Template Parameters: From Integers to C++20 Floats and Class Types'
+reading_time_minutes: 9
 related:
-  - "Template Friends and Barton-Nackman: The Hidden Friends Trick"
-  - "Template Specialization and Partial Specialization: The Art of Pattern Matching"
+- 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
+- 'Template Specialization and Partial Specialization: The Art of Pattern Matching'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Name Lookup and ADL: How Two-Phase Lookup Works'
 ---
-
 # Name Lookup and ADL: How Two-Phase Lookup Works
 
 In ordinary code, when you use a name, the compiler looks it up at the current position, finds it, and uses it. In templates, that stops working. Name lookup in templates happens in two phases, one at the template definition and one at instantiation. This mechanism is called two-phase lookup, and it is exactly what explains the seemingly strange rules from earlier pieces: why `typename` cannot be dropped, why `this->` is mandatory, and why hidden friends matter. This piece takes two-phase lookup, dependent and non-dependent names, and ADL all the way through. After it, the "inexplicable" errors you hit in templates will all trace back to a root cause you can name.

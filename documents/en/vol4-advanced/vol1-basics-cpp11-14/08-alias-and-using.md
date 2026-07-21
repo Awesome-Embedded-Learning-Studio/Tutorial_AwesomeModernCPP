@@ -1,27 +1,32 @@
 ---
-title: "Alias Templates and using Declarations: Short Names for Types"
-description: "C++11 alias templates (template<typename T> using X = ...) fix the old problem that typedef cannot be parameterized. The _t alias (from C++14) and the _v variable (from C++17) make type_traits clean to write, and using introduces dependent-base names in template inheritance. This piece covers all three uses."
 chapter: 12
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 类型别名
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: C++11 alias templates (template<typename T> using X = ...) fix the old
+  problem that typedef cannot be parameterized. The _t alias (from C++14) and the
+  _v variable (from C++17) make type_traits clean to write, and using introduces dependent-base
+  names in template inheritance. This piece covers all three uses.
 difficulty: intermediate
+order: 8
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 16
 prerequisites:
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+reading_time_minutes: 7
 related:
-  - "Template Friends and Barton-Nackman: The Hidden Friends Trick"
-  - "CRTP: Static Polymorphism with the Curiously Recurring Template Pattern"
+- 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
+- 'CRTP: Static Polymorphism with the Curiously Recurring Template Pattern'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 类型别名
+- 泛型
+title: 'Alias Templates and using Declarations: Short Names for Types'
 ---
-
 # Alias Templates and using Declarations: Short Names for Types
 
 C++11 upgraded type aliasing with a new use of `using` and the **alias template**. The old `typedef` can give one type a new name, but it cannot be parameterized. You want a short name for `std::vector<T>`, and `typedef` cannot do it; you have to go through a nested type inside a class template. `using` plus alias templates fix this directly. This piece covers three uses: the alias template itself, the `_t` alias (from C++14) and the `_v` variable (from C++17) used to type_traits, and the role of `using` in introducing base-class names in template inheritance (a follow-up to the `this->` discussion in piece three).

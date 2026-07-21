@@ -1,26 +1,33 @@
 ---
-title: "Template Specialization and Partial Specialization: The Art of Pattern Matching"
-description: "Specialization is the most expressive part of templates. Full vs partial specialization, the rule by which the compiler picks the most specialized version, and two classic applications: why std::vector<bool> is a partial specialization, and how the entire type_traits machinery (is_pointer, is_const) is built on partial specialization."
 chapter: 12
-order: 4
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 'Specialization is the most expressive part of templates. Full vs partial
+  specialization, the rule by which the compiler picks the most specialized version,
+  and two classic applications: why std::vector<bool> is a partial specialization,
+  and how the entire type_traits machinery (is_pointer, is_const) is built on partial
+  specialization.'
 difficulty: intermediate
+order: 4
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
-  - "Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap"
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+- 'Function Templates, In Depth: Compilation Model and the No-Partial-Specialization
+  Trap'
+reading_time_minutes: 10
 related:
-  - "Non-Type Template Parameters: From Integers to C++20 Floats and Class Types"
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
+- 'Non-Type Template Parameters: From Integers to C++20 Floats and Class Types'
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Template Specialization and Partial Specialization: The Art of Pattern Matching'
 ---
-
 # Template Specialization and Partial Specialization: The Art of Pattern Matching
 
 The strongest part of templates is not "write one, fit any type." It is **giving some specific type, or some family of types, a separate, different implementation.** This mechanism is called specialization. It comes in two forms: full specialization targets one concrete type, partial specialization targets a family of types matching a pattern. The previous piece noted that function templates cannot be partially specialized; only class templates and variable templates can. This piece takes class-template specialization all the way: full specialization, partial specialization, the priority rule for which version the compiler picks, and two classic cases that push partial specialization to the limit, the standard library's `std::vector<bool>` and the whole of `<type_traits>`.

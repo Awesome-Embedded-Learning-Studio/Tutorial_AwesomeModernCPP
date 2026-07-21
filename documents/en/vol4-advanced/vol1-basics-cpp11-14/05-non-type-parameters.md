@@ -1,27 +1,33 @@
 ---
-title: "Non-Type Template Parameters: From Integers to C++20 Floats and Class Types"
-description: "A non-type template parameter parameterizes a value, not a type. The N in array<T, N> is one. What types it accepts, the C++17 auto placeholder, how C++20 opened it up to floating-point and structural class types, and which arguments count as the same instantiation."
 chapter: 12
-order: 5
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
-  - 编译期计算
+cpp_standard:
+- 11
+- 14
+- 17
+- 20
+description: A non-type template parameter parameterizes a value, not a type. The
+  N in array<T, N> is one. What types it accepts, the C++17 auto placeholder, how
+  C++20 opened it up to floating-point and structural class types, and which arguments
+  count as the same instantiation.
 difficulty: intermediate
+order: 5
 platform: host
-cpp_standard: [11, 14, 17, 20]
-reading_time_minutes: 18
 prerequisites:
-  - "Template Specialization and Partial Specialization: The Art of Pattern Matching"
-  - "Class Templates: Members, Dependent Names, and Lazy Instantiation"
+- 'Template Specialization and Partial Specialization: The Art of Pattern Matching'
+- 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
+reading_time_minutes: 9
 related:
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
-  - "Template Friends and Barton-Nackman: The Hidden Friends Trick"
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+- 'Template Friends and Barton-Nackman: The Hidden Friends Trick'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+- 编译期计算
+title: 'Non-Type Template Parameters: From Integers to C++20 Floats and Class Types'
 ---
-
 # Non-Type Template Parameters: From Integers to C++20 Floats and Class Types
 
 The previous pieces parameterized types. `typename T` stands in for a type. A template can also parameterize something else: **a value known at compile time**. The `N` in `std::array<T, N>` and `std::bitset<N>` is exactly this kind of parameter, called a non-type template parameter. This piece covers what types of values it can take, how C++17 `auto` made it more flexible, how C++20 opened it up from "integers and pointers only" to "floating-point and even class types," and which arguments count as the "same" instantiation. The C++20 relaxation is the biggest upgrade non-type parameters have had since they were invented, and it enables fixed_string, compile-time constant objects, and other new tricks.

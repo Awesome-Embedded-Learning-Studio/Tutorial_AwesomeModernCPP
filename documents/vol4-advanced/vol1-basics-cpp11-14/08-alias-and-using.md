@@ -1,27 +1,30 @@
 ---
-title: "别名模板与 using 声明:给类型起个短名字"
-description: "C++11 的别名模板(template<typename T> using X = ...)解决了 typedef 不能参数化的老问题,C++14 起的 _t 别名和 C++17 起的 _v 变量让 type traits 写起来清爽,using 还能在模板继承里引入 dependent base 的名字。这一篇讲清这三种用法"
 chapter: 12
-order: 8
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 类型别名
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: C++11 的别名模板(template<typename T> using X = ...)解决了 typedef 不能参数化的老问题,C++14
+  起的 _t 别名和 C++17 起的 _v 变量让 type traits 写起来清爽,using 还能在模板继承里引入 dependent base 的名字。这一篇讲清这三种用法
 difficulty: intermediate
+order: 8
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 16
 prerequisites:
-  - "名字查找与 ADL:两阶段查找是怎么回事"
-  - "类模板:成员、依赖名与惰性实例化"
+- 名字查找与 ADL:两阶段查找是怎么回事
+- 类模板:成员、依赖名与惰性实例化
+reading_time_minutes: 7
 related:
-  - "模板友元与 Barton-Nackman:隐藏友元技巧"
-  - "CRTP:用奇递归模板做静态多态"
+- 模板友元与 Barton-Nackman:隐藏友元技巧
+- CRTP:用奇递归模板做静态多态
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 类型别名
+- 泛型
+title: 别名模板与 using 声明:给类型起个短名字
 ---
-
 # 别名模板与 using 声明:给类型起个短名字
 
 C++11 给类型起别名这件事做了一次大升级,引入了 `using` 的新用法和**别名模板**(alias template)。老式的 `typedef` 能给一个类型起别名,但它没法参数化,您想给 `std::vector<T>` 起个短名字,`typedef` 做不到,只能借类模板的嵌套类型绕一圈。`using` + 别名模板直接解决了这个问题。这一篇讲三种用法:别名模板本身、C++14 起 type traits 配的 `_t` 别名(C++17 又补了 `_v` 变量)、以及 `using` 在模板继承里引入基类名字的作用(承接第三篇讲过的 `this->`)。

@@ -1,26 +1,32 @@
 ---
-title: "Class Templates: Members, Dependent Names, and Lazy Instantiation"
-description: "Class templates are the foundation of the STL. This piece covers the three differences from function templates that trip people up: members defined inside or outside the class, the lazy-instantiation temper, and why dependent names need typename and this-> for disambiguation."
 chapter: 12
-order: 3
-tags:
-  - host
-  - cpp-modern
-  - intermediate
-  - 模板
-  - 泛型
+cpp_standard:
+- 11
+- 14
+- 17
+description: 'Class templates are the foundation of the STL. This piece covers the
+  three differences from function templates that trip people up: members defined inside
+  or outside the class, the lazy-instantiation temper, and why dependent names need
+  typename and this-> for disambiguation.'
 difficulty: intermediate
+order: 3
 platform: host
-cpp_standard: [11, 14, 17]
-reading_time_minutes: 20
 prerequisites:
-  - "Templates, From Scratch: A Code Recipe with Placeholders"
-  - "Function Templates, In Depth: Compilation Model and the No-Partial-Specialization Trap"
+- 'Templates, From Scratch: A Code Recipe with Placeholders'
+- 'Function Templates, In Depth: Compilation Model and the No-Partial-Specialization
+  Trap'
+reading_time_minutes: 10
 related:
-  - "Template Specialization and Partial Specialization: The Art of Pattern Matching"
-  - "Name Lookup and ADL: How Two-Phase Lookup Works"
+- 'Template Specialization and Partial Specialization: The Art of Pattern Matching'
+- 'Name Lookup and ADL: How Two-Phase Lookup Works'
+tags:
+- host
+- cpp-modern
+- intermediate
+- 模板
+- 泛型
+title: 'Class Templates: Members, Dependent Names, and Lazy Instantiation'
 ---
-
 # Class Templates: Members, Dependent Names, and Lazy Instantiation
 
 Class templates are the foundation of the STL. `std::vector`, `std::map`, and `std::string` (really `std::basic_string<char>`) are all class templates. Knowing function templates does not mean knowing class templates. There are a few key differences, and they happen to be exactly where newcomers stumble. This piece focuses on three: whether member functions go inside or outside the class, the error-hiding temper that lazy instantiation brings, and why dependent names need `typename` and `this->` for disambiguation. Get these three straight, and writing your own containers or policy classes, or reading STL source, stops snagging on these details.
