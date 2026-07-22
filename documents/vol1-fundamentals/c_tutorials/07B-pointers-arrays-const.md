@@ -1,21 +1,22 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 深入理解数组名退化为指针的机制、const 与指针的四种组合、NULL 指针和野指针的防范，为学习 C++ 引用和智能指针打下基础
 difficulty: beginner
 order: 10
 platform: host
 prerequisites:
-- 指针入门：地址的世界
+  - 指针入门：地址的世界
 reading_time_minutes: 11
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
 title: 指针与数组、const 和空指针
 ---
+
 # 指针与数组、const 和空指针
 
 上一篇里我们掌握了指针的基本操作——声明、初始化、取地址、解引用、指针运算。现在我们来啃指针里几个比较绕但非常重要的应用：数组和指针之间到底是什么关系，`const` 和指针组合在一起有多少种意思，以及 NULL 指针和野指针为什么这么危险。
@@ -33,7 +34,7 @@ title: 指针与数组、const 和空指针
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -264,6 +265,53 @@ std::unique_ptr<int> p = std::make_unique<int>(42);
 const int* linear_search(const int* data, size_t count, int target);
 ```
 
+### 练习 1 参考答案
+
+```c
+#include <stdio.h>
+const int* linear_search(const int* data, size_t count, int target);
+
+int main(void) {
+    const int arr[] = {10, 21, 32, 43, 54, 65, 76, 87, 98, 9};
+    int target = 43;
+
+    // 使用 sizeof 自动计算数组大小
+    size_t count = sizeof(arr) / sizeof(arr[0]);
+
+    const int* result = linear_search(arr, count, target);
+
+    if (result != NULL) {
+        printf("找到了目标 %d，位于地址 %p，是数组的第 %llu 个元素。\n",
+               target, (void*)result, (unsigned long long)(result - arr));
+    } else {
+        printf("未找到目标 %d。\n", target);
+    }
+
+    return 0;
+}
+
+const int* linear_search(const int* data, size_t count, int target) {
+    // 防御性编程：如果指针为空，或者数量为0，直接返回 NULL
+    if (data == NULL || count == 0) {
+        return NULL;
+    }
+    for (size_t i = 0; i < count; i++) {
+        if (*(data + i) == target) {
+            return data + i;
+        }
+    }
+    return NULL;
+}
+```
+
+终端应当输出：
+
+```text
+找到了目标 43，位于地址 00000000005ffe5c，是数组的第 3 个元素。
+```
+
+如果出现乱码，可能是字符编码的问题
+
 ### 练习 2：指针版数组反转
 
 实现一个原地反转数组的函数，只使用指针算术（两个指针从两端向中间靠拢），不使用数组下标：
@@ -273,6 +321,80 @@ const int* linear_search(const int* data, size_t count, int target);
 /// @param data 数组首元素地址
 /// @param count 元素个数
 void reverse_array(int* data, size_t count);
+```
+
+### 练习 2 参考答案
+
+```c
+void reverse_array(int* data, size_t count);
+
+int main(void) {
+    int arr[] = {10, 21, 32, 43, 54, 65, 76, 87, 98, 9};
+    int arr_size = sizeof(arr) / sizeof(arr[0]);
+
+    printf("before reverse_array:\n");
+    for (int i = 0; i < arr_size; i++) {
+        printf("%d\n", arr[i]);
+    }
+
+    reverse_array(arr, arr_size);
+
+    printf("after reverse_array:\n");
+    for (int i = 0; i < arr_size; i++) {
+        printf("%d\n", arr[i]);
+    }
+
+    return 0;
+}
+
+void reverse_array(int* data, size_t count) {
+    if (data == NULL) {
+        printf("data is null\n");
+        return;
+    }
+    if (count == 0) {
+        printf("data is empty\n");
+        return;
+    }
+
+    int* start = data;
+    int* end = data + count - 1;
+    int temp = 0;
+    while (start < end) {
+        temp = *start;
+        *start = *end;
+        *end = temp;
+        start++;
+        end--;
+    }
+}
+```
+
+终端应当输出：
+
+```text
+before reverse_array:
+10
+21
+32
+43
+54
+65
+76
+87
+98
+9
+after reverse_array:
+9
+98
+87
+76
+65
+54
+43
+32
+21
+10
 ```
 
 ### 练习 3：const 练习
@@ -289,6 +411,25 @@ const int* const p3 = &value;
 // 对每个指针 p1/p2/p3，判断以下操作是否合法：
 // *px = 50;      // 通过指针修改数据
 // px = &other;   // 修改指针指向
+```
+
+### 练习 3 参考答案
+
+```c
+int value = 42, other = 100;
+
+const int* p1 = &value;
+int* const p2 = &value;
+const int* const p3 = &value;
+
+*p1 = other;    //不合法，因为p1是指向 const int 类型的指针，无法修改其值
+*p2 = other;    //合法，因为p2是指向 int 类型的 const 指针，不能指向其它地址，但可以修改其值
+*p3 = other;    //不合法，因为p3既是指向 const int 类型的指针，也是 const 指针,所以既不能指向其它地址，也不能修改其值
+
+p1 = &other;    //合法，因为p1不是 const 类型的指针，所以可以指向其它地址
+p2 = &other;    //不合法，因为p2是指向 int 类型的 const 指针，不能指向其它地址
+p3 = &other;    //不合法，因为p3既是指向 const int 类型的指针，也是 const 指针,所以既不能指向其它地址，也不能修改其值
+
 ```
 
 ## 参考资源
