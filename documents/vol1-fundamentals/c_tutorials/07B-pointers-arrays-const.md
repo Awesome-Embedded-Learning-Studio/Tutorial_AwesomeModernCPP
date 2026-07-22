@@ -304,13 +304,13 @@ const int* linear_search(const int* data, size_t count, int target) {
 }
 ```
 
-终端应当输出：
+运行后你会看到类似这样的输出（地址那串数字每次运行都不一样，这是系统的地址随机化 ASLR 在起作用，属正常现象）：
 
 ```text
-找到了目标 43，位于地址 00000000005ffe5c，是数组的第 3 个元素。
+找到了目标 43，位于地址 0x7ffd02b50bac，是数组的第 3 个元素。
 ```
 
-如果出现乱码，可能是字符编码的问题
+地址本身不用记，关键是后面那个「第 3 个元素」——`result - arr` 算出来就是 `3`，这个结论是稳的。顺带一提：要是终端里中文显示成乱码，那是终端编码不是 UTF-8 的问题，跟代码无关，换 WSL2 或现代终端就好。
 
 ### 练习 2：指针版数组反转
 
@@ -326,6 +326,8 @@ void reverse_array(int* data, size_t count);
 ### 练习 2 参考答案
 
 ```c
+#include <stdio.h>
+
 void reverse_array(int* data, size_t count);
 
 int main(void) {
@@ -422,13 +424,15 @@ const int* p1 = &value;
 int* const p2 = &value;
 const int* const p3 = &value;
 
-*p1 = other;    //不合法，因为p1是指向 const int 类型的指针，无法修改其值
-*p2 = other;    //合法，因为p2是指向 int 类型的 const 指针，不能指向其它地址，但可以修改其值
-*p3 = other;    //不合法，因为p3既是指向 const int 类型的指针，也是 const 指针,所以既不能指向其它地址，也不能修改其值
-
-p1 = &other;    //合法，因为p1不是 const 类型的指针，所以可以指向其它地址
-p2 = &other;    //不合法，因为p2是指向 int 类型的 const 指针，不能指向其它地址
-p3 = &other;    //不合法，因为p3既是指向 const int 类型的指针，也是 const 指针,所以既不能指向其它地址，也不能修改其值
+// 下面六行用来判断合法性，逐行对照上面的声明看（都写成注释，
+// 因为不合法的那几行真写出来会编译报错）：
+// *p1 = other;   // 不合法：p1 指向 const int，无法通过它改值
+// *p2 = other;   // 合法：p2 是 const 指针（指向固定），但它指向的是普通 int，值能改
+// *p3 = other;   // 不合法：p3 既指向 const int，自身也是 const，改值改向都不行
+//
+// p1 = &other;   // 合法：p1 本身不是 const 指针，可以改指向
+// p2 = &other;   // 不合法：p2 是 const 指针，指向不能改
+// p3 = &other;   // 不合法：p3 同样是 const 指针，指向不能改
 
 ```
 

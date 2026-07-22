@@ -314,7 +314,7 @@ int** allocate_matrix(int rows, int cols) {
         return NULL;
     }
 
-    int** matrix= malloc(sizeof(int*) * rows);
+    int** matrix = malloc(sizeof(int*) * rows);
     if (matrix == NULL) {
         return NULL;    //防止内存分配失败，但这不太可能吧...以防万一，还是写上吧，如果程序在1978年的硬件上跑呢(笑)
     }
@@ -358,24 +358,25 @@ void fill_matrix(int** matrix, int rows, int cols, int value) {
 ```
 
 ```text
-兴致大发，来写一个图示awa
-[M](这个是matrix)(int** 类型)
-[M_rows_i](这个是matrix[rows])(int* 类型)
-[Value](这个是matrix的值)(int类型)
+兴致大发，来画个图示 awa
 
-[M]--->[M_rows_0][M_rows_1][M_rows_2]...[M_rows_n]
-    |      |         |         |             |
-    ↓      |—————————|—————————|—————————————|————>第2次解引用
-第1次解引用 ↓         ↓         ↓             ↓
-        [Value]   [Value]   [Value]       [Value]
-        [Value]   [Value]   [Value]       [Value]
-        [Value]   [Value]   [Value]       [Value]
-        [Value]   [Value]   [Value]       [Value]
-        [Value]   [Value]   [Value]       [Value]
-        ......
-        [Value]   [Value]   [Value]       [Value]
+matrix 的类型是 int**，要解两次引用才摸到具体的 int：
 
-应该写的很清楚吧OwO？
+  matrix  (int**)
+    │
+    │   matrix[0]    matrix[1]    matrix[2]    ...    matrix[n]      ← 第 1 次解引用，每个是 int*
+    │      │            │            │                   │
+    │      ▼            ▼            ▼                   ▼
+    └─▶ ┌─┬─┬─┬─┐   ┌─┬─┬─┬─┐    ┌─┬─┬─┬─┐         ┌─┬─┐
+         │ │ │ │ │   │ │ │ │ │    │ │ │ │ │   ...   │ │ │   ← 第 2 次解引用，每个是 int
+         └─┴─┴─┴─┘   └─┴─┴─┴─┘    └─┴─┴─┴─┘         └─┴─┘
+             ↑
+             matrix[0][1] 就是这一格（第 0 行、第 1 列的那个 int）
+
+  - matrix[i]     ：int*，指向第 i 行的开头（那块 cols 个 int）
+  - matrix[i][j]  ：int，第 i 行第 j 列的具体值
+
+这下应该清楚了吧 OwO？
 ```
 
 提示：分配时先分配一个指针数组（`int**` 指向的那一维），然后对每一行分别 `malloc`。释放时顺序反过来——先释放每一行，再释放指针数组本身。
