@@ -25,17 +25,17 @@ title: 自定义删除器与侵入式引用计数
 ---
 # 自定义删除器与侵入式引用计数
 
-到目前为止，我们讨论的智能指针都在管理"new 出来的对象"——析构时调用 `delete`，一切自然而然。但现实世界远比这复杂。你需要管理的资源可能是 `fopen()` 返回的 `FILE*`（要用 `fclose` 关闭），可能是 `malloc()` 分配的内存（要用 `free` 释放），可能是 POSIX 的文件描述符 `int`（要用 `close` 关闭），可能是 SDL 的窗口、OpenGL 的纹理、CUDA 的 stream——每种资源都有自己的释放函数。如果智能指针只能 `delete`，那它就太鸡肋了。
+到目前为止，咱们讨论的智能指针都在管理"new 出来的对象"——析构时调用 `delete`，一切自然而然。但现实世界远比这复杂。您需要管理的资源可能是 `fopen()` 返回的 `FILE*`（要用 `fclose` 关闭），可能是 `malloc()` 分配的内存（要用 `free` 释放），可能是 POSIX 的文件描述符 `int`（要用 `close` 关闭），可能是 SDL 的窗口、OpenGL 的纹理、CUDA 的 stream——每种资源都有自己的释放函数。如果智能指针只能 `delete`，那它就太鸡肋了。
 
-自定义删除器（custom deleter）就是让智能指针适配各种"非标准"资源的关键机制。而侵入式引用计数（intrusive reference counting）则是在性能和内存受限场景下替代 `shared_ptr` 的重要方案。今天我们把这两个话题放在一起讨论，因为它们都围绕着同一个核心问题：**如何让 C++ 的智能指针管理那些"不是 new 出来的"资源**。
+自定义删除器（custom deleter）就是让智能指针适配各种"非标准"资源的关键机制。而侵入式引用计数（intrusive reference counting）则是在性能和内存受限场景下替代 `shared_ptr` 的重要方案。今天咱们把这两个话题放在一起讨论，因为它们都围绕着同一个核心问题：**如何让 C++ 的智能指针管理那些"不是 new 出来的"资源**。
 
 ## 删除器的三种形态
 
-自定义删除器本质上就是一个"可调用对象"——在智能指针析构时被调用，负责释放资源。它可以是函数指针、lambda 表达式、或者函数对象（functor）。这三种形态各有特点，我们从最简单的开始逐一讲解。
+自定义删除器本质上就是一个"可调用对象"——在智能指针析构时被调用，负责释放资源。它可以是函数指针、lambda 表达式、或者函数对象（functor）。这三种形态各有特点，咱们从最简单的开始逐一讲解。
 
 ### 函数指针：最直观的方式
 
-函数指针是最容易理解的删除器形式。你传入一个函数的地址，智能指针在析构时调用它。但函数指针有一个缺点：它会增加 `unique_ptr` 的大小，因为 `unique_ptr` 需要额外存储这个函数指针。
+函数指针是最容易理解的删除器形式。您传入一个函数的地址，智能指针在析构时调用它。但函数指针有一个缺点：它会增加 `unique_ptr` 的大小，因为 `unique_ptr` 需要额外存储这个函数指针。
 
 ```cpp
 #include <cstdio>
@@ -79,7 +79,7 @@ std::cout << sizeof(std::unique_ptr<FILE, void(*)(FILE*)>) << "\n";       // 16
 std::cout << sizeof(std::unique_ptr<FILE, decltype(&std::fclose)>) << "\n"; // 16
 ```
 
-> **注意**：以上数值在 x86_64-linux-gnu 平台（g++ 15.2.1）测试得出。不同平台和编译器的实现可能略有差异。完整验证代码见 `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`。
+> **注意**：以上数值在 x86_64-linux-gnu 平台（GCC 16.1.1）测试得出。不同平台和编译器的实现可能略有差异。
 
 ### Lambda：灵活且现代
 
@@ -93,7 +93,6 @@ auto file_closer = [](FILE* f) noexcept {
 using LambdaFilePtr = std::unique_ptr<FILE, decltype(file_closer)>;
 
 // sizeof(LambdaFilePtr) == sizeof(FILE*) == 8（EBO 优化）
-// 验证：参见 code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp
 
 // 有捕获 lambda —— 有状态，会增大 unique_ptr
 void captured_lambda_example() {
@@ -112,8 +111,7 @@ void captured_lambda_example() {
         logging_closer
     );
     // sizeof(fp) > sizeof(FILE*)，因为 lambda 捕获了 log_fd
-    // 验证：参见 code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp
-}
+    }
 ```
 
 ### 函数对象：最高效的方式
@@ -151,7 +149,7 @@ void functor_example() {
 
 "零开销"不是一句空话——空基类优化（Empty Base Optimization, EBO）是 C++ 编译器的一项优化技术：当一个空类（没有数据成员、没有虚函数）被用作基类时，编译器可以把它的大小优化为 0 字节，不需要占用额外的内存空间。`unique_ptr` 的典型实现会将删除器作为基类存储（通过继承），这样当删除器为空类时，整个 `unique_ptr` 就只包含一个裸指针。
 
-我们来验证一下（在 x86_64-linux-gnu 平台，g++ 15.2.1）：
+咱们来验证一下（在 x86_64-linux-gnu 平台，GCC 16.1.1）：
 
 ```cpp
 #include <memory>
@@ -180,7 +178,7 @@ int main() {
 }
 ```
 
-64 位平台上的典型输出（g++ 15.2.1，-O0）：
+64 位平台上的典型输出（GCC 16.1.1，-O0）：
 
 ```text
 sizeof(int*):                              8
@@ -190,7 +188,6 @@ sizeof(unique_ptr<int, StatefulDeleter>):   16
 sizeof(unique_ptr<int, void(*)(int*)>):     16
 ```
 
-完整验证代码见 `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`。
 
 数据很清楚：空删除器（包括默认删除器和空的函数对象）不会增加 `unique_ptr` 的大小。只有有状态的删除器（比如捕获了变量的 lambda、包含数据成员的函数对象、函数指针）才会增加大小。
 
@@ -198,7 +195,7 @@ sizeof(unique_ptr<int, void(*)(int*)>):     16
 
 ## FILE* 管理、C API 封装实战
 
-掌握了删除器的基本原理之后，我们来看几个实际的封装场景。第一个是最常见的 C API 封装：用 `unique_ptr` 管理 `FILE*`。
+掌握了删除器的基本原理之后，咱们来看几个实际的封装场景。第一个是最常见的 C API 封装：用 `unique_ptr` 管理 `FILE*`。
 
 ```cpp
 #include <cstdio>
@@ -296,13 +293,13 @@ UniqueGlTexture create_texture(int width, int height) {
 }
 ```
 
-这里有一个细节值得注意：OpenGL 的纹理 ID 是一个 `GLuint`（整数），不是指针。但 `unique_ptr` 只能管理指针类型。所以我们把 `GLuint` 放在堆上（`new GLuint`），然后用 `unique_ptr` 管理这个堆上的 `GLuint`。删除器在析构时既调用 `glDeleteTextures` 又调用 `delete`。这种"间接"虽然看起来不太完美，但在实践中是标准做法。
+这里有一个细节值得注意：OpenGL 的纹理 ID 是一个 `GLuint`（整数），不是指针。但 `unique_ptr` 只能管理指针类型。所以咱们把 `GLuint` 放在堆上（`new GLuint`），然后用 `unique_ptr` 管理这个堆上的 `GLuint`。删除器在析构时既调用 `glDeleteTextures` 又调用 `delete`。这种"间接"虽然看起来不太完美，但在实践中是标准做法。
 
 ## shared_ptr 的删除器：类型擦除
 
 前面讨论的都是 `unique_ptr` 的删除器——删除器类型是 `unique_ptr` 类型的一部分。而 `shared_ptr` 的删除器有一个本质的不同：**删除器类型不是 `shared_ptr` 类型的一部分**，它被"擦除"后存储在控制块里。
 
-这意味着你可以用同一个 `shared_ptr<T>` 类型持有不同删除器的对象：
+这意味着您可以用同一个 `shared_ptr<T>` 类型持有不同删除器的对象：
 
 ```cpp
 #include <memory>
@@ -335,7 +332,7 @@ void resource_demo() {
 }
 ```
 
-这种"运行时多态"的灵活性是 `shared_ptr` 删除器的优势，但也有代价：删除器存储在控制块里（额外的堆分配），每次析构需要通过函数指针调用删除器。根据基准测试（g++ 15.2.1，-O2，100000 次迭代），`shared_ptr` 的创建和销毁比 `unique_ptr` 慢约 30-50%，主要开销来自控制块的内存分配。完整测试代码见 `code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-benchmark.cpp`。
+这种"运行时多态"的灵活性是 `shared_ptr` 删除器的优势，但也有代价：删除器存储在控制块里（额外的堆分配），每次析构需要通过函数指针调用删除器。`shared_ptr` 的创建和销毁比 `unique_ptr` 慢约 30-50%（`-O2`，10 万次迭代），主要开销来自控制块的内存分配。
 
 ## 侵入式引用计数原理
 
@@ -381,7 +378,7 @@ private:
 
 ## intrusive_ptr 实现与应用场景
 
-有了引用计数的基类，我们还需要一个智能指针来自动管理 `add_ref/release` 的调用。这就是 `intrusive_ptr`：
+有了引用计数的基类，咱们还需要一个智能指针来自动管理 `add_ref/release` 的调用。这就是 `intrusive_ptr`：
 
 ```cpp
 template <typename T>
@@ -451,13 +448,11 @@ void intrusive_demo() {
 
     std::cout << "缓冲区仍然有效\n";
 }  // 引用计数: 1 → 0，SharedBuffer 被销毁
-
-// 完整实现代码见 code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp
 ```
 
 侵入式方案与 `shared_ptr` 的核心区别在于：`shared_ptr` 的控制块是在对象外部的堆上分配的（需要额外的 `new`），而侵入式方案把计数器直接放在对象内部。这意味着只有一次内存分配（对象本身），引用计数的访问不需要跳转到另一个内存位置（缓存更友好）。
 
-侵入式方案也有一些限制：对象必须继承引用计数基类（侵入性），不方便管理已有类型的对象（比如标准库类型），而且引用计数的线程安全性需要你自己决定。但正是这种"你自己决定"的灵活性，使得侵入式方案在嵌入式系统中非常有吸引力——在单线程场景下，你可以用普通的 `uint32_t` 计数器；在多线程场景下，你需要把计数器换成 `std::atomic<uint32_t>`，但这会引入原子操作的开销。完整的多线程实现示例见 `code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp`。
+侵入式方案也有一些限制：对象必须继承引用计数基类（侵入性），不方便管理已有类型的对象（比如标准库类型），而且引用计数的线程安全性需要您自己决定。但正是这种"您自己决定"的灵活性，使得侵入式方案在嵌入式系统中非常有吸引力——在单线程场景下，您可以用普通的 `uint32_t` 计数器；在多线程场景下，您需要把计数器换成 `std::atomic<uint32_t>`，但这会引入原子操作的开销。
 
 ## 嵌入式实战：硬件句柄管理
 
@@ -517,13 +512,7 @@ void peripheral_sharing() {
 
 这种模式在嵌入式驱动开发中非常常见。`unique_ptr` + 无状态删除器适合"独占使用"的场景（一次只有一个模块持有），侵入式引用计数适合"共享使用"的场景（多个模块同时持有），两者都比 `shared_ptr` 更轻量、更适合资源受限的环境。
 
-## 小结
-
-自定义删除器让智能指针突破了"只能管理 new/delete"的限制，能够适配任何类型的资源释放方式。函数指针、lambda、函数对象三种删除器形态各有优劣：函数对象通过 EBO 可以实现零开销，是性能敏感场景的首选；lambda 编写方便但要注意捕获带来的大小增加；函数指针最直观但会翻倍 `unique_ptr` 的大小。
-
-侵入式引用计数则是在性能和内存受限场景下替代 `shared_ptr` 的有效方案。通过把引用计数嵌入对象内部，省去了控制块的堆分配和额外的间接访问。代价是需要修改对象类型（侵入性），但在嵌入式和游戏引擎等性能敏感领域，这种权衡通常值得。
-
-下一篇我们将讨论 scope_guard——一种更通用的 RAII 变体，它不仅能管理资源，还能管理任何需要在作用域退出时执行的操作。
+下一篇聊 scope_guard——一种更通用的 RAII 变体，不光管资源，还能管任何"作用域退出时要执行的操作"。
 
 ## 参考资源
 
@@ -531,36 +520,4 @@ void peripheral_sharing() {
 - [Empty Base Optimization and no_unique_address](https://www.cppstories.com/2021/no-unique-address/)
 - [Boost intrusive_ptr documentation](https://www.boost.org/doc/libs/1_40_0/libs/smart_ptr/intrusive_ptr.html)
 - [C++ Core Guidelines: R.20-24](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rr-smart)
-- [P0468R0: An Intrusive Smart Pointer Proposal](https://www.open-std.org/jc1/sc22/wg21/docs/papers/2016/p0468r0.html)
-下一篇我们将讨论 scope_guard——一种更通用的 RAII 变体，它不仅能管理资源，还能管理任何需要在作用域退出时执行的操作。
 - [P0468R0: An Intrusive Smart Pointer Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0468r0.html)
-
-## 验证代码
-
-本文中涉及的技术断言均通过以下代码验证（在 x86_64-linux-gnu 平台，g++ 15.2.1）：
-
-1. **删除器 sizeof 验证**：`code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-sizeof.cpp`
-   - 验证函数指针、lambda、函数对象作为删除器时的内存占用
-   - 验证空基类优化（EBO）对 `unique_ptr` 大小的影响
-
-2. **删除器性能基准测试**：`code/volumn_codes/vol2/ch01-smart-pointers/05-custom-deleter-benchmark.cpp`
-   - 对比 `unique_ptr` 和 `shared_ptr` 在使用自定义删除器时的性能差异
-   - 测试条件：100000 次迭代，-O2 优化级别
-
-3. **侵入式引用计数完整实现**：`code/volumn_codes/vol2/ch01-smart-pointers/05-intrusive-ptr-demo.cpp`
-   - 完整的 `IntrusivePtr` 实现
-   - 单线程和多线程版本的引用计数基类
-   - 与 `shared_ptr` 的对比演示
-
-编译和运行方法：
-
-```bash
-cd code/volumn_codes/vol2/ch01-smart-pointers
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-./build/05-custom-deleter-sizeof
-./build/05-custom-deleter-benchmark
-./build/05-intrusive-ptr-demo
-```
-
-或使用 g++ 直接编译：

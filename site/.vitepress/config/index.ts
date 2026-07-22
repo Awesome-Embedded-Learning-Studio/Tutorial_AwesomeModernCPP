@@ -36,7 +36,9 @@ export default withDrawio(defineConfig({
   vite: {
     plugins: [serveCodeExamplesInDev()],
     ssr: {
-      external: ['mermaid'],
+      // mermaid / @panzoom/panzoom 都只在客户端 onMounted 后动态 import 求值,
+      // SSR 阶段不能也不应打包求值(mermaid 访问 document、panzoom 访问 DOM)。
+      external: ['mermaid', '@panzoom/panzoom'],
     },
   },
 

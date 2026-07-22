@@ -564,13 +564,7 @@ Exception destructed
 
 This verification tells us: RAII's guarantee only applies to **normal control flow** (including exception handling). If the program exits abnormally via `std::abort()`, `std::quick_exit()`, `std::exit()`, or signal handling, destructors will not execute. This is one reason why modern C++ recommends using exceptions over `exit()`—exceptions guarantee stack unwinding and resource cleanup, while `exit()` does not.
 
-## Summary
-
-RAII is the cornerstone of C++ resource management. Its core mechanism—acquire resources on construction, release on destruction—leverages C++'s stack unwinding guarantee, making resource release no longer dependent on programmer memory, but guaranteed by the language specification. No matter how the control flow leaves the scope (normal return, early `return`, exception propagation), all RAII objects will be correctly destroyed.
-
-The three levels of exception safety (basic, strong, nothrow) give us a yardstick to measure code quality. As long as all resources are managed through RAII, basic exception safety is almost "free." The design pattern for RAII wrappers is also highly consistent—acquire resource, disable copy, allow move, `noexcept` destructor. Mastering this "four-piece set" allows you to write safe wrappers for any type of resource.
-
-The next topic we will explore in depth, `std::unique_ptr`, is the most direct embodiment of RAII thought in the realm of smart pointers: zero-overhead exclusive ownership management. Once you understand RAII, understanding `std::unique_ptr` will be very natural.
+The next chapter covers `std::unique_ptr`—RAII applied directly to smart pointers, for zero-overhead exclusive ownership. With the RAII groundwork laid, `unique_ptr` reads very naturally.
 
 ## Reference Resources
 

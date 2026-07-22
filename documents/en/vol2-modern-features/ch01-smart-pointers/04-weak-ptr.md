@@ -298,7 +298,7 @@ The design of this cache is very natural: the cache itself does not hold a stron
 
 Although `weak_ptr` is a powerful tool for solving circular references, overusing it can actually increase code complexity and the probability of errors. I have seen some codebases replace almost all pointers with `weak_ptr` for fear of circular references—this is overcorrecting.
 
-First is the performance issue. Every time you access an object via `weak_ptr`, you need to call `lock()`, which involves atomic operations (checking and incrementing the reference count). Frequent `lock()` calls in hot paths can bring measurable performance overhead. According to benchmarks on [Stack Overflow](https://stackoverflow.com/questions/39516416/using-weak-ptr-to-implement-the-observer-pattern), accessing via `weak_ptr` is about 10-15 times slower than directly accessing `shared_ptr` (under -O2 optimization, 10 million iterations: direct access ~5ms, `lock()` access ~62ms). Although this absolute time difference might not be significant in practical applications, if called frequently in performance-sensitive code paths, the overhead accumulates.
+First is the performance issue. Every time you access an object via `weak_ptr`, you need to call `lock()`, which involves atomic operations (checking and incrementing the reference count). Frequent `lock()` calls in hot paths can bring measurable performance overhead. In a quick benchmark (GCC 16.1.1 -O2, 10 million iterations), accessing via `weak_ptr::lock()` is about 30 times slower than directly accessing `shared_ptr` (direct access ~2ms, `lock()` access ~68ms) — `lock()` has to do an atomic operation to grab the reference count. Although this absolute time difference might not be significant in practical applications, if called frequently in performance-sensitive code paths, the overhead accumulates.
 
 Second is semantic ambiguity. If your code is full of `weak_ptr` everywhere, it is hard for readers to determine which objects have true ownership relationships. Ownership relationships should be clarified as much as possible during the design phase, rather than using `weak_ptr` to avoid ownership design.
 
@@ -306,15 +306,7 @@ My suggestion is: in most cases, use `unique_ptr` to express exclusive ownership
 
 Another common error is using `weak_ptr` to "observe" objects on the stack or objects managed by `unique_ptr`—this is impossible because `weak_ptr` can only be used in conjunction with `shared_ptr`. If you want to observe the lifecycle of a non-shared object, you need other mechanisms (such as callbacks, manual implementation of the Observer pattern, or changing the object to be managed by `shared_ptr`).
 
-## Summary
-
-`weak_ptr` is `shared_ptr`'s partner, solving the `shared_ptr` circular reference problem through a "weak reference" mechanism that does not participate in strong reference counting. Its three core APIs—`lock()`, `expired()`, and `use_count()`—provide safe "check but don't own" semantics.
-
-In practical applications, `weak_ptr` is mainly used in three scenarios: breaking circular references in data structures (doubly linked lists, trees, graphs), implementing the loosely coupled notification mechanism of the Observer pattern, and building automatically reclaiming cache systems. Mastering these three patterns means mastering the core usage of `weak_ptr`.
-
-But remember, `weak_ptr` is not a panacea. Overusing it makes code harder to understand and maintain. Good design should prioritize clarifying ownership relationships, introducing `weak_ptr` only when necessary.
-
-In the next post, we will discuss custom deleters and intrusive reference counting—delving into how to make smart pointers manage resources that "weren't created with new."
+The next chapter covers custom deleters and intrusive reference counting—how to make smart pointers manage resources that "weren't created with new."
 
 ## Reference Resources
 

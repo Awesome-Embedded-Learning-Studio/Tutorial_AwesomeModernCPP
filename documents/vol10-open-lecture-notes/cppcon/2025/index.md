@@ -67,3 +67,16 @@ CppCon 2025 的演讲笔记合集。
 <ChapterNav variant="sub">
   <ChapterLink href="04-back-to-basics-move-semantics/">Back to Basics: Move Semantics</ChapterLink>
 </ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="The Evolution of std::optional: From Boost to C++26"
+  speaker="Steve Downey"
+  conference="cppcon"
+  :year="2025"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="06-evolution-of-std-optional/">The Evolution of std::optional: From Boost to C++26</ChapterLink>
+</ChapterNav>
