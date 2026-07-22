@@ -1,22 +1,23 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
+  - 11
 description: 深入理解多级指针的内存模型和实际使用场景，区分指针数组与数组指针，掌握 cdecl 声明读法和多级 const 指针的组合
 difficulty: beginner
 order: 11
 platform: host
 prerequisites:
-- 指针与数组、const 和空指针
+  - 指针与数组、const 和空指针
 reading_time_minutes: 9
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
+  - 基础
 title: 多级指针与声明读法
 ---
+
 # 多级指针与声明读法
 
 上一篇我们把指针和数组、`const`、NULL 的关系理清楚了。现在来啃指针里更绕的部分——多级指针（指向指针的指针）、指针数组和数组指针那对"混淆双胞胎"，以及看到 `const int* const *` 这种声明时不至于大脑宕机的方法。
@@ -36,7 +37,7 @@ title: 多级指针与声明读法
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -300,6 +301,82 @@ void free_matrix(int** matrix, int rows);
 /// @param cols 列数
 /// @param value 填充值
 void fill_matrix(int** matrix, int rows, int cols, int value);
+```
+
+### 参考答案
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int** allocate_matrix(int rows, int cols) {
+    if (rows < 1 || cols < 1) {
+        return NULL;
+    }
+
+    int** matrix = malloc(sizeof(int*) * rows);
+    if (matrix == NULL) {
+        return NULL;    //防止内存分配失败，但这不太可能吧...以防万一，还是写上吧，如果程序在1978年的硬件上跑呢(笑)
+    }
+
+    for (int i = 0; i < rows; i++) {
+        matrix[i] = malloc(sizeof(int) * cols);
+        if (matrix[i] == NULL) {    //内存不够，取消分配，并释放内存。
+            for (int j = 0; j < i; j++) {
+                free(matrix[j]);
+            }
+            free(matrix);
+            return NULL;
+        }
+    }
+    return matrix;
+}
+
+void free_matrix(int** matrix, int rows) {
+    if (matrix == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
+}
+
+void fill_matrix(int** matrix, int rows, int cols, int value) {
+    if (rows < 1 || cols < 1 || matrix == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            matrix[i][j] = value;
+        }
+    }
+}
+
+```
+
+```text
+兴致大发，来画个图示 awa
+
+matrix 的类型是 int**，要解两次引用才摸到具体的 int：
+
+  matrix  (int**)
+    │
+    │   matrix[0]    matrix[1]    matrix[2]    ...    matrix[n]      ← 第 1 次解引用，每个是 int*
+    │      │            │            │                   │
+    │      ▼            ▼            ▼                   ▼
+    └─▶ ┌─┬─┬─┬─┐   ┌─┬─┬─┬─┐    ┌─┬─┬─┬─┐         ┌─┬─┐
+         │ │ │ │ │   │ │ │ │ │    │ │ │ │ │   ...   │ │ │   ← 第 2 次解引用，每个是 int
+         └─┴─┴─┴─┘   └─┴─┴─┴─┘    └─┴─┴─┴─┘         └─┴─┘
+             ↑
+             matrix[0][1] 就是这一格（第 0 行、第 1 列的那个 int）
+
+  - matrix[i]     ：int*，指向第 i 行的开头（那块 cols 个 int）
+  - matrix[i][j]  ：int，第 i 行第 j 列的具体值
+
+这下应该清楚了吧 OwO？
 ```
 
 提示：分配时先分配一个指针数组（`int**` 指向的那一维），然后对每一行分别 `malloc`。释放时顺序反过来——先释放每一行，再释放指针数组本身。
