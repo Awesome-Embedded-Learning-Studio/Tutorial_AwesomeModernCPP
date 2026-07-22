@@ -304,13 +304,7 @@ Third is **atomic operations**. Atomic increment/decrement of the reference coun
 
 My advice is: in embedded systems, prioritize `unique_ptr` or use RAII wrapper classes directly. If shared semantics are truly needed, consider intrusive reference counting—placing the reference count inside the object to avoid extra heap allocation. In single-threaded environments, the reference count in an intrusive solution can be a plain `size_t`, requiring no atomic operations and having extremely low overhead. We will discuss this topic in detail in the "Custom Deleters and Intrusive Reference Counting" article.
 
-## Summary
-
-`shared_ptr` implements shared ownership semantics through reference counting, complementing `unique_ptr`'s exclusive semantics. The key to understanding it lies in the control block mechanism—each `shared_ptr` instance holds two pointers (object and control block), and the atomic reference count in the control block guarantees safety in multi-threaded environments, but also brings non-negligible performance overhead.
-
-`make_shared` optimizes performance and memory locality through single allocation and should be the preferred way to create `shared_ptr`s. The aliasing constructor and `enable_shared_from_this` are two advanced features that are relatively unknown but very useful. In embedded scenarios, the memory overhead, heap allocation, and atomic operation costs of `shared_ptr` need careful weighing—in most cases, `unique_ptr` or intrusive solutions are better choices.
-
-In the next post, we will discuss `weak_ptr`—`shared_ptr`'s partner, specifically designed to solve the thorny problem of circular references.
+The next chapter discusses `weak_ptr`—`shared_ptr`'s partner, built specifically to solve circular references.
 
 ## References
 

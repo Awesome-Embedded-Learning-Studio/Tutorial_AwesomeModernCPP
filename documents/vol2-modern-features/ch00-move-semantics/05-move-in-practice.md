@@ -23,13 +23,13 @@ title: 移动语义实战：从 STL 到自定义类型
 ---
 # 移动语义实战：从 STL 到自定义类型
 
-前面四篇文章我们把移动语义的理论基础从头到尾梳理了一遍：值类别、右值引用、移动构造与移动赋值、RVO/NRVO、完美转发。现在到了把理论落地的环节——我们来看看移动语义在实际代码中到底能带来多大的性能差异，以及在 STL 容器和自定义类型中应该如何正确使用它。这一篇会有不少代码和实测数据，建议你跟着敲一遍，亲手感受一下拷贝和移动之间的差距。
+理论铺垫够了，这篇把移动语义落到实际代码里。咱们要看清两件事：移动到底比拷贝快多少，以及 STL 容器和自定义类型各自怎么写才能吃到这份收益。代码和实测数据不少，建议您跟着敲一遍，亲手感受拷贝和移动的差距。
 
 ## STL 容器中的移动——无处不在的收益
 
 标准库容器是移动语义最大的受益者之一。C++11 之后，所有标准库容器都实现了移动构造和移动赋值，这意味着容器之间的传递不再需要逐元素拷贝。
 
-先看 `std::vector` 的 `push_back`。它有两个重载：一个接收 `const T&`（拷贝），一个接收 `T&&`（移动）。当你传入左值时调用拷贝版本，传入右值时调用移动版本。
+先看 `std::vector` 的 `push_back`。它有两个重载：一个接收 `const T&`（拷贝），一个接收 `T&&`（移动）。当您传入左值时调用拷贝版本，传入右值时调用移动版本。
 
 ```cpp
 #include <iostream>
@@ -127,7 +127,7 @@ g++ -std=c++17 -Wall -Wextra -O2 -o push_demo push_demo.cpp
 
 三种方式的效果一目了然。`push_back(h1)` 触发拷贝——`h1` 的 10000 个 `int` 被完整复制。`push_back(std::move(h2))` 触发移动——只转移了 `vector` 的内部指针，`h2` 的 `data_` 变成空的。`emplace_back("Gamma", 10000)` 连移动都省了——直接在 vector 的空间里构造 `Heavy` 对象。
 
-三种方式的性能排序是：`emplace_back` > `push_back(std::move(...))` > `push_back(lvalue)`。在日常编码中，如果你有一个现成的对象要放进容器，用 `std::move` 移动进去；如果你有构造参数，用 `emplace_back` 直接原位构造。
+三种方式的性能排序是：`emplace_back` > `push_back(std::move(...))` > `push_back(lvalue)`。在日常编码中，如果您有一个现成的对象要放进容器，用 `std::move` 移动进去；如果您有构造参数，用 `emplace_back` 直接原位构造。
 
 ## swap 惯用法——移动语义的经典应用
 
@@ -146,13 +146,13 @@ void swap(T& a, T& b) noexcept(
 }
 ```
 
-三次移动操作完成了两个对象的交换。对于通过指针间接管理资源的类（内部持有 `new` 出来的内存、文件描述符等），每次移动只是指针转移，所以整个 swap 的代价是 O(1)——与对象管理的资源大小无关。但要注意前提：这条结论依赖于"资源是间接持有的"。如果你的对象像 `std::array<int, 1000>` 那样把数据直接存在对象内部（没有间接层），那么移动和拷贝是等价的——swap 仍然是 O(n)。相比之下，C++03 的 swap 对间接持有资源的类型需要一次拷贝构造加两次拷贝赋值，代价是 O(n)。
+三次移动操作完成了两个对象的交换。对于通过指针间接管理资源的类（内部持有 `new` 出来的内存、文件描述符等），每次移动只是指针转移，所以整个 swap 的代价是 O(1)——与对象管理的资源大小无关。但要注意前提：这条结论依赖于"资源是间接持有的"。如果您的对象像 `std::array<int, 1000>` 那样把数据直接存在对象内部（没有间接层），那么移动和拷贝是等价的——swap 仍然是 O(n)。相比之下，C++03 的 swap 对间接持有资源的类型需要一次拷贝构造加两次拷贝赋值，代价是 O(n)。
 
-在排序算法中，swap 是最频繁的操作之一。`std::sort` 内部会大量调用 swap 来调整元素位置，高效的移动操作能让排序过程中每次元素调整的代价从 O(n) 降到 O(1)。需要特别说明的是，`noexcept` 对 `std::sort` 本身并没有直接影响——sort 内部直接使用 `std::move` 和 `std::swap`，不关心移动操作是否 `noexcept`（只要类型满足可移动构造和可移动赋值要求即可）。`noexcept` 真正发挥作用的场景是 `std::vector` 扩容：当 vector 需要把旧元素搬到新内存时，它会通过 `std::move_if_noexcept` 来选择策略——如果移动操作是 `noexcept` 的，就用移动；否则退回拷贝，以保证强异常安全。我们用下面这个验证程序来证明这一点：
+在排序算法中，swap 是最频繁的操作之一。`std::sort` 内部会大量调用 swap 来调整元素位置，高效的移动操作能让排序过程中每次元素调整的代价从 O(n) 降到 O(1)。需要特别说明的是，`noexcept` 对 `std::sort` 本身并没有直接影响——sort 内部直接使用 `std::move` 和 `std::swap`，不关心移动操作是否 `noexcept`（只要类型满足可移动构造和可移动赋值要求即可）。`noexcept` 真正发挥作用的场景是 `std::vector` 扩容：当 vector 需要把旧元素搬到新内存时，它会通过 `std::move_if_noexcept` 来选择策略——如果移动操作是 `noexcept` 的，就用移动；否则退回拷贝，以保证强异常安全。咱们用下面这个验证程序来证明这一点：
 
 ```cpp
 // noexcept_sort_vs_realloc_verify.cpp -- 验证 noexcept 对 sort 和 vector 扩容的影响
-// 完整代码见 code/volumn_codes/vol2/ch00-move-semantics/
+// 完整可编译版本见 code/examples/vol2/noexcept_sort_vs_realloc.cpp
 
 #include <iostream>
 #include <vector>
@@ -199,14 +199,50 @@ int NoexceptType::copy_count = 0;
 int NoexceptType::move_count = 0;
 
 // ThrowingType 与 NoexceptType 完全相同，唯一区别是移动操作没有 noexcept
-// （完整代码见仓库）
-// ...
+struct ThrowingType
+{
+    std::string payload;
+    int value;
+
+    static int copy_count;
+    static int move_count;
+
+    ThrowingType(int v) : payload("data"), value(v) {}
+    ThrowingType(const ThrowingType& o)
+        : payload(o.payload + "_c"), value(o.value) { ++copy_count; }
+    ThrowingType(ThrowingType&& o) // 注意：没有 noexcept
+        : payload(std::move(o.payload)), value(o.value)
+    {
+        o.payload = "(moved)";
+        ++move_count;
+    }
+    ThrowingType& operator=(ThrowingType&& o) // 注意：没有 noexcept
+    {
+        payload = std::move(o.payload);
+        value = o.value;
+        o.payload = "(moved)";
+        ++move_count;
+        return *this;
+    }
+    ThrowingType& operator=(const ThrowingType& o)
+    {
+        payload = o.payload + "_c";
+        value = o.value;
+        ++copy_count;
+        return *this;
+    }
+    bool operator<(const ThrowingType& rhs) const { return value < rhs.value; }
+    static void reset() { copy_count = 0; move_count = 0; }
+};
+
+int ThrowingType::copy_count = 0;
+int ThrowingType::move_count = 0;
 
 int main()
 {
     const int kCount = 5000;
 
-    // Test 1: std::sort
+    // Test 1: std::sort（noexcept 类型）
     {
         std::vector<NoexceptType> vec;
         vec.reserve(kCount);
@@ -217,7 +253,20 @@ int main()
                   << " 移动=" << NoexceptType::move_count << "\n";
     }
 
-    // Test 2: vector 扩容（无 reserve）
+    // Test 2: std::sort（非 noexcept 类型）
+    {
+        std::vector<ThrowingType> vec;
+        vec.reserve(kCount);
+        for (int i = 0; i < kCount; ++i) vec.emplace_back(kCount - i);
+        ThrowingType::reset();
+        std::sort(vec.begin(), vec.end());
+        std::cout << "非noexcept sort: 拷贝=" << ThrowingType::copy_count
+                  << " 移动=" << ThrowingType::move_count << "\n";
+    }
+
+    std::cout << "\n";
+
+    // Test 3: vector 扩容（noexcept 类型，无 reserve）
     {
         NoexceptType::reset();
         std::vector<NoexceptType> vec;
@@ -226,13 +275,19 @@ int main()
                   << " 移动=" << NoexceptType::move_count << "\n";
     }
 
-    // Test 3: vector 扩容（非 noexcept 类型）
+    // Test 4: vector 扩容（非 noexcept 类型，无 reserve）
     // ThrowingType 的扩容会退回拷贝，因为 move_if_noexcept 不选中它的移动
-    // ...
+    {
+        ThrowingType::reset();
+        std::vector<ThrowingType> vec;
+        for (int i = 0; i < 200; ++i) vec.emplace_back(i);
+        std::cout << "非noexcept扩容: 拷贝=" << ThrowingType::copy_count
+                  << " 移动=" << ThrowingType::move_count << "\n";
+    }
 }
 ```
 
-编译运行（g++ 15.2, -std=c++17 -O2, x86_64）：
+编译运行（GCC 16.1.1, -std=c++17 -O2, x86_64）：
 
 ```text
 noexcept sort:  拷贝=0 移动=23516
@@ -242,9 +297,9 @@ noexcept 扩容:  拷贝=0 移动=255
 非noexcept扩容: 拷贝=255 移动=0
 ```
 
-数据非常清楚。`std::sort` 两种情况都只使用移动（23516 次），完全不区分 `noexcept`。但 `vector` 扩容就大不一样了：`noexcept` 的类型在扩容时使用移动（255 次移动），非 `noexcept` 的类型在扩容时全部退回拷贝（255 次拷贝）。如果你在 `vector` 里频繁 `push_back` 但没有提前 `reserve`，没有 `noexcept` 的移动会让每次扩容都变成全量拷贝——这才是 `noexcept` 真正影响性能的地方。
+数据非常清楚。`std::sort` 两种情况都只使用移动（23516 次），完全不区分 `noexcept`。但 `vector` 扩容就大不一样了：`noexcept` 的类型在扩容时使用移动（255 次移动），非 `noexcept` 的类型在扩容时全部退回拷贝（255 次拷贝）。如果您在 `vector` 里频繁 `push_back` 但没有提前 `reserve`，没有 `noexcept` 的移动会让每次扩容都变成全量拷贝——这才是 `noexcept` 真正影响性能的地方。
 
-正确的自定义 swap 写法需要注意 ADL（Argument-Dependent Lookup）。标准做法是在类的命名空间中提供一个非成员的 `swap` 函数，然后让用户通过 `using std::swap; swap(a, b);` 的方式调用。这样 ADL 会优先找到你的自定义版本，找不到时退回到 `std::swap`。
+正确的自定义 swap 写法需要注意 ADL（Argument-Dependent Lookup）。标准做法是在类的命名空间中提供一个非成员的 `swap` 函数，然后让用户通过 `using std::swap; swap(a, b);` 的方式调用。这样 ADL 会优先找到您写的 swap，找不到时退回到 `std::swap`。
 
 ```cpp
 namespace mylib {
@@ -290,11 +345,11 @@ public:
 }  // namespace mylib
 ```
 
-这里我们用了 copy-and-swap 惯用法来实现赋值运算符，用 `friend swap` 来提供高效的交换操作。`swap` 本身只是交换两个指针和两个整数——代价微乎其微。
+这里咱们用了 copy-and-swap 惯用法来实现赋值运算符，用 `friend swap` 来提供高效的交换操作。`swap` 本身只是交换两个指针和两个整数——代价微乎其微。
 
 ## 性能对比——拷贝 vs 移动的 benchmark
 
-理论讲了一大堆，数字最有说服力。我们来做一个 benchmark，对比拷贝和移动的实际耗时。这一次我们把构造的开销单独分离出来，这样你能看到纯粹的移动操作到底有多快。
+理论讲了一大堆，数字最有说服力。咱们来做一个 benchmark，对比拷贝和移动的实际耗时。这一次咱们把构造的开销单独分离出来，这样您能看到纯粹的移动操作到底有多快。
 
 ```cpp
 // move_benchmark.cpp -- 拷贝 vs 移动性能对比（分离构造开销）
@@ -394,32 +449,33 @@ g++ -std=c++17 -O2 -Wall -Wextra -o move_bench move_benchmark.cpp
 ./move_bench
 ```
 
-笔者的机器上输出（g++ 15.2, -O2, x86_64 WSL2）：
+笔者的机器上输出（GCC 16.1.1, -O2, x86_64 WSL2，取一次稳定运行）：
 
 ```text
 数据大小: 7812 KB
 迭代次数: 100
 
-仅构造（baseline）: 95.6 ms
-构造 + 拷贝:        1404 ms
-构造 + 移动:        94.8 ms
+仅构造（baseline）: 47.3 ms
+构造 + 拷贝:        505.3 ms
+构造 + 移动:        44.6 ms
 
 === 分离后的实际耗时 ===
-纯拷贝: 1308 ms
-纯移动: -0.8 ms
+纯拷贝: 458.1 ms
+纯移动: -2.7 ms
+移动耗时在测量噪声范围内（接近零）
 ```
 
-这个结果比单纯报一个"加速比"要有说服力得多。我们逐行看：构造一个 `BigData`（分配 8MB 内存并填充数据）花了约 96ms，这是两组测试共有的基础开销。加上拷贝后总耗时飙升到 1404ms——纯拷贝部分占了 1308ms，因为需要分配新内存并把 8MB 数据逐字节复制过去。加上移动后总耗时是 94.8ms——甚至比纯构造还少了不到 1ms（测量噪声），说明移动操作本身的开销在这个数据规模下几乎测不出来。
+这个结果比单报一个"加速比"有说服力。咱们逐行看：构造一个 `BigData`（分配约 8MB 内存并填充数据）花了 47ms，这是两组测试共有的固定开销。加上拷贝，总耗时飙到 505ms——纯拷贝占 458ms，因为要另开一块内存把 8MB 数据逐字节复制过去。加上移动，总耗时是 45ms，和纯构造几乎没差——说明移动操作本身在这个数据规模下根本测不出来。
 
-> 💡 **测量噪声说明**：你可能会看到"纯移动"时间出现负值（如 -0.8 ms），这是完全正常的。高精度计时器会捕捉到系统调度、缓存状态等微小差异，导致"构造+移动"的总时间偶尔略小于单独构造的时间。这恰恰说明移动操作的开销极小，已被淹没在测量噪声中。
+> 💡 **测量噪声说明**：「纯移动」时间会在零附近抖动——这次是 -2.7 ms，换个时间点也许是个位数的正值，都正常。高精度计时器会捕捉到系统调度、缓存状态这些微小差异，而移动本身的开销远小于这些差异，所以被噪声淹没了。要紧的是它和纯拷贝那几百毫秒根本不在一个量级。
 
-移动操作做了什么？它只是复制了 `std::vector` 内部的三个指针大小的字段（指向堆缓冲区的指针、大小、容量），然后把源对象的指针置空。整个操作只有几个 CPU 指令（在纳秒级别），在 96ms 的构造时间面前完全可以忽略。这就是为什么我们把构造分离出来很重要——如果不分离，你看到的"移动耗时"其实是 95ms 的构造加上几纳秒的移动，和 285ms 的构造加拷贝相比只能得到 3 倍加速比，严重低估了移动的真实优势。
+移动操作到底做了什么？它只是复制 `std::vector` 内部那几个指针大小的字段（指向堆缓冲区的指针、大小、容量），再把源对象的指针置空，拢共几条 CPU 指令，纳秒级别，在 47ms 的构造面前可以忽略。这就是为什么要把构造单独分离出来：如果不分离，您看到的"移动耗时"其实是 47ms 构造加上几纳秒移动，和 505ms 的构造加拷贝一比，只会得出一个"快十来倍"的结论——这个数被构造稀释了，反而把"移动几乎免费"这件事给盖住了。
 
 > ⚠️ **踩坑预警**：不要在没有移动语义的类型上期待性能提升。`std::array<int, 1000>` 的"移动"和"拷贝"是等价的——因为 `std::array` 的数据直接存储在对象内部，没有指针可以转移。移动语义只在管理了间接资源（动态内存、文件句柄等）的类型上有实际收益。
 
 ## 自定义类型的移动最佳实践
 
-把你学到的移动语义知识应用到自己的类上，这里有几条经过实战验证的最佳实践。
+把您学到的移动语义知识应用到自己的类上，这里有几条经过实战验证的最佳实践。
 
 对于管理了动态资源的类（持有 `new` 出来的内存、`fopen` 打开的文件、或者类似的资源句柄），应该实现完整的规则五：自定义析构函数、拷贝构造、移动构造、拷贝赋值、移动赋值。移动构造和移动赋值中要把源对象的资源指针置空，确保源对象析构时不会释放已转移的资源。只要移动操作保证不抛出异常，就应该标记 `noexcept`（绝大多数情况下移动操作只是指针复制，不会抛出异常）。
 
@@ -443,7 +499,7 @@ struct UserProfile
 };
 ```
 
-对于封装了独占资源的类（文件句柄、网络连接、锁），应该**禁用拷贝、启用移动**。拷贝没有意义——你不能"复制"一个 TCP 连接或一个互斥锁。但移动是合理的——你可以把连接的控制权从一个对象转移到另一个对象。
+对于封装了独占资源的类（文件句柄、网络连接、锁），应该**禁用拷贝、启用移动**。拷贝没有意义——您不能"复制"一个 TCP 连接或一个互斥锁。但移动是合理的——您可以把连接的控制权从一个对象转移到另一个对象。
 
 ```cpp
 class NetworkConnection
@@ -599,7 +655,7 @@ int main()
 
 ## 练习——实现一个支持移动的动态数组
 
-理论看得再多不如动手写一遍。这个练习要求你实现一个简化版的动态数组类，支持拷贝语义和移动语义。这个类不需要像 `std::vector` 那么复杂，但需要正确处理资源管理。
+理论看得再多不如动手写一遍。这个练习要求您实现一个简化版的动态数组类，支持拷贝语义和移动语义。这个类不需要像 `std::vector` 那么复杂，但需要正确处理资源管理。
 
 要求如下：类名 `SimpleVector`，内部用 `new[]` 分配的 `int` 数组存储数据。支持 `push_back(int)` 添加元素，必要时扩容（可以简单地按 2 倍增长）。实现完整的规则五。移动操作标记 `noexcept`。实现 `size()` 和 `operator[]`。写一段测试代码验证拷贝和移动的行为。
 
@@ -691,7 +747,7 @@ int main()
 }
 ```
 
-如果你卡住了，可以参考前面 `Buffer` 类的实现——逻辑几乎完全一样。关键点是：析构函数里 `delete[] data_`，移动构造里转移指针并置空源对象的指针，拷贝构造里分配新内存并复制数据，移动赋值里先 `delete[]` 当前数据再接管新数据。
+如果您卡住了，可以参考前面 `Buffer` 类的实现——逻辑几乎完全一样。关键点是：析构函数里 `delete[] data_`，移动构造里转移指针并置空源对象的指针，拷贝构造里分配新内存并复制数据，移动赋值里先 `delete[]` 当前数据再接管新数据。
 
 完整的参考实现：
 
@@ -861,12 +917,24 @@ c (移动构造): 0 1 4 9 16 25 36 49 64 81
 a 重新赋值后: 999
 ```
 
-拷贝构造后 `b` 拥有独立的数据副本，修改 `b` 不影响 `a`。移动构造后 `c` 接管了 `a` 的所有数据，`a` 变成空的状态（size=0, capacity=0）。之后 `a` 可以通过移动赋值重新获得一个有效的对象，证明移动后的对象确实处于"有效但未指定"的状态——它可以被安全地赋新值、析构，但你不应该依赖它的当前值。
+拷贝构造后 `b` 拥有独立的数据副本，修改 `b` 不影响 `a`。移动构造后 `c` 接管了 `a` 的所有数据，`a` 变成空的状态（size=0, capacity=0）。之后 `a` 可以通过移动赋值重新获得一个有效的对象，证明移动后的对象确实处于"有效但未指定"的状态——它可以被安全地赋新值、析构，但您不应该依赖它的当前值。
 
-## 小结
+## 在线运行
 
-这一篇我们把移动语义从理论推向了实战。STL 容器（特别是 `vector` 的 `push_back`、`emplace_back` 和扩容）是移动语义最直接受益者。`swap` 惯用法利用三次移动操作实现了 O(1) 的交换，是排序、数据结构重组等场景的核心。性能测试显示，对于管理了大块动态内存的类型，移动操作本身的开销几乎为零——拷贝需要逐字节复制全部数据，移动只转移指针。另外我们验证了一个重要细节：`noexcept` 修饰符对 `std::sort` 没有影响，但对 `std::vector` 扩容至关重要——没有 `noexcept` 的移动会让扩容退回拷贝。
+在线运行两个示例，亲手验证这篇的关键结论：
 
-在自定义类型中，关键是识别你的类管理了什么资源：独占资源（文件句柄、外设、DMA 缓冲区）应该禁止拷贝、允许移动；共享资源可以用智能指针管理；简单的值类型让编译器自动生成就好。移动操作记得标记 `noexcept`，这不仅是一个承诺，更是 `std::vector` 扩容时选择移动而非拷贝的关键条件。练习中的 `SimpleVector` 覆盖了规则五的所有要点——如果你能独立完成它，说明你已经真正掌握了移动语义的核心机制。
+<OnlineCompilerDemo
+  title="push_back vs emplace_back：拷贝、移动、原位构造"
+  source-path="code/examples/vol2/push_back_emplace.cpp"
+  description="追踪 Heavy 对象的构造、拷贝、移动、析构日志，对比 push_back(左值)、push_back(右值)、emplace_back 三种方式的开销。"
+/>
 
-到这里，移动语义这一章就全部讲完了。从右值引用的绑定规则到移动构造的实现，从 RVO/NRVO 的编译器优化到完美转发的类型推导链条，再到实战中的性能对比和最佳实践——希望这些内容能让你在以后遇到 `std::move` 的时候不再只是"抄过来用"，而是清楚地知道它在做什么、为什么这样做。
+<OnlineCompilerDemo
+  title="noexcept 对 sort 与 vector 扩容的影响"
+  source-path="code/examples/vol2/noexcept_sort_vs_realloc.cpp"
+  description="统计拷贝和移动次数：std::sort 不区分 noexcept，但 vector 扩容会通过 move_if_noexcept 在非 noexcept 类型上退回拷贝。"
+/>
+
+移动语义这一章到这里就讲完了。从右值引用的绑定规则，到移动构造的实现，再到 RVO/NRVO 和完美转发，最后落到这篇的性能实测——希望您以后看到 `std::move`，不再只是照抄，而是清楚它在做什么、为什么这么做。
+
+顺着资源所有权这条线，下一章咱们聊智能指针：RAII 会把这一章里那些手动的 `delete`、所有权转移，变成编译器自动管的事。

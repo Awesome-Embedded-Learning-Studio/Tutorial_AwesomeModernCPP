@@ -106,7 +106,7 @@ namespace std {
 
 Three move operations complete the exchange of two objects. For classes that manage resources indirectly via pointers (memory allocated by `new`, file descriptors, etc.), each move is just a pointer transfer, so the cost of the entire swap is O(1)—independent of the size of the resources the object manages. However, note the prerequisite: this conclusion relies on "resources being held indirectly." If your object stores data directly inside itself like `std::array` (no indirection), then moving and copying are equivalent—swap remains O(n). In contrast, C++03's `swap` for types holding indirect resources required one copy construction and two copy assignments, costing O(n).
 
-In sorting algorithms, `swap` is one of the most frequent operations. `std::sort` internally calls `swap` extensively to adjust element positions; efficient move operations reduce the cost of each adjustment from O(n) to O(1). It's worth noting specifically that `noexcept` has no direct effect on `std::sort` itself—`sort` uses `swap` internally and doesn't care if the move operation is `noexcept` (as long as the type meets the MoveConstructible and MoveAssignable requirements). Where `noexcept` really shines is during `std::vector` reallocation: when a `vector` needs to move old elements to new memory, it uses `std::is_nothrow_move_constructible_v` to choose its strategy—if the move operation is `noexcept`, it uses move; otherwise, it falls back to copy to guarantee strong exception safety. Let's use the following verification program to prove this:
+In sorting algorithms, `swap` is one of the most frequent operations. `std::sort` internally calls `swap` extensively to adjust element positions; efficient move operations reduce the cost of each adjustment from O(n) to O(1). `noexcept` actually has no direct effect on `std::sort` itself—`sort` uses `std::move` and `std::swap` internally and doesn't care whether the move is `noexcept` (as long as the type is MoveConstructible and MoveAssignable). Where `noexcept` really shines is during `std::vector` reallocation: when a `vector` needs to move old elements to new memory, it uses `std::is_nothrow_move_constructible_v` to choose its strategy—if the move operation is `noexcept`, it uses move; otherwise, it falls back to copy to guarantee strong exception safety. Let's use the following verification program to prove this:
 
 ```cpp
 #include <algorithm>
@@ -169,7 +169,7 @@ int main() {
 }
 ```
 
-Compile and run (g++ 15.2, -std=c++17 -O2, x86_64):
+Compile and run (GCC 16.1.1, -std=c++17 -O2, x86_64):
 
 ```bash
 g++ -std=c++17 -O2 main.cpp -o main && ./main
@@ -264,91 +264,124 @@ Here we use the copy-and-swap idiom to implement the assignment operator, and a 
 We've covered a lot of theory, but numbers are the most persuasive. Let's do a benchmark comparing the actual time taken by copying versus moving. This time, we'll separate the construction overhead so you can see just how fast a pure move operation is.
 
 ```cpp
-#include <chrono>
+// move_benchmark.cpp -- Copy vs Move performance comparison (isolating construction overhead)
+// Standard: C++17
+
 #include <iostream>
 #include <vector>
-#include <iomanip>
+#include <string>
+#include <chrono>
+#include <numeric>
 
-using namespace std;
-using namespace std::chrono;
+class BigData
+{
+    std::vector<double> payload_;
 
-class BigData {
 public:
-    // Allocate 8MB memory and fill with data
-    BigData() : size_(1024 * 1024 * 2), data_(new int[size_]) {
-        for (size_t i = 0; i < size_; ++i) {
-            data_[i] = static_cast<int>(i);
-        }
+    explicit BigData(std::size_t n) : payload_(n)
+    {
+        std::iota(payload_.begin(), payload_.end(), 0.0);
     }
 
-    ~BigData() { delete[] data_; }
-
-    // Copy: allocate new memory and copy all data
-    BigData(const BigData& other) : size_(other.size_), data_(new int[size_]) {
-        std::copy(other.data_, other.data_ + size_, data_);
-    }
-
-    // Move: just transfer pointers
-    BigData(BigData&& other) noexcept
-        : size_(other.size_), data_(other.data_) {
-        other.data_ = nullptr;
-        other.size_ = 0;
-    }
-
-private:
-    size_t size_;
-    int* data_;
+    BigData(const BigData& other) : payload_(other.payload_) {}
+    BigData(BigData&& other) noexcept = default;
+    BigData& operator=(const BigData&) = default;
+    BigData& operator=(BigData&&) noexcept = default;
 };
 
-int main() {
-    auto t0 = high_resolution_clock::now();
+/// @brief Helper template to measure a function's execution time
+template<typename Func>
+double measure_ms(Func&& func, int iterations)
+{
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < iterations; ++i) {
+        func();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration<double, std::milli>(end - start).count();
+}
 
-    // 1. Pure construction
-    auto start = high_resolution_clock::now();
-    BigData src1;
-    auto end = high_resolution_clock::now();
-    double t_ctor = duration_cast<microseconds>(end - start).count() / 1000.0;
+int main()
+{
+    constexpr std::size_t kDataSize = 1000000;   // 1M doubles, ~8MB
+    constexpr int kIterations = 100;
 
-    // 2. Construction + Copy
-    start = high_resolution_clock::now();
-    BigData src2;
-    BigData dst_copy(src2); // Copy
-    end = high_resolution_clock::now();
-    double t_copy = duration_cast<microseconds>(end - start).count() / 1000.0;
+    std::cout << "Data size: " << kDataSize * sizeof(double) / 1024
+              << " KB\n";
+    std::cout << "Iterations: " << kIterations << "\n\n";
 
-    // 3. Construction + Move
-    start = high_resolution_clock::now();
-    BigData src3;
-    BigData dst_move(std::move(src3)); // Move
-    end = high_resolution_clock::now();
-    double t_move = duration_cast<microseconds>(end - start).count() / 1000.0;
+    // Test 0: construction only (baseline)
+    auto construct_time = measure_ms([&]() {
+        BigData source(kDataSize);
+        (void)source;
+    }, kIterations);
 
-    cout << fixed << setprecision(1);
-    cout << "Pure construction:      " << t_ctor << " ms\n";
-    cout << "Construction + Copy:    " << t_copy << " ms (copy cost: " << (t_copy - t_ctor) << " ms)\n";
-    cout << "Construction + Move:    " << t_move << " ms (move cost: " << (t_move - t_ctor) << " ms)\n";
+    std::cout << "Construction only (baseline): " << construct_time << " ms\n";
+
+    // Test 1: construction + copy
+    auto copy_time = measure_ms([&]() {
+        BigData source(kDataSize);
+        BigData copy = source;  // copy ctor
+        (void)copy;
+    }, kIterations);
+
+    std::cout << "Construction + Copy:          " << copy_time << " ms\n";
+
+    // Test 2: construction + move
+    auto move_time = measure_ms([&]() {
+        BigData source(kDataSize);
+        BigData moved = std::move(source);  // move ctor
+        (void)moved;
+    }, kIterations);
+
+    std::cout << "Construction + Move:          " << move_time << " ms\n\n";
+
+    // Isolate the pure copy/move cost
+    double actual_copy = copy_time - construct_time;
+    double actual_move = move_time - construct_time;
+
+    std::cout << "=== Isolated actual cost ===\n";
+    std::cout << "Pure copy: " << actual_copy << " ms\n";
+    std::cout << "Pure move: " << actual_move << " ms\n";
+
+    if (actual_move > 0.01) {
+        std::cout << "Speedup: " << actual_copy / actual_move << "x\n";
+    } else {
+        std::cout << "Move cost is within measurement noise (near zero)\n";
+    }
+
+    return 0;
 }
 ```
 
 Compile and run:
 
 ```bash
-g++ -std=c++17 -O2 main.cpp -o main && ./main
+g++ -std=c++17 -O2 -Wall -Wextra -o move_bench move_benchmark.cpp
+./move_bench
 ```
 
-Output on my machine (g++ 15.2, -O2, x86_64 WSL2):
+Output on my machine (GCC 16.1.1, -O2, x86_64 WSL2, one stable run):
 
 ```text
-Pure construction:      96.2 ms
-Construction + Copy:    1404.0 ms (copy cost: 1307.8 ms)
-Construction + Move:    94.8 ms (move cost: -1.4 ms)
+Data size: 7812 KB
+Iterations: 100
+
+Construction only (baseline): 47.3 ms
+Construction + Copy:          505.3 ms
+Construction + Move:          44.6 ms
+
+=== Isolated actual cost ===
+Pure copy: 458.1 ms
+Pure move: -2.7 ms
+Move cost is within measurement noise (near zero)
 ```
 
-This result is much more persuasive than simply reporting a "speedup factor." Let's look at it line by line: constructing a `BigData` (allocating 8MB memory and filling it with data) took about 96ms, which is the base overhead shared by both test groups. Adding a copy sent the total time soaring to 1404ms—the pure copy portion took 1308ms, because it needs to allocate new memory and copy 8MB of data byte by byte. Adding a move resulted in a total time of 94.8ms—even slightly less than pure construction by less than 1ms (measurement noise), indicating that the overhead of the move operation itself is almost unmeasurable at this data scale.
+This is more persuasive than just reporting a "speedup factor." Let's go line by line: constructing a `BigData` (allocating ~8MB and filling it) took 47ms, the fixed overhead shared by both groups. Adding a copy pushes the total to 505ms—the pure copy portion is 458ms, because it has to allocate a fresh block and copy 8MB byte by byte. Adding a move gives a total of 45ms, essentially identical to pure construction—meaning the move operation itself is unmeasurable at this scale.
 
-> 💡 **Note on Measurement Noise**: You might see negative values for "pure move" time (like -1.4 ms). This is completely normal. High-precision timers capture tiny differences in system scheduling and cache state, causing the total "construction + move" time to occasionally be slightly less than the construction time alone. This precisely demonstrates that the overhead of move operations is so minimal it's drowned out by measurement noise.
+> 💡 **Note on Measurement Noise**: The "pure move" time jitters around zero—one run gives -2.7 ms, the next might be a small positive number. That's expected: high-precision timers pick up tiny differences in scheduling and cache state, and the move's own overhead is far smaller than those differences, so it's drowned in noise. What matters is that it's nowhere near the hundreds of milliseconds a pure copy takes.
 
-What did the move operation do? It simply copied three pointer-sized fields inside `BigData` (pointer to heap buffer, size, capacity) and then nullified the source object's pointers. The entire operation is only a few CPU instructions (in the nanosecond range), completely negligible compared to the 96ms construction time. This is why separating construction is important—if you didn't, the "move time" you'd see would be 95ms of construction plus nanoseconds of moving, compared to 285ms of construction plus copying, yielding only a 3x speedup and severely underestimating the true advantage of moving.
+So what does the move actually do? It copies a few pointer-sized fields inside `std::vector` (the heap pointer, size, capacity) and nulls the source pointer—a handful of CPU instructions, nanoseconds, negligible next to 47ms of construction. That's why we isolate construction: without isolating it, the "move time" you'd read is 47ms of construction plus nanoseconds of moving, and set against 505ms of construction plus copy that only gives a "roughly 10x faster" number—a figure diluted by construction that actually hides the fact that the move itself is nearly free.
 
 > ⚠️ **Warning**: Don't expect performance improvements on types without move semantics. "Moving" and "copying" are equivalent for `std::array`—because its data is stored directly inside the object, there are no pointers to transfer. Move semantics only provides tangible benefits for types that manage indirect resources (dynamic memory, file handles, etc.).
 
@@ -687,10 +720,22 @@ arr4 (move assigned from arr3): [10, 20, 30]
 
 After copy construction, `arr2` owns an independent copy of the data; modifying `arr2` does not affect `arr1`. After move construction, `arr3` takes over all data from `arr1`, leaving `arr1` in an empty state (size=0, capacity=0). Afterwards, `arr4` can regain a valid object via move assignment, proving that the moved-from object is indeed in a "valid but unspecified" state—it can be safely assigned a new value or destructed, but you shouldn't rely on its current value.
 
-## Summary
+## Run Online
 
-In this article, we moved move semantics from theory to practice. STL containers (especially `std::vector`'s `push_back`, `emplace_back`, and reallocation) are the most direct beneficiaries of move semantics. The `swap` idiom uses three move operations to achieve O(1) swapping, which is core to sorting and data structure reorganization scenarios. Performance tests show that for types managing large blocks of dynamic memory, the overhead of move operations is nearly zero—copying requires byte-by-byte replication of all data, while moving only transfers pointers. Additionally, we verified an important detail: the `noexcept` modifier has no effect on `std::sort`, but is crucial for `std::vector` reallocation—without `noexcept`, moves during reallocation fall back to copies.
+Run the two examples and verify the key claims of this article yourself:
 
-In custom types, the key is identifying what resources your class manages: exclusive resources (file handles, peripherals, DMA buffers) should prohibit copying and allow moving; shared resources can be managed with smart pointers; simple value types are fine with compiler-generated defaults. Remember to mark move operations `noexcept`; this is not just a promise, but a key condition for `std::vector` to choose move over copy during reallocation. The `DynArray` exercise covers all points of the Rule of Five—if you can complete it independently, it shows you have truly mastered the core mechanisms of move semantics.
+<OnlineCompilerDemo
+  title="push_back vs emplace_back: copy, move, in-place construction"
+  source-path="code/examples/vol2/push_back_emplace.cpp"
+  description="Trace the construction, copy, move, and destruction logs of Heavy objects to compare push_back(lvalue), push_back(rvalue), and emplace_back."
+/>
 
-This concludes the chapter on move semantics. From the binding rules of rvalue references to the implementation of move constructors, from compiler optimizations like RVO/NRVO to the type deduction chains of perfect forwarding, and finally to performance comparisons and best practices in real-world scenarios—I hope these contents help you move beyond just "copy-pasting" code when you encounter `std::move` in the future, and instead clearly understand what it is doing and why it is done this way.
+<OnlineCompilerDemo
+  title="How noexcept affects sort vs vector reallocation"
+  source-path="code/examples/vol2/noexcept_sort_vs_realloc.cpp"
+  description="Count copies and moves: std::sort doesn't distinguish noexcept, but vector reallocation falls back to copy for non-noexcept move types via move_if_noexcept."
+/>
+
+That wraps up the chapter on move semantics. From the binding rules of rvalue references, to the implementation of move constructors, through RVO/NRVO and perfect forwarding, and finally to the performance measurements in this article—I hope that from now on, when you see `std::move`, you're not just copy-pasting it, but actually know what it does and why.
+
+Following the thread of resource ownership, the next chapter covers smart pointers: RAII turns all the manual `delete`s and ownership transfers from this chapter into something the compiler manages for you.

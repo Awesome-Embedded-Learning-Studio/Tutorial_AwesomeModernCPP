@@ -413,13 +413,7 @@ DmaBuffer buffer(static_cast<uint8_t*>(HAL_DMA_Malloc(1024)), dma_deleter);
 
 The benefit of this approach is that any return path—whether it's a normal return, error return, or exception—will correctly release the DMA buffer. In complex driver code, this automatic management significantly reduces bug rates.
 
-## Summary
-
-`std::unique_ptr` is the preferred tool for expressing exclusive ownership in modern C++. Its core design—non-copyable, movable, RAII-managed lifetime—precisely maps to the semantic "one object, one owner." Through Empty Base Optimization (EBO), `std::unique_ptr` with a default deleter is identical to a raw pointer in memory and runtime overhead, making it a true zero-overhead abstraction.
-
-We covered the core usage of `std::unique_ptr` today: exception safety of `std::make_unique`, move semantics and container compatibility, the array version, custom deleters basics, the PIMPL idiom, and the factory function pattern. These are the most frequent scenarios in daily engineering.
-
-In the next post, we will turn to `std::shared_ptr`—a completely different ownership model: shared ownership. Are you ready? The real complexity is just beginning.
+The next chapter turns to `std::shared_ptr`—a completely different ownership model: shared ownership. That's where the real complexity begins.
 
 ## Reference Resources
 
