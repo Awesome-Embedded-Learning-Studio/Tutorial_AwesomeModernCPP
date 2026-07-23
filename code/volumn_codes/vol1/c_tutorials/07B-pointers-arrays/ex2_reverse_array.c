@@ -1,41 +1,44 @@
 #include <stdio.h>
-#include <stddef.h>
 
-void reverse_array(int* data, size_t count)
-{
-    int* left = data;
-    int* right = data + count - 1;
-    while (left < right) {
-        int tmp = *left;
-        *left = *right;
-        *right = tmp;
-        left++;
-        right--;
+void reverse_array(int* data, size_t count);
+
+int main(void) {
+    int arr[] = {10, 21, 32, 43, 54, 65, 76, 87, 98, 9};
+    int arr_size = sizeof(arr) / sizeof(arr[0]);
+
+    printf("before reverse_array:\n");
+    for (int i = 0; i < arr_size; i++) {
+        printf("%d\n", arr[i]);
     }
-}
 
-static void print_array(const int* data, size_t count)
-{
-    printf("[");
-    for (size_t i = 0; i < count; i++) {
-        if (i > 0) printf(", ");
-        printf("%d", data[i]);
+    reverse_array(arr, arr_size);
+
+    printf("after reverse_array:\n");
+    for (int i = 0; i < arr_size; i++) {
+        printf("%d\n", arr[i]);
     }
-    printf("]\n");
-}
-
-int main(void)
-{
-    int data[] = {1, 2, 3, 4, 5, 6, 7};
-    size_t count = sizeof(data) / sizeof(data[0]);
-
-    printf("Before: ");
-    print_array(data, count);
-
-    reverse_array(data, count);
-
-    printf("After:  ");
-    print_array(data, count);
 
     return 0;
+}
+
+void reverse_array(int* data, size_t count) {
+    if (data == NULL) {
+        printf("data is null\n");
+        return;
+    }
+    if (count == 0) {
+        printf("data is empty\n");
+        return;
+    }
+
+    int* start = data;
+    int* end = data + count - 1;
+    int temp = 0;
+    while (start < end) {
+        temp = *start;
+        *start = *end;
+        *end = temp;
+        start++;
+        end--;
+    }
 }

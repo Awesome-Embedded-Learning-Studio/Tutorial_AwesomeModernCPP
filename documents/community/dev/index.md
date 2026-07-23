@@ -26,6 +26,7 @@ description: "社区协作下的项目维护节奏、开发日志、发布治理
 <ChapterNav variant="main">
   <ChapterLink num="1" href="01-iteration-cadence">网站迭代节奏</ChapterLink>
   <ChapterLink num="2" href="02-repo-slimdown">仓库瘦身与分支清理</ChapterLink>
+  <ChapterLink num="3" href="03-contribution-cookbook">贡献速查手册</ChapterLink>
 </ChapterNav>
 
 ## 使用原则

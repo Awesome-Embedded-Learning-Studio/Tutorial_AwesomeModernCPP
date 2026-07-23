@@ -26,6 +26,13 @@ repos:
         always_run: true
         pass_filenames: false
 
+      - id: validate-frontmatter
+        name: Validate frontmatter
+        entry: python3 scripts/validate_frontmatter.py
+        language: system
+        files: '^documents/.*\.md$'
+        pass_filenames: false
+
   # Check for added large files
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
