@@ -61,6 +61,15 @@ else
     echo "  - clang-format: $(clang-format --version 2>&1)"
 fi
 
+# PyYAML: frontmatter 校验需要(缺失时 validate_frontmatter.py 会降级,只查边界不查字段内容)
+if python3 -c "import yaml" >/dev/null 2>&1; then
+    echo -e "${GREEN}PyYAML detected:${NC} frontmatter 校验完整可用"
+else
+    echo -e "${YELLOW}PyYAML not found for python3 — frontmatter 校验将降级(不查字段内容)。${NC}"
+    echo "  Install:  python3 -m pip install pyyaml"
+    echo "  或用项目 venv:  .venv/bin/python -m pip install pyyaml"
+fi
+
 echo ""
 echo "What runs before each commit:"
 echo "  - markdownlint/frontmatter/basic file checks from .pre-commit-config.yaml"

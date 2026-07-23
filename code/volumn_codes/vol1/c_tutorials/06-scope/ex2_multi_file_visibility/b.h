@@ -1,6 +1,6 @@
-#ifndef B_H
-#define B_H
+#ifndef MODERNCPP_PRE8_2_B_H
+#define MODERNCPP_PRE8_2_B_H
 
-void print_from_b(void);
+void set_kSharedValue(int value);
 
-#endif /* B_H */
+#endif // MODERNCPP_PRE8_2_B_H

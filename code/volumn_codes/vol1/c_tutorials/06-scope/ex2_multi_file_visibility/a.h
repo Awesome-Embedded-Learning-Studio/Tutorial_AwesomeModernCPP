@@ -1,9 +1,7 @@
-#ifndef A_H
-#define A_H
+#ifndef MODERNCPP_PRE8_2_A_H
+#define MODERNCPP_PRE8_2_A_H
 
-extern const int kSharedValue;
+extern int kSharedValue;
+void a_greet(void);
 
-void print_from_a(void);
-void set_shared_value(int val);
-
-#endif /* A_H */
+#endif // MODERNCPP_PRE8_2_A_H

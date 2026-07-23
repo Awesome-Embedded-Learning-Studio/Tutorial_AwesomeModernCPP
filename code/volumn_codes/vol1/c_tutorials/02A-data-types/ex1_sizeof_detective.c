@@ -1,21 +1,24 @@
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+// #include <stddef.h>
 
-#define PRINT_SIZEOF(type) printf("sizeof(%-15s) = %zu bytes\n", #type, sizeof(type))
+int main() {
+    // 基本类型
+    printf("sizeof(char)      = %zu bytes\n", sizeof(char));
+    printf("sizeof(short)     = %zu bytes\n", sizeof(short));
+    printf("sizeof(int)       = %zu bytes\n", sizeof(int));
+    printf("sizeof(long)      = %zu bytes\n", sizeof(long));
+    printf("sizeof(long long) = %zu bytes\n", sizeof(long long));
 
-int main(void)
-{
-    PRINT_SIZEOF(char);
-    PRINT_SIZEOF(short);
-    PRINT_SIZEOF(int);
-    PRINT_SIZEOF(long);
-    PRINT_SIZEOF(long long);
-    PRINT_SIZEOF(int8_t);
-    PRINT_SIZEOF(uint8_t);
-    PRINT_SIZEOF(int32_t);
-    PRINT_SIZEOF(uint32_t);
-    PRINT_SIZEOF(int64_t);
-    PRINT_SIZEOF(size_t);
+    // 定长整数类型 (需包含 <stdint.h>)
+    printf("sizeof(int8_t)    = %zu bytes\n", sizeof(int8_t));
+    printf("sizeof(uint8_t)   = %zu bytes\n", sizeof(uint8_t));
+    printf("sizeof(int32_t)   = %zu bytes\n", sizeof(int32_t));
+    printf("sizeof(uint32_t)  = %zu bytes\n", sizeof(uint32_t));
+    printf("sizeof(int64_t)   = %zu bytes\n", sizeof(int64_t));
+
+    // size_t 类型 (需包含<stdio.h>、 <stddef.h> 或 <stdlib.h>)
+    printf("sizeof(size_t)    = %zu bytes\n", sizeof(size_t));
 
     return 0;
 }

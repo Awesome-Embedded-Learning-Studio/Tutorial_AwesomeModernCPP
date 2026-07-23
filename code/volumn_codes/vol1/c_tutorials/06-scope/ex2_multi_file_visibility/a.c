@@ -1,24 +1,12 @@
 #include "a.h"
-
 #include <stdio.h>
 
-const int kSharedValue = 42;
-
-static void helper_a(void)
-{
-    printf("  [a.c] helper_a called, kSharedValue = %d\n", kSharedValue);
+int kSharedValue = 0;
+static void helper_a(void) {
+    printf("need help?\n");
 }
 
-void print_from_a(void)
-{
-    printf("[a.c] print_from_a:\n");
+// a.c 暴露的公共函数，内部调用文件私有的 helper_a
+void a_greet(void) {
     helper_a();
-}
-
-void set_shared_value(int val)
-{
-    // Note: kSharedValue is const, this would require removing const
-    // For demonstration, we show that extern linkage works:
-    printf("[a.c] kSharedValue is const (%d), cannot modify\n", kSharedValue);
-    (void)val;
 }
