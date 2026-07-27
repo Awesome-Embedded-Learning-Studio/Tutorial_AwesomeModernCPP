@@ -16,7 +16,8 @@ tags:
 
 - [Stage 0 · 工程脚手架](./stage0/scaffold.md) —— standalone CMake23 工程 + Catch2 冒烟,把工具链地基浇好
 - [Stage 1 · 固定维度 Tensor](./stage1/06-tensor.md) —— 编译期固定维度、行主序、`std::array` 存储的 Tensor + `std::expected`
+- [Stage 2 · Dense 与权重布局](./stage2/03-dense.md) —— 全连接层 `y=W·x+b`、`std::span` 视图存储、权重 `[Out,In]` 布局
 
 ## 后续(进行中)
 
-Stage 2(Dense 与权重布局)→ Stage 3(ReLU / Argmax)→ Stage 4(DemoModel 串联)→ Stage 5(NumPy 训练导出)→ Stage 6(Python/C++ golden test 对拍)→ Stage 7(嵌入式友好审查)→ Stage 8(MCU porting 规划)。配套工程在 `code/volumn_codes/vol8-labs/ai/tiny_ml/`。
+Stage 3(ReLU / Argmax)→ Stage 4(DemoModel 串联)→ Stage 5(NumPy 训练导出)→ Stage 6(Python/C++ golden test 对拍)→ Stage 7(嵌入式友好审查)→ Stage 8(MCU porting 规划)。配套工程在 `code/volumn_codes/vol8-labs/ai/tiny_ml/`。
