@@ -76,8 +76,15 @@ struct SafeNumber {
 Numeric auto half(Numeric auto x) { return x / 2; }
 ```
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra constraints_everywhere.cpp -o ce && ./ce
+<OnlineCompilerDemo allow-run
+  title="约束可以用在哪:函数/类/成员/auto"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/constraints_everywhere.cpp"
+  description="Numeric 约束加在函数模板、类模板、成员函数、简写 auto 上,四种位置都能编。"
+/>
+
+运行结果:
+
+```text
 square(4) = 16
 square(2.5) = 6.25
 SafeNumber(3) + 4 = 7
@@ -112,8 +119,11 @@ int main() {
 }
 ```
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra subsumption_basic.cpp -o sub1 && ./sub1
+这里贴的是核心部分。完整文件(含下面 conjunction 节要讲的 `Both/C`)见 [subsumption_overloads.cpp](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/examples/vol4/vol3-metaprogramming-cpp20-23/subsumption_overloads.cpp)。
+
+运行结果(animal/dog 部分):
+
+```text
 an animal
 a dog
 ```
@@ -192,6 +202,20 @@ C
 ::: warning 约束不是看名字,是看原子
 subsumption 比较的是规范化后的**原子约束集合**,不是 concept 的名字。`C2 = C1<T>` 不会让 `C2` 比 `C1` 更特定,因为它们的原子约束相同。想让一个重载胜出,得让它的原子约束集合是对方的真超集,最常用的办法就是用 `&&` 再叠一个约束。记住这一条,后面写带约束的重载族时就不会被「明明名字不一样怎么还歧义」绕进去。
 :::
+
+<OnlineCompilerDemo allow-run
+  title="Subsumption 完整演示:animal/dog 与 conjunction 的 C"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/subsumption_overloads.cpp"
+  description="subsumption_overloads.cpp 完整运行:Cat 走宽重载、Pup 走窄重载、Both 同时满足 A/B/C 被选为 C。"
+/>
+
+完整运行结果:
+
+```text
+an animal
+a dog
+C
+```
 
 ## 坑:别把 concept 当 is_same 用
 

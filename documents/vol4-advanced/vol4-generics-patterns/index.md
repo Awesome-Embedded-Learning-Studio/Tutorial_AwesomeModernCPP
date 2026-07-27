@@ -9,8 +9,6 @@ description: "GoF 设计模式的现代 C++ 实现:演进式讲清每个模式�
 
 和「定义 + UML + 例子」式的传统讲法不同,我们的路子是**从最直觉、最原始的写法起步,一步步逼出每个模式**——讲清楚它到底在解决什么问题、每一步演进为什么还不够、以及到了 C++17/20 有了 `std::variant` / concepts / CRTP / 模板之后,同一个模式能写出怎样更安全、更零开销的版本。
 
-贯穿全卷的几个写法特点:每个模式都带「这里先验证一下」的真实终端输出(不是纸上谈兵);该踩的坑写成 `::: warning` 预警块;凡是能用现代 C++ 替代的旧写法,都把「经典 vs 现代」摆在一起比。
-
 配套可编译工程在仓库的 [code/volumn_codes/vol4/design-patterns/](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns) 下,每个模式一个独立 CMake 子工程,`cmake -S . -B build && cmake --build build` 即可跑。
 
 ## 创造型(Creational)

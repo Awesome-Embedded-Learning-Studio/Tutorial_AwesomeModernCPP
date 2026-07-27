@@ -16,8 +16,6 @@ Design patterns represent classic solutions to recurring design problems, distil
 
 Unlike traditional tutorials that follow a "Definition + UML + Example" format, our approach is to **start from the most intuitive, primitive code and step-by-step derive each pattern**. We clarify exactly what problem each pattern solves, why each evolutionary step is insufficient, and how—with C++17/20 features like `std::variant`, concepts, CRTP, and templates—we can achieve safer, zero-overhead versions of these classic patterns.
 
-Key features throughout this volume: every pattern includes "let's verify this" real terminal output (not just theory on paper); common pitfalls are highlighted in `::: warning` blocks; and wherever modern C++ can replace old idioms, we place "Classic vs. Modern" side-by-side for comparison.
-
 The accompanying compilable project is located in the repository at [code/volumn_codes/vol4/design-patterns/](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/volumn_codes/vol4/design-patterns). Each pattern is a separate CMake sub-project. Run `cmake -S . -B build && cmake --build build` to build and run.
 
 ## Creational

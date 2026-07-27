@@ -7,8 +7,6 @@ description: "C++ 模板编程的核心基础:从函数模板到 CRTP 的完整�
 
 C++ 模板是泛型编程的核心机制。本部分从「会用模板」推进到「想写库、读得懂 STL 源码」的视角,讲透模板的编译模型、特化与偏特化、非类型参数、两阶段名字查找、隐藏友元、别名模板和 CRTP,最后用一个 `fixed_vector<T, N>` 综合项目把前九篇焊在一起。
 
-每篇都带「上手跑一跑」的真实编译输出,该踩的坑写成 `::: warning` 预警块,关键的编译期行为用汇编佐证。
-
 配套可运行示例在 [code/examples/vol4/vol1-basics-cpp11-14/](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/examples/vol4/vol1-basics-cpp11-14),四个最有复用价值的例子(fixed_vector、CRTP 静态多态、Comparable mixin、手写 type_traits),每个文件 `g++ -std=c++20 xxx.cpp` 直接跑。
 
 <ChapterNav variant="sub">
