@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - 'TMP Core Techniques: The World Before Concepts'
 - 'Template Instantiation Control: extern template and Compile Time'
-reading_time_minutes: 14
+reading_time_minutes: 12
 related:
 - 'Template Instantiation Control: extern template and Compile Time'
 - 'Comprehensive Project: A mini-STL Algorithm Library with Concepts'

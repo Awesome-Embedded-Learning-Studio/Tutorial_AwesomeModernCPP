@@ -11,7 +11,7 @@ platform: host
 prerequisites:
 - 'TMP Core Techniques: The World Before Concepts'
 - 'Concepts: Putting Constraints in the Signature'
-reading_time_minutes: 14
+reading_time_minutes: 11
 related:
 - 'Static Reflection Basics: The Reflection Operator and Splice'
 - 'Templates and Exception Safety: move_if_noexcept and Reallocation'

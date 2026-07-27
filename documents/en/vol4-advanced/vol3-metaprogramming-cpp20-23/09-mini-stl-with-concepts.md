@@ -11,7 +11,7 @@ prerequisites:
 - 'Constraining Templates with Concepts: Subsumption and Overloading'
 - 'Requires Expressions, In Depth: The Four Kinds'
 - 'TMP Core Techniques: The World Before Concepts'
-reading_time_minutes: 16
+reading_time_minutes: 11
 related:
 - 'Concepts: Putting Constraints in the Signature'
 - 'Templates and Exception Safety: move_if_noexcept and Reallocation'

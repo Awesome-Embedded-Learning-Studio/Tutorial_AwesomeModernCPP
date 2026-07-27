@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - TMP 核心技巧:concepts 之前的世界
 - Concepts:把模板约束写进签名
-reading_time_minutes: 14
+reading_time_minutes: 12
 related:
 - TMP 核心技巧:concepts 之前的世界
 - 静态反射基础:反射运算符与 splice 重组

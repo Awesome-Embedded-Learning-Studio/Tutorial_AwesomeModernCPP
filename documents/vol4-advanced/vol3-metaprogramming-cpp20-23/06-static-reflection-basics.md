@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - 编译期字符串:NTTP class type 与 fixed_string
 - TMP 核心技巧:concepts 之前的世界
-reading_time_minutes: 15
+reading_time_minutes: 11
 related:
 - 编译期字符串:NTTP class type 与 fixed_string
 - 模板实例化控制:extern template 与编译时间

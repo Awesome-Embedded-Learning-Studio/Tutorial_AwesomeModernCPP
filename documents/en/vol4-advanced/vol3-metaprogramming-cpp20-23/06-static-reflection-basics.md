@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - 'Compile-Time Strings: NTTP Class Type and fixed_string'
 - 'TMP Core Techniques: The World Before Concepts'
-reading_time_minutes: 15
+reading_time_minutes: 11
 related:
 - 'Compile-Time Strings: NTTP Class Type and fixed_string'
 - 'Template Instantiation Control: extern template and Compile Time'

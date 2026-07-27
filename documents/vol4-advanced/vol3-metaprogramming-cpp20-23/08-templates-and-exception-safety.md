@@ -9,7 +9,7 @@ platform: host
 prerequisites:
 - TMP 核心技巧:concepts 之前的世界
 - 模板实例化控制:extern template 与编译时间
-reading_time_minutes: 14
+reading_time_minutes: 12
 related:
 - 模板实例化控制:extern template 与编译时间
 - 综合项目:concepts 约束的 mini-STL 算法库

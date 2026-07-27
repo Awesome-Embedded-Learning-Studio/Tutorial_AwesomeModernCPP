@@ -11,7 +11,7 @@ prerequisites:
 - 使用 Concepts 约束模板:subsumption 与重载
 - Requires 表达式深度解析:四种成分
 - TMP 核心技巧:concepts 之前的世界
-reading_time_minutes: 16
+reading_time_minutes: 11
 related:
 - Concepts:把模板约束写进签名
 - 模板与异常安全:move_if_noexcept 与扩容
