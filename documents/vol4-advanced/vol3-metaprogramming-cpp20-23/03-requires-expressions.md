@@ -95,10 +95,17 @@ void process(T t) {
 }
 ```
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra four_requirements2.cpp -o fr2 && ./fr2
-has empty()      // std::vector<int> 有 empty()
-no empty()       // int 没有
+<OnlineCompilerDemo allow-run
+  title="Requires 表达式当 bool 用"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/requires_expression.cpp"
+  description="内联 requires 表达式直接塞进 if constexpr,编译期判断类型有没有 empty(),不用先定义 concept。"
+/>
+
+运行结果:
+
+```text
+has empty()
+no empty()
 ```
 
 临时检查一下「这个类型有没有某个操作」,用内联 requires 表达式最省事。但要注意一个取舍:内联表达式没有名字,它不形成可复用的原子约束。上一篇讲 subsumption 时说过,重载分派靠命名的 concept 建立蕴含关系。如果您想让两个重载靠约束分派,得用命名的 concept(`concept C = requires(...){...}`),内联表达式做不到 subsumption。所以「只在某一处用一次」的检查用内联表达式,「要参与重载或反复复用」的要求提成 concept。
@@ -130,8 +137,15 @@ int main() {
 }
 ```
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra unevaluated.cpp -o ue && ./ue
+<OnlineCompilerDemo allow-run
+  title="Requires 表达式不求值,counter 实证"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/unevaluated.cpp"
+  description="requires 里的 increment() 调用只检查合法性不执行,concept 求值后 counter 仍是 0,直到 main 里真正调用。"
+/>
+
+运行结果:
+
+```text
 concept 求值完毕,counter = 0
 [副作用] increment 被调用了
 真正调用后,counter = 1

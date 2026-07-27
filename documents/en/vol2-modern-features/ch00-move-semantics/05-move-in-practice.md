@@ -724,13 +724,13 @@ After copy construction, `arr2` owns an independent copy of the data; modifying 
 
 Run the two examples and verify the key claims of this article yourself:
 
-<OnlineCompilerDemo
+<OnlineCompilerDemo allow-run
   title="push_back vs emplace_back: copy, move, in-place construction"
   source-path="code/examples/vol2/push_back_emplace.cpp"
   description="Trace the construction, copy, move, and destruction logs of Heavy objects to compare push_back(lvalue), push_back(rvalue), and emplace_back."
 />
 
-<OnlineCompilerDemo
+<OnlineCompilerDemo allow-run
   title="How noexcept affects sort vs vector reallocation"
   source-path="code/examples/vol2/noexcept_sort_vs_realloc.cpp"
   description="Count copies and moves: std::sort doesn't distinguish noexcept, but vector reallocation falls back to copy for non-noexcept move types via move_if_noexcept."

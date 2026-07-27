@@ -86,8 +86,15 @@ T form4(T a, T b) { return a + b; }
 
 跑一下,四种形式各调一次:
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra four_forms.cpp -o four_forms && ./four_forms
+<OnlineCompilerDemo allow-run
+  title="Concept 的四种语法形式"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/concepts_four_forms.cpp"
+  description="把同一个 add 用四种方式约束:模板参数列表、requires 子句、简写 auto、内嵌 requires 表达式。"
+/>
+
+运行结果:
+
+```text
 form1: 8
 form2: 5
 form3: 30
@@ -142,7 +149,6 @@ add_concept.cpp:16:8: error: no matching function for call to 'add(std::string&,
 ```cpp
 #include <concepts>
 #include <iostream>
-#include <string>
 #include <vector>
 
 struct Base {};
@@ -151,27 +157,40 @@ struct Unrelated {};
 
 int main() {
     std::cout << std::boolalpha;
-    std::cout << "same_as<int,int>:           " << std::same_as<int, int> << "\n";
-    std::cout << "same_as<int, const int>:    " << std::same_as<int, const int> << "\n";
-    std::cout << "convertible_to<int,double>: " << std::convertible_to<int, double> << "\n";
-    std::cout << "derived_from<Derived,Base>: " << std::derived_from<Derived, Base> << "\n";
+    std::cout << "same_as<int,int>:             " << std::same_as<int, int> << "\n";
+    std::cout << "same_as<int, const int>:      " << std::same_as<int, const int> << "\n";
+    std::cout << "convertible_to<int,double>:   " << std::convertible_to<int, double> << "\n";
+    std::cout << "convertible_to<double,int>:   " << std::convertible_to<double, int> << "\n";
+    std::cout << "derived_from<Derived,Base>:   " << std::derived_from<Derived, Base> << "\n";
     std::cout << "derived_from<Unrelated,Base>: " << std::derived_from<Unrelated, Base> << "\n";
-    std::cout << "common_with<int,double>:    " << std::common_with<int, double> << "\n";
-    std::cout << "integral<bool>:            " << std::integral<bool> << "\n";
-    std::cout << "floating_point<float>:     " << std::floating_point<float> << "\n";
+    std::cout << "common_with<int,double>:      " << std::common_with<int, double> << "\n";
+    std::cout << "default_initializable<int>:   " << std::default_initializable<int> << "\n";
+    std::cout << "integral<int>:                " << std::integral<int> << "\n";
+    std::cout << "integral<bool>:               " << std::integral<bool> << "\n";
+    std::cout << "floating_point<float>:        " << std::floating_point<float> << "\n";
 }
 ```
 
-```bash
-$ g++ -std=c++20 -Wall -Wextra stdconcepts.cpp -o stdconcepts && ./stdconcepts
-same_as<int,int>:           true
-same_as<int, const int>:    false
-convertible_to<int,double>: true
-derived_from<Derived,Base>: true
+<OnlineCompilerDemo allow-run
+  title="标准库 concepts 常用概念实测"
+  source-path="code/examples/vol4/vol3-metaprogramming-cpp20-23/stdconcepts_demo.cpp"
+  description="same_as / convertible_to / derived_from / common_with / integral / floating_point 的真实判断。"
+/>
+
+运行结果:
+
+```text
+same_as<int,int>:             true
+same_as<int, const int>:      false
+convertible_to<int,double>:   true
+convertible_to<double,int>:   true
+derived_from<Derived,Base>:   true
 derived_from<Unrelated,Base>: false
-common_with<int,double>:    true
-integral<bool>:            true
-floating_point<float>:     true
+common_with<int,double>:      true
+default_initializable<int>:   true
+integral<int>:                true
+integral<bool>:               true
+floating_point<float>:        true
 ```
 
 这里有个容易踩的点。`same_as<int, const int>` 跑出来是 **false**,而您的直觉可能觉得「不都是 int 嘛」。原因是 `const` 限定让它们成为两个不同的类型,`std::is_same_v<int, const int>` 本来就是 false,`same_as` 建立在它之上,自然也是 false。如果您想判断「剥掉 cv 限定和引用之后是不是同一个类型」,得先用 `std::remove_cvref_t` 把限定擦掉再比。

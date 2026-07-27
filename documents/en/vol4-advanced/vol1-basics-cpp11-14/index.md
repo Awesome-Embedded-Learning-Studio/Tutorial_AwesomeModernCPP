@@ -7,8 +7,6 @@ description: "The core foundation of C++ template programming: a complete introd
 
 C++ templates are the core mechanism of generic programming. This part moves from "using templates" to "writing libraries, reading STL source," covering the compilation model, specialization and partial specialization, non-type parameters, two-phase name lookup, hidden friends, alias templates, and CRTP, finally welding the first nine pieces together with a `fixed_vector<T, N>` project.
 
-Every piece ships with "run it and see" real compile output, traps written up as `::: warning` blocks, and key compile-time behavior backed by assembly.
-
 Runnable examples live in [code/examples/vol4/vol1-basics-cpp11-14/](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/tree/main/code/examples/vol4/vol1-basics-cpp11-14): the four most reusable ones (fixed_vector, CRTP static polymorphism, the Comparable mixin, and type_traits from scratch), each compiles with `g++ -std=c++20 xxx.cpp`.
 
 <ChapterNav variant="sub">

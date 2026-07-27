@@ -923,13 +923,13 @@ a 重新赋值后: 999
 
 在线运行两个示例，亲手验证这篇的关键结论：
 
-<OnlineCompilerDemo
+<OnlineCompilerDemo allow-run
   title="push_back vs emplace_back：拷贝、移动、原位构造"
   source-path="code/examples/vol2/push_back_emplace.cpp"
   description="追踪 Heavy 对象的构造、拷贝、移动、析构日志，对比 push_back(左值)、push_back(右值)、emplace_back 三种方式的开销。"
 />
 
-<OnlineCompilerDemo
+<OnlineCompilerDemo allow-run
   title="noexcept 对 sort 与 vector 扩容的影响"
   source-path="code/examples/vol2/noexcept_sort_vs_realloc.cpp"
   description="统计拷贝和移动次数：std::sort 不区分 noexcept，但 vector 扩容会通过 move_if_noexcept 在非 noexcept 类型上退回拷贝。"
