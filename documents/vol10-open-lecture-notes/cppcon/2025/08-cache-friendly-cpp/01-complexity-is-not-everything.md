@@ -10,7 +10,7 @@ speaker: Jonathan Müller
 cpp_standard: [20]
 difficulty: intermediate
 platform: host
-reading_time_minutes: 12
+reading_time_minutes: 8
 tags:
   - cpp-modern
   - host

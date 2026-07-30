@@ -138,4 +138,4 @@ Folding the rules above into a mental checklist for a concrete scenario:
 
 This all sounds like common sense, but each rule only really sticks once you've been bitten by it. The biggest value of Jonathan's talk isn't teaching you any single trick — it's making it so that every time you write a line of memory-accessing code, a question flashes through your head subconsciously: "For this access pattern, what's the cache-line utilization?" Build that intuition, and you'll write faster code than most people.
 
-[Back to the index](index.md) · [Sister piece: why 99% of microbenchmarks lie](../07-microbenchmarks-that-lie/)
+[Back to the index](index.md) · [Sister piece: why 99% of microbenchmarks lie](../07-microbenchmarks-that-lie/index.md)
