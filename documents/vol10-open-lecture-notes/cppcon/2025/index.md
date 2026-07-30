@@ -80,3 +80,31 @@ CppCon 2025 的演讲笔记合集。
 <ChapterNav variant="sub">
   <ChapterLink href="06-evolution-of-std-optional/">The Evolution of std::optional: From Boost to C++26</ChapterLink>
 </ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="Why 99% of C++ Microbenchmarks Lie – and How to Write the 1% that Matter!"
+  speaker="Kris Jusiak"
+  conference="cppcon"
+  :year="2025"
+  videoYoutube="https://www.youtube.com/watch?v=s_cWIeo9r4I"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="07-microbenchmarks-that-lie/">为什么 99% 的微基准测试都在撒谎</ChapterLink>
+</ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="Cache-Friendly C++"
+  speaker="Jonathan Müller"
+  conference="cppcon"
+  :year="2025"
+  videoYoutube="https://www.youtube.com/watch?v=g_X5g3xw43Q"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="08-cache-friendly-cpp/">Cache-Friendly C++</ChapterLink>
+</ChapterNav>

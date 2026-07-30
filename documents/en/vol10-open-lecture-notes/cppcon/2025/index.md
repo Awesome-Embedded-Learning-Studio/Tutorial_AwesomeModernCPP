@@ -72,3 +72,44 @@ A collection of notes from CppCon 2025 presentations.
 <ChapterNav variant="sub">
   <ChapterLink href="04-back-to-basics-move-semantics/">Back to Basics: Move Semantics</ChapterLink>
 </ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="The Evolution of std::optional: From Boost to C++26"
+  speaker="Steve Downey"
+  conference="cppcon"
+  :year="2025"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="06-evolution-of-std-optional/">The Evolution of std::optional: From Boost to C++26</ChapterLink>
+</ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="Why 99% of C++ Microbenchmarks Lie – and How to Write the 1% that Matter!"
+  speaker="Kris Jusiak"
+  conference="cppcon"
+  :year="2025"
+  videoYoutube="https://www.youtube.com/watch?v=s_cWIeo9r4I"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="07-microbenchmarks-that-lie/">Why 99% of C++ Microbenchmarks Lie</ChapterLink>
+</ChapterNav>
+
+---
+
+<TalkInfoCard
+  talkTitle="Cache-Friendly C++"
+  speaker="Jonathan Müller"
+  conference="cppcon"
+  :year="2025"
+  videoYoutube="https://www.youtube.com/watch?v=g_X5g3xw43Q"
+/>
+
+<ChapterNav variant="sub">
+  <ChapterLink href="08-cache-friendly-cpp/">Cache-Friendly C++</ChapterLink>
+</ChapterNav>
