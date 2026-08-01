@@ -1,613 +1,241 @@
 ---
-chapter: 9
+chapter: 12
 cpp_standard:
-- 11
-- 14
-- 17
 - 20
-description: Ranges Pipeline in Practice
+description: 'C++20 pipe operator | chains view adaptors like filter and transform into a lazy pipeline that is left-associative and equivalent to nested function calls, evaluated element by element on iteration. Views do not own data and dangle once the source dies, custom types plug in by providing begin/end, and materializing into a container uses the iterator-pair constructor.'
 difficulty: intermediate
 order: 8
 platform: host
 prerequisites:
-- 'Chapter 8: 类型安全'
-reading_time_minutes: 12
+- 'C++20 Ranges Library Basics and Views'
+reading_time_minutes: 14
+related:
+- 'C++20 Ranges Library Basics and Views'
+- 'Designated Initializers'
 tags:
-- cpp-modern
 - host
+- cpp-modern
 - intermediate
-title: Pipes and Ranges in Practice
-translation:
-  source: documents/vol4-advanced/vol2-modern-cpp17/08-ranges-pipeline-in-practice.md
-  source_hash: 6a01545ffd4070e56e1741366b3e70fd01468089844173ecc6adf889bf61e3a8
-  translated_at: '2026-06-16T06:18:00.304140+00:00'
-  engine: anthropic
-  token_count: 3136
+- Ranges
+title: 'Pipeline Operations and Ranges in Practice'
 ---
-# Modern Embedded C++ Tutorial — Pipeline Operations and Ranges in Practice
+# Pipeline Operations and Ranges in Practice
 
-## Introduction
+In the previous chapter we saw that views are lazy, lightweight handles that do not own data. A single view does one thing, though. What really pays off is chaining several views into a pipeline, where each step's output feeds straight into the next. The Unix pipeline `cat data | grep pattern | sort` is exactly this idea — each program does one job, and together they get a full task done. C++20 brought this style into the language, and the mechanism is the overloaded pipe operator `|`.
 
-In the previous chapter, we explored the concept of **views**, but if we only use them in isolation, we haven't fully unleashed their power. The real magic happens when we chain views together—much like Unix pipelines, where the output of one operation immediately becomes the input for the next.
+This chapter pins down the semantics of the pipe (it is just nested function calls in another notation), runs two practical scenarios (ADC sample processing and protocol byte parsing), then shows how to plug a custom type into a pipeline. Along the way it flags the one trap that catches everyone: views do not own data.
 
-Honestly, the first time I wrote code using the pipe operator `|`, I felt like I was writing some high-level scripting language rather than C++. The code reads like an English sentence, and the logic is so clear it almost feels unfamiliar. But what is even better is that behind this "script-like" syntax lies fully zero-overhead compile-time optimization.
+## The pipe `|`: nested calls in another notation
 
-> TL;DR: **The pipe operator `|` allows you to compose data processing operations like building blocks. It is both readable and efficient, making it one of C++20's most elegant features.**
-
-In this chapter, we focus on practice—how to use Ranges and pipelines in embedded projects to write code that is both elegant and efficient.
-
-------
-
-## The Pipe Operator: The Unix Philosophy in C++
-
-The philosophy of Unix pipelines is: **combine small programs to accomplish large tasks**. `cat data | grep pattern | sort | head -n 10`—each program does one thing, but chained together, their power is limitless.
-
-C++20 brings this philosophy into the language:
+Let's get the semantics right first. These two snippets are equivalent:
 
 ```cpp
-// 传统写法：嵌套、内联、难以阅读
-auto result = std::views::transform(
-    std::views::filter(
-        data,
-        predicate1
-    ),
-    function2
-);
+std::vector<int> data{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-// 管道写法：像句子一样自然
-auto result = data
-    | std::views::filter(predicate1)
-    | std::views::transform(function2);
+// pipe form: read top to bottom, like a sentence
+auto pipe = data
+    | std::views::filter(is_even)
+    | std::views::transform(times10);
 
+// nested call form: read inside out, gets ugly with more layers
+auto nested = std::views::transform(std::views::filter(data, is_even), times10);
 ```
 
-The pipe operator `|` is overloaded here. The left side is a range, and the right side is a view adaptor, returning a new view. The key point is: **no data copying occurs throughout the entire process**. Instead, a "processing chain" is constructed, and data only flows through this chain when you iterate over the result.
+The pipe `|` is left-associative: `a | f | g` parses as `(a | f) | g`, which is exactly `g(f(a))`. It really is function application, just written horizontally so the data flow reads better. Let's run it to confirm both produce the same result:
 
-Let's start with a simple example and gradually build a complex data processing pipeline.
+<OnlineCompilerDemo allow-run
+  title="Pipe form and nested call form are equivalent"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_pipe_basics.cpp"
+  description="The same filter+transform written as a pipe and as nested calls produces identical output, confirming | is left-associative and equivalent to function nesting."
+/>
 
-------
+```text
+pipe:  20 40 60 80 100
+nested:20 40 60 80 100
+```
 
-## Basic Pipeline: Filter-Transform-Collect
+## The whole pipeline is lazy
 
-The most common combination is the "filter → transform → collect" trio. Suppose we are processing a set of sensor readings:
+Last chapter we said a single view is lazy. A pipeline keeps that property: building the pipeline does nothing; only when you iterate the result does data actually flow through the chain. We can prove it with a counting lambda.
 
 ```cpp
-#include <ranges>
-#include <vector>
-#include <iostream>
+std::vector<int> data{1, 2, 3, 4, 5};
+int filter_calls = 0, transform_calls = 0;
 
-struct SensorReading {
-    int sensor_id;
-    int raw_value;
-    bool valid;
-};
+auto pipe = data
+    | std::views::filter([&](int x){ ++filter_calls; return x % 2 == 0; })
+    | std::views::transform([&](int x){ ++transform_calls; return x * 10; });
+```
 
-std::vector<SensorReading> get_readings() {
-    return {
-        {1, 120, true},
-        {2, 45, false},   // 无效
-        {3, 230, true},
-        {4, 67, true},
-        {5, 340, false},  // 超量程
-        {6, 89, true}
-    };
+After the line that builds `pipe`, both counters are still 0. Only once `for (int x : pipe)` actually starts iterating do the filter and transform lambdas run.
+
+<OnlineCompilerDemo allow-run
+  title="Laziness proof: nothing runs at build time, only on iteration"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_pipe_lazy_and_dangling.cpp"
+  description="Counting lambdas show filter and transform call counts are both 0 during pipeline construction, and only go non-zero once the for loop begins."
+/>
+
+```text
+[before build]  filter=0 transform=0
+[after build, before iterate] filter=0 transform=0
+[after full iterate]  filter=5 transform=2 elements=2
+```
+
+Notice the filter ran 5 times (it walked all 5 elements through the predicate), but transform only ran 2 times (only 2 elements passed the filter). The whole pipeline is a **single pass**: an element starts at the source, flows through filter and then transform all the way to the end, never landing in an intermediate vector. That is also why it saves memory compared to "copy_if first, then transform."
+
+## Views do not own data: this is the main trap
+
+This one has to be called out on its own. Views like `filter` and `transform` **do not copy or hold the source data**: they store only a reference to it. As long as the source container lives, the view is valid; the moment the source dies, the view dangles.
+
+The most common way to wreck this is to build a local vector inside a function and return its view:
+
+```cpp
+auto make_dangling_view() {
+    std::vector<int> local{1, 2, 3, 4, 5};   // destroyed on return
+    return local | std::views::filter([](int x){ return x > 2; });
 }
-
-void process_sensors() {
-    auto readings = get_readings();
-
-    // 构建管道：过滤有效读数 → 提取raw_value → 转换为电压
-    auto voltages = readings
-        | std::views::filter([](const SensorReading& r) { return r.valid; })
-        | std::views::transform([](const SensorReading& r) { return r.raw_value; })
-        | std::views::transform([](int raw) { return raw * 3.3f / 4095; });
-
-    std::cout << "Valid voltages:\n";
-    for (float v : voltages) {
-        std::cout << "  " << v << " V\n";
-    }
-}
-
 ```
 
+This compiles (the view type can be deduced), but the view you get points at freed vector memory, and iterating it is **undefined behavior**. The same thing happens when the view is built on a temporary:
+
 ```cpp
-
-Valid voltages:
-  0.0966133 V
-  0.185425 V
-  0.0540171 V
-  0.0717957 V
-
+auto bad = std::vector<int>{1, 2, 3}        // temporary, destroyed at end of line
+    | std::views::filter([](int x){ return x > 1; });
 ```
 
-The beauty of this code:
+::: warning A view is just a reference — don't let it outlive the source
+A pipeline returns a view that does not own data; its lifetime follows the source container. If you need to keep the result around, materialize it into a container that actually owns data, using the iterator-pair constructor: `std::vector<float>(pipe.begin(), pipe.end())`. This is the standard C++20 approach, and we'll see it again below.
+:::
 
-- The logic flows from top to bottom, like telling a story.
-- There are no temporary variables to store intermediate results.
-- The compiler optimizes the entire pipeline into a single pass.
+## In practice: multi-stage ADC processing
 
-------
-
-## Real-World Scenario 1: Multi-Stage ADC Data Processing
-
-In embedded systems, ADC data usually requires multiple processing stages. Let's design a complete ADC processing pipeline:
+The most natural place for the pipeline style is multi-stage sensor data cleaning. Raw ADC samples typically need out-of-range noise removed, conversion to voltage, and a calibration curve applied. Each step is a transform or filter, and they chain into one pipeline:
 
 ```cpp
-#include <ranges>
-#include <vector>
-#include <array>
-#include <cmath>
+struct AdcSample { std::uint16_t raw; };
 
-class ADCProcessor {
-public:
-    // 添加ADC原始读数
-    void add_sample(uint16_t raw) {
-        samples_.push_back(raw);
-        keep_recent(100);  // 只保留最近100个样本
-    }
+std::vector<AdcSample> samples = fetch_samples();   // one frame
 
-    // 处理并返回结果
-    std::vector<float> process() {
-        // 构建完整处理管道
-        auto pipeline = samples_
-            | std::views::filter([](uint16_t v) {
-                // 阶段1：过滤掉明显无效的值
-                return v >= 100 && v <= 4000;
-            })
-            | std::views::transform([](uint16_t v) {
-                // 阶段2：转换为电压
-                return v * 3.3f / 4095.0f;
-            })
-            | std::views::transform([](float voltage) {
-                // 阶段3：应用校准曲线（二阶多项式）
-                return 1.001f * voltage + 0.0002f * voltage * voltage;
-            });
-
-        // 转换为vector返回
-        return std::vector<float>(pipeline.begin(), pipeline.end());
-    }
-
-    // 获取滤波后的当前值
-    std::optional<float> get_filtered_value() {
-        if (samples_.empty()) return std::nullopt;
-
-        // 计算移动平均
-        auto pipeline = samples_
-            | std::views::filter([](uint16_t v) {
-                return v >= 100 && v <= 4000;
-            })
-            | std::views::transform([](uint16_t v) {
-                return v * 3.3f / 4095.0f;
-            });
-
-        float sum = 0.0f;
-        size_t count = 0;
-        for (float v : pipeline) {
-            sum += v;
-            count++;
-        }
-
-        return count > 0 ? std::optional<float>(sum / count) : std::nullopt;
-    }
-
-private:
-    std::vector<uint16_t> samples_;
-
-    void keep_recent(size_t n) {
-        if (samples_.size() > n) {
-            samples_.erase(samples_.begin(), samples_.end() - n);
-        }
-    }
-};
-
+auto pipeline = samples
+    | std::views::filter([](const AdcSample& s){
+        return s.raw >= 64 && s.raw <= 4000;       // drop out-of-range noise
+    })
+    | std::views::transform([](const AdcSample& s){
+        return s.raw * 3.3f / 4095.0f;             // raw value -> voltage
+    })
+    | std::views::transform([](float v){
+        return 1.001f * v + 0.0002f * v * v;        // second-order calibration
+    });
 ```
 
-This example demonstrates several advantages of pipelines:
-
-- Each processing stage has a single responsibility, making it easy to test.
-- Adding a new processing step only requires adding one line to the pipeline.
-- We can comment out any step at any time to facilitate debugging.
-
-------
-
-## Practical Scenario 2: Protocol Parsing and Data Extraction
-
-In embedded communication, we often need to extract data from a byte stream. Ranges make this task exceptionally simple:
+Each step has a single responsibility. Adding a stage means appending one line to the pipeline; to skip calibration while debugging, comment out that one transform. When you need to hold the result long-term (say, to store it in a buffer), materialize with the iterator-pair constructor:
 
 ```cpp
-#include <ranges>
-#include <vector>
-#include <cstdint>
-#include <iostream>
+std::vector<float> kept(pipeline.begin(), pipeline.end());
+```
 
-// 假设我们接收到了一串16位数据（大端序）
-std::vector<uint8_t> receive_spi_data() {
-    return {0x01, 0x00, 0x00, 0x64, 0x00, 0x02, 0xFF, 0xFF};
-    // 解析为：0x0100, 0x0064, 0x0002, 0xFFFF
-}
+<OnlineCompilerDemo allow-run
+  title="Multi-stage ADC pipeline: filter -> voltage -> calibration"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_pipe_adc.cpp"
+  description="A simulated ADC frame (with out-of-range noise) goes through a three-stage pipeline, then materialized into a vector with the iterator-pair constructor."
+/>
 
-void parse_spi_packet() {
-    auto data = receive_spi_data();
+```text
+校准后电压: 0.8262 2.4212 1.6526 2.8249
+物化进 vector 的样本数:4
+```
 
-    // 步骤1：按2字节分组
-    auto chunks = data | std::views::chunk(2);
+Of 8 raw samples, 4 were filtered out as out-of-range, and the remaining 4 went through calibration.
 
-    // 步骤2：将每组合并为16位值
-    auto words = chunks | std::views::transform([](auto chunk) {
-        uint16_t high = chunk[0];
-        uint16_t low = chunk[1];
-        return (high << 8) | low;
+## In practice: parsing a protocol byte stream
+
+Another common job is assembling 16-bit words out of a byte stream. One C++20 boundary has to be cleared up first: a lot of writeups group bytes two at a time using `std::views::chunk(2)`, but `chunk` only entered the standard in **C++23**, so it does not compile under `-std=c++20` (GCC 16 reports `'chunk' is not a member of 'std::views'`). In C++20 we use a `chunk`-free form, generating indices with `iota` and pairing them up:
+
+```cpp
+std::vector<std::uint8_t> bytes = receive_spi_data();   // big-endian byte stream
+
+// pair adjacent bytes into 16-bit words (C++20-friendly, no chunk)
+auto words = std::views::iota(std::size_t{0}, bytes.size() / 2)
+    | std::views::transform([&](std::size_t i){
+        std::uint16_t hi = bytes[i * 2];
+        std::uint16_t lo = bytes[i * 2 + 1];
+        return static_cast<std::uint16_t>((hi << 8) | lo);
     });
 
-    // 步骤3：过滤掉填充值（假设0xFFFF是填充）
-    auto valid_words = words | std::views::filter([](uint16_t w) {
-        return w != 0xFFFF;
-    });
-
-    // 输出结果
-    for (uint16_t w : valid_words) {
-        std::cout << "Word: 0x" << std::hex << w << std::dec << '\n';
-    }
-}
-
+// drop the 0xFFFF padding word
+auto valid = words | std::views::filter([](std::uint16_t w){ return w != 0xFFFF; });
 ```
 
-```cpp
+The indices produced by `iota` are themselves lazy and take no memory, and the pipeline ties "take an index" and "assemble a word" together.
 
-Word: 0x100
-Word: 0x64
-Word: 0x2
+::: warning views::chunk / slide / stride are C++23
+Grouping and sliding adaptors require `-std=c++23`. In a C++20 project, roll your own with `iota + transform`, or upgrade to C++23. Before reaching for any adaptor, confirm it is fully implemented on your target compiler — ranges landed in GCC 10, and several adaptors were filled in by later versions.
+:::
 
-```
+## Plugging a custom type into a pipeline
 
-`std::views::chunk` is a highly practical view adapter that groups elements into sets of N, making it ideal for handling protocol data.
+In embedded code we often have our own container types (ring buffers, sample windows, register maps). Getting them to work as `data | views::filter(...)` is easier than it looks: **as long as the type is a range (that is, it provides `begin()` and `end()`), it can go straight on the left side of a pipe**. The pipeline wraps it in a `views::all` and grabs the begin and end iterators.
 
-------
-
-## Practical Scenario 3: Event Queue Processing
-
-In event-driven embedded systems, we frequently need to handle various types of events. We can use Ranges to elegantly implement event classification and handling:
+Here is an `IntWindow` that holds just a pointer plus a length over a contiguous run of ints:
 
 ```cpp
-#include <ranges>
-#include <vector>
-#include <variant>
-#include <iostream>
-
-enum class EventType { Timer, GPIO, UART, ADC };
-
-struct Event {
-    EventType type;
-    uint32_t timestamp;
-    std::variant<int, bool, char> data;  // 简化版事件数据
-};
-
-class EventManager {
+class IntWindow {
 public:
-    void add_event(Event e) {
-        events_.push_back(e);
-    }
-
-    // 处理所有GPIO事件
-    void process_gpio_events() {
-        auto gpio_events = events_
-            | std::views::filter([](const Event& e) {
-                return e.type == EventType::GPIO;
-            });
-
-        for (const auto& e : gpio_events) {
-            handle_gpio(e);
-        }
-
-        // 处理完后移除
-        std::erase_if(events_, [](const Event& e) {
-            return e.type == EventType::GPIO;
-        });
-    }
-
-    // 获取最近N个事件的时间戳
-    std::vector<uint32_t> get_recent_timestamps(size_t n) {
-        auto recent = events_
-            | std::views::reverse  // 从新到旧
-            | std::views::take(n)
-            | std::views::transform([](const Event& e) {
-                return e.timestamp;
-            });
-
-        return std::vector<uint32_t>(recent.begin(), recent.end());
-    }
-
+    IntWindow(const int* p, std::size_t n) : p_(p), n_(n) {}
+    const int* begin() const { return p_; }      // these two are enough
+    const int* end()   const { return p_ + n_; }
+    std::size_t size() const { return n_; }
 private:
-    std::vector<Event> events_;
-
-    void handle_gpio(const Event& e) {
-        std::cout << "GPIO event at " << e.timestamp << '\n';
-    }
+    const int* p_;
+    std::size_t n_;
 };
 
+int raw[] = {10, 15, 20, 25, 30, 35, 40};
+IntWindow window(raw, 7);
+
+// custom type plugs straight into the pipeline
+auto out = window
+    | std::views::filter([](int x){ return x > 18; })
+    | std::views::transform([](int x){ return x / 5; });
 ```
 
-------
+This "bolt begin/end onto the type" approach is enough for most embedded cases. If you also want to write your own adaptor (something that sits on the right side of `|`, like `filter` does), that takes a Range Adaptor Object and a good deal more template machinery — leave it for when you actually need it.
 
-## Custom View Adapters: Making Your Types Pipe-Friendly
+<OnlineCompilerDemo allow-run
+  title="Custom type into a pipeline, compared with a hand-written loop"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_pipe_custom_and_perf.cpp"
+  description="IntWindow plugs into the pipeline after providing begin/end; the pipeline produces identical output to a hand-written loop, and stays lazy and single-pass with no intermediate vector."
+/>
 
-Sometimes, we want our custom types to participate in pipe operations. C++20 allows us to define custom view adapters (Range Adaptor Objects), but this involves some template metaprogramming.
+## Performance: the pipeline does not slow you down
 
-The good news is that for most embedded scenarios, we can use a simpler approach: make the custom range support iteration, and then we can directly plug it into the pipeline:
+Since the pipeline is lazy, single-pass, and stores only lightweight handles, how does it compare to a hand-written loop? Let's run a 2-million-element comparison: the old style does `copy_if` into an intermediate vector, then `transform`-accumulates; the pipeline accumulates straight through one chain.
 
-```cpp
-#include <ranges>
-#include <iterator>
-
-// 简单的环形缓冲区
-template<typename T, size_t N>
-class RingBuffer {
-public:
-    void push(T value) {
-        data_[head_] = value;
-        head_ = (head_ + 1) % N;
-        if (size_ < N) size_++;
-    }
-
-    // 让它成为Range：提供begin/end
-    auto begin() { return Iterator(this, 0); }
-    auto end() { return Iterator(this, size_); }
-
-private:
-    std::array<T, N> data_;
-    size_t head_ = 0;
-    size_t size_ = 0;
-
-    // 简单的迭代器实现
-    struct Iterator {
-        using iterator_category = std::input_iterator_tag;
-        using value_type = T;
-        using difference_type = ptrdiff_t;
-
-        RingBuffer* buf;
-        size_t idx;
-
-        Iterator(RingBuffer* b, size_t i) : buf(b), idx(i) {}
-
-        T& operator*() {
-            size_t pos = (buf->head_ - buf->size_ + idx) % N;
-            return buf->data_[pos];
-        }
-
-        Iterator& operator++() {
-            ++idx;
-            return *this;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return idx != other.idx;
-        }
-    };
-};
-
-// 使用：RingBuffer可以直接接入管道
-void demo_ring_buffer_pipeline() {
-    RingBuffer<int, 10> buffer;
-
-    for (int i = 0; i < 8; ++i) {
-        buffer.push(i);
-    }
-
-    // 直接用管道处理环形缓冲区
-    auto result = buffer
-        | std::views::filter([](int x) { return x % 2 == 0; })
-        | std::views::transform([](int x) { return x * 2; });
-
-    for (int x : result) {
-        std::cout << x << ' ';  // 输出：0 4 8 12
-    }
-}
-
+```text
+手写循环累加 = 3999997997450
+管道写法累加 = 3999997997450
+两者一致:是
+手写循环:23133 us(20 次平均)
+管道写法:12812 us(20 次平均)
+管道更快:老写法建了中间 vector,惰性单遍省了分配和拷贝
 ```
 
-## Common Composition Patterns
+Both produce identical results, and the pipeline is actually faster here. The reason is that at `-O2` the compiler inlines the entire chain of lambdas and the data flows through in a single pass, while the old style pays for an extra intermediate vector (one allocation plus one copy). It compiles clean under `-Wall -Wextra`, with no warnings at all.
 
-Based on practical project experience, I have summarized several particularly useful pipeline composition patterns:
+There is a caveat, of course: the pipeline wins because it is single-pass and the compiler can see the whole chain at modest data volume. If you force a materialization to a vector somewhere in the middle and then keep going, you pay for that allocation. So the rule is simple: **when a pipeline can go end to end, don't materialize midway**. When you must, materialize once — don't save an intermediate result at every step.
 
-### Pattern 1: Data Cleaning Pipeline
+## A few pitfalls to remember
 
-```cpp
-auto clean_data = raw_data
-    | std::views::filter(is_valid)      // 去除无效值
-    | std::views::transform(clamp)       // 限制范围
-    | std::views::transform(calibrate);  // 校准
+**Don't expect iterating the same pipeline to "cache."** In the laziness experiment above, after the first for loop the filter counter went from 0 to 5; a second pass runs the filter again and the counter keeps climbing. Most views (`filter`, `transform`, `take`, ...) **do not cache**: every iteration recomputes. As long as the source is stable, multiple passes give the same result (just recompute each time), but with generator-style views like `iota` or stateful adaptors, watch the semantics when you repeatedly take `begin` and `end`.
 
-```
+**A view cannot outlive its source.** Already emphasized above: returning a view over a local vector, or hanging a view off a temporary, both dangle. Materialize into a container if you need to keep it.
 
-### Mode 2: Sliding Window
+**Compiler needs to be new enough.** C++20 ranges need GCC 10 or later; this machine's GCC 16.1.1 supports them fully. Adaptors like `chunk`/`slide`/`stride` are C++23 and are not available under `-std=c++20`.
 
-```cpp
-auto windowed = data
-    | std::views::slide(window_size)     // 滑动窗口（C++23）
-    | std::views::transform(compute_avg);
+**Error messages get long.** Pipelines are all templates, and one mismatched lambda return type can produce dozens of lines of constraint failure. When that happens, look at the innermost constraint error first and confirm the range's `value_type` matches the parameter type your lambda accepts.
 
-```
+## That wraps this sub-volume
 
-Here is how we can implement a sliding window effect in C++20:
+The pipe operator plus ranges lets you write "filter, transform, collect" data-processing pipelines almost like natural language, while keeping single-pass laziness for performance. Combined with the tools from earlier chapters (`if constexpr`, variadic templates, perfect forwarding, CTAD, type-safe `any`/`variant`, designated initializers), the modern C++ toolkit we now have covers the vast majority of embedded use cases: compile-time dispatch, zero-overhead abstraction, type-safe data carriers, self-documenting configuration, and composable data processing.
 
-```cpp
-template<std::ranges::input_range R>
-auto sliding_window(R&& r, size_t n) {
-    return std::views::iota(size_t{0}, std::ranges::size(r) - n + 1)
-        | std::views::transform([r, n](size_t i) {
-            return r | std::views::drop(i) | std::views::take(n);
-        });
-}
-
-```
-
-### Mode 3: Zip Operation (Iterating Over Two Sequences Simultaneously)
-
-```cpp
-std::vector<float> values = {1.1f, 2.2f, 3.3f};
-std::vector<int> ids = {10, 20, 30};
-
-// 同时遍历两个序列（需要自定义zip视图或等C++23）
-// C++23: auto zipped = std::views::zip(values, ids);
-
-```
-
-In the C++20 era, we can use `std::views::zip` (provided by some libraries) or implement a simple zip ourselves:
-
-```cpp
-template<typename R1, typename R2>
-auto zip_simple(R1&& r1, R2&& r2) {
-    return std::views::iota(size_t{0}, std::min(std::ranges::size(r1), std::ranges::size(r2)))
-        | std::views::transform([&r1, &r2](size_t i) {
-            return std::pair{r1[i], r2[i]};
-        });
-}
-
-```
-
-------
-
-## Performance Verification: Is it Really Zero Overhead?
-
-Let's verify the performance of the Ranges pipeline. I wrote a test snippet:
-
-```cpp
-#include <ranges>
-#include <vector>
-#include <algorithm>
-#include <chrono>
-
-// 传统写法
-std::vector<int> traditional(const std::vector<int>& input) {
-    std::vector<int> temp1;
-    std::copy_if(input.begin(), input.end(), std::back_inserter(temp1),
-                 [](int x) { return x > 50; });
-
-    std::vector<int> temp2;
-    std::transform(temp1.begin(), temp1.end(), std::back_inserter(temp2),
-                   [](int x) { return x * 2; });
-
-    return temp2;
-}
-
-// Ranges管道写法
-std::vector<int> with_ranges(const std::vector<int>& input) {
-    auto pipeline = input
-        | std::views::filter([](int x) { return x > 50; })
-        | std::views::transform([](int x) { return x * 2; });
-
-    return std::vector<int>(pipeline.begin(), pipeline.end());
-}
-
-// 性能测试
-void benchmark() {
-    std::vector<int> data(1000000);
-    for (int i = 0; i < 1000000; ++i) data[i] = i;
-
-    auto t1 = std::chrono::high_resolution_clock::now();
-    auto r1 = traditional(data);
-    auto t2 = std::chrono::high_resolution_clock::now();
-
-    auto t3 = std::chrono::high_resolution_clock::now();
-    auto r2 = with_ranges(data);
-    auto t4 = std::chrono::high_resolution_clock::now();
-
-    auto time1 = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1);
-    auto time2 = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t3);
-
-    // 在-O2优化下，两者性能接近，ranges甚至可能更快
-    // 因为编译器能更好地优化整个管道
-}
-
-```
-
-At `-O2` or higher optimization levels, modern compilers will completely inline the lambda expressions within the pipeline and eliminate unnecessary intermediate steps. The resulting assembly code is highly efficient, potentially even faster than a hand-written loop—because the compiler sees the complete processing logic, it can perform better vectorization optimizations.
-
-------
-
-## Common Pitfalls
-
-### Pitfall 1: Do not iterate over the same pipeline multiple times
-
-Some view adapters generate "consuming" views, where multiple iterations may yield different results:
-
-```cpp
-auto data = std::views::iota(0, 5);
-
-// 如果内部有状态（比如生成随机数）
-// 多次迭代结果可能不同
-
-// 解决方案：如果需要多次使用，转成容器
-auto vec = std::vector<int>(data.begin(), data.end());
-
-```
-
-### Pitfall 2: Watch out for object lifetimes
-
-```cpp
-// ❌ 危险
-auto get_pipeline() {
-    std::vector<int> local = {1, 2, 3};
-    return local | std::views::filter([](int x) { return x > 1; });
-    // local被销毁，返回的管道悬垂
-}
-
-// ✅ 正确：传数据进来
-template<std::ranges::input_range R>
-auto make_pipeline(R&& r) {
-    return r | std::views::filter([](int x) { return x > 1; });
-}
-
-```
-
-### Pitfall 3: Compiler error messages can be verbose
-
-Ranges involve a large number of templates, so compiler error messages can span dozens of lines. When you encounter issues:
-
-- First, check if the lambda's return type matches.
-- Confirm that the Range's `value_type` meets expectations.
-- Use `std::ranges::range_reference_t<R>` to inspect the reference type.
-
-### Pitfall 4: Incomplete compiler support
-
-If you encounter strange compilation errors, first verify your compiler version:
-
-- GCC 11+
-- Clang 13+
-- MSVC 2019 v16.10+
-
-------
-
-## Compiler Support and Alternatives
-
-If your compiler does not fully support C++20 Ranges, or if you want some additional features, consider:
-
-1. **range-v3 library**: This is the reference implementation of Ranges, written by Eric Niebler; C++20 Ranges is based on it. It can be used with C++14/17.
-
-```cpp
-#include <range/v3/all.hpp>
-
-using namespace ranges;  // 提供类似C++20的接口
-
-```
-
-1. **nano-range**: A lightweight Ranges implementation suitable for embedded systems.
-
-However, to be honest, in 2024, mainstream embedded compilers (GCC 11+, Clang 13+) have fairly good support for C++20 Ranges. If your project can upgrade the compiler, we strongly recommend using the standard library implementation directly.
-
-------
-
-## Summary
-
-The combination of the pipe operator `|` and the Ranges library is one of the most elegant features in modern C++:
-
-- **Readability**: Data processing flows are clear at a glance.
-- **Composability**: We can combine operations like building blocks.
-- **Zero overhead**: After compiler optimization, efficiency is on par with traditional code.
-- **Type safety**: The compiler checks all type matching at compile time.
-
-For embedded developers, Ranges finally allows us to write data processing code that is both elegant and efficient—no need to choose between "readability" and "performance." This toolset is particularly suitable for common embedded scenarios like sensor data processing, protocol parsing, and event handling.
-
-Once we get used to thinking in terms of pipelines, we will find that many data processing tasks that used to seem troublesome can now be handled in just a few lines of code. This is the effect that good language features should achieve—making code resemble our thought process, rather than forcing us to adapt to the language's limitations.
-
-In the next chapter, we will continue to explore the application of functional programming in C++ and see how to use tools like `std::expected` to build more robust error handling mechanisms.
+This volume has been about "what the language gives you." What comes next is "how to organize an engineering project with these tools": RAII resource management, smart-pointer ownership, concurrency models, and more. The tools themselves are not the hard part; the hard part is picking the right one in a real project and putting it in the right place.

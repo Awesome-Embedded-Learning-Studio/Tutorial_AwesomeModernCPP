@@ -1,579 +1,226 @@
 ---
-chapter: 11
+chapter: 12
 cpp_standard:
 - 20
-description: 'Modern C++ Designated Initializers: Deep Dive and Embedded Applications'
+description: 'C++20 designated initializers use .field = value to initialize aggregate members by name, must follow declaration order (unlike C99), and default the rest. They only work on aggregates, and C++20 does not support the [index] syntax for arrays.'
 difficulty: intermediate
 order: 6
 platform: host
 prerequisites:
-- 'Chapter 11.1: auto与decltype'
-- 'Chapter 11.2: 结构化绑定'
-reading_time_minutes: 15
+- 'CTAD: Class Template Argument Deduction'
+reading_time_minutes: 12
+related:
+- 'if constexpr: Compile-Time Branching'
+- 'CTAD: Class Template Argument Deduction'
 tags:
-- cpp-modern
 - host
+- cpp-modern
 - intermediate
-title: designated initializer
-translation:
-  source: documents/vol4-advanced/vol2-modern-cpp17/06-designated-initializers.md
-  source_hash: 8d2e920124d4dbab7a3677f94d872d61e3e2abfff3c3ec12d2b69ef21d649cf2
-  translated_at: '2026-06-16T04:02:08.087200+00:00'
-  engine: anthropic
-  token_count: 4247
+- 基础
+title: 'Designated Initializers'
 ---
-# Modern C++ for Embedded Development — Designated Initializers
+# Designated Initializers
 
-## Introduction
-
-When writing embedded code, have you ever been frustrated by obscure struct initializations like this?
+Once a config struct grows past a few fields, positional initialization gets scary. A UART config with seven or eight fields, filled in by position:
 
 ```cpp
-UART_InitTypeDef uart;
-uart.BaudRate = 115200;
-uart.WordLength = UART_WORDLENGTH_8B;
-uart.StopBits = UART_STOPBITS_1;
-uart.Parity = UART_PARITY_NONE;
-
-// Or even worse, the positional initialization nightmare:
-TIM_TimeBaseInitTypeDef timer = { 0, 999, 0, TIM_COUNTERMODE_UP, 0 };
+UartConfig cfg = {115200, 8, 0, 1, 0, 1, 1};   // who can read this
 ```
 
-The biggest problem with this code is that you must remember the declaration order of the struct members. If the struct definition changes (for example, inserting a new member in the middle), all initialization code might break. Worse still, the compiler won't report an error, and strange behaviors only manifest at runtime.
+We've all hit the problems with this style: with many fields you end up counting positions against the declaration, inserting a new member in the middle forces every initializer to shift, and the compiler won't catch a mistake — it just shows up as weird behavior at runtime. C99 had an answer, the designated initializer, and C++20 brought it into the standard so we can write `.field = value` and initialize by name. But the C++20 version differs from C99 in two important places, and those two places are exactly where the traps are. We'll get to them as we go.
 
-C99 introduced designated initializers, and C++20 officially incorporated them into the standard to solve this problem—allowing us to initialize members by name. This makes code clearer, safer, and easier to maintain.
+## Specify with `.field = value`, and follow declaration order
 
-> TL;DR: **Designated initializers allow initializing struct members by name using the `.member = value` syntax, creating self-documenting code that is independent of declaration order.**
-
-However, using designated initializers in embedded development requires understanding their mechanics and limitations because:
-
-1. The syntax differs slightly from C (C++ uses braces `{}`).
-2. They can only be used for aggregate types, not classes with constructors.
-3. The default behavior of partial initialization needs to be clearly understood.
-4. Support varies across different compilers.
-
-Let's walk through the correct usage of this feature step by step.
-
-------
-
-## Basic Syntax
-
-### Simple Designated Initialization
-
-C++20 designated initializers use the `.member{value}` syntax inside braces:
+The basic shape is `.field = value`, one per line inside the braces:
 
 ```cpp
-struct Point {
-    int x;
-    int y;
-    int z;
+struct UartConfig {
+    std::uint32_t baudrate = 0;
+    std::uint8_t data_bits = 8;
+    std::uint8_t parity = 0;      // 0=None 1=Odd 2=Even
+    std::uint8_t stop_bits = 1;
 };
 
-// Traditional initialization (order-dependent)
-Point p1 = { 10, 20, 30 }; // x=10, y=20, z=30
-
-// Designated initialization (order-independent)
-Point p2 = { .z{30}, .x{10}, .y{20} }; // x=10, y=20, z=30
+UartConfig cfg{
+    .baudrate = 115200,
+    .data_bits = 8,
+    .parity = 0,
+    .stop_bits = 1,
+};
 ```
 
-The advantage of the second approach is obvious:
+Each value is labeled, no more counting on position — that's the main win. But C++20 adds a hard rule that C99 does not have: **the designators must appear in the same order as the member declarations**. If you move `stop_bits` ahead of `baudrate` for convenience:
 
-1. **Self-documenting code**: Each value explicitly labels its corresponding field.
-2. **Order-independent**: Does not rely on the struct declaration order.
-3. **Easy to maintain**: Initialization code remains correct even if the struct definition changes.
+```cpp
+UartConfig bad{.stop_bits = 1, .baudrate = 115200};   // won't compile in C++20
+```
 
-### Differences from C
+GCC refuses outright:
 
-The syntax for designated initializers in C is slightly different:
+```text
+error: designator order for field 'UartConfig::baudrate' does not match declaration order in 'UartConfig'
+```
+
+This reordering is legal in C99; C++20 dropped it. The reason ties back to how brace initialization walks members in declaration order — a designator is "a name tag on the current position," not "a pass to jump around." So you may leave later members out, but you cannot list them out of order.
+
+<OnlineCompilerDemo allow-run
+  title="Basic syntax: name fields, follow declaration order, partial init uses defaults"
+  source-path="code/examples/vol4/vol2-modern-cpp17/designated_basics.cpp"
+  description="Specify fields in declaration order; unlisted members fall back to default member initializers; add -DOUT_OF_ORDER to reproduce the out-of-order compile error."
+/>
+
+Run it:
+
+```text
+cfg: baud=115200 bits=8 parity=0 stop=1
+partial: baud=921600 data_bits=8(默认8) parity=2 stop=1(默认1)
+```
+
+## Aggregates only
+
+Designated initializers only work on **aggregate types**. Roughly, a class is an aggregate when it has: no user-declared constructors, no private or protected non-static data members, no virtual functions, no virtual base classes. Ordinary structs and qualifying classes are aggregates.
+
+The moment you add a constructor, it stops being an aggregate, and designated initializers stop working:
+
+```cpp
+struct WithCtor {
+    int a;
+    int b;
+    WithCtor(int, int) {}
+};
+
+WithCtor x{.a = 1, .b = 2};   // won't compile: not an aggregate
+```
+
+The error says so plainly:
+
+```text
+error: designated initializers cannot be used with a non-aggregate type 'WithCtor'
+```
+
+This draws a clean line: classes with constructors own their initialization logic (validation, defaults, throws); aggregates have no constructor, so initialization is done with braces, and designated initializers just make the braces clearer. Want both? Give the struct a static factory, and use designated initialization inside it:
+
+```cpp
+struct Config {
+    int baudrate;
+    int data_bits;
+    static Config standard() { return {.baudrate = 115200, .data_bits = 8}; }
+};
+```
+
+## What about the members you didn't list
+
+Under partial initialization, the members you don't name follow two rules: if they have a default member initializer (`int data_bits = 8;`), that default applies; otherwise they're value-initialized, which for built-in types means zero. In the `partial` line above, `{.baudrate = 921600, .parity = 2}` leaves `data_bits` and `stop_bits` unwritten, so they fall back to the defaults `8` and `1`.
+
+::: warning Watch the implicit zero, and don't be spooked by -Wmissing-field-initializers
+Without a default member initializer, an omitted member is zero-initialized. For a `bool auto_reload`, zero-initializing to `false` may not be what you meant — write the important ones explicitly.
+
+Also, partial initialization trips GCC's `-Wmissing-field-initializers` warning (part of `-Wextra`), nudging you about members you didn't list. It's a **warning, not an error**, and for built-in types an omission is usually safe (zero), so treat it as a "did I mean to skip this?" nudge rather than a sign of trouble.
+:::
+
+## Nested structs, bit-fields, and unions all work
+
+Designated initializers handle the common aggregate variants. Nested structs go level by level:
+
+```cpp
+struct Pin { std::uint8_t port; std::uint8_t pin; };
+struct UartCfg { std::uint32_t baud; Pin tx; Pin rx; };
+
+UartCfg u{
+    .baud = 115200,
+    .tx = {.port = 0, .pin = 9},
+    .rx = {.port = 0, .pin = 10},
+};
+```
+
+Bit-fields work too, and so do unions (initialize one member only):
+
+```cpp
+struct Flags { unsigned a : 1; unsigned b : 1; unsigned c : 6; };
+Flags f{.a = 1, .b = 0, .c = 5};
+
+union Value { int i; float f; };
+Value v{.f = 3.14f};
+```
+
+<OnlineCompilerDemo allow-run
+  title="Aggregate variants: nested structs, bit-fields, unions"
+  source-path="code/examples/vol4/vol2-modern-cpp17/designated_aggregate.cpp"
+  description="Nested structs specified layer by layer, bit-fields set by name, a union with one member named. Add -DNON_AGGREGATE to reproduce the non-aggregate error."
+/>
+
+Run it:
+
+```text
+uart: baud=115200 tx=PA9 rx=PA10
+flags: a=1 b=0 c=5
+union as float: 3.14
+```
+
+## Don't bother with `[index]` for arrays: C++20 doesn't have it
+
+This is the second trap, and the other C99 difference. C99 lets arrays use `[index] = value`:
 
 ```c
-// C99 style (uses =)
-Point p2 = { .z = 30, .x = 10, .y = 20 };
+int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // legal C99
 ```
 
-Good news: C++20 adopted the same syntax as C99, allowing for better interoperability between the two languages.
-
-**Note**: Before C++20, some compilers (like GCC, Clang) supported designated initializers as an extension, but the behavior might differ slightly from the C++20 standard.
-
-------
-
-## Aggregate Type Requirements
-
-Designated initializers can only be used with aggregate types. So, what is an aggregate type?
-
-### Definition of an Aggregate Type
-
-In C++20, an aggregate type is a class type that satisfies the following conditions:
-
-1. No user-declared constructors.
-2. No private or protected non-static data members.
-3. No virtual functions.
-4. No virtual base classes.
-5. No default member initializers (prior to C++14).
+C++20 **did not** adopt this. Feed the same line to a C++ compiler:
 
 ```cpp
-// This is an aggregate
-struct SensorConfig {
-    int pin;
-    int threshold;
-    bool enabled;
-};
-
-// This is NOT an aggregate (has user-declared constructor)
-struct SensorConfig {
-    int pin;
-    SensorConfig(int p) : pin(p) {} // Not an aggregate
-};
+int pins[5] = {[0] = 1, [2] = 5, [4] = 12};   // won't compile in C++20
 ```
 
-### Arrays Are Also Aggregate Types
+GCC's wording is a little coy: `sorry, unimplemented: non-trivial designated initializers not supported`. It doesn't quite say "the standard forbids it," but the effect is the same — no compile. C++20's designated initializers only cover the `.field` form for aggregates; array-index designators aren't in the standard. For partial array initialization, just use positional braces like `{1, 0, 5, 0, 12}`.
 
-Arrays can also use designated initializers:
+## Embedded use: constexpr config tables
+
+Where designated initializers land most naturally in embedded is the **compile-time config table**. A set of pin configs or register maps, written as a `constexpr` array with `.field = value`, is self-documenting, fixed at compile time, and zero-cost at runtime:
 
 ```cpp
-int arr[5] = { [3] = 10, [1] = 20 }; // C style, mostly C-compatible
-// Note: C++ designated initializers for arrays have limited support
+constexpr std::array<PinCfg, 4> kUartPins = {{
+    {.pin = 9,  .mode = GpioMode::Alternate, .pull = GpioPull::None, .alternate = 7},
+    {.pin = 10, .mode = GpioMode::Alternate, .pull = GpioPull::Up,   .alternate = 7},
+    {.pin = 2,  .mode = GpioMode::Alternate, .pull = GpioPull::None, .alternate = 7},
+    {.pin = 3,  .mode = GpioMode::Alternate, .pull = GpioPull::None, .alternate = 7},
+}};
+
+constexpr std::array<RegMap, 4> kUartRegs = {{
+    {.name = "SR",  .offset = 0x00, .read_only = true},
+    {.name = "DR",  .offset = 0x04, .read_only = false},
+    {.name = "BRR", .offset = 0x08, .read_only = false},
+    {.name = "CR1", .offset = 0x0C, .read_only = false},
+}};
 ```
 
-**Note**: Support for array designated initializer syntax `[index] =` varies in C++; verify compiler support before use.
+This table reads like a table. Adding a row or changing a field doesn't ripple anywhere. Because it's `constexpr`, it's all settled at compile time, and the generated code is indistinguishable from a hand-written set of constants — but far easier to read. Register maps, pin tables, message templates, PWM channel configs all fit this pattern.
 
-------
+<OnlineCompilerDemo allow-run
+  title="constexpr config table: compile-time pin table and register map"
+  source-path="code/examples/vol4/vol2-modern-cpp17/designated_config_table.cpp"
+  description="Designated initializers plus constexpr plus std::array form an embedded config table — zero runtime cost, far more readable than positional aggregate initialization."
+/>
 
-## Embedded Scenarios in Practice
+Run it:
 
-### Scenario 1: UART Configuration Initialization
+```text
+UART 引脚配置表:
+  P9  mode=2 pull=0 af=7
+  P10 mode=2 pull=1 af=7
+  P2  mode=2 pull=0 af=7
+  P3  mode=2 pull=0 af=7
 
-```cpp
-struct UARTConfig {
-    uint32_t baud_rate;
-    uint8_t data_bits;
-    uint8_t stop_bits;
-    uint8_t parity;
-    bool flow_control;
-};
-
-void init_uart() {
-    // Clear and safe
-    UARTConfig cfg = {
-        .baud_rate = 115200,
-        .data_bits = 8,
-        .stop_bits = 1,
-        .parity = 0,       // None
-        .flow_control = false
-    };
-    // Apply configuration...
-}
+UART 寄存器映射:
+  SR   @0x00  RO
+  DR   @0x04  RW
+  BRR  @0x08  RW
+  CR1  @0x0C  RW
 ```
 
-### Scenario 2: GPIO Configuration
+## A few practical rules of thumb
 
-```cpp
-struct GPIOConfig {
-    GPIO_Port port;
-    uint16_t pin;
-    GPIO_Mode mode;
-    GPIO_Pull pull;
-    GPIO_Speed speed;
-};
+When a type is an aggregate, reach for `.field = value`. Config code becomes self-documenting, and restructuring the struct later won't break initializers. For types with many fields and sensible defaults, pair them with default member initializers so partial initialization is painless.
 
-GPIOConfig led_config = {
-    .port = GPIOA,
-    .pin = 5,
-    .mode = GPIO_MODE_OUTPUT_PP,
-    .pull = GPIO_NOPULL,
-    .speed = GPIO_SPEED_FREQ_LOW
-};
-```
+If you want both "validation logic" and "field-style initialization," use a static factory — don't shoehorn a constructor into an aggregate. The moment you add one, you lose designated initializers.
 
-### Scenario 3: SPI Configuration
-
-```cpp
-struct SPIConfig {
-    SPI_HandleTypeDef handle;
-    uint32_t mode;
-    uint32_t baud_prescaler;
-    uint32_t bit_order;
-};
-
-SPIConfig spi_flash = {
-    .mode = SPI_MODE_MASTER,
-    .baud_prescaler = SPI_BAUDRATEPRESCALER_4,
-    .bit_order = SPI_FIRSTBIT_MSB
-    // handle left default-initialized
-};
-```
-
-### Scenario 4: Timer Configuration
-
-```cpp
-struct TimerConfig {
-    uint32_t prescaler;
-    uint32_t period;
-    uint32_t clock_division;
-    uint32_t counter_mode;
-};
-
-TimerConfig pwm_timer = {
-    .prescaler = 71,      // 1MHz tick
-    .period = 999,        // 1kHz PWM
-    .counter_mode = TIM_COUNTERMODE_UP
-};
-```
-
-### Scenario 5: Register Map Table
-
-```cpp
-struct RegisterMap {
-    volatile uint32_t ctrl;
-    volatile uint32_t status;
-    volatile uint32_t data;
-    volatile uint32_t reserved[4];
-};
-
-// Memory-mapped IO initialization
-const RegisterMap peripheral_base = {
-    .ctrl = 0x00,
-    .status = 0x00,
-    .data = 0x00
-};
-```
-
-### Scenario 6: Message Packet Construction
-
-```cpp
-struct Packet {
-    uint8_t start_byte;
-    uint8_t cmd;
-    uint16_t length;
-    uint8_t payload[256];
-    uint16_t checksum;
-};
-
-Packet cmd_packet = {
-    .start_byte = 0xAA,
-    .cmd = 0x01,
-    .length = 4,
-    .payload = { 0x01, 0x02, 0x03, 0x04 },
-    .checksum = 0x1234
-};
-```
-
-------
-
-## Partial Initialization and Default Values
-
-### Behavior of Partial Initialization
-
-When using designated initializers, unspecified members follow these rules:
-
-1. If there is a default member initializer, use that default value.
-2. Otherwise, for aggregate types, perform value initialization (zero-initialization).
-
-```cpp
-struct Device {
-    int id = 1;           // Default member initializer
-    int status;          // No default
-    int priority = 10;   // Default member initializer
-};
-
-Device dev = { .id{5} };
-// Result: id=5, status=0 (zero-initialized), priority=10 (default initializer)
-```
-
-### Beware of Implicit Zero Initialization
-
-```cpp
-struct Buffer {
-    uint8_t* data;
-    size_t size;
-    bool is_ready;
-};
-
-Buffer buf = { .data{nullptr} };
-// Result: data=nullptr, size=0, is_ready=false
-```
-
-In embedded development, this implicit zero-initialization can lead to hard-to-find bugs. It is recommended to always explicitly initialize all important members.
-
-------
-
-## Nested Structs and Arrays
-
-### Initializing Nested Structs
-
-```cpp
-struct Inner {
-    int x;
-    int y;
-};
-
-struct Outer {
-    int a;
-    Inner inner;
-    int b;
-};
-
-Outer out = {
-    .a{10},
-    .inner{ .x{1}, .y{2} },
-    .b{20}
-};
-```
-
-### Initializing Array Members
-
-```cpp
-struct ArrayHolder {
-    int values[5];
-    int count;
-};
-
-ArrayHolder holder = {
-    .values{ [0]{1}, [4]{5} }, // Note: Array designated init support varies
-    .count{2}
-};
-```
-
-**Note**: Support for array designated initializer syntax `[index]` in C++20 may vary by compiler; verify before use.
-
-------
-
-## Interaction with Constructors
-
-### Aggregate Types Cannot Have User-Defined Constructors
-
-```cpp
-struct Bad {
-    int x;
-    Bad() = default; // User-declared constructor -> Not an aggregate
-};
-
-// Bad b = { .x{1} }; // Error: Not an aggregate
-```
-
-If you need to support both constructors and designated initializers, consider the following approaches:
-
-### Solution 1: Use Static Factory Methods
-
-```cpp
-struct Config {
-    int baud;
-    int mode;
-
-    static Config create(int b) {
-        return { .baud{b}, .mode{0} };
-    }
-};
-
-Config cfg = Config::create(115200);
-```
-
-### Solution 2: Use Aggregate Initialization + Helper Functions
-
-```cpp
-struct Config {
-    int baud;
-    int mode;
-};
-
-Config make_default_config() {
-    return { .baud{9600}, .mode{1} };
-}
-```
-
-------
-
-## Common Pitfalls and Limitations
-
-### Pitfall 1: Order-Dependent Initialization
-
-```cpp
-struct Data {
-    int a;
-    int b;
-};
-
-Data d = { .b{2}, .a{1} }; // Valid, but confusing
-```
-
-While the syntax allows out-of-order initialization, for readability, it is recommended to keep the order consistent with the struct declaration.
-
-### Pitfall 2: Impact of Member Reordering
-
-```cpp
-struct V1 {
-    int x;
-    int y;
-};
-
-struct V2 {
-    int y; // Reordered
-    int x;
-};
-
-V2 v = { .x{1}, .y{2} }; // Safe! Order independent
-```
-
-### Pitfall 3: Bit Field Members
-
-```cpp
-struct Flags {
-    unsigned int flag1 : 1;
-    unsigned int flag2 : 1;
-};
-
-Flags f = { .flag1{1}, .flag2{0} }; // Supported
-```
-
-### Pitfall 4: Designated Initialization for Unions
-
-```cpp
-union Data {
-    int i;
-    float f;
-};
-
-Data d = { .i{42} }; // OK
-// Data d2 = { .i{42}, .f{3.14f} }; // Error: Only one member can be initialized
-```
-
-### Pitfall 5: Precedence of Non-Static Member Initializers
-
-```cpp
-struct S {
-    int x = 10;
-};
-
-S s = { .x{20} }; // x is 20, the explicit value overrides the default
-```
-
-Explicitly specified values in designated initializers override default member initializers.
-
-### Limitation 1: Cannot Be Used on Non-Aggregate Types
-
-```cpp
-class NonAggregate {
-private:
-    int x;
-public:
-    NonAggregate(int v) : x(v) {}
-};
-
-// NonAggregate n = { .x{10} }; // Error: Not an aggregate
-```
-
-### Limitation 2: Cannot Specify the Same Member Multiple Times
-
-```cpp
-struct Point { int x; int y; };
-// Point p = { .x{1}, .x{2} }; // Error: Duplicate member initialization
-```
-
-### Limitation 3: Cannot Skip Members in Some Compilers
-
-While the C++20 standard allows partial initialization, some compilers may have additional restrictions or warnings in practice.
-
-### Limitation 4: Interaction with Base Classes
-
-```cpp
-struct Base { int x; };
-struct Derived : Base { int y; };
-
-// Derived d = { .x{1}, .y{2} }; // Error: Cannot designate base class members directly
-Derived d = { .y{2} }; // OK, x is zero-initialized
-```
-
-------
-
-## C++20 Updates
-
-C++20 officially incorporated designated initializers into the standard. Key features include:
-
-1. **Standardized Syntax**: `.member{value}` becomes standard syntax.
-2. **Updated Aggregate Definition**: Relaxed the definition of aggregate types.
-3. **Interaction with Templates**: Can be used in templates.
-
-### Usage in Templates
-
-```cpp
-template<typename T>
-struct Container {
-    T value;
-    int id;
-};
-
-Container<float> c = { .value{3.14f}, .id{1} };
-```
-
-### constexpr Context
-
-```cpp
-struct Point {
-    int x;
-    int y;
-};
-
-constexpr Point origin = { .x{0}, .y{0} };
-static_assert(origin.x == 0);
-```
-
-------
-
-## Compiler Support
-
-| Compiler | Support as Extension | C++20 Standard Support |
-|----------|---------------------|------------------------|
-| GCC | 4.x+ | GCC 8+ |
-| Clang | 3.x+ | Clang 10+ |
-| MSVC | Not Supported | VS 2019 16.8+ |
-
-When writing portable code, it is recommended to:
-
-```cpp
-#if __cplusplus >= 202002L
-    Point p = { .x{1}, .y{2} };
-#else
-    Point p = { 1, 2 }; // Fallback
-#endif
-```
-
-------
-
-## Summary
-
-Designated initializers offer a concise and safe way to initialize objects in modern C++:
-
-**Comparison with Traditional Initialization**:
-
-| Feature | Traditional Initialization | Designated Initializers |
-|---------|---------------------------|------------------------|
-| Order Dependency | Yes | No |
-| Code Readability | Poor (need to check definition) | Good (self-documenting) |
-| Maintainability | Poor (struct changes require updates) | Good (immune to struct changes) |
-| Partial Initialization | Supported (positional) | Supported (by name) |
-
-**Practical Recommendations**:
-
-1. **Prefer in these scenarios**:
-   - Configuration struct initialization.
-   - Register map tables.
-   - Hardware configuration constants.
-   - Message packet construction.
-
-2. **Use with caution in these scenarios**:
-   - Initialization requiring validation logic (consider factory functions).
-   - Complex initialization order dependencies.
-   - Projects needing to support older compilers.
-
-3. **Embedded specific focus**:
-   - Understand the default behavior of partial initialization.
-   - Be aware of bugs introduced by zero-initialization.
-   - Verify compiler support.
-   - Keep order consistent with struct declaration for readability.
-
-4. **Performance considerations**:
-   - Designated initializers are a compile-time feature with no runtime overhead.
-   - Generates the same machine code as traditional aggregate initialization.
-   - Safe to use in performance-critical code.
-
-Designated initializers bring C++ configuration code closer to a declarative programming style. Combined with `constexpr`, we can accomplish significant configuration work at compile time, making it an essential tool for modern C++ embedded development. Along with previously learned features like `auto`, structured binding, and attributes, we can write embedded C++ code that is both efficient and easy to maintain.
+And keep those two C++20-versus-C99 differences in mind: designators must follow declaration order, and there is no `[index]` for arrays. They're the easiest spots to take for granted when porting C code into C++. The compiler catches both on the first try, but it's better to know why going in.

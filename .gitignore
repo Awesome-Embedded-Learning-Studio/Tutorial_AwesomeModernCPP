@@ -8,6 +8,7 @@
 .claude/chapter-projects-outline.md
 .claude/templates/
 .claude/tools/
+.claude/books/
 
 # Build directories
 build/
