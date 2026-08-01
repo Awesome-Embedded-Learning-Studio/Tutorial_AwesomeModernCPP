@@ -1,341 +1,260 @@
 ---
-chapter: 9
+chapter: 12
 cpp_standard:
-- 11
-- 14
-- 17
 - 20
-description: Ranges Library Basics
+description: 'C++20 Ranges lifts "a pair of iterators" into a range, so algorithms take a whole container; views build on that with lazy evaluation, reference semantics, and O(1) copy, letting you chain filter/transform/take into a zero-allocation pipeline.'
 difficulty: intermediate
 order: 7
 platform: host
 prerequisites:
-- 'Chapter 8: 类型安全'
-reading_time_minutes: 11
+- 'Designated Initializers'
+reading_time_minutes: 14
+related:
+- 'Pipelines and Ranges in Practice'
+- 'Designated Initializers'
 tags:
-- cpp-modern
 - host
+- cpp-modern
 - intermediate
-title: C++20 Ranges Library Basics and Views
-translation:
-  source: documents/vol4-advanced/vol2-modern-cpp17/07-ranges-basics-and-views.md
-  source_hash: 89721c9de712eca886a3ab34b440681ebc4107dae1ad5c5d8773b483bc4d232a
-  translated_at: '2026-06-16T04:02:14.277090+00:00'
-  engine: anthropic
-  token_count: 2581
+- Ranges
+title: 'C++20 Ranges: Ranges and Views'
 ---
-# Modern Embedded C++ Tutorial — C++20 Ranges Library Basics and Views
+# C++20 Ranges: Ranges and Views
 
-## Introduction
+Processing one frame of sensor data is usually a chain: drop the anomalies, convert the raw code into engineering units, take the first few and ship them out. The old way means opening two temporary `vector`s, one `copy_if` followed by one `transform`, a few `back_inserter`s in between; the logic reads like a chopped-up list. C++20 Ranges offers a smoother path: write the whole chain as one pipeline, allocate nothing in the middle, and the intent reads top to bottom. The key is the **view**, which is lazy, holds no data, and is cheap to copy, exactly the kind of abstraction embedded work wants most.
 
-Whenever I handle arrays or container data, I always feel like something is missing. If I use STL algorithms, those `std::vector<int>::iterator`, `std::back_inserter` things are a total pain to write—iterator begin, iterator end, temporary container, and finally paste it back. After this whole routine, the code logic is torn into pieces, and reading it feels like chewing on dry bread.
+This article splits two concepts that are easy to conflate (Range and View), pins down the three core properties of a view with real measurements, and lands on a temperature-data pipeline.
 
-Then C++20 brought the Ranges library, like installing a "data processing pipeline" into your code. Even more importantly, it introduced the concept of a "View"—**lazy evaluation, zero-overhead copying**—which is simply tailor-made for embedded development.
+## Range: anything you can iterate
 
-> TL;DR: **Ranges lets you compose operations like Unix pipes, while Views let you process data without extra copies, making it both elegant and efficient.**
+C++20's definition of a Range is plain: **anything that can hand you a pair of iterators (begin/end)**. `std::vector`, `std::array`, raw arrays — all Ranges.
 
-Our current goal is to understand two things: what is a Range, what is a View, and why they are so useful in embedded scenarios.
-
-------
-
-## Starting with the Pain Point: How Annoying Traditional STL Algorithms Are
-
-Let's first look at how we used to process data. Suppose we read a set of data from a sensor, need to filter out anomalies, and then multiply the rest by a coefficient:
+The first thing you feel is that algorithms stop forcing you to type a `begin()/end()` pair. Used to be:
 
 ```cpp
-std::vector<int> raw_data = { /* ... sensor readings ... */ };
-std::vector<int> filtered;
-std::vector<int> calibrated;
-
-// 1. Filter
-for (auto x : raw_data) {
-    if (x >= 0 && x <= 1023) {
-        filtered.push_back(x);
-    }
-}
-
-// 2. Calibrate
-for (auto x : filtered) {
-    calibrated.push_back(x * 2);
-}
+std::sort(vec.begin(), vec.end());
 ```
 
-Look at how annoying this code is:
-
-- You have to write the iterator range twice for every operation.
-- You need to create temporary containers like `filtered` to store intermediate results.
-- The logic is interrupted by intermediate variables; you can't see the "raw data → filter → calibrate" pipeline at a glance.
-- Memory is allocated at least twice (`filtered` and `calibrated`).
-
-In embedded scenarios, this kind of temporary memory allocation is particularly a headache—are you sure the heap has enough space? Are you sure it won't fragment? Are you sure real-time performance won't be affected by allocation?
-
-The answers to these questions lie in the Ranges library.
-
-------
-
-## What is a Range: Simply Put, "A Pair of Iterators"
-
-The C++20 standard library's definition of a "Range" is simple: **anything that can provide iterators**.
+C++20 takes the whole container:
 
 ```cpp
-std::vector<int> vec {1, 2, 3};
-int arr[10] = {0};
-std::list<float> list;
+std::ranges::sort(vec);   // pass the whole range
 ```
 
-These are all Ranges. Previously, we wrote algorithms using `begin()`, `end()`, but now we can directly throw the entire container into the algorithm:
+That's the surface sugar; the real work is in the view factories inside `<ranges>`. First, draw the line between two concepts:
+
+- **Range**: the general name for anything iterable (`vector`/`array`/raw arrays qualify), and it **owns its data**.
+- **View**: a special kind of Range that **holds no data**, just "another angle" on existing data, and evaluates **lazily**.
+
+The next few sections are about views. This is the foundation of the whole piece.
+
+## Views are lazy: building one computes nothing
+
+A view is lazy. The moment you build a `filter` view, no computation happens; the predicate is not called until you start iterating. Let's prove it by counting calls inside the predicate:
 
 ```cpp
-std::ranges::sort(vec); // No more vec.begin(), vec.end()
-```
+std::vector<int> data = {1, 2, 3, 4, 5};
+int pred_calls = 0;
 
-But this is just syntactic sugar on the surface. The real power lies in a whole new set of tools in the `<ranges>` header file.
+auto v = data | std::views::filter([&](int x) {
+    ++pred_calls;
+    return x > 2;
+});
+std::cout << "pred calls after building (no iteration): " << pred_calls << "\n";
 
-First, we need to distinguish two concepts: **Range** and **View**.
-
-- **Range**: Anything iterable, including `std::vector`, `std::list`, native arrays.
-- **View**: A special kind of Range that does not own data, it is just a "specific angle of observation" on existing data, and it performs **lazy evaluation**.
-
-The concept of a View is so important that we will dedicate a whole section to it.
-
-------
-
-## Views: Zero-Overhead Data Lenses
-
-The essence of a View can be summarized in four words: **Lazy, Non-owning, Composable, O(1) copy**.
-
-### Lazy Views
-
-Views are "lazy"—when you define them, nothing is calculated. Calculation only happens when you actually iterate over them:
-
-```cpp
-auto even = [](int i) { return i % 2 == 0; };
-auto evens_view = std::views::filter(data, even); // No calculation happens here yet
-
-// Calculation happens only during iteration
-for (int val : evens_view) {
-    // ...
+for (int x : v) {
+    std::cout << "got " << x << ", pred calls so far: " << pred_calls << "\n";
 }
 ```
 
-### Non-owning Data
+<OnlineCompilerDemo allow-run
+  title="View laziness, reference semantics, O(1) copy"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_laziness.cpp"
+  description="A counting predicate shows the filter view calls nothing when built and fires per element only during iteration; mutating the source changes what the next iteration sees; copying a view does not copy any elements."
+/>
 
-Views just "look at" the underlying data, they don't own it:
+Run it:
+
+```text
+建视图后(还没遍历)谓词调用次数=0
+取到 3, 此刻谓词已调用 3 次
+取到 4, 此刻谓词已调用 4 次
+取到 5, 此刻谓词已调用 5 次
+改 data[2]=300 后重新遍历: 300 4 5
+拷贝视图后 v2 首元素=300
+```
+
+`pred_calls` starts at 0: building the view cost zero predicate calls. Once iteration begins, `filter` has to scan past `1`, `2`, and `3` to find the first element greater than 2, so by the time we hand you `3` the count has already jumped to 3. That is the proof of laziness: the predicate runs only when an element is actually demanded.
+
+One more property rides along. After we change `data[2]` from `3` to `300`, **a fresh iteration of the view sees the new value**. The view holds no copy; it references the source container, and when the source changes the view follows.
+
+## Views hold no data; copying is O(1)
+
+A view only "looks at" the underlying data, it does not own it. So copying a view copies a few iterators and a predicate, none of the underlying elements. For embedded, that means you can pass views around freely without worrying that you silently copied a whole buffer.
+
+There is a counter-intuitive trap to flag early. The view **references** the source — literally. What it stores is a pointer/iterator to the source, not a snapshot of the values. So **the source must outlive the view**. The moment the source is destroyed, the view dangles. We will demonstrate this with a whole section later; for now, keep the rule.
+
+## Common view factories
+
+`<ranges>` ships a set of "view factories." Here are the ones most used in embedded, one minimal example each.
 
 ```cpp
-std::vector<int> get_data() {
-    return {1, 2, 3, 4, 5};
+std::vector<int> data = {120, 45, 230, 67, 340, 89, 56, 180};
+
+// filter: keep only readings in [50,300]
+auto valid = data | std::views::filter([](int v){ return v >= 50 && v <= 300; });
+
+// transform: 12-bit ADC raw code to voltage (mV scale)
+auto mv = std::views::transform(data, [](int adc){ return adc * 3300 / 4095; });
+
+// take / drop: slice the head/tail of a data frame
+auto seq     = std::views::iota(0, 10);
+auto first3  = seq | std::views::take(3);                                  // 0 1 2
+auto rest    = std::views::iota(0, 10) | std::views::drop(3);              // 3..9
+auto middle  = std::views::iota(0, 10) | std::views::drop(2) | std::views::take(4);  // 2 3 4 5
+
+// iota: produce ADC channel numbers 0..15, with no storage at all
+auto adc_channels = std::views::iota(0, 16);
+```
+
+`iota` deserves a pause: it increments on demand, allocates nothing, stores nothing, a natural fit for "I just need a sequence of indices," like enumerating channel numbers or generating loop indices.
+
+For string parsing there is also `split`, which cuts by a delimiter. NMEA sentences, key-value pairs, anything "comma or equals separated," becomes a one-liner:
+
+```cpp
+std::string raw = "sensor1=25,sensor2=30,sensor3=28";
+for (auto sub : raw | std::views::split(',')) {
+    std::string_view sv{sub.begin(), sub.end()};   // sub is not a string; wrap it
+    // [sensor1=25] [sensor2=30] [sensor3=28]
 }
-
-auto view = std::views::all(get_data()); // Dangerous! get_data() returns a temporary vector
-// view is now dangling because the temporary vector is destroyed
 ```
 
-### O(1) Copy
+<OnlineCompilerDemo allow-run
+  title="View factories: filter / transform / take / drop / iota / split"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_factories.cpp"
+  description="One minimal example for each of the six most common view factories, covering filtering, mapping, slicing, sequence generation, and string splitting."
+/>
 
-The copy cost of a View is constant level—it only stores a few pointers/iterators and does not copy the underlying data:
+Run it:
 
-```cpp
-auto view1 = std::views::filter(data, pred);
-auto view2 = view1; // O(1), just copies pointers, no data copying
+```text
+filter [50,300]: 120 230 67 89 56 180
+transform->mV: 96 36 185 53 273 71 45 145
+take 3: 0 1 2
+drop 3: 3 4 5 6 7 8 9
+drop 2 | take 4: 2 3 4 5
+iota ADC 通道: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+split(','): [sensor1=25] [sensor2=30] [sensor3=28]
 ```
 
-This is crucial for embedded systems—you can pass Views around everywhere without worrying about the overhead of data copying.
+## Combining into a pipeline
 
-------
-
-## Common View Factory Functions
-
-The `<ranges>` header provides a series of "view factory" functions to create various Views. Let's pick the most useful ones for embedded development.
-
-### filter: Filter Data
-
-`std::views::filter` creates a View containing only elements that meet the condition:
+A single view is modest; stringing them together is where Ranges earns its keep. The pipe `|` connects views into a chain that evaluates lazily, **and as you iterate, data flows through element by element** (the pipe operator gets a full treatment in the next article; here we build intuition).
 
 ```cpp
-std::vector<int> data = {10, 25, 3, 8, 30};
-auto valid = std::views::filter(data, [](int x) { return x > 5; });
-// valid is now a view of {10, 25, 8, 30}
+std::vector<int> readings = {120, 45, 230, 67, 340, 89, 56, 180};
+int tf_calls = 0;
+
+auto pipeline = readings
+    | std::views::filter([](int v){ return v >= 50 && v <= 300; })
+    | std::views::transform([&](int v){ ++tf_calls; return v * 3.3f / 4095; })
+    | std::views::take(3);
 ```
 
-### transform: Convert Each Element
+This reads like a sentence: "from `readings`, keep the valid ones, convert to voltage, take the first three." No intermediate `vector`, no chopped-up logic. Let's use a counter to see how lazy this really is.
 
-`std::views::transform` applies a function to each element:
+<OnlineCompilerDemo allow-run
+  title="Pipeline laziness: take cuts the chain short once it has enough"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_pipeline.cpp"
+  description="The whole filter|transform|take pipeline calls transform zero times when built; over iteration it fires exactly 3 times, because take stops the upstream early."
+/>
 
-```cpp
-auto volts = std::views::transform(readings, [](int adc) { return adc * 3.3 / 4096; });
+Run it:
+
+```text
+建好管道(没遍历) transform 调用次数=0
+前 3 个有效读数的电压:
+  0.096703
+  0.185348
+  0.053993
+遍历完 transform 总调用次数=3(take 在取够 3 个后掐断了管道)
 ```
 
-### take and drop: Take First N or Skip First N
+`transform` is called 3 times — exactly the `take(3)` count. The whole pipeline advances **element by element, on demand**: once `take` has 3, the upstream `filter` and `transform` stop, and the remaining elements are never touched. Of the 8 original readings, `340`, `56`, and `180` were never tested by filter, never computed by transform. That is the core payoff of a lazy pipeline: you pay only for the results you actually consume.
+
+## Embedded in practice: a temperature pipeline
+
+Let's assemble the pieces into a real embedded scenario. A batch of temperature sensors returns readings, with anomalies mixed in (999 when a sensor drops, -200 on an open circuit). The job: filter the anomalies, convert Celsius to Fahrenheit, average, ship it out.
 
 ```cpp
-auto first_5 = std::views::take(data, 5);   // Take first 5
-auto rest = std::views::drop(data, 2);      // Skip first 2
-```
+std::vector<int> readings = {23, 999, 25, -200, 27, 22, 999, 26};
 
-In embedded scenarios, this is particularly useful when dealing with protocol headers:
-
-```cpp
-auto payload = std::views::drop(packet, 4); // Skip 4-byte header
-```
-
-### split: Split by Delimiter
-
-`std::views::split` splits a Range into sub-Ranges based on a delimiter:
-
-```cpp
-std::string msg = "ID:123;TEMP:25.5";
-auto parts = std::views::split(msg, ';'); // Now ["ID:123", "TEMP:25.5"]
-```
-
-It's especially useful for parsing NMEA sentences (GPS data format):
-
-```cpp
-std::string nmea = "$GPGGA,123519,4807.036,N,01131.000,E*1A";
-auto fields = std::views::split(nmea, ',');
-```
-
-### iota: Generate Sequence
-
-`std::views::iota` generates an incrementing sequence:
-
-```cpp
-auto indices = std::views::iota(0, 10); // 0, 1, 2, ..., 9
-```
-
-------
-
-## Composing Views: Start Building Pipelines
-
-A single View has limited power, but combined they are powerful. We can use the pipe operator `|` to chain Views together (we will detail this in the next chapter, but let's warm up here):
-
-```cpp
 auto processed = readings
-    | std::views::filter([](int x) { return x > 0; })
-    | std::views::transform([](int x) { return x * 3.3 / 4096; })
-    | std::views::take(5);
+    | std::views::filter([](int t){ return t >= -50 && t <= 150; })
+    | std::views::transform([](int t){ return t * 9.0 / 5.0 + 32.0; });
 ```
 
-This code reads like a sentence: "From readings, filter valid values, convert to voltage, take the first 5." No temporary variables, no intermediate containers, the logic is touchingly clear.
+The whole chain has no `filtered` or `calibrated` intermediate. The data is walked once, memory cost is constant.
 
-------
+<OnlineCompilerDemo allow-run
+  title="Temperature sensor data pipeline"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_sensor_pipeline.cpp"
+  description="One frame of temperature readings with anomalies; filter drops them, transform converts to Fahrenheit, take the average, with no temporary containers at all."
+/>
 
-## Embedded Practice: Sensor Data Processing Pipeline
+Run it:
 
-Let's use a real embedded scenario to demonstrate the power of Views. Suppose we are building a temperature monitoring system with a set of temperature sensors, and we need to:
+```text
+有效读数(F): 73.4 77.0 80.6 71.6 78.8
+平均温度: 76.3 F
+```
 
-1. Filter out invalid readings (< -50 or > 150)
-2. Convert Celsius to Fahrenheit
-3. Calculate moving average
-4. Output result
+Note that the `999` and `-200` never appear in any intermediate buffer — filter simply skipped them. Under the old style those values would have been `push_back`'d into the raw `vector` first, only to be discarded during filtering.
+
+## Pitfall: the lifetime of a view
+
+A view holds no data. Flip that around and you get the biggest trap: **when the source container dies, the view dangles**. The most common shape is returning a view from a function, where the view references a local inside the function:
 
 ```cpp
-std::vector<double> temps = { /* sensor readings */ };
-
-auto pipeline = temps
-    | std::views::filter([](double t) { return t >= -50.0 && t <= 150.0; })
-    | std::views::transform([](double t) { return t * 9.0 / 5.0 + 32.0; })
-    | std::views::transform([](double t) { /* moving average logic */ return t; });
-
-for (auto val : pipeline) {
-    printf("Temp: %.2f F\n", val);
+// Bad: local dies when the function returns; the returned view dangles at once
+auto make_bad_view() {
+    std::vector<int> local = {1, 2, 3, 4, 5};
+    return local | std::views::filter([](int x){ return x > 2; });
 }
 ```
 
-Notice the beauty of this code:
+This is a use-after-free. Inside, the view is a `ref_view` holding a pointer to `local`; the moment the function returns, `local` is destroyed, the memory goes back to the stack/heap, and the view is a wild pointer. Let's catch it with AddressSanitizer: compile with `g++ -std=c++20 -DDANGLING -fsanitize=address ranges_dangling.cpp`.
 
-- No temporary containers like `filtered_temps`, `calibrated_temps`.
-- The whole process traverses the data only once.
-- Memory overhead is O(1)—Views only store a few pointers.
+<OnlineCompilerDemo allow-run
+  title="View dangling: correct form by default; add -DDANGLING with ASan to reproduce"
+  source-path="code/examples/vol4/vol2-modern-cpp17/ranges_dangling.cpp"
+  description="Default mode shows the correct form where the data source outlives the view; add -DDANGLING and run under ASan to reproduce the use-after-free when a view references a temporary container returned from a function."
+/>
 
-------
+The core of what ASan reports:
 
-## View vs Container: When to Use What
-
-Views are powerful, but not a panacea. Here is a simple decision tree:
-
-**Use View when:**
-
-- Read-only data, no modification needed.
-- Need to compose multiple operations.
-- Want zero-overhead copying.
-- Data source lifetime is long enough.
-- One-time traversal.
-
-**Use Container when:**
-
-- Need to modify data.
-- Need to traverse the same result multiple times.
-- Data source might be destroyed.
-- Need to own the data.
-
-```cpp
-// Good: One-time processing
-for (auto x : data | std::views::filter(pred)) { /* ... */ }
-
-// Good: Need to reuse results
-auto result = std::vector<int>(data | std::views::filter(pred));
+```text
+ERROR: AddressSanitizer: stack-use-after-return on address 0x...
+READ of size 8 ... in std::ranges::ref_view<...>::end() const
+This frame has 4 object(s):
+  [96, 120) 'local' (line 8) <== Memory access at offset 104 is inside this variable
 ```
 
-------
+The complaint is `ref_view::end()` reading the already-destroyed `local`. The correct form is to make the source outlive the view: store the data in a class member, and have the view reference that member; or pass the source in as an argument. In the example, `SensorBuffer` keeps `data_` as a member, and the view returned by `valid()` is safe for as long as the `SensorBuffer` object lives.
 
-## Pitfall Guide
+::: warning Don't reshape the source while a view is alive
+A view references the source; if the source's contents change, the view reflects it, and that is usually fine. But **changing the source's structure** (insert, erase, grow, anything that invalidates iterators) is a different matter. Views like filter also cache `begin`; if the source invalidates that cached iterator, the view's behavior is undefined. The rule: while a view is alive, read its source but don't reshape it. If you need to reshape, materialize into a container first.
+:::
 
-### Pitfall 1: View Lifetime
+## View vs. container: which when
 
-Views don't own data, so if the underlying data is destroyed, the View becomes dangling:
+Views are not a panacea. Whether to use a view or commit to a container falls out of two questions:
 
-```cpp
-auto get_view() {
-    std::vector<int> local = {1, 2, 3};
-    return std::views::all(local); // BUG: local is destroyed after return
-}
-```
+- **Use a view**: read-only, single-pass, you want to compose operations with zero copy, and the source lives long enough.
+- **Use a container**: you need to mutate, you need to traverse the same result several times, the source is about to die, or you genuinely need ownership.
 
-### Pitfall 2: Invalid After Iteration
+Because a view stores no data, "traverse the same result repeatedly" is usually better served by materializing once into a container rather than re-running the pipeline each time. The materializer is `std::ranges::to<std::vector<int>>(...)`, but it entered the standard in **C++23**, and this article is C++20; in C++20 you just iterate the view once and push into a `vector`. We'll come back to `ranges::to` in the next article on the pipe operator.
 
-Some Views can only be iterated once, or their state changes after iteration:
+One last note on types: a view's type is a long nested template (`filter_view<transform_view<ref_view<vector<int>>, ...>, ...>`). Don't write it by hand — always use `auto`.
 
-```cpp
-auto r = std::views::single(42);
-auto it = r.begin();
-*it; // OK
-++it; // UB
-```
-
-If you need to iterate multiple times, consider converting to a container:
-
-```cpp
-auto vec = std::vector<int>(view); // Materialize the view
-```
-
-### Pitfall 3: View Types
-
-The type of a View is a complex template instantiation product. Don't try to write it manually, use `auto`:
-
-```cpp
-// Bad
-std::ranges::filter_view<std::ranges::ref_view<std::vector<int>>, Lambda> view = ...;
-
-// Good
-auto view = std::views::filter(data, pred);
-```
-
-### Bad News: Not All Compilers Fully Support It
-
-C++20 Ranges are new, and some older compilers might have incomplete support. GCC 11+, Clang 13+, MSVC 2019+ are generally fine. If your compiler spits out a pile of template errors, check the version first.
-
-------
-
-## Summary
-
-Views are the core concept of the C++20 Ranges library:
-
-- **Lazy Evaluation**: No calculation on definition, calculation on iteration.
-- **Non-owning Data**: Just a "lens" on underlying data.
-- **O(1) Copy**: Passing Views around has zero overhead.
-- **Composable**: Chain multiple operations with the pipe operator.
-
-For embedded developers, Views allow us to write elegant data processing code while maintaining zero-overhead runtime performance. No need to choose between "elegant code" and "efficient code"—we want both.
-
-In the next chapter, we will dive into the usage of the pipe operator `|` and more practical Ranges techniques. Then you will see how the philosophy of Unix pipes is perfectly implemented in C++.
+The next article takes the pipe operator `|` apart, shows how it stitches views together, and goes deeper into Ranges in practice.
