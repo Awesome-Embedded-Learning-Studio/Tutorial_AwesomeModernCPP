@@ -33,3 +33,4 @@ scripts/cppref_cache/
 
 # Ignore Any Caches brought from local
 .cache/
+.vscode/
