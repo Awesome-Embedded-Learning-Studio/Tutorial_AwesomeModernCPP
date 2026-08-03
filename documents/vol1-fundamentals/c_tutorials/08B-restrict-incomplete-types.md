@@ -1,23 +1,24 @@
 ---
 chapter: 1
 cpp_standard:
-- 11
-- 17
+  - 11
+  - 17
 description: 理解 restrict 限定符的优化原理、不完整类型与前向声明的用途、opaque pointer 模式，以及 -> 运算符操作结构体指针
 difficulty: beginner
 order: 12
 platform: host
 prerequisites:
-- 多级指针与声明读法
+  - 多级指针与声明读法
 reading_time_minutes: 9
 tags:
-- host
-- cpp-modern
-- beginner
-- 入门
-- 基础
+  - host
+  - cpp-modern
+  - beginner
+  - 入门
+  - 基础
 title: restrict、不完整类型与结构体指针
 ---
+
 # restrict、不完整类型与结构体指针
 
 上一篇我们把多级指针和声明读法搞定了。这一篇来看几个相对独立但都很有用的机制：`restrict` 限定符让编译器敢于做更激进的优化，不完整类型和前向声明让我们在不暴露内部细节的情况下设计接口，而 `->` 运算符则是操作结构体指针的日常工具。
@@ -37,7 +38,7 @@ title: restrict、不完整类型与结构体指针
 
 我们接下来的所有实验都在这个环境下进行：
 
-- 平台：Linux x86\_64（WSL2 也可以）
+- 平台：Linux x86_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
 - 编译选项：`-Wall -Wextra -std=c17`
 
@@ -296,12 +297,12 @@ C++ 标准一直没有引入 `restrict`。C++ 的类语义和引用让指针别�
 
 ## 常见陷阱
 
-| 陷阱 | 说明 | 解决方法 |
-|------|------|----------|
-| restrict 下传重叠指针 | 未定义行为，编译器不会检查 | 确保 restrict 指针指向的内存真的不重叠 |
+| 陷阱                   | 说明                               | 解决方法                                 |
+| ---------------------- | ---------------------------------- | ---------------------------------------- |
+| restrict 下传重叠指针  | 未定义行为，编译器不会检查         | 确保 restrict 指针指向的内存真的不重叠   |
 | 前向声明后直接使用成员 | `struct Foo; Foo f; f.x = 1;` 全错 | 前向声明只能声明指针，完整使用需完整定义 |
-| `.` 和 `->` 搞混 | 指针用 `->`，变量用 `.` | `ptr->member` 等价于 `(*ptr).member` |
-| 混用 memcpy 和 memmove | 源和目标重叠时用 memcpy 是 UB | 有重叠风险就用 memmove |
+| `.` 和 `->` 搞混       | 指针用 `->`，变量用 `.`            | `ptr->member` 等价于 `(*ptr).member`     |
+| 混用 memcpy 和 memmove | 源和目标重叠时用 memcpy 是 UB      | 有重叠风险就用 memmove                   |
 
 ## 小结
 
@@ -322,6 +323,94 @@ void   stack_destroy(Stack* s);
 int    stack_push(Stack* s, int value);   // 成功返回 0，满栈返回 -1
 int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
 int    stack_size(const Stack* s);
+```
+
+### 参考答案
+
+stack.h
+
+```c
+// stack.h — 只暴露接口，不暴露内部结构
+typedef struct Stack Stack;
+
+Stack* stack_create(int capacity);
+void   stack_destroy(Stack* s);
+int    stack_push(Stack* s, int value);   // 成功返回 0，满栈返回 -1
+int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
+int    stack_size(const Stack* s);
+```
+
+stack.c — 实现文件，定义完整结构体
+
+```c
+#include <stdlib.h>
+#include "stack.h"
+
+struct Stack {
+    int* data;
+    int capacity;
+    int size;
+};
+
+Stack* stack_create(int capacity){
+    if (capacity <= 0) {
+        return NULL;
+    }
+
+    Stack* s = (Stack*)malloc(sizeof(Stack));
+    if (s == NULL){
+        return NULL;
+    }
+
+    s->capacity = capacity;
+    s->size = 0;
+    s->data = (int*)malloc(capacity * sizeof(int));
+
+    if (s->data == NULL) {
+        free(s);
+        return NULL;
+    }
+
+    return s;
+}
+
+void stack_destroy(Stack* s){
+    if (s) {
+        free(s->data);
+        free(s);
+    }
+}
+
+int stack_push(Stack* s, int value){
+    if(s == NULL){
+        return -1;  // 栈不存在，返回 -1
+    }
+
+    if(s->size == s->capacity){
+        return -1;  // 栈满，返回 -1
+    }
+
+    s->data[stack_size(s)] = value;
+    s->size++;
+
+    return 0;
+}
+
+int stack_pop(Stack* s, int* out){
+    if(s == NULL || out == NULL){
+        return -1;  // 栈不存在或输出指针为空，返回 -1
+    }
+    if(stack_size(s) == 0){
+        return -1;  // 栈空，返回 -1
+    }
+    *out = s->data[stack_size(s) - 1];
+    s->size--;
+    return 0;
+}
+
+int stack_size(const Stack* s){
+    return s->size;
+}
 ```
 
 提示：在 `.c` 文件里定义 `struct Stack` 的完整结构（可以用数组+栈顶索引实现），`.h` 文件只放前向声明和函数声明。
