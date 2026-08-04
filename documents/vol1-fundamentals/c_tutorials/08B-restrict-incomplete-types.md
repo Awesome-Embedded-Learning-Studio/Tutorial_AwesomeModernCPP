@@ -327,8 +327,6 @@ int    stack_size(const Stack* s);
 
 ### 参考答案
 
-stack.h
-
 ```c
 // stack.h — 只暴露接口，不暴露内部结构
 typedef struct Stack Stack;
@@ -340,9 +338,8 @@ int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
 int    stack_size(const Stack* s);
 ```
 
-stack.c — 实现文件，定义完整结构体
-
 ```c
+// stack.c — 实现文件，定义完整结构体
 #include <stdlib.h>
 #include "stack.h"
 
@@ -409,6 +406,9 @@ int stack_pop(Stack* s, int* out){
 }
 
 int stack_size(const Stack* s){
+    if(s == NULL){
+        return 0;  // 栈不存在视为空
+    }
     return s->size;
 }
 ```
