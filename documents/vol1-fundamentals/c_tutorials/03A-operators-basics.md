@@ -266,7 +266,7 @@ printf("%d\n", 7 % 2);
 printf("%d\n", -7 % 2);
 ```
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```text
  3    //  7 / 2 = 3.5，整数除法向零取整，砍掉小数部分 → 3
@@ -277,6 +277,8 @@ printf("%d\n", -7 % 2);
 ```
 
 关键点：C99 起 `/` 和 `%` 都向零取整（truncation toward zero），正负数规则一致，直接丢弃小数部分。所以 `-7 / 2` 得 `-3` 而不是 `-4`，`-7 % 2` 的符号随被除数取负。
+
+:::
 
 ### 练习 2：短路求值实战
 
@@ -291,7 +293,7 @@ printf("%d\n", -7 % 2);
 int find_first_above(const int* arr, size_t len, int threshold);
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 ```c
 #include <stddef.h>
@@ -315,6 +317,8 @@ int find_first_above(const int* arr, size_t len, int threshold) {
 ```
 
 核心是 `while (i < len && arr[i] <= threshold)` 这一行：`&&` 短路求值，`i < len` 为假时根本不会去读 `arr[i]`，越界访问就被挡住了。
+
+:::
 
 ## 参考资源
 
