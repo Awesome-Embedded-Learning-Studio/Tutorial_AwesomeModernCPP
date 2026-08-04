@@ -303,7 +303,7 @@ void free_matrix(int** matrix, int rows);
 void fill_matrix(int** matrix, int rows, int cols, int value);
 ```
 
-### 参考答案
+::: details 参考答案
 
 ```c
 #include <stdio.h>
@@ -380,6 +380,8 @@ matrix 的类型是 int**，要解两次引用才摸到具体的 int：
 ```
 
 提示：分配时先分配一个指针数组（`int**` 指向的那一维），然后对每一行分别 `malloc`。释放时顺序反过来——先释放每一行，再释放指针数组本身。
+
+:::
 
 ## 参考资源
 

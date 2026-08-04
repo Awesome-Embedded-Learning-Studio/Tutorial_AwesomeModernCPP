@@ -325,7 +325,7 @@ typedef enum { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR } LogLevel;
 void log_message(LogLevel level, const char* format, ...);
 ```
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```c
 void log_message(LogLevel level, const char* format, ...) {
@@ -359,6 +359,8 @@ void log_message(LogLevel level, const char* format, ...) {
 }
 ```
 
+:::
+
 ### 练习 2：递归与迭代——二分查找
 
 分别用递归和迭代实现二分查找，比较两者的性能和可读性：
@@ -368,7 +370,7 @@ int binary_search_recursive(const int* arr, size_t len, int target);
 int binary_search_iterative(const int* arr, size_t len, int target);
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 ```c
 int binary_search_recursive(const int* arr, size_t len, int target) {
@@ -405,6 +407,8 @@ int binary_search_iterative(const int* arr, size_t len, int target) {
 }
 ```
 
+:::
+
 ### 练习 3：多返回值实战
 
 实现一个函数，同时计算数组的最大值和最小值：
@@ -418,7 +422,7 @@ int binary_search_iterative(const int* arr, size_t len, int target) {
 void find_min_max(const int* data, size_t len, int* min_out, int* max_out);
 ```
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 void find_min_max(const int* data, size_t len, int* min_out, int* max_out) {
@@ -436,6 +440,8 @@ void find_min_max(const int* data, size_t len, int* min_out, int* max_out) {
     }
 }
 ```
+
+:::
 
 ## 参考资源
 

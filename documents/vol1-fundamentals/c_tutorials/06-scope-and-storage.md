@@ -456,7 +456,7 @@ void counter_reset(void);
 
 请自行实现 `counter.c`。
 
-### 练习 1 参考答案
+::: details 参考答案
 
 main.c
 
@@ -508,6 +508,8 @@ int counter_get(void) {
 }
 ```
 
+:::
+
 ### 练习 2：多文件符号可见性
 
 创建三个文件 `a.c`、`b.c`、`main.c`。要求：
@@ -524,7 +526,7 @@ int counter_get(void) {
 // 各 .c 文件的实现留给你
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 main.c
 
@@ -601,6 +603,8 @@ void set_kSharedValue(int value) {
 }
 ```
 
+:::
+
 ### 练习 3：延迟初始化
 
 用 `static` 局部变量实现一个 `get_config` 函数：第一次调用时执行初始化（打印 "Initializing..." 并设置默认值），后续调用直接返回已初始化的值，不再重新初始化。
@@ -617,7 +621,7 @@ const Config* get_config(void);
 
 > 提示：`static` 局部变量只在第一次进入函数时被初始化——正好可以用来实现"只初始化一次"的语义。
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 #include <stdio.h>
@@ -650,6 +654,8 @@ const Config* get_config(void) {
     return &config;
 }
 ```
+
+:::
 
 ## 参考资源
 

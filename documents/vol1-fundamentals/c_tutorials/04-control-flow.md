@@ -469,7 +469,7 @@ C++17 引入了 `if constexpr`，它在编译期评估条件，直接把不满�
 
 用 `switch` 实现一个函数，根据月份和是否闰年返回该月的天数。要求利用穿透特性合并同天数的月份。
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```c
 bool is_leap_year(int year) {
@@ -489,6 +489,8 @@ int month_day(int year, int month) {
     }
 }
 ```
+
+:::
 
 ### 练习 2：安全的矩阵搜索
 

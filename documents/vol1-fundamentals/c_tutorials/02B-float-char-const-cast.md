@@ -353,7 +353,7 @@ g_float               = 0.69999998807907104492 //0.7f
 
 修改代码使用 epsilon 比较来得到正确的结果。
 
-### 练习 1 参考答案
+::: details 参考答案
 
 把 `==` 换成「差的绝对值小于一个很小的阈值（epsilon）」来判断：
 
@@ -374,6 +374,8 @@ int float_equal(float a, float b) {
 
 替换之后，`0.1 + 0.2` 与 `0.3` 的差约 `5.5e-17`，小于 `DBL_EPSILON`（约 `2.2e-16`），`double_equal(0.1 + 0.2, 0.3)` 就会返回真。要留意，绝对 epsilon 比较在数值数量级很大时会失效，工程里更稳妥的是相对误差比较，这里先用入门写法。
 
+:::
+
 ### 练习 2：隐式转换陷阱
 
 下面这段代码有一个隐藏的 bug，找出它并解释原因：
@@ -391,7 +393,7 @@ if (target < sizeof(values) / sizeof(values[0])) {
 提示：`sizeof` 返回的是什么类型？
 
 
-### 练习 2 参考答案
+::: details 参考答案
 
 ```c
 int values[] = {1, 2, 3, 4, 5};
@@ -415,6 +417,8 @@ if (target < (int)(sizeof(values) / sizeof(values[0]))) {
 }
 ```
 
+:::
+
 ### 练习 3：const 实战
 
 写一个函数，接收一个字符串，统计其中某个字符出现的次数。函数签名中正确使用 `const`：
@@ -427,7 +431,7 @@ if (target < (int)(sizeof(values) / sizeof(values[0]))) {
 size_t count_char(const char* str, char ch);
 ```
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 size_t count_char(const char* str, char ch) {
@@ -443,6 +447,8 @@ size_t count_char(const char* str, char ch) {
     return count;
 }
 ```
+
+:::
 
 ## 参考资源
 
