@@ -1,0 +1,21 @@
+# .clang-tidy —— clang-tidy 配置(YAML)
+# clangd 启动时会自动找工程根目录的 .clang-tidy 读进来,
+# 配合 .clangd 里的 Diagnostics.ClangTidy 一起决定跑哪些 check。
+# 顺序:.clangd 的 Add/Remove 在 .clang-tidy 的 Checks 之后再叠加。
+
+Checks: >
+    -*,
+    modernize-*,
+    bugprone-*,
+    performance-*,
+    readability-*,
+    -modernize-use-trailing-return-type,
+    -readability-magic-numbers,
+    -readability-identifier-length
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+CheckOptions:
+    - key:   readability-function-cognitive-complexity.Threshold
+      value: '25'
+FormatStyle: file

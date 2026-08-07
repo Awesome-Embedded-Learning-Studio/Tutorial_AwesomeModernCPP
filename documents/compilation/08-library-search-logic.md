@@ -9,7 +9,8 @@ tags:
 - host
 - intermediate
 title: 深入理解C/C++的编译与链接技术8：库文件检索逻辑
-description: ''
+description: '讲清可执行文件在运行时按什么优先级顺序找到它依赖的动态库：LD_PRELOAD、RPATH/RUNPATH、LD_LIBRARY_PATH、ldconfig 缓存、系统默认目录，以及 Windows 的对应搜索规则'
+cpp_standard: [11, 14, 17, 20]
 ---
 # 深入理解C/C++的编译与链接技术8：库文件检索逻辑
 
@@ -133,3 +134,7 @@ Windows 的可执行/装载器与 API（`LoadLibrary` / `LoadLibraryEx` / 自动
 8. **如果启用了应用配置或 Side-by-side（SxS）/manifest 特性**，会优先解析 manifest 中声明的绑定版本或来自 WinSxS 的并行程序集。
 
 重点是：**如果你使用了绝对路径或相对可执行文件路径，系统不会去 PATH 搜索**；反之如果只给了裸名 `foo.dll`，就会按上面顺序尝试。
+
+## 现代 CMake 视角
+
+上面这些手工 `export LD_LIBRARY_PATH`、改 `/etc/ld.so.conf.d`、`-Wl,-rpath` 的折腾，在用 CMake 管理的项目里基本都被接管了。`target_link_libraries(myapp PRIVATE foo)` 会替你转成 `-lfoo` 和正确的 `-L`；`add_library(foo SHARED)` 默认给目标加 `-fPIC`，静态库 `add_library(foo STATIC)` 则走 `ar` 打包。运行时检索那块，`set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")` 配合 `CMAKE_BUILD_WITH_INSTALL_RPATH` 把 `$ORIGIN` 写进 ELF 的 `DT_RUNPATH`，分发出去的可执行文件跟着自己的目录跑，根本不用用户去污染 shell 的 `LD_LIBRARY_PATH`。Windows 上则交给 `RUNTIME_OUTPUT_DIRECTORY` 把 DLL 摆到 `.exe` 旁边，正好命中"应用程序目录"那条优先级。换句话说，前面这些规则是底层事实，CMake 没改它们，只是把"该写哪个标志、该把库放哪"这件事变成了几行声明式配置。

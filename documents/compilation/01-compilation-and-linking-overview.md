@@ -9,15 +9,16 @@ tags:
 - host
 - intermediate
 title: 深入理解C/C++的编译与链接技术：导论
-description: ''
+description: '从 undefined reference 这个让人一激灵的报错出发，讲清编译与链接的底层机制：符号怎么生成、链接器怎么裁决、静态库和动态库到底差在哪。'
+cpp_standard: [11, 14, 17, 20]
 ---
 # 深入理解C/C++的编译与链接技术：导论
 
 ## 前言
 
-​ 这个是一个新的系列！是笔者本周打算系统深入开展研究的话题。具体来讲，我们会讨论和总结一系列的C/C++编程中，我们很有可能一带而过但是肯定被备受折磨的话题——编译与链接技术。我相信任何一个朋友都遇到过令人头疼的`undefined referenced`等问题，我相信看到这样的报错不少朋友会吓得一激灵（笔者前段时间就被模板实例化时的`undefined referenced`折磨过）。
+​ 这个是一个新的系列！是笔者本周打算系统深入开展研究的话题。具体来讲，我们会讨论和总结一系列的C/C++编程中，我们很有可能一带而过但是肯定被备受折磨的话题——编译与链接技术。我相信任何一个朋友都遇到过令人头疼的`undefined reference`等问题，我相信看到这样的报错不少朋友会吓得一激灵（笔者前段时间就被模板实例化时的`undefined reference`折磨过）。
 
-​ 解决这类问题，我相信不少朋友最开始的时候都是手忙脚乱的问AI，上网搜，但是鲜有人真正思考——为什么我们会有`undefined referenced`这类的错误呢？抛去那些咱们真的在构建系统中真忘记提供源代码文件的情况（我相信很多人也遇到过，笔者也是），很多情况时咱们真的有——起码真的是自己认为自己有的——提供了源文件且你甚至看到他链接了，但是就是链接失败了。
+​ 解决这类问题，我相信不少朋友最开始的时候都是手忙脚乱的问AI，上网搜，但是鲜有人真正思考——为什么我们会有`undefined reference`这类的错误呢？抛去那些咱们真的在构建系统中真忘记提供源代码文件的情况（我相信很多人也遇到过，笔者也是），很多情况时咱们真的有——起码真的是自己认为自己有的——提供了源文件且你甚至看到他链接了，但是就是链接失败了。
 
 举个例子，比如说您在一个lib.c文件中编写了，并且将它制作成了一个静态库libutils。
 
@@ -58,7 +59,7 @@ collect2: error: ld returned 1 exit status
 
 ​ 这看起来太奇怪了，我们明明链接了libutils，他甚至都找到了我们的libutils（没有抱怨`/usr/sbin/ld: cannot find -lutils: No such file or directory`，这就是找到了），但是为什么会出错呢？而且就算没找到这个符号，为什么不在编译的时候就向我们抱怨呢？我认为，如果你像[`Beginner's Guide to Linkers`](https://www.lurklurk.org/linkers/linkers.html)的作者所说的那样，立马看到其中的问题的时候，我想这篇导论性质的《深入理解C/C++的编译与链接技术：导论》对您是没有新鲜东西的，我们随后才会真正细致的聊每一个细节，这里不会。
 
-​ **本篇博客可能需要您至少写过C语言程序（上面的问题尽管涉及到C++，但是本文的核心不在C++），如果您遇到过类似`undefined referenced`的错误而不知道如何解决，那更好了**
+​ **本篇博客可能需要您至少写过C语言程序（上面的问题尽管涉及到C++，但是本文的核心不在C++），如果您遇到过类似`undefined reference`的错误而不知道如何解决，那更好了**
 
 ## 所以，我们写的变量和函数到底意味着什么？
 
@@ -238,12 +239,12 @@ Summary
 
 我们踢开其他乱七八糟的输出，实际上就是下表：
 
-| `dumpbin` 输出                                      | 意义                      | 类比 Linux `nm` |
-| --------------------------------------------------- | ------------------------- | --------------- |
-| `SECT4  notype () External \| _func`                | 定义在 .text 中的外部函数 | `T _func`       |
-| `SECT3  notype External    \| _g_initialized_var`   | 定义在 .data 中的外部变量 | `D _g_initialized_var` |
-| `UNDEF  notype External    \| _extern_func`         | 未定义外部函数引用        | `U _extern_func` |
-| `UNDEF  notype External    \| _extern_var`          | 未定义外部变量引用        | `U _extern_var`  |
+| `dumpbin` 输出                                       | 意义                      | 类比 Linux `nm`           |
+| ---------------------------------------------------- | ------------------------- | ------------------------- |
+| `SECT4  notype () External \| _func`                 | 定义在 .text 中的外部函数 | `T _func`                 |
+| `SECT3  notype External    \| _g_initialized_var`    | 定义在 .data 中的外部变量 | `D _g_initialized_var`    |
+| `UNDEF  notype External    \| _extern_func`          | 未定义外部函数引用        | `U _extern_func`          |
+| `UNDEF  notype External    \| _extern_var`           | 未定义外部变量引用        | `U _extern_var`           |
 | `UNDEF  notype External    \| _un_g_initialized_var` | 未定义外部变量引用        | `U _un_g_initialized_var` |
 
 ## 解决我们不知道的符号：链接
@@ -411,7 +412,7 @@ collect2: error: ld returned 1 exit status
 
 ​ 您注意到了，还是一样，因为编译器相信**链接器可以正确的处理任何符号的关系**（他只能一分一分的编译文件！他管不了全局其他的源文件！**整个结果单元（包含可执行文件，动态库和静态库）的符号裁决由链接器决定**！这是笔者要再强调一次的！）
 
-​ 所以，链接的时候，链接器发现两个文件中居然存在一模一样的符号定义。自然，定义是不一样，就像您即说A是1，又说A是2，唯一性被打破，贸然决定只会让程序变得不可控。所以，链接器自然一巴掌闪回来，不予通过！至少在今天的GNU工具链的默认行为下，您这样做智慧得到一个`multiple definition`。
+所以，链接的时候，链接器发现两个文件中居然存在一模一样的符号定义。自然，定义是不一样，就像您即说A是1，又说A是2，唯一性被打破，贸然决定只会让程序变得不可控。所以，链接器自然一巴掌闪回来，不予通过！至少在今天的GNU工具链的默认行为下，您这样做只会得到一个`multiple definition`。
 
 ## 那链接器的作用就这样？
 
@@ -577,3 +578,7 @@ int main() {
 ```
 
 重新编译并链接，程序就会成功运行，因为此时 `usage.o` 中引用的符号将是简单的 `int_max`，与 `libutils.a` 中提供的符号相匹配。
+
+## 现代 CMake 视角
+
+上面这些 `gcc -c`、`ar rcs`、`-l`/`-L`、`extern "C"`、`-fvisibility` 的手活儿，在今天的项目里基本都被 CMake 接管了。您写 `add_library(utils STATIC lib.c)`，CMake 自动调起 `ar` 打包成 `libutils.a`；`target_link_libraries(myapp PRIVATE utils)` 接管了 `-lutils` 和 `-L` 的拼装，还会按依赖拓扑算出正确的链接顺序——前面讲过的"链接器不走回头路"那条铁律，CMake 帮您排好了。要 C/C++ 混编也没问题，给 C 目标设 `set_target_properties(utils PROPERTIES POSITION_INDEPENDENT_CODE ON)`，或者直接 `add_library(utils SHARED ...)` 让 CMake 默认开 `-fPIC`，C++ 这边就能链上。符号可见性交给 `CXX_VISIBILITY_PRESET hidden`（等价全局 `-fvisibility=hidden`），只把真正要导出的接口用 `__attribute__((visibility("default")))` 放出来。动态库的运行期查找路径，则从手写 `LD_LIBRARY_PATH` 升级成 `CMAKE_INSTALL_RPATH` 配合 `$ORIGIN`，让 `.so` 跟着可执行文件走，部署不再靠改环境变量。换句话说，本篇讲的这些底层机制一个都没消失，只是被构建系统包成了一行声明式的配置。

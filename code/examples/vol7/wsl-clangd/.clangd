@@ -1,0 +1,53 @@
+# .clangd —— clangd 项目级配置(YAML)
+# clangd 会沿源文件所在目录一路向上搜 .clangd,所有命中的片段按顺序合并,
+# 越靠近源文件的片段优先级越高(可覆盖父目录的同名 key)。
+# 字段权威来源:https://clangd.llvm.org/config.html
+
+CompileFlags:
+    # Add:在 compile_commands.json 里每条命令后面追加这些 flag
+    # 想让 clangd 的报错和真编译一样严,就把它加上
+    Add: [-Wall, -Wextra, -Wno-unused-parameter]
+    # Remove:干掉编译命令里某些 clangd 不该再跑一遍的 flag
+    # 典型场景:compile_commands 里有 -fsanitize=thread,clangd 不需要也不该重跑它
+    Remove: [-Wno-unused-parameter, -fsanitize=thread]
+    # Compiler:把编译器可执行名替换成指定值
+    # 不写就用 compile_commands.json 里原始的;写 clang++ 是让 clangd 用 Clang 自家
+    # 驱动去 query 系统头/ABI,常见于交叉编译场景(原始编译器是 arm-none-eabi-g++)
+    Compiler: clang++
+
+Index:
+    # Background: Build = 后台索引项目并落盘到 ~/.cache/clangd/index/
+    #            Skip = 不做后台索引(超大项目想省内存时关掉)
+    Background: Build
+    # StandardLibrary: Yes = 把标准库符号纳入索引,补全 std::xxx 才有结果
+    StandardLibrary: Yes
+    # External:指向一个外部预构建好的索引文件,大项目用得上
+    # External:
+    #   File: /path/to/project-idx.riff
+    #   MountPoint: /path/to/dep-source-tree
+
+InlayHints:
+    # 行内提示(灰色虚文字)。clangd 18+ 支持,18 之前这些 key 被忽略
+    Enabled: Yes
+    ParameterNames: Yes    # 函数调用处显示参数名 foo(/*name=*/"x")
+    DeducedTypes: Yes      # 显示 auto 推导出的类型 auto /*= int*/
+    Designators: Yes       # 结构体初始化显示字段名 {.x=1, .y=2}
+    BlockEnd: Yes          # 大块 } 后显示它属于哪个函数/命名空间
+
+Diagnostics:
+    # ClangTidy:clangd 直接读 .clang-tidy 文件就能跑,这里再加一份项目级开关
+    # 用于覆盖 .clang-tidy,或者按目录差异化(比如 tests/ 目录关掉某些 check)
+    ClangTidy:
+        Add: [modernize-*, bugprone-*, performance-*, readability-*]
+        Remove: [modernize-use-trailing-return-type, readability-magic-numbers]
+    # UnusedIncludes / MissingIncludes:clangd 自带的 include-cleaner
+    # Strict = 标记"include 了但没用上"和"用上了但没 include"两种问题
+    # 想 IWYU 严格化再开;刚上手建议先 None,免得满屏是黄波浪线
+    UnusedIncludes: Strict
+    MissingIncludes: Strict
+    # Suppress:屏蔽某些 clangd 内建诊断。常见值 '*'(全屏,慎用)或具体 code
+    Suppress: [unused-includes]
+
+Hover:
+    # ShowAKA:鼠标悬停在宏/typedef 展开后的"别名"上时,同时显示原始名
+    ShowAKA: Yes

@@ -9,19 +9,25 @@ hero:
   tagline: "不止于语法速查 —— 从基础到工程实战的一条完整现代 C++ 路径"
   actions:
     - theme: brand
-      text: 开始学习
+      text: 零基础起步
+      link: /getting-started/
+    - theme: alt
+      text: 直接学语法
       link: /vol1-fundamentals/
     - theme: alt
       text: 查看路线图
       link: /roadmap/
     - theme: alt
-      text: C++ 速查
-      link: /cpp-reference/
-    - theme: alt
       text: GitHub
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
 
 features:
+  - title: "新手起步"
+    details: "从没写过代码也能跟上：装环境、跑通第一个 C++ 程序、让 vscode 看懂代码。六篇手把手，全程鼠标点、命令行进折叠盒。"
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'
+    link: /getting-started/
+    linkText: 开始阅读
+
   - title: "卷一 · 基础入门"
     details: "从零开始，系统化学习 C++ 基础知识。适合零基础读者。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>'

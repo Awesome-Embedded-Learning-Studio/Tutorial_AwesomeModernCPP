@@ -135,6 +135,7 @@ function enSidebar(): DefaultTheme.Sidebar {
 
 export function buildSidebar(): DefaultTheme.Sidebar {
   const sidebar: DefaultTheme.Sidebar = {
+    '/getting-started/': volumeSidebar('getting-started', '/getting-started'),
     '/vol1-fundamentals/': volumeSidebar('vol1-fundamentals', '/vol1-fundamentals'),
     '/vol2-modern-features/': volumeSidebar('vol2-modern-features', '/vol2-modern-features'),
     '/vol3-standard-library/': volumeSidebar('vol3-standard-library', '/vol3-standard-library'),

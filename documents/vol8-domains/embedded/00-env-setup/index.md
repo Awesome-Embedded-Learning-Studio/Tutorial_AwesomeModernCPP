@@ -22,3 +22,7 @@ tags:
 
 - [环境搭建（四）：WSL2 USB 透传](04-wsl2-usb.md) — 让 ST-Link 穿越虚拟化边界
 - [第5篇：调试进阶篇](05-debugging-guide.md) — 从 printf 到完整 GDB 调试环境
+
+## IDE 配置
+
+- [第6篇：嵌入式 clangd](06-clangd-for-cross-compilation.md) — 让 vscode 看懂交叉编译的代码,query-driver 配置详解

@@ -228,16 +228,15 @@ html[data-font-size='xxlarge'] {
   }
 }
 
-/* Code Blocks */
+/* Code Blocks
+   字号统一走 --vp-code-font-size 变量:代码(code)与行号(line-numbers-wrapper)
+   都引用它,必须同步——否则两者行盒高度不同,会逐行累积错位(行号越往下越偏离代码行)。
+   用 rem 覆盖 VitePress 默认的 0.875em,避免 em 在本 div 内被 font-size 二次缩放。 */
 .vp-doc div[class*='language-'] {
   border-radius: 8px;
   font-size: 0.96rem;
-  /* 代码块 0.75rem→0.86rem≈13.8px,随正文等比放大 */
+  --vp-code-font-size: 0.96rem;
   line-height: 1.6;
-}
-
-.vp-doc div[class*='language-'] code {
-  font-size: 0.96rem;
 }
 
 .vp-doc :not(pre)>code {

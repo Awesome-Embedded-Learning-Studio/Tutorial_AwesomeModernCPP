@@ -280,7 +280,9 @@ int main()
 
 ## 第四步——在 VS Code 里配置开发环境
 
-不管你用了哪条编译器路线，VS Code 都是一个很不错的轻量级编辑器选择。我们需要安装以下几个扩展：**C/C++**（Microsoft 出品，提供语法高亮、IntelliSense、调试支持）和 **CMake Tools**（CMake 项目管理和构建）。如果你习惯用中文界面，再加一个 Chinese Language Pack 就行。
+不管你用了哪条编译器路线，VS Code 都是一个很不错的轻量级编辑器选择。我们需要安装以下几个扩展：**C/C++**（Microsoft 出品，提供语法高亮、调试支持）和 **CMake Tools**（CMake 项目管理和构建）。如果你习惯用中文界面，再加一个 Chinese Language Pack 就行。
+
+> 代码补全、跳转这些「IntelliSense」功能，这套教程推荐另装 **clangd** 扩展来管（比 C/C++ 扩展准），C/C++ 扩展留着管调试就行。详细做法见 [新手起步卷 · 装 clangd](/getting-started/05-vscode-clangd)。
 
 CMake Tools 扩展会自动检测系统中的编译器。安装好扩展后打开我们的项目目录，VS Code 底部状态栏会出现一个 "Kit" 选择项，点击它就能选择要用的编译器——如果你同时装了 MSVC 和 MinGW，这里可以切换。选好之后 CMake Tools 会自动配置项目，状态栏上会显示构建配置和编译器信息。
 
