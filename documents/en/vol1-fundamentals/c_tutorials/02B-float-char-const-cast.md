@@ -317,6 +317,8 @@ At this point, we have laid a solid foundation for C language data types. Next, 
 
 ### Exercise 1: Floating-Point Precision Detective
 
+**Difficulty: Basic** · compare floats with epsilon
+
 Predict the output of the following code, then compile and run it to verify your prediction:
 
 ```c
@@ -339,6 +341,8 @@ Modify the code to use epsilon comparison to obtain the correct result.
 
 ### Exercise 2: Implicit Conversion Pitfalls
 
+**Difficulty: Basic** · the trap of mixing signed with size_t
+
 The following code contains a hidden bug. Find it and explain the reason:
 
 ```c
@@ -355,15 +359,37 @@ Hint: What type does `sizeof` return?
 
 ### Exercise 3: `const` in Practice
 
-Write a function that accepts a string and counts the occurrences of a specific character. Use `const` correctly in the function signature:
+**Difficulty: Basic** · what const protects, and how to pass arguments
+
+Read the code below and answer four questions:
 
 ```c
-/// @brief 统计字符 ch 在字符串 str 中出现的次数
-/// @param str 不可修改的字符串
-/// @param ch 要查找的字符
-/// @return 出现次数
-size_t count_char(const char* str, char ch);
+// sum promises not to modify what data points at
+int sum(const int* data, size_t n);   // (1) what does the const on the parameter promise?
+
+void f(void) {
+    const int limit = 100;            // (2) what does const on a local variable do?
+    int arr[3] = {1, 2, 3};
+    limit = 200;                      // (3) does this line compile?
+    sum(arr, 3);                      // (4) is passing int* to a const int* parameter legal?
+}
 ```
+
+Now flip it around: if `sum`'s parameter were `int*` (no const), and the caller passed a `const int carr[3]`, what happens and why?
+
+::: details Reference answer
+
+(1) const is a read-only contract: it tells callers and the compiler that `sum` won't modify the array through `data`.
+
+(2) `limit` becomes a read-only variable that can't be reassigned, and the compiler can optimize based on it.
+
+(3) It does not compile. `limit` is read-only; assigning to it is an error.
+
+(4) Legal. Passing `int*` to a `const int*` parameter "tightens" the contract (writable to read-only), which is safe and implicit.
+
+The reverse: passing `const int*` to an `int*` parameter drops the const protection, so the compiler warns or errors. You'd need an explicit cast, which is dangerous: the function could modify data it wasn't supposed to.
+
+:::
 
 ## References
 

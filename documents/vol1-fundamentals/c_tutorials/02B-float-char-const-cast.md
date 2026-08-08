@@ -309,6 +309,8 @@ C++ 在类型系统上做了大量的安全加固，很多改进直接瞄准了 
 
 ### 练习 1：浮点精度侦探
 
+**难度：基础** · 用 epsilon 判断浮点相等
+
 预测以下代码的输出，然后编译运行验证你的预测：
 
 ```c
@@ -378,6 +380,8 @@ int float_equal(float a, float b) {
 
 ### 练习 2：隐式转换陷阱
 
+**难度：基础** · 有符号数与 size_t 混用的坑
+
 下面这段代码有一个隐藏的 bug，找出它并解释原因：
 
 ```c
@@ -421,32 +425,35 @@ if (target < (int)(sizeof(values) / sizeof(values[0]))) {
 
 ### 练习 3：const 实战
 
-写一个函数，接收一个字符串，统计其中某个字符出现的次数。函数签名中正确使用 `const`：
+**难度：基础** · 辨析 const 保护了什么、参数该怎么传
+
+读下面这段代码，回答四个问题：
 
 ```c
-/// @brief 统计字符 ch 在字符串 str 中出现的次数
-/// @param str 不可修改的字符串
-/// @param ch 要查找的字符
-/// @return 出现次数
-size_t count_char(const char* str, char ch);
+// sum 承诺不改 data 指向的内容
+int sum(const int* data, size_t n);   // (1) 参数加 const 是什么契约？
+
+void f(void) {
+    const int limit = 100;            // (2) 局部变量加 const 有什么用？
+    int arr[3] = {1, 2, 3};
+    limit = 200;                      // (3) 这行能编译吗？
+    sum(arr, 3);                      // (4) int* 传给 const int* 参数，合法吗？
+}
 ```
+
+再反向想：如果 `sum` 的参数是 `int*`（没有 const），而调用者传一个 `const int carr[3]`，会发生什么？为什么？
 
 ::: details 参考答案
 
-```c
-size_t count_char(const char* str, char ch) {
-    if (str == NULL) {  // 警惕空指针
-        return 0;
-    }
-    size_t count = 0;
-    for (;*str;str++) {
-        if (*str == ch) {
-            count++;
-        }
-    }
-    return count;
-}
-```
+(1) const 是只读契约：告诉调用者和编译器，`sum` 不会通过 `data` 改数组内容。
+
+(2) `limit` 加 const 后变成只读变量，不能再赋值，编译器也能据此做优化。
+
+(3) 不能编译。`limit` 是 read-only，给它赋值会直接报错。
+
+(4) 合法。把 `int*` 传给 `const int*` 参数属于"加严"（从可写到只读），是安全的隐式转换。
+
+反向：把 `const int*` 传给 `int*` 参数会丢掉 const 保护，编译器会警告甚至报错；如果非要做，得显式强转，但这很危险，函数内部可能改了本不该改的数据。
 
 :::
 

@@ -470,6 +470,8 @@ C++ 对嵌入式代码的改进主要集中在三个方面：
 
 ### 练习 1：通用环形缓冲区
 
+**难度：进阶** · 把 uint8_t 版改成 void* 通用版
+
 将文中的 `uint8_t` 环形缓冲区改造为通用版本（用 `void*` + 元素大小实现）：
 
 ```c
@@ -490,23 +492,29 @@ uint32_t ring_buffer_count(const RingBuffer* rb);
 
 提示：内部用 `memcpy` 做通用字节拷贝，`head`/`tail` 改为绝对计数（`uint32_t` 不怕溢出），实际索引通过 `count % capacity` 计算。
 
-### 练习 2：可移植的 UART 抽象层
+### 练习 2：UART 抽象层接口设计
 
-为 UART 外设设计一套和具体芯片无关的抽象层接口。驱动内部需要两个环形缓冲区（发送和接收），`uart_write` 先写缓冲区再触发发送中断，实际逐字节发送在 ISR 中完成。
+**难度：进阶** · 只设计接口，不实现中断时序
+
+参照本篇外设抽象层的思路，设计一套与具体芯片无关的 UART 抽象层接口。不要求实现中断驱动的逐字节发送，只要求把接口定义清楚：驱动结构体里需要哪些字段（收发缓冲区、状态）、`init`/`write`/`read` 三个接口的签名、以及"write 写满缓冲区时返回什么"。
 
 ```c
 typedef struct { /* 你设计 */ } UartDriver;
 
-void uart_init(UartDriver* uart, uint32_t baud,
-               uint8_t* tx_buffer, uint8_t* rx_buffer, size_t buffer_size);
+void  uart_init(UartDriver* uart, uint32_t baud);
 size_t uart_write(UartDriver* uart, const uint8_t* data, size_t len);
 size_t uart_read(UartDriver* uart, uint8_t* data, size_t len);
-void uart_irq_handler(UartDriver* uart);  // 在 ISR 中调用
 ```
 
-### 练习 3：链接脚本与启动代码
+想一想：为什么把缓冲区和状态藏在结构体里、只对外暴露函数接口，能让上层代码不被具体芯片绑死？
 
-写一个针对 ARM Cortex-M4（256K Flash, 64K SRAM）的最小链接脚本和启动代码。要求：定义正确的 MEMORY 区域、向量表放 Flash 开头、处理 `.data` 段地址分离、清零 `.bss`、在 `main` 后加安全死循环。
+### 练习 3：读懂一份链接脚本
+
+**难度：基础** · 读解现有脚本，不要求从零写
+
+找一份现成的 Cortex-M 链接脚本（本篇启动流程一节给过示例），逐段解释：`MEMORY` 命令定义了哪些区域？向量表为什么放在 Flash 开头？`.data` 段的 `AT > FLASH` 是什么意思？`.bss` 段为什么用 `NOLOAD`？
+
+再想一下：要把这份脚本里的 Flash 改成 256K、SRAM 改成 64K，你需要改哪几行？
 
 ## 参考资源
 

@@ -550,6 +550,8 @@ C++ 的 OOP 语法本质就是 C OOP 惯用法的语法糖。编译器把绑 vta
 
 ### 练习 1：三角形扩展
 
+**难度：基础** · 照 vtable 加一个形状
+
 在图形框架中添加一个 `Triangle` 类型（用三边长度表示）：
 
 ```c
@@ -566,6 +568,8 @@ Triangle* triangle_create(const char* name, int id,
 
 ### 练习 2：图形排序
 
+**难度：进阶** · qsort 加函数指针比较
+
 给 `ShapeManager` 添加按面积排序功能：
 
 ```c
@@ -576,6 +580,8 @@ void shape_manager_sort_by_area(ShapeManager* mgr);
 提示：可以用标准库的 `qsort()`，但比较函数接收 `const void*`，需要转成 `Shape**` 再解引用得到 `Shape*`，然后通过 `shape_area()` 比较大小。
 
 ### 练习 3：不透明指针版计数器
+
+**难度：进阶** · 不透明指针重做 Counter
 
 把第二步的 `Counter` 改成不透明指针版本——头文件只暴露 `typedef struct Counter Counter;` 和操作函数，实现文件藏起完整定义。请自行拆分头文件和实现文件，并提供一个 `counter_create()` 返回堆分配的对象。
 

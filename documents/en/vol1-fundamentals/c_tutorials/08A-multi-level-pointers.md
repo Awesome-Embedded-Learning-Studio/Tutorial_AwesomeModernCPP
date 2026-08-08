@@ -288,6 +288,8 @@ The core logic of multi-level pointers is actually quite simple: each level stor
 
 ### Exercise: Allocation and Deallocation of Dynamic 2D Arrays
 
+**Difficulty: Intermediate** · int** for a dynamic 2D array (mind rollback on a failed row)
+
 Use multi-level pointers to implement the allocation, population, and deallocation of a dynamic two-dimensional array. Please implement the following three functions yourself:
 
 ```c

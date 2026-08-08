@@ -286,6 +286,8 @@ At this point, we have covered all aspects of C operators. Next, we will learn a
 
 ### Exercise 1: Bit Manipulation Toolkit
 
+**Difficulty: Intermediate** · set / clear / toggle / extract a bit field
+
 Implement the following bit manipulation functions:
 
 ```c
@@ -307,6 +309,8 @@ bool bit_check(uint32_t val, uint8_t n);
 
 ### Exercise 2: Safe Shift
 
+**Difficulty: Basic** · boundary checks that fend off shift UB
+
 Write a function to safely perform a left shift, handling all boundary cases:
 
 ```c
@@ -319,6 +323,8 @@ bool safe_shift_left(uint32_t *result, uint32_t val, int n);
 ```
 
 ### Exercise 3: Expression Analysis
+
+**Difficulty: Basic** · spot sequence points and undefined behavior
 
 Analyze the evaluation behavior of the following expressions (without running them), marking each as "well-defined", "unspecified behavior", or "undefined behavior":
 

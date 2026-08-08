@@ -339,57 +339,43 @@ ARM 平台上的 C++ 对象内存布局遵循 AAPCS 的 ABI 规范：普通成�
 
 ## 练习题
 
-下面几道练习题留给你们自己折腾——动手查资料、写代码、上板验证，才是真正的学习路径。
+下面几道练习题留给你们自己折腾。本篇偏理论综述，所以练习以概念分析为主；需要上板或 QEMU 的实操题，标了挑战可选。
+
+### 练习 1：IPSR 寄存器的作用
+
+**难度：基础** · 概念分析，不需要写代码
+
+IPSR 是 Cortex-M 程序状态寄存器（xPSR）的一部分。请回答：IPSR 在什么时机被硬件更新？它记录的是什么信息？为什么在中断服务函数里读 IPSR 能帮你判断"当前在处理哪个异常"？
+
+### 练习 2：HardFault 调试流程
+
+**难度：进阶** · 文字描述调试思路，不要求上板
+
+程序因为访问非法地址触发 HardFault 时，硬件会把当前寄存器压栈。请描述从 HardFault 触发到定位"出错的那条指令地址"的整个流程：你需要读哪些栈上的值？压栈的 PC 指向哪里？
+
+提示：本篇异常处理部分讲过，HardFault Handler 拿到的栈帧指针指向 `{R0, R1, R2, R3, R12, LR, PC, xPSR}`。
+
+### 练习 3：分析 AAPCS 的参数传递
+
+**难度：进阶** · 需要 arm-none-eabi-gcc 工具链
+
+写两个函数：一个接受 4 个 int 参数，另一个接受 6 个。用 `arm-none-eabi-objdump -d` 反汇编对比调用序列，观察前 4 个参数走 R0–R3，第 5、6 个参数走哪里。
 
 ```c
-/// @brief 练习 1：读取 IPSR 寄存器
-/// 使用 GCC 内嵌汇编读取 Cortex-M 的 IPSR 寄存器值
-/// 解释在正常运行和进入中断服务函数时读到的值有什么不同
-/// 提示：IPSR 是 xPSR 的一部分，可以用 MRS 指令读取
-uint32_t exercise_read_ipsr(void)
-{
-    // 练习： 用内嵌汇编读取 IPSR
-    return 0;
+int exercise_aapcs_4(int a, int b, int c, int d) {
+    return a + b + c + d;
+}
+
+int exercise_aapcs_6(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
 }
 ```
 
-```c
-/// @brief 练习 2：触发并调试 HardFault
-/// 对一个无效地址执行写操作，故意触发 HardFault
-/// 然后在 HardFault Handler 中读取入栈的寄存器值
-/// 定位导致异常的指令地址
-/// 提示：HardFault Handler 的参数可以拿到栈帧指针
-void exercise_trigger_hardfault(void)
-{
-    // 练习： 写一个无效地址来触发 HardFault
-}
-```
+### 练习 4：向量表重定位（挑战·可选）
 
-```c
-/// @brief 练习 3：分析 AAPCS 的参数传递
-/// 写两个函数：一个接受 4 个 int 参数，另一个接受 6 个
-/// 用 arm-none-eabi-objdump -d 反汇编对比调用序列
-/// 找出编译器如何分配 R4-R11 给局部变量
-int exercise_aapcs_4(int a, int b, int c, int d)
-{
-    // 练习： 添加局部变量和函数调用，使反汇编更有看头
-    return 0;
-}
+**难度：挑战** · 可选，需要启动文件、链接脚本与 Bootloader 前置知识
 
-int exercise_aapcs_6(int a, int b, int c, int d, int e, int f)
-{
-    // 练习： 同上，对比反汇编结果
-    return 0;
-}
-```
-
-```c
-/// @brief 练习 4（进阶）：向量表重定位
-/// 阅读一个 Cortex-M 启动文件（如 startup_stm32f407xx.s）
-/// 画出完整的向量表布局
-/// 然后修改链接脚本把向量表重定位到 RAM 中
-/// 实现运行时动态修改中断向量（Bootloader 开发的基础技能）
-```
+阅读一个 Cortex-M 启动文件（如 startup_stm32f407xx.s），画出完整的向量表布局；再修改链接脚本把向量表重定位到 RAM，实现运行时动态修改中断向量。这是 Bootloader 开发的基础。
 
 ## 参考资源
 

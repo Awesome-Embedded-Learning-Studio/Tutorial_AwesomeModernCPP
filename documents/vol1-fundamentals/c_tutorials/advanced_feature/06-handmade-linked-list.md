@@ -617,6 +617,8 @@ C++ 的迭代器模式把"遍历"这个操作抽象了出来。不管是链表�
 
 ### 练习 1：链表反转
 
+**难度：基础** · 三指针 O(1) 空间
+
 实现一个函数，将单链表原地反转。要求空间复杂度 O(1)，不能分配新节点。
 
 ```c
@@ -628,6 +630,8 @@ void linked_list_reverse(LinkedList* list);
 提示：维护三个指针——`prev`、`current`、`next`，逐个反转每个节点的 `next` 方向。
 
 ### 练习 2：合并两个有序链表
+
+**难度：基础** · 双指针归并
 
 给定两个按升序排列的链表，将它们合并为一个新的有序链表。
 
@@ -643,6 +647,8 @@ LinkedList* linked_list_merge_sorted(const LinkedList* a, const LinkedList* b);
 
 ### 练习 3：检测链表环
 
+**难度：进阶** · Floyd 快慢指针
+
 判断一个链表是否有环（某个节点的 `next` 指向了前面已经出现过的节点）。
 
 ```c
@@ -654,6 +660,8 @@ bool linked_list_has_cycle(const LinkedList* list);
 提示：经典解法是 Floyd 龟兔赛跑算法——用两个指针，一个每次走一步，一个每次走两步。如果有环，快指针最终会追上慢指针。
 
 ### 练习 4：哨兵版完整 API
+
+**难度：进阶** · 带哨兵节点的完整链表
 
 用哨兵节点重新实现完整的链表 API（`push_front`、`push_back`、`insert_at`、`remove`、`find`），体会哨兵节点消除了哪些特判代码。
 

@@ -391,22 +391,91 @@ In this tutorial, we thoroughly dissected structures from "how to use them" to "
 
 ## Exercises
 
-### Exercise: Design a Manually Aligned Communication Protocol Frame
+### Exercise 1: Alignment Prediction and Verification
 
-Please design a binary protocol frame structure for embedded device communication. Requirements are as follows:
+**Difficulty: Basic** · first compute sizeof and offsetof by hand, then verify with code
 
-1. **Frame Header**: 1-byte start flag `0xAA`, 1-byte frame type, 2-byte payload length, 4-byte timestamp.
-2. **Payload**: Variable-length data (use a flexible array member).
-3. **Frame Tail**: 2-byte CRC16 checksum.
-4. Use `alignas(4)` to ensure the timestamp field is 4-byte aligned.
-5. Use `__attribute__((packed))` to ensure the frame structure is compact (suitable for direct cast parsing of byte streams).
-6. Write a function that uses `offsetof` to print the offset of each field to verify the layout.
+Assume `int` has alignment 4 and `sizeof(int) == 4`. First compute the `offsetof` of every field and the `sizeof` of each struct below by hand, then write a program that prints them with `offsetof` and `sizeof` to check yourself:
 
 ```c
-// TODO: Write your code here
+#include <stddef.h>
+#include <stdio.h>
+
+typedef struct {
+    char  a;
+    int   b;
+    char  c;
+} StructA;
+
+typedef struct {
+    int   b;
+    char  a;
+    char  c;
+} StructB;
+
+typedef struct {
+    char  a;
+    char  c;
+    int   b;
+} StructC;
 ```
 
-**Hint**: When using `alignas` inside a `packed` structure, be careful—`packed` removes automatic padding, but `alignas` can force a specific field's alignment. Think about this: in a packed structure, if the offset from the frame header to the timestamp is not a multiple of 4, how would you handle it?
+Think about it: the three structs have exactly the same fields, only in a different order — why is `sizeof` different? Which one wastes the least space?
+
+::: details Reference answer
+
+Hand-computed results (`int` aligned to 4 bytes):
+
+| struct | a offset | b offset | c offset | sizeof |
+|--------|----------|----------|----------|--------|
+| StructA | 0 | 4 | 8 | 12 |
+| StructB | 4 | 0 | 5 | 8 |
+| StructC | 0 | 4 | 1 | 8 |
+
+In StructA, `a` is at 0, `b` needs 4-byte alignment so 3 padding bytes are inserted before it at offset 4, `c` is at 8, and the tail is padded to 12. Grouping the larger-alignment fields (`int`) and the small fields (`char`) each together reduces the middle padding. StructB and StructC are both 8 bytes, smaller than StructA's 12.
+
+:::
+
+### Exercise 2: packed vs Explicit Alignment
+
+**Difficulty: Intermediate** · compare default alignment, packed, and alignas
+
+For the same set of fields, define the struct in three ways — default alignment, `__attribute__((packed))`, and `alignas` — and print `sizeof` and each field's offset to see how the three layouts differ:
+
+```c
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+typedef struct {
+    uint8_t  type;
+    uint32_t value;
+} FrameNormal;
+
+typedef struct __attribute__((packed)) {
+    uint8_t  type;
+    uint32_t value;
+} FramePacked;
+
+typedef struct {
+    uint8_t  type;
+    alignas(4) uint32_t value;
+} FrameAligned;
+```
+
+Think about it: `FramePacked` saves the most space, so why is accessing the `value` field slower on some CPUs, or even crashing? When should you use packed, and when should you use explicit alignment?
+
+### Exercise 3: Communication Protocol Frame Design (Challenge, optional)
+
+**Difficulty: Challenge** · Optional, needs CRC and endianness, beginners can skip
+
+Design a binary protocol frame for embedded device communication: a header (start byte, frame type, payload length, timestamp), a variable-length payload (flexible array member), and a tail checksum.
+
+- Use `offsetof` to print each field's offset and verify the layout
+- The tail checksum field can be a 2-byte placeholder for now, with a `// TODO: fill CRC16` comment; you do not have to implement the CRC algorithm yet
+- Think about it: when devices with different endianness (big-endian, little-endian) talk to each other, how should multi-byte fields (like the timestamp) be handled?
+
+Hint: this chapter covered flexible array members, `alignas`, `__attribute__((packed))`, and `offsetof` — those are your tools. CRC algorithms and endianness conversion belong to the communication topic; here you only need to be aware of these two issues and leave a placeholder, no full implementation required.
 
 ## References
 

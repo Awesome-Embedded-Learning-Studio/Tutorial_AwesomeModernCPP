@@ -341,33 +341,55 @@ At this point, we have mastered the basic usage of functions. The next question 
 
 ## Exercises
 
-### Exercise 1: Variadic Log Function
+### Exercise 1: Variadic Max
 
-Implement a custom log function that supports log levels and formatted strings:
+**Difficulty: Basic** · pull arguments one by one with va_arg
+
+Following the `average` example in this chapter, implement a variadic function that returns the maximum of all its integer arguments. The first argument `count` says how many integers follow:
 
 ```c
-#include <stdio.h>
+/// @brief Return the maximum of count integers
+/// @param count number of integer arguments that follow
+/// @return the maximum; returns 0 if count is 0
+int max_int(int count, ...);
+```
+
+Usage: `max_int(3, 10, 25, 7)` should return `25`.
+
+**Challenge extension** (optional): if you want to implement `log_message(level, format, ...)` with real formatting, you need to forward the variadic arguments to the `printf` family, i.e. `vprintf`/`vfprintf` (not covered in this chapter). Look up `vprintf` on cppreference and then try it.
+
+::: details Reference answer
+
+```c
 #include <stdarg.h>
 
-void log_message(const char *level, const char *fmt, ...) {
-    // TODO: Print timestamp and log level
-    // TODO: Use va_list to handle formatted string
-    printf("[%s] ", level);
+int max_int(int count, ...) {
+    if (count <= 0) {
+        return 0;
+    }
     va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-    printf("\n");
-}
+    va_start(args, count);
 
-int main() {
-    log_message("INFO", "System started with code %d", 200);
-    log_message("ERROR", "Failed to open file: %s", "config.txt");
-    return 0;
+    int result = va_arg(args, int);
+    for (int i = 1; i < count; i++) {
+        int next = va_arg(args, int);
+        if (next > result) {
+            result = next;
+        }
+    }
+
+    va_end(args);
+    return result;
 }
 ```
 
+Same structure as `average`, just "accumulate then divide" becomes "compare and keep the max". The `va_start` / `va_arg` / `va_end` trio is rehearsed once more here.
+
+:::
+
 ### Exercise 2: Recursion vs. Iteration — Binary Search
+
+**Difficulty: Intermediate** · two ways to write the same algorithm
 
 Implement binary search using both recursion and iteration, and compare their performance and readability:
 
@@ -395,6 +417,8 @@ int main() {
 ```
 
 ### Exercise 3: Multiple Return Values in Practice
+
+**Difficulty: Basic** · return multiple results through pointer parameters
 
 Implement a function that calculates both the maximum and minimum values of an array:
 

@@ -368,15 +368,15 @@ C++ standard library containers are also designed with caching factors in mind. 
 
 ## Exercises
 
-1. **Stride Experiment Verification**: Modify the stride test code from this article to shrink the array to 4 MB (which should fit into most CPUs' L3 cache, avoiding interference from main memory latency), and focus on the `per_access` column. Observe the change in single-access latency as the stride increases from one to 32. Think about it: why does `per_access` only start to rise significantly after the stride exceeds 16 (a cache line boundary)? Can the byte count corresponding to this inflection point be used to deduce the cache line size of your machine?
+1. **Stride Experiment Verification** (Basic): Modify the stride test code from this article to shrink the array to 4 MB (which should fit into most CPUs' L3 cache, avoiding interference from main memory latency), and focus on the `per_access` column. Observe the change in single-access latency as the stride increases from one to 32. Think about it: why does `per_access` only start to rise significantly after the stride exceeds 16 (a cache line boundary)? Can the byte count corresponding to this inflection point be used to deduce the cache line size of your machine?
 
-2. **Reproduce False Sharing**: Write a multi-threaded program (using pthreads or C++ `<thread>`) that creates two threads, each incrementing a different field in a shared struct one hundred million times. First, run it without alignment, then use `alignas(64)` to align the two fields to different cache lines and run it again. Compare the execution times.
+2. **Reproduce False Sharing** (Intermediate): Write a multi-threaded program (using pthreads or C++ `<thread>`) that creates two threads, each incrementing a different field in a shared struct one hundred million times. First, run it without alignment, then use `alignas(64)` to align the two fields to different cache lines and run it again. Compare the execution times.
 
-3. **Matrix Transpose Optimization**: Implement a square matrix transpose function. First, write a naive double-loop version, then try blocking—split the matrix into 32x32 small blocks and perform the transpose within each block. Compare the performance difference of the two versions on a large matrix (2048x2048).
+3. **Matrix Transpose Optimization** (Intermediate): Implement a square matrix transpose function. First, write a naive double-loop version, then try blocking—split the matrix into 32x32 small blocks and perform the transpose within each block. Compare the performance difference of the two versions on a large matrix (2048x2048).
 
-4. **AoS vs SoA Benchmark**: Define a particle struct containing `float x, y, z, r, g, b`, and create one hundred thousand particles. Implement "normalize all particle coordinates to the unit sphere" using both AoS and SoA layouts, and compare the execution times.
+4. **AoS vs SoA Benchmark** (Basic): Define a particle struct containing `float x, y, z, r, g, b`, and create one hundred thousand particles. Implement "normalize all particle coordinates to the unit sphere" using both AoS and SoA layouts, and compare the execution times.
 
-5. **Cache-Friendly Linked List**: Reference the design philosophy of the Linux kernel's `list_head` to implement an intrusive doubly linked list. Store the node data domain and the linked list pointer domain separately so that traversing the linked list pointers does not require loading the entire node data, thereby improving cache hit rates.
+(The original also had a "Cache-Friendly Linked List" exercise; it was removed because it needs intrusive-container background and couples loosely with the cache topic. It fits better in the linked-list chapter, advanced_feature/06.)
 
 ## References
 

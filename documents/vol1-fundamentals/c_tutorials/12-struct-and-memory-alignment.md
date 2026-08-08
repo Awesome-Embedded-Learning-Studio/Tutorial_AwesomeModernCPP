@@ -460,42 +460,91 @@ using AlignedStorage = std::aligned_storage_t<sizeof(MyStruct), alignof(MyStruct
 
 ## 练习
 
-### 练习：设计一个手动对齐控制的通信协议帧
+### 练习 1：对齐预测与验证
 
-请设计一个用于嵌入式设备通信的二进制协议帧结构。要求如下：
+**难度：基础** · 先手算 sizeof 和 offsetof，再写程序验证
 
-1. 帧头包含 1 字节的起始标志 `0xAA`、1 字节的帧类型、2 字节的载荷长度、4 字节的时间戳
-2. 载荷部分为变长数据（使用柔性数组成员）
-3. 帧尾包含 2 字节的 CRC16 校验
-4. 使用 `_Alignas` 确保时间戳字段 4 字节对齐
-5. 使用 `__attribute__((packed))` 确保帧结构紧凑（适合直接强转解析字节流）
-6. 编写一个函数，使用 `offsetof` 打印每个字段的偏移量来验证布局
+假设 `int` 对齐为 4、`sizeof(int) == 4`，先手算下面三个结构体里每个字段的 `offsetof` 和整个结构体的 `sizeof`，再写一段程序用 `offsetof` 和 `sizeof` 打印出来对一对：
 
 ```c
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 
-// 练习： 定义 Frame 结构体
-// typedef struct __attribute__((packed)) {
-//     ...
-// } Frame;
+typedef struct {
+    char  a;
+    int   b;
+    char  c;
+} StructA;
 
-// 练习： 实现 print_frame_layout() 函数
-// 使用 offsetof 打印每个字段的偏移量
+typedef struct {
+    int   b;
+    char  a;
+    char  c;
+} StructB;
 
-// 练习： 实现 create_frame() 函数
-// 分配内存并填充帧数据（含柔性数组成员）
-
-int main(void) {
-    print_frame_layout();
-
-    // 练习： 创建一个测试帧并验证偏移
-    return 0;
-}
+typedef struct {
+    char  a;
+    char  c;
+    int   b;
+} StructC;
 ```
 
-提示：在 packed 结构体中使用 `alignas` 需要注意——packed 会取消自动填充，但 `alignas` 可以强制某个字段的对齐。思考一下：在 packed 结构体中，如果帧头到时间戳之间恰好不是 4 的倍数偏移，你该怎么处理？
+想一下：三个结构体字段完全相同、只是顺序不同，`sizeof` 为什么不一样？哪个最省空间？
+
+::: details 参考答案
+
+手算结果（`int` 4 字节对齐）：
+
+| 结构体 | a 偏移 | b 偏移 | c 偏移 | sizeof |
+|--------|--------|--------|--------|--------|
+| StructA | 0 | 4 | 8 | 12 |
+| StructB | 4 | 0 | 5 | 8 |
+| StructC | 0 | 4 | 1 | 8 |
+
+StructA 里 `a` 在 0、`b` 要 4 字节对齐所以前面补 3 字节填到偏移 4、`c` 在 8、尾部再补到 12。把大对齐的字段（`int`）和小字段（`char`）各自集中放，能减少中间填充。StructB 和 StructC 都是 8 字节，比 StructA 的 12 字节省。
+
+:::
+
+### 练习 2：packed 与显式对齐对比
+
+**难度：进阶** · 对比默认对齐、packed、_Alignas 三种布局
+
+对同一组字段，分别用默认对齐、`__attribute__((packed))`、`_Alignas` 三种方式定义结构体，打印 `sizeof` 和各字段偏移，看三种布局有什么不同：
+
+```c
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+
+typedef struct {
+    uint8_t  type;
+    uint32_t value;
+} FrameNormal;
+
+typedef struct __attribute__((packed)) {
+    uint8_t  type;
+    uint32_t value;
+} FramePacked;
+
+typedef struct {
+    uint8_t  type;
+    _Alignas(4) uint32_t value;
+} FrameAligned;
+```
+
+想一想：`FramePacked` 最省空间，但为什么在有些 CPU 上访问 `value` 字段反而更慢、甚至直接崩？什么场景该用 packed，什么场景该用显式对齐？
+
+### 练习 3：通信协议帧设计（挑战·可选）
+
+**难度：挑战** · 可选，需要了解 CRC 与字节序，新手可跳过
+
+设计一个用于嵌入式设备通信的二进制协议帧结构：帧头（起始符、帧类型、载荷长度、时间戳）、变长载荷（柔性数组成员）、帧尾校验。
+
+- 用 `offsetof` 打印每个字段偏移，验证布局符合预期
+- 帧尾的校验字段可以先预留 2 字节占位、写一句 `// TODO: 填 CRC16`，不必现在就实现 CRC 算法
+- 想一下：不同字节序（大端、小端）的设备通信时，多字节字段（比如时间戳）该怎么处理？
+
+提示：本篇讲过柔性数组成员、`_Alignas`、`__attribute__((packed))`、`offsetof`，这些都是你的工具。CRC 算法和字节序转换属于通信专题，这里只要求你意识到这两个问题、留好占位，不要求完整实现。
 
 ## 参考资源
 

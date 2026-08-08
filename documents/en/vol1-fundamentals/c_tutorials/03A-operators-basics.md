@@ -356,6 +356,8 @@ The next question is—we haven't covered bitwise operations yet. If you plan to
 
 ### Exercise 1: Integer Division Prediction
 
+**Difficulty: Basic** · truncation toward zero and the sign of the remainder
+
 Without actually running it, predict the value of the following expressions, then write a program to verify:
 
 ```c
@@ -368,6 +370,8 @@ int a = 7, b = -4;
 ```
 
 ### Exercise 2: Short-Circuit Evaluation in Action
+
+**Difficulty: Intermediate** · guard an array bound with short-circuit evaluation
 
 Write a function that safely finds the first element in an array greater than a specified value. Use short-circuit evaluation to ensure no out-of-bounds access occurs:
 

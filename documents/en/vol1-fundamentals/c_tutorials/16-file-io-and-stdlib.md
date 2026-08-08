@@ -250,6 +250,8 @@ The core of file operations lies in `fopen` and `fread`/`fwrite`/`fgets`/`fputs`
 
 ### Exercise 1: Configuration File Parser
 
+**Difficulty: Intermediate** · parse key=value line by line with fgets
+
 Parse a configuration file in `.ini` format, ignoring `#` comments and empty lines.
 
 ```c
@@ -262,6 +264,8 @@ port = 8080
 Hint: Use `fgets` to read line by line, `strchr` to find the `=` position, and trim whitespace.
 
 ### Exercise 2: File Copy Tool
+
+**Difficulty: Basic** · fread/fwrite with a progress bar
 
 Specify source and destination files via command-line arguments, support binary file copying, and display progress.
 

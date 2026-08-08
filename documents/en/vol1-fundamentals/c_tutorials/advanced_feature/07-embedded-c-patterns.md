@@ -419,6 +419,8 @@ C++ improvements for embedded code focus on three areas:
 
 ### Exercise 1: Generic Ring Buffer
 
+**Difficulty: Intermediate** · turn the uint8_t version into a generic void* version
+
 Refactor the `uint8_t` ring buffer from the text into a generic version (using `void*` + element size):
 
 ```c
@@ -436,21 +438,29 @@ bool ring_pop(generic_ring_t *ring, void *data);
 
 **Hint**: Use `memcpy` internally for generic byte copying. Change `head`/`tail` to absolute counts (don't worry about overflow), and calculate the actual index via `count % capacity`.
 
-### Exercise 2: Portable UART Abstraction Layer
+### Exercise 2: UART Abstraction Layer Interface Design
 
-Design a chip-independent abstraction layer interface for a UART peripheral. The driver needs two ring buffers (TX and RX). The application writes to the buffer first and then triggers the transmit interrupt; actual byte-by-byte transmission is completed in the ISR.
+**Difficulty: Intermediate** · design the interface only, do not implement the interrupt timing
+
+Following the peripheral-abstraction approach in this chapter, design a chip-independent UART abstraction-layer interface. You do not have to implement interrupt-driven byte-by-byte transmission — just define the interface clearly: which fields the driver struct needs (TX/RX buffers, state), the signatures of `init`/`write`/`read`, and "what write returns when the buffer is full".
 
 ```c
-// uart.h
-void uart_init(uint32_t baudrate);
-void uart_send_byte(uint8_t data);
-bool uart_receive_byte(uint8_t *data);
-void UART_IRQHandler(void);
+typedef struct { /* your design */ } UartDriver;
+
+void  uart_init(UartDriver* uart, uint32_t baud);
+size_t uart_write(UartDriver* uart, const uint8_t* data, size_t len);
+size_t uart_read(UartDriver* uart, uint8_t* data, size_t len);
 ```
 
-### Exercise 3: Linker Script and Startup Code
+Think about it: why does hiding the buffers and state inside the struct, exposing only function interfaces, keep upper-layer code from being tied to a specific chip?
 
-Write a minimal linker script and startup code for an ARM Cortex-M4 (256K Flash, 64K SRAM). Requirements: define correct MEMORY regions, place the vector table at the start of Flash, handle `.data` section address separation, zero out `.bss`, and add a safe infinite loop after `main`.
+### Exercise 3: Reading a Linker Script
+
+**Difficulty: Basic** · explain an existing script, no need to write one from scratch
+
+Find an existing Cortex-M linker script (one was shown in this chapter's startup-flow section) and explain it section by section: which regions does `MEMORY` define? Why is the vector table placed at the start of Flash? What does `AT > FLASH` on the `.data` section mean? Why does the `.bss` section use `NOLOAD`?
+
+Also think: to change Flash to 256K and SRAM to 64K in this script, which lines do you need to edit?
 
 ## Reference Resources
 
