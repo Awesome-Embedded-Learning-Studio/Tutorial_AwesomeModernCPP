@@ -506,6 +506,8 @@ The following exercises provide only the function signature and requirement desc
 
 ### Exercise 1: Implement resize
 
+**Difficulty: Basic** · reserve plus fill with a default value
+
 `reserve` only changes capacity, not size, whereas `resize` needs to change size. When the new size is greater than the old size, the extra positions should be filled with default values.
 
 ```c
@@ -521,6 +523,8 @@ DynamicArrayStatus dynamic_array_resize(
 
 ### Exercise 2: Implement filter
 
+**Difficulty: Basic** · predicate that returns a new array
+
 Given a dynamic array and a filter predicate, return a newly created dynamic array containing only the elements that satisfy the condition.
 
 ```c
@@ -533,6 +537,8 @@ DynamicArray* dynamic_array_filter(
 ```
 
 ### Exercise 3: Implement map transformation
+
+**Difficulty: Intermediate** · transform with a possibly different element size
 
 Given a dynamic array and a transformation function, we apply the transformation function to each element and store the results in a new array to return.
 
@@ -548,6 +554,8 @@ DynamicArray* dynamic_array_map(
 ```
 
 ### Exercise 4: Implementing Concatenation
+
+**Difficulty: Basic** · concatenate two arrays of the same type
 
 Concatenate two dynamic arrays of the same type into a new dynamic array.
 

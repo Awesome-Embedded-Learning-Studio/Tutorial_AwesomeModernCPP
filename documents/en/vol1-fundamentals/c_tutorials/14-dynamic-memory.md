@@ -210,26 +210,133 @@ We started with memory layout, clarified the roles of the stack and heap, dissec
 
 ## Exercises
 
-### Exercise 1: Fixed-Size Memory Pool Allocator
+### Exercise 1: A Growing Array with realloc
 
-Implement a simple fixed-size memory pool that slices fixed-size blocks from a large chunk of memory, supporting allocation and reclamation.
+**Difficulty: Basic** · grow capacity with realloc, building on this chapter's realloc section
 
-```cpp
-// TODO: Implement allocate() and deallocate()
-void* allocate(size_t size);
-void deallocate(void* ptr);
+Implement a simple dynamic array of ints: initial capacity 4, and each `push_back` doubles the capacity with `realloc` when full.
+
+```c
+#include <stddef.h>
+
+typedef struct {
+    int*   data;
+    size_t size;
+    size_t capacity;
+} IntVec;
+
+/// @brief initialize with capacity 4
+void intvec_init(IntVec* v);
+/// @brief append to the tail; doubles capacity when full, returns -1 on failure
+int  intvec_push(IntVec* v, int value);
+/// @brief release
+void intvec_free(IntVec* v);
 ```
 
-Hint: Use a linked list to manage free blocks—the first few bytes of each free block store a pointer to the next free block.
+Hint: `realloc(NULL, n)` is equivalent to `malloc(n)`, so even the first allocation can go through realloc. Note that `realloc` returns NULL on failure and does not free the old block — catch the return value in a temporary, confirm success, and only then overwrite the old pointer; otherwise you leak.
 
-### Exercise 2: malloc/free Wrapper with Statistics
+::: details Reference answer
 
-Implement a wrapper layer for `malloc` and `free` that tracks all allocation and deallocation operations, printing a statistical report when the program exits.
+```c
+#include <stdlib.h>
 
-```cpp
-// TODO: Implement tracked_malloc() and tracked_free()
-void* tracked_malloc(size_t size);
-void tracked_free(void* ptr);
+void intvec_init(IntVec* v) {
+    v->capacity = 4;
+    v->size = 0;
+    v->data = malloc(v->capacity * sizeof(int));
+}
+
+int intvec_push(IntVec* v, int value) {
+    if (v->size >= v->capacity) {
+        size_t new_cap = v->capacity * 2;
+        int* new_data = realloc(v->data, new_cap * sizeof(int));
+        if (new_data == NULL) {
+            return -1;          // grow failed; the old data is still valid, let the caller decide
+        }
+        v->data = new_data;
+        v->capacity = new_cap;
+    }
+    v->data[v->size++] = value;
+    return 0;
+}
+
+void intvec_free(IntVec* v) {
+    free(v->data);
+    v->data = NULL;
+    v->size = v->capacity = 0;
+}
 ```
 
-Hint: Use an array or linked list to record information for each allocation. `atexit` can register an exit hook.
+The key is to store the `realloc` return value in `new_data` first and only assign it to `v->data` after success. If you wrote `v->data = realloc(v->data, ...)` directly, a failure would overwrite the original `v->data` with NULL, and that memory is lost forever — a leak.
+
+:::
+
+### Exercise 2: Memory Error Diagnosis
+
+**Difficulty: Intermediate** · identify the memory errors from this chapter with ASan or Valgrind
+
+The code below hides at least four memory errors. First read the code and guess what each issue is, then run it with `gcc -fsanitize=address` (or Valgrind) and record the error type and location reported by the tool:
+
+```c
+#include <stdlib.h>
+
+int main(void) {
+    int* p = malloc(4 * sizeof(int));
+    p[4] = 42;            // (1) what is wrong here?
+
+    int* q = malloc(sizeof(int));
+    free(q);
+    *q = 100;             // (2) and here?
+
+    int* r = malloc(1024);
+    /* forgot to free(r) */   // (3) which category is this?
+
+    free(p);
+    free(p);              // (4) one more
+    return 0;
+}
+```
+
+Requirement: for each one, name which kind of error from this chapter it is (out-of-bounds write, use-after-free, leak, double free, uninitialized read), and describe how the tool reports it.
+
+::: details Reference answer
+
+(1) `p[4]`: only 4 ints were allocated (indices 0–3), so `p[4]` is a heap-buffer-overflow write. ASan reports `heap-buffer-overflow`.
+
+(2) `*q = 100`: `q` was freed and then written — use-after-free. ASan reports `heap-use-after-free`.
+
+(3) `r` is never freed: a memory leak. Valgrind's `LEAK SUMMARY` lists it; ASan on most platforms checks for leaks by default (`detect_leaks=1`) and reports `Detected memory leaks` at exit.
+
+(4) `free(p)` twice: double free. ASan reports `attempting double-free`.
+
+These four cover exactly the typical memory errors from this chapter; the tool's error keyword lets you quickly tell which kind it is.
+
+:::
+
+### Exercise 3: Fixed-Size Memory Pool Allocator (Challenge, optional)
+
+**Difficulty: Challenge** · Optional, needs the free-list idiom; self-study required
+
+Implement a fixed-size memory pool: slice fixed-size blocks out of one large chunk and manage free blocks with a linked list — the first few bytes of each free block store a pointer to the next free block. Look up the "in-place linked list / free list" technique before writing it.
+
+```c
+typedef struct MemoryPool MemoryPool;
+MemoryPool* pool_create(size_t block_size, size_t block_count);
+void*       pool_alloc(MemoryPool* pool);
+void        pool_free(MemoryPool* pool, void* block);
+void        pool_destroy(MemoryPool* pool);
+```
+
+Think about it: compared to calling `malloc`/`free` directly, what does a memory pool buy you in an embedded or real-time system? Why can it do O(1) allocate/free with no fragmentation?
+
+### Exercise 4: malloc/free Wrapper with Statistics (Challenge, optional)
+
+**Difficulty: Challenge** · Optional, best done after Chapter 15 on the preprocessor
+
+Wrap `malloc`/`free` to record the file and line of each allocation, and print the still-unfreed list when the program exits. You will need the `__FILE__`/`__LINE__` macros (covered in Chapter 15) and `atexit` to register an exit hook.
+
+```c
+#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
+```
+
+Hint: use an array or linked list to record each allocation's address, size, and location; on `free`, match by address and mark it freed; register `mem_report` with `atexit` to print the remaining unfreed entries at exit.

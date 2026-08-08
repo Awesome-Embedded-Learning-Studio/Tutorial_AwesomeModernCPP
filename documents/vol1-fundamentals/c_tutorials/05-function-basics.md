@@ -312,56 +312,55 @@ C++ 还支持**函数重载**——同名函数可以有不同参数列表，编
 
 ## 练习
 
-### 练习 1：可变参数日志函数
+### 练习 1：可变参数求最大值
 
-实现一个自定义的日志函数，支持日志级别和格式化字符串：
+**难度：基础** · 用 va_arg 逐个取参数
+
+参照本篇 `average` 的写法，实现一个可变参数函数，返回所有整数参数里的最大值。第一个参数 `count` 给出后面有几个整数：
 
 ```c
-typedef enum { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR } LogLevel;
-
-/// @brief 带级别的日志输出
-/// @param level 日志级别
-/// @param format 格式化字符串
-void log_message(LogLevel level, const char* format, ...);
+/// @brief 返回 count 个整数中的最大值
+/// @param count 后续整数参数的个数
+/// @return 最大值；count 为 0 返回 0
+int max_int(int count, ...);
 ```
+
+用法：`max_int(3, 10, 25, 7)` 应该返回 `25`。
+
+**挑战扩展**（可选）：如果想实现 `log_message(level, format, ...)` 这种带格式化的日志函数，需要把可变参数转交给 `printf` 家族——也就是 `vprintf`/`vfprintf`（本篇没讲），可以自查 cppreference 的 `vprintf` 后再动手。
 
 ::: details 参考答案
 
 ```c
-void log_message(LogLevel level, const char* format, ...) {
-    const char* level_str;
-    switch (level) {
-        case LOG_DEBUG:
-            level_str = "DEBUG";
-            break;
-        case LOG_INFO:
-            level_str = "INFO";
-            break;
-        case LOG_WARN:
-            level_str = "WARN";
-            break;
-        case LOG_ERROR:
-            level_str = "ERROR";
-            break;
-        default:
-            level_str = "UNKNOWN";
-            break;
+#include <stdarg.h>
+
+int max_int(int count, ...) {
+    if (count <= 0) {
+        return 0;
     }
-    printf("%s\n", level_str);
-
     va_list args;
-    va_start(args, format);
+    va_start(args, count);
 
-    vprintf(format, args);
-    printf("\n");
+    int result = va_arg(args, int);
+    for (int i = 1; i < count; i++) {
+        int next = va_arg(args, int);
+        if (next > result) {
+            result = next;
+        }
+    }
 
     va_end(args);
+    return result;
 }
 ```
+
+和 `average` 的结构一模一样，只是把"累加再除"换成了"逐个比较取最大"。`va_start` / `va_arg` / `va_end` 三件套的用法在这里再过一遍。
 
 :::
 
 ### 练习 2：递归与迭代——二分查找
+
+**难度：进阶** · 同一个算法的两种写法
 
 分别用递归和迭代实现二分查找，比较两者的性能和可读性：
 
@@ -410,6 +409,8 @@ int binary_search_iterative(const int* arr, size_t len, int target) {
 :::
 
 ### 练习 3：多返回值实战
+
+**难度：基础** · 用指针参数带出多个结果
 
 实现一个函数，同时计算数组的最大值和最小值：
 

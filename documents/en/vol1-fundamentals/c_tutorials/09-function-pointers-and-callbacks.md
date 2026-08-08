@@ -323,6 +323,8 @@ Function pointers are the core mechanism for implementing callbacks and the stra
 
 ### Exercise 1: Generic Sorting Interface
 
+**Difficulty: Intermediate** · function pointer as the comparison strategy
+
 Following the interface design of `qsort`, implement your own generic insertion sort function. Use it to sort an `int` array (ascending and descending) and a string array (lexicographical order):
 
 ```cpp
@@ -331,11 +333,34 @@ void my_isort(void *base, size_t n, size_t size,
               int (*compar)(const void *, const void *));
 ```
 
-### Exercise 2: Event Dispatch System Extension
+### Exercise 2: Retry with a Max Attempt Count
 
-Based on the event dispatch system in this chapter, support registering multiple callbacks for the same event (a callback chain) and support unregistering callbacks. Think about this: what happens if a handler in the chain modifies the linked list structure during execution?
+**Difficulty: Intermediate** · use a function pointer as a condition callback
+
+Implement `retry_until`: call the `check` function pointer repeatedly until it returns non-zero (success) or the max attempt count is reached.
+
+```c
+/// @brief Call check repeatedly until it succeeds or max_attempts is reached
+/// @param check the condition function; non-zero return means success
+/// @param max_attempts maximum number of attempts
+/// @return on success, which attempt succeeded (starting from 1); -1 if all attempts failed
+int retry_until(int (*check)(void), int max_attempts);
+```
+
+Hint: `check` can simulate a peripheral that only becomes ready on the third try like this:
+
+```c
+int device_ready(void) {
+    static int tried = 0;       // the static local from Chapter 06, put to use here
+    return ++tried >= 3;
+}
+```
+
+Think about it: this pattern of turning the "condition to check" into a function pointer you pass in — what does it share with the `qsort` comparator and event dispatch in this chapter?
 
 ### Exercise 3: Simple Command-Line Calculator
+
+**Difficulty: Intermediate** · table-driven dispatch with an array of function pointers
 
 Use an array of function pointers to implement a command-line calculator supporting addition, subtraction, multiplication, division, and modulo operations. Select the corresponding function based on the user-inputted operator.
 
@@ -343,6 +368,14 @@ Use an array of function pointers to implement a command-line calculator support
 // Hint: Define a function pointer array and index it by operator type
 // double (*operations[])(double, double) = { ... };
 ```
+
+### Exercise 4: Event Dispatch System Extension (Challenge, optional)
+
+**Difficulty: Challenge** · Optional, design a callback container, beginners can skip
+
+Based on the array-based event dispatch system in this chapter, extend it to support registering multiple callbacks for the same event, plus unregistering. Hint: you do not need a linked list — an array of function pointers can hold multiple callbacks, and unregistering can be done with a tombstone flag or a compaction move.
+
+Think about it: if one callback unregisters another callback while we are still iterating the callback array, what goes wrong? It is the same trap as "deleting from an array while iterating it".
 
 ## References
 

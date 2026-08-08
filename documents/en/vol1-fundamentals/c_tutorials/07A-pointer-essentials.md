@@ -262,9 +262,13 @@ We have only laid the "foundation" for pointers so far. Next, we will tackle que
 
 ### Exercise 1: Addresses and Values
 
+**Difficulty: Basic** · observe &, *, sizeof, and address spacing
+
 Write a program that declares three variables of different types (`int`, `double`, `char`), prints their values, addresses, and the result of dereferencing their pointers. Observe if the spacing between addresses matches the size of each type.
 
 ### Exercise 2: Traversing Arrays with Pointers
+
+**Difficulty: Intermediate** · walk an array with pointer arithmetic
 
 Use pointer arithmetic to traverse an `int` array and print all elements. Do not use the `[]` operator; use only pointer addition and dereference:
 

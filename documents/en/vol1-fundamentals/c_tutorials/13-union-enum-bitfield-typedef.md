@@ -373,6 +373,8 @@ In this post, we covered four C language features—unions, enums, bit-fields, a
 
 ### Exercise 1: IEEE 754 Float Decomposition
 
+**Difficulty: Intermediate** · crack a float's bits with a union
+
 Use a union to implement a tool that decomposes a `float` value into IEEE 754 format sign bit, exponent, and mantissa, and prints them out.
 
 ```c
@@ -384,6 +386,8 @@ Use a union to implement a tool that decomposes a `float` value into IEEE 754 fo
 
 ### Exercise 2: 32-bit Hardware Control Register
 
+**Difficulty: Basic** · map a register with bit-fields plus a union view
+
 Use bit fields to define a 32-bit hardware control register struct, then write functions to manipulate it.
 
 ```c
@@ -391,6 +395,8 @@ Use bit fields to define a 32-bit hardware control register struct, then write f
 ```
 
 ### Exercise 3: Simple Tagged Union
+
+**Difficulty: Basic** · enum + union + tag-checked access
 
 Use an enum and a union to implement a tagged union that can store an `int`, a `float`, or a string pointer.
 

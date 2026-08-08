@@ -583,33 +583,52 @@ C++20 introduced the Modules system, aiming to fundamentally replace the header 
 
 ## Exercises
 
-### Exercise 1: Opaque Pointer String Hash Map
+### Exercise 1: Opaque-Pointer Stack Module
 
-Implement a simple string-to-integer map using opaque pointers to hide the internal implementation. Requirements:
+**Difficulty: Intermediate** · build on this chapter's ring_buffer module, swap in a different data structure
+
+Following the opaque-pointer ring_buffer in this chapter, implement an opaque-pointer stack module. The header exposes only `typedef struct Stack Stack;` and the interface functions; the internal struct lives in the .c file:
 
 ```c
-// inc/strmap.h
-StrMap* strmap_create(void);
-void    strmap_destroy(StrMap* map);
-
-int  strmap_put(StrMap* map, const char* key, int value);
-int  strmap_get(StrMap* map, const char* key, int* out_value);
-void strmap_remove(StrMap* map, const char* key);
+// stack.h
+typedef struct Stack Stack;
+Stack* stack_create(size_t capacity);
+void   stack_destroy(Stack* s);
+int    stack_push(Stack* s, int value);   // returns -1 when full
+int    stack_pop(Stack* s);                // decide yourself what to do when empty
+size_t stack_size(const Stack* s);
 ```
 
-**Hint:** Internally, you can use a simple array of linked lists (separate chaining) to implement the hash map. The hash function can use the classic `djb2` algorithm. Remember that all internal types and helper functions must be hidden in the `.c` file.
+Think about it: why does the header only say `typedef struct Stack Stack;` instead of expanding the struct definition? Can a caller that gets the pointer do `s->top` to access a member?
 
 ### Exercise 2: Platform Abstraction Layer Practice
 
-Write a platform abstraction layer for the hash map in Exercise 1 to replace the standard library's `malloc`/`free`. Requirements:
+**Difficulty: Intermediate** · write two backends for the same interface
+
+Design a platform abstraction layer for the reusable module in this chapter (or the stack from Exercise 1) to replace direct calls to `malloc`/`free`:
 
 ```c
-// inc/platform.h
-void* plat_malloc(size_t size);
-void  plat_free(void* ptr);
+// pal.h
+void* pal_alloc(size_t size);
+void  pal_free(void* ptr);
 ```
 
-Please implement two versions: one using the standard library `malloc`/`free` (suitable for PC), and another using a static memory pool (suitable for embedded bare-metal environments). The hash map's `.c` file should allocate memory by including `platform.h` and calling `plat_malloc`, rather than directly calling `malloc`.
+Implement two versions: one using the standard library `malloc`/`free` (suitable for PC), and one using a static memory pool (suitable for embedded bare metal). The module's .c file allocates memory by including `pal.h`.
+
+### Exercise 3: Opaque-Pointer String Hash Map (Challenge, optional)
+
+**Difficulty: Challenge** · Optional, needs separate-chaining hash-map background, beginners can skip
+
+Implement an opaque-pointer string-to-integer hash map (internally an array of linked lists with separate chaining, `djb2` as the hash function). Finish the linked-list chapter (advanced_feature/06) first, then come back to implement the chaining structure for collision resolution.
+
+```c
+typedef struct HashMap HashMap;
+HashMap* hashmap_create(size_t bucket_count);
+void     hashmap_destroy(HashMap* map);
+int      hashmap_insert(HashMap* map, const char* key, int value);
+int      hashmap_lookup(const HashMap* map, const char* key, int* out);
+int      hashmap_remove(HashMap* map, const char* key);
+```
 
 ## Reference Resources
 

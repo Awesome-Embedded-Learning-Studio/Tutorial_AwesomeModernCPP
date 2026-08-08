@@ -219,67 +219,133 @@ gcc -fsanitize=address -g -o demo demo.c
 
 ## 练习
 
-### 练习 1：固定大小内存池分配器
+### 练习 1：用 realloc 实现动态增长数组
 
-实现一个简单的固定大小内存池，从大块内存中切分固定大小的块，支持分配和回收。
+**难度：基础** · 用 realloc 扩容，承接本篇 realloc 讲解
+
+实现一个简单的动态整数数组：初始容量 4，每次 `push_back` 在满时用 `realloc` 把容量翻倍。
 
 ```c
 #include <stddef.h>
-#include <stdint.h>
+
+typedef struct {
+    int*   data;
+    size_t size;
+    size_t capacity;
+} IntVec;
+
+/// @brief 初始化，初始容量 4
+void intvec_init(IntVec* v);
+/// @brief 尾部追加；满时扩容翻倍，失败返回 -1
+int  intvec_push(IntVec* v, int value);
+/// @brief 释放
+void intvec_free(IntVec* v);
+```
+
+提示：`realloc(NULL, n)` 等价于 `malloc(n)`，所以第一次分配也能走 realloc。注意 `realloc` 失败时返回 NULL 且不会释放旧块——拿一个临时变量接住返回值，确认成功后再覆盖原指针，否则会泄漏。
+
+::: details 参考答案
+
+```c
 #include <stdlib.h>
 
-typedef struct MemoryPool MemoryPool;
+void intvec_init(IntVec* v) {
+    v->capacity = 4;
+    v->size = 0;
+    v->data = malloc(v->capacity * sizeof(int));
+}
 
-/// @brief 创建一个固定大小内存池
-/// @param block_size 每个块的大小（字节）
-/// @param block_count 块的数量
-/// @return 指向内存池的指针，失败返回 NULL
-MemoryPool* pool_create(size_t block_size, size_t block_count);
-
-/// @brief 从内存池中分配一个块
-void* pool_alloc(MemoryPool* pool);
-
-/// @brief 将块归还给内存池
-void pool_free(MemoryPool* pool, void* block);
-
-/// @brief 销毁内存池，释放所有内存
-void pool_destroy(MemoryPool* pool);
-
-int main(void) {
-    // 练习： 创建一个 64 字节/块、共 64 块的内存池
-    // 练习： 分配几个块，写入数据，然后释放
-    // 练习： 销毁内存池
+int intvec_push(IntVec* v, int value) {
+    if (v->size >= v->capacity) {
+        size_t new_cap = v->capacity * 2;
+        int* new_data = realloc(v->data, new_cap * sizeof(int));
+        if (new_data == NULL) {
+            return -1;          // 扩容失败，旧 data 仍然有效，调用者决定怎么办
+        }
+        v->data = new_data;
+        v->capacity = new_cap;
+    }
+    v->data[v->size++] = value;
     return 0;
+}
+
+void intvec_free(IntVec* v) {
+    free(v->data);
+    v->data = NULL;
+    v->size = v->capacity = 0;
 }
 ```
 
-提示：用链表管理空闲块——每个空闲块的前几个字节存储指向下一个空闲块的指针。
+关键是 `realloc` 的返回值先存到 `new_data`、判断成功后再赋给 `v->data`。要是直接写 `v->data = realloc(v->data, ...)`，一旦失败原来的 `v->data` 就被 NULL 覆盖，那块内存再也找不回来，就是泄漏。
 
-### 练习 2：带统计的 malloc/free 包装器
+:::
 
-实现一个对 `malloc` 和 `free` 的包装层，跟踪所有分配和释放操作，程序退出时打印统计报告。
+### 练习 2：内存错误诊断
+
+**难度：进阶** · 用 ASan 或 Valgrind 识别本篇讲过的内存错误
+
+下面这段代码藏着至少四种内存错误。先读代码猜每一处有什么问题，再用 `gcc -fsanitize=address`（或 Valgrind）跑一遍，把工具报出的错误类型和位置记下来：
 
 ```c
-#include <stddef.h>
-#include <stdio.h>
-
-/// @brief 带统计的 malloc
-void* tracked_malloc(size_t size, const char* file, int line);
-
-/// @brief 带统计的 free
-void tracked_free(void* ptr);
-
-/// @brief 打印内存统计报告
-void mem_report(void);
-
-#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
+#include <stdlib.h>
 
 int main(void) {
-    // 练习： 用 TMALLOC 分配几块内存
-    // 练习： 故意只释放其中一部分
-    // 练习： 调用 mem_report() 查看哪些分配没有被释放
+    int* p = malloc(4 * sizeof(int));
+    p[4] = 42;            // (1) 这里有什么问题？
+
+    int* q = malloc(sizeof(int));
+    free(q);
+    *q = 100;             // (2) 这里呢？
+
+    int* r = malloc(1024);
+    /* 忘了 free(r) */   // (3) 这又是哪一类？
+
+    free(p);
+    free(p);              // (4) 再来一个
     return 0;
 }
 ```
 
-提示：用一个数组或链表记录每次分配的信息。`atexit(mem_report)` 可以注册退出钩子。
+要求：对每一处，写出它属于本篇讲的哪一类错误（越界写、释放后使用、泄漏、双重释放、未初始化读取），并说明工具是怎么报的。
+
+::: details 参考答案
+
+(1) `p[4]`：只分配了 4 个 `int`（下标 0–3），`p[4]` 是堆缓冲区越界写。ASan 报 `heap-buffer-overflow`。
+
+(2) `*q = 100`：`q` 已经 free 又去写，是释放后使用。ASan 报 `heap-use-after-free`。
+
+(3) `r` 没 free：内存泄漏。Valgrind 的 `LEAK SUMMARY` 会列出来；ASan 在多数平台上默认也做泄漏检查（`detect_leaks=1`），退出时报 `Detected memory leaks`。
+
+(4) `free(p)` 两次：双重释放。ASan 报 `attempting double-free`。
+
+这四类正好对应本篇讲的那几种典型内存错误，工具的报错关键词能帮你快速定位是哪一类。
+
+:::
+
+### 练习 3：固定大小内存池分配器（挑战·可选）
+
+**难度：挑战** · 可选，需要自学空闲链表（free list）惯用法
+
+实现一个固定大小内存池：从一块大内存里切出固定大小的块，用链表管理空闲块——每个空闲块的前几个字节存指向下一个空闲块的指针。建议先查资料弄懂"in-place 链表 / free list"是怎么回事再来写。
+
+```c
+typedef struct MemoryPool MemoryPool;
+MemoryPool* pool_create(size_t block_size, size_t block_count);
+void*       pool_alloc(MemoryPool* pool);
+void        pool_free(MemoryPool* pool, void* block);
+void        pool_destroy(MemoryPool* pool);
+```
+
+想一下：内存池相比直接 `malloc`/`free`，在嵌入式或实时系统里有什么好处？为什么它能做到 O(1) 分配释放、且不产生碎片？
+
+### 练习 4：带统计的 malloc/free 包装器（挑战·可选）
+
+**难度：挑战** · 可选，建议学完第 15 章预处理器后再做
+
+包装 `malloc`/`free`，记录每次分配的文件名和行号，程序退出时打印还没释放的清单。需要用到 `__FILE__`/`__LINE__` 宏（第 15 章才讲）和 `atexit` 注册退出钩子。
+
+```c
+#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
+```
+
+提示：用一个数组或链表记录每次分配的地址、大小、位置；`free` 时按地址匹配并标记已释放；`atexit(mem_report)` 注册退出时打印剩余未释放项。

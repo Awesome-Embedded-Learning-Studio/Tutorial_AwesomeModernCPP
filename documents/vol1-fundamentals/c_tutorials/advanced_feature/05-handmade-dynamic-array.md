@@ -498,6 +498,8 @@ size_t dynamic_array_find(
 
 ### 练习 1：实现 resize
 
+**难度：基础** · reserve 加填充默认值
+
 `reserve` 只改变容量不改变 size，而 `resize` 需要改变 size。当新 size 大于旧 size 时，多出来的位置应该填充默认值。
 
 ```c
@@ -513,6 +515,8 @@ DynamicArrayStatus dynamic_array_resize(
 
 ### 练习 2：实现 filter
 
+**难度：基础** · 谓词返回新数组
+
 给定一个动态数组和一个过滤谓词，返回一个新创建的动态数组，只包含满足条件的元素。
 
 ```c
@@ -525,6 +529,8 @@ DynamicArray* dynamic_array_filter(
 ```
 
 ### 练习 3：实现 map 变换
+
+**难度：进阶** · 变换函数，输出元素大小可能不同
 
 给定一个动态数组和一个变换函数，对每个元素应用变换函数，将结果存入新数组返回。
 
@@ -540,6 +546,8 @@ DynamicArray* dynamic_array_map(
 ```
 
 ### 练习 4：实现拼接
+
+**难度：基础** · 合并两个同类型数组
 
 将两个同类型的动态数组拼接成一个新的动态数组。
 

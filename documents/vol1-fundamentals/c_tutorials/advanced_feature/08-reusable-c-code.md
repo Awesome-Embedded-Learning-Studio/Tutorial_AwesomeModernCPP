@@ -693,57 +693,52 @@ C++20 引入了 Modules 系统，旨在从根本上替代头文件的 `#include`
 
 ## 练习
 
-### 练习 1：不透明指针的字符串哈希表
+### 练习 1：不透明指针的栈模块
 
-实现一个简单的字符串-整数映射表，使用不透明指针隐藏内部实现。要求：
+**难度：进阶** · 承接本篇 ring_buffer 模块，换个数据结构
+
+参照本篇不透明指针 ring_buffer 的写法，实现一个不透明指针的栈模块。头文件只暴露 `typedef struct Stack Stack;` 和接口函数，内部结构藏在 .c 里：
 
 ```c
-// hashmap.h — 你需要编写的公开接口
-#ifndef HASHMAP_H
-#define HASHMAP_H
-
-#include <stddef.h>
-
-typedef struct HashMap HashMap;
-
-HashMap* hashmap_create(size_t bucket_count);
-void     hashmap_destroy(HashMap* map);
-
-/// 插入键值对，如果 key 已存在则覆盖旧值
-/// @return 0 表示成功，非零表示失败
-int hashmap_insert(HashMap* map, const char* key, int value);
-
-/// 查找 key 对应的值，通过 out 返回
-/// @return 0 表示找到，非零表示不存在
-int hashmap_lookup(const HashMap* map, const char* key, int* out);
-
-/// 删除指定 key
-/// @return 0 表示成功删除，非零表示 key 不存在
-int hashmap_remove(HashMap* map, const char* key);
-
-#endif // HASHMAP_H
+// stack.h
+typedef struct Stack Stack;
+Stack* stack_create(size_t capacity);
+void   stack_destroy(Stack* s);
+int    stack_push(Stack* s, int value);   // 满返回 -1
+int    stack_pop(Stack* s);                // 空时怎么办你自己定
+size_t stack_size(const Stack* s);
 ```
 
-提示：内部可以用一个简单的链表数组（拉链法）来实现哈希表。哈希函数可以用经典的 `djb2` 算法。记住所有内部类型和辅助函数都要藏在 `.c` 文件里。
+想一想：为什么头文件里只写 `typedef struct Stack Stack;` 而不展开结构体定义？调用者拿到指针后，能直接 `s->top` 访问成员吗？
 
 ### 练习 2：平台抽象层实践
 
-为上面练习 1 的哈希表写一个平台抽象层，替换掉标准库的 `malloc`/`free`。要求：
+**难度：进阶** · 给同一接口写两个后端
+
+为本篇的可复用模块（或上面练习 1 的栈）设计一个平台抽象层，替换掉对 `malloc`/`free` 的直接依赖：
 
 ```c
-// pal.h — 平台抽象层接口
-#ifndef PAL_H
-#define PAL_H
-
-#include <stddef.h>
-
+// pal.h
 void* pal_alloc(size_t size);
 void  pal_free(void* ptr);
-
-#endif // PAL_H
 ```
 
-请分别实现两个版本：一个使用标准库 `malloc`/`free`（适合 PC），另一个使用静态内存池（适合嵌入式裸机环境）。哈希表的 `.c` 文件应该通过包含 `pal.h` 来分配内存，而不是直接调用 `malloc`。
+分别实现两个版本：一个用标准库 `malloc`/`free`（适合 PC），一个用静态内存池（适合嵌入式裸机）。模块的 .c 文件通过包含 `pal.h` 来分配内存。
+
+### 练习 3：不透明指针的字符串哈希表（挑战·可选）
+
+**难度：挑战** · 可选，需要自学拉链法哈希表，新手可跳过
+
+实现一个字符串→整数的不透明指针哈希表（内部用链表数组拉链法、`djb2` 哈希函数）。建议先学完进阶专题 06 的链表，再回来实现冲突处理的拉链结构。
+
+```c
+typedef struct HashMap HashMap;
+HashMap* hashmap_create(size_t bucket_count);
+void     hashmap_destroy(HashMap* map);
+int      hashmap_insert(HashMap* map, const char* key, int value);
+int      hashmap_lookup(const HashMap* map, const char* key, int* out);
+int      hashmap_remove(HashMap* map, const char* key);
+```
 
 ## 参考资源
 

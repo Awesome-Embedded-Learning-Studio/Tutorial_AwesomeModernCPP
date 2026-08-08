@@ -445,6 +445,8 @@ int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static�
 
 ### 练习 1：模块化计数器
 
+**难度：基础** · 用 static 文件级内部链接隐藏数据
+
 设计一个简单的模块，头文件只暴露 `counter_increment`、`counter_get`、`counter_reset` 三个函数，内部用一个 `static` 变量维护计数。要求外部无法直接访问或修改这个计数器变量。
 
 ```c
@@ -511,6 +513,8 @@ int counter_get(void) {
 :::
 
 ### 练习 2：多文件符号可见性
+
+**难度：进阶** · 外部链接、内部链接、extern 综合题
 
 创建三个文件 `a.c`、`b.c`、`main.c`。要求：
 
@@ -605,55 +609,41 @@ void set_kSharedValue(int value) {
 
 :::
 
-### 练习 3：延迟初始化
+### 练习 3：调用计数器
 
-用 `static` 局部变量实现一个 `get_config` 函数：第一次调用时执行初始化（打印 "Initializing..." 并设置默认值），后续调用直接返回已初始化的值，不再重新初始化。
+**难度：基础** · 用 static 局部变量保持函数调用之间的状态
+
+实现一个 `call_count(void)`：每次被调用时返回"这是第几次调用"。利用 `static` 局部变量"值不会随函数返回而销毁"的特性。
 
 ```c
-typedef struct {
-    int max_connections;        //建议设为5
-    int timeout_ms;             //建议设为500
-    const char* server_name;    //建议设为localhost
-} Config;
-
-const Config* get_config(void);
+/// @return 这是第几次调用本函数（第一次调用返回 1）
+int call_count(void);
 ```
 
-> 提示：`static` 局部变量只在第一次进入函数时被初始化——正好可以用来实现"只初始化一次"的语义。
+提示：在函数里声明 `static int n = 0;`，每次 `++n` 后返回。再想一下：如果把它换成普通局部变量 `int n = 0;`（去掉 static），结果会变成什么样？为什么？
 
 ::: details 参考答案
 
 ```c
 #include <stdio.h>
 
-typedef struct {
-    int max_connections;
-    int timeout_ms;
-    const char* server_name;
-} Config;
-
-const Config* get_config(void);
+int call_count(void) {
+    static int n = 0;   // 只初始化一次，值在函数返回后依然保留
+    ++n;
+    return n;
+}
 
 int main(void) {
-    get_config();   //应当输出"Initializing..."
-    printf("%d %d %s\n",get_config()->max_connections, get_config()->timeout_ms, get_config()->server_name);  //应当输出"5 500 localhost"
+    printf("%d\n", call_count());   // 1
+    printf("%d\n", call_count());   // 2
+    printf("%d\n", call_count());   // 3
     return 0;
 }
-
-const Config* get_config(void) {
-    // config 用 static 初始化器：程序加载时一次性初始化，正好呼应题目说的
-    // "static 局部变量只在第一次进入函数时被初始化"
-    static Config config = {5, 500, "localhost"};
-    // 但题目还要求第一次调用时打印 "Initializing..."——静态初始化器本身
-    // 没有运行时钩子去打印，所以再用一个 static flag 控制只打印一次
-    static int initialized = 0;
-    if (!initialized) {
-        printf("Initializing...\n");
-        initialized = 1;
-    }
-    return &config;
-}
 ```
+
+去掉 `static` 的话，`n` 每次进函数都会重新初始化成 0，`++n` 后返回 1，于是不管调用多少次都只打印 1，丢了"记住上次结果"的能力。
+
+顺便澄清一个容易混的点：`static int n = 0;` 的初始化发生在程序启动时（不是第一次调用 `call_count` 时），而且整个生命周期只发生这一次。正因为它只初始化一次、之后值一直保留，所以才能拿来当计数器用。
 
 :::
 

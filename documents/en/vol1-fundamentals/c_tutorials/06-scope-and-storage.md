@@ -395,6 +395,8 @@ In actual projects, form a habit: **add `static` to all global variables and hel
 
 ### Exercise 1: Modular Counter
 
+**Difficulty: Basic** · hide data with file-scope internal linkage
+
 Design a simple module where the header file exposes only three functions: `counter_init`, `counter_inc`, and `counter_get`. Internally, use a `static` variable to maintain the count. External code must not be able to directly access or modify this counter variable.
 
 ```c
@@ -412,6 +414,8 @@ int  counter_get(void);
 Please implement `counter.c` yourself.
 
 ### Exercise 2: Multi-file Symbol Visibility
+
+**Difficulty: Intermediate** · external linkage, internal linkage, and extern together
 
 Create three files: `data.c`, `helper.c`, and `main.c`. Requirements:
 
@@ -448,28 +452,43 @@ int main(void) {
 }
 ```
 
-### Exercise 3: Lazy Initialization
+### Exercise 3: Call Counter
 
-Use a `static` local variable to implement a `get_config` function: on the first call, perform initialization (print "Initializing..." and set default values), subsequent calls directly return the initialized value without re-initializing.
+**Difficulty: Basic** · keep state across calls with a static local variable
+
+Implement `call_count(void)`: each time it is called, it returns "which call this is". Use the property that a `static` local variable "does not get destroyed when the function returns".
+
+```c
+/// @return which call this is (the first call returns 1)
+int call_count(void);
+```
+
+Hint: declare `static int n = 0;` inside the function, do `++n`, then return. Think some more: if you turned it into a plain local `int n = 0;` (dropping static), what would the result become, and why?
+
+::: details Reference answer
 
 ```c
 #include <stdio.h>
 
-int *get_config(void) {
-    static int config = 0;
-    static int initialized = 0;
+int call_count(void) {
+    static int n = 0;   // initialized once; the value survives after the function returns
+    ++n;
+    return n;
+}
 
-    if (!initialized) {
-        printf("Initializing...\n");
-        config = 42; // Load from EEPROM or something
-        initialized = 1;
-    }
-
-    return &config;
+int main(void) {
+    printf("%d\n", call_count());   // 1
+    printf("%d\n", call_count());   // 2
+    printf("%d\n", call_count());   // 3
+    return 0;
 }
 ```
 
-> Hint: `static` local variables are initialized only when entering the function for the first time—perfect for implementing "initialize once" semantics.
+Drop `static` and `n` gets re-initialized to 0 on every entry, so `++n` returns 1 no matter how many times you call it: it loses the ability to "remember the last result".
+
+One common confusion worth clearing up: `static int n = 0;` is initialized when the program starts (not when `call_count` is first called), and this happens only once for the whole lifetime. Because it is initialized only once and the value is preserved afterwards, it works as a counter.
+
+:::
 
 ## Reference Resources
 

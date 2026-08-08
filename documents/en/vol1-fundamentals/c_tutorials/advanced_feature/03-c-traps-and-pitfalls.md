@@ -349,7 +349,7 @@ Several key C++ improvements are worth special mention. Brace initialization (`{
 
 ## Practice Exercises
 
-Here are a few practice problems. The code intentionally contains traps; please find and fix them.
+Here are a few practice problems. The code intentionally contains traps; please find and fix them. All six are **Difficulty: Basic**, each targeting one trap covered in this chapter (greedy matching, precedence, assignment vs comparison, stray semicolon, integer overflow, synthesis).
 
 ```cpp
 // Exercise 1: Fix the precedence issue

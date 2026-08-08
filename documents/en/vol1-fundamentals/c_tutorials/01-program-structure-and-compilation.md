@@ -353,6 +353,8 @@ At this point, we have a clear understanding of the complete path of a C program
 
 ### Exercise 1: Multi-File Compilation Practice
 
+**Difficulty: Basic** · multi-file staged compile and the symbol table
+
 Build a multi-file project containing the following files:
 
 **utils.h**:
@@ -372,6 +374,8 @@ Please complete the following:
 4. Use `nm` or `objdump` to view the symbol table of the object files.
 
 ### Exercise 2: `printf` Formatting Practice
+
+**Difficulty: Basic** · practice printf width, precision, alignment
 
 Without looking up resources, write the expected output of the following `printf` statements (then compile and run to verify):
 

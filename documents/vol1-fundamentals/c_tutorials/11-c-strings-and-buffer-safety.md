@@ -309,7 +309,9 @@ C 字符串就是一个以 `\0` 终止的 `char` 数组，没有类型系统的�
 
 ### 练习 1：安全字符串库
 
-实现一组安全的字符串操作函数，让每个函数都知道目标缓冲区的大小，自动处理截断和终止：
+**难度：进阶** · 封装带缓冲区大小感知的字符串操作
+
+实现两个安全字符串函数，让它们都知道目标缓冲区的大小，自动处理截断和终止：
 
 ```c
 #include <stddef.h>
@@ -327,19 +329,15 @@ size_t safe_str_copy(char* dst, const char* src, size_t dst_size);
 /// @param dst_size 目标缓冲区总大小（含终止符）
 /// @return 拼接后字符串的总长度（不含终止符）
 size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
-
-/// @brief 安全地格式化字符串
-/// @param dst 目标缓冲区
-/// @param dst_size 目标缓冲区总大小
-/// @param format 格式字符串
-/// @param ... 格式参数
-/// @return 实际写入的字符数（不含终止符）
-size_t safe_str_format(char* dst, size_t dst_size, const char* format, ...);
 ```
 
-提示：`safe_str_copy` 可以基于 `strncpy` 实现，但必须保证终止；`safe_str_cat` 需要先算出目标字符串当前长度，再计算剩余可用空间；`safe_str_format` 直接用 `vsnprintf` 实现即可。
+提示：`safe_str_copy` 可以基于 `strncpy` 实现，但 `strncpy` 在 src 过长时不会自动写终止符，得自己补；`safe_str_cat` 要先算出 dst 当前长度，再算剩余可用空间。
+
+**挑战扩展**（可选）：再加一个 `safe_str_format(char* dst, size_t dst_size, const char* format, ...)`。它需要用到 `vsnprintf` 和 `<stdarg.h>` 的可变参数机制（本篇没讲，函数篇也只是带过），请自查 cppreference 的 `vsnprintf` 后再实现。
 
 ### 练习 2：字符串分割函数
+
+**难度：基础** · 用指针遍历字符串，按分隔符切片
 
 实现一个将字符串按分隔符切分的函数：
 

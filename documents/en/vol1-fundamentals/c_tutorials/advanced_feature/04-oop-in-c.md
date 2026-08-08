@@ -560,6 +560,8 @@ In our C implementation, `shape_destroy()` uses the vtable to find the correct `
 
 ### Exercise 1: Triangle Extension
 
+**Difficulty: Basic** · add a shape following the vtable
+
 Add a `Triangle` type to the graphics framework (represented by three side lengths):
 
 ```c
@@ -576,6 +578,8 @@ Triangle* triangle_create(const char* name, int id,
 
 ### Exercise 2: Shape Sorting
 
+**Difficulty: Intermediate** · qsort plus a function-pointer comparator
+
 Add area sorting functionality to `ShapeManager`:
 
 ```c
@@ -586,6 +590,8 @@ void shape_manager_sort_by_area(ShapeManager* mgr);
 > **Tip:** We can use the standard library's `qsort()`. However, the comparison function receives `const void*`, which we need to cast to `Shape**` and then dereference to obtain the `Shape*`. We can then compare sizes using `shape_area()`.
 
 ### Exercise 3: Opaque Pointer Counter
+
+**Difficulty: Intermediate** · redo Counter with an opaque pointer
 
 Refactor the `Counter` from step two into an opaque pointer version. The header file should only expose `typedef struct Counter Counter;` and the operation functions, while the implementation file hides the full definition. Please split the header and implementation files yourself, and provide a `counter_create()` function that returns a heap-allocated object.
 
