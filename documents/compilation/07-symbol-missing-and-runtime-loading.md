@@ -9,7 +9,8 @@ tags:
 - host
 - intermediate
 title: 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
-description: ''
+description: '跨平台对比链接时未定义符号的容忍度差异，并演示 dlopen/LoadLibrary 运行时动态加载与 C++ 插件工厂模式'
+cpp_standard: [11, 14, 17, 20]
 ---
 # 深入理解C/C++编译技术——动态库A4：链接时符号缺失行为与运行时动态加载
 
@@ -17,7 +18,7 @@ description: ''
 
 ## 链接时符号缺失行为的平台差异
 
-这个很有趣，我们讨论的时在链接发生的时候，平台之间对存在未定义符号的容忍程度分析。在Windows上，动态库生成的时候，我们就已经要求不允许存在未定义符号，一旦发生未定义的符号，我们的工具链就会抱怨道找不到符号。
+这个很有趣，我们讨论的是在链接发生的时候，平台之间对存在未定义符号的容忍程度分析。在Windows上，动态库生成的时候，我们就已经要求不允许存在未定义符号，一旦发生未定义的符号，我们的工具链就会抱怨道找不到符号。
 
 而在Linux上不会存在这样的事情。事实上，Linux的策略更加宽容，默认的情况下，我们允许符号未定义，直到上进程的时候，加载器会检查所有的依赖确保所有的重要符号都是被正确编址的。直到那个时候才会确认我们的程序是否真的存在重要的问题。
 
@@ -268,3 +269,7 @@ PluginAPI* create_plugin_api(void) {
 #### **Windows 的 `GetProcAddress` 失败怎么排查？**
 
 检查导出名称（使用 `dumpbin /EXPORTS` 或 `nm`），检查调用约定是否匹配（`__stdcall` 会改变导出名），或是否使用了 C++ 名称修饰。建议 `__declspec(dllexport)` + `extern "C"`。
+
+## 现代 CMake 视角
+
+上面这一堆 `gcc -fPIC -shared`、`-Wl,-no-undefined`、`__declspec(dllexport)` 的手工活，在现代项目里基本都被 CMake 接管了。`add_library(mylib SHARED mylib.c)` 会自动给位置无关代码加 `-fPIC`，并按平台产出 `.so`/`.dll`/`.dylib`，`STATIC` 则走 `ar` 打包，您不再需要手敲这两个标志。Linux 上默认放行未定义符号那一套宽松策略，可以用 `set_target_properties(mylib PROPERTIES LINK_FLAGS "-Wl,--no-undefined")`（或 `CMAKE_SHARED_LINKER_FLAGS`）拧紧，复刻本文开头讲的严格检查。符号可见性方面，`CXX_VISIBILITY_PRESET hidden` + `VISIBILITY_INLINES_HIDDEN ON` 等价于给整个目标套 `-fvisibility=hidden`，然后您只在需要导出的工厂函数上拍 `__attribute__((visibility("default")))`（或 Windows 的 `__declspec(dllexport)`），导出表干净利落，跨平台写起来比满文件撒 `dllexport` 省心得多。至于运行时找库那条 `LD_LIBRARY_PATH` / `PATH` 折腾链，CMake 用安装期 `CMAKE_INSTALL_RPATH`（Linux 下配 `$ORIGIN` 让可执行文件去自己所在目录找 `.so`）和 Windows 上把 DLL 复制到可执行文件同目录这两招，把"装到哪儿能在哪儿找到"自动化了——您本文里 `export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH` 那一行，在规范的 CMake 工程里基本用不着手敲。

@@ -8,10 +8,11 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
-description: ''
+title: 深入理解C/C++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+description: '动态库 .so 为什么直接执行会段错误、libc 为什么又能优雅打印版本信息——从 ELF 入口点到手工 syscall 的完整拆解'
+cpp_standard: [11, 14, 17, 20]
 ---
-# 深入理解CC++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
+# 深入理解C/C++的编译与链接技术（番外）：动态库可以像可执行文件那样执行嘛？
 
 我知道有朋友看到这个话题会下意识的发笑，会觉得笔者在胡言乱语。其实，笔者在最最开始的时候，也对这个事情一笑了之，觉得太荒唐。但是实际上，动态库是**可以像可执行文件那样执行的。**
 
@@ -31,7 +32,7 @@ Segmentation fault         (core dumped) /lib/libcrypt.so.2.0.0
 
 我们第一个想法是——为什么？为什么事情会变成这样？答案很简单，在后续的博客中，笔者会强调，一般而言，以.so结尾的，一般是动态库（或者说共享库，笔者已经说明了在今天的操作系统中，可以不再刻意的区分共享库和动态库了）
 
-> [深入理解CC++的编译与链接技术2：动态库静态库导论-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/154828385)
+> [深入理解C/C++的编译与链接技术2：动态库静态库导论-CSDN博客](https://blog.csdn.net/charliechen114514191/article/details/154828385)
 
 很显然，当我们直接输入文件的绝对地址的时候，操作系统的bash会尝试将它当作一个可独立运行的程序，然而，这个跟我们的动态库的定义：包含一组函数和数据的**动态共享组件**是不一致的。由于共享库没有设计像普通程序那样的标准主入口点（$\text{main}$ 函数），直接运行时，执行流很可能跳转到无效的内存地址。操作系统检测到这种**非法内存访问**（试图访问程序无权访问的内存区域）时，就会触发**段错误**。我想很多人看到这里的时候，已经确信我这篇博客中指出：动态库是**可以像可执行文件那样执行的**这个论点就是错误的。
 
@@ -222,8 +223,8 @@ Disassembly of section .text:
 001b5230  65 20 73 65 65 3a 0a 3c  68 74 74 70 73 3a 2f 2f  |e see:.<https://|
 001b5240  67 69 74 6c 61 62 2e 61  72 63 68 6c 69 6e 75 78  |gitlab.archlinux|
 001b5250  2e 6f 72 67 2f 61 72 63  68 6c 69 6e 75 78 2f 70  |.org/archlinux/p|
-001b5260  61 63 6b 61 67 69 6e 67  2f 70 61 63 6b 61 67 65  |ackaging/package|
-001b5270  73 2f 67 6c 69 62 63 2f  2d 2f 69 73 73 75 65 73  |s/glibc/-/issues|
+001b5260  61 63 6b 61 67 69 6e  67 2f 70 61 63 6b 61 67 65  |ackaging/package|
+001b5270  73 2f 67 6c 69 62 63  2f 2d 2f 69 73 73 75 65 73  |s/glibc/-/issues|
 001b5280  3e 2e 0a                                          |>..|
 001b5283
 
@@ -233,7 +234,7 @@ Disassembly of section .text:
 
 ## 我们可以干这档事情嘛？
 
-拜托！当然可以啊！现在笔者就陪你干一票！但是会有点难，因为我们现在不可能依赖libc库，因为动态库的初始化跟咱们的可执行程序有不一致的地方，比如说不会主动的初始化CRunTime，没办法主动链接C库（当然笔者之前做dynamic linker指定过，发现没有用，而且代码崩在了stack函数跳转上，有点无能为力了，搞半天没搞定）等等。
+拜托！当然可以啊！现在笔者就陪你干一票！但是会有点难，因为我们现在不可能依赖libc库，因为动态库的初始化跟咱们的可执行程序有不一致的地方，比如说不会主动的初始化C Runtime，没办法主动链接C库（当然笔者之前做dynamic linker指定过，发现没有用，而且代码崩在了stack函数跳转上，有点无能为力了，搞半天没搞定）等等。
 
 所以，现在我们可以搞一处了：
 
@@ -345,3 +346,7 @@ int main() {
 Result of 1 + 2 = 3
 
 ```
+
+## 现代 CMake 视角
+
+本篇演示的那条 `gcc -shared -fPIC -Wl,-e,direct_load_helper_main` 在现代项目里基本不会手敲，而是交给 CMake 接管。`add_library(cclib SHARED cclib.c)` 会自动给共享库加上 `-fPIC` 并产出 `.so`；`visibility("hidden")` 这一手符号可见性控制，对应 `set_target_properties(cclib PROPERTIES CXX_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN ON)`，CMake 替你转成 `-fvisibility=hidden`。改入口点（`-Wl,-e`）属于相当少见的特殊需求，CMake 没有内置 target 属性直接覆盖，通常走 `target_link_options(cclib PRIVATE "-Wl,-e,direct_load_helper_main")` 显式塞给链接器。而另一头的可执行程序 `gcc main.c -o main ./libcclib.so`，对应 `add_executable(main main.c)` 加 `target_link_libraries(main PRIVATE cclib)`，链接路径和 `-lcclib` 全部由 CMake 根据 target 依赖图自动算出来，再也不用手挑 `-L`/`-l`。理解了底层 ELF 入口点和符号可见性的机制，回过头看这些 CMake 命令，就明白它们各自接管了哪一段原本要手写的链接器活儿。

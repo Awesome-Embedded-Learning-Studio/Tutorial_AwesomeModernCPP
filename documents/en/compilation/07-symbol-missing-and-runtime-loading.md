@@ -8,60 +8,54 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'In-depth Understanding of C/C++ Compilation Technology — Dynamic Libraries
-  A4: Link-Time Symbol Missing Behavior and Runtime Dynamic Loading'
-description: ''
-translation:
-  source: documents/compilation/07-symbol-missing-and-runtime-loading.md
-  source_hash: 2f848caece654c8136cefb8c2fc7d988f0af62905153ff32c6c990871169e250
-  translated_at: '2026-06-24T00:25:31.082918+00:00'
-  engine: anthropic
-  token_count: 1424
+title: 'Deep Dive into C/C++ Compilation — Dynamic Libraries A4: Undefined-Symbol Behavior at Link Time and Runtime Dynamic Loading'
+description: 'A cross-platform comparison of how tolerant each platform is about undefined symbols at link time, plus a walkthrough of runtime dynamic loading with dlopen / LoadLibrary and a C++ plugin factory pattern.'
+cpp_standard: [11, 14, 17, 20]
 ---
-# In-Depth Understanding of C/C++ Compilation Technology—Dynamic Libraries A4: Link-Time Symbol Missing Behavior and Runtime Dynamic Loading
+# Deep Dive into C/C++ Compilation — Dynamic Libraries A4: Undefined-Symbol Behavior at Link Time and Runtime Dynamic Loading
 
-This blog post is particularly important. Here, we plan to discuss the behavior on different platforms (Windows and GNU/Linux) when undefined symbols exist during the generation of our executable files or when other library files depend on them. We will also cover the fairly significant topic of programming for runtime dynamic library loading.
+This post is going to matter a bit more. What I'm planning to talk through here is how the different platforms (Windows and GNU/Linux) behave when an executable we're building, or another library, depends on a symbol that's left undefined; and then the more interesting topic, which is the programming side of dynamically loading a dynamic library at runtime.
 
-## Platform Differences in Link-Time Symbol Missing Behavior
+## Platform differences for undefined symbols at link time
 
-This is quite interesting. We are discussing the tolerance levels of different platforms for undefined symbols when linking occurs. On Windows, when a dynamic library is generated, undefined symbols are strictly prohibited. Once an undefined symbol appears, our toolchain will complain that it cannot find the symbol.
+This one's genuinely interesting. What we're talking about is, at the moment linking actually happens, how tolerant each platform is of leaving a symbol undefined. On Windows, the moment you produce a dynamic library, you're already required to have zero undefined symbols. The instant an undefined symbol shows up, your toolchain starts complaining that it can't find the symbol.
 
-This is not the case on Linux. In fact, Linux's strategy is more permissive. By default, we allow symbols to remain undefined until the process is launched. At that point, the loader checks all dependencies to ensure all essential symbols are correctly resolved. It is only then that we confirm whether our program truly has critical issues.
+On Linux, nothing of the sort happens. In fact, Linux's policy is far more permissive; by default, we let symbols stay undefined all the way up to the point the process is launched, at which point the loader goes through every dependency and checks that every important symbol actually gets addressed. Only then does it confirm whether our program really has a serious problem.
 
-Of course, if you prefer this strict checking, there is a way: pass the `-Wl,-no-undefined` option when compiling the relocatable files to instruct the subsequent linker to report errors.
+Of course, if you want this kind of strict checking, there is a way: when you're producing the relocatable object, pass `-Wl,-no-undefined` to steer the linker's error-reporting behavior down the line.
 
-## What is Runtime Dynamic Loading?
+## What is runtime dynamic loading?
 
-Officially, runtime dynamic loading refers to a program loading a shared library (shared object / dynamic library / DLL) **at runtime** on demand, finding the required symbols (functions, variables), and then calling them. In the author's opinion, **this is a key implementation mechanism for plugin systems**. Because now:
+Officially speaking, runtime dynamic linking (dynamic loading) means a program loads a shared library (shared object / dynamic library / DLL) on demand at runtime, looks up the symbols it needs (functions, variables), and then calls them. In my view, this is one of the important implementation mechanisms behind plugin systems, because now:
 
-- We can load plugins dynamically, loading different functional modules (internationalization, rendering backends, drivers, etc.) at runtime based on configuration.
-- The above features allow us to load only the dependencies we need, saving some space.
-- Furthermore, it supports hot-swapping/extending at runtime. At the very least, we can extend functionality without recompiling the main program.
+- We can load plugins dynamically, pulling in different functional modules at runtime based on configuration (internationalization, rendering backends, drivers, and so on).
+- The above property means we can load only the dependencies we actually need, saving a bit of space.
+- And we get hot-swap / extension support at runtime; at the very least, we can extend functionality without recompiling the main program.
 
-## Many Benefits, But Are There Drawbacks?
+## Lots of upsides, but any trouble?
 
-There certainly are. We need to be much more careful with error handling. After all, we will face a series of troublesome issues, such as mismatched symbols or loading failures. It is also recommended to create a unified management class to handle these exported symbols. There is a reason for this: the beauty of plugins is that they can be installed and uninstalled at any time. After unloading, we must absolutely avoid continuing to call their functions or accessing their static resources. The author suggests creating a function wrapper object similar to `QPointer` that includes an expiration mechanism to access them.
+There really is some. Our error handling has to get more careful, since we end up with a whole string of annoying problems, things like the symbol not matching, the load failing, and so on. I'd also suggest you build a single manager class to handle these exported symbols, and there's a reason for that: the whole point of a plugin is that it can be installed and uninstalled at any time, and once it's unloaded, you absolutely must not keep calling its functions or touching its static resources. I think you could build something like a function-wrapping object with an expire mechanism, similar in spirit to Qt's `QPointer`, to access it through.
 
-## Some System-Level APIs
+## Some system-level APIs
 
-Here is a list of some system-level APIs.
+Here's a quick rundown of some of the system-level APIs:
 
 - `void *dlopen(const char *filename, int flag);`
-  - Common `flag` values: `RTLD_LAZY` (lazy symbol resolution), `RTLD_NOW` (resolve all required symbols immediately), `RTLD_LOCAL` (symbols are local), `RTLD_GLOBAL` (symbols can be resolved by subsequently loaded libraries)
-- `void *dlsym(void *handle, const char *symbol);` Returns a pointer to the function/variable
-- `int dlclose(void *handle);` Unloads the library
-- `char *dlerror(void);` Retrieves error description (implementations that are not thread-safe may return a static string)
+  - Common `flag` values: `RTLD_LAZY` (defer symbol resolution), `RTLD_NOW` (resolve every needed symbol immediately), `RTLD_LOCAL` (keep symbols local), `RTLD_GLOBAL` (symbols can be picked up by libraries loaded afterwards)
+- `void *dlsym(void *handle, const char *symbol);` returns a pointer to a function or variable
+- `int dlclose(void *handle);` unloads
+- `char *dlerror(void);` fetches the error description (a non-thread-safe implementation may return a static string)
 
-Windows equivalents:
+The Windows equivalents:
 
-- `HMODULE LoadLibrary(LPCSTR lpFileName);` Of course, there is also an EX version. Here, the author suggests you head over to Microsoft's MSDN documentation to find out more: [LoadLibraryExW function (libloaderapi.h) - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)
+- `HMODULE LoadLibrary(LPCSTR lpFileName);` there's also the Ex version; I'll point you over to Microsoft's MSDN docs if you want to dig in: [LoadLibraryExW function (libloaderapi.h) - Win32 apps | Microsoft Learn](https://learn.microsoft.com/zh-cn/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)
 - `FARPROC GetProcAddress(HMODULE hModule, LPCSTR lpProcName);`
 - `BOOL FreeLibrary(HMODULE hModule);`
-- `DWORD GetLastError(void);` + `FormatMessage` to get a readable string
+- `DWORD GetLastError(void);` plus `FormatMessage` to get a readable string
 
-## Minimal C Dynamic Library + Program (Linux) — C-Style Function Export
+## A minimal C dynamic library + program (Linux) — exporting C-style functions
 
-For example, the author has written a simple dynamic library
+For example, I wrote a simple dynamic library:
 
 ```c
 // mylib.c
@@ -77,7 +71,7 @@ const char *hello(void) {
 
 ```
 
-On Linux, we build a shared library like this
+On Linux, we build the dynamic library like this:
 
 ```bash
 
@@ -89,7 +83,7 @@ gcc -o main main.c -ldl
 
 ```
 
-Next, we write a `main.c` to use it:
+Then we write a `main.c` that uses it:
 
 ```c
 // main.c
@@ -124,7 +118,7 @@ int main(void) {
 
 ```
 
-**Run**
+**Run it**
 
 ```bash
 
@@ -206,7 +200,7 @@ int main(void) {
 
 ```
 
-**Run (in the same directory as the DLL or add the DLL to PATH)**
+**Run it (in the same directory as the DLL, or add the DLL's directory to PATH)**
 
 ```cmd
 set PATH=%CD%;%PATH%
@@ -214,9 +208,11 @@ main_win.exe
 
 ```
 
-## C++ Plugin Interfaces and extern "C" Factories (Recommended Practice)
+------
 
-When we need to export C++ objects or classes, a common strategy is to export a factory function (`extern "C"`) that returns an opaque pointer, or to export a `struct` function table (interface table), to avoid C++ name mangling issues.
+## C++ plugin interfaces and the `extern "C"` factory (the recommended approach)
+
+When you need to export C++ objects or classes, the common strategy is to export a factory function (`extern "C"`) that returns an opaque pointer, or to export a `struct` full of function pointers (an interface table), so that C++ name mangling doesn't get in the way.
 
 ```c
 // plugin.h
@@ -239,7 +235,7 @@ PluginAPI* create_plugin_api(void);
 
 ```
 
-### plugin_impl.c (Plugin Implementation)
+### plugin_impl.c (the plugin implementation)
 
 ```c
 // plugin_impl.c
@@ -262,14 +258,18 @@ PluginAPI* create_plugin_api(void) {
 
 ```
 
-The main program only needs to obtain the `PluginAPI*` via `dlsym(h, "create_plugin_api")` to seamlessly call plugin functions, without worrying about C++ name mangling.
+The main program just needs to grab the `PluginAPI*` through `dlsym(h, "create_plugin_api")`, and it can call into the plugin's functions seamlessly, without ever having to care about C++ name mangling.
 
-## Issues I Encountered and Troubleshooting Techniques
+## Problems I've hit, and the debugging tricks I've picked up along the way
 
-### **Why can't `dlsym` find my function in C++?**
+#### **Why can't `dlsym` find the function I wrote in C++?**
 
-When I was hand-writing a PDF viewer and preparing to implement a plugin system, I ran into this issue. As discussed in my previous blog posts, C++ compilers perform name mangling on symbol names. The natural solution is to export a C-style interface using `extern "C"`, or use the solution mentioned above.
+I got bitten by this back when I was hand-rolling a PDF viewer and starting to build out its plugin system. As I talked about in an earlier post, the C++ compiler mangles symbol names (name mangling). The natural fix is to export a C-style interface through `extern "C"`, or use the function-table approach I mentioned above.
 
-### **How to troubleshoot `GetProcAddress` failures on Windows?**
+#### **How do you debug a failing `GetProcAddress` on Windows?**
 
-Check the exported names (using `dumpbin /EXPORTS` or `nm`), verify that the calling conventions match (`__stdcall` changes the exported name), or check if C++ name mangling is being used. I recommend using `__declspec(dllexport)` + `extern "C"`.
+Check the exported names (using `dumpbin /EXPORTS` or `nm`), check whether the calling convention matches (`__stdcall` will rewrite the exported name), and check whether C++ name mangling is in play. I'd recommend going with `__declspec(dllexport)` paired with `extern "C"`.
+
+## The modern CMake view
+
+All of that hand-typed `gcc -fPIC -shared`, `-Wl,-no-undefined`, `__declspec(dllexport)` stuff is, in a modern project, basically taken over by CMake. `add_library(mylib SHARED mylib.c)` will add `-fPIC` for position-independent code for you and produce a `.so` / `.dll` / `.dylib` depending on the platform; `STATIC` then goes through `ar` for packaging, and you no longer have to type these two flags by hand. As for Linux's permissive default of letting undefined symbols slide, you can tighten it back up with `set_target_properties(mylib PROPERTIES LINK_FLAGS "-Wl,--no-undefined")` (or `CMAKE_SHARED_LINKER_FLAGS`) to reproduce the strict checking I talked about at the start of this post. On the symbol-visibility side, `CXX_VISIBILITY_PRESET hidden` paired with `VISIBILITY_INLINES_HIDDEN ON` is equivalent to slapping `-fvisibility=hidden` over the entire target; then you only drop `__attribute__((visibility("default")))` (or, on Windows, `__declspec(dllexport)`) onto the factory functions you actually want to export, and the export table comes out clean. Writing that cross-platform is far less of a headache than sprinkling `dllexport` all over the file. As for the runtime library-search chain, that whole `LD_LIBRARY_PATH` / `PATH` song and dance, CMake automates the "wherever it gets installed is where it can be found" part with install-time `CMAKE_INSTALL_RPATH` (on Linux, pair it with `$ORIGIN` so the executable goes looking for its `.so` in its own directory) and, on Windows, the trick of copying the DLL next to the executable. That line of yours, `export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH`, in a properly structured CMake project you basically never have to type by hand.

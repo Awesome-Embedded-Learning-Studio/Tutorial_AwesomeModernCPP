@@ -8,10 +8,11 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 深入理解CC++的编译与链接技术9：动态库细节（完结）
-description: ''
+title: 深入理解C/C++的编译与链接技术9：动态库细节（完结）
+description: '从 PIC、GOT/PLT 到符号介入，把动态库在运行时为什么"地址不确定"和现代链接器-装载器如何协作这件事讲透'
+cpp_standard: [11, 14, 17, 20]
 ---
-# 深入理解CC++的编译与链接技术9：动态库细节（完结）
+# 深入理解C/C++的编译与链接技术9：动态库细节（完结）
 
 ## 前言
 
@@ -33,7 +34,7 @@ mov ds:0xBAD10000, eax; 写回操作
 
 ```
 
-非常好，知道这个事情之后，我们要指出，函数调用的本质也是找到代码段的函数地址——比如说，咱们要调用一个平凡的add函数，就要告诉我们的call指令add哈桑农户在哪（也就说，我们要提供add函数入口点的代码段地址）
+非常好，知道这个事情之后，我们要指出，函数调用的本质也是找到代码段的函数地址——比如说，咱们要调用一个平凡的add函数，就要告诉我们的call指令add函数在哪（也就说，我们要提供add函数入口点的代码段地址）
 
 ```cpp
 
@@ -138,7 +139,7 @@ PLT 的好处：
 3. 解析器在所有动态库中查找符号 foo
 4. 更新 GOT[foo] = foo 的真实地址
 5. 返回 foo
-6. 之后的调用直接跳 GO[foo]
+6. 之后的调用直接跳 GOT[foo]
 
 ------
 
@@ -238,3 +239,11 @@ Linux 下的动态链接器（ld-linux）采用了一套特定的规则来处理
 这个事情要重复下！很多人认为："我在 C++ 代码里把函数放在 `namespace MyLib { ... }` 里，或者我把代码编译成了 `libMyLib.so`，那么这个库就像一个独立的容器，里面的变量名 `count` 不会和外面冲突。"
 
 但是实际上**链接器（Linker）是"符号类型盲（Type-blind）"和"结构盲"的。**我们都知道**C++ 命名空间只是语法糖：** 编译器通过**名字修饰（Name Mangling）** 将 `MyLib::foo()` 变成了字符串 `_ZN5MyLib3fooEv`。对于链接器来说，这只是一个长字符串。如果两个库碰巧生成了相同的修饰名（Mangled Name），冲突依然会发生。而**动态库不是命名空间：** 动态库只是文件组织形式。一旦被加载到进程内存，所有导出符号（Exported Symbols）都会进入一个平铺的、扁平的全局符号池（Global Symbol Table）。`libA.so` 里的全局变量 `g_context` 和 `libB.so` 里的 `g_context` 在链接器眼中就是同一个东西，除非你使用了 Visibility 隐藏或 Local 绑定。
+
+## 现代 CMake 视角
+
+上面这些 `-fPIC`、`-fvisibility=hidden`、`-Wl,-Bsymbolic`、`$ORIGIN` 之类的标志，今天基本都不用手敲了，CMake 把它们封到了几行 `add_library` / `set_target_properties` 里。
+
+`add_library(foo SHARED)` 就等于替你做了两件事：自动给库内每个 `.o` 加上 `-fPIC`（SHARED 默认开），再用 `gcc -shared` 打成 `.so`，相当于自动跑了一遍前面说的 PIC 流程。符号可见性则交给 `CMAKE_CXX_VISIBILITY_PRESET hidden` 和 `CMAKE_VISIBILITY_INLINES_HIDDEN`：设上之后所有符号默认隐藏，只有你显式 `__attribute__((visibility("default")))` 标的接口才进动态符号表，正好对应上一节"符号可见性"那条最佳实践。`target_link_libraries` 接管了 `-l`/`-L`，依赖关系会被 CMake 自动传播（PUBLIC/PRIVATE/INTERFACE 三档），传递依赖里的重复符号问题靠这个就能少踩一大半。
+
+剩下两个运行期的坑也有专门的家。`LD_LIBRARY_PATH` 那套"装完还要 export"的折腾，现在用 `CMAKE_INSTALL_RPATH` 配 `$ORIGIN` 让可执行文件自己记住 `.so` 在哪，部署到任何相对路径都能找到库；`-Wl,-Bsymbolic` 这种"我要库内部符号自己解析自己"的需求，通过 `target_link_options(foo PRIVATE "-Wl,-Bsymbolic")` 一样能挂上去。换句话说，链接器-装载器协作的底层机制没变，但今天你写的不再是 `gcc -shared -fPIC -Wl,-Bsymbolic -o libfoo.so ...`，而是 `add_library(foo SHARED)` 加几个 `set_target_properties`，剩下的脏活 CMake 替你干了。

@@ -8,39 +8,33 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'Deep Dive into C/C++ Compilation and Linking: Part 9 – Dynamic Library Details
-  (Finale)'
-description: ''
-translation:
-  source: documents/compilation/09-dynamic-library-details.md
-  source_hash: 315ba24b7cf9d2848735ab94d5d5acf600605787f7b91efd2692f588cac62b3d
-  translated_at: '2026-06-16T03:28:05.668438+00:00'
-  engine: anthropic
-  token_count: 1653
+title: "Deep Dive into C/C++ Compilation and Linking, Part 9: Dynamic Library Details (Finale)"
+description: 'From PIC, GOT/PLT, to symbol interposition, properly explaining why dynamic libraries have "indeterminate addresses" at runtime and how the modern linker-loader collaboration actually works'
+cpp_standard: [11, 14, 17, 20]
 ---
-# Deep Dive into C/C++ Compilation and Linking Techniques 9: Dynamic Library Details (Finale)
+# Deep Dive into C/C++ Compilation and Linking, Part 9: Dynamic Library Details (Finale)
 
-## Introduction
+## Foreword
 
-Next, let's discuss the details of dynamic libraries. Generally speaking, engineering development might not involve this level of detail, but knowing how dynamic libraries work is better than not knowing. Therefore, combining "Advanced C/C++ Compilation Technology," I will revisit some details of dynamic libraries.
+Next up, we're going to talk through the details of dynamic libraries. Honestly, day-to-day engineering work rarely drags you into this stuff, but knowing how dynamic libraries actually tick is better than not knowing. So here I'm leaning on *Advanced C and C++ Compiling* to walk through some of the finer points of dynamic libraries one more time.
 
-## **8.1 The Necessity of Resolving Memory Addresses**
+## **8.1 Why Resolving Memory Addresses Is Necessary**
 
-Before rushing ahead, let's supplement a few assembly instructions.
+Don't rush ahead just yet, let me throw in a bit more assembly.
 
-Obviously, we know that the basic model of modern computers is the Turing machine; we know where the operands are, fetch them for calculation, and put them back.
+The basic model of a modern computer is, obviously enough, a Turing machine. We know where the operands live, we fetch them, do the math, and put them back.
 
-Taking X86 as an example, we need to know the address of the memory operand so that we can transfer data back and forth between memory and the CPU.
+Take x86 as the example. We need to know the address of a memory operand, otherwise we can't move data back and forth between memory and the CPU.
 
 ```cpp
 
-mov eax, ds:0xBAD10000 ; 将地址0xBAD10000装载到eax中
-add eax, 0x1 ; 装载值自增
-mov ds:0xBAD10000, eax; 写回操作
+mov eax, ds:0xBAD10000 ; load address 0xBAD10000 into eax
+add eax, 0x1 ; increment the loaded value
+mov ds:0xBAD10000, eax; write it back
 
 ```
 
-Very good. Knowing this, we must point out that the essence of a function call is also finding the address of the function in the code segment—for example, if we want to call an ordinary `add` function, we must tell our `call` instruction where the `add` function is (that is, we must provide the code segment address of the `add` function's entry point).
+Great. With that out of the way, here's the point I want to make: a function call boils down to the same thing — finding the function's address in the code segment. Say we want to call a plain old `add` function, we have to tell our `call` instruction where `add` is (in other words, hand it the code-segment address of `add`'s entry point).
 
 ```cpp
 
@@ -53,195 +47,205 @@ main:
 
 ```
 
-Of course, sometimes we also use relative addresses for calls, which is slightly more convenient.
+Of course, sometimes we `call` a relative address instead, which is a bit more convenient.
 
-## Common Issues in Reference Resolution
+## Common Problems in Reference Resolution
 
-Let's look at the simplest situation! Suppose an executable file can only work further after loading a single dynamic library. These things are obvious:
+Let's look at the simplest case. Say the executable can only do real work after loading a single dynamic library. The following things are pretty self-evident:
 
-- The client binary provides a portion of the process memory map with a fixed and predictable address range.
-- Only after dynamic loading is complete does it become a valid part of the process.
-- When the executable calls one or more function implementations provided by the dynamic library (such as the library's interface), a connection is naturally established at this time.
+- The client binary provides a fixed, pre-determinable address range in the process memory map
+- Only after dynamic loading is finished does that range become a valid part of the process
+- Only when the executable calls one or several feature implementations exposed by the dynamic library (its interface, say) does the connection get wired up naturally
 
-From the basic situation above, we can know one thing: the core problem of dynamic libraries is that **the location of library code at runtime is indeterminate**. Whether it is Windows DLLs, Linux .so, or macOS dylib, they all have one thing in common: **dynamic libraries cannot determine their final load address during the compilation phase.**
+From the above, one thing becomes clear: the heart of the dynamic-library problem is that **the library code's location is indeterminate at runtime**. Whether it's a Windows DLL, a Linux `.so`, or a macOS dylib, they all share one trait: **a dynamic library cannot fix its final load address at compile time.**
 
-Why? Mainly for these reasons:
+Why? Mostly for these reasons:
 
-#### **(1) Address conflicts may occur between multiple dynamic libraries**
+#### **(1) Multiple dynamic libraries can collide on addresses**
 
-Assume two .so files both want to map to the 0x400000 area in virtual memory; this will cause a conflict.
-To avoid conflict, the operating system's loader must re-select a suitable base address.
+Suppose two `.so` files both want to map into the `0x400000` region of virtual memory. That's a collision.
+
+To avoid it, the OS loader has to pick a fresh, suitable base address.
 
 #### **(2) ASLR (Address Space Layout Randomization)**
 
-Modern operating systems enable address randomization for security, so dynamic libraries load at different addresses every time.
-This means: compilers and linkers cannot assume that dynamic libraries will run at a fixed address.
+Modern OSes turn on address randomization for security, so a dynamic library lands at a different address every time it loads.
 
-#### **(3) The same dynamic library loads at different locations in different processes**
+That means: the compiler and linker cannot assume the dynamic library will run at a fixed address.
 
-The address spaces of processes are independent of each other, and the loading location of the library in each process can be completely different.
+#### **(3) The same dynamic library loads at different positions in different processes**
 
-## Address Conversion is the Solution
+Process address spaces are independent, and the library's load position can be completely different in each one.
 
-#### Case: We just want to use exported binary symbols
+## Translating Addresses Is the Solution
 
-For example, if we just want to use those exported symbols, such as interfaces provided by the library—``create_window``, ``init_all``, ``deinit_all``, etc.—this is using exported binary symbols. At this time, the client program obviously needs to know immediately where the successful load address is, rather than the dynamic library's original symbol address (they are offset from zero!). Therefore, in the past, it was obviously impossible for the linker to complete all symbol resolution work directly. The determination of symbol addresses must be determined by the loader together.
+#### Case: We really do want to use the exported binary symbols
+
+Say we genuinely want to use those exported symbols, the ones the library hands us — `create_window`, `init_all`, `deinit_all`, that kind of interface. This is using exported binary symbols, and clearly the client program needs to know right away where the successfully loaded address is, not the dynamic library's original symbol address (those are offset from 0!), so the old approach of letting the linker resolve everything upfront obviously doesn't cut it anymore. Pinning down the symbol address has to be a joint effort with the loader.
 
 #### Case: Calling your own private symbols
 
-Regardless, some private symbols cannot be found by the client program, but there is a more severe problem—if these symbols are called by exported symbols, what should be done then?
+Either way, some private symbols can't be found by the client program at all. But there's a thornier problem — what if those symbols are being called by the *exported* symbols? Now what?
 
-## Linker-Loader Cooperation—Old Technology
+## Linker–Loader Collaboration: The Old Technique
 
-Now let's talk carefully about linker-loader cooperation. After understanding all the constraints described earlier, we can establish cooperation between the linker and the loader based on the following rules:
+Now let's talk carefully about linker–loader collaboration. Once we understand all the constraints above, we can frame the collaboration between linker and loader with these rules:
 
-- The linker identifies the limitations of its own symbol resolution.
-- The linker accurately counts invalid symbol references, prepares reference fix-up hints, and embeds these hints into the binary file.
-- The loader accurately follows the linker's relocation hints and performs fix-ups based on these hints after completing address translation.
+- The linker recognizes the limits of its own symbol resolution.
+- The linker tallies up the references that will break, prepares relocation hints, and embeds those hints in the binary.
+- The loader faithfully follows the linker's relocation hints and patches things up after completing the address translation.
 
-### Linker identifies the limitations of its own symbol resolution
+### The Linker Recognizes the Limits of Its Own Symbol Resolution
 
-When creating a dynamic library, in addition to clearly distinguishing the relationship between different parts of the code, the linker also needs to accurately identify which symbol references will fail when the code segment is loaded into different address ranges.
+When building a dynamic library, the linker has to do more than clearly sort out the relationships between different chunks of code — it also has to identify, accurately, which symbol references would break if the code segment were loaded at a different address range.
 
-First, unlike executable files, the address range of the dynamic library memory mapping starts from zero. When processing executable files, the linker will mostly not set the start point of the address range to zero. Secondly, before the loading stage, if the linker finds that the addresses of certain symbols cannot be resolved, it will stop resolving and instead use temporary values to fill the unresolved symbols (usually obviously wrong values, such as 0). However, this does not mean that the linker will completely abandon the symbol resolution task. On the contrary, it will only give up dealing with those symbols that really cannot be figured out.
+First, unlike an executable, a dynamic library's memory map starts from zero. When the linker processes an executable, in most cases it does not set the start of the address range to zero. Second, before the load stage, if the linker finds it can't resolve some symbol's address, it stops trying to resolve it and instead fills the unresolved symbol with a placeholder (usually a blatantly wrong value like 0). But that doesn't mean the linker gives up on symbol resolution entirely. It only gives up on the symbols it genuinely can't handle.
 
-### Next step: Linker accurately counts invalid symbol references, prepares fix-up hints
+### Next Step: The Linker Tallies the Broken References and Prepares Fix-up Hints
 
-We can fully know which resolved references will fail due to loader address translation. Whenever an assembly instruction requires an absolute address, the reference in the instruction will be invalid. At the completion of the link stage of dynamic library construction, the linker can identify where absolute addresses appear and let the loader know this information through some methods. To provide linker-loader cooperation support, the linker will reserve some hints for the loader. These hints point out to the loader how to fix errors caused by address translation during dynamic loading. The binary format specification supports some new sections specifically reserved for this type of hint. In addition, specific simple syntax is designed to facilitate the linker to accurately point out the action the loader needs to perform.
+We can fully tell which resolved references will be invalidated by the loader's address translation. As long as an assembly instruction needs an absolute address, the reference inside it will break. During the link stage that finishes building the dynamic library, the linker can flag the spots where absolute addresses appear and, through some mechanism, let the loader know about them. To support this linker–loader collaboration, the linker reserves a set of hints for the loader, pointing out how to fix the errors caused by address translation during dynamic loading. The binary format spec accommodates this with new sections dedicated to holding such hints. There's also a specific, simple syntax designed so the linker can state precisely what action the loader needs to perform.
 
-These sections are called "relocation sections" in the binary file, where the `.rel.dyn` section is the oldest relocation section. Generally speaking, the linker writes relocation hints into the binary file so that the loader can read these hints. These hints specify the addresses that the loader needs to patch after completing the final memory map layout of the entire process, and the correct actions the loader needs to perform to correctly patch unresolved references.
+These sections are called "relocation sections" in the binary, and `.rel.dyn` is the oldest of them. Generally, the linker writes the relocation hints into the binary so the loader can read them. The hints specify the addresses the loader needs to patch — once the final memory-map layout of the entire process is settled — and the correct action the loader must take to properly fix up the unresolved references.
 
-### Loader accurately follows linker relocation hints
+### The Loader Faithfully Follows the Linker's Relocation Hints
 
-The last stage belongs to the loader. The loader reads the dynamic library created by the linker, reads the loader segments in the dynamic library (each segment holds multiple linker sections), and places all data into the process memory map, stored near the original executable file code.
+The last stage belongs to the loader. The loader reads the dynamic library produced by the linker, reads the loader segments inside the library (each segment holds several linker sections), and places all of it into the process memory map, near the original executable's code.
 
-Finally, the loader locates the `.rel.dyn` section, reads the hints reserved by the linker, and patches the original dynamic library code according to these hints. After the patching is completed, we are ready to use the memory map to start the process. Compared to handling basic tasks, we need to provide the loader with more information when handling dynamic library loading.
+Finally, the loader locates the `.rel.dyn` section, reads the hints the linker left behind, and patches the original dynamic library code according to those hints. Once patching is done, the memory map is ready to be used to start the process. Compared to the basic tasks, when it comes to dynamic library loading we have to feed the loader a lot more information.
 
-## Modern Linker-Loader Cooperation Implementation Technology: PLT/GOT
+## Modern Linker–Loader Collaboration: PLT/GOT
 
-#### Internal mechanism of GOT / PLT
+#### The Inner Workings of GOT / PLT
 
-GOT (Global Offset Table) is used to allow code to not rely on fixed addresses, but to fetch the final address from the table. Of course, this obviously requires us to compile our code with `-fPIC` (do you understand now why Step 1 for dynamic libraries is to use PIC (Position Independent Code)!)
+The GOT (Global Offset Table) exists so code doesn't depend on a fixed address, but instead pulls the final address out of a table. Of course, this obviously requires us to compile our code with `-fPIC` (do you now get why step one of building a dynamic library is to use PIC, position-independent code?).
 
-Now, our call becomes similar to ``call [GOT + foo]``. For this, when the address of `foo` is determined, the `foo` entry in the GOT is written as the actual address. This way we update it directly.
+Now our call turns into something like `call [GOT + foo]`, so once `foo`'s address is pinned down, the `foo` entry in the GOT gets overwritten with the real address. That way we've updated it directly.
 
-PLT combines with GOT to implement lazy binding:
+PLT, combined with GOT, implements lazy binding:
 
-- First function call → PLT jumps to resolver → Updates GOT → Jumps directly to correct address (no more resolving)
+- First call to a function → PLT jumps to the resolver → updates the GOT → next time jumps straight to the correct address (no more resolution)
 
 Benefits of PLT:
 
 - Speeds up program startup
-- Resolves symbols only when needed
+- Resolves symbols only when they're actually needed
 
 ------
 
-## **Detailed Explanation of Lazy Binding Process**
+## **Lazy Binding, Step by Step**
 
-Simply put, lazy binding means not actually setting the GOT table address until the very last moment; before that, it polls and resolves all determined symbols.
+Put simply, lazy binding means we hold off on really setting the GOT entry until the very last moment, and until then we keep polling to resolve the symbols.
 
-1. `call foo` → Jump to `PLT[foo]`
-2. `PLT[foo]` calls resolver `_dl_runtime_resolve`
-3. Resolver searches for symbol `foo` in all dynamic libraries
-4. Update `GOT[foo]` = real address of `foo`
+1. `call foo` → jump to `PLT[foo]`
+2. `PLT[foo]` calls the resolver `_dl_runtime_resolve`
+3. The resolver hunts for the symbol `foo` across all the dynamic libraries
+4. Update `GOT[foo]` = the real address of `foo`
 5. Return to `foo`
-6. Subsequent calls jump directly to `GOT[foo]`
+6. Subsequent calls jump straight to `GOT[foo]`
 
 ------
 
 ## Duplicate Symbols in Dynamic Linking
 
-In static linking, if two global symbols with the same name appear, the linker usually reports an error directly (Multiple Definition Error). But in the world of **dynamic linking**, the rules are completely different. This is why it is worth discussing separately.
+In static linking, if two global symbols share the same name, the linker usually just bails with an error (Multiple Definition Error). But in the world of **dynamic linking**, the rules are completely different. That's why this deserves its own section.
 
 #### Duplicate Symbol Definitions
 
-In large projects, we often link multiple third-party libraries. Suppose your program links `libA.so` and `libB.so`. Coincidentally, the developers of both libraries defined a global function `void init()` or a global variable `int g_config`.
+In a large project we frequently link against several third-party libraries. Suppose your program links `libA.so` and `libB.so`, and by coincidence both libraries' authors defined a global function `void init()` or a global variable `int g_config`.
 
-When your main program starts and loads these two libraries, there will be two symbols named `init` in memory.
+When your main program starts up and loads both libraries, there will be two symbols named `init` sitting in memory.
 
 #### Why does this happen?
 
-1. **Common naming**: Used overly generic names (like ``utils``, ``log``, ``init``) without using ``static`` to limit the scope.
-2. **Diamond Dependency**: The project depends on library A and library B, and both A and B internally statically link the same base library C (such as an old version of OpenSSL). This results in C's symbols having a copy in both A and B.
-3. **Header file implementation**: Defined global variables or non-inline functions in header files, which were included by multiple ``.c/.cpp`` files.
+1. **Common names**: using overly generic names (like `utils`, `log`, `init`) without `static` to limit the scope.
+2. **Diamond dependency**: the project depends on library A and library B, and A and B each statically link the same base library C (an older OpenSSL, say). That leaves C's symbols with one copy inside A and another inside B.
+3. **Header-file implementations**: defining a global variable or a non-inline function in a header file that then gets included by multiple `.c/.cpp` files.
 
 ------
 
 ## Default Handling of Duplicate Symbols
 
-The dynamic linker under Linux (`ld-linux`) adopts a specific set of rules to handle such conflicts, usually referred to as **Symbol Interposition**.
+Linux's dynamic linker (`ld-linux`) follows a specific set of rules to handle this kind of conflict, generally known as **symbol interposition**.
 
 #### Rule: First Match Wins
 
-By default, the dynamic linker uses a **Breadth-First Search (BFS)** order to find symbols. It binds to the **first** matching symbol found in the Global Symbol Table and **ignores** all subsequent symbols with the same name.
+By default, the dynamic linker searches for symbols in **breadth-first (BFS)** order. It walks the global symbol table in order, binds to the **first** matching symbol it finds, and **ignores** every same-named symbol after that.
 
-#### Load Order Decides Everything
+#### Load order decides everything
 
-This means that **Link Order** or **Load Order** determines whose code the program actually calls.
+What this means is that **link order** or **load order** decides whose code your program actually calls.
 
-Assume ``app`` depends on ``libA`` and ``libB``, and both have ``func()``:
+Suppose `app` depends on `libA` and `libB`, and both define `func()`:
 
-- If the link command is ``gcc main.c -lA -lB``: When the main program calls ``func()``, it usually links to ``libA``'s version.
-- **Dangerous situation**: If code inside ``libB`` calls ``func()``, following ELF's global symbol binding rules, ``libB`` will also call ``libA``'s ``func()``! This is called "symbol hijacking." ``libB`` thinks it is calling its own code, but actually runs into ``libA``, which can lead to logic errors or even crashes.
+- If your link command is `gcc main.c -lA -lB`: when the main program calls `func()`, it usually binds to `libA`'s version.
+- **The dangerous case**: if code inside `libB` calls `func()`, by ELF's global symbol binding rules `libB` will also end up calling `libA`'s `func()`! This is called "symbol hijacking." `libB` thinks it's calling its own code but actually jumps into `libA`, which causes logic errors or even crashes.
 
-> **Application Scenario:** The ``LD_PRELOAD`` environment variable utilizes exactly this mechanism. By preloading a library containing ``malloc`` implementations, we can override libc's standard ``malloc``, thereby implementing memory leak detection tools (like Valgrind or jemalloc).
+> **Use case:** the `LD_PRELOAD` environment variable leans on exactly this mechanism. By preloading a library that implements `malloc`, we can override libc's standard `malloc`, which is how memory-leak detection tools (Valgrind, jemalloc) get built.
 
 ------
 
-## Handling Duplicates During Dynamic Library Linking
+## Handling Duplicate Symbols When Linking Dynamic Libraries
 
-Since the default behavior is so dangerous, how can we protect our symbols from being hijacked when developing dynamic libraries, or avoid hijacking others?
+Since the default behavior is this dangerous, how do we protect our own symbols from being hijacked (or avoid hijacking someone else's) when developing a dynamic library?
 
-#### 1. Linker parameter: ``-Bsymbolic``
+#### 1. The linker flag: `-Bsymbolic`
 
-When compiling a dynamic library, you can use the linker parameter ``-Wl,-Bsymbolic``.
+When compiling a dynamic library, you can pass the linker flag `-Wl,-Bsymbolic`.
 
-- **Function**: Forces the dynamic library to prioritize resolving global symbol references within itself.
-- **Effect**: If ``libB`` is compiled with this parameter, then when ``libB`` internally calls ``func()``, it will definitely call ``libB``'s own version and will not be overridden by ``libA`` or the main program.
+- **What it does:** forces the dynamic library to resolve its own global symbol references internally first.
+- **Effect:** if `libB` was compiled with this flag, then when code inside `libB` calls `func()`, it is guaranteed to call `libB`'s own version, never the one overridden by `libA` or the main program.
 
 #### 2. Symbol Visibility
 
-This is a best practice for modern C++ development. Through GCC/Clang's ``-fvisibility=hidden`` parameter, all symbols are hidden by default, and only required interfaces are exported.
+This is the modern C++ best practice. With GCC/Clang's `-fvisibility=hidden` flag, you hide all symbols by default and only export the interfaces you actually need.
 
-- **Code Example**:
+- **Code example:**
 
-  ````C
-  // 只有标记了 DEFAULT 的符号才会被导出到动态符号表
+  ```C
+  // Only symbols marked DEFAULT get exported to the dynamic symbol table
   __attribute__((visibility("default"))) void public_api();
 
-  // 即使是全局函数，在外部看来也是不可见的，避免冲突
+  // Even though this is a global function, it's invisible from the outside, avoiding conflicts
   void internal_helper();
 
-  ````
+  ```
 
-#### 3. Scope control of ``dlopen``
+#### 3. Scope Control with `dlopen`
 
-If using ``dlopen`` to manually load a library, you can specify the ``RTLD_LOCAL`` flag (this is the default). This causes the loaded library's symbols **not** to enter the global symbol table, thereby avoiding affecting other libraries.
-
-------
-
-### A Few Classic Examples
-
-#### Custom Memory Allocator
-
-Many high-performance services (like Redis, MySQL) will link ``jemalloc`` or ``tcmalloc``.
-
-- **Phenomenon**: These libraries define the same ``malloc``, ``free``, ``realloc`` symbols as Glibc.
-- **Mechanism**: Because they are explicitly linked or preloaded, their symbols rank before Glibc in the global table.
-- **Result**: All memory allocations for the entire process (including other third-party libraries depending on Glibc) are automatically forwarded to ``jemalloc``. This is a benign, intentional symbol conflict.
-
-#### C++ STL Version Conflict
-
-This is a malignant case.
-
-- **Scenario**: The main program is compiled with GCC 4.8 and depends on ``libStdOld.so``; the plugin is compiled with GCC 9.0 and depends on ``libStdNew.so``.
-- **Problem**: The internal implementation of ``std::string`` or ``std::vector`` may differ in different versions, but their symbol names (Mangled Name) may remain consistent through partial compatibility, or conflicts may occur.
-- **Consequence**: When objects are passed across libraries, due to different memory layouts but identical symbols, the program may exhibit Undefined Behavior (UB), usually manifesting as inexplicable Segfaults.
+If you load libraries manually with `dlopen`, you can pass the `RTLD_LOCAL` flag (which is the default). That keeps the loaded library's symbols **out of** the global symbol table, so it can't interfere with other libraries.
 
 ------
 
-#### Tip: Linking Does Not Provide Any Namespace Inheritance
+### A Few Classic Cases
 
-This needs to be repeated! Many people think: "I put the function in ``namespace MyLib { ... }`` in my C++ code, or I compiled the code into ``libMyLib.so``, so this library is like an independent container, and the variable name ``count`` inside won't conflict with the outside."
+#### Custom Memory Allocators
 
-But in reality, **the Linker is "Symbol Type-blind" and "Structure-blind."** We all know **C++ namespaces are just syntactic sugar**: The compiler turns ``MyLib::foo()`` into the string ``_ZN5MyLib3fooEv`` via **Name Mangling**. For the linker, this is just a long string. If two libraries happen to generate the same Mangled Name, conflicts will still occur. And **dynamic libraries are not namespaces**: Dynamic libraries are just a file organization form. Once loaded into process memory, all exported symbols enter a flat, global symbol pool. The global variable ``g_context`` in ``libA.so`` and ``g_context`` in ``libB.so`` are the same thing in the linker's eyes, unless you use Visibility hiding or Local binding.
+A lot of high-performance services (Redis, MySQL) link against `jemalloc` or `tcmalloc`.
+
+- **Symptom:** these libraries define the same `malloc`, `free`, `realloc` symbols as glibc.
+- **Mechanism:** since they're explicitly linked or preloaded, their symbols sit ahead of glibc's in the global table.
+- **Result:** every memory allocation in the entire process — including third-party libraries that depend on glibc — automatically gets routed to `jemalloc`. This is a benign, intentional symbol conflict.
+
+#### C++ STL Version Clashes
+
+This one is the malignant case.
+
+- **Scenario:** the main program is compiled with GCC 4.8 and depends on `libStdOld.so`; a plugin is compiled with GCC 9.0 and depends on `libStdNew.so`.
+- **Problem:** the internal implementation of `std::string` or `std::vector` may differ between versions, but their symbol names (mangled names) may stay consistent through partial compatibility, or outright collide.
+- **Consequence:** when objects get passed across libraries, the memory layout differs but the symbol is the same, so the program can hit undefined behavior — usually showing up as a baffling segfault.
+
+------
+
+#### Tip: No Namespace Inheritance in Linking
+
+This one is worth repeating! A lot of people think: "I put my function inside `namespace MyLib { ... }` in C++ code, or I compiled my code into `libMyLib.so`, so now the library acts like an isolated container, and the variable name `count` inside it won't clash with anything outside."
+
+But in reality **the linker is "type-blind" and "structure-blind."** We all know **a C++ namespace is just syntactic sugar:** the compiler turns `MyLib::foo()` into the string `_ZN5MyLib3fooEv` through **name mangling**. To the linker, that's just a long string. If two libraries happen to generate the same mangled name, the collision still happens. And **a dynamic library is not a namespace:** a dynamic library is just a way of organizing files. The moment it gets loaded into a process's memory, every exported symbol dumps into one flat, global symbol pool (the Global Symbol Table). The global variable `g_context` in `libA.so` and `g_context` in `libB.so` are the exact same thing in the linker's eyes — unless you've hidden them with visibility or bound them as local.
+
+## Through a Modern CMake Lens
+
+All those flags — `-fPIC`, `-fvisibility=hidden`, `-Wl,-Bsymbolic`, `$ORIGIN` and friends — you basically never type by hand anymore. CMake has packed them into a few lines of `add_library` / `set_target_properties`.
+
+`add_library(foo SHARED)` basically does two things for you: it automatically adds `-fPIC` to every `.o` inside the library (SHARED turns it on by default), then uses `gcc -shared` to bundle them into a `.so`, which amounts to automatically running through the PIC flow we just talked about. Symbol visibility is handed off to `CMAKE_CXX_VISIBILITY_PRESET hidden` and `CMAKE_VISIBILITY_INLINES_HIDDEN`: once you set those, every symbol is hidden by default, and only the interfaces you explicitly tag with `__attribute__((visibility("default")))` make it into the dynamic symbol table — exactly matching the "symbol visibility" best practice from the previous section. `target_link_libraries` takes over `-l`/`-L`, and dependency relationships get propagated by CMake automatically (the three tiers PUBLIC/PRIVATE/INTERFACE); a good chunk of the duplicate-symbol pain from transitive dependencies gets sidestepped just by leaning on that.
+
+The two remaining runtime pitfalls also have proper homes. That whole "you have to `export` after installing" dance with `LD_LIBRARY_PATH` — nowadays you pair `CMAKE_INSTALL_RPATH` with `$ORIGIN` so the executable remembers itself where the `.so` lives, and it'll find the library no matter what relative path you deploy it to. And a need like `-Wl,-Bsymbolic` for "I want my library to resolve its internal symbols against itself" can be hooked up just the same through `target_link_options(foo PRIVATE "-Wl,-Bsymbolic")`. In other words, the underlying linker–loader mechanism hasn't changed, but what you write today isn't `gcc -shared -fPIC -Wl,-Bsymbolic -o libfoo.so ...`, it's `add_library(foo SHARED)` plus a couple of `set_target_properties`, and CMake takes care of the dirty work for you.

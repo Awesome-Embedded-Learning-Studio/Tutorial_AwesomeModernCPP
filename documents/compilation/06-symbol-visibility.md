@@ -9,7 +9,8 @@ tags:
 - host
 - intermediate
 title: 深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
-description: ''
+description: '聊一聊 ABI 层的符号可见性：用 nm/dumpbin 查导出符号，以及 GCC 的 -fvisibility、__attribute__((visibility))、#pragma visibility 和 MSVC 的 __declspec(dllexport/dllimport) 四种控制方式。'
+cpp_standard: [11, 14, 17, 20]
 ---
 # 深入理解C/C++编译技术——动态库A3：聊一聊符号可见性
 
@@ -126,12 +127,16 @@ int api_minus(int a, int b);
 
 ```cpp
 #ifdef CCLOG_BUILD_SHARED
-/* If we plan to exports sysbols to DLL, we need to decorate symbols by this */
+/* If we plan to exports symbols to DLL, we need to decorate symbols by this */
 /* Others in case can use the symbols */
 #define CCLOG_API __declspec(dllexport)
 #else
-/* If we plan to import sysbols from DLL, we need to decorate symbols by this */
+/* If we plan to import symbols from DLL, we need to decorate symbols by this */
 #define CCLOG_API __declspec(dllimport)
-#end
+#endif
 
 ```
+
+## 现代 CMake 视角
+
+上面这些 `-fvisibility=hidden`、`__attribute__((visibility))`、`-fPIC` 的手活儿，在用 CMake 管理的项目里基本都被构建系统接管了。`add_library(foo SHARED ...)` 默认就会给目标加上 `-fPIC`（静态库默认不加，需要时再 `set(CMAKE_POSITION_INDEPENDENT_CODE ON)`）；想统一隐藏符号，给目标设 `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)`，CMake 就会自动把 `-fvisibility=hidden` 喂给编译器；同时配 `VISIBILITY_INLINES_HIDDEN ON` 把内联函数也藏起来。至于 Windows 上那套 `dllexport`/`dllimport` 来回切，CMake 提供了 `GenerateExportHeader`，一个宏就能生成跨平台的 `FOO_API` 宏——Linux 下展开成 `visibility` 属性，Windows 下根据编译期是构建库还是使用库自动展开成 `dllexport` 或 `dllimport`，省得自己手写 `#ifdef` 拼接。所以今天写库，这些底层修饰大多不用自己手敲，CMake target 的属性面板里一两行就配齐了。

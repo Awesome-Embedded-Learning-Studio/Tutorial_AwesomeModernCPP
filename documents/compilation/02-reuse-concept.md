@@ -8,10 +8,11 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 深入理解CC++的编译与链接技术2：动态库静态库导论
-description: ''
+title: 深入理解C/C++的编译与链接技术2：动态库静态库导论
+description: '从源码复用到二进制分发：静态库与动态库到底解决了什么问题，以及动态库在构建期和运行时各自发生了什么'
+cpp_standard: [11, 14, 17, 20]
 ---
-# 深入理解CC++的编译与链接技术2：动态库静态库导论
+# 深入理解C/C++的编译与链接技术2：动态库静态库导论
 
 ## 什么是重用概念，跟我们的编译与链接技术有什么关系
 
@@ -137,6 +138,16 @@ int main()
 | 二进制文件处理/转换的难易程度 | 打包/检查/合并较直观（`ar`, `nm`, `objdump`），反向替换/替换局部符号更困难（需重新链接）。 | 生成与控制导出符号更复杂（symbol versioning, visibility），运行时重定位 & 符号解析机制复杂；但运行时 `dlopen/dlsym` 提供灵活扩展能力。 |
 | 是否适合开发工作              | 适合：小型工具、嵌入式/单文件发布、无运行时依赖场景；方便离线/受限环境部署。 | 适合：大型项目、模块化设计、插件系统、需要热更新或减少重复内存/磁盘占用的场景；利于团队协作与库独立发布。 |
 | 其他值得一提的点              | - 安全/Bug 修复需重建并重新发布所有可执行。- 版权/许可证（如 GPL）在静态链接下可能带来更严格的义务。- 对运行时性能（调用）通常没有 PLT 费用。 | - 可以单独修复/替换库（快速补丁）。- 存在运行时劫持风险（LD_PRELOAD、RPATH 注入）和首次调用的延迟（lazy binding）。- 对平台 ABI/SONAME 管理和部署流程要求更高。 |
+
+## 现代 CMake 视角
+
+上面这些 `-fPIC`、`-shared`、`-Wl,-soname`、`-fvisibility=hidden`，在手敲命令行的年代确实得一项项自己拼。现代项目里这套基本都被 CMake 接管了，咱们写 CMakeLists 的时候很少再裸写这些 flag。
+
+`add_library(foo SHARED ${FOO_SOURCES})` 直接生成 `.so`，CMake 默认就给 SHARED 目标加上 `-fPIC`，省去手抄；`add_library(foo STATIC ...)` 则自动调 `ar` 打 `.a` 包，等于把上一节的归档流程脚本化。客户端那边，`target_link_libraries(myapp PRIVATE foo)` 一行就把 `-lfoo`/`-L<dir>` 全接管了，CMake 还会自动把库的接口 include 目录、传递依赖一起串起来。
+
+`-fvisibility=hidden` 在 CMake 里通过 `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)` 设置，配套 `VISIBILITY_INLINES_HIDDEN ON`，效果就是只导出你显式标了 `visibility("default")` 的符号——上一节讲的"减少 API 污染和符号冲突"用属性落地。
+
+至于运行时 `LD_LIBRARY_PATH` 那套脏活，CMake 用 `CMAKE_INSTALL_RPATH` 和 `$ORIGIN` 接管：装到非标准目录时设置 `INSTALL_RPATH "$ORIGIN/../lib"`，可执行文件自带 rpath，loader 直接照着找，不用用户去 export 环境变量。SONAME/versioning 这类 ABI 管理相对薄一点，通常配合 `set_target_properties(... VERSION 1.0 SOVERSION 1)` 生成 `libfoo.so.1.0` + symlink，CMake 替你建好软链。一句话：这些底层机制没有消失，只是被构建系统封到了声明式的目标属性背后。
 
 # Reference
 

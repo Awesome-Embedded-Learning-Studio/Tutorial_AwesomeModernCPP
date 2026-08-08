@@ -8,43 +8,37 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'In-depth Understanding of C/C++ Compilation and Linking Technologies 6 — A2:
-  Dynamic Library Design Basics — ABI Interface Design'
-description: ''
-translation:
-  source: documents/compilation/05-dynamic-library-design.md
-  source_hash: 8974278b432cc3da8a20980a1d79444c095a87d9b4ba3684ca0c50ce008c0617
-  translated_at: '2026-06-24T00:25:08.933724+00:00'
-  engine: anthropic
-  token_count: 2093
+title: 'Deep Dive into C/C++ Compilation and Linking, Part 6 — A2: Dynamic Library Design Basics, the ABI Design Interface'
+description: 'Get clear on the low-level pain of dynamic library ABI design: why C++ name mangling does not port across compilers, the static-object initialization-order trap, and how a C-style export interface plus a complete ABI header file lets you sidestep the ABI hookup mess.'
+cpp_standard: [11, 14, 17, 20]
 ---
-# In-Depth Understanding of C/C++ Compilation and Linking Technology 6 – A2: Dynamic Library Design Basics – ABI Interface Design
+# Deep Dive into C/C++ Compilation and Linking, Part 6 — A2: Dynamic Library Design Basics, the ABI Design Interface
 
-## Introduction
+## Preface
 
-In this blog post, I attempt to summarize and categorize some of the more important technical points in the **design** of dynamic libraries, such as the design and export of binary interfaces.
+In this post I'm trying to pull together some of the more important technical points on the **design** side of dynamic libraries — things like the design and export of the binary interface.
 
-## So, why bring up the binary interface?
+## So, how come we're dragging the binary interface into this
 
-Fundamentally, the ultimate goal of designing a dynamic library (which I believe we must always keep in mind) is to reuse our code for others to use. Therefore, we must consider the details of code collaboration. In a blog post a long time ago, we simplified the abstract concept of a dynamic library to specifying a number of exported symbols, written in header files or dedicated export files, serving as an **interface** for other users to know how to call the target functionality, alongside the underlying hidden details of machine code.
+At its core, the whole end goal of designing a dynamic library (and I do think this is something you have to keep firmly in mind) is to hand our code over to other people for them to reuse. So the details of how that code collaboration actually works are exactly what we have to think about. Way back in an earlier post we already boiled the abstract concept of "dynamic library" down to this: a set of exported symbols written down in a header file or a dedicated export file, so other users know how to call into the target functionality — that's the **interface** — plus a bunch of hidden concrete machine code behind it.
 
-However, we know that what is written in human-readable files, such as function names under classes and global variable names in header files, is indeed an interface, but we obviously know this does not constitute a **binary interface**. It seems we have always been accustomed to the idea that as long as we export specified symbols and provide the machine code for the implementation, everything is fine. But, due to the free nature of C++ (note, I didn't say C; in fact, this problem erupts intensely in reusable libraries written in C++), the **transformation from human-readable APIs to machine-compatible ABIs handled by compilers from different vendors is inconsistent!** This has created a series of issues that are no laughing matter. Below, I enumerate why and under which circumstances our C++ symbol export and ABI matching produce serious inconsistencies, causing trouble in software construction.
+But here's the thing. We know that the function names and global variable names sitting under various classes inside a human-readable file (say, a header file) really are an interface, but we also clearly know that's not a **binary interface**. For the longest time we've all sort of gotten used to the idea that as long as we exported the right symbols and shipped the concrete machine code, everything was hunky-dory. Except, thanks to C++'s freewheeling nature (and notice I did not say C — in practice this problem blows up almost entirely on reusable libraries written in C++), the **path from the human-readable API to the machine-to-machine ABI that each compiler vendor produces** is not consistent! And that births a whole series of problems that are not even a little bit funny. Let me lay out, point by point, exactly which situations make our C++ symbol export and ABI hookup go badly inconsistent and turn software builds into a headache.
 
-#### More complex naming rules
+#### A more complicated naming scheme
 
-The mapping from C++ functions to linker symbols is decided by the compiler vendor. Although standards exist to constrain compiler vendors to generate as universal symbols as possible, unfortunately, taking g++ and MSVC as examples, there are still gaps. This means that the same symbol lookup and mapping rules prevent a project using the MSVC compiler from directly using a library built with the g++ compiler without pain (my other meaning is, if we don't adopt some methods, we need to obtain the source code and recompile; the methods we discuss later will finally allow us to avoid this approach).
+The mapping from a C++ function down to a linker symbol is decided by the compiler vendor. Sure, there are some standards out there nudging compiler vendors toward producing symbols that are as portable as possible, but unfortunately, taking g++ and MSVC as the example, there is still a gap — so much so that an MSVC-built project can't painlessly drop its symbols straight into a g++-built project (and by that I also mean: without taking some measures, we'd have to grab the source and recompile. The methods we get to later on are exactly what finally let us dodge that move).
 
-Readers might ask: How did this happen? Actually, we can easily think of a series of code like this:
+You might be asking: how does that happen? Well, it's pretty easy to picture a chunk of code like this:
 
 ```c++
-// 在C++中，我们很喜欢将一些方法放置到类中,
-// OOP就是推介我们这样做的！
+// In C++, we love sticking methods inside classes,
+// OOP literally recommends we do this!
 class Foo {
 public:
     void someFunc(int a, const char* b);
 };
 
-// 或者，我们喜欢放置一些工具类的函数到单独的命名空间中
+// Or, we like putting utility-style functions into a dedicated namespace
 namespace charlies_tools {
    std::vector<std::string_view> split(const std::string& waited_splits, const char ch);
    std::vector<std::string_view> split(const std::string& waited_splits, const std::string_view sp_view);
@@ -52,9 +46,10 @@ namespace charlies_tools {
 
 ```
 
-As C++ programmers, we naturally use these features to avoid symbol-level conflicts and improve readability in software engineering.
+As C++ programmers, we reach for these features completely naturally — they sidestep a bunch of symbol-level collisions and make the code read better in a real software-engineering context.
 
-Let's examine the symbol names generated by the g++ compiler:
+Let's see what the symbol names look like coming out of g++:
+
 
 ```text
 
@@ -64,7 +59,8 @@ Let's examine the symbol names generated by the g++ compiler:
 
 ```
 
-Next, let's look at what MSVC produces:
+And now here's what MSVC spits out:
+
 
 ```text
 
@@ -74,15 +70,15 @@ Next, let's look at what MSVC produces:
 
 ```
 
-In reality, we can see that the symbols written into the relocatable file look completely different. This indicates that we cannot use our symbols in a generic way. Furthermore, features like function overloading allow us to use the same function name with different parameter lists within a single object file. Consequently, our toolchain has to go to great lengths to handle these complexities.
+Honestly you can see the symbols written into the relocatable file look absolutely nothing alike, which tells us straight up that we can't portably share these symbols across the two. On top of that, we've got overloading and a whole pile of features that let us offer the same function name with different parameter lists and have them all coexist in one object file — and that means our toolchain has to bend over backwards to sort all of it out.
 
-This modification is known as **name mangling**. Great, now we have to deal with these annoying issues.
+This decoration is called **name mangling**. Great. Now we get to deal with this mess.
 
-#### Static Data Initialization
+#### Static-storage initialization
 
-In C, data is often considered to be *trivial* (aha, I prefer C too; at least it's predictable). Due to legacy code conventions, we are accustomed to initializing these variables during the linking phase. However, in C++, we know that this data can be objects, which implies the existence of constructor calls. If these objects are initialized under **order-independent conditions** (meaning the objects do not have dependencies, such that static object A must be initialized before static object B), then it isn't an issue. The real problem arises with order-dependent static objects. Since the CPU executes the program, there are often no fixed constraints on the initialization order of these objects, which can easily lead to random program crashes.
+In C, our data can mostly be treated as trivial (honestly, I get why somebody would prefer C too — at least it's controllable). For legacy reasons we've gotten into the habit of initializing those variables back at link time. But in C++, as we know, that data can be an object, which means there's a constructor call involved. Now, if all those objects are **under conditions where initialization order doesn't matter** (meaning, none of them form a dependency — we don't have to insist that static object A get initialized before static object B), then it's honestly fine. The scary case is when you do have order-dependent static objects, because once the program is running on the CPU, the initialization order for those objects has no fixed constraint, and that's a really easy way to give yourself random crashes.
 
-Fortunately, this problem is easy to handle. We know that the initialization of data scattered freely in the data segment is uncertain. However, if we place the object inside a function, it is initialized only when execution reaches that point. Therefore, if static object A indeed must be initialized before static object B, we can do the following:
+Of course, this one is pretty easy to handle. We know the initialization order of data scattered across the data segment is uncertain, but if we tuck it inside a function, then we only initialize the object at the moment execution actually reaches it. So if static object A really does have to be initialized before static object B, we can do something like:
 
 ```cpp
 static void init_a_and_b() {
@@ -97,11 +93,11 @@ auto dummy = [](){
 
 ```
 
-## So, How to Design a Less Troublesome Binary Interface
+## So, how do you design a binary interface with fewer headaches
 
-#### Designing C-Style Export Interfaces
+#### Design a C-style export interface
 
-Of course, you do not need to strictly follow C naming conventions to avoid conflicts like a C programmer would. The point here is to avoid exporting the distinct ABI symbol rules characteristic of C++. The solution is to decorate the symbols you decide to export with the `extern "C"` identifier.
+Now, you don't have to actually go full C programmer and start dodging collisions using C naming conventions — what I mean here is just: don't export the C++-flavored ABI symbol rules that differ all over the place. The trick is to decorate the symbols you've decided to export with the `extern "C"` marker.
 
 ```cpp
 
@@ -117,52 +113,53 @@ extern "C"{
 
 ```
 
-This makes the interface presented to the linker much cleaner.
+That way the interface the linker ends up seeing looks a whole lot cleaner.
 
-#### Header Files Providing Complete ABI Declarations
+#### Ship a header file with a complete ABI declaration
 
-Here, a "**header file providing complete ABI declarations**" refers to a header file (`.h`) that contains all necessary declarations, enabling the compiler to **fully understand** the interface of a library or module. This allows it to:
+By "**a header file with a complete ABI declaration**" I mean a header file (`.h`) that carries all the declarations the compiler needs to **fully understand** a library's or module's interface, so it can:
 
-1. **Correctly compile** code that calls the library.
-2. **Correctly generate** machine code that interacts with the functions in the library.
+1. **Correctly compile** the code that calls into the library.
+2. **Correctly generate** the machine code that talks to the functions inside the library.
 
-The core of this "complete ABI declaration" is that it includes not only function names but also all details that affect binary-level interaction. Therefore, we use the term "header file providing complete ABI declarations." Let's discuss what such a header file contains:
+The heart of this "complete ABI declaration" is that it isn't just the function names — it covers every detail that affects interaction at the binary level. That's exactly why we say things like "ship a header file with a complete ABI declaration." So let's walk through what such a header actually contains:
 
-##### Function Declarations
+##### Function declarations
 
-This is the most basic part. It tells the compiler the function's name, return type, and parameter types.
+This is the most basic part. It tells the compiler the function's name, its return type, and its parameter types.
 
 ```cpp
-// 不完整的声明 - 只知道名字和类型，但可能隐藏问题
+// Incomplete declaration - you only know the name and types,
+// but problems can hide underneath
 int do_something(int a, int b);
 
-// 更完整的声明 - 增加了extern "C"和异常规范
+// A more complete declaration - adds extern "C" and a noexcept spec
 extern "C" int do_something(int a, int b) noexcept;
 
 ```
 
-##### Type Definitions
+##### Type definitions
 
-If we use custom structs or classes in an interface, their memory layout must be well-defined.
+If the interface uses a custom struct or class, its memory layout has to be pinned down explicitly.
 
 ```cpp
-// 完整的结构体声明，编译器能确定其大小和内存布局
+// Complete struct declaration - the compiler can pin down its size and memory layout
 struct MyData {
     int id;
     double value;
     char name[32];
 };
 
-// 函数使用这个结构体
+// A function that uses this struct
 extern "C" void process_data(const MyData* data);
 
 ```
 
-If the header file does not contain the full definition of `MyData`, the compiler does not know the size of `sizeof(MyData)`, and cannot correctly allocate stack space or pass arguments for the `process_data` function call.
+If the header file doesn't carry the complete definition of `MyData`, the compiler has no idea what `sizeof(MyData)` is, and it can't correctly allocate stack space or pass arguments for the call to `process_data`.
 
-##### Macro and Constant Definitions
+##### Macros and constant definitions
 
-Used to define magic numbers or configurations used in the interface.
+These are for the magic numbers or configuration values used inside the interface.
 
 ```cpp
 #define MAX_BUFFER_SIZE 1024
@@ -174,24 +171,28 @@ extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
 
 ##### Including other headers
 
-If a declaration depends on other types (such as `size_t` from the standard library or custom types), we need to include the corresponding headers.
+If a declaration depends on other types (like the standard library's `size_t`, or a custom type), you need to pull in the matching headers.
 
 ```cpp
-#include <stddef.h> // 为了使用 size_t
+#include <stddef.h> // so we can use size_t
 
 extern "C" void* allocate_buffer(size_t size);
 
 ```
 
+## A modern CMake perspective
+
+Most of the ABI-design pain covered in this piece gets taken over by the CMake build system in modern projects. The `extern "C"` part is still hand work on your end, but symbol visibility can be driven by `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)` to hide every symbol by default, then export only the ones you want through the macros that `generate_export_header` spits out — so you don't accidentally leak all your internal C++ mangled symbols downstream. `target_link_libraries(foo PUBLIC bar)` strings together the transitive dependencies, header search paths, and `-l` / `-L` for you, so the downstream side only has to link once. `add_library(foo SHARED)` automatically feeds `-fPIC` to every object file, saving you the typing. When the ABI hookup has to be cross-platform, set the `PUBLIC_HEADER` property on the dynamic library and pair it with `install(TARGETS ...)`; on Unix CMake drops the headers into `include/`, and on Windows it handles the import-library side of `__declspec(dllexport/dllimport)`. That's what actually turns the C-style export interface you wrote by hand into "one header, usable everywhere."
+
 # Reference
 
-## Verifying Names
+## Confirming the names
 
-If you would like to see the symbol differences produced by the MSVC and g++ compilers firsthand, we will explain how the results above were generated.
+If you want to see the symbol difference between the MSVC compiler and g++ with your own eyes, let me walk through how I produced the results above.
 
-We used MSVC compiler version 19.44.35217 and g++ version 15.2.1.
+The MSVC compiler version I used is 19.44.35217, and the g++ version is 15.2.1.
 
-We saved the sample code above into a file named `test.cpp`.
+Let's drop the sample code above into test.cpp:
 
 ```cpp
 #include <string>
@@ -213,7 +214,8 @@ void charlies_tools::split(const std::string& waited_splits, const std::string_v
 
 ```
 
-Then, on a Linux machine, we use the `-c` flag to compile `test.cpp` into machine code only:
+Then, on a Linux machine, use the `-c` flag to translate test.cpp into machine code only:
+
 
 ```bash
 
@@ -221,7 +223,8 @@ g++ -c test.cpp -o test_name
 
 ```
 
-Then, we use the `nm` command to inspect the ABI.
+Then use `nm` to inspect the ABI:
+
 
 ```text
 
@@ -232,9 +235,10 @@ Then, we use the `nm` command to inspect the ABI.
 
 ```
 
-This yields the results listed in the main text.
+And that's the result I quoted in the body of the post.
 
-For MSVC, we need to open the VS Developer Prompt to initialize the MSVC toolchain environment. Then, assuming we have saved the code to `test.cpp`, we can use the `cl` compiler with the compile-only flag and the latest C++ standard flag to obtain the following output:
+For MSVC, you need to open the VS Developer Prompt to initialize the MSVC toolchain environment. Same as before, let's say you've saved the code to test.cpp; then, using the `cl` compiler and passing a compile-only flag plus the latest C++ standard flag, you'll get the following output:
+
 
 ```text
 
@@ -252,7 +256,8 @@ test.cpp
 
 ```
 
-Next, we use the `dumpbin` utility to obtain the following:
+Then, using the `dumpbin` little tool, you get:
+
 
 ```text
 
