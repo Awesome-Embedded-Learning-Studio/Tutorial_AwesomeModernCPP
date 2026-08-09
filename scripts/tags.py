@@ -43,7 +43,7 @@ VALID_TAGS = {
 
     # Embedded specific
     '嵌入式', '单片机', '外设管理', '寄存器', '链接器',
-    '交叉编译', '工具链', 'CMake', 'clangd',
+    '交叉编译', '工具链', 'CMake', 'clangd', 'renode',
 
     # General
     '基础', '入门', '进阶', '实战', '优化', '工程实践',
@@ -52,7 +52,7 @@ VALID_TAGS = {
     '网络编程', '内存安全', '调试', '测试',
 
     # Platforms
-    'host', 'stm32f1',
+    'host', 'stm32f1', 'stm32f4',
 
     # Audience / difficulty (as tags)
     'beginner', 'intermediate', 'advanced', 'cpp-modern',

@@ -1,0 +1,23 @@
+:name: F407 Blink PD12 (gpio template)
+:description: 第 4 档 - 模板化 GPIO/LED 版本,验证仍翻转 PD12
+
+using sysbus
+mach create
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery.repl
+
+$bin?=$ORIGIN/build/blink_gpio_template.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+emulation RunFor "00:00:01.000000"
+
+echo "=== PD12 翻转证明(gpio template 版,GPIOD_ODR @0x40020C14)==="
+sysbus ReadDoubleWord 0x40020C14
+emulation RunFor "00:00:00.020000"
+sysbus ReadDoubleWord 0x40020C14
+emulation RunFor "00:00:00.020000"
+sysbus ReadDoubleWord 0x40020C14

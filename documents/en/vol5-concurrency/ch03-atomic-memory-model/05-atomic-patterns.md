@@ -32,7 +32,7 @@ translation:
 ---
 # Atomic Operation Patterns
 
-> 📖 **Application Scenario**: The atomic patterns in this article have a high-frequency application in embedded systems—sharing variables between an ISR and the main loop without locks. If you are writing MCU firmware, reading this alongside [Volume 8: Interrupt-Safe Programming](../../vol8-domains/embedded/05-interrupt-safe-coding.md) will provide even greater clarity.
+> 📖 **Application Scenario**: The atomic patterns in this article have a high-frequency application in embedded systems—sharing variables between an ISR and the main loop without locks. If you are writing MCU firmware, reading this alongside [Volume 8: Interrupt-Safe Programming](../../vol8-domains/embedded/f103/05-interrupt-safe-coding.md) will provide even greater clarity.
 
 By this point, we have fully decomposed the `std::atomic` operation set, the six memory orders, fences and barriers, `std::atomic_ref`, and `std::atomic_wait`. However, taking these tools in isolation only answers the "how" question—how to perform an atomic addition, how to issue a release store, or how to wait for a value to change. Real-world engineering practice requires patterns: when facing a specific concurrency problem, which atomic operations should we choose, and what combination of memory orders will solve the problem correctly and efficiently?
 

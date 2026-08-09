@@ -1,0 +1,23 @@
+:name: F407 Blink PD12 (cpp23)
+:description: 第 5 档 - C++23 consteval/constinit/属性版本,验证仍翻转 PD12
+
+using sysbus
+mach create
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery.repl
+
+$bin?=$ORIGIN/build/blink_cpp23.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+emulation RunFor "00:00:01.000000"
+
+echo "=== PD12 翻转证明(cpp23 版,GPIOD_ODR @0x40020C14)==="
+sysbus ReadDoubleWord 0x40020C14
+emulation RunFor "00:00:00.020000"
+sysbus ReadDoubleWord 0x40020C14
+emulation RunFor "00:00:00.020000"
+sysbus ReadDoubleWord 0x40020C14
