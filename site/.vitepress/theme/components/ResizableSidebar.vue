@@ -14,7 +14,7 @@ type Side = 'left' | 'right'
 interface Dim { min: number; max: number; def: number; key: string; cssVar: string }
 
 const CONF: Record<Side, Dim> = {
-  left: { min: 200, max: 480, def: 272, key: 'vp-sidebar-width', cssVar: '--vp-sidebar-width' },
+  left: { min: 200, max: 480, def: 240, key: 'vp-sidebar-width', cssVar: '--vp-sidebar-width' },
   right: { min: 180, max: 360, def: 256, key: 'vp-aside-width', cssVar: '--vp-aside-width' },
 }
 
