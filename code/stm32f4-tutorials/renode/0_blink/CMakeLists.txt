@@ -36,6 +36,7 @@ add_blink_variant(blink_mmio         src/main_mmio.cpp)         # 第 2 档:mmio
 add_blink_variant(blink_fields       src/main_fields.cpp)       # 第 3 档:位域 + enum class
 add_blink_variant(blink_gpio_template src/main_gpio_template.cpp) # 第 4 档:模板 GPIO/LED
 add_blink_variant(blink_cpp23        src/main_cpp23.cpp)        # 第 5 档:C++23 consteval/constinit/属性
+add_blink_variant(blink_uart         src/main_uart.cpp)         # 加餐:闪灯 + printf 走 UART2(配合 showAnalyzer)
 
 # TODO(核心板到位):加 flash 目标(openocd -f interface/stlink.cfg -f target/stm32f4x.cfg ...)
 # TODO(有可分离纯逻辑后,如消抖状态机/环形缓冲):加 host 单测目标(Catch2/doctest)

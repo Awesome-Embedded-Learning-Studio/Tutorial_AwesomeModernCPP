@@ -1,0 +1,18 @@
+:name: F407 Blink + UART2
+:description: 闪灯 + printf 走串口。showAnalyzer 开串口窗,GUI 里实时看输出;无头模式直接打到终端
+
+using sysbus
+mach create
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery.repl
+
+$bin?=$ORIGIN/build/blink_uart.elf
+
+showAnalyzer sysbus.usart2
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+start
