@@ -420,7 +420,24 @@ public:
 int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static）
 ```
 
-另外，C++ 的匿名命名空间（anonymous namespace）可以完全替代文件级 `static` 的用法，而且更彻底——匿名命名空间里的符号不仅对外部隐藏，连模板参数推导也参与不了。在 C++ 项目中，推荐用匿名命名空间代替 `static`。
+另外，C++ 的匿名命名空间（anonymous namespace）可以替代文件级 `static` 的用法，而且管得更宽：`static` 只能修饰变量和函数，想给一个类型加内部链接，编译器直接报错；匿名命名空间则把里面的类型也一并藏进当前翻译单元。里面的符号在本文件里照常使用，模板参数推导也不受影响，别的 `.cpp` 文件只是引用不到。所以在 C++ 项目中，只在单个源文件里使用的函数、变量和类型，推荐用匿名命名空间；至于函数内的静态局部变量和类的静态成员，那是另外两种语义，该用 `static` 的还得用。
+
+```cpp
+// 某个 .cpp 文件内部——类型也一起藏进本翻译单元
+namespace {
+struct Config {          // 想给它加内部链接？static 做不到，匿名命名空间可以
+    int retries;
+};
+
+template <class T>
+void dump(const T&) {}
+}  // namespace
+
+void use() {
+    Config c{3};
+    dump(c);             // 正常推导出 T = Config，内部链接不影响模板
+}
+```
 
 最后，C++11 的 `thread_local` 提供了线程级别的存储周期——每个线程有自己独立的变量副本。这在多线程编程中非常有用，C11 也有对应的 `_Thread_local`，但支持程度和易用性都不如 C++。
 
