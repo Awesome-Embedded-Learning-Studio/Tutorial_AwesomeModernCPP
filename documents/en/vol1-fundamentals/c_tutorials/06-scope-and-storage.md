@@ -370,7 +370,24 @@ public:
 };
 ```
 
-Additionally, C++ anonymous namespaces can completely replace file-level `static` usage, and more thoroughly—symbols in an anonymous namespace are hidden from the outside and cannot even participate in template argument deduction. In C++ projects, using anonymous namespaces instead of `static` is recommended.
+Additionally, C++ anonymous namespaces can replace file-level `static` usage, and they cover more ground: `static` only applies to variables and functions (the compiler rejects it on a type definition), while an anonymous namespace also gives types internal linkage. Symbols inside still work normally within the translation unit, template argument deduction included; other `.cpp` files simply cannot reference them. So in C++ projects, for functions, variables, and types used in a single source file, an anonymous namespace is recommended; as for function-local static variables and class static members, those are two other semantics where `static` still applies.
+
+```cpp
+// Inside some .cpp file—types are hidden in this translation unit too
+namespace {
+struct Config {          // Want internal linkage for a type? static can't do it; an anonymous namespace can
+    int retries;
+};
+
+template <class T>
+void dump(const T&) {}
+}  // namespace
+
+void use() {
+    Config c{3};
+    dump(c);             // Deduces T = Config just fine; internal linkage doesn't affect templates
+}
+```
 
 Finally, C++11's `thread_local` provides thread-level storage duration—each thread has its own independent copy of the variable. This is very useful in multithreaded programming. C11 also has corresponding `_Thread_local`, but its support and usability are not as good as C++.
 
