@@ -127,7 +127,7 @@ C++20 终于让 `vector` 能在编译期用了。这背后是两个提案接力�
 
 老 C++ 里想从 `vector` 中删掉所有满足条件的元素，得手写那个著名的 erase-remove 惯用法：`v.erase(std::remove_if(v.begin(), v.end(), pred), v.end());`。又长又容易写错——第二个参数的 `v.end()` 忘了、外层 `erase` 忘了套，都是笔者见过的事故现场。C++20 用一对自由函数把它收编了：`std::erase(v, value)` 删所有等于 `value` 的，`std::erase_if(v, pred)` 删所有满足谓词的，返回值都是被删掉的元素个数。
 
-这对函数来自提案 **P1209R0**，标题就叫「Adopt Consistent Container Erasure from Library Fundamentals 2 for C++20」——光看标题您就明白它的初衷了：把原本待在 Library Fundamentals TS 里的统一擦除 API，正式落地到 C++20。cppreference 上对它俩有一句很干脆的定义性描述：它们 *"erase all elements that compare equal to value / satisfy the predicate from the container"*，替掉的就是那个易错的 erase-remove。有个细节别记岔：序列容器（`vector`、`deque`、`list`、`forward_list`、`string`）同时拿到 `erase` 和 `erase_if`，而关联/无序关联容器只有 `erase_if`——因为它们的成员 `erase(key)` 早就在干"按键删"的活了，再塞一个 `erase(c, value)` 进来会语义打架。探测支持看 `__cpp_lib_erase_if`（C++20，值 `202002`）。
+这对函数来自提案 **P1209R0**，标题就叫「Adopt Consistent Container Erasure from Library Fundamentals 2 for C++20」——光看标题您就明白它的初衷了：把原本待在 Library Fundamentals TS 里的统一擦除 API，正式落地到 C++20。cppreference 上对它俩有一句很干脆的定义性描述：它们 *"erase all elements that compare equal to value / satisfy the predicate from the container"*，替掉的就是那个易错的 erase-remove。有个细节别记岔：序列容器（`vector`、`deque`、`list`、`forward_list`、`string`）同时拿到 `erase` 和 `erase_if`，而关联/无序关联容器只有 `erase_if`——因为它们的成员 `erase(key)` 早就在干"按键删"的活了，再塞一个 `erase(c, value)` 进来会语义打架。探测支持看 `__cpp_lib_erase_if`（C++20，值 $202002$）。
 
 ------
 

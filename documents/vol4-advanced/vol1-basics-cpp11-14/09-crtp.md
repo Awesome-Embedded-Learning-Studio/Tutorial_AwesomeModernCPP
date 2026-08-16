@@ -185,7 +185,7 @@ p1 != p2: true
 
 **编译期接口注入 / 策略注入**。基类可以要求派生类提供某些 typedef 或常量,在编译期检查,实现「静态接口」。比如基类里写 `using value_type = typename Derived::value_type;`,派生类没暴露 `value_type` 就编不过。这种「concept-like」的编译期约束,在 concepts 出现之前常用 CRTP 模拟。
 
-**表达式模板**(expression templates)。Eigen 的 `a + b * c` 不产生临时矩阵,而是生成一个「表达式类型」记录运算,最后赋值时一次性求值,避免中间临时对象。这套机制完全建立在 CRTP 上,是 CRTP 最惊艳的应用,vol3 元编程会专门拆。
+**表达式模板**(expression templates)。Eigen 的 $a + b\times c$ 不产生临时矩阵,而是生成一个「表达式类型」记录运算,最后赋值时一次性求值,避免中间临时对象。这套机制完全建立在 CRTP 上,是 CRTP 最惊艳的应用,vol3 元编程会专门拆。
 
 ## CRTP 的坑
 

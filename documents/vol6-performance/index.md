@@ -28,3 +28,8 @@ tags:
   <ChapterLink href="ch06-cpp-abstraction-cost">ch06 · C++ 抽象的性能成本</ChapterLink>
   <ChapterLink href="ch07-compiler-and-size">ch07 · 编译器优化边界与体积评估</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

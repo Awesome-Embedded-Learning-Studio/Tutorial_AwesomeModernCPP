@@ -188,7 +188,7 @@ from_chars '   42': ec-ok=0 value=-1 (v unchanged on err)
 stoi '   42': value=42 consumed=5 (skips leading ws)
 ```
 
-`from_chars` 返回失败、`v` 原封不动是 `-1`；`stoi` 却乐呵呵地跳过空格解析出了 42。这不是 `from_chars` 的 bug，而是刻意的取舍：跳空白是 locale 相关的（什么算空白得查 `isspace` 表），跳了就违背了"无 locale"的设计目标。所以用 `from_chars` 解析用户输入或文件字段时，**你自己先把前导空白 `trim` 掉**，或者用 `std::find_if` 找到第一个非空白字符再喂给它。
+`from_chars` 返回失败、`v` 原封不动是 $-1$；`stoi` 却乐呵呵地跳过空格解析出了 42。这不是 `from_chars` 的 bug，而是刻意的取舍：跳空白是 locale 相关的（什么算空白得查 `isspace` 表），跳了就违背了"无 locale"的设计目标。所以用 `from_chars` 解析用户输入或文件字段时，**你自己先把前导空白 `trim` 掉**，或者用 `std::find_if` 找到第一个非空白字符再喂给它。
 
 ::: warning from_chars 不跳前导空白
 `from_chars` 要求输入首字符就是数字或符号，前导空白直接判 `invalid_argument`。这和 `stoi` / `strtod` 主动跳空白的行为相反。解析带空白的输入（用户键入、CSV 字段）要自己先 trim。
@@ -265,7 +265,7 @@ to_chars scientific: 1.23456789e+05
 to_chars fixed: 123456.789
 ```
 
-浮点 `from_chars` 反过来，按 `chars_format` 去读。hex 格式有点特殊：它用 `p` 分隔二进制指数（`1.8p+1` 表示 `1.5 × 2¹ = 3.0`），跟 `%a` 一脉：
+浮点 `from_chars` 反过来，按 `chars_format` 去读。hex 格式有点特殊：它用 `p` 分隔二进制指数（`1.8p+1` 表示 $1.5 \times 2¹ = 3.0$），跟 `%a` 一脉：
 
 ```cpp
 // Standard: C++17

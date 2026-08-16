@@ -181,7 +181,7 @@ auto min_it = std::min_element(v.begin(), v.end());  // *min_it == 1
 auto max_it = std::max_element(v.begin(), v.end());  // *max_it == 9
 ```
 
-注意 `accumulate` 的初始值类型决定了整个计算的返回类型。传 `0` 得到 `int`，传 `0.0` 得到 `double`，传 `0LL` 得到 `long long`。如果你的 vector 里存的是大整数，初始值传 `0` 就有溢出风险——这是一个经典的踩坑点。
+注意 `accumulate` 的初始值类型决定了整个计算的返回类型。传 `0` 得到 `int`，传 $0.0$ 得到 `double`，传 `0LL` 得到 `long long`。如果你的 vector 里存的是大整数，初始值传 `0` 就有溢出风险——这是一个经典的踩坑点。
 
 ## 上号——综合实战：学生成绩处理
 

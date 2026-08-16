@@ -166,7 +166,7 @@ TEST_CASE("then with void first callback", "[then]") {
 }
 ```
 
-`then()` 这一类的三条用例各压一种姿势:两级非 void 管道、跨类型的多级管道、void 前缀回调。多级管道这条笔者觉得最能说明问题——`(5*2)+10 = 20` 这个数最后被 `std::to_string` 折成字符串 `"20"`,一路上每一级的返回类型都被 `then()` 推导对了,而 `std::move_only_function` 在几种完全不同类型的 lambda 之间做的类型擦除也没崩。void 前缀那条专门压 `if constexpr (std::is_void_v<ReturnType>)` 分支——第一个回调往外部 `value` 写 7,第二个回调靠引用把 `value` 读出来乘 3 得 21。
+`then()` 这一类的三条用例各压一种姿势:两级非 void 管道、跨类型的多级管道、void 前缀回调。多级管道这条笔者觉得最能说明问题——$(5\times 2)+10 = 20$ 这个数最后被 `std::to_string` 折成字符串 `"20"`,一路上每一级的返回类型都被 `then()` 推导对了,而 `std::move_only_function` 在几种完全不同类型的 lambda 之间做的类型擦除也没崩。void 前缀那条专门压 `if constexpr (std::is_void_v<ReturnType>)` 分支——第一个回调往外部 `value` 写 7,第二个回调靠引用把 `value` 读出来乘 3 得 21。
 
 ### 测试框架与构建配置
 

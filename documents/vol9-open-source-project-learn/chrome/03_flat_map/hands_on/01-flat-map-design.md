@@ -33,7 +33,7 @@ title: "flat_map 设计指南（一）：动机、接口与 flat_tree 架构"
 
 ## 问题:std::map 卡在哪
 
-flat_map 跟 std::map 的查找都是 `O(log n)`,渐近一模一样,教科书上写不出差别。差别全在常数因子。红黑树节点散落在堆上各过各的,查找每一步 `node = node->left_` 都是一次数据相关解引用,CPU 没法预取,大概率就是一次 cache miss。给您一个直观的数:100 万个 `map<int,int>`,std::map 光节点元数据就吃掉大概 32MB,外加 100 万次 malloc;flat_map 这边几乎零额外开销,数据老老实实排成一条。渐近相同,常数因子差一个数量级——这就是 flat_map 存在的全部理由。
+flat_map 跟 std::map 的查找都是 $O(\log n)$,渐近一模一样,教科书上写不出差别。差别全在常数因子。红黑树节点散落在堆上各过各的,查找每一步 `node = node->left_` 都是一次数据相关解引用,CPU 没法预取,大概率就是一次 cache miss。给您一个直观的数:100 万个 `map<int,int>`,std::map 光节点元数据就吃掉大概 32MB,外加 100 万次 malloc;flat_map 这边几乎零额外开销,数据老老实实排成一条。渐近相同,常数因子差一个数量级——这就是 flat_map 存在的全部理由。
 
 ## 接口长什么样
 
@@ -72,13 +72,13 @@ flat_tree 内部那条 `body_` 永远按 `comp_` 严格升序、且没有重复�
 
 | 操作 | 复杂度 | 机制 |
 |---|---|---|
-| find/contains/lower_bound | `O(log n)` | std::ranges::lower_bound 二分,cache 友好 |
-| insert/emplace/erase | `O(n)` | vector shift,无摊还 |
-| operator[]/insert_or_assign/try_emplace | `O(n)` | 同 insert |
-| range 构造 | `O(N log²N)` / `O(N log N)` | sort_and_unique |
-| sorted_unique 构造 | `O(N)` | 跳过 sort,只 DCHECK |
+| find/contains/lower_bound | $O(\log n)$ | std::ranges::lower_bound 二分,cache 友好 |
+| insert/emplace/erase | $O(n)$ | vector shift,无摊还 |
+| operator[]/insert_or_assign/try_emplace | $O(n)$ | 同 insert |
+| range 构造 | $O(N \log²N)$ / $O(N \log N)$ | sort_and_unique |
+| sorted_unique 构造 | $O(N)$ | 跳过 sort,只 DCHECK |
 
-您看出来了吧,这套代价跟 std::map 是镜像的:查找这边赢了常数因子,插入那边因为 vector shift 赔了 `O(n)`。flat_map 压根不打算当通用 map 用,它把赌注押在"查多写少"上——您手里要是有个配置表、路由表、枚举映射这种构造完基本只读的场景,这笔交易就划算;反过来高频插入删除,老老实实回去用 std::map。它也没忘给"我数据已经有序了"开后门,`sorted_unique` 构造 tag dispatch 跳过排序,只要 DCHECK 验过就 O(N) 进场,零成本。
+您看出来了吧,这套代价跟 std::map 是镜像的:查找这边赢了常数因子,插入那边因为 vector shift 赔了 $O(n)$。flat_map 压根不打算当通用 map 用,它把赌注押在"查多写少"上——您手里要是有个配置表、路由表、枚举映射这种构造完基本只读的场景,这笔交易就划算;反过来高频插入删除,老老实实回去用 std::map。它也没忘给"我数据已经有序了"开后门,`sorted_unique` 构造 tag dispatch 跳过排序,只要 DCHECK 验过就 O(N) 进场,零成本。
 
 架构和代价到这儿算是理顺了。但纸面讲清楚是一回事,真把它一行行撸出来,有些东西纸上看不出来——`sort_and_unique` 为什么要拆成 stable_sort + unique + erase 三步、`sorted_unique` 的 DCHECK 在 release 下怎么保证不误删数据、`extract()&&` 那一手右值限定到底省在哪。下一篇咱们就把 flat_tree 的核心代码摊开来看。
 

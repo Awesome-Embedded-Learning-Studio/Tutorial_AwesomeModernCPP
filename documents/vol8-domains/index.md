@@ -37,3 +37,8 @@ tags:
   <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
   <ChapterLink href="cpp-deep-dives/">C++ 深度专题</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

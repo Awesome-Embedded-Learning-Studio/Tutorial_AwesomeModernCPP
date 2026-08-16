@@ -52,7 +52,7 @@ friend std::ostream& operator<<(std::ostream& os, const Fraction& f)
 }
 ```
 
-使用起来和打印内置类型完全一样：`std::cout << Fraction(3, 4)` 输出 `3/4`，`std::cout << Fraction(5, 1)` 输出 `5`，链式调用 `cout << a << " and " << b` 也毫无问题。
+使用起来和打印内置类型完全一样：`std::cout << Fraction(3, 4)` 输出 $\frac{3}{4}$，`std::cout << Fraction(5, 1)` 输出 `5`，链式调用 `cout << a << " and " << b` 也毫无问题。
 
 这里有一个值得思考的设计选择：`operator<<` 需要访问 `Fraction` 的私有成员。把它声明为 `friend` 是最直接的做法；另一个方案是提供一个公有 `print` 成员函数，然后 `operator<<` 调用它。`friend` 更简洁，`print` 方法则在需要支持不同格式化输出时更灵活。
 
@@ -93,7 +93,7 @@ friend std::istream& operator>>(std::istream& is, Fraction& f)
 >
 > **踩坑预警**：另一个常见错误是在输入失败时没有设置 `failbit`。如果你只检查了流状态但不设置 `failbit`，调用者就无法通过 `if (cin >> fraction)` 来判断输入是否成功。上面代码中 `is.setstate(std::ios::failbit)` 就是处理这种情况的。
 
-使用方式和 `cin >>` 读取 `int` 一模一样：`if (std::cin >> f)` 在输入 `3/4` 后会让 `f` 变成 `Fraction(3, 4)`，输入 `abc` 则进入 `else` 分支报错。
+使用方式和 `cin >>` 读取 `int` 一模一样：`if (std::cin >> f)` 在输入 $\frac{3}{4}$ 后会让 `f` 变成 `Fraction(3, 4)`，输入 `abc` 则进入 `else` 分支报错。
 
 ## 下标运算符 operator[]
 
@@ -361,7 +361,7 @@ const_arr[2] = 20
 捕获异常: IntArray::at: index out of range
 ```
 
-验证一下：`3/4 + 1/3 = 9/12 + 4/12 = 13/12`，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，`at(10)` 越界被异常捕获，都没问题。
+验证一下：$3/4 + 1/3 = 9/12 + 4/12 = 13/12$，正确。`arr` 被赋值为 `{0, 10, 20, 30, 40}`，`const_arr[2]` 是 20，`at(10)` 越界被异常捕获，都没问题。
 
 ## 动手试试
 

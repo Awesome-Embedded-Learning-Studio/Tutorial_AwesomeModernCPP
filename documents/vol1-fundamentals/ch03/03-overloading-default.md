@@ -88,7 +88,7 @@ void process(int x) { /* ... */ }
 void process(double x) { /* ... */ }
 ```
 
-调用 `process(5)` 时，字面量 `5` 本身就是 `int`，属于精确匹配 `process(int)`，而 `process(double)` 需要一次从 `int` 到 `double` 的转换。精确匹配对任何形式的转换都有压倒性优势，最终调用的一定是 `process(int)`。反过来，`process(5.0)` 中的 `5.0` 是 `double`，这次精确匹配发生在 `process(double)` 上。
+调用 `process(5)` 时，字面量 `5` 本身就是 `int`，属于精确匹配 `process(int)`，而 `process(double)` 需要一次从 `int` 到 `double` 的转换。精确匹配对任何形式的转换都有压倒性优势，最终调用的一定是 `process(int)`。反过来，`process(5.0)` 中的 $5.0$ 是 `double`，这次精确匹配发生在 `process(double)` 上。
 
 稍微容易让人困惑的是 `process(5.0f)` 这种情况。`5.0f` 的类型是 `float`，而我们并没有 `process(float)` 的重载。此时编译器会比较两条可能的路径：`float` 提升为 `double`，以及 `float` 转换为 `int`。前者是浮点类型之间的标准提升，被认为更加自然、安全；后者则涉及截断语义，优先级更低。所以最终仍然会调用 `process(double)`。这也体现了一个事实：**重载决议不是"最少字符匹配"，而是"最合理的类型路径匹配"**。
 

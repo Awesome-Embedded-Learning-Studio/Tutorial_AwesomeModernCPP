@@ -562,7 +562,7 @@ Triangle* triangle_create(const char* name, int id,
                            double a, double b, double c);
 ```
 
-提示：三角形面积用海伦公式——先算半周长 `s = (a+b+c)/2`，面积 `A = sqrt(s*(s-a)*(s-b)*(s-c))`。别忘了在 vtable 里填入正确的函数指针。
+提示：三角形面积用海伦公式——先算半周长 $s = \frac{a+b+c}{2}$，面积 $A = \sqrt{s\times(s-a)\times(s-b)\times(s-c)}$。别忘了在 vtable 里填入正确的函数指针。
 
 ### 练习 2：图形排序
 

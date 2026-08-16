@@ -19,7 +19,7 @@ tags:
 1. [Tensor 是什么——先把名字从神坛上拿下来](./01-what-is-tensor.md) —— 祛魅:它就是一张固定大小的二维数表
 2. [Tensor 在神经网络里装什么——四种数据,一种容器](./02-tensor-in-neural-network.md) —— 输入 / 权重 / 偏置 / 输出,全是 Tensor
 3. [为什么不用现成的——三个候选过堂](./03-why-not-built-in.md) —— vector、原生数组、嵌套 array 各死在哪
-4. [行主序——二维坐标怎么落进一维内存](./04-row-major.md) —— `i*Cols + j`,跟 NumPy 对齐
+4. [行主序——二维坐标怎么落进一维内存](./04-row-major.md) —— $i\times Cols + j$,跟 NumPy 对齐
 5. [形状塞进类型——维度为什么是模板参数](./05-shape-in-type.md) —— 类型系统当免费的形状检查器
 
 ## 实现:动手写 Tensor

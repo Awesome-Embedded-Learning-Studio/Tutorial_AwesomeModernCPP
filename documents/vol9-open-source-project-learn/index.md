@@ -23,3 +23,8 @@ platform: host
   <ChapterLink href="chrome/03_flat_map/">flat_map：从 Chromium 学到的有序容器设计</ChapterLink>
   <ChapterLink href="chrome/04_no_destructor/">NoDestructor：从 Chromium 学到的静态生命周期管理</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

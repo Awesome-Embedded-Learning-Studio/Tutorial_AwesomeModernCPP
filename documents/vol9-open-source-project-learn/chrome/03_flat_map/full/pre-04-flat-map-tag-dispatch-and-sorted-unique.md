@@ -25,7 +25,7 @@ title: "flat_map 前置知识（四）：tag dispatch 与 sorted_unique_t"
 ---
 # flat_map 前置知识（四）：tag dispatch 与 sorted_unique_t
 
-[pre-02](./pre-02-flat-map-complexity-and-amortized.md) 那篇笔者顺手埋了个钩子:flat_map 的批量构造是 `O(N log N)`,因为它拿到数据得先排一遍、再去个重(`sort_and_unique`)。笔者当时写完心里就嘀咕,这要是数据本来就是有序的,这一遍岂不是白排?Chromium 的工程师也想到了这茬,他们的答法挺干净:您构造时甩个 `sorted_unique_t` 标签进去,等于跟它说"放心,这批数据有序无重复",它就把排序那步跳了,构造直接掉到 `O(N)`。
+[pre-02](./pre-02-flat-map-complexity-and-amortized.md) 那篇笔者顺手埋了个钩子:flat_map 的批量构造是 $O(N \log N)$,因为它拿到数据得先排一遍、再去个重(`sort_and_unique`)。笔者当时写完心里就嘀咕,这要是数据本来就是有序的,这一遍岂不是白排?Chromium 的工程师也想到了这茬,他们的答法挺干净:您构造时甩个 `sorted_unique_t` 标签进去,等于跟它说"放心,这批数据有序无重复",它就把排序那步跳了,构造直接掉到 $O(N)$。
 
 这一篇咱们就拆这个标签背后的机制,也就是 tag dispatch(标签分发),外加 flat_map 怎么在 debug 下用 `DCHECK` 抓那些嘴上打包票、手上递乱数据的人。
 
@@ -33,14 +33,14 @@ title: "flat_map 前置知识（四）：tag dispatch 与 sorted_unique_t"
 
 flat_map 的普通构造——不管是传 vector、initializer_list 还是 range——默认都走 `sort_and_unique`(flat_tree.h:567/578/586/594)。它没办法,它根本不知道您给它的数据是不是排好的,只能先排再去重,保险第一。
 
-可工程里"数据本来就排好了"的场景一抓一大把。配置是从另一个有序容器拷过来的、点云是上游 pipeline 处理过按 id 排好的、测试 fixture 是您手写的有序 list。这种时候还让它 `O(N log N)` 排一遍,纯粹白烧 CPU:
+可工程里"数据本来就排好了"的场景一抓一大把。配置是从另一个有序容器拷过来的、点云是上游 pipeline 处理过按 id 排好的、测试 fixture 是您手写的有序 list。这种时候还让它 $O(N \log N)$ 排一遍,纯粹白烧 CPU:
 
 ```cpp
 std::vector<std::pair<int, Config>> raw = load_config();  // 已知有序
 flat_map<int, Config> m(raw.begin(), raw.end());           // 还是会再排一次!
 ```
 
-`raw` 明明已有序,flat_map 照样花 `O(N log N)` 再排一遍。数据集小您不在意,真上到百万量级,这个对数因子就肉疼了。
+`raw` 明明已有序,flat_map 照样花 $O(N \log N)$ 再排一遍。数据集小您不在意,真上到百万量级,这个对数因子就肉疼了。
 
 ---
 
@@ -109,15 +109,15 @@ constexpr bool is_sorted_and_unique(const Range& range, Comp comp) {
 
 它用 `std::ranges::adjacent_find` 配 `std::not_fn(comp)` 扫一遍相邻对:任何相邻元素没满足"严格小于"的(相等或逆序),`adjacent_find` 立刻定位到那个位置,`DCHECK` 翻脸,abort 给您看。
 
-这是一份很 Chromium 风格的契约:debug 下 flat_map 替您校验您保证的真实性,撒谎当场爆;release 下 `DCHECK` 整个编译成空,完全不校验,直接信任您。`is_sorted_and_unique` 本身是 `O(N)`(扫一遍相邻对),但这个钱只在 debug 付——release 是真正的 `O(N)` 构造,append 完直接接管,不排也不校验。
+这是一份很 Chromium 风格的契约:debug 下 flat_map 替您校验您保证的真实性,撒谎当场爆;release 下 `DCHECK` 整个编译成空,完全不校验,直接信任您。`is_sorted_and_unique` 本身是 $O(N)$(扫一遍相邻对),但这个钱只在 debug 付——release 是真正的 $O(N)$ 构造,append 完直接接管,不排也不校验。
 
 ---
 
 ## 零成本:release 完全不付费
 
-代价摊开算一笔就清楚了。debug 构建里 sorted_unique 构造是 append(`O(N)`)加上 `DCHECK(is_sorted_and_unique)` 那次 `O(N)` 校验,合起来还是 `O(N)`。release 构建里 `DCHECK` 直接消失,sorted_unique 构造就只剩 append,纯 `O(N)`。
+代价摊开算一笔就清楚了。debug 构建里 sorted_unique 构造是 append($O(N)$)加上 `DCHECK(is_sorted_and_unique)` 那次 $O(N)$ 校验,合起来还是 $O(N)$。release 构建里 `DCHECK` 直接消失,sorted_unique 构造就只剩 append,纯 $O(N)$。
 
-对比一下普通构造:append(`O(N)`)+ `sort_and_unique`(`O(N log N)`,走的是 stable_sort)。大数据集上 `N log N` 比 `N` 慢一个对数因子——100 万元素就是 20 倍的差距。所以 sorted_unique 在 release 下是真·零开销抽象:您只在确信数据有序时用它,省掉那个 `log N` 因子,debug 下还白送一道校验保平安。
+对比一下普通构造:append($O(N)$)+ `sort_and_unique`($O(N \log N)$,走的是 stable_sort)。大数据集上 $N \log N$ 比 $N$ 慢一个对数因子——100 万元素就是 20 倍的差距。所以 sorted_unique 在 release 下是真·零开销抽象:您只在确信数据有序时用它,省掉那个 $\log N$ 因子,debug 下还白送一道校验保平安。
 
 ---
 

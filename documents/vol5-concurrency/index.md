@@ -26,3 +26,8 @@ tags:
   <ChapterLink href="ch08-debug-testing-perf">ch08 · 调试、测试与性能</ChapterLink>
   <ChapterLink href="ch09-distributed-bridge">ch09 · 分布式桥接附录</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

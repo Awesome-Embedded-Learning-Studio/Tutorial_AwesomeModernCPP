@@ -5,3 +5,6 @@ nav:
   - gui-graphics/
   - data-storage/
   - algorithms/
+  - ai/
+  - cpp-deep-dives/
+  - exercises/

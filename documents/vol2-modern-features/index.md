@@ -28,3 +28,8 @@ tags:
   <ChapterLink num="10" href="ch10-error-handling/">错误处理的现代方式</ChapterLink>
   <ChapterLink num="11" href="ch11-user-defined-literals/">用户自定义字面量</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

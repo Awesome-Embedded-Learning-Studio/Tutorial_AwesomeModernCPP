@@ -212,7 +212,7 @@ int main() {
 }
 ```
 
-您会看到终端里打出 `chromium` 和 `42`,但 **`~Noisy()` 那行从头到尾不打印**——不析构生效了。
+您会看到终端里打出 `chromium` 和 $42$,但 **`~Noisy()` 那行从头到尾不打印**——不析构生效了。
 
 到这里 NoDestructor 的实现就算撸通了。拢共五层,笔者再带您过一遍:`storage_` 那段对齐缓冲;placement new 加完美转发的构造;`reinterpret_cast<T*>` 的访问(`get`/`operator*`/`->`);`= default` 这一手跳过 `~T()`、只析构 char 成员的析构策略;最后两条 static_assert 把关,把工具卡在非平凡析构的 T 上。整个类不到 50 行,每一行笔者都跟您掰扯过它的理由。
 

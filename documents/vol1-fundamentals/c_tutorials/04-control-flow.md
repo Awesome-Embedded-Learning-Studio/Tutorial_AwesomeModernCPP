@@ -165,7 +165,7 @@ int days_in_month(int month, int is_leap_year) {
 
 ### case 标签的限制
 
-`switch` 的 case 标签必须是**整数常量表达式**——编译时就能确定值的整数。这意味着不能用变量、浮点数或字符串。字面量（`42`）、`enum` 成员和 `#define` 宏都行。
+`switch` 的 case 标签必须是**整数常量表达式**——编译时就能确定值的整数。这意味着不能用变量、浮点数或字符串。字面量（$42$）、`enum` 成员和 `#define` 宏都行。
 
 养成习惯：**写 `switch` 必须写 `default`**，哪怕只是打一行日志。特别是当你的 `enum` 后来新增了成员但忘了更新 `switch` 的时候，`default` 就是你的安全网。
 

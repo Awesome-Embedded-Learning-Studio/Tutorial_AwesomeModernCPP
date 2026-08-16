@@ -46,7 +46,7 @@ title: 容器适配器：stack、queue、priority_queue 是怎么「包」出来
 
 三个适配器里 `priority_queue` 最值得拆，因为它的实现最能体现「适配器 = 底层容器 + 标准库算法」这个套路。它根本不是什么神秘数据结构，本质就是「一个连续容器 + `<algorithm>` 里的几个堆函数」——具体说，`push` 等价于 `c.push_back(x)` 然后 `std::push_heap(c.begin(), c.end(), cmp)`；`pop` 等价于 `std::pop_heap(c.begin(), c.end(), cmp)` 然后 `c.pop_back()`；`top` 就是返回 `c.front()`。堆算法维护的「堆序」保证 `c.front()` 永远是当前最优先的元素。
 
-复杂度全可以从这个实现推出来。`top()` 直接读首元素，O(1)。`push()` 末尾追加是常数，`push_heap` 把新元素往上浮，最多爬树高 `log n` 层，所以是 O(log n)。`pop()` 里 `pop_heap` 先把首元素和末尾交换、再把新的首元素往下沉，同样最多 `log n` 层，加上一次 `pop_back`，整体 O(log n)。这也解释了为什么 `priority_queue` 的底层**必须是随机访问迭代器**的容器——堆的下沉上浮要在数组里按下标跳着访问（父节点 `i`、孩子 `2i+1`/`2i+2`），链表做不了这种 O(1) 定位，所以底层只能选 `vector` 或 `deque`，默认是 `vector`（连续内存，cache 友好，堆操作更快）。
+复杂度全可以从这个实现推出来。`top()` 直接读首元素，O(1)。`push()` 末尾追加是常数，`push_heap` 把新元素往上浮，最多爬树高 $\log n$ 层，所以是 O(log n)。`pop()` 里 `pop_heap` 先把首元素和末尾交换、再把新的首元素往下沉，同样最多 $\log n$ 层，加上一次 `pop_back`，整体 O(log n)。这也解释了为什么 `priority_queue` 的底层**必须是随机访问迭代器**的容器——堆的下沉上浮要在数组里按下标跳着访问（父节点 `i`、孩子 $2i+1$/$2i+2$），链表做不了这种 O(1) 定位，所以底层只能选 `vector` 或 `deque`，默认是 `vector`（连续内存，cache 友好，堆操作更快）。
 
 默认比较器是 `std::less`，结果是个**最大堆**——`top()` 返回的是当前最大值。想要最小堆，把比较器换成 `std::greater` 就行。这个「换比较器改变堆方向」的特性，是 priority_queue 最常用的玩法。
 

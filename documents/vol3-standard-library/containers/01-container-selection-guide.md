@@ -38,7 +38,7 @@ vol3 把主力容器逐个拆了一遍——`array`、`vector`、`deque`/`list`/
 
 标准库容器先分成两大类，这个分法决定了你问的第一个问题不一样。**顺序容器**（`array`、`vector`、`deque`、`list`、`forward_list`）按「位置」存数据，元素在容器里的次序就是你放进去的次序，你关心的是「我要在第几个位置插、在第几个位置删」。**关联容器**（`map`/`set` 和它们的 `unordered` 版）按「键」存数据，元素的次序由键决定（有序）或由哈希决定（无序），你关心的是「我按什么来查」。
 
-关联容器内部又分两小类。`map`/`set`/`multimap`/`multiset` 是**有序**的，底层是红黑树，按 key 排好序，查找是稳定的 `O(log n)`，还能按范围遍历。`unordered_map`/`unordered_set` 这一组是**无序**的，底层是哈希表，查找平均 `O(1)` 但最坏 `O(n)`（全撞同一个桶时），不能按序遍历。一句话区分：**要不要按 key 排序遍历？要，就红黑树；不要，就哈希换平均 O(1)**。这个权衡我们在 [map 与 set 深入](06-map-set-deep-dive.md) 和 [unordered_map 与 set 深入](07-unordered-map-set-deep-dive.md) 两篇里都实测过。
+关联容器内部又分两小类。`map`/`set`/`multimap`/`multiset` 是**有序**的，底层是红黑树，按 key 排好序，查找是稳定的 $O(\log n)$，还能按范围遍历。`unordered_map`/`unordered_set` 这一组是**无序**的，底层是哈希表，查找平均 $O(1)$ 但最坏 $O(n)$（全撞同一个桶时），不能按序遍历。一句话区分：**要不要按 key 排序遍历？要，就红黑树；不要，就哈希换平均 O(1)**。这个权衡我们在 [map 与 set 深入](06-map-set-deep-dive.md) 和 [unordered_map 与 set 深入](07-unordered-map-set-deep-dive.md) 两篇里都实测过。
 
 ## 复杂度速查：按操作挑容器
 

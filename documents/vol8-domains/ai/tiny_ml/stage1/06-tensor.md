@@ -47,7 +47,7 @@ Stage 1 把 v0.1 硬约束里最承重的三条凑在一起:无堆分配、不�
 
 ### 决策三:`std::array` 存储 + 行主序
 
-存储没得选,硬约束禁了 `std::vector`,只剩 `std::array`,三个候选的过堂见[引入 03 篇](./03-why-not-built-in.md)。布局走**行主序** `internals_[i*Cols + j]`,跟 NumPy 默认的 C order 一致,这样 Stage 5 的 Python 权重和 C++ Tensor 能一位对一位地对拍,Python 的 `W[i, j]` 和 C++ 的 `W(i, j)` 指向同一个数。行主序的完整推导和内存图在[引入 04 篇](./04-row-major.md),这里不重复。
+存储没得选,硬约束禁了 `std::vector`,只剩 `std::array`,三个候选的过堂见[引入 03 篇](./03-why-not-built-in.md)。布局走**行主序** `internals_[i*Cols + j]`,跟 NumPy 默认的 C order 一致,这样 Stage 5 的 Python 权重和 C++ Tensor 能一位对一位地对拍,Python 的 `W[i, j]` 和 C++ 的 $W(i, j)$ 指向同一个数。行主序的完整推导和内存图在[引入 04 篇](./04-row-major.md),这里不重复。
 
 ## 实现指引
 
@@ -214,7 +214,7 @@ ctest --test-dir build
 ## 常见坑
 
 1. **at 越界检查用 `||` 不是 `&&`**:`if (i >= Rows && j >= Cols)` 要求 i、j **都**越界才报错,单维越界(`at(99, 0)`)直接漏过去访问 `internals_[198]`,撞 `std::array` 越界断言。写成 `||`,i 或 j 任一越界就返回错误。这条本机 ASAN 实证过。
-2. **`internals_{}` 的 `{}` 不能省**:成员没写 `{}` 时,`Tensor<2,2> t;` 的 default 构造让 `std::array` 元素处于 indeterminate,`t(0, 0)` 读的是未初始化垃圾(UB)。测试能过是栈上垃圾凑巧是 0,撞大运。本机 msan 实证 `use-of-uninitialized-value`。加上 `{}` 才 value-init(float 就是 0.0f),default 构造名副其实。
+2. **`internals_{}` 的 `{}` 不能省**:成员没写 `{}` 时,`Tensor<2,2> t;` 的 default 构造让 `std::array` 元素处于 indeterminate,$t(0, 0)$ 读的是未初始化垃圾(UB)。测试能过是栈上垃圾凑巧是 0,撞大运。本机 msan 实证 `use-of-uninitialized-value`。加上 `{}` 才 value-init(float 就是 0.0f),default 构造名副其实。
 3. **`std::expected` 不接引用类型**:`expected<T&, E>` 编译不过(标准 `static_assert(!is_reference_v<T>)`)。所以 at 没法“返回引用 + 走 expected 错误”,只能返回值或指针。咱们选值,理由见决策一。
 4. **CTAD 会丢维度**:`Tensor t(std::array{...})` 这种类模板参数推导会把 `Rows` / `Cols` 全丢了,必须显式写 `Tensor<2, 2>`。别指望 CTAD 帮你。
 5. **`tests/CMakeLists.txt` 要注册测试 target**:写了 `tensor_api.cpp` 但忘了 `tamcpp_add_test(tensor_api tensor_api.cpp)`,构建根本不会编译它,你跑的 `ctest` 只有 smoke。新加测试文件记得在这儿注册一行。

@@ -45,3 +45,8 @@ tags:
   <ChapterLink href="05-language-choice-performance-vs-maintainability">语言选择原则：性能 vs 可维护性的真实取舍</ChapterLink>
   <ChapterLink href="c_tutorials/">C 语言教程（详细版）</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

@@ -24,3 +24,8 @@ tags:
   <ChapterLink href="time-numeric/">时间与数值</ChapterLink>
   <ChapterLink href="error-utils/">错误处理与工具</ChapterLink>
 </ChapterNav>
+
+
+---
+
+> **练习与作业**：本卷配套五档练习见 [exercises/](exercises/index.md)（Homework / Lab / Project，题题附参考答案与知识点链接）。

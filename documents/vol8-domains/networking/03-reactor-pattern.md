@@ -136,7 +136,7 @@ flowchart LR
 
 一个能用的 Reactor server 还差最后一块:**优雅关闭**。你不能 `Ctrl+C` 直接杀进程——那样正在处理的连接会被粗暴 `close`,对端收到 RST。正确的姿势:
 
-1. **信号 handler** 把 `epoll_wait` 的 timeout 从 `-1`(永久阻塞)改成短超时,或用一个 eventfd 唤醒它。
+1. **信号 handler** 把 `epoll_wait` 的 timeout 从 $-1$(永久阻塞)改成短超时,或用一个 eventfd 唤醒它。
 2. **停止 accept 新连接**(从兴趣表移除监听 fd)。
 3. **drain**:给已有连接发完剩余数据、等它们自然关闭或超时。
 4. 最后退出循环。
