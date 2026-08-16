@@ -1004,7 +1004,7 @@ rows = 12
 
 **思路**：①`unique_ptr` 版 clone 的隐式转换在函数体里找回具体类型；②默认拷贝构造对 `shared_ptr` 成员是共享，不是深拷。
 
-1. `make_unique<Button>(*this)` 返回的 `unique_ptr<Button>` 隐式转成 `unique_ptr<Widget>`（派生到基类的转换模板），动态类型保留。`unique_ptr<Derived>` 与 `unique_ptr<Base>` 是平级的独立类型，所以智能指针之间不支持协变返回。→ 知识点：[原型模式](../vol4-generics-patterns/04-prototype.md)「那个返回类型：为什么我推荐你写 std::unique_ptr<Base>」
+1. `make_unique<Button>(*this)` 返回的 `unique_ptr<Button>` 隐式转成 `unique_ptr<Widget>`（派生到基类的转换模板），动态类型保留。`unique_ptr<Derived>` 与 `unique_ptr<Base>` 是平级的独立类型，所以智能指针之间不支持协变返回。→ 知识点：[原型模式](../vol4-generics-patterns/04-prototype.md)「那个返回类型：为什么我推荐你写 `std::unique_ptr<Base>`」
 2. `b.get() == 999`：默认拷贝构造只复制 `shared_ptr` 的引用计数，两个对象底层同一块。clone 的实现者要逐个成员过「值 / 共享 / 所有权」三问。→ 知识点：[原型模式](../vol4-generics-patterns/04-prototype.md)「真正的坑在后面：clone 不是无脑 new」
 
 **验证输出**：

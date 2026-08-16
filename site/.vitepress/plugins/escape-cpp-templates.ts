@@ -87,7 +87,8 @@ function sanitizeHtml(html: string): string {
       if (tag[0] === tag[0].toUpperCase() && tag[0] !== tag[0].toLowerCase()) return match
       return match.replace(/^</, '&lt;').replace(/>$/, '&gt;')
     }
-  )
+    // C++ 聚合初始化 {…} 在正文出现会触发 Vue 的 {{ 插值解析(如 Circle c = {{0.0f, 0.0f}, 5.0f};)
+  ).replace(/\{\{/g, '&#123;&#123;')
 }
 
 export function cppTemplateEscapePlugin(md: MarkdownIt): void {
