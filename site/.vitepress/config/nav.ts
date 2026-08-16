@@ -1,6 +1,7 @@
 import type { DefaultTheme } from 'vitepress'
 
 export const navZh: DefaultTheme.NavItem[] = [
+  { text: '新手起步', link: '/getting-started/' },
   {
     text: '基础与特性',
     items: [
@@ -21,6 +22,7 @@ export const navZh: DefaultTheme.NavItem[] = [
       { text: '卷五 · 并发编程', link: '/vol5-concurrency/' },
       { text: '卷六 · 性能优化', link: '/vol6-performance/' },
       { text: '卷七 · 工程实践', link: '/vol7-engineering/' },
+      { text: '编译与链接', link: '/compilation/' },
     ],
   },
   {
@@ -29,7 +31,6 @@ export const navZh: DefaultTheme.NavItem[] = [
       { text: '卷八 · 领域应用', link: '/vol8-domains/' },
       { text: '卷九 · 开源项目学习', link: '/vol9-open-source-project-learn/' },
       { text: '卷十 · 课程与演讲笔记', link: '/vol10-open-lecture-notes/' },
-      { text: '编译与链接', link: '/compilation/' },
       { text: '实战项目', link: '/projects/' },
     ],
   },
@@ -46,6 +47,7 @@ export const navZh: DefaultTheme.NavItem[] = [
 ]
 
 export const navEn: DefaultTheme.NavItem[] = [
+  { text: 'Getting Started', link: '/en/getting-started/' },
   {
     text: 'Fundamentals',
     items: [
@@ -66,6 +68,7 @@ export const navEn: DefaultTheme.NavItem[] = [
       { text: 'Vol.5 Concurrency', link: '/en/vol5-concurrency/' },
       { text: 'Vol.6 Performance', link: '/en/vol6-performance/' },
       { text: 'Vol.7 Engineering', link: '/en/vol7-engineering/' },
+      { text: 'Compilation & Linking', link: '/en/compilation/' },
     ],
   },
   {
@@ -74,7 +77,6 @@ export const navEn: DefaultTheme.NavItem[] = [
       { text: 'Vol.8 Domain Applications', link: '/en/vol8-domains/' },
       { text: 'Vol.9 Open Source Projects', link: '/en/vol9-open-source-project-learn/' },
       { text: 'Vol.10 Courses & Talks', link: '/en/vol10-open-lecture-notes/' },
-      { text: 'Compilation & Linking', link: '/en/compilation/' },
       { text: 'Projects', link: '/en/projects/' },
     ],
   },

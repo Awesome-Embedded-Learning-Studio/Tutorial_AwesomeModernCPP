@@ -625,6 +625,8 @@ At this point, we have built a complete singly linked list from scratch. The nod
 
 ### Exercise 1: Reverse Linked List
 
+**Difficulty: Basic** · three pointers, O(1) space
+
 Implement a function to reverse a singly linked list in place. The space complexity must be O(1), and you cannot allocate new nodes.
 
 ```c
@@ -636,6 +638,8 @@ void linked_list_reverse(LinkedList* list);
 **Hint:** Maintain three pointers—`prev`, `current`, and `next`, and reverse the `next` direction of each node one by one.
 
 ### Exercise 2: Merge Two Sorted Linked Lists
+
+**Difficulty: Basic** · two-pointer merge
 
 Given two linked lists sorted in ascending order, merge them into a new sorted linked list.
 
@@ -651,6 +655,8 @@ LinkedList* linked_list_merge_sorted(const LinkedList* a, const LinkedList* b);
 
 ### Exercise 3: Detect List Cycle
 
+**Difficulty: Intermediate** · Floyd's tortoise and hare
+
 Determine if a linked list contains a cycle (where a node's `next` pointer points to a node that has already appeared).
 
 ```c
@@ -662,6 +668,8 @@ bool linked_list_has_cycle(const LinkedList* list);
 **Hint:** The classic solution is Floyd's Tortoise and Hare algorithm—use two pointers, one moving one step at a time, and the other moving two steps. If a cycle exists, the fast pointer will eventually catch up to the slow pointer.
 
 ### Exercise 4: Full API with Sentinel
+
+**Difficulty: Intermediate** · full API with a sentinel node
 
 Re-implement the full linked list API (`push_front`, `push_back`, `insert_at`, `remove`, `find`) using a sentinel node, and observe which special-case checks are eliminated by the sentinel node.
 

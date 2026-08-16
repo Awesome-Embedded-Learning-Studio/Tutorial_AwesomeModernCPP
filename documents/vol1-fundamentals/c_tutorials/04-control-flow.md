@@ -467,9 +467,11 @@ C++17 引入了 `if constexpr`，它在编译期评估条件，直接把不满�
 
 ### 练习 1：月份天数
 
+**难度：基础** · 练 switch 的穿透特性
+
 用 `switch` 实现一个函数，根据月份和是否闰年返回该月的天数。要求利用穿透特性合并同天数的月份。
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```c
 bool is_leap_year(int year) {
@@ -490,7 +492,11 @@ int month_day(int year, int month) {
 }
 ```
 
+:::
+
 ### 练习 2：安全的矩阵搜索
+
+**难度：进阶** · 跳出多层循环的两种姿势
 
 在二维矩阵中查找目标值。找到后用两种方式跳出多层循环：一种用标志变量，一种用 `goto`。
 
@@ -504,17 +510,78 @@ typedef struct {
 SearchResult matrix_search(int** matrix, int rows, int cols, int target);
 ```
 
-### 练习 3：带超时的等待
+### 练习 3：手写一个协议帧解析状态机
 
-实现一个带超时机制的等待函数，避免裸 `while` 等待导致的死锁：
+**难度：进阶** · 用 switch 加状态变量实现状态机
+
+本篇末尾演示过一个逐字节驱动的串口协议状态机（起始符 `0xAA` → 载荷长度 → 载荷 → 结束符 `0x55`）。请你自己实现一个等价的解析器：把收到的字节逐个喂给 `frame_feed`，它内部用 `switch (state)` 在状态之间转移，收完一帧后把载荷打印出来。
 
 ```c
-/// @brief 等待某个条件满足或超时
-/// @param check 条件检查函数，返回非零表示条件满足
-/// @param timeout_ms 超时时间（毫秒）
-/// @return 0 表示条件满足，-1 表示超时
-int wait_with_timeout(int (*check)(void), unsigned int timeout_ms);
+#include <stdint.h>
+
+typedef enum { STATE_IDLE, STATE_LEN, STATE_PAYLOAD, STATE_DONE } FrameState;
+
+/// @brief 逐字节喂入；收到完整一帧（含结束符）时返回 1，否则返回 0
+int frame_feed(uint8_t byte);
 ```
+
+要求用 `switch` 加一个显式的状态变量来实现，别用一长串 if-else。再想一件事：如果对端发来的"载荷长度"字段被篡改成一个超出缓冲区大小的值，你的状态机会被带崩吗？该怎么防？
+
+::: details 参考答案
+
+```c
+#include <stdio.h>
+#include <stdint.h>
+
+#define MAX_PAYLOAD 16
+
+typedef enum { STATE_IDLE, STATE_LEN, STATE_PAYLOAD, STATE_DONE } FrameState;
+
+static FrameState state = STATE_IDLE;
+static uint8_t payload[MAX_PAYLOAD];
+static uint8_t payload_len = 0;
+static uint8_t payload_idx = 0;
+
+int frame_feed(uint8_t byte) {
+    switch (state) {
+        case STATE_IDLE:
+            if (byte == 0xAA) {         // 等到起始符才进入下一状态
+                payload_idx = 0;
+                payload_len = 0;
+                state = STATE_LEN;
+            }
+            break;
+        case STATE_LEN:
+            // 防御：长度字段可能被篡改，钳到缓冲区上限，避免后面越界写
+            payload_len = (byte <= MAX_PAYLOAD) ? byte : MAX_PAYLOAD;
+            state = (payload_len == 0) ? STATE_DONE : STATE_PAYLOAD;
+            break;
+        case STATE_PAYLOAD:
+            payload[payload_idx++] = byte;
+            if (payload_idx >= payload_len) {
+                state = STATE_DONE;
+            }
+            break;
+        case STATE_DONE:
+            if (byte == 0x55) {         // 正常结束符
+                printf("Frame OK (%u bytes):", payload_len);
+                for (uint8_t i = 0; i < payload_len; i++) {
+                    printf(" %02X", payload[i]);
+                }
+                printf("\n");
+                state = STATE_IDLE;
+                return 1;
+            }
+            state = STATE_IDLE;         // 没等到结束符，帧出错，回空闲重新等 0xAA
+            break;
+    }
+    return 0;
+}
+```
+
+关键在每个 `case` 里都明确写出"下一个状态是谁"，这就是状态机读起来比一长串 if-else 清爽的地方。`STATE_LEN` 里对长度做钳制，是协议解析里最基本的防御：永远别直接信任对端发来的长度字段。
+
+:::
 
 ## 参考资源
 

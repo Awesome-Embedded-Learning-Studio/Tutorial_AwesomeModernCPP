@@ -8,88 +8,90 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 'Deep Dive into C/C++ Compilation and Linking Part 3: How to Create and Use
-  Static Libraries'
-description: ''
-translation:
-  source: documents/compilation/03-creating-and-using-static-libs.md
-  source_hash: 994ba6406ea27e83d4acd93cbf12656c3fd61db3683f1fc2eefe3320aa388f29
-  translated_at: '2026-06-16T03:26:52.565296+00:00'
-  engine: anthropic
-  token_count: 877
+title: "A Deep Dive into C/C++ Compilation and Linking, Part 3: How to Build and Use Static Libraries"
+description: 'Use ar to pack object files into a lib<name>.a static library, get clear on why the library name has to start with lib, how the linker finds the library through the -l convention, and when you should actually reach for a static library.'
+cpp_standard: [11, 14, 17, 20]
 ---
-# Deep Dive into C/C++ Compilation and Linking Part 3: How to Create and Use Static Libraries
+# A Deep Dive into C/C++ Compilation and Linking, Part 3: How to Build and Use Static Libraries
 
-In the previous blog post, I briefly introduced the basics of static and dynamic libraries. Here are the links:
+In the last post I briefly touched on the basic theory behind static and dynamic libraries. I'll drop the links here:
 
-> [Deep Dive into C/C++ Compilation and Linking - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/152921903)
+> [A Deep Dive into C/C++ Compilation and Linking — CSDN blog](https://blog.csdn.net/charlie114514191/article/details/152921903)
 >
-> [Deep Dive into C/C++ Compilation and Linking 2: Intro to Dynamic and Static Libraries - CSDN Blog](https://blog.csdn.net/charlie114514191/article/details/154828385)
+> [A Deep Dive into C/C++ Compilation and Linking, Part 2: An Introduction to Static and Dynamic Libraries — CSDN blog](https://blog.csdn.net/charlie114514191/article/details/154828385)
 
-So, we have previously covered the essence of static libraries. Although using dynamic libraries is a more fundamental strategy for code sharing today, for the sake of completeness—and because I personally prefer using static libraries to package code that depends only on the most basic runtime (I don't have a strong technical reason for this, I just don't like dumping a massive pile of relocatable files directly into the linker)—let's discuss this further.
+So earlier on we already talked through what a static library actually is at its core. Even though today, shipping code through dynamic libraries is the more default strategy, I want to cover static libraries anyway for completeness — and also because I personally like packing anything that only depends on the bare-bones `C/C++` runtime into a static library. (Honestly I don't have some deep technical reason for the choice; I just don't enjoy dumping a giant pile of relocatable files straight onto the linker.)
 
-## How to Create a Static Library?
+## So how do you actually make a static library?
 
-### The `ar` Tool
+### The `ar` tool
 
-A natural question arises: we have learned the basic principles of static libraries (an organic combination of several relocatable files), but how do we create one? The answer is a small yet powerful tool—`ar` (Archiver).
+So a pretty natural question comes up: last time we learned the basic idea behind a static library (an organic bundle of several relocatable files), but how do you actually build one? The answer is a small but powerful tool called `ar` (Archiver).
 
-Let me briefly introduce `ar`! It is a tool used to create, modify, and extract **archive files**. These files usually end with the `.a` extension (where 'a' stands for archive). The most common use is packaging object files (`.o` files) to create **static link libraries**. On Linux, if we decide to name a library `demo`, the generated library will typically be `libdemo.a`.
+Let me give `ar` a quick intro. It's a tool for creating, modifying, and extracting **archive files**. These archives usually end in `.a` (the *a* stands for archive), and the most common use is to bundle up object files (`.o` files) into a **static library**. On Linux, we like to — for a static library at least — say we decide the library's name is going to be `Charlie`. Then the file we generate is generally `libCharlie.a`.
 
-You might wonder why it must start with `lib`. Isn't generating `demo.a` more intuitive? The core reason is: **this is dictated by the working conventions of the linker we will use later.** Most often, when we compile and link objects, we dispatch `ld` to link target libraries and relocatable files. Generally, high-level build tools use `-L` to specify the search directory and `-l` (lowercase L) to find the library. For example, when we try to provide a `math` static library at a known path to `main.c`, we might write:
+Some of you might be puzzled: why does it have to start with `lib`? Wouldn't `Charlie.a` be way more intuitive? Right, so the core reason is this: **it's a working convention the linker relies on when we come back around to do the linking**. Most of the time, when `gcc`/`g++` is getting ready to link against some target, it dispatches `ld` to link the target libraries and relocatable files, and the upper-layer build tools are in the habit of using `-L` to set the folder search path together with `-l` (that's a lowercase L) to find the library. For example, when we want to feed `main.c` the well-known `math` static library, we'd write something like:
+
+
+```cpp
+
+gcc main.c -lmath
+
+```
+
+The linker isn't going to go looking for a file literally named `math`. Instead, following the convention, it tries to find a file named **`libmath.a`** (static library) or **`libmath.so`** (dynamic library). Put simply:
+
+- The name after the `-l` flag (`math` in this example) is called the "library name".
+- The linker automatically prepends the prefix `lib` to that name.
+- Then, depending on the situation (and the priority order), it appends `.a` (static library) or `.so` (dynamic library) and so on, to build the full filename.
+
+So **naming your library file `lib<name>.a` is you proactively playing along with the linker's auto-lookup mechanism**. If you don't name the file this way, the linker can't find it through the convenient `-l` option, and you're stuck with the clumsy fallback of pointing it at the library's full path by hand, which is really annoying. There's also a nastier problem hiding in here, and we'll dig it back up when we get to dynamic libraries (static libraries don't care; their code just gets packed into the target file anyway).
+
+### Some common `ar` command forms
+
+The basic syntax of `ar` is fairly simple. It wants an **operation code** (think of it as a main command) and some **modifiers** to spell out the exact behavior.
 
 ```bash
-gcc main.c -L./lib -lmath -o app
+ar [operation code][modifiers] <archive filename> <files...>
+
 ```
 
-The linker does not directly look for a file named `math`. Instead, following conventions, it attempts to find a file named **`libmath.a`** (static library) or **`libmath.so`** (dynamic library). Simply put:
+| **Code** | **Description**                                                              | **Common modifier** | **Example**                     |
+| -------- | --------------------------------------------------------------------------- | ------------------- | ------------------------------- |
+| **`r`**  | **Insert / replace**: adds files to the archive. If a same-named file already exists in the archive, it gets replaced. | `v` (verbose)       | `ar rv libmy.a file1.o file2.o` |
+| **`t`**  | **List**: shows the list of files contained in the archive.                  | `v` (verbose)       | `ar t libmy.a`                  |
+| **`x`**  | **Extract**: pulls (unpacks) files out of the archive.                       | `v` (verbose)       | `ar xv libmy.a`                 |
 
-- The name following the `-l` parameter (`math` in this example) is called the "library name".
-- The linker automatically adds the prefix `lib` to this name.
-- Then, based on the situation (and priority), it adds `.a` (static library) or `.so` (dynamic library) suffixes to form the complete filename.
-
-Therefore, **naming the library file in the `libname.a` format is to actively cater to the linker's automatic search mechanism**. If the library file is not named in this format, the linker cannot find it via the convenient `-l` option. You would have to link by specifying the full path to the library file, which is clumsy and inconvenient. This also leads to a serious problem that we will revisit when discussing dynamic libraries (it doesn't matter for static libraries, as they are packaged into the target file).
-
-### Common `ar` Commands
-
-The basic syntax of `ar` is relatively simple; it requires an **operation code** (similar to a main command) and some **modifiers** to specify specific behaviors.
-
-```text
-ar -operation modifiers archive_name member_list
-```
-
-| **Operation Code** | **Description**                                                                 | **Common Modifiers** | **Example Command**        |
-| ------------------ | ------------------------------------------------------------------------------- | -------------------- | -------------------------- |
-| **r**              | **Insert/Replace**: Adds files to the archive. If a file with the same name exists, it replaces it. | `v` (verbose)       | `ar r libdemo.a file1.o`   |
-| **t**              | **List**: Displays the list of files contained in the archive.                  | `v` (verbose)        | `ar t libdemo.a`           |
-| **x**              | **Extract**: Extracts (unpacks) files from the archive.                         | `v` (verbose)        | `ar x libdemo.a file1.o`   |
-
-> Checking the man page is always a good idea: [ar(1) - Linux man page](https://linux.die.net/man/1/ar)
+> Reading the man page is always a good idea: [ar(1) - Linux man page](https://linux.die.net/man/1/ar)
 
 ### What about Windows?
 
-This is actually handled by the MSVC toolchain. However, few people do this manually on Windows; most people delegate the task to the massive IDE: Visual Studio, or like me, use lightweight Visual Studio Code and delegate to CMake. For specific details, you can check the detailed logs of CMake compilation. I won't expand on this here due to space constraints.
+This part is really handled by the MSVC toolchain, but honestly very few people do it by hand anymore. On Windows, almost everybody delegates to the giant IDE, Visual Studio — or, like me, they prefer the lighter Visual Studio Code and let CMake handle it. You can dig into the verbose CMake build log to see the actual details; I'm not going to expand on it here, mostly for space reasons.
 
-## Where Do We Use Static Libraries?
+## So where do we actually use static libraries?
 
-I thought about this carefully, combining my shallow engineering experience (which is practically non-existent) with the materials I've read. Actually, today static libraries can almost be replaced by dynamic libraries. However, in these scenarios, using static libraries is clearly more appropriate. Since I use static libraries more in embedded development, I will frame it this way:
+I thought about it for a while, pooled together my own shallow engineering experience (you could almost call it none at all) and the bits of material I've read, and honestly, today, static libraries are almost entirely replaceable by dynamic ones. But in these scenarios, a static library is clearly the better fit. I tend to use static libraries more in embedded work, so I'll frame it that way:
 
-- **Simplified Distribution:** You only need to distribute one executable file, without carrying a bunch of `.dll` (Windows) or `.so`/`.dylib` (Linux/macOS) files.
-- **Version Locking:** You need to **absolutely guarantee** that your program uses a specific version of a library, free from interference by other versions on the user's system.
-- **Small Tools or Embedded Systems:** In environments where the number of files or dynamic linking support is strictly limited.
+- **Simpler distribution:** you only ship one executable, no need to drag along a pile of `.dll` (Windows) or `.so` / `.dylib` (Linux/macOS) files.
+- **Version lock:** when you need to **absolutely guarantee** your program is using a specific version of a library and won't get messed with by whatever other versions happen to live on the user's system.
+- **Small tools or embedded systems:** in environments with strict limits on file count, or on dynamic-linking support.
 
-## Conversely, Reasons Not to Use Static Libraries
+## And on the flip side, reasons not to use a static library
 
-Reviewing the previous blog, we explained how static libraries work. So, it is easy to think of the first reason not to use them:
+Looking back at the last post, we already explained how a static library actually works. So it's easy to come up with the first reason not to use one:
 
-#### Executable Bloat
+#### Executable bloat
 
-When focusing on **interface reuse**, using static libraries obviously leads to a sizeable increase in the size of all libraries and executables that depend on them (Executable Bloat). Therefore, **for any module intended to provide functional interfaces to other dependencies and remain independent, please use a dynamic library**. In this case, we keep the code dependency in a single copy and let the operating system and loader automatically coordinate all symbol mapping relationships, which is clearly better.
+When you care about **reusing an interface**, going static obviously makes every library and executable that depends on it blow up in size (Executable Bloat). So **for anything whose whole purpose is to expose a functional interface to other dependencies — a module that's otherwise fully standalone — please use a dynamic library**. In that case we want the code dependency to live exactly once, and let the OS and loader sort out all the symbol mapping. That's clearly the better call.
 
-#### Updates Require Recompilation and Redistribution (Hot Reloading Request)
+#### Updates force a recompile and a re-release (Hot Reloading Request)
 
-In scenarios focusing on **hot reloading**, using static libraries is clearly unreasonable. For example, when it is inconvenient to replace the entire executable file directly, but we only need to update a sub-dependency (for instance, a library we use has a vulnerability discovered by an enthusiastic open-source programmer and promptly reported to us)—meaning we found a security vulnerability or a bug in the library—with a static library, we must **recompile and redistribute the entire application (static linking makes this code part of the main body rather than a required dependency)**.
+In scenarios that care about **hot updates**, going static obviously doesn't make sense. For instance, sometimes it's awkward to just swap out the whole executable, and we'd rather only update one sub-dependency — say a library we use gets a vulnerability found by an enthusiastic open-source programmer who reports it back to you in time. In other words, once we find a security hole in the library, or a bug that needs fixing, going static means we have to **recompile and redistribute the entire application** (static linking has turned that code into part of the body, not just a dependency you swap).
 
-#### Potential Symbol Collisions and Version Management Issues
+#### Potential symbol collisions and version-management headaches (Symbol Collisions)
 
-If we link **multiple versions** of static libraries or libraries with **identical symbol names** into the same executable, the compiler/linker will attempt to resolve them, but the risk is high (if I recall correctly, it discards them randomly based on symbol strength and equality). This is really dangerous; no one likes to play a guessing game with their program.
+If we link **multiple versions** of a static library, or libraries with **same-named symbols**, into a single executable, the compiler / linker will try to sort it out, but the risk is high (if I'm remembering right, it goes by symbol strong/weak rules, and on a tie it just drops one at random). It really is dangerous — nobody likes their program playing a guessing game.
+
+## The modern CMake perspective
+
+This whole hand-rolled `ar rvs lib<name>.a` plus `-l<name>` / `-L<dir>` flow has basically been taken over by CMake in modern projects. One line, `add_library(Charlie STATIC src/foo.cpp src/bar.cpp)`, automatically compiles the source files into `.o` and then calls `ar` to pack out `libCharlie.a` — the `STATIC` keyword maps to a static library, `SHARED` maps to a dynamic library, and if you leave it off CMake picks one based on the `BUILD_SHARED_LIBS` switch. On the linking side you don't have to hand-write `-l` / `-L` anymore either; `target_link_libraries(myapp PRIVATE Charlie)` gets it done in one shot, and CMake auto-expands that into `-lCharlie` and stuffs the library's directory into `-L`. That `lib` prefix convention from the start of this post? It's quietly carrying that load for you behind the scenes. As for "simpler distribution" and "version lock" — those reasons to pick static still hold; it's just that today you don't have to type `ar` by hand for them anymore.

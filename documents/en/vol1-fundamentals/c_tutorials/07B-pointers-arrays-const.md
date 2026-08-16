@@ -268,6 +268,8 @@ At this point, we have built a solid foundation in pointers. Next, we will learn
 
 ### Exercise 1: Linear Search with Pointers
 
+**Difficulty: Basic** · pointer walk plus NULL on miss
+
 Implement a linear search function that returns a pointer to the first occurrence of the target value in the array. If not found, return `NULL`.
 
 ```c
@@ -279,6 +281,8 @@ int *find_int(int *arr, int size, int target) {
 
 ### Exercise 2: Array Reversal with Pointers
 
+**Difficulty: Intermediate** · in-place reversal with two pointers
+
 Implement a function that reverses an array in-place, using only pointer arithmetic (two pointers moving from both ends towards the middle), without using array subscripts:
 
 ```c
@@ -288,6 +292,8 @@ void reverse(int *arr, int size) {
 ```
 
 ### Exercise 3: const Practice
+
+**Difficulty: Basic** · the four const-and-pointer combinations
 
 For each of the following declarations, determine which operations are legal and which will result in a compilation error:
 

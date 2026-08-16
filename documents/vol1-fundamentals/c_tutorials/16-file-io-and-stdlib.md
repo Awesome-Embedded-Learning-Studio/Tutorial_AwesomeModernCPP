@@ -266,6 +266,8 @@ std::string s = std::format("{} is {} years old", name, age);
 
 ### 练习 1：配置文件解析器
 
+**难度：进阶** · fgets 逐行解析 key=value
+
 解析 `key=value` 格式的配置文件，忽略 `#` 注释和空行。
 
 ```c
@@ -305,6 +307,8 @@ int main(int argc, char* argv[]) {
 提示：用 `fgets` 逐行读取，`strchr` 找 `=` 位置，`trim` 去除空白。
 
 ### 练习 2：文件复制工具
+
+**难度：基础** · fread/fwrite 加进度
 
 通过命令行参数指定源文件和目标文件，支持二进制文件复制，显示进度。
 

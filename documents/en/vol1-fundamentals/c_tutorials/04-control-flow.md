@@ -445,9 +445,13 @@ Next, we will learn about functions—how to organize code into reusable modules
 
 ### Exercise 1: Days in a Month
 
+**Difficulty: Basic** · practice the fall-through of switch
+
 Use `switch` to implement a function that returns the number of days in a month based on the month and whether it is a leap year. You are required to use the fall-through feature to merge months with the same number of days.
 
 ### Exercise 2: Safe Matrix Search
+
+**Difficulty: Intermediate** · two ways to break out of nested loops
 
 Search for a target value in a 2D matrix. Once found, break out of the multi-level loop in two ways: one using a flag variable, and one using `goto`.
 
@@ -455,13 +459,78 @@ Search for a target value in a 2D matrix. Once found, break out of the multi-lev
 // TODO: Implement search_matrix_flag and search_matrix_goto
 ```
 
-### Exercise 3: Waiting with Timeout
+### Exercise 3: Hand-Writing a Protocol-Frame State Machine
 
-Implement a waiting function with a timeout mechanism to avoid deadlocks caused by naked `while` waiting:
+**Difficulty: Intermediate** · a state machine with switch and an explicit state variable
+
+The end of this chapter demonstrated a byte-driven serial protocol state machine (start byte `0xAA` -> payload length -> payload -> end byte `0x55`). Implement an equivalent parser yourself: feed received bytes one at a time to `frame_feed`, which internally uses `switch (state)` to transition between states and prints the payload once a full frame is received.
 
 ```c
-// TODO: Implement wait_with_timeout
+#include <stdint.h>
+
+typedef enum { STATE_IDLE, STATE_LEN, STATE_PAYLOAD, STATE_DONE } FrameState;
+
+/// @brief Feed one byte at a time; returns 1 when a complete frame (with end byte) is received, 0 otherwise
+int frame_feed(uint8_t byte);
 ```
+
+Implement it with `switch` plus an explicit state variable, not a long if-else chain. One more thing to think about: if the "payload length" field sent by the peer is tampered to a value larger than your buffer, will your state machine blow up? How do you defend against it?
+
+::: details Reference answer
+
+```c
+#include <stdio.h>
+#include <stdint.h>
+
+#define MAX_PAYLOAD 16
+
+typedef enum { STATE_IDLE, STATE_LEN, STATE_PAYLOAD, STATE_DONE } FrameState;
+
+static FrameState state = STATE_IDLE;
+static uint8_t payload[MAX_PAYLOAD];
+static uint8_t payload_len = 0;
+static uint8_t payload_idx = 0;
+
+int frame_feed(uint8_t byte) {
+    switch (state) {
+        case STATE_IDLE:
+            if (byte == 0xAA) {         // only advance on the start byte
+                payload_idx = 0;
+                payload_len = 0;
+                state = STATE_LEN;
+            }
+            break;
+        case STATE_LEN:
+            // defense: the length may be tampered, clamp to the buffer cap to avoid an out-of-bounds write later
+            payload_len = (byte <= MAX_PAYLOAD) ? byte : MAX_PAYLOAD;
+            state = (payload_len == 0) ? STATE_DONE : STATE_PAYLOAD;
+            break;
+        case STATE_PAYLOAD:
+            payload[payload_idx++] = byte;
+            if (payload_idx >= payload_len) {
+                state = STATE_DONE;
+            }
+            break;
+        case STATE_DONE:
+            if (byte == 0x55) {         // proper end byte
+                printf("Frame OK (%u bytes):", payload_len);
+                for (uint8_t i = 0; i < payload_len; i++) {
+                    printf(" %02X", payload[i]);
+                }
+                printf("\n");
+                state = STATE_IDLE;
+                return 1;
+            }
+            state = STATE_IDLE;         // end byte never came: frame broken, go idle and wait for the next 0xAA
+            break;
+    }
+    return 0;
+}
+```
+
+The key is that every `case` explicitly states "what the next state is", which is what makes a state machine easier to read than a long if-else chain. Clamping the length in `STATE_LEN` is the most basic defense in protocol parsing: never trust a length field sent by the peer.
+
+:::
 
 ## References
 

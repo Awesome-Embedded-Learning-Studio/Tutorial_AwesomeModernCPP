@@ -8,16 +8,17 @@ tags:
 - cpp-modern
 - host
 - intermediate
-title: 深入理解CC++的编译与链接技术3：如何制作和使用静态库
-description: ''
+title: 深入理解C/C++的编译与链接技术3：如何制作和使用静态库
+description: '用 ar 把目标文件打包成 lib<name>.a 静态库，搞清楚为什么库名必须 lib 起头、链接器如何按 -l 约定找库，以及在什么场景下该用静态库。'
+cpp_standard: [11, 14, 17, 20]
 ---
-# 深入理解CC++的编译与链接技术3：如何制作和使用静态库
+# 深入理解C/C++的编译与链接技术3：如何制作和使用静态库
 
 在上一篇博客中，笔者就简单的提及了一下关于静态库和动态库的基本导论，笔者将链接放在这里：
 
-> [深入理解CC++的编译与链接技术-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/152921903)
+> [深入理解C/C++的编译与链接技术-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/152921903)
 >
-> [深入理解CC++的编译与链接技术2：动态库静态库导论-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/154828385)
+> [深入理解C/C++的编译与链接技术2：动态库静态库导论-CSDN博客](https://blog.csdn.net/charlie114514191/article/details/154828385)
 
 所以在之前，我们就简单的讲述了静态库的本质是什么。尽管，在今天，使用动态库作为代码的共享是一种更加基本的策略。但是处于完整，和笔者自己也喜欢用静态库打包一个只依赖于`C/C++`最基本运行时的人（其实笔者的确没有什么技术原因选择，纯粹是不太喜欢将一大坨可重定位文件直接塞给Linker）
 
@@ -90,3 +91,7 @@ ar [操作码][修饰符] <归档文件名> <文件...>
 #### 潜在的符号冲突和版本管理问题 (Symbol Collisions)
 
 如果我们将**多个版本**或**同名符号**的静态库链接到同一个可执行文件中，编译器/链接器会尝试解决，但风险很高（笔者没有记错的话，是按照符号强弱和等同下随机丢弃），这真的很危险，谁也不喜欢自己的程序猜猜乐。
+
+## 现代 CMake 视角
+
+上面这套手工 `ar rvs lib<name>.a` 加 `-l<name>`/`-L<dir>` 的流程，在现代项目里基本都被 CMake 接管了。一行 `add_library(Charlie STATIC src/foo.cpp src/bar.cpp)` 就会自动把源文件编译成 `.o`，再调用 `ar` 打包出 `libCharlie.a`——`STATIC` 关键字对应静态库，`SHARED` 对应动态库，不写就让 CMake 按 `BUILD_SHARED_LIBS` 开关二选一。链接那头也不用再手撸 `-l`/`-L`，`target_link_libraries(myapp PRIVATE Charlie)` 一句话搞定，CMake 会自动展开成 `-lCharlie` 并把库所在目录塞进 `-L`，本篇开头讲的那个 `lib` 前缀约定它在背后替你扛了。至于「分发简单化」「版本锁死」这些选静态库的理由依然成立，只是今天你不用再为了它们去手敲 `ar` 了。

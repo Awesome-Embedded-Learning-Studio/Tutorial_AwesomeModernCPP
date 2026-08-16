@@ -280,6 +280,8 @@ In this post, we looked at three independent but practical mechanisms. `restrict
 
 ### Exercise: Implement a Simple Opaque Pointer Module
 
+**Difficulty: Intermediate** · opaque-pointer idiom for a stack module
+
 Use the opaque pointer pattern to implement a simple Stack module. Requirements:
 
 - `stack.h`: Contains only the `struct Stack` forward declaration and function declarations.

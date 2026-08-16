@@ -312,6 +312,8 @@ C++ 标准一直没有引入 `restrict`。C++ 的类语义和引用让指针别�
 
 ### 练习：实现一个简单的 opaque pointer 模块
 
+**难度：进阶** · 不透明指针模式实现栈模块
+
 用 opaque pointer 模式实现一个简单的栈（Stack）模块。要求：
 
 ```c
@@ -325,7 +327,7 @@ int    stack_pop(Stack* s, int* out);     // 成功返回 0，空栈返回 -1
 int    stack_size(const Stack* s);
 ```
 
-### 参考答案
+::: details 参考答案
 
 ```c
 // stack.h — 只暴露接口，不暴露内部结构
@@ -414,6 +416,8 @@ int stack_size(const Stack* s){
 ```
 
 提示：在 `.c` 文件里定义 `struct Stack` 的完整结构（可以用数组+栈顶索引实现），`.h` 文件只放前向声明和函数声明。
+
+:::
 
 ## 参考资源
 

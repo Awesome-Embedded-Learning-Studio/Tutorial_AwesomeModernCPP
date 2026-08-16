@@ -296,6 +296,8 @@ C++ 在位运算方面做了几件有用的事情。`<bitset>` 中的 `std::bits
 
 ### 练习 1：位操作工具集
 
+**难度：进阶** · 置位、清零、翻转、取位域
+
 实现以下位操作函数：
 
 ```c
@@ -312,7 +314,7 @@ uint32_t bit_toggle(uint32_t value, int n);
 uint32_t bit_extract(uint32_t value, int high, int low);
 ```
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```c
 /// @brief 将 value 的第 n 位置为 1
@@ -341,7 +343,11 @@ uint32_t bit_extract(uint32_t value, int high, int low) {
 
 `bit_extract` 里 mask 用 `1ULL` 是为了避开 `width == 32` 时 `1U << 32` 的移位溢出，这种细节在位域操作里很常见。
 
+:::
+
 ### 练习 2：安全的移位
+
+**难度：基础** · 挡住移位 UB 的边界检查
 
 写一个函数，安全地执行左移操作，处理所有边界情况：
 
@@ -354,7 +360,7 @@ uint32_t bit_extract(uint32_t value, int high, int low) {
 uint32_t safe_shift_left(uint32_t val, int n, int bits);
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 ```c
 #include <stdint.h>
@@ -370,7 +376,11 @@ uint32_t safe_shift_left(uint32_t val, int n, int bits) {
 
 只要保证 `n < bits` 且 `bits <= 32`，`val << n` 就不会触发移位溢出这类 UB。
 
+:::
+
 ### 练习 3：表达式分析
+
+**难度：基础** · 判定序列点与未定义行为
 
 分析以下表达式的求值行为（不实际运行），标出每个是"明确定义"、"未指定行为"还是"未定义行为"：
 
@@ -382,7 +392,7 @@ int r3 = (a > b) ? a-- : b--; // ?
 printf("%d %d\n", a++, a++);  // ?
 ```
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 int a = 5, b = 3;
@@ -393,6 +403,8 @@ printf("%d %d\n", a++, a++);  // 未定义行为：函数实参之间没有序�
 ```
 
 容易踩的是 `r3`：看起来两边都在自减，但三目运算符只会对成立的那个分支求值，而且 `?:` 的第一个操作数之后有序列点，所以是安全的。`printf` 那行虽然写了逗号，但函数实参之间的逗号不是逗号运算符，没有序列点，两个 `a++` 之间无序列点 → UB。
+
+:::
 
 ## 参考资源
 

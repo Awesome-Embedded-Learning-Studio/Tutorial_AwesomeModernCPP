@@ -126,7 +126,11 @@ def normalize_link(link_url: str, source_file: Path, root: Path) -> str:
     if not link_url:
         return ''
     try:
-        resolved = (source_file.parent / link_url).resolve()
+        if link_url.startswith('/'):
+            # VitePress site-root absolute path (e.g. /compilation/, /getting-started/05-vscode-clangd)
+            resolved = (root / link_url.lstrip('/')).resolve()
+        else:
+            resolved = (source_file.parent / link_url).resolve()
         return str(resolved.relative_to(root))
     except (ValueError, RuntimeError):
         return link_url
@@ -247,9 +251,11 @@ class InternalLinkChecker(QualityChecker):
                 if not normalized.endswith('.md') and not ext:
                     normalized_md = normalized + '.md'
                     if normalized_md in self.file_index:
-                        report.warnings.append(Issue(filepath, line_num, 'warning',
-                                                     'internal_link',
-                                                     f"Missing .md extension: [{text}]({url})"))
+                        # VitePress clean-URL style (/path without .md) is valid, not a warning
+                        continue
+                    # Try as directory (VitePress /path/ → path/index.md)
+                    normalized_idx = normalized.rstrip('/') + '/index.md'
+                    if normalized_idx in self.file_index:
                         continue
 
                 report.errors.append(Issue(filepath, line_num, 'error',

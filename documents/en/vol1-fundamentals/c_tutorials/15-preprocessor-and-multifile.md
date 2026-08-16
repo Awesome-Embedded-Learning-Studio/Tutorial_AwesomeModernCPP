@@ -198,6 +198,8 @@ Although the preprocessor is primitive, it remains an indispensable glue for mul
 
 ### Exercise 1: Build a Multi-File Modular Project
 
+**Difficulty: Basic** · .h/.c split plus packing a static library
+
 ```c
 // math_utils.h
 #pragma once
@@ -220,6 +222,8 @@ int main(void) {
 > **Tip:** The compilation steps are `gcc -c math_utils.c`, `gcc -c main.c`, and `gcc -o demo main.o math_utils.o`. To package a static library, use `ar rcs libmath_utils.a math_utils.o`.
 
 ### Exercise 2: Zero-Overhead DEBUG_LOG Macro
+
+**Difficulty: Intermediate** · conditional compilation plus variadic macros
 
 ```c
 // debug_log.h

@@ -420,7 +420,24 @@ public:
 int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static）
 ```
 
-另外，C++ 的匿名命名空间（anonymous namespace）可以完全替代文件级 `static` 的用法，而且更彻底——匿名命名空间里的符号不仅对外部隐藏，连模板参数推导也参与不了。在 C++ 项目中，推荐用匿名命名空间代替 `static`。
+另外，C++ 的匿名命名空间（anonymous namespace）可以替代文件级 `static` 的用法，而且管得更宽：`static` 只能修饰变量和函数，想给一个类型加内部链接，编译器直接报错；匿名命名空间则把里面的类型也一并藏进当前翻译单元。里面的符号在本文件里照常使用，模板参数推导也不受影响，别的 `.cpp` 文件只是引用不到。所以在 C++ 项目中，只在单个源文件里使用的函数、变量和类型，推荐用匿名命名空间；至于函数内的静态局部变量和类的静态成员，那是另外两种语义，该用 `static` 的还得用。
+
+```cpp
+// 某个 .cpp 文件内部——类型也一起藏进本翻译单元
+namespace {
+struct Config {          // 想给它加内部链接？static 做不到，匿名命名空间可以
+    int retries;
+};
+
+template <class T>
+void dump(const T&) {}
+}  // namespace
+
+void use() {
+    Config c{3};
+    dump(c);             // 正常推导出 T = Config，内部链接不影响模板
+}
+```
 
 最后，C++11 的 `thread_local` 提供了线程级别的存储周期——每个线程有自己独立的变量副本。这在多线程编程中非常有用，C11 也有对应的 `_Thread_local`，但支持程度和易用性都不如 C++。
 
@@ -445,6 +462,8 @@ int Counter::count = 0;  // 定义，在类外（C++17 可以用 inline static�
 
 ### 练习 1：模块化计数器
 
+**难度：基础** · 用 static 文件级内部链接隐藏数据
+
 设计一个简单的模块，头文件只暴露 `counter_increment`、`counter_get`、`counter_reset` 三个函数，内部用一个 `static` 变量维护计数。要求外部无法直接访问或修改这个计数器变量。
 
 ```c
@@ -456,7 +475,7 @@ void counter_reset(void);
 
 请自行实现 `counter.c`。
 
-### 练习 1 参考答案
+::: details 参考答案
 
 main.c
 
@@ -508,7 +527,11 @@ int counter_get(void) {
 }
 ```
 
+:::
+
 ### 练习 2：多文件符号可见性
+
+**难度：进阶** · 外部链接、内部链接、extern 综合题
 
 创建三个文件 `a.c`、`b.c`、`main.c`。要求：
 
@@ -524,7 +547,7 @@ int counter_get(void) {
 // 各 .c 文件的实现留给你
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 main.c
 
@@ -601,55 +624,45 @@ void set_kSharedValue(int value) {
 }
 ```
 
-### 练习 3：延迟初始化
+:::
 
-用 `static` 局部变量实现一个 `get_config` 函数：第一次调用时执行初始化（打印 "Initializing..." 并设置默认值），后续调用直接返回已初始化的值，不再重新初始化。
+### 练习 3：调用计数器
+
+**难度：基础** · 用 static 局部变量保持函数调用之间的状态
+
+实现一个 `call_count(void)`：每次被调用时返回"这是第几次调用"。利用 `static` 局部变量"值不会随函数返回而销毁"的特性。
 
 ```c
-typedef struct {
-    int max_connections;        //建议设为5
-    int timeout_ms;             //建议设为500
-    const char* server_name;    //建议设为localhost
-} Config;
-
-const Config* get_config(void);
+/// @return 这是第几次调用本函数（第一次调用返回 1）
+int call_count(void);
 ```
 
-> 提示：`static` 局部变量只在第一次进入函数时被初始化——正好可以用来实现"只初始化一次"的语义。
+提示：在函数里声明 `static int n = 0;`，每次 `++n` 后返回。再想一下：如果把它换成普通局部变量 `int n = 0;`（去掉 static），结果会变成什么样？为什么？
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 #include <stdio.h>
 
-typedef struct {
-    int max_connections;
-    int timeout_ms;
-    const char* server_name;
-} Config;
-
-const Config* get_config(void);
+int call_count(void) {
+    static int n = 0;   // 只初始化一次，值在函数返回后依然保留
+    ++n;
+    return n;
+}
 
 int main(void) {
-    get_config();   //应当输出"Initializing..."
-    printf("%d %d %s\n",get_config()->max_connections, get_config()->timeout_ms, get_config()->server_name);  //应当输出"5 500 localhost"
+    printf("%d\n", call_count());   // 1
+    printf("%d\n", call_count());   // 2
+    printf("%d\n", call_count());   // 3
     return 0;
 }
-
-const Config* get_config(void) {
-    // config 用 static 初始化器：程序加载时一次性初始化，正好呼应题目说的
-    // "static 局部变量只在第一次进入函数时被初始化"
-    static Config config = {5, 500, "localhost"};
-    // 但题目还要求第一次调用时打印 "Initializing..."——静态初始化器本身
-    // 没有运行时钩子去打印，所以再用一个 static flag 控制只打印一次
-    static int initialized = 0;
-    if (!initialized) {
-        printf("Initializing...\n");
-        initialized = 1;
-    }
-    return &config;
-}
 ```
+
+去掉 `static` 的话，`n` 每次进函数都会重新初始化成 0，`++n` 后返回 1，于是不管调用多少次都只打印 1，丢了"记住上次结果"的能力。
+
+顺便澄清一个容易混的点：`static int n = 0;` 的初始化发生在程序启动时（不是第一次调用 `call_count` 时），而且整个生命周期只发生这一次。正因为它只初始化一次、之后值一直保留，所以才能拿来当计数器用。
+
+:::
 
 ## 参考资源
 

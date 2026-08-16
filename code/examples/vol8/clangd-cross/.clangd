@@ -1,0 +1,17 @@
+# 嵌入式 clangd 工程根配置
+# 详见 documents/vol8-domains/embedded/00-env-setup/06-clangd-for-cross-compilation.md
+#
+# 用法:把这个 .clangd 和 .vscode/settings.json 放到工程根目录。
+# 如果您的 compile_commands.json 里 executable 已经是 arm-none-eabi-g++
+# 绝对路径,且自带 -mcpu/-mthumb,这个 .clangd 其实可以省掉——
+# .vscode/settings.json 里的 --query-driver 就够了。
+# 这里是 compile_commands 不够干净时的兜底。
+
+CompileFlags:
+  Compiler: arm-none-eabi-g++
+  Add:
+    - -mcpu=cortex-m3
+    - -mthumb
+    # 如果 query-driver 之后还有头找不到,补上 GCC 的 install 目录:
+    # --gcc-install-dir=/usr/lib/gcc/arm-none-eabi/16.1.0
+  BuiltinHeaders: QueryDriver

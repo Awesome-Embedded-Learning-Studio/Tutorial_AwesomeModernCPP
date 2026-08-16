@@ -191,6 +191,8 @@ gcc -o demo main.c -L. -lmath_utils
 
 ### 练习 1：构建多文件模块化项目
 
+**难度：基础** · .h/.c 分离加静态库打包
+
 ```c
 // math_utils.h
 #pragma once
@@ -213,6 +215,8 @@ int main(void) {
 提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
 
 ### 练习 2：零开销的 DEBUG_LOG 宏
+
+**难度：进阶** · 条件编译加可变参数宏
 
 ```c
 // debug_log.h

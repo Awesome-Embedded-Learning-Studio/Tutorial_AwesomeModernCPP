@@ -254,6 +254,8 @@ std::unique_ptr<int> p = std::make_unique<int>(42);
 
 ### 练习 1：指针版线性搜索
 
+**难度：基础** · 指针遍历加 NULL 返回
+
 实现一个线性搜索函数，返回目标值在数组中首次出现的指针。如果未找到，返回 `NULL`。
 
 ```c
@@ -265,7 +267,7 @@ std::unique_ptr<int> p = std::make_unique<int>(42);
 const int* linear_search(const int* data, size_t count, int target);
 ```
 
-### 练习 1 参考答案
+::: details 参考答案
 
 ```c
 #include <stdio.h>
@@ -312,7 +314,11 @@ const int* linear_search(const int* data, size_t count, int target) {
 
 地址本身不用记，关键是后面那个「第 3 个元素」——`result - arr` 算出来就是 `3`，这个结论是稳的。顺带一提：要是终端里中文显示成乱码，那是终端编码不是 UTF-8 的问题，跟代码无关，换 WSL2 或现代终端就好。
 
+:::
+
 ### 练习 2：指针版数组反转
+
+**难度：进阶** · 双指针原地反转
 
 实现一个原地反转数组的函数，只使用指针算术（两个指针从两端向中间靠拢），不使用数组下标：
 
@@ -323,7 +329,7 @@ const int* linear_search(const int* data, size_t count, int target) {
 void reverse_array(int* data, size_t count);
 ```
 
-### 练习 2 参考答案
+::: details 参考答案
 
 ```c
 #include <stdio.h>
@@ -399,7 +405,11 @@ after reverse_array:
 10
 ```
 
+:::
+
 ### 练习 3：const 练习
+
+**难度：基础** · const 与指针的四种组合
 
 判断以下每个声明中，哪些操作是合法的，哪些会编译错误：
 
@@ -415,7 +425,7 @@ const int* const p3 = &value;
 // px = &other;   // 修改指针指向
 ```
 
-### 练习 3 参考答案
+::: details 参考答案
 
 ```c
 int value = 42, other = 100;
@@ -435,6 +445,8 @@ const int* const p3 = &value;
 // p3 = &other;   // 不合法：p3 同样是 const 指针，指向不能改
 
 ```
+
+:::
 
 ## 参考资源
 

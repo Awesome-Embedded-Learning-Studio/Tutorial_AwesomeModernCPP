@@ -317,6 +317,8 @@ The next question arises: we've covered integers, but what about decimals? How a
 
 ### Exercise 1: Type Detector
 
+**Difficulty: Basic** · use sizeof to map out each type's size
+
 Write a program that prints the `sizeof` values of all the following types, and check against the standard to see if they meet the minimum guarantees:
 
 ```c
@@ -329,6 +331,8 @@ void*, char*
 Hint: You can use a macro to reduce repetitive code.
 
 ### Exercise 2: Overflow Observation
+
+**Difficulty: Basic** · see signed overflow UB vs unsigned wraparound
 
 Perform overflow experiments on signed `int8_t` and unsigned `uint8_t` respectively:
 

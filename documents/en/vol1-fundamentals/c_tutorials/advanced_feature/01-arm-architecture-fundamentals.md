@@ -349,57 +349,43 @@ Many operations that require table lookups at runtime (CRC calculations, bit man
 
 ## Exercises
 
-We leave the following exercises for you to tinker with—hands-on research, coding, and hardware verification are the true path to learning.
+We leave the following exercises for you to tinker with. This chapter is mostly a theoretical overview, so the exercises are mainly conceptual analysis; the ones that need a board or QEMU are marked as optional challenges.
+
+### Exercise 1: The Role of the IPSR Register
+
+**Difficulty: Basic** · conceptual analysis, no code required
+
+IPSR is part of the Cortex-M program status register (xPSR). Answer: when is IPSR updated by hardware, and what does it record? Why does reading IPSR inside an interrupt service routine help you tell "which exception is currently being handled"?
+
+### Exercise 2: HardFault Debugging Flow
+
+**Difficulty: Intermediate** · describe the debugging flow in words, no board required
+
+When a program triggers a HardFault by accessing an illegal address, the hardware pushes the current registers onto the stack. Describe the whole flow from HardFault trigger to locating "the faulting instruction": which values on the stack do you need to read, and where does the pushed PC point?
+
+Hint: this chapter's exception-handling section covered that the stack-frame pointer the HardFault Handler receives points at `{R0, R1, R2, R3, R12, LR, PC, xPSR}`.
+
+### Exercise 3: Analyzing AAPCS Argument Passing
+
+**Difficulty: Intermediate** · needs the arm-none-eabi-gcc toolchain
+
+Write two functions: one taking 4 int arguments, the other 6. Disassemble and compare the call sequences with `arm-none-eabi-objdump -d`: the first 4 arguments go in R0–R3, but where do the 5th and 6th go?
 
 ```c
-/// @brief 练习 1：读取 IPSR 寄存器
-/// 使用 GCC 内嵌汇编读取 Cortex-M 的 IPSR 寄存器值
-/// 解释在正常运行和进入中断服务函数时读到的值有什么不同
-/// 提示：IPSR 是 xPSR 的一部分，可以用 MRS 指令读取
-uint32_t exercise_read_ipsr(void)
-{
-    // 练习： 用内嵌汇编读取 IPSR
-    return 0;
+int exercise_aapcs_4(int a, int b, int c, int d) {
+    return a + b + c + d;
+}
+
+int exercise_aapcs_6(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
 }
 ```
 
-```c
-/// @brief 练习 2：触发并调试 HardFault
-/// 对一个无效地址执行写操作，故意触发 HardFault
-/// 然后在 HardFault Handler 中读取入栈的寄存器值
-/// 定位导致异常的指令地址
-/// 提示：HardFault Handler 的参数可以拿到栈帧指针
-void exercise_trigger_hardfault(void)
-{
-    // 练习： 写一个无效地址来触发 HardFault
-}
-```
+### Exercise 4: Vector Table Relocation (Challenge, optional)
 
-```c
-/// @brief 练习 3：分析 AAPCS 的参数传递
-/// 写两个函数：一个接受 4 个 int 参数，另一个接受 6 个
-/// 用 arm-none-eabi-objdump -d 反汇编对比调用序列
-/// 找出编译器如何分配 R4-R11 给局部变量
-int exercise_aapcs_4(int a, int b, int c, int d)
-{
-    // 练习： 添加局部变量和函数调用，使反汇编更有看头
-    return 0;
-}
+**Difficulty: Challenge** · Optional, needs startup-file, linker-script, and bootloader background
 
-int exercise_aapcs_6(int a, int b, int c, int d, int e, int f)
-{
-    // 练习： 同上，对比反汇编结果
-    return 0;
-}
-```
-
-```c
-/// @brief 练习 4（进阶）：向量表重定位
-/// 阅读一个 Cortex-M 启动文件（如 startup_stm32f407xx.s）
-/// 画出完整的向量表布局
-/// 然后修改链接脚本把向量表重定位到 RAM 中
-/// 实现运行时动态修改中断向量（Bootloader 开发的基础技能）
-```
+Read a Cortex-M startup file (e.g. startup_stm32f407xx.s) and draw the complete vector-table layout; then modify the linker script to relocate the vector table to RAM and enable runtime patching of interrupt vectors. This is the foundation of bootloader development.
 
 ## Reference Resources
 

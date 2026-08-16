@@ -9,7 +9,8 @@ tags:
 - host
 - intermediate
 title: 深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
-description: ''
+description: '讲清动态库 ABI 设计的底层坑：C++ 名称修饰跨编译器不通用的根因、静态对象初始化时序陷阱，以及如何用 C 风格导出接口和完整 ABI 头文件规避 ABI 对接麻烦'
+cpp_standard: [11, 14, 17, 20]
 ---
 # 深入理解C/C++的编译链接技术6——A2：动态库设计基础之ABI设计接口
 
@@ -177,6 +178,10 @@ extern "C" int initialize_lib(int buffer_capacity = MAX_BUFFER_SIZE);
 extern "C" void* allocate_buffer(size_t size);
 
 ```
+
+## 现代 CMake 视角
+
+本篇讨论的 ABI 设计坑，在现代项目里大多被 CMake 这套构建系统接管了。`extern "C"` 仍然是您手写的活，但符号可见性可以用 `set_target_properties(foo PROPERTIES CXX_VISIBILITY_PRESET hidden)` 默认隐藏所有符号、再靠 `generate_export_header` 生成的宏按需导出，避免一不小心把内部 C++ 修饰符号全暴露给下游。`target_link_libraries(foo PUBLIC bar)` 替您把传递依赖、头文件路径和 `-l`/`-L` 一并串好，下游只需 link 一次。`add_library(foo SHARED)` 会自动给所有目标文件加 `-fPIC`，省去手敲。涉及跨平台 ABI 对接时，给动态库装好 `PUBLIC_HEADER` 属性，配合 `install(TARGETS ...)`，CMake 就会按 Unix 把头文件扔进 `include/`、Windows 处理好 `__declspec(dllexport/dllimport)` 的导入库分发，让您写的 C 风格导出接口真正落地成"一份头文件处处可用"。
 
 # Reference
 

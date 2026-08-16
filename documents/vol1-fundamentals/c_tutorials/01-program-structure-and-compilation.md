@@ -384,6 +384,8 @@ ODR（One Definition Rule）是 C++ 链接模型的核心规则：一个实体�
 
 ### 练习 1：多文件编译实战
 
+**难度：基础** · 多文件分步编译与符号表
+
 构建一个多文件项目，包含以下文件：
 
 **utils.h**：
@@ -406,6 +408,8 @@ void print_result(const char* label, int value);
 4. 用 `nm` 或 `objdump` 查看目标文件的符号表
 
 ### 练习 2：printf 格式化练习
+
+**难度：基础** · 练 printf 的宽度、精度、对齐
 
 不查资料，写出以下 `printf` 语句的预期输出（然后再编译运行验证）：
 

@@ -317,37 +317,35 @@ A C string is simply a `\0`-terminated `char` array. Without the protection of t
 
 ### Exercise 1: Safe String Library
 
-Implement a set of safe string manipulation functions where each function is aware of the destination buffer size and automatically handles truncation and termination:
+**Difficulty: Intermediate** · wrap size-aware string operations
+
+Implement two safe string functions that each know the size of the destination buffer and handle truncation and termination automatically:
 
 ```c
 #include <stddef.h>
 
-/// @brief 安全地复制字符串到目标缓冲区
-/// @param dst 目标缓冲区
-/// @param src 源字符串
-/// @param dst_size 目标缓冲区总大小（含终止符）
-/// @return 实际复制的字符数（不含终止符）；如果 dst 为 NULL 返回 0
+/// @brief Safely copy a string into the destination buffer
+/// @param dst destination buffer
+/// @param src source string
+/// @param dst_size total size of the destination buffer (including the terminator)
+/// @return number of characters actually copied (excluding the terminator); 0 if dst is NULL
 size_t safe_str_copy(char* dst, const char* src, size_t dst_size);
 
-/// @brief 安全地拼接字符串
-/// @param dst 目标缓冲区（已有内容）
-/// @param src 要追加的字符串
-/// @param dst_size 目标缓冲区总大小（含终止符）
-/// @return 拼接后字符串的总长度（不含终止符）
+/// @brief Safely append a string
+/// @param dst destination buffer (already holds some content)
+/// @param src string to append
+/// @param dst_size total size of the destination buffer (including the terminator)
+/// @return total length of the concatenated string (excluding the terminator)
 size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
-
-/// @brief 安全地格式化字符串
-/// @param dst 目标缓冲区
-/// @param dst_size 目标缓冲区总大小
-/// @param format 格式字符串
-/// @param ... 格式参数
-/// @return 实际写入的字符数（不含终止符）
-size_t safe_str_format(char* dst, size_t dst_size, const char* format, ...);
 ```
 
-**Hint:** We can implement `safe_str_copy` based on `strncpy`, but we must ensure null termination. For `safe_str_cat`, we need to calculate the current length of the destination string first, then determine the remaining available space. We can implement `safe_str_format` directly using `vsnprintf`.
+Hint: `safe_str_copy` can be based on `strncpy`, but `strncpy` does not write a terminator when src is too long, so you have to add one yourself. For `safe_str_cat`, first compute the current length of dst, then figure out the remaining space.
+
+**Challenge extension** (optional): add `safe_str_format(char* dst, size_t dst_size, const char* format, ...)`. It needs `vsnprintf` and the `<stdarg.h>` variadic mechanism (not covered here, and only briefly mentioned in the functions chapter). Look up `vsnprintf` on cppreference and then implement it.
 
 ### Exercise 2: String Splitting Function
+
+**Difficulty: Basic** · walk a string with pointers, split on a delimiter
 
 Implement a function that splits a string based on a delimiter:
 

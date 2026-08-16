@@ -371,6 +371,8 @@ The memory model of arrays is actually not complex—it's just a contiguous arra
 
 ### Exercise 1: Matrix Operations
 
+**Difficulty: Intermediate** · 2D array transpose and multiply
+
 Implement the following three functions to perform basic matrix operations. Matrices are represented using standard C two-dimensional arrays. Please implement matrix transposition and matrix multiplication yourself:
 
 ```c
@@ -392,6 +394,8 @@ void print_matrix(int rows, int cols, int matrix[rows][cols]);
 **Hint:** The core of transposition is `result[j][i] = matrix[i][j]`. The core of multiplication is a triple loop—`result[i][j]` is the dot product of the `i`-th row of `a` and the `j`-th column of `b`. The function parameters here use VLA syntax to allow column counts to be specified dynamically.
 
 ### Exercise 2: Compare VLA and malloc
+
+**Difficulty: Intermediate** · trade-offs between VLA and malloc
 
 Write a program that uses VLA and `malloc` respectively to allocate an integer array whose size is determined by user input, then compare the behavioral differences:
 
