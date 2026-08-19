@@ -516,6 +516,8 @@ typedef int (*BinaryOp)(int, int);
 // 请自行设计映射表和主循环
 ```
 
+::: details 参考答案
+
 ```c
 #include <limits.h>
 #include <stddef.h>
@@ -609,6 +611,7 @@ int main(void)
         if (sscanf(line, " %c", &symbol) == 1 &&
             (symbol == 'q' || symbol == 'Q'))
         {
+            putchar('\n');
             break;
         }
 
@@ -647,6 +650,17 @@ int main(void)
 
 ```
 
+运行结果：
+
+```text
+Integer calculator: +  -  *  /  %
+Enter an expression such as 12 + 3, or q to quit.
+> = 15
+> Error: division by zero is not allowed.
+>
+```
+
+:::
 
 ### 练习 4：事件分发系统扩展（挑战·可选）
 
@@ -693,6 +707,8 @@ enum EventName
 event.c
 
 ```c
+#include <stddef.h>
+
 #include "event.h"
 
 Callback_t callback_list[EVENT_TYPE_Num][EVENT_NAME_Num] = {0};
@@ -746,6 +762,7 @@ main.c
 void register_callback(enum EventType type, enum EventName name,
                        void (*fn)(void *arg), void *arg);
 void run_callback(enum EventType type, enum EventName name);
+void unregister_callback(enum EventType type, enum EventName name);
 
 static void on_event_name_1(void *arg)
 {
@@ -790,6 +807,11 @@ static void callback_demo(void)
                       "the original callback was replaced");
     printf("after re-registering EVENT_NAME_1 -> ");
     run_callback(type, EVENT_NAME_1);
+
+    unregister_callback(type, EVENT_NAME_1);
+    puts("after unregistering EVENT_NAME_1 -> (no callback registered)");
+    printf("EVENT_NAME_2 remains -> ");
+    run_callback(type, EVENT_NAME_2);
 }
 
 int main(void)
@@ -800,15 +822,22 @@ int main(void)
 
 ```
 
+运行结果：
+
+```text
+Callback demo (the same type uses different callbacks):
+run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> EVENT_NAME_1 callback: registered for the first event name
+run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> EVENT_NAME_2 callback: registered for the second event name
+after re-registering EVENT_NAME_1 -> EVENT_NAME_1 replacement callback: the original callback was replaced
+after unregistering EVENT_NAME_1 -> (no callback registered)
+EVENT_NAME_2 remains -> EVENT_NAME_2 callback: registered for the second event name
+```
+
 这里的二维数组把 `type` 和 `name` 共同当作回调的键。同一个 `type` 下，`EVENT_NAME_1` 和 `EVENT_NAME_2` 对应不同槽位，互不影响；再次注册完全相同的 `type + name`，则会替换该槽位原来的回调。
 
 想一想：注销 `EVENT_TYPE_1 + EVENT_NAME_1` 后，为什么 `EVENT_TYPE_1 + EVENT_NAME_2` 仍然可以正常分发？
 
-::: details 参考答案
-
 答案是这两个回调位于二维数组的不同槽位：前者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_1]`，后者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_2]`。`unregister_callback` 只会把指定槽位中的 `fn` 和 `arg` 清空，不会修改同一 `type` 下其他 `name` 对应的槽位，所以 `EVENT_NAME_2` 的回调仍然可以正常分发。
-
-:::
 
 ## 参考资源
 
