@@ -10,7 +10,7 @@ prerequisites:
 - 07A 指针基础与核心用法
 - 07B 指针、数组与 const
 - 08A 多级指针与函数参数
-reading_time_minutes: 10
+reading_time_minutes: 29
 tags:
 - host
 - cpp-modern
@@ -359,7 +359,6 @@ void insertion_sort(void* base, size_t nmemb, size_t size,
     }
 
     free(current);
-    current=NULL;
 }
 
 int main(void)
@@ -683,9 +682,9 @@ typedef enum {
     ERR_NOT_FOUND = -4//未找到
 } err_t;
 typedef struct {
-  void (*fn)(void *arg);
-  void *arg;
-}Callback_t;
+    void (*fn)(void *arg);
+    void *arg;
+} Callback_t;
 
 enum EventType
 {
@@ -693,7 +692,6 @@ enum EventType
     EVENT_TYPE_2,
     EVENT_TYPE_3,
     EVENT_TYPE_Num,
-   
 };
 enum EventName
 {
@@ -716,7 +714,7 @@ Callback_t callback_list[EVENT_TYPE_Num][EVENT_NAME_Num] = {0};
 //回调注册
 void register_callback(enum EventType type, enum EventName name, void (*fn)(void *arg), void *arg)
 {
-    if (type >= EVENT_TYPE_Num || name >= EVENT_NAME_Num)
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
     {
         return;
     }
@@ -727,7 +725,7 @@ void register_callback(enum EventType type, enum EventName name, void (*fn)(void
 //运行回调
 void run_callback(enum EventType type, enum EventName name)
 {
-    if (type >= EVENT_TYPE_Num || name >= EVENT_NAME_Num)
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
     {
         return;
     }
@@ -741,7 +739,7 @@ void run_callback(enum EventType type, enum EventName name)
 //注销回调
 void unregister_callback(enum EventType type, enum EventName name)
 {
-    if (type >= EVENT_TYPE_Num || name >= EVENT_NAME_Num)
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
     {
         return;
     }
@@ -835,9 +833,15 @@ EVENT_NAME_2 仍可用 -> EVENT_NAME_2 回调：已为第二个事件名称注�
 
 这里的二维数组把 `type` 和 `name` 共同当作回调的键。同一个 `type` 下，`EVENT_NAME_1` 和 `EVENT_NAME_2` 对应不同槽位，互不影响；再次注册完全相同的 `type + name`，则会替换该槽位原来的回调。
 
+另外注意答案里的边界检查写法：先把入参转成 `unsigned` 再与上界比较。如果调用方传入了负值（例如 `(enum EventType)-1`），转换后会变成一个非常大的无符号数，同样会被挡在界外——这样就不必再写 `type < 0` 之类的判断，也避免了枚举底层类型为无符号时"与 0 比较"触发编译器告警的问题。
+
 想一想：注销 `EVENT_TYPE_1 + EVENT_NAME_1` 后，为什么 `EVENT_TYPE_1 + EVENT_NAME_2` 仍然可以正常分发？
 
 答案是这两个回调位于二维数组的不同槽位：前者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_1]`，后者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_2]`。`unregister_callback` 只会把指定槽位中的 `fn` 和 `arg` 清空，不会修改同一 `type` 下其他 `name` 对应的槽位，所以 `EVENT_NAME_2` 的回调仍然可以正常分发。
+
+> **延伸思考**：如果在遍历回调数组的过程中，某个回调又去注销了另一个回调，会出什么问题？这和“边遍历数组边删元素”是同一个坑。
+
+:::
 
 ## 参考资源
 
