@@ -586,8 +586,8 @@ int main(void)
 {
     char line[128];
 
-    puts("Integer calculator: +  -  *  /  %");
-    puts("Enter an expression such as 12 + 3, or q to quit.");
+    puts("整数计算器：+  -  *  /  %");
+    puts("输入示例：12 + 3；输入 q 退出。");
 
     for (;;)
     {
@@ -618,31 +618,31 @@ int main(void)
         if (sscanf(line, " %d %c %d %c", &left, &symbol, &right,
                    &trailing) != 3)
         {
-            puts("Invalid input. Use: integer operator integer");
+            puts("输入无效。格式：整数 运算符 整数");
             continue;
         }
 
         operation = find_operation(symbol);
         if (operation == NULL)
         {
-            printf("Unknown operator: %c\n", symbol);
+            printf("未知运算符：%c\n", symbol);
             continue;
         }
 
         if ((symbol == '/' || symbol == '%') && right == 0)
         {
-            puts("Error: division by zero is not allowed.");
+            puts("错误：不允许除以零。");
             continue;
         }
 
         if ((symbol == '/' || symbol == '%') && left == INT_MIN && right == -1)
         {
-            puts("Error: result is outside the range of int.");
+            puts("错误：结果超出 int 范围。");
             continue;
         }
 
         result = operation->function(left, right);
-        printf("= %d\n", result);
+        printf("结果：%d\n", result);
     }
 
     return 0;
@@ -653,10 +653,10 @@ int main(void)
 运行结果：
 
 ```text
-Integer calculator: +  -  *  /  %
-Enter an expression such as 12 + 3, or q to quit.
-> = 15
-> Error: division by zero is not allowed.
+整数计算器：+  -  *  /  %
+输入示例：12 + 3；输入 q 退出。
+> 结果：15
+> 错误：不允许除以零。
 >
 ```
 
@@ -768,49 +768,49 @@ static void on_event_name_1(void *arg)
 {
     const char *message = (const char *)arg;
 
-    printf("EVENT_NAME_1 callback: %s\n", message);
+    printf("EVENT_NAME_1 回调：%s\n", message);
 }
 
 static void on_event_name_2(void *arg)
 {
     const char *message = (const char *)arg;
 
-    printf("EVENT_NAME_2 callback: %s\n", message);
+    printf("EVENT_NAME_2 回调：%s\n", message);
 }
 
 static void on_event_name_1_replaced(void *arg)
 {
     const char *message = (const char *)arg;
 
-    printf("EVENT_NAME_1 replacement callback: %s\n", message);
+    printf("EVENT_NAME_1 替换回调：%s\n", message);
 }
 
 static void callback_demo(void)
 {
     const enum EventType type = EVENT_TYPE_1;
 
-    puts("Callback demo (the same type uses different callbacks):");
+    puts("回调演示（同一类型使用不同回调）：");
 
     /* 同一个事件类型可以通过不同事件名称绑定不同回调。 */
     register_callback(type, EVENT_NAME_1, on_event_name_1,
-                      "registered for the first event name");
+                      "已为第一个事件名称注册");
     register_callback(type, EVENT_NAME_2, on_event_name_2,
-                      "registered for the second event name");
+                      "已为第二个事件名称注册");
 
-    printf("run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> ");
+    printf("运行 run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> ");
     run_callback(type, EVENT_NAME_1);
-    printf("run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> ");
+    printf("运行 run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> ");
     run_callback(type, EVENT_NAME_2);
 
     /* 再次注册相同的类型和名称会替换该槽位中的回调。 */
     register_callback(type, EVENT_NAME_1, on_event_name_1_replaced,
-                      "the original callback was replaced");
-    printf("after re-registering EVENT_NAME_1 -> ");
+                      "原始回调已替换");
+    printf("重新注册 EVENT_NAME_1 后 -> ");
     run_callback(type, EVENT_NAME_1);
 
     unregister_callback(type, EVENT_NAME_1);
-    puts("after unregistering EVENT_NAME_1 -> (no callback registered)");
-    printf("EVENT_NAME_2 remains -> ");
+    puts("注销 EVENT_NAME_1 后 ->（未注册回调）");
+    printf("EVENT_NAME_2 仍可用 -> ");
     run_callback(type, EVENT_NAME_2);
 }
 
@@ -825,12 +825,12 @@ int main(void)
 运行结果：
 
 ```text
-Callback demo (the same type uses different callbacks):
-run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> EVENT_NAME_1 callback: registered for the first event name
-run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> EVENT_NAME_2 callback: registered for the second event name
-after re-registering EVENT_NAME_1 -> EVENT_NAME_1 replacement callback: the original callback was replaced
-after unregistering EVENT_NAME_1 -> (no callback registered)
-EVENT_NAME_2 remains -> EVENT_NAME_2 callback: registered for the second event name
+回调演示（同一类型使用不同回调）：
+运行 run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> EVENT_NAME_1 回调：已为第一个事件名称注册
+运行 run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> EVENT_NAME_2 回调：已为第二个事件名称注册
+重新注册 EVENT_NAME_1 后 -> EVENT_NAME_1 替换回调：原始回调已替换
+注销 EVENT_NAME_1 后 ->（未注册回调）
+EVENT_NAME_2 仍可用 -> EVENT_NAME_2 回调：已为第二个事件名称注册
 ```
 
 这里的二维数组把 `type` 和 `name` 共同当作回调的键。同一个 `type` 下，`EVENT_NAME_1` 和 `EVENT_NAME_2` 对应不同槽位，互不影响；再次注册完全相同的 `type + name`，则会替换该槽位原来的回调。
