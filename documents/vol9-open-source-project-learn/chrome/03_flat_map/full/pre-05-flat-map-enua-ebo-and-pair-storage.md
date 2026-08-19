@@ -5,7 +5,7 @@ cpp_standard:
 - 17
 - 20
 description: 拆解 flat_map 的两个内存优化——[[no_unique_address]]/EBO 让空比较器零空间开销,
-  以及为什么 flat_map 存 pair<K,V> 而非 std::map 的 pair<const K,V>
+  以及为什么 flat_map 存 pair&lt;K,V> 而非 std::map 的 pair&lt;const K,V>
 difficulty: intermediate
 order: 5
 platform: host
@@ -102,7 +102,7 @@ struct WithoutNUA { Empty e; int i; };
 
 ---
 
-## pair<K,V> vs pair<const K,V>:flat_map 的存储选择
+## pair\<K,V> vs pair\<const K,V>:flat_map 的存储选择
 
 第二个设计点更狠,直接把 flat_map 的 API 长相都改了。咱们看 flat_map 的模板签名(flat_map.h:193):
 

@@ -201,7 +201,7 @@ int main()
 
 在这个版本中，`waiter` 线程在 `signal.wait(0)` 处直接阻塞，完全不消耗 CPU。当 `notifier` 把值改成 42 并调用 `notify_one()` 时，`waiter` 立即被唤醒。这比忙等省电，比 condition_variable 省代码。
 
-## std::atomic_ref<T>：给非原子变量"套上"原子操作
+## std::atomic_ref\<T>：给非原子变量"套上"原子操作
 
 ### 为什么需要 atomic_ref
 
@@ -243,7 +243,7 @@ int main()
 
 注意，`value` 的类型是普通的 `int`，但通过 `std::atomic_ref<int>` 访问时，`fetch_add` 是原子的——没有 data race。`t1` 和 `t2` 同时对 `value` 做百万次自增，最终结果稳定在 2000000。
 
-### 操作集：跟 std::atomic<T> 几乎一致
+### 操作集：跟 std::atomic\<T> 几乎一致
 
 `std::atomic_ref<T>` 的接口跟 `std::atomic<T>` 几乎完全一样——`load()`、`store()`、`exchange()`、`compare_exchange_weak/strong()`、`fetch_add()`（对整型和指针）等全部支持。内存序参数也完全相同。唯一的区别是：`atomic_ref` 不拥有数据，它只是一个指向已有变量的引用。
 

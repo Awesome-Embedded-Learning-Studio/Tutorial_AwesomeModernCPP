@@ -1774,8 +1774,8 @@ config default = INFO
 
 **思路**：教材的简化版 `expected` 有个真实的编译坑——匿名 union 里放着 `std::string` 这类非平凡成员时，union 的隐式默认构造/析构被删除，整个类实例化即报错。修复是给 union 起名并补上一对空的 `Storage()`/`~Storage()`（活跃成员由 `expected` 自己负责构造/析构）。然后搭「地址解析链」。
 
-1. 先复现编译错误（原版匿名 union 的原样报错），再修复：`union Storage { T val_; E err_; Storage() {} ~Storage() {} } storage_;`。→ 知识点：[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节（教材代码的编译坑与修法——这是教材以外必须补的机制点）
-2. `and_then` 串联 `validate_input → split_address`，`transform` 把成功值拼成字符串；五个输入覆盖全部四条错误路径。→ 知识点：[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「monadic 操作」一节、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
+1. 先复现编译错误（原版匿名 union 的原样报错），再修复：`union Storage { T val_; E err_; Storage() {} ~Storage() {} } storage_;`。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节（教材代码的编译坑与修法——这是教材以外必须补的机制点）
+2. `and_then` 串联 `validate_input → split_address`，`transform` 把成功值拼成字符串；五个输入覆盖全部四条错误路径。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「monadic 操作」一节、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
 
 ```cpp
 // hw2b1b.cpp -- Homework 2.11-B: C++17 simplified expected + error chain

@@ -1,6 +1,6 @@
 ---
 title: 标准化真相：The Beman Project 与一份能跑的参考实现
-description: CppCon 2025 笔记 —— optional<T&> 赋值的汇编实证、The Beman Project 参考实现为何重要、大而全与小而专的取舍、optional<T> 与 optional<T&> 必须是一个整体
+description: CppCon 2025 笔记 —— optional&lt;T&> 赋值的汇编实证、The Beman Project 参考实现为何重要、大而全与小而专的取舍、optional&lt;T> 与 optional&lt;T&> 必须是一个整体
 chapter: 6
 order: 6
 conference: cppcon

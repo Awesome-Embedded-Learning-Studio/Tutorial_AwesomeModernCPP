@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 非类型模板参数让一个「值」也能被参数化,array<T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20
+description: 非类型模板参数让一个「值」也能被参数化,array&lt;T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20
   把它放宽到浮点和满足 structural 条件的类类型,以及哪些实参算「同一个」实例化
 difficulty: intermediate
 order: 5
@@ -144,7 +144,7 @@ corner: (3,4)
 
 ## 等价性:哪些实参算「同一个」
 
-非类型参数有个绕不开的问题:两个实参什么时候算「同一个实例化」?规则叫 template-argument-equivalent。对整数,看值相等:$1 + 1$ 和 `2` 是等价的,`Tag<1 + 1>` 和 `Tag<2>` 是同一个类型。
+非类型参数有个绕不开的问题:两个实参什么时候算「同一个实例化」?规则叫 template-argument-equivalent。对整数,看值相等:`1 + 1` 和 `2` 是等价的,`Tag<1 + 1>` 和 `Tag<2>` 是同一个类型。
 
 ```cpp
 #include <iostream>

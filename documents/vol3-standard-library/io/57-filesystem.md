@@ -270,7 +270,7 @@ error_code 重载: size=18446744073709551615, ec.value=2, ec.message=No such fil
 两条路的行为差异一目了然：
 
 - **异常版**把失败信息塞进 `filesystem_error::what()`，里头带操作名（"cannot get file size"）、系统错误描述（"No such file or directory"）、以及涉及的路径。信息全、读着舒服，适合"这事必须成，不成程序没法继续"的场景。
-- **error_code 版**不抛，失败时 `ec` 被填上错误码（`ec.value()` 是 2，对应 POSIX 的 `ENOENT`；`ec.message()` 是人话描述），函数返回值是个"无效值"——`file_size` 失败返回 `static_cast<uintmax_t>(-1)`，也就是上面那个 $18446744073709551615$（uintmax 的最大值）。
+- **error_code 版**不抛，失败时 `ec` 被填上错误码（`ec.value()` 是 2，对应 POSIX 的 `ENOENT`；`ec.message()` 是人话描述），函数返回值是个"无效值"——`file_size` 失败返回 `static_cast<uintmax_t>(-1)`，也就是上面那个 `18446744073709551615`（uintmax 的最大值）。
 
 那么什么时候用哪个？这是个实打实的工程判断，不是口味问题。
 

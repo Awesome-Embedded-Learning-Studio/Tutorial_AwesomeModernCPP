@@ -482,5 +482,5 @@ sink=15900000
 - [cppreference: std::basic_stacktrace (C++23)](https://en.cppreference.com/w/cpp/utility/basic_stacktrace) —— `current()` / `size()` / 遍历接口与 `std::stacktrace` 别名
 - [cppreference: std::stacktrace_entry (C++23)](https://en.cppreference.com/w/cpp/utility/stacktrace_entry) —— `description` / `source_file` / `source_line` / `native_handle` 的语义(标准里没有 `symbol()` 成员)
 - [cppreference: std::to_string (stacktrace)](https://en.cppreference.com/w/cpp/utility/basic_stacktrace/to_string) —— 自由函数 `to_string` 的 gdb 风格输出格式
-- [cppreference: `__cpp_lib_stacktrace`](https://en.cppreference.com/w/cpp/feature_test) —— 特性测试宏，本机 GCC 16.1.1 实测值为 $202011$
+- [cppreference: `__cpp_lib_stacktrace`](https://en.cppreference.com/w/cpp/feature_test) —— 特性测试宏，本机 GCC 16.1.1 实测值为 `202011`
 - [GCC libstdc++ C++23 status](https://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html#iso.2023) —— `<stacktrace>` 实现状态与实验库链接约定

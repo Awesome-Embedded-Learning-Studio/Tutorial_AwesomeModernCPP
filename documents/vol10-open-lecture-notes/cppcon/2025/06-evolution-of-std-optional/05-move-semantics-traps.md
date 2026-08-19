@@ -1,6 +1,6 @@
 ---
 title: optional 引用里藏着的移动语义陷阱
-description: CppCon 2025 笔记 —— optional<T&> 与移动语义交叉处的"猫被偷走"bug：operator* 对右值 optional 的返回类型、*std::move(opt) 为何危险、std::move 能不写就不写
+description: CppCon 2025 笔记 —— optional&lt;T&> 与移动语义交叉处的"猫被偷走"bug：operator* 对右值 optional 的返回类型、*std::move(opt) 为何危险、std::move 能不写就不写
 chapter: 6
 order: 5
 conference: cppcon

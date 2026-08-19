@@ -376,9 +376,9 @@ key=host index=2 holds_string=1
 
 **思路**：C++17 没有 `std::expected`，照教材思路自制精简版；先跨过 union 编译坑——匿名 union 里有非平凡成员时默认构造/析构被删除，起名并补一对空的 `Storage()/` `~Storage()`。`and_then` 的穿透逻辑只有一行：有值就继续调 `f`，没值就把错误原样包回新类型的 `expected`。
 
-1. `expected` + `unexpected` 的实现（union 修复在内）。→ 知识点：[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节
+1. `expected` + `unexpected` 的实现（union 修复在内）。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节
 2. `enum class [[nodiscard]] ParseError`（位置在 `enum class` 关键字之后——放前面 GCC 16 会忽略并警告）+ `parse_port`/`find_field` 两个可能失败的操作。→ 知识点：[标准属性详解：让编译器成为你的代码审查员](../ch07-attributes/01-standard-attributes.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
-3. `and_then` 串链 + 四个输入。→ 知识点：[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「and_then：链接可能失败的操作」一节
+3. `and_then` 串链 + 四个输入。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「and_then：链接可能失败的操作」一节
 
 ```cpp
 // lab5.cpp -- Lab step 5: error propagation chain with a mini expected

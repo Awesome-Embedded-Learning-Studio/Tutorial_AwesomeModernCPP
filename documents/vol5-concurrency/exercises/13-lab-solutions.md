@@ -67,7 +67,7 @@ after cleanup notify_all: woken=4
 
 **思路**：`atomic_ref` 是对已有对象的「原子视图」，对象本身不用改类型；但视图存续期间，所有访问都必须走视图。
 
-1. 正确用法：4×100 万次 `fetch_add` 得 4000000 整——普通 `int` 数组也能无锁累加。→ 知识点：[atomic_wait 与 atomic_ref](../ch03-atomic-memory-model/04-atomic-wait-and-ref.md)「std::atomic_ref<T>」一节
+1. 正确用法：4×100 万次 `fetch_add` 得 4000000 整——普通 `int` 数组也能无锁累加。→ 知识点：[atomic_wait 与 atomic_ref](../ch03-atomic-memory-model/04-atomic-wait-and-ref.md)「std::atomic_ref\<T>」一节
 2. 红线实验：一半 `fetch_add`、一半裸写混用，普通构建最终值 2323399（期望 400 万，丢了 168 万）；TSan 报 2 个 race：一条是「Atomic write（fetch_add）」vs 另一线程的裸写，另一条是裸写 vs 裸写——TSan 甚至能把「atomic 侧」和「非 atomic 侧」分开点名。→ 知识点：同上「限制与约束」一节（第二条：存在 atomic_ref 期间对象只能经 atomic_ref 访问）
 
 **验证输出**：

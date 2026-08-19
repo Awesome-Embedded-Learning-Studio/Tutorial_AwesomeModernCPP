@@ -313,7 +313,7 @@ sizeof expected<int,std::string>    = 40
 
 40 字节,因为 `std::string`(libstdc++ 的 SSO 实现)本身就 32 字节,加上 `double`/`int` 那一份和 tag,凑齐了对齐。这里的教训是:**选 `E` 的时候留意它的大小**,`std::string` 当错误类型虽然信息丰富,但每个 `expected` 都要多背一个字符串的体积——错误类型小而精,是 expected 用得经济的要点。
 
-### expected 是 variant<T,E> 的语义特化
+### expected 是 variant\<T,E> 的语义特化
 
 往深看一层,`expected<T,E>` 在结构上就是 `variant<T, E>`,只是**给两个成员赋予了语义**:第一个是"期望的值",第二个是"意外的错误"。`variant` 是中性的"A 或 B",`expected` 是有立场的"成功或失败"。这个语义上的区别,带来的是一整套贴合错误处理的接口:`value()`/`error()` 的不对称(值失败抛异常、错误失败不抛)、`value_or`/`error_or` 的兜底、还有上面那套 monadic。这些都是 `variant` 没有的——`variant` 要做同样的事,你得自己写一串 `visit`。
 
@@ -421,7 +421,7 @@ if (!r) std::cout << r.error().value() << ": " << r.error().message() << '\n';
 110: Connection timed out
 ```
 
-那个 $110$ 是 POSIX 的 `ETIMEDOUT` 错误号,`message()` 给出可读描述——这就是 `error_code` 直接对接系统错误码的好处,你不用自己维护一套编号到字符串的映射。
+那个 `110` 是 POSIX 的 `ETIMEDOUT` 错误号,`message()` 给出可读描述——这就是 `error_code` 直接对接系统错误码的好处,你不用自己维护一套编号到字符串的映射。
 
 **信息最全:自定义错误类型**。当错误需要附带结构化信息(错误码 + 人话消息 + 上下文),就定义一个结构体当 `E`。代价是体积,但如果你的函数返回路径上错误信息确实有用,这点开销值得:
 

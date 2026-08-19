@@ -109,7 +109,7 @@ ssize_t n = read(cfd, buf, sizeof(buf));   /* 读对方发来的 */
 write(cfd, buf, n);                         /* 原样回写(echo) */
 ```
 
-`read` 返回**实际读到的字节数**;返回 `0` 表示**对端正常关闭了连接**(TCP 的 FIN 走完了,这是"流结束"的信号,不是错误);返回 $-1$ 表示出错。`write` 把数据发回去,它也可能只写一部分(尤其非阻塞或大数据量时),教学版里我们简化处理,下一节你会看到完整循环。
+`read` 返回**实际读到的字节数**;返回 `0` 表示**对端正常关闭了连接**(TCP 的 FIN 走完了,这是"流结束"的信号,不是错误);返回 `-1` 表示出错。`write` 把数据发回去,它也可能只写一部分(尤其非阻塞或大数据量时),教学版里我们简化处理,下一节你会看到完整循环。
 
 到这里五步就走完了。我们把它们串成一个能跑的 server,真跑一次。
 
@@ -198,7 +198,7 @@ $ ss -tlnp | grep 13013
 LISTEN 0      64           0.0.0.0:13013      0.0.0.0:*    users:(("server",pid=283539,fd=3))
 ```
 
-这几列信息量很大,我们把第三步讲的那些概念和它对上:`LISTEN` 是 socket 状态;`0.0.0.0:13013` 是我们 `bind` 的地址(`INADDR_ANY` + 端口 13013);`fd=3` 正是前面说的"stdin/stdout/stderr 占了 0/1/2,第一个新 fd 是 3"。最关键的是中间那两个数字 `0` 和 $64$——对 LISTEN 状态的 socket,**第一列是 Accept 队列的当前长度(0,因为刚被 accept 取走、没积压),第二列就是 backlog 上限($64$,正是我们 `listen(lfd, 64)` 设的)**。你看,第三步讲的 backlog = Accept 队列上限,在这里是能直接看到的实物,不是抽象概念。
+这几列信息量很大,我们把第三步讲的那些概念和它对上:`LISTEN` 是 socket 状态;`0.0.0.0:13013` 是我们 `bind` 的地址(`INADDR_ANY` + 端口 13013);`fd=3` 正是前面说的"stdin/stdout/stderr 占了 0/1/2,第一个新 fd 是 3"。最关键的是中间那两个数字 `0` 和 `64`——对 LISTEN 状态的 socket,**第一列是 Accept 队列的当前长度(0,因为刚被 accept 取走、没积压),第二列就是 backlog 上限(`64`,正是我们 `listen(lfd, 64)` 设的)**。你看,第三步讲的 backlog = Accept 队列上限,在这里是能直接看到的实物,不是抽象概念。
 
 ::: tip 自己编译核查
 本篇的完整代码在 `code/volumn_codes/vol8/networking/00-traditional-socket/`(`classic_server.c` + `classic_client.c` + `CMakeLists.txt`)。建议你亲手编译跑一遍,别只看:
@@ -219,7 +219,7 @@ cmake -S . -B build && cmake --build build
 
 这套经典写法能跑,但有两个细节,都是**测试时不出问题、上线或重启才咬人**的那种——它们属于"man page 有但不会主动提醒你"的现场知识,笔者在这里必须强调一下。
 
-**第一个是 SIGPIPE**。TCP 有个经典场景:客户端异常退出了,你的 server 还傻乎乎地往这条连接 `write`。对一个"对端已经关掉"的 socket 写数据,内核会给你发一个 `SIGPIPE` 信号,而 `SIGPIPE` 的默认处理动作是**直接终止进程**——你的 server 没有任何错误日志,就这么悄无声息地死了。这是个能让你排查一整天的坑。解法是 server 启动第一行就 `signal(SIGPIPE, SIG_IGN)` 忽略它,之后 `write` 到已关闭的 fd 会改返回 $-1$、`errno = EPIPE`,你能像处理普通错误一样处理它,而不是被信号谋杀。上面代码 `main` 第一行的就是这个。
+**第一个是 SIGPIPE**。TCP 有个经典场景:客户端异常退出了,你的 server 还傻乎乎地往这条连接 `write`。对一个"对端已经关掉"的 socket 写数据,内核会给你发一个 `SIGPIPE` 信号,而 `SIGPIPE` 的默认处理动作是**直接终止进程**——你的 server 没有任何错误日志,就这么悄无声息地死了。这是个能让你排查一整天的坑。解法是 server 启动第一行就 `signal(SIGPIPE, SIG_IGN)` 忽略它,之后 `write` 到已关闭的 fd 会改返回 `-1`、`errno = EPIPE`,你能像处理普通错误一样处理它,而不是被信号谋杀。上面代码 `main` 第一行的就是这个。
 
 **第二个是 SO_REUSEADDR**。你 kill 了 server 想立刻重启,经常撞 `bind: Address already in use`——明明刚才那个进程已经没了。原因是上一条 server 的某些连接还处在 **TIME_WAIT** 状态(主动关闭方会保持约 60 秒,确保对端收到了自己最后那个 FIN 的 ACK),这段时间端口还"占着"。解法是 `bind` 之前 `setsockopt(SO_REUSEADDR)`,允许复用处于 TIME_WAIT 的地址——上面代码 `socket` 之后那行就是这个。开发期频繁重启必备。注意它只解决 TIME_WAIT,不能让两个进程同时 `listen` 同一个端口(那要 `SO_REUSEPORT`,是另一个机制)。
 

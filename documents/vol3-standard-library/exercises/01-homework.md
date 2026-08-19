@@ -112,7 +112,7 @@ related:
 
 难度 **L3** · 涉及[random：为什么别再用 rand()](../time-numeric/60-random.md)、[cmath：数学函数、浮点分类与精度陷阱](../time-numeric/59-cmath.md)
 
-① 用 `std::mt19937(42)` + `uniform_int_distribution<int>(1,6)` 掷 60000 次骰子，统计 6 个面各自次数；对照 `srand(42)` + `rand()%6+1` 再做一遍。贴两组分布；回答：`uniform_int_distribution` 的区间是开还是闭？`eng() % 6` 的取模偏差是怎么被拒绝采样消掉的？② `std::sqrt(1e200*1e200 + 1e200*1e200)` 和 `std::hypot(1e200, 1e200)` 各是多少？解释朴素写法的 inf 从哪来。③ `NaN == NaN` 是真是假？该用什么函数判 NaN？④ $0.1$ 累加 10 次 `== 1.0` 是真是假？贴 17 位精度的输出。
+① 用 `std::mt19937(42)` + `uniform_int_distribution<int>(1,6)` 掷 60000 次骰子，统计 6 个面各自次数；对照 `srand(42)` + `rand()%6+1` 再做一遍。贴两组分布；回答：`uniform_int_distribution` 的区间是开还是闭？`eng() % 6` 的取模偏差是怎么被拒绝采样消掉的？② `std::sqrt(1e200*1e200 + 1e200*1e200)` 和 `std::hypot(1e200, 1e200)` 各是多少？解释朴素写法的 inf 从哪来。③ `NaN == NaN` 是真是假？该用什么函数判 NaN？④ 0.1 累加 10 次 `== 1.0` 是真是假？贴 17 位精度的输出。
 
 [参考答案 →](02-homework-solutions.md#hw-3-5-b)
 

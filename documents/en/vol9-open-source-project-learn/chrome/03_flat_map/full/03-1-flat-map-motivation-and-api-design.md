@@ -139,7 +139,7 @@ Because an out-of-range access usually means the caller's logic is wrong: either
 
 `std::map` defaults to `Compare = std::less<Key>`, non-transparent; flat_map swaps in `std::less<>`, transparent (flat_map.h:192). That one swap opens the door to heterogeneous lookup: you can `find` a `std::string` map with a `const char*` without constructing a temporary `std::string`. On a hot path the accumulated cost of those temporaries is real; see [pre-03](./pre-03-flat-map-comparator-and-transparent.md). Modern C++ recommends transparent comparators as the default, and flat_map just does it.
 
-### Why we store pair<K,V> and not pair<const K, V>
+### Why we store pair\<K,V> and not pair\<const K, V>
 
 The underlying storage is `std::vector<std::pair<Key, Mapped>>`, with a non-const key (flat_map.h:193). This counterintuitive choice is forced by vector's shifting: insert and erase relocate whole pairs, which means the pair has to be move-assignable, and `pair<const K, V>` is not move-assignable. The cost is that the key is exposed as mutable; an iterator could in principle rewrite a key and break the sorted invariant, and only user discipline stops that. The full accounting is in [pre-05](./pre-05-flat-map-enua-ebo-and-pair-storage.md).
 

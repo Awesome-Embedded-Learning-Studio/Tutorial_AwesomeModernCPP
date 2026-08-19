@@ -106,7 +106,7 @@ $ g++ -std=c++20 hw32a_fail.cpp -o hw32a_fail
 
 **思路**：需求越弱、能用的排序算法越快；投影让「按成员排序」不用写 lambda；`accumulate` 的返回类型 = 初始值类型。
 
-1. `nth_element` 把第 4 位钉成 $90.5$（两边内部无序）——只要中位数就别全排。→ 知识点：[算法总览（下）](../iterators-algorithms/43-algorithm-overview-part2.md)「nth_element」一节
+1. `nth_element` 把第 4 位钉成 90.5（两边内部无序）——只要中位数就别全排。→ 知识点：[算法总览（下）](../iterators-algorithms/43-algorithm-overview-part2.md)「nth_element」一节
 2. `partial_sort` 前 3 名得 `95 91 90.5`。→ 知识点：同上「partial_sort」一节
 3. `ranges::sort(asc, {}, &Student::score)` 升序、换 `std::greater{}` 降序；`ranges::stable_sort` 保输入顺序（并列的 bob/frank 与 alice/carol 都保持原序），而普通 `sort` 的并列顺序不可依赖。→ 知识点：同上「C++20 投影」一节、「sort 不保证相等元素的顺序」提示块
 4. 数学和 703.5：`accumulate(frac, 0)` 把每个 double 先截断成 int，得 **702**；`accumulate(frac, 0.0)` 全程 double，得 **703.5**。→ 知识点：[numeric](../iterators-algorithms/44-numeric-algorithms.md)「accumulate：累加，以及它最坑的返回类型」一节
@@ -255,9 +255,9 @@ hw35a_fail.cpp:7:17: error: conversion from 'duration<[...],ratio<[...],1000>>' 
 **思路**：`uniform_int_distribution` 是**闭区间**且用拒绝采样消除取模偏差；`hypot` 防中间溢出；NaN 不等于自己；0.1 累加有舍入误差。
 
 1. `uniform_int_distribution<int>(1,6)` 的区间是 `[1,6]` 闭区间，两个端点都抽得到；`eng() % N` 的取模偏差（$2^{32}$ 不被 N 整除时余数桶多一个候选）被内部拒绝采样丢弃尾巴重抽，保证严格均匀。60000 次下来六面都在 1/6 附近（0.164~0.168），`rand()%6+1` 对照也在同量级。→ 知识点：[random](../time-numeric/60-random.md)「分布」一节与「uniform_int_distribution 是闭区间」提示块
-2. `sqrt(1e200*1e200+...)` 中间平方溢出成 `inf`；`hypot(1e200,1e200)` 用防溢出算法给出 $1.41421e+200$。→ 知识点：[cmath](../time-numeric/59-cmath.md)「hypot」一节
+2. `sqrt(1e200*1e200+...)` 中间平方溢出成 `inf`；`hypot(1e200,1e200)` 用防溢出算法给出 1.41421e+200。→ 知识点：[cmath](../time-numeric/59-cmath.md)「hypot」一节
 3. `NaN == NaN` 是 **false**（IEEE 754 规定 NaN 与任何值比较都为 false），判 NaN 用 `std::isnan`。→ 知识点：同上「NaN 不等于自己」一节
-4. 10 次 $0.1$ 累加得 $0.99999999999999989$，`== 1.0` 为 false——浮点没有精确的 0.1。→ 知识点：同上「== 为什么失灵」一节
+4. 10 次 0.1 累加得 0.99999999999999989，`== 1.0` 为 false——浮点没有精确的 0.1。→ 知识点：同上「== 为什么失灵」一节
 
 **验证输出**：
 

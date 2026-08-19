@@ -197,7 +197,7 @@ int factorial(int n) {
 }
 ```
 
-递归调用链：`factorial(5)` → `5 * factorial(4)` → `5 * 4 * factorial(3)` → ... → $5 \times 4 \times 3 \times 2 \times 1 = 120$
+递归调用链：`factorial(5)` → `5 * factorial(4)` → `5 * 4 * factorial(3)` → ... → `5 * 4 * 3 * 2 * 1 = 120`
 
 每个递归调用都会在栈上分配一个新的栈帧（保存局部变量、参数和返回地址），所以递归深度受限于栈大小——这就是为什么递归有可能导致栈溢出。
 

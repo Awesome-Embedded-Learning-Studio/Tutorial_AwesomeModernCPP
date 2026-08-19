@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: std::atomic<T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free
+description: std::atomic&lt;T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free
   判断
 difficulty: intermediate
 order: 1
@@ -29,7 +29,7 @@ title: atomic 操作
 
 `std::atomic` 就是针对这种"极小粒度"场景设计的。它不靠锁（至少在理想情况下），而是直接利用 CPU 提供的原子指令来保证操作不可分割。上一篇中我们在并发基本问题里已经用 `std::atomic<int>` 修复过 data race 了，但当时只是浅尝辄止。这一篇我们要完整地拆解 `std::atomic<T>` 的所有操作——从最基础的 `load`/`store`，到 CAS（compare-and-swap）机制，再到 lock-free 的判断和特化类型 `atomic_flag`。下一篇我们再讨论内存序，这里先把注意力集中在"原子操作能做什么"上。
 
-## std::atomic<T> 支持哪些类型
+## std::atomic\<T> 支持哪些类型
 
 `std::atomic` 是一个类模板，定义在 `<atomic>` 头文件中。并不是所有类型都能放进 `std::atomic`——标准对此有明确的限制。
 
@@ -147,7 +147,7 @@ x += 5;                  // x 变成 17
 
 硬件层面，绝大多数 CPU 架构没有提供原子浮点加法指令。x86 有 `LOCK XADD` 用于整数原子加法，但浮点加法走的是 FPU/SSE/AVX 执行单元，这些单元本身就不是为原子操作设计的。所以 `atomic<float>::fetch_add` 在大多数平台上内部会退化成 CAS 循环——并没有硬件级的原子浮点加法。
 
-语义层面，浮点加法不是结合律的——$(a + b) + c$ 不等于 $a + (b + c)$，因为每次运算都涉及精度舍入。这意味着即使你有多个线程同时对一个浮点原子变量做 `fetch_add`，最终结果依赖于操作的执行顺序，而这个顺序是不确定的。此外，浮点运算的结果可能因浮点环境（舍入模式、精度控制）的不同而变化，这给 `fetch_add` 的语义带来了额外的不可复现性。
+语义层面，浮点加法不是结合律的——`(a + b) + c` 不等于 `a + (b + c)`，因为每次运算都涉及精度舍入。这意味着即使你有多个线程同时对一个浮点原子变量做 `fetch_add`，最终结果依赖于操作的执行顺序，而这个顺序是不确定的。此外，浮点运算的结果可能因浮点环境（舍入模式、精度控制）的不同而变化，这给 `fetch_add` 的语义带来了额外的不可复现性。
 
 如果你需要在 C++20 之前的环境中原子地修改浮点变量，或者需要避免 `fetch_add` 的精度不可复现问题，标准的做法是用 CAS 循环：
 

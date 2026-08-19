@@ -195,7 +195,7 @@ found 5 .log file(s) under /tmp/logscan_demo
 
 **思路**：`analyze` 的行解析是纯函数：`analyze_line(line, line_no)` 返回 `expected<LineOutcome, LineError>`——坏行带行号穿透到命令层，好行给「级别 + 零拷贝消息视图」。`LineOutcome::message` 是 `string_view`，直接指向 `getline` 的缓冲，行处理完就失效，所以 `first_error` 只在记录时拷贝成 `std::string`。级别令牌与消息之间的空白用 `remove_prefix` 跳过。
 
-1. `expected`（union 修复版）+ `LineError`/`LineOutcome`。→ 知识点：[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节
+1. `expected`（union 修复版）+ `LineError`/`LineOutcome`。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节
 2. `analyze_line`：去 `\r` → 校验 `[` → 找 `]` → 切令牌 → 级别识别（L5 会换成哈希分派）→ 消息视图。→ 知识点：[string_view 陷阱与最佳实践](../ch08-string-view/03-string-view-pitfalls.md)（视图只做短期只读观察）
 3. `cmd_analyze`：`getline` 循环 + `switch` 计数 + 坏行打印 + 第一条 ERROR 拷贝。→ 知识点：[enum class 与强类型枚举](../ch04-type-safety/01-enum-class.md)、[结构化绑定：一行解包多个值](../ch05-structured-bindings/01-structured-bindings.md)（`for (const auto& [ext, stat] : by_ext)` 已在 scan 用过）
 

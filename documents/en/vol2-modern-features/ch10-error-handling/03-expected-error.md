@@ -19,7 +19,7 @@ tags:
 - intermediate
 - expected
 - 类型安全
-title: 'std::expected<T, E>: Type-Safe Error Propagation'
+title: 'std::expected&lt;T, E>: Type-Safe Error Propagation'
 translation:
   source: documents/vol2-modern-features/ch10-error-handling/03-expected-error.md
   source_hash: 31bfe8489ee19196b3a58f3e8405c538be69c40c97f6ba7c801dffe390b724fe
@@ -27,7 +27,7 @@ translation:
   engine: anthropic
   token_count: 3394
 ---
-# std::expected<T, E>: Type-Safe Error Propagation
+# std::expected\<T, E>: Type-Safe Error Propagation
 
 In the previous post, we discussed the application of `std::optional` in error handling and pointed out its limitation—it cannot carry error information. When you need to know "why it failed," `std::optional` falls short. The `std::expected` introduced in C++23 fills this gap: it tells you both "whether there is a value" and "the reason why there isn't."
 

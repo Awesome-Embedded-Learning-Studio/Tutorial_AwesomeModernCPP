@@ -42,7 +42,7 @@ related: []
 
 ### 再进阶任务（L4）：把门装上 {#pj-gates}
 
-四件事。①**健壮性**：`add` 检查输入是不是合法数字（`strtold` 的 endptr 校验）、越界和带小数由窄化检测拦；`calc` 的参数用 `strtoll` + errno 校验。分别用「缺参数」「`abc`」「$3.5$」「$1e300$」测试。②**编译门**：`-Wall -Wextra -Wconversion -Werror` 做到**零警告**（`-Wconversion` 会逼你把每个隐式转换显式化，这条最难）。③**质量门**：`-fsanitize=address,undefined` 构建跑一遍完整会话（含 `1e300` 用例）**零报告**。④**格式门**：`.clang-format`（`BasedOnStyle: LLVM` + `IndentWidth: 4` + `BreakBeforeBraces: Allman` + `ColumnLimit: 100`）下 `clang-format --dry-run --Werror` 退出码 0，格式门之后再严格编译一遍确认没被格式化改坏。附带一个**汇编审计**：`-O2 -S` 看 `do_sum` 的函数体，确认求和循环里没有任何对 `Number::get()` 的函数调用（内联证据）。
+四件事。①**健壮性**：`add` 检查输入是不是合法数字（`strtold` 的 endptr 校验）、越界和带小数由窄化检测拦；`calc` 的参数用 `strtoll` + errno 校验。分别用「缺参数」「`abc`」「3.5」「1e300」测试。②**编译门**：`-Wall -Wextra -Wconversion -Werror` 做到**零警告**（`-Wconversion` 会逼你把每个隐式转换显式化，这条最难）。③**质量门**：`-fsanitize=address,undefined` 构建跑一遍完整会话（含 `1e300` 用例）**零报告**。④**格式门**：`.clang-format`（`BasedOnStyle: LLVM` + `IndentWidth: 4` + `BreakBeforeBraces: Allman` + `ColumnLimit: 100`）下 `clang-format --dry-run --Werror` 退出码 0，格式门之后再严格编译一遍确认没被格式化改坏。附带一个**汇编审计**：`-O2 -S` 看 `do_sum` 的函数体，确认求和循环里没有任何对 `Number::get()` 的函数调用（内联证据）。
 
 **验收标准**：贴出四个健壮性测试的输出、零警告的编译命令、sanitizer 会话零报告、格式门退出码 0、以及 `do_sum` 的汇编片段。
 

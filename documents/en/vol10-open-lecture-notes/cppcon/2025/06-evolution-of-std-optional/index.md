@@ -1,6 +1,6 @@
 ---
 title: "The Evolution of std::optional: From Boost to C++26"
-description: "CppCon 2025 notes — Steve Downey on how std::optional evolved from Boost to C++26, focused on why optional<T&> (P2988) waited twenty years to enter the standard"
+description: "CppCon 2025 notes — Steve Downey on how std::optional evolved from Boost to C++26, focused on why optional&lt;T&> (P2988) waited twenty years to enter the standard"
 conference: cppcon
 conference_year: 2025
 talk_title: 'The Evolution of std::optional: From Boost to C++26'

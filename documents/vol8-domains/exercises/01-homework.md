@@ -103,7 +103,7 @@ related: []
 
 难度 **L1** · 涉及[行主序——二维坐标怎么落进一维内存](../ai/tiny_ml/stage1/04-row-major.md)
 
-行主序换算三题。①**手算**：`Tensor<4, 3>` 的权重矩阵，$W(2, 1)$ 对应扁平数组下标几？下标换算公式是什么？②真跑：往 `std::array<float, 12>` 里依次填 0..11，用 $i \times Cols + j$ 打印成 4 行 3 列表格，对照手算结果。③**先预测再验证**：同一行相邻元素 `&W[0][1] - &W[0][0]` 是几？跨行的 `&W[1][0] - &W[0][2]` 是几？很多人预测第二个不是 1——解释为什么它也是 1（提示：底层是一段连续数组，二维只是外面那层「壳」的换算），并说明这套行主序约定为什么是后面 NumPy 对拍的基础。
+行主序换算三题。①**手算**：`Tensor<4, 3>` 的权重矩阵，W(2, 1) 对应扁平数组下标几？下标换算公式是什么？②真跑：往 `std::array<float, 12>` 里依次填 0..11，用 $i \times Cols + j$ 打印成 4 行 3 列表格，对照手算结果。③**先预测再验证**：同一行相邻元素 `&W[0][1] - &W[0][0]` 是几？跨行的 `&W[1][0] - &W[0][2]` 是几？很多人预测第二个不是 1——解释为什么它也是 1（提示：底层是一段连续数组，二维只是外面那层「壳」的换算），并说明这套行主序约定为什么是后面 NumPy 对拍的基础。
 
 [参考答案 →](./02-homework-solutions.md#hw-8-3-a)
 
@@ -215,7 +215,7 @@ UB 实证对抗赛。①写 `UnsafeWeakPtr`（`T* + raw Flag*`，Flag 是 Factor
 
 难度 **L4** · 涉及[非拥有指针全景：从 T* 到 Borrowed 到 ObserverPtr](../cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md)、[固定维度 Tensor——推理器的数据底座](../ai/tiny_ml/stage1/06-tensor.md)、[行主序——二维坐标怎么落进一维内存](../ai/tiny_ml/stage1/04-row-major.md)
 
-非拥有视图的推理数据通路（深度专题 × AI 综合）。给定 `Tensor<4, 3>` 权重 W 与 `Tensor<1, 4>` 偏置 b，实现 `LayerView`：**只持有** `std::span<const float>`（权重、偏置各一个）+ 维度，提供 `forward(x, y)` 计算 $y[i] = Σ_j W[i\times in+j]·x[j] + b[i]$（行主序，公式已在题面给出；Dense 层是 Stage 2 的内容，这里只练「非拥有视图」这个机制）。验证：①`w.view().data() == w.storage().data()`（view 零拷贝）；②把 $w(0,0)$ 改成 100 后再 forward，视图立刻看到新值（借用不是拷贝）；③问答：这套「span 视图不拥有数据」的约定，推理器为什么敢用？什么情况下它会变成悬垂引用（对照 01 篇四层语义模型回答）？
+非拥有视图的推理数据通路（深度专题 × AI 综合）。给定 `Tensor<4, 3>` 权重 W 与 `Tensor<1, 4>` 偏置 b，实现 `LayerView`：**只持有** `std::span<const float>`（权重、偏置各一个）+ 维度，提供 `forward(x, y)` 计算 $y[i] = Σ_j W[i\times in+j]·x[j] + b[i]$（行主序，公式已在题面给出；Dense 层是 Stage 2 的内容，这里只练「非拥有视图」这个机制）。验证：①`w.view().data() == w.storage().data()`（view 零拷贝）；②把 w(0,0) 改成 100 后再 forward，视图立刻看到新值（借用不是拷贝）；③问答：这套「span 视图不拥有数据」的约定，推理器为什么敢用？什么情况下它会变成悬垂引用（对照 01 篇四层语义模型回答）？
 
 [参考答案 →](./02-homework-solutions.md#hw-8-c-2)
 

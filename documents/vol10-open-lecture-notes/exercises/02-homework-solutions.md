@@ -93,7 +93,7 @@ int main()
 ```
 
 1. `bool ← int` 在本机**两条分支同时成立**：`smaller_range`（`bool` 的 `max()` 是 `true` 即 1，`1 < int 的 max` 恒真）**和**「有符号性不同」（`int` 是 signed、`bool` 是 unsigned，`signed_integral` 不同）；`int ← double` 同样是两条（`smaller_range` + 「浮点转整数」）。分支重叠不影响结论，`||` 合取后仍是 1。`float ← double` 只走 `smaller_range` 一条（`float::max < double::max`），不是「浮点转整数」分支——精度损失也属于窄化。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)「动手写一个 narrowing 判断」一节
-2. `char ← unsigned char` 在本机判为 1，且同样是**两条分支同时成立**：`smaller_range`（本机 `char` 是 signed，$127 < 255$）**和**「有符号性不同」（$-1$ 赋过去会变 255，拦得对）。换成 `char` 是 unsigned 的平台（如部分 ARM 平台），这两条分支会一起翻转成 0——这就是「平台相关」的含义，也是**最后一例不能写成 static_assert、必须运行期打印**的原因：写死 `static_assert(narrowing_assign<char, unsigned char>)` 在另一类平台上会编译失败。→ 知识点：同上「还有一些边界情况要想清楚」一节（`char` 的有符号性是实现定义的）
+2. `char ← unsigned char` 在本机判为 1，且同样是**两条分支同时成立**：`smaller_range`（本机 `char` 是 signed，$127 < 255$）**和**「有符号性不同」（-1 赋过去会变 255，拦得对）。换成 `char` 是 unsigned 的平台（如部分 ARM 平台），这两条分支会一起翻转成 0——这就是「平台相关」的含义，也是**最后一例不能写成 static_assert、必须运行期打印**的原因：写死 `static_assert(narrowing_assign<char, unsigned char>)` 在另一类平台上会编译失败。→ 知识点：同上「还有一些边界情况要想清楚」一节（`char` 的有符号性是实现定义的）
 3. 括号问题：`&&` 优先级高于 `||`，不加括号时 `number<T> && number<U>` 只约束第一个 `||` 分支，后两个分支会对非数字类型求值——语义就错了。加括号把三个分支合成一个整体，再由外层 `number<T> && number<U>` 统一约束。→ 知识点：同上
 
 **验证输出**：

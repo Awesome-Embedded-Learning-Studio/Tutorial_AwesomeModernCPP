@@ -159,7 +159,7 @@ s[10] 捕获: 下标越界了兄弟
 s[-3] 捕获: 负数下标,你想干嘛
 ```
 
-1. `operator[]` 先查 `index < 0` 再查上界——用 `size_t` 的话 $-3$ 会被隐式转成天文数字，要么读到垃圾要么报一个误导性的错。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)「负数下标的问题——有符号无符号的坑」一节
+1. `operator[]` 先查 `index < 0` 再查上界——用 `size_t` 的话 -3 会被隐式转成天文数字，要么读到垃圾要么报一个误导性的错。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)「负数下标的问题——有符号无符号的坑」一节
 2. CTAD 指引（`checked_span(T*, std::size_t) -> checked_span<T>`）让编译器从实参推导元素类型，少写一处重复信息，改类型时只改一处。→ 知识点：同上「类型推导：别再重复编译器已经知道的事」一节
 
 ## 步骤 5：惰性管道与短路 {#lab-5}

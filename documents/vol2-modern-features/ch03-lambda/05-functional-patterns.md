@@ -145,7 +145,7 @@ std::function<int()> make_counter(bool start_high) {
 
 ## 函数组合——compose 与 pipe
 
-函数组合（function composition）是把多个函数串联起来，前一个的输出作为后一个的输入。在数学上，$compose(f, g)(x) = f(g(x))$；在管道风格中，$pipe(g, f)(x) = f(g(x))$——先应用 g，再应用 f。
+函数组合（function composition）是把多个函数串联起来，前一个的输出作为后一个的输入。在数学上，`compose(f, g)(x) = f(g(x))`；在管道风格中，`pipe(g, f)(x) = f(g(x))`——先应用 g，再应用 f。
 
 在 C++ 中实现函数组合最干净的方式是利用泛型 lambda 和 `auto` 返回类型推导：
 

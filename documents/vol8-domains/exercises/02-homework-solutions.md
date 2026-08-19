@@ -32,7 +32,7 @@ related: []
 **思路**：置位用 `|=`、清位用 `&= ~`、翻转用 `^=`，三者都是「读-改-写」的位运算三件套；进阶自测里**只有 `1 << 32` 是 UB**——`1 << 31` 在 C++20（本套默认标准）里良定义，本机 sanitizer 不报它是正确行为；「工具盲区」的讨论要回到 C++11 的老规则口径下才成立（见步骤 2 与实测矩阵）。
 
 1. 手算链：`0x1C00 | 0x2000 = 0x3C00`；`0x3C00 & ~0x0400 = 0x3800`；翻转 bit11（`0x0800`）两次回到 `0x3800`；bit13 读回 `(0x3800 >> 13) & 1 = 1`。→ 知识点：[第 11 篇](../embedded/01-led/06-hal-gpio-output.md)（`HAL_GPIO_WritePin` 背后的寄存器位操作）、[类型安全的寄存器访问](../embedded/02-type-safe-register-access.md)（置位/清位封装 `set_bits`/`clear_bits` 一节）
-2. `1 << n` 要分两条看。`n=32`：移位位数等于位宽，**任何标准下都是 UB**，UBSan 报 `shift exponent 32 is too large` 报得对。`n=31`：C++20 的移位规则把结果定义为「与 $1×2^{31}$ 模 2^32 同余的唯一可表示值」——two's complement 下就是 INT_MIN（$-2147483648$），**良定义**；C++17 同样良定义（CWG 1457 之后的措辞：$2^{31}$ 可被对应无符号类型 `unsigned int` 表示，该值经**实现定义转换**得 INT_MIN）。所以 UBSan 对 `1 << 31` 一声不吭（普通构建输出 `a=-2147483648`）**不是漏报，是正确行为**。真盲区要回 C++11：发布版老规则要求「$E1×2^{E2}$ 可被**结果类型**（`int`）表示」，$2^{31}$ 超上限，按 C++11 原文 `1 << 31` 是 UB——但 `-std=c++11` 下两个编译器的 shift sanitizer 照样不报它（见下方矩阵；CWG 1457 是 DR，编译器在所有模式下都按修复后的规则实现，所以连编译产物都一致）。**别把 sanitizer 绿当安全证明，也别把标准条款当摆设**。→ 知识点：[第 11 篇](../embedded/01-led/06-hal-gpio-output.md)（`GPIO_PIN_13` 这类掩码全是无符号常量，`1u << 13` 的 `u` 就是在躲这个坑）
+2. `1 << n` 要分两条看。`n=32`：移位位数等于位宽，**任何标准下都是 UB**，UBSan 报 `shift exponent 32 is too large` 报得对。`n=31`：C++20 的移位规则把结果定义为「与 $1×2^{31}$ 模 2^32 同余的唯一可表示值」——two's complement 下就是 INT_MIN（-2147483648），**良定义**；C++17 同样良定义（CWG 1457 之后的措辞：$2^{31}$ 可被对应无符号类型 `unsigned int` 表示，该值经**实现定义转换**得 INT_MIN）。所以 UBSan 对 `1 << 31` 一声不吭（普通构建输出 `a=-2147483648`）**不是漏报，是正确行为**。真盲区要回 C++11：发布版老规则要求「$E1×2^{E2}$ 可被**结果类型**（`int`）表示」，$2^{31}$ 超上限，按 C++11 原文 `1 << 31` 是 UB——但 `-std=c++11` 下两个编译器的 shift sanitizer 照样不报它（见下方矩阵；CWG 1457 是 DR，编译器在所有模式下都按修复后的规则实现，所以连编译产物都一致）。**别把 sanitizer 绿当安全证明，也别把标准条款当摆设**。→ 知识点：[第 11 篇](../embedded/01-led/06-hal-gpio-output.md)（`GPIO_PIN_13` 这类掩码全是无符号常量，`1u << 13` 的 `u` 就是在躲这个坑）
 
 **代码**：
 
@@ -115,7 +115,7 @@ a=-2147483648 b=1
 
 1. 核心三行：`sample != last_raw_` 时更新 `last_raw_` 并重置 `last_change_`；`(now - last_change_) >= 20` 且 `last_raw_ != stable_` 时确认转换。→ 知识点：[第 24 篇](../embedded/02-button/06-non-blocking-debounce.md)「非阻塞消抖算法」一节（记录变化时间，检查是否稳定了足够长时间）
 2. 跟踪序列：t=11 是最后一次反弹，此后原始值保持 1 直到 t=31（差值 20 恰好到窗口）——所以 PRESSED 落在 t=31；释放方向同理，t=63 之后稳定到 t=85 确认 RELEASED。中间每次反弹都把计时器打回零，这正是「抖动的 5~20ms 跳变被计时器不断重置过滤掉」的机制。→ 知识点：[第 24 篇](../embedded/02-button/06-non-blocking-debounce.md)「非阻塞消抖算法」一节、[第 25 篇](../embedded/02-button/07-debounce-state-machine.md)（状态机版把同样的判断顺序写成了 `DebouncingPress` 三个分支）
-3. 溢出验证：`0x10 - 0xFFFFFFF8` 在无符号域等于 $24$，不受 49.7 天回绕影响——所以第 24 篇说「你不需要担心溢出问题」。注意输出里 `[t=  16] stable -> PRESSED` 就是这次溢出测试自己确认的转换（now=0x10=16，差值 24≥20）。→ 知识点：[第 24 篇](../embedded/02-button/06-non-blocking-debounce.md)「溢出的安全性」一节
+3. 溢出验证：`0x10 - 0xFFFFFFF8` 在无符号域等于 24，不受 49.7 天回绕影响——所以第 24 篇说「你不需要担心溢出问题」。注意输出里 `[t=  16] stable -> PRESSED` 就是这次溢出测试自己确认的转换（now=0x10=16，差值 24≥20）。→ 知识点：[第 24 篇](../embedded/02-button/06-non-blocking-debounce.md)「溢出的安全性」一节
 
 **代码**：
 
@@ -614,9 +614,9 @@ ET-once 丢了 $8192 - 1024 = 7168$ 字节，且 `events=1` 说明之后 200ms �
 
 **思路**：行主序就是「一行存完再存下一行」，换算公式 `offset = i * Cols + j`；因为底层是**一段**连续数组，行内和跨行其实都是连续的——「二维」只是外面那层壳的换算。
 
-1. $W(2, 1)$ → $2 \times 3 + 1 = 7$（第 2 行从下标 6 开始，第 1 列就是 7）。→ 知识点：[行主序](../ai/tiny_ml/stage1/04-row-major.md)「公式：i * Cols + j」一节
+1. W(2, 1) → $2 \times 3 + 1 = 7$（第 2 行从下标 6 开始，第 1 列就是 7）。→ 知识点：[行主序](../ai/tiny_ml/stage1/04-row-major.md)「公式：i * Cols + j」一节
 2. 打印出的 4×3 表格：第 0 行 0 1 2、第 1 行 3 4 5……与手算一一对应。→ 知识点：同上（「一行一行抄」的内存图）
-3. 两个指针差都是 1：`&W[1][0] - &W[0][2]` 也是 1，因为第 1 行第 0 列在内存里就紧跟在第 0 行第 2 列后面——底层是连续数组，不是「12 个散布的格子」。这个约定和 NumPy 默认的 C order 一致，Stage 5 的 Python 权重才能和 C++ 的 $W(i, j)$ 一位对一位地对拍。→ 知识点：同上、[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)「决策三：std::array 存储 + 行主序」一节
+3. 两个指针差都是 1：`&W[1][0] - &W[0][2]` 也是 1，因为第 1 行第 0 列在内存里就紧跟在第 0 行第 2 列后面——底层是连续数组，不是「12 个散布的格子」。这个约定和 NumPy 默认的 C order 一致，Stage 5 的 Python 权重才能和 C++ 的 W(i, j) 一位对一位地对拍。→ 知识点：同上、[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)「决策三：std::array 存储 + 行主序」一节
 
 **代码**：
 
@@ -667,7 +667,7 @@ cross-row contiguity:   &W[1][0]-&W[0][2] = 1
 **思路**：热路径 `operator()` 返回引用不检查，带检查的 `at` 走 `std::expected` 的错误路径；`at` 不返回引用是因为标准直接堵死了 `expected<T&, E>`；`internals_{}` 的 `{}` 是值初始化的开关。
 
 1. `at(99, 0)` 返回 `kOutOfRange`、`noexcept` 保证不抛异常——进程退出码 0。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)「决策一：at 返回 std::expected 的值」、常见坑 1（越界检查用 `||` 不是 `&&`）
-2. 默认构造零初始化来自 `internals_{}`：没有 `{}` 时 `std::array` 的元素是 indeterminate，$t(0,0)$ 读未初始化垃圾（UB）——教材常见坑 2 里 msan 抓到的就是这个。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)常见坑 2
+2. 默认构造零初始化来自 `internals_{}`：没有 `{}` 时 `std::array` 的元素是 indeterminate，t(0,0) 读未初始化垃圾（UB）——教材常见坑 2 里 msan 抓到的就是这个。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)常见坑 2
 3. 行主序地址恒等逐元素成立：`operator()` 只是 `internals_[i*Cols+j]` 的引用返回，没有第二个存储。→ 知识点：[行主序](../ai/tiny_ml/stage1/04-row-major.md)
 4. `expected<float&, int>` 编译失败：libstdc++ 的 `<expected>` 第 372 行 `static_assert( ! is_reference_v<_Tp> );` 直接断言，随后还有「union 成员不得是引用类型」的连锁报错——这就是教材决策一的硬约束来源。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)常见坑 3（「std::expected 不接引用类型」）
 
@@ -1286,7 +1286,7 @@ slots=8
 
 1. 填空表：冒泡最坏/平均 O(n²)（稳定）；插入 O(n²)/O(n²)（稳定，近似有序时近 O(n)）；选择 O(n²)/O(n²)（不稳定）；快速 O(n²)/O(n log n)（不稳定）；归并 O(n log n)/O(n log n)（稳定）；堆排序 O(n log n)/O(n log n)（不稳定）。→ 知识点：[算法与数据结构（规划中）](../algorithms/index.md)（规划主题：复杂度分析、经典算法）
 2. `std::sort` 是 introsort（快速排序 + 堆排序兜底 + 小规模插入排序），最坏 O(n log n)——快速排序一出现坏划分就切到堆排序，所以标准库敢承诺。→ 知识点：同上
-3. 实测：冒泡 $499500$ 次比较 = $\frac{1000×999}{2}$ 精确命中理论值（两重循环、每轮少一个）；`std::sort` $11508$ 次，实测 $\frac{499500}{11508} ≈ 43.4$ 倍——约 1.6 个数量级。**「两个数量级」是理论比值**：n/log₂n = $\frac{1000}{9.97} ≈ 100$；实测只有 43 倍是因为 n=1000 还太小、n log n 的常数与低阶项没被摊薄，n 越大差距越悬殊（n² vs n log n）。→ 知识点：同上
+3. 实测：冒泡 499500 次比较 = $\frac{1000×999}{2}$ 精确命中理论值（两重循环、每轮少一个）；`std::sort` 11508 次，实测 $\frac{499500}{11508} ≈ 43.4$ 倍——约 1.6 个数量级。**「两个数量级」是理论比值**：n/log₂n = $\frac{1000}{9.97} ≈ 100$；实测只有 43 倍是因为 n=1000 还太小、n log n 的常数与低阶项没被摊薄，n 越大差距越悬殊（n² vs n log n）。→ 知识点：同上
 
 **代码**：
 
@@ -1502,8 +1502,8 @@ $ g++ -std=c++20 -Wall -Wextra -fsanitize=address -g lineparse.cpp -o lineparse_
 
 **思路**：`span` 是「借用」在 C++ 里的标准形态——指针 + 长度，不拥有、不拷贝；`LayerView` 只存视图，数据仍归 Tensor 所有，所有权边界清晰所以推理器敢用。
 
-1. `forward` 按行主序做乘加：$y = [1, 2, 3, 12.5]$（第 3 行权重全 2，$2+4+6+0.5 = 12.5$）。→ 知识点：[行主序](../ai/tiny_ml/stage1/04-row-major.md)（`W[i*in+j]` 的换算）
-2. `view().data() == storage().data()`——视图与底层数组同址；$w(0,0) = 100$ 后再次 forward，`y[0]` 立刻变成 100：借用的视图看到的是所有者的最新数据，不是副本。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)「扁平 span 视图（不拷贝）」、[非拥有指针全景](../cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md)（第一层：借用）
+1. `forward` 按行主序做乘加：y = [1, 2, 3, 12.5]（第 3 行权重全 2，$2+4+6+0.5 = 12.5$）。→ 知识点：[行主序](../ai/tiny_ml/stage1/04-row-major.md)（`W[i*in+j]` 的换算）
+2. `view().data() == storage().data()`——视图与底层数组同址；w(0,0) = 100 后再次 forward，`y[0]` 立刻变成 100：借用的视图看到的是所有者的最新数据，不是副本。→ 知识点：[固定维度 Tensor](../ai/tiny_ml/stage1/06-tensor.md)「扁平 span 视图（不拷贝）」、[非拥有指针全景](../cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md)（第一层：借用）
 3. 推理器敢用是因为 Tensor 的所有权集中、生命周期明确（栈上/静态存储，视图不逃逸）；一旦 `LayerView` 存得比 Tensor 久（比如异步回调里带着视图跑），span 就变成悬垂引用——和 `Borrowed` 的边界一模一样：借用适合「短暂同步使用」，别存下来以后再用。→ 知识点：[非拥有指针全景](../cpp-deep-dives/pointer-semantics/01-non-owning-pointer-overview.md)（四层语义模型与「异步回调：危险」那一行）
 
 **代码**：

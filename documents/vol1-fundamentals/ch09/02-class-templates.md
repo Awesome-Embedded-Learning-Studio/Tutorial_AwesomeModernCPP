@@ -350,7 +350,7 @@ after pop, top: world
 caught: Stack::pop(): stack is empty
 ```
 
-核对关键结果：`Stack<int>` 压入三个元素后 top 是 $30$（最后压入的），pop 一次后 top 变成 $20$，正确。`Stack<double>` 和 `Stack<std::string>` 的行为也符合 LIFO（后进先出）预期。空栈调用 `pop` 时正确抛出 `std::out_of_range` 异常。
+核对关键结果：`Stack<int>` 压入三个元素后 top 是 `30`（最后压入的），pop 一次后 top 变成 `20`，正确。`Stack<double>` 和 `Stack<std::string>` 的行为也符合 LIFO（后进先出）预期。空栈调用 `pop` 时正确抛出 `std::out_of_range` 异常。
 
 ## 踩坑预警——模板的三个暗坑
 

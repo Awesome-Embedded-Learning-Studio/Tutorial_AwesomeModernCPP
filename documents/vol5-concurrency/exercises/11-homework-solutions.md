@@ -378,9 +378,9 @@ stored futures (3 个): elapsed=300 ms
 
 **思路**：promise 是 future 的写端、一次设值；`set_exception` + `current_exception` 让异常对象完整穿越线程边界；`shared_future` 可拷贝、可反复 `get()`。
 
-1. A→B→C 链：`[C] final = 42`。→ 知识点：[promise 与 packaged_task](../ch05-future-task-threadpool/02-promise-and-packaged-task.md)「std::promise<T>」一节
+1. A→B→C 链：`[C] final = 42`。→ 知识点：[promise 与 packaged_task](../ch05-future-task-threadpool/02-promise-and-packaged-task.md)「std::promise\<T>」一节
 2. `failing_stage` 里 catch 后用 `set_exception(std::current_exception())`，主线程 `get()` 重新抛出，`[main] caught: negative input`——异常类型与消息完整穿越线程。→ 知识点：同上「set_value()、set_exception() 和 get_future()」一节
-3. 发令枪：主线程睡 300ms 后 `set_value(42)`，4 个 runner 全部苏醒并读到 42。`shared_future` 的 `get()` 返回 `const T&`、可并发多次调用；`future` 只能移动、`get()` 一次消耗。→ 知识点：同上「std::shared_future<T>」一节
+3. 发令枪：主线程睡 300ms 后 `set_value(42)`，4 个 runner 全部苏醒并读到 42。`shared_future` 的 `get()` 返回 `const T&`、可并发多次调用；`future` 只能移动、`get()` 一次消耗。→ 知识点：同上「std::shared_future\<T>」一节
 
 **验证输出**：
 

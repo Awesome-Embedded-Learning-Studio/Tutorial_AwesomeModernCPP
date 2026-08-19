@@ -1,6 +1,6 @@
 ---
 title: "The Value-Semantics Foundation of std::optional"
-description: "CppCon 2025 notes — before tackling optional<T&>, get the value version straight: ownership, value semantics, T plus one state, used as a range in C++26, and the overload-set nightmare behind defaulted parameters"
+description: "CppCon 2025 notes — before tackling optional&lt;T&>, get the value version straight: ownership, value semantics, T plus one state, used as a range in C++26, and the overload-set nightmare behind defaulted parameters"
 chapter: 6
 order: 2
 conference: cppcon

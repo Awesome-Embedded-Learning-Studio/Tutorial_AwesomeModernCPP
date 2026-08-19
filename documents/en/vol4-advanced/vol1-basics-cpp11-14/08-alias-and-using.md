@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: C++11 alias templates (template<typename T> using X = ...) fix the old
+description: C++11 alias templates (template&lt;typename T> using X = ...) fix the old
   problem that typedef cannot be parameterized. The _t alias (from C++14) and the
   _v variable (from C++17) make type_traits clean to write, and using introduces dependent-base
   names in template inheritance. This piece covers all three uses.

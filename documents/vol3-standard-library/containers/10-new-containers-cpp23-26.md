@@ -66,7 +66,7 @@ int main()
 
 第二个是 `std::inplace_vector<T, N>`，C++26 进的标准（提案 P0843）。它填的是 `array` 和 `vector` 中间的缝：`array<T, N>` 大小编译期定死、不能变；`vector<T>` 能变长但要堆分配（扩容时 new 新块、拷贝、释放旧块）。很多时候你要的是「容量上限编译期知道、运行期 size 可变、但绝不碰堆」——`inplace_vector` 就是干这个的。它的元素**直接存在对象内部**（对象本身占 `sizeof(T) * N` 那块空间，放栈上或静态区），运行期可以在 0 到 N 之间增删，不 new、不扩容、不拷贝搬移。
 
-最讨喜的一个性质是：**当 `T` 是 trivially copyable 时，`inplace_vector<T, N>` 本身也是 trivially copyable**。这意味着它可以整体 `memcpy`、可以放进寄存器、可以安全交给 DMA——这些对嵌入式和系统编程极重要，[array 深入](02-array.md) 讲过的「连续内存 + trivially copyable」红利，inplace_vector 同样吃到，而 `std::vector` 因为持有一个堆指针、不是 trivially copyable，是吃不到的。容量超限时的行为也设计得克制：`push_back` 超过 N 会抛 `std::bad_alloc`（异常关闭时退化为 terminate），而想避免异常可以用 C++26 的 `try_push_back`/`try_emplace_back`，它们超限时不抛、返回类型是std::optional<T&>, 空值来代表失败，适合 `-fno-exceptions` 环境。
+最讨喜的一个性质是：**当 `T` 是 trivially copyable 时，`inplace_vector<T, N>` 本身也是 trivially copyable**。这意味着它可以整体 `memcpy`、可以放进寄存器、可以安全交给 DMA——这些对嵌入式和系统编程极重要，[array 深入](02-array.md) 讲过的「连续内存 + trivially copyable」红利，inplace_vector 同样吃到，而 `std::vector` 因为持有一个堆指针、不是 trivially copyable，是吃不到的。容量超限时的行为也设计得克制：`push_back` 超过 N 会抛 `std::bad_alloc`（异常关闭时退化为 terminate），而想避免异常可以用 C++26 的 `try_push_back`/`try_emplace_back`，它们超限时不抛、返回类型是std::optional\<T&>, 空值来代表失败，适合 `-fno-exceptions` 环境。
 
 ```cpp
 #include <cstdio>

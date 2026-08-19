@@ -32,7 +32,7 @@ cpp_standard: [17, 20]
 
 难度 **L1** · 涉及[性能思维:efficiency 与 performance 不是一回事](../ch00-performance-mindset/01-efficiency-vs-performance.md)
 
-三道小题。①某程序 75% 的计算可并行、25% 必须串行。用 Amdahl 定律手算 2 核、8 核、无穷核的理论加速比；再回答：如果我把可并行部分的比例从 75% 提到 90%，无穷核的加速比上限从多少变成多少？②判断题（对/错，并说一句理由）：a)「两个算法都是 $O(n)$，它们的运行速度也差不多」；b)「性能优化应该在动手改代码之前先做 profile」；c)「Amdahl 定律告诉我们应该优先优化耗时占比最大的串行部分」。③写一个程序打印 `sizeof(std::vector<int>)`、`sizeof(std::set<int>)`、`sizeof(int)`，再用 `getconf LEVEL1_DCACHE_LINESIZE` 查出本机缓存行大小——这三个数字放在一起，能不能解释为什么同样的 $O(\log n)$，`vector`+二分和 `set` 查找会差几倍？不能解释的部分又是什么造成的？
+三道小题。①某程序 75% 的计算可并行、25% 必须串行。用 Amdahl 定律手算 2 核、8 核、无穷核的理论加速比；再回答：如果我把可并行部分的比例从 75% 提到 90%，无穷核的加速比上限从多少变成多少？②判断题（对/错，并说一句理由）：a)「两个算法都是 O(n)，它们的运行速度也差不多」；b)「性能优化应该在动手改代码之前先做 profile」；c)「Amdahl 定律告诉我们应该优先优化耗时占比最大的串行部分」。③写一个程序打印 `sizeof(std::vector<int>)`、`sizeof(std::set<int>)`、`sizeof(int)`，再用 `getconf LEVEL1_DCACHE_LINESIZE` 查出本机缓存行大小——这三个数字放在一起，能不能解释为什么同样的 $O(\log n)$，`vector`+二分和 `set` 查找会差几倍？不能解释的部分又是什么造成的？
 
 [参考答案 →](02-homework-solutions.md#hw-6-0-a)
 

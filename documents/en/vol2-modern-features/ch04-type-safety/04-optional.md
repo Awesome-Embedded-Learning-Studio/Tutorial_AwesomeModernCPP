@@ -43,7 +43,7 @@ Before `std::optional` appeared, C++ programmers mainly used the following metho
 
 **Raw Pointers**: Return `nullptr` to mean "no value." This is common in lookup functions. The problem is that pointer semantics are too broad. `T*` can mean "nullable optional value," "non-owning observer pointer," or "pointing to a dynamically allocated object." The caller cannot distinguish these semantics from the type alone. Even more dangerous, dereferencing a null pointer is UB (undefined behavior), which doesn't give you any friendly error messages.
 
-**std::pair<T, bool>**: The second element indicates "whether the value is valid." This is slightly better than the previous two approaches, but it is verbose to use—you have to check `.second` every time, and the value of `.first` is undefined when `.second` is `false` (default construction might not be valid).
+**std::pair\<T, bool>**: The second element indicates "whether the value is valid." This is slightly better than the previous two approaches, but it is verbose to use—you have to check `.second` every time, and the value of `.first` is undefined when `.second` is `false` (default construction might not be valid).
 
 ```cpp
 // Sentinel value approach

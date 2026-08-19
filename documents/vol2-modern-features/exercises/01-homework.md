@@ -29,7 +29,7 @@ related:
 
 难度 **L1** · 涉及[右值引用：从拷贝到移动](../ch00-move-semantics/01-rvalue-reference.md)
 
-用 `decltype((expr))` 探针写一个「值类别体检表」：对下面这 11 个表达式逐一打印它们属于 lvalue、xvalue 还是 prvalue，再配一组 `static_assert` 把关键结论钉死：普通变量 `x`、左值引用 `lref`、命名右值引用 `rref`、字面量 $42$、`x + 1`、`std::move(x)`、`++x`、`x++`、解引用指针 `*p`、`"hi"[0]`、指针变量 `p`。哪个结果最反直觉？一句话解释它。
+用 `decltype((expr))` 探针写一个「值类别体检表」：对下面这 11 个表达式逐一打印它们属于 lvalue、xvalue 还是 prvalue，再配一组 `static_assert` 把关键结论钉死：普通变量 `x`、左值引用 `lref`、命名右值引用 `rref`、字面量 42、`x + 1`、`std::move(x)`、`++x`、`x++`、解引用指针 `*p`、`"hi"[0]`、指针变量 `p`。哪个结果最反直觉？一句话解释它。
 
 [参考答案 →](./02-homework-solutions.md#hw-2-1-a)
 
@@ -215,7 +215,7 @@ lambda 没有名字，怎么递归？用 Y 组合子（第一个参数传「自�
 
 ### 2.11-B {#hw-2-11-b}
 
-难度 **L3** · 涉及[std::expected<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
+难度 **L3** · 涉及[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
 
 教材给了 C++17 简化版 `expected`，但那份实现有个**编译坑**：匿名 union 里放着 `std::string` 这类非平凡成员时，union 的默认构造/析构是被删除的，直接编译不过——先复现这个报错，再修好它（给 union 起名并补上空的构造/析构）。然后完成「地址解析链」：`validate_input` → `split_address`（拆 host:port、`from_chars` 解析端口、范围检查）→ `transform` 拼回字符串，用 `and_then` 串起来，对 `"192.168.1.1:8080"`、`"localhost"`、`":9090"`、`"host:99999"`、`""` 五个输入跑一遍，错误分支各贴一条。
 

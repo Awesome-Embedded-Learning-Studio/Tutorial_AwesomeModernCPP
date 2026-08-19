@@ -127,7 +127,7 @@ x is five
 
 1. 耗时实测：`-O0` 约 800 ms，`-O2`/`-Os` 为 0.0 ms——循环被常量折叠（`0..N-1` 的和是 $\frac{N(N-1)}{2}$），程序只剩一句赋值。→ 知识点：[编译器选项](../02-compiler-options.md)「优化等级」一节（`-O0`/`-O2`/`-Os` 的行为差异）
 2. `size` 对比：`-O0` text 2940，`-O2`/`-Os` 都降到 1679——`chrono` 与 `printf` 的调用代码被精简掉，且 `-O2` 与 `-Os` 在这个小例子上恰好同尺寸。→ 知识点：同上（`-Os` 是嵌入式发布的默认选择）
-3. `-Wdouble-promotion`：$x \times 0.5$ 里 $0.5$ 是 `double`，`float x` 被隐式提升成 `double` 再截断回 `float`——每次运算多一次「提升 + 截断」。→ 知识点：同上「`-Wdouble-promotion`」一节（无硬件双精度 FPU 时性能暴跌）
+3. `-Wdouble-promotion`：$x \times 0.5$ 里 0.5 是 `double`，`float x` 被隐式提升成 `double` 再截断回 `float`——每次运算多一次「提升 + 截断」。→ 知识点：同上「`-Wdouble-promotion`」一节（无硬件双精度 FPU 时性能暴跌）
 4. gc-sections：普通链接 text=1305 且 `nm` 里两个函数都在；加 `-ffunction-sections -fdata-sections` + `-Wl,--gc-sections` 后 text 降到 1263，`unused_fn` 从符号表消失。→ 知识点：同上「垃圾回收不用的代码」一节、[链接器与链接脚本](../03-linker-and-linker-scripts.md)「函数级链接优化」一节
 
 **验证输出**：

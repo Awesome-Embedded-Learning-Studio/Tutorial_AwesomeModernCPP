@@ -346,7 +346,7 @@ int main()
 timeout=30  host=localhost  retries-as-int=-1
 ```
 
-注意 `retries-as-int=-1` 这一格——`retries` 存的是 `unsigned`，用 `any_cast<int>` 取取不出来，指针重载返回 `nullptr`，我们安全地兜底成了 $-1$。这正是 `any` 属性表的正确用法：消费端用**指针重载**做防御式取值，类型对不上有明确的失败语义，而不是一抛异常整个程序崩。这也呼应了前面那个警告——`int` 和 `unsigned` 在 `any` 里是两个不同类型，存取必须严格对应。
+注意 `retries-as-int=-1` 这一格——`retries` 存的是 `unsigned`，用 `any_cast<int>` 取取不出来，指针重载返回 `nullptr`，我们安全地兜底成了 `-1`。这正是 `any` 属性表的正确用法：消费端用**指针重载**做防御式取值，类型对不上有明确的失败语义，而不是一抛异常整个程序崩。这也呼应了前面那个警告——`int` 和 `unsigned` 在 `any` 里是两个不同类型，存取必须严格对应。
 
 **跨边界的"值信封"**。当值要穿越一层你无法干预的边界——比如某个消息系统、某个脚本绑定层、某个插件接口——而你只想透传"一个值"而不关心它具体是什么，`any` 是个不挑类型的信封。接收方拿到之后再按自己知道的方式拆。这种场景下，"类型集合开放 + 不关心具体类型"两条都成立，`any` 才是真的合适。
 
@@ -371,7 +371,7 @@ timeout=30  host=localhost  retries-as-int=-1
 把这一路用到的坑集中收一下，每个都是上面实测验证过的：
 
 ::: warning any_cast 要求精确类型，不做任何转换
-`int` 取成 `long`、`unsigned` 取成 `int`、`int` 取成 `double`——在 `any_cast` 里**全是失败**。指针重载返回 `nullptr`，值重载抛 `bad_any_cast`。记住 `any_cast` 的模板参数必须和存进去的类型一字不差，存的时候随手写了个字面量（`42u` 是 `unsigned`、$42$ 是 `int`），取的时候就要对上。
+`int` 取成 `long`、`unsigned` 取成 `int`、`int` 取成 `double`——在 `any_cast` 里**全是失败**。指针重载返回 `nullptr`，值重载抛 `bad_any_cast`。记住 `any_cast` 的模板参数必须和存进去的类型一字不差，存的时候随手写了个字面量（`42u` 是 `unsigned`、`42` 是 `int`），取的时候就要对上。
 :::
 
 ::: warning any 只能装 CopyConstructible 类型

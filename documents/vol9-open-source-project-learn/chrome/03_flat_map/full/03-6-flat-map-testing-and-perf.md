@@ -108,7 +108,7 @@ flat_map 在 per-item 上几乎白嫖:数据连续排布,没有节点元数据,�
   std::map:  0 ms   (每次 O(log n) 节点重连)
 ```
 
-flat_map 慢得明明白白,这就是"查多写少"判据背后最硬的那块数据。您的活儿要是插入占大头,flat_map 这个 $O(n)$ 的 shift 迟早成瓶颈,乖乖回去用 `std::map`。绝对值会随机器和 N 浮动,但 flat_map 插入比 `std::map` 慢这个趋势是稳的——N 越大口子越大,因为 shift 的代价本来就是 $O(n)$。
+flat_map 慢得明明白白,这就是"查多写少"判据背后最硬的那块数据。您的活儿要是插入占大头,flat_map 这个 `O(n)` 的 shift 迟早成瓶颈,乖乖回去用 `std::map`。绝对值会随机器和 N 浮动,但 flat_map 插入比 `std::map` 慢这个趋势是稳的——N 越大口子越大,因为 shift 的代价本来就是 `O(n)`。
 
 ## 选型判据(实测总结)
 
@@ -128,7 +128,7 @@ flat_map 慢得明明白白,这就是"查多写少"判据背后最硬的那块�
 
 先说 `std::flat_map`(C++23,P0429)。它跟 Chromium 这套 flat_map 同宗同源,但标准版换了个存法——split storage,keys 和 values 各自一条连续数组,只遍历键的时候 cache 排得更密,value 不会插进来添乱。听着更优,代价是维护两套容器同步,实现复杂度上去了。Chromium 没走 split,老老实实一个 `vector<pair<K,V>>`——"看起来更优"的 split 在工业界主力那儿反而被放弃了,复杂度跟收益对不上账。
 
-再说 `absl::btree_map`。它是 B-tree,每个节点 TargetNodeSize=256B,一次能塞几十个 key。这样一来,一次 cache line 命中能比对好几个 key,既治了红黑树指针追逐的毛病,又躲开了 sorted vector 那个 $O(n)$ 的插入。属于"既要有序、又要大 N、还要频繁改"这摊需求的解药。可它有笔账没法回避:代码体积。Chromium 在 `//base` 明令禁用 `absl::btree_map`,原因就在这儿。
+再说 `absl::btree_map`。它是 B-tree,每个节点 TargetNodeSize=256B,一次能塞几十个 key。这样一来,一次 cache line 命中能比对好几个 key,既治了红黑树指针追逐的毛病,又躲开了 sorted vector 那个 `O(n)` 的插入。属于"既要有序、又要大 N、还要频繁改"这摊需求的解药。可它有笔账没法回避:代码体积。Chromium 在 `//base` 明令禁用 `absl::btree_map`,原因就在这儿。
 
 ## 教学版与 Chromium 的取舍
 

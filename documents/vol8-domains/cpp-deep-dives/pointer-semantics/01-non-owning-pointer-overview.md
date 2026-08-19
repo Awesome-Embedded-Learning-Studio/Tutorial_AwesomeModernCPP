@@ -3,7 +3,7 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: 理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed<T> 和 ObserverPtr<T>
+description: 理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed&lt;T> 和 ObserverPtr&lt;T>
 difficulty: intermediate
 order: 1
 platform: host

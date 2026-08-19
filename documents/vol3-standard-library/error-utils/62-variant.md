@@ -311,7 +311,7 @@ after index=18446744073709551615 valueless=1
 get<double> 也抛: std::get: variant is valueless
 ```
 
-那个吓人的 $18446744073709551615$ 就是 `variant::npos`（`(size_t)-1`，即 $2^{64}-1$），是 `valueless` 时 `index()` 的标记值。一旦进了这个状态，连原本那个 `double` 都取不回来了——`get<double>` 也抛 `bad_variant_access`，错误信息直接写 `variant is valueless`。
+那个吓人的 `18446744073709551615` 就是 `variant::npos`（`(size_t)-1`，即 $2^{64}-1$），是 `valueless` 时 `index()` 的标记值。一旦进了这个状态，连原本那个 `double` 都取不回来了——`get<double>` 也抛 `bad_variant_access`，错误信息直接写 `variant is valueless`。
 
 这状态有多容易碰到？说实话，很难。它要求「构造新值抛异常 + 实现无法回滚」，标准库里能让实现回滚的情况（比如新值是 nothrow 拷贝的）不会进 valueless。真正会触发它的，通常是你自己写了个拷贝/移动构造会抛的类型。工程上这状态基本可以当「不该出现，出现了说明你的类型异常保证有 bug」来对待——`valueless_by_exception()` 主要是给做库的人留的自检接口，业务代码里见到了，修那个抛异常的构造比处理 valueless 更对。
 

@@ -62,7 +62,7 @@ related:
 **目标**：把 6 行「名字 分数」日志（其中一行是坏行 `bad_line`）解析成结构体，输出四项统计。
 
 1. `string_view::find(' ')` 切两段；`from_chars` 解析分数，**ec 和 ptr 都检查**；坏行计数跳过。
-2. 平均分：`accumulate` 初始值用 $0.0$（`-std=c++23` 编译）。
+2. 平均分：`accumulate` 初始值用 0.0（`-std=c++23` 编译）。
 3. 中位数：`nth_element`；前 2 名：`partial_sort` 降序。
 4. 全表：`ranges::sort` 按名字投影排序，`std::format` 对齐输出。
 
@@ -109,7 +109,7 @@ related:
 3. 写 `expected<int, error_code> parse_value(string_view line)`：`"key=value"` 格式检查、`from_chars` 解析（失败给标准 `errc::invalid_argument`）、值域检查（>1000 给 `MyErrc::kTooBig`）。
 4. 对 6 行输入（含 3 个坏行）跑 `parse_value(...).transform(翻倍).and_then(...)` 链，逐行打印失败原因与 category，汇总成功/失败数与总和。
 
-**验收标准**：贴输出（3 条失败信息分别带 `generic` 与 `my-app` 两个 category，总和 $596$）。
+**验收标准**：贴输出（3 条失败信息分别带 `generic` 与 `my-app` 两个 category，总和 596）。
 
 [实验参考 →](04-lab-solutions.md#lab-6)
 

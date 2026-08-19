@@ -1,6 +1,6 @@
 ---
 title: optional 引用是什么，以及赋值为什么一定是重绑定
-description: CppCon 2025 笔记 —— optional<T&> 的非拥有定位、map 查找痛点、赋值为何永远是重新绑定、vector<bool> 幽灵，以及 make_optional 与 CTAD 在引用上的真实行为
+description: CppCon 2025 笔记 —— optional&lt;T&> 的非拥有定位、map 查找痛点、赋值为何永远是重新绑定、vector<bool> 幽灵，以及 make_optional 与 CTAD 在引用上的真实行为
 chapter: 6
 order: 3
 conference: cppcon

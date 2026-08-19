@@ -311,7 +311,7 @@ int main() {
 }
 ```
 
-跑一下,终端会吐出 `alive` / $42$ / `dead` / `0`。`Invalidate` 一调,`wp` 的 `operator bool`(背后走 `get()`)翻成 false,`get()` 老实交回 `nullptr`。[02-1](./02-1-weak-ptr-motivation-and-api-design.md) 当时许下的那条承诺——对象死了,回调拿到的是 nullptr 而不是悬垂指针——到这儿在代码里兑现了。
+跑一下,终端会吐出 `alive` / `42` / `dead` / `0`。`Invalidate` 一调,`wp` 的 `operator bool`(背后走 `get()`)翻成 false,`get()` 老实交回 `nullptr`。[02-1](./02-1-weak-ptr-motivation-and-api-design.md) 当时许下的那条承诺——对象死了,回调拿到的是 nullptr 而不是悬垂指针——到这儿在代码里兑现了。
 
 不过咱们这会儿的 Flag 还是手工拼的。谁来铸币、谁在对象析构那一刻负责喊 `Invalidate`?这就轮到 `WeakPtrFactory` 出场了。实现 factory,外加那条出了名的"最后成员"惯用法,下一篇咱们接着拆。
 

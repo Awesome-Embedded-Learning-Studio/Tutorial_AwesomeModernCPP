@@ -155,7 +155,7 @@ std::invoke(&Calc::multiply, &calc, 5, 8)
 ((*(&calc)).*(&Calc::multiply))(5, 8)
 ```
 
-等价于 `calc.multiply(5, 8)`,结果 $40$。整个魔法其实就是 `std::invoke` 对成员函数指针那条重载在做兜底。
+等价于 `calc.multiply(5, 8)`,结果 `40`。整个魔法其实就是 `std::invoke` 对成员函数指针那条重载在做兜底。
 
 ## 这里有个生命周期坑
 

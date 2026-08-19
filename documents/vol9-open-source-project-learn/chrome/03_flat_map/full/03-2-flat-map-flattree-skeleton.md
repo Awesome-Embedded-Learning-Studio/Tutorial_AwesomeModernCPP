@@ -273,7 +273,7 @@ int main() {
 
 骨架搭到这儿算是立住了。`flat_tree<Key, GetKeyFromValue, KeyCompare, Container>` 这套签名是有序数组关联容器的通用底座,Key 提取器策略决定它戴 map 还是 set 的帽子,有序不变量靠构造期的 `sort_and_unique` 和插入期的 `lower_bound + insert` 两道关守着,`value_compare` 把 value 比较翻译回 key 比较。flat_map 在这之上加几个 map 特有操作,flat_set 干脆一个 `using` 交代完——flat_set.h 那 191 行就是这么来的。
 
-接下来咱们把 flat_tree 的查找与插入真正写出来,$O(\log n)$ 二分好办,$O(n)$ 的 shift 才是笔者想实测给您看的——那个代价到底有多肉疼。
+接下来咱们把 flat_tree 的查找与插入真正写出来,$O(\log n)$ 二分好办,`O(n)` 的 shift 才是笔者想实测给您看的——那个代价到底有多肉疼。
 
 ## 参考资源
 

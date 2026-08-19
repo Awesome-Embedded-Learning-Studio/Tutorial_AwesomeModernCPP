@@ -1,6 +1,6 @@
 ---
 title: "The Standardization Truth: The Beman Project and a Reference Implementation That Actually Runs"
-description: 'CppCon 2025 Notes — assembly evidence for optional<T&> assignment, why The Beman Project reference implementation matters, the big-and-complete vs small-and-focused tradeoff, and why optional<T> and optional<T&> must be one coherent whole'
+description: 'CppCon 2025 Notes — assembly evidence for optional&lt;T&> assignment, why The Beman Project reference implementation matters, the big-and-complete vs small-and-focused tradeoff, and why optional&lt;T> and optional&lt;T&> must be one coherent whole'
 chapter: 6
 order: 6
 conference: cppcon

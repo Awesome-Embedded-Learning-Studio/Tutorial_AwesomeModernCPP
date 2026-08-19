@@ -148,7 +148,7 @@ constexpr uint32_t calculate_baud_rate_divisor(uint32_t sysclk, uint32_t baud) {
 constexpr uint32_t divisor = calculate_baud_rate_divisor(72000000, 115200);
 ```
 
-传统做法是在运行时做除法，而用 `constexpr` 函数，这个除法在编译阶段就完成了。程序跑起来的时候，`divisor` 的值已经就是 $39$ 了，不需要任何计算。这不仅提升了性能，也让代码的意图更加明确。它甚至可以直接用作数组的大小：
+传统做法是在运行时做除法，而用 `constexpr` 函数，这个除法在编译阶段就完成了。程序跑起来的时候，`divisor` 的值已经就是 `39` 了，不需要任何计算。这不仅提升了性能，也让代码的意图更加明确。它甚至可以直接用作数组的大小：
 
 ```cpp
 constexpr size_t kBufferSize = calculate_baud_rate_divisor(1000, 10);

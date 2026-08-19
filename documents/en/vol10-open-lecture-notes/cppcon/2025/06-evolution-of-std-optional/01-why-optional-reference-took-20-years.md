@@ -1,6 +1,6 @@
 ---
 title: "Why the optional reference took twenty years"
-description: "CppCon 2025 notes — Steve Downey on why std::optional<T&> (P2988) went from 2005 to the 2025 Sofia meeting before finally making it into C++26 — the triple identity of references, the assign-through vs rebind fight, and the final landing on a pointer"
+description: "CppCon 2025 notes — Steve Downey on why std::optional&lt;T&> (P2988) went from 2005 to the 2025 Sofia meeting before finally making it into C++26 — the triple identity of references, the assign-through vs rebind fight, and the final landing on a pointer"
 chapter: 6
 order: 1
 conference: cppcon

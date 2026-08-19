@@ -103,7 +103,7 @@ CMakeLists.txt              # Catch2(FetchContent)+ 普通测试 + TSan 测试�
 **实现指引**:
 
 - `add` 时给连接 `EPOLLIN | EPOLLET`;连接 fd 必须 `O_NONBLOCK`。
-- handler 收到事件后,**必须 `for(;;)` 循环 `read`,直到返回 $-1$ 且 `errno == EAGAIN`** 才结束这次处理——把缓冲区彻底读空。
+- handler 收到事件后,**必须 `for(;;)` 循环 `read`,直到返回 `-1` 且 `errno == EAGAIN`** 才结束这次处理——把缓冲区彻底读空。
 - 读到的每段循环 `write` 回去(write 也可能短写/`EAGAIN`)。
 
 **验证**:MS3 用例发 100KB、读 echo(带 3s 超时),`REQUIRE(got == 100000)`。**一字节都不能少**——这就是对抗性验收。漏了循环读、或忘了非阻塞,这个数字就到不了 10 万。

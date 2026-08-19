@@ -1,6 +1,6 @@
 ---
 title: "What an optional reference is, and why assignment is always a rebind"
-description: "CppCon 2025 notes — the non-owning nature of optional<T&>, the map-lookup pain point, why assignment is always a rebind, the vector<bool> specter, and how make_optional and CTAD really behave with references"
+description: "CppCon 2025 notes — the non-owning nature of optional&lt;T&>, the map-lookup pain point, why assignment is always a rebind, the vector<bool> specter, and how make_optional and CTAD really behave with references"
 chapter: 6
 order: 3
 conference: cppcon

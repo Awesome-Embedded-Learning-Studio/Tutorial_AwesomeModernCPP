@@ -1,6 +1,6 @@
 ---
 title: std::optional 的值语义底子
-description: CppCon 2025 笔记 —— 在啃 optional<T&> 之前先把值版本说透：拥有所有权、值语义、T 加一个状态、C++26 当 range 用、以及默认参数背后的重载集噩梦
+description: CppCon 2025 笔记 —— 在啃 optional&lt;T&> 之前先把值版本说透：拥有所有权、值语义、T 加一个状态、C++26 当 range 用、以及默认参数背后的重载集噩梦
 chapter: 6
 order: 2
 conference: cppcon

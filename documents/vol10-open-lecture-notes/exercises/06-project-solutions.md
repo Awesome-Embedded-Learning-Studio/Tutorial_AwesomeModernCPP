@@ -20,7 +20,7 @@ related: []
 
 **题面见 [05-project](./05-project.md#pj-core)**
 
-**思路**：`add` 走「`strtold` 解析成 `long double` → `narrow_convert<long long>` 落库」这条链，把「带小数」「超范围」的输入在构造那一刻就拦下；`Number<T>` 的构造函数是所有魔法发生的地方。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)「把检查塞进类型里：Number<T>」一节
+**思路**：`add` 走「`strtold` 解析成 `long double` → `narrow_convert<long long>` 落库」这条链，把「带小数」「超范围」的输入在构造那一刻就拦下；`Number<T>` 的构造函数是所有魔法发生的地方。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)「把检查塞进类型里：Number\<T>」一节
 
 **`Number` 与窄化检测**——L1 热身从这里开始：concept 骨架 + `Number<T>` 声明先过 `g++ -c` 零警告。注意：pj-core 阶段你可以照讲座写原版 `would_narrow`，但 pj-gates 的 sanitizer 门会逼你换成下面的范围检查版（原版里 `static_cast<long long>(NaN/1e300)` 是 UB，见 [10.C-3](./02-homework-solutions.md#hw-10-c-3)）：
 
@@ -206,7 +206,7 @@ $ ./safelist
 > quit
 ```
 
-$3.5$ 被窄化检测拦下（浮点转整数、有小数部分），`abc` 被 endptr 校验拦下——两条防线各管一摊。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)（窄化检测与输入校验的分工）
+3.5 被窄化检测拦下（浮点转整数、有小数部分），`abc` 被 endptr 校验拦下——两条防线各管一摊。→ 知识点：[类型安全、Number 约束与边界检查](../cppcon/2025/01-concept-based-generic-programming/01-type-safety-and-number-concept.md)（窄化检测与输入校验的分工）
 
 ## 进阶任务（L3）：统计与排序 {#pj-opt}
 

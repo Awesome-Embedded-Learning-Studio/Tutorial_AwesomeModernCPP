@@ -244,7 +244,7 @@ Foo* safe_b = std::launder(reinterpret_cast<Foo*>(buf));
 
 ## 在线运行
 
-在线运行 InPlace<T> RAII 封装示例，观察 placement new 的安全使用：
+在线运行 InPlace\<T> RAII 封装示例，观察 placement new 的安全使用：
 
 <OnlineCompilerDemo
   title="placement new RAII 封装：InPlace<T>"

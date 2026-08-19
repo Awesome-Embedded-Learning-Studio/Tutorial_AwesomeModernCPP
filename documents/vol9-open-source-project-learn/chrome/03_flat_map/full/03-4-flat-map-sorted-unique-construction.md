@@ -26,9 +26,9 @@ title: "flat_map 实战（四）：sorted_unique 构造优化"
 ---
 # flat_map 实战（四）：sorted_unique 构造优化
 
-上一篇咱们把 flat_map 的单元素插入拆透了,每次 insert 都是 $O(n)$ 的 shift。这玩意儿平时一个个插感觉不出什么,可您要是拿它去构造一个挺大的 flat_map,比如启动时加载配置表,那 $O(N²)$ 的总代价能把人等死。笔者之前就在一个 10 万元素的配置上栽过,启动慢得离谱,profile 一看全耗在 shift 上。
+上一篇咱们把 flat_map 的单元素插入拆透了,每次 insert 都是 `O(n)` 的 shift。这玩意儿平时一个个插感觉不出什么,可您要是拿它去构造一个挺大的 flat_map,比如启动时加载配置表,那 `O(N²)` 的总代价能把人等死。笔者之前就在一个 10 万元素的配置上栽过,启动慢得离谱,profile 一看全耗在 shift 上。
 
-这一篇咱们就专攻构造期怎么绕开这堵墙。先说批量构造这条路,数据先攒进 vector、最后一刀 move 进 flat_map,$O(N \log N)$ 一次排序收尾。然后是真正的重头戏 sorted_unique 构造,数据本来就有序的话,排序那步直接跳过,降到 $O(N)$。这条优化路子是 [pre-04 tag dispatch](./pre-04-flat-map-tag-dispatch-and-sorted-unique.md) 的落地现场,咱们把它从头到尾走一遍。
+这一篇咱们就专攻构造期怎么绕开这堵墙。先说批量构造这条路,数据先攒进 vector、最后一刀 move 进 flat_map,$O(N \log N)$ 一次排序收尾。然后是真正的重头戏 sorted_unique 构造,数据本来就有序的话,排序那步直接跳过,降到 `O(N)`。这条优化路子是 [pre-04 tag dispatch](./pre-04-flat-map-tag-dispatch-and-sorted-unique.md) 的落地现场,咱们把它从头到尾走一遍。
 
 ---
 
@@ -43,7 +43,7 @@ for (auto& [k, v] : load_data()) {
 }
 ```
 
-咱们把代价摊开看。第 1 次 insert 是 $O(1)$,第 2 次 $O(2)$,一路涨到第 N 次 $O(N)$,总代价 $O(1) + O(2) + ... + O(N) = O(N²)$。数据量一上去就是灾难。拿 10 万元素来说,shift 总次数大概 $10⁸$,实测能磨好几秒,这就是笔者当初踩坑的现场。
+咱们把代价摊开看。第 1 次 insert 是 `O(1)`,第 2 次 `O(2)`,一路涨到第 N 次 `O(N)`,总代价 `O(1) + O(2) + ... + O(N) = O(N²)`。数据量一上去就是灾难。拿 10 万元素来说,shift 总次数大概 `10⁸`,实测能磨好几秒,这就是笔者当初踩坑的现场。
 
 flat_map 的接口设计者显然也清楚这件事,所以他们给构造期单独留了更便宜的路。
 
@@ -51,7 +51,7 @@ flat_map 的接口设计者显然也清楚这件事,所以他们给构造期单�
 
 ## 批量构造:先填 vector 再 move,O(N log N)
 
-绕开 $O(N²)$ 的办法是批量。先把数据一股脑塞进一个 vector,再把这个 vector 整个 move 进 flat_map:
+绕开 `O(N²)` 的办法是批量。先把数据一股脑塞进一个 vector,再把这个 vector 整个 move 进 flat_map:
 
 ```cpp
 std::vector<std::pair<int, Config>> raw;
@@ -61,9 +61,9 @@ for (auto& [k, v] : load_data()) raw.emplace_back(k, v);   // vector push_back,�
 flat_map<int, Config> m(std::move(raw));   // move 构造,内部一次排序
 ```
 
-`flat_map(container_type&& items)` 这个构造(flat_tree.h:578 附近)干的事很简单:接管 vector 的存储,这是一次 $O(1)$ 的 move,然后调一次 `sort_and_unique`,代价 $O(N \log N)$。总构造代价就压到 $O(N \log N)$。和逐个 insert 的 $O(N²)$ 比一比,还是 10 万元素,$N \log N ≈ 1.7×10⁶$ 对上 $N² = 10¹⁰$,差着四个数量级。
+`flat_map(container_type&& items)` 这个构造(flat_tree.h:578 附近)干的事很简单:接管 vector 的存储,这是一次 `O(1)` 的 move,然后调一次 `sort_and_unique`,代价 $O(N \log N)$。总构造代价就压到 $O(N \log N)$。和逐个 insert 的 `O(N²)` 比一比,还是 10 万元素,$N \log N ≈ 1.7×10^{6}$ 对上 `N² = 10¹⁰`,差着四个数量级。
 
-这就是 flat_map 官方推荐的构造姿势,数据先在 vector 里攒好,享受 push_back 摊还的 $O(1)$,最后一刀 move 进去。flat_map.h:61-62 那段文档原话就是这么写的:"If possible, construct a flat_map in one operation by inserting into a container and moving that container into the flat_map constructor."
+这就是 flat_map 官方推荐的构造姿势,数据先在 vector 里攒好,享受 push_back 摊还的 `O(1)`,最后一刀 move 进去。flat_map.h:61-62 那段文档原话就是这么写的:"If possible, construct a flat_map in one operation by inserting into a container and moving that container into the flat_map constructor."
 
 ---
 
@@ -76,7 +76,7 @@ std::vector<std::pair<int, Config>> raw = load_already_sorted_data();   // 已�
 flat_map<int, Config> m(sorted_unique, std::move(raw));   // 跳过 sort_and_unique,O(N)
 ```
 
-第一个参数传个 `sorted_unique` 标签,flat_map 就走那个跳过排序的构造重载(flat_tree.h:606-646)。它总共就两件事:接管 vector,$O(1)$ move;然后跑一遍 `DCHECK(is_sorted_and_unique(...))` 做 debug 校验。release 编译下 DCHECK 是空,所以总代价就是接管那一刀,纯 $O(N)$。
+第一个参数传个 `sorted_unique` 标签,flat_map 就走那个跳过排序的构造重载(flat_tree.h:606-646)。它总共就两件事:接管 vector,`O(1)` move;然后跑一遍 `DCHECK(is_sorted_and_unique(...))` 做 debug 校验。release 编译下 DCHECK 是空,所以总代价就是接管那一刀,纯 `O(N)`。
 
 ### 5 个 sorted_unique 重载
 
@@ -113,9 +113,9 @@ constexpr bool is_sorted_and_unique(const Range& range, Comp comp) {
 }
 ```
 
-它扫一遍相邻元素,确认每个都严格小于下一个,既没有相等的也没有逆序的。一遍 $O(N)$,只在 debug 下跑。您要是撒谎了,debug 测试就 abort 给您看;release 下 `DCHECK` 编译成空,一个字都不校验,完全信您。
+它扫一遍相邻元素,确认每个都严格小于下一个,既没有相等的也没有逆序的。一遍 `O(N)`,只在 debug 下跑。您要是撒谎了,debug 测试就 abort 给您看;release 下 `DCHECK` 编译成空,一个字都不校验,完全信您。
 
-笔者管这份约定叫诚实契约。flat_map 给您 $O(N)$ 构造的优化,交换条件就是您得保证数据真的有序;debug 帮您把关这个保证,release 就放手信任。所以数据来源不靠谱的时候,比如用户输入、网络抓来的东西,就别硬上 sorted_unique,老老实实用普通批量构造让 flat_map 替您排。
+笔者管这份约定叫诚实契约。flat_map 给您 `O(N)` 构造的优化,交换条件就是您得保证数据真的有序;debug 帮您把关这个保证,release 就放手信任。所以数据来源不靠谱的时候,比如用户输入、网络抓来的东西,就别硬上 sorted_unique,老老实实用普通批量构造让 flat_map 替您排。
 
 ---
 
@@ -173,7 +173,7 @@ int main() {
 
 ---
 
-到这里,flat_map 单元素插入那堵 $O(n)$ 的墙咱们算是绕开了。批量构造这条路,先填 vector 再一刀 move 进去,$O(N \log N)$ 收尾;数据本来有序的话,sorted_unique 标签一传,排序那步直接省掉,$O(N)$ 纯接管,配 debug 下的 `DCHECK` 把关,这就是 tag dispatch 在构造期省下的真金白银。
+到这里,flat_map 单元素插入那堵 `O(n)` 的墙咱们算是绕开了。批量构造这条路,先填 vector 再一刀 move 进去,$O(N \log N)$ 收尾;数据本来有序的话,sorted_unique 标签一传,排序那步直接省掉,`O(N)` 纯接管,配 debug 下的 `DCHECK` 把关,这就是 tag dispatch 在构造期省下的真金白银。
 
 flat_map 还剩两件事值得讲透,一是迭代器失效规则,二是更多的批量构造模式,咱们后续接着拆。
 

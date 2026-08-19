@@ -1,6 +1,6 @@
 ---
 title: optional 引用的浅层陷阱：const、value_or 与悬垂
-description: CppCon 2025 笔记 —— optional<T&> 的浅层 const 三种位置、条件 explicit、value_or 为何总返回值、悬垂防御为何用 delete 而非 requires
+description: CppCon 2025 笔记 —— optional&lt;T&> 的浅层 const 三种位置、条件 explicit、value_or 为何总返回值、悬垂防御为何用 delete 而非 requires
 chapter: 6
 order: 4
 conference: cppcon
