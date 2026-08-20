@@ -34,3 +34,6 @@ scripts/cppref_cache/
 # Ignore Any Caches brought from local
 .cache/
 .vscode/
+
+# Native .venv
+.venv/
