@@ -461,6 +461,114 @@ void matrix_print(int rows, int cols, const int mat[rows][cols]);
 
 提示：转置的核心是 `dst[j][i] = src[i][j]`。乘法的核心是三重循环——`c[i][j]` 是 `a` 的第 `i` 行和 `b` 的第 `j` 列的点积。这里函数参数用了 VLA 语法，让列数可以动态指定。
 
+::: details 参考答案
+
+先把两个维度的含义固定下来：`rows`/`cols` 描述源矩阵的形状，`m`/`n`/`p`
+描述矩阵乘法中 `a (m x n)`、`b (n x p)` 和 `c (m x p)` 的形状。参数中的
+`int a[m][n]` 在函数调用时会调整为“指向含 `n` 个 `int` 的数组的指针”，所以
+第二维 `n` 不能省略；它决定了 `a[i][k]` 的行间步长。下面的实现假定调用者传入
+正数维度、非空指针，并保证目标矩阵的空间足够。
+
+```c
+#include <stdio.h>
+
+// 将 src 的第 i 行第 j 列写到 dst 的第 j 行第 i 列。
+void matrix_transpose(int rows, int cols,
+                      const int src[rows][cols],
+                      int dst[cols][rows])
+{
+    for (int i = 0; i < rows; ++i)
+    {
+        for (int j = 0; j < cols; ++j)
+        {
+            dst[j][i] = src[i][j];
+        }
+    }
+}
+// c[i][j] 是 a 的第 i 行和 b 的第 j 列的点积。
+void matrix_multiply(int m, int n, int p,
+                     const int a[m][n],
+                     const int b[n][p],
+                     int c[m][p])
+{
+    for (int i = 0; i < m; ++i)
+    {
+        for (int j = 0; j < p; ++j)
+        {
+            c[i][j] = 0;
+            for (int k = 0; k < n; ++k)
+            {
+                c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+}
+// 打印一个 rows x cols 的矩阵。
+void matrix_print(int rows, int cols, const int mat[rows][cols])
+{
+    for (int i = 0; i < rows; ++i)
+    {
+        for (int j = 0; j < cols; ++j)
+        {
+            printf("%d ", mat[i][j]);
+        }
+        printf("\n");
+    }
+}
+int main(void)
+{
+    const int rows = 2;
+    const int cols = 3;
+    const int product_cols = 2;
+
+    const int source[2][3] = {
+        {1, 2, 3},
+        {4, 5, 6},
+    };
+    int transposed[3][2] = {0};
+    const int multiplier[3][2] = {
+        {7, 8},
+        {9, 10},
+        {11, 12},
+    };
+    int product[2][2] = {0};
+
+    //二维数组传参时，会退化为“指向一行数组的指针”。
+    matrix_transpose(rows, cols, source, transposed);
+    printf("Transpose:\n");
+    //指向一个包含 rows 个 const int 元素的数组的指针
+    matrix_print(cols, rows, (const int (*)[rows])transposed);
+
+    matrix_multiply(rows, cols, product_cols, source, multiplier, product);
+    printf("Product:\n");
+    matrix_print(rows, product_cols, (const int (*)[product_cols])product);
+
+    return 0;
+}
+```
+
+运行结果：
+
+```text
+Transpose:
+1 4
+2 5
+3 6
+Product:
+58 64
+139 154
+```
+
+转置只是在交换两个下标，时间复杂度是 `O(rows * cols)`。乘法先把每个
+`c[i][j]` 清零，再累加 `n` 个乘积，时间复杂度是 `O(m * n * p)`；如果省略清零，
+`c` 中原来的内容就会被错误地带入结果。还要注意，这里使用的是 C99 VLA 参数，
+不是在函数内部重新分配一个 VLA：真正的数组空间仍由调用者提供，函数只通过带有
+维度信息的指针访问它。
+
+:::
+
+
+
 ### 练习 2：对比 VLA 与 malloc
 
 **难度：进阶** · VLA 与 malloc 的取舍
@@ -473,16 +581,160 @@ void matrix_print(int rows, int cols, const int mat[rows][cols]);
 
 /// @brief 用 VLA 方式分配并填充数组
 /// @param n 数组大小
-/// @param out 输出数组的指针（VLA 版本需要调用者传入栈数组）
+/// @param arr 调用者提供的 VLA 数组
 void fill_with_vla(int n, int arr[n]);
 
 /// @brief 用 malloc 方式分配并填充数组
 /// @param n 数组大小
 /// @return 指向动态分配数组的指针，失败返回 NULL
-int* fill_with_malloc(int n);
+int *fill_with_malloc(int n);
+
 ```
 
-请自行实现这两个函数和 `main` 函数。思考以下问题：如果用户输入一个非常大的数字（比如 100000000），两种方式分别会发生什么？哪种方式可以优雅地处理分配失败的情况？在嵌入式系统中你会选择哪种方式？
+::: details 参考答案
+
+这个例子把“谁负责存储、谁负责释放”分开看：VLA 的空间由调用者在栈上提供，
+`fill_with_vla` 不拥有它；`fill_with_malloc` 则在堆上申请空间，把所有权交给调用者，
+所以调用者必须在最后调用 `free`。输入上限是有意保守设置的，它避免演示程序因为
+VLA 栈空间耗尽而直接崩溃；正式代码应根据实际栈大小重新评估这个上限。
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/*
+ * VLA 的空间由调用者提供。本函数只负责填充数据，
+ * 不负责释放数组，因为 VLA 通常位于调用者的栈上。
+ */
+void fill_with_vla(int n, int arr[n])
+{
+    if (n <= 0 || arr == NULL)
+    {
+        return;
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        arr[i] = i + 1;
+    }
+}
+
+/*
+ * malloc 在堆上申请数组，并填充 1, 2, 3, ... n。
+ * 返回的内存归调用者所有，调用者使用完后必须调用 free。
+ */
+int *fill_with_malloc(int n)
+{
+    if (n <= 0)
+    {
+        return NULL;
+    }
+
+    int *arr = malloc((size_t)n * sizeof (*arr));
+    if (arr == NULL)
+    {
+        return NULL;
+    }
+
+    for (int i = 0; i < n; ++i)
+    {
+        arr[i] = i + 1;
+    }
+
+    return arr;
+}
+
+// 这里只打印前 10 个元素，避免大输入让示例输出失控。
+static void print_array(const char *name, int n, const int arr[n])
+{
+    const int count = n < 10 ? n : 10;
+
+    printf("%s:", name);
+    for (int i = 0; i < count; ++i)
+    {
+        printf(" %d", arr[i]);
+    }
+    if (n > count)
+    {
+        printf(" ...");
+    }
+    putchar('\n');
+}
+
+int main(void)
+{
+    int n;
+    char line[100];
+
+    puts("请输入数组长度（1~100000）：");
+    if (fgets(line, sizeof(line), stdin) == NULL ||
+        sscanf(line, "%d", &n) != 1 || n <= 0 || n > 100000)
+    {
+        fprintf(stderr, "输入无效：请输入 1~100000 之间的整数。\n");
+        return EXIT_FAILURE;
+    }
+
+    /* VLA：数组大小由运行时的 n 决定，离开作用域后自动释放。 */
+    int vla_array[n];
+    fill_with_vla(n, vla_array);
+
+    /* malloc：在堆上申请同样大小的数组，使用完后必须手动释放。 */
+    int *malloc_array = fill_with_malloc(n);
+    if (malloc_array == NULL)
+    {
+        fprintf(stderr, "malloc 分配内存失败。\n");
+        return EXIT_FAILURE;
+    }
+
+    printf("\n--- VLA 与 malloc 对比 ---\n");
+    printf("数组长度：%d\n", n);
+    printf("VLA 数组大小：%lu 字节\n",
+           (unsigned long)sizeof vla_array);
+    printf("malloc 数组大小：%lu 字节\n",
+           (unsigned long)((size_t)n * sizeof *malloc_array));
+
+    print_array("VLA 数组", n, vla_array);
+    print_array("malloc 数组", n, malloc_array);
+
+    printf("\nVLA：由作用域自动管理，不需要 free。\n");
+    printf("malloc：由程序员手动管理，下面调用 free 释放。\n");
+
+    free(malloc_array);
+    malloc_array = NULL;
+    return EXIT_SUCCESS;
+}
+
+```
+
+运行结果（输入 `5`）：
+
+```text
+请输入数组长度（1~100000）：
+
+--- VLA 与 malloc 对比 ---
+数组长度：5
+VLA 数组大小：20 字节
+malloc 数组大小：20 字节
+VLA 数组: 1 2 3 4 5
+malloc 数组: 1 2 3 4 5
+
+VLA：由作用域自动管理，不需要 free。
+malloc：由程序员手动管理，下面调用 free 释放。
+```
+
+两种数组的元素内容和占用字节数可以相同，但生命周期不同：离开 `main` 的作用域
+后，VLA 自动结束生命周期；`malloc` 得到的内存不会自动释放，必须显式调用 `free`。
+如果把输入改成 `100000000`，本程序会先拒绝输入，避免创建一个危险的栈数组；如果
+直接删除这个上限，VLA 可能在进入函数体前就触发栈溢出，程序没有机会像检查
+`malloc` 返回值那样优雅地处理失败。嵌入式系统通常更偏好固定大小的静态缓冲区，
+确实需要运行时大小时再结合明确的内存预算使用动态分配。
+
+> ⚠️ **踩坑预警**：C11 将 VLA 降级为可选特性，编译器可能定义 `__STDC_NO_VLA__`
+> 表示不支持它。这个示例需要用支持 VLA 的 C99/C11 编译器编译，例如
+> `gcc -std=c11 -Wall -Wextra example.c`；MSVC 的 C 编译器不能依赖 VLA。
+
+:::
 
 ## 参考资源
 
