@@ -23,7 +23,7 @@ interface Volume {
 }
 
 const VOLUMES: Volume[] = [
-  { name: 'gettting-started', srcDir: 'gettting-started', urlPrefix: '/gettting-started' },
+  { name: 'getting-started', srcDir: 'getting-started', urlPrefix: '/getting-started' },
   { name: 'vol1', srcDir: 'vol1-fundamentals', urlPrefix: '/vol1-fundamentals' },
   { name: 'vol2', srcDir: 'vol2-modern-features', urlPrefix: '/vol2-modern-features' },
   { name: 'vol3', srcDir: 'vol3-standard-library', urlPrefix: '/vol3-standard-library' },
@@ -652,7 +652,10 @@ async function main() {
   for (const vol of VOLUMES) {
     for (const lang of ['zh', 'en'] as const) {
       const volDocDir = lang === 'en' ? join(DOCUMENTS, 'en', vol.srcDir) : join(DOCUMENTS, vol.srcDir)
-      if (!existsSync(volDocDir)) continue
+      if (!existsSync(volDocDir)){ 
+        log(`  ${volDocDir}: source dir missing, skipping`)
+        continue
+      }
       tasks.push(prepareVolume(vol, lang, manifest, buildInputsHash))
     }
   }
