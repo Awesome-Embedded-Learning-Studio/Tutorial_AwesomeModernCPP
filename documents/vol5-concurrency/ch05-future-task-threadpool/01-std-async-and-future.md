@@ -119,7 +119,7 @@ int main()
 
 运行这段代码，你会看到 async 模式下 compute 打印的线程 ID 与主线程不同，而 deferred 模式下两者的线程 ID 是一样的——因为 deferred 任务就是在调用 `get()` 的线程上同步执行的。
 
-## std::future\<T\>：获取异步结果
+## `std::future<T>`：获取异步结果
 
 `std::future<T>` 是 C++ 标准库提供的"一次性结果容器"。你可以把它理解为一个只读的单次管道：一端（`std::async`、`std::promise` 或 `std::packaged_task`）负责往里面塞值，另一端（你手里的 `std::future`）负责把值取出来。这个管道的设计哲学非常明确——值只能被取走一次，取完管道就报废了。
 

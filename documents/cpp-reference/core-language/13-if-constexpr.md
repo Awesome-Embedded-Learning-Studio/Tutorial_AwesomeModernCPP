@@ -44,7 +44,7 @@ title: if constexpr
 | `if constexpr (cond) { ... }` | 若 `cond` 为 `true`，编译 then 分支 |
 | `if constexpr (cond) { ... } else { ... }` | 二选一编译 |
 | `if constexpr (cond1) { ... } else if constexpr (cond2) { ... } else { ... }` | 多分支链 |
-| `if constexpr` 搭配概念 | `if constexpr (std::integral\<T\>)` 类型特征判断 |
+| `if constexpr` 搭配概念 | `if constexpr (std::integral<T>)` 类型特征判断 |
 | `if constexpr` 搭配 `requires` | (C++20) 更推荐用 concepts 重载替代 |
 
 ## 最小示例

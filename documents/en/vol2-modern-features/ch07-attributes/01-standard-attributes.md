@@ -91,15 +91,17 @@ If the caller writes `init_hardware()` without checking the return value, the co
 
 ### Applying to Types
 
-`[[nodiscard]]` can also be placed on a class or enumeration definition. This way, all functions returning that type automatically carry the `nodiscard` semantics:
+`[[nodiscard]]` can also be placed on a class or enumeration definition. This way, all functions returning that type automatically carry the `nodiscard` semantics. Mind the position: the attribute goes **after the `struct` / `class` / `enum class` keyword and before the type name**:
 
 ```cpp
-[[nodiscard]] struct Error {
+struct [[nodiscard]] Error {
     int code;
 };
 
 Error process_data(); // Implicitly [[nodiscard]]
 ```
+
+Putting the attribute in front of the keyword (writing `[[nodiscard]] struct Error { ... };`) is a common slip, and a quiet one: GCC 16 warns `attribute ignored ... must follow the 'struct' keyword`—the attribute is discarded and nodiscard silently stops working; clang 22 is stricter and rejects it outright with `misplaced attributes`. The same applies to enums: `enum class [[nodiscard]] ErrorCode` is the correct form.
 
 ### ⚠️ nodiscard Is Not Mandatory
 

@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 非类型模板参数让一个「值」也能被参数化,array&lt;T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20
+description: 非类型模板参数让一个「值」也能被参数化,array<T,N> 里的 N 就是它。讲清它能用什么类型、C++17 的 auto 推导、C++20
   把它放宽到浮点和满足 structural 条件的类类型,以及哪些实参算「同一个」实例化
 difficulty: intermediate
 order: 5

@@ -35,7 +35,7 @@ In the previous post, we used `std::async` to launch asynchronous tasks and retr
 
 In this post, we will meet the other side of `std::future`—`std::promise` and `std::packaged_task`. They allow us to manually control when values are set and when tasks are executed, serving as the infrastructure for building more flexible asynchronous pipelines (such as task submission interfaces for thread pools). We will also encounter `std::shared_future`, which solves the pain point of `std::future` being "read-only once."
 
-## std::promise\<T\>: Manually Setting a future's Value
+## `std::promise<T>`: Manually Setting a future's Value
 
 Let's start with `std::promise`. You can think of it as the write end of a `std::future`. A promise and a future are connected via a shared state: you set the value through the promise, and read the value through the future. Their lifecycle relationship is: the promise calls `get_future()` to retrieve the associated future, then passes the future to the consumer thread, while remaining in the producer thread to set the value.
 
@@ -133,7 +133,7 @@ The value channel has a very important characteristic called a "synchronization 
 
 But don't rush to use promise for everything—it has a non-negligible limitation: it is one-shot. `set_value()` can only be called once; after that, the promise is useless. This symmetry with the one-shot consumption semantics of `std::future`—one end writes once, the other reads once—is intentional. If you need a channel that can be repeatedly written to and read from, you should use `std::atomic` or a message queue, not promise/future.
 
-## std::packaged_task\<F\>: Wrapping Callable Objects
+## `std::packaged_task<F>`: Wrapping Callable Objects
 
 Great, now we know that a promise can manually set a future's value. But writing try-catch blocks and manually calling `set_value()` or `set_exception()` every time is tedious. The C++ standard library provides a higher-level wrapper—`std::packaged_task`. It wraps a callable object (function, lambda, functor, etc.) and automatically associates a promise/future pair. When you invoke this `packaged_task`, it internally calls the wrapped callable object and automatically pushes the return value into the promise (or pushes the exception if one is thrown).
 
@@ -302,7 +302,7 @@ int main() {
 
 The return type of `submit_task` is automatically adapted via trailing return type deduction—no matter what callable you pass, it correctly deduces the return type and returns the corresponding `std::future`. `std::invoke_result_t` is a type trait provided in C++17 to deduce the return type of a callable. If your compiler only supports C++11/14, you can use `std::result_of` (which was deprecated in C++17 and removed in C++20, so using `std::invoke_result_t` is recommended).
 
-## std::shared_future\<T\>: Shareable Future Values
+## `std::shared_future<T>`: Shareable Future Values
 
 Previously, we emphasized the one-shot consumption semantics of `std::future`—`get()` can only be called once, after which the future is invalid. In most scenarios, this is fine, but sometimes you need multiple threads to wait for the same result. For example, after an initialization task completes, multiple worker threads need the initialization result before they can start—in this case, a single `std::future` isn't enough because after the first thread calls `get()`, the future is invalid. `std::shared_future` is designed for this "one-to-many" scenario.
 

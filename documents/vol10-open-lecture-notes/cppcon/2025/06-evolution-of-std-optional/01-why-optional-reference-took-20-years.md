@@ -1,6 +1,6 @@
 ---
 title: 为什么 optional 引用折腾了二十年
-description: CppCon 2025 笔记 —— Steve Downey 讲 std::optional&lt;T&>(P2988) 为何从 2005 拖到 2025 年 Sofia 会议才进 C++26：引用的三重身份、assign-through 与 rebind 之争、最终落地为指针
+description: CppCon 2025 笔记 —— Steve Downey 讲 std::optional<T&>(P2988) 为何从 2005 拖到 2025 年 Sofia 会议才进 C++26：引用的三重身份、assign-through 与 rebind 之争、最终落地为指针
 chapter: 6
 order: 1
 conference: cppcon

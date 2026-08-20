@@ -26,7 +26,7 @@ tags:
 - 容器
 - vector
 - 零开销抽象
-title: 综合项目:fixed_vector&lt;T, N>
+title: 综合项目:fixed_vector<T, N>
 ---
 # 综合项目:fixed_vector&lt;T, N&gt;
 

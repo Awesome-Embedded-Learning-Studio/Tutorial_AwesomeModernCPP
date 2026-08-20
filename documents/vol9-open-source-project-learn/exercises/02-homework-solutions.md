@@ -1145,7 +1145,7 @@ int main() {
 **思路**：这一题复刻 `bind_internal.h` 的编译期接线（源码出处：Chromium `base/functional/bind_internal.h` 的 `kIsWeakMethod`/`IsWeakReceiver`/`WeakCallReturnsVoid`，教材 02-5 全文引用）。三块拼图：类型特征认出 WeakPtr、编译期开关选分支、static_assert 强制 void。
 
 1. `is_instantiation_of<Template, T>` 判"T 是不是 `Template<...>` 的实例化"，`IsWeakReceiver<T>` 拿它判 `WeakPtr`。→ 知识点：[WeakPtr 实战（五）](../chrome/02_weak_ptr/full/02-5-weak-ptr-bind-integration.md)「编译期接线:kIsWeakMethod / IsWeakReceiver」一节
-2. `kIsWeakMethod<true, T, Args...>` 只在"成员方法 + receiver 是 WeakPtr"时为真；`bind` 里 `constexpr bool is_weak = kIsWeakMethod<true, DecayedReceiver>` 在编译期选定 `InvokeHelper<true/false>` 分派。→ 知识点：同上「编译期接线」「调用期分派:InvokeHelper\<true\>::MakeItSo」两节
+2. `kIsWeakMethod<true, T, Args...>` 只在"成员方法 + receiver 是 WeakPtr"时为真；`bind` 里 `constexpr bool is_weak = kIsWeakMethod<true, DecayedReceiver>` 在编译期选定 `InvokeHelper<true/false>` 分派。→ 知识点：同上「编译期接线」「调用期分派:`InvokeHelper<true>::MakeItSo`」两节
 3. 强制 void：`static_assert(!is_weak || std::is_void_v<Ret>)`——weak 调用取消时执行的是 `return;`（没值），方法带返回值的话取消那一刻无值可返，所以签名层面直接拒绝。真实报错如下。→ 知识点：同上「弱调用强制 void 返回」一节
 4. "先 Unwrap 再判活"：`make_it_so` 里先取出 receiver、再 `if (!receiver) return;`——对允许跨线程、在 `Unwrap` 里 `Lock()` 的弱指针实现，先判活再 Unwrap 两步之间会开一道 race 的缝。本卷 `WeakPtr` 的 `Unwrap` 是透传所以无碍，但通用模板要守这条契约。→ 知识点：同上「"先 Unwrap 再判活"的 race 防御」一节
 

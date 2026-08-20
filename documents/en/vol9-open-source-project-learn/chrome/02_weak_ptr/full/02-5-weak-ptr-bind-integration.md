@@ -75,7 +75,7 @@ The trigger is deliberately narrow, and that surprised me the first time I read 
 
 ---
 
-## Call-time dispatch: InvokeHelper\<true\>::MakeItSo
+## Call-time dispatch: `InvokeHelper<true>::MakeItSo`
 
 Once `kIsWeakMethod` evaluates true at compile time, it selects a specialized `InvokeHelper<true>`, the executor for weak calls. The core code is startlingly short (`bind_internal.h:939-961`), short enough to quote in full:
 

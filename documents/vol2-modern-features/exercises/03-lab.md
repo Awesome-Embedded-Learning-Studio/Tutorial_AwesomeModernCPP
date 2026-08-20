@@ -77,7 +77,7 @@ related:
 
 ## 步骤 5：错误传播链 {#lab-5}
 
-难度 **L4** · 涉及[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)、[标准属性详解：让编译器成为你的代码审查员](../ch07-attributes/01-standard-attributes.md)
+难度 **L4** · 涉及[`std::expected<T, E>`：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)、[标准属性详解：让编译器成为你的代码审查员](../ch07-attributes/01-standard-attributes.md)
 
 **目标**：给读取器装上报错系统——自制 C++17 简化版 `expected` + 枚举错误类型 + `[[nodiscard]]`。
 

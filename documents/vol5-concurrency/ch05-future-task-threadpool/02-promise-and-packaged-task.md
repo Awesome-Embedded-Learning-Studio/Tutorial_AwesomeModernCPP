@@ -28,7 +28,7 @@ title: promise 与 packaged_task
 
 这一篇我们要认识的是 `std::future` 的"另一端"——`std::promise` 和 `std::packaged_task`。它们让你可以手动控制值的设置时机和任务的执行时机，是构建更灵活的异步管道（比如线程池的任务提交接口）的基础设施。我们还会遇到 `std::shared_future`，它解决了 `std::future` "只能读一次"的痛点。
 
-## std::promise\<T\>：手动设置 future 的值
+## `std::promise<T>`：手动设置 future 的值
 
 我们先从 `std::promise` 说起。你可以把它理解为 `std::future` 的写端。一个 promise 和一个 future 通过共享状态（shared state）连接在一起：你通过 promise 设置值，通过 future 读取值。两者的生命周期关系是：promise 先调用 `get_future()` 获取关联的 future，然后把 future 交给消费者线程，自己留在生产者线程里设值。
 
@@ -140,7 +140,7 @@ int main()
 
 但先别急着什么都用 promise——它有一个不可忽视的局限：它是一次性的。`set_value()` 只能调用一次，调用后 promise 就没什么用处了。这跟 `std::future` 的一次性消耗语义是对称的——一端只写一次，另一端只读一次。如果你需要一个可以反复写入/读取的通道，应该用 `std::condition_variable` 或者消息队列，而不是 promise/future。
 
-## std::packaged_task\<F\>：封装可调用对象
+## `std::packaged_task<F>`：封装可调用对象
 
 很好，现在我们知道了 promise 可以手动设置 future 的值。但每次都要自己写 try-catch、手动调 `set_value()` 或 `set_exception()`，也挺繁琐的。C++ 标准库提供了一个更高级的封装——`std::packaged_task<F>`，它把一个可调用对象（函数、lambda、函数对象等）包装起来，自动关联一个 promise/future 对。当你调用这个 packaged_task 时，它内部会调用被包装的可调用对象，把返回值自动塞进 promise 里（如果抛异常就把异常塞进去）。
 
@@ -331,7 +331,7 @@ int main()
 
 `submit()` 的返回类型通过尾置返回值推导自动适配——不管你传什么可调用对象，它都能正确推导返回类型并返回对应的 `std::future<T>`。`std::invoke_result_t<F, Args...>` 是 C++17 提供的类型萃取，用来推导 `F(Args...)` 的返回类型。如果你的编译器只支持 C++11/14，可以用 `std::result_of_t<F(Args...)>` 代替（C++17 中 `std::result_of` 已被废弃，C++20 中已移除，所以建议直接用 `invoke_result_t`）。
 
-## std::shared_future\<T\>：未来值可共享
+## `std::shared_future<T>`：未来值可共享
 
 前面我们反复强调 `std::future` 的一次性消耗语义——`get()` 只能调用一次，之后 future 就失效了。大部分场景下这没什么问题，但有时候你需要多个线程等待同一个结果。比如一个初始化任务完成后，多个工作线程都需要拿到初始化结果才能开始工作——这时候一个 `std::future` 就不够用了，因为第一个线程 `get()` 完之后 future 就失效了。`std::shared_future<T>` 就是为这种"一对多"场景设计的。
 

@@ -27,7 +27,7 @@ related: []
 
 ## 核心任务（L2）：能跑起来的调度器 {#pj-core}
 
-**思路**：`Task` 成员按 `priority, deadline, id, name` 声明，default `<=>` 自动按这个顺序做字典序比较——「优先级排序」因此免费到手；指定初始化器必须按声明顺序写（作业 4.16-A 纠正过的 C++20 硬规则）。
+**思路**：`Task` 成员按 `priority, deadline, id, name` 声明，default `<=>` 自动按这个顺序做字典序比较——「优先级排序」因此免费到手；指定初始化器必须按声明顺序写（作业 4.16-A 实测验证过的 C++20 硬规则）。
 
 **`Task` 与 default 三路比较**——成员顺序即比较顺序，designator 顺序与声明顺序一致。→ 知识点：[三路比较运算符](../05-spaceship-operator.md)「比较顺序」一节、[指定初始化器](../vol2-modern-cpp17/06-designated-initializers.md)（C++20 顺序规则）
 

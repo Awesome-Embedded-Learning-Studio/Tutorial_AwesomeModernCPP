@@ -178,30 +178,37 @@ while (full_stem.has_extension()) {
 
 ## 路径修改：原地改还是生成新的
 
-`path` 的修改操作会返回一个新的 `path` 对象，不会修改原始对象（因为 `path` 的值语义设计）。常用的修改操作有以下几个：
+这一节的标题是个好问题，先把答案说死：`path` 的**修改类成员**（`replace_extension`、`replace_filename`、`remove_filename`、`operator/=`、`operator+=` 等）都是**就地修改** `*this`，并返回 `*this` 的引用（`path&`）；真正生成新对象的是**非修改操作**——自由运算符 `operator/`（`p / "sub"`）、`lexically_normal()` 这类。这是实测结论（g++ 16.1.1 / clang++ 22.1.8，libstdc++）。
 
 `replace_extension(new_ext)` 把当前路径的扩展名替换为 `new_ext`。如果原来没有扩展名，就追加一个。这是处理文件扩展名最安全的方式——它正确处理了所有边界情况（比如路径末尾有 `.` 或没有扩展名）：
 
 ```cpp
 fs::path p = "/home/user/report.pdf";
-auto p2 = p.replace_extension(".txt");
-// p2 = "/home/user/report.txt"
+fs::path& p2 = p.replace_extension(".txt");
+// p 已被就地修改为 "/home/user/report.txt"
+// p2 不是新对象，是 p 自身的引用
 
 fs::path p3 = "/home/user/README";
-auto p4 = p3.replace_extension(".md");
-// p4 = "/home/user/README.md"
+p3.replace_extension(".md");
+// p3 已变为 "/home/user/README.md"
 
-// replace_extension 不改变原始对象
-std::cout << p << "\n";   // 仍然是 "report.pdf"
-std::cout << p2 << "\n";  // "report.txt"
+std::cout << p << "\n";          // "/home/user/report.txt"
+std::cout << (&p2 == &p) << "\n";  // 1 —— 同一个对象
 ```
 
-`remove_filename()` 去掉路径中的文件名部分，只保留目录部分：
+对比一下返回新对象的写法——自由运算符 `operator/` 不碰左操作数：
+
+```cpp
+fs::path q = p / "sub" / "file.log";
+// p 保持不变，q 是拼出来的新对象
+```
+
+`remove_filename()` 去掉路径中的文件名部分，只保留目录部分（同样是就地修改）：
 
 ```cpp
 fs::path p = "/usr/local/bin/gcc";
-auto dir = p.remove_filename();
-// dir = "/usr/local/bin/"
+p.remove_filename();      // 就地修改，返回 *this
+std::cout << p << "\n";   // "/usr/local/bin/"
 ```
 
 ⚠️ 注意 `remove_filename()` 和 `parent_path()` 的区别：`parent_path()` 返回的是逻辑上的父目录（不含末尾分隔符），而 `remove_filename()` 只是简单地删掉最后一个组件（保留末尾分隔符）。在大多数情况下，`parent_path()` 才是你想要的。

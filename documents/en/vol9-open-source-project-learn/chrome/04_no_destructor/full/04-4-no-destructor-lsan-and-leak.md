@@ -30,13 +30,15 @@ That pushes us into a tradeoff. Let's lay the cost out first.
 
 T's destructor normally does two things. One, hand back the resources T itself holds, the vector's heap memory, a file's `close`, that kind of thing. Two, run side effects that matter to the outside world, flushing logs to disk, notifying another process. NoDestructor skips `~T()`, and both stop happening. The first one doesn't matter, the OS covers it. The second is the one to watch: wrap a type whose destructor has to flush logs, and the data is gone. So a fairly hard line: NoDestructor suits types whose destructor just returns resources; it doesn't suit types whose destructor has external side effects.
 
-What that cost buys, in our view, is the thing most worth having: no destruction-order problem. Shutdown races, in a program the size of Chromium where the shutdown paths twist like spaghetti, are something anyone who's been bitten by them knows about. Skipping the whole category makes the "we don't free those resources" tradeoff easy to accept. As for the LSan alarm, we'll deal with that next.
+What that cost buys, in our view, is the thing most worth having: no destruction-order problem. Shutdown races, in a program the size of Chromium where the shutdown paths twist like spaghetti, are something anyone who's been bitten by them knows about. Skipping the whole category makes the "we don't free those resources" tradeoff easy to accept. As for the LSan question—whether an alarm even fires—we'll put that to the test next.
 
 ---
 
 ## How LeakSanitizer works
 
-To see why it fires, we first have to look at how LSan decides something leaked. It's the leak specialist in the AddressSanitizer family, and the technique is **reachability analysis**. The name sounds intimidating; the idea is plain. At program exit it walks every "root," roots being global variables, stack slots, and registers holding pointers. From those roots it follows pointers along, and any heap memory it can reach this way counts as reachable. The heap blocks no live pointer can find are leaks.
+To answer whether it fires at all, we first have to look at how LSan decides something leaked. It's the leak specialist in the AddressSanitizer family, and the technique is **reachability analysis**. The name sounds intimidating; the idea is plain. At program exit it walks every "root," roots being global variables, stack slots, and registers holding pointers. From those roots it follows pointers along, and any heap memory it can reach this way counts as reachable. The heap blocks no live pointer can find are leaks.
+
+One more crucial detail: this "following" is a **conservative byte-level scan**. LSan ignores types and declarations; it treats every aligned machine word in a root region as a candidate pointer and tries it—better to over-recognize than to miss. That detail is exactly what saves the NoDestructor case below.
 
 Note LSan doesn't care at all whether this memory was "supposed to be destructed." It checks one thing: is anyone still pointing at this block. If nobody is, it's a leak, even when you know full well it's the harmless "intentional leak, OS covers it" case.
 
@@ -52,9 +54,9 @@ static const base::NoDestructor<std::vector<int>> v({1, 2, 3});
 
 Inside `v` is `alignas(vector) char storage_[sizeof(vector)]`, a char array, with the vector placed on top via placement new. The vector itself allocates the `{1,2,3}` storage on the heap. The layout is fine, and it looks fine to a human.
 
-When LSan scans roots it does see `v`'s `storage_`. The catch is that `storage_`'s type is a **char array**. LSan doesn't treat it as "a pointer to the vector's heap memory" and follow it; to LSan it's a blob of raw bytes, even when some of those bytes happen to be the vector's internal pointer. That's where the chain breaks. The `{1,2,3}` the vector allocated on the heap can't be reached from LSan's root set. Reachability analysis hits a dead end here, and the block is judged a leak.
+A widely repeated claim goes: "`storage_` is a char array; LSan can't recognize the pointer hiding inside it, the reachability chain breaks, and `NoDestructor<vector<int>>` inevitably gets falsely reported as a leak under an LSan build." [crbug.com/40562930](https://crbug.com/40562930) records exactly that old pit, and Chromium even added the hack from the next section for it—on the LSan of that era, the claim held.
 
-This is the bug [crbug.com/40562930](https://crbug.com/40562930) records: `NoDestructor<vector<int>>` gets falsely reported as a leak under an LSan build. "Falsely" is doing some work in that sentence. LSan isn't wrong by its own rules. Its rule is reachability, and reachability really is broken here. It's only from the engineering angle that we know this is a harmless, intentional leak.
+But run it on a modern toolchain (g++ 16.1.1 / clang++ 22.1.8, `-fsanitize=leak`) and the false positive **no longer happens**: a static `NoDestructor<vector<int>>` passes the leak check cleanly (`__lsan_do_recoverable_leak_check()` returns 0, no report at all), while in the same environment a genuine-leak control case (a `new int[100]` whose pointer is wiped) is duly caught (400 bytes, exit 23). The reason is the detail from the previous section: LSan's root scan is a conservative byte-level scan. `storage_` being a char array doesn't matter—the pointer-shaped bytes of the vector object inside it are followed as roots just the same, and the heap `{1,2,3}` stays reachable. A char array can't "hide" a pointer from modern LSan; it never gets the chance.
 
 ---
 
@@ -76,9 +78,7 @@ Chromium's workaround, the first time we read it, stopped us cold. We genuinely 
 
 Under an LSan build it slips an extra `T* storage_ptr_` member in, pointing at the T object placed via placement new. Plainly put, this address is the same one as `storage_`; only the type changes, from `char*` to `T*`.
 
-Swap that one type and the problem is gone. Where did we get stuck before? On LSan treating `storage_` as raw bytes and not recognizing the pointer inside it. But `storage_ptr_`'s type is **`T*`**, and that makes LSan treat it as a proper "pointer-to-T root." From it, LSan reaches the T object, then follows the T object's pointers all the way to the vector's heap `{1,2,3}`. The whole reachability chain is connected again, the memory goes back to "reachable," and the alarm goes quiet.
-
-The move, stated plainly: the pointer hiding inside the char array is something LSan can't read, so we also hand it a `T*` it can read, an explicit one. We "re-expose" the placement-new'd object in LSan's view. The address didn't change, the object didn't change, the only thing that changed is whether LSan can recognize this root.
+In the original pit, this line was a real fix: the root scanning of older LSan versions—on some platforms—wasn't conservative enough, and the pointer bytes inside `storage_` really did get missed. Swap in an explicit `T*` root and LSan reaches the T object, then follows the T object's pointers all the way to the vector's heap `{1,2,3}`, and the alarm goes quiet. Today, on mainstream Linux toolchains, this line is mostly asleep on the job—but the idea is still elegant: rather than betting that every runtime on every platform scans conservatively, hand it an explicit root whose type is already `T*`, turning "can it be found" from an implementation detail into a written guarantee. Chromium needs to be clean under LSan builds on all platforms; keeping this line is the safest call.
 
 One more detail worth flagging: this member only exists when `LEAK_SANITIZER` is defined. A normal build doesn't have it at all, zero overhead. Standard conditional-compilation practice; you pay this small cost only in the builds that need it, the test/debug builds with LSan on.
 
@@ -94,7 +94,7 @@ Of course, if you'd rather have the code report zero alarms under an LSan build 
 
 ---
 
-With this, the NoDestructor thread, motivation, implementation, when to use it, LSan compatibility, is complete. Looking back at the whole thing is genuinely interesting: with just placement new plus no destructor, you trade for a fairly solid piece of a solution to the long-standing C++ pain of "global/static objects have no destruction-order problem," and you patch the LSan reachability hole along the way with a single `T*`. In the vol9/chrome series it sits alongside OnceCallback (callbacks), WeakPtr (weak references), and flat_map (containers), making up the four pieces of Chromium's `//base` infrastructure: callbacks, weak references, containers, static lifetime. Each minds its own shop.
+With this, the NoDestructor thread, motivation, implementation, when to use it, LSan compatibility, is complete. Looking back at the whole thing is genuinely interesting: with just placement new plus no destructor, you trade for a fairly solid piece of a solution to the long-standing C++ pain of "global/static objects have no destruction-order problem," and you patch the historical LSan reachability hole along the way with a single `T*`. In the vol9/chrome series it sits alongside OnceCallback (callbacks), WeakPtr (weak references), and flat_map (containers), making up the four pieces of Chromium's `//base` infrastructure: callbacks, weak references, containers, static lifetime. Each minds its own shop.
 
 ## References
 

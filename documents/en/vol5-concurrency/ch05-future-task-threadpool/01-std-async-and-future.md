@@ -106,7 +106,7 @@ int main() {
 
 Running this code, you will see that in `async` mode, the thread ID printed by `compute` differs from the main thread, while in `deferred` mode, the thread IDs are identical—because the deferred task executes synchronously on the thread that called `get()`.
 
-## std::future\<T\>: Fetching Asynchronous Results
+## `std::future<T>`: Fetching Asynchronous Results
 
 `std::future<T>` is the "one-time result container" provided by the C++ Standard Library. You can think of it as a read-only, single-use pipe: one end (`std::promise`, `std::packaged_task`, or `std::async`) is responsible for putting a value in, and the other end (the `std::future` in your hand) is responsible for taking it out. The design philosophy is very clear—the value can be taken out only once; once taken, the pipe is defunct.
 

@@ -5,7 +5,7 @@ conference_year: 2025
 cpp_standard:
 - 20
 - 23
-description: CppCon 2025 演讲笔记 —— 从隐式窄化转换到 Number&lt;T> 包装类型，再到 safe_int 与 checked_span
+description: CppCon 2025 演讲笔记 —— 从隐式窄化转换到 Number<T> 包装类型，再到 safe_int 与 checked_span
 difficulty: intermediate
 order: 1
 platform: host
@@ -332,7 +332,7 @@ a = 42, b = 100
 
 很好，该拦的都拦住了。但问题来了——不可能在每个赋值的地方都写 `narrow_convert<int>(xxx)`。代码会变得冗长，而且完全没法保持一致性。靠程序员自觉去加检查，最后一定会有漏网之鱼。有些地方加了，有些地方忘了，然后 bug 就藏在那些忘了的地方。
 
-## 把检查塞进类型里：Number\<T>
+## 把检查塞进类型里：`Number<T>`
 
 所以真正的解法是——让检查变成隐式的。定义一个包装类型 `Number<T>`，它在构造的时候就自动做 narrowing 检查。之后这个 `Number<T>` 就像普通的 `T` 一样用，但不用担心 narrowing 问题，因为如果构造都过不了，这个对象根本就不存在。
 

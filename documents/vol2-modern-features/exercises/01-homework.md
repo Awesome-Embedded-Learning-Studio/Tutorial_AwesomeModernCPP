@@ -215,7 +215,7 @@ lambda 没有名字，怎么递归？用 Y 组合子（第一个参数传「自�
 
 ### 2.11-B {#hw-2-11-b}
 
-难度 **L3** · 涉及[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
+难度 **L3** · 涉及[`std::expected<T, E>`：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
 
 教材给了 C++17 简化版 `expected`，但那份实现有个**编译坑**：匿名 union 里放着 `std::string` 这类非平凡成员时，union 的默认构造/析构是被删除的，直接编译不过——先复现这个报错，再修好它（给 union 起名并补上空的构造/析构）。然后完成「地址解析链」：`validate_input` → `split_address`（拆 host:port、`from_chars` 解析端口、范围检查）→ `transform` 拼回字符串，用 `and_then` 串起来，对 `"192.168.1.1:8080"`、`"localhost"`、`":9090"`、`"host:99999"`、`""` 五个输入跑一遍，错误分支各贴一条。
 
@@ -245,7 +245,7 @@ lambda 没有名字，怎么递归？用 Y 组合子（第一个参数传「自�
 
 难度 **L3** · 涉及[string_view 内部原理：非拥有字符串视图](../ch08-string-view/01-string-view-internals.md)、[std::variant：类型安全的联合体](../ch04-type-safety/03-variant.md)、[结构化绑定：一行解包多个值](../ch05-structured-bindings/01-structured-bindings.md)
 
-**零拷贝配置解析器**：输入一行 `"host=192.168.1.1;port=8080;debug=true;pi=3.14;name=alpha"`，用 `string_view` 零拷贝拆出五个键值对；值按「bool → int → double → 字符串」的优先级解析成 `variant<int, double, string_view, bool>`；用 `Overloaded` 访问者打印「键 = 值 (类型)」。注意一个坑：lambda 里想捕获结构化绑定变量 `key`——这在 C++17 不合法（C++20 才允许）：显式捕获时 clang 和 gcc 都会警告「这是 C++20 扩展」，换**隐式捕获** gcc 16 在 struct 分解下仍警告、只在 tuple-like 分解（pair/tuple）下才静默——「不合法」与「编译器拦不拦」是两回事，拦不拦还随分解形状变（教材哪句话在这个点上说得不准），用初始化捕获把它修成干净的 C++17。
+**零拷贝配置解析器**：输入一行 `"host=192.168.1.1;port=8080;debug=true;pi=3.14;name=alpha"`，用 `string_view` 零拷贝拆出五个键值对；值按「bool → int → double → 字符串」的优先级解析成 `variant<int, double, string_view, bool>`；用 `Overloaded` 访问者打印「键 = 值 (类型)」。注意一个坑：lambda 里想捕获结构化绑定变量 `key`——这在 C++17 不合法（C++20 才允许）：显式捕获时 clang 和 gcc 都会警告「这是 C++20 扩展」，换**隐式捕获** gcc 16 在 struct 分解下仍警告、只在 tuple-like 分解（pair/tuple）下才静默——「不合法」与「编译器拦不拦」是两回事，拦不拦还随分解形状变（旧版教材在这个点上的说法就栽过跟头，现行版已修订——所以别只信文档，要信编译器实测），用初始化捕获把它修成干净的 C++17。
 
 [参考答案 →](./02-homework-solutions.md#hw-2-c-1)
 

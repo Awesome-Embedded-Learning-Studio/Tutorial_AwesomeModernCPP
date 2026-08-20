@@ -70,7 +70,7 @@ PUBLIC 表示「两者都要，自己用加上别人也需要」。最常见的�
 
 记住这张表，后面看任何 `target_*` 命令都套得上。
 
-### 一个具体例子：fmt 是 PRIVATE，\<string> 是 INTERFACE
+### 一个具体例子：fmt 是 PRIVATE，`<string>` 是 INTERFACE
 
 光定义不够，咱们落到代码上。下面这个工程有三个 target：一个极简的 `fmt`（模拟第三方格式化库）、一个对外暴露的 `mylib` 静态库、一个下游 `app` 可执行文件。`mylib` 的实现内部用 `fmt::format`，但公开头文件只用了 `std::string`。
 

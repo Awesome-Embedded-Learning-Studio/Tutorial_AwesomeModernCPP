@@ -32,10 +32,8 @@ class CircularBuffer {
     }
 
     bool   empty() const noexcept { return head_ == tail_; }
-    bool   full()  const noexcept { return next(head_) == tail_; }
-    size_t size()  const noexcept {
-        return head_ >= tail_ ? head_ - tail_ : N - tail_ + head_;
-    }
+    bool   full()  const noexcept { return ((head_ - tail_) & (2 * N - 1)) == N; }
+    size_t size()  const noexcept { return (head_ - tail_) & (2 * N - 1); }
 
   private:
     static constexpr size_t mask(size_t v) noexcept { return v & (N - 1); }

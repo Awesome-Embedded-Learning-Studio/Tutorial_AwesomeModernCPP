@@ -34,7 +34,7 @@ WeakPtr 读到这里,笔者之前一直绕着没讲的两个细节,这会儿得�
 
 ---
 
-## 跨类型友元:WeakPtr\<U\> 要访问 WeakPtr\<T\>
+## 跨类型友元:`WeakPtr<U>` 要访问 `WeakPtr<T>`
 
 [前置知识（四）](./pre-04-weak-ptr-concepts-and-requires.md) 里那个转换构造,咱们再贴一遍:
 

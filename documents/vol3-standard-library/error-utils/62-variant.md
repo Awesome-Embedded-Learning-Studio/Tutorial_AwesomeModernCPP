@@ -201,7 +201,7 @@ int:7
 `using Ts::operator()...;` 末尾的 `...` 不能漏——它表示「把每个基类的 `operator()` 都 using 进来」，漏了就是只引入一个，分发不全。推导指引 `overloaded(Ts...) -> overloaded<Ts...>;` 也别忘，少了它你没法直接 `overloaded{...}` 就地构造。C++20 之后这套写法仍然成立，是社区最稳的范式。
 :::
 
-## C++20 的两个新工具：就地 lambda + visit\<R\>
+## C++20 的两个新工具：就地 lambda + `visit<R>`
 
 到了 C++20，上面那个 `overloaded` 咒语其实可以省掉——直接用一个泛型 lambda 配 `if constexpr`，就地写「看到啥类型就干啥」：
 

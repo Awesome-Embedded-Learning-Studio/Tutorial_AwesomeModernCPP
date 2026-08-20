@@ -35,7 +35,7 @@ title: "WeakPtr 前置知识（四）：concepts 与 requires 在 WeakPtr 里的
 
 ---
 
-## 转换构造:WeakPtr\<U\> 到 WeakPtr\<T\> 的向上转型
+## 转换构造:`WeakPtr<U>` 到 `WeakPtr<T>` 的向上转型
 
 笔者先讲个最直白的诉求。手上有 `WeakPtr<Derived>`,需要 `WeakPtr<Base>`,咱们本能就觉得应该能直接塞过去——`Derived*` 本来就能转成 `Base*`。但反过来不行(`Base*` 撑不成 `Derived*`),`WeakPtr<int>` 想转 `WeakPtr<Foo>` 这种乱七八糟的更别想。
 

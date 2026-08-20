@@ -57,9 +57,9 @@ related: []
 
 难度 **L4** · 涉及[第 37 篇：无锁环形缓冲区](../embedded/03-uart/07-circular-buffer-lock-free-spsc.md)、[循环缓冲区](../embedded/03-circular-buffer.md)
 
-这道题是「教材代码审查」。第 37 篇的 `CircularBuffer` 用两个技巧：`mask(v) = v & (N-1)` 做数组下标环绕，`next(v) = (v+1) & (2N-1)` 让 `head_`/`tail_` 在 `0..2N-1` 之间环绕，并且白纸黑字写着「留一个位置不写来区分空和满：如果 N 个位置的缓冲区，最多存 N-1 个字节」。
+这道题是「代码审查」实战。审查对象是第 37 篇**旧版**的 `CircularBuffer`——一个真实存在过的缺陷实现（教材现已修复，现行版用「索引差判定满」的方案；修复前的旧版恰好是「定义域混用」的经典反面教材，值得整题练一遍）。旧版用两个技巧：`mask(v) = v & (N-1)` 做数组下标环绕，`next(v) = (v+1) & (2N-1)` 让 `head_`/`tail_` 在 `0..2N-1` 之间环绕，并且白纸黑字写着「留一个位置不写来区分空和满：如果 N 个位置的缓冲区，最多存 N-1 个字节」。
 
-①**照抄**教材的实现（N=8），push 10 个字节不 pop，打印每次 push 的返回值、`size()`，再全部 drain 出来——教材承诺的「最多存 7 个」守住了吗？贴出真实输出。②定位缺陷根源：结合 `next()` 的定义域（0..2N-1）和 `mask()` 的值域（0..N-1），说明 `full()` 判定为什么失效、失效后写到了哪里。③用「单调递增计数器 + 只在数组下标处 `& (N-1)`」重写，验证：容量恰好 N-1、满时拒绝并计数、pop 后 push 走环绕路径、drain 顺序正确。④一句话说清重写方案为什么不怕计数器回绕。
+①**照抄**旧版实现（N=8），push 10 个字节不 pop，打印每次 push 的返回值、`size()`，再全部 drain 出来——旧版承诺的「最多存 7 个」守住了吗？贴出真实输出。②定位缺陷根源：结合 `next()` 的定义域（0..2N-1）和 `mask()` 的值域（0..N-1），说明 `full()` 判定为什么失效、失效后写到了哪里。③用「单调递增计数器 + 只在数组下标处 `& (N-1)`」重写，验证：容量恰好 N-1、满时拒绝并计数、pop 后 push 走环绕路径、drain 顺序正确。④一句话说清重写方案为什么不怕计数器回绕；顺带对照现行教材的「索引差判定」修法，说说两种修法各把容量定格在多少、各依仗哪条位运算性质。
 
 [参考答案 →](./02-homework-solutions.md#hw-8-1-c)
 
@@ -135,7 +135,7 @@ related: []
 
 ### 8.4-B {#hw-8-4-b}
 
-难度 **L4** · 涉及[WeakPtr 反模式：T* + raw Flag* 的致命陷阱](../cpp-deep-dives/pointer-semantics/02-unsafe-weakptr-ub.md)、[SimpleWeakPtr：T* + shared_ptr\<Flag\> 的安全改进](../cpp-deep-dives/pointer-semantics/03-simple-weakptr.md)
+难度 **L4** · 涉及[WeakPtr 反模式：T* + raw Flag* 的致命陷阱](../cpp-deep-dives/pointer-semantics/02-unsafe-weakptr-ub.md)、[SimpleWeakPtr：T* + `shared_ptr<Flag>` 的安全改进](../cpp-deep-dives/pointer-semantics/03-simple-weakptr.md)
 
 UB 实证对抗赛。①写 `UnsafeWeakPtr`（`T* + raw Flag*`，Flag 是 Factory 的成员），在 owner 销毁后调用 `is_valid()`：普通构建输出什么？ASan 构建（`-fsanitize=address -g`）报告什么——贴出 report 的 ERROR 行与 `freed by` 栈帧。②改成 `SimpleWeakPtr`（`T* + std::shared_ptr<Flag>`），同样场景 ASan 干净、安全返回 false。③关键问答：普通构建下 Unsafe 版「看起来能工作」（本机输出就是它），为什么这恰恰是 UB 最危险的表现形式？`shared_ptr<Flag>` 解决的到底是「Flag 内存没了」还是「对象 T 的并发访问安全」？
 

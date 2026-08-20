@@ -89,10 +89,10 @@ ErrorCode init_board();
 
 ### 应用在类型上
 
-`[[nodiscard]]` 还可以放在类或枚举的定义上。这样所有返回该类型的函数都自动带有 nodiscard 语义：
+`[[nodiscard]]` 还可以放在类或枚举的定义上。这样所有返回该类型的函数都自动带有 nodiscard 语义。注意属性的位置：要放在 `enum class` / `struct` / `class` **关键字之后、类型名之前**：
 
 ```cpp
-[[nodiscard]] enum class ErrorCode {
+enum class [[nodiscard]] ErrorCode {
     Ok,
     InvalidParam,
     Timeout,
@@ -103,6 +103,8 @@ ErrorCode init_board();
 ErrorCode read_sensor(uint8_t id);
 read_sensor(5);  // 警告：忽略了返回值
 ```
+
+把属性放到关键字前面（写成 `[[nodiscard]] enum class ErrorCode { ... };`）是个常见笔误，后果还很隐蔽：GCC 16 会警告 `attribute ignored ... must follow the 'enum class' keyword`——属性被整个忽略，nodiscard 静默失效；clang 22 更严格，直接编译报错 `misplaced attributes`。类同理：`struct [[nodiscard]] Error` 才对，`[[nodiscard]] struct Error` 会被点名单（本篇后面「属性位置的正确放置」一节汇总了各类属性的标准位置）。
 
 ### ⚠️ nodiscard 不是强制的
 

@@ -27,7 +27,7 @@ translation:
   engine: anthropic
   token_count: 1433
 ---
-# SimpleWeakPtr: Safe Improvements via T* + shared_ptr\<Flag\>
+# SimpleWeakPtr: Safe Improvements via T* + `shared_ptr<Flag>`
 
 ## Introduction
 
@@ -161,7 +161,7 @@ graph TD
     end
 ```
 
-## shared_ptr\<Flag\> Does Not Mean Owning T
+## `shared_ptr<Flag>` Does Not Mean Owning T
 
 There is a subtle point here that needs emphasis: `shared_ptr<Flag>` only owns the control block (the `Flag`), **it does not own T**.
 

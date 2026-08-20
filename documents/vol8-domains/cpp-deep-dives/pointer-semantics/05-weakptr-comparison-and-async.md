@@ -40,7 +40,7 @@ Chrome-like `WeakPtr<T>` 解决的是"在非 shared_ptr 管理的对象上的弱
 
 这是两种完全不同的生命周期策略：
 
-| 特性 | Chrome-like WeakPtr\<T\> | std::weak_ptr\<T\> |
+| 特性 | Chrome-like `WeakPtr<T>` | `std::weak_ptr<T>` |
 |------|-------------------------|-------------------|
 | 依赖 shared_ptr | 否 | 是 |
 | 获取引用时延长生命周期 | **否** | **是**（lock 返回 shared_ptr） |

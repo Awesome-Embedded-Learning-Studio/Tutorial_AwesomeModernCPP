@@ -1,6 +1,6 @@
 ---
 title: optional 引用是什么，以及赋值为什么一定是重绑定
-description: CppCon 2025 笔记 —— optional&lt;T&> 的非拥有定位、map 查找痛点、赋值为何永远是重新绑定、vector<bool> 幽灵，以及 make_optional 与 CTAD 在引用上的真实行为
+description: CppCon 2025 笔记 —— optional<T&> 的非拥有定位、map 查找痛点、赋值为何永远是重新绑定、vector<bool> 幽灵，以及 make_optional 与 CTAD 在引用上的真实行为
 chapter: 6
 order: 3
 conference: cppcon
@@ -167,7 +167,7 @@ swap 后 *oa=2 *ob=1 (p=1 q=2 不变)
 
 [上一篇](./01-why-optional-reference-took-20-years.md)讲过 JeanHeyd 的那个关键观察：赋值行为一旦依赖状态，类型就没法静态推导。所有走过这条路的实现最后都踩进了坑里。始终重绑定这条规则，不管 optional 之前什么状态，赋值之后就绑定到您给的那个东西上。简单、一致、可预测。
 
-### vector\<bool> 的幽灵
+### `vector<bool>` 的幽灵
 
 但这里有个严肃的反对意见，笔者也纠结过。`optional<int>` 赋值是值拷贝，`optional<int&>` 赋值是重绑定。同一个模板，不同特化，行为不一致。这不是另一个 `vector<bool>` 吗？
 

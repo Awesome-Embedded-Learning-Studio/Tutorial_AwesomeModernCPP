@@ -89,7 +89,7 @@ Note that we passed `DescendingCompare()` to `std::sort`—this is a temporary f
 >     }
 > } counter;
 >
-> std::vector\<int> v(100);
+> std::vector<int> v(100);
 > std::sort(v.begin(), v.end(), counter);
 > std::cout << counter.count; // Output is likely 0, not the actual comparison count!
 > ```

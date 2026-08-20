@@ -1,6 +1,6 @@
 ---
 title: "The Move-Semantics Traps Hiding Inside Optional References"
-description: "CppCon 2025 notes — the \"stolen cat\" bug where optional&lt;T&> meets move semantics: the return type of operator* on an rvalue optional, why *std::move(opt) is dangerous, and why you should write std::move as little as possible"
+description: "CppCon 2025 notes — the \"stolen cat\" bug where optional<T&> meets move semantics: the return type of operator* on an rvalue optional, why *std::move(opt) is dangerous, and why you should write std::move as little as possible"
 chapter: 6
 order: 5
 conference: cppcon

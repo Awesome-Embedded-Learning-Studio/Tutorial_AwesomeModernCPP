@@ -139,19 +139,31 @@ std::cout << "Full stem: " << full_stem << "\n"; // Output: archive
 
 ## Path Modification: In-Place vs. New Objects
 
-Modification operations on `path` return a new `path` object and do not modify the original object (due to `path`'s value semantics design). Common modification operations include the following:
+Let's settle the section title's question up front: `path`'s **modifying members** (`replace_extension`, `replace_filename`, `remove_filename`, `operator/=`, `operator+=`, etc.) all modify `*this` **in place** and return a reference to it (`path&`); it's the **non-modifying operations**—the free `operator/` (`p / "sub"`), `lexically_normal()`, and the like—that produce new objects. That is the verified behavior (g++ 16.1.1 / clang++ 22.1.8, libstdc++).
 
 `replace_extension()` replaces the current path's extension with the new one. If there was no extension, it appends one. This is the safest way to handle file extensions—it correctly handles all edge cases (such as trailing dots or missing extensions):
 
 ```cpp
 fs::path p = "data.txt";
-p.replace_extension("csv"); // Result: "data.csv"
+fs::path& r = p.replace_extension("csv");
+// p has been modified in place to "data.csv"
+// r is not a new object: it refers to p itself
 
 fs::path p2 = "archive";
-p2.replace_extension("tar.gz"); // Result: "archive.tar.gz"
+p2.replace_extension("tar.gz"); // p2 is now "archive.tar.gz"
+
+std::cout << p << "\n";          // "data.csv"
+std::cout << (&r == &p) << "\n"; // 1 — same object
 ```
 
-`remove_filename()` removes the filename part from the path, keeping only the directory part:
+Compare with the form that does return a new object—the free `operator/` never touches its left operand:
+
+```cpp
+fs::path q = p / "sub" / "file.log";
+// p is unchanged; q is the newly joined path
+```
+
+`remove_filename()` removes the filename part from the path, keeping only the directory part (also an in-place modification):
 
 ```cpp
 fs::path p = "/usr/local/bin/bash";

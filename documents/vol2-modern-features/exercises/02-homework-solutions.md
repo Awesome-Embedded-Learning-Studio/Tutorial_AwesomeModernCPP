@@ -1232,7 +1232,7 @@ handled case
 
 **难度 L2** · 题面见 [homework](./01-homework.md#hw-2-8-b)
 
-**思路**：先踩教材写法里的一个真实坑——GCC 16 下 `[[nodiscard]] enum class ...` 会被 `-Wattributes` 警告「属性被忽略」，正确位置是 `enum class [[nodiscard]] ...`（放在 `enum class` 关键字**之后**）。这是教材 ch07 例子与 GCC 16 实际行为的出入，如实记下。然后完成迁移 + 状态机，`-Wall -Wextra` 零警告收尾。
+**思路**：先亲手踩一个真实的坑——GCC 16 下 `[[nodiscard]] enum class ...`（属性放在关键字前面）会被 `-Wattributes` 警告「属性被忽略」，clang 22 更是直接报错，正确位置是 `enum class [[nodiscard]] ...`（放在 `enum class` 关键字**之后**）。旧版教材 ch07 的示例曾把属性放错这一侧、现已修订——「放错侧属性会静默失效」这个坑本身值得亲手踩一遍。然后完成迁移 + 状态机，`-Wall -Wextra` 零警告收尾。
 
 1. 属性位置实测：两种写法各编译一遍，贴出第一版的真实警告。→ 知识点：[标准属性详解：让编译器成为你的代码审查员](../ch07-attributes/01-standard-attributes.md)「属性位置的正确放置」一节（属性放错位置会被忽略——这里是活的例子）
 2. 错误码 `enum class [[nodiscard]]` + 新接口 + `[[deprecated]]` 旧接口；状态机用 `[[fallthrough]]` 共享 Idle/Starting 的初始化逻辑，Paused 和 Error 空 case 直接贯穿（空 case 不需要 `[[fallthrough]]`）。→ 知识点：[标准属性详解：让编译器成为你的代码审查员](../ch07-attributes/01-standard-attributes.md)、[enum class 与强类型枚举](../ch04-type-safety/01-enum-class.md)
@@ -1317,7 +1317,7 @@ int main()
 **验证输出**：
 
 ```text
-$ # 教材写法（属性放在 enum class 之前）：GCC 16 忽略并警告
+$ # 错误写法（属性放在 enum class 之前，旧版教材曾这样写）：GCC 16 忽略并警告
 $ g++ -std=c++17 -Wall -Wextra -O2 -c hw281b_wrong.cpp
 hw281b_wrong.cpp:6:26: warning: attribute ignored in declaration of 'enum class ErrorCode' [-Wattributes]
     6 | [[nodiscard]] enum class ErrorCode : std::uint8_t
@@ -1332,7 +1332,7 @@ state = 2
 state = 3
 ```
 
-要点：第一版编译的 `-Wattributes` 警告是 GCC 16 的真实行为——`[[nodiscard]]` 放错了侧就会被静默忽略，属性白加（教材原文尚未修订，以本实测为准）。挪到 `enum class` 关键字之后，`-Wall -Wextra` 干净通过。这是「属性位置决定属性生效对象」的活教材：位置错了编译器要么忽略、要么作用到错的目标上。
+要点：第一版编译的 `-Wattributes` 警告是 GCC 16 的真实行为——`[[nodiscard]]` 放错了侧就会被静默忽略，属性白加（旧版教材 ch07 曾把属性放错侧，现行版已修订；这里保留当初的实测记录）。挪到 `enum class` 关键字之后，`-Wall -Wextra` 干净通过。这是「属性位置决定属性生效对象」的活教材：位置错了编译器要么忽略、要么作用到错的目标上。
 
 ## 2.9-A {#hw-2-9-a}
 
@@ -1540,10 +1540,10 @@ v2 = hello
 
 **难度 L2** · 题面见 [homework](./01-homework.md#hw-2-10-a)
 
-**思路**：path 的纯语法分解 + 三组修改实验。这里有个教材表述与实测不符的点要如实记下：教材说「`replace_extension` 不改变原始对象」，但 libstdc++ 上它返回 `path&` 并**就地修改接收者**——真实输出里 `p` 变成了 `report.txt`。
+**思路**：path 的纯语法分解 + 三组修改实验。这里有个经典坑值得亲手踩一遍：`replace_extension` 在 libstdc++ 上返回 `path&` 并**就地修改接收者**——旧版教材曾误称「不改变原始对象」，现行版已按实测修订；真实输出里 `p` 变成了 `report.txt`。
 
 1. 三个路径的 `root_path/parent/filename/stem/extension` 分解（`archive.tar.gz` 的 extension 只取最后一个 `.gz`、stem 是 `archive.tar`）。→ 知识点：[path 操作：跨平台路径处理](../ch09-filesystem/01-filesystem-path.md)「路径分解：把路径拆开来看」一节
-2. `replace_extension` 实测就地修改（教材原文与 libstdc++ 行为不一致，以实测为准）；`+=` 纯字符串拼接 vs `/=` 路径组件追加；绝对右操作数压过左操作数。→ 知识点：[path 操作：跨平台路径处理](../ch09-filesystem/01-filesystem-path.md)「路径修改」「append 和 concat」两节
+2. `replace_extension` 实测就地修改（返回 `path&`，旧版教材的说法已修订）；`+=` 纯字符串拼接 vs `/=` 路径组件追加；绝对右操作数压过左操作数。→ 知识点：[path 操作：跨平台路径处理](../ch09-filesystem/01-filesystem-path.md)「路径修改」「append 和 concat」两节
 
 ```cpp
 // hw2a0a.cpp -- Homework 2.10-A: path decomposition and modification
@@ -1610,7 +1610,7 @@ append (/=):              "file/.txt"
 base / "/tmp/x" (absolute rhs wins): "/tmp/x"
 ```
 
-要点：`replace_extension` 在本机 libstdc++ 上是**就地修改**（`p` 从 `report.pdf` 变成 `report.txt`）——教材那句「不改变原始对象」与标准库实际行为不符（教材原文尚未修订，以本实测为准），要用「改完的原对象」还是「改前的旧路径」，务必先自己跑一遍再定代码。`+=` 是纯字符串拼接，`/=` 把右操作数当独立路径组件；右操作数是绝对路径时，`/` 直接返回右操作数。
+要点：`replace_extension` 在本机 libstdc++ 上是**就地修改**（`p` 从 `report.pdf` 变成 `report.txt`）——旧版教材那句「不改变原始对象」与标准库实际行为不符、现行版已修订；要用「改完的原对象」还是「改前的旧路径」，务必先自己跑一遍再定代码。`+=` 是纯字符串拼接，`/=` 把右操作数当独立路径组件；右操作数是绝对路径时，`/` 直接返回右操作数。
 
 ## 2.10-B {#hw-2-10-b}
 
@@ -1774,8 +1774,8 @@ config default = INFO
 
 **思路**：教材的简化版 `expected` 有个真实的编译坑——匿名 union 里放着 `std::string` 这类非平凡成员时，union 的隐式默认构造/析构被删除，整个类实例化即报错。修复是给 union 起名并补上一对空的 `Storage()`/`~Storage()`（活跃成员由 `expected` 自己负责构造/析构）。然后搭「地址解析链」。
 
-1. 先复现编译错误（原版匿名 union 的原样报错），再修复：`union Storage { T val_; E err_; Storage() {} ~Storage() {} } storage_;`。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节（教材代码的编译坑与修法——这是教材以外必须补的机制点）
-2. `and_then` 串联 `validate_input → split_address`，`transform` 把成功值拼成字符串；五个输入覆盖全部四条错误路径。→ 知识点：[std::expected\<T, E>：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「monadic 操作」一节、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
+1. 先复现编译错误（原版匿名 union 的原样报错），再修复：`union Storage { T val_; E err_; Storage() {} ~Storage() {} } storage_;`。→ 知识点：[`std::expected<T, E>`：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「C++17 环境下的简化实现」一节（教材代码的编译坑与修法——这是教材以外必须补的机制点）
+2. `and_then` 串联 `validate_input → split_address`，`transform` 把成功值拼成字符串；五个输入覆盖全部四条错误路径。→ 知识点：[`std::expected<T, E>`：类型安全的错误传播](../ch10-error-handling/03-expected-error.md)「monadic 操作」一节、[错误处理模式总结：选择指南与最佳实践](../ch10-error-handling/04-error-patterns.md)
 
 ```cpp
 // hw2b1b.cpp -- Homework 2.11-B: C++17 simplified expected + error chain
@@ -2176,7 +2176,7 @@ all static_asserts passed
 
 **难度 L3** · 题面见 [homework](./01-homework.md#hw-2-c-1)
 
-**思路**：拆解任务——string_view 分段拆键值对、值按「bool → int → double → 字符串」优先级解析进 variant、Overloaded 访问者打印。真正的坑在最后：lambda 里直接捕获结构化绑定变量 `key` 在 C++17 不合法（C++20 的 P1091R3 才允许）；显式捕获 `[&key]` 时 g++ 16.1.1 与 clang++ 22.1.8 都亮 `-Wc++20-extensions`。注意这个警告行为**随分解形状而异**：对 `struct` 分解（本题这种），gcc 对隐式捕获 `[&]`/`[=]` 照样警告（与 clang 一样）；gcc 的「隐式捕获静默」只出现在 **tuple-like 分解**（`std::pair`/`std::tuple`，如 map 迭代）下——「不合法」与「编译器拦不拦」是两回事，而「拦不拦」还取决于代码形状。教材 ch05「C++17 就支持直接捕获」的说法与标准不符；用初始化捕获 `[k = key]` 复制一份才是干净的 C++17。
+**思路**：拆解任务——string_view 分段拆键值对、值按「bool → int → double → 字符串」优先级解析进 variant、Overloaded 访问者打印。真正的坑在最后：lambda 里直接捕获结构化绑定变量 `key` 在 C++17 不合法（C++20 的 P1091R3 才允许）；显式捕获 `[&key]` 时 g++ 16.1.1 与 clang++ 22.1.8 都亮 `-Wc++20-extensions`。注意这个警告行为**随分解形状而异**：对 `struct` 分解（本题这种），gcc 对隐式捕获 `[&]`/`[=]` 照样警告（与 clang 一样）；gcc 的「隐式捕获静默」只出现在 **tuple-like 分解**（`std::pair`/`std::tuple`，如 map 迭代）下——「不合法」与「编译器拦不拦」是两回事，而「拦不拦」还取决于代码形状。旧版教材 ch05 曾称「C++17 就支持直接捕获」，与标准不符（现行版已修订为「C++17 不允许、C++20 才补上」）；用初始化捕获 `[k = key]` 复制一份才是干净的 C++17。
 
 1. 主循环 `find(';')` + `remove_prefix` 消费；每段 `find('=')` 拆键值。→ 知识点：[string_view 内部原理：非拥有字符串视图](../ch08-string-view/01-string-view-internals.md)「修改视图本身」一节
 2. `parse_value` 用 `from_chars` 依次尝试 int、double，失败落字符串；bool 精确匹配。→ 知识点：[std::variant：类型安全的联合体](../ch04-type-safety/03-variant.md)「配置值」一节
@@ -2307,7 +2307,7 @@ hw2c1_sb_implicit.cpp:10:15: note: declared here
       |               ^~~
 ```
 
-要点：五个值全部零拷贝分类落袋——`192.168.1.1` 不是合法数字所以落字符串、`pi` 落 double、`port` 落 int、`debug` 落 bool。结构化绑定捕获是 C++20 才进标准的（P1091R3），教材 ch05 在这个点上说得不准（教材原文尚未修订，以本实测为准）；显式捕获 `[&key]` 两个编译器都亮 `-Wc++20-extensions`；隐式捕获 `[&]` 在本题 struct 分解下 gcc 也照报（gcc 的静默只在 tuple-like 分解下出现）——「不合法」与「编译器拦不拦」确实是两回事，拦不拦还随代码形状变；用 `[k = key]`（C++14 初始化捕获）既干净又不越标准。
+要点：五个值全部零拷贝分类落袋——`192.168.1.1` 不是合法数字所以落字符串、`pi` 落 double、`port` 落 int、`debug` 落 bool。结构化绑定捕获是 C++20 才进标准的（P1091R3），旧版教材 ch05 在这个点上说得不准（现行版已修订，以本实测为准）；显式捕获 `[&key]` 两个编译器都亮 `-Wc++20-extensions`；隐式捕获 `[&]` 在本题 struct 分解下 gcc 也照报（gcc 的静默只在 tuple-like 分解下出现）——「不合法」与「编译器拦不拦」确实是两回事，拦不拦还随代码形状变；用 `[k = key]`（C++14 初始化捕获）既干净又不越标准。
 
 ## 2.C-2 {#hw-2-c-2}
 

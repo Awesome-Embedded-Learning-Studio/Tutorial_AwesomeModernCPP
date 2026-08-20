@@ -118,7 +118,7 @@ This is "doesn't介入 ownership + can check liveness," made concrete. The four 
 
 Now let's fix the target API. This is how engineers work: figure out "what I want" first, then come back and argue every decision. Naming follows the project's `tamcpp::chrome` namespace, snake_case style, consistent with the OnceCallback series.
 
-### The weak pointer: WeakPtr\<T\>
+### The weak pointer: `WeakPtr<T>`
 
 ```cpp
 #include "weak_ptr/weak_ptr.hpp"
@@ -140,7 +140,7 @@ wp.get();                    // get()      : object dead → returns nullptr, no
 wp.reset();                  // let go; after this, wp == nullptr
 ```
 
-### The factory: WeakPtrFactory\<T\>
+### The factory: `WeakPtrFactory<T>`
 
 ```cpp
 class Controller {

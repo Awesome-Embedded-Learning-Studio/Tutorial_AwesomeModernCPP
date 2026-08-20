@@ -43,7 +43,7 @@ ivan,notnum,2021
 
 ### 核心任务（L2）：能跑起来的报表 {#pj-core}
 
-**L1 热身**：先搭骨架——`struct Row { string name; double score; int year; }`、`parse_row` 与 `report` 两个空函数声明，外加一段 `sizeof` 侦察（Row / string / vector\<Row\> / span\<Row\> 各占多少字节）和 `__cplusplus` 版本打印，只求 `-std=c++23 -Wall -Wextra` 编译零警告、跑得起来。
+**L1 热身**：先搭骨架——`struct Row { string name; double score; int year; }`、`parse_row` 与 `report` 两个空函数声明，外加一段 `sizeof` 侦察（Row / string / `vector<Row>` / `span<Row>` 各占多少字节）和 `__cplusplus` 版本打印，只求 `-std=c++23 -Wall -Wextra` 编译零警告、跑得起来。
 
 实现 CSV 读取：`argv[1]` 传文件路径，`is_open()` 检查后 `while (std::getline(in, line))` 逐行读；每行用 `string_view::find(',')` 切三段，`from_chars` 解析分数（double）与年份（int）——**ec 和 ptr 都要检查**，坏行计数跳过。用 `rows.reserve(64)` 预撑容量，`std::format` 打印 `解析 N 行, 坏行 M` 和一张对齐表格（名字左对齐 8、分数 `>6.1f`、年份 `>6`）。
 

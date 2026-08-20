@@ -375,7 +375,7 @@ int*         : false
 
 **思路**：①`vector<bool>` 位压缩后给不了真引用，只能给代理；②引用偏特化是「模式匹配」最直接的演示。
 
-1. `auto& x = v[0];` 的报错点名了 `_Bit_reference` 这个代理类型——它是右值临时对象，绑不了非 const 左值引用。这是偏特化的反面教材：实现可以完全重写，代价是不再满足主模板隐含的接口契约。→ 知识点：[模板特化与偏特化](../vol1-basics-cpp11-14/04-specialization-partial.md)「std::vector\<bool\> 的偏特化」
+1. `auto& x = v[0];` 的报错点名了 `_Bit_reference` 这个代理类型——它是右值临时对象，绑不了非 const 左值引用。这是偏特化的反面教材：实现可以完全重写，代价是不再满足主模板隐含的接口契约。→ 知识点：[模板特化与偏特化](../vol1-basics-cpp11-14/04-specialization-partial.md)「`std::vector<bool>` 的偏特化」
 2. `IsRef<T&>` 一个偏特化同时覆盖 `int&` 和 `const int&`，因为 `T` 能绑定 `int` 和 `const int`；`T&&` 同理覆盖右值引用。→ 知识点：[模板特化与偏特化](../vol1-basics-cpp11-14/04-specialization-partial.md)「偏特化能匹配哪些模式」
 
 **验证输出**：
@@ -625,10 +625,10 @@ $ echo | g++ -std=c++26 -dM -E -x c++ - | grep -i inplace_vector || echo "(旧�
 
 **难度 L1** · 题面见 [homework](./01-homework.md#hw-4-16-a)
 
-**思路**：部分初始化时未指定的字段走默认成员初始化器（没有就走值初始化）；**C++20 要求指定初始化器按声明顺序**——这一条与教材示例的 C99 写法冲突，实测是硬标准。
+**思路**：部分初始化时未指定的字段走默认成员初始化器（没有就走值初始化）；**C++20 要求指定初始化器按声明顺序**——旧版教材示例曾按 C99 语义写「乱序也没问题」（现行版已修正），实测是硬标准。
 
 1. `NetConfig a{.port = 443, .use_tls = true};` 未指定的 `host` 走默认值 `"localhost"`；无默认值的 `Raw` 里未指定的 `t` 被零初始化成 `false`（编译器同时给出 `-Wmissing-field-initializers` 提醒——这正是「隐式零初始化可能不是你的本意」的注脚）。→ 知识点：[指定初始化器](../vol2-modern-cpp17/06-designated-initializers.md)「部分初始化和默认值」「警惕隐式的零初始化」
-2. 乱序初始化被 C++20 硬拒：教材「乱序也没问题」是 C99 的语义，C++20（P0329）规定 designator 必须按声明顺序。**真实结果与教材表述不一致，按验证铁律如实报告并以此为准**。编译器差异注：上面「乱序硬拒」是 g++ 的行为；clang++ 22 默认只发 `-Wreorder-init-list` **警告**、编译照常通过（exit=0）——clang 用户请加 `-pedantic-errors` 复现标准要求的报错，或至少知晓这一差异。→ 知识点：[指定初始化器](../vol2-modern-cpp17/06-designated-initializers.md)（C99 与 C++20 差异，本题为教材纠正）
+2. 乱序初始化被 C++20 硬拒：C99 允许乱序，C++20（P0329）规定 designator 必须按声明顺序（旧版教材曾写成「乱序也没问题」，现行版已修正）。**无论哪一版教材怎么说，按验证铁律以实测为准**。编译器差异注：上面「乱序硬拒」是 g++ 的行为；clang++ 22 默认只发 `-Wreorder-init-list` **警告**、编译照常通过（exit=0）——clang 用户请加 `-pedantic-errors` 复现标准要求的报错，或至少知晓这一差异。→ 知识点：[指定初始化器](../vol2-modern-cpp17/06-designated-initializers.md)（C99 与 C++20 差异）
 
 **验证输出**：
 

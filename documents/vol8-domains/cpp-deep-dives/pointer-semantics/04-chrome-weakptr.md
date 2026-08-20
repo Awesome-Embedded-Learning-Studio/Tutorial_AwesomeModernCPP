@@ -96,7 +96,7 @@ private:
 
 和 `shared_ptr` 的控制块相比，`WeakFlag` 只有两个原子变量：`is_valid_` 和 `ref_count_`。没有 strong/weak 双计数、没有虚析构、没有 allocator。一个 `WeakFlag` 对象只有 8 字节（`atomic<bool>` 1 字节 + 对齐填充 3 字节 + `atomic<int>` 4 字节）。
 
-### WeakPtr\<T\>
+### `WeakPtr<T>`
 
 ```cpp
 // weak_ptr.h
@@ -195,7 +195,7 @@ private:
 };
 ```
 
-### WeakPtrFactory\<T\>
+### `WeakPtrFactory<T>`
 
 ```cpp
 // weak_ptr_factory.h

@@ -20,7 +20,7 @@ tags:
 - 引用计数
 title: SimpleWeakPtr：T* + shared_ptr<Flag> 的安全改进
 ---
-# SimpleWeakPtr：T* + shared_ptr\<Flag\> 的安全改进
+# SimpleWeakPtr：T* + `shared_ptr<Flag>` 的安全改进
 
 ## 引言
 
@@ -154,7 +154,7 @@ graph TD
     end
 ```
 
-## shared_ptr\<Flag\> 不等于拥有 T
+## `shared_ptr<Flag>` 不等于拥有 T
 
 这里有一个容易混淆的地方需要强调：`shared_ptr<Flag>` 只是拥有 Flag 这个控制块，**不拥有 T**。
 

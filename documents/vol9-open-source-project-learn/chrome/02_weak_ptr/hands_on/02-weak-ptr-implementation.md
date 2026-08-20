@@ -177,7 +177,7 @@ private:
 }  // namespace tamcpp::chrome::internal
 ```
 
-## 第 3 层:WeakPtr\<T\> —— 用户句柄
+## 第 3 层:`WeakPtr<T>` —— 用户句柄
 
 终于到用户能摸到的 API 了。WeakPtr 内部就两样东西:一个 `WeakReference`、一个裸指针 `ptr_`。判活全靠前者,真正解引用用后者。咱们上一篇提过的那个 `[[clang::trivial_abi]]`,就挂在这个类头上。
 
@@ -222,7 +222,7 @@ private:
 
 还有一处得提:私有构造函数加 `friend class WeakPtrFactory`,意思是只有 factory 能铸出 WeakPtr,外部不能凭空捏一个。这是把"铸币权"收口的关键。
 
-## 第 4 层:WeakPtrFactory\<T\>
+## 第 4 层:`WeakPtrFactory<T>`
 
 最后一层,也是用户真正会 new 出来的那个东西。它先内含一个 `WeakReferenceOwner`(Flag 的发行方),再加一个存被观察对象指针的成员。两个一起协作:铸币、批量失效、析构时兜底。
 

@@ -145,7 +145,7 @@ int main() {
 
 这里有一个重要的细节：`unique_ptr` 的移动构造函数和移动赋值运算符都标记为 `noexcept`。这对 `std::vector` 的行为有直接影响——当 vector 扩容时，如果元素的移动构造是 `noexcept` 的，vector 会优先使用移动；否则会退化为拷贝（但 `unique_ptr` 不可拷贝，所以必须移动）。因此 `noexcept` 的移动操作是 `unique_ptr` 能够安全存入容器的关键保证。
 
-## unique_ptr\<T[]>：数组版本
+## `unique_ptr<T[]>`：数组版本
 
 `unique_ptr` 有一个针对数组的偏特化版本 `unique_ptr<T[]>`，它在析构时会调用 `delete[]` 而不是 `delete`。
 

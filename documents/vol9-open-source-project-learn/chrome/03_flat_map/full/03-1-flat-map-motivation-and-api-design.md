@@ -140,7 +140,7 @@ API 定是定下来了,可每个签名里都藏着取舍,咱们把"为什么"挨
 
 `std::map` 默认 `Compare = std::less<Key>`,不透明;flat_map 默认换成 `std::less<>`,透明的(flat_map.h:192)。这一换,异构查找就开了口子——您拿 `const char*` 去 `find` 一个 `std::string` 的 map,不用再临时构造一个 `std::string` 出来。在热路径上这点临时对象的累积相当可观,详见 [pre-03](./pre-03-flat-map-comparator-and-transparent.md)。现代 C++ 的推荐默认就是透明比较器,flat_map 直接照办。
 
-### 为什么存 pair\<K,V> 而非 pair\<const K,V>
+### 为什么存 `pair<K,V>` 而非 `pair<const K,V>`
 
 底层存的是 `std::vector<std::pair<Key, Mapped>>`,key 是非 const 的(flat_map.h:193)。这个反直觉的取舍是被 vector 的 shift 逼出来的——insert/erase 要搬迁整对元素,得能对整对做移动赋值,可 `pair<const K, V>` 偏偏不可 move-assign。代价是 key 暴露成可改的,理论上迭代器能把 key 改坏、把有序不变量打破,只能靠用户自律。这笔账的明细在 [pre-05](./pre-05-flat-map-enua-ebo-and-pair-storage.md)。
 

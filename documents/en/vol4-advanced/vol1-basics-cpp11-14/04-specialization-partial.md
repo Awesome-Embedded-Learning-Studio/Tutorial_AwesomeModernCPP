@@ -131,7 +131,7 @@ The expressiveness of partial specialization comes from the rich set of patterns
 
 Combined, partial specialization can recognize almost any "type shape." This is what gives `<type_traits>` its many type queries, as we will see next.
 
-## Classic Application One: The std::vector\<bool\> Specialization
+## Classic Application One: The `std::vector<bool>` Specialization
 
 The most famous partial specialization in the standard library is `std::vector<bool>`. It is not the ordinary version of `std::vector<T>` instantiated with `T=bool`. It is a specialization the library writes on purpose, so that one `bool` takes one bit instead of one byte, saving memory.
 

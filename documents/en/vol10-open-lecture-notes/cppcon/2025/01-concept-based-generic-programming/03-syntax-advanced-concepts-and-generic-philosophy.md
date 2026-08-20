@@ -64,7 +64,7 @@ public:
 };
 ```
 
-I tested this. `SmartPtr<std::string>` works perfectly. If I uncomment the `ptr->` line with `SmartPtr<int>`, GCC gives a clean error: "no member named 'operator->' in 'SmartPtr\<int>'." In the past, with `std::enable_if`, the error would scroll for pages. Now it's one line. This is the experience concepts bring—not "doing what was impossible before," but "doing the same thing ten times better."
+I tested this. `SmartPtr<std::string>` works perfectly. If I uncomment the `ptr->` line with `SmartPtr<int>`, GCC gives a clean error: "no member named 'operator->' in '`SmartPtr<int>`'." In the past, with `std::enable_if`, the error would scroll for pages. Now it's one line. This is the experience concepts bring—not "doing what was impossible before," but "doing the same thing ten times better."
 
 You might ask, why not just use `operator*`? Indeed, if you only use `operator*`, the smart pointer behaves uniformly for all types. But `operator->` is too convenient when dealing with objects; removing it completely is a waste. The correct approach isn't a "one-size-fits-none removal," but "precise control over when it exists." Concepts are the tool for this.
 

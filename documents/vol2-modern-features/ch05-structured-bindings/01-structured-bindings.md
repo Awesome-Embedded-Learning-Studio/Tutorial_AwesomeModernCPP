@@ -285,20 +285,31 @@ static_assert(test_structured_binding());
 
 不过要注意，您不能在命名空间作用域直接声明 `constexpr` 的结构化绑定（比如 `constexpr auto [x, y] = get_point();` 是编译错误的）。这是因为结构化绑定本质上是一组引用变量的声明，而不是单个变量声明。
 
-在 lambda 捕获方面，C++17 其实就支持直接捕获结构化绑定变量。下面的代码在 C++17 中就能工作：
+在 lambda 捕获方面，结构化绑定有个著名的坑：**C++17 标准不允许捕获结构化绑定变量**——把绑定的名字直接写进捕获列表，是 C++20（P1091）才补上的能力。但「标准不允许」和「编译器拦不拦」是两回事。拿这套代码实测（g++ 16.1.1 / clang++ 22.1.8）：
 
 ```cpp
 std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
 
 for (const auto& [k, v] : m) {
-    auto callback = [k, v] {  // C++17 就支持直接捕获
+    auto callback = [k, v] {  // 显式捕获结构化绑定
         std::cout << k << ": " << v << '\n';
     };
     callback();
 }
 ```
 
-C++20 新增的是初始化捕获语法（`key = k`），这在某些情况下更灵活。但需要注意，`[=]` 默认捕获不会自动捕获结构化绑定变量，您需要显式列出它们。
+在 `-std=c++17` 下：clang++ 对这种写法（无论显式 `[k, v]` 还是隐式 `[=]`、无论分解 pair/tuple 还是 struct）一律警告 `captured structured bindings are a C++20 extension [-Wc++20-extensions]`；g++ 则宽松得多——对 pair/tuple 这类 tuple-like 分解（上面的 `map` 循环就是）**完全静默放行**，只对 struct 成员分解才给出同样的扩展警告。换句话说，这段代码能不能在 C++17 模式下无警告地编过，取决于编译器、版本和分解形状——指望不上。
+
+要写得跨标准、跨编译器都干净，两条路：升到 C++20，让捕获名正言顺；或者用 C++14 起就有的**初始化捕获**，先把值拷进普通变量再捕获：
+
+```cpp
+for (const auto& [k, v] : m) {
+    auto callback = [key = k, val = v] {  // 初始化捕获：C++14 起，任何模式下零警告
+        std::cout << key << ": " << val << '\n';
+    };
+    callback();
+}
+```
 
 ------
 

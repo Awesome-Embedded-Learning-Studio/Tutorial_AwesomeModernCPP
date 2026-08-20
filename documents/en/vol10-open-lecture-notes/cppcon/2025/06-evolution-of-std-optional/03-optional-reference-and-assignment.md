@@ -1,6 +1,6 @@
 ---
 title: "What an optional reference is, and why assignment is always a rebind"
-description: "CppCon 2025 notes — the non-owning nature of optional&lt;T&>, the map-lookup pain point, why assignment is always a rebind, the vector<bool> specter, and how make_optional and CTAD really behave with references"
+description: "CppCon 2025 notes — the non-owning nature of optional<T&>, the map-lookup pain point, why assignment is always a rebind, the vector<bool> specter, and how make_optional and CTAD really behave with references"
 chapter: 6
 order: 3
 conference: cppcon
@@ -173,7 +173,7 @@ I once considered what looked like a cleverer scheme: if the optional is engaged
 
 [The first piece](./01-why-optional-reference-took-20-years.md) covered JeanHeyd's key observation: once assignment behavior depends on state, the type can no longer be reasoned about statically. Every implementation that went down this road eventually fell into the trap. The rule "always rebind" means that regardless of what state the optional was in before, after the assignment it is bound to whatever you handed it. Simple, consistent, predictable.
 
-### The vector\<bool> specter
+### The `vector<bool>` specter
 
 But there is a serious objection here, one I wrestled with too. Assignment on `optional<int>` is a value copy; assignment on `optional<int&>` is a rebind. The same template, different specializations, inconsistent behavior. Is this not another `vector<bool>`?
 

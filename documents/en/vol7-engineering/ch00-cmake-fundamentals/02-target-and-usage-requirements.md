@@ -70,7 +70,7 @@ Splitting these three states along "self-use / others-use" sits on top of a simp
 
 Memorize this table. It fits every `target_*` command you will ever read.
 
-### A Concrete Example: fmt Is PRIVATE, \<string> Is INTERFACE
+### A Concrete Example: fmt Is PRIVATE, `<string>` Is INTERFACE
 
 Definitions alone are not enough; let us drop down to code. The project below has three targets: a minimal `fmt` (standing in for a third-party formatting library), a `mylib` static library that exposes an outward-facing API, and a downstream `app` executable. `mylib` uses `fmt::format` internally, but its public header uses only `std::string`.
 

@@ -315,6 +315,6 @@ In the next chapter, we will continue to dive deeper into the STL and explore mo
 
 > **References**
 >
-> - [cppreference: \<algorithm\>](https://en.cppreference.com/w/cpp/algorithm)
-> - [cppreference: \<numeric\>](https://en.cppreference.com/w/cpp/header/numeric)
+> - [cppreference: `<algorithm>`](https://en.cppreference.com/w/cpp/algorithm)
+> - [cppreference: `<numeric>`](https://en.cppreference.com/w/cpp/header/numeric)
 > - [cppreference: Lambda expressions](https://en.cppreference.com/w/cpp/language/lambda)

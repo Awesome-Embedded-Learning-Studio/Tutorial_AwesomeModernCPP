@@ -76,7 +76,7 @@ struct IsWeakReceiver : std::bool_constant<is_instantiation<T, WeakPtr>> {};
 
 ---
 
-## 调用期分派:InvokeHelper\<true\>::MakeItSo
+## 调用期分派:`InvokeHelper<true>::MakeItSo`
 
 `kIsWeakMethod` 一旦在编译期为真,就会选中一个特化版的 `InvokeHelper<true>`——它就是 weak 调用的执行器。核心代码短得吓人(`bind_internal.h:939-961`),咱们整段贴出来:
 

@@ -47,7 +47,7 @@ Chrome-like `WeakPtr` solves the problem of "weak references on objects not mana
 
 These are two completely different lifetime strategies:
 
-| Feature | Chrome-like WeakPtr\<T\> | std::weak_ptr\<T\> |
+| Feature | Chrome-like `WeakPtr<T>` | `std::weak_ptr<T>` |
 |---------|-------------------------|-------------------|
 | Depends on shared_ptr | No | Yes |
 | Extends lifetime when acquiring reference | **No** | **Yes** (lock returns shared_ptr) |

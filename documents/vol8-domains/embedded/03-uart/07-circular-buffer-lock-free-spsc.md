@@ -40,9 +40,9 @@ description: ''
 
 几个关键状态：
 
-- **空（empty）**：`head == tail`，没有任何数据。
-- **满（full）**：`head` 的下一个位置等于 `tail`。注意这里不能用 `head == tail` 来判断满——因为 `head == tail` 已经被用来表示"空"了。我们留一个位置不写来区分空和满：如果 N 个位置的缓冲区，最多存 N-1 个字节。
-- **数据量**：`head - tail`（处理环绕后的结果）。
+- **空（empty）**：`head == tail`——索引差为 0，没有任何数据。
+- **满（full）**：索引差恰好等于 N。注意这里不能用 `head == tail` 来判断满——它已经被用来表示"空"了。本篇把 head 和 tail 的取值范围扩大到 0 到 2N-1（下一节详解）：空 = 差 0，满 = 差 N，两个状态永无歧义，N 个位置全部可用，一个都不用牺牲。
+- **数据量**：索引差（`head - tail` 对 2N 取模，下文 `size()` 一条位与就能取出）。
 
 这种"单生产者单消费者"（SPSC，Single-Producer Single-Consumer）的访问模式保证了一个关键性质：head 和 tail 各自只被一方修改。ISR 只修改 head，主循环只修改 tail。不存在两个执行流同时修改同一个变量的情况——因此不需要锁。
 
@@ -104,10 +104,8 @@ class CircularBuffer {
     }
 
     bool   empty() const noexcept { return head_ == tail_; }
-    bool   full()  const noexcept { return next(head_) == tail_; }
-    size_t size()  const noexcept {
-        return head_ >= tail_ ? head_ - tail_ : N - tail_ + head_;
-    }
+    bool   full()  const noexcept { return ((head_ - tail_) & (2 * N - 1)) == N; }
+    size_t size()  const noexcept { return (head_ - tail_) & (2 * N - 1); }
 
   private:
     static constexpr size_t mask(size_t v) noexcept { return v & (N - 1); }
@@ -133,14 +131,12 @@ class CircularBuffer {
 
 ### empty() 和 full()
 
-- `empty()`：`head_ == tail_`。简单直接——如果 head 和 tail 相等，说明没有数据。
-- `full()`：`next(head_) == tail_`。如果 head 的下一个位置就是 tail，说明写一个新字节就会覆盖还没读走的数据——所以满了。
+- `empty()`：`head_ == tail_`。索引差为 0，没有数据。
+- `full()`：`((head_ - tail_) & (2 * N - 1)) == N`。索引差（对 2N 取模）恰好为 N——N 个位置全部装满。不用担心无符号减法的回绕：head 和 tail 都在 0 到 2N-1 的域内前进，谁也领先不了对方 N 步以上（< 2N），`head_ - tail_` 回绕后再 `& (2 * N - 1)`，得到的正是差值对 2N 的余数（N 是 2 的幂，2N 整除 2^64）。空 = 0、满 = N、部分填充 = 1..N-1，永无歧义。
 
 ### size()
 
-当前缓冲区中的数据量。当 `head_ >= tail_` 时（没发生环绕），直接 `head_ - tail_`。当 `head_ < tail_` 时（head 绕过了 tail），数据量是 head 前面的部分加上 tail 后面的部分。
-
-不过，由于我们使用了 `next()` 的设计（head 和 tail 的范围是 0 到 2N-1），实际上 `head_ - tail_` 在大多数情况下就足够了——但为了防御性编程，代码还是处理了两种情况。
+当前缓冲区中的数据量就是索引差：`(head_ - tail_) & (2 * N - 1)`，一条减法加一条位与，没有任何分支。这正是把索引域扩大到 2N 的回报——head 和 tail 谁也"绕不过"谁，差值对 2N 取模后就是元素个数。一个提醒：`size()` 要同时读 head 和 tail 两个索引，在 ISR 与主循环并发的真实系统里只能当近似值用；push/pop 的满/空判定各自只依赖对方的一个索引，那才是无锁安全的部分。
 
 ---
 

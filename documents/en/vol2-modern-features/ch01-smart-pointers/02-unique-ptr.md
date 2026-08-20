@@ -134,7 +134,7 @@ Here is an important detail: `std::unique_ptr`'s move constructor and move assig
 
 You can run `unique_ptr_vector.cpp` to verify this. This example shows how the vector safely moves objects managed by `std::unique_ptr` during expansion and verifies that all elements remain valid after resizing.
 
-## unique_ptr\<T[]>: Array Version
+## `unique_ptr<T[]>`: Array Version
 
 `std::unique_ptr` has a partial specialization for arrays, `std::unique_ptr<T[]>`, which calls `delete[]` instead of `delete` upon destruction.
 

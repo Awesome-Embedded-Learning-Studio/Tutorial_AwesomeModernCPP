@@ -127,7 +127,7 @@ struct TypeKind<int*> {
 
 把这些组合起来,偏特化几乎能识别任何「类型形状」。这正是 `<type_traits>` 能提供那么多类型查询的底层支撑,后面会看到。
 
-## 经典应用一:std::vector\<bool\> 的偏特化
+## 经典应用一:`std::vector<bool>` 的偏特化
 
 标准库里最出名的偏特化,是 `std::vector<bool>`。它不是 `std::vector<T>` 用 `T=bool` 实例化出来的普通版本,而是库专门写的一个偏特化。目的是让一个 `bool` 只占一个 bit,而不是一个字节,省内存。
 

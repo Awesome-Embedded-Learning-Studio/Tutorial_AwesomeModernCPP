@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 掌握 template&lt;typename T> 的语法、实例化机制和类型推导，学会编写泛型函数
+description: 掌握 template<typename T> 的语法、实例化机制和类型推导，学会编写泛型函数
 difficulty: intermediate
 order: 1
 platform: host
@@ -25,7 +25,7 @@ title: 函数模板
 
 这种"逻辑相同、类型不同"的重复代码，在实际项目里到处都是——排序、查找、交换、打印数组，几乎每个通用操作都会碰到。C++ 提供了一种机制，让咱们只写一次逻辑，编译器就能自动为不同类型生成对应的函数版本，这就是函数模板（function template）。从这一章开始，咱们正式进入 C++ 泛型编程的世界。
 
-## template\<typename T\>——泛型的起点
+## `template<typename T>`——泛型的起点
 
 咱们先从最简单的例子入手，写一个泛型的 `max_value` 函数（之所以不叫 `max`，是因为 `std::max` 已经在标准库里了，直接同名容易在某些编译器上引起冲突——尤其是 Windows 上 `<windows.h>` 会定义一个 `max` 宏，那才是真正的血压拉满）。
 

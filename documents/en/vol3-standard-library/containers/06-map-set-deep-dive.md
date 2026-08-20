@@ -340,7 +340,7 @@ Want to run it and see the effect immediately? Open the online example below (ru
 
 - [std::map — cppreference](https://en.cppreference.com/w/cpp/container/map)
 - [std::set — cppreference](https://en.cppreference.com/w/cpp/container/set)
-- [std::less\<void\> transparent comparator — cppreference](https://en.cppreference.com/w/cpp/utility/functional/less_void)
+- [`std::less<void>` transparent comparator — cppreference](https://en.cppreference.com/w/cpp/utility/functional/less_void)
 - [map::extract / merge node handle — cppreference](https://en.cppreference.com/w/cpp/container/map/extract)
 - [Container iterator invalidation rules summary — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
 - [N3657: C++14 Heterogeneous Lookup Proposal](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3657.htm)

@@ -107,9 +107,9 @@ related:
 
 1. 实现 `NoDestructor` 最小版（placement new + `= default` 析构 + 两条 static_assert），用一个构造/析构都打印的 `Noisy` 验证"构造一次、析构永不跑"。
 2. 把一张 `flat_map` 配置表装进 `NoDestructor`（函数局部静态），从 `main` 里查两回，验证第二次不重新构造（打印构造计数）。
-3. 验货：①把步骤 4 的完整时间线用 `-fsanitize=address,undefined` 跑一遍，零报告；②LSan 实验——写一个"真泄漏对照组"（`new` 之后指针置空，比如 `int* p = new int[100]; p[0]=1; p=nullptr;`），和 NoDestructor 版配置表放进同一个程序，用 `-fsanitize=address -g -O0` 加 `ASAN_OPTIONS=detect_leaks=1` 跑一遍，**如实贴出** LSan 报了谁、没报谁。教材 04-4 说 LSan 会把 NoDestructor 误报成泄漏，但您在新工具链上很可能看到它只报真泄漏、放过 NoDestructor——如果这样，结合 LSan 的保守字节扫描（它扫的是内存里的指针值，不是 C++ 类型）解释为什么 `char storage_` 里的指针还是被看见了，并说明"工具行为随版本变化"对读教材意味着什么。两个实测踩坑请一并记录：本工具链 LSan 的 `detect_leaks` 默认就是 1——不写 `ASAN_OPTIONS` 也照样报真泄漏（命令里写上无害且自解释，值得写）；真正必须的是 `-O0`——`-O1`/`-O2` 下编译器可能把您的对照组分配直接优化掉（那实验就白做了）；③把 `GetSharedCounter`（magic statics 首调计数）用 `-fsanitize=thread` 多线程跑一遍，零报告。
+3. 验货：①把步骤 4 的完整时间线用 `-fsanitize=address,undefined` 跑一遍，零报告；②LSan 实验——写一个"真泄漏对照组"（`new` 之后指针置空，比如 `int* p = new int[100]; p[0]=1; p=nullptr;`），和 NoDestructor 版配置表放进同一个程序，用 `-fsanitize=address -g -O0` 加 `ASAN_OPTIONS=detect_leaks=1` 跑一遍，**如实贴出** LSan 报了谁、没报谁。教材 04-4 **旧版**曾说 LSan 会把 NoDestructor 误报成泄漏（那是 crbug 年代老版本 LSan 的行为，现行教材已按保守字节扫描的口径修订）；您在新工具链上大概率看到它只报真泄漏、放过 NoDestructor——结合 LSan 的保守字节扫描（它扫的是内存里的指针值，不是 C++ 类型）解释为什么 `char storage_` 里的指针还是被看见了，并体会"工具行为随版本变化"对读旧文档意味着什么。两个实测踩坑请一并记录：本工具链 LSan 的 `detect_leaks` 默认就是 1——不写 `ASAN_OPTIONS` 也照样报真泄漏（命令里写上无害且自解释，值得写）；真正必须的是 `-O0`——`-O1`/`-O2` 下编译器可能把您的对照组分配直接优化掉（那实验就白做了）；③把 `GetSharedCounter`（magic statics 首调计数）用 `-fsanitize=thread` 多线程跑一遍，零报告。
 
-**验收标准**：贴出三种 sanitizer 的输出；说清"真泄漏被抓、NoDestructor 没被误报"（或您实测到的任何其他结果）背后的可达性分析机制，以及为什么 `storage_` 的 `char` 类型本来可能让这条可达链断开。
+**验收标准**：贴出三种 sanitizer 的输出；说清"真泄漏被抓、NoDestructor 没被误报"（或您实测到的任何其他结果）背后的可达性分析机制，以及为什么按旧版机制描述 `storage_` 的 `char` 类型本会让可达链断开、现代 LSan 的保守扫描又为什么让它断不了。
 
 [实验参考 →](04-lab-solutions.md#lab-6)
 

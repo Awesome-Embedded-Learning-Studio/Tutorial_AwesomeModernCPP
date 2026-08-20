@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: std::atomic&lt;T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free
+description: std::atomic<T> 的完整操作手册：load/store、fetch_add、compare_exchange 与 lock-free
   判断
 difficulty: intermediate
 order: 1
@@ -29,7 +29,7 @@ title: atomic 操作
 
 `std::atomic` 就是针对这种"极小粒度"场景设计的。它不靠锁（至少在理想情况下），而是直接利用 CPU 提供的原子指令来保证操作不可分割。上一篇中我们在并发基本问题里已经用 `std::atomic<int>` 修复过 data race 了，但当时只是浅尝辄止。这一篇我们要完整地拆解 `std::atomic<T>` 的所有操作——从最基础的 `load`/`store`，到 CAS（compare-and-swap）机制，再到 lock-free 的判断和特化类型 `atomic_flag`。下一篇我们再讨论内存序，这里先把注意力集中在"原子操作能做什么"上。
 
-## std::atomic\<T> 支持哪些类型
+## `std::atomic<T>` 支持哪些类型
 
 `std::atomic` 是一个类模板，定义在 `<atomic>` 头文件中。并不是所有类型都能放进 `std::atomic`——标准对此有明确的限制。
 

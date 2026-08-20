@@ -331,7 +331,7 @@ map 和 set 这一家子，表面上看就是「能按键排序、能 O(log n) �
 
 - [std::map — cppreference](https://en.cppreference.com/w/cpp/container/map)
 - [std::set — cppreference](https://en.cppreference.com/w/cpp/container/set)
-- [std::less\<void\> 透明比较器 — cppreference](https://en.cppreference.com/w/cpp/utility/functional/less_void)
+- [`std::less<void>` 透明比较器 — cppreference](https://en.cppreference.com/w/cpp/utility/functional/less_void)
 - [map::extract / merge 节点句柄 — cppreference](https://en.cppreference.com/w/cpp/container/map/extract)
 - [容器迭代器失效规则总表 — cppreference](https://en.cppreference.com/w/cpp/container#Iterator_invalidation)
 - [N3657：C++14 异构查找提案](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3657.htm)

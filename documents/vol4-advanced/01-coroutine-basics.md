@@ -54,7 +54,7 @@ description: ''
   >     struct __coroutine_traits_impl<_Result, void>
   > #else
   >     struct __coroutine_traits_impl<_Result,
-  >        __void_t\<typename _Result::promise_type>>
+  >        __void_t<typename _Result::promise_type>>
   > #endif
   >     {
   >       using promise_type = typename _Result::promise_type;

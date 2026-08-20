@@ -187,7 +187,7 @@ private:
 
 ---
 
-## 第三层:WeakPtr\<T\> —— 用户句柄
+## 第三层:`WeakPtr<T>` —— 用户句柄
 
 到了顶层 `WeakPtr<T>`,它在 `WeakReference` 基础上再补一个 `T*`。这根指针的语义有点反直觉:对象活着它指向对象,对象一析构,它允许悬垂——明晃晃地挂着,但不许碰。[前置知识（五）](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) 解释过这里为什么刻意不用 `raw_ptr`,允许悬垂本身就是设计的一部分,守门的事交给 `WeakReference`。
 

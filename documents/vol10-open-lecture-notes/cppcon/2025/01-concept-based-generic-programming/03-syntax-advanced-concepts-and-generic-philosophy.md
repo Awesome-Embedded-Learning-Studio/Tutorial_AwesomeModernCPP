@@ -84,7 +84,7 @@ void test_with_int() {
 }
 ```
 
-我跑了一下，`test_with_class()` 完全正常，`test_with_int()` 里如果取消注释那行 `sp->`，GCC 给出的错误是"no member named 'operator->' in 'SmartPtr\<int>'"，干净利落。以前用 `enable_if` 的时候，报错能滚满一屏幕，现在就一句话。这就是 concepts 带来的体验提升——不是"能做以前做不了的事"，而是"做同样的事，体验好十倍"。
+我跑了一下，`test_with_class()` 完全正常，`test_with_int()` 里如果取消注释那行 `sp->`，GCC 给出的错误是"no member named 'operator->' in '`SmartPtr<int>`'"，干净利落。以前用 `enable_if` 的时候，报错能滚满一屏幕，现在就一句话。这就是 concepts 带来的体验提升——不是"能做以前做不了的事"，而是"做同样的事，体验好十倍"。
 
 你可能会问，为什么不直接用 `operator*` 就完了？确实，如果你只用 `operator*`，那智能指针对所有类型的行为是统一的。但 `operator->` 在操作对象类型的时候实在太方便了，完全不用也太可惜了。所以正确的做法不是"一刀切去掉"，而是"精确控制它在什么时候存在"。concepts 就是干这个的。
 

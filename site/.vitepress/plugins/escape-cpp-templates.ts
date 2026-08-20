@@ -54,7 +54,7 @@ function escapeCppTemplates(src: string): string {
   let fenceChar = ''
 
   return lines.map(line => {
-    const fenceMatch = line.match(/^(\s*)(```+|~~~+)/)
+    const fenceMatch = line.match(/^(\s*(?:>\s*)*)(```+|~~~+)/)
     if (fenceMatch) {
       const marker = fenceMatch[2]
       if (!inFence) {

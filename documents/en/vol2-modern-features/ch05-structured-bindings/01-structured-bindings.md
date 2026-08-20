@@ -291,20 +291,31 @@ static_assert(test_structured_binding());
 
 Note, though, that you can't declare a `constexpr` structured binding at namespace scope (e.g., `constexpr auto [x, y] = get_point();` is a compile error). That's because structured binding is fundamentally a declaration of a set of reference variables, not a single variable.
 
-On lambda captures: C++17 already supports capturing structured-binding variables directly. This works in C++17:
+On lambda captures, structured bindings have a famous pitfall: **C++17 does not permit capturing structured-binding variables**. Naming a binding directly in a capture list is a C++20 (P1091) addition. But "the standard doesn't allow it" and "the compiler stops you" are two different things. Here is what an actual run shows (g++ 16.1.1 / clang++ 22.1.8):
 
 ```cpp
 std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
 
 for (const auto& [k, v] : m) {
-    auto callback = [k, v] {  // direct capture, valid in C++17
+    auto callback = [k, v] {  // explicitly capturing structured bindings
         std::cout << k << ": " << v << '\n';
     };
     callback();
 }
 ```
 
-What C++20 adds is the init-capture syntax (`key = k`), which is more flexible in some cases. But note: `[=]` default capture does not capture structured-binding variables automatically—you have to list them explicitly.
+Under `-std=c++17`, clang++ warns on every variant of this—explicit `[k, v]`, implicit `[=]`, tuple-like or struct decompositions alike—with `captured structured bindings are a C++20 extension [-Wc++20-extensions]`. g++ is far laxer: for tuple-like decompositions (pair/tuple—the `map` loop above is one) it **accepts the code in complete silence**, and only warns for struct-member decompositions. In other words, whether this compiles warning-free in C++17 mode depends on the compiler, its version, and the shape of the decomposition—not something to rely on.
+
+Two clean ways out: move to C++20 and capture openly; or use the **init-capture** that has existed since C++14, copying the value into an ordinary variable first:
+
+```cpp
+for (const auto& [k, v] : m) {
+    auto callback = [key = k, val = v] {  // init-capture: available since C++14, zero warnings everywhere
+        std::cout << key << ": " << val << '\n';
+    };
+    callback();
+}
+```
 
 ------
 

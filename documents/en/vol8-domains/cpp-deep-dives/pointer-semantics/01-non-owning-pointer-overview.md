@@ -57,7 +57,7 @@ Before writing code, we need to clarify one thing—how many semantics does "not
 
 Now, let's use a table to compare these four layers:
 
-| Feature | T* | T& | Borrowed\<T\> | ObserverPtr\<T\> | WeakPtr\<T\> | std::weak_ptr\<T\> |
+| Feature | T* | T& | `Borrowed<T>` | `ObserverPtr<T>` | `WeakPtr<T>` | `std::weak_ptr<T>` |
 |---------|----|----|---------------|-----------------|-------------|-------------------|
 | Nullable | Yes | No | No (by design) | Yes | Yes | Yes |
 | Owns Object | No | No | No | No | No | No |
@@ -69,7 +69,7 @@ Now, let's use a table to compare these four layers:
 
 ⚠️ Note this row—"Safe Null Check After Destruction". The first four types (T*, T&, Borrowed, ObserverPtr) cannot do this. Only a WeakPtr with a truly independent control block can. We will expand on this in the second article; for now, just remember this conclusion.
 
-## Hand-rolling Borrowed\<T\>: Making Borrowing Semantics Explicit
+## Hand-rolling `Borrowed<T>`: Making Borrowing Semantics Explicit
 
 The problem ``Borrowed<T>`` wants to solve is simple: when ``const T&`` or ``T*`` appears in function parameters, the caller and the reader cannot immediately tell that "this is just a borrow." We need a type to nail the semantics of "non-null, non-owning, short-term use" into the type system.
 
@@ -169,7 +169,7 @@ int main()
 
 Compared to directly using ``const std::vector<int>&``, the advantage of the ``Borrowed`` version lies not in runtime behavior (they generate almost identical code), but in **readability**—the function signature tells you directly "this is a borrow."
 
-## Hand-rolling ObserverPtr\<T\>: A Nullable Non-Owning Observer
+## Hand-rolling `ObserverPtr<T>`: A Nullable Non-Owning Observer
 
 If ``Borrowed<T>`` is for function parameters, then ``ObserverPtr<T>`` is for class members. Its semantics are "I am observing this object, but I don't own it, and I am not responsible for its lifecycle."
 
@@ -318,8 +318,8 @@ The problem with the raw pointer ``T*`` is not that it is "unsafe," but that it 
 Let's summarize the key points of this article:
 
 - **T\*** and **T&** are C++'s most primitive borrowing mechanisms and do not express ownership semantics themselves.
-- **Borrowed\<T\>** expresses non-null borrowing, is suitable for function parameters, prohibits construction from temporary objects, and does not extend the object's lifecycle.
-- **ObserverPtr\<T\>** expresses nullable non-owning observation, is suitable for class members, and does not provide the ability to check for liveness.
+- **`Borrowed<T>`** expresses non-null borrowing, is suitable for function parameters, prohibits construction from temporary objects, and does not extend the object's lifecycle.
+- **`ObserverPtr<T>`** expresses nullable non-owning observation, is suitable for class members, and does not provide the ability to check for liveness.
 - **Non-owning does not equal safety**—Borrowed and ObserverPtr cannot safely detect failure after the object is destroyed.
 - Their core value is **semantic expression**, not runtime safety—let the code speak for itself and reduce ambiguity.
 

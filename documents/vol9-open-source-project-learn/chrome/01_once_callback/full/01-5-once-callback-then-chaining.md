@@ -121,7 +121,7 @@ auto then(Next&& next) &&
 
 末尾那个 `&&` 把它做成了右值限定的成员函数，意思是 `then()` 只接受 `std::move(cb).then(next)` 或者临时对象上的 `.then(next)`。谁要是不小心写了 `cb.then(next)` 这种左值调用，编译器当场就甩一句"没有匹配的重载函数"，连错都报得直白。这跟 `run()` 走 deducing this 那一套是两条路——`run()` 得在左值和右值上分别给出不同的错误信息，麻烦些；`then()` 不用区分，一个 ref-qualifier 就够了，干净。
 
-### std::decay_t\<Next\>：退化去掉引用
+### `std::decay_t<Next>`：退化去掉引用
 
 ```cpp
 using NextType = std::decay_t<Next>;

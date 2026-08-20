@@ -364,11 +364,11 @@ caught: Stack::pop(): stack is empty
 
 ## 练习
 
-### 练习 1：实现 Pair\<T, U\>
+### 练习 1：实现 `Pair<T, U>`
 
 实现一个泛型的 `Pair` 类模板，存储两个不同类型的值。要求提供 `first()` 和 `second()` 访问器（const 和非 const 版本），以及一个 `swap(Pair& other)` 成员函数用来交换两个 `Pair` 对象的内容。用 `Pair<int, std::string>` 和 `Pair<double, char>` 分别测试。提示：类模板可以接受多个类型参数，写法是 `template <typename T, typename U>`。
 
-### 练习 2：实现 RingBuffer\<T, N\>
+### 练习 2：实现 `RingBuffer<T, N>`
 
 实现一个环形缓冲区类模板，使用非类型模板参数 `std::size_t kCapacity` 指定容量。要求提供 `push(const T&)` 写入元素、`pop()` 读取并移除最早写入的元素、`full() const` 和 `empty() const` 判断状态、以及 `size() const` 返回当前元素数量。底层使用 `std::array<T, kCapacity>` 存储，用两个索引（读和写）追踪位置。环形缓冲区的核心思路是用取模运算 `% kCapacity` 让索引在数组末尾回绕到头部。
 

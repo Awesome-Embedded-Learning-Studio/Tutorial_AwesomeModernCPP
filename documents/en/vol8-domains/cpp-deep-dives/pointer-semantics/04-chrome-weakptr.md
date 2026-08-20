@@ -75,7 +75,7 @@ struct WeakFlag {
 
 Compared to `std::shared_ptr`'s control block, `WeakFlag` has only two atomic variables: `ref_count` and `is_valid`. There are no strong/weak dual counts, no virtual destructors, and no allocators. A `WeakFlag` object is only 8 bytes (`ref_count` 4 bytes + `is_valid` 1 byte + padding 3 bytes).
 
-### WeakPtr\<T\>
+### `WeakPtr<T>`
 
 ```cpp
 template <typename T>
@@ -122,7 +122,7 @@ private:
 };
 ```
 
-### WeakPtrFactory\<T\>
+### `WeakPtrFactory<T>`
 
 ```cpp
 template <typename T>

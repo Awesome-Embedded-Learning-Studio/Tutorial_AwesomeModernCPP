@@ -1,6 +1,6 @@
 ---
 title: 标准化真相：The Beman Project 与一份能跑的参考实现
-description: CppCon 2025 笔记 —— optional&lt;T&> 赋值的汇编实证、The Beman Project 参考实现为何重要、大而全与小而专的取舍、optional&lt;T> 与 optional&lt;T&> 必须是一个整体
+description: CppCon 2025 笔记 —— optional<T&> 赋值的汇编实证、The Beman Project 参考实现为何重要、大而全与小而专的取舍、optional<T> 与 optional<T&> 必须是一个整体
 chapter: 6
 order: 6
 conference: cppcon
@@ -94,7 +94,7 @@ Steve Downey 提到，C++ 标准库倾向于提供一个"大而全"的东西，�
 
 其他语言怎么做？Rust 有 `Option<T>` 和各种零成本抽象的迭代器适配器，Go 有"零值"哲学根本不需要 optional，Swift 有 `Optional` 但它的语言层面集成都和 C++ 不同。每个生态都有自己的取舍，C++ 的取舍就是"给您一个万能的"，代价就是"这个万能的可能在每个具体场景里都不是最优的"。作为使用者，至少得意识到这个取舍存在。
 
-## optional\<T> 和 optional\<T&> 必须是一个整体
+## `optional<T>` 和 `optional<T&>` 必须是一个整体
 
 聊完 The Beman Project，看一个更深层的问题，也是笔者一开始没意识到的：如果 `optional<T&>` 进了标准库，它必须和已有的 `optional<T>` 无缝协作。
 

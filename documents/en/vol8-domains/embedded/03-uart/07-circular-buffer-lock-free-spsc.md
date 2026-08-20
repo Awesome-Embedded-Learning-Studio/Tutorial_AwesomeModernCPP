@@ -75,7 +75,7 @@ class CircularBuffer {
 
 `static_assert` forces a compile-time check that N must be a power of two. If you write `CircularBuffer<char, 100>`, compilation fails directly. This is much better than a runtime check—you won't discover the buffer size was wrong after flashing the board.
 
-`next()` also uses a clever design. It doesn't simply add 1 to `v` and then take the modulo, but uses `(v + 1) & (N - 1)`. This means the actual range of values for `head` and `tail` is 0 to 2N-1, rather than 0 to N-1. The benefit of this is that `size()` calculation is simpler: `(head - tail)` doesn't need to handle wrap-around, because `head` and `tail` won't "cross" each other (they are monotonically increasing, just mapped to actual array indices via `& (N - 1)`).
+`next()` wraps the index in the same single AND: `(v + 1) & (N - 1)` keeps `head` and `tail` inside 0 to N-1 with no separate modulo step. The price of distinguishing "empty" from "full" with the single `head == tail` check is the one sacrificed slot you met above: an N-slot buffer stores at most N-1 elements. The payoff shows up in `size()`: `(head - tail) & (N - 1)` recovers the element count with one subtraction and one AND—no branches.
 
 ---
 
@@ -141,9 +141,9 @@ It is also an O(1) `noexcept` operation.
 
 ### size()
 
-The amount of data currently in the buffer. When `head >= tail` (no wrap-around has occurred), it is simply `head - tail`. When `head < tail` (head has wrapped past tail), the data amount is the part before head plus the part after tail.
+The amount of data currently in the buffer is exactly the index difference: `(head - tail) & (N - 1)`. Unsigned subtraction wraps around, and masking with `N - 1` takes the result modulo N—which is precisely the element count, since the buffer never holds more than N-1 elements. One subtraction plus one AND, no branch needed.
 
-However, due to our `next()` design (where head and tail range from 0 to 2N-1), `(head - tail)` is sufficient in most cases—but for defensive programming, the code handles both cases.
+One caveat: `size()` reads both `head` and `tail`, so in a live ISR/main-loop system it is only an approximation; the full/empty checks inside `push()`/`pop()` each depend on a single index owned by the other side—that is the part that is lock-free safe.
 
 ---
 

@@ -208,7 +208,7 @@ int main()
 
 In this version, the `worker` thread blocks directly at `value.wait(0)`, consuming zero CPU. When the `main` thread changes the value to 42 and calls `value.notify_one()`, `worker` is woken up immediately. This saves power compared to busy-waiting and requires less code than `condition_variable`.
 
-## std::atomic_ref\<T>: Wrapping Non-Atomic Variables in Atomic Operations
+## `std::atomic_ref<T>`: Wrapping Non-Atomic Variables in Atomic Operations
 
 ### Why We Need atomic_ref
 
@@ -250,7 +250,7 @@ int main()
 
 Note that the type of `counter` is a plain `int`, but when accessed through `atomic_ref`, `fetch_add` is atomic — there is no data race. `t1` and `t2` simultaneously increment `counter` one million times each, and the final result stably lands at 2,000,000.
 
-### Operation Set: Almost Identical to std::atomic\<T>
+### Operation Set: Almost Identical to `std::atomic<T>`
 
 The interface of `std::atomic_ref<T>` is almost exactly the same as `std::atomic<T>` — `load`, `store`, `exchange`, `compare_exchange_weak`, `compare_exchange_strong`, and `fetch_add` (for integers and pointers) are all supported. The memory order parameters are also identical. The only difference is that `std::atomic_ref<T>` does not own the data; it is merely a reference to an existing variable.
 

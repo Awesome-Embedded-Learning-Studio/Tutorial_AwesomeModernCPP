@@ -90,7 +90,7 @@ int main()
 > };
 >
 > CountingComparator comp;
-> std::vector\<int> v = {5, 2, 8, 1, 9};
+> std::vector<int> v = {5, 2, 8, 1, 9};
 > std::sort(v.begin(), v.end(), comp);
 > // comp.count 很可能仍然是 0！
 > // 因为 sort 拷贝了 comp，比较次数记录在拷贝里

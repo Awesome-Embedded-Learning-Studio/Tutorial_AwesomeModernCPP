@@ -2,7 +2,7 @@
 chapter: 12
 cpp_standard:
 - 17
-description: CTAD 让编译器从构造函数参数反推类模板的参数,把 std::pair&lt;int,double> p(1, 2.5) 这种啰嗦写法收成 std::pair p(1, 2.5)。讲清隐式推导指南、手写 deduction guide,以及圆括号与花括号、最窄可行类型这几个坑
+description: CTAD 让编译器从构造函数参数反推类模板的参数,把 std::pair<int,double> p(1, 2.5) 这种啰嗦写法收成 std::pair p(1, 2.5)。讲清隐式推导指南、手写 deduction guide,以及圆括号与花括号、最窄可行类型这几个坑
 difficulty: intermediate
 order: 4
 platform: host

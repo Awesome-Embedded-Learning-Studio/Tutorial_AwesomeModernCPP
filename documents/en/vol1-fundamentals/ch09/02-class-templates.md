@@ -96,7 +96,7 @@ T Stack::pop() {
 }
 ```
 
-The `` in `Stack::` cannot be omitted—because `Stack` itself is a template, only `Stack` is a specific class. If there are multiple template parameters, like `template \<typename K, typename V>`, the outside definition must write `HashMap::`, and the template header must be included completely.
+The `<T>` in `Stack<T>::` cannot be omitted—because `Stack` itself is a template, only `Stack<T>` is a specific class. If there are multiple template parameters, like `template <typename K, typename V>`, the outside definition must write `HashMap<K, V>::`, and the template header must be included completely.
 
 ## Step 3 — Getting to Know the Three Faces of Template Parameters
 

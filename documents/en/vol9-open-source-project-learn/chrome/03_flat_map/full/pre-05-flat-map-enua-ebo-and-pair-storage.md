@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 17
 - 20
-description: "Two memory optimizations behind flat_map: [[no_unique_address]]/EBO lets a stateless comparator cost zero bytes, and the storage is pair&lt;K,V> rather than std::map's pair&lt;const K,V>"
+description: "Two memory optimizations behind flat_map: [[no_unique_address]]/EBO lets a stateless comparator cost zero bytes, and the storage is pair<K,V> rather than std::map's pair<const K,V>"
 difficulty: intermediate
 order: 5
 platform: host
@@ -101,7 +101,7 @@ What the comment at flat_tree.h:542-547 actually points at is a real GCC bug tha
 
 ---
 
-## pair\<K,V> vs pair\<const K,V>: flat_map's storage choice
+## `pair<K,V>` vs `pair<const K,V>`: flat_map's storage choice
 
 The second design point hits harder. It reshapes what flat_map's API even looks like. Look at flat_map's template signature (flat_map.h:193):
 

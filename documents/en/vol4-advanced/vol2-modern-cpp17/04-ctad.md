@@ -2,7 +2,7 @@
 chapter: 12
 cpp_standard:
 - 17
-description: 'CTAD lets the compiler deduce a class template''s arguments from constructor parameters, collapsing std::pair&lt;int,double> p(1, 2.5) into std::pair p(1, 2.5). Covers implicit deduction guides, hand-written deduction guides, and the traps around parentheses vs braces and the narrowest viable type.'
+description: 'CTAD lets the compiler deduce a class template''s arguments from constructor parameters, collapsing std::pair<int,double> p(1, 2.5) into std::pair p(1, 2.5). Covers implicit deduction guides, hand-written deduction guides, and the traps around parentheses vs braces and the narrowest viable type.'
 difficulty: intermediate
 order: 4
 platform: host

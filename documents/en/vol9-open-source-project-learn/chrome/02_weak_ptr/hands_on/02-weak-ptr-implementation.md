@@ -176,7 +176,7 @@ private:
 }  // namespace tamcpp::chrome::internal
 ```
 
-## Layer 3: WeakPtr\<T\>, the user handle
+## Layer 3: `WeakPtr<T>`, the user handle
 
 We finally reach the API users actually touch. WeakPtr holds two things internally: a `WeakReference` and a raw pointer `ptr_`. The first decides liveness, the second is what you dereference. The `[[clang::trivial_abi]]` we mentioned last time sits on this class.
 
@@ -221,7 +221,7 @@ The real trap is the `[[clang::trivial_abi]]` annotation. It tells the compiler:
 
 One more thing to call out: the private constructor plus `friend class WeakPtrFactory` means only the factory can mint a WeakPtr. Nobody outside can conjure one out of thin air. That's the seam where the "minting authority" gets locked down.
 
-## Layer 4: WeakPtrFactory\<T\>
+## Layer 4: `WeakPtrFactory<T>`
 
 The top layer, and the one users actually instantiate. It owns a `WeakReferenceOwner` (the Flag issuer) plus a member holding the observed object's pointer. The two cooperate on minting, batch invalidation, and destructor-time cleanup.
 

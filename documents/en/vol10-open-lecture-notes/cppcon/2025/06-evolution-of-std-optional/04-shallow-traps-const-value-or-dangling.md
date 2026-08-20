@@ -1,6 +1,6 @@
 ---
 title: "Shallow traps of optional references: const, value_or, and dangling"
-description: "CppCon 2025 notes — the three positions of shallow const on optional&lt;T&>, conditional explicit, why value_or always returns a value, and why dangling defense uses delete instead of requires"
+description: "CppCon 2025 notes — the three positions of shallow const on optional<T&>, conditional explicit, why value_or always returns a value, and why dangling defense uses delete instead of requires"
 chapter: 6
 order: 4
 conference: cppcon

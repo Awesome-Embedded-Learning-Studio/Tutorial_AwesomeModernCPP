@@ -34,7 +34,7 @@ One-line recap (details back in the 01 piece): a concept is a compile-time predi
 
 ---
 
-## The converting constructor: WeakPtr\<U\> to WeakPtr\<T\> upcast
+## The converting constructor: `WeakPtr<U>` to `WeakPtr<T>` upcast
 
 Start with the plainest need. You hold a `WeakPtr<Derived>` and need a `WeakPtr<Base>`. The instinct is that it should just work. `Derived*` already converts to `Base*`. The reverse does not (`Base*` cannot stretch into `Derived*`), and nonsense like `WeakPtr<int>` to `WeakPtr<Foo>` is even less thinkable.
 

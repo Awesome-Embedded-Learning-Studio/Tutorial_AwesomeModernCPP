@@ -4,7 +4,7 @@ cpp_standard:
 - 11
 - 14
 - 17
-description: C++11 的别名模板(template&lt;typename T> using X = ...)解决了 typedef 不能参数化的老问题,C++14
+description: C++11 的别名模板(template<typename T> using X = ...)解决了 typedef 不能参数化的老问题,C++14
   起的 _t 别名和 C++17 起的 _v 变量让 type traits 写起来清爽,using 还能在模板继承里引入 dependent base 的名字。这一篇讲清这三种用法
 difficulty: intermediate
 order: 8

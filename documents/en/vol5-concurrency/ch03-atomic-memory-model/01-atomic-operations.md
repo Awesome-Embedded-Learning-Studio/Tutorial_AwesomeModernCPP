@@ -5,7 +5,7 @@ cpp_standard:
 - 14
 - 17
 - 20
-description: 'Complete guide to std::atomic&lt;T>: load/store, fetch_add, compare_exchange,
+description: 'Complete guide to std::atomic<T>: load/store, fetch_add, compare_exchange,
   and lock-free detection'
 difficulty: intermediate
 order: 1
@@ -35,7 +35,7 @@ So far, the synchronization primitives we have discussed—mutex, condition vari
 
 `std::atomic` is designed for these "minimal granularity" scenarios. It does not rely on locks (at least ideally), but instead utilizes atomic instructions provided directly by the CPU to guarantee that operations are indivisible. In the previous article, we used `std::atomic` to fix data races in our discussion of basic concurrency issues, but we only scratched the surface. In this article, we will completely dissect all `std::atomic` operations—from the most basic `load`/`store`, to the CAS (Compare-And-Swap) mechanism, and finally to lock-free determination and the specialized type `std::atomic_flag`. We will discuss memory ordering in the next article; for now, let's focus on "what atomic operations can do."
 
-## Which types does std::atomic\<T> support?
+## Which types does `std::atomic<T>` support?
 
 `std::atomic` is a class template defined in the `<atomic>` header file. Not all types can be used with `std::atomic`—the standard places explicit restrictions on this.
 

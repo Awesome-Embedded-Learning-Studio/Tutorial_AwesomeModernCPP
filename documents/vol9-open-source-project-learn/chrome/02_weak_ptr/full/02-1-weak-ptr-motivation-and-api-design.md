@@ -118,7 +118,7 @@ flowchart TB
 
 接下来把目标 API 定下来。这是工程师的工作方式——先想清楚"我要什么",再回头讨论每个决策。命名沿用项目的 `tamcpp::chrome` 命名空间,snake_case 风格,跟 OnceCallback 系列保持一致。
 
-### 弱指针:WeakPtr\<T\>
+### 弱指针:`WeakPtr<T>`
 
 ```cpp
 #include "weak_ptr/weak_ptr.hpp"
@@ -140,7 +140,7 @@ wp.get();                    // get()      :对象死了 → 返回 nullptr,不�
 wp.reset();                  // 主动松手,之后 wp == nullptr
 ```
 
-### 工厂:WeakPtrFactory\<T\>
+### 工厂:`WeakPtrFactory<T>`
 
 ```cpp
 class Controller {

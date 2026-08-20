@@ -191,7 +191,7 @@ private:
 
 ---
 
-## Layer three: WeakPtr\<T\>, the user handle
+## Layer three: `WeakPtr<T>`, the user handle
 
 At the top sits `WeakPtr<T>`, which takes a `WeakReference` and adds a `T*`. The semantics of that pointer are a little counterintuitive. While the object lives it points at it; once the object destructs, it's allowed to dangle, hanging there in plain sight but off-limits. [Prerequisite (V)](./pre-05-weak-ptr-template-friend-and-uintptr-t.md) explains why this deliberately avoids `raw_ptr`: allowing the dangle is part of the design, and `WeakReference` does the gating.
 

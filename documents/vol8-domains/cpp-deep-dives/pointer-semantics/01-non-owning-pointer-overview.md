@@ -3,7 +3,7 @@ chapter: 1
 cpp_standard:
 - 17
 - 20
-description: 理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed&lt;T> 和 ObserverPtr&lt;T>
+description: 理解 C++ 中借用、观察与非拥有指针的语义边界，手搓 Borrowed<T> 和 ObserverPtr<T>
 difficulty: intermediate
 order: 1
 platform: host
@@ -49,7 +49,7 @@ C++ Core Guidelines 里有一条 R.3 说得很直白：**裸指针（非 `owner<
 
 现在我们用一个表格来对比这四层：
 
-| 特性 | T* | T& | Borrowed\<T\> | ObserverPtr\<T\> | WeakPtr\<T\> | std::weak_ptr\<T\> |
+| 特性 | T* | T& | `Borrowed<T>` | `ObserverPtr<T>` | `WeakPtr<T>` | `std::weak_ptr<T>` |
 |------|----|----|---------------|-----------------|-------------|-------------------|
 | 可空 | 是 | 否 | 否（设计上） | 是 | 是 | 是 |
 | 拥有对象 | 否 | 否 | 否 | 否 | 否 | 否 |
@@ -61,7 +61,7 @@ C++ Core Guidelines 里有一条 R.3 说得很直白：**裸指针（非 `owner<
 
 ⚠️ 注意看这一行——"对象销毁后安全判空"。前四种类型（T*、T&、Borrowed、ObserverPtr）全部做不到。只有真正拥有独立 control block 的 WeakPtr 才行。这一点我们第二篇会展开讲，先记住这个结论。
 
-## 手搓 Borrowed\<T\>：让借用语义显式化
+## 手搓 `Borrowed<T>`：让借用语义显式化
 
 `Borrowed<T>` 想解决的问题很简单：函数参数里出现 `const T&` 或者 `T*` 的时候，调用者和阅读者无法一眼看出"这只是一个借用"。我们需要一个类型来把"非空、非拥有、短期使用"这个语义钉死在类型系统里。
 
@@ -161,7 +161,7 @@ int main()
 
 和直接用 `const std::vector<int>&` 相比，`Borrowed` 版本的优势不在运行时行为（它们生成的代码几乎一样），而在于**可读性**——函数签名直接告诉你"这是一个借用"。
 
-## 手搓 ObserverPtr\<T\>：可空的非拥有观察
+## 手搓 `ObserverPtr<T>`：可空的非拥有观察
 
 如果说 `Borrowed<T>` 是给函数参数用的，那 `ObserverPtr<T>` 就是给类成员用的。它的语义是"我观察这个对象，但我不拥有它，我也不负责它的生命周期"。
 
@@ -310,8 +310,8 @@ void Service::async_task()
 我们把这一篇的关键要点总结一下：
 
 - **T\*** 和 **T&** 是 C++ 最原始的借用机制，本身不表达所有权语义
-- **Borrowed\<T\>** 表达非空借用，适合函数参数，禁止从临时对象构造，不延长生命周期
-- **ObserverPtr\<T\>** 表达可空非拥有观察，适合类成员，不提供判活能力
+- **`Borrowed<T>`** 表达非空借用，适合函数参数，禁止从临时对象构造，不延长生命周期
+- **`ObserverPtr<T>`** 表达可空非拥有观察，适合类成员，不提供判活能力
 - **非拥有不等于安全**——Borrowed 和 ObserverPtr 都不能在对象销毁后安全检测失效
 - 它们的核心价值是**语义表达**，不是运行时安全——让代码自己说话，减少歧义
 

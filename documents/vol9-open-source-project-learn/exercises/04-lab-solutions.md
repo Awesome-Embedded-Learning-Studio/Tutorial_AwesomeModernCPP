@@ -129,11 +129,11 @@ sorted_unique(lying): size=3
 
 ## 步骤 6：NoDestructor + 三把 sanitizer 验货 {#lab-6}
 
-**思路**：第四件套 `include/mini_no_destructor.hpp` 落地后，用 sanitizer 给全部家当验货。这步最有含金量的是 LSan 实验——**实测结果和教材 04-4 的描述不一致**，我们如实记录。
+**思路**：第四件套 `include/mini_no_destructor.hpp` 落地后，用 sanitizer 给全部家当验货。这步最有含金量的是 LSan 实验——**实测结果曾与旧版教材 04-4 的描述不一致**（这一发现推动了教材修订，现行版已按保守字节扫描的口径改写），我们如实记录当初的实测。
 
 1. `NoDestructor` 三件套：placement new 构造、`= default` 析构跳过 `~T()`、两条 static_assert 把关。`Noisy` 只打印 `Noisy()`，`~Noisy()` 永不出现。→ 知识点：[NoDestructor 实战（二）：核心实现](../chrome/04_no_destructor/full/04-2-no-destructor-core-impl.md)「不析构:=default 这个动作藏着玄机」「static_assert 把关」两节
 2. 配置表装进函数局部静态的 NoDestructor：查两回构造计数仍为 1，`port=8080` 正常命中。→ 知识点：[NoDestructor 实战（三）：何时用、何时不用](../chrome/04_no_destructor/full/04-3-no-destructor-when-to-use.md)「该用的场景:函数局部静态 + 非平凡析构 T」一节
-3. LSan 实验的实测结论（**与教材不一致，如实报告**）：真泄漏（`new int[100]` 后指针置空）被 g++ 16 的 ASan 内置 LSan 点名（400 字节），NoDestructor 的 vector **没有**被误报；clang 22 独立 LSan 同样只报真泄漏；clang ASan 集成 LSan（`-fsanitize=address` 内置）也只报真泄漏、放过 NoDestructor——注意 Linux 下 clang ASan **不会**打印 `checking for leaks` 那行（那是 macOS 的行为），别拿它当启动标志。教材 04-4 引用的 crbug/40562930 场景（LSan 把 `char storage_` 当原始字节、可达链断开）在本工具链上**不复现**——因为现代 LSan 做的是**保守字节扫描**：它扫静态区里每一个指针形状的字节，`storage_` 里 vector 三指针的字节值被认了出来，可达链没断。这是"工具行为随版本变化"的活样本，也提醒我们：教材的每条结论都值得亲手复现一遍——教材 04-4 的机制表述在现代工具链不复现，读教材的同学注意以本实测为准。两个实验坑也记下：本工具链 LSan 的 `detect_leaks` 默认就是 1，不设 `ASAN_OPTIONS` 照样报真泄漏（命令里写上无害且自解释）；真正必须的是 `-O0`——`-O1`/`-O2` 下编译器可能把对照组分配直接优化掉，泄漏实验就白做了。→ 知识点：[NoDestructor 实战（四）：LSan 泄漏权衡与 reachability hack](../chrome/04_no_destructor/full/04-4-no-destructor-lsan-and-leak.md)「LeakSanitizer 怎么工作」一节（可达性分析 + 本节实测修正）
+3. LSan 实验的实测结论（**当初与旧版教材不一致、如实报告，现行教材已按此修订**）：真泄漏（`new int[100]` 后指针置空）被 g++ 16 的 ASan 内置 LSan 点名（400 字节），NoDestructor 的 vector **没有**被误报；clang 22 独立 LSan 同样只报真泄漏；clang ASan 集成 LSan（`-fsanitize=address` 内置）也只报真泄漏、放过 NoDestructor——注意 Linux 下 clang ASan **不会**打印 `checking for leaks` 那行（那是 macOS 的行为），别拿它当启动标志。旧版教材 04-4 引用的 crbug/40562930 场景（LSan 把 `char storage_` 当原始字节、可达链断开）在本工具链上**不复现**——因为现代 LSan 做的是**保守字节扫描**：它扫静态区里每一个指针形状的字节，`storage_` 里 vector 三指针的字节值被认了出来，可达链没断。这是"工具行为随版本变化"的活样本，也提醒我们：文档的每条结论都值得亲手复现一遍——旧版 04-4 的机制表述在现代工具链不复现（现行版已修订），读任何版本的同学都以本机实测为准。两个实验坑也记下：本工具链 LSan 的 `detect_leaks` 默认就是 1，不设 `ASAN_OPTIONS` 照样报真泄漏（命令里写上无害且自解释）；真正必须的是 `-O0`——`-O1`/`-O2` 下编译器可能把对照组分配直接优化掉，泄漏实验就白做了。→ 知识点：[NoDestructor 实战（四）：LSan 泄漏权衡与 reachability hack](../chrome/04_no_destructor/full/04-4-no-destructor-lsan-and-leak.md)「LeakSanitizer 怎么工作」一节（可达性分析 + 本节实测修正）
 4. TSan 压 magic statics：16 线程首调，`ctor_count=1` 零报告。→ 知识点：[NoDestructor 前置知识（零）：静态存储期、初始化与析构](../chrome/04_no_destructor/full/pre-00-static-storage-and-init.md)「magic statics:C++11 的线程安全保证」一节
 
 **验证输出**：
