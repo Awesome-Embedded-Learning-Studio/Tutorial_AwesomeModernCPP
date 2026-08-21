@@ -299,6 +299,12 @@ async function buildVolume(task: BuildTask): Promise<string> {
   if (lang === 'en') {
     mkdirSync(join(volSrcDir, 'en'), { recursive: true })
     cpSync(volDocDir, join(volSrcDir, 'en', vol.srcDir), { recursive: true })
+    if (vol.srcDir === 'compilation') {
+      const sharedAssets = join(DOCUMENTS, 'compilation', 'compilation-linking-2-reuse-concept')
+      if (existsSync(sharedAssets)) {
+        cpSync(sharedAssets, join(volSrcDir, 'compilation', 'compilation-linking-2-reuse-concept'), { recursive: true })
+      }
+    }
   } else {
     mkdirSync(volSrcDir, { recursive: true })
     cpSync(volDocDir, join(volSrcDir, vol.srcDir), { recursive: true })

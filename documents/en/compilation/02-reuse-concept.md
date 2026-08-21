@@ -51,7 +51,7 @@ A static library is probably way simpler than you think. We know that after the 
 
 The two figures below do a decent job of showing what a static library does.
 
-![static_library](./compilation-linking-2-reuse-concept/static_library.png)
+![static_library](../../compilation/compilation-linking-2-reuse-concept/static_library.png)
 
 But this introduces a new problem. In reality, libfoo's code is exactly the same in two places, and there are now two copies of it. Sometimes we really don't want this kind of hard copy. If libfoo is small it's fine, and disk space isn't all that expensive anymore, so we can sort of call it redundancy-as-an-advantage. But more often, if libfoo ships an important security update and we want every piece of software to pick it up on its next launch, the static library looks pretty helpless. All it really did was shift distribution from the harder source-distribution model over to binary distribution. It does absolutely nothing about the much more important "load it when you use it" problem. So it's just not that elegant. In practice, static libraries aren't used all that widely (I barely use them myself, either).
 
@@ -120,7 +120,7 @@ To resolve a given symbol (say the function `foo`), the loader's lookup order is
 
 > Important: **symbols in the executable take priority** over those in shared libraries (this is what's called symbol interposition), so an executable can "override" functions in a library (this is also the foundation of how `LD_PRELOAD` can swap out a function's implementation).
 
-![dynamic_library](./compilation-linking-2-reuse-concept/dynamic_library.png)
+![dynamic_library](../../compilation/compilation-linking-2-reuse-concept/dynamic_library.png)
 
 That figure above lays the whole flow out clearly.
 
