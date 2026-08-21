@@ -8,7 +8,7 @@ order: 16
 platform: host
 prerequisites:
 - restrict、不完整类型与结构体指针
-reading_time_minutes: 20
+reading_time_minutes: 64
 tags:
 - host
 - cpp-modern
