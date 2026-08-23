@@ -201,6 +201,20 @@ html[data-font-size='xxlarge'] {
   white-space: nowrap;
 }
 
+/* 宽屏下 VitePress 会把布局居中的外侧留白塞进 sidebar 的 padding-left：
+   viewport 越宽，导航树离左边越远（1920px 下约 212px），形成一大片无效空白。
+   sidebar 外框宽度和右边缘仍交给 VitePress 计算，只收回内容与站点标题的动态缩进，
+   因而正文位置、侧栏拖拽手柄和居中布局都不受影响。重复类名用于覆盖组件 scoped CSS。 */
+@media (min-width: 1440px) {
+  .VPSidebar.VPSidebar {
+    padding-left: 32px;
+  }
+
+  .VPNavBar.has-sidebar .title.title {
+    padding-left: 32px;
+  }
+}
+
 /* 右侧大纲:辅助导航,再小一档(默认 14px) */
 .VPDocAsideOutline .outline-link {
   font-size: 1.1rem;

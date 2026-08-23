@@ -10,7 +10,7 @@ prerequisites:
 - 07A 指针基础与核心用法
 - 07B 指针、数组与 const
 - 08A 多级指针与函数参数
-reading_time_minutes: 10
+reading_time_minutes: 29
 tags:
 - host
 - cpp-modern
@@ -177,7 +177,7 @@ int compare_asc(const void* a, const void* b)
 {
     int ia = *(const int*)a;
     int ib = *(const int*)b;
-    return ia - ib;
+    return (ia > ib) - (ia < ib);
 }
 
 int main(void)
@@ -297,6 +297,120 @@ void insertion_sort(void* base, size_t nmemb, size_t size,
                     int (*compar)(const void*, const void*));
 ```
 
+::: details 参考答案
+
+这里我们沿用 `qsort` 的比较器约定：返回负数表示左侧元素应排在右侧之前，返回 0
+表示两者等价，返回正数表示左侧元素应排在右侧之后。插入排序本身只认这个约定，至于
+最终是升序、降序还是字符串字典序，全部交给回调决定。
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int compare_int_ascending(const void* a, const void* b)
+{
+    const int ia = *(const int*)a;
+    const int ib = *(const int*)b;
+    return (ia > ib) - (ia < ib);
+}
+
+int compare_int_descending(const void* a, const void* b)
+{
+    const int ia = *(const int*)a;
+    const int ib = *(const int*)b;
+    return (ib > ia) - (ib < ia);
+}
+
+int compare_cstrings(const void* a, const void* b)
+{
+    const char* const lhs = *(const char* const*)a;
+    const char* const rhs = *(const char* const*)b;
+    return strcmp(lhs, rhs);
+}
+
+void insertion_sort(void* base, size_t nmemb, size_t size,
+                    int (*compar)(const void*, const void*))
+{
+    if (base == NULL || compar == NULL || nmemb < 2 || size == 0) {
+        return;
+    }
+
+    // unsigned char* 可以逐字节移动，才能让同一套算法处理任意元素类型。
+    unsigned char* data = (unsigned char*)base;
+    unsigned char* current = malloc(size);
+    if (current == NULL) {
+        return;
+    }
+
+    for (size_t i = 1; i < nmemb; ++i) {
+        size_t j = i;
+        memcpy(current, data + i * size, size);
+
+        while (j > 0 && compar(data + (j - 1) * size, current) > 0) {
+            --j;
+        }
+
+        if (j != i) {
+            // 源区间和目标区间重叠，因此这里必须使用 memmove。
+            memmove(data + (j + 1) * size, data + j * size, (i - j) * size);
+            memcpy(data + j * size, current, size);
+        }
+    }
+
+    free(current);
+}
+
+int main(void)
+{
+    int ascending_numbers[] = {5, 2, 9, 1, 5, 6};
+    int descending_numbers[] = {5, 2, 9, 1, 5, 6};
+    const char* words[] = {"pear", "apple", "orange", "banana", "grape"};
+    const size_t number_count = sizeof(ascending_numbers) / sizeof(ascending_numbers[0]);
+    const size_t word_count = sizeof(words) / sizeof(words[0]);
+
+    insertion_sort(ascending_numbers, number_count, sizeof(ascending_numbers[0]),
+                   compare_int_ascending);
+    insertion_sort(descending_numbers, number_count, sizeof(descending_numbers[0]),
+                   compare_int_descending);
+    insertion_sort(words, word_count, sizeof(words[0]), compare_cstrings);
+
+    printf("int 升序：");
+    for (size_t i = 0; i < number_count; ++i) {
+        printf("%d ", ascending_numbers[i]);
+    }
+
+    printf("\nint 降序：");
+    for (size_t i = 0; i < number_count; ++i) {
+        printf("%d ", descending_numbers[i]);
+    }
+
+    printf("\n字符串字典序：");
+    for (size_t i = 0; i < word_count; ++i) {
+        printf("%s ", words[i]);
+    }
+    putchar('\n');
+
+    return 0;
+}
+```
+
+运行结果：
+
+```text
+int 升序：1 2 5 5 6 9
+int 降序：9 6 5 5 2 1
+字符串字典序：apple banana grape orange pear
+```
+
+这里和前面的 `qsort` 示例一样，没有写成 `ia - ib`，因为两个相距很远的 `int` 相减
+可能发生有符号整数溢出。用 `(ia > ib) - (ia < ib)` 只会得到 `-1`、`0` 或 `1`，同样
+满足比较器约定，却不会埋下这个坑。另一个工程上的取舍是：题目给定的接口返回 `void`，
+所以临时缓冲区分配失败时只能保持原数组不变并直接返回；如果这是正式库接口，我们通常
+会返回状态码，把失败明确交给调用者处理。
+
+:::
+
 ### 练习 2：带最大次数的重试
 
 **难度：进阶** · 用函数指针做条件回调
@@ -322,6 +436,74 @@ int device_ready(void) {
 
 想一想：这种把"判断条件"做成函数指针传进来的写法，和本篇的 `qsort` 比较器、事件分发有什么共同点？
 
+::: details 参考答案
+
+先把 `retry_until` 跑起来。这里我们同时准备两个回调：`device_ready` 在第 3 次检查时
+成功，`always_fail` 则始终失败，正好把“提前成功”和“达到上限”两条退出路径都走一遍。
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+
+int retry_until(int (*check)(void), int max_attempts)
+{
+    if (check == NULL || max_attempts <= 0) {
+        return -1;
+    }
+
+    int attempt = 0;
+    while (attempt < max_attempts) {
+        ++attempt;
+        if (check() != 0) {
+            return attempt;
+        }
+    }
+
+    return -1;
+}
+
+int device_ready(void)
+{
+    static int tried = 0;
+    return ++tried >= 3;
+}
+
+int always_fail(void)
+{
+    return 0;
+}
+
+int main(void)
+{
+    const int ready_attempt = retry_until(device_ready, 5);
+    const int failed_attempt = retry_until(always_fail, 2);
+
+    printf("device_ready：第 %d 次检查成功\n", ready_attempt);
+    printf("always_fail：%d\n", failed_attempt);
+    return 0;
+}
+```
+
+运行结果：
+
+```text
+device_ready：第 3 次检查成功
+always_fail：-1
+```
+
+它们的共同点是：**框架负责流程，回调负责策略**。`qsort` 决定何时比较元素，但把
+“怎样算大小”交给比较器；`retry_until` 决定最多检查几次，但把“怎样算成功”交给
+`check`；事件分发器决定何时响应事件，但把“收到事件后做什么”交给处理函数。三者都
+不需要知道回调内部的具体实现，只需要约定好函数签名和返回值含义，这就是把算法框架和
+可替换行为解耦。
+
+> ⚠️ **踩坑预警**：示例里的 `device_ready` 用 `static` 局部变量模拟外设状态，它的值
+> 不会在 `retry_until` 返回后自动复位。如果再次用同一个回调测试，它会在第 1 次检查时
+> 直接成功。正式项目通常会通过 `void* context` 传入可独立管理的状态，避免把测试状态
+> 藏在函数内部。
+
+:::
+
 ### 练习 3：简单的命令行计算器
 
 **难度：进阶** · 用函数指针数组做表驱动分发
@@ -333,13 +515,333 @@ typedef int (*BinaryOp)(int, int);
 // 请自行设计映射表和主循环
 ```
 
+::: details 参考答案
+
+```c
+#include <limits.h>
+#include <stddef.h>
+#include <stdio.h>
+
+typedef int (*BinaryOp)(int, int);
+
+typedef struct
+{
+    char symbol;
+    BinaryOp function;
+} Operation;
+
+static int add(int left, int right)
+{
+    return left + right;
+}
+
+static int subtract(int left, int right)
+{
+    return left - right;
+}
+
+static int multiply(int left, int right)
+{
+    return left * right;
+}
+
+static int divide(int left, int right)
+{
+    return left / right;
+}
+
+static int modulo(int left, int right)
+{
+    return left % right;
+}
+
+static const Operation operations[] = {
+    {'+', add},
+    {'-', subtract},
+    {'*', multiply},
+    {'/', divide},
+    {'%', modulo},
+};
+
+//根据符号查找对应的运算函数
+static const Operation *find_operation(char symbol)
+{
+    const size_t operation_count =
+        sizeof(operations) / sizeof(operations[0]);
+    size_t i;
+
+    for (i = 0; i < operation_count; ++i)
+    {
+        if (operations[i].symbol == symbol)
+        {
+            return &operations[i];
+        }
+    }
+
+    return NULL;
+}
+
+int main(void)
+{
+    char line[128];
+
+    puts("整数计算器：+  -  *  /  %");
+    puts("输入示例：12 + 3；输入 q 退出。");
+
+    for (;;)
+    {
+        const Operation *operation;
+        int left;
+        int right;
+        int result;
+        char symbol;
+        char trailing;
+
+        printf("> ");
+        //因为 "> " 没有换行。立即刷新可以保证用户在等待输入前看到提示符
+        fflush(stdout);
+
+        if (fgets(line, sizeof(line), stdin) == NULL)
+        {
+            putchar('\n');
+            break;
+        }
+
+        if (sscanf(line, " %c", &symbol) == 1 &&
+            (symbol == 'q' || symbol == 'Q'))
+        {
+            putchar('\n');
+            break;
+        }
+
+        if (sscanf(line, " %d %c %d %c", &left, &symbol, &right,
+                   &trailing) != 3)
+        {
+            puts("输入无效。格式：整数 运算符 整数");
+            continue;
+        }
+
+        operation = find_operation(symbol);
+        if (operation == NULL)
+        {
+            printf("未知运算符：%c\n", symbol);
+            continue;
+        }
+
+        if ((symbol == '/' || symbol == '%') && right == 0)
+        {
+            puts("错误：不允许除以零。");
+            continue;
+        }
+
+        if ((symbol == '/' || symbol == '%') && left == INT_MIN && right == -1)
+        {
+            puts("错误：结果超出 int 范围。");
+            continue;
+        }
+
+        result = operation->function(left, right);
+        printf("结果：%d\n", result);
+    }
+
+    return 0;
+}
+
+```
+
+运行结果：
+
+```text
+整数计算器：+  -  *  /  %
+输入示例：12 + 3；输入 q 退出。
+> 结果：15
+> 错误：不允许除以零。
+>
+```
+
+:::
+
 ### 练习 4：事件分发系统扩展（挑战·可选）
 
 **难度：挑战** · 可选，需要设计回调容器，新手可跳过
 
-基于本篇的数组版事件分发系统，扩展成支持同一个事件注册多个回调，并支持注销回调。提示：不必上链表，可以用**函数指针数组**存多个回调，注销时用标记删除或紧凑移动。
+基于本篇的数组版事件分发系统，扩展成支持同一个事件类型（event type）按不同事件名称（event name）注册多个回调，并支持按 `type + name` 注销回调。提示：不必上链表，可以用**二维函数指针数组**作为回调容器；重复注册同一组 `type + name` 时替换原回调，注销时清空对应槽位。
 
-想一想：如果在遍历回调数组的过程中，某个回调又去注销了另一个回调，会出什么问题？这和"边遍历数组边删元素"是同一个坑。
+::: details 参考答案
+
+event.h
+
+```c
+#pragma once
+#include <stdint.h>
+typedef enum {
+    ERR_OK = 0,//成功
+    ERR_NULL = -1,//空指针
+    ERR_INVALID_ARGUMENT = -2,//无效参数
+    ERR_FULL = -3,//队列已满
+    ERR_NOT_FOUND = -4//未找到
+} err_t;
+typedef struct {
+    void (*fn)(void *arg);
+    void *arg;
+} Callback_t;
+
+enum EventType
+{
+    EVENT_TYPE_1 = 0,
+    EVENT_TYPE_2,
+    EVENT_TYPE_3,
+    EVENT_TYPE_Num,
+};
+enum EventName
+{
+    EVENT_NAME_1 = 0,
+    EVENT_NAME_2,
+    EVENT_NAME_3,
+    EVENT_NAME_Num,
+};
+```
+
+event.c
+
+```c
+#include <stddef.h>
+
+#include "event.h"
+
+Callback_t callback_list[EVENT_TYPE_Num][EVENT_NAME_Num] = {0};
+
+//回调注册
+void register_callback(enum EventType type, enum EventName name, void (*fn)(void *arg), void *arg)
+{
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
+    {
+        return;
+    }
+
+    callback_list[type][name].fn = fn;
+    callback_list[type][name].arg = arg;
+}
+//运行回调
+void run_callback(enum EventType type, enum EventName name)
+{
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
+    {
+        return;
+    }
+
+    Callback_t *callback = &callback_list[type][name];
+    if (callback->fn != NULL)
+    {
+        callback->fn(callback->arg);
+    }
+}
+//注销回调
+void unregister_callback(enum EventType type, enum EventName name)
+{
+    if ((unsigned)type >= EVENT_TYPE_Num || (unsigned)name >= EVENT_NAME_Num)
+    {
+        return;
+    }
+
+    callback_list[type][name].fn = NULL;
+    callback_list[type][name].arg = NULL;
+}
+```
+
+main.c
+
+```c
+#include <stdio.h>
+
+#include "event.h"
+
+/* 回调接口由 event.c 实现。 */
+void register_callback(enum EventType type, enum EventName name,
+                       void (*fn)(void *arg), void *arg);
+void run_callback(enum EventType type, enum EventName name);
+void unregister_callback(enum EventType type, enum EventName name);
+
+static void on_event_name_1(void *arg)
+{
+    const char *message = (const char *)arg;
+
+    printf("EVENT_NAME_1 回调：%s\n", message);
+}
+
+static void on_event_name_2(void *arg)
+{
+    const char *message = (const char *)arg;
+
+    printf("EVENT_NAME_2 回调：%s\n", message);
+}
+
+static void on_event_name_1_replaced(void *arg)
+{
+    const char *message = (const char *)arg;
+
+    printf("EVENT_NAME_1 替换回调：%s\n", message);
+}
+
+static void callback_demo(void)
+{
+    const enum EventType type = EVENT_TYPE_1;
+
+    puts("回调演示（同一类型使用不同回调）：");
+
+    /* 同一个事件类型可以通过不同事件名称绑定不同回调。 */
+    register_callback(type, EVENT_NAME_1, on_event_name_1,
+                      "已为第一个事件名称注册");
+    register_callback(type, EVENT_NAME_2, on_event_name_2,
+                      "已为第二个事件名称注册");
+
+    printf("运行 run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> ");
+    run_callback(type, EVENT_NAME_1);
+    printf("运行 run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> ");
+    run_callback(type, EVENT_NAME_2);
+
+    /* 再次注册相同的类型和名称会替换该槽位中的回调。 */
+    register_callback(type, EVENT_NAME_1, on_event_name_1_replaced,
+                      "原始回调已替换");
+    printf("重新注册 EVENT_NAME_1 后 -> ");
+    run_callback(type, EVENT_NAME_1);
+
+    unregister_callback(type, EVENT_NAME_1);
+    puts("注销 EVENT_NAME_1 后 ->（未注册回调）");
+    printf("EVENT_NAME_2 仍可用 -> ");
+    run_callback(type, EVENT_NAME_2);
+}
+
+int main(void)
+{
+    callback_demo();
+    return 0;
+}
+
+```
+
+运行结果：
+
+```text
+回调演示（同一类型使用不同回调）：
+运行 run_callback(EVENT_TYPE_1, EVENT_NAME_1) -> EVENT_NAME_1 回调：已为第一个事件名称注册
+运行 run_callback(EVENT_TYPE_1, EVENT_NAME_2) -> EVENT_NAME_2 回调：已为第二个事件名称注册
+重新注册 EVENT_NAME_1 后 -> EVENT_NAME_1 替换回调：原始回调已替换
+注销 EVENT_NAME_1 后 ->（未注册回调）
+EVENT_NAME_2 仍可用 -> EVENT_NAME_2 回调：已为第二个事件名称注册
+```
+
+这里的二维数组把 `type` 和 `name` 共同当作回调的键。同一个 `type` 下，`EVENT_NAME_1` 和 `EVENT_NAME_2` 对应不同槽位，互不影响；再次注册完全相同的 `type + name`，则会替换该槽位原来的回调。
+
+另外注意答案里的边界检查写法：先把入参转成 `unsigned` 再与上界比较。如果调用方传入了负值（例如 `(enum EventType)-1`），转换后会变成一个非常大的无符号数，同样会被挡在界外——这样就不必再写 `type < 0` 之类的判断，也避免了枚举底层类型为无符号时"与 0 比较"触发编译器告警的问题。
+
+想一想：注销 `EVENT_TYPE_1 + EVENT_NAME_1` 后，为什么 `EVENT_TYPE_1 + EVENT_NAME_2` 仍然可以正常分发？
+
+答案是这两个回调位于二维数组的不同槽位：前者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_1]`，后者对应 `callback_list[EVENT_TYPE_1][EVENT_NAME_2]`。`unregister_callback` 只会把指定槽位中的 `fn` 和 `arg` 清空，不会修改同一 `type` 下其他 `name` 对应的槽位，所以 `EVENT_NAME_2` 的回调仍然可以正常分发。
+
+> **延伸思考**：如果在遍历回调数组的过程中，某个回调又去注销了另一个回调，会出什么问题？这和“边遍历数组边删元素”是同一个坑。
+
+:::
 
 ## 参考资源
 

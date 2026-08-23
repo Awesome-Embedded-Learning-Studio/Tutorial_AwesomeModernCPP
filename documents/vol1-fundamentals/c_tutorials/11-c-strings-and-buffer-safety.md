@@ -9,7 +9,7 @@ order: 15
 platform: host
 prerequisites:
 - 指针与数组、const 和空指针
-reading_time_minutes: 13
+reading_time_minutes: 28
 tags:
 - host
 - cpp-modern
@@ -298,7 +298,7 @@ printf("C string: %s\n", result.c_str());    // 和 C API 无障碍交互
 | `strncpy` 不保证终止 | 源字符串长度 >= n 时不会追加 `\0` | 始终手动设置最后一个字节为 `\0` |
 | 用 `==` 比较字符串 | 比较的是指针地址，不是内容 | 用 `strcmp` |
 | 修改字符串字面量 | 存储在只读段，修改触发段错误 | 用数组拷贝：`char s[] = "Hello"` |
-| `strncat` 的第三个参数 | 是"最多追加的字符数"，不是缓冲区总大小 | 用 `sizeof(dst) - strlen(dst) - 1` |
+| `strncat` 的第三个参数 | 是"最多追加的字符数"，不是缓冲区总大小 | 先有界确认 `dst` 已终止，再用容量减去当前长度和终止符空间 |
 | `memcpy` 处理重叠区域 | 未定义行为 | 重叠时使用 `memmove` |
 
 ## 小结
@@ -320,20 +320,243 @@ C 字符串就是一个以 `\0` 终止的 `char` 数组，没有类型系统的�
 /// @param dst 目标缓冲区
 /// @param src 源字符串
 /// @param dst_size 目标缓冲区总大小（含终止符）
-/// @return 实际复制的字符数（不含终止符）；如果 dst 为 NULL 返回 0
+/// @return 源字符串的完整长度（不含终止符）；返回值 >= dst_size 表示发生截断；
+///         dst/src 为 NULL 或 dst_size 为 0 时返回 0
 size_t safe_str_copy(char* dst, const char* src, size_t dst_size);
 
 /// @brief 安全地拼接字符串
 /// @param dst 目标缓冲区（已有内容）
 /// @param src 要追加的字符串
 /// @param dst_size 目标缓冲区总大小（含终止符）
-/// @return 拼接后字符串的总长度（不含终止符）
+/// @return 完整拼接所需的总长度（不含终止符）；返回值 >= dst_size 表示发生截断；
+///         dst/src 为 NULL 或 dst_size 为 0 时返回 0
 size_t safe_str_cat(char* dst, const char* src, size_t dst_size);
 ```
 
-提示：`safe_str_copy` 可以基于 `strncpy` 实现，但 `strncpy` 在 src 过长时不会自动写终止符，得自己补；`safe_str_cat` 要先算出 dst 当前长度，再算剩余可用空间。
+提示：`safe_str_copy` 可以基于 `strncpy` 实现，但 `strncpy` 在 src 过长时不会自动写终止符，得自己补；返回源字符串的完整长度后，调用者可以用 `返回值 >= dst_size` 判断是否截断。`safe_str_cat` 要先在 `dst_size` 范围内确认 `dst` 的当前长度，再算剩余可用空间。`src` 和 `dst` 可以重叠，但 `dst_size` 必须是目标缓冲区的真实容量。
+
+::: details 参考答案
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+
+size_t safe_str_copy(char *dst, const char *src, size_t dst_size)
+{
+    size_t source_length = 0;
+    size_t copy_length = 0;
+
+    if (dst == NULL || src == NULL || dst_size == 0)
+    {
+        return 0;
+    }
+
+    // 先扫描完整源串，既能报告截断，也能避免重叠复制时读取到已覆盖的数据。
+    while (src[source_length] != '\0')
+    {
+        source_length++;
+    }
+
+    copy_length = source_length < dst_size - 1 ? source_length : dst_size - 1;
+
+    memmove(dst, src, copy_length);
+    dst[copy_length] = '\0';
+
+    return source_length;
+}
+
+size_t safe_str_cat(char *dst, const char *src, size_t dst_size)
+{
+    size_t dst_length = 0;
+    size_t src_length = 0;
+    size_t copy_length = 0;
+    size_t available;
+
+    if (dst == NULL || src == NULL || dst_size == 0)
+    {
+        return 0;
+    }
+
+    // 只在目标缓冲区范围内查找终止符，避免 strlen 越界读取。
+    while (dst_length < dst_size && dst[dst_length] != '\0')
+    {
+        dst_length++;
+    }
+
+    // 调用者传入的 dst 不是以空字符结尾的字符串时，先截断并终止它。
+    if (dst_length == dst_size)
+    {
+        dst[dst_size - 1] = '\0';
+        return dst_size; // 目标串无终止符，按截断情况报告
+    }
+
+    // 先完成源串长度扫描，再写目标，避免 src/dst 重叠时读到刚写入的数据。
+    while (src[src_length] != '\0')
+    {
+        src_length++;
+    }
+
+    available = dst_size - dst_length - 1;
+    if (src_length < available)
+    {
+        copy_length = src_length;
+    }
+    else
+    {
+        copy_length = available;
+    }
+
+    // memmove 支持源、目标区域重叠；终止符不计入 copy_length。
+    memmove(dst + dst_length, src, copy_length);
+    dst[dst_length + copy_length] = '\0';
+
+    return dst_length + src_length; // 返回未截断时的完整长度（不含终止符）
+}
+
+int main(void)
+{
+    char copied_text[32];// 目标缓冲区
+    char short_buffer[8];// 较小的缓冲区
+    char combined_text[32] = "STM32";// 已有内容的目标缓冲区
+    char short_combined[8] = "STM32";// 用于演示拼接截断
+    char self_combined[16] = "ab";// 用于演示源、目标重叠
+    size_t copied_length;// 源字符串的完整长度
+    size_t short_length;// 源字符串的完整长度
+    size_t combined_length;// 拼接后的总字节数
+    size_t short_combined_length;// 完整拼接所需的长度
+    size_t self_combined_length;// 重叠拼接后的完整长度
+
+    copied_length = safe_str_copy(copied_text, "Hello, Embedded!",
+                                  sizeof(copied_text));
+    printf("复制结果：%s\n", copied_text);
+    printf("源字符串的完整长度：%u\n", (unsigned int)copied_length);
+
+    short_length = safe_str_copy(short_buffer, "Embedded",
+                                 sizeof(short_buffer));
+    printf("缓冲区较小时的截断结果：%s\n", short_buffer);
+    printf("源字符串的完整长度：%u\n", (unsigned int)short_length);
+
+    combined_length = safe_str_cat(combined_text, " Board",
+                                   sizeof(combined_text));
+    printf("拼接结果：%s\n", combined_text);
+    printf("拼接后的总字节数：%u\n", (unsigned int)combined_length);
+
+    short_combined_length = safe_str_cat(short_combined, " Board",
+                                         sizeof(short_combined));
+    printf("空间不足时的拼接结果：%s\n", short_combined);
+    printf("完整拼接所需的字节数：%u\n", (unsigned int)short_combined_length);
+
+    self_combined_length = safe_str_cat(self_combined, self_combined,
+                                        sizeof(self_combined));
+    printf("源、目标重叠时的拼接结果：%s\n", self_combined);
+    printf("完整拼接所需的字节数：%u\n", (unsigned int)self_combined_length);
+
+    return 0;
+}
+
+```
+
+运行结果：
+
+```text
+复制结果：Hello, Embedded!
+源字符串的完整长度：16
+缓冲区较小时的截断结果：Embedde
+源字符串的完整长度：8
+拼接结果：STM32 Board
+拼接后的总字节数：11
+空间不足时的拼接结果：STM32 B
+完整拼接所需的字节数：11
+源、目标重叠时的拼接结果：abab
+完整拼接所需的字节数：4
+```
+
+`safe_str_cat` 会先在 `dst_size` 范围内查找 `dst` 的终止符。如果整个缓冲区都没有 `\0`，
+函数会把最后一个字节改为 `\0` 并返回 `dst_size`，调用者可将其视为截断或输入无效。正常输入下，
+返回值是完整拼接所需的长度；如果返回值大于等于 `dst_size`，说明目标字符串被截断。函数要求
+`src` 是有效的以 `\0` 结尾的字符串，且 `dst_size` 是 `dst` 实际缓冲区的容量。
+
+`safe_str_copy` 也返回源字符串的完整长度，而不是实际写入的长度；因此返回值大于等于 `dst_size`
+时表示发生了截断。这样即使源字符串恰好填满缓冲区，也不会和截断情况混淆。
+
+:::
 
 **挑战扩展**（可选）：再加一个 `safe_str_format(char* dst, size_t dst_size, const char* format, ...)`。它需要用到 `vsnprintf` 和 `<stdarg.h>` 的可变参数机制（本篇没讲，函数篇也只是带过），请自查 cppreference 的 `vsnprintf` 后再实现。
+
+::: details 挑战扩展参考答案（可选）
+
+```c
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdio.h>
+
+/// @brief 安全地格式化字符串
+/// @param dst 目标缓冲区
+/// @param dst_size 目标缓冲区总大小（含终止符）
+/// @param format 格式字符串
+/// @param ... 可变参数
+/// @return 格式化后字符串的总长度（不含终止符）
+size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...);
+
+size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...)
+{
+    if (dst == NULL || format == NULL || dst_size == 0)
+    {
+        return 0;
+    }
+
+    dst[0] = '\0';
+
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf(dst, dst_size, format, args);
+    va_end(args);
+
+    // 无论格式化是否成功，都保证缓冲区以空字符结尾。
+    dst[dst_size - 1] = '\0';
+
+    // 返回“如果缓冲区足够大本来需要写入的长度”，截断时也保留这个信息。
+    // 返回负数表示格式化失败，此时返回 0。
+    return written >= 0 ? (size_t)written : 0;
+}
+
+int main(void)
+{
+    char message[64];//缓冲区
+    char short_message[12];//较小的缓冲区
+    size_t message_length;//格式化后消息的长度
+    size_t short_length;//完整格式化结果的长度
+
+    message_length = safe_str_format(message, sizeof(message),
+                                     "设备：%s，温度：%d 摄氏度",
+                                     "STM32", 26);
+    printf("正常格式化结果：%s\n", message);
+    printf("完整格式化结果的长度：%u\n", (unsigned int)message_length);
+
+    short_length = safe_str_format(short_message, sizeof(short_message),
+                                   "ID=%d,STATUS=%s", 1001, "OK");
+    printf("缓冲区不足时的截断结果：%s\n", short_message);
+    printf("完整格式化结果的长度：%u\n", (unsigned int)short_length);
+
+    return 0;
+}
+
+```
+
+运行结果：
+
+```text
+正常格式化结果：设备：STM32，温度：26 摄氏度
+完整格式化结果的长度：38
+缓冲区不足时的截断结果：ID=1001,STA
+完整格式化结果的长度：17
+```
+
+`vsnprintf` 的返回值是“如果缓冲区足够大，本来需要写入的字节数”。答案把截断情况
+保留下来，调用者可以用返回值 `>= dst_size` 判断截断，并显式保证最后一个字节是 `\0`。
+
+:::
 
 ### 练习 2：字符串分割函数
 
@@ -358,7 +581,114 @@ size_t str_split(
 );
 ```
 
-提示：遍历 `input`，记录每个子串的起始指针和长度。遇到分隔符时结束当前子串，开始下一个。不要忘记处理字符串末尾的最后一个子串。
+约定：保留空字段。例如 `"a,,b,"` 会得到 `"a"`、`""`、`"b"`、`""` 四个字段；
+如果输出数组容量不足，只返回已经写入的前 `max_tokens` 个字段。
+
+提示：遍历 `input`，记录每个字段的起始指针和长度。遇到分隔符时结束当前字段，遇到
+`\0` 时还要记录最后一个字段。函数不复制也不修改原字符串。
+
+::: details 参考答案
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+
+size_t str_split(
+    const char* input,
+    char delim,
+    const char** out_starts,
+    size_t* out_lengths,
+    size_t max_tokens
+)
+{
+    // 检查输入指针和输出数组是否有效，同时确保输出数组至少能容纳一个子串。
+    if (input == NULL || out_starts == NULL ||
+        out_lengths == NULL || max_tokens == 0)
+    {
+        return 0;
+    }
+
+    size_t token_count = 0;
+    const char* start = input; // 当前子串的起始位置
+    const char* end = input;   // 当前扫描位置
+
+    // 从左向右扫描字符串；输出数组写满后立即停止。
+    while (*end != '\0' && token_count < max_tokens)
+    {
+        if (*end == delim)
+        {
+            // 只记录子串的起始指针和长度，不复制或修改原字符串。
+            out_starts[token_count] = start;
+            out_lengths[token_count] = (size_t)(end - start);
+            token_count++;
+
+            // 跳过当前分隔符，下一个字符是下一段的起点。
+            start = end + 1;
+        }
+
+        end++;
+    }
+
+    // 无论最后一个字段是否为空，都要记录它（例如 "a,b," 的末尾空字段）。
+    if (token_count < max_tokens)
+    {
+        out_starts[token_count] = start;
+        out_lengths[token_count] = (size_t)(end - start);
+        token_count++;
+    }
+
+    return token_count;
+}
+
+int main(void)
+{
+    const char* input = "温度,湿度,气压";//原始字符串
+    const char delimiter = ',';//分割符号
+    const char* token_starts[16];//存储子串起始指针的数组
+    size_t token_lengths[16];//存储子串长度的数组
+    size_t token_count;//实际分割出的子串数量
+    size_t i;
+
+    token_count = str_split(input, delimiter,
+                            token_starts, token_lengths,
+                            sizeof(token_starts) / sizeof(token_starts[0]));
+
+    printf("原始字符串：%s\n", input);
+    printf("使用分隔符：%c\n", delimiter);
+    printf("共分割出 %u 个字段：\n", (unsigned int)token_count);
+
+    for (i = 0; i < token_count; i++)
+    {
+        printf("第 %u 个字段：%.*s（长度为 %u 字节）\n",
+               (unsigned int)(i + 1),
+               (int)token_lengths[i], token_starts[i],
+               (unsigned int)token_lengths[i]);
+    }
+
+    return 0;
+}
+
+
+
+```
+
+
+
+```text
+原始字符串：温度,湿度,气压
+使用分隔符：,
+共分割出 3 个字段：
+第 1 个字段：温度（长度为 6 字节）
+第 2 个字段：湿度（长度为 6 字节）
+第 3 个字段：气压（长度为 6 字节）
+```
+
+`str_split` 返回的是原字符串中的指针和长度，因此这些指针只在 `input` 仍然有效时可用。
+打印时使用 `%.*s` 配合长度，不要求每个字段单独拥有一个 `\0` 终止符；如果需要独立保存
+字段，则应再复制到调用者提供的缓冲区中。空字符串也按一个空字段处理；例如 `""` 返回一个长度为
+0 的字段，`",,"` 返回三个长度均为 0 的字段。输出数组容量不足时，仍只返回前 `max_tokens` 个字段。
+
+:::
 
 ## 参考资源
 

@@ -72,7 +72,7 @@ A huge thank you to these friends for their PRs and various forms of support! Yo
     <span class="card-name">owollz4 <span class="card-badge pr">PR</span></span>
     <p class="card-role">Content Additions</p>
     <p class="card-types">💡 📝</p>
-    <p class="card-desc">Submitted PRs adding reference answers to the C language tutorial chapters 2 & 3 (#108) and annotating the Chapter 6 state machine code (#104)</p>
+    <p class="card-desc">Submitted PRs adding reference answers to C tutorial chapters 2, 3, 10, 11 & 12 (#108, #125, #134) and annotating the Chapter 6 state machine code (#104); proposed improvements including a binary-representation explanation for floating-point numbers (#102) and exercise reference answers (#103), both implemented</p>
   </div>
 </a>
 </div>
@@ -122,7 +122,7 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <span class="card-name">Zch0 <span class="card-badge issue">Issue</span></span>
     <p class="card-role">Bug Report · Content Errata</p>
     <p class="card-types">🐛 💡</p>
-    <p class="card-desc">Reported a misleading claim in Vol.1's function templates chapter about template specialization and overloading ambiguity (#109), prompting a wording fix</p>
+    <p class="card-desc">Reported a misleading claim about template specialization and overloading ambiguity in Vol.1's function templates chapter (#109), and a conceptual error about std::sort parameters in the algorithms chapter (#116)</p>
   </div>
 </a>
 <a href="https://github.com/HiAirman" target="_blank" rel="noopener noreferrer" class="contributor-card">
@@ -132,6 +132,24 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <p class="card-role">Discussion</p>
     <p class="card-types">🐛 💡</p>
     <p class="card-desc">Raised a discussion on the correctness of an alignas example in the Advanced C++98 chapter (#96)</p>
+  </div>
+</a>
+<a href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/xiaoshuaijie.png?size=96" alt="xiaoshuaijie" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">xiaoshuaijie <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported an incorrect statement about anonymous namespaces and template argument deduction in the C tutorial "Scope and Storage" (#144), leading to a fix</p>
+  </div>
+</a>
+<a href="https://github.com/f4bb0" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/f4bb0.png?size=96" alt="f4bb0" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">f4bb0 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Site Experience</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">Reported a rendering issue where code block line numbers were vertically misaligned with the code lines (#142), leading to a fix</p>
   </div>
 </a>
 </div>
