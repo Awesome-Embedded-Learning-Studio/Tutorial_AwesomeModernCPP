@@ -9,6 +9,7 @@
 .claude/templates/
 .claude/tools/
 .claude/books/
+.claude/worktrees
 
 # Build directories
 build/

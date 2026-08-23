@@ -1,0 +1,13 @@
+:name: Blue Pill HAL demo - GDB
+:description: 调试用:加载平台与固件后开 GDB Server(3333),停在 Monitor 等连接。用法见教程 00-env-setup 调试篇
+
+using sysbus
+mach create
+$plf?=$ORIGIN/../../stm32-tutorials/f103/0_blink/platform/blue_pill.repl
+machine LoadPlatformDescription $plf
+
+$bin?=$ORIGIN/build/stm32_demo.elf
+
+sysbus LoadELF $bin
+
+machine StartGdbServer 3333

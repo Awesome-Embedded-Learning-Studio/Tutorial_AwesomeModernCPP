@@ -1,0 +1,19 @@
+:name: F103 Blink + UART1
+:description: 闪灯 + printf 走串口。showAnalyzer 开串口窗,GUI 里实时看输出;无头模式直接打到终端
+
+using sysbus
+mach create
+$plf?=$ORIGIN/platform/blue_pill.repl
+machine LoadPlatformDescription $plf
+
+$bin?=$ORIGIN/build/blink_uart.elf
+
+showAnalyzer sysbus.usart1
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+start
