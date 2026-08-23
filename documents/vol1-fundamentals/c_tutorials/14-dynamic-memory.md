@@ -11,7 +11,7 @@ order: 18
 platform: host
 prerequisites:
 - 结构体与内存对齐
-reading_time_minutes: 9
+reading_time_minutes: 35
 tags:
 - host
 - cpp-modern
@@ -815,6 +815,12 @@ int main(void)
     return 0;
 }
 ```
+
+atexit 是 C/C++ 标准库 <stdlib.h> 中用来注册一个在程序正常退出时自动执行的回调函数。
+`tracked_malloc`使用`malloc`和`__FILE__, __LINE__`机制动态分配内存并将分配时的位置记录，方便日后忘回收时进行快速查找
+通过`allocation_records`记录表将状态进行记录
+`tracked_free`使用`free`和`__FILE__, __LINE__`机制释放内存和查找是否重复释放和释放错误地址，通过`find_record`进行对释放地址的判断
+`register_mem_report`在首次`tracked_malloc`是进行`atexit`注册`mem_repor`确定程序运行结束后内存的状态（判断是否全部释放和有几个未释放和当初的分配位置
 
 运行结果：
 
