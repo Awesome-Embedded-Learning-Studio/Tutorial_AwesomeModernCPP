@@ -106,9 +106,12 @@ size_t count = fread(buffer, sizeof(Record), max_count, fp);
 
 ```c
 long get_file_size(FILE* fp) {
+    //获取当前初始位置
     long original = ftell(fp);
+    //将文件位置移至文件末尾
     fseek(fp, 0, SEEK_END);
     long size = ftell(fp);
+    //将文件位置从开头移至文件初始位置
     fseek(fp, original, SEEK_SET);
     return size;
 }
@@ -116,7 +119,7 @@ long get_file_size(FILE* fp) {
 
 ### 别把 feof 当循环条件
 
-`feof` 只有在读取操作已经失败**之后**才会返回真。正确的做法是直接检查读取函数的返回值：
+`feof` 只有在读取操作已经失败**之后**才会返回真。当`feof` 读到`EOF`时，会返回零后再次执行`feof`时才会返回1.将正确的做法是直接检查读取函数的返回值：
 
 ```c
 int ch;

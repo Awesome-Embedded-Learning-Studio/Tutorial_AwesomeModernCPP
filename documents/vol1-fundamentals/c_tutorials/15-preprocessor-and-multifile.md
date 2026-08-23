@@ -212,6 +212,127 @@ int main(void) {
 }
 ```
 
+::: details 参考答案
+
+```c
+// math_utils.h
+// math_utils.h
+#pragma once
+/**
+ * @brief 返回两个值中的最大值
+ *
+ */
+#define MAX(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a > _b ? _a : _b;      \
+  })
+
+/**
+ * @brief 返回两个值中的最小值
+ *
+ */
+#define MIN(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a < _b ? _a : _b;      \
+  })
+
+
+void clamp_int(int *value, int min_val,int max_val);
+
+/**
+ * @brief Print and return the number of decimal digits in an integer.
+ *
+ * The sign is not counted. Zero has one digit.
+ */
+int count_digits(int value);
+
+// int main(void) {
+//     // 练习： 调用两个函数，验证结果
+//     return 0;
+// }
+
+```
+
+```c
+// math_utils.c
+#include "math_utils.h"
+#include <stdio.h>
+
+void clamp_int(int *value, int min_val,int max_val)
+{
+   *value = MAX(min_val, MIN(*value, max_val));
+}
+
+int count_digits(int value)
+{
+    int digits = 0;
+
+    do {
+        ++digits;
+        value /= 10;
+    } while (value != 0);
+
+    printf("%d\n", digits);
+    return digits;
+}
+
+```
+
+```c
+// main.c
+#include <stdio.h>
+
+#include "math_utils.h"
+
+int main(void)
+{
+    int v;
+    int digits;
+  
+    v = 5;
+    clamp_int(&v, 0, 10);
+    printf("clamp_int(5, 0, 10) = %d\n", v);
+
+    v = 100;
+    clamp_int(&v, 0, 10);
+    printf("clamp_int(100, 0, 10) = %d\n", v);
+
+    digits = count_digits(42);
+    printf("count_digits(42) = %d\n", digits);
+
+    digits = count_digits(-12345);
+    printf("count_digits(-12345) = %d\n", digits);
+
+    printf("All tests passed.\n");
+    return 0;
+}
+
+```
+
+```bash
+gcc -std=gnu11 -Wall -Wextra main.c math_utils.c -o main
+```
+
+运行结果：
+
+```text
+clamp_int(5, 0, 10) = 5
+clamp_int(100, 0, 10) = 10
+2
+count_digits(42) = 2
+5
+count_digits(-12345) = 5
+All tests passed.
+```
+
+:::
+
+
+
 提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
 
 ### 练习 2：零开销的 DEBUG_LOG 宏
@@ -229,5 +350,77 @@ int main(void) {
 // 提示：使用 __FILE__、__LINE__、__VA_ARGS__
 #endif
 ```
+
+::: details 参考答案
+
+```c
+//debug_log.h
+#pragma once
+
+#include <stdio.h>
+
+/* 默认开启日志；编译时用 -DNDEBUG 可关闭 */
+#ifdef NDEBUG
+    #define DEBUG_LOG(fmt, ...)  ((void)(0))
+#else
+    #define DEBUG_LOG(fmt, ...) \
+        fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
+```
+
+```#include "debug_log.h"
+#include <stdio.h>
+
+int main(void)
+{
+    int count = 0;
+    DEBUG_LOG("开始运行，初始值 count = %d", count);
+
+    for (int i = 0; i < 3; ++i) {
+        DEBUG_LOG("第 %d 次循环", i);
+        count += i;
+    }
+
+    DEBUG_LOG("结束，最终 count = %d", count);
+    DEBUG_LOG("这是不带额外参数的中文消息");
+
+    printf("完成。\n");
+    return 0;
+}
+```
+
+`Debug 模式`
+
+```bash
+ gcc -std=gnu11 -Wall -Wextra main.c -o main &&./main
+```
+
+`Release 模式`
+
+```bash
+gcc -std=gnu11 -Wall -Wextra  -DNDEBUG  -Wno-unused-variable  main.c -o main &&./main
+```
+
+运行结果：
+
+Debug 模式：
+
+```text
+[main.c:7] 开始运行，初始值 count = 0
+[main.c:10] 第 0 次循环
+[main.c:10] 第 1 次循环
+[main.c:10] 第 2 次循环
+[main.c:14] 结束，最终 count = 3
+[main.c:15] 这是不带额外参数的中文消息
+完成。
+```
+
+Release 模式：`DEBUG_LOG` 被展开为 `((void)(0))`，什么都不输出，只留下 `printf` 的那一行：
+
+```text
+完成。
+```
+
+:::
 
 提示：可变参数宏的写法是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。GCC 提供了 `##__VA_ARGS__` 扩展处理没有额外参数时的逗号问题。
