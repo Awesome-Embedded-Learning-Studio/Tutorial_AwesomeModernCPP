@@ -42,7 +42,12 @@ def is_stm32_project(cmake_path: Path) -> bool:
         'arm-none-eabi-g++',
         'cortex-m',
     ]
-    return any(ind in content for ind in indicators)
+    if any(ind in content for ind in indicators):
+        return True
+    # 独立 toolchain 文件范式:交叉编译特征全在共享的 toolchain-*.cmake 里,
+    # CMakeLists 本体平台无关(如 stm32-tutorials/f103/*)。这种工程靠路径识别——
+    # STM32 线的目录名本身就是意图。
+    return any('stm32' in part.lower() for part in cmake_path.parts)
 
 
 def has_parent_cmake(project_dir: Path, code_root: Path) -> bool:
