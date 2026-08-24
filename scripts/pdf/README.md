@@ -275,11 +275,15 @@ DRAWIO_VIEWER_PATH=/absolute/path/to/viewer-static.min.js pnpm pdf -- --book <id
 
 ## GitHub Actions 和 rolling Release
 
-`.github/workflows/pdf.yml` 只通过 `workflow_dispatch` 手动触发，输入为：
+`.github/workflows/pdf.yml` 支持两种触发方式。手动 `workflow_dispatch` 的输入为：
 
 - `book`：一个书册 ID 或 `all`，默认 `all`；
 - `language`：`zh` 或 `en`；
 - `publish`：是否更新固定 tag `pdf-latest`。
+
+PR 可由维护者添加 `export-pdf` 标签，自动构建全部 14 本中文书并上传为 Actions artifacts，
+但不会更新 `pdf-latest`。标签保留期间，PR 新提交或重新打开会重新构建；同一 PR 的旧导出会
+自动取消。未添加该标签的 PR 不执行 PDF 构建。
 
 plan job 从 `pnpm pdf:list --json` 动态生成矩阵并校验 ID。build job 使用 `ubuntu-latest`、
 Node 22、pnpm 10，安装匹配 Chrome、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
