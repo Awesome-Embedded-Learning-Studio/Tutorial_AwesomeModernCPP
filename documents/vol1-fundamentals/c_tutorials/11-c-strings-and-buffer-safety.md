@@ -457,10 +457,6 @@ int main(void)
 
 ```
 
-```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic safe_strings.c -o safe_strings && ./safe_strings
-```
-
 运行结果：
 
 ```text
@@ -546,10 +542,6 @@ int main(void)
     return 0;
 }
 
-```
-
-```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic safe_str_format.c -o safe_str_format && ./safe_str_format
 ```
 
 运行结果：
@@ -676,11 +668,11 @@ int main(void)
     return 0;
 }
 
+
+
 ```
 
-```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic str_split.c -o str_split && ./str_split
-```
+
 
 ```text
 原始字符串：温度,湿度,气压
@@ -690,8 +682,6 @@ gcc -std=c11 -Wall -Wextra -Wpedantic str_split.c -o str_split && ./str_split
 第 2 个字段：湿度（长度为 6 字节）
 第 3 个字段：气压（长度为 6 字节）
 ```
-
-
 
 `str_split` 返回的是原字符串中的指针和长度，因此这些指针只在 `input` 仍然有效时可用。
 打印时使用 `%.*s` 配合长度，不要求每个字段单独拥有一个 `\0` 终止符；如果需要独立保存
