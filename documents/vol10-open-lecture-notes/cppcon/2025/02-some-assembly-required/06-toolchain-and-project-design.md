@@ -153,12 +153,12 @@ MSVC 用得少，但如果项目需要跨平台，偶尔在 Windows 上用 MSVC 
 
 直到尝试 C++20 Modules。第一次听说 Modules 的时候很兴奋，心想终于不用再忍受头文件包含的编译速度问题了。然后动手试了一下——首先，CMake 对 Modules 的支持在早期版本里非常粗糙，需要手动指定 `.cppm` 文件怎么编译成模块接口单元、怎么编译成模块实现单元，不同编译器之间的模块文件格式还不一样，GCC 用 `.gcm`<RefLink :id="9" preview="GCC 模块缓存 .gcm" />，Clang 用 `.pcm`<RefLink :id="10" preview="Clang 预编译模块 .pcm" />，MSVC 又是另一套。然后还会遇到循环依赖的问题，传统头文件时代可以用前置声明来打破循环依赖，但 Modules 的世界里这个做法不完全一样，这个坑卡了三天，最后发现是对"模块分区"的理解根本就是错的。
 
-下面是一个当时折腾出来的最小可运行例子，例子本身不复杂，但搞通它花了一整个周末：
+下面是一个当时折腾出来的最小可运行例子，例子本身不复杂，但搞通它花了一整个周末。`module;` 引入的全局模块片段用来容纳传统头文件<RefLink :id="11" preview="C++20 全局模块片段" />：
 
 ```cpp
 // math_utils.cppm (模块接口单元)
 module;
-#include <cmath>  // module 声明之前的 #include 是全局模块片段<RefLink :id="11" preview="C++20 全局模块片段" />，这里放传统头文件
+#include <cmath>  // module 声明之前的全局模块片段中放传统头文件
 export module math_utils;  // 声明模块名
 
 export double compute_sqrt(double x) {
