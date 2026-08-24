@@ -138,6 +138,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -181,7 +182,8 @@ jobs:
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
           pnpm pdf -- --book "${{ matrix.book }}" \
             --language "${{ matrix.language }}" \
-            --output dist/pdf
+            --output dist/pdf \
+            --no-sandbox
 
       - name: Validate and normalize PDF name
         id: validate

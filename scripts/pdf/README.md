@@ -124,6 +124,7 @@ pnpm pdf -- --book vol1 --executable-path /path/to/chrome
 | `--output <dir>` | PDF/JSON 报告目录，默认 `dist/pdf` |
 | `--html-only` | 生成并校验 HTML，不运行 Chromium；暂存目录会保留 |
 | `--keep-staging` | 完整 PDF 成功后仍保留 `.pdf-build/<book>-<language>/` |
+| `--no-sandbox` | 关闭 Chromium sandbox；仅用于渲染受信任内容的隔离 CI 环境 |
 | `--timeout <seconds>` | Puppeteer 启动、导航、分页和 PDF 输出各阶段的等待上限；默认每阶段 900 秒 |
 | `--executable-path <path>` | 使用指定 Chromium 可执行文件 |
 
