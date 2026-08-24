@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(f103_blink C CXX ASM)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 默认优化级别 RelWithDebInfo(-O2 -g):既能验证零开销,又能 GDB 单步
