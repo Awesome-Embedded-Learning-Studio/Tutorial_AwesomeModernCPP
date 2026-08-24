@@ -470,7 +470,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic float_bits.c -o float_bits && printf '%s\n' '-3.14' | ./float_bits
+gcc -std=c17 -Wall -Wextra -Wpedantic float_bits.c -o float_bits && printf '%s\n' '-3.14' | ./float_bits
 ```
 
 在支持 IEEE 754 binary32 的 GCC x86_64 环境中，输入 `-3.14` 的结果如下：
@@ -605,7 +605,7 @@ int main(void)
 `value` 与 `bits` 共用同一段 32 位存储，因此可用 `value` 观察这些位的整体值。位域的实际分配方向、对齐和填充由实现定义；上图只描述这一示例已实测的 GCC x86_64 布局，不能直接当作跨编译器或跨目标平台的寄存器协议。
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic bitfield_register.c -o bitfield_register && ./bitfield_register
+gcc -std=c17 -Wall -Wextra -Wpedantic bitfield_register.c -o bitfield_register && ./bitfield_register
 ```
 
 在 WSL Ubuntu 24.04（GCC 13.3，x86_64）中运行：
@@ -815,7 +815,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic tagged_union.c -o tagged_union && ./tagged_union
+gcc -std=c17 -Wall -Wextra -Wpedantic tagged_union.c -o tagged_union && ./tagged_union
 ```
 
 运行结果：

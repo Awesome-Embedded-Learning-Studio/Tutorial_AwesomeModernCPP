@@ -458,7 +458,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic safe_strings.c -o safe_strings && ./safe_strings
+gcc -std=c17 -Wall -Wextra -Wpedantic safe_strings.c -o safe_strings && ./safe_strings
 ```
 
 运行结果：
@@ -549,7 +549,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic safe_str_format.c -o safe_str_format && ./safe_str_format
+gcc -std=c17 -Wall -Wextra -Wpedantic safe_str_format.c -o safe_str_format && ./safe_str_format
 ```
 
 运行结果：
@@ -679,7 +679,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic str_split.c -o str_split && ./str_split
+gcc -std=c17 -Wall -Wextra -Wpedantic str_split.c -o str_split && ./str_split
 ```
 
 ```text

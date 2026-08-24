@@ -533,7 +533,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra alignment_verify.c -o alignment_verify && ./alignment_verify
+gcc -std=c17 -Wall -Wextra alignment_verify.c -o alignment_verify && ./alignment_verify
 ```
 
 在 `int` 为 4 字节、按 4 字节对齐的测试环境中，输出如下：
@@ -625,7 +625,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c11 -Wall -Wextra packed_compare.c -o packed_compare && ./packed_compare
+gcc -std=c17 -Wall -Wextra packed_compare.c -o packed_compare && ./packed_compare
 ```
 
 运行结果：
@@ -1137,7 +1137,7 @@ int main(void) {
 把三个文件放在同一目录后编译运行：
 
 ```bash
-gcc -std=c11 -Wall -Wextra -Wpedantic protocol_frame.c crc_ref.c -o protocol_frame && ./protocol_frame
+gcc -std=c17 -Wall -Wextra -Wpedantic protocol_frame.c crc_ref.c -o protocol_frame && ./protocol_frame
 ```
 
 这组测试数据的输出如下：
