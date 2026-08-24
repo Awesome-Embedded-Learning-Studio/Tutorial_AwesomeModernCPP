@@ -8,6 +8,9 @@
     "check:links": "python3 scripts/check_links.py",
     "build": "pnpm check:links && tsx scripts/build.ts",
     "build:single": "pnpm check:links && vitepress build site",
+    "pdf": "tsx scripts/pdf/cli.ts",
+    "pdf:list": "tsx scripts/pdf/cli.ts --list",
+    "test:pdf": "tsx --test scripts/pdf/test/*.test.ts",
     "preview": "vitepress preview site",
     "hooks:install": "scripts/setup_precommit.sh",
     "coverage": "python3 scripts/coverage.py",
@@ -17,8 +20,12 @@
     "@dhlx/vitepress-plugin-drawio": "^0.0.10",
     "@panzoom/panzoom": "^4.6.2",
     "@types/node": "^25.6.2",
+    "gray-matter": "4.0.3",
+    "linkedom": "0.18.13",
     "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^10.9.6",
+    "pagedjs": "0.4.3",
+    "puppeteer": "25.8.0",
     "shiki": "^2.5.0",
     "tsx": "^4.21.0",
     "vitepress": "^1.6.4",
@@ -26,7 +33,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "puppeteer"
     ]
   },
   "dependencies": {
