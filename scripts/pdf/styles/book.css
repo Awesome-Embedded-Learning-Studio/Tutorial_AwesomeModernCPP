@@ -18,8 +18,8 @@
     "Songti SC", SimSun, serif;
   --book-sans: "Noto Sans CJK SC", "Source Han Sans SC", "Noto Sans SC",
     system-ui, sans-serif;
-  --book-mono: "Noto Sans Mono CJK SC", "Source Han Mono SC", "Noto Sans Mono",
-    "Cascadia Mono", "DejaVu Sans Mono", monospace;
+  --book-mono: "Cascadia Mono", "Noto Sans Mono CJK SC", "Source Han Mono SC",
+    "Noto Sans Mono", "DejaVu Sans Mono", monospace;
 }
 
 @page {
@@ -216,39 +216,30 @@ body {
   border-top: 0.8mm solid var(--book-accent);
 }
 
-.book-cover__metadata {
+.book-cover__credit {
   margin: auto 0 0;
   color: var(--book-muted);
   font-family: var(--book-sans);
-  font-size: 7.7pt;
-  line-height: 1.55;
+  font-size: 8.8pt;
+  line-height: 1.45;
 }
 
-.book-cover__metadata > div {
-  display: grid;
-  grid-template-columns: 23mm minmax(0, 1fr);
-  gap: 3mm;
-}
-
-.book-cover__metadata dt,
-.book-cover__metadata dd {
+.book-cover__credit p {
   margin: 0;
 }
 
-.book-cover__metadata dt {
+.book-cover__credit p + p {
+  margin-top: 0.8mm;
+}
+
+.book-cover__studio {
+  color: var(--book-ink);
   font-weight: 650;
+  letter-spacing: 0.025em;
 }
 
-.book-cover__metadata code {
-  font-family: var(--book-mono);
-  font-size: 0.94em;
-  overflow-wrap: anywhere;
-}
-
-.book-cover__metadata a {
-  color: inherit;
-  overflow-wrap: anywhere;
-  text-decoration: none;
+.book-cover__credit time {
+  font-variant-numeric: tabular-nums;
 }
 
 .book-toc {
@@ -537,8 +528,8 @@ body {
   background: var(--book-code-bg) !important;
   color: #282521;
   font-family: var(--book-mono);
-  font-size: 7.65pt;
-  line-height: 1.5;
+  font-size: 7.8pt;
+  line-height: 1.37;
   tab-size: 4;
   white-space: pre-wrap;
   word-break: normal;
@@ -564,7 +555,7 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 1.5em;
+  min-height: 1.37em;
   padding-left: 3.2em;
   break-inside: avoid;
   overflow-wrap: anywhere;

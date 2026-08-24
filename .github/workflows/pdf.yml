@@ -1,6 +1,9 @@
 name: Build PDF books
 
 on:
+  pull_request:
+    types: [labeled]
+    branches: [main]
   workflow_dispatch:
     inputs:
       book:
@@ -29,15 +32,22 @@ env:
   PUPPETEER_CACHE_DIR: ${{ github.workspace }}/.cache/puppeteer
 
 # Publishing runs share one queue from the beginning, so an older, slower run
-# can never move the rolling tag backwards after a newer run. Non-publishing
-# previews retain independent groups and may run concurrently.
+# can never move the rolling tag backwards after a newer run. Labeled PR
+# previews use one replaceable run per PR; manual previews remain independent.
 concurrency:
-  group: pdf-books-${{ github.repository }}-${{ inputs.publish && 'publish' || github.run_id }}
-  cancel-in-progress: false
+  group: pdf-books-${{ github.repository }}-${{ github.event_name == 'pull_request' && github.event.label.name == 'export-pdf' && format('pr-{0}', github.event.pull_request.number) || github.event_name == 'workflow_dispatch' && inputs.publish && 'publish' || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   plan:
     name: Plan books
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch'
+        || (github.event_name == 'pull_request'
+          && github.event.action == 'labeled'
+          && github.event.label.name == 'export-pdf')
+      }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -46,6 +56,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -67,9 +79,9 @@ jobs:
         id: plan
         shell: bash
         env:
-          SELECTED_BOOK: ${{ inputs.book }}
-          SELECTED_LANGUAGE: ${{ inputs.language }}
-          PUBLISH: ${{ inputs.publish }}
+          SELECTED_BOOK: ${{ inputs.book || 'all' }}
+          SELECTED_LANGUAGE: ${{ inputs.language || 'zh' }}
+          PUBLISH: ${{ inputs.publish == true }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
@@ -138,6 +150,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -166,11 +179,16 @@ jobs:
       - name: Install fonts and PDF validators
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y fonts-noto-cjk-extra poppler-utils qpdf
+          sudo apt-get install --no-install-recommends -y fonts-cascadia-code fonts-noto-cjk-extra poppler-utils qpdf
           fc-cache -f
           serif_family="$(fc-match -f '%{family}\n' 'Noto Serif CJK SC' | head -n 1)"
           [[ "$serif_family" == *'Noto Serif CJK SC'* ]] || {
             echo "Noto Serif CJK SC was not selected: $serif_family" >&2
+            exit 1
+          }
+          mono_family="$(fc-match -f '%{family}\n' 'Cascadia Mono' | head -n 1)"
+          [[ "$mono_family" == *'Cascadia Mono'* ]] || {
+            echo "Cascadia Mono was not selected: $mono_family" >&2
             exit 1
           }
 
@@ -181,7 +199,8 @@ jobs:
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
           pnpm pdf -- --book "${{ matrix.book }}" \
             --language "${{ matrix.language }}" \
-            --output dist/pdf
+            --output dist/pdf \
+            --no-sandbox
 
       - name: Validate and normalize PDF name
         id: validate
@@ -249,7 +268,7 @@ jobs:
     needs:
       - plan
       - build
-    if: ${{ inputs.publish && inputs.book == 'all' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && inputs.book == 'all' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

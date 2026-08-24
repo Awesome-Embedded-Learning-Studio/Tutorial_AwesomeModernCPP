@@ -32,6 +32,7 @@ export interface BuildBookOptions {
   markdown: MarkdownIt
   htmlOnly?: boolean
   keepStaging?: boolean
+  noSandbox?: boolean
   timeoutMs?: number
   executablePath?: string
   log?: (message: string) => void
@@ -217,6 +218,7 @@ export async function buildBook(options: BuildBookOptions): Promise<BuildBookRes
         outputPath: pdfPath,
         timeoutMs: options.timeoutMs,
         executablePath: options.executablePath,
+        launchArgs: options.noSandbox ? ['--no-sandbox'] : undefined,
       })
       elapsedMs.browser = browser.elapsedMs
       report.pageCount = browser.pageCount

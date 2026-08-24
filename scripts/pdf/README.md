@@ -124,6 +124,7 @@ pnpm pdf -- --book vol1 --executable-path /path/to/chrome
 | `--output <dir>` | PDF/JSON 报告目录，默认 `dist/pdf` |
 | `--html-only` | 生成并校验 HTML，不运行 Chromium；暂存目录会保留 |
 | `--keep-staging` | 完整 PDF 成功后仍保留 `.pdf-build/<book>-<language>/` |
+| `--no-sandbox` | 关闭 Chromium sandbox；仅用于渲染受信任内容的隔离 CI 环境 |
 | `--timeout <seconds>` | Puppeteer 启动、导航、分页和 PDF 输出各阶段的等待上限；默认每阶段 900 秒 |
 | `--executable-path <path>` | 使用指定 Chromium 可执行文件 |
 
@@ -211,8 +212,9 @@ Chromium 返回值还需具有 `%PDF-` 签名且大于最小尺寸。若本机�
 ## 排版和超长卷
 
 首期采用“现代技术书 + 教材级中文细节”的书风，而不是高密度论文版式。书稿为
-176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题和等宽代码字体。封面不显示
-页眉页脚；目录和正文使用左右页镜像边距、running book/chapter title 和页码。目录页码由
+176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题，以及 Cascadia Mono（中文回退
+Noto Sans Mono CJK SC）代码字体。封面只显示系列名、卷名、书名、工作室与年份，不显示
+版本号、提交 SHA 和长 URL，也不显示页眉页脚；目录和正文使用左右页镜像边距、running book/chapter title 和页码。目录页码由
 Paged.js 的 `target-counter(attr(href), page)` 从最终分页结果回填。章索引和检测到的新章可
 换页，正文设置 widows/orphans；表格可在行间分页并重复表头，单行保持完整；图表受版心宽度
 和可用高度限制。
@@ -274,14 +276,19 @@ DRAWIO_VIEWER_PATH=/absolute/path/to/viewer-static.min.js pnpm pdf -- --book <id
 
 ## GitHub Actions 和 rolling Release
 
-`.github/workflows/pdf.yml` 只通过 `workflow_dispatch` 手动触发，输入为：
+`.github/workflows/pdf.yml` 支持两种触发方式。手动 `workflow_dispatch` 的输入为：
 
 - `book`：一个书册 ID 或 `all`，默认 `all`；
 - `language`：`zh` 或 `en`；
 - `publish`：是否更新固定 tag `pdf-latest`。
 
+PR 可由维护者添加 `export-pdf` 标签，自动构建全部 14 本中文书并上传为 Actions artifacts，
+但不会更新 `pdf-latest`。标签是一次性触发器：PR 新提交或重新打开不会自动重建；需要再次导出时，
+先移除再重新添加该标签。同一 PR 正在运行的旧导出会自动取消。未触发标签事件的 PR 不会创建
+PDF workflow。
+
 plan job 从 `pnpm pdf:list --json` 动态生成矩阵并校验 ID。build job 使用 `ubuntu-latest`、
-Node 22、pnpm 10，安装匹配 Chrome、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
+Node 22、pnpm 10，安装匹配 Chrome、Cascadia Mono、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
 最多并行 3 本。每本 PDF 必须通过 `qpdf --check`、有效页数、字体嵌入和非空文本检查，随后
 连同 JSON 报告作为保留 14 天的 Actions artifact 上传。
 

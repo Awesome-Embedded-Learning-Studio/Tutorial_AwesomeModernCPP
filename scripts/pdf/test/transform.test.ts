@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
+import { parseHTML } from 'linkedom'
 
 import type { BookLocale, ContentUnit, SourceDocument } from '../model'
 import { createBookMarkdownRenderer } from '../markdown'
@@ -270,7 +271,7 @@ test('rewrites OnlineCompilerDemo instructions into a paper context', async (tes
 test('materializes stable Shiki line numbers before Paged.js cloning', async () => {
   const vitePressHtml = `<div class="vp-code-group"><div class="tabs"><input type="radio"><label>CPP</label></div>
 <pre class="shiki" v-pre><button class="copy">Copy</button><code><span class="line">first</span>
-<span class="line">second</span>
+<span class="line"></span>
 <span class="line">third</span></code></pre></div>`
   const context: TransformContext = {
     repositoryRoot: '/tmp/pdf-transform-fixture',
@@ -291,6 +292,15 @@ test('materializes stable Shiki line numbers before Paged.js cloning', async () 
     Array.from(rendered.html.matchAll(/data-line-number="(\d+)"/g), (match) => match[1]),
     ['1', '2', '3'],
   )
+
+  const { document } = parseHTML(`<main>${rendered.html}</main>`)
+  const code = document.querySelector('pre[data-line-count] > code')
+  assert.ok(code)
+  assert.deepEqual(Array.from(code.childNodes, (node) => node.nodeType), [1, 1, 1])
+  const renderedLines = Array.from(code.children)
+  assert.equal(renderedLines.length, 3)
+  assert.equal(renderedLines[1].textContent, '')
+  assert.equal(renderedLines[1].getAttribute('data-line-number'), '2')
 })
 
 test('rejects executable or embedded-document link schemes', () => {

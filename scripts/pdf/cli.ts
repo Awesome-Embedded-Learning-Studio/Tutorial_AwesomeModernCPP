@@ -13,6 +13,7 @@ interface CliOptions {
   json: boolean
   htmlOnly: boolean
   keepStaging: boolean
+  noSandbox: boolean
   timeoutMs?: number
   executablePath?: string
 }
@@ -28,6 +29,7 @@ Options:
   --output <directory>     Final PDF/report directory (default: dist/pdf)
   --html-only              Assemble and validate HTML without launching Chromium
   --keep-staging           Preserve .pdf-build/<book>-<language>
+  --no-sandbox             Disable Chromium sandbox (trusted CI only)
   --timeout <seconds>      Browser/pagination timeout (default: 900)
   --executable-path <path> Use a specific Chromium executable
   --list [--json]          List publication books
@@ -50,6 +52,7 @@ function parseArgs(args: string[]): CliOptions {
     json: false,
     htmlOnly: false,
     keepStaging: false,
+    noSandbox: false,
   }
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index]
@@ -85,6 +88,8 @@ function parseArgs(args: string[]): CliOptions {
       options.htmlOnly = true
     } else if (argument === '--keep-staging') {
       options.keepStaging = true
+    } else if (argument === '--no-sandbox') {
+      options.noSandbox = true
     } else {
       throw new Error(`Unknown option "${argument}"`)
     }
@@ -119,6 +124,7 @@ async function main(): Promise<void> {
       markdown,
       htmlOnly: options.htmlOnly,
       keepStaging: options.keepStaging,
+      noSandbox: options.noSandbox,
       timeoutMs: options.timeoutMs,
       executablePath: options.executablePath,
       log: (message) => process.stderr.write(`${message}\n`),
