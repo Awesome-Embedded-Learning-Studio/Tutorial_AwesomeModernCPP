@@ -27,14 +27,12 @@ interface PreparedDocument {
 const localStrings = {
   zh: {
     series: '现代 C++ 教程',
-    version: '版本',
-    source: '源文件',
+    studio: 'Awesome Embedded Learning Studio',
     page: '页',
   },
   en: {
     series: 'Modern C++ Tutorial',
-    version: 'Version',
-    source: 'Source',
+    studio: 'Awesome Embedded Learning Studio',
     page: 'page',
   },
 } as const
@@ -66,9 +64,9 @@ function assertNonEmpty(name: string, value: string): void {
   if (value.trim() === '') throw new Error(`${name} must not be empty`)
 }
 
-function displayDate(value: string): string {
-  const isoDate = /^(\d{4}-\d{2}-\d{2})/.exec(value)
-  return isoDate?.[1] ?? value
+function displayYear(value: string): string {
+  const isoYear = /^(\d{4})/.exec(value)
+  return isoYear?.[1] ?? value
 }
 
 function chapterKey(document: RenderedDocument): string {
@@ -230,8 +228,6 @@ export function assembleBookHtml(
   const tocDocuments = documents.filter((document) => document.kind !== 'book-index')
   const tocEntries = tocDocuments.map(renderTocEntry).join('\n')
   const body = prepared.map((document) => renderDocument(document, locale.strings.references)).join('\n')
-  const onlineUrl = locale.onlinePrefix.replace(/\/$/, '')
-
   const browserAssets = {
     mermaidModule: assets.mermaidModule,
     drawioViewerScript: assets.drawioViewerScript,
@@ -279,12 +275,10 @@ export function assembleBookHtml(
         <p class="book-cover__label">${escapeHtml(bookLabel)}</p>
         <h1 id="book-cover-title">${escapeHtml(bookTitle)}</h1>
         <div class="book-cover__rule" aria-hidden="true"></div>
-        <dl class="book-cover__metadata">
-          <div><dt>${escapeHtml(strings.version)}</dt><dd>${escapeHtml(metadata.version)}</dd></div>
-          <div><dt>${escapeHtml(locale.strings.generated)}</dt><dd><time datetime="${escapeAttribute(metadata.generatedAt)}">${escapeHtml(displayDate(metadata.generatedAt))}</time></dd></div>
-          <div><dt>${escapeHtml(locale.strings.sourceRevision)}</dt><dd><code title="${escapeAttribute(metadata.revision)}">${escapeHtml(metadata.revision)}</code></dd></div>
-          <div><dt>${escapeHtml(locale.strings.onlineEdition)}</dt><dd><a href="${escapeAttribute(onlineUrl)}">${escapeHtml(onlineUrl)}</a></dd></div>
-        </dl>
+        <div class="book-cover__credit">
+          <p class="book-cover__studio">${escapeHtml(strings.studio)}</p>
+          <p><time datetime="${escapeAttribute(metadata.generatedAt)}">${escapeHtml(displayYear(metadata.generatedAt))}</time></p>
+        </div>
       </div>
     </section>
 

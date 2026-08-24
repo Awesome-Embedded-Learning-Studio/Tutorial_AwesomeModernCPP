@@ -212,8 +212,9 @@ Chromium 返回值还需具有 `%PDF-` 签名且大于最小尺寸。若本机�
 ## 排版和超长卷
 
 首期采用“现代技术书 + 教材级中文细节”的书风，而不是高密度论文版式。书稿为
-176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题和等宽代码字体。封面不显示
-页眉页脚；目录和正文使用左右页镜像边距、running book/chapter title 和页码。目录页码由
+176 mm × 250 mm 的 B5 页面，宋体正文、无衬线标题，以及 Cascadia Mono（中文回退
+Noto Sans Mono CJK SC）代码字体。封面只显示系列名、卷名、书名、工作室与年份，不显示
+版本号、提交 SHA 和长 URL，也不显示页眉页脚；目录和正文使用左右页镜像边距、running book/chapter title 和页码。目录页码由
 Paged.js 的 `target-counter(attr(href), page)` 从最终分页结果回填。章索引和检测到的新章可
 换页，正文设置 widows/orphans；表格可在行间分页并重复表头，单行保持完整；图表受版心宽度
 和可用高度限制。
@@ -287,7 +288,7 @@ PR 可由维护者添加 `export-pdf` 标签，自动构建全部 14 本中文�
 PDF workflow。
 
 plan job 从 `pnpm pdf:list --json` 动态生成矩阵并校验 ID。build job 使用 `ubuntu-latest`、
-Node 22、pnpm 10，安装匹配 Chrome、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
+Node 22、pnpm 10，安装匹配 Chrome、Cascadia Mono、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
 最多并行 3 本。每本 PDF 必须通过 `qpdf --check`、有效页数、字体嵌入和非空文本检查，随后
 连同 JSON 报告作为保留 14 天的 Actions artifact 上传。
 

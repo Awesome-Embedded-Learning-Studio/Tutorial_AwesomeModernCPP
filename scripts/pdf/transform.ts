@@ -596,7 +596,20 @@ function normalizeStructure(root: Element): void {
     pre.classList.add('book-code-block')
     const lines = Array.from(pre.querySelectorAll('code > .line'))
     lines.forEach((line, index) => line.setAttribute('data-line-number', String(index + 1)))
-    if (lines.length) pre.setAttribute('data-line-count', String(lines.length))
+    if (lines.length) {
+      const code = lines[0].parentElement
+      if (code) {
+        // Shiki separates .line spans with formatting newlines. With pre-wrap
+        // and block-level lines Chromium would render every separator as a
+        // second, blank code line. Real empty source lines remain .line spans.
+        for (const node of Array.from(code.childNodes)) {
+          if (node.nodeType === 3 && (node.textContent ?? '').trim() === '') {
+            code.removeChild(node)
+          }
+        }
+      }
+      pre.setAttribute('data-line-count', String(lines.length))
+    }
   }
 }
 

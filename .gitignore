@@ -27,7 +27,7 @@ site/.vitepress/.build-tmp/
 
 # Book/PDF pipeline (generated locally or uploaded as CI/Release artifacts)
 .pdf-build/
-dist/pdf/
+dist/
 
 # Python cache
 __pycache__/
