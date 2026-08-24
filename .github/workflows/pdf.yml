@@ -1,0 +1,605 @@
+name: Build PDF books
+
+on:
+  workflow_dispatch:
+    inputs:
+      book:
+        description: Book id from `pnpm pdf:list --json`, or `all`
+        required: true
+        default: all
+        type: string
+      language:
+        description: Source language
+        required: true
+        default: zh
+        type: choice
+        options:
+          - zh
+          - en
+      publish:
+        description: Update the rolling pdf-latest Release (requires book=all)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  PUPPETEER_CACHE_DIR: ${{ github.workspace }}/.cache/puppeteer
+
+# Publishing runs share one queue from the beginning, so an older, slower run
+# can never move the rolling tag backwards after a newer run. Non-publishing
+# previews retain independent groups and may run concurrently.
+concurrency:
+  group: pdf-books-${{ github.repository }}-${{ inputs.publish && 'publish' || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan books
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      expected_books: ${{ steps.plan.outputs.expected_books }}
+      expected_count: ${{ steps.plan.outputs.expected_count }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate selection and create matrix
+        id: plan
+        shell: bash
+        env:
+          SELECTED_BOOK: ${{ inputs.book }}
+          SELECTED_LANGUAGE: ${{ inputs.language }}
+          PUBLISH: ${{ inputs.publish }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$PUBLISH" == "true" && "$SELECTED_BOOK" != "all" ]]; then
+            echo 'Publishing requires book=all so a Release never contains mixed source revisions.' >&2
+            exit 1
+          fi
+          if [[ "$PUBLISH" == "true" && "$SELECTED_LANGUAGE" != "zh" ]]; then
+            echo 'The first publication phase is Chinese-only; English may be built as an artifact but not published.' >&2
+            exit 1
+          fi
+          if [[ "$PUBLISH" == "true" && "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "Publishing is restricted to the default branch ($DEFAULT_BRANCH); got $GITHUB_REF." >&2
+            exit 1
+          fi
+
+          catalog="$(pnpm --silent pdf:list --json)"
+          ids="$(jq -ce '
+            def ids:
+              if type == "array" then .
+              elif type == "object" and (.books | type) == "array" then .books
+              else error("pdf:list JSON must be an array or an object with a books array")
+              end
+              | map(
+                  if type == "string" then .
+                  elif type == "object" and (.id | type) == "string" then .id
+                  else error("each book must be a string or contain a string id")
+                  end
+                );
+            ids
+            | if length == 0 then error("book catalog is empty")
+              elif length != (unique | length) then error("book ids are not unique")
+              else .
+              end
+          ' <<<"$catalog")"
+
+          if [[ "$SELECTED_BOOK" == "all" ]]; then
+            selected="$ids"
+          elif jq -e --arg id "$SELECTED_BOOK" 'index($id) != null' <<<"$ids" >/dev/null; then
+            selected="$(jq -cn --arg id "$SELECTED_BOOK" '[$id]')"
+          else
+            echo "Unknown book '$SELECTED_BOOK'. Available ids: $(jq -r 'join(", ")' <<<"$ids")" >&2
+            exit 1
+          fi
+
+          matrix="$(jq -cn --arg language "$SELECTED_LANGUAGE" --argjson books "$selected" \
+            '{include: [$books[] | {book: ., language: $language}]}')"
+          {
+            echo "matrix=$matrix"
+            echo "expected_books=$selected"
+            echo "expected_count=$(jq 'length' <<<"$selected")"
+          } >>"$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.book }} (${{ matrix.language }})
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Restore Chromium cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.PUPPETEER_CACHE_DIR }}
+          key: puppeteer-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            puppeteer-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Install Node dependencies and matching Chromium
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec puppeteer browsers install chrome
+
+      - name: Install fonts and PDF validators
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y fonts-noto-cjk-extra poppler-utils qpdf
+          fc-cache -f
+          serif_family="$(fc-match -f '%{family}\n' 'Noto Serif CJK SC' | head -n 1)"
+          [[ "$serif_family" == *'Noto Serif CJK SC'* ]] || {
+            echo "Noto Serif CJK SC was not selected: $serif_family" >&2
+            exit 1
+          }
+
+      - name: Build one book
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
+          pnpm pdf -- --book "${{ matrix.book }}" \
+            --language "${{ matrix.language }}" \
+            --output dist/pdf
+
+      - name: Validate and normalize PDF name
+        id: validate
+        shell: bash
+        env:
+          BOOK: ${{ matrix.book }}
+          LANGUAGE: ${{ matrix.language }}
+        run: |
+          set -euo pipefail
+          export LC_ALL=C
+          mapfile -d '' pdfs < <(find dist/pdf -type f -name '*.pdf' -print0)
+          if (( ${#pdfs[@]} != 1 )); then
+            echo "Expected exactly one PDF, found ${#pdfs[@]}" >&2
+            find dist/pdf -maxdepth 3 -type f -print >&2 || true
+            exit 1
+          fi
+
+          pdf="${pdfs[0]}"
+          qpdf --check "$pdf"
+          pages="$(pdfinfo "$pdf" | awk -F: '$1 == "Pages" { gsub(/[[:space:]]/, "", $2); print $2 }')"
+          [[ "$pages" =~ ^[1-9][0-9]*$ ]] || {
+            echo "Invalid page count reported by pdfinfo: $pages" >&2
+            exit 1
+          }
+
+          font_rows="$(pdffonts "$pdf" | tail -n +3)"
+          [[ -n "$font_rows" ]] || {
+            echo 'The PDF contains no discoverable fonts.' >&2
+            exit 1
+          }
+          awk '
+            NF && $(NF - 4) != "yes" {
+              print "Font is not embedded: " $0 > "/dev/stderr"
+              bad = 1
+            }
+            END { exit bad }
+          ' <<<"$font_rows"
+
+          text_path="$RUNNER_TEMP/${BOOK}-${LANGUAGE}.txt"
+          pdftotext "$pdf" "$text_path"
+          (( $(wc -c <"$text_path") > 200 )) || {
+            echo 'Extracted PDF text is unexpectedly empty.' >&2
+            exit 1
+          }
+
+          short_sha="${GITHUB_SHA:0:12}"
+          normalized="dist/pdf/${BOOK}-${LANGUAGE}-${short_sha}.pdf"
+          if [[ "$pdf" != "$normalized" ]]; then mv -- "$pdf" "$normalized"; fi
+          echo "pdf=$normalized" >>"$GITHUB_OUTPUT"
+          echo "pages=$pages" >>"$GITHUB_OUTPUT"
+
+      - name: Upload book artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdf-${{ matrix.book }}-${{ matrix.language }}-${{ github.sha }}
+          path: |
+            ${{ steps.validate.outputs.pdf }}
+            dist/pdf/*.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    name: Publish pdf-latest
+    needs:
+      - plan
+      - build
+    if: ${{ inputs.publish && inputs.book == 'all' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Refuse a stale default-branch build
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${DEFAULT_BRANCH}" --jq '.object.sha')"
+          if [[ "$current_sha" != "$GITHUB_SHA" ]]; then
+            echo "Refusing to publish stale revision $GITHUB_SHA; ${DEFAULT_BRANCH} is now $current_sha." >&2
+            exit 1
+          fi
+          source_date="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.committer.date')"
+          [[ "$source_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || {
+            echo "Could not determine the source commit date: $source_date" >&2
+            exit 1
+          }
+          echo "source_date=$source_date" >>"$GITHUB_OUTPUT"
+
+      - name: Download every book from this run
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pdf-*-${{ inputs.language }}-${{ github.sha }}
+          path: release-input
+
+      - name: Assemble and verify the complete Release set
+        id: release_set
+        shell: bash
+        env:
+          EXPECTED_BOOKS: ${{ needs.plan.outputs.expected_books }}
+          EXPECTED_COUNT: ${{ needs.plan.outputs.expected_count }}
+          LANGUAGE: ${{ inputs.language }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_DATE: ${{ steps.source.outputs.source_date }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          node --input-type=module <<'NODE'
+          import {
+            appendFileSync,
+            copyFileSync,
+            createReadStream,
+            mkdirSync,
+            readdirSync,
+            statSync,
+            writeFileSync,
+          } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          import { basename, join } from 'node:path'
+
+          function walk(directory) {
+            return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+              const path = join(directory, entry.name)
+              return entry.isDirectory() ? walk(path) : [path]
+            })
+          }
+
+          async function sha256File(path) {
+            const hash = createHash('sha256')
+            for await (const chunk of createReadStream(path)) hash.update(chunk)
+            return hash.digest('hex')
+          }
+
+          const expectedBooks = JSON.parse(process.env.EXPECTED_BOOKS)
+          const expectedCount = Number(process.env.EXPECTED_COUNT)
+          const language = process.env.LANGUAGE
+          const revision = process.env.SOURCE_SHA
+          const shortRevision = revision.slice(0, 12)
+          if (!Array.isArray(expectedBooks) || expectedBooks.length !== expectedCount) {
+            throw new Error('Invalid expected book set from the plan job')
+          }
+
+          const expectedNames = expectedBooks.map((book) => `${book}-${language}-${shortRevision}.pdf`).sort()
+          const pdfSources = walk('release-input').filter((path) => path.endsWith('.pdf'))
+          const sourceByName = new Map()
+          for (const source of pdfSources) {
+            const name = basename(source)
+            if (sourceByName.has(name)) throw new Error(`Duplicate PDF asset: ${name}`)
+            sourceByName.set(name, source)
+          }
+          const actualNames = [...sourceByName.keys()].sort()
+          if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+            throw new Error(`Release set mismatch\nexpected: ${expectedNames.join(', ')}\nactual: ${actualNames.join(', ')}`)
+          }
+
+          mkdirSync('release-assets', { recursive: true })
+          const books = []
+          for (const book of expectedBooks) {
+            const sourceName = `${book}-${language}-${shortRevision}.pdf`
+            const source = sourceByName.get(sourceName)
+            const bytes = statSync(source).size
+            const sha256 = await sha256File(source)
+            const name = `${book}-${language}-${shortRevision}-${sha256}.pdf`
+            copyFileSync(source, join('release-assets', name))
+            books.push({ book, name, bytes, sha256 })
+          }
+
+          const checksums = `${books.map(({ name, sha256 }) => `${sha256}  ${name}`).join('\n')}\n`
+          const checksumsHash = createHash('sha256').update(checksums).digest('hex')
+          const checksumsName = `SHA256SUMS-${language}-${shortRevision}-${checksumsHash}.txt`
+          writeFileSync(join('release-assets', checksumsName), checksums)
+
+          const manifest = `${JSON.stringify({
+              schemaVersion: 1,
+              tag: 'pdf-latest',
+              language,
+              revision,
+              generatedAt: process.env.SOURCE_DATE,
+              checksums: checksumsName,
+              workflow: {
+                repository: process.env.GITHUB_REPOSITORY,
+                runId: process.env.WORKFLOW_RUN_ID,
+                runAttempt: process.env.WORKFLOW_RUN_ATTEMPT,
+              },
+              books,
+            }, null, 2)}\n`
+          const manifestHash = createHash('sha256').update(manifest).digest('hex')
+          const manifestName = `manifest-${language}-${shortRevision}-${manifestHash}.json`
+          writeFileSync(join('release-assets', manifestName), manifest)
+          appendFileSync(process.env.GITHUB_OUTPUT, `manifest=${manifestName}\nchecksums=${checksumsName}\n`)
+          NODE
+
+      - name: Prepare a recoverable Release candidate
+        id: release_state
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+        run: |
+          set -euo pipefail
+          created="$RUNNER_TEMP/pdf-release-created.txt"
+          : >"$RUNNER_TEMP/pdf-release-uploaded.txt"
+          echo false >"$created"
+
+          if release_json="$(gh release view "$RELEASE_TAG" --json isDraft 2>/dev/null)"; then
+            if jq -e '.isDraft == true' <<<"$release_json" >/dev/null; then
+              echo 'Removing an incomplete draft left by an interrupted publication.'
+              gh release delete "$RELEASE_TAG" --yes --cleanup-tag
+            fi
+          fi
+
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --draft \
+              --title 'PDF books (rolling)' \
+              --notes 'Complete offline PDF set. Use the attached manifest and SHA256SUMS file to verify revision and content.' \
+              --latest=false
+            echo true >"$created"
+          fi
+          echo "created=$(<"$created")" >>"$GITHUB_OUTPUT"
+
+      - name: Upload only missing content-addressed assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+          CHECKSUMS: ${{ steps.release_set.outputs.checksums }}
+          MANIFEST: ${{ steps.release_set.outputs.manifest }}
+        run: |
+          set -euo pipefail
+          mapfile -t remote_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+
+          upload_if_missing() {
+            local path="$1"
+            local name="${path##*/}"
+            if printf '%s\n' "${remote_assets[@]}" | grep -Fxq -- "$name"; then
+              echo "Already present: $name"
+              return
+            fi
+            gh release upload "$RELEASE_TAG" "$path"
+            # Record only assets whose upload command completed. A crash before
+            # this append can leave an extra candidate, but can never delete a
+            # pre-existing valid asset during failure cleanup.
+            printf '%s\n' "$name" >>"$RUNNER_TEMP/pdf-release-uploaded.txt"
+          }
+
+          mapfile -d '' pdf_paths < <(find release-assets -maxdepth 1 -type f -name '*.pdf' -print0 | sort -z)
+          for path in "${pdf_paths[@]}"; do
+            upload_if_missing "$path"
+          done
+          upload_if_missing "release-assets/$CHECKSUMS"
+          upload_if_missing "release-assets/$MANIFEST"
+
+      - name: Verify the complete remote candidate set
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+        run: |
+          set -euo pipefail
+          remote_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets')"
+          mapfile -d '' current_paths < <(find release-assets -maxdepth 1 -type f -print0)
+          for path in "${current_paths[@]}"; do
+            name="${path##*/}"
+            local_size="$(stat -c '%s' "$path")"
+            local_digest="$(sha256sum "$path" | awk '{print $1}')"
+            [[ "$name" == *"$local_digest"* ]] || {
+              echo "Content-addressed asset name does not contain its SHA-256: $name" >&2
+              exit 1
+            }
+            matches="$(jq -c --arg name "$name" '[.[] | select(.name == $name)]' <<<"$remote_json")"
+            [[ "$(jq 'length' <<<"$matches")" == 1 ]] || {
+              echo "Release asset was not uploaded: $name" >&2
+              exit 1
+            }
+            remote_size="$(jq -r '.[0].size' <<<"$matches")"
+            [[ "$remote_size" == "$local_size" ]] || {
+              echo "Release asset size mismatch for $name: local=$local_size remote=$remote_size" >&2
+              exit 1
+            }
+            remote_digest="$(jq -r '.[0].digest // ""' <<<"$matches")"
+            if [[ -n "$remote_digest" && "$remote_digest" != "sha256:$local_digest" ]]; then
+              echo "Release asset digest mismatch for $name: local=sha256:$local_digest remote=$remote_digest" >&2
+              exit 1
+            fi
+          done
+
+      - name: Finalize the rolling Release
+        id: finalize
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CREATED: ${{ steps.release_state.outputs.created }}
+        run: |
+          set -euo pipefail
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${DEFAULT_BRANCH}" --jq '.object.sha')"
+          if [[ "$current_sha" != "$GITHUB_SHA" ]]; then
+            echo "Default branch advanced to $current_sha during publication; discarding this candidate." >&2
+            exit 1
+          fi
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            # A transport error can happen after GitHub has applied a write.
+            # Always read back the durable state instead of trusting only the
+            # command exit status; the failure cleanup uses the same rule.
+            gh api --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/git/refs/tags/${RELEASE_TAG}" \
+              -f sha="$GITHUB_SHA" \
+              -F force=true >/dev/null || true
+          else
+            gh api --method POST \
+              "repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/tags/${RELEASE_TAG}" \
+              -f sha="$GITHUB_SHA" >/dev/null || true
+          fi
+          committed_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq '.object.sha')"
+          [[ "$committed_sha" == "$GITHUB_SHA" ]] || {
+            echo "Rolling tag did not commit the candidate: expected=$GITHUB_SHA actual=$committed_sha" >&2
+            exit 1
+          }
+
+          if [[ "$CREATED" == "true" ]]; then
+            # Publishing the already-complete draft is the visibility commit.
+            gh release edit "$RELEASE_TAG" --draft=false --latest=false || true
+            is_draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')"
+            [[ "$is_draft" == "false" ]] || {
+              echo 'The complete Release candidate is still a draft.' >&2
+              exit 1
+            }
+          fi
+
+      - name: Remove a failed candidate without touching the previous set
+        if: ${{ failure() && steps.release_state.outcome != 'skipped' && steps.finalize.outcome != 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+          RELEASE_STATE_OUTCOME: ${{ steps.release_state.outcome }}
+        run: |
+          set +e
+          created="$(cat "$RUNNER_TEMP/pdf-release-created.txt" 2>/dev/null)"
+
+          # Never infer failure solely from a client exit code: the tag PATCH
+          # or draft publication may already be durable on GitHub. If we cannot
+          # read the state, retaining content-addressed candidate assets is the
+          # recoverable choice; a later successful run can remove them.
+          current_tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq '.object.sha' 2>/dev/null)" || {
+            echo 'Could not verify rolling tag after failure; preserving candidate assets.'
+            exit 0
+          }
+          is_draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' 2>/dev/null)" || {
+            echo 'Could not verify Release visibility after failure; preserving candidate assets.'
+            exit 0
+          }
+          if [[ "$current_tag_sha" == "$GITHUB_SHA" && "$is_draft" == "false" ]]; then
+            echo 'GitHub already committed the verified candidate; preserving it despite the client-side failure.'
+            exit 0
+          fi
+
+          if [[ "$created" == "true" ]]; then
+            if [[ "$is_draft" == "true" ]]; then
+              gh release delete "$RELEASE_TAG" --yes --cleanup-tag
+            else
+              echo 'New Release is public in an unexpected state; preserving it for manual recovery.'
+            fi
+            exit 0
+          fi
+
+          # A failed snapshot/preparation step never authorizes mutation of an
+          # existing public Release. After successful preparation, delete only
+          # names positively recorded after a successful upload in this run.
+          [[ "$RELEASE_STATE_OUTCOME" == "success" ]] || exit 0
+          [[ "$current_tag_sha" != "$GITHUB_SHA" ]] || exit 0
+          while IFS= read -r name; do
+            [[ -n "$name" ]] && gh release delete-asset "$RELEASE_TAG" "$name" --yes
+          done <"$RUNNER_TEMP/pdf-release-uploaded.txt"
+
+      - name: Remove superseded owned assets
+        if: ${{ success() && steps.finalize.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: pdf-latest
+          EXPECTED_BOOKS: ${{ needs.plan.outputs.expected_books }}
+        run: |
+          set -euo pipefail
+          mapfile -t current_assets < <(find release-assets -maxdepth 1 -type f -printf '%f\n')
+          mapfile -t remote_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+          mapfile -t books < <(jq -r '.[]' <<<"$EXPECTED_BOOKS")
+
+          for name in "${remote_assets[@]}"; do
+            owned=false
+            for book in "${books[@]}"; do
+              if [[ "$name" == "$book-zh-"*.pdf || "$name" == "$book-en-"*.pdf ]]; then
+                owned=true
+                break
+              fi
+            done
+            if [[ "$name" == manifest-zh-*.json || "$name" == manifest-en-*.json \
+              || "$name" == SHA256SUMS-zh-*.txt || "$name" == SHA256SUMS-en-*.txt ]]; then
+              owned=true
+            fi
+            if [[ "$owned" == true ]] && ! printf '%s\n' "${current_assets[@]}" | grep -Fxq -- "$name"; then
+              gh release delete-asset "$RELEASE_TAG" "$name" --yes
+            fi
+          done
