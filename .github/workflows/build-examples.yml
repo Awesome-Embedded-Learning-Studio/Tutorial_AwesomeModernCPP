@@ -62,6 +62,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build ccache
 
+      # Renode 官方不进 apt 源,Linux 用 linux-portable 包(自带 .NET 运行时)。
+      # 钉 v1.16.1:与教程声明的本地验证环境一致。
+      - name: Install Renode
+        run: |
+          curl -sL https://github.com/renode/renode/releases/download/v1.16.1/renode-1.16.1.linux-portable.tar.gz -o /tmp/renode.tar.gz
+          mkdir -p "$HOME/renode"
+          tar -xzf /tmp/renode.tar.gz -C "$HOME/renode" --strip-components=1
+          echo "$HOME/renode" >> "$GITHUB_PATH"
+          "$HOME/renode/renode" --version
+
       - name: Cache ccache
         uses: actions/cache@v4
         with:
