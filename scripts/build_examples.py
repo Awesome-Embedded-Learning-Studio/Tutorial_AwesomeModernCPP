@@ -105,6 +105,23 @@ def discover_projects(code_root: Path, target: str) -> list[Path]:
     return projects
 
 
+def find_toolchain_file(project_dir: Path):
+    """向上找共享的 toolchain*.cmake(到 code/ 根为止)。
+
+    独立 toolchain 文件范式的工程(如 stm32-tutorials/*)交叉编译器全在
+    toolchain-*.cmake 里,configure 时必须以 -DCMAKE_TOOLCHAIN_FILE 传入;
+    内联工具链的工程(老 stm32f1-tutorials)祖先链上没有该文件,不受影响。
+    """
+    d = project_dir.resolve()
+    for _ in range(4):
+        for cand in sorted(d.glob('toolchain*.cmake')):
+            return cand
+        if d.name == 'code' or d.parent == d:
+            return None
+        d = d.parent
+    return None
+
+
 def build_project(project_dir: Path) -> BuildResult:
     """Build a single CMake project."""
     build_dir = project_dir / '_build_ci'
@@ -119,6 +136,9 @@ def build_project(project_dir: Path) -> BuildResult:
     # Configure
     configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja',
                       '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache']
+    toolchain = find_toolchain_file(project_dir)
+    if toolchain:
+        configure_cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={toolchain}')
     try:
         result = subprocess.run(
             configure_cmd,
