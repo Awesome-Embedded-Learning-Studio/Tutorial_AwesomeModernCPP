@@ -2,7 +2,7 @@ name: Build PDF books
 
 on:
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [labeled]
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -35,7 +35,7 @@ env:
 # can never move the rolling tag backwards after a newer run. Labeled PR
 # previews use one replaceable run per PR; manual previews remain independent.
 concurrency:
-  group: pdf-books-${{ github.repository }}-${{ github.event_name == 'pull_request' && (github.event.action != 'labeled' || github.event.label.name == 'export-pdf') && format('pr-{0}', github.event.pull_request.number) || github.event_name == 'workflow_dispatch' && inputs.publish && 'publish' || format('run-{0}', github.run_id) }}
+  group: pdf-books-${{ github.repository }}-${{ github.event_name == 'pull_request' && github.event.label.name == 'export-pdf' && format('pr-{0}', github.event.pull_request.number) || github.event_name == 'workflow_dispatch' && inputs.publish && 'publish' || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -44,8 +44,9 @@ jobs:
     if: >-
       ${{
         github.event_name == 'workflow_dispatch'
-        || (github.event.action == 'labeled' && github.event.label.name == 'export-pdf')
-        || (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'export-pdf'))
+        || (github.event_name == 'pull_request'
+          && github.event.action == 'labeled'
+          && github.event.label.name == 'export-pdf')
       }}
     runs-on: ubuntu-latest
     outputs:

@@ -282,8 +282,9 @@ DRAWIO_VIEWER_PATH=/absolute/path/to/viewer-static.min.js pnpm pdf -- --book <id
 - `publish`：是否更新固定 tag `pdf-latest`。
 
 PR 可由维护者添加 `export-pdf` 标签，自动构建全部 14 本中文书并上传为 Actions artifacts，
-但不会更新 `pdf-latest`。标签保留期间，PR 新提交或重新打开会重新构建；同一 PR 的旧导出会
-自动取消。未添加该标签的 PR 不执行 PDF 构建。
+但不会更新 `pdf-latest`。标签是一次性触发器：PR 新提交或重新打开不会自动重建；需要再次导出时，
+先移除再重新添加该标签。同一 PR 正在运行的旧导出会自动取消。未触发标签事件的 PR 不会创建
+PDF workflow。
 
 plan job 从 `pnpm pdf:list --json` 动态生成矩阵并校验 ID。build job 使用 `ubuntu-latest`、
 Node 22、pnpm 10，安装匹配 Chrome、CJK 衬线字体、qpdf 和 Poppler；每个矩阵项只构建一本，
