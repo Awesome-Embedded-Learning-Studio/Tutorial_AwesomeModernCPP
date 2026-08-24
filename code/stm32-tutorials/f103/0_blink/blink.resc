@@ -1,0 +1,26 @@
+:name: F103 Blink PC13
+:description: STM32F103 闪灯 - 翻转 PC13(Blue Pill 板载 LED,低电平点亮),跑 1 秒后采几次 ODR 证翻转
+
+using sysbus
+mach create
+$plf?=$ORIGIN/platform/blue_pill.repl
+machine LoadPlatformDescription $plf
+
+$bin?=$ORIGIN/build/blink.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+emulation RunFor "00:00:01.000000"
+
+echo "=== PC13 翻转证明(GPIOC_ODR @0x4001100C,bit13 应在 0x2000/0x0 跳)==="
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.500000"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.500000"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.500000"
+sysbus ReadDoubleWord 0x4001100C

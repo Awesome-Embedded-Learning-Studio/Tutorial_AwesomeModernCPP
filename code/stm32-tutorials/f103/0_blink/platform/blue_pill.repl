@@ -1,0 +1,11 @@
+// Blue Pill(STM32F103C8T6)板级描述。
+// Renode 发行版只有芯片级的 platforms/cpus/stm32f103.repl,没有现成的 Blue Pill 板级文件;
+// 这份是本教程自己维护的板级描述:在芯片级之上挂板载器件。
+using "platforms/cpus/stm32f103.repl"
+
+// 板载 LED:PC13。Blue Pill 的 LED 阴极接 PC13,写 0 点亮、写 1 熄灭
+// (和 F4 Discovery 板的高电平点亮正好相反)。
+UserLED: Miscellaneous.LED @ gpioPortC
+
+gpioPortC:
+    13 -> UserLED@0

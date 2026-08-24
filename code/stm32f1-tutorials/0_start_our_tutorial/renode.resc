@@ -1,0 +1,27 @@
+:name: Blue Pill HAL demo
+:description: HAL 工程在 Renode 里跑:HAL_Init / SystemClock_Config / led.toggle / HAL_Delay 全链路验证 PC13 翻转
+
+using sysbus
+mach create
+$plf?=$ORIGIN/../../stm32-tutorials/f103/0_blink/platform/blue_pill.repl
+machine LoadPlatformDescription $plf
+
+$bin?=$ORIGIN/build/stm32_demo.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+emulation RunFor "00:00:00.500000"
+
+echo "PC13 翻转证明(GPIOC_ODR @0x4001100C)"
+echo "注意:采样间隔别撞上翻转周期的整数倍,否则混叠会误判成常亮/常灭"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.070000"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.070000"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.070000"
+sysbus ReadDoubleWord 0x4001100C

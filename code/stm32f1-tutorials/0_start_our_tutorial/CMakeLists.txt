@@ -112,3 +112,15 @@ add_custom_target(erase
             -c "init; halt; stm32f1x mass_erase 0; exit"
     COMMENT "Erasing STM32 Flash"
 )
+
+# ── 模拟器目标：make run_in_renode ──────────────────────────────────────────
+# 不装 Renode 也能正常构建,目标只在找到 renode 时生成
+find_program(RENODE_BIN renode)
+if(RENODE_BIN)
+    add_custom_target(run_in_renode
+        COMMAND ${RENODE_BIN} --console --disable-xwt
+                ${CMAKE_SOURCE_DIR}/renode.resc -e quit
+        DEPENDS ${PROJECT_NAME}.elf
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running ${PROJECT_NAME}.elf in Renode simulator")
+endif()

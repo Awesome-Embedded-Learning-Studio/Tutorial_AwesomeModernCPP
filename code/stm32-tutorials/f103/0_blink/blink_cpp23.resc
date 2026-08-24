@@ -1,0 +1,24 @@
+:name: F103 Blink PC13 (cpp23)
+:description: 第 5 档 - C++23 consteval/constinit/属性版本,验证仍翻转 PC13
+
+using sysbus
+mach create
+$plf?=$ORIGIN/platform/blue_pill.repl
+machine LoadPlatformDescription $plf
+
+$bin?=$ORIGIN/build/blink_cpp23.elf
+
+macro reset
+"""
+    sysbus LoadELF $bin
+"""
+runMacro $reset
+
+emulation RunFor "00:00:01.000000"
+
+echo "=== PC13 翻转证明(cpp23 版,GPIOC_ODR @0x4001100C)==="
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.500000"
+sysbus ReadDoubleWord 0x4001100C
+emulation RunFor "00:00:00.500000"
+sysbus ReadDoubleWord 0x4001100C

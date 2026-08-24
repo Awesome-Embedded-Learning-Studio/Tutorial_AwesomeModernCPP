@@ -1,43 +1,19 @@
 ---
 title: "嵌入式开发"
-description: "现代 C++ 在嵌入式系统中的实战应用"
-platform: stm32f1
-tags:
-  - cpp-modern
-  - intermediate
-  - stm32f1
+description: "现代 C++ 嵌入式主线:Renode 模拟器先行,从 STM32F103 走到 STM32F407,不用买板子也能从头跟到尾"
 ---
 
 # 嵌入式开发
 
-> 现代 C++ 在资源受限的嵌入式系统里能做什么、不能做什么——从零开销抽象、内存管理到外设编程、中断并发，再到 STM32 实战与 RTOS。
+这条线回答一个问题:现代 C++ 拿到单片机上,到底该怎么用、能好到什么程度。主角是 C++,芯片是道具。所以整条线从门槛最低的 STM32F103 起步,一路走到资源宽裕的 STM32F407,同一套 C++ 打法在两块芯片上各走到头。
 
-## STM32F1 实战系列
+和多数嵌入式教程的另一个不同:**Renode 模拟器先行**。您手头没有单片机,也能把每段代码跑起来、验证对;真板验证放在每站的最后,有板子跟着做,没板子不耽误学。
 
-这是一条从零开始、用现代 C++ 写 STM32 的完整路线，按 "环境 → LED → 按键 → 串口" 的顺序展开，每个外设都从 C 起步，一路重构到 C++23：
+## 两幕结构
 
-- [开发环境搭建](00-env-setup/index.md) — 工具链、项目结构、CMake、WSL2 USB 透传、GDB 调试
-- [LED 点灯：从 C 到 C++ 的演进](01-led/index.md) — 从 HAL 寄存器到模板与 `if constexpr`
-- [按键输入：消抖、状态机与类型安全](02-button/index.md) — 从轮询到 `variant`/`concepts`
-- [UART 串口通信](03-uart/index.md) — 从协议到中断驱动、`std::expected` 错误处理
+- **[第一幕:STM32F103 + Renode](f103/)** —— 从点亮一盏 LED 开始,每个外设从 C 起步,一档一档重构到 C++23;每一档都用反汇编对照,证明抽象没有付出额外开销。
+- **第二幕:STM32F407** —— 第一幕毕业后进阶:DMA、以太网、RTOS,再把整条线攒下的能力汇流成一个完整的大项目。
 
-## 嵌入式专题文章
-
-这些是从旧教程迁移来的专题文章，覆盖零开销抽象、内存管理、寄存器访问、中断安全等主题，可作为实战系列的横向补充：
-
-<ChapterNav variant="sub">
-  <ChapterLink href="01-zero-overhead-abstraction">嵌入式现代 C++ 教程——零开销抽象</ChapterLink>
-  <ChapterLink href="01-resource-and-realtime-constraints">嵌入式的资源与实时约束</ChapterLink>
-  <ChapterLink href="01-dynamic-allocation-issues">动态内存的代价：碎片化与不确定性</ChapterLink>
-  <ChapterLink href="02-static-and-stack-allocation">嵌入式 C++ 教程——静态存储与栈上分配策略</ChapterLink>
-  <ChapterLink href="03-object-pool-pattern">嵌入式 C++ 教程：对象池模式</ChapterLink>
-  <ChapterLink href="04-crtp-vs-runtime-polymorphism">编译期多态 vs 运行时多态</ChapterLink>
-  <ChapterLink href="04-placement-new">嵌入式 C++ 教程：placement new</ChapterLink>
-  <ChapterLink href="05-fixed-pool-allocation">嵌入式 C++ 教程：Slab / Arena 实现与比较</ChapterLink>
-  <ChapterLink href="05-etl">嵌入式 C++ 教程——ETL</ChapterLink>
-  <ChapterLink href="05-interrupt-safe-coding">中断安全的代码编写</ChapterLink>
-  <ChapterLink href="03-circular-buffer">循环缓冲区</ChapterLink>
-  <ChapterLink href="04-intrusive-containers">侵入式容器设计</ChapterLink>
-  <ChapterLink href="02-type-safe-register-access">类型安全的寄存器访问</ChapterLink>
-  <ChapterLink href="core-embedded-cpp-index">目录</ChapterLink>
-</ChapterNav>
+::: tip 正在重构中
+这条线正在按新结构逐步翻新,内容从第一幕的起步篇开始陆续上线。老版 STM32F103 教程(HAL 库起步)已归档,它的知识内核会融合进新线的对应站点。
+:::
