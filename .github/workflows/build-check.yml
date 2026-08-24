@@ -19,6 +19,14 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create Python virtual environment
+        run: python -m venv .venv
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
