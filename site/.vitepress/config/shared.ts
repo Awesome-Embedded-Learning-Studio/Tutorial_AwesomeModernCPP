@@ -1,4 +1,8 @@
 import type { DefaultTheme, PageData } from 'vitepress'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import { navZh, navEn } from './nav'
 import { getGitTimestampMs } from './git-timestamp'
 import { kbdPlugin } from '../plugins/kbd-plugin'
@@ -87,11 +91,72 @@ export const sharedBase = {
   markdown: sharedMarkdown,
 }
 
+const SEARCH_CACHE_DIR = join(fileURLToPath(new URL('./', import.meta.url)), '..', '.search-cache')
+const SEARCH_CACHE_BUNDLE = join(SEARCH_CACHE_DIR, 'bundle.json')
+// 渲染管线行为变化时(markdown 插件增删、vitepress 升级)手动递增,使旧缓存整体失效
+const SEARCH_CACHE_VERSION = 'v1'
+
+let searchRenderBundle: Record<string, string> | null = null
+let searchRenderDirty = false
+let searchRenderFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+function loadSearchRenderBundle(): Record<string, string> {
+  if (searchRenderBundle === null) {
+    try {
+      searchRenderBundle = JSON.parse(readFileSync(SEARCH_CACHE_BUNDLE, 'utf8'))
+    } catch {
+      searchRenderBundle = {}
+    }
+  }
+  return searchRenderBundle
+}
+
+function scheduleSearchRenderFlush() {
+  searchRenderDirty = true
+  if (searchRenderFlushTimer === null) {
+    searchRenderFlushTimer = setTimeout(() => {
+      searchRenderFlushTimer = null
+      if (!searchRenderDirty) return
+      searchRenderDirty = false
+      try {
+        mkdirSync(SEARCH_CACHE_DIR, { recursive: true })
+        writeFileSync(SEARCH_CACHE_BUNDLE, JSON.stringify(loadSearchRenderBundle()))
+      } catch {
+        // 缓存写失败不影响索引构建,只是下次还得重渲染
+      }
+    }, 500)
+  }
+}
+
+const localSearchOptions = {
+  _render(src: string, env: Record<string, any>, md: any) {
+    const key = createHash('sha1').update(SEARCH_CACHE_VERSION).update(src).digest('hex')
+    const bundle = loadSearchRenderBundle()
+    if (key in bundle) {
+      return bundle[key]
+    }
+    const fast = process.env.npm_lifecycle_event === 'dev'
+    const saved = md.options.highlight
+    if (fast) md.options.highlight = undefined
+    let html: string
+    try {
+      html = md.render(src, env)
+    } finally {
+      if (fast) md.options.highlight = saved
+    }
+    // 与 vitepress 默认行为对齐:frontmatter 声明 search: false 的页面不入索引
+    bundle[key] = env.frontmatter?.search === false ? '' : html
+    scheduleSearchRenderFlush()
+    return bundle[key]
+  },
+}
+
 export function sharedThemeConfig(): DefaultTheme.Config {
   return {
     nav: navZh,
     search: {
       provider: 'local',
+      options: localSearchOptions,
     },
     editLink: {
       pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/:path',
@@ -112,6 +177,7 @@ export function sharedEnThemeConfig(): DefaultTheme.Config {
     nav: navEn,
     search: {
       provider: 'local',
+      options: localSearchOptions,
     },
     editLink: {
       pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path',
