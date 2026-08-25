@@ -12,7 +12,7 @@ prerequisites:
 - 11 C 字符串与缓冲区安全
 - 12 结构体与内存对齐
 - 14 动态内存管理
-reading_time_minutes: 9
+reading_time_minutes: 30
 tags:
 - host
 - cpp-modern
@@ -106,9 +106,12 @@ size_t count = fread(buffer, sizeof(Record), max_count, fp);
 
 ```c
 long get_file_size(FILE* fp) {
+    //获取当前初始位置
     long original = ftell(fp);
+    //将文件位置移至文件末尾
     fseek(fp, 0, SEEK_END);
     long size = ftell(fp);
+    //将文件位置从开头移至文件初始位置
     fseek(fp, original, SEEK_SET);
     return size;
 }
@@ -116,7 +119,7 @@ long get_file_size(FILE* fp) {
 
 ### 别把 feof 当循环条件
 
-`feof` 只有在读取操作已经失败**之后**才会返回真。正确的做法是直接检查读取函数的返回值：
+`feof` 只有在读取操作已经失败**之后**才会返回真。当`feof` 读到`EOF`时，会返回零后再次执行`feof`时才会返回1.将正确的做法是直接检查读取函数的返回值：
 
 ```c
 int ch;
@@ -304,6 +307,284 @@ int main(int argc, char* argv[]) {
 }
 ```
 
+::: details 参考答案
+
+```c
+
+#include <stdio.h>      
+#include <string.h>    
+#include <ctype.h>      
+#include <stdbool.h>    
+
+#define MAX_LINE 256    // 单行文本的最大长度（含结尾的 '\0'），超出限制时解析失败
+#define MAX_KEY 64      // 配置项 key（键名）的最大长度（含结尾的 '\0'）
+#define MAX_VALUE 128   // 配置项 value（值）的最大长度（含结尾的 '\0'）
+
+typedef struct {
+    char key[MAX_KEY];      
+    char value[MAX_VALUE]; 
+} ConfigEntry;             
+/// @brief 去除字符串首尾的空白字符
+char* trim(char* str);
+
+/// @brief 解析配置文件
+bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, size_t* out_count);
+
+/// @brief 在配置项中查找指定 key
+const char* find_config(const ConfigEntry* entries, size_t count, const char* key);
+
+/**
+ * @brief 去除字符串首尾的空白字符（原地修改，返回指向处理结果的首地址）
+ * @param str 要处理的字符串（会被修改）
+ * @return char* 去除空白后字符串的首地址
+ *
+ **/
+ 
+ //`trim`从左往右跳过前导空白字符后如果字符串不为空则从末尾向前跳过尾部空白字符并在最后一个有效字符后写入 '\0' 结束符。
+
+char* trim(char* str) {
+    char* end;  // 用于从字符串末尾向前扫描的指针
+
+    // 跳过字符串开头的所有空白字符（空格、制表符、换行等）
+    while (isspace((unsigned char)*str)) {
+        ++str;
+    }
+
+    // 若跳过开头空白后字符串已结束（整行都是空白），则直接返回空字符串
+    if (*str == '\0') {
+        return str;
+    }
+
+    // end 指向最后一个字符的位置（跳过末尾的 '\0'）
+    end = str + strlen(str) - 1;
+    // 从后向前跳过尾部空白字符，直到遇到有效字符或回到字符串开头
+    while (end > str && isspace((unsigned char)*end)) {
+        --end;
+    }
+    // 在最后一个有效字符之后写入结束符，截断尾部空白
+    end[1] = '\0';
+    return str;
+}
+
+/**
+ * @brief 解析配置文件（每行格式：key=value，# 开头为注释会被忽略）
+ * @param path        配置文件路径
+ * @param entries     存放解析结果的配置项数组
+ * @param max_entries 数组最多能存放的配置项个数
+ * @param out_count   成功时写入实际解析出的配置项数量
+ * @return bool 成功返回 true；入参非法、文件访问失败或配置内容超限时返回 false
+ *
+ * 处理逻辑：
+ *   1. 校验入参是否合法；
+ *   2. 打开文件，失败则打印错误信息并返回 false；
+ *   3. 逐行读取（最多保存 max_entries 个配置项）：
+ *        - 去掉行内 '#' 之后的注释部分；
+ *        - 用 trim 去掉首尾空白；
+ *        - 查找 '=' 分隔符，找不到则跳过该行；
+ *        - 以 '=' 为界拆分为 key 和 value，并分别 trim；
+ *        - 用 snprintf 安全复制进 entries 数组并计数。
+ */
+bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, size_t* out_count) {
+    FILE* file;                                 // 文件流指针
+    char line[MAX_LINE];                        // 读取单行文本的缓冲区，大小由 MAX_LINE 决定
+    size_t count = 0;                           // 已解析出的配置项数量
+    size_t line_number = 0;                     // 当前读取到的物理行号
+
+    // 参数校验：路径、数组和输出指针不能为空，数组容量必须大于 0
+    if (out_count == NULL) {
+        return false;
+    }
+    *out_count = 0;
+    if (path == NULL || entries == NULL || max_entries == 0) {
+        return false;
+    }
+
+    // 以只读文本模式打开配置文件
+    file = fopen(path, "r");
+    // 打开失败：用 perror 打印系统错误信息，并返回 0
+    if (file == NULL) {
+        perror(path);
+        return false;
+    }
+
+    // 逐行读取：既限制读取行数为 max_entries，又防止数组越界
+    while (count < max_entries && fgets(line, sizeof(line), file) != NULL) {
+        char* comment = strchr(line, '#');      // 查找注释起始字符 '#'
+        char* equal;                            // 指向 '=' 分隔符的指针
+        char* key;                              // 指向 key 部分
+        char* value;                            // 指向 value 部分
+        int next_char;
+        int key_length;
+        int value_length;
+
+        ++line_number;
+
+        // 缓冲区已满时向前读取一个字符，区分“刚好装满”和真正的超长行
+        if (strchr(line, '\n') == NULL) {
+            next_char = fgetc(file);
+            if (next_char != '\n' && next_char != EOF) {
+                while (next_char != '\n' && next_char != EOF) {
+                    next_char = fgetc(file);
+                }
+                fprintf(stderr, "%s:%zu: 行长度超过 %d 个字符\n",
+                        path, line_number, MAX_LINE - 1);
+                fclose(file);
+                return false;
+            }
+        }
+
+        // 若行内含有 '#'，则将其截断，忽略其后所有注释内容
+        if (comment != NULL) {
+            *comment = '\0';
+        }
+
+        // 去掉行首尾空白，得到 key 候选字符串
+        key = trim(line);
+        // 去掉空白后为空行，跳过
+        if (*key == '\0') {
+            continue;
+        }
+
+        // 查找 '=' 分隔符
+        equal = strchr(key, '=');
+        // 找不到 '='，说明不是合法的 key=value 行，跳过
+        if (equal == NULL) {
+            continue;
+        }
+
+        // 用 '\0' 替换 '='，把字符串在分隔符处切开，同时保留 '=' 之后的原始内容
+        *equal = '\0';
+        // 分别处理 key（'=' 之前）和 value（'=' 之后），各自去掉首尾空白
+        key = trim(key);
+        value = trim(equal + 1);
+        // key 去空白后为空，说明缺少有效键名，跳过
+        if (*key == '\0') {
+            continue;
+        }
+
+        // 复制后检查 snprintf 返回值，拒绝被截断的 key 或 value
+        key_length = snprintf(entries[count].key, sizeof(entries[count].key), "%s", key);
+        value_length = snprintf(entries[count].value, sizeof(entries[count].value), "%s", value);
+        if (key_length < 0 || value_length < 0 ||
+            (size_t)key_length >= sizeof(entries[count].key) ||
+            (size_t)value_length >= sizeof(entries[count].value)) {
+            fprintf(stderr, "%s:%zu: 键名或值过长\n", path, line_number);
+            fclose(file);
+            return false;
+        }
+        ++count;    // 增加已解析数量
+    }
+
+    if (ferror(file)) {
+        fprintf(stderr, "%s: 读取配置文件失败\n", path);
+        fclose(file);
+        return false;
+    }
+    if (fclose(file) != 0) {
+        perror(path);
+        return false;
+    }
+
+    *out_count = count;
+    return true;
+}
+
+/**
+ * @brief 在配置项数组中查找指定 key，并返回对应的 value
+ * @param entries 配置项数组
+ * @param count   数组中的有效元素个数
+ * @param key     要查找的键名
+ * @return const char* 找到时返回对应 value 的指针；找不到或入参非法时返回 NULL
+ */
+const char* find_config(const ConfigEntry* entries, size_t count, const char* key) {
+    size_t i;   // 循环下标
+
+    // 参数校验：数组或查找键不能为空
+    if (entries == NULL || key == NULL) {
+        return NULL;
+    }
+
+    // 遍历每个配置项，用 strcmp 比较键名
+    for (i = 0; i < count; ++i) {
+        if (strcmp(entries[i].key, key) == 0) {
+            return entries[i].value;   // 找到匹配的 key，返回其 value 指针
+        }
+    }
+
+    return NULL;    // 遍历结束仍未找到，返回 NULL
+}
+
+/**
+ * @brief 程序入口：读取命令行指定的配置文件并解析，然后打印所有配置项
+ * @param argc 命令行参数个数（含程序名）
+ * @param argv 命令行参数数组，argv[1] 应为配置文件路径
+ * @return int 程序退出码：0 表示成功，1 表示用法错误，2 表示配置解析失败
+ */
+int main(int argc, char* argv[]) {
+    ConfigEntry entries[32];    // 定义数组，最多存放 32 个配置项
+    size_t count;               // 实际解析出的配置项数量
+    size_t i;                   // 循环下标
+
+    // 检查参数个数：至少需要程序名 + 配置文件路径
+    if (argc < 2) {
+        // 打印用法提示到标准错误输出，并返回非零退出码
+        fprintf(stderr, "用法: %s <配置文件>\n", argv[0]);
+        return 1;
+    }
+
+    // 计算数组能容纳的元素个数，并调用 parse_config 解析配置文件
+    if (!parse_config(argv[1], entries, sizeof(entries) / sizeof(entries[0]), &count)) {
+        return 2;
+    }
+    // 遍历并打印所有解析出的配置项（key=value 格式）
+    for (i = 0; i < count; ++i) {
+        printf("%s=%s\n", entries[i].key, entries[i].value);
+    }
+
+    return 0;   // 正常退出
+}
+
+
+```
+
+先捏一个示例配置文件（也可以手动创建，`#` 开头是注释，空行会被跳过）：
+
+```bash
+cat > config.ini <<'EOF'
+# 服务器配置示例
+# 注释行可以被忽略
+
+server_type = production
+listen_port = 8080
+enable_tls = true
+log_level = debug
+
+# 下面的行会被解析
+database_url = mysql://user@localhost:3306/db
+max_connections = 128
+EOF
+
+gcc -std=c17 -Wall -Wextra -pedantic config_parser.c -o config_parser
+./config_parser config.ini
+```
+
+运行结果（解析后按行序打印所有配置项，注释和空行被忽略）：
+
+```text
+server_type=production
+listen_port=8080
+enable_tls=true
+log_level=debug
+database_url=mysql://user@localhost:3306/db
+max_connections=128
+```
+
+这里每一项的 `key` 和 `value` 都经过了首尾去空白处理，`=` 两侧的空格不会出现在输出里；`find_config` 则可用于按 key 取 value，例如查 `listen_port` 时它会返回 `8080`。
+
+:::
+
+
+
 提示：用 `fgets` 逐行读取，`strchr` 找 `=` 位置，`trim` 去除空白。
 
 ### 练习 2：文件复制工具
@@ -334,5 +615,251 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 ```
+
+::: details 参考答案
+
+```c
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#define kBufferSize 4096
+
+/* 检查两个路径是否指向同一个已有文件，避免目标文件打开时截断源文件。 */
+static int same_file(const char *src_path, const char *dst_path)
+{
+    struct stat src_info;
+    struct stat dst_info;
+
+    if (strcmp(src_path, dst_path) == 0) {
+        return 1;
+    }
+
+    if (stat(src_path, &src_info) == 0 && stat(dst_path, &dst_info) == 0) {
+        return src_info.st_dev == dst_info.st_dev &&
+               src_info.st_ino == dst_info.st_ino;
+    }
+
+    return 0;
+}
+
+/// @brief 复制文件
+/// @param src_path 源文件路径
+/// @param dst_path 目标文件路径
+/// @return 成功返回 0，失败返回 -1
+int copy_file(const char *src_path, const char *dst_path)
+{
+    FILE *src = NULL;                /* 源文件指针，初始化为 NULL */
+    FILE *dst = NULL;                /* 目标文件指针，初始化为 NULL */
+    unsigned char buffer[kBufferSize]; /* 用于读写数据的缓冲区 */
+    long total_size;                 /* 源文件总大小（字节） */
+    long copied_size = 0;            /* 已复制的字节数 */
+    int result = -1;                 /* 函数返回值，默认失败 */
+    int dst_opened = 0;              /* 目标文件是否曾经成功打开 */
+    int progress_active = 0;         /* 当前是否有未换行的进度输出 */
+
+    if (src_path == NULL || dst_path == NULL) {
+        fprintf(stderr, "源文件和目标文件路径不能为空\n");
+        return -1;
+    }
+
+    if (same_file(src_path, dst_path)) {
+        fprintf(stderr, "源文件和目标文件不能是同一个文件: '%s'\n", src_path);
+        return -1;
+    }
+
+    /* 以只读二进制模式打开源文件 */
+    src = fopen(src_path, "rb");
+    if (src == NULL) {
+        fprintf(stderr, "无法打开源文件 '%s'\n", src_path);
+        goto cleanup;                /* 跳过后续步骤，直接清理并返回 */
+    }
+
+    /* 将文件指针移动到文件末尾，以便获取文件大小 */
+    if (fseek(src, 0, SEEK_END) != 0) {
+        fprintf(stderr, "无法获取源文件大小 '%s'\n", src_path);
+        goto cleanup;
+    }
+
+    /* 获取当前文件指针位置，即文件的总大小 */
+    total_size = ftell(src);
+    if (total_size < 0) {
+        fprintf(stderr, "无法获取源文件大小 '%s'\n", src_path);
+        goto cleanup;
+    }
+
+    /* 将文件指针重新移动到文件开头，准备读取内容 */
+    if (fseek(src, 0, SEEK_SET) != 0) {
+        fprintf(stderr, "无法定位源文件 '%s'\n", src_path);
+        goto cleanup;
+    }
+
+    /* 以只写二进制模式创建/覆盖目标文件 */
+    dst = fopen(dst_path, "wb");
+    if (dst == NULL) {
+        fprintf(stderr, "无法打开目标文件 '%s'\n", dst_path);
+        goto cleanup;
+    }
+    dst_opened = 1;
+
+    /* 源文件为空（大小为 0）时直接显示 100% 进度 */
+    if (total_size == 0) {
+        printf("进度: 100%%\n");
+    }
+
+    /* 循环读取源文件内容并写入目标文件 */
+    while (1) {
+        /* 从源文件读取最多一个缓冲区的字节 */
+        size_t bytes_read = fread(buffer, 1, sizeof(buffer), src);
+
+        if (bytes_read > 0) {
+            /* 将读取到的内容写入目标文件 */
+            size_t bytes_written = fwrite(buffer, 1, bytes_read, dst);
+
+            /* 写入字节数不一致说明写入失败 */
+            if (bytes_written != bytes_read) {
+                if (progress_active) {
+                    putchar('\n');
+                    fflush(stdout);
+                    progress_active = 0;
+                }
+                fprintf(stderr, "写入目标文件失败 '%s'\n", dst_path);
+                goto cleanup;
+            }
+
+            /* 累加已复制的字节数，并计算并输出进度百分比 */
+            copied_size += (long)bytes_written;
+            if (total_size > 0) {
+                int percent = (int)(((long double)copied_size * 100.0L) /
+                                    (long double)total_size);
+                if (percent > 100) {
+                    percent = 100;
+                }
+                printf("\r进度: %d%%", percent);     /* \r 表示回车回行首，覆盖旧进度 */
+                fflush(stdout);                     /* 强制刷新输出缓冲区，立即显示进度 */
+                progress_active = 1;
+            }
+        }
+
+        /* 如果读取字节数小于缓冲区大小，说明已到达文件末尾 */
+        if (bytes_read < sizeof(buffer)) {
+            if (ferror(src)) {                      /* 判断读取是否发生错误 */
+                if (progress_active) {
+                    putchar('\n');
+                    fflush(stdout);
+                    progress_active = 0;
+                }
+                fprintf(stderr, "读取源文件失败 '%s'\n", src_path);
+                goto cleanup;
+            }
+            break;                                  /* 正常到达文件末尾，结束循环 */
+        }
+    }
+
+    /* 循环结束后再次显示 100% 进度并换行 */
+    if (total_size > 0) {
+        printf("\r进度: 100%%\n");
+        progress_active = 0;
+    }
+
+    /* 显式关闭目标文件，并检查是否出错 */
+    if (fclose(dst) != 0) {
+        dst = NULL;
+        fprintf(stderr, "关闭目标文件失败 '%s'\n", dst_path);
+        goto cleanup;
+    }
+    dst = NULL;                                     /* 关闭成功，置空防止重复关闭 */
+
+    result = 0;                                     /* 全部操作成功，标记成功 */
+
+cleanup:
+    if (progress_active) {
+        putchar('\n');
+        fflush(stdout);
+    }
+    /* 统一清理：若句柄不为 NULL 则关闭，避免资源泄漏 */
+    if (dst != NULL) {
+        fclose(dst);
+    }
+    if (result != 0 && dst_opened) {
+        if (remove(dst_path) == 0) {
+            fprintf(stderr, "复制失败，已删除不完整的目标文件 '%s'\n", dst_path);
+        } else {
+            fprintf(stderr, "复制失败，无法删除不完整的目标文件 '%s'\n", dst_path);
+        }
+    }
+    if (src != NULL) {
+        fclose(src);
+    }
+    return result;      /* 返回结果 */
+}
+
+int main(int argc, char *argv[])
+{
+    /* 参数个数校验：需要程序名 + 源文件路径 + 目标文件路径，共 3 个 */
+    if (argc != 3) {
+        fprintf(stderr, "用法: %s <源文件> <目标文件>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    /* 调用复制函数，若非 0 说明失败 */
+    if (copy_file(argv[1], argv[2]) != 0) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;    /* 成功退出 */
+}
+
+
+```
+
+```bash
+gcc -std=c17 -Wall -Wextra -pedantic main.c -o main
+
+# A. 基础功能：拷贝 + 校验
+head -c 1048576 /dev/urandom > /tmp/src.bin     # 1MB 随机二进制
+./main /tmp/src.bin /tmp/dst.bin                 # 应看到进度条 \r 原地刷新
+cmp /tmp/src.bin /tmp/dst.bin && echo "OK 内容一致"
+
+# B. 空文件（大小 0，应显示 100%）
+: > /tmp/empty.bin
+./main /tmp/empty.bin /tmp/e.bin; wc -c /tmp/e.bin   # 正确为 0
+
+# C. 大文件（观察进度递增，末尾 100%）
+head -c 100000000 /dev/urandom > /tmp/big.bin    # 100MB，能看到百分比跳动
+./main /tmp/big.bin /tmp/big_dst.bin
+
+# D. 错误处理（每项应打印错误、退出码非 0）
+./main                                             # 缺参数 → 用法提示
+./main /tmp/src.bin /tmp/src.bin; echo $?           # 同文件 → 拒绝
+./main /tmp/没有的文件 /tmp/x.bin; echo $?           # 源不存在 → 报错
+./main /tmp/src.bin /tmp/不存在目录/x.bin; echo $?   # 目标不可写 → 报错
+
+```
+
+运行结果（前两段是真实终端输出；`\r` 让进度在同一行原地刷新，所以正常拷贝最终停在 `100%`）：
+
+```text
+# A. 拷贝 src.bin → dst.bin，进度条在同一行不断刷新，最终停在 100%
+进度: 100%
+OK 内容一致
+
+# B. 空文件：直接显示 100%，目标文件大小为 0
+进度: 100%
+
+# D. 错误处理（每项打印一行错误，退出码均为非 0）
+用法: ./main <源文件> <目标文件>
+源文件和目标文件不能是同一个文件: '/tmp/src.bin'
+无法打开源文件 '/tmp/没有的文件'
+无法打开目标文件 '/tmp/不存在目录/x.bin'
+```
+
+注意拷贝成功时的输出里没有出现中间的百分比：`\r` 会把光标移回行首，新百分比直接覆盖旧值，所以肉眼看只有一个从 0% 跳到 100% 的进度。如果把这个程序接到管道或重定向到文件，才会看到中间那些一步一格的百分比都留了下来。还有一点：`long` 和 `ftell` 的组合在 32 位系统上只能表示到 2GB，但本篇的 Linux x86_64 环境里 `long` 是 64 位的，无需担心大文件。
+
+:::
+
+
 
 提示：用 `fseek` + `ftell` 获取源文件大小，`\r` 覆写同一行实现进度条。
