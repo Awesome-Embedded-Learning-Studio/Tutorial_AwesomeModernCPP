@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.18.0",
   "scripts": {
     "dev": "vitepress dev site",
     "check:links": "node scripts/run_python.mjs scripts/check_links.py",
@@ -30,12 +31,6 @@
     "tsx": "^4.21.0",
     "vitepress": "^1.6.4",
     "vue": "^3.5.34"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "puppeteer"
-    ]
   },
   "dependencies": {
     "minisearch": "^7.2.0"
