@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev site",
-    "check:links": "python3 scripts/check_links.py",
+    "check:links": "node scripts/run_python.mjs scripts/check_links.py",
     "build": "pnpm check:links && tsx scripts/build.ts",
     "build:single": "pnpm check:links && vitepress build site",
     "pdf": "tsx scripts/pdf/cli.ts",
@@ -13,8 +13,8 @@
     "test:pdf": "tsx --test scripts/pdf/test/*.test.ts",
     "preview": "vitepress preview site",
     "hooks:install": "scripts/setup_precommit.sh",
-    "coverage": "python3 scripts/coverage.py",
-    "coverage:update": "python3 scripts/coverage.py --update"
+    "coverage": "node scripts/run_python.mjs scripts/coverage.py",
+    "coverage:update": "node scripts/run_python.mjs scripts/coverage.py --update"
   },
   "devDependencies": {
     "@dhlx/vitepress-plugin-drawio": "^0.0.10",

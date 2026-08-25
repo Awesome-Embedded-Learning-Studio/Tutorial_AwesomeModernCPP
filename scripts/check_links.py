@@ -124,6 +124,37 @@ class LinkChecker:
 
         return [str(candidate) for candidate in candidates]
 
+    @staticmethod
+    def path_exists(path: Path) -> bool:
+        """Check a path, including Git symlinks checked out as text on Windows.
+
+        When ``core.symlinks`` is disabled, Git materializes a directory symlink
+        as a regular file containing its relative target. Resolve that form only
+        when the target exists, so ordinary missing paths still fail normally.
+        """
+        if path.exists():
+            return True
+
+        missing_parts: List[str] = []
+        current = path
+        while not current.exists() and current != current.parent:
+            missing_parts.insert(0, current.name)
+            current = current.parent
+
+        if not current.is_file() or not missing_parts:
+            return False
+
+        try:
+            target_text = current.read_text(encoding='utf-8').strip()
+        except (OSError, UnicodeError):
+            return False
+
+        if not target_text or '\n' in target_text or '\r' in target_text:
+            return False
+
+        target = (current.parent / target_text).resolve()
+        return target.joinpath(*missing_parts).exists()
+
     def check_file(self, filepath: Path):
         """Check links in a single file."""
         rel_path = filepath.relative_to(self.tutorial_dir)
@@ -147,7 +178,7 @@ class LinkChecker:
             link_ext = Path(link_url.split('#')[0]).suffix.lower()
             if link_ext in self.IMAGE_EXTENSIONS:
                 candidates = self.candidate_paths(link_url, filepath)
-                if candidates and not any((self.tutorial_dir / candidate).exists() for candidate in candidates):
+                if candidates and not any(self.path_exists(self.tutorial_dir / candidate) for candidate in candidates):
                     self.errors.append(
                         f"{rel_path}:{line_num} - Broken image: [{link_text}]({link_url})"
                     )

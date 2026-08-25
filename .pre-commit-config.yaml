@@ -21,14 +21,14 @@ repos:
 
       - id: update-translation-coverage
         name: Update translation coverage
-        entry: python3 scripts/coverage.py --update
+        entry: node scripts/run_python.mjs scripts/coverage.py --update
         language: system
         always_run: true
         pass_filenames: false
 
       - id: validate-frontmatter
         name: Validate frontmatter
-        entry: python3 scripts/validate_frontmatter.py
+        entry: node scripts/run_python.mjs scripts/validate_frontmatter.py
         language: system
         files: '^documents/.*\.md$'
         pass_filenames: false

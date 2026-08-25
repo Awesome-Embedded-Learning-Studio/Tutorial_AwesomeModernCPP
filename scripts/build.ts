@@ -81,7 +81,17 @@ function ensureClean(dir: string) {
 
 function symlinkDir(target: string, link: string) {
   if (existsSync(link)) rmSync(link, { recursive: true })
-  symlinkSync(target, link, 'dir')
+  try {
+    // Junctions do not require elevated privileges on Windows and preserve
+    // realpath-based relative imports used by the VitePress theme.
+    symlinkSync(target, link, process.platform === 'win32' ? 'junction' : 'dir')
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code
+    if (code !== 'EPERM' && code !== 'EACCES' && code !== 'ENOTSUP') throw error
+    // Windows may deny symlink creation without Developer Mode or elevation.
+    // The temporary build tree can use a copy without changing the output.
+    cpSync(target, link, { recursive: true })
+  }
 }
 
 function countMdFiles(dir: string): number {
@@ -299,6 +309,14 @@ async function buildVolume(task: BuildTask): Promise<string> {
   if (lang === 'en') {
     mkdirSync(join(volSrcDir, 'en'), { recursive: true })
     cpSync(volDocDir, join(volSrcDir, 'en', vol.srcDir), { recursive: true })
+    if (vol.srcDir === 'compilation') {
+      const sharedAssets = join(DOCUMENTS, 'compilation', 'compilation-linking-2-reuse-concept')
+      if (existsSync(sharedAssets)) {
+        const assetDest = join(volSrcDir, 'en', vol.srcDir, 'compilation-linking-2-reuse-concept')
+        rmSync(assetDest, { recursive: true, force: true })
+        cpSync(sharedAssets, assetDest, { recursive: true })
+      }
+    }
   } else {
     mkdirSync(volSrcDir, { recursive: true })
     cpSync(volDocDir, join(volSrcDir, vol.srcDir), { recursive: true })
