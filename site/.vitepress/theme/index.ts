@@ -18,13 +18,15 @@ import FontSizeSwitcher from './components/FontSizeSwitcher.vue'
 import ResizableSidebar from './components/ResizableSidebar.vue'
 import { setupMermaid } from './mermaid-client'
 import MermaidLightbox from './components/MermaidLightbox.vue'
+import NavSpinner from './components/NavSpinner.vue'
+import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 
 export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'layout-top': () => [h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox)],
+      'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox)],
       'home-hero-image': () => h(HomeHeroVisual),
       'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(ProofStrip)]),
       'home-hero-after': () => h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
@@ -37,6 +39,7 @@ export default {
   },
   setup() {
     setupMermaid()
+    setupDevFakeLag()
   },
   enhanceApp({ app }) {
     app.component('ChapterNav', ChapterNav)
