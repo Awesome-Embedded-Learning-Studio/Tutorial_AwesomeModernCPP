@@ -315,10 +315,10 @@ gcc -std=gnu11 -Wall -Wextra main.c math_utils.c -o main
 或者是
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra -c math_utils.c   # 只编译不链接，生成 math_utils.o
-gcc -std=gnu11 -Wall -Wextra -c main.c         # 生成 main.o
+gcc -std=gnu11 -Wall -Wextra -c math_utils.c  # 只编译不链接，生成 math_utils.o
+gcc -std=gnu11 -Wall -Wextra -c main.c        # 生成 main.o
 ar rcs libmath_utils.a math_utils.o            # 把 .o 打进静态库
-gcc -std=gnu11 -Wall -Wextra -o demo main.o -L. -lmath_utils   # 链接
+gcc -std=gnu11 -Wall -Wextra -o demo main.o -L. -lmath_utils  # 链接
 
 ./demo
 ```
@@ -337,7 +337,6 @@ All tests passed.
 ```
 
 :::
-
 
 
 提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
@@ -401,13 +400,13 @@ int main(void)
 `Debug 模式`
 
 ```bash
- gcc -std=gnu11 -Wall -Wextra main.c -o main &&./main
+gcc -std=gnu11 -Wall -Wextra main.c -o main && ./main
 ```
 
 `Release 模式`
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra  -DNDEBUG  -Wno-unused-variable  main.c -o main &&./main
+gcc -std=gnu11 -Wall -Wextra -DNDEBUG main.c -o main && ./main
 ```
 
 运行结果：

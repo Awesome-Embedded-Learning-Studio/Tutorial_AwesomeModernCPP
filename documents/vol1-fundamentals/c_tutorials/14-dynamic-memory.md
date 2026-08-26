@@ -180,7 +180,7 @@ numbers = NULL;
 Linux 上最经典的内存调试工具，能检测泄漏、非法读写、未初始化读取、双重释放。不需要重新编译，直接在程序前面加 `valgrind`：
 
 ```bash
-gcc -g -o demo demo.c
+gcc -std=c17 -Wall -Wextra -Wpedantic -g -o demo demo.c
 valgrind --leak-check=full ./demo
 ```
 
@@ -189,7 +189,7 @@ valgrind --leak-check=full ./demo
 编译器内置的内存错误检测工具，性能开销比 Valgrind 小得多：
 
 ```bash
-gcc -fsanitize=address -g -o demo demo.c
+gcc -std=c17 -Wall -Wextra -Wpedantic -fsanitize=address -g -o demo demo.c
 ./demo
 ```
 
@@ -314,7 +314,7 @@ int main(void) {
 ```
 
 ```bash
-gcc -std=c17 -Wall -Wextra intvec_test.c -o intvec_test && ./intvec_test
+gcc -std=c17 -Wall -Wextra -Wpedantic intvec_test.c -o intvec_test && ./intvec_test
 ```
 
 运行结果：
@@ -343,7 +343,7 @@ push 90 -> size=10 cap=16
 
 **难度：进阶** · 用 ASan 或 Valgrind 识别本篇讲过的内存错误
 
-下面这段代码藏着至少四种内存错误。先读代码猜每一处有什么问题，再用 `gcc -fsanitize=address`（或 Valgrind）跑一遍，把工具报出的错误类型和位置记下来：
+下面这段代码藏着至少四种内存错误。先读代码猜每一处有什么问题，再用 `gcc -std=c17 -Wall -Wextra -Wpedantic -fsanitize=address`（或 Valgrind）跑一遍，把工具报出的错误类型和位置记下来：
 
 ```c
 #include <stdlib.h>
@@ -604,7 +604,7 @@ int main(void)
 编译运行这个内存池示例：
 
 ```bash
-gcc -std=c17 -Wall -Wextra memory_pool.c -o memory_pool && ./memory_pool
+gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_pool
 ```
 
 运行结果：
@@ -831,7 +831,7 @@ atexit 是 C/C++ 标准库 <stdlib.h> 中用来注册一个在程序正常退出
 `register_mem_report`在首次`tracked_malloc`是进行`atexit`注册`mem_repor`确定程序运行结束后内存的状态（判断是否全部释放和有几个未释放和当初的分配位置
 
 ```bash
-gcc -std=c17 -Wall -Wextra tracked.c -o tracked && ./tracked
+gcc -std=c17 -Wall -Wextra -Wpedantic tracked.c -o tracked && ./tracked
 ```
 
 运行结果：

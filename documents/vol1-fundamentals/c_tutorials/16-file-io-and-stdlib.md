@@ -44,7 +44,7 @@ C 语言的文件操作建立在一套简洁但足够强大的 API 之上——`
 
 - **操作系统**：Linux（Ubuntu 22.04+） / WSL2 / macOS
 - **编译器**：GCC 11+（通过 `gcc --version` 确认版本）
-- **编译选项**：`gcc -Wall -Wextra -std=c11`（开警告、指定 C11 标准）
+- **编译选项**：`gcc -std=c17 -Wall -Wextra -Wpedantic`（开启警告并指定 C17 标准）
 - **验证方式**：所有代码可直接编译运行
 
 ## 第一步——上手文件操作
@@ -564,7 +564,7 @@ database_url = mysql://user@localhost:3306/db
 max_connections = 128
 EOF
 
-gcc -std=c17 -Wall -Wextra -pedantic config_parser.c -o config_parser
+gcc -std=c17 -Wall -Wextra -Wpedantic config_parser.c -o config_parser
 ./config_parser config.ini
 ```
 
@@ -816,7 +816,7 @@ int main(int argc, char *argv[])
 ```
 
 ```bash
-gcc -std=c17 -Wall -Wextra -pedantic main.c -o main
+gcc -std=c17 -Wall -Wextra -Wpedantic main.c -o main
 
 # A. 基础功能：拷贝 + 校验
 head -c 1048576 /dev/urandom > /tmp/src.bin     # 1MB 随机二进制
