@@ -463,6 +463,9 @@ int main(void)
         return 1;
     }
 
+    /* 管道或重定向输入没有终端回显，这里回显实际读到的输入行。 */
+    fputs(input, stdout);
+
     print_float_bits(value);
     return 0;
 }
