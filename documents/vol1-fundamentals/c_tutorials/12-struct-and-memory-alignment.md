@@ -533,7 +533,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c17 -Wall -Wextra alignment_verify.c -o alignment_verify && ./alignment_verify
+gcc -std=c17 -Wall -Wextra -Wpedantic alignment_verify.c -o alignment_verify && ./alignment_verify
 ```
 
 在 `int` 为 4 字节、按 4 字节对齐的测试环境中，输出如下：
@@ -625,7 +625,7 @@ int main(void)
 ```
 
 ```bash
-gcc -std=c17 -Wall -Wextra packed_compare.c -o packed_compare && ./packed_compare
+gcc -std=c17 -Wall -Wextra -Wpedantic packed_compare.c -o packed_compare && ./packed_compare
 ```
 
 运行结果：
@@ -664,23 +664,21 @@ FrameAligned: type=0, value=4, sizeof=8
 
 ::: details 参考答案
 
+题面只要求预留校验字段，下面给出一份完整的 CRC8/CRC16 与协议帧实现，供学有余力的读者对照。完整程序分为三个文件：
 
-
-crc_ref.h
+**crc_ref.h**
 
 ```c
 #ifndef CRC_REF_H
 #define CRC_REF_H
 
 #include <stdint.h>
-
-#define TRUE 1u
-#define FALSE 0u
+#include <stdbool.h>
 
 
 void Append_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength);
 
-uint32_t Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength);
+bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength);
 
 
 uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
@@ -690,7 +688,7 @@ uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
 void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
 
 
-uint32_t Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
+bool Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength);
 
 
 uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
@@ -701,13 +699,15 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
 
 ```
 
-crc_ref.c
+**crc_ref.c**
 
 ```c
 
 #include "crc_ref.h"
 
 #include <stddef.h>
+
+/* CRC 查表和接口命名改编自 RoboMaster 官方例程；为便于对照保留原命名。 */
 
 
 //查表法CRC
@@ -784,7 +784,7 @@ uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
 {
   uint8_t ucIndex = 0u;
 
-  //? 每轮消耗 1 字节，并把该字节折叠进当前 CRC 状态。
+  // 每轮消耗 1 字节，并把该字节折叠进当前 CRC 状态。
   while (dwLength-- != 0u)
   {
     ucIndex = ucCRC8 ^ (*pchMessage++);
@@ -794,20 +794,20 @@ uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
 }
 
 //校验缓冲区末尾已保存的 CRC8。
-uint32_t Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
+bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
 {
   uint8_t expected = 0u;
 
   // 系统帧头至少要包含有效字段和 1 字节 CRC8。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
-    return FALSE;
+    return false;
   }
 
   //计算窗口排除末尾已经保存的 CRC8 字节。
   expected = Get_CRC8_Check_Sum(pchMessage, (uint16_t)(dwLength - 1u),
                                 k_crc8_init);
-  return (expected == pchMessage[dwLength - 1u]) ? TRUE : FALSE;
+  return expected == pchMessage[dwLength - 1u];
 }
 
 //把重新计算得到的 CRC8 写入缓冲区末尾。
@@ -847,22 +847,20 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
 
 //校验完整帧末尾 2 字节保存的 CRC16。
 
-uint32_t Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
+bool Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 {
   uint16_t expected = 0u;
 
   //完整帧至少要包含受保护数据和 2 字节 CRC16。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
-    return FALSE;
+    return false;
   }
 
   //只重算受保护的载荷/帧头区域，末尾 CRC16 不参与计算。
   expected = Get_CRC16_Check_Sum(pchMessage, dwLength - 2u, k_crc16_init);
   return (((expected & 0x00ffu) == pchMessage[dwLength - 2u]) &&
-          (((expected >> 8u) & 0x00ffu) == pchMessage[dwLength - 1u]))
-             ? TRUE
-             : FALSE;
+          (((expected >> 8u) & 0x00ffu) == pchMessage[dwLength - 1u]));
 }
 
 //把 CRC16 追加到完整帧缓冲区末尾 2 字节。
@@ -885,8 +883,7 @@ void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 
 ```
 
-
-protocol_frame.c
+**protocol_frame.c**
 
 ```c
 #include <stdint.h>
@@ -1002,16 +999,16 @@ static uint32_t read_u32(const uint8_t *source, bool big_endian) {
  * 函数先检查长度和指针，再分配空间；之后按协议序列化字段、复制 payload，
  * 最后计算 CRC8 和 CRC16。这样 CRC 覆盖的是最终真正要发送的字节。
  */
-static int data_process(uint8_t type, uint32_t timestamp,
+static bool data_process(uint8_t type, uint32_t timestamp,
                         const uint8_t *payload, size_t payload_size,
                         protocol_frame_t **frame_out,
                         uint32_t *frame_size_out) {
-    size_t calculated_frame_size;//计算的帧大小
-    protocol_frame_t *frame;//分配的帧缓冲区
+    size_t calculated_frame_size; // 计算的帧大小
+    protocol_frame_t *frame; // 分配的帧缓冲区
 
     /* 输出参数无效时不能写回结果。 */
     if ((frame_out == NULL) || (frame_size_out == NULL)) {
-        return FALSE;
+        return false;
     }
 
     *frame_out = NULL;
@@ -1020,17 +1017,17 @@ static int data_process(uint8_t type, uint32_t timestamp,
     /* payload_length 只有 16 位，超出后强制转换会发生截断。 */
     if (payload_size > UINT16_MAX) {
         fputs("Payload is too large for the 16-bit length field.\n", stderr);
-        return FALSE;
+        return false;
     }
     /* 只有空 payload 才允许 payload 指针为 NULL。 */
     if ((payload == NULL) && (payload_size != 0u)) {
         fputs("Payload pointer is NULL for a non-empty payload.\n", stderr);
-        return FALSE;
+        return false;
     }
     /* 先检查加法，再计算总长度，防止 size_t 溢出。 */
     if (payload_size > SIZE_MAX - sizeof(protocol_frame_t) - FRAME_CRC16_SIZE) {
         fputs("Frame size calculation overflowed size_t.\n", stderr);
-        return FALSE;
+        return false;
     }
 
     calculated_frame_size =
@@ -1040,7 +1037,7 @@ static int data_process(uint8_t type, uint32_t timestamp,
     frame = calloc(1u, calculated_frame_size);
     if (frame == NULL) {
         fputs("Failed to allocate protocol frame.\n", stderr);
-        return FALSE;
+        return false;
     }
 
     /* 写入固定字段：多字节普通字段统一使用小端序。 */
@@ -1064,7 +1061,7 @@ static int data_process(uint8_t type, uint32_t timestamp,
 
     *frame_out = frame;
     *frame_size_out = (uint32_t)calculated_frame_size;
-    return TRUE;
+    return true;
 }
 
 static void print_layout(void) {
@@ -1087,7 +1084,7 @@ int main(void) {
 
     /* type=0x01 表示一个示例业务分类，时间戳固定为 0x12345678。 */
     if (data_process(0x01u, 0x12345678u, sample_payload,
-                     payload_size, &frame, &frame_size) != TRUE) {
+                     payload_size, &frame, &frame_size) == false) {
         return EXIT_FAILURE;
     }
 
@@ -1119,11 +1116,11 @@ int main(void) {
            (unsigned int)frame->timestamp[3]);
     printf("crc8 check:            %s\n",
            Verify_CRC8_Check_Sum((uint8_t *)frame,
-                                 (uint16_t)FRAME_HEADER_SIZE) == TRUE
+                                 (uint16_t)FRAME_HEADER_SIZE)
                ? "passed"
                : "failed");
     printf("crc16 check:           %s\n",
-           Verify_CRC16_Check_Sum((uint8_t *)frame, frame_size) == TRUE
+           Verify_CRC16_Check_Sum((uint8_t *)frame, frame_size)
                ? "passed"
                : "failed");
 

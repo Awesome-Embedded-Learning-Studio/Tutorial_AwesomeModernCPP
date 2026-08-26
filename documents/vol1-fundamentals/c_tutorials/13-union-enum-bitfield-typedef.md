@@ -383,7 +383,7 @@ typedef union {
     uint32_t u;
 } FloatBits;
 
-//float的IEEE 754 浮点数字节规则
+//float 的 IEEE 754 浮点数位规则
 //1 位符号 |  8 位指数                  |  23 位尾数
 //正还是负 | 决定能表示多大、多小（范围） | 决定有多少位有效数字（精度）
 void print_float_bits(float f)
@@ -485,7 +485,7 @@ bits     = 1 10000000 10010001111010111000011
 ```
 
 > ⚠️ **踩坑预警**
-> `fgets` 对 `char input[32]` 最多读取 31 个字符，并在末尾追加 `\0`。当输入行超过 31 个字符时，函数仍会返回成功，但换行符和剩余内容还留在输入流中；如果不检查 `next_character` 是否为 `\n` 或 `EOF`，即使输入过长仍会判断为为完整读取。
+> `fgets` 对 `char input[32]` 最多读取 31 个字符，并在末尾追加 `\0`。当输入行超过 31 个字符时，函数仍会返回成功，但换行符和剩余内容还留在输入流中；如果不检查 `next_character` 是否为 `\n` 或 `EOF`，即使输入过长仍会判断为完整读取。
 
 :::
 
@@ -657,6 +657,7 @@ int main(void) {
 ```c
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /* 用于标识联合体中当前有效成员的类型标签。 */
 typedef enum {
@@ -736,52 +737,55 @@ void print_tagged_value(const TaggedValue *value)
     }
 }
 
-/* 仅当值实际保存 int 时返回其内容，否则返回 0 并报告错误。 */
-int get_as_int(const TaggedValue *value)
+/* 仅当值实际保存 int 时写入输出参数并返回 true。 */
+bool get_as_int(const TaggedValue *value, int *out)
 {
-    if (value == NULL) {
-        fprintf(stderr, "Error: value is NULL.\n");
-        return 0;
+    if ((value == NULL) || (out == NULL)) {
+        fprintf(stderr, "Error: value or output is NULL.\n");
+        return false;
     }
 
     if (value->tag != TAG_INT) {
         fprintf(stderr, "Error: value is not an int.\n");
-        return 0;
+        return false;
     }
 
-    return value->data.int_value;
+    *out = value->data.int_value;
+    return true;
 }
 
-/* 仅当值实际保存 float 时返回其内容，否则返回 0.0f 并报告错误。 */
-float get_as_float(const TaggedValue *value)
+/* 仅当值实际保存 float 时写入输出参数并返回 true。 */
+bool get_as_float(const TaggedValue *value, float *out)
 {
-    if (value == NULL) {
-        fprintf(stderr, "Error: value is NULL.\n");
-        return 0.0f;
+    if ((value == NULL) || (out == NULL)) {
+        fprintf(stderr, "Error: value or output is NULL.\n");
+        return false;
     }
 
     if (value->tag != TAG_FLOAT) {
         fprintf(stderr, "Error: value is not a float.\n");
-        return 0.0f;
+        return false;
     }
 
-    return value->data.float_value;
+    *out = value->data.float_value;
+    return true;
 }
 
-/* 仅当值实际保存字符串指针时返回该指针，否则返回 NULL 并报告错误。 */
-const char *get_as_string(const TaggedValue *value)
+/* 仅当值实际保存字符串指针时写入输出参数并返回 true。 */
+bool get_as_string(const TaggedValue *value, const char **out)
 {
-    if (value == NULL) {
-        fprintf(stderr, "Error: value is NULL.\n");
-        return NULL;
+    if ((value == NULL) || (out == NULL)) {
+        fprintf(stderr, "Error: value or output is NULL.\n");
+        return false;
     }
 
     if (value->tag != TAG_STRING) {
         fprintf(stderr, "Error: value is not a string.\n");
-        return NULL;
+        return false;
     }
 
-    return value->data.string_value;
+    *out = value->data.string_value;
+    return true;
 }
 
 int main(void)
@@ -790,7 +794,9 @@ int main(void)
     TaggedValue int_value = make_int(42);
     TaggedValue float_value = make_float(3.14f);
     TaggedValue string_value = make_string("Hello, tagged union!");
-    const char *text;
+    int int_result = 0;
+    float float_result = 0.0f;
+    const char *text = NULL;
 
     /* 输出时由类型标签决定应读取联合体的哪个成员。 */
     print_tagged_value(&int_value);
@@ -798,16 +804,19 @@ int main(void)
     print_tagged_value(&string_value);
 
     /* 通过类型匹配的访问函数读取数据。 */
-    printf("get_as_int: %d\n", get_as_int(&int_value));
-    printf("get_as_float: %.2f\n", get_as_float(&float_value));
-    text = get_as_string(&string_value);
-    if (text != NULL) {
+    if (get_as_int(&int_value, &int_result)) {
+        printf("get_as_int: %d\n", int_result);
+    }
+    if (get_as_float(&float_value, &float_result)) {
+        printf("get_as_float: %.2f\n", float_result);
+    }
+    if (get_as_string(&string_value, &text)) {
         printf("get_as_string: %s\n", text);
     }
 
     /* 以下两次调用用于演示类型不匹配时的错误处理。 */
-    (void)get_as_float(&int_value);
-    (void)get_as_string(&float_value);
+    (void)get_as_float(&int_value, &float_result);
+    (void)get_as_string(&float_value, &text);
 
     return 0;
 }
@@ -831,11 +840,11 @@ Error: value is not a float.
 Error: value is not a string.
 ```
 
-`TaggedValue` 的 `tag` 和 `data` 必须一起维护：写入 `data.float_value` 后，只有 `tag == kValueTagFloat` 时才可以读取它。`make_string` 只保存指针，不复制字符串，因此调用方必须保证字符串的存储期覆盖整个使用过程；这里用 `bool` 加输出参数表示访问结果，也避免把合法的 `0`、`0.0f` 或 `NULL` 与错误混为一谈。
+`TaggedValue` 的 `tag` 和 `data` 必须一起维护：写入 `data.float_value` 后，只有 `tag == TAG_FLOAT` 时才可以读取它。`make_string` 只保存指针，不复制字符串，因此调用方必须保证字符串的存储期覆盖整个使用过程；三个 `get_as_*` 函数用 `bool` 加输出参数表示访问结果，避免把合法的 `0`、`0.0f` 或 `NULL` 与错误混为一谈。
 
 :::
 
 ## 参考资源
 
 - [cppreference：C union](https://en.cppreference.com/w/c/language/union)、[C enumeration](https://en.cppreference.com/w/c/language/enum)、[C bit-field](https://en.cppreference.com/w/c/language/bit_field)：C 语言规则与实现差异速查。
-- [cppreference：`std::variant`](https://en.cppreference.com/w/cpp/utility/variant)、[`std::bitset`](https://en.cppreference.com/w/cpp/utility/bitset)、[`std::bit_cast`](https://en.cppreference.com/w/cpp/numeric/bit_cast)：C++11/17/20 对应工具。
+- [cppreference：`std::variant`](https://en.cppreference.com/w/cpp/utility/variant)（C++17）、[`std::bitset`](https://en.cppreference.com/w/cpp/utility/bitset)（C++98）、[`std::bit_cast`](https://en.cppreference.com/w/cpp/numeric/bit_cast)（C++20）：对应工具。
