@@ -416,16 +416,16 @@ size_t safe_str_cat(char *dst, const char *src, size_t dst_size)
 
 int main(void)
 {
-    char copied_text[32];// 目标缓冲区
-    char short_buffer[8];// 较小的缓冲区
-    char combined_text[32] = "STM32";// 已有内容的目标缓冲区
-    char short_combined[8] = "STM32";// 用于演示拼接截断
-    char self_combined[16] = "ab";// 用于演示源、目标重叠
-    size_t copied_length;// 源字符串的完整长度
-    size_t short_length;// 源字符串的完整长度
-    size_t combined_length;// 拼接后的总字节数
-    size_t short_combined_length;// 完整拼接所需的长度
-    size_t self_combined_length;// 重叠拼接后的完整长度
+    char copied_text[32]; // 目标缓冲区
+    char short_buffer[8]; // 较小的缓冲区
+    char combined_text[32] = "STM32"; // 已有内容的目标缓冲区
+    char short_combined[8] = "STM32"; // 用于演示拼接截断
+    char self_combined[16] = "ab"; // 用于演示源、目标重叠
+    size_t copied_length; // 源字符串的完整长度
+    size_t short_length; // 源字符串的完整长度
+    size_t combined_length; // 拼接后的总字节数
+    size_t short_combined_length; // 完整拼接所需的长度
+    size_t self_combined_length; // 重叠拼接后的完整长度
 
     copied_length = safe_str_copy(copied_text, "Hello, Embedded!",
                                   sizeof(copied_text));
@@ -455,6 +455,12 @@ int main(void)
     return 0;
 }
 
+```
+
+编译运行：
+
+```bash
+gcc -std=c17 -Wall -Wextra -Wpedantic safe_strings.c -o safe_strings && ./safe_strings
 ```
 
 运行结果：
@@ -523,10 +529,10 @@ size_t safe_str_format(char *dst, size_t dst_size, const char *format, ...)
 
 int main(void)
 {
-    char message[64];//缓冲区
-    char short_message[12];//较小的缓冲区
-    size_t message_length;//格式化后消息的长度
-    size_t short_length;//完整格式化结果的长度
+    char message[64]; // 缓冲区
+    char short_message[12]; // 较小的缓冲区
+    size_t message_length; // 格式化后消息的长度
+    size_t short_length; // 完整格式化结果的长度
 
     message_length = safe_str_format(message, sizeof(message),
                                      "设备：%s，温度：%d 摄氏度",
@@ -542,6 +548,12 @@ int main(void)
     return 0;
 }
 
+```
+
+编译运行：
+
+```bash
+gcc -std=c17 -Wall -Wextra -Wpedantic safe_str_format.c -o safe_str_format && ./safe_str_format
 ```
 
 运行结果：
@@ -642,11 +654,11 @@ size_t str_split(
 
 int main(void)
 {
-    const char* input = "温度,湿度,气压";//原始字符串
-    const char delimiter = ',';//分割符号
-    const char* token_starts[16];//存储子串起始指针的数组
-    size_t token_lengths[16];//存储子串长度的数组
-    size_t token_count;//实际分割出的子串数量
+    const char* input = "温度,湿度,气压"; // 原始字符串
+    const char delimiter = ','; // 分割符号
+    const char* token_starts[16]; // 存储子串起始指针的数组
+    size_t token_lengths[16]; // 存储子串长度的数组
+    size_t token_count; // 实际分割出的子串数量
     size_t i;
 
     token_count = str_split(input, delimiter,
@@ -668,11 +680,13 @@ int main(void)
     return 0;
 }
 
-
-
 ```
 
+编译运行：
 
+```bash
+gcc -std=c17 -Wall -Wextra -Wpedantic str_split.c -o str_split && ./str_split
+```
 
 ```text
 原始字符串：温度,湿度,气压
@@ -682,6 +696,8 @@ int main(void)
 第 2 个字段：湿度（长度为 6 字节）
 第 3 个字段：气压（长度为 6 字节）
 ```
+
+
 
 `str_split` 返回的是原字符串中的指针和长度，因此这些指针只在 `input` 仍然有效时可用。
 打印时使用 `%.*s` 配合长度，不要求每个字段单独拥有一个 `\0` 终止符；如果需要独立保存
