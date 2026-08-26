@@ -383,9 +383,9 @@ typedef union {
     uint32_t u;
 } FloatBits;
 
-//float 的 IEEE 754 浮点数位规则
-//1 位符号 |  8 位指数                  |  23 位尾数
-//正还是负 | 决定能表示多大、多小（范围） | 决定有多少位有效数字（精度）
+// float 的 IEEE 754 浮点数位规则
+// 1 位符号 |  8 位指数                  |  23 位尾数
+// 正还是负 | 决定能表示多大、多小（范围） | 决定有多少位有效数字（精度）
 void print_float_bits(float f)
 {
     FloatBits data;
@@ -442,7 +442,7 @@ int main(void)
     /* 缓冲区未读到换行时，确认是否还有未读取的字符，避免静默截断。 */
     if (strchr(input, '\n') == NULL)
     {
-        //读取输入的第32个字符
+        // 读取输入的第 32 个字符
         int next_character = getchar();
 
         if (next_character != '\n' && next_character != EOF)
@@ -468,6 +468,8 @@ int main(void)
 }
 
 ```
+
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic float_bits.c -o float_bits && printf '%s\n' '-3.14' | ./float_bits
@@ -603,6 +605,8 @@ int main(void)
 - `D` = `dma_enable`，占 bit 2
 
 `value` 与 `bits` 共用同一段 32 位存储，因此可用 `value` 观察这些位的整体值。位域的实际分配方向、对齐和填充由实现定义；上图只描述这一示例已实测的 GCC x86_64 布局，不能直接当作跨编译器或跨目标平台的寄存器协议。
+
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic bitfield_register.c -o bitfield_register && ./bitfield_register
@@ -822,6 +826,8 @@ int main(void)
 }
 
 ```
+
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic tagged_union.c -o tagged_union && ./tagged_union

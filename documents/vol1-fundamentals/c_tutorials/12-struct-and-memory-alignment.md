@@ -532,6 +532,8 @@ int main(void)
 }
 ```
 
+编译运行：
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic alignment_verify.c -o alignment_verify && ./alignment_verify
 ```
@@ -624,6 +626,8 @@ int main(void)
 }
 ```
 
+编译运行：
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic packed_compare.c -o packed_compare && ./packed_compare
 ```
@@ -710,9 +714,9 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
 /* CRC 查表和接口命名改编自 RoboMaster 官方例程；为便于对照保留原命名。 */
 
 
-//查表法CRC
+// 查表法 CRC
 
-//CRC8 使用的初始值。
+// CRC8 使用的初始值。
 static const uint8_t k_crc8_init = 0xffu;
 
 // CRC8 预计算状态转移表。
@@ -742,7 +746,7 @@ static const uint8_t k_crc8_tab[256] = {
     0xd7, 0x89, 0x6b, 0x35,
 };
 
-//系统整帧 CRC16 使用的初始值。
+// 系统整帧 CRC16 使用的初始值。
 static const uint16_t k_crc16_init = 0xffffu;
 
 // CRC16 预计算状态转移表。
@@ -778,7 +782,7 @@ static const uint16_t k_crc16_tab[256] = {
     0x3de3, 0x2c6a, 0x1ef1, 0x0f78,
 };
 
-//计算一段连续字节的 CRC8。
+// 计算一段连续字节的 CRC8。
 uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
                            uint8_t ucCRC8)
 {
@@ -793,7 +797,7 @@ uint8_t Get_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength,
   return ucCRC8;
 }
 
-//校验缓冲区末尾已保存的 CRC8。
+// 校验缓冲区末尾已保存的 CRC8。
 bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
 {
   uint8_t expected = 0u;
@@ -804,13 +808,13 @@ bool Verify_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
     return false;
   }
 
-  //计算窗口排除末尾已经保存的 CRC8 字节。
+  // 计算窗口排除末尾已经保存的 CRC8 字节。
   expected = Get_CRC8_Check_Sum(pchMessage, (uint16_t)(dwLength - 1u),
                                 k_crc8_init);
   return expected == pchMessage[dwLength - 1u];
 }
 
-//把重新计算得到的 CRC8 写入缓冲区末尾。
+// 把重新计算得到的 CRC8 写入缓冲区末尾。
 void Append_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
 {
   // 不向空指针或长度不足的缓冲区写入。
@@ -819,12 +823,12 @@ void Append_CRC8_Check_Sum(uint8_t *pchMessage, uint16_t dwLength)
     return;
   }
 
-  //校验字节本身不参与本轮 CRC8 计算。
+  // 校验字节本身不参与本轮 CRC8 计算。
   pchMessage[dwLength - 1u] =
       Get_CRC8_Check_Sum(pchMessage, (uint16_t)(dwLength - 1u), k_crc8_init);
 }
 
-//计算一段连续字节的 CRC16。
+// 计算一段连续字节的 CRC16。
 uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
                              uint16_t wCRC)
 {
@@ -845,36 +849,36 @@ uint16_t Get_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength,
   return wCRC;
 }
 
-//校验完整帧末尾 2 字节保存的 CRC16。
+// 校验完整帧末尾 2 字节保存的 CRC16。
 
 bool Verify_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 {
   uint16_t expected = 0u;
 
-  //完整帧至少要包含受保护数据和 2 字节 CRC16。
+  // 完整帧至少要包含受保护数据和 2 字节 CRC16。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return false;
   }
 
-  //只重算受保护的载荷/帧头区域，末尾 CRC16 不参与计算。
+  // 只重算受保护的载荷/帧头区域，末尾 CRC16 不参与计算。
   expected = Get_CRC16_Check_Sum(pchMessage, dwLength - 2u, k_crc16_init);
   return (((expected & 0x00ffu) == pchMessage[dwLength - 2u]) &&
           (((expected >> 8u) & 0x00ffu) == pchMessage[dwLength - 1u]));
 }
 
-//把 CRC16 追加到完整帧缓冲区末尾 2 字节。
+// 把 CRC16 追加到完整帧缓冲区末尾 2 字节。
 void Append_CRC16_Check_Sum(uint8_t *pchMessage, uint32_t dwLength)
 {
   uint16_t wCRC = 0u;
 
-  //不向空指针或长度不足的帧缓冲区写入。
+  // 不向空指针或长度不足的帧缓冲区写入。
   if ((pchMessage == NULL) || (dwLength <= 2u))
   {
     return;
   }
 
-  //小端协议：低字节在前，高字节在后。
+  // 小端协议：低字节在前，高字节在后。
   wCRC = Get_CRC16_Check_Sum(pchMessage, dwLength - 2u, k_crc16_init);
   pchMessage[dwLength - 2u] = (uint8_t)(wCRC & 0x00ffu);
   pchMessage[dwLength - 1u] = (uint8_t)((wCRC >> 8u) & 0x00ffu);
