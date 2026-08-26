@@ -313,6 +313,8 @@ int main(void) {
 }
 ```
 
+编译运行:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic intvec_test.c -o intvec_test && ./intvec_test
 ```
@@ -409,19 +411,19 @@ void        pool_destroy(MemoryPool* pool);
 #define MEMORY_POOL_MAX_INSTANCES 2U
 
 /* 每个内存块的起始地址都按 max_align_t 对齐。 */
-//max_align_t是对齐要求最严格的基础 C 类型，以此为基准可以适应不同的数据类型
+// max_align_t 是对齐要求最严格的基础 C 类型，以此为基准可以适应不同的数据类型
 typedef union {
-    max_align_t alignment;//用于强制整个内存块按最严格的基础类型对齐
-    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_SIZE];//以字节数组形式存储的实际内存数据
+    max_align_t alignment; // 用于强制整个内存块按最严格的基础类型对齐
+    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_SIZE]; // 以字节数组形式存储的实际内存数据
 } PoolBlock;
 
 typedef struct  {
-    PoolBlock blocks[MEMORY_POOL_MAX_BLOCK_COUNT];//内存块数组，实际存放数据的内存槽位
-    unsigned char in_use[MEMORY_POOL_MAX_BLOCK_COUNT];//每个内存块的占用标记数组，非 0 表示已分配
-    size_t block_size;//每个内存块的字节大小（由 pool_create 指定）
-    size_t block_count;//实际使用的内存块数量（由 pool_create 指定）
-    int active;//内存池实例是否已被创建并投入使用（非 0 表示有效）
-}MemoryPool;
+    PoolBlock blocks[MEMORY_POOL_MAX_BLOCK_COUNT]; // 内存块数组，实际存放数据的内存槽位
+    unsigned char in_use[MEMORY_POOL_MAX_BLOCK_COUNT]; // 每个内存块的占用标记数组，非 0 表示已分配
+    size_t block_size; // 每个内存块的字节大小（由 pool_create 指定）
+    size_t block_count; // 实际使用的内存块数量（由 pool_create 指定）
+    int active; // 内存池实例是否已被创建并投入使用（非 0 表示有效）
+} MemoryPool;
 
 /* 使用静态实例代替运行时堆内存分配。 */
 static MemoryPool memory_pools[MEMORY_POOL_MAX_INSTANCES];
@@ -629,10 +631,11 @@ gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_p
 #define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
 ```
 
+**debug_log.h**
+
 ::: details 参考答案
 
 ```c
-//debug_log.h
 #pragma once
 
 #include <stdio.h>
@@ -658,16 +661,16 @@ gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_p
   
 // active为1 表示该内存块尚未被 free，属于潜在泄漏； 0 表示已被 free 或已被重复释放检测使用。
 typedef struct {
-    void *address;//实际 malloc 返回的内存块首地址（NULL 表示空）；
-    size_t size;//本次分配的字节数，由调用方传入的 size 决定；
-    const char *file;//记录该次分配发生所在源文件（由 __FILE__ 宏提供）；
-    unsigned int line;//记录该次分配发生所在行号（由 __LINE__ 宏提供）；
-    int active;//标记该记录当前是否仍处于“活跃”状态：
+    void *address; // 实际 malloc 返回的内存块首地址（NULL 表示空）；
+    size_t size; // 本次分配的字节数，由调用方传入的 size 决定；
+    const char *file; // 记录该次分配发生所在源文件（由 __FILE__ 宏提供）；
+    unsigned int line; // 记录该次分配发生所在行号（由 __LINE__ 宏提供）；
+    int active; // 标记该记录当前是否仍处于“活跃”状态：
 } AllocationRecord;
 
 static AllocationRecord allocation_records[TRACKED_ALLOCATION_MAX];
 
-//内存报告注册标志。记录 atexit(mem_report) 是否注册成功：
+// 内存报告注册标志。记录 atexit(mem_report) 是否注册成功：
 static int mem_report_registered;
 
 /* mem_report 的声明：定义在文件下方，先在此声明以供 atexit 使用。 */
@@ -687,10 +690,10 @@ static void register_mem_report(void)
         }
     }
 }
-//在记录表中查找指定地址对应的记录。
- //address 要查找的 malloc 起始地址；
+// 在记录表中查找指定地址对应的记录。
+ // address 要查找的 malloc 起始地址；
 // active_only 为真(非0)时只查找仍处于活跃(active==1)状态的记录，
-//为假(0)时查找任意状态的记录（包含已释放的）。
+// 为假(0)时查找任意状态的记录（包含已释放的）。
 
 static AllocationRecord *find_record(void *address, int active_only)
 {
@@ -705,7 +708,7 @@ static AllocationRecord *find_record(void *address, int active_only)
     return NULL;
 }
 
-//带跟踪的 malloc：调用真正的 malloc 并登记一条分配记录。
+// 带跟踪的 malloc：调用真正的 malloc 并登记一条分配记录。
 void *tracked_malloc(size_t size, const char *file, unsigned int line)
 {
     AllocationRecord *record = NULL;
@@ -745,7 +748,7 @@ void *tracked_malloc(size_t size, const char *file, unsigned int line)
     return address;
 }
 
-//带跟踪的 free：调用真正的 free 并维护对应的分配记录。
+// 带跟踪的 free：调用真正的 free 并维护对应的分配记录。
 void tracked_free(void *address, const char *file, unsigned int line)
 {
     AllocationRecord *record;
@@ -829,6 +832,8 @@ atexit 是 C/C++ 标准库 <stdlib.h> 中用来注册一个在程序正常退出
 通过`allocation_records`记录表将状态进行记录
 `tracked_free`使用`free`和`__FILE__, __LINE__`机制释放内存和查找是否重复释放和释放错误地址，通过`find_record`进行对释放地址的判断
 `register_mem_report`在首次`tracked_malloc`是进行`atexit`注册`mem_repor`确定程序运行结束后内存的状态（判断是否全部释放和有几个未释放和当初的分配位置
+
+编译运行:
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic tracked.c -o tracked && ./tracked

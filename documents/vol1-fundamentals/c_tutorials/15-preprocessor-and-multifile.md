@@ -193,6 +193,7 @@ gcc -o demo main.c -L. -lmath_utils
 
 **难度：基础** · .h/.c 分离加静态库打包
 
+
 ```c
 // math_utils.h
 #pragma once
@@ -214,9 +215,9 @@ int main(void) {
 
 ::: details 参考答案
 
+**math_utils.h**
+
 ```c
-// math_utils.h
-// math_utils.h
 #pragma once
 /**
  * @brief 返回两个值中的最大值
@@ -252,8 +253,9 @@ int count_digits(int value);
 
 ```
 
+**math_utils.c**
+
 ```c
-// math_utils.c
 #include "math_utils.h"
 #include <stdio.h>
 
@@ -277,8 +279,9 @@ int count_digits(int value)
 
 ```
 
+**main.c**
+
 ```c
-// main.c
 #include <stdio.h>
 
 #include "math_utils.h"
@@ -307,6 +310,8 @@ int main(void)
 }
 
 ```
+
+编译运行:
 
 ```bash
 gcc -std=gnu11 -Wall -Wextra main.c math_utils.c -o main
@@ -359,8 +364,9 @@ All tests passed.
 
 ::: details 参考答案
 
+**debug_log.h**
+
 ```c
-//debug_log.h
 #pragma once
 
 #include <stdio.h>
@@ -374,8 +380,9 @@ All tests passed.
 #endif
 ```
 
+**main.c**
+
 ```c
-//main
 #include "debug_log.h"
 #include <stdio.h>
 
@@ -396,6 +403,8 @@ int main(void)
     return 0;
 }
 ```
+
+编译运行:
 
 `Debug 模式`
 

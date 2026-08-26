@@ -340,7 +340,7 @@ const char* find_config(const ConfigEntry* entries, size_t count, const char* ke
  *
  **/
  
- //`trim`从左往右跳过前导空白字符后如果字符串不为空则从末尾向前跳过尾部空白字符并在最后一个有效字符后写入 '\0' 结束符。
+ // `trim` 从左往右跳过前导空白字符后如果字符串不为空则从末尾向前跳过尾部空白字符并在最后一个有效字符后写入 '\0' 结束符。
 
 char* trim(char* str) {
     char* end;  // 用于从字符串末尾向前扫描的指针
@@ -563,6 +563,8 @@ log_level = debug
 database_url = mysql://user@localhost:3306/db
 max_connections = 128
 EOF
+
+编译运行:
 
 gcc -std=c17 -Wall -Wextra -Wpedantic config_parser.c -o config_parser
 ./config_parser config.ini
@@ -814,6 +816,8 @@ int main(int argc, char *argv[])
 
 
 ```
+
+编译运行:
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic main.c -o main
