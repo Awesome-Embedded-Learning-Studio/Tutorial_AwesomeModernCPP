@@ -147,6 +147,7 @@ export function buildSidebar(): DefaultTheme.Sidebar {
     '/vol9-open-source-project-learn/': volumeSidebar('vol9-open-source-project-learn', '/vol9-open-source-project-learn'),
     '/vol10-open-lecture-notes/': volumeSidebar('vol10-open-lecture-notes', '/vol10-open-lecture-notes'),
     '/compilation/': volumeSidebar('compilation', '/compilation'),
+    '/crash-lab/': volumeSidebar('crash-lab', '/crash-lab'),
     '/cpp-reference/': volumeSidebar('cpp-reference', '/cpp-reference'),
     '/projects/': volumeSidebar('projects', '/projects'),
     '/community/': volumeSidebar('community', '/community'),
