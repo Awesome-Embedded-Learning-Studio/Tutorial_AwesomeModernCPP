@@ -303,22 +303,44 @@ const int& r6 = a;
 
 下面这段代码有一个严重的 bug——函数返回了局部变量的引用。找到它并修复：
 
+::: details 参考答案
+
 ```cpp
-int& get_max(int a, int b)
+#include <iostream>
+int &get_max(int a, int b)
 {
-    int result = (a > b) ? a : b;
+    static int result = 0;
+    result = (a > b) ? a : b;
     return result;
 }
 
 int main()
 {
-    int& m = get_max(3, 7);
+    int &m = get_max(3, 7);
     std::cout << m << "\n";
     return 0;
 }
 ```
 
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+7
+```
+
+:::
+
+
+
 提示：思考一下，这个函数应该返回值还是返回引用？局部变量 `result` 在函数返回后还存在吗？
+
+
 
 ## 小结
 
