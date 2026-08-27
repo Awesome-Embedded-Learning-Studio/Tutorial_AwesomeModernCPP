@@ -43,7 +43,7 @@ title: 预处理器与多文件工程
 
 - 平台：Linux x86\_64（WSL2 也可以）
 - 编译器：GCC 13+ 或 Clang 17+
-- 编译选项：`-Wall -Wextra -std=gnu11`
+- 编译选项：`-std=c17 -Wall -Wextra -Wpedantic`
 
 ## 第一步——理解预处理器做什么
 
@@ -222,6 +222,9 @@ int main(void) {
 /**
  * @brief 返回两个值中的最大值
  *
+ * @param a 参与比较的第一个值
+ * @param b 参与比较的第二个值
+ * @return a 与 b 中较大的那个
  */
 #define MAX(a, b)           \
   ({                        \
@@ -233,6 +236,9 @@ int main(void) {
 /**
  * @brief 返回两个值中的最小值
  *
+ * @param a 参与比较的第一个值
+ * @param b 参与比较的第二个值
+ * @return a 与 b 中较小的那个
  */
 #define MIN(a, b)           \
   ({                        \
@@ -242,12 +248,12 @@ int main(void) {
   })
 
 
-void clamp_int(int *value, int min_val,int max_val);
+void clamp_int(int *value, int min_val, int max_val);
 
 /**
- * @brief Print and return the number of decimal digits in an integer.
+ * @brief 返回一个整数十进制位数
  *
- * The sign is not counted. Zero has one digit.
+ * 不计符号位；0 的位数为 1。
  */
 int count_digits(int value);
 
@@ -257,11 +263,10 @@ int count_digits(int value);
 
 ```c
 #include "math_utils.h"
-#include <stdio.h>
 
-void clamp_int(int *value, int min_val,int max_val)
+void clamp_int(int *value, int min_val, int max_val)
 {
-   *value = MAX(min_val, MIN(*value, max_val));
+    *value = MAX(min_val, MIN(*value, max_val));
 }
 
 int count_digits(int value)
@@ -273,9 +278,10 @@ int count_digits(int value)
         value /= 10;
     } while (value != 0);
 
-    printf("%d\n", digits);
     return digits;
 }
+
+
 
 ```
 
@@ -288,24 +294,20 @@ int count_digits(int value)
 
 int main(void)
 {
-    int v;
-    int digits;
-  
-    v = 5;
-    clamp_int(&v, 0, 10);
-    printf("clamp_int(5, 0, 10) = %d\n", v);
+    int value;
 
-    v = 100;
-    clamp_int(&v, 0, 10);
-    printf("clamp_int(100, 0, 10) = %d\n", v);
+    value = 5;
+    clamp_int(&value, 0, 10);
+    printf("clamp_int(5, 0, 10) = %d\n", value);
 
-    digits = count_digits(42);
-    printf("count_digits(42) = %d\n", digits);
+    value = 100;
+    clamp_int(&value, 0, 10);
+    printf("clamp_int(100, 0, 10) = %d\n", value);
 
-    digits = count_digits(-12345);
-    printf("count_digits(-12345) = %d\n", digits);
+    printf("count_digits(42) = %d\n", count_digits(42));
+    printf("count_digits(-12345) = %d\n", count_digits(-12345));
 
-    printf("All tests passed.\n");
+    puts("All tests passed.");
     return 0;
 }
 
@@ -314,29 +316,28 @@ int main(void)
 编译运行:
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra main.c math_utils.c -o main
+gcc -std=c17 -Wall -Wextra main.c math_utils.c -o main
 ```
 
 或者是
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra -c math_utils.c  # 只编译不链接，生成 math_utils.o
-gcc -std=gnu11 -Wall -Wextra -c main.c        # 生成 main.o
+gcc -std=c17 -Wall -Wextra  -c math_utils.c  # 只编译不链接，生成 math_utils.o
+gcc -std=c17 -Wall -Wextra  -c main.c        # 生成 main.o
 ar rcs libmath_utils.a math_utils.o            # 把 .o 打进静态库
-gcc -std=gnu11 -Wall -Wextra -o demo main.o -L. -lmath_utils  # 链接
+gcc -std=c17 -Wall -Wextra  -o demo main.o -L. -lmath_utils  # 链接
 
 ./demo
 ```
 
+注意：`math_utils.h` 中的宏使用了 GCC 扩展（语句表达式和 `__typeof__`），因此编译时不启用 `-Wpedantic`，否则会产生扩展相关的警告。
 
 运行结果：
 
 ```text
 clamp_int(5, 0, 10) = 5
 clamp_int(100, 0, 10) = 10
-2
 count_digits(42) = 2
-5
 count_digits(-12345) = 5
 All tests passed.
 ```
@@ -344,7 +345,7 @@ All tests passed.
 :::
 
 
-提示：编译步骤是 `gcc -c math_utils.c`、`gcc -c main.c`、`gcc -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
+提示：编译步骤是 `gcc -std=c17 -Wall -Wextra -c math_utils.c`、`gcc -std=c17 -Wall -Wextra  -c main.c`、`gcc -std=c17 -Wall -Wextra  -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
 
 ### 练习 2：零开销的 DEBUG_LOG 宏
 
@@ -373,22 +374,24 @@ All tests passed.
 
 /* 默认开启日志；编译时用 -DNDEBUG 可关闭 */
 #ifdef NDEBUG
-    #define DEBUG_LOG(fmt, ...)  ((void)(0))
+#define DEBUG_LOG(fmt, ...) ((void)(0))
 #else
-    #define DEBUG_LOG(fmt, ...) \
-        fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define DEBUG_LOG(fmt, ...) \
+    fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 ```
 
 **main.c**
 
 ```c
-#include "debug_log.h"
 #include <stdio.h>
+
+#include "debug_log.h"
 
 int main(void)
 {
     int count = 0;
+
     DEBUG_LOG("开始运行，初始值 count = %d", count);
 
     for (int i = 0; i < 3; ++i) {
@@ -409,26 +412,26 @@ int main(void)
 `Debug 模式`
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra main.c -o main && ./main
+gcc -std=c17 -Wall -Wextra main.c -o main && ./main
 ```
 
 `Release 模式`
 
 ```bash
-gcc -std=gnu11 -Wall -Wextra -DNDEBUG main.c -o main && ./main
+gcc -std=c17 -Wall -Wextra -DNDEBUG main.c -o main && ./main
 ```
 
 运行结果：
 
-Debug 模式：
+Debug 模式：行号取决于 `main.c` 中的实际行位置，以下用 `<line>` 表示。
 
 ```text
-[main.c:8] 开始运行，初始值 count = 0
-[main.c:11] 第 0 次循环
-[main.c:11] 第 1 次循环
-[main.c:11] 第 2 次循环
-[main.c:15] 结束，最终 count = 3
-[main.c:16] 这是不带额外参数的中文消息
+[main.c:<line>] 开始运行，初始值 count = 0
+[main.c:<line>] 第 0 次循环
+[main.c:<line>] 第 1 次循环
+[main.c:<line>] 第 2 次循环
+[main.c:<line>] 结束，最终 count = 3
+[main.c:<line>] 这是不带额外参数的中文消息
 完成。
 ```
 
@@ -438,11 +441,11 @@ Release 模式：`DEBUG_LOG` 被展开为 `((void)(0))`，什么都不输出，�
 完成。
 ```
 
-> **注意**：`__typeof__` 是 GCC/Clang 支持的 GNU C 扩展，不属于 C11/C17。它只能根据表达式推导类型，本身不会阻止宏参数被重复求值。只有把它与 GNU 语句表达式 `({ ... })` 和临时变量结合，在初始化临时变量时保存参数，才能让 `MAX(x++, 4)` 中的 `x++` 只执行一次。该写法依赖 GNU 扩展（本章使用 `-std=gnu11`），不适用于严格 ISO C 或 MSVC；需要可移植性时应改用普通函数或按类型实现的函数。
+> **注意**：`__VA_ARGS__` 是 C99 起标准化的可变参数宏机制，但答案中的 `##__VA_ARGS__` 是 GCC 扩展：它在 `DEBUG_LOG("一条消息")` 没有额外格式化参数时删除多余的逗号。因此这里的编译命令不启用 `-Wpedantic`；它可在 GCC 的 C17 模式下使用，却不是严格 ISO C17 的可移植写法。
 
 
 :::
 
 
 
-提示：可变参数宏的写法是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。GCC 提供了 `##__VA_ARGS__` 扩展处理没有额外参数时的逗号问题。
+提示：可变参数宏的标准形式是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。本答案为了支持没有额外格式化参数的调用，使用了 GCC 的 `##__VA_ARGS__` 扩展。

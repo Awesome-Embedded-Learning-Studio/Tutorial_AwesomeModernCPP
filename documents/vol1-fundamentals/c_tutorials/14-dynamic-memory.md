@@ -246,72 +246,103 @@ void intvec_free(IntVec* v);
 
 ::: details 参考答案
 
+**intvec_test.c**
+
 ```c
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-int intvec_init(IntVec* v) {
-    v->capacity = 4;
-    v->size = 0;
-    v->data = malloc(v->capacity * sizeof(int));
-    if (v->data == NULL) {
-        v->capacity = 0;
+typedef struct {
+    int* data;
+    size_t size;
+    size_t capacity;
+} IntVec;
+
+static int intvec_init(IntVec* vector)
+{
+    if (vector == NULL) {
+        return -1;
+    }
+
+    vector->capacity = 4U; // 初始容量
+    vector->size = 0U;
+    vector->data = malloc(vector->capacity * sizeof(*vector->data));
+    if (vector->data == NULL) {
+        vector->capacity = 0U;
         return -1;
     }
     return 0;
 }
 
-int intvec_push(IntVec* v, int value) {
-    if (v->size >= v->capacity) {
-        size_t new_cap = v->capacity * 2;
-        int* new_data = realloc(v->data, new_cap * sizeof(int));
-        if (new_data == NULL) {
-            return -1;          // 扩容失败，旧 data 仍然有效，调用者决定怎么办
-        }
-        v->data = new_data;
-        v->capacity = new_cap;
+static int intvec_push(IntVec* vector, int value)
+{
+    if (vector == NULL) {
+        return -1;
     }
-    v->data[v->size++] = value;
+
+    if (vector->size == vector->capacity) {
+        size_t new_capacity = vector->capacity * 2U;
+        int* new_data = realloc(vector->data,
+                                new_capacity * sizeof(*vector->data)); //容量不足翻倍扩充
+
+        if (new_data == NULL) {
+            return -1;
+        }
+        vector->data = new_data;
+        vector->capacity = new_capacity;
+    }
+
+    vector->data[vector->size++] = value;
     return 0;
 }
 
-void intvec_free(IntVec* v) {
-    free(v->data);
-    v->data = NULL;
-    v->size = v->capacity = 0;
+static void intvec_free(IntVec* vector)
+{
+    if (vector == NULL) {
+        return;
+    }
+
+    free(vector->data);
+    vector->data = NULL;
+    vector->size = 0U;
+    vector->capacity = 0U;
 }
-```
 
-关键是 `realloc` 的返回值先存到 `new_data`、判断成功后再赋给 `v->data`。要是直接写 `v->data = realloc(v->data, ...)`，一旦失败原来的 `v->data` 就被 NULL 覆盖，那块内存再也找不回来，就是泄漏。
+int main(void)
+{
+    IntVec vector;
+    size_t i;
 
-
-```c
-#include <stdio.h>
-#include <stdlib.h>
-
-/* 把上面的 intvec_init / intvec_push / intvec_free 粘贴到此处 */
-
-int main(void) {
-    IntVec v;
-    if (intvec_init(&v) != 0) {
+    if (intvec_init(&vector) != 0) {
         fputs("初始化失败\n", stderr);
         return 1;
     }
-    printf("初始容量 = %zu\n", v.capacity);
+    printf("初始容量 = %zu\n", vector.capacity);
 
-    for (int i = 0; i < 10; ++i) {
-        intvec_push(&v, i * 10);
-        printf("push %d -> size=%zu cap=%zu\n", i * 10, v.size, v.capacity);
+    for (i = 0U; i < 10U; ++i) {
+        if (intvec_push(&vector, (int)i * 10) != 0) {
+            fputs("扩容失败\n", stderr);
+            intvec_free(&vector);
+            return 1;
+        }
+        printf("push %d -> size=%zu cap=%zu\n", (int)i * 10, vector.size,
+               vector.capacity);
     }
 
     printf("数组内容: ");
-    for (int i = 0; i < (int)v.size; ++i) printf("%d ", v.data[i]);
-    printf("\n");
+    for (i = 0U; i < vector.size; ++i) {
+        printf("%d ", vector.data[i]);
+    }
+    putchar('\n');
 
-    intvec_free(&v);
-    printf("释放后 data = %p\n", (void*)v.data);
+    intvec_free(&vector);
+    printf("释放后 data 是否为空: %s\n", vector.data == NULL ? "是" : "否");
     return 0;
 }
 ```
+
+关键是 `realloc` 的返回值先存到 `new_data`、判断成功后再赋给 `vector->data`。要是直接写 `vector->data = realloc(vector->data, ...)`，一旦失败原来的指针会被 `NULL` 覆盖，那块内存再也找不回来，就是泄漏。
 
 编译运行:
 
@@ -334,10 +365,10 @@ push 70 -> size=8 cap=8
 push 80 -> size=9 cap=16
 push 90 -> size=10 cap=16
 数组内容: 0 10 20 30 40 50 60 70 80 90 
-释放后 data = (nil)
+释放后 data 是否为空: 是
 ```
 
-可以看到 `size` 到 5 时容量从 4 翻倍到 8，再到 8 成 16；`realloc` 扩容后旧元素被无损保留。`intvec_free` 把 `data` 置为 NULL，之后误用会立刻崩溃而不是静默读垃圾。
+可以看到 `size` 到 5 时容量从 4 翻倍到 8，再到 8 成 16；`realloc` 扩容后旧元素被无损保留。`intvec_free` 会把结构体成员 `data` 置为 `NULL`，避免它继续保留悬垂地址；释放后仍然不能解引用该成员，应该先重新初始化或检查状态。
 
 :::
 
@@ -397,39 +428,40 @@ void        pool_free(MemoryPool* pool, void* block);
 void        pool_destroy(MemoryPool* pool);
 ```
 
-::: details 参考答案
+下面两份代码是互相独立的替代实现，各自包含 `main`；请任选一份编译，不要把两份代码拼到同一个源文件。
+
+::: details 参考答案一：静态容量版（适合嵌入式）
+
+这份实现不调用 `malloc`，而是预先准备固定数量的池实例和内存块。它的优点是运行时不会受堆碎片或堆分配失败影响；代价是容量和实例数量写死，`pool_alloc` 与 `pool_free` 都需要线性扫描，时间复杂度为 O(block_count)。它适合资源上限明确的固件，也能用占用标记拒绝异属地址和重复释放。
 
 ```c
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
-/* 单个内存块可容纳的最大字节数。 */
 #define MEMORY_POOL_MAX_BLOCK_SIZE 64U
-/* 单个内存池可管理的最大内存块数量。 */
 #define MEMORY_POOL_MAX_BLOCK_COUNT 16U
-/* 程序可同时创建的内存池实例最大数量。 */
 #define MEMORY_POOL_MAX_INSTANCES 2U
 
-/* 每个内存块的起始地址都按 max_align_t 对齐。 */
-// max_align_t 是对齐要求最严格的基础 C 类型，以此为基准可以适应不同的数据类型
+/* 每个联合体元素的首地址按 max_align_t 对齐。 */
 typedef union {
-    max_align_t alignment; // 用于强制整个内存块按最严格的基础类型对齐
-    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_SIZE]; // 以字节数组形式存储的实际内存数据
+    max_align_t alignment;
+    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_SIZE];
 } PoolBlock;
 
-typedef struct  {
-    PoolBlock blocks[MEMORY_POOL_MAX_BLOCK_COUNT]; // 内存块数组，实际存放数据的内存槽位
-    unsigned char in_use[MEMORY_POOL_MAX_BLOCK_COUNT]; // 每个内存块的占用标记数组，非 0 表示已分配
-    size_t block_size; // 每个内存块的字节大小（由 pool_create 指定）
-    size_t block_count; // 实际使用的内存块数量（由 pool_create 指定）
-    int active; // 内存池实例是否已被创建并投入使用（非 0 表示有效）
-} MemoryPool;
+typedef struct MemoryPool MemoryPool;
 
-/* 使用静态实例代替运行时堆内存分配。 */
+struct MemoryPool {
+    PoolBlock blocks[MEMORY_POOL_MAX_BLOCK_COUNT];
+    unsigned char in_use[MEMORY_POOL_MAX_BLOCK_COUNT];
+    size_t block_size;
+    size_t block_count;
+    int active;
+};
+
 static MemoryPool memory_pools[MEMORY_POOL_MAX_INSTANCES];
 
-/* 判断内存池指针是否指向本模块管理的静态内存池实例。 */
-static int pool_is_managed(const MemoryPool *pool)
+static int pool_is_managed(const MemoryPool* pool)
 {
     size_t i;
 
@@ -441,9 +473,8 @@ static int pool_is_managed(const MemoryPool *pool)
     return 0;
 }
 
-/* 查找内存块在指定内存池中的下标；找到时将下标写入 index。 */
-static int pool_block_index(const MemoryPool *pool, const void *block,
-                            size_t *index)
+static int pool_block_index(const MemoryPool* pool, const void* block,
+                            size_t* index)
 {
     size_t i;
 
@@ -452,23 +483,16 @@ static int pool_block_index(const MemoryPool *pool, const void *block,
     }
 
     for (i = 0U; i < pool->block_count; ++i) {
-        if (block == (const void *)pool->blocks[i].bytes) {
+        if (block == (const void*)pool->blocks[i].bytes) {
             *index = i;
             return 1;
         }
     }
-
     return 0;
 }
 
-/*
- * 创建内存池。
- * block_size 为每个内存块的字节数，block_count 为内存块数量。
- * 创建成功返回内存池指针；参数超出上限或无空闲实例时返回 NULL。
- */
-MemoryPool *pool_create(size_t block_size, size_t block_count)
+MemoryPool* pool_create(size_t block_size, size_t block_count)
 {
-    MemoryPool *pool;
     size_t i;
 
     if (block_size == 0U || block_size > MEMORY_POOL_MAX_BLOCK_SIZE ||
@@ -477,28 +501,24 @@ MemoryPool *pool_create(size_t block_size, size_t block_count)
     }
 
     for (i = 0U; i < MEMORY_POOL_MAX_INSTANCES; ++i) {
-        pool = &memory_pools[i];
+        MemoryPool* pool = &memory_pools[i];
+
         if (!pool->active) {
             size_t block_index;
 
             pool->block_size = block_size;
             pool->block_count = block_count;
-            pool->active = 1;
             for (block_index = 0U; block_index < block_count; ++block_index) {
                 pool->in_use[block_index] = 0U;
             }
+            pool->active = 1;
             return pool;
         }
     }
-
     return NULL;
 }
 
-/*
- * 从内存池中分配一个空闲内存块。
- * 分配成功返回内存块首地址；内存池无效或已满时返回 NULL。
- */
-void *pool_alloc(MemoryPool *pool)
+void* pool_alloc(MemoryPool* pool)
 {
     size_t i;
 
@@ -512,15 +532,10 @@ void *pool_alloc(MemoryPool *pool)
             return pool->blocks[i].bytes;
         }
     }
-
     return NULL;
 }
 
-/*
- * 释放由 pool_alloc 从指定内存池分配的内存块。
- * pool 或 block 无效、block 不属于该内存池或已释放时，函数直接返回。
- */
-void pool_free(MemoryPool *pool, void *block)
+void pool_free(MemoryPool* pool, void* block)
 {
     size_t index;
 
@@ -528,25 +543,15 @@ void pool_free(MemoryPool *pool, void *block)
         !pool_block_index(pool, block, &index) || pool->in_use[index] == 0U) {
         return;
     }
-
     pool->in_use[index] = 0U;
 }
 
-/*
- * 销毁内存池并将其静态实例标记为空闲。
- * 内存池无效或已销毁时，函数直接返回。
- */
-void pool_destroy(MemoryPool *pool)
+void pool_destroy(MemoryPool* pool)
 {
-    size_t i;
-
     if (!pool_is_managed(pool) || !pool->active) {
         return;
     }
 
-    for (i = 0U; i < pool->block_count; ++i) {
-        pool->in_use[i] = 0U;
-    }
     pool->block_size = 0U;
     pool->block_count = 0U;
     pool->active = 0;
@@ -555,9 +560,10 @@ void pool_destroy(MemoryPool *pool)
 int main(void)
 {
     enum { BLOCK_COUNT = 4 };
-    MemoryPool *pool;
-    int *values[BLOCK_COUNT];
-    int *reused_value;
+    MemoryPool* pool;
+    void* blocks[BLOCK_COUNT];
+    void* reused_block;
+    int value;
     size_t i;
 
     pool = pool_create(sizeof(int), BLOCK_COUNT);
@@ -567,7 +573,186 @@ int main(void)
     }
 
     for (i = 0U; i < BLOCK_COUNT; ++i) {
-        values[i] = (int *)pool_alloc(pool);
+        blocks[i] = pool_alloc(pool);
+        if (blocks[i] == NULL) {
+            fputs("内存池分配失败\n", stderr);
+            pool_destroy(pool);
+            return 1;
+        }
+        value = (int)(i + 1U) * 10;
+        memcpy(blocks[i], &value, sizeof(value));
+    }
+
+    printf("当前数值：");
+    for (i = 0U; i < BLOCK_COUNT; ++i) {
+        memcpy(&value, blocks[i], sizeof(value));
+        printf("%d%s", value, i + 1U == BLOCK_COUNT ? "\n" : " ");
+    }
+    if (pool_alloc(pool) == NULL) {
+        puts("内存池已满，下一次分配返回 NULL");
+    }
+
+    pool_free(pool, blocks[1]);
+    reused_block = pool_alloc(pool);
+    if (reused_block == NULL || reused_block != blocks[1]) {
+        fputs("内存池复用失败\n", stderr);
+        pool_destroy(pool);
+        return 1;
+    }
+    value = 99;
+    memcpy(reused_block, &value, sizeof(value));
+    memcpy(&value, reused_block, sizeof(value));
+    printf("复用后的数值：%d\n", value);
+    pool_destroy(pool);
+    return 0;
+}
+```
+
+`PoolBlock` 是联合体，因此数组中每个块都以 `max_align_t` 对齐；C17 保证它的对齐要求不低于任何基础标量类型。不过，对齐只解决地址条件，不能在已经声明为字节数组的静态存储里凭空创建任意 `T` 对象，所以示例用 `memcpy` 写入和读回 `int` 的对象表示，而不把 `bytes` 强转为 `int*` 后解引用。调用者必须保证复制的数据不超过传入的 `block_size`，并在使用完后调用 `pool_free`。`pool_destroy` 只把静态实例标回空闲，不能让旧的 `pool` 或块指针继续有效。这个版本不使用 free list，正好可以和下一份实现对照：边界检查更友好，但为了找到空闲块或确认块归属付出了线性时间；如果需要把块直接作为任意类型的活动对象使用，应选择下一份基于 `malloc` 的版本。
+
+> ⚠️ **踩坑预警**
+> `bytes` 是已经声明为 `unsigned char[]` 的对象。C 的有效类型规则不允许把它当作一个真实存在的 `int` 对象，通过 `int*` 读写。`max_align_t` 只能保证地址适合放 `int`，不能改变这块静态对象原本的类型。
+`malloc` 不同：它返回的是没有声明类型的存储，因此首次通过 `int*` 写入时，可以形成 `int` 对象的有效类型。静态 `char[]` 没有这项特权。
+
+:::
+
+::: details 参考答案二：动态 `malloc` + free list 版
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+/* 内存块空闲时，块起始位置用于保存指向下一个空闲块的指针。 */
+typedef struct PoolBlock {
+    struct PoolBlock* next;
+} PoolBlock;
+
+typedef struct MemoryPool MemoryPool;
+
+struct MemoryPool {
+    unsigned char* storage; // malloc 获得的池底层存储区
+    PoolBlock* free_list; // 空闲块链表的头指针
+};
+
+/*
+ * 创建内存池。
+ * block_size 为每个内存块的字节数，block_count 为内存块数量。
+ * 创建成功返回内存池指针；参数为 0、大小计算溢出或 malloc 失败时返回 NULL。
+ */
+MemoryPool* pool_create(size_t block_size, size_t block_count)
+{
+    MemoryPool* pool;
+    size_t alignment;
+    size_t block_stride;
+    size_t storage_size;
+    size_t i;
+
+    if (block_size == 0U || block_count == 0U) {
+        return NULL;
+    }
+
+    if (block_size < sizeof(PoolBlock)) {
+        block_size = sizeof(PoolBlock);
+    }
+    alignment = _Alignof(max_align_t);
+    if (block_size > SIZE_MAX - (alignment - 1U)) {
+        return NULL;
+    }
+    block_stride = ((block_size + alignment - 1U) / alignment) * alignment;
+    if (block_count > SIZE_MAX / block_stride) {
+        return NULL;
+    }
+    storage_size = block_stride * block_count;
+
+    pool = malloc(sizeof(*pool));
+    if (pool == NULL) {
+        return NULL;
+    }
+
+    pool->storage = malloc(storage_size);
+    if (pool->storage == NULL) {
+        free(pool);
+        return NULL;
+    }
+
+    pool->free_list = NULL;
+    for (i = 0U; i < block_count; ++i) {
+        PoolBlock* block = (PoolBlock*)(void*)(pool->storage +
+                                               i * block_stride);
+
+        block->next = pool->free_list;
+        pool->free_list = block;
+    }
+    return pool;
+}
+
+/*
+ * 从内存池中分配一个空闲内存块。
+ * 分配成功返回内存块首地址；pool 为 NULL 或内存池已满时返回 NULL。
+ */
+void* pool_alloc(MemoryPool* pool)
+{
+    PoolBlock* block;
+
+    if (pool == NULL) {
+        return NULL;
+    }
+
+    block = pool->free_list;
+    if (block == NULL) {
+        return NULL;
+    }
+
+    pool->free_list = block->next;
+    return (void*)block;
+}
+
+/*
+ * 释放由 pool_alloc 从指定内存池分配的内存块。
+ * block 必须是该池当前已分配、且尚未释放的块；传入异属地址、块内地址或重复
+ * 释放违反接口前置条件，行为未定义。pool 或 block 为 NULL 时函数直接返回。
+ */
+void pool_free(MemoryPool* pool, void* block)
+{
+    if (pool == NULL || block == NULL) {
+        return;
+    }
+
+    ((PoolBlock*)block)->next = pool->free_list;
+    pool->free_list = block;
+}
+
+/*
+ * 销毁内存池。pool 为 NULL 时函数直接返回；调用后该指针失效。
+ */
+void pool_destroy(MemoryPool* pool)
+{
+    if (pool == NULL) {
+        return;
+    }
+
+    free(pool->storage);
+    free(pool);
+}
+
+int main(void)
+{
+    enum { BLOCK_COUNT = 4 };
+    MemoryPool* pool;
+    int* values[BLOCK_COUNT];
+    int* reused_value;
+    size_t i;
+
+    pool = pool_create(sizeof(int), BLOCK_COUNT);
+    if (pool == NULL) {
+        fputs("内存池创建失败\n", stderr);
+        return 1;
+    }
+
+    for (i = 0U; i < BLOCK_COUNT; ++i) {
+        values[i] = (int*)pool_alloc(pool);
         if (values[i] == NULL) {
             fputs("内存池分配失败\n", stderr);
             pool_destroy(pool);
@@ -584,8 +769,8 @@ int main(void)
     }
 
     pool_free(pool, values[1]);
-    reused_value = (int *)pool_alloc(pool);
-    if (reused_value == NULL) {
+    reused_value = (int*)pool_alloc(pool);
+    if (reused_value == NULL || reused_value != values[1]) {
         fputs("内存池复用失败\n", stderr);
         pool_destroy(pool);
         return 1;
@@ -596,12 +781,13 @@ int main(void)
     pool_destroy(pool);
     return 0;
 }
-
 ```
 
-`pool_create`创建内存池，`pool_create`的作用是类似动态管理的堆区。创建内存池时需指定内存池类型：`int`,`float`等都可以，由于 `max_align_t alignment`是最严格的对齐要求，所以无论是`pool_create`、`pool_alloc`，还是首地址都满足它们的对齐，那么创建时满足`block_size ≤ MEMORY_POOL_MAX_BLOCK_SIZE`即可。注意在创建时每个内存块的`block_size` 指定每块字节数；`block_count` 指定块数量,`block_count`最大不超过`MEMORY_POOL_MAX_BLOCK_COUNT`，当创建`block_count<MEMORY_POOL_MAX_BLOCK_COUNT`时只有`block_count`个内存块可以使用，剩下的内存块将不可以使用，创建时的最大内存池数量为`MEMORY_POOL_MAX_INSTANCES`,超过后将不再可以进行创建.
-`pool_alloc`的作用类似与`malloc`,从内存池中分配一个内存块.`pool_free`是通过`pool_block_index`查找对应的内存块位置并进行内存的回收，`pool_free`的作用类似与`free`,
-`pool_destroy`将创建的内存池进行回收方便创建新的其他类型的内存池，否则创建的内存池数量超过`MEMORY_POOL_MAX_INSTANCES`时将不可以再次创建，由于创建的内存池依赖`memory_pools`这个静态数组,本质上是属于静态存储区BSS段,"静态存储期生命周期贯穿整个程序，若不手动 pool_destroy，它们会一直占用 MEMORY_POOL_MAX_INSTANCES 个名额直到程序退出"由 OS 统一回收。如果不进行二次使用可以不进行回收但还是希望养成好习惯.
+这里真正管理空闲块的是 `free_list`：创建时把每个块的起始位置串成链表；分配时取下表头，把表头推进到 `next`；释放时再把该块插回表头。`pool_create` 初始化链表需要遍历全部块，时间复杂度为 O(block_count)；而 `pool_alloc` 和满足前置条件的 `pool_free` 都只改动常数个指针，时间复杂度是 O(1)。当块处于空闲状态时，块开头暂存 `next` 指针；一旦分配给调用者，这些字节就完全交还给调用者使用。
+
+`pool_create` 接受的是每块的字节数，不是 `int`、`float` 之类的类型；调用者必须保证实际对象放得进该字节数。为容纳空闲链表指针，实际步长至少为 `sizeof(PoolBlock)`；随后再向上取整到 `_Alignof(max_align_t)` 的倍数。C17 规定 `max_align_t` 的对齐要求不低于任何标量类型，因此示例返回的块满足基础标量对象的对齐要求。函数还在对齐和总存储量计算前检查 `size_t` 溢出；只要参数合法且内存足够，`block_size` 与 `block_count` 不受人为上限限制。
+
+池的元数据和底层存储区都来自 `malloc`：底层区域没有预先声明的对象类型，因此空闲时可作为 `PoolBlock` 保存 `next`，分配后也可由调用者按其需要的对象类型使用。`pool_create` 只应在初始化阶段调用；创建成功后，`pool_alloc` 和 `pool_free` 不再调用通用堆分配器。`pool_free` 不扫描链表来防御错误用法，否则释放就会退化为 O(block_count)；它和 `free` 一样要求调用者不能传入异属地址、块内地址或已经释放的指针，违反此前置条件的行为未定义。`pool_destroy` 释放底层存储区和元数据；调用后 `pool` 是悬垂指针，不能继续传给任何 `pool_*` 函数。
 
 编译运行这个内存池示例：
 
@@ -631,9 +817,11 @@ gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_p
 #define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
 ```
 
-**debug_log.h**
-
 ::: details 参考答案
+
+完整程序分为三个文件；`debug_log.h` 只提供调试日志宏，`tracked.h` 公开跟踪器接口，`tracked.c` 实现分配记录和报告。
+
+**debug_log.h**
 
 ```c
 #pragma once
@@ -642,39 +830,58 @@ gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_p
 
 /* 默认开启日志；编译时用 -DNDEBUG 可关闭 */
 #ifdef NDEBUG
-    #define DEBUG_LOG(fmt, ...)  ((void)(0))
+#define DEBUG_LOG(fmt, ...) ((void)(0))
 #else
-    #define DEBUG_LOG(fmt, ...) \
-        fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define DEBUG_LOG(fmt, ...) \
+    fprintf(stderr, "[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 ```
 
+**tracked.h**
+
 ```c
+#ifndef TRACKED_H
+#define TRACKED_H
+
 #include <stddef.h>
+
+void* tracked_malloc(size_t size, const char* file, unsigned int line);
+void  tracked_free(void* address, const char* file, unsigned int line);
+
+/* 自动记录调用处的文件名和行号。 */
+#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
+#define TFREE(address) tracked_free((address), __FILE__, __LINE__)
+
+#endif
+```
+
+**tracked.c**
+
+```c
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "debug_log.h"
+#include "tracked.h"
 
-// malloc/free 跟踪记录的最大数量。
+/* malloc/free 跟踪记录的最大数量。 */
 #define TRACKED_ALLOCATION_MAX 128U
-  
-// active为1 表示该内存块尚未被 free，属于潜在泄漏； 0 表示已被 free 或已被重复释放检测使用。
+
+/* active 为 1 表示该内存块尚未被 free。 */
 typedef struct {
-    void *address; // 实际 malloc 返回的内存块首地址（NULL 表示空）；
-    size_t size; // 本次分配的字节数，由调用方传入的 size 决定；
-    const char *file; // 记录该次分配发生所在源文件（由 __FILE__ 宏提供）；
-    unsigned int line; // 记录该次分配发生所在行号（由 __LINE__ 宏提供）；
-    int active; // 标记该记录当前是否仍处于“活跃”状态：
+    void* address;
+    size_t size;
+    const char* file;
+    unsigned int line;
+    int active;
 } AllocationRecord;
 
 static AllocationRecord allocation_records[TRACKED_ALLOCATION_MAX];
 
-// 内存报告注册标志。记录 atexit(mem_report) 是否注册成功：
+/* 内存报告注册标志。 */
 static int mem_report_registered;
 
-/* mem_report 的声明：定义在文件下方，先在此声明以供 atexit 使用。 */
-void mem_report(void);
+static void mem_report(void);
 
 /* 注册内存报告退出钩子：在第一次使用跟踪器时调用。
  * 作用：向 atexit 注册 mem_report，使程序退出时自动打印泄漏统计。
@@ -708,11 +915,11 @@ static AllocationRecord *find_record(void *address, int active_only)
     return NULL;
 }
 
-// 带跟踪的 malloc：调用真正的 malloc 并登记一条分配记录。
-void *tracked_malloc(size_t size, const char *file, unsigned int line)
+/* 调用 malloc 并登记一条分配记录。 */
+void* tracked_malloc(size_t size, const char* file, unsigned int line)
 {
-    AllocationRecord *record = NULL;
-    void *address;
+    AllocationRecord* record = NULL;
+    void* address;
     size_t i;
 
     register_mem_report();
@@ -720,9 +927,6 @@ void *tracked_malloc(size_t size, const char *file, unsigned int line)
     if (address == NULL) {
         return NULL;
     }
-
-    /* 统一输出本次分配的大小，方便观察挂钩/监控效果。 */
-    printf("size = %zu\n", size);
 
     /* 在记录表中查找第一个空闲槽位。 */
     for (i = 0U; i < TRACKED_ALLOCATION_MAX; ++i) {
@@ -748,8 +952,8 @@ void *tracked_malloc(size_t size, const char *file, unsigned int line)
     return address;
 }
 
-// 带跟踪的 free：调用真正的 free 并维护对应的分配记录。
-void tracked_free(void *address, const char *file, unsigned int line)
+/* 调用 free 并维护对应的分配记录。 */
+void tracked_free(void* address, const char* file, unsigned int line)
 {
     AllocationRecord *record;
 
@@ -780,7 +984,7 @@ void tracked_free(void *address, const char *file, unsigned int line)
  *   遍历整张记录表，统计仍处于活跃状态的记录并逐条打印，
  *   最后给出汇总结论（无泄漏 / 泄漏块数量）。
  */
-void mem_report(void)
+static void mem_report(void)
 {
     size_t i;
     size_t leak_count = 0U;
@@ -802,50 +1006,50 @@ void mem_report(void)
     }
 }
 
-/* 宏封装：把普通 malloc/free 替换成带文件名与行号的跟踪版本。
- * TMALLOC(size)  实际调用 tracked_malloc，并自动填入 __FILE__、__LINE__；
- * TFREE(address) 实际调用 tracked_free，并自动填入 __FILE__、__LINE__。
- * 这样调用者无需手动编写文件名与行号参数，易于日常使用。 */
-#define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
-#define TFREE(address) tracked_free((address), __FILE__, __LINE__)
-
 /* 程序入口：演示跟踪内存分配、释放与退出报告流程。 */
 int main(void)
 {
-    void *tracked_block;
-    int *problem_block;
+    void* tracked_block;
+    int* problem_block;
 
     tracked_block = TMALLOC(32U);
-    problem_block = TMALLOC(sizeof(int)*4);
-    if (tracked_block == NULL) {
+    problem_block = TMALLOC(4U * sizeof(*problem_block));
+    if (tracked_block == NULL || problem_block == NULL) {
         fputs("跟踪内存分配失败\n", stderr);
+        TFREE(tracked_block);
+        TFREE(problem_block);
         return 1;
     }
-     TFREE(tracked_block);
-     TFREE(problem_block);
+    TFREE(tracked_block);
+    // TFREE(problem_block);
     return 0;
 }
 ```
 
-atexit 是 C/C++ 标准库 <stdlib.h> 中用来注册一个在程序正常退出时自动执行的回调函数。
-`tracked_malloc`使用`malloc`和`__FILE__, __LINE__`机制动态分配内存并将分配时的位置记录，方便日后忘回收时进行快速查找
-通过`allocation_records`记录表将状态进行记录
-`tracked_free`使用`free`和`__FILE__, __LINE__`机制释放内存和查找是否重复释放和释放错误地址，通过`find_record`进行对释放地址的判断
-`register_mem_report`在首次`tracked_malloc`是进行`atexit`注册`mem_repor`确定程序运行结束后内存的状态（判断是否全部释放和有几个未释放和当初的分配位置
+`atexit` 是 C/C++ 标准库 `<stdlib.h>` 中用来注册一个在程序正常退出时自动执行的回调函数。
+
+`tracked_malloc` 借助 `malloc` 和 `__FILE__`/`__LINE__` 动态分配内存，并把分配位置记入 `allocation_records` 记录表，方便日后忘记回收时快速定位泄漏来源。
+
+`tracked_free` 借助 `free` 和 `__FILE__`/`__LINE__` 释放内存，并通过 `find_record` 判断是否为重复释放或释放了未登记的错误地址。
+
+`register_mem_report` 在首次调用 `tracked_malloc` 时通过 `atexit` 注册 `mem_report`，程序运行结束后据此判断内存状态（是否全部释放、还有几个未释放、当初在什么位置分配）。
 
 编译运行:
 
 ```bash
-gcc -std=c17 -Wall -Wextra -Wpedantic tracked.c -o tracked && ./tracked
+gcc -std=c17 -Wall -Wextra tracked.c -o tracked && ./tracked
 ```
+
+注意：这里的 `DEBUG_LOG` 用 `##__VA_ARGS__` 删除没有额外格式化参数时多出的逗号，这是 GCC 扩展；因此命令没有启用 `-Wpedantic`。它可以在 GCC 的 C17 模式下使用，但不应被当作严格 ISO C17 的可移植写法。
 
 运行结果：
 
 ```text
-size = 32
-size = 16
-内存报告：没有未释放的内存
+[tracked.c:135] 内存泄漏 #1: 地址=0x60ff136cd2d0, 大小=16 字节, 分配位置=tracked.c:163
+[tracked.c:145] 内存报告：共 1 个未释放块
 ```
+
+注意：`[tracked.c:135]`、`分配位置=tracked.c:163` 里的行号是示意值。`__FILE__`/`__LINE__` 输出的是宏展开处的实际源码行，随文件排版变化，读者看到的数字会与上面不同——以你编译后的输出为准。
 
 :::
 

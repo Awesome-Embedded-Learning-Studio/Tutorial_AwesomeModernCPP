@@ -9,9 +9,9 @@ difficulty: beginner
 order: 20
 platform: host
 prerequisites:
-- 11 C 字符串与缓冲区安全
-- 12 结构体与内存对齐
-- 14 动态内存管理
+- C 字符串与缓冲区安全
+- 结构体与内存对齐
+- 动态内存管理
 reading_time_minutes: 30
 tags:
 - host
@@ -42,10 +42,10 @@ C 语言的文件操作建立在一套简洁但足够强大的 API 之上——`
 
 本篇的所有代码在以下环境下验证通过：
 
-- **操作系统**：Linux（Ubuntu 22.04+） / WSL2 / macOS
-- **编译器**：GCC 11+（通过 `gcc --version` 确认版本）
-- **编译选项**：`gcc -std=c17 -Wall -Wextra -Wpedantic`（开启警告并指定 C17 标准）
-- **验证方式**：所有代码可直接编译运行
+- 平台：Linux x86\_64（WSL2 也可以）
+- 编译器：GCC 13+ 或 Clang 17+
+- 编译选项：`-std=c17 -Wall -Wextra -Wpedantic`
+- 验证方式：所有代码可直接编译运行
 
 ## 第一步——上手文件操作
 
@@ -106,12 +106,12 @@ size_t count = fread(buffer, sizeof(Record), max_count, fp);
 
 ```c
 long get_file_size(FILE* fp) {
-    //获取当前初始位置
+    // 保存调用前的位置。
     long original = ftell(fp);
-    //将文件位置移至文件末尾
+    // 将文件位置移至文件末尾。
     fseek(fp, 0, SEEK_END);
     long size = ftell(fp);
-    //将文件位置从开头移至文件初始位置
+    // 恢复到调用前的位置。
     fseek(fp, original, SEEK_SET);
     return size;
 }
@@ -119,7 +119,7 @@ long get_file_size(FILE* fp) {
 
 ### 别把 feof 当循环条件
 
-`feof` 只有在读取操作已经失败**之后**才会返回真。当`feof` 读到`EOF`时，会返回零后再次执行`feof`时才会返回1.将正确的做法是直接检查读取函数的返回值：
+`feof` 只有在读取操作已经失败**之后**才会返回真。正确的做法是直接检查读取函数的返回值：
 
 ```c
 int ch;
@@ -309,26 +309,30 @@ int main(int argc, char* argv[]) {
 
 ::: details 参考答案
 
+**config_parser.c**
+
 ```c
 
-#include <stdio.h>      
-#include <string.h>    
-#include <ctype.h>      
-#include <stdbool.h>    
+#include <ctype.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define MAX_LINE 256    // 单行文本的最大长度（含结尾的 '\0'），超出限制时解析失败
-#define MAX_KEY 64      // 配置项 key（键名）的最大长度（含结尾的 '\0'）
-#define MAX_VALUE 128   // 配置项 value（值）的最大长度（含结尾的 '\0'）
+#define MAX_LINE 256
+#define MAX_KEY 64
+#define MAX_VALUE 128
+#define PARSE_CONFIG_ERROR SIZE_MAX
 
 typedef struct {
-    char key[MAX_KEY];      
-    char value[MAX_VALUE]; 
-} ConfigEntry;             
+    char key[MAX_KEY];
+    char value[MAX_VALUE];
+} ConfigEntry;
 /// @brief 去除字符串首尾的空白字符
 char* trim(char* str);
 
 /// @brief 解析配置文件
-bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, size_t* out_count);
+size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries);
 
 /// @brief 在配置项中查找指定 key
 const char* find_config(const ConfigEntry* entries, size_t count, const char* key);
@@ -338,9 +342,7 @@ const char* find_config(const ConfigEntry* entries, size_t count, const char* ke
  * @param str 要处理的字符串（会被修改）
  * @return char* 去除空白后字符串的首地址
  *
- **/
- 
- // `trim` 从左往右跳过前导空白字符后如果字符串不为空则从末尾向前跳过尾部空白字符并在最后一个有效字符后写入 '\0' 结束符。
+ */
 
 char* trim(char* str) {
     char* end;  // 用于从字符串末尾向前扫描的指针
@@ -371,44 +373,40 @@ char* trim(char* str) {
  * @param path        配置文件路径
  * @param entries     存放解析结果的配置项数组
  * @param max_entries 数组最多能存放的配置项个数
- * @param out_count   成功时写入实际解析出的配置项数量
- * @return bool 成功返回 true；入参非法、文件访问失败或配置内容超限时返回 false
+ * @return 解析出的配置项数量；发生错误时返回 PARSE_CONFIG_ERROR
  *
  * 处理逻辑：
  *   1. 校验入参是否合法；
- *   2. 打开文件，失败则打印错误信息并返回 false；
- *   3. 逐行读取（最多保存 max_entries 个配置项）：
+ *   2. 打开文件，失败则打印错误信息并返回 PARSE_CONFIG_ERROR；
+ *   3. 逐行读取：
  *        - 去掉行内 '#' 之后的注释部分；
  *        - 用 trim 去掉首尾空白；
  *        - 查找 '=' 分隔符，找不到则跳过该行；
  *        - 以 '=' 为界拆分为 key 和 value，并分别 trim；
- *        - 用 snprintf 安全复制进 entries 数组并计数。
+ *        - 用 snprintf 安全复制进 entries 数组并计数；超过 max_entries 时返回错误。
  */
-bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, size_t* out_count) {
+size_t parse_config(const char* path, ConfigEntry* entries, size_t max_entries)
+{
     FILE* file;                                 // 文件流指针
     char line[MAX_LINE];                        // 读取单行文本的缓冲区，大小由 MAX_LINE 决定
     size_t count = 0;                           // 已解析出的配置项数量
     size_t line_number = 0;                     // 当前读取到的物理行号
 
-    // 参数校验：路径、数组和输出指针不能为空，数组容量必须大于 0
-    if (out_count == NULL) {
-        return false;
-    }
-    *out_count = 0;
+    // 参数校验：路径和数组不能为空，数组容量必须大于 0。
     if (path == NULL || entries == NULL || max_entries == 0) {
-        return false;
+        return PARSE_CONFIG_ERROR;
     }
 
     // 以只读文本模式打开配置文件
     file = fopen(path, "r");
-    // 打开失败：用 perror 打印系统错误信息，并返回 0
+    // 打开失败：用 perror 打印系统错误信息。
     if (file == NULL) {
         perror(path);
-        return false;
+        return PARSE_CONFIG_ERROR;
     }
 
-    // 逐行读取：既限制读取行数为 max_entries，又防止数组越界
-    while (count < max_entries && fgets(line, sizeof(line), file) != NULL) {
+    // 读完整个文件：一旦有效配置项超过数组容量，就报告错误而不是静默丢弃。
+    while (fgets(line, sizeof(line), file) != NULL) {
         char* comment = strchr(line, '#');      // 查找注释起始字符 '#'
         char* equal;                            // 指向 '=' 分隔符的指针
         char* key;                              // 指向 key 部分
@@ -429,7 +427,7 @@ bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, si
                 fprintf(stderr, "%s:%zu: 行长度超过 %d 个字符\n",
                         path, line_number, MAX_LINE - 1);
                 fclose(file);
-                return false;
+                return PARSE_CONFIG_ERROR;
             }
         }
 
@@ -462,6 +460,13 @@ bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, si
             continue;
         }
 
+        if (count == max_entries) {
+            fprintf(stderr, "%s:%zu: 配置项数量超过上限 %zu\n", path,
+                    line_number, max_entries);
+            fclose(file);
+            return PARSE_CONFIG_ERROR;
+        }
+
         // 复制后检查 snprintf 返回值，拒绝被截断的 key 或 value
         key_length = snprintf(entries[count].key, sizeof(entries[count].key), "%s", key);
         value_length = snprintf(entries[count].value, sizeof(entries[count].value), "%s", value);
@@ -470,7 +475,7 @@ bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, si
             (size_t)value_length >= sizeof(entries[count].value)) {
             fprintf(stderr, "%s:%zu: 键名或值过长\n", path, line_number);
             fclose(file);
-            return false;
+            return PARSE_CONFIG_ERROR;
         }
         ++count;    // 增加已解析数量
     }
@@ -478,15 +483,14 @@ bool parse_config(const char* path, ConfigEntry* entries, size_t max_entries, si
     if (ferror(file)) {
         fprintf(stderr, "%s: 读取配置文件失败\n", path);
         fclose(file);
-        return false;
+        return PARSE_CONFIG_ERROR;
     }
     if (fclose(file) != 0) {
         perror(path);
-        return false;
+        return PARSE_CONFIG_ERROR;
     }
 
-    *out_count = count;
-    return true;
+    return count;
 }
 
 /**
@@ -520,20 +524,22 @@ const char* find_config(const ConfigEntry* entries, size_t count, const char* ke
  * @param argv 命令行参数数组，argv[1] 应为配置文件路径
  * @return int 程序退出码：0 表示成功，1 表示用法错误，2 表示配置解析失败
  */
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     ConfigEntry entries[32];    // 定义数组，最多存放 32 个配置项
     size_t count;               // 实际解析出的配置项数量
     size_t i;                   // 循环下标
 
-    // 检查参数个数：至少需要程序名 + 配置文件路径
-    if (argc < 2) {
+    // 检查参数个数：必须是程序名 + 配置文件路径。
+    if (argc != 2) {
         // 打印用法提示到标准错误输出，并返回非零退出码
         fprintf(stderr, "用法: %s <配置文件>\n", argv[0]);
         return 1;
     }
 
     // 计算数组能容纳的元素个数，并调用 parse_config 解析配置文件
-    if (!parse_config(argv[1], entries, sizeof(entries) / sizeof(entries[0]), &count)) {
+    count = parse_config(argv[1], entries, sizeof(entries) / sizeof(entries[0]));
+    if (count == PARSE_CONFIG_ERROR) {
         return 2;
     }
     // 遍历并打印所有解析出的配置项（key=value 格式）
@@ -541,7 +547,7 @@ int main(int argc, char* argv[]) {
         printf("%s=%s\n", entries[i].key, entries[i].value);
     }
 
-    return 0;   // 正常退出
+    return EXIT_SUCCESS;
 }
 
 
@@ -563,9 +569,11 @@ log_level = debug
 database_url = mysql://user@localhost:3306/db
 max_connections = 128
 EOF
+```
 
-编译运行:
+编译运行：
 
+```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic config_parser.c -o config_parser
 ./config_parser config.ini
 ```
@@ -599,7 +607,7 @@ max_connections=128
 #include <stdio.h>
 #include <stdlib.h>
 
-#define kBufferSize 4096
+#define BUFFER_SIZE 4096U
 
 /// @brief 复制文件
 int copy_file(const char* src_path, const char* dst_path)
@@ -620,6 +628,8 @@ int main(int argc, char* argv[]) {
 
 ::: details 参考答案
 
+**file_copy.c**
+
 ```c
 
 #include <stdio.h>
@@ -627,7 +637,7 @@ int main(int argc, char* argv[]) {
 #include <string.h>
 #include <sys/stat.h>
 
-#define kBufferSize 4096
+#define BUFFER_SIZE 4096U
 
 /* 检查两个路径是否指向同一个已有文件，避免目标文件打开时截断源文件。 */
 static int same_file(const char *src_path, const char *dst_path)
@@ -655,7 +665,7 @@ int copy_file(const char *src_path, const char *dst_path)
 {
     FILE *src = NULL;                /* 源文件指针，初始化为 NULL */
     FILE *dst = NULL;                /* 目标文件指针，初始化为 NULL */
-    unsigned char buffer[kBufferSize]; /* 用于读写数据的缓冲区 */
+    unsigned char buffer[BUFFER_SIZE]; /* 用于读写数据的缓冲区 */
     long total_size;                 /* 源文件总大小（字节） */
     long copied_size = 0;            /* 已复制的字节数 */
     int result = -1;                 /* 函数返回值，默认失败 */
@@ -774,6 +784,13 @@ int copy_file(const char *src_path, const char *dst_path)
     }
     dst = NULL;                                     /* 关闭成功，置空防止重复关闭 */
 
+    if (fclose(src) != 0) {
+        src = NULL;
+        fprintf(stderr, "关闭源文件失败 '%s'\n", src_path);
+        goto cleanup;
+    }
+    src = NULL;
+
     result = 0;                                     /* 全部操作成功，标记成功 */
 
 cleanup:
@@ -820,30 +837,30 @@ int main(int argc, char *argv[])
 编译运行:
 
 ```bash
-gcc -std=c17 -Wall -Wextra -Wpedantic main.c -o main
+gcc -std=c17 -Wall -Wextra -Wpedantic file_copy.c -o file_copy
 
 # A. 基础功能：拷贝 + 校验
 head -c 1048576 /dev/urandom > /tmp/src.bin     # 1MB 随机二进制
-./main /tmp/src.bin /tmp/dst.bin                 # 应看到进度条 \r 原地刷新
+./file_copy /tmp/src.bin /tmp/dst.bin            # 应看到进度条 \r 原地刷新
 cmp /tmp/src.bin /tmp/dst.bin && echo "OK 内容一致"
 
 # B. 空文件（大小 0，应显示 100%）
 : > /tmp/empty.bin
-./main /tmp/empty.bin /tmp/e.bin; wc -c /tmp/e.bin   # 正确为 0
+./file_copy /tmp/empty.bin /tmp/e.bin; wc -c /tmp/e.bin   # 正确为 0
 
 # C. 大文件（观察进度递增，末尾 100%）
 head -c 100000000 /dev/urandom > /tmp/big.bin    # 100MB，能看到百分比跳动
-./main /tmp/big.bin /tmp/big_dst.bin
+./file_copy /tmp/big.bin /tmp/big_dst.bin
 
 # D. 错误处理（每项应打印错误、退出码非 0）
-./main                                             # 缺参数 → 用法提示
-./main /tmp/src.bin /tmp/src.bin; echo $?           # 同文件 → 拒绝
-./main /tmp/没有的文件 /tmp/x.bin; echo $?           # 源不存在 → 报错
-./main /tmp/src.bin /tmp/不存在目录/x.bin; echo $?   # 目标不可写 → 报错
+./file_copy                                             # 缺参数 → 用法提示
+./file_copy /tmp/src.bin /tmp/src.bin; echo $?           # 同文件 → 拒绝
+./file_copy /tmp/没有的文件 /tmp/x.bin; echo $?           # 源不存在 → 报错
+./file_copy /tmp/src.bin /tmp/不存在目录/x.bin; echo $?   # 目标不可写 → 报错
 
 ```
 
-运行结果（前两段是真实终端输出；`\r` 让进度在同一行原地刷新，所以正常拷贝最终停在 `100%`）：
+运行结果（正常拷贝时，`\r` 让进度在同一行原地刷新，因此终端最终只保留 `100%`）：
 
 ```text
 # A. 拷贝 src.bin → dst.bin，进度条在同一行不断刷新，最终停在 100%
@@ -852,15 +869,16 @@ OK 内容一致
 
 # B. 空文件：直接显示 100%，目标文件大小为 0
 进度: 100%
+0 /tmp/e.bin
 
 # D. 错误处理（每项打印一行错误，退出码均为非 0）
-用法: ./main <源文件> <目标文件>
+用法: ./file_copy <源文件> <目标文件>
 源文件和目标文件不能是同一个文件: '/tmp/src.bin'
 无法打开源文件 '/tmp/没有的文件'
 无法打开目标文件 '/tmp/不存在目录/x.bin'
 ```
 
-注意拷贝成功时的输出里没有出现中间的百分比：`\r` 会把光标移回行首，新百分比直接覆盖旧值，所以肉眼看只有一个从 0% 跳到 100% 的进度。如果把这个程序接到管道或重定向到文件，才会看到中间那些一步一格的百分比都留了下来。还有一点：`long` 和 `ftell` 的组合在 32 位系统上只能表示到 2GB，但本篇的 Linux x86_64 环境里 `long` 是 64 位的，无需担心大文件。
+注意拷贝成功时的输出里没有出现中间的百分比：`\r` 会把光标移回行首，新百分比直接覆盖旧值，所以肉眼看只有一个从 0% 跳到 100% 的进度。如果把这个程序接到管道或重定向到文件，才会看到中间那些一步一格的百分比都留了下来。这里用 `long` 与 `ftell` 演示普通可定位文件的大小获取；在 32 位系统上它通常只能表示到约 2 GiB，处理超大文件时应改用目标平台提供的大文件定位接口。
 
 :::
 
