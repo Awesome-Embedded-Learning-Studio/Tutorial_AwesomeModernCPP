@@ -287,7 +287,7 @@ public:
     {
         double sum = 0;
         for (const auto& shape : shapes_) {
-            sum += shape_->area();
+            sum += shape->area();
         }
         return sum;
     }
