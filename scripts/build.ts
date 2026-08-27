@@ -294,12 +294,10 @@ async function buildVolume(task: BuildTask): Promise<string> {
   const volOutput = join(BUILD_TMP, 'output', srcDirName)
   const cachedOutput = join(CACHE_DIR, 'output', srcDirName)
 
-  // If cached, copy from cache and skip build
+  // Cached output can be consumed directly during the serialized merge phase.
   if (task.cached) {
     log(`  ${id}: ✓ cached (unchanged)`)
-    mkdirSync(volOutput, { recursive: true })
-    cpSync(cachedOutput, volOutput, { recursive: true })
-    return volOutput
+    return cachedOutput
   }
 
   const mdCount = countMdFiles(volDocDir)
@@ -336,12 +334,31 @@ async function buildVolume(task: BuildTask): Promise<string> {
   if (!existsSync(volOutput)) throw new Error(`${id}: output dir not found after build`)
   log(`  ${id}: ✓ built in ${elapsed}s (${mdCount} files, ${memMB()})`)
 
-  // Save to cache
-  mkdirSync(join(CACHE_DIR, 'output'), { recursive: true })
-  if (existsSync(cachedOutput)) rmSync(cachedOutput, { recursive: true })
-  cpSync(volOutput, cachedOutput, { recursive: true })
-
   return volOutput
+}
+
+/**
+ * Refresh one private cache entry after all VitePress child processes finish.
+ * Windows can transiently report a just-created nested directory as absent
+ * under concurrent build I/O, so retry only those path-not-found errors.
+ */
+async function saveVolumeToCache(id: string, volOutput: string): Promise<void> {
+  const cachedOutput = join(CACHE_DIR, 'output', id)
+  const attempts = process.platform === 'win32' ? 3 : 1
+  mkdirSync(join(CACHE_DIR, 'output'), { recursive: true })
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    rmSync(cachedOutput, { recursive: true, force: true })
+    try {
+      cpSync(volOutput, cachedOutput, { recursive: true })
+      return
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if ((code !== 'ESRCH' && code !== 'ENOENT') || attempt === attempts) throw error
+      log(`  ${id}: cache copy ${code}, retrying (${attempt}/${attempts})`)
+      await new Promise<void>((resolve) => setTimeout(resolve, 100))
+    }
+  }
 }
 
 /** Run tasks with limited concurrency */
@@ -685,14 +702,24 @@ async function main() {
 
   const searchSources: SearchIndexSource[] = [{ dir: rootOutput, lang: 'mixed' }]
   const newManifest: Manifest = {}
+  const volumeOutputs = new Map<string, string>()
 
   await runParallel(tasks, async (task) => {
     const volOutput = await buildVolume(task)
+    volumeOutputs.set(task.id, volOutput)
+  }, CONCURRENCY)
+
+  // Merge only after every VitePress process has exited. Besides keeping the
+  // final output deterministic, this avoids recursive Windows copies racing
+  // with active volume builds on the same filesystem.
+  for (const task of tasks) {
+    const volOutput = volumeOutputs.get(task.id)
+    if (!volOutput) throw new Error(`${task.id}: build output missing`)
+    if (!task.cached) await saveVolumeToCache(task.id, volOutput)
     searchSources.push({ dir: volOutput, lang: task.lang })
-    // Copy to final dist
     cpSync(volOutput, DIST_FINAL, { recursive: true })
     newManifest[task.id] = { hash: task.cacheKey, timestamp: new Date().toISOString() }
-  }, CONCURRENCY)
+  }
 
   // ── Step 3: Merge search indexes ────────────────────────
   await mergeSearchIndexes(searchSources, DIST_FINAL)
