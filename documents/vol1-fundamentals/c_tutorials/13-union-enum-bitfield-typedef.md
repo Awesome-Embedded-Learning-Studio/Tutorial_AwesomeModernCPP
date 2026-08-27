@@ -463,8 +463,6 @@ int main(void)
         return 1;
     }
 
-    /* 管道或重定向输入没有终端回显，这里回显实际读到的输入行。 */
-    fputs(input, stdout);
 
     print_float_bits(value);
     return 0;
@@ -475,7 +473,7 @@ int main(void)
 编译运行：
 
 ```bash
-gcc -std=c17 -Wall -Wextra -Wpedantic float_bits.c -o float_bits && printf '%s\n' '-3.14' | ./float_bits
+gcc -std=c17 -Wall -Wextra -Wpedantic float_bits.c -o float_bits && ./float_bits
 ```
 
 在支持 IEEE 754 binary32 的 GCC x86_64 环境中，输入 `-3.14` 的结果如下：
