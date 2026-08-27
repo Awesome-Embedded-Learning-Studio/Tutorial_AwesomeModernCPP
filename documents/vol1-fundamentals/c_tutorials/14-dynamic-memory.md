@@ -344,7 +344,7 @@ int main(void)
 
 关键是 `realloc` 的返回值先存到 `new_data`、判断成功后再赋给 `vector->data`。要是直接写 `vector->data = realloc(vector->data, ...)`，一旦失败原来的指针会被 `NULL` 覆盖，那块内存再也找不回来，就是泄漏。
 
-编译运行:
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic intvec_test.c -o intvec_test && ./intvec_test
@@ -458,7 +458,6 @@ typedef union {
     unsigned char bytes[MEMORY_POOL_MAX_BLOCK_STRIDE *
                         MEMORY_POOL_MAX_BLOCK_COUNT];
 } PoolStorage;
-
 
 typedef struct MemoryPool MemoryPool;
 
@@ -706,7 +705,6 @@ int main(void)
 }
 ```
 
-
 `PoolStorage` 用联合体把整块 `bytes` 存储对齐到 `max_align_t`；又因为每块的起始偏移是该对齐值的整数倍，所以每块也满足同一对齐要求。C17 保证 `max_align_t` 的对齐要求不弱于任何标量类型，但它不承诺支持具有扩展对齐要求的任意类型。对齐只解决地址条件，不能把已经声明为字节数组的静态存储变成任意 `T` 对象：`pool_write_next` 和 `pool_read_next` 用 `memcpy` 记录空闲链表指针，`main` 也只用 `memcpy` 写入和读回 `int` 的对象表示，从不把 `bytes` 强转为指针后解引用。调用者复制的数据不得超过传入的 `block_size`，并且使用完后必须调用 `pool_free`；`pool_destroy` 只把静态实例标回空闲。旧指针本身不会因此悬垂，但它不再代表活动内存池，之前分配的块也必须停止使用。
 
 > ⚠️ **踩坑预警**
@@ -940,8 +938,7 @@ gcc -std=c17 -Wall -Wextra -Wpedantic memory_pool.c -o memory_pool && ./memory_p
 **tracked.h**
 
 ```c
-#ifndef TRACKED_H
-#define TRACKED_H
+#pragma once
 
 #include <stddef.h>
 
@@ -951,8 +948,6 @@ void  tracked_free(void* address, const char* file, unsigned int line);
 /* 自动记录调用处的文件名和行号。 */
 #define TMALLOC(size) tracked_malloc((size), __FILE__, __LINE__)
 #define TFREE(address) tracked_free((address), __FILE__, __LINE__)
-
-#endif
 ```
 
 **tracked.c**
@@ -997,12 +992,12 @@ static void register_mem_report(void)
         }
     }
 }
-// 在记录表中查找指定地址对应的记录。
- // address 要查找的 malloc 起始地址；
-// active_only 为真(非0)时只查找仍处于活跃(active==1)状态的记录，
-// 为假(0)时查找任意状态的记录（包含已释放的）。
-
-static AllocationRecord *find_record(void *address, int active_only)
+/* 在记录表中查找指定地址对应的记录。
+ * address 为要查找的 malloc 起始地址；
+ * active_only 非 0 时只查找仍处于活跃（active == 1）状态的记录，
+ * 为 0 时查找任意状态的记录（包含已释放的）。
+ */
+static AllocationRecord* find_record(void* address, int active_only)
 {
     size_t i;
 
@@ -1055,7 +1050,7 @@ void* tracked_malloc(size_t size, const char* file, unsigned int line)
 /* 调用 free 并维护对应的分配记录。 */
 void tracked_free(void* address, const char* file, unsigned int line)
 {
-    AllocationRecord *record;
+    AllocationRecord* record;
 
     if (address == NULL) {
         return;
@@ -1134,13 +1129,13 @@ int main(void)
 
 `register_mem_report` 在首次调用 `tracked_malloc` 时通过 `atexit` 注册 `mem_report`，程序运行结束后据此判断内存状态（是否全部释放、还有几个未释放、当初在什么位置分配）。
 
-编译运行:
+编译运行：
 
 ```bash
-gcc -std=c17 -Wall -Wextra tracked.c -o tracked && ./tracked
+gcc -std=c17 -Wall -Wextra -Wpedantic tracked.c -o tracked && ./tracked
 ```
 
-注意：这里的 `DEBUG_LOG` 用 `##__VA_ARGS__` 删除没有额外格式化参数时多出的逗号，这是 GCC 扩展；因此命令没有启用 `-Wpedantic`。它可以在 GCC 的 C17 模式下使用，但不应被当作严格 ISO C17 的可移植写法。
+注意：这里的 `DEBUG_LOG` 用 `##__VA_ARGS__` 删除没有额外格式化参数时多出的逗号，这是 GCC 扩展，可以在 GCC 的 C17 模式下使用，但不应被当作严格 ISO C17 的可移植写法。本文件中所有 `DEBUG_LOG` 调用都带有格式化参数，因此 `-Wpedantic` 下也能零警告编译；一旦出现不带额外参数的调用，`-Wpedantic` 就会给出警告。
 
 运行结果：
 

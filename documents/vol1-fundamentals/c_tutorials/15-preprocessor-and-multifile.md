@@ -193,7 +193,6 @@ gcc -o demo main.c -L. -lmath_utils
 
 **难度：基础** · .h/.c 分离加静态库打包
 
-
 ```c
 // math_utils.h
 #pragma once
@@ -247,16 +246,14 @@ int main(void) {
     _a < _b ? _a : _b;      \
   })
 
-
 void clamp_int(int *value, int min_val, int max_val);
 
 /**
- * @brief 返回一个整数十进制位数
+ * @brief 返回一个整数的十进制位数
  *
  * 不计符号位；0 的位数为 1。
  */
 int count_digits(int value);
-
 ```
 
 **math_utils.c**
@@ -280,9 +277,6 @@ int count_digits(int value)
 
     return digits;
 }
-
-
-
 ```
 
 **main.c**
@@ -310,10 +304,9 @@ int main(void)
     puts("All tests passed.");
     return 0;
 }
-
 ```
 
-编译运行:
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra main.c math_utils.c -o main
@@ -343,7 +336,6 @@ All tests passed.
 ```
 
 :::
-
 
 提示：编译步骤是 `gcc -std=c17 -Wall -Wextra -c math_utils.c`、`gcc -std=c17 -Wall -Wextra  -c main.c`、`gcc -std=c17 -Wall -Wextra  -o demo main.o math_utils.o`。打包静态库用 `ar rcs libmath_utils.a math_utils.o`。
 
@@ -402,12 +394,12 @@ int main(void)
     DEBUG_LOG("结束，最终 count = %d", count);
     DEBUG_LOG("这是不带额外参数的中文消息");
 
-    printf("完成。\n");
+    printf("完成，count = %d\n", count);
     return 0;
 }
 ```
 
-编译运行:
+编译运行：
 
 `Debug 模式`
 
@@ -432,20 +424,17 @@ Debug 模式：行号取决于 `main.c` 中的实际行位置，以下用 `<line
 [main.c:<line>] 第 2 次循环
 [main.c:<line>] 结束，最终 count = 3
 [main.c:<line>] 这是不带额外参数的中文消息
-完成。
+完成，count = 3
 ```
 
 Release 模式：`DEBUG_LOG` 被展开为 `((void)(0))`，什么都不输出，只留下 `printf` 的那一行：
 
 ```text
-完成。
+完成，count = 3
 ```
 
 > **注意**：`__VA_ARGS__` 是 C99 起标准化的可变参数宏机制，但答案中的 `##__VA_ARGS__` 是 GCC 扩展：它在 `DEBUG_LOG("一条消息")` 没有额外格式化参数时删除多余的逗号。因此这里的编译命令不启用 `-Wpedantic`；它可在 GCC 的 C17 模式下使用，却不是严格 ISO C17 的可移植写法。
 
-
 :::
-
-
 
 提示：可变参数宏的标准形式是 `#define DEBUG_LOG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)`。本答案为了支持没有额外格式化参数的调用，使用了 GCC 的 `##__VA_ARGS__` 扩展。

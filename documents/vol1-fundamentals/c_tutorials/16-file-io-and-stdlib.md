@@ -312,7 +312,6 @@ int main(int argc, char* argv[]) {
 **config_parser.c**
 
 ```c
-
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -549,8 +548,6 @@ int main(int argc, char* argv[])
 
     return EXIT_SUCCESS;
 }
-
-
 ```
 
 先捏一个示例配置文件（也可以手动创建，`#` 开头是注释，空行会被跳过）：
@@ -593,8 +590,6 @@ max_connections=128
 
 :::
 
-
-
 提示：用 `fgets` 逐行读取，`strchr` 找 `=` 位置，`trim` 去除空白。
 
 ### 练习 2：文件复制工具
@@ -631,7 +626,6 @@ int main(int argc, char* argv[]) {
 **file_copy.c**
 
 ```c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -830,11 +824,9 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;    /* 成功退出 */
 }
-
-
 ```
 
-编译运行:
+编译运行：
 
 ```bash
 gcc -std=c17 -Wall -Wextra -Wpedantic file_copy.c -o file_copy
@@ -881,7 +873,5 @@ OK 内容一致
 注意拷贝成功时的输出里没有出现中间的百分比：`\r` 会把光标移回行首，新百分比直接覆盖旧值，所以肉眼看只有一个从 0% 跳到 100% 的进度。如果把这个程序接到管道或重定向到文件，才会看到中间那些一步一格的百分比都留了下来。这里用 `long` 与 `ftell` 演示普通可定位文件的大小获取；在 32 位系统上它通常只能表示到约 2 GiB，处理超大文件时应改用目标平台提供的大文件定位接口。
 
 :::
-
-
 
 提示：用 `fseek` + `ftell` 获取源文件大小，`\r` 覆写同一行实现进度条。
