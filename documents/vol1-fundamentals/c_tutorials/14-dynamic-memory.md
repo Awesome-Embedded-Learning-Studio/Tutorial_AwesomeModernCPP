@@ -432,35 +432,48 @@ void        pool_destroy(MemoryPool* pool);
 
 ::: details 参考答案一：静态容量版（适合嵌入式）
 
-这份实现不调用 `malloc`，而是预先准备固定数量的池实例和内存块。它的优点是运行时不会受堆碎片或堆分配失败影响；代价是容量和实例数量写死，`pool_alloc` 与 `pool_free` 都需要线性扫描，时间复杂度为 O(block_count)。它适合资源上限明确的固件，也能用占用标记拒绝异属地址和重复释放。
+这份实现不调用 `malloc`，而是预先准备固定数量的池实例和内存块。它的优点是运行时不会受堆碎片或堆分配失败影响；代价是容量和实例数量写死。空闲链表仍放在每个空闲块的开头，不过静态字节存储中的指针值只能通过 `memcpy` 写入和读回：`pool_alloc` 因而仍是 O(1)，为检查异属地址和重复释放而扫描的 `pool_free` 是 O(block_count)。它适合资源上限明确的固件。
 
 ```c
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
+/* 单个内存块可容纳的最大字节数。 */
 #define MEMORY_POOL_MAX_BLOCK_SIZE 64U
+/* 单个内存池可管理的最大内存块数量。 */
 #define MEMORY_POOL_MAX_BLOCK_COUNT 16U
+/* 程序可同时创建的内存池实例最大数量。 */
 #define MEMORY_POOL_MAX_INSTANCES 2U
+/* 内存块按照 max_align_t 的对齐要求切分。 */
+#define MEMORY_POOL_ALIGNMENT _Alignof(max_align_t)
+/* 为每个内存池预留最坏情况下所需的存储空间。 */
+#define MEMORY_POOL_MAX_BLOCK_STRIDE                                      \
+    (((MEMORY_POOL_MAX_BLOCK_SIZE + MEMORY_POOL_ALIGNMENT - 1U) /         \
+      MEMORY_POOL_ALIGNMENT) * MEMORY_POOL_ALIGNMENT)
 
-/* 每个联合体元素的首地址按 max_align_t 对齐。 */
+/* 使用联合体确保整块池内存按 max_align_t 对齐。 */
 typedef union {
     max_align_t alignment;
-    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_SIZE];
-} PoolBlock;
+    unsigned char bytes[MEMORY_POOL_MAX_BLOCK_STRIDE *
+                        MEMORY_POOL_MAX_BLOCK_COUNT];
+} PoolStorage;
+
 
 typedef struct MemoryPool MemoryPool;
 
 struct MemoryPool {
-    PoolBlock blocks[MEMORY_POOL_MAX_BLOCK_COUNT];
-    unsigned char in_use[MEMORY_POOL_MAX_BLOCK_COUNT];
-    size_t block_size;
+    PoolStorage storage;
+    unsigned char* free_list;
+    size_t block_stride;
     size_t block_count;
     int active;
 };
 
+/* 使用静态实例代替运行时堆内存分配。 */
 static MemoryPool memory_pools[MEMORY_POOL_MAX_INSTANCES];
 
+/* 判断内存池指针是否指向本模块管理的静态内存池实例。 */
 static int pool_is_managed(const MemoryPool* pool)
 {
     size_t i;
@@ -473,6 +486,7 @@ static int pool_is_managed(const MemoryPool* pool)
     return 0;
 }
 
+/* 查找内存块在指定内存池中的下标；找到时将下标写入 index。 */
 static int pool_block_index(const MemoryPool* pool, const void* block,
                             size_t* index)
 {
@@ -483,16 +497,61 @@ static int pool_block_index(const MemoryPool* pool, const void* block,
     }
 
     for (i = 0U; i < pool->block_count; ++i) {
-        if (block == (const void*)pool->blocks[i].bytes) {
+        const void* current_block =
+            (const void*)(pool->storage.bytes + i * pool->block_stride);
+
+        if (block == current_block) {
             *index = i;
             return 1;
         }
     }
+
     return 0;
 }
 
+/* 将 next 的对象表示复制到空闲块开头，不把 bytes 当作指针对象解引用。 */
+static void pool_write_next(unsigned char* block, unsigned char* next)
+{
+    memcpy(block, &next, sizeof(next));
+}
+
+/* 从空闲块开头读回曾由 pool_write_next 写入的指针对象表示。 */
+static unsigned char* pool_read_next(const unsigned char* block)
+{
+    unsigned char* next;
+
+    memcpy(&next, block, sizeof(next));
+    return next;
+}
+
+/* 判断指定内存块是否已经位于空闲链表中。 */
+static int pool_block_is_free(const MemoryPool* pool, const unsigned char* block)
+{
+    const unsigned char* current;
+
+    if (pool == NULL || block == NULL) {
+        return 0;
+    }
+
+    for (current = pool->free_list; current != NULL;
+         current = pool_read_next(current)) {
+        if (current == block) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * 创建内存池。
+ * block_size 为每个内存块的字节数，block_count 为内存块数量。
+ * 创建成功返回内存池指针；参数超出上限或无空闲实例时返回 NULL。
+ */
 MemoryPool* pool_create(size_t block_size, size_t block_count)
 {
+    MemoryPool* pool;
+    size_t block_stride;
     size_t i;
 
     if (block_size == 0U || block_size > MEMORY_POOL_MAX_BLOCK_SIZE ||
@@ -500,59 +559,96 @@ MemoryPool* pool_create(size_t block_size, size_t block_count)
         return NULL;
     }
 
-    for (i = 0U; i < MEMORY_POOL_MAX_INSTANCES; ++i) {
-        MemoryPool* pool = &memory_pools[i];
+    block_stride = block_size;
+    if (block_stride < sizeof(unsigned char*)) {
+        block_stride = sizeof(unsigned char*);
+    }
+    block_stride = ((block_stride + MEMORY_POOL_ALIGNMENT - 1U) /
+                    MEMORY_POOL_ALIGNMENT) * MEMORY_POOL_ALIGNMENT;
 
+    for (i = 0U; i < MEMORY_POOL_MAX_INSTANCES; ++i) {
+        pool = &memory_pools[i];
         if (!pool->active) {
             size_t block_index;
 
-            pool->block_size = block_size;
+            pool->block_stride = block_stride;
             pool->block_count = block_count;
             for (block_index = 0U; block_index < block_count; ++block_index) {
-                pool->in_use[block_index] = 0U;
+                unsigned char* current_block =
+                    pool->storage.bytes + block_index * block_stride;
+                unsigned char* next_block = NULL;
+
+                if (block_index + 1U < block_count) {
+                    next_block = pool->storage.bytes +
+                                 (block_index + 1U) * block_stride;
+                }
+                pool_write_next(current_block, next_block);
             }
+            pool->free_list = pool->storage.bytes;
             pool->active = 1;
             return pool;
         }
     }
+
     return NULL;
 }
 
+/*
+ * 从内存池中分配一个空闲内存块。
+ * 分配成功返回内存块首地址；内存池无效或已满时返回 NULL。
+ */
 void* pool_alloc(MemoryPool* pool)
 {
-    size_t i;
+    unsigned char* block;
 
     if (!pool_is_managed(pool) || !pool->active) {
         return NULL;
     }
 
-    for (i = 0U; i < pool->block_count; ++i) {
-        if (pool->in_use[i] == 0U) {
-            pool->in_use[i] = 1U;
-            return pool->blocks[i].bytes;
-        }
+    block = pool->free_list;
+    if (block == NULL) {
+        return NULL;
     }
-    return NULL;
+
+    pool->free_list = pool_read_next(block);
+    return (void*)block;
 }
 
+/*
+ * 释放由 pool_alloc 从指定内存池分配的内存块。
+ * pool 或 block 无效、block 不属于该内存池或已释放时，函数直接返回。
+ */
 void pool_free(MemoryPool* pool, void* block)
 {
     size_t index;
+    unsigned char* released_block;
 
     if (!pool_is_managed(pool) || !pool->active ||
-        !pool_block_index(pool, block, &index) || pool->in_use[index] == 0U) {
+        !pool_block_index(pool, block, &index)) {
         return;
     }
-    pool->in_use[index] = 0U;
+
+    released_block = pool->storage.bytes + index * pool->block_stride;
+    if (pool_block_is_free(pool, released_block)) {
+        return;
+    }
+
+    pool_write_next(released_block, pool->free_list);
+    pool->free_list = released_block;
 }
 
+/*
+ * 销毁内存池并将其静态实例标记为空闲。
+ * 内存池无效或已销毁时，函数直接返回。
+ */
 void pool_destroy(MemoryPool* pool)
 {
     if (!pool_is_managed(pool) || !pool->active) {
         return;
     }
 
-    pool->block_size = 0U;
+    pool->free_list = NULL;
+    pool->block_stride = 0U;
     pool->block_count = 0U;
     pool->active = 0;
 }
@@ -588,6 +684,7 @@ int main(void)
         memcpy(&value, blocks[i], sizeof(value));
         printf("%d%s", value, i + 1U == BLOCK_COUNT ? "\n" : " ");
     }
+
     if (pool_alloc(pool) == NULL) {
         puts("内存池已满，下一次分配返回 NULL");
     }
@@ -603,16 +700,19 @@ int main(void)
     memcpy(reused_block, &value, sizeof(value));
     memcpy(&value, reused_block, sizeof(value));
     printf("复用后的数值：%d\n", value);
+
     pool_destroy(pool);
     return 0;
 }
 ```
 
-`PoolBlock` 是联合体，因此数组中每个块都以 `max_align_t` 对齐；C17 保证它的对齐要求不低于任何基础标量类型。不过，对齐只解决地址条件，不能在已经声明为字节数组的静态存储里凭空创建任意 `T` 对象，所以示例用 `memcpy` 写入和读回 `int` 的对象表示，而不把 `bytes` 强转为 `int*` 后解引用。调用者必须保证复制的数据不超过传入的 `block_size`，并在使用完后调用 `pool_free`。`pool_destroy` 只把静态实例标回空闲，不能让旧的 `pool` 或块指针继续有效。这个版本不使用 free list，正好可以和下一份实现对照：边界检查更友好，但为了找到空闲块或确认块归属付出了线性时间；如果需要把块直接作为任意类型的活动对象使用，应选择下一份基于 `malloc` 的版本。
+
+`PoolStorage` 用联合体把整块 `bytes` 存储对齐到 `max_align_t`；又因为每块的起始偏移是该对齐值的整数倍，所以每块也满足同一对齐要求。C17 保证 `max_align_t` 的对齐要求不弱于任何标量类型，但它不承诺支持具有扩展对齐要求的任意类型。对齐只解决地址条件，不能把已经声明为字节数组的静态存储变成任意 `T` 对象：`pool_write_next` 和 `pool_read_next` 用 `memcpy` 记录空闲链表指针，`main` 也只用 `memcpy` 写入和读回 `int` 的对象表示，从不把 `bytes` 强转为指针后解引用。调用者复制的数据不得超过传入的 `block_size`，并且使用完后必须调用 `pool_free`；`pool_destroy` 只把静态实例标回空闲。旧指针本身不会因此悬垂，但它不再代表活动内存池，之前分配的块也必须停止使用。
 
 > ⚠️ **踩坑预警**
-> `bytes` 是已经声明为 `unsigned char[]` 的对象。C 的有效类型规则不允许把它当作一个真实存在的 `int` 对象，通过 `int*` 读写。`max_align_t` 只能保证地址适合放 `int`，不能改变这块静态对象原本的类型。
-`malloc` 不同：它返回的是没有声明类型的存储，因此首次通过 `int*` 写入时，可以形成 `int` 对象的有效类型。静态 `char[]` 没有这项特权。
+> `bytes` 是已经声明为 `unsigned char[]` 的对象。C17 的有效类型规则不允许仅因地址已经对齐，就把它当作一个真实存在的 `int` 对象并通过 `int*` 读写；`max_align_t` 不能改变这块静态对象的声明类型。要读取示例中保存的整数，必须先把字节表示复制回一个真正声明为 `int` 的对象。
+>
+> `malloc` 不同：它返回的存储没有声明类型。在大小和对齐都满足的前提下，首次通过 `int*` 的非字符写入可以为那片已分配存储设定 `int` 的有效类型；静态 `unsigned char[]` 没有这项特权。
 
 :::
 
@@ -785,7 +885,7 @@ int main(void)
 
 这里真正管理空闲块的是 `free_list`：创建时把每个块的起始位置串成链表；分配时取下表头，把表头推进到 `next`；释放时再把该块插回表头。`pool_create` 初始化链表需要遍历全部块，时间复杂度为 O(block_count)；而 `pool_alloc` 和满足前置条件的 `pool_free` 都只改动常数个指针，时间复杂度是 O(1)。当块处于空闲状态时，块开头暂存 `next` 指针；一旦分配给调用者，这些字节就完全交还给调用者使用。
 
-`pool_create` 接受的是每块的字节数，不是 `int`、`float` 之类的类型；调用者必须保证实际对象放得进该字节数。为容纳空闲链表指针，实际步长至少为 `sizeof(PoolBlock)`；随后再向上取整到 `_Alignof(max_align_t)` 的倍数。C17 规定 `max_align_t` 的对齐要求不低于任何标量类型，因此示例返回的块满足基础标量对象的对齐要求。函数还在对齐和总存储量计算前检查 `size_t` 溢出；只要参数合法且内存足够，`block_size` 与 `block_count` 不受人为上限限制。
+`pool_create` 接受的是每块的字节数，不是 `int`、`float` 之类的类型；调用者必须保证实际对象放得进该字节数。为容纳空闲链表指针，实际步长至少为 `sizeof(PoolBlock)`；随后再向上取整到 `_Alignof(max_align_t)` 的倍数。C17 规定 `max_align_t` 的对齐要求不低于任何标量类型，因此示例返回的块满足标量对象的对齐要求；具有扩展对齐要求的类型需要额外设计。函数还在对齐和总存储量计算前检查 `size_t` 溢出；只要参数合法且内存足够，`block_size` 与 `block_count` 不受人为上限限制。
 
 池的元数据和底层存储区都来自 `malloc`：底层区域没有预先声明的对象类型，因此空闲时可作为 `PoolBlock` 保存 `next`，分配后也可由调用者按其需要的对象类型使用。`pool_create` 只应在初始化阶段调用；创建成功后，`pool_alloc` 和 `pool_free` 不再调用通用堆分配器。`pool_free` 不扫描链表来防御错误用法，否则释放就会退化为 O(block_count)；它和 `free` 一样要求调用者不能传入异属地址、块内地址或已经释放的指针，违反此前置条件的行为未定义。`pool_destroy` 释放底层存储区和元数据；调用后 `pool` 是悬垂指针，不能继续传给任何 `pool_*` 函数。
 
