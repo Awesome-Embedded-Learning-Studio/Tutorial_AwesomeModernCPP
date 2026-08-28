@@ -9,6 +9,5 @@ sidebar_order: 1
 
 - [01 · 空指针解引用:崩得最明白的一案](01-null-deref)
 - [02 · 释放之后,指针还活着](02-use-after-free)
-- [04 · 堆缓冲区溢出:踩了邻居家的地界](04-heap-buffer-overflow)
 
-其余案子(double free、栈溢出、内存泄漏、对齐违例等)陆续搬入。
+其余案子(堆缓冲区溢出、double free、栈溢出、内存泄漏、对齐违例等)陆续搬入。

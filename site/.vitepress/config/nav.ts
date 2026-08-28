@@ -70,6 +70,7 @@ export const navEn: DefaultTheme.NavItem[] = [
       { text: 'Vol.6 Performance', link: '/en/vol6-performance/' },
       { text: 'Vol.7 Engineering', link: '/en/vol7-engineering/' },
       { text: 'Compilation & Linking', link: '/en/compilation/' },
+      { text: 'Crash Lab', link: '/en/crash-lab/' },
     ],
   },
   {
