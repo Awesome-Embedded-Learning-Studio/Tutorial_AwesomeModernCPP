@@ -360,6 +360,67 @@ switch 判定结果:  F
 -7 是负数
 ```
 
+::: details 参考答案
+
+**main.cpp**（if-else 链版本）
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int value = 0;
+    std::cout << "请输入一个整数: ";
+    std::cin >> value;
+
+    if (value > 0) {
+        std::cout << value << " 是正数" << std::endl;
+    } else if (value < 0) {
+        std::cout << value << " 是负数" << std::endl;
+    } else {
+        std::cout << value << " 是零" << std::endl;
+    }
+
+    return 0;
+}
+```
+
+**main.cpp**（三元运算符版本）
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int value = 0;
+    std::cout << "请输入一个整数: ";
+    std::cin >> value;
+
+    std::cout << value
+              << (value > 0 ? " 是正数"
+                            : value < 0 ? " 是负数"
+                                        : " 是零")
+              << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入一个整数: 10
+10 是正数
+```
+
+:::
+
 ### 练习二：简单计算器
 
 用 `switch` 实现一个简单计算器：从标准输入读取两个整数和一个运算符（`+`、`-`、`*`、`/`），输出运算结果。除法要处理除数为零的情况。
@@ -371,9 +432,132 @@ switch 判定结果:  F
 错误：除数不能为零
 ```
 
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int left = 0;
+    int right = 0;
+    char operation = 0;
+
+    std::cout << "请输入表达式（如 3 + 5）: " ;
+    if (!(std::cin >> left >> operation >> right)) {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+
+    switch (operation) {
+    case '+':
+        std::cout << left + right << std::endl;
+        break;
+    case '-':
+        std::cout << left - right << std::endl;
+        break;
+    case '*':
+        std::cout << left * right << std::endl;
+        break;
+    case '/':
+        if (right == 0) {
+            std::cout << "错误：除数不能为零" << std::endl;
+            return 1;
+        }
+        std::cout << left / right << std::endl;
+        break;
+    default:
+        std::cout << "错误：不支持的运算符" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入表达式（如 3 + 5）: 10/0
+错误：除数不能为零
+```
+
+:::
+
 ### 练习三：日期合法性检查
 
 写一个函数，接收年、月、日三个整数，用条件语句判断这个日期是否合法。需要考虑月份范围是否在 1-12、每月天数上限不同、闰年的二月有 29 天。提示：用 `switch` 处理不同月份的天数会非常清晰。
+
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int year, month, day;
+    std::cout << "请输入年、月、日（用空格分割，例如：2024 2 29）: " ;
+    if (!(std::cin >> year >> month >> day)) {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+
+    if (year <= 0 || month < 1 || month > 12 || day < 1) {
+        std::cout << "这个日期不合法" << std::endl;
+        return 1;
+    }
+
+    int maxDay = 31;
+    switch (month) {
+    case 2:
+        maxDay = ((year % 400 == 0) ||
+                  (year % 4 == 0 && year % 100 != 0))
+                     ? 29
+                     : 28;
+        break;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        maxDay = 30;
+        break;
+    }
+
+    if (day > maxDay) {
+        std::cout << "这个日期不合法" << std::endl;
+        return 1;
+    }
+
+    std::cout << "这个日期合法" << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入年、月、日（用空格分割，例如：2024 2 29）: 2024 2 29
+这个日期合法
+```
+
+:::
+
 
 ## 小结
 
