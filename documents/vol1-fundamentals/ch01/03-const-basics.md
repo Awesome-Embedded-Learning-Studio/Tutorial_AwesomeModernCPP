@@ -379,21 +379,31 @@ g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
 
 ```cpp
 #include <iostream>
-#include <algorithm>
+
 constexpr double PI = 3.14159265;
 constexpr double MAX_RADIUS = 100.0;
 constexpr double MIN_RADIUS = 0.1;
+
+constexpr double clamp_radius(double radius)
+{
+    return radius < MIN_RADIUS
+        ? MIN_RADIUS
+        : (radius > MAX_RADIUS ? MAX_RADIUS : radius);
+}
+
 constexpr double circle_area(double radius)
 {
-    radius = std::clamp(radius, MIN_RADIUS, MAX_RADIUS);
-    return PI * radius * radius;
+    const double r = clamp_radius(radius);
+    return PI * r * r;
 }
+
 int main()
 {
     double r = 0;
     std::cout << "请你输入所求圆的半径 : ";
     std::cin >> r;
     std::cout << "半径为" << r << "的面积是: " << circle_area(r) << std::endl;
+    return 0;
 }
 ```
 
@@ -412,7 +422,6 @@ g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
 
 :::
 
-
 ### 练习三：写一个使用 const 引用参数的函数
 
 写一个函数 `print_sum`，接收两个 `const int&` 参数，输出它们的和。然后在 `main` 函数里调用它。思考一下：对于 `int` 这种小类型，用 `const int&` 和直接用 `int` 作为参数，性能上有区别吗？什么类型的参数最适合用 `const T&` 传递？
@@ -423,10 +432,12 @@ g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
 
 ```cpp
 #include <iostream>
+
 void print_sum(const int& a, const int& b)
 {
-    std::cout << 'a' << "+" << 'b' << "的值是: " << a + b << std::endl;
+    std::cout << a << " + " << b << " 的值是: " << a + b << std::endl;
 }
+
 int main()
 {
     int a = 0;
@@ -451,8 +462,10 @@ g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
 ```text
 请输入a的值是 :1
 请输入b的值是 :3
-a+b的值是: 4
+1 + 3 的值是: 4
 ```
+
+对于 `int` 这种小类型，按值传递通常更合适：复制一个机器字大小的值成本很低，编译器也常能直接通过寄存器传递；使用 `const int&` 不一定更快，实际差异应以测量为准。`const T&` 更适合较大的、只读且不需要复制的对象，例如 `std::string` 或容器；小型标量类型一般直接按值传递即可。
 
 :::
 

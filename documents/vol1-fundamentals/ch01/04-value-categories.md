@@ -303,20 +303,40 @@ const int& r6 = a;
 
 下面这段代码有一个严重的 bug——函数返回了局部变量的引用。找到它并修复：
 
-::: details 参考答案
-
 ```cpp
-#include <iostream>
-int &get_max(int a, int b)
+int& get_max(int a, int b)
 {
-    static int result = 0;
-    result = (a > b) ? a : b;
+    int result = (a > b) ? a : b;
     return result;
 }
 
 int main()
 {
-    int &m = get_max(3, 7);
+    int& m = get_max(3, 7);
+    std::cout << m << "\n";
+    return 0;
+}
+```
+
+提示：思考一下，这个函数应该返回值还是返回引用？局部变量 `result` 在函数返回后还存在吗？
+
+::: details 参考答案
+
+`result` 是函数体内的局部变量，函数返回时它的生命周期就结束了。因此，原代码返回 `int&` 会得到一个悬空引用；调用者随后通过这个引用读取 `m` 的行为是未定义的。这里 `a` 和 `b` 也是按值传入的局部副本，同样不能通过引用返回。
+
+这个函数应按值返回 `int`。返回时，函数把结果初始化到调用者可接收的返回对象中；随后 `result` 即使被销毁，也不会影响已经返回的整数。调用者也应使用普通的 `int` 接收，而不是再声明一个引用：
+
+```cpp
+#include <iostream>
+
+int get_max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
+
+int main()
+{
+    int m = get_max(3, 7);
     std::cout << m << "\n";
     return 0;
 }
@@ -335,11 +355,6 @@ g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
 ```
 
 :::
-
-
-
-提示：思考一下，这个函数应该返回值还是返回引用？局部变量 `result` 在函数返回后还存在吗？
-
 
 
 ## 小结
