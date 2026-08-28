@@ -353,22 +353,173 @@ g++ -Wall -Wextra -o loops loops.cpp
 输入一个正整数 N，打印一个 N x N 的空心正方形。比如 N=5 时：
 
 ```text
-* * * * *
-*       *
-*       *
-*       *
-* * * * *
+ *  *  *  *  * 
+ *           * 
+ *           * 
+ *           * 
+ *  *  *  *  * 
 ```
 
 只有第一行、最后一行、第一列和最后一列打印星号，中间全是空格。提示：用嵌套 for 循环，内层判断当前是不是边界位置。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int n = 0;
+    std::cout << "输入一个正整数 N: ";
+    if (!(std::cin >> n) || n < 1)
+    {
+        std::cout << "输入无效，请输入一个正整数！" << std::endl;
+        return 1;
+    }
+    for (int i = 1; i <= n; i++)
+    {
+        for (int j = 1; j <= n; j++)
+        {
+            if ((i != 1) && (i != n))
+            {
+                if ((j != 1) && (j != n))
+                {
+                    std::cout << "   ";
+                    continue;
+                }
+            }
+            std::cout << " * ";
+        }
+        std::cout << std::endl;
+    }
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+输入一个正整数 N: 5
+ *  *  *  *  * 
+ *           * 
+ *           * 
+ *           * 
+ *  *  *  *  * 
+```
+
+:::
+
 
 ### 练习二：计算阶乘
 
 用 `for` 循环计算 N 的阶乘（N!）。比如 5! = 120。注意阶乘增长极快，用 `int` 的话 13! 就会溢出，可以试试 `long long` 能撑到多大。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int n = 0;
+    long long sum = 1;
+    std::cout << "输入一个正整数 N: ";
+    if (!(std::cin >> n) || n < 1)
+    {
+        std::cout << "输入无效，请输入一个正确的正整数！" << std::endl;
+        return 1;
+    }
+
+    for (int i = n; i >= 1; i--)
+    {
+        sum *= i;
+    }
+    std::cout << n << "的阶乘" << "(" << n << "!): " << sum << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+输入一个正整数 N: 5
+5的阶乘(5!): 120
+```
+
+:::
+
+
 ### 练习三：找素数
 
 输入一个正整数 N，打印从 2 到 N 之间所有的素数。判断素数的方法：对于数 m，检查 2 到 m-1 之间有没有能整除 m 的数，如果没有就是素数。提示：外层循环遍历候选数，内层循环做整除检查，找到因子后用 `break` 提前退出内层。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int n = 0;
+    std::cout << "输入一个正整数 N: ";
+    if (!(std::cin >> n) || n < 2)
+    {
+        std::cout << "输入无效，请输入一个正确的正整数！" << std::endl;
+        return 1;
+    }
+    std::cout << "2" << "到" << n << "之间所有的素数: " << std::endl;
+    for (int flag = 0, i = 2; i <= n; i++)
+    {
+        flag = 0;
+        for (int j = 2; j <= i - 1; j++)
+        {
+
+            if (i % j == 0)
+            {
+                flag = 1;
+                break;
+            }
+        }
+        if (flag != 1)
+        {
+            std::cout << i << std::endl;
+        }
+    }
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+输入一个正整数 N: 5
+2到5之间所有的素数: 
+2
+3
+5
+```
+
+:::
 
 ### 练习四：打印菱形
 
@@ -383,6 +534,67 @@ g++ -Wall -Wextra -o loops loops.cpp
 ```
 
 提示：上半部分和金字塔一样，下半部分是金字塔的镜像——行号从大到小。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    int n = 0;
+    std::cout << "输入一个正奇数 N: ";
+
+    if (!(std::cin >> n) || n <= 0 || n % 2 == 0)
+    {
+        std::cout << "输入无效，请输入一个正确的正奇数！" << std::endl;
+        return 1;
+    }
+
+    const int middleRow = (n + 1) / 2;
+    for (int row = 1; row <= n; ++row)
+    {
+        const int stars = row <= middleRow
+                              ? 2 * row - 1
+                              : 2 * (n - row) + 1;
+        const int spaces = (n - stars) / 2;
+
+        for (int column = 0; column < spaces; ++column)
+        {
+            std::cout << ' ';
+        }
+
+        for (int column = 0; column < stars; ++column)
+        {
+            std::cout << '*';
+        }
+
+        std::cout << std::endl;
+    }
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+输入一个正奇数 N: 5
+  *
+ ***
+*****
+ ***
+  *
+```
+
+:::
+
 
 ## 小结
 
