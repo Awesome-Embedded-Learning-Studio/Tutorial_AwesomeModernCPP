@@ -71,7 +71,7 @@ features:
     linkText: 开始阅读
 
   - title: "卷八 · 领域应用"
-    details: "现代 C++ 在各领域的实战应用：嵌入式、网络编程、GUI、数据存储。"
+    details: "现代 C++ 在各领域的实战应用：嵌入式、TinyML 推理、网络编程、C++ 深度专题。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
     link: /vol8-domains/
     linkText: 开始阅读
@@ -101,7 +101,7 @@ features:
     linkText: 进入实验室
 
   - title: "贯穿式实战项目"
-    details: "手写 STL 组件、迷你 HTTP 服务器、GUI 框架、嵌入式 OS 等综合项目。"
+    details: "把各卷知识串成完整项目：协程服务器、迷你运行时、INI 解析器已就绪，手写 STL、迷你 HTTP 服务器在规划中。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
     link: /projects/
     linkText: 开始阅读

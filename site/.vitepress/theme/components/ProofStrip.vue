@@ -7,8 +7,8 @@ const isEn = computed(() => lang.value.startsWith('en'))
 
 const items = computed(() =>
   isEn.value
-    ? ['350+ articles', 'C++11–23', 'Compilable CMake examples', 'STM32 embedded', 'Bilingual']
-    : ['350+ 篇', 'C++11–23', '可编译 CMake 示例', 'STM32 嵌入式实战', '中英双语'],
+    ? ['10 volumes', 'C++11–23', 'Compilable CMake examples', 'STM32 embedded', 'Bilingual']
+    : ['10 卷', 'C++11–23', '可编译 CMake 示例', 'STM32 嵌入式实战', '中英双语'],
 )
 </script>
 

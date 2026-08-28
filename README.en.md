@@ -40,15 +40,15 @@
 <table>
   <tr>
     <td width="50%" align="center"><h4>🔧 From syntax to silicon</h4>Go beyond desktop C++ — hands-on STM32F1 embedded: register access, interrupt safety, zero-overhead abstraction, cross-compilation & linker scripts.</td>
-    <td width="50%" align="center"><h4>⚡ Real, runnable examples</h4>CMake projects validated in CI — not unbuildable snippets stranded in articles.</td>
+    <td width="50%" align="center"><h4>🧪 Crash Lab</h4>Deliberately broken crash.cpp, the repaired fixed.cpp, and a step-by-step debugging trail — watch it crash, then corner the culprit.</td>
   </tr>
   <tr>
-    <td align="center"><h4>📚 One complete path</h4>10 volumes, 430+ articles — fundamentals → modern features → standard library → advanced → concurrency → performance → engineering → domains.</td>
-    <td align="center"><h4>🚀 C++23 current</h4>Covers and practices concepts, coroutines, ranges and more — not stuck at C++11.</td>
+    <td align="center"><h4>💻 No board? Blink it anyway</h4>Renode is the main verification environment: one command runs your first firmware on a virtual Blue Pill, register sampling proving the LED really blinks.</td>
+    <td align="center"><h4>📇 C++ feature reference cards</h4>One card per feature, C++98 through C++23 — grab the syntax you forgot without digging back through a whole chapter.</td>
   </tr>
   <tr>
     <td align="center"><h4>🔍 Read real code, real talks</h4>Vol.9 studies Chromium (e.g. OnceCallback); Vol.10 is reading notes on CppCon and other talks.</td>
-    <td align="center"><h4>🌐 Engineered + bilingual</h4>VitePress (search / dark mode / GitHub Pages auto-deploy) + Chinese main line + English translation + C++98→23 reference cards.</td>
+    <td align="center"><h4>🌐 Engineered + bilingual</h4>VitePress (search / dark mode / GitHub Pages auto-deploy) + Chinese main line + English translation.</td>
   </tr>
 </table>
 
@@ -94,23 +94,23 @@ The visual roadmap (ten-volume content map + learning paths by background) is in
 
 ### Volume overview
 
-Core volumes are complete, advanced ones are still being filled in — progress in the open (counts are a snapshot and change as content grows):
+Core volumes are complete, advanced ones are still being filled in — progress in the open:
 
-| Volume | Topic | Articles | Maturity |
-|--------|-------|:--------:|----------|
-| Vol 1 | Fundamentals (incl. C crash-course) | 87 | ✅ Complete |
-| Vol 2 | Modern features (RAII / smart pointers / move / lambda) | 44 | ✅ Complete |
-| Vol 3 | Standard library in depth | 40 | ✅ Complete |
-| Vol 4 | Advanced (concepts / coroutines / templates / design patterns) | 29 | 🔨 In progress |
-| Vol 5 | Concurrency | 44 | ✅ Complete |
-| Vol 6 | Performance | 38 | ✅ Complete |
-| Vol 7 | Engineering (CMake / toolchain / debugging) | 8 | 🔨 In progress |
-| Vol 8 | Domains (embedded / networking / GUI / storage) | 75 | ✅ Complete |
-| Vol 9 | Open-source code study (Chromium etc.) | 55 | 📚 Ongoing |
-| Vol 10 | Talk & course notes (CppCon etc.) | 17 | 📚 Ongoing |
+| Volume | Topic | Maturity |
+|--------|-------|----------|
+| Vol 1 | Fundamentals (incl. C crash-course) | ✅ Complete |
+| Vol 2 | Modern features (RAII / smart pointers / move / lambda) | ✅ Complete |
+| Vol 3 | Standard library in depth | ✅ Complete |
+| Vol 4 | Advanced (concepts / coroutines / templates / design patterns) | 🔨 In progress |
+| Vol 5 | Concurrency | ✅ Complete |
+| Vol 6 | Performance | ✅ Complete |
+| Vol 7 | Engineering (CMake / toolchain / debugging) | 🔨 In progress |
+| Vol 8 | Domains (embedded / TinyML / networking) | 🔨 In progress |
+| Vol 9 | Open-source code study (Chromium etc.) | 📚 Ongoing |
+| Vol 10 | Talk & course notes (CppCon etc.) | 📚 Ongoing |
 
-> Plus "Compilation & Linking" (11) and C++ feature reference cards (46). Most core volumes are complete; the rest are being filled in.
-
+> Plus Getting Started, the "Compilation & Linking" series, Crash Lab, community articles, and C++ feature reference cards.
+>
 > 📋 For volume content and progress see the [project roadmap](todo/000-project-roadmap.md); for release history see [changelogs/](changelogs/).
 
 ## Local Development and Checks
