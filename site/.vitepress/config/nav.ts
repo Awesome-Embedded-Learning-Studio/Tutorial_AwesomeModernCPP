@@ -23,6 +23,7 @@ export const navZh: DefaultTheme.NavItem[] = [
       { text: '卷六 · 性能优化', link: '/vol6-performance/' },
       { text: '卷七 · 工程实践', link: '/vol7-engineering/' },
       { text: '编译与链接', link: '/compilation/' },
+      { text: '崩溃实验室', link: '/crash-lab/' },
     ],
   },
   {
@@ -69,6 +70,7 @@ export const navEn: DefaultTheme.NavItem[] = [
       { text: 'Vol.6 Performance', link: '/en/vol6-performance/' },
       { text: 'Vol.7 Engineering', link: '/en/vol7-engineering/' },
       { text: 'Compilation & Linking', link: '/en/compilation/' },
+      { text: 'Crash Lab', link: '/en/crash-lab/' },
     ],
   },
   {
