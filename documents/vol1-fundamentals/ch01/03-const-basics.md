@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 类型转换
-reading_time_minutes: 14
+reading_time_minutes: 16
 tags:
 - cpp-modern
 - host
@@ -314,6 +314,55 @@ ref = 100
 - `int* const p2`
 - `const int* const p3`
 
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+int main()
+{
+    int a1 = 0;
+    int a2 = 0;
+    int a3 = 0;
+
+    const int* p1 = &a1;
+    // *p1 = 5;   // 编译错误！不能通过 const int* 修改数据
+    p1 = &a2;     // 没问题，指针本身可以指向别的地方
+    std::cout << "*p1 = " << *p1 << std::endl;
+
+    int* const p2 = &a2;
+    *p2 = 5;      // 没问题，int* const 指向的数据可以修改
+    // p2 = &a3;  // 编译错误！int* const 指针本身不能改变指向
+    std::cout << "*p2 = " << *p2 << std::endl;
+
+    p1 = &a3;     // 没问题，const int* 指针本身可以指向别的地方
+
+    const int* const p3 = &a3;
+    // *p3 = 5;   // 编译错误！const int* const 既不能修改数据，也不能改变指向
+    // p3 = &a1;  // 编译错误！const int* const 指针本身不能改变指向
+    std::cout << "*p3 = " << *p3 << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+*p1 = 0
+*p2 = 5
+*p3 = 0
+```
+
+:::
+
 ### 练习二：把 #define 改造成 constexpr
 
 下面是一段使用 `#define` 的 C 风格代码。把所有的宏常量替换成 `constexpr` 变量，并写一个 `constexpr` 函数 `circle_area(double radius)` 来计算圆的面积。
@@ -324,9 +373,103 @@ ref = 100
 #define MIN_RADIUS 0.1
 ```
 
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+constexpr double PI = 3.14159265;
+constexpr double MAX_RADIUS = 100.0;
+constexpr double MIN_RADIUS = 0.1;
+
+constexpr double clamp_radius(double radius)
+{
+    return radius < MIN_RADIUS
+        ? MIN_RADIUS
+        : (radius > MAX_RADIUS ? MAX_RADIUS : radius);
+}
+
+constexpr double circle_area(double radius)
+{
+    const double r = clamp_radius(radius);
+    return PI * r * r;
+}
+
+int main()
+{
+    double r = 0;
+    std::cout << "请你输入所求圆的半径 : ";
+    std::cin >> r;
+    std::cout << "半径为" << r << "的面积是: " << circle_area(r) << std::endl;
+    return 0;
+}
+```
+
+题目只给了三个宏，没规定 `MAX_RADIUS` / `MIN_RADIUS` 怎么用，原样换成 `constexpr` 后它们会闲置。这里加了一个同为 `constexpr` 的 `clamp_radius`，把输入半径夹回 `[0.1, 100]` 区间，让两个常量真正参与计算——`constexpr` 函数也可以调用另一个 `constexpr` 函数，像 `constexpr double area = circle_area(2.0);` 这样的常量表达式初始化，整条调用链都会在编译期算完。
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请你输入所求圆的半径 : 2
+半径为2的面积是: 12.5664
+```
+
+:::
+
 ### 练习三：写一个使用 const 引用参数的函数
 
 写一个函数 `print_sum`，接收两个 `const int&` 参数，输出它们的和。然后在 `main` 函数里调用它。思考一下：对于 `int` 这种小类型，用 `const int&` 和直接用 `int` 作为参数，性能上有区别吗？什么类型的参数最适合用 `const T&` 传递？
+
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+void print_sum(const int& a, const int& b)
+{
+    std::cout << a << " + " << b << " 的值是: " << a + b << std::endl;
+}
+
+int main()
+{
+    int a = 0;
+    int b = 0;
+    std::cout << "请输入a的值是 :";
+    std::cin >> a;
+    std::cout << "请输入b的值是 :";
+    std::cin >> b;
+    print_sum(a, b);
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入a的值是 :1
+请输入b的值是 :3
+1 + 3 的值是: 4
+```
+
+对于 `int` 这种小类型，按值传递通常更合适：复制一个机器字大小的值成本很低，编译器也常能直接通过寄存器传递；使用 `const int&` 不一定更快，实际差异应以测量为准。`const T&` 更适合较大的、只读且不需要复制的对象，例如 `std::string` 或容器；小型标量类型一般直接按值传递即可。
+
+:::
 
 ## 小结
 

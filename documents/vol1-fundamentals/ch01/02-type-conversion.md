@@ -348,6 +348,43 @@ int main()
 36.5 C = 97.7 F
 ```
 
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include <iomanip>
+
+int main()
+{
+    double celsius = 0;
+    std::cout << "请输入摄氏温度: ";
+    std::cin >> celsius;
+    double fahrenheit = celsius * 9 / 5 + 32;
+    std::cout << std::fixed << std::setprecision(1);
+    std::cout << celsius << " C = " << fahrenheit << " F" << std::endl;
+    return 0;
+}
+```
+
+题目要求里点名了 `static_cast`：`celsius` 已经声明成 `double`，`celsius * 9` 会把 `9` 提升成 `double` 再算，整条表达式都是浮点运算，`static_cast` 在这里没有上场机会。如果手里只有 `int`（比如上游函数只给整数），就要写 `static_cast<double>(celsius) * 9 / 5 + 32`，先转型再乘除，否则 `(celsius * 9) / 5` 走的还是整数除法，小数直接丢。
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入摄氏温度: 36.5
+36.5 C = 97.7 F
+```
+
+:::
+
 ## 小结
 
 这一章我们过了一遍 C++ 的类型转换机制。隐式转换在编译器幕后默默运作，涵盖整数提升、算术转换、赋值转换和布尔转换——不了解规则时它是隐形的 bug 来源。`static_cast` 是日常转型的主力，比 C 风格转型更安全、意图更明确。数值精度方面，整数除法截断、浮点数不可直接比较、整数溢出，每一个都是高频出现的陷阱。

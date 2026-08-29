@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - 第一个 C++ 程序
-reading_time_minutes: 17
+reading_time_minutes: 22
 tags:
 - cpp-modern
 - host
@@ -375,13 +375,284 @@ long double:   16 字节
 
 写一个程序，打印出所有基本整数类型（`short`、`int`、`long`、`long long` 及其 `unsigned` 版本，加上 `int8_t`、`int16_t`、`int32_t`、`int64_t` 及其 `unsigned` 版本）的 `sizeof` 和通过 `std::numeric_limits` 获取的最小值、最大值。格式化输出，让结果一目了然。
 
+
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include <limits>
+#include <cstdint>
+
+int main()
+{
+    std::cout << "=== 完整的大小和范围报告 ===" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "--- 基本整数类型sizeof汇总 ---" << std::endl;
+    std::cout << "short:          sizeof " << sizeof(short) << " 字节, "
+              << "min " << std::numeric_limits<short>::min() << ", "
+              << "max " << std::numeric_limits<short>::max() << std::endl;
+    std::cout << "unsigned short: sizeof " << sizeof(unsigned short) << " 字节, "
+              << "min " << std::numeric_limits<unsigned short>::min() << ", "
+              << "max " << std::numeric_limits<unsigned short>::max() << std::endl;
+    std::cout << "int:            sizeof " << sizeof(int) << " 字节, "
+              << "min " << std::numeric_limits<int>::min() << ", "
+              << "max " << std::numeric_limits<int>::max() << std::endl;
+    std::cout << "unsigned int:   sizeof " << sizeof(unsigned int) << " 字节, "
+              << "min " << std::numeric_limits<unsigned int>::min() << ", "
+              << "max " << std::numeric_limits<unsigned int>::max() << std::endl;
+    std::cout << "long:           sizeof " << sizeof(long) << " 字节, "
+              << "min " << std::numeric_limits<long>::min() << ", "
+              << "max " << std::numeric_limits<long>::max() << std::endl;
+    std::cout << "unsigned long:  sizeof " << sizeof(unsigned long) << " 字节, "
+              << "min " << std::numeric_limits<unsigned long>::min() << ", "
+              << "max " << std::numeric_limits<unsigned long>::max() << std::endl;
+    std::cout << "long long:      sizeof " << sizeof(long long) << " 字节, "
+              << "min " << std::numeric_limits<long long>::min() << ", "
+              << "max " << std::numeric_limits<long long>::max() << std::endl;
+    std::cout << "unsigned long long: sizeof " << sizeof(unsigned long long) << " 字节, "
+              << "min " << std::numeric_limits<unsigned long long>::min() << ", "
+              << "max " << std::numeric_limits<unsigned long long>::max() << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "--- <cstdint> 固定宽整数类型 ---" << std::endl;
+    std::cout << "int8_t:         sizeof " << sizeof(int8_t) << " 字节, "
+              << "min " << (int)std::numeric_limits<int8_t>::min() << ", "
+              << "max " << (int)std::numeric_limits<int8_t>::max() << std::endl;
+    std::cout << "uint8_t:        sizeof " << sizeof(uint8_t) << " 字节, "
+              << "min " << (unsigned)std::numeric_limits<uint8_t>::min() << ", "
+              << "max " << (unsigned)std::numeric_limits<uint8_t>::max() << std::endl;
+    std::cout << "int16_t:        sizeof " << sizeof(int16_t) << " 字节, "
+              << "min " << std::numeric_limits<int16_t>::min() << ", "
+              << "max " << std::numeric_limits<int16_t>::max() << std::endl;
+    std::cout << "uint16_t:       sizeof " << sizeof(uint16_t) << " 字节, "
+              << "min " << std::numeric_limits<uint16_t>::min() << ", "
+              << "max " << std::numeric_limits<uint16_t>::max() << std::endl;
+    std::cout << "int32_t:        sizeof " << sizeof(int32_t) << " 字节, "
+              << "min " << std::numeric_limits<int32_t>::min() << ", "
+              << "max " << std::numeric_limits<int32_t>::max() << std::endl;
+    std::cout << "uint32_t:       sizeof " << sizeof(uint32_t) << " 字节, "
+              << "min " << std::numeric_limits<uint32_t>::min() << ", "
+              << "max " << std::numeric_limits<uint32_t>::max() << std::endl;
+    std::cout << "int64_t:        sizeof " << sizeof(int64_t) << " 字节, "
+              << "min " << std::numeric_limits<int64_t>::min() << ", "
+              << "max " << std::numeric_limits<int64_t>::max() << std::endl;
+    std::cout << "uint64_t:       sizeof " << sizeof(uint64_t) << " 字节, "
+              << "min " << std::numeric_limits<uint64_t>::min() << ", "
+              << "max " << std::numeric_limits<uint64_t>::max() << std::endl;
+
+    return 0;
+}
+
+```
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+=== 完整的大小和范围报告 ===
+
+--- 基本整数类型sizeof汇总 ---
+short:          sizeof 2 字节, min -32768, max 32767
+unsigned short: sizeof 2 字节, min 0, max 65535
+int:            sizeof 4 字节, min -2147483648, max 2147483647
+unsigned int:   sizeof 4 字节, min 0, max 4294967295
+long:           sizeof 8 字节, min -9223372036854775808, max 9223372036854775807
+unsigned long:  sizeof 8 字节, min 0, max 18446744073709551615
+long long:      sizeof 8 字节, min -9223372036854775808, max 9223372036854775807
+unsigned long long: sizeof 8 字节, min 0, max 18446744073709551615
+
+--- <cstdint> 固定宽整数类型 ---
+int8_t:         sizeof 1 字节, min -128, max 127
+uint8_t:        sizeof 1 字节, min 0, max 255
+int16_t:        sizeof 2 字节, min -32768, max 32767
+uint16_t:       sizeof 2 字节, min 0, max 65535
+int32_t:        sizeof 4 字节, min -2147483648, max 2147483647
+uint32_t:       sizeof 4 字节, min 0, max 4294967295
+int64_t:        sizeof 8 字节, min -9223372036854775808, max 9223372036854775807
+uint64_t:       sizeof 8 字节, min 0, max 18446744073709551615
+```
+
+> ℹ️ **平台说明**:以上为典型 64 位 Linux 平台的结果。在 Windows 上,`long` 与 `unsigned long` 是 4 字节(`long` 范围为 `-2147483648` ~ `2147483647`,`unsigned long` 范围为 `0` ~ `4294967295`),其余类型不变。
+
+:::
+
+
+
 ### 练习二：预测 sizeof 的结果
 
 在看答案之前，先预测一下以下表达式在你的平台上的结果，然后写程序验证：`sizeof('A')`、`sizeof(true)`、`sizeof(3.14)`、`sizeof(3.14f)`、`sizeof(3.14L)`。额外挑战：写一个 `.c` 文件编译为 C 程序，再写一个 `.cpp` 文件编译为 C++ 程序，都打印 `sizeof('A')`，观察结果有什么不同。提示：C++ 中字符字面量 `'A'` 的类型是 `char`（`sizeof` 为 1），而 C 中字符常量 `'A'` 的类型是 `int`（`sizeof` 通常为 4），这是两门语言之间一个微妙但重要的区别。
 
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+
+int main()
+{
+    std::cout << "=== C++: sizeof 表达式验证 ===" << std::endl;
+    std::cout << "sizeof('A')   = " << sizeof('A') << std::endl;
+    std::cout << "sizeof(true)  = " << sizeof(true) << std::endl;
+    std::cout << "sizeof(3.14)  = " << sizeof(3.14) << std::endl;
+    std::cout << "sizeof(3.14f) = " << sizeof(3.14f) << std::endl;
+    std::cout << "sizeof(3.14L) = " << sizeof(3.14L) << std::endl;
+    return 0;
+}
+
+```
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+=== C++: sizeof 表达式验证 ===
+sizeof('A')   = 1
+sizeof(true)  = 1
+sizeof(3.14)  = 8
+sizeof(3.14f) = 4
+sizeof(3.14L) = 16
+```
+
+```c
+#include <stdio.h>
+#include <stdbool.h>
+
+int main(void)
+{
+    printf("=== C: sizeof 表达式验证 ===\n");
+    printf("sizeof('A')   = %zu\n", sizeof('A'));
+    printf("sizeof(true)  = %zu\n", sizeof(true));
+    printf("sizeof(3.14)  = %zu\n", sizeof(3.14));
+    printf("sizeof(3.14f) = %zu\n", sizeof(3.14f));
+    printf("sizeof(3.14L) = %zu\n", sizeof(3.14L));
+    return 0;
+}
+
+```
+
+```bash
+gcc -std=c17 -Wall -Wextra -pedantic main.c -o main && ./main
+```
+
+运行结果:
+
+```text
+=== C: sizeof 表达式验证 ===
+sizeof('A')   = 4
+sizeof(true)  = 4
+sizeof(3.14)  = 8
+sizeof(3.14f) = 4
+sizeof(3.14L) = 16
+```
+
+> ⚠️ **踩坑预警**：`sizeof(char)` 恒为 1 字节，但字符字面量 `'A'` 的类型在两门语言里不一样。同理，布尔字面量 `true` 的类型也随语言 / 标准版本变化：
+>
+> - **C++**：`true` 是 `bool` 字面量，`sizeof(true)` = `sizeof(bool)` = 1。
+> - **C（`<stdbool.h>`，C17 及更早）**：`true` 是宏，展开成 `int` 字面量 `1`，`sizeof(true)` = `sizeof(int)` = 4。
+> - **C（C23）**：`true` / `false` 成为真正的关键字，类型是 `bool`（即 `_Bool`），`sizeof(true)` = 1。
+
+:::
+
+
+
 ### 练习三：体验浮点精度陷阱
 
 写一个程序，用 `float` 变量从 0 开始，每次加 0.1，加 10 次，然后判断结果是否等于 1.0。再用 `double` 做同样的事情。观察两者的行为差异，并用 `std::setprecision` 打印出每一步累加后的精确值。
+
+
+::: details 参考答案
+
+**main.cpp**
+
+```cpp
+#include <iostream>
+#include <iomanip>
+//std::setw  设置字符宽度 只对下一个输出生效，用完即失效
+
+//std::setprecision设置精度  持续有效，直到下次调用改变它
+//默认模式下是有效数字位数（20 位有效数字）。
+//配合 std::fixed 后，变成小数点后位数：std::fixed << std::setprecision(2) → 3.14
+
+int main()
+{
+    std::cout << "=== float: 从 0 开始，每次加 0.1，共 10 次 ===" << std::endl;
+    float f = 0.0f;
+    for (int i = 1; i <= 10; ++i)
+    {
+        f += 0.1f;
+        std::cout << std::setw(2) << i << " 次后 = "
+                  << std::setprecision(20) << f << std::endl;
+    }
+    std::cout << "最终 f == 1.0f ?  " << (f == 1.0f ? "true" : "false")
+              << "   差值 = " << (f - 1.0f) << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "=== double: 从 0 开始，每次加 0.1，共 10 次 ===" << std::endl;
+    double d = 0.0;
+    for (int i = 1; i <= 10; ++i)
+    {
+        d += 0.1;
+        std::cout << std::setw(2) << i << " 次后 = "
+                  << std::setprecision(20) << d << std::endl;
+    }
+    std::cout << "最终 d == 1.0 ?  " << (d == 1.0 ? "true" : "false")
+              << "   差值 = " << std::setprecision(20) << (d - 1.0) << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++20 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+=== float: 从 0 开始，每次加 0.1，共 10 次 ===
+ 1 次后 = 0.10000000149011611938
+ 2 次后 = 0.20000000298023223877
+ 3 次后 = 0.30000001192092895508
+ 4 次后 = 0.40000000596046447754
+ 5 次后 = 0.5
+ 6 次后 = 0.60000002384185791016
+ 7 次后 = 0.70000004768371582031
+ 8 次后 = 0.80000007152557373047
+ 9 次后 = 0.90000009536743164062
+10 次后 = 1.0000001192092895508
+最终 f == 1.0f ?  false   差值 = 1.1920928955078125e-07
+
+=== double: 从 0 开始，每次加 0.1，共 10 次 ===
+ 1 次后 = 0.10000000000000000555
+ 2 次后 = 0.2000000000000000111
+ 3 次后 = 0.30000000000000004441
+ 4 次后 = 0.4000000000000000222
+ 5 次后 = 0.5
+ 6 次后 = 0.5999999999999999778
+ 7 次后 = 0.69999999999999995559
+ 8 次后 = 0.79999999999999993339
+ 9 次后 = 0.89999999999999991118
+10 次后 = 0.99999999999999988898
+最终 d == 1.0 ?  false   差值 = -1.1102230246251565404e-16
+```
+
+:::
 
 ## 小结
 
