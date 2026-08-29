@@ -383,8 +383,38 @@ function unifyCrossVolumeData(distDir: string) {
   logStep('Step 3.5/4: Unifying cross-volume hash maps & site data')
 
   const htmlFiles: string[] = []
+  const missingFiles = new Set<string>()
+
+  // The final dist is assembled from many recursive copies. On Windows, a
+  // file can briefly disappear from a directory between readdirSync and
+  // readFileSync (for example while an indexer or antivirus scanner is
+  // touching it). Treat that narrow race as a skipped file instead of
+  // aborting the entire build; the normal build path still propagates all
+  // other I/O errors.
+  function readHtmlFile(path: string): string | undefined {
+    try {
+      return readFileSync(path, 'utf-8')
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code !== 'ENOENT') throw error
+      if (!missingFiles.has(path)) {
+        missingFiles.add(path)
+        log(`  ⚠ HTML disappeared during unification, skipping: ${relative(PROJECT_ROOT, path)}`)
+      }
+      return undefined
+    }
+  }
+
   function walk(d: string) {
-    for (const e of readdirSync(d, { withFileTypes: true })) {
+    let entries
+    try {
+      entries = readdirSync(d, { withFileTypes: true })
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'ENOENT') return
+      throw error
+    }
+    for (const e of entries) {
       const full = join(d, e.name)
       if (e.isDirectory()) walk(full)
       else if (e.name.endsWith('.html')) htmlFiles.push(full)
@@ -398,7 +428,8 @@ function unifyCrossVolumeData(distDir: string) {
   let rootSiteDataExpr = ''
 
   for (const f of htmlFiles) {
-    const c = readFileSync(f, 'utf-8')
+    const c = readHtmlFile(f)
+    if (c === undefined) continue
 
     // Extract hash map — captured content is JS string literal (has \" escaping)
     const hmMatch = c.match(/__VP_HASH_MAP__\s*=\s*JSON\.parse\("(.+?)"\)/)
@@ -425,7 +456,8 @@ function unifyCrossVolumeData(distDir: string) {
 
   let patched = 0
   for (const f of htmlFiles) {
-    let c = readFileSync(f, 'utf-8')
+    let c = readHtmlFile(f)
+    if (c === undefined) continue
     let changed = false
 
     // Replace hash map
