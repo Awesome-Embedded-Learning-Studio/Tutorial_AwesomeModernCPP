@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 循环语句
-reading_time_minutes: 9
+reading_time_minutes: 11
 tags:
 - cpp-modern
 - host
@@ -282,6 +282,47 @@ g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
 最大值: 56
 ```
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <array>
+
+int main()
+{
+    std::array<int, 8> value = {12, 3, 45, 7, 23, 56, 8, 19};
+    int max_val = value[0];
+    std::cout << "数组: ";
+    for (const auto& x : value)
+    {
+        if (max_val < x)
+        {
+            max_val = x;
+        }
+        std::cout << x << " ";
+    }
+
+    std::cout << std::endl
+              << "最大值: " << max_val << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+数组: 12 3 45 7 23 56 8 19 
+最大值: 56
+```
+
+:::
+
 ### 练习二：统计元音
 
 用 range-for 统计 `std::string` 中元音字母（a/e/i/o/u，不区分大小写）的个数。
@@ -291,6 +332,45 @@ g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
 元音个数: 5
 ```
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+int main()
+{
+    std::string text = "Beautiful C++";
+    int vowel_count = 0;
+    for (char c : text)
+    {
+        char lower = (c >= 'A' && c <= 'Z') ? (c + 32) : c;
+        if (lower == 'a' || lower == 'e' || lower == 'i' || lower == 'o' || lower == 'u')
+        {
+            ++vowel_count;
+        }
+    }
+    std::cout << "元音个数: " << vowel_count << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+元音个数: 5
+```
+
+:::
+
+
 ### 练习三：原地修改
 
 用 range-for 的引用版本，把数组中所有负数取绝对值。
@@ -299,6 +379,51 @@ g++ -std=c++17 -Wall -Wextra -o range_for range_for.cpp
 修改前: 3 -7 1 -9 4 -6
 修改后: 3 7 1 9 4 6
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <array>
+
+int main()
+{
+    std::array<int, 6> value = {3, -7, 1, -9, 4, -6};
+    std::cout << "修改前: ";
+    for (auto& x : value)
+    {
+        std::cout << x << " ";
+        if (x < 0)
+        {
+            x *= -1;
+        }
+    }
+    std::cout << std::endl
+              << "修改后: ";
+    for (const auto& x : value)
+    {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+修改前: 3 -7 1 -9 4 -6 
+修改后: 3 7 1 9 4 6 
+```
+
+:::
+
 
 ## 小结
 
