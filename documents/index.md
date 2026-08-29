@@ -1,24 +1,24 @@
 ---
 layout: home
-title: "欢迎来到现代 C++ 教程"
-description: "系统化的现代 C++ 教程 — 从基础入门到领域实战"
+title: "欢迎来到现代C++的世界！"
+description: "一个正在努力进步的，系统化的现代 C++ 教程"
 
 hero:
   name: "现代 C++ 教程"
   text: "Modern C++ Tutorial"
-  tagline: "不止于语法速查 —— 从基础到工程实战的一条完整现代 C++ 路径"
+  tagline: "不只是语法 —— 挑战走出从基础，到工程阅读，再到领域实战的一条完整现代 C++ 路径"
   actions:
     - theme: brand
-      text: 零基础起步
+      text: 新手来这里！
       link: /getting-started/
     - theme: alt
-      text: 直接学语法
+      text: C++语法第一关，启动！
       link: /vol1-fundamentals/
     - theme: alt
-      text: 查看路线图
+      text: 我们的路由图！
       link: /roadmap/
     - theme: alt
-      text: GitHub
+      text: 点我去GitHub！
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
 
 features:

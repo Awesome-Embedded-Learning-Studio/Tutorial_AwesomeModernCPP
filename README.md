@@ -124,20 +124,20 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 <details>
 <summary>常用命令</summary>
 
-| 命令 / 脚本                                            | 功能                                    |
-| ------------------------------------------------------ | --------------------------------------- |
-| `pnpm dev`                                             | 启动 VitePress 开发服务器，支持热更新   |
-| `pnpm build`                                           | 生产构建，按分卷并行构建并合并搜索索引  |
-| `pnpm build:single`                                    | 使用 VitePress 单体构建                 |
-| `pnpm check:links`                                     | 检查 Markdown 与组件内部链接有效性      |
-| `pnpm preview`                                         | 预览生产构建结果                        |
-| `pnpm hooks:install` / `scripts/setup_precommit.sh`    | 安装 pre-commit 提交前检查              |
-| `pnpm coverage`                                        | 查看英文翻译覆盖率                      |
-| `pnpm coverage:update`                                 | 更新 `README.md` 中的英文翻译覆盖率徽章 |
-| `.venv/bin/python scripts/validate_frontmatter.py`     | 验证文章 frontmatter                    |
-| `.venv/bin/python scripts/check_quality.py documents/` | 内容质量检查                            |
-| `.venv/bin/python scripts/build_examples.py --host`    | 编译主机侧 CMake 示例                   |
-| `.venv/bin/python scripts/build_examples.py --stm32`   | 编译 STM32 示例工程                     |
+| 命令 / 脚本                                            | 功能                                                                             |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| `pnpm dev`                                             | 启动 VitePress 开发服务器，支持热更新（PS：WSL看不到的朋友记得加一个--host穿透） |
+| `pnpm build`                                           | 生产构建，按分卷并行构建并合并搜索索引                                           |
+| `pnpm build:single`                                    | 使用 VitePress 单体构建                                                          |
+| `pnpm check:links`                                     | 检查 Markdown 与组件内部链接有效性                                               |
+| `pnpm preview`                                         | 预览生产构建结果                                                                 |
+| `pnpm hooks:install` / `scripts/setup_precommit.sh`    | 安装 pre-commit 提交前检查                                                       |
+| `pnpm coverage`                                        | 查看英文翻译覆盖率                                                               |
+| `pnpm coverage:update`                                 | 更新 `README.md` 中的英文翻译覆盖率徽章                                          |
+| `.venv/bin/python scripts/validate_frontmatter.py`     | 验证文章 frontmatter                                                             |
+| `.venv/bin/python scripts/check_quality.py documents/` | 内容质量检查                                                                     |
+| `.venv/bin/python scripts/build_examples.py --host`    | 编译主机侧 CMake 示例                                                            |
+| `.venv/bin/python scripts/build_examples.py --stm32`   | 编译 STM32 示例工程                                                              |
 
 </details>
 
