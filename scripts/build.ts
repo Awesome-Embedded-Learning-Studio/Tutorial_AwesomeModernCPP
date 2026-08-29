@@ -338,28 +338,42 @@ async function buildVolume(task: BuildTask): Promise<string> {
   return volOutput
 }
 
-/**
- * Refresh one private cache entry after all VitePress child processes finish.
- * Windows can transiently report a just-created nested directory as absent
- * under concurrent build I/O, so retry only those path-not-found errors.
- */
-async function saveVolumeToCache(id: string, volOutput: string): Promise<void> {
-  const cachedOutput = join(CACHE_DIR, 'output', id)
-  const attempts = process.platform === 'win32' ? 3 : 1
-  mkdirSync(join(CACHE_DIR, 'output'), { recursive: true })
+// ── FS Resilience (Windows transients) ──────────────────────
 
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    rmSync(cachedOutput, { recursive: true, force: true })
+/** Error codes observed as transient Windows build-I/O failures. */
+function isTransientFsError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException).code
+  return code === 'ENOENT' || code === 'ESRCH'
+}
+
+/**
+ * Retry a filesystem operation that Windows may transiently fail: external
+ * scanners (antivirus / search indexer) can make a freshly written path
+ * briefly invisible. Non-Windows platforms get a single attempt so that a
+ * genuinely missing file still fails the build loudly.
+ */
+async function retryFs<T>(label: string, fn: () => T): Promise<T> {
+  const attempts = process.platform === 'win32' ? 3 : 1
+  for (let attempt = 1; ; attempt++) {
     try {
-      cpSync(volOutput, cachedOutput, { recursive: true })
-      return
+      return fn()
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
-      if ((code !== 'ESRCH' && code !== 'ENOENT') || attempt === attempts) throw error
-      log(`  ${id}: cache copy ${code}, retrying (${attempt}/${attempts})`)
+      if (!isTransientFsError(error) || attempt === attempts) throw error
+      log(`  ${label}: ${code}, retrying (${attempt}/${attempts})`)
       await new Promise<void>((resolve) => setTimeout(resolve, 100))
     }
   }
+}
+
+/** Refresh one private cache entry after all VitePress child processes finish. */
+async function saveVolumeToCache(id: string, volOutput: string): Promise<void> {
+  const cachedOutput = join(CACHE_DIR, 'output', id)
+  mkdirSync(join(CACHE_DIR, 'output'), { recursive: true })
+  await retryFs(`${id}: cache copy`, () => {
+    rmSync(cachedOutput, { recursive: true, force: true })
+    cpSync(volOutput, cachedOutput, { recursive: true })
+  })
 }
 
 /** Run tasks with limited concurrency */
@@ -379,18 +393,41 @@ async function runParallel<T>(tasks: T[], fn: (t: T) => Promise<void>, limit: nu
 
 // ── Cross-Volume Data Unification ────────────────────────────
 
-function unifyCrossVolumeData(distDir: string) {
+async function unifyCrossVolumeData(distDir: string) {
   logStep('Step 3.5/4: Unifying cross-volume hash maps & site data')
 
   const htmlFiles: string[] = []
-  function walk(d: string) {
-    for (const e of readdirSync(d, { withFileTypes: true })) {
+  const missingFiles = new Set<string>()
+
+  // Every volume copy is awaited (serialized in main()) before this step,
+  // so an ENOENT here is never an in-process race. On Windows an external
+  // scanner (antivirus / search indexer) can still make a freshly written
+  // file briefly invisible: retryFs absorbs exactly that blip, and the
+  // guards below fail the build loudly when a file stays missing.
+  async function readHtmlFile(path: string): Promise<string | undefined> {
+    try {
+      return await retryFs(`unify read ${relative(PROJECT_ROOT, path)}`, () => readFileSync(path, 'utf-8'))
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      if (!missingFiles.has(path)) {
+        missingFiles.add(path)
+        log(`  ⚠ HTML missing after retries: ${relative(PROJECT_ROOT, path)}`)
+      }
+      return undefined
+    }
+  }
+
+  async function walk(d: string) {
+    const entries = await retryFs(`unify walk ${relative(PROJECT_ROOT, d)}`, () =>
+      readdirSync(d, { withFileTypes: true }))
+    for (const e of entries) {
       const full = join(d, e.name)
-      if (e.isDirectory()) walk(full)
+      if (e.isDirectory()) await walk(full)
       else if (e.name.endsWith('.html')) htmlFiles.push(full)
     }
   }
-  walk(distDir)
+  await walk(distDir)
+  if (htmlFiles.length === 0) throw new Error(`no HTML files under ${relative(PROJECT_ROOT, distDir)} — dist assembly failed`)
   log(`  Found ${htmlFiles.length} HTML files`)
 
   // 1. Collect all hash map entries and find the root site data
@@ -398,7 +435,8 @@ function unifyCrossVolumeData(distDir: string) {
   let rootSiteDataExpr = ''
 
   for (const f of htmlFiles) {
-    const c = readFileSync(f, 'utf-8')
+    const c = await readHtmlFile(f)
+    if (c === undefined) continue
 
     // Extract hash map — captured content is JS string literal (has \" escaping)
     const hmMatch = c.match(/__VP_HASH_MAP__\s*=\s*JSON\.parse\("(.+?)"\)/)
@@ -419,13 +457,15 @@ function unifyCrossVolumeData(distDir: string) {
   const totalEntries = Object.keys(mergedHashMap).length
   log(`  Merged hash map: ${totalEntries} entries`)
   log(`  Root site data: ${rootSiteDataExpr ? 'found' : 'MISSING'}`)
+  if (!rootSiteDataExpr) throw new Error('root site data missing from dist/index.html — refusing to ship volume-local site data')
 
   // 2. Build replacement expressions using JSON.stringify for proper JS string literal escaping
   const hmJsLiteral = JSON.stringify(JSON.stringify(mergedHashMap))
 
   let patched = 0
   for (const f of htmlFiles) {
-    let c = readFileSync(f, 'utf-8')
+    let c = await readHtmlFile(f)
+    if (c === undefined) continue
     let changed = false
 
     // Replace hash map
@@ -450,6 +490,10 @@ function unifyCrossVolumeData(distDir: string) {
     }
   }
   log(`  Patched ${patched} files with unified data`)
+  if (missingFiles.size > 0) {
+    const sample = [...missingFiles].slice(0, 5).map((p) => relative(PROJECT_ROOT, p)).join(', ')
+    throw new Error(`${missingFiles.size} HTML file(s) missing after retries: ${sample}${missingFiles.size > 5 ? ', …' : ''}`)
+  }
 }
 
 // ── Search Index Merge ──────────────────────────────────────
@@ -726,7 +770,7 @@ async function main() {
   await mergeSearchIndexes(searchSources, DIST_FINAL)
 
   // ── Step 3.5: Unify hash maps and site data ─────────────
-  unifyCrossVolumeData(DIST_FINAL)
+  await unifyCrossVolumeData(DIST_FINAL)
 
   // Make code examples available to interactive client-side components.
   if (existsSync(CODE_EXAMPLES)) {
