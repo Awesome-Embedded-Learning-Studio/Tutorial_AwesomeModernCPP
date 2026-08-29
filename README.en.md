@@ -18,6 +18,12 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
 ![AI agent ready](https://img.shields.io/badge/AI%20agent-ready-7C3AED)
 
+<p align="center">
+  <a href="https://qm.qq.com/q/cD89HxtmUg">
+    <img src="https://img.shields.io/badge/Join_the_QQ_Group-Chinese_chat-12B7F5?logo=qq" alt="QQ Group · click to join" />
+  </a>
+</p>
+
 ---
 
 ## What This Project Is
@@ -199,4 +205,5 @@ This project references the following excellent resources:
 - **License**: [MIT License](./LICENSE)
 - **Issues**: [Submit an issue](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)
 - **Email**: <725610365@qq.com>
+- **QQ Group**: [TAMCPP Chat Group](https://qm.qq.com/q/cD89HxtmUg) — group ID 1107100989 (Chinese-language chat)
 - **Organization**: [Awesome-Embedded-Learning-Studio](https://github.com/Awesome-Embedded-Learning-Studio)

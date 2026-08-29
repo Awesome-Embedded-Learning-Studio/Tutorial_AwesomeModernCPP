@@ -3,10 +3,9 @@ title: Community Articles
 description: Community contributions, inaugural articles, and reviewed content
 translation:
   source: documents/community/index.md
-  source_hash: 94f6850709a28dedf8baa3578dee1ed45a34aa866f0c37b72a030766890c65b0
-  translated_at: '2026-06-14T00:14:30.009104+00:00'
-  engine: anthropic
-  token_count: 283
+  source_hash: 3c9be490f0e16a42fbfd01b94c61566887f0716d70586e2b7fc1bc5743b63d12
+  translated_at: '2026-08-29T00:00:00+00:00'
+  engine: manual
 ---
 # Community Articles
 
@@ -25,9 +24,10 @@ The newest community submission — a thorough take on why C++ still has no unif
 ## Content Status
 
 <ChapterNav variant="main">
-  <ChapterLink num="1" href="incoming/">Community Submissions (First Issue)</ChapterLink>
-  <ChapterLink num="2" href="articles/">Reviewed & Included</ChapterLink>
-  <ChapterLink num="3" href="dev/">Project Development</ChapterLink>
+  <ChapterLink num="1" href="join">Join the Chat Group</ChapterLink>
+  <ChapterLink num="2" href="incoming/">Community Submissions (First Issue)</ChapterLink>
+  <ChapterLink num="3" href="articles/">Reviewed & Included</ChapterLink>
+  <ChapterLink num="4" href="dev/">Project Development</ChapterLink>
 </ChapterNav>
 
 ## Workflow
@@ -68,6 +68,6 @@ While community submissions are not final drafts, they must meet basic requireme
 - Clear sources for images, code, and extensive materials.
 - The author agrees to public display and allows maintainers to make necessary edits.
 
-For learning questions, roadmap discussions, and open-ended suggestions, please use GitHub Discussions first; for specific content proposals or submission topics, please use GitHub Issues.
+Quick questions and casual chat are welcome in the QQ group; for open-ended discussions, please use GitHub Discussions first, and for specific content proposals or submission topics, please use GitHub Issues.
 
 The project's maintenance rhythm, site iterations, and release metrics are recorded in [Project Development](dev/).
