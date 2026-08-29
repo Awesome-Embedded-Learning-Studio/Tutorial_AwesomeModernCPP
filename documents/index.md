@@ -1,24 +1,24 @@
 ---
 layout: home
-title: "欢迎来到现代 C++ 教程"
-description: "系统化的现代 C++ 教程 — 从基础入门到领域实战"
+title: "欢迎来到现代C++的世界！"
+description: "一个正在努力进步的，系统化的现代 C++ 教程"
 
 hero:
   name: "现代 C++ 教程"
   text: "Modern C++ Tutorial"
-  tagline: "不止于语法速查 —— 从基础到工程实战的一条完整现代 C++ 路径"
+  tagline: "不只是语法 —— 挑战走出从基础，到工程阅读，再到领域实战的一条完整现代 C++ 路径"
   actions:
     - theme: brand
-      text: 零基础起步
+      text: 新手来这里！
       link: /getting-started/
     - theme: alt
-      text: 直接学语法
+      text: C++语法第一关，启动！
       link: /vol1-fundamentals/
     - theme: alt
-      text: 查看路线图
+      text: 我们的路由图！
       link: /roadmap/
     - theme: alt
-      text: GitHub
+      text: 点我去GitHub！
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
 
 features:
@@ -71,7 +71,7 @@ features:
     linkText: 开始阅读
 
   - title: "卷八 · 领域应用"
-    details: "现代 C++ 在各领域的实战应用：嵌入式、网络编程、GUI、数据存储。"
+    details: "现代 C++ 在各领域的实战应用：嵌入式、TinyML 推理、网络编程、C++ 深度专题。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
     link: /vol8-domains/
     linkText: 开始阅读
@@ -101,7 +101,7 @@ features:
     linkText: 进入实验室
 
   - title: "贯穿式实战项目"
-    details: "手写 STL 组件、迷你 HTTP 服务器、GUI 框架、嵌入式 OS 等综合项目。"
+    details: "把各卷知识串成完整项目：协程服务器、迷你运行时、INI 解析器已就绪，手写 STL、迷你 HTTP 服务器在规划中。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
     link: /projects/
     linkText: 开始阅读

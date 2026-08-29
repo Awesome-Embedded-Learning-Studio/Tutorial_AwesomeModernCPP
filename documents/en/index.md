@@ -9,6 +9,9 @@ hero:
   tagline: "More than a syntax cheat-sheet — a complete path from fundamentals to engineering practice."
   actions:
     - theme: brand
+      text: Start from Zero
+      link: /en/getting-started/
+    - theme: alt
       text: Start Learning
       link: /en/vol1-fundamentals/
     - theme: alt
@@ -22,6 +25,12 @@ hero:
       link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
 
 features:
+  - title: "Getting Started"
+    details: "Never written code before? Install a toolchain, get your first C++ program running, and teach vscode to understand it — six hands-on articles, mouse-first with commands tucked into fold-out boxes."
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'
+    link: /en/getting-started/
+    linkText: Start Reading
+
   - title: "Vol.1 · Fundamentals"
     details: "Learn C++ fundamentals systematically from scratch. Suitable for absolute beginners."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>'
@@ -65,7 +74,7 @@ features:
     linkText: Start Reading
 
   - title: "Vol.8 · Domain Applications"
-    details: "Practical applications of modern C++ across domains: embedded systems, networking, GUI, and data storage."
+    details: "Practical applications of modern C++ across domains: embedded systems, TinyML inference, networking, and C++ deep dives."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'
     link: /en/vol8-domains/
     linkText: Start Reading
@@ -95,7 +104,7 @@ features:
     linkText: Enter the Lab
 
   - title: "Capstone Projects"
-    details: "Hands-on projects: hand-written STL components, a mini HTTP server, a GUI framework, an embedded OS, and more."
+    details: "Tie the volumes together into full projects: a coroutine echo server, a mini runtime, and an INI parser are ready to build on; hand-written STL components and a mini HTTP server are on the roadmap."
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'
     link: /en/projects/
     linkText: Start Reading

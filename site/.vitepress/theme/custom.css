@@ -1163,6 +1163,111 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
   color: var(--vp-c-text-2) !important;
 }
 
+/* ── Hero 按钮区:1 主 CTA + 图标化 ghost 快捷入口 ──────────
+   设计意图:hero 只需要回答一个问题——新人从哪进。首行让 brand 主按钮独占
+   (自然宽度,不拉伸),尾部一枚箭头指路;其余入口降级为第二行的 ghost 描边按钮,
+   前置身份图标(书/地图/GitHub mark)区分去处,hover 才浮出钢蓝软底。
+   全部走自然宽度:胶囊天生按内容收缩,强行等宽会在短文字两侧留出空洞;
+   ghost 形态下 flex-wrap 换到哪行都成立,不再有"应该等宽却参差"的预期。
+   图标用 mask + background: currentColor,颜色随文字走(平时深灰、hover 钢蓝),
+   与 feature 卡 rail/icon 同一套视觉语言。按钮文案一个字符不动。
+   类名加倍(.actions.actions/.action.action)抬高特异性,稳压 VitePress scoped
+   的 [data-v] 同分规则,不赌样式注入顺序(同上文 .VPSidebar.VPSidebar 先例)。 */
+.VPHero .actions.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 12px;
+  margin: 0;                       /* 抵消默认 -6px,间距统一交给 gap */
+}
+
+.VPHero .actions .action.action {
+  padding: 0;                      /* 抵消默认 6px(原与负 margin 配对) */
+  min-width: 0;
+}
+
+/* 主按钮独占首行:包裹层占满整行,按钮本身保持自然宽度,次按钮整体换行 */
+.VPHero .actions .action:first-child {
+  flex-basis: 100%;
+}
+
+/* 主按钮尾部箭头(hover 前探,呼应 feature 卡 link-text-icon 的位移手法) */
+.VPHero .actions .action:first-child .VPButton::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  vertical-align: -1.5px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M12 5l7 7-7 7'/%3E%3C/svg%3E") no-repeat center / contain;
+  transition: transform 0.25s ease;
+}
+
+.VPHero .actions .action:first-child .VPButton:hover::after {
+  transform: translateX(3px);
+}
+
+/* 次按钮 ghost 化:透明底 + 描边,把实底让给主按钮 */
+.VPHero .actions .action:not(:first-child) .VPButton.alt {
+  background-color: transparent;
+  border-color: var(--vp-c-border);
+  color: var(--vp-c-text-1);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-soft);
+}
+
+.VPHero .actions .action:not(:first-child) .VPButton.alt:active {
+  border-color: var(--vp-c-brand-2);
+  color: var(--vp-c-brand-2);
+  background-color: var(--vp-c-brand-soft-2);
+}
+
+/* 次按钮前置图标:形状装在 CSS 变量里,按位置分配(书/地图/GitHub)。
+   mask 只取 alpha,颜色交给 currentColor → 跟文字一起变钢蓝。 */
+.VPHero .actions .action:not(:first-child) .VPButton::before {
+  content: '';
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 7px;
+  vertical-align: -2px;
+  background-color: currentColor;
+  -webkit-mask: var(--hero-action-icon) no-repeat center / contain;
+  mask: var(--hero-action-icon) no-repeat center / contain;
+  flex-shrink: 0;
+}
+
+.VPHero .actions .action:nth-child(2) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20'/%3E%3C/svg%3E");
+}
+
+.VPHero .actions .action:nth-child(3) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z'/%3E%3Cpath d='M9 3v15M15 6v15'/%3E%3C/svg%3E");
+}
+
+.VPHero .actions .action:nth-child(4),
+.VPHero .actions .action:nth-child(5) {
+  --hero-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+}
+
+/* 未来按钮再多:第 6 个起没配图标,藏掉 ::before 占位,免得空 15px */
+.VPHero .actions .action:nth-child(n+6) .VPButton::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPHero .actions .action:first-child .VPButton::after {
+    transition: none;
+  }
+}
+
 /* ── Hero Image Slot: content card (HomeHeroVisual terminal) ──
    VitePress sizes .image-container as a fixed 320/392px square and gives .image
    large negative margins — both meant for a small decorative image with a
@@ -1313,6 +1418,14 @@ html.dark .online-compiler-demo__source-highlight .shiki span {
 }
 
 /* ── Features Grid ───────────────────────────────────────────── */
+
+/* VitePress 默认渲染的首页卡网格整体隐藏：16 卡已由 HomePathExplorer 的
+   「全部内容」视图(HomeFeatureGrid,读同一份 frontmatter)接管。
+   .VPHomeFeatures 只在 layout: home 渲染(全仓仅中英两个首页),不影响其他页面;
+   隐藏副本仍留在 DOM 中(SEO 无损),但移出 tab 序,交互归自渲染副本。 */
+.VPHomeFeatures {
+  display: none;
+}
 
 .VPFeatures {
   padding-top: 16px;

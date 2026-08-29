@@ -13,7 +13,7 @@ import ReferenceItem from './components/ReferenceItem.vue'
 import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
 import HomeHeroVisual from './components/HomeHeroVisual.vue'
 import ProofStrip from './components/ProofStrip.vue'
-import HomeRoadmap from './components/HomeRoadmap.vue'
+import HomePathExplorer from './components/HomePathExplorer.vue'
 import FontSizeSwitcher from './components/FontSizeSwitcher.vue'
 import ResizableSidebar from './components/ResizableSidebar.vue'
 import { setupMermaid } from './mermaid-client'
@@ -32,7 +32,7 @@ export default {
       'home-hero-after': () => h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
       'home-features-before': () =>
         h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel), h(HomeTipBanner)]),
-      'home-features-after': () => h(HomeRoadmap),
+      'home-features-after': () => h(HomePathExplorer),
       'nav-bar-content-after': () => h(FontSizeSwitcher),
       'nav-screen-content-after': () => h(FontSizeSwitcher),
     })

@@ -1,15 +1,17 @@
 # 贡献指南
 
-感谢你对现代 C++ 教程的关注！我们欢迎任何形式的贡献，包括但不限于：修正错别字、改进代码示例、完善现有内容、添加新章节等。
+嘿！感谢您原因看看这一页！如果您发现了问题，却还在犹豫要不要自己手改。。。不必犹豫！我们欢迎您的到来！！！我们欢迎任何形式的贡献，包括但不限于：修正错别字、改进代码示例、完善现有内容、添加新章节等。
 
 ## 快速开始
 
-1. Fork 本仓库
-2. 创建你的特性分支 (`git switch -c feature/amazing-feature`)
-3. 安装 pre-commit 提交前检查 (`pnpm hooks:install` 或 `scripts/setup_precommit.sh`)
-4. 提交更改 (`git commit -m '添加某功能'`)
+说的道理，您可以这样开始！
+
+1. 点点 Github 仓库的 Fork，把他克隆下来，
+2. 强烈建议创建属于您的分支，您会Git的话，就请`git switch -c feature/amazing-feature`
+3. 我们建议您安装 pre-commit 提交前检查 (`pnpm hooks:install` 或 `scripts/setup_precommit.sh`)，因为这样的话，您可以在提交之前，就抓到触发CI构建前的一些问题——除非CI通过，否则我们不会审查您的PR~。
+4. 提交您的更改：提交更改 (`git commit -m '我做了超级牛逼的工作'`)
 5. 推送到分支 (`git push origin feature/amazing-feature`)
-6. 创建 Pull Request
+6. 您的fork仓库，会出现Contribute to...，是的，贡献到我们的main分支上！创建您的PR，然后静候我们的审查！
 
 ## 提交前自动化
 
@@ -69,20 +71,20 @@ pre-commit 会在运行检查前临时隔离未暂存改动，避免把未准备
 
 ### Frontmatter 元数据
 
-每篇文章必须包含以下元数据：
+每篇文章必须包含以下元数据，这样的话，方便我们根据标签找内容（这个特性正在持续开发！但是我们CI检查会见检查的！）
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `title` | 是 | 文章标题 |
-| `description` | 是 | 一句话描述文章内容 |
-| `chapter` | 是 | 所属章节 |
-| `order` | 是 | 在章节中的顺序 |
-| `tags` | 是 | 标签列表 |
-| `difficulty` | 否 | 难度：beginner / intermediate / advanced |
-| `reading_time_minutes` | 否 | 预计阅读时间（分钟） |
-| `prerequisites` | 否 | 前置知识 |
-| `related` | 否 | 相关文章 |
-| `cpp_standard` | 否 | 涉及的 C++ 标准（如 [11, 14, 17, 20]） |
+| 字段                   | 必填 | 说明                                     |
+| ---------------------- | ---- | ---------------------------------------- |
+| `title`                | 是   | 文章标题                                 |
+| `description`          | 是   | 一句话描述文章内容                       |
+| `chapter`              | 是   | 所属章节                                 |
+| `order`                | 是   | 在章节中的顺序                           |
+| `tags`                 | 是   | 标签列表                                 |
+| `difficulty`           | 否   | 难度：beginner / intermediate / advanced |
+| `reading_time_minutes` | 否   | 预计阅读时间（分钟）                     |
+| `prerequisites`        | 否   | 前置知识                                 |
+| `related`              | 否   | 相关文章                                 |
+| `cpp_standard`         | 否   | 涉及的 C++ 标准（如 [11, 14, 17, 20]）   |
 
 ### 目录组织
 
@@ -100,17 +102,11 @@ documents/vol2-modern-features/     # 卷二目录
 
 ### 写作风格
 
-1. **语言**：使用清晰、简洁的中文
-2. **术语**：首次出现的技术术语应附英文原文
-3. **代码注释**：使用中文注释
-4. **标题层级**：不超过 4 级（`####`）
-5. **篇幅**：每篇文章控制在 1500-3000 字
-
-> 完整的写作人格、语气规则、文章骨架与代码风格见 [`.claude/style/writing-style.md`](.claude/style/writing-style.md)(项目作者的真实写作声音,贡献时尽量贴合)。
+完整的写作人格、语气规则、文章骨架与代码风格见 [`.claude/style/writing-style.md`](.claude/style/writing-style.md)(建议！当然如果您是投稿随意！毕竟这个文章是您的！但是通用教程还请保持文风的一致性！)。
 
 ## 自定义 Vue 组件
 
-文档站注册了若干自定义 Vue 组件，可在 Markdown 中直接使用。
+文档站注册了若干自定义 Vue 组件，可在 Markdown 中直接使用。关于这个，您可以摇一摇您的Agent，或者是自行看看site/.vitepress/theme/components/下的所有 Vue 组件。
 
 ### 导航组件（全站通用）
 
@@ -123,11 +119,11 @@ documents/vol2-modern-features/     # 卷二目录
 </ChapterNav>
 ```
 
-| 组件 | Prop | 类型 | 说明 |
-|------|------|------|------|
-| `ChapterNav` | `variant` | `'main'` \| `'sub'` | 布局样式，sub 用于子目录，默认 main |
-| `ChapterLink` | `num` | string \| number | 章节编号（仅 main 变体显示） |
-| `ChapterLink` | `href` | string | 链接路径，**不要**以 `.md` 结尾 |
+| 组件          | Prop      | 类型                | 说明                                |
+| ------------- | --------- | ------------------- | ----------------------------------- |
+| `ChapterNav`  | `variant` | `'main'` \| `'sub'` | 布局样式，sub 用于子目录，默认 main |
+| `ChapterLink` | `num`     | string \| number    | 章节编号（仅 main 变体显示）        |
+| `ChapterLink` | `href`    | string              | 链接路径，**不要**以 `.md` 结尾     |
 
 ### 参考文献组件（全站通用）
 
@@ -155,18 +151,18 @@ documents/vol2-modern-features/     # 卷二目录
 </ReferenceCard>
 ```
 
-| 组件 | Prop | 类型 | 说明 |
-|------|------|------|------|
-| `RefLink` | `id` | number \| string | 引用编号，与 ReferenceItem 的 id 对应 |
-| `RefLink` | `preview` | string | 鼠标悬停时的预览文字 |
-| `ReferenceCard` | `title` | string | 卡片标题，默认"参考文献" |
-| `ReferenceItem` | `id` | number \| string | 引用编号，页内锚点 |
-| `ReferenceItem` | `author` | string | 作者 |
-| `ReferenceItem` | `title` | string | 文献标题（必填） |
-| `ReferenceItem` | `publisher` | string | 出版者 |
-| `ReferenceItem` | `year` | number \| string | 年份 |
-| `ReferenceItem` | `chapter` | string | 章节或备注信息 |
-| `ReferenceItem` | `url` | string | 外部链接 |
+| 组件            | Prop        | 类型             | 说明                                  |
+| --------------- | ----------- | ---------------- | ------------------------------------- |
+| `RefLink`       | `id`        | number \| string | 引用编号，与 ReferenceItem 的 id 对应 |
+| `RefLink`       | `preview`   | string           | 鼠标悬停时的预览文字                  |
+| `ReferenceCard` | `title`     | string           | 卡片标题，默认"参考文献"              |
+| `ReferenceItem` | `id`        | number \| string | 引用编号，页内锚点                    |
+| `ReferenceItem` | `author`    | string           | 作者                                  |
+| `ReferenceItem` | `title`     | string           | 文献标题（必填）                      |
+| `ReferenceItem` | `publisher` | string           | 出版者                                |
+| `ReferenceItem` | `year`      | number \| string | 年份                                  |
+| `ReferenceItem` | `chapter`   | string           | 章节或备注信息                        |
+| `ReferenceItem` | `url`       | string           | 外部链接                              |
 
 ### 演讲信息卡片（卷十专用）
 
@@ -183,15 +179,15 @@ documents/vol2-modern-features/     # 卷二目录
 />
 ```
 
-| Prop | 类型 | 说明 |
-|------|------|------|
-| `talkTitle` | string | 演讲标题（必填） |
-| `speaker` | string | 演讲者（必填） |
-| `conference` | string | 会议标识（必填）：`cppcon` \| `cppnow` \| `meetingpp` \| `course` \| `blog` |
-| `year` | number \| string | 年份（必填） |
-| `videoBilibili` | string | Bilibili 视频链接 |
-| `videoYoutube` | string | YouTube 视频链接 |
-| `slidesUrl` | string | 幻灯片链接 |
+| Prop            | 类型             | 说明                                                                        |
+| --------------- | ---------------- | --------------------------------------------------------------------------- |
+| `talkTitle`     | string           | 演讲标题（必填）                                                            |
+| `speaker`       | string           | 演讲者（必填）                                                              |
+| `conference`    | string           | 会议标识（必填）：`cppcon` \| `cppnow` \| `meetingpp` \| `course` \| `blog` |
+| `year`          | number \| string | 年份（必填）                                                                |
+| `videoBilibili` | string           | Bilibili 视频链接                                                           |
+| `videoYoutube`  | string           | YouTube 视频链接                                                            |
+| `slidesUrl`     | string           | 幻灯片链接                                                                  |
 
 组件源码位于 `site/.vitepress/theme/components/`。
 
@@ -199,8 +195,8 @@ documents/vol2-modern-features/     # 卷二目录
 
 ### C++ 代码风格
 
-1. 使用现代 C++ 风格（C++11 及以上）
-2. 优先使用 `auto`、范围 for 循环等现代特性
+1. 除非咱们真的在讲C++98，我们建议您使用现代 C++ 风格（C++11 及以上）
+2. 优先使用 `auto`、范围 for 循环等现代特性，这很重要，ModernCPP还是Modern一些~
 3. 标注适用的 C++ 标准
 4. 代码示例使用 CMake 构建，确保可独立编译
 
@@ -254,21 +250,9 @@ documents/community/incoming/
 
 1. 初步通过基础检查后，文章进入 `documents/community/incoming/`，可在文档站展示，并可被 TAMCPP 周报引用。
 2. 经过社区讨论、语法修订和技术审阅后，文章可移动到 `documents/community/articles/` 长期收录。
-3. 如果文章非常适合主线教程，维护者可进一步整理进对应卷或章节。
+3. 如果文章非常适合主线教程，我们会进一步整理进对应卷或章节。
 
 社区初刊不代表最终定稿，但上线前仍需满足基本要求：内容可以正常渲染、没有明显技术硬伤、来源和引用清楚、作者同意公开展示。
-
-## 发布前检查清单
-
-提交 PR 前，请确认：
-
-- [ ] Frontmatter 元数据完整
-- [ ] 代码示例可编译
-- [ ] 无错别字
-- [ ] 内部链接有效
-- [ ] 标签使用规范
-- [ ] 遵循文章模板结构
-- [ ] 更新了卷首页索引（如适用）
 
 ## 本地预览
 
@@ -290,9 +274,9 @@ pnpm dev
 
 ## 代码审查流程
 
-1. 所有 PR 需要至少一位维护者审核
+1. 所有 PR 需要至少一位维护者审核（目前是笔者QAQ）
 2. CI 检查必须通过（markdown lint、链接检查）
-3. 审核通过后，维护者将合并代码
+3. 恭喜，您的审查通过咯！欢迎加入我们！
 
 ## 社区协作规则
 
@@ -353,14 +337,14 @@ QA 不替代正文，只负责解答常见分叉问题和高频误区。
 
 我们同样重视非代码形式的贡献！以下贡献方式均会被记录在 [CONTRIBUTORS.md](./CONTRIBUTORS.md) 中：
 
-| 贡献类型 | 说明 | 如何参与 |
-|---------|------|---------|
-| 界面设计 | 文档站 UI/UX 优化 | 通过 Issue 提交设计方案 |
-| 插画配图 | 教程插图、架构图 | 通过 Issue 或邮件提交 |
+| 贡献类型 | 说明                 | 如何参与                          |
+| -------- | -------------------- | --------------------------------- |
+| 界面设计 | 文档站 UI/UX 优化    | 通过 Issue 提交设计方案           |
+| 插画配图 | 教程插图、架构图     | 通过 Issue 或邮件提交             |
 | 问题反馈 | 发现错误或不准确之处 | 提交 Issue 或通过微信/QQ/邮件反馈 |
 | 内容建议 | 新主题建议、改进意见 | 提交 Issue 或通过微信/QQ/邮件反馈 |
-| 内容审阅 | 技术校对、审阅 | 通过 Issue 或邮件参与 |
-| 翻译 | 英文翻译 | 通过 PR 提交 |
+| 内容审阅 | 技术校对、审阅       | 通过 Issue 或邮件参与             |
+| 翻译     | 英文翻译             | 通过 PR 提交                      |
 
 ### 匿名贡献
 
@@ -383,16 +367,16 @@ QA 不替代正文，只负责解答常见分叉问题和高频误区。
 
 ## 行为准则
 
-- 尊重所有贡献者
-- 建设性的反馈和讨论
-- 专注于对项目最有利的事情
+- 还尊重所有贡献者，各位都是用爱发电，我们不会考虑展开任何收费形式。“这个时代的知识应当是免费的”
+- 还请建设性的反馈和讨论，我们欢迎吐槽（类似你这是不是AI写的哇？我们甚至都欢迎，说明文章质量告警，我们要加班处理了！但是攻击性的话语还请收一下，公共场合，不必骂街~）
+- 专注于对项目最有利的事情（各位对事不对人）
 
-## 获取帮助
+## 坏了，你没有解答我的问题
 
-如有问题，请：
+Sir! This Way!
 
 - 提交 [GitHub Issue](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)
-- 发送邮件至：725610365@qq.com
+- 直接对着这个邮箱塞邮件：725610365@qq.com
 
 ---
 
