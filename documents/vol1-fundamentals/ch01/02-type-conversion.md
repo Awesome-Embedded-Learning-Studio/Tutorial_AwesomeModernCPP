@@ -362,11 +362,13 @@ int main()
     std::cout << "请输入摄氏温度: ";
     std::cin >> celsius;
     double fahrenheit = celsius * 9 / 5 + 32;
-    std::cout << std::fixed <<std::setprecision(1); 
+    std::cout << std::fixed << std::setprecision(1);
     std::cout << celsius << " C = " << fahrenheit << " F" << std::endl;
     return 0;
 }
 ```
+
+题目要求里点名了 `static_cast`：`celsius` 已经声明成 `double`，`celsius * 9` 会把 `9` 提升成 `double` 再算，整条表达式都是浮点运算，`static_cast` 在这里没有上场机会。如果手里只有 `int`（比如上游函数只给整数），就要写 `static_cast<double>(celsius) * 9 / 5 + 32`，先转型再乘除，否则 `(celsius * 9) / 5` 走的还是整数除法，小数直接丢。
 
 编译运行:
 

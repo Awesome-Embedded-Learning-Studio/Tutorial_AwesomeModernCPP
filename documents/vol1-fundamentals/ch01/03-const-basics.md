@@ -407,6 +407,8 @@ int main()
 }
 ```
 
+题目只给了三个宏，没规定 `MAX_RADIUS` / `MIN_RADIUS` 怎么用，原样换成 `constexpr` 后它们会闲置。这里加了一个同为 `constexpr` 的 `clamp_radius`，把输入半径夹回 `[0.1, 100]` 区间，让两个常量真正参与计算——`constexpr` 函数也可以调用另一个 `constexpr` 函数，像 `constexpr double area = circle_area(2.0);` 这样的常量表达式初始化，整条调用链都会在编译期算完。
+
 编译运行:
 
 ```bash

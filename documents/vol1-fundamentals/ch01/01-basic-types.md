@@ -563,7 +563,7 @@ sizeof(3.14L) = 16
 >
 > - **C++**：`true` 是 `bool` 字面量，`sizeof(true)` = `sizeof(bool)` = 1。
 > - **C（`<stdbool.h>`，C17 及更早）**：`true` 是宏，展开成 `int` 字面量 `1`，`sizeof(true)` = `sizeof(int)` = 4。
-> - **C（C23）**：`true` 变成真正的关键字 `bool`（即 `_Bool`），`sizeof(true)` = 1。
+> - **C（C23）**：`true` / `false` 成为真正的关键字，类型是 `bool`（即 `_Bool`），`sizeof(true)` = 1。
 
 :::
 
