@@ -26,6 +26,9 @@ hero:
     - theme: alt
       text: Contributors
       link: /en/team/
+    - theme: alt
+      text: Join QQ Group
+      link: /en/community/join
 
 features:
   - title: "Getting Started"

@@ -23,6 +23,9 @@ hero:
     - theme: alt
       text: 感谢大佬们
       link: /team/
+    - theme: alt
+      text: 加交流群
+      link: /community/join
 
 features:
   - title: "新手起步"

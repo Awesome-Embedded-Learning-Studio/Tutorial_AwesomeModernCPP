@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navEn } from './nav'
 import { buildSidebar } from './sidebar'
-import { sharedThemeConfig, sharedMarkdown } from './shared'
+import { sharedThemeConfig, sharedMarkdown, makeSocialLinks } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
 import { join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -74,6 +74,9 @@ export default withDrawio(defineConfig({
       link: '/en/',
       themeConfig: {
         nav: navEn,
+        // root 构建里 EN locale 只覆盖这几项,其余继承上面的中文 themeConfig;
+        // socialLinks 不补 base 前缀,必须显式给 EN 自己的加群页全路径
+        socialLinks: makeSocialLinks('/Tutorial_AwesomeModernCPP/en/community/join'),
         editLink: {
           pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path',
           text: 'Edit this page on GitHub',

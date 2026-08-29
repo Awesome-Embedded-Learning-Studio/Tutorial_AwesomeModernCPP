@@ -20,9 +20,10 @@ description: "社区来稿、初刊文章与已审阅收录内容"
 ## 内容状态
 
 <ChapterNav variant="main">
-  <ChapterLink num="1" href="incoming/">社区来稿初刊</ChapterLink>
-  <ChapterLink num="2" href="articles/">已审阅收录</ChapterLink>
-  <ChapterLink num="3" href="dev/">项目开发</ChapterLink>
+  <ChapterLink num="1" href="join">加入交流群</ChapterLink>
+  <ChapterLink num="2" href="incoming/">社区来稿初刊</ChapterLink>
+  <ChapterLink num="3" href="articles/">已审阅收录</ChapterLink>
+  <ChapterLink num="4" href="dev/">项目开发</ChapterLink>
 </ChapterNav>
 
 ## 流转方式
@@ -63,6 +64,6 @@ description: "社区来稿、初刊文章与已审阅收录内容"
 - 图片、代码和大段材料来源清楚。
 - 作者同意公开展示，并允许维护者进行必要编辑。
 
-学习问题、路线讨论和开放式建议请优先使用 GitHub Discussions；明确的内容提案或投稿主题可以使用 GitHub Issue。
+快速提问和日常交流欢迎在 QQ 群进行；开放式讨论请优先使用 GitHub Discussions，明确的内容提案或投稿主题可以使用 GitHub Issue。
 
 项目自身的维护节奏、站点迭代和发布度量记录在 [项目开发](dev/) 中。

@@ -19,6 +19,7 @@ import ResizableSidebar from './components/ResizableSidebar.vue'
 import { setupMermaid } from './mermaid-client'
 import MermaidLightbox from './components/MermaidLightbox.vue'
 import NavSpinner from './components/NavSpinner.vue'
+import QQGroupCard from './components/QQGroupCard.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
 
@@ -49,5 +50,6 @@ export default {
     app.component('ReferenceCard', ReferenceCard)
     app.component('ReferenceItem', ReferenceItem)
     app.component('OnlineCompilerDemo', OnlineCompilerDemo)
+    app.component('QQGroupCard', QQGroupCard)
   }
 } satisfies Theme

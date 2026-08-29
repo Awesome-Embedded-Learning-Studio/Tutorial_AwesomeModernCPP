@@ -219,7 +219,7 @@ function generateRootConfig(absSiteDir: string, absSrcDir: string): string {
 
   return `import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
-import { sharedBase, sharedThemeConfig, sharedEnThemeConfig } from '${relShared}'
+import { sharedBase, sharedThemeConfig, sharedEnThemeConfig, makeSocialLinks } from '${relShared}'
 import { navEn } from '${relNav}'
 import { buildSidebar } from '${relSidebar}'
 
@@ -234,7 +234,7 @@ export default withDrawio(defineConfig({
   locales: {
     root: { label: '中文', lang: 'zh-CN', title: '现代 C++ 教程', description: '系统化的现代 C++ 教程 — 从基础入门到领域实战' },
     en: { label: 'English', lang: 'en-US', title: 'Modern C++ Tutorial', description: 'A systematic modern C++ tutorial', link: '/en/',
-      themeConfig: { nav: navEn, editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path', text: 'Edit this page on GitHub' } } },
+      themeConfig: { nav: navEn, socialLinks: makeSocialLinks('/Tutorial_AwesomeModernCPP/en/community/join'), editLink: { pattern: 'https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/edit/main/documents/en/:path', text: 'Edit this page on GitHub' } } },
   },
   themeConfig: {
     ...sharedThemeConfig(),
@@ -326,7 +326,8 @@ async function buildVolume(task: BuildTask): Promise<string> {
   writeFileSync(join(tmpSite, '.vitepress', 'config.ts'), generateVolumeConfig(vol, lang, tmpSite, volSrcDir))
   symlinkDir(join(MAIN_VP, 'theme'), join(tmpSite, '.vitepress', 'theme'))
   symlinkDir(join(MAIN_VP, 'plugins'), join(tmpSite, '.vitepress', 'plugins'))
-  symlinkDir(join(MAIN_VP, 'public'), join(tmpSite, '.vitepress', 'public'))
+  // 静态资源走 documents/public:root 构建把它拷进 srcDir,VitePress 只认 <srcDir>/public
+  // (曾经的 .vitepress/public 符号链接从未被 VitePress 读取,线上 favicon 404 即此因)
 
   const t0 = Date.now()
   await execFileAsync(process.execPath, [VITEPRESS_BIN, 'build', relative(PROJECT_ROOT, tmpSite)])
@@ -655,7 +656,9 @@ async function main() {
     const s = join(DOCUMENTS, f)
     if (existsSync(s)) cpSync(s, join(rootSrcDir, f))
   }
-  for (const asset of ['images', 'stylesheets', 'javascripts', 'robots.txt', 'Awesome-Embedded.png', 'Awesome-Embedded.ico']) {
+  // public/ 内的静态资源(favicon/logo/QQ 群二维码等)会被 VitePress 从 <srcDir>/public
+  // 复制到产物根目录——这是 VitePress 唯一会搬运的 public 位置
+  for (const asset of ['public', 'images', 'stylesheets', 'javascripts', 'robots.txt', 'Awesome-Embedded.png', 'Awesome-Embedded.ico']) {
     const s = join(DOCUMENTS, asset)
     if (existsSync(s)) cpSync(s, join(rootSrcDir, asset), statSync(s).isDirectory() ? { recursive: true } : undefined)
   }
@@ -672,7 +675,6 @@ async function main() {
   writeFileSync(join(rootTmpSite, '.vitepress', 'config.ts'), generateRootConfig(rootTmpSite, rootSrcDir))
   symlinkDir(join(MAIN_VP, 'theme'), join(rootTmpSite, '.vitepress', 'theme'))
   symlinkDir(join(MAIN_VP, 'plugins'), join(rootTmpSite, '.vitepress', 'plugins'))
-  symlinkDir(join(MAIN_VP, 'public'), join(rootTmpSite, '.vitepress', 'public'))
 
   const rootT0 = Date.now()
   await execFileAsync(process.execPath, [VITEPRESS_BIN, 'build', '.'], { cwd: rootTmpSite })

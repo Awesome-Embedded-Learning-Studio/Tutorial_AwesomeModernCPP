@@ -17,6 +17,12 @@
 ![Build](https://img.shields.io/github/actions/workflow/status/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/deploy.yml?branch=main)
 ![AI agent ready](https://img.shields.io/badge/AI%20agent-ready-7C3AED)
 
+<p align="center">
+  <a href="https://qm.qq.com/q/cD89HxtmUg">
+    <img src="https://img.shields.io/badge/%E7%82%B9%E5%87%BB%E8%BF%99%E9%87%8C%E5%8A%A0%E5%85%A5%E6%88%91%E4%BB%AC-QQ%E4%BA%A4%E6%B5%81%E7%BE%A4-12B7F5?logo=qq" alt="QQ 交流群（群号1107100989） · 点击加入" />
+  </a>
+</p>
+
 ---
 
 <!-- COVERAGE_START -->
@@ -194,4 +200,5 @@ cmake -S code/examples/chapter05/06_array_vs_stdarray -B build && cmake --build 
 - **许可证**：[MIT License](./LICENSE)，随便改，fork，分发
 - **Issues**：[提交问题](https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP/issues)，遇到任何疑问，或者发现代码存在显著问题，随意提，第一时间响应。
 - **Email**：<725610365@qq.com>
+- **QQ 群**：TAMCPP 交流群（群号 `1107100989`），[点这里一键加群](https://qm.qq.com/q/cD89HxtmUg)
 - **组织**：隶属于[Awesome-Embedded-Learning-Studio](https://github.com/Awesome-Embedded-Learning-Studio)
