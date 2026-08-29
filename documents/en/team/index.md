@@ -3,9 +3,9 @@ title: Contributors
 description: Thanks to everyone who contributed to this project.
 translation:
   source: documents/team/index.md
-  source_hash: d57d71c8f25587ebd62a051a3d996f535b2be153012ac592658ba2011489ce45
-  translated_at: '2026-06-07T02:11:01.601674+00:00'
-  engine: anthropic
+  source_hash: 74b8885afb78cba4e7e4c4b18327ac31a256fa446b5624217be19b4246285af0
+  translated_at: '2026-08-29T00:00:00.000000+00:00'
+  engine: manual
   token_count: 961
 ---
 # Contributors
@@ -75,6 +75,15 @@ A huge thank you to these friends for their PRs and various forms of support! Yo
     <p class="card-desc">Submitted PRs adding reference answers to C tutorial chapters 2, 3, 10, 11 & 12 (#108, #125, #134) and annotating the Chapter 6 state machine code (#104); proposed improvements including a binary-representation explanation for floating-point numbers (#102) and exercise reference answers (#103), both implemented</p>
   </div>
 </a>
+<a href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/xiaoshuaijie.png?size=96" alt="xiaoshuaijie" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">xiaoshuaijie <span class="card-badge pr">PR</span></span>
+    <p class="card-role">Content Additions & Build Fixes</p>
+    <p class="card-types">💡 📝</p>
+    <p class="card-desc">Submitted PRs adding reference answers for the C tutorial's function pointers & callbacks, arrays & C strings, structs & unions, and dynamic memory & file I/O exercises (#149, #153, #164, #165), fixing Windows build failures and stabilizing the split-volume build (#160, #169); earlier reported an incorrect statement in "Scope and Storage" (#144), leading to a fix</p>
+  </div>
+</a>
 </div>
 
 The valuable feedback from these folks is equally worth recording. It is your feedback that allows this project to identify real issues and pushes us to improve! (Another deep 90-degree bow!)
@@ -134,15 +143,6 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <p class="card-desc">Raised a discussion on the correctness of an alignas example in the Advanced C++98 chapter (#96)</p>
   </div>
 </a>
-<a href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" class="contributor-card">
-  <img src="https://github.com/xiaoshuaijie.png?size=96" alt="xiaoshuaijie" class="card-avatar" />
-  <div class="card-body">
-    <span class="card-name">xiaoshuaijie <span class="card-badge issue">Issue</span></span>
-    <p class="card-role">Bug Report · Content Errata</p>
-    <p class="card-types">🐛 💡</p>
-    <p class="card-desc">Reported an incorrect statement about anonymous namespaces and template argument deduction in the C tutorial "Scope and Storage" (#144), leading to a fix</p>
-  </div>
-</a>
 <a href="https://github.com/f4bb0" target="_blank" rel="noopener noreferrer" class="contributor-card">
   <img src="https://github.com/f4bb0.png?size=96" alt="f4bb0" class="card-avatar" />
   <div class="card-body">
@@ -150,6 +150,24 @@ The valuable feedback from these folks is equally worth recording. It is your fe
     <p class="card-role">Bug Report · Site Experience</p>
     <p class="card-types">🐛</p>
     <p class="card-desc">Reported a rendering issue where code block line numbers were vertically misaligned with the code lines (#142), leading to a fix</p>
+  </div>
+</a>
+<a href="https://github.com/ypj0" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/ypj0.png?size=96" alt="ypj0" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">ypj0 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Content Errata</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">Reported a typo in the Canvas class's total_area() in Vol.1's OOP-in-practice chapter — shape_->area() should be shape->area() (#170), leading to a fix</p>
+  </div>
+</a>
+<a href="https://github.com/bocchiqwq" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/bocchiqwq.png?size=96" alt="bocchiqwq" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">bocchiqwq <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">Bug Report · Site Experience</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">Reported 404 errors on the Getting Started page and broken navigation redirects (#151), leading to fixes</p>
   </div>
 </a>
 </div>

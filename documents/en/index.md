@@ -12,6 +12,9 @@ hero:
       text: Start from Zero
       link: /en/getting-started/
     - theme: alt
+      text: GitHub
+      link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
+    - theme: alt
       text: Start Learning
       link: /en/vol1-fundamentals/
     - theme: alt
@@ -21,8 +24,8 @@ hero:
       text: View Roadmap
       link: /en/roadmap/
     - theme: alt
-      text: GitHub
-      link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
+      text: Contributors
+      link: /en/team/
 
 features:
   - title: "Getting Started"
@@ -120,4 +123,10 @@ features:
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>'
     link: /en/tags/
     linkText: Browse Tags
+
+  - title: "With Gratitude"
+    details: "Warm feedback and contributions have carried this tutorial to today."
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>'
+    link: /en/team/
+    linkText: Meet the Team
 ---

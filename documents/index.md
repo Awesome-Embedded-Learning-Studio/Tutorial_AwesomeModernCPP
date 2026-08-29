@@ -12,14 +12,17 @@ hero:
       text: 新手来这里！
       link: /getting-started/
     - theme: alt
+      text: 来Github转转！点个小⭐！
+      link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
+    - theme: alt
       text: C++语法第一关，启动！
       link: /vol1-fundamentals/
     - theme: alt
       text: 我们的路由图！
       link: /roadmap/
     - theme: alt
-      text: 点我去GitHub！
-      link: https://github.com/Awesome-Embedded-Learning-Studio/Tutorial_AwesomeModernCPP
+      text: 感谢大佬们
+      link: /team/
 
 features:
   - title: "新手起步"
@@ -117,4 +120,10 @@ features:
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>'
     link: /tags/
     linkText: 浏览标签
+
+  - title: "感谢这些朋友们"
+    details: "热心的反馈和贡献，让这份教程走到今天。"
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>'
+    link: /team/
+    linkText: 去鸣谢页看看
 ---

@@ -70,6 +70,15 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">提交 PR 为 C 语言教程第二、三、十、十一、十二章补充参考答案（#108、#125、#134），为第六章状态机代码补充注释（#104）；提出浮点数讲解补充二进制表示（#102）、练习加参考答案（#103）等改进提案，均促成落地</p>
   </div>
 </a>
+<a href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/xiaoshuaijie.png?size=96" alt="xiaoshuaijie" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">xiaoshuaijie <span class="card-badge pr">PR</span></span>
+    <p class="card-role">内容补充与构建修复</p>
+    <p class="card-types">💡 📝</p>
+    <p class="card-desc">提交 PR 为 C 语言教程补全函数指针与回调、数组与 C 字符串、结构体与联合体、动态内存与文件 I/O 等多章练习参考答案（#149、#153、#164、#165），修复 Windows 构建失败并稳定分卷构建（#160、#169）；此前反馈「作用域与存储类别」表述错误（#144）促成修正</p>
+  </div>
+</a>
 </div>
 
 这些同志提出的宝贵反馈，同样值得记录，正是你们的反馈让这个项目可以知晓真实的问题，督促我们改进！（继续深鞠躬90°！）
@@ -129,15 +138,6 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-desc">就「C++98 进阶」章节 alignas 示例的正确性发起讨论（#96）</p>
   </div>
 </a>
-<a href="https://github.com/xiaoshuaijie" target="_blank" rel="noopener noreferrer" class="contributor-card">
-  <img src="https://github.com/xiaoshuaijie.png?size=96" alt="xiaoshuaijie" class="card-avatar" />
-  <div class="card-body">
-    <span class="card-name">xiaoshuaijie <span class="card-badge issue">Issue</span></span>
-    <p class="card-role">问题反馈 · 内容勘误</p>
-    <p class="card-types">🐛 💡</p>
-    <p class="card-desc">反馈 C 语言教程「作用域与存储类别」中匿名命名空间与模板参数推导关系的表述错误（#144），促成修正</p>
-  </div>
-</a>
 <a href="https://github.com/f4bb0" target="_blank" rel="noopener noreferrer" class="contributor-card">
   <img src="https://github.com/f4bb0.png?size=96" alt="f4bb0" class="card-avatar" />
   <div class="card-body">
@@ -145,6 +145,24 @@ description: "感谢所有为本项目做出贡献的人"
     <p class="card-role">问题反馈 · 站点体验</p>
     <p class="card-types">🐛</p>
     <p class="card-desc">反馈教程页面代码块行号与代码行纵向不对齐的渲染问题（#142），促成修复</p>
+  </div>
+</a>
+<a href="https://github.com/ypj0" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/ypj0.png?size=96" alt="ypj0" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">ypj0 <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈 · 内容勘误</p>
+    <p class="card-types">🐛 💡</p>
+    <p class="card-desc">反馈卷一 OOP 实战 Canvas 类 total_area() 中 shape_->area() 应为 shape->area() 的笔误（#170），促成修正</p>
+  </div>
+</a>
+<a href="https://github.com/bocchiqwq" target="_blank" rel="noopener noreferrer" class="contributor-card">
+  <img src="https://github.com/bocchiqwq.png?size=96" alt="bocchiqwq" class="card-avatar" />
+  <div class="card-body">
+    <span class="card-name">bocchiqwq <span class="card-badge issue">Issue</span></span>
+    <p class="card-role">问题反馈 · 站点体验</p>
+    <p class="card-types">🐛</p>
+    <p class="card-desc">反馈新手起步页面 404 与导航跳转异常的问题（#151），促成修复</p>
   </div>
 </a>
 </div>
