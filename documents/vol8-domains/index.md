@@ -35,5 +35,6 @@ tags:
   <ChapterLink href="gui-graphics/">GUI 与图形 — 规划中</ChapterLink>
   <ChapterLink href="data-storage/">数据存储 — 规划中</ChapterLink>
   <ChapterLink href="algorithms/">算法与数据结构 — 规划中</ChapterLink>
+  <ChapterLink href="data-structure/">手搓 mini STL:容器库实战</ChapterLink>
   <ChapterLink href="cpp-deep-dives/">C++ 深度专题</ChapterLink>
 </ChapterNav>
