@@ -428,7 +428,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 int main()
 {
     int n = 0;
-    long long sum = 1;
+    long long factorial = 1;
     std::cout << "输入一个正整数 N: ";
     if (!(std::cin >> n) || n < 1)
     {
@@ -438,9 +438,9 @@ int main()
 
     for (int i = n; i >= 1; i--)
     {
-        sum *= i;
+        factorial *= i;
     }
-    std::cout << n << "的阶乘" << "(" << n << "!): " << sum << std::endl;
+    std::cout << n << "的阶乘" << "(" << n << "!): " << factorial << std::endl;
 
     return 0;
 }
@@ -474,6 +474,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 int main()
 {
     int n = 0;
+    bool flag=0;
     std::cout << "输入一个正整数 N: ";
     if (!(std::cin >> n) || n < 2)
     {
@@ -481,7 +482,7 @@ int main()
         return 1;
     }
     std::cout << "2" << "到" << n << "之间所有的素数: " << std::endl;
-    for (int flag = 0, i = 2; i <= n; i++)
+    for (int i = 2; i <= n; i++)
     {
         flag = 0;
         for (int j = 2; j <= i - 1; j++)
