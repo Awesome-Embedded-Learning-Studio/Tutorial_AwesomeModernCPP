@@ -136,7 +136,7 @@ for (const auto& s : scores) {
 std::string text = "Hello C++ World";
 int vowel_count = 0;
 for (char c : text) {
-    char lower = (c >= 'A' && c <= 'Z') ? (c + 32) : c;
+    char lower = (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c;
     if (lower == 'a' || lower == 'e' || lower == 'i'
         || lower == 'o' || lower == 'u') {
         ++vowel_count;
@@ -344,7 +344,7 @@ int main()
     int vowel_count = 0;
     for (char c : text)
     {
-        char lower = (c >= 'A' && c <= 'Z') ? (c + 32) : c;
+        char lower = (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c;
         if (lower == 'a' || lower == 'e' || lower == 'i' || lower == 'o' || lower == 'u')
         {
             ++vowel_count;
