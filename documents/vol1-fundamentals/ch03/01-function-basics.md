@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - range-for 循环
-reading_time_minutes: 13
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
@@ -363,6 +363,60 @@ gcd(100, 75) → 25
 gcd(7, 3)    → 1
 ```
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int gcd(int a, int b);
+int main()
+{
+    int a = 0;
+    int b = 0;
+    int measure = 0;
+    std::cout << "请输入两个正整数: (例如48 18)";
+
+    if (!(std::cin >> a >> b))
+    {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+    if (a < b)
+    {
+        int temp = 0;
+        temp = a;
+        a = b;
+        b = temp;
+    }
+    measure = gcd(a, b);
+    std::cout << a << "和" << b << "的最大公约数为: " << measure << std::endl;
+    return 0;
+}
+int gcd(int a, int b)
+{
+    if (b == 0)
+    {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入两个正整数: (例如48 18)18 48
+48和18的最大公约数为: 6
+```
+
+:::
+
 ### 练习二：素数判断
 
 写一个函数 `bool is_prime(int n)`，判断一个正整数 `n` 是否为素数。注意处理边界情况：小于 2 的数不是素数，2 是素数。提示：只需要检查 2 到 `sqrt(n)` 范围内有没有能整除 `n` 的数。
@@ -373,6 +427,61 @@ is_prime(17) → true
 is_prime(18) → false
 is_prime(1)  → false
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+bool is_prime(int a);
+int main()
+{
+    int a = 0;
+    std::cout << "请输入一个正整数: ";
+
+    if (!(std::cin >> a))
+    {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+    // std::boolalpha使bool 以文字形式
+    std::cout << std::boolalpha << "is_prime(" << a << ") -> " << is_prime(a) << std::endl;
+    return 0;
+}
+bool is_prime(int a)
+{
+    if (a < 2)
+    {
+        return false;
+    }
+
+    const int limit = static_cast<int>(std::sqrt(a));
+    for (int i = 2; i <= limit; ++i)
+    {
+        if (a % i == 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入一个正整数: 5
+is_prime(5) -> true
+```
+
+:::
 
 ### 练习三：用 struct 返回多个值
 
@@ -391,6 +500,63 @@ DivResult divmod(int dividend, int divisor);
 divmod(17, 5) → 商: 3, 余: 2
 divmod(100, 7) → 商: 14, 余: 2
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+struct DivResult
+{
+    int quotient;
+    int remainder;
+};
+DivResult divmod(int dividend, int divisor);
+int main()
+{
+    int dividend = 0;
+    int divisor = 0;
+    std::cout << "请输入被除数和除数(例如17 5): ";
+
+    if (!(std::cin >> dividend >> divisor))
+    {
+        std::cout << "错误：输入格式无效" << std::endl;
+        return 1;
+    }
+    if (divisor == 0)
+    {
+        std::cout << "除数不能为零" << std::endl;
+        return 1;
+    }
+
+    const DivResult value = divmod(dividend, divisor);
+    std::cout << "divmod(" << dividend << ", " << divisor << ") -> 商: "
+              << value.quotient << ", 余: " << value.remainder << std::endl;
+
+    return 0;
+}
+DivResult divmod(int dividend, int divisor)
+{
+
+    return {dividend / divisor, dividend % divisor};
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+请输入被除数和除数(例如17 5): 17 5
+divmod(17, 5) -> 商: 3, 余: 2
+```
+
+:::
 
 ## 小结
 
