@@ -44,9 +44,11 @@ jobs:
         with:
           path: site/.vitepress/.build-cache
           key: vitepress-build-${{ runner.os }}-${{ hashFiles('documents/**', 'site/.vitepress/config/**', 'site/.vitepress/plugins/**', 'site/.vitepress/public/**', 'site/.vitepress/theme/**', 'scripts/build.ts', 'package.json', 'pnpm-lock.yaml') }}
+          # 兜底必须限定 runner.os:manifest 是纯内容哈希(跨 OS 恒等),
+          # 若不限定,Windows 腿会恢复 Linux 条目并整卷判为 cached,跳过
+          # 全部分卷构建——Windows 专属代码路径(junction/重试)就测不到了。
           restore-keys: |
             vitepress-build-${{ runner.os }}-
-            vitepress-build-
 
       - name: Build
         run: pnpm build
