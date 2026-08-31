@@ -9,6 +9,9 @@
  */
 
 #include <cstdlib>
+#ifdef _WIN32
+#include <malloc.h>  // _aligned_malloc/_aligned_free:Windows CRT 的等价物
+#endif
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -40,7 +43,13 @@ void* aligned_alloc_wrapper(std::size_t alignment,
     // aligned_alloc 要求 total 是 alignment 的整数倍
     total = ((total + alignment - 1) / alignment) * alignment;
 
+#ifdef _WIN32
+    // Windows CRT(MSVC 与 mingw)不提供 std::aligned_alloc;等价是
+    // _aligned_malloc(注意参数顺序相反),释放须配对 _aligned_free
+    void* ptr = _aligned_malloc(total, alignment);
+#else
     void* ptr = std::aligned_alloc(alignment, total);
+#endif
     if (ptr) {
         std::memset(ptr, 0, total);
     }
@@ -189,9 +198,15 @@ int main()
     std::cout << "  对应的 unaligned 版本: _mm_loadu_ps / _mm256_loadu_ps / _mm512_loadu_ps\n";
 
     // 释放堆内存
+#ifdef _WIN32
+    _aligned_free(heap_a);
+    _aligned_free(heap_b);
+    _aligned_free(heap_result);
+#else
     std::free(heap_a);
     std::free(heap_b);
     std::free(heap_result);
+#endif
 
     std::cout << "\n要点:\n";
     std::cout << "  1. alignas(32) 在栈上声明 32 字节对齐的数组\n";

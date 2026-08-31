@@ -13,7 +13,11 @@ using clk = std::chrono::steady_clock;
 static std::vector<int> g_data;
 
 inline void do_not_optimize(int v) {
-    asm volatile("" : "+r"(v)::"memory");
+    #ifdef _MSC_VER
+        volatile auto msvc_sink = v; (void)msvc_sink;  // MSVC:volatile 写入阻止优化
+    #else
+        asm volatile("" : "+r"(v)::"memory");
+    #endif
 }
 
 // ---------- A. 步长扫描:固定 size,扫 stride,测吞吐(元素/ns)----------

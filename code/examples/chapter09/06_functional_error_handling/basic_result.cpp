@@ -120,7 +120,10 @@ void demo_error_propagation() {
     }
 }
 
-// TRY macro simulation (GCC/Clang statement expression)
+// TRY macro simulation (GCC/Clang statement expression)。
+// 语句表达式({ ... })里的 return 属于外围函数——这是 GCC 扩展,MSVC 无对应,
+// lambda IIFE 也无法模拟宏内提前返回,故 MSVC 线不编译此演示。
+#ifndef _MSC_VER
 #define TRY(...) ({ \
     auto _result = (__VA_ARGS__); \
     if (!_result) return std::unexpected{_result.error()}; \
@@ -143,12 +146,15 @@ void demo_try_macro() {
         std::cout << "Failed: " << result.error().message << std::endl;
     }
 }
+#endif
 
 int main() {
     demo_basic_usage();
     demo_void_result();
     demo_error_propagation();
+#ifndef _MSC_VER
     demo_try_macro();
+#endif
 
     return 0;
 }

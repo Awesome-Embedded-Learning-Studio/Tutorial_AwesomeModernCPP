@@ -50,10 +50,10 @@ struct Packed {
     int i;
 };
 
-struct Aligned {
+struct alignas(16) Aligned {
     char c;
     int i;
-} __attribute__((aligned(16)));
+};
 
 // ==================== 演示主函数 ====================
 int main() {

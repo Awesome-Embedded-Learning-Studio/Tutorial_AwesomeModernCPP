@@ -6,8 +6,33 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+
+// POSIX fd 的跨平台适配:MSVC 的 <io.h> 提供 _open/_close/_write,
+// 旗标名为 _O_RDWR/_O_CREAT;GCC/Clang 直接用 POSIX 原名
+#ifdef _MSC_VER
+#include <io.h>
+#include <fcntl.h>
+#define FD_OPEN(p, f)   _open((p), (f))
+#define FD_CLOSE(fd)    _close(fd)
+#define FD_WRITE(fd, buf, n) _write((fd), (buf), (unsigned)(n))
+#define FD_O_RDWR       _O_RDWR
+#define FD_O_CREAT      _O_CREAT
+// MSVC 没有 /tmp,落到当前工作目录
+static const char kFdTestPath[]      = "fd_test.txt";
+static const char kTmpTestPath[]     = "file_handle_test.txt";
+static const char kWrapperTestPath[] = "wrapper_test.txt";
+#else
 #include <unistd.h>
 #include <fcntl.h>
+#define FD_OPEN(p, f)   ::open((p), (f))
+#define FD_CLOSE(fd)    ::close(fd)
+#define FD_WRITE(fd, buf, n) ::write((fd), (buf), (n))
+#define FD_O_RDWR       O_RDWR
+#define FD_O_CREAT      O_CREAT
+static const char kFdTestPath[]      = "/tmp/fd_test.txt";
+static const char kTmpTestPath[]     = "/tmp/test.txt";
+static const char kWrapperTestPath[] = "/tmp/wrapper_test.txt";
+#endif
 
 // ========== FILE* 删除器 ==========
 
@@ -35,7 +60,7 @@ FilePtr open_file(const char* path, const char* mode) {
 void file_example() {
     printf("=== FILE* Example ===\n");
 
-    auto fp = open_file("/tmp/test.txt", "w");
+    auto fp = open_file(kTmpTestPath, "w");
     if (fp) {
         std::fprintf(fp.get(), "Hello from embedded C++!\n");
         printf("Data written\n");
@@ -95,7 +120,7 @@ void stateless_deleter_example() {
 struct FdDeleter {
     void operator()(int* fd) const noexcept {
         if (fd && *fd >= 0) {
-            ::close(*fd);
+            FD_CLOSE(*fd);
             printf("[FdDeleter] Closed fd %d\n", *fd);
             delete fd;
         }
@@ -105,7 +130,7 @@ struct FdDeleter {
 using FdPtr = std::unique_ptr<int, FdDeleter>;
 
 FdPtr open_fd(const char* path, int flags) {
-    int fd = ::open(path, flags);
+    int fd = FD_OPEN(path, flags);
     if (fd < 0) {
         printf("Failed to open %s\n", path);
         return FdPtr(nullptr);
@@ -117,10 +142,10 @@ FdPtr open_fd(const char* path, int flags) {
 void fd_example() {
     printf("\n=== File Descriptor Example ===\n");
 
-    auto fd = open_fd("/tmp/fd_test.txt", O_RDWR | O_CREAT);
+    auto fd = open_fd(kFdTestPath, FD_O_RDWR | FD_O_CREAT);
     if (fd) {
         const char* msg = "Writing via fd\n";
-        ::write(*fd, msg, 16);
+        FD_WRITE(*fd, msg, 16);
         printf("Data written via fd %d\n", *fd);
     }
     // 离开作用域时自动 close
@@ -167,7 +192,7 @@ struct FileDescriptor {
     explicit FileDescriptor(int fd_) noexcept : fd(fd_) {}
     ~FileDescriptor() noexcept {
         if (fd >= 0) {
-            ::close(fd);
+            FD_CLOSE(fd);
             printf("[FileDescriptor] Closed fd %d\n", fd);
         }
     }
@@ -194,10 +219,10 @@ struct FileDescriptor {
 void custom_wrapper_example() {
     printf("\n=== Custom RAII Wrapper Example ===\n");
 
-    FileDescriptor fd(::open("/tmp/wrapper_test.txt", O_RDWR | O_CREAT));
+    FileDescriptor fd(FD_OPEN(kWrapperTestPath, FD_O_RDWR | FD_O_CREAT));
     if (fd.get() >= 0) {
         const char* msg = "Via custom wrapper\n";
-        ::write(fd.get(), msg, 20);
+        FD_WRITE(fd.get(), msg, 20);
         printf("Written via custom wrapper, fd=%d\n", fd.get());
     }
 }

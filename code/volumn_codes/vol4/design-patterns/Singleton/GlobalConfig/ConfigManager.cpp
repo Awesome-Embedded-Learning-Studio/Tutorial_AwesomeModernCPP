@@ -26,7 +26,8 @@ void ConfigManager::parse_line(const std::string& line) {
     if (line.empty() || line[0] == '#')
         return;
 
-    ssize_t splity_symbol_pos = line.find_first_of('=');
+    // ssize_t 是 POSIX 类型,MSVC 无;find_first_of 返回 string::size_type
+    std::string::size_type splity_symbol_pos = line.find_first_of('=');
 
     if (splity_symbol_pos == std::string::npos)
         return; // invalid kv

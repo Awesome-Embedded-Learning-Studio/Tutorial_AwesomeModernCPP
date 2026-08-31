@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <iostream>
 #include <mutex>
 #include <stdexcept>
@@ -304,8 +305,10 @@ void parallel_for_each(Iterator begin, Iterator end, Func func) {
     // 为前 (num_threads - 1) 个块各启动一个线程
     for (unsigned int i = 0; i < num_threads - 1 && block_start != end; ++i) {
         Iterator block_end = block_start;
+        // 统一 difference_type:MSVC 的 long 是 32 位而 distance 返回 64 位,
+        // min(long, long long) 模板推导冲突(GCC 的 long 即 64 位,无此问题)
         std::advance(block_end,
-                     std::min(static_cast<long>(block_size), std::distance(block_start, end)));
+                     std::min<std::ptrdiff_t>(block_size, std::distance(block_start, end)));
 
         threads.emplace_back([block_start, block_end, &func]() {
             for (auto it = block_start; it != block_end; ++it) {

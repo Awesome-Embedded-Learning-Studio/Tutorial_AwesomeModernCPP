@@ -2,6 +2,7 @@
 // Demonstrates std::function usage and its capabilities
 
 #include <iostream>
+#include <array>
 #include <functional>
 #include <string>
 #include <vector>

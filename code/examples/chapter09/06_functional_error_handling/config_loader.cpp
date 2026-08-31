@@ -93,12 +93,16 @@ Result<void> apply_config(const Config& cfg) {
     return {};  // Success
 }
 
-// TRY macro for clean error propagation
+// TRY macro for clean error propagation。
+// 语句表达式是 GCC 扩展(宏内 return 属于外围函数),MSVC 无对应,
+// lambda IIFE 无法模拟,故 MSVC 线不编译此实现。
+#ifndef _MSC_VER
 #define TRY(...) ({ \
     auto _result = (__VA_ARGS__); \
     if (!_result) return std::unexpected{_result.error()}; \
     _result.value(); \
 })
+#endif
 
 // Load pipeline using manual propagation
 Result<void> load_config_manual(const std::string& path) {
@@ -114,13 +118,15 @@ Result<void> load_config_manual(const std::string& path) {
     return apply_config(config_result.value());
 }
 
-// Load pipeline using TRY macro
+// Load pipeline using TRY macro(仅 GCC/Clang,见上宏定义处的平台说明)
+#ifndef _MSC_VER
 Result<void> load_config_clean(const std::string& path) {
     auto content = TRY(read_file(path));
     auto json = TRY(parse_json(content));
     auto config = TRY(validate_config(json));
     return apply_config(config);
 }
+#endif
 
 // Nested and_then approach
 Result<void> load_config_functional(const std::string& path) {
@@ -146,11 +152,13 @@ int main() {
         std::cout << "Failed: " << r1.error().message << std::endl;
     }
 
+#ifndef _MSC_VER
     std::cout << "\n--- TRY macro ---" << std::endl;
     auto r2 = load_config_clean("config.json");
     if (!r2) {
         std::cout << "Failed: " << r2.error().message << std::endl;
     }
+#endif
 
     std::cout << "\n--- Functional (and_then) ---" << std::endl;
     auto r3 = load_config_functional("config.json");

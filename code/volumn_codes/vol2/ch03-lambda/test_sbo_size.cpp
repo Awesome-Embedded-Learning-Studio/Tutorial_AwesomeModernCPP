@@ -29,7 +29,11 @@ void operator delete(void* ptr, std::size_t) noexcept {
 
 void test_sbo_size() {
     std::cout << "=== SBO 缓冲区大小测试 ===\n";
+#ifdef _MSC_VER
+    std::cout << "编译器: MSVC " << _MSC_VER << "\n";
+#else
     std::cout << "编译器: GCC " << __GNUC__ << "." << __GNUC_MINOR__ << "\n";
+#endif
     std::cout << "sizeof(std::function<int()>): "
               << sizeof(std::function<int()>) << " bytes\n";
     std::cout << "sizeof(void(*)()): "

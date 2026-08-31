@@ -1,3 +1,4 @@
+#include <string>
 #include "DbConfig.h"
 
 #include <iostream>

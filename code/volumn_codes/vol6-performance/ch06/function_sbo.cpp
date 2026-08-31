@@ -11,7 +11,11 @@
 
 using clk = std::chrono::steady_clock;
 inline void do_not_optimize(uint64_t v) {
-    asm volatile("" : "+r"(v)::"memory");
+    #ifdef _MSC_VER
+        volatile auto msvc_sink = v; (void)msvc_sink;  // MSVC:volatile 写入阻止优化
+    #else
+        asm volatile("" : "+r"(v)::"memory");
+    #endif
 }
 
 constexpr int N = 100'000'000;

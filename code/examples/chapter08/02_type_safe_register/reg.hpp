@@ -4,6 +4,9 @@
 #pragma once
 #include <cstdint>
 #include <type_traits>
+#ifdef _MSC_VER
+#include <intrin.h>  // _ReadWriteBarrier:MSVC 的编译器屏障 intrinsic
+#endif
 
 template<typename RegT, std::uintptr_t addr>
 struct mmio_reg {
@@ -46,8 +49,12 @@ struct mmio_reg {
 
 private:
     static inline void compiler_barrier() noexcept {
-        // 强制编译器不重排序访问
+        // 强制编译器不重排序访问(GCC/Clang 内联汇编;MSVC intrinsic 等价)
+#ifdef _MSC_VER
+        _ReadWriteBarrier();
+#else
         asm volatile ("" ::: "memory");
+#endif
     }
 };
 

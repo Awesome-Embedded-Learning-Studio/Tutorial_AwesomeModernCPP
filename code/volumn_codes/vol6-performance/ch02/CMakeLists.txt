@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(vol6_ch02_cpu_microarchitecture LANGUAGES CXX)
 
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -8,11 +12,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 02-01 存储层次:memory mountain(吞吐 size×stride)+ 指针追逐延迟阶梯
 add_executable(memory_mountain memory_mountain.cpp)
-target_compile_options(memory_mountain PRIVATE -O2 -Wall -Wextra -Wpedantic)
+target_compile_options(memory_mountain PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra;-Wpedantic>")
 
 # 02-02 缓存行与局部性:步长扫描定位 64B 断崖 + 行优先 vs 列优先 2D 遍历
 add_executable(cacheline_locality cacheline_locality.cpp)
-target_compile_options(cacheline_locality PRIVATE -O2 -Wall -Wextra -Wpedantic)
+target_compile_options(cacheline_locality PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra;-Wpedantic>")
 
 # 02-03 流水线/ILP/分支预测
 # ⚠️ pipeline_branch_ilp 必须用下面的反优化 flag,否则:
@@ -21,9 +29,14 @@ target_compile_options(cacheline_locality PRIVATE -O2 -Wall -Wextra -Wpedantic)
 # 这组 flag 是文章论证成立的前提,别「优化」掉。
 add_executable(pipeline_branch_ilp pipeline_branch_ilp.cpp)
 target_compile_options(pipeline_branch_ilp PRIVATE
-    -O2 -fno-tree-vectorize -fno-tree-slp-vectorize -fno-if-conversion
-    -Wall -Wextra -Wpedantic)
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-fno-tree-vectorize;-fno-tree-slp-vectorize;-fno-if-conversion;-Wall;-Wextra;-Wpedantic>")
 
 # 02-04 TLB / huge page:同工作集 4KB 页 vs 2MB 大页(THP)指针追逐
-add_executable(tlb_hugepage tlb_hugepage.cpp)
-target_compile_options(tlb_hugepage PRIVATE -O2 -Wall -Wextra -Wpedantic)
+# mmap + MADV_HUGEPAGE 是 Linux 特性,Windows(MSVC/mingw)不构建此 target
+if(NOT WIN32)
+    add_executable(tlb_hugepage tlb_hugepage.cpp)
+    target_compile_options(tlb_hugepage PRIVATE
+        "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+        "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra;-Wpedantic>")
+endif()

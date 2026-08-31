@@ -162,7 +162,11 @@ void benchmark_multithreaded_copy() {
 int main() {
     std::cout << "shared_ptr 性能与线程安全验证\n";
     std::cout << "编译时间: " << __DATE__ << " " << __TIME__ << "\n";
+#ifdef _MSC_VER
+    std::cout << "编译器: MSVC " << _MSC_VER << "\n\n";
+#else
     std::cout << "编译器: g++ " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__ << "\n\n";
+#endif
 
     benchmark_copy_overhead();
     verify_thread_safety();

@@ -32,7 +32,7 @@ struct PackedStruct {
 #pragma pack(pop)
 
 // 示例4：DMA对齐要求示例
-struct __attribute__((aligned(32))) AlignedBuffer {
+struct alignas(32) AlignedBuffer {
     uint8_t data[256];  // 32字节对齐，适合DMA
 };
 
@@ -110,7 +110,7 @@ void struct_size_demo() {
 }
 
 // 演示缓存行影响
-struct __attribute__((aligned(64))) CacheLineAligned {
+struct alignas(64) CacheLineAligned {
     int data;
 };
 

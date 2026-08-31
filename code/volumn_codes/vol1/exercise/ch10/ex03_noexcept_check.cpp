@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 /// @brief 不抛异常的安全计算
 /// @param x  输入值

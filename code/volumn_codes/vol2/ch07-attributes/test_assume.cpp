@@ -1,6 +1,13 @@
 // 验证代码：[[assume]] 的优化效果
 // 验证编译器是否真的基于假设优化
 
+// __builtin_unreachable 的 MSVC 等价是 __assume(0)
+#ifdef _MSC_VER
+#define BUILTIN_UNREACHABLE() __assume(0)
+#else
+#define BUILTIN_UNREACHABLE() __builtin_unreachable()
+#endif
+
 #if __cplusplus >= 202302L
 
 // 有 assume
@@ -44,7 +51,7 @@ _Z16divide_no_assumeii:
 
 // C++23 之前的替代方案：__builtin_assume 或 __builtin_unreachable
 int divide_with_builtin(int a, int b) {
-    if (b == 0) __builtin_unreachable();
+    if (b == 0) BUILTIN_UNREACHABLE();
     return a / b;
 }
 

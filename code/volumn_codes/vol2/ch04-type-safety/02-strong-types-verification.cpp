@@ -81,8 +81,12 @@ void test_zero_overhead()
            sizeof(MetersTag));
 }
 
-// 验证点4: 运行时性能（内联验证）
+// 验证点4: 运行时性能（内联验证）——noinline 的跨编译器写法
+#ifdef _MSC_VER
+__declspec(noinline)
+#else
 __attribute__((noinline))
+#endif
 double calculate_area(Width w, Height h)
 {
     return static_cast<double>(w.get()) * static_cast<double>(h.get());

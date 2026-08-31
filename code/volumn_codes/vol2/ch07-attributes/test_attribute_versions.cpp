@@ -3,9 +3,16 @@
 
 #include <cstdio>
 
+// __builtin_unreachable 的 MSVC 等价是 __assume(0)
+#ifdef _MSC_VER
+#define BUILTIN_UNREACHABLE() __assume(0)
+#else
+#define BUILTIN_UNREACHABLE() __builtin_unreachable()
+#endif
+
 // C++11 引入的属性
 [[noreturn]] void test_cxx11_noreturn() {
-    __builtin_unreachable();
+    BUILTIN_UNREACHABLE();
 }
 
 // C++14 引入的属性

@@ -4,6 +4,14 @@
 #include <new>
 #include <cstring>
 
+// 位计数:GCC/Clang 用 __builtin_popcount,MSVC 用 <intrin.h> 的 __popcnt
+#ifdef _MSC_VER
+#include <intrin.h>
+#define POPCOUNT32(x) __popcnt(x)
+#else
+#define POPCOUNT32(x) __builtin_popcount(x)
+#endif
+
 // 专用对象池示例 - 针对特定类型优化
 
 // ========== 固定大小整数池 ==========
@@ -100,7 +108,7 @@ public:
     size_t used_count() const {
         size_t count = 0;
         for (size_t w = 0; w < bitmap_size; ++w) {
-            count += __builtin_popcount(~bitmap_[w]);
+            count += POPCOUNT32(~bitmap_[w]);
         }
         return count;
     }

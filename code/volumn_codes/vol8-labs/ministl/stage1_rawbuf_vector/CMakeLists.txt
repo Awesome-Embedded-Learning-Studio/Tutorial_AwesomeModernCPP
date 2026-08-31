@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.31.0)
 
 project(tamcpp_ministl LANGUAGES CXX VERSION 0.1.0)
 
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 # 导出编译数据库,clangd 靠它才知道 -Iinclude 这些参数
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -20,9 +24,13 @@ option(TAMCPP_MINISTL_SANITIZE "Build examples and tests with ASan+UBSan" ON)
 function(tamcpp_add_exec name source)
     add_executable(${name} ${source})
     target_link_libraries(${name} PRIVATE tamcpp_ministl)
-    target_compile_options(${name} PRIVATE -Wall -Wextra)
+    target_compile_options(${name} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+        "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
 
-    if(TAMCPP_MINISTL_SANITIZE)
+    # ASan+UBSan 是 Linux GCC/Clang 工具链特性(mingw 无 ASan runtime,
+    # MSVC 的 /fsanitize=address 仅 ASan 且配接管运行时)——Windows 全系跳过
+    if(TAMCPP_MINISTL_SANITIZE AND NOT WIN32)
         target_compile_options(${name} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${name} PRIVATE -fsanitize=address,undefined)
     endif()

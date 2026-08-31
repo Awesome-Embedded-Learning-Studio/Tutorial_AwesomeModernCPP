@@ -47,6 +47,53 @@ jobs:
           mkdir -p "$CCACHE_DIR"
           python3 scripts/build_examples.py --host
 
+  build-host-msvc:
+    name: Host Examples (MSVC)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 注入 MSVC 开发者环境(cl 进入 PATH);windows-latest 自带 CMake/Ninja/Python
+      - name: Setup MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # Windows 用户免 WSL 直接构建的验收线:平台性工程(POSIX socket/epoll 等)
+      # 由脚本内 MSVC_SKIP_PROJECTS 显式跳过并注明原因
+      - name: Build host examples (MSVC)
+        run: python scripts/build_examples.py --host --msvc
+
+  # mingw(Windows 上的 GCC)线:本地开发者最常见的 Windows GCC 环境。
+  # 与 Ubuntu GCC 线的差异主要在链接层(如 libstdc++exp 需显式链),
+  # 提前在 CI 暴露,避免"Linux 绿、Windows GCC 红"的隐性回归。
+  build-host-mingw:
+    name: Host Examples (mingw GCC)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 UCRT64 toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: false
+          # native(python)而非 msys 模拟层版:sys.platform=win32,
+          # 与本地 Windows 用户环境一致,MSVC skip 清单逻辑同样生效
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-ccache
+            mingw-w64-ucrt-x86_64-python
+
+      - name: Build host examples (mingw GCC)
+        shell: msys2 {0}
+        run: python scripts/build_examples.py --host
+
   build-stm32:
     name: STM32 Examples
     runs-on: ubuntu-latest

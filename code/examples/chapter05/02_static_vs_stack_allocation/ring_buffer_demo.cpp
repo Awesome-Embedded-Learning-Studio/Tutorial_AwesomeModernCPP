@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdint>
+#include <string>
 #include <array>
 
 // 环形缓冲区实现 - 静态分配的经典应用

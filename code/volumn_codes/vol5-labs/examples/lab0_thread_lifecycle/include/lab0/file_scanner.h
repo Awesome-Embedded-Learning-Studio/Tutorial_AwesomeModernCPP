@@ -61,7 +61,9 @@ class FileScanner {
                     for (std::size_t index = start; index < end; ++index) {
                         local.files_scanned++;
                         local.total_bytes += entries[index].file_size();
-                        local.ext_counts[entries[index].path().extension()]++;
+                        // extension() 返回 filesystem::path,无到 string 的隐式
+                        // 转换;map key 是 string,须显式 .string()
+                        local.ext_counts[entries[index].path().extension().string()]++;
                     }
                     results[worker_id] = std::move(local);
                 });
