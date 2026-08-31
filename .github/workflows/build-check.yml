@@ -6,7 +6,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # 双 OS 矩阵:scripts/build.ts 的 Windows 分卷逻辑(链接 junction / 目录重试)
+    # 需要一条 CI 线守住回归,否则只能靠本地手工验证。deploy 仍固定 ubuntu(产物与构建 OS 无关)。
+    strategy:
+      fail-fast: false   # 一条腿挂了也让另一条跑完,PR 上能同时看到两个 OS 的结果
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
