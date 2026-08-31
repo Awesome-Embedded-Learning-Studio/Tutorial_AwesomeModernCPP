@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0.0)
+cmake_minimum_required(VERSION 3.31.0)
 
 project(tamcpp_ministl LANGUAGES CXX VERSION 0.1.0)
 
@@ -21,6 +21,7 @@ function(tamcpp_add_exec name source)
     add_executable(${name} ${source})
     target_link_libraries(${name} PRIVATE tamcpp_ministl)
     target_compile_options(${name} PRIVATE -Wall -Wextra)
+
     if(TAMCPP_MINISTL_SANITIZE)
         target_compile_options(${name} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${name} PRIVATE -fsanitize=address,undefined)
