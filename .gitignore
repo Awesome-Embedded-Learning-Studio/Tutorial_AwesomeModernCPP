@@ -10,6 +10,7 @@
 .claude/tools/
 .claude/books/
 .claude/worktrees
+.claude/data-struct/
 
 # Build directories
 build/

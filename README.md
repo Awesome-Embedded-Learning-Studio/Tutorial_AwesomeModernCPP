@@ -26,7 +26,7 @@
 ---
 
 <!-- COVERAGE_START -->
-![English Coverage](https://img.shields.io/badge/en_coverage-97%25-green.svg) 578/593 docs translated
+![English Coverage](https://img.shields.io/badge/en_coverage-97%25-green.svg) 578/598 docs translated
 <!-- COVERAGE_END -->
 
 ## 嘿！这是什么？
