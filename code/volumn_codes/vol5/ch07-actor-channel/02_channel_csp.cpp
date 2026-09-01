@@ -484,7 +484,9 @@ void demo_multiple_producers_consumers() {
     // 多个生产者线程（与消费者并行运行）
     std::vector<std::thread> producers;
     for (int p = 0; p < kProducerCount; ++p) {
-        producers.emplace_back([channel, remaining_producers, p]() {
+        // kItemsPerProducer 显式捕获:MSVC 对函数内 constexpr 在 lambda 里的
+        // 使用按 odr-use 处理(GCC/Clang 只读免捕获),显式列出两端行为一致
+        producers.emplace_back([channel, remaining_producers, p, kItemsPerProducer]() {
             for (int i = 0; i < kItemsPerProducer; ++i) {
                 int value = p * 100 + i;
                 channel->send(value);

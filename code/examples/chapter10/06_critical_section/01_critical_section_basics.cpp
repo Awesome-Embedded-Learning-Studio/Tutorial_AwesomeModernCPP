@@ -9,6 +9,11 @@
 #include <mutex>
 #include <chrono>
 
+// 自旋提示指令:MSVC 用 _mm_pause(),GCC/Clang 用内联汇编
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 // ============================================================================
 // 问题演示：没有保护的临界区
 // ============================================================================
@@ -240,12 +245,16 @@ namespace with_interrupt_disable {
 namespace with_spinlock {
     class SpinLock {
     public:
-        SpinLock() noexcept : flag_(false) {}
+        // C++17:atomic_flag 只能用 ATOMIC_FLAG_INIT 初始化(成员初始化列表里写
+        // ATOMIC_FLAG_INIT 是拷贝初始化,MSVC 拒绝;成员声明处初始化是标准写法)
+        SpinLock() noexcept = default;
 
         void lock() noexcept {
             while (!try_lock()) {
                 // 短暂自旋
-                #if defined(__x86_64__)
+                #if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
+                _mm_pause();
+                #elif defined(__x86_64__)
                 __asm__ volatile("pause" ::: "memory");
                 #elif defined(__aarch64__) || defined(__ARM_ARCH)
                 __asm__ volatile("yield" ::: "memory");

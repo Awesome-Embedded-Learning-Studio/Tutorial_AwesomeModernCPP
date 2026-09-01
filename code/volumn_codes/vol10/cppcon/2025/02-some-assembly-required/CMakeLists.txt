@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(cppcon2025_02 VERSION 0.1.0 LANGUAGES CXX)
 
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -12,7 +16,9 @@ add_executable(02-00-add-demo 02-00-add-demo.cpp)
 
 # 验证代码：AVX2/FMA matmul 性能对比（需要 AVX2+FMA 硬件支持）
 add_executable(02-00-matmul-test 02-00-matmul-test.cpp)
-target_compile_options(02-00-matmul-test PRIVATE -O3 -mavx2 -mfma)
+target_compile_options(02-00-matmul-test PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/arch:AVX2>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3;-mavx2;-mfma>")
 add_executable(02-02-bit-lookup 02-02-bit-lookup.cpp)
 add_executable(03-01-square-asm 03-01-square-asm.cpp)
 add_executable(03-02-check-length 03-02-check-length.cpp)

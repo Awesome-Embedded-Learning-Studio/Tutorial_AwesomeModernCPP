@@ -6,6 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <cstdint>
+#include <string>
 
 void demo_basic_transform() {
     std::cout << "=== Basic Transform ===" << std::endl;

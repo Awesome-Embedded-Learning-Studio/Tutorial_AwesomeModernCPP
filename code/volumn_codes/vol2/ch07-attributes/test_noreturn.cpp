@@ -1,8 +1,15 @@
 // 验证代码：[[noreturn]] 的优化效果
 // 验证编译器是否真的优化了不可达代码
 
+// __builtin_unreachable 的 MSVC 等价是 __assume(0)
+#ifdef _MSC_VER
+#define BUILTIN_UNREACHABLE() __assume(0)
+#else
+#define BUILTIN_UNREACHABLE() __builtin_unreachable()
+#endif
+
 [[noreturn]] void fatal_error() {
-    __builtin_unreachable();
+    BUILTIN_UNREACHABLE();
 }
 
 int check_value(int x) {
@@ -16,7 +23,7 @@ int check_value(int x) {
 
 // 对比版本（无 noreturn）
 void normal_error() {
-    __builtin_unreachable();
+    BUILTIN_UNREACHABLE();
 }
 
 int check_value_no_hint(int x) {

@@ -16,6 +16,10 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 # ── 项目定义 ────────────────────────────────────────────────────────────────
 project(stm32_demo C CXX ASM)
+
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
 set(CMAKE_C_STANDARD   23)
 set(CMAKE_CXX_STANDARD 23)
 

@@ -2,6 +2,10 @@
 // 编译: g++ -Wall -Wextra -std=c++17 shapes.cpp -o shapes
 
 #include <cmath>
+// M_PI 是 POSIX 扩展,MSVC 的 <cmath> 不提供;标准做法是自定义 fallback
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include <iostream>
 #include <memory>
 #include <string>

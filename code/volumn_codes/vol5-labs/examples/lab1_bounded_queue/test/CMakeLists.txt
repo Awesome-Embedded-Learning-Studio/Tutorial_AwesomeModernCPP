@@ -13,13 +13,15 @@ foreach(test ${LAB1_TESTS})
     add_executable(${test} ${test}.cpp)
     target_link_libraries(${test} PRIVATE lab1 Catch2::Catch2WithMain)
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_compile_options(${test} PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(${test} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+        "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic>")
 
     # Debug 配置开 ThreadSanitizer:-DCMAKE_BUILD_TYPE=Debug 构建即在 TSan 下运行。
     target_compile_options(${test} PRIVATE
-        $<$<CONFIG:Debug>:-fsanitize=thread -g -fno-omit-frame-pointer>)
+        "$<$<AND:$<CONFIG:Debug>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-fsanitize=thread;-g;-fno-omit-frame-pointer>")
     target_link_options(${test} PRIVATE
-        $<$<CONFIG:Debug>:-fsanitize=thread>)
+        "$<$<AND:$<CONFIG:Debug>,$<NOT:$<CXX_COMPILER_ID:MSVC>>>:-fsanitize=thread>")
 
     add_test(NAME ${test} COMMAND ${test})
 endforeach()

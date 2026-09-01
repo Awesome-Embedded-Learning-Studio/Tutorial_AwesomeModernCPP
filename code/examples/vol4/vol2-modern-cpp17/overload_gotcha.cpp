@@ -5,6 +5,13 @@
 #include <iostream>
 using namespace std;
 
+// 函数签名宏:GCC/Clang 是 __PRETTY_FUNCTION__,MSVC 是 __FUNCSIG__
+#ifdef _MSC_VER
+#define PRETTY_FUNCTION __FUNCSIG__
+#else
+#define PRETTY_FUNCTION __PRETTY_FUNCTION__
+#endif
+
 struct Widget {
     int v;
 };
@@ -18,7 +25,7 @@ void tag(Widget&&) {
 }
 template <typename T> void tag(T&&) {
     // 转发引用:T&& 推导后也是精确匹配,模板还更优,反而抢了主角
-    cout << "  命中 T&& 转发引用:" << __PRETTY_FUNCTION__ << "\n";
+    cout << "  命中 T&& 转发引用:" << PRETTY_FUNCTION << "\n";
 }
 
 int main() {

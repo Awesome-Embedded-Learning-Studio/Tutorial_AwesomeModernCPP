@@ -20,6 +20,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
+# Windows 控制台默认代码页(cp936/cp1252)不是 UTF-8,本脚本输出含中文
+# (skip 名单理由等),不在入口处强制 UTF-8 会在第一次 print 中文时炸
+# UnicodeEncodeError('charmap' codec)。必须在任何输出之前执行。
+if sys.platform == 'win32' and sys.stdout.encoding.lower() not in ('utf-8', 'utf8'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+# --msvc 开关(由 main() 设置):configure 时显式指定 cl 编译器
+FORCE_MSVC = False
+
 
 @dataclass
 class BuildResult:
@@ -27,6 +37,22 @@ class BuildResult:
     success: bool
     duration: float
     output: str
+
+
+# MSVC(Windows)线上已知不兼容、显式跳过的工程,key 为相对 code/ 的 POSIX 路径。
+# 判定标准:工程依赖 POSIX 专属 API(epoll/socket/mmap)或 GCC 专属工具链特性,
+# 属"平台性示例"——条件编译大改会偏离教学原意,显式跳过并在输出里注明原因。
+# 仅 Windows 线生效,Ubuntu(gcc)线不受影响。
+MSVC_SKIP_PROJECTS = {
+    'volumn_codes/vol8/networking/00-traditional-socket':
+        'POSIX socket API,教学即 POSIX 网络',
+    'volumn_codes/vol8/networking/01-modern-socket':
+        'POSIX socket API,教学即 POSIX 网络',
+    'volumn_codes/vol8-labs/lab0-mini-reactor':
+        'epoll/eventfd,Linux reactor 教学专属',
+    'volumn_codes/vol10/cppcon/2025/02-some-assembly-required':
+        'ARM32/GCC 内联汇编教学,MSVC 无对应',
+}
 
 
 def is_stm32_project(cmake_path: Path) -> bool:
@@ -76,8 +102,10 @@ def discover_projects(code_root: Path, target: str) -> list[Path]:
     """
     projects = []
     for cmake_file in sorted(code_root.rglob('CMakeLists.txt')):
-        # Skip build directories
-        if 'build' in cmake_file.parts or '.cache' in cmake_file.parts:
+        # Skip build directories(_build_ci 是本脚本的构建目录,FetchContent 的
+        # _deps/catch2-subbuild 里也有 CMakeLists.txt,不排除会被当成独立工程)
+        if any(p == 'build' or p.startswith('_build') for p in cmake_file.parts) \
+                or '.cache' in cmake_file.parts:
             continue
 
         # vol5-labs 练习手册特殊结构:
@@ -126,16 +154,27 @@ def build_project(project_dir: Path) -> BuildResult:
     """Build a single CMake project."""
     build_dir = project_dir / '_build_ci'
 
-    # Clean previous build artifacts
+    # Clean previous build artifacts(ignore_errors:Windows 上残留进程占用文件时
+    # 不让清理失败炸掉整个构建,CMake 会覆盖式重配)
     if build_dir.exists():
-        shutil.rmtree(build_dir)
+        shutil.rmtree(build_dir, ignore_errors=True)
 
     start = time.time()
     all_output = []
 
     # Configure
-    configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja',
-                      '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache']
+    configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja']
+    # ccache 仅在环境里存在时启用(Linux CI 提速);Windows/MSVC 与未装 ccache 的
+    # 本地环境自动降级为直连编译,不再因 launcher 缺失而 configure 失败。
+    if shutil.which('ccache'):
+        configure_cmd.append('-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+    # --msvc:显式选 cl。Windows 上若 PATH 里有 mingw/MSYS 的 g++,CMake 默认
+    # 探测会抢先命中它;显式 cl 才能保证 MSVC 线名副其实(需在 VS 开发者环境下运行)。
+    # Release:MSVC 无 build type 时按 Debug 走,默认 /RTC1 与示例的 /O2 冲突(D8016);
+    # 基准类示例的语义本来就是优化构建,与 GCC 线手动 -O2 的意图一致。
+    if FORCE_MSVC:
+        configure_cmd.append('-DCMAKE_CXX_COMPILER=cl')
+        configure_cmd.append('-DCMAKE_BUILD_TYPE=Release')
     toolchain = find_toolchain_file(project_dir)
     if toolchain:
         configure_cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={toolchain}')
@@ -145,6 +184,8 @@ def build_project(project_dir: Path) -> BuildResult:
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=120,
         )
         all_output.append(result.stdout)
@@ -179,6 +220,8 @@ def build_project(project_dir: Path) -> BuildResult:
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             timeout=300,
         )
         all_output.append(result.stdout)
@@ -195,7 +238,7 @@ def build_project(project_dir: Path) -> BuildResult:
                      '--output-on-failure', '--timeout', '60']
         try:
             ct = subprocess.run(ctest_cmd, cwd=str(project_dir),
-                                capture_output=True, text=True, timeout=180)
+                                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
             all_output.append('--- ctest ---')
             all_output.append(ct.stdout)
             all_output.append(ct.stderr)
@@ -289,9 +332,15 @@ def main():
                        help='Build all projects')
     parser.add_argument('--discover', action='store_true',
                         help='Only list discovered projects, do not build')
+    parser.add_argument('--msvc', action='store_true',
+                        help='Configure with MSVC cl explicitly (run from a VS '
+                             'developer environment; also enables the MSVC skip list)')
     parser.add_argument('-j', '--jobs', type=int, default=os.cpu_count(),
                         help=f'Max concurrent builds (default: {os.cpu_count()})')
     args = parser.parse_args()
+
+    global FORCE_MSVC
+    FORCE_MSVC = args.msvc
 
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
@@ -303,6 +352,20 @@ def main():
 
     target = 'host' if args.host else 'stm32' if args.stm32 else 'all'
     projects = discover_projects(code_root, target)
+
+    # MSVC 线:过滤显式列入 MSVC_SKIP_PROJECTS 的平台性工程
+    if sys.platform == 'win32' or args.msvc:
+        def skip_reason(p: Path) -> str | None:
+            rel = p.relative_to(code_root).as_posix()
+            return MSVC_SKIP_PROJECTS.get(rel)
+
+        skipped = [(p, skip_reason(p)) for p in projects if skip_reason(p)]
+        projects = [p for p in projects if not skip_reason(p)]
+        if skipped:
+            print(f"MSVC skip list: {len(skipped)} project(s)", flush=True)
+            for p, reason in skipped:
+                print(f"  [SKIP] {p.relative_to(code_root).as_posix()} - {reason}", flush=True)
+            print(flush=True)
 
     if not projects:
         print(f"No {target} projects found under {code_root}")

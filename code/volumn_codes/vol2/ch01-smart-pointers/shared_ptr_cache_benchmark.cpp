@@ -10,7 +10,9 @@
 #include <queue>
 #include <thread>
 #include <vector>
-#include <sys/utsname.h>
+#ifndef _WIN32
+#include <sys/utsname.h>  // uname 打印机器信息,POSIX 专属
+#endif
 
 // ── Configuration ──────────────────────────────────────────────────────────
 static constexpr int kProducers        = 4;
@@ -200,6 +202,11 @@ static double run_shared_benchmark() {
 // ── Main ───────────────────────────────────────────────────────────────────
 int main() {
     // Print machine info
+#ifdef _WIN32
+    std::printf("shared_ptr cache-line contention benchmark\n");
+    std::printf("==========================================\n");
+    std::printf("platform : Windows\n");
+#else
     struct utsname info;
     if (uname(&info) == 0) {
         std::printf("shared_ptr cache-line contention benchmark\n");
@@ -207,6 +214,7 @@ int main() {
         std::printf("hostname : %s\n", info.nodename);
         std::printf("kernel   : %s %s\n", info.sysname, info.release);
     }
+#endif
     std::printf("producers: %d  consumers: %d  messages: %d\n\n",
                 kProducers, kConsumers, kTotalMessages);
 

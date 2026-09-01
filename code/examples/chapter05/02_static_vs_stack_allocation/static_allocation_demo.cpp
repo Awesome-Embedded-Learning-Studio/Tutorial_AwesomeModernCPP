@@ -19,13 +19,31 @@ static const int16_t sine_table[16] = {
 };
 
 // 4. 自定义段的变量
+// GCC/Clang 用 __attribute__((section(...)));MSVC 等价写法是
+// #pragma section + __declspec(allocate(...)),且变量必须初始化
+// (未初始化的 BSS 类变量无法进自定义段,链接期报 LNK2001,实测 MSVC 14.5x)
+#ifdef _MSC_VER
+#pragma section(".rodata.lookup", read)
+__declspec(allocate(".rodata.lookup")) const int lookup_table[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+#else
 __attribute__((section(".rodata.lookup"))) const int lookup_table[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+#endif
 
 // 5. 放在快速RAM的变量（示例）
+#ifdef _MSC_VER
+#pragma section(".fastram", read, write)
+__declspec(allocate(".fastram")) int fast_var = 0;  // MSVC 要求段内变量已初始化
+#else
 __attribute__((section(".fastram"))) int fast_var;
+#endif
 
 // 6. 不初始化的变量（不会在启动时清零）
+// 这是嵌入式链接器脚本概念;MSVC 无真正等价(启动时统一清零),退化为普通 .bss
+#ifdef _MSC_VER
+int noinit_var;
+#else
 __attribute__((section(".noinit"))) int noinit_var;
+#endif
 
 void print_addresses() {
     std::cout << "=== Static Storage Addresses ===\n\n";

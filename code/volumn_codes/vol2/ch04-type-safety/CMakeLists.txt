@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 project(ch04_type_safety VERSION 0.0.1 LANGUAGES CXX)
 
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -26,21 +30,29 @@ add_executable(any_basics any_basics.cpp)
 # 验证 01-enum-class.md
 add_executable(verify_01_enum_class 01-enum-class-verification.cpp)
 target_compile_options(verify_01_enum_class PRIVATE
-    -Wall -Wextra -Wswitch -Wswitch-enum
-)
+    "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wswitch;-Wswitch-enum>")
 
 # 验证 02-strong-types.md
 add_executable(verify_02_strong_types 02-strong-types-verification.cpp)
-target_compile_options(verify_02_strong_types PRIVATE -Wall -Wextra -O2)
+target_compile_options(verify_02_strong_types PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/W4;/O2>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-O2>")
 
 # 验证 03-variant.md
 add_executable(verify_03_variant 03-variant-verification.cpp)
-target_compile_options(verify_03_variant PRIVATE -Wall -Wextra)
+target_compile_options(verify_03_variant PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
 
 # 验证 04-optional.md
 add_executable(verify_04_optional 04-optional-verification.cpp)
-target_compile_options(verify_04_optional PRIVATE -Wall -Wextra)
+target_compile_options(verify_04_optional PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
 
 # 验证 05-any.md
 add_executable(verify_05_any 05-any-verification.cpp)
-target_compile_options(verify_05_any PRIVATE -Wall -Wextra)
+target_compile_options(verify_05_any PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")

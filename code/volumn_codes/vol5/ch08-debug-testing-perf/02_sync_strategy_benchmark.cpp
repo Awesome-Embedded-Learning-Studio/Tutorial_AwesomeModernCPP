@@ -27,6 +27,9 @@
 
 #include <algorithm>
 #include <atomic>
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -43,28 +46,38 @@ static constexpr int kIterationsPerThread = 2'000'000; // 每线程递增次数
 static constexpr int kWarmupRounds = 2;                // 预热轮次
 static constexpr int kBenchmarkRounds = 5;             // 正式测试轮次
 
+// x86 PAUSE 指令的平台宏
+#ifdef _MSC_VER
+#define CPU_PAUSE() _mm_pause()
+#else
+#define CPU_PAUSE() __builtin_ia32_pause()
+#endif
+
 // ============================================================================
 // SpinLock：基于 std::atomic_flag 的自旋锁
 //
-// 使用 __builtin_ia32_pause()（x86 PAUSE 指令）在自旋等待时降低功耗，
+// 使用 x86 PAUSE 指令在自旋等待时降低功耗(GCC/Clang 是 __builtin_ia32_pause,
+// MSVC 是 _mm_pause),
 // 同时改善超线程场景下的性能。该内建函数在 GCC 和 Clang 上均可用。
 // ============================================================================
 class SpinLock {
   public:
-    SpinLock() : flag_(ATOMIC_FLAG_INIT) {}
+    // C++17:成员初始化列表里写 ATOMIC_FLAG_INIT 是拷贝初始化,MSVC 拒绝(C2280);
+    // 初始化放到成员声明处,ctor 默认化
+    SpinLock() = default;
 
     void lock() {
         while (flag_.test_and_set(std::memory_order_acquire)) {
             // x86 PAUSE 指令：提示 CPU 当前处于自旋等待循环，
             // 减少功耗并避免流水线惩罚
-            __builtin_ia32_pause();
+            CPU_PAUSE();
         }
     }
 
     void unlock() { flag_.clear(std::memory_order_release); }
 
   private:
-    std::atomic_flag flag_;
+    std::atomic_flag flag_ = ATOMIC_FLAG_INIT;
 };
 
 // RAII 守卫，配合 SpinLock 使用
@@ -185,7 +198,7 @@ long benchmark_atomic_cas(int thread_count, int iterations) {
                                                   std::memory_order_relaxed)) {
                 // CAS 失败，old_val 已被自动更新为当前值，重试
                 // 在 x86 上可以插入 pause 减少总线压力
-                __builtin_ia32_pause();
+                CPU_PAUSE();
             }
         }
     };

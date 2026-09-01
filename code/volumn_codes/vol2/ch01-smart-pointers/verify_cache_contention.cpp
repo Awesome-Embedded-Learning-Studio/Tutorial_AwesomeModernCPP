@@ -189,7 +189,11 @@ void run_benchmark(const std::string& test_name, int num_messages, int num_round
 int main() {
     std::cout << "shared_ptr 缓存行争用开销验证\n";
     std::cout << "编译时间: " << __DATE__ << " " << __TIME__ << "\n";
+#ifdef _MSC_VER
+    std::cout << "编译器: MSVC " << _MSC_VER << "\n";
+#else
     std::cout << "编译器: g++ " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__ << "\n";
+#endif
     std::cout << "优化级别: -O2\n";
     std::cout << "消息大小: " << sizeof(Message) << " bytes\n";
 

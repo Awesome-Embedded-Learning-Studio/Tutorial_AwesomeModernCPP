@@ -7,10 +7,20 @@
 #include <type_traits>
 #include <utility>
 
-// 用于构造错误分支的辅助类型
+// 用于构造错误分支的辅助类型。
+// MSVC 的 <eh.h> 在全局命名空间声明了老式 unexpected() 函数(C++17 前的
+// 意外处理机制),全局模板与之撞名(C2904)——收进 tamcpp_detl 并用宏导出,
+// 调用侧写法不变
+#ifdef _MSC_VER
+namespace tamcpp_detl {
+#endif
 template <typename E> struct unexpected {
   E value;
 };
+#ifdef _MSC_VER
+}
+#define unexpected tamcpp_detl::unexpected
+#endif
 
 template <typename T, typename E> class expected {
   bool has_value_;

@@ -81,7 +81,11 @@ int main() {
 
     std::cout << "=== 智能指针删除器性能基准测试 ===\n";
     std::cout << "迭代次数: " << iterations << "\n";
+#ifdef _MSC_VER
+    std::cout << "编译器: MSVC " << _MSC_VER << "\n";
+#else
     std::cout << "编译器: g++ " << __VERSION__ << "\n";
+#endif
     std::cout << "优化级别: -O2\n\n";
 
     benchmark_unique_ptr_default(iterations);

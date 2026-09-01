@@ -8,17 +8,27 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <vector>
 
 using clk = std::chrono::steady_clock;
 inline void do_not_optimize(uint64_t v) {
-    asm volatile("" : "+r"(v)::"memory");
+    #ifdef _MSC_VER
+        volatile auto msvc_sink = v; (void)msvc_sink;  // MSVC:volatile 写入阻止优化
+    #else
+        asm volatile("" : "+r"(v)::"memory");
+    #endif
 }
 inline void do_not_optimize_f(float v) {
     uint32_t u;
-    __builtin_memcpy(&u, &v, 4);
-    asm volatile("" : "+r"(u)::"memory");
+    #ifdef _MSC_VER
+        std::memcpy(&u, &v, 4);
+        volatile uint32_t msvc_sink = u; (void)msvc_sink;  // MSVC:volatile 写入阻止优化
+    #else
+        __builtin_memcpy(&u, &v, 4);
+        asm volatile("" : "+r"(u)::"memory");
+    #endif
 }
 
 constexpr int N = 32'768;

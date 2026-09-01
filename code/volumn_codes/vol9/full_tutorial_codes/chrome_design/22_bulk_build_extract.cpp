@@ -2,6 +2,7 @@
 // 来源:flat_map 实战(五)
 // 编译:g++ -std=c++20 -Wall -Wextra -I. 22_bulk_build_extract.cpp -o 22_bulk_build_extract
 
+#include <string>
 #include "flat_map.hpp"
 
 #include <algorithm>

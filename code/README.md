@@ -60,6 +60,30 @@ cmake --build .
 ./example
 ```
 
+### Windows + MSVC（免 WSL）
+
+所有示例的 CMake 均已兼容 MSVC：警告旗标按编译器分派（MSVC 用 `/W4`）、
+源码含中文时自动加 `/utf-8`、GCC 专属特性（内联汇编 / 语句表达式等）
+带 `_MSC_VER` 分支。在 **VS 开发者命令行**（"x64 Native Tools Command
+Prompt"）里即可直接构建：
+
+```bat
+cd examples\chapter02\01_zero_overhead
+cmake -B build -G Ninja
+cmake --build build
+build\gpio_example.exe
+```
+
+一次性全量构建（等价于 CI 的 MSVC 线，平台性工程会显式 SKIP 并注明原因）：
+
+```bat
+python scripts\build_examples.py --host --msvc
+```
+
+> 少数 POSIX 专属示例（socket / epoll / mmap 大页 / ARM 汇编）在 MSVC 线
+> 跳过——它们的教学主题就是平台 API 本身，见 `scripts/build_examples.py`
+> 里的 `MSVC_SKIP_PROJECTS` 清单。
+
 ## 代码规范
 
 1. 所有示例必须能独立编译

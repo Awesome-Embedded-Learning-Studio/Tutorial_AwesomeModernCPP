@@ -51,7 +51,11 @@ struct FreeDeleter {
 int main() {
     std::cout << "=== 自定义删除器 sizeof 测试 ===\n";
     std::cout << "平台: x86_64-linux-gnu\n";
+#ifdef _MSC_VER
+    std::cout << "编译器: MSVC " << _MSC_VER << "\n\n";
+#else
     std::cout << "编译器: g++ " << __VERSION__ << "\n\n";
+#endif
 
     std::cout << "基础类型大小:\n";
     std::cout << "  sizeof(FILE*):                        " << sizeof(FILE*) << "\n";

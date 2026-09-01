@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(lambda_basics_tests LANGUAGES CXX)
 
+# MSVC:按 UTF-8 读源码与执行字符集(源文件是 UTF-8 无 BOM,含中文注释/字符串,
+# 不显式声明会被 cl 按系统代码页误读,C2001 常量中有换行符)
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 # 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,8 +21,12 @@ add_executable(test_return_type_deduction
 )
 
 # 启用优化以便更好地观察内联效果
-target_compile_options(test_lambda_inlining PRIVATE -O2)
-target_compile_options(test_return_type_deduction PRIVATE -O2)
+target_compile_options(test_lambda_inlining PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/O2>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2>)
+target_compile_options(test_return_type_deduction PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/O2>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2>)
 
 # 测试捕获方式对闭包大小的影响
 add_executable(test_capture_size
@@ -41,83 +49,122 @@ add_executable(benchmark_performance
 )
 
 # 启用所有警告
-target_compile_options(test_lambda_inlining PRIVATE -Wall -Wextra)
-target_compile_options(test_return_type_deduction PRIVATE -Wall -Wextra)
-target_compile_options(test_capture_size PRIVATE -Wall -Wextra)
-target_compile_options(test_ref_capture_impl PRIVATE -Wall -Wextra)
-target_compile_options(test_cxx20_default_capture PRIVATE -Wall -Wextra)
-target_compile_options(benchmark_performance PRIVATE -Wall -Wextra)
+target_compile_options(test_lambda_inlining PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
+target_compile_options(test_return_type_deduction PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
+target_compile_options(test_capture_size PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
+target_compile_options(test_ref_capture_impl PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
+target_compile_options(test_cxx20_default_capture PRIVATE
+    # [=, this] 显式并存在 C++20 才合法(GCC 在 17 下宽容接受,MSVC 严格)
+    $<$<CXX_COMPILER_ID:MSVC>:/W4;/std:c++20>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
+target_compile_options(benchmark_performance PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
 
 # 性能测试使用 -O3 优化
-target_compile_options(benchmark_performance PRIVATE -O3)
+target_compile_options(benchmark_performance PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/O2>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3>)
 
 # 测试递归 lambda 不同实现的性能差异
 add_executable(test_recursive_lambda_performance
     test_recursive_lambda_performance.cpp
 )
-target_compile_options(test_recursive_lambda_performance PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_recursive_lambda_performance PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试 Concepts 与传统 SFINAE 的错误信息质量
 add_executable(test_concepts_error_messages
     test_concepts_error_messages.cpp
 )
-target_compile_options(test_concepts_error_messages PRIVATE -Wall -Wextra -std=c++20)
+target_compile_options(test_concepts_error_messages PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/W4;/std:c++20>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-std=c++20>")
 
 # 测试 std::function SBO 大小
 add_executable(test_sbo_size
     test_sbo_size.cpp
 )
-target_compile_options(test_sbo_size PRIVATE -Wall -Wextra)
+target_compile_options(test_sbo_size PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra>")
 
 # 测试 std::invoke 性能
 add_executable(test_invoke_performance
     test_invoke_performance.cpp
 )
-target_compile_options(test_invoke_performance PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_invoke_performance PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试 std::function 性能
 add_executable(test_function_performance
     test_function_performance.cpp
 )
-target_compile_options(test_function_performance PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_function_performance PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试函数式编程模式 - 高阶函数
 add_executable(test_higher_order_functions
     test_higher_order_functions.cpp
 )
-target_compile_options(test_higher_order_functions PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_higher_order_functions PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试函数组合
 add_executable(test_function_composition
     test_function_composition.cpp
 )
-target_compile_options(test_function_composition PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_function_composition PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 target_compile_features(test_function_composition PRIVATE cxx_std_20)
 
 # 测试偏应用
 add_executable(test_partial_application
     test_partial_application.cpp
 )
-target_compile_options(test_partial_application PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_partial_application PRIVATE
+    # ...fixed_args = std::move(...) 的包展开 init-capture 是 C++20 特性
+    # (GCC 在 17 下宽容接受,MSVC 严格)
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4;/std:c++20>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试 map/filter/reduce 模式
 add_executable(test_map_filter_reduce
     test_map_filter_reduce.cpp
 )
-target_compile_options(test_map_filter_reduce PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_map_filter_reduce PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 测试 Ranges 性能
 add_executable(test_ranges_performance
     test_ranges_performance.cpp
 )
-target_compile_options(test_ranges_performance PRIVATE -O3 -Wall -Wextra)
+target_compile_options(test_ranges_performance PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O3;-Wall;-Wextra>")
 target_compile_features(test_ranges_performance PRIVATE cxx_std_20)
 
 # 测试不可变数据和 NRVO
 add_executable(test_immutability_nrvo
     test_immutability_nrvo.cpp
 )
-target_compile_options(test_immutability_nrvo PRIVATE -O2 -Wall -Wextra)
+target_compile_options(test_immutability_nrvo PRIVATE
+    "$<$<CXX_COMPILER_ID:MSVC>:/O2;/W4>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-O2;-Wall;-Wextra>")
 
 # 如果需要生成汇编进行内联分析，可以运行：
 # cmake --build . --target test_lambda_inlining

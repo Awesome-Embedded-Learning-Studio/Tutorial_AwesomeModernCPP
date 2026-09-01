@@ -8,6 +8,7 @@
 // 跑:   taskset -c 0 ./simd_o2 && taskset -c 0 ./simd_o3
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <vector>
 
@@ -18,8 +19,13 @@
 using clk = std::chrono::steady_clock;
 inline void do_not_optimize_f(float v) {
     uint32_t u;
-    __builtin_memcpy(&u, &v, 4);
-    asm volatile("" : "+r"(u)::"memory");
+    #ifdef _MSC_VER
+        std::memcpy(&u, &v, 4);
+        volatile uint32_t msvc_sink = u; (void)msvc_sink;  // MSVC:volatile 写入阻止优化
+    #else
+        __builtin_memcpy(&u, &v, 4);
+        asm volatile("" : "+r"(u)::"memory");
+    #endif
 }
 
 constexpr int N = 1 << 22; // 4M float = 16MB
