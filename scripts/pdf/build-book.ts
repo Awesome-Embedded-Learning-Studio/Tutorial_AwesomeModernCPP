@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 import type MarkdownIt from 'markdown-it'
 import { AssetManager } from './assets'
 import { exportBookPdf } from './browser'
@@ -101,7 +101,8 @@ async function packageVersions(repositoryRoot: string): Promise<Record<string, s
 function safeBuildDirectory(repositoryRoot: string, definition: BookDefinition, language: BookLanguage): string {
   const base = resolve(repositoryRoot, '.pdf-build')
   const selected = resolve(base, `${definition.id}-${language}`)
-  if (!selected.startsWith(`${base}/`)) throw new Error(`Unsafe PDF staging path: ${selected}`)
+  // resolve() keeps the platform separator, so compare with sep ('\\' on Windows).
+  if (!selected.startsWith(`${base}${sep}`)) throw new Error(`Unsafe PDF staging path: ${selected}`)
   return selected
 }
 

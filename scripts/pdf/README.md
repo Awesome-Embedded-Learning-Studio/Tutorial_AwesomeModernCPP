@@ -25,7 +25,7 @@ documents/**/*.md
 
 | 文件 | 职责 |
 | --- | --- |
-| `books.ts` | 内容单元、14 个出版书册及中英文 locale 注册表 |
+| `books.ts` | 内容单元、15 个出版书册及中英文 locale 注册表 |
 | `catalog.ts` | 递归发现 Markdown、gray-matter 解析、稳定排序、canonical lookup |
 | `markdown.ts` | 创建 VitePress Markdown renderer；启用 Shiki、数学、kbd、mermaid |
 | `transform.ts` | 方言审计、自定义组件转换、资源与标题 ID 规范化 |
@@ -44,9 +44,9 @@ documents/**/*.md
 `chapter`、`order`，最后以数字感知的自然文件名稳定排序。单单元书册的根 index 是
 `book-index`；多单元合辑的每个单元根 index 是 `chapter-index`，会进入目录。
 
-## 14 个出版书册
+## 15 个出版书册
 
-仓库当前注册 18 个内容单元，但对外生成 14 个书册：
+仓库当前注册 19 个内容单元，但对外生成 15 个书册：
 
 | 书册 ID | 中文书册 | 内容单元 | 源目录 |
 | --- | --- | --- | --- |
@@ -62,6 +62,7 @@ documents/**/*.md
 | `vol9` | 卷九 · 开源项目研读 | `vol9` | `documents/vol9-open-source-project-learn/` |
 | `vol10` | 卷十 · 课程与演讲笔记 | `vol10` | `documents/vol10-open-lecture-notes/` |
 | `compilation` | 专题册 · 编译、链接与构建系统 | `compilation` | `documents/compilation/` |
+| `crash-lab` | 实验册 · 崩溃实验室 | `crash-lab` | `documents/crash-lab/` |
 | `cpp-reference` | 参考册 · Modern C++ 速查手册 | `cpp-reference` | `documents/cpp-reference/` |
 | `supplement` | 附录合辑 · 项目、社区与附录 | `projects`、`community`、`roadmap`、`appendix`、`team` | 对应五个 `documents/<unit>/` 目录 |
 
@@ -282,7 +283,7 @@ DRAWIO_VIEWER_PATH=/absolute/path/to/viewer-static.min.js pnpm pdf -- --book <id
 - `language`：`zh` 或 `en`；
 - `publish`：是否更新固定 tag `pdf-latest`。
 
-PR 可由维护者添加 `export-pdf` 标签，自动构建全部 14 本中文书并上传为 Actions artifacts，
+PR 可由维护者添加 `export-pdf` 标签，自动构建全部 15 本中文书并上传为 Actions artifacts，
 但不会更新 `pdf-latest`。标签是一次性触发器：PR 新提交或重新打开不会自动重建；需要再次导出时，
 先移除再重新添加该标签。同一 PR 正在运行的旧导出会自动取消。未触发标签事件的 PR 不会创建
 PDF workflow。
@@ -294,9 +295,14 @@ Node 22、pnpm 10，安装匹配 Chrome、Cascadia Mono、CJK 衬线字体、qpd
 
 首期 `publish=true` 还有额外约束：
 
-1. `book` 必须是 `all`、`language` 必须是 `zh`，保证首期 14 本中文书来自同一 revision；
+1. `book` 必须是 `all`、`language` 必须是 `zh`，保证首期 15 本中文书来自同一 revision；
 2. 只能从默认分支发布；候选上传前和固定 tag 移动前都会拒绝已落后的 revision；
-3. 所有预期 PDF 必须完整且无重复，并以文件 SHA-256 加入 Release 资源名；
+3. 所有预期 PDF 必须完整且无重复；PDF 的 Release 资源名保持人类可读
+   （`<book>-<language>-<yyyymmdd>-r<run>.pdf`：日期是源提交的 committer 日期
+   （UTC），`r<run>` 是 PDF workflow 的 run number——Chromium 输出跨次构建不可
+   复现，靠它保证每次发布都拿到全新名字，同名只可能来自同一次 run 的字节一致
+   产物；精确的 revision SHA 记录在 manifest 里），完整性由 manifest 与
+   `SHA256SUMS` 中的文件级 SHA-256 绑定，校验步骤按 manifest 核对远端 digest；
 4. 严格按 PDF、`SHA256SUMS`、manifest 的顺序上传，并核对远端名称、大小及可用的 digest；
 5. 首次发布先建不可见 draft；已有公开 Release 则保持上一版可用，直到候选集完整通过；
 6. 所有检查通过后才移动固定 tag `pdf-latest`；失败只删除本次成功上传并正向记录的资源，
@@ -309,7 +315,7 @@ Release 标记为 rolling、不是 GitHub 的 “latest release”。CI artifact
 
 ## 英文开关
 
-英文使用相同的 14 册映射和管线：
+英文使用相同的 15 册映射和管线：
 
 ```bash
 pnpm pdf -- --book vol3 --language en
@@ -357,7 +363,7 @@ pnpm pdf -- --book getting-started --keep-staging
 - 抽查目录页码、页眉章名、同册跳转、跨册脚注；
 - 抽查 Shiki 代码、长代码跨页、mermaid、公式、drawio、本地及远程图片；
 - 抽查 CJK 行首/行尾禁则、空白页、裁切和横向溢出；
-- CI 单册 artifact 通过；只有完整 14 册同 revision 时才启用 publish。
+- CI 单册 artifact 通过；只有完整 15 册同 revision 时才启用 publish。
 
 常见错误定位：
 

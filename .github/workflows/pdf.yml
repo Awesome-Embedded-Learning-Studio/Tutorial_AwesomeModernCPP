@@ -242,8 +242,20 @@ jobs:
             exit 1
           }
 
-          short_sha="${GITHUB_SHA:0:12}"
-          normalized="dist/pdf/${BOOK}-${LANGUAGE}-${short_sha}.pdf"
+          # Human-readable stamps: the source commit's committer date (UTC,
+          # derived from the epoch so it always matches the publish job's
+          # ISO-UTC source date) plus the workflow run number. PDF bytes are
+          # not reproducible across builds (Chromium embeds a wall-clock
+          # creation date), so the run number gives every publish fresh,
+          # unique names; the exact revision SHA lives in the manifest and
+          # the Actions run.
+          commit_epoch="$(git show -s --format=%ct "$GITHUB_SHA")"
+          date_stamp="$(date -u -d "@${commit_epoch}" +%Y%m%d)"
+          [[ "$date_stamp" =~ ^[0-9]{8}$ ]] || {
+            echo "Could not derive a YYYYMMDD stamp for $GITHUB_SHA: $date_stamp" >&2
+            exit 1
+          }
+          normalized="dist/pdf/${BOOK}-${LANGUAGE}-${date_stamp}-r${GITHUB_RUN_NUMBER}.pdf"
           if [[ "$pdf" != "$normalized" ]]; then mv -- "$pdf" "$normalized"; fi
           echo "pdf=$normalized" >>"$GITHUB_OUTPUT"
           echo "pages=$pages" >>"$GITHUB_OUTPUT"
@@ -313,6 +325,7 @@ jobs:
           SOURCE_DATE: ${{ steps.source.outputs.source_date }}
           WORKFLOW_RUN_ID: ${{ github.run_id }}
           WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_RUN_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
           mkdir -p release-assets
@@ -347,11 +360,19 @@ jobs:
           const language = process.env.LANGUAGE
           const revision = process.env.SOURCE_SHA
           const shortRevision = revision.slice(0, 12)
+          const runNumber = process.env.WORKFLOW_RUN_NUMBER
+          const dateStamp = (process.env.SOURCE_DATE ?? '').slice(0, 10).replace(/-/g, '')
+          if (!/^\d+$/.test(runNumber ?? '')) {
+            throw new Error(`Missing workflow run number: ${runNumber}`)
+          }
+          if (!/^\d{8}$/.test(dateStamp)) {
+            throw new Error(`Could not derive a YYYYMMDD stamp from source date: ${process.env.SOURCE_DATE}`)
+          }
           if (!Array.isArray(expectedBooks) || expectedBooks.length !== expectedCount) {
             throw new Error('Invalid expected book set from the plan job')
           }
 
-          const expectedNames = expectedBooks.map((book) => `${book}-${language}-${shortRevision}.pdf`).sort()
+          const expectedNames = expectedBooks.map((book) => `${book}-${language}-${dateStamp}-r${runNumber}.pdf`).sort()
           const pdfSources = walk('release-input').filter((path) => path.endsWith('.pdf'))
           const sourceByName = new Map()
           for (const source of pdfSources) {
@@ -367,11 +388,17 @@ jobs:
           mkdirSync('release-assets', { recursive: true })
           const books = []
           for (const book of expectedBooks) {
-            const sourceName = `${book}-${language}-${shortRevision}.pdf`
-            const source = sourceByName.get(sourceName)
+            // PDF asset names stay readable (book-language-date-run) but are
+            // unique per publish run: PDF bytes are not reproducible across
+            // builds (Chromium embeds a wall-clock creation date), so the
+            // workflow run number gives every publish fresh names. The exact
+            // revision and the digest binding live in the manifest and
+            // SHA256SUMS below; verification cross-checks remote digests
+            // against them.
+            const name = `${book}-${language}-${dateStamp}-r${runNumber}.pdf`
+            const source = sourceByName.get(name)
             const bytes = statSync(source).size
             const sha256 = await sha256File(source)
-            const name = `${book}-${language}-${shortRevision}-${sha256}.pdf`
             copyFileSync(source, join('release-assets', name))
             books.push({ book, name, bytes, sha256 })
           }
@@ -382,7 +409,9 @@ jobs:
           writeFileSync(join('release-assets', checksumsName), checksums)
 
           const manifest = `${JSON.stringify({
-              schemaVersion: 1,
+              // schemaVersion 2: books[].name switched from content-addressed
+              // (sha256 suffix) to readable date-and-run-numbered names.
+              schemaVersion: 2,
               tag: 'pdf-latest',
               language,
               revision,
@@ -431,7 +460,7 @@ jobs:
           fi
           echo "created=$(<"$created")" >>"$GITHUB_OUTPUT"
 
-      - name: Upload only missing content-addressed assets
+      - name: Upload only missing assets
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -442,6 +471,12 @@ jobs:
           set -euo pipefail
           mapfile -t remote_assets < <(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
 
+          # Asset names embed the workflow run number, so an existing name can
+          # only come from a same-run re-attempt whose artifacts are byte
+          # identical; skipping the re-upload is safe. "Re-run all jobs" never
+          # gets here: immutable v4 artifacts make the rebuilt upload fail with
+          # a name collision in the build job, so a re-run never re-publishes
+          # mixed content; the next fresh dispatch uses a new run number.
           upload_if_missing() {
             local path="$1"
             local name="${path##*/}"
@@ -468,6 +503,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: pdf-latest
+          MANIFEST: ${{ steps.release_set.outputs.manifest }}
         run: |
           set -euo pipefail
           remote_json="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets')"
@@ -476,10 +512,24 @@ jobs:
             name="${path##*/}"
             local_size="$(stat -c '%s' "$path")"
             local_digest="$(sha256sum "$path" | awk '{print $1}')"
-            [[ "$name" == *"$local_digest"* ]] || {
-              echo "Content-addressed asset name does not contain its SHA-256: $name" >&2
-              exit 1
-            }
+            if [[ "$name" == *.pdf ]]; then
+              # PDF names are readable, so the expected digest comes from the
+              # manifest instead of the file name.
+              expected_digest="$(jq -r --arg name "$name" '.books[] | select(.name == $name) | .sha256' "release-assets/$MANIFEST")"
+              [[ -n "$expected_digest" ]] || {
+                echo "PDF asset is not listed in the manifest: $name" >&2
+                exit 1
+              }
+              [[ "$local_digest" == "$expected_digest" ]] || {
+                echo "Local PDF digest disagrees with the manifest for ${name}: local=$local_digest manifest=$expected_digest" >&2
+                exit 1
+              }
+            else
+              [[ "$name" == *"$local_digest"* ]] || {
+                echo "Content-addressed asset name does not contain its SHA-256: $name" >&2
+                exit 1
+              }
+            fi
             matches="$(jq -c --arg name "$name" '[.[] | select(.name == $name)]' <<<"$remote_json")"
             [[ "$(jq 'length' <<<"$matches")" == 1 ]] || {
               echo "Release asset was not uploaded: $name" >&2
@@ -555,7 +605,7 @@ jobs:
 
           # Never infer failure solely from a client exit code: the tag PATCH
           # or draft publication may already be durable on GitHub. If we cannot
-          # read the state, retaining content-addressed candidate assets is the
+          # read the state, retaining candidate assets is the
           # recoverable choice; a later successful run can remove them.
           current_tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}" --jq '.object.sha' 2>/dev/null)" || {
             echo 'Could not verify rolling tag after failure; preserving candidate assets.'
