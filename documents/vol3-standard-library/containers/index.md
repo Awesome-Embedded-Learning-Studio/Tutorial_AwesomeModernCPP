@@ -6,9 +6,10 @@ sidebar_order: 10
 
 # 容器与数据结构
 
-存放和管理数据的家伙们。这一组把每个容器的内部表示、扩容与迭代器失效规则、复杂度代价讲透，并在「容器选择指南」里给出按操作挑选容器的决策路径。
+存放和管理数据的家伙们。这一组把每个容器的内部表示、扩容与迭代器失效规则、复杂度代价讲透，并在「容器选择指南」里给出按操作挑选容器的决策路径。还没摸过动态数组、哈希表这些结构本身的读者，先走一遍「数据结构 primer」子系列，地基打好再上来。
 
 <ChapterNav variant="sub">
+  <ChapterLink href="primer/">数据结构 primer：容器底下的结构</ChapterLink>
   <ChapterLink href="01-container-selection-guide">容器选择指南</ChapterLink>
   <ChapterLink href="02-array">array：定长数组</ChapterLink>
   <ChapterLink href="03-vector-deep-dive">vector 深入</ChapterLink>
