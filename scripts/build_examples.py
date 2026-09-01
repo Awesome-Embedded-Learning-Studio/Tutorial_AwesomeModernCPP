@@ -20,6 +20,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
+# Windows 控制台默认代码页(cp936/cp1252)不是 UTF-8,本脚本输出含中文
+# (skip 名单理由等),不在入口处强制 UTF-8 会在第一次 print 中文时炸
+# UnicodeEncodeError('charmap' codec)。必须在任何输出之前执行。
+if sys.platform == 'win32' and sys.stdout.encoding.lower() not in ('utf-8', 'utf8'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # --msvc 开关(由 main() 设置):configure 时显式指定 cl 编译器
 FORCE_MSVC = False
 
@@ -260,9 +267,6 @@ def build_project(project_dir: Path) -> BuildResult:
 def print_results(results: list[BuildResult], code_root: Path) -> None:
     """Print build results summary."""
     in_ci = os.environ.get('CI') is not None
-    # Windows 控制台默认 GBK,输出里 errors='replace' 产生的 U+FFFD 会炸 print
-    if sys.platform == 'win32':
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     passed = [r for r in results if r.success]
     failed = [r for r in results if not r.success]
 

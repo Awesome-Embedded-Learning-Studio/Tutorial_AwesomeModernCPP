@@ -81,10 +81,11 @@ jobs:
           msystem: UCRT64
           update: false
           # native(python)而非 msys 模拟层版:sys.platform=win32,
-          # 与本地 Windows 用户环境一致,MSVC skip 清单逻辑同样生效
+          # 与本地 Windows 用户环境一致,MSVC skip 清单逻辑同样生效。
+          # 只装 gcc 精准包,不装 toolchain 全家桶(gdb 等用不到)
           install: >-
             git
-            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-cmake
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-ccache
