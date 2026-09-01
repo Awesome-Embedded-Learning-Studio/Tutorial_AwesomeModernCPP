@@ -158,6 +158,7 @@ pnpm test:pdf
 | `<RefLink>` | 转为指向本篇参考条目的上标编号 |
 | `<ReferenceCard>` / `<ReferenceItem>` | 转为参考资料 section/list；独立 item 也可转换 |
 | `<TalkInfoCard>` | 转为适合纸面的讲座信息 aside |
+| `<QQGroupCard>` | 转为纸面群卡片：本地二维码、群号与加群链接；复制按钮仅网页有效，纸面不保留（群号与链接常量需与 `QQGroupCard.vue` 保持同步） |
 | 站内 Markdown 链接 | 同册转 PDF 内锚点；跨册保留在线 URL，并生成去重的篇末脚注 |
 | 仓库文件或目录链接 | 已存在文件转 GitHub `blob`，目录转 `tree`；兼容 VitePress 产生的 `README.html`、`foo.cpp.html` |
 | 任何未解析的本地/站内链接 | 无论有无扩展名都直接失败，不降级为看似可用的外链 |

@@ -5,7 +5,7 @@ import type { RenderedDocument } from './model'
 
 const COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
-  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard',
+  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard',
 ]
 
 const SAFE_FRAGMENT_HTML = new Set([

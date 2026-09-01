@@ -199,7 +199,7 @@ test('a rendered fragment contains no known component residue and retains its ti
 
   assert.doesNotMatch(
     rendered.html,
-    /<(?:chapternav|chapterlink|reflink|referencecard|referenceitem|talkinfocard)\b/i,
+    /<(?:chapternav|chapterlink|reflink|referencecard|referenceitem|talkinfocard|qqgroupcard)\b/i,
   )
   assert.match(rendered.html, /class="chapter-xref"/)
   assert.match(rendered.html, /class="reference-link"/)
@@ -243,6 +243,30 @@ test('preserves every local image when several share one paragraph', async () =>
   assert.equal((rendered.html.match(/<img\b/g) ?? []).length, 2)
   assert.match(rendered.html, /src="\/assets\/one\.png"/)
   assert.match(rendered.html, /src="\/assets\/two\.png"/)
+})
+
+test('renders QQGroupCard as a paper aside with the staged QR asset', async () => {
+  const context: TransformContext = {
+    repositoryRoot: '/tmp/pdf-transform-fixture',
+    markdown: { render: (value: string) => value } as TransformContext['markdown'],
+    locale,
+    assets: {
+      resolveSourceAsset: (_from: string, raw: string) => `/tmp/pdf-transform-fixture/${raw.replace(/^\//, '')}`,
+      copyLocalAsset: async (path: string) => `/assets/${path.split('/').at(-1)}`,
+    } as TransformContext['assets'],
+    resolveLink: (href) => ({ kind: 'external', href }),
+  }
+  const rendered = await transformDocument(
+    source('<h1>Fixture topic</h1>\n<QQGroupCard />'),
+    context,
+  )
+
+  assert.match(rendered.html, /class="qq-group-card"/)
+  assert.match(rendered.html, /class="id-value">1107100989/)
+  assert.match(rendered.html, /href="https:\/\/qm\.qq\.com\/q\/cD89HxtmUg"/)
+  assert.match(rendered.html, /src="\/assets\/qq-group\.svg"/)
+  assert.doesNotMatch(rendered.html, /<qqgroupcard\b/i)
+  assert.equal(rendered.stats.qqGroupCard, 1)
 })
 
 test('rewrites OnlineCompilerDemo instructions into a paper context', async (testContext) => {
@@ -313,7 +337,7 @@ test('rejects executable or embedded-document link schemes', () => {
       endnotes: [],
       stats: {
         chapterNav: 0, chapterLink: 0, onlineCompilerDemo: 0, refLink: 0,
-        referenceCard: 0, referenceItem: 0, talkInfoCard: 0, remoteImages: 0,
+        referenceCard: 0, referenceItem: 0, talkInfoCard: 0, qqGroupCard: 0, remoteImages: 0,
         internalLinks: 0, crossBookLinks: 0, paperContext: 0,
       },
     }
