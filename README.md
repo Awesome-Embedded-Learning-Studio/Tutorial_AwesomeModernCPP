@@ -19,7 +19,11 @@
 
 <p align="center">
   <a href="https://qm.qq.com/q/cD89HxtmUg">
-    <img src="https://img.shields.io/badge/%E7%82%B9%E5%87%BB%E8%BF%99%E9%87%8C%E5%8A%A0%E5%85%A5%E6%88%91%E4%BB%AC-QQ%E4%BA%A4%E6%B5%81%E7%BE%A4-12B7F5?logo=qq" alt="QQ 交流群（群号1107100989） · 点击加入" />
+    <img src="documents/public/qq-group.svg" alt="QQ 交流群二维码 · 群号 1107100989 · 扫码进群" width="170">
+  </a>
+  <br>
+  <a href="https://qm.qq.com/q/cD89HxtmUg">
+    <img src="https://img.shields.io/badge/%E7%82%B9%E5%87%BB%E8%BF%99%E9%87%8C%E5%8A%A0%E5%85%A5%E6%88%91%E4%BB%AC-QQ%E4%BA%A4%E6%B5%81%E7%BE%A4_1107100989-12B7F5?logo=qq" alt="QQ 交流群（群号1107100989） · 点击加入" />
   </a>
 </p>
 

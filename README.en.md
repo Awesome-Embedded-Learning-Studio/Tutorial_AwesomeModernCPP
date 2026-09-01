@@ -20,7 +20,11 @@
 
 <p align="center">
   <a href="https://qm.qq.com/q/cD89HxtmUg">
-    <img src="https://img.shields.io/badge/Join_the_QQ_Group-Chinese_chat-12B7F5?logo=qq" alt="QQ Group · click to join" />
+    <img src="documents/public/qq-group.svg" alt="QQ Group QR code · group ID 1107100989 · scan to join" width="170">
+  </a>
+  <br>
+  <a href="https://qm.qq.com/q/cD89HxtmUg">
+    <img src="https://img.shields.io/badge/Join_the_QQ_Group-1107100989_Chinese_chat-12B7F5?logo=qq" alt="QQ Group (ID 1107100989) · click to join" />
   </a>
 </p>
 
