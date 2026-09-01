@@ -13,6 +13,7 @@ export const CONTENT_UNITS: readonly ContentUnit[] = [
   { id: 'vol9', sourceDir: 'vol9-open-source-project-learn', urlPrefix: '/vol9-open-source-project-learn' },
   { id: 'vol10', sourceDir: 'vol10-open-lecture-notes', urlPrefix: '/vol10-open-lecture-notes' },
   { id: 'compilation', sourceDir: 'compilation', urlPrefix: '/compilation' },
+  { id: 'crash-lab', sourceDir: 'crash-lab', urlPrefix: '/crash-lab' },
   { id: 'cpp-reference', sourceDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { id: 'projects', sourceDir: 'projects', urlPrefix: '/projects' },
   { id: 'community', sourceDir: 'community', urlPrefix: '/community' },
@@ -34,6 +35,7 @@ export const BOOKS: readonly BookDefinition[] = [
   { id: 'vol9', title: { zh: '开源项目研读', en: 'Open-source Project Studies' }, label: { zh: '卷九', en: 'Volume 9' }, units: ['vol9'] },
   { id: 'vol10', title: { zh: '课程与演讲笔记', en: 'Course and Talk Notes' }, label: { zh: '卷十', en: 'Volume 10' }, units: ['vol10'] },
   { id: 'compilation', title: { zh: '编译、链接与构建系统', en: 'Compilation, Linking, and Build Systems' }, label: { zh: '专题册', en: 'Special Edition' }, units: ['compilation'] },
+  { id: 'crash-lab', title: { zh: '崩溃实验室', en: 'Crash Lab' }, label: { zh: '实验册', en: 'Lab Edition' }, units: ['crash-lab'] },
   { id: 'cpp-reference', title: { zh: 'Modern C++ 速查手册', en: 'Modern C++ Quick Reference' }, label: { zh: '参考册', en: 'Reference' }, units: ['cpp-reference'] },
   { id: 'supplement', title: { zh: '项目、社区与附录', en: 'Projects, Community, and Appendices' }, label: { zh: '附录合辑', en: 'Supplement' }, units: ['projects', 'community', 'roadmap', 'appendix', 'team'] },
 ] as const

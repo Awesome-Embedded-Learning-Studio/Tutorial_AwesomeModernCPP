@@ -10,7 +10,7 @@ import { canonicalRepositoryPath } from './path-safety'
 
 const KNOWN_COMPONENT_NAMES = [
   'ChapterNav', 'ChapterLink', 'OnlineCompilerDemo', 'RefLink',
-  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard',
+  'ReferenceCard', 'ReferenceItem', 'TalkInfoCard', 'QQGroupCard',
 ] as const
 const KNOWN_COMPONENTS = new Map(
   KNOWN_COMPONENT_NAMES.map((name) => [name.toLowerCase(), name]),
@@ -55,6 +55,7 @@ const statsTemplate: TransformStats = {
   referenceCard: 0,
   referenceItem: 0,
   talkInfoCard: 0,
+  qqGroupCard: 0,
   remoteImages: 0,
   internalLinks: 0,
   crossBookLinks: 0,
@@ -508,6 +509,21 @@ async function transformComponents(
       ['Slides', attr(card, 'slidesurl', 'slides-url', 'slidesUrl')],
     ].filter((entry) => entry[1])
     replaceWithHtml(document, card, `<aside class="talk-info-card"><p class="talk-kicker">${escapeHtml(context.locale.strings.lectureResources)} · ${escapeHtml(conference)} ${escapeHtml(year)}</p><p class="talk-title">${escapeHtml(talkTitle)}</p><p>${escapeHtml(speaker)}</p>${links.length ? `<p>${links.map(([label, url]) => `<a href="${escapeHtml(url)}">${label}</a>`).join(' · ')}</p>` : ''}</aside>`)
+  }
+
+  for (const card of Array.from(root.querySelectorAll('qqgroupcard'))) {
+    stats.qqGroupCard += 1
+    // Keep the group number, join link, and QR asset path in sync with
+    // site/.vitepress/theme/components/QQGroupCard.vue. The leading-slash img
+    // src is repository-root relative, so it resolves for both locales, and
+    // the later local-image pass stages the file; the copy button is a
+    // web-only interaction with no paper equivalent.
+    const isChinese = context.locale.language === 'zh'
+    replaceWithHtml(
+      document,
+      card,
+      `<aside class="qq-group-card"><img class="qq-group-qr" src="/documents/public/qq-group.svg" alt="${isChinese ? 'QQ 群二维码' : 'QQ group QR code'}" /><div class="qq-group-info"><p class="qq-group-name">${isChinese ? 'TAMCPP 交流群' : 'TAMCPP Chat Group'}</p><p class="qq-group-id"><span class="id-label">${isChinese ? '群号' : 'Group ID'}</span> <span class="id-value">1107100989</span></p><p class="qq-group-actions"><a href="https://qm.qq.com/q/cD89HxtmUg">${isChinese ? '一键加群' : 'Join the Group'}</a></p><p class="qq-group-hint">${isChinese ? '手机 QQ 扫码，或在 QQ 里搜索群号。' : 'Scan with the QQ app, or search the group ID in QQ. Chinese-language chat.'}</p></div></aside>`,
+    )
   }
 }
 

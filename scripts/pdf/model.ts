@@ -85,6 +85,7 @@ export interface TransformStats {
   referenceCard: number
   referenceItem: number
   talkInfoCard: number
+  qqGroupCard: number
   remoteImages: number
   internalLinks: number
   crossBookLinks: number

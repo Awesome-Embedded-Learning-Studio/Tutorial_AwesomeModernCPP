@@ -792,6 +792,7 @@ body {
 
 .book-content .reference-card,
 .book-content .talk-info-card,
+.book-content .qq-group-card,
 .book-content .online-demo {
   width: 100%;
   max-width: 100%;
@@ -885,6 +886,54 @@ body {
   font-size: 0.82em;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+/* QQ 群卡片：二维码必须保持白底，暗色模式也一样，否则扫不出来 */
+.book-content .qq-group-card {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  margin: 1em 0;
+  padding: 3mm 4mm;
+  border: 0.25mm solid var(--book-rule);
+  border-left: 0.9mm solid var(--book-accent);
+  background: #faf7f3;
+  break-inside: avoid;
+  font-family: var(--book-sans);
+  font-size: 8.9pt;
+}
+
+.book-content .qq-group-card .qq-group-qr {
+  flex: 0 0 auto;
+  width: 33mm;
+  height: 33mm;
+  padding: 1.5mm;
+  background: #fff;
+  border: 0.2mm solid var(--book-rule);
+}
+
+.book-content .qq-group-card .qq-group-info {
+  min-width: 0;
+}
+
+.book-content .qq-group-card p {
+  margin: 0.35em 0;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.book-content .qq-group-card .qq-group-name {
+  font-weight: 700;
+}
+
+.book-content .qq-group-card .id-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.book-content .qq-group-card .qq-group-hint {
+  color: #6b6259;
+  font-size: 0.9em;
 }
 
 .book-content .talk-info-card .talk-title {
