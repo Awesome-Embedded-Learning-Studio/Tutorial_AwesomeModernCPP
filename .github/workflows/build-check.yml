@@ -3,6 +3,11 @@ name: Build Check
 on:
   pull_request:
     branches: [main]
+  # 合并后在 main 跑一次,让 cache 沉进 main 作用域:PR 间 cache 互相隔离,
+  # 只在 pull_request 触发的话,每个新 PR 首跑必 miss(Windows 冷构建 ~13min);
+  # 有 main 条目兜底后,新 PR 首跑经 restore-keys 命中,只重建改动的卷。
+  push:
+    branches: [main]
 
 jobs:
   build:
