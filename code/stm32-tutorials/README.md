@@ -1,15 +1,15 @@
 # STM32 教程代码(现代 C++ 主线)
 
-嵌入式线"两幕一桥"的代码工程。中心是现代 C++ 在 STM32 上的开发方式,芯片是道具:
-第一幕从门槛最低的 STM32F103(Blue Pill,十块钱)起步,第二幕走到资源宽裕的 STM32F407。
+嵌入式线的代码工程。中心是现代 C++ 在 STM32 上的开发方式,芯片是道具:
+咱们从门槛最低的 STM32F103(Blue Pill,十块钱)起步,后段走到资源宽裕的 STM32F407。
 
-每一站都跑在 Renode 模拟器里,不用买板子也能写、跑、验证;真板是每站末尾的可选项。
+每一站都跑在 Renode 模拟器里,您不用买板子也能写、跑、验证;实际板子是每站末尾的可选项。
 
 ## 结构
 
-```
+```text
 toolchain-arm-none-eabi.cmake   各工程共用的交叉编译工具链(独立文件,不内联)
-f103/                           第一幕:STM32F103 + Renode
+f103/                           F103 教程:STM32F103 + Renode
   0_blink/                      第 0 个工程:最小闪灯(裸机寄存器,翻转 PC13)
     CMakeLists.txt
     src/main.c                  第 1 档:裸机寄存器(C,基线)
@@ -24,15 +24,15 @@ f103/                           第一幕:STM32F103 + Renode
     blink*.resc                 Renode 启动脚本(.resc 平铺在工程根)
 ```
 
-后续按站增长(`1_button/` `2_uart/` ...),每条外设走"C → 类型安全寄存器 → 模板 → C++23"
-的重构阶梯,每档都在 Renode 验证。
+后续按站增长。这套"C → 类型安全寄存器 → 模板 → C++23"的五档阶梯,咱们只留在
+LED 站当"地砖下面"的透视素材,每档都在 Renode 验证;其余各站的主线是 HAL 之上的现代 C++ 应用层。
 
 ## 工具链前提(本机已就绪)
 
 - `arm-none-eabi-gcc`(交叉编译,cortex-m3)
 - `cmake` ≥ 3.16
 - `renode`(模拟器,本机 `/usr/sbin/renode`)
-- `openocd`(真板烧录,等 Blue Pill 到位用)
+- `openocd`(实际板子烧录,等 Blue Pill 到位用)
 
 ## 怎么跑第一个工程
 
@@ -44,7 +44,7 @@ cmake --build build --target run_blink_in_renode       # 第 1 档(C 裸机基�
 cmake --build build --target run_blink_mmio_in_renode  # 第 2 档(mmio 封装)进 Renode 跑
 ```
 
-`run_in_renode` 会跑 1 秒虚拟时间,然后连采几次 GPIOC_ODR,看到 `0x00002000` 和
+`run_in_renode` 会跑 1 秒虚拟时间,然后连采几次 GPIOC_ODR,您会看到 `0x00002000` 和
 `0x00000000` 交替就是 PC13 在闪(Blue Pill 的板载 LED 低电平点亮)。
 
 ## 构建目标
@@ -58,6 +58,6 @@ cmake --build build --target run_blink_mmio_in_renode  # 第 2 档(mmio 封装)�
 
 ## Renode 平台说明
 
-Renode 稳定版(1.16.x)没有现成的 Blue Pill 板级文件,`platform/blue_pill.repl` 是本教程
+Renode 稳定版(1.16.x)没有现成的 Blue Pill 板级文件,`platform/blue_pill.repl` 是咱们
 自己维护的板级描述:基于官方 `platforms/cpus/stm32f103.repl` 挂上板载 LED(PC13)。
 后续按键站会在这里补 Button 外设。
