@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - 参数传递方式
-reading_time_minutes: 14
+reading_time_minutes: 20
 tags:
 - cpp-modern
 - host
@@ -310,14 +310,115 @@ overload.cpp:xx:xx: error: call of overloaded 'process(int)' is ambiguous
 写一组重载函数 `max_value`，分别接受两个 `int`、两个 `double`、两个 `const char*`（比较字典序，返回较大的那个指针）。在 `main` 里分别调用它们，打印结果。
 
 ```text
-max_value(3, 7)         -> 7
-max_value(2.5, 1.8)     -> 2.5
-max_value("apple", "banana") -> banana
+max_value(3, 7)          -> 7
+max_value(2.5, 1.8)      -> 2.5
+max_value(apple, banana) -> banana
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <cstring>
+void max_value(int a, int b);
+void max_value(double a, double b);
+void max_value(const char *a, const char *b);
+int main()
+{
+    max_value(3, 7);
+    max_value(2.5, 1.8);
+    max_value("apple", "banana");
+    return 0;
+}
+void max_value(int a, int b)
+{
+    std::cout << "max_value(" << a << ", " << b << ") -> " << (a > b ? a : b) << std::endl;
+}
+void max_value(double a, double b)
+{
+    std::cout << "max_value(" << a << ", " << b << ") -> " << (a > b ? a : b) << std::endl;
+}
+void max_value(const char *a, const char *b)
+{
+    std::cout << "max_value(" << a << ", " << b << ") -> " << (strcmp(a, b) > 0 ? a : b) << std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+max_value(3, 7) -> 7
+max_value(2.5, 1.8) -> 2.5
+max_value(apple, banana) -> banana
+```
+
+:::
+
 
 ### 练习二：带默认参数的日志函数
 
 写一个 `log_message` 函数，签名为 `void log_message(const char* text, const char* level = "INFO", bool show_timestamp = false)`。分别用不同的参数组合调用它，观察默认参数的行为。
+
+::: details 参考答案
+
+```cpp
+#include <chrono>
+#include <iostream>
+
+void log_message(const char *text, const char *level = "INFO", bool show_timestamp = false);
+
+int main()
+{
+    // 使用不同的参数组合演示默认参数。
+    log_message("应用程序已启动");
+    log_message("配置已加载", "DEBUG");
+    log_message("计划任务正在运行", "INFO", true);
+    log_message("无法打开数据文件", "ERROR", true);
+
+    return 0;
+}
+
+void log_message(const char *text, const char *level, bool show_timestamp)
+{
+    if (show_timestamp)
+    {
+        // system_clock 表示墙上时间，适合生成日志时间戳。
+        const auto now = std::chrono::system_clock::now();
+        const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   now.time_since_epoch())
+                                   .count();
+        std::cout << "[" << timestamp << "] ";
+    }
+
+    std::cout << "[" << level << "] " << text << std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果（时间戳数值取决于实际运行时刻）:
+
+```text
+[INFO] 应用程序已启动
+[DEBUG] 配置已加载
+[timestamp-1] [INFO] 计划任务正在运行
+[timestamp-2] [ERROR] 无法打开数据文件
+```
+
+其中 `timestamp-1` 和 `timestamp-2` 代表两次调用分别得到的毫秒时间戳。两次调用如果跨过了毫秒边界，数值就会不同；即使相同，也只说明它们发生在同一毫秒内，并不代表时间戳被复用了。
+
+:::
+
 
 ### 练习三：能编译还是歧义
 
@@ -335,6 +436,44 @@ int main()
 ```
 
 提示：`'A'` 的类型是 `char`。`char` → `int` 和 `char` → `short` 分别属于什么转换级别？整型提升（promotion）和整型转换（conversion）在重载决议中的优先级一样吗？
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+void func(int x);
+void func(short x);
+
+int main()
+{
+    func('A'); // 歧义？还是能编译？
+    return 0;
+}
+void func(int x)
+{
+    std::cout << "func(int): " << x << std::endl;
+}
+void func(short x)
+{
+    std::cout << "func(short): " << x << std::endl;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+func(int): 65
+```
+
+>这里 `char` → `int` 是整型提升，`char` → `short` 是整型转换；整型提升（promotion）优先于整型转换（conversion），所以最终选择 `func(int)`。
+
+:::
 
 ## 小结
 
