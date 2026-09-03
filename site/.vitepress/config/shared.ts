@@ -38,6 +38,16 @@ export const sharedMarkdown = {
   },
 }
 
+// 覆盖 vitepress 内置搜索盒:VPLocalSearchBox 只被 VPNavBarSearch 以
+// './VPLocalSearchBox.vue' 这一 specifier 引用,alias 指到我们的覆盖版
+// (索引构建+查询挪进 Web Worker,修 issue #156 的搜索卡顿)。
+// index.ts(dev/单体 build)与 sharedBase(分卷构建)都要用,单一来源防漏改。
+export const localSearchBoxAlias = {
+  './VPLocalSearchBox.vue': fileURLToPath(
+    new URL('../theme/components/VPLocalSearchBox.vue', import.meta.url)
+  ),
+}
+
 export const sharedBase = {
   base: '/Tutorial_AwesomeModernCPP/',
   cleanUrls: true,
@@ -54,6 +64,9 @@ export const sharedBase = {
   },
 
   vite: {
+    resolve: {
+      alias: localSearchBoxAlias,
+    },
     build: {
       chunkSizeWarningLimit: 5000,
     },

@@ -21,12 +21,21 @@ importers:
       '@types/node':
         specifier: ^25.6.2
         version: 25.6.2
+      '@vueuse/core':
+        specifier: ^12.4.0
+        version: 12.8.2
+      '@vueuse/integrations':
+        specifier: ^12.4.0
+        version: 12.8.2(focus-trap@7.8.0)
       gray-matter:
         specifier: 4.0.3
         version: 4.0.3
       linkedom:
         specifier: 0.18.13
         version: 0.18.13
+      mark.js:
+        specifier: 8.11.1
+        version: 8.11.1
       markdown-it-mathjax3:
         specifier: ^4.3.2
         version: 4.3.2
@@ -817,6 +826,7 @@ packages:
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
+    deprecated: this version has critical issues, please update to the latest version
 
   algoliasearch@5.52.1:
     resolution: {integrity: sha512-fHA8+kXTbjagw3jkLiaS7KKrH8qe2DyOsiUhGlN4cdT77PEsfqXZl7ewDk1hsg+pJnPlnE50XtLxjR91iJOpmg==}
