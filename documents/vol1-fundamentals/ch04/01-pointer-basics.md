@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - inline 与 constexpr 函数
-reading_time_minutes: 11
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
