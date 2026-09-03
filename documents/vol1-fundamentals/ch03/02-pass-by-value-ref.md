@@ -4,7 +4,7 @@ description: "理解值传递、引用传递和 const 引用传递的区别，�
 chapter: 3
 order: 2
 difficulty: beginner
-reading_time_minutes: 12
+reading_time_minutes: 22
 platform: host
 prerequisites:
   - "函数基础"
@@ -127,7 +127,7 @@ x = 7, y = 3
 
 但引用传递也带来了新的约束和陷阱。
 
-> **踩坑预警**：非 const 引用参数只能绑定到左值——也就是有名字、有地址的变量。字面量、临时值（右值）都不能传给非 const 引用。比如 `add_ten(5)` 会编译报错，因为 `5` 是个字面量，没有内存地址可供引用绑定。同理，`swap_values(x, 3)` 也编译不过——你不能把一个数字字面量交换到别的地方去。如果你看到类似 `cannot bind non-const lvalue reference to an rvalue` 的编译错误，多半就是这个问题。
+> **踩坑预警**：非 const 引用参数只能绑定到左值——也就是有名字、有地址的变量。字面量、临时值（右值）都不能传给非 const 引用。比如当前的 `add_ten(int&)` 若被 `add_ten(5)` 调用会编译报错，因为 `5` 是个字面量，没有内存地址可供引用绑定。同理，`swap_values(x, 3)` 也编译不过——你不能把一个数字字面量交换到别的地方去。如果你看到类似 `cannot bind non-const lvalue reference to an rvalue` 的编译错误，多半就是这个问题。
 
 ## const 引用传递——两全其美
 
@@ -366,9 +366,183 @@ Hello, World! Welcome to Modern C++.
 
 写一个 `swap_values` 函数交换两个 `double` 的值，再写一个重载版本交换两个 `std::string`。用 `main` 函数验证结果。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+void swap_values(double &first, double &second)
+{
+    double temporary = first;
+    first = second;
+    second = temporary;
+}
+
+void swap_values(std::string &first, std::string &second)
+{
+    std::string temporary = first;
+    first = second;
+    second = temporary;
+}
+
+int main()
+{
+    double first_number = 3.14;
+    double second_number = 2.71;
+
+    std::cout << "交换 double 前：" << first_number << ", "
+              << second_number << '\n';
+    swap_values(first_number, second_number);
+    std::cout << "交换 double 后：" << first_number << ", "
+              << second_number << '\n';
+
+    std::string first_text = "hello";
+    std::string second_text = "world";
+
+    std::cout << "交换字符串前：" << first_text << ", "
+              << second_text << '\n';
+    swap_values(first_text, second_text);
+    std::cout << "交换字符串后：" << first_text << ", "
+              << second_text << '\n';
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+交换 double 前：3.14, 2.71
+交换 double 后：2.71, 3.14
+交换字符串前：hello, world
+交换字符串后：world, hello
+```
+
+:::
+
 ### 练习二：高效处理大型结构体
 
 定义一个包含至少 1000 个 `double` 元素数组的结构体 `Measurement`。写两个函数：一个用值传递计算平均值，一个用 const 引用传递计算平均值。分别计时比较性能。
+
+::: details 参考答案
+
+```cpp
+#include <chrono>
+#include <iostream>
+
+#define kValueCount 1000
+#define kIterations 100000
+
+struct Measurement
+{
+    double values[kValueCount];
+};
+
+double average_by_value(Measurement measurement);
+double average_by_const_ref(const Measurement &measurement);
+
+int main()
+{
+
+    Measurement measurement{};
+
+    for (int i = 0; i < kValueCount; ++i)
+    {
+        measurement.values[i] = static_cast<double>(i + 1);
+    }
+
+    double value_average = 0.0;
+
+    const auto value_start = std::chrono::steady_clock::now();
+    for (int i = 0; i < kIterations; ++i)
+    {
+        value_average = average_by_value(measurement);
+    }
+    const auto value_end = std::chrono::steady_clock::now();
+    const auto value_time =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            value_end - value_start)
+            .count();
+    double const_ref_average = 0.0;
+    const auto const_ref_start = std::chrono::steady_clock::now();
+    for (int i = 0; i < kIterations; ++i)
+    {
+        const_ref_average = average_by_const_ref(measurement);
+    }
+    const auto const_ref_end = std::chrono::steady_clock::now();
+    const auto const_ref_time =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            const_ref_end - const_ref_start)
+            .count();
+    const double expected_average =
+        (1.0 + static_cast<double>(kValueCount)) / 2.0;
+    std::cout << "Measurement 大小: " << sizeof(Measurement) << " 字节\n";
+    std::cout << "值传递平均值: " << value_average
+              << "（应为 " << expected_average << "）\n";
+    std::cout << "const 引用平均值: " << const_ref_average
+              << "（应为 " << expected_average << "）\n";
+    std::cout << "值传递耗时: " << value_time << " 微秒\n";
+    std::cout << "const 引用耗时: " << const_ref_time << " 微秒\n";
+    if (const_ref_time > 0)
+    {
+        std::cout << "耗时比值（值传递 / const 引用）: "
+                  << static_cast<double>(value_time) /
+                         static_cast<double>(const_ref_time)
+                  << "x\n";
+    }
+
+    return 0;
+}
+
+double average_by_value(Measurement measurement)
+{
+    double sum = 0.0;
+    for (double value : measurement.values)
+    {
+        sum += value;
+    }
+    return sum / static_cast<double>(kValueCount);
+}
+
+double average_by_const_ref(const Measurement &measurement)
+{
+    double sum = 0.0;
+    for (double value : measurement.values)
+    {
+        sum += value;
+    }
+    return sum / static_cast<double>(kValueCount);
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -O2 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+Measurement 大小: 8000 字节
+值传递平均值: 500.5（应为 500.5）
+const 引用平均值: 500.5（应为 500.5）
+值传递耗时: 264553 微秒
+const 引用耗时: 253918 微秒
+耗时比值（值传递 / const 引用）: 1.04188x
+```
+
+在这个基准中，间接调用使值传递形参需要复制完整的 `Measurement`（1000 个 `double`）；`const Measurement&` 只传递引用，不复制对象。示例中的耗时只是一次代表性运行，具体数值会受编译器、硬件和系统调度影响；重复运行时应关注整体趋势，而不是某个固定数字。
+
+:::
+
 
 ### 练习三：修复悬垂引用
 
@@ -390,6 +564,45 @@ int main()
 ```
 
 提示：想想函数返回后局部变量 `prefix` 会发生什么。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+std::string get_prefix()
+{
+    std::string prefix = "user_";
+    return prefix;
+}
+
+int main()
+{
+    std::string name = get_prefix() + "admin";
+    std::cout << name << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+user_admin
+```
+
+原代码中的 `prefix` 是普通局部变量，只在 `get_prefix` 函数执行期间存在。函数返回时，它的生命周期结束，返回的 `const std::string&` 便指向已经销毁的对象，后续通过这个引用读取数据就是未定义行为。
+
+这里的修复方式是让 `get_prefix` 按值返回。`prefix` 仍是普通局部变量，只在函数执行期间存在；`return prefix` 会构造并返回一个独立的 `std::string` 对象，调用者接收的是这个返回值，而不是局部变量的引用，因此函数返回后不会产生悬垂引用。同时取消`const`的使用，防止编译器没有发生`NRVO`时阻碍移动。移动构造通常需要：`std::string(std::string&&)`
+
+:::
+
 
 ## 小结
 
