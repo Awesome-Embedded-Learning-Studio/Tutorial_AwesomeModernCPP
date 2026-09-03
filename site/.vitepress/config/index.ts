@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navEn } from './nav'
 import { buildSidebar } from './sidebar'
-import { sharedThemeConfig, sharedMarkdown, makeSocialLinks } from './shared'
+import { sharedThemeConfig, sharedMarkdown, makeSocialLinks, localSearchBoxAlias } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
 import { join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,6 +35,9 @@ function serveCodeExamplesInDev() {
 export default withDrawio(defineConfig({
   vite: {
     plugins: [serveCodeExamplesInDev()],
+    resolve: {
+      alias: localSearchBoxAlias,
+    },
     ssr: {
       // mermaid / @panzoom/panzoom 都只在客户端 onMounted 后动态 import 求值,
       // SSR 阶段不能也不应打包求值(mermaid 访问 document、panzoom 访问 DOM)。
