@@ -437,7 +437,8 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 #include <chrono>
 #include <iostream>
 
-constexpr int kValueCount = 1000;
+#define kValueCount 1000
+#define kIterations 100000
 
 struct Measurement
 {
@@ -449,7 +450,7 @@ double average_by_const_ref(const Measurement &measurement);
 
 int main()
 {
-    constexpr int kIterations = 100000;
+
     Measurement measurement{};
 
     for (int i = 0; i < kValueCount; ++i)
@@ -570,7 +571,7 @@ int main()
 #include <iostream>
 #include <string>
 
-const std::string get_prefix()
+std::string get_prefix()
 {
     std::string prefix = "user_";
     return prefix;
@@ -598,7 +599,7 @@ user_admin
 
 原代码中的 `prefix` 是普通局部变量，只在 `get_prefix` 函数执行期间存在。函数返回时，它的生命周期结束，返回的 `const std::string&` 便指向已经销毁的对象，后续通过这个引用读取数据就是未定义行为。
 
-这里的修复方式是让 `get_prefix` 按值返回。`prefix` 仍是普通局部变量，只在函数执行期间存在；`return prefix` 会构造并返回一个独立的 `std::string` 对象，调用者接收的是这个返回值，而不是局部变量的引用，因此函数返回后不会产生悬垂引用。
+这里的修复方式是让 `get_prefix` 按值返回。`prefix` 仍是普通局部变量，只在函数执行期间存在；`return prefix` 会构造并返回一个独立的 `std::string` 对象，调用者接收的是这个返回值，而不是局部变量的引用，因此函数返回后不会产生悬垂引用。同时取消`const`的使用，防止编译器没有发生`NRVO`时阻碍移动。移动构造通常需要：`std::string(std::string&&)`
 
 :::
 
