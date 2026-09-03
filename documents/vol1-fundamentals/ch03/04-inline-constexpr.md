@@ -4,7 +4,7 @@ description: "理解 inline 的真正含义和 constexpr 函数的编译期计�
 chapter: 3
 order: 4
 difficulty: beginner
-reading_time_minutes: 12
+reading_time_minutes: 19
 platform: host
 prerequisites:
   - "重载与默认参数"
@@ -314,13 +314,177 @@ runtime  square(7)  = 49
 
 写一个 `constexpr int gcd(int a, int b)` 函数，使用欧几里得算法（辗转相除法）计算两个正整数的最大公约数。用 `static_assert` 验证 `gcd(12, 8) == 4`、`gcd(100, 75) == 25`。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+constexpr int gcd(int a, int b)
+{
+    return (b == 0) ? a : gcd(b, a % b);
+}
+
+static_assert(gcd(12, 8) == 4, "12和8的最大公约数应为4");
+static_assert(gcd(100, 75) == 25, "100和75的最大公约数应为25");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    std::cout << "12和8的最大公约数: " << gcd(12, 8) << std::endl;
+    std::cout << "100和75的最大公约数: " << gcd(100, 75) << std::endl;
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+=== 编译期计算结果 ===
+12和8的最大公约数: 4
+100和75的最大公约数: 25
+```
+
+:::
+
 ### 练习二：编译期斐波那契查找表
 
 写一个 `constexpr` 函数生成一个包含 30 个元素的 `std::array<uint32_t, 30>`，其中第 i 个元素是第 i 个 Fibonacci 数。用 `static_assert` 验证 `table[10] == 55`、`table[20] == 6765`。注意用迭代而不是递归，避免指数级编译时间。
 
+::: details 参考答案
+
+```cpp
+#include <array>
+#include <cstdint>
+#include <iostream>
+
+constexpr std::array<std::uint32_t, 30> fibonacci()
+{
+    std::array<std::uint32_t, 30> fib{};
+    fib[0] = 0;
+    fib[1] = 1;
+    for (std::size_t i = 2; i < 30; ++i)
+    {
+        fib[i] = fib[i - 1] + fib[i - 2];
+    }
+    return fib;
+}
+
+constexpr auto table = fibonacci();
+static_assert(table[10] == 55, "Fibonacci(10) 应为 55");
+static_assert(table[20] == 6765, "Fibonacci(20) 应为 6765");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    for (std::size_t i = 0; i < 30; ++i)
+    {
+        std::cout << "Fibonacci(" << i << ") = " << table[i] << std::endl;
+    }
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+=== 编译期计算结果 ===
+Fibonacci(0) = 0
+Fibonacci(1) = 1
+Fibonacci(2) = 1
+Fibonacci(3) = 2
+Fibonacci(4) = 3
+Fibonacci(5) = 5
+Fibonacci(6) = 8
+Fibonacci(7) = 13
+Fibonacci(8) = 21
+Fibonacci(9) = 34
+Fibonacci(10) = 55
+Fibonacci(11) = 89
+Fibonacci(12) = 144
+Fibonacci(13) = 233
+Fibonacci(14) = 377
+Fibonacci(15) = 610
+Fibonacci(16) = 987
+Fibonacci(17) = 1597
+Fibonacci(18) = 2584
+Fibonacci(19) = 4181
+Fibonacci(20) = 6765
+Fibonacci(21) = 10946
+Fibonacci(22) = 17711
+Fibonacci(23) = 28657
+Fibonacci(24) = 46368
+Fibonacci(25) = 75025
+Fibonacci(26) = 121393
+Fibonacci(27) = 196418
+Fibonacci(28) = 317811
+Fibonacci(29) = 514229
+```
+
+:::
+
 ### 练习三：constexpr popcount
 
 写一个 `constexpr int count_bits(int n)` 函数，返回整数 `n` 的二进制表示中有多少个 1。用 `static_assert` 验证 `count_bits(0) == 0`、`count_bits(7) == 3`、`count_bits(255) == 8`。提示：每次 `n &= (n - 1)` 会消除最低位的 1（Brian Kernighan 技巧）。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+constexpr int count_bits(int n)
+{
+    unsigned int value = static_cast<unsigned int>(n);
+    int count = 0;
+    while (value != 0)
+    {
+        value &= (value - 1);
+        ++count;
+    }
+    return count;
+}
+
+static_assert(count_bits(0) == 0, "0的二进制表示中1的个数应为0");
+static_assert(count_bits(7) == 3, "7的二进制表示中1的个数应为3");
+static_assert(count_bits(255) == 8, "255的二进制表示中1的个数应为8");
+
+int main()
+{
+    std::cout << "=== 编译期计算结果 ===" << std::endl;
+    std::cout << "0的二进制表示中1的个数: " << count_bits(0) << std::endl;
+    std::cout << "7的二进制表示中1的个数: " << count_bits(7) << std::endl;
+    std::cout << "255的二进制表示中1的个数: " << count_bits(255) << std::endl;
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+=== 编译期计算结果 ===
+0的二进制表示中1的个数: 0
+7的二进制表示中1的个数: 3
+255的二进制表示中1的个数: 8
+```
+
+:::
 
 ## 小结
 
