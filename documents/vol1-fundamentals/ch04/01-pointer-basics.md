@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - inline 与 constexpr 函数
-reading_time_minutes: 15
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
@@ -307,18 +307,20 @@ x = 100
 
 ```cpp
 #include <iostream>
-constexpr void swap(int *p1, int *p2)
+
+void swap(int* p1, int* p2)
 {
     int temp = *p1;
     *p1 = *p2;
     *p2 = temp;
 }
+
 int main()
 {
     int a = 10;
     int b = 20;
-    int *p1 = &a;
-    int *p2 = &b;
+    int* p1 = &a;
+    int* p2 = &b;
 
     std::cout << "========== 交换前 ==========" << std::endl;
     std::cout << "变量a的值: " << a << std::endl;
@@ -363,8 +365,8 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 **关键观察：值变了，地址没变**
 
 仔细对比输出会发现：
-- `a` 的值从 10 变成了 20，但地址始终是 `0x7ffe15dc91b0`
-- `b` 的值从 20 变成了 10，但地址始终是 `0x7ffe15dc91b4`
+-`a` 的值从 10 变成了 20，但地址始终是 `0x7ffe15dc91b0`
+-`b` 的值从 20 变成了 10，但地址始终是 `0x7ffe15dc91b4`
 
 **为什么地址不会变？**
 
@@ -413,7 +415,10 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 运行结果:
 
 ```text
-
+x = 20
+y = 30
+*p = 30
+*q = 30
 ```
 
 :::
@@ -447,7 +452,26 @@ int main()
 ::: details 参考答案
 
 ```cpp
+#include <iostream>
 
+int *create_value()
+{
+    static int val = 42;
+    return &val;
+}
+
+int main()
+{
+    int *p = nullptr; // bug 1
+    int value = 10;
+    p = &value;
+    std::cout << "*p的值是: " << *p << std::endl;
+
+    int *q = create_value(); // bug 2
+    std::cout << "*q的值是: " << *q << std::endl;
+
+    return 0;
+}
 ```
 
 编译运行:
@@ -459,7 +483,8 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 运行结果:
 
 ```text
-
+*p的值是: 10
+*q的值是: 42
 ```
 
 :::
