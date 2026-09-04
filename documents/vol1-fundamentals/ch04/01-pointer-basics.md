@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - inline 与 constexpr 函数
-reading_time_minutes: 11
+reading_time_minutes: 14
 tags:
 - cpp-modern
 - host
@@ -303,6 +303,82 @@ x = 100
 
 声明两个 `int` 变量 `a` 和 `b`，打印值和地址，通过指针交换值后再次打印。值变了，地址变了吗？为什么？
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+void swap(int* p1, int* p2)
+{
+    int temp = *p1;
+    *p1 = *p2;
+    *p2 = temp;
+}
+
+int main()
+{
+    int a = 10;
+    int b = 20;
+    int* p1 = &a;
+    int* p2 = &b;
+
+    std::cout << "========== 交换前 ==========" << std::endl;
+    std::cout << "变量a的值: " << a << std::endl;
+    std::cout << "变量a的地址: " << p1 << std::endl;
+    std::cout << "变量b的值: " << b << std::endl;
+    std::cout << "变量b的地址: " << p2 << std::endl;
+
+    swap(p1, p2);
+
+    std::cout << "\n========== 交换后 ==========" << std::endl;
+    std::cout << "变量a的值: " << a << std::endl;
+    std::cout << "变量a的地址: " << p1 << std::endl;
+    std::cout << "变量b的值: " << b << std::endl;
+    std::cout << "变量b的地址: " << p2 << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+========== 交换前 ==========
+变量a的值: 10
+变量a的地址: 0x7ffe15dc91b0
+变量b的值: 20
+变量b的地址: 0x7ffe15dc91b4
+
+========== 交换后 ==========
+变量a的值: 20
+变量a的地址: 0x7ffe15dc91b0
+变量b的值: 10
+变量b的地址: 0x7ffe15dc91b4
+```
+
+**关键观察：值变了，地址没变**
+
+仔细对比输出会发现：
+-`a` 的值从 10 变成了 20，但地址始终是 `0x7ffe15dc91b0`
+-`b` 的值从 20 变成了 10，但地址始终是 `0x7ffe15dc91b4`
+
+**为什么地址不会变？**
+
+变量的地址在它被创建时就确定了——`int a = 10;` 在栈上分配空间时，操作系统和编译器协作为 `a` 分配了一块 4 字节的内存（假设 `int` 是 4 字节），这块内存的起始位置就是 `a` 的地址。这个地址在变量的整个生命周期内都不会改变。
+
+`swap` 函数通过指针交换的是**变量存储的内容**（即值），而不是变量本身在内存中的位置。就像两个房子交换了住户，但房子的门牌号不会变——`0x7ffe15dc91b0` 这个"门牌号"永远属于变量 `a`，只是里面的"住户"从 10 换成了 20。
+
+这也是指针强大之处的体现：通过地址，我们可以跨越函数边界去修改原始变量的内容，而不需要拷贝整个变量或改变它的内存布局。
+
+:::
+
+
 ### 练习二：追踪指针的值
 
 先不运行，在纸上追踪结果，再编译验证：
@@ -328,9 +404,29 @@ int main()
 
 很多朋友第一次做时会在 `*p = *q` 和 `p = q` 的区别上栽跟头——前者是赋值数据，后者是改变指向。
 
+::: details 参考答案
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+x = 20
+y = 30
+*p = 30
+*q = 30
+```
+
+:::
+
+
 ### 练习三：修复空指针 bug
 
-下面代码有三个指针相关的 bug，找出并修复：
+下面代码有两个指针相关的 bug，找出并修复：
 
 ```cpp
 #include <iostream>
@@ -352,6 +448,46 @@ int main()
     return 0;
 }
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+int *create_value()
+{
+    static int val = 42;
+    return &val;
+}
+
+int main()
+{
+    int *p = nullptr; // bug 1
+    int value = 10;
+    p = &value;
+    std::cout << "*p的值是: " << *p << std::endl;
+
+    int *q = create_value(); // bug 2
+    std::cout << "*q的值是: " << *q << std::endl;
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+*p的值是: 10
+*q的值是: 42
+```
+
+:::
 
 ## 小结
 
