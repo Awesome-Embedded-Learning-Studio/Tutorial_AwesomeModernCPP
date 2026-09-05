@@ -32,10 +32,10 @@
           <mxGeometry x="640" y="100" width="80" height="60" as="geometry"/>
         </mxCell>
         <mxCell id="sizerule" value="size = 5（有效元素）" style="shape=flexArrow;html=1;fontSize=13;fontStyle=1;strokeColor=#d79b00;fillColor=#ffe6cc;" vertex="1" parent="1">
-          <mxGeometry x="80" y="190" width="400" height="30" as="geometry" relative="1" flipH="1"/>
+          <mxGeometry x="80" y="190" width="400" height="30" as="geometry"/>
         </mxCell>
         <mxCell id="caprule" value="cap = 8（整块内存的格数）" style="shape=flexArrow;html=1;fontSize=13;fontStyle=1;strokeColor=#6c8ebf;fillColor=#dae8fc;" vertex="1" parent="1">
-          <mxGeometry x="80" y="240" width="640" height="30" as="geometry" relative="1" flipH="1"/>
+          <mxGeometry x="80" y="240" width="640" height="30" as="geometry"/>
         </mxCell>
         <mxCell id="note" value="右侧空格留着给下一次 push_back 直接用——立刻还掉再借，分配器一来一回的开销更高。" style="text;html=1;fontSize=13;align=left;whiteSpace=wrap;" vertex="1" parent="1">
           <mxGeometry x="80" y="300" width="640" height="30" as="geometry"/>

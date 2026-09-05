@@ -1,0 +1,739 @@
+{
+ "version": 1,
+ "id": "opp3-two-representations",
+ "title": "双表示并排：三指针 vs 指针+计数",
+ "subtitle": "libstdc++ 内部三指针，语义与指针+计数完全等价",
+ "source": "projects/vol8-vector-growth/02-dsl/opp3-two-representations.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "双表示并排：三指针 vs 指针+计数",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 6.4832,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "libstdc++ 内部三指针，语义与指针+计数完全等价",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.852,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row_b": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": 3.4,
+   "y": 0.2632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row_b": {
+   "kind": "cells",
+   "cap": 4,
+   "side": 0.62,
+   "cx": 3.4,
+   "cy": -0.9,
+   "w": 2.66,
+   "h": 0.62,
+   "cells": [
+    {
+     "i": 0,
+     "x": 2.38,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 1,
+     "x": 3.06,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 2,
+     "x": 3.74,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 3,
+     "x": 4.42,
+     "y": -0.9,
+     "s": 0.62
+    }
+   ],
+   "idx": []
+  },
+  "_cap_row_a": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": -3.4,
+   "y": 0.2632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row_a": {
+   "kind": "cells",
+   "cap": 4,
+   "side": 0.62,
+   "cx": -3.4,
+   "cy": -0.9,
+   "w": 2.66,
+   "h": 0.62,
+   "cells": [
+    {
+     "i": 0,
+     "x": -4.42,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 1,
+     "x": -3.74,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 2,
+     "x": -3.06,
+     "y": -0.9,
+     "s": 0.62
+    },
+    {
+     "i": 3,
+     "x": -2.38,
+     "y": -0.9,
+     "s": 0.62
+    }
+   ],
+   "idx": []
+  },
+  "ptr:p_data": {
+   "kind": "ptr",
+   "id": "p_data",
+   "name": "data",
+   "above": true,
+   "x": 2.38,
+   "tipY": -0.35,
+   "baseY": 0.04,
+   "txt": {
+    "text": "data",
+    "x": 2.38,
+    "y": 0.2,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.5808,
+    "h": 0.22
+   },
+   "cx": 2.38,
+   "cy": -0.02,
+   "w": 0.5808,
+   "h": 0.66
+  },
+  "ptr:p_begin": {
+   "kind": "ptr",
+   "id": "p_begin",
+   "name": "start",
+   "above": true,
+   "x": -4.42,
+   "tipY": -0.35,
+   "baseY": 0.04,
+   "txt": {
+    "text": "start",
+    "x": -4.42,
+    "y": 0.2,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.726,
+    "h": 0.22
+   },
+   "cx": -4.42,
+   "cy": -0.02,
+   "w": 0.726,
+   "h": 0.66
+  },
+  "ptr:p_finish": {
+   "kind": "ptr",
+   "id": "p_finish",
+   "name": "finish",
+   "above": false,
+   "x": -3.06,
+   "tipY": -1.45,
+   "baseY": -1.84,
+   "txt": {
+    "text": "finish",
+    "x": -3.06,
+    "y": -2.0,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.8712,
+    "h": 0.22
+   },
+   "cx": -3.06,
+   "cy": -1.78,
+   "w": 0.8712,
+   "h": 0.66
+  },
+  "ptr:p_capend": {
+   "kind": "ptr",
+   "id": "p_capend",
+   "name": "cap_end",
+   "above": true,
+   "x": -2.07,
+   "tipY": -0.35,
+   "baseY": 0.04,
+   "txt": {
+    "text": "cap_end",
+    "x": -2.07,
+    "y": 0.2,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 1.0164,
+    "h": 0.22
+   },
+   "cx": -2.07,
+   "cy": -0.02,
+   "w": 1.0164,
+   "h": 0.66
+  },
+  "show:lb_eq": {
+   "kind": "text",
+   "text": "同一个 vector，两种画法",
+   "x": 0,
+   "y": -0.9,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.98,
+   "h": 0.272,
+   "id": "lb_eq"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "三指针: start / finish / cap_end",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.8192,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "指针 + 计数: data + size + capacity",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.2848,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "等价表示, sizeof 都是 24 字节",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.4688,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row_b",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row_b",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": 3.4,
+      "cy": -0.9,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": 2.38,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": 3.06,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": 3.74,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": 4.42,
+        "y": -0.9,
+        "s": 0.62
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row_b",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 4",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×2 (slow)",
+   "note": "[0,2)",
+   "duration": 0.6,
+   "speed": 0.6,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row_b",
+     "i": 0,
+     "s": 1,
+     "cap": 4,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row_b",
+     "i": 1,
+     "s": 2,
+     "cap": 4,
+     "counter": true,
+     "t": 0.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 5.9,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row_a",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row_a",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": -3.4,
+      "cy": -0.9,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": -4.42,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": -3.74,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": -3.06,
+        "y": -0.9,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": -2.38,
+        "y": -0.9,
+        "s": 0.62
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row_a",
+     "t": 5.6,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×2 (fast)",
+   "note": "[0,2)",
+   "duration": 0.2,
+   "speed": 1.8,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row_a",
+     "i": 0,
+     "s": 1,
+     "cap": 4,
+     "counter": false,
+     "t": 0.0,
+     "dur": 0.1
+    },
+    {
+     "type": "fill",
+     "target": "row:row_a",
+     "i": 1,
+     "s": 2,
+     "cap": 4,
+     "counter": false,
+     "t": 0.1,
+     "dur": 0.1
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 data 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_data",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 start 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_begin",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 finish 出场",
+   "note": "index 2",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_finish",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 cap_end 出场",
+   "note": "index 4",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_capend",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,2) gold",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": 2.72,
+      "cy": -0.9,
+      "w": 1.4,
+      "h": 0.72
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": 2.72,
+      "cy": -0.9,
+      "w": 1.4,
+      "h": 0.72
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,2) gold",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -4.08,
+      "cy": -0.9,
+      "w": 1.4,
+      "h": 0.72
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -4.08,
+      "cy": -0.9,
+      "w": 1.4,
+      "h": 0.72
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_eq",
+   "note": "",
+   "duration": 2.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_eq",
+     "t": 0.0,
+     "dur": 2.15
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_eq",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.3,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 3.05,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.8,
+     "dur": 2.4
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 12.15,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

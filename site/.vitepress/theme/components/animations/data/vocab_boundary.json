@@ -1,0 +1,689 @@
+{
+ "version": 1,
+ "id": "vocab_boundary",
+ "title": "析构边界：多杀一格是 UB，少杀一格是泄漏",
+ "subtitle": "为什么笔者每次都掰手指数格子",
+ "source": "examples/vocab_boundary.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "析构边界：多杀一格是 UB，少杀一格是泄漏",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 8.1984,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "为什么笔者每次都掰手指数格子",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.696,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": 0.0,
+   "y": 0.1632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 4,
+   "side": 0.62,
+   "cx": 0.0,
+   "cy": -1.0,
+   "w": 2.66,
+   "h": 0.62,
+   "cells": [
+    {
+     "i": 0,
+     "x": -1.02,
+     "y": -1.0,
+     "s": 0.62
+    },
+    {
+     "i": 1,
+     "x": -0.34,
+     "y": -1.0,
+     "s": 0.62
+    },
+    {
+     "i": 2,
+     "x": 0.34,
+     "y": -1.0,
+     "s": 0.62
+    },
+    {
+     "i": 3,
+     "x": 1.02,
+     "y": -1.0,
+     "s": 0.62
+    }
+   ],
+   "idx": [
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "ptr:p_begin": {
+   "kind": "ptr",
+   "id": "p_begin",
+   "name": "begin",
+   "above": true,
+   "x": -1.02,
+   "tipY": -0.45,
+   "baseY": -0.06,
+   "txt": {
+    "text": "begin",
+    "x": -1.02,
+    "y": 0.1,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.726,
+    "h": 0.22
+   },
+   "cx": -1.02,
+   "cy": -0.12,
+   "w": 0.726,
+   "h": 0.66
+  },
+  "ptr:p_end": {
+   "kind": "ptr",
+   "id": "p_end",
+   "name": "end",
+   "above": true,
+   "x": 1.02,
+   "tipY": -0.45,
+   "baseY": -0.06,
+   "txt": {
+    "text": "end",
+    "x": 1.02,
+    "y": 0.1,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.4356,
+    "h": 0.22
+   },
+   "cx": 1.02,
+   "cy": -0.12,
+   "w": 0.4356,
+   "h": 0.66
+  },
+  "show:lb_ok": {
+   "kind": "text",
+   "text": "该析构的：恰好这三格",
+   "x": -0.34,
+   "y": -1.796,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.64,
+   "h": 0.272,
+   "id": "lb_ok"
+  },
+  "show:lb_bad": {
+   "kind": "text",
+   "text": "多杀一格 = 对未构造内存调析构（UB）",
+   "x": 1.02,
+   "y": -1.796,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.58,
+   "h": 0.272,
+   "id": "lb_bad"
+  },
+  "show:code": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 4.62,
+   "w": 5.5456,
+   "h": 2.69,
+   "rows": [
+    {
+     "text": "~Vector() {",
+     "w": 1.452
+    },
+    {
+     "text": "  helper::DestroySources(",
+     "w": 3.3
+    },
+    {
+     "text": "    buffer_.data(),",
+     "w": 2.508
+    },
+    {
+     "text": "    buffer_.data() + current_cnt_);",
+     "w": 4.62
+    },
+    {
+     "text": "}",
+     "w": 0.132
+    }
+   ],
+   "cx": 4.2683,
+   "cy": -0.68
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "析构区间 = [data, data + current_cnt_)",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.7312,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "多杀一格 UB，少杀一格泄漏",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.9312,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "内存归还交给 RawBuffer 的 RAII",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.5984,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": 0.0,
+      "cy": -1.0,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": -1.02,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": -0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": 0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": 1.02,
+        "y": -1.0,
+        "s": 0.62
+       }
+      ],
+      "idx": [
+       1,
+       2,
+       3,
+       4
+      ]
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 4",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×3 (slow)",
+   "note": "[0,3)",
+   "duration": 0.9,
+   "speed": 0.6,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 0,
+     "s": 1,
+     "cap": 4,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 1,
+     "s": 2,
+     "cap": 4,
+     "counter": true,
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 2,
+     "s": 3,
+     "cap": 4,
+     "counter": true,
+     "t": 0.6,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 begin 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_begin",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 end 出场",
+   "note": "index 3",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_end",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,3) green",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#7BC96A",
+      "cx": -0.34,
+      "cy": -1.0,
+      "w": 2.08,
+      "h": 0.72
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#7BC96A",
+      "cx": -0.34,
+      "cy": -1.0,
+      "w": 2.08,
+      "h": 0.72
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_ok",
+   "note": "",
+   "duration": 1.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_ok",
+     "t": 0.0,
+     "dur": 1.55
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_ok",
+   "note": "",
+   "duration": 0.95,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_ok",
+     "t": 0.55,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [3,4) red",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#E06C75",
+      "cx": 1.02,
+      "cy": -1.0,
+      "w": 0.72,
+      "h": 0.72
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#E06C75",
+      "cx": 1.02,
+      "cy": -1.0,
+      "w": 0.72,
+      "h": 0.72
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_bad",
+   "note": "",
+   "duration": 2.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_bad",
+     "t": 0.0,
+     "dur": 2.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_bad",
+   "note": "",
+   "duration": 2.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_bad",
+     "t": 2.2,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show code",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code",
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide code",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 14.98,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 2.75,
+     "dur": 2.03
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.13,
+     "dur": 2.4
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 11.98,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

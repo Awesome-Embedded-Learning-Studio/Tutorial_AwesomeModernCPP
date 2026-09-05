@@ -113,5 +113,7 @@ export default withDrawio(defineConfig({
   height: '600px',
   darkMode: 'auto',
   resize: true,
-  zoom: true,
 })
+// 注: 不传 zoom —— 插件会把它翻译成每张图的 toolbar 配置, GraphViewer 据此
+// 渲染 body 级绝对定位的悬浮工具条(坐标初始化时定格, 滚动后飘到图外压正文),
+// 2026-09-05 幽灵工具条事故的真凶, 勿再加回。
