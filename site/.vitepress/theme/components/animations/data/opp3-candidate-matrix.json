@@ -1,0 +1,480 @@
+{
+ "version": 1,
+ "id": "opp3-candidate-matrix",
+ "title": "裸内存三选一：operator new / new T[n] / malloc",
+ "subtitle": "大小对、对齐对、内容未定义 —— 三项考核",
+ "source": "projects/vol8-raw-buffer/02-dsl/opp3-candidate-matrix.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "裸内存三选一：operator new / new T[n] / malloc",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 9.3056,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "大小对、对齐对、内容未定义 —— 三项考核",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.264,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": 0.0,
+   "y": 0.1632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 4,
+   "side": 0.62,
+   "cx": 5.0,
+   "cy": 1.55,
+   "w": 2.66,
+   "h": 0.62,
+   "cells": [
+    {
+     "i": 0,
+     "x": 3.98,
+     "y": 1.55,
+     "s": 0.62
+    },
+    {
+     "i": 1,
+     "x": 4.66,
+     "y": 1.55,
+     "s": 0.62
+    },
+    {
+     "i": 2,
+     "x": 5.34,
+     "y": 1.55,
+     "s": 0.62
+    },
+    {
+     "i": 3,
+     "x": 6.02,
+     "y": 1.55,
+     "s": 0.62
+    }
+   ],
+   "idx": []
+  },
+  "show:matrix": {
+   "kind": "rowlist",
+   "w": 9.5616,
+   "h": 3.034,
+   "noteX": 2.8108,
+   "entries": [
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 3.696,
+      "w": 4.6216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "void* p = ::operator new(n);",
+        "w": 3.696
+       }
+      ]
+     },
+     "note": {
+      "text": "当选：大小对 · 对齐对 · 内容未定义",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 4.44,
+      "h": 0.272
+     },
+     "tone": "ok"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 3.696,
+      "w": 4.6216,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "Sources* p = new Sources[n];",
+        "w": 3.696
+       }
+      ]
+     },
+     "note": {
+      "text": "落选：越位——无对象处也构造",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 3.696,
+      "h": 0.272
+     },
+     "tone": "bad"
+    },
+    {
+     "card": {
+      "kind": "card",
+      "fs": 0.2,
+      "lh": 0.258,
+      "pitch": 0.478,
+      "gutW": 0.1056,
+      "bodyW": 3.3,
+      "w": 4.2256,
+      "h": 0.778,
+      "rows": [
+       {
+        "text": "void* p = std::malloc(n);",
+        "w": 3.3
+       }
+      ]
+     },
+     "note": {
+      "text": "落选：对齐不保证 · 要手动转型",
+      "x": 0,
+      "y": 0,
+      "fs": 0.2,
+      "color": "#ECECE4",
+      "mono": false,
+      "anchor": "middle",
+      "w": 3.804,
+      "h": 0.272
+     },
+     "tone": "bad"
+    }
+   ],
+   "rowHs": [
+    0.778,
+    0.778,
+    0.778
+   ],
+   "cx": 0,
+   "cy": -0.75
+  },
+  "show:row_note": {
+   "kind": "text",
+   "text": "要的只是一段空格子",
+   "x": 5.0,
+   "y": 2.25,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.376,
+   "h": 0.272,
+   "id": "row_note"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "裸内存三选一: ::operator new 当选",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.064,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "new T[n] 越位构造, malloc 欠对齐",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.896,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": 0.0,
+      "cy": -1.0,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": -1.02,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": -0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": 0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": 1.02,
+        "y": -1.0,
+        "s": 0.62
+       }
+      ],
+      "idx": []
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 4",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "counter 退场",
+   "note": "",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "counter",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move row",
+   "note": "to [5.0, 1.55]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "row:row",
+     "frm": [
+      0.0,
+      -1.0
+     ],
+     "to": [
+      5.0,
+      1.55
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show matrix",
+   "note": "",
+   "duration": 3.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "rowlist_show",
+     "target": "show:matrix",
+     "t": 0.0,
+     "dur": 3.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show row_note",
+   "note": "",
+   "duration": 1.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:row_note",
+     "t": 0.0,
+     "dur": 1.43
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.0s",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 12.1,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 2.75,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}

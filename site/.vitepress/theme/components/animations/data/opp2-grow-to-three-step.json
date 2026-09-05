@@ -1,0 +1,875 @@
+{
+ "version": 1,
+ "id": "opp2-grow-to-three-step",
+ "title": "扩容三步搬迁：申请 → Relocate → move",
+ "subtitle": "grow_to 源码逐行对应，搬迁零新增代码",
+ "source": "projects/vol8-vector-growth/02-dsl/opp2-grow-to-three-step.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "扩容三步搬迁：申请 → Relocate → move",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.8208,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "grow_to 源码逐行对应，搬迁零新增代码",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.688,
+   "h": 0.272
+  },
+  "counter": {
+   "kind": "text",
+   "text": "size = 0    capacity = 0",
+   "x": 0.0,
+   "y": 1.6,
+   "fs": 0.3,
+   "color": "#ECECE4",
+   "mono": true,
+   "anchor": "middle",
+   "w": 4.752,
+   "h": 0.3
+  },
+  "_empty": {
+   "kind": "text",
+   "text": "还没申请内存",
+   "x": 0.0,
+   "y": -1.0,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 1.584,
+   "h": 0.272
+  },
+  "_cap_row": {
+   "kind": "text",
+   "text": "申请内存: capacity 0 → 4",
+   "x": 0.0,
+   "y": 0.1632,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.816,
+   "h": 0.3264
+  },
+  "row:row": {
+   "kind": "cells",
+   "cap": 8,
+   "side": 0.5,
+   "cx": 0.0,
+   "cy": -1.0,
+   "w": 4.42,
+   "h": 0.5,
+   "cells": [
+    {
+     "i": 0,
+     "x": -1.96,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 1,
+     "x": -1.4,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 2,
+     "x": -0.84,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 3,
+     "x": -0.28,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 4,
+     "x": 0.28,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 5,
+     "x": 0.84,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 6,
+     "x": 1.4,
+     "y": -1.0,
+     "s": 0.5
+    },
+    {
+     "i": 7,
+     "x": 1.96,
+     "y": -1.0,
+     "s": 0.5
+    }
+   ],
+   "idx": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ]
+  },
+  "show:code": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 3.96,
+   "w": 4.8856,
+   "h": 3.646,
+   "rows": [
+    {
+     "text": "void grow_to(size_t ncap) {",
+     "w": 3.564
+    },
+    {
+     "text": "  RawBuffer next(ncap);   // 1",
+     "w": 3.96
+    },
+    {
+     "text": "  T* p = buf_.data();",
+     "w": 2.772
+    },
+    {
+     "text": "  helper::Relocate(       // 2",
+     "w": 3.96
+    },
+    {
+     "text": "    p, p + cnt_, next.data());",
+     "w": 3.96
+    },
+    {
+     "text": "  buf_ = std::move(next); // 3",
+     "w": 3.96
+    },
+    {
+     "text": "}",
+     "w": 0.132
+    }
+   ],
+   "cx": 4.5983,
+   "cy": -1.22
+  },
+  "ptr:p_data": {
+   "kind": "ptr",
+   "id": "p_data",
+   "name": "data",
+   "above": true,
+   "x": -1.02,
+   "tipY": -0.45,
+   "baseY": -0.06,
+   "txt": {
+    "text": "data",
+    "x": -1.02,
+    "y": 0.1,
+    "fs": 0.22,
+    "color": "#ECECE4",
+    "mono": true,
+    "anchor": "middle",
+    "w": 0.5808,
+    "h": 0.22
+   },
+   "cx": -1.02,
+   "cy": -0.12,
+   "w": 0.5808,
+   "h": 0.66
+  },
+  "_cap_row_4": {
+   "kind": "text",
+   "text": "满了！capacity 4 → 8，grow_to！",
+   "x": 0.0,
+   "y": -2.1732,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.8768,
+   "h": 0.3264
+  },
+  "_grow4:row": {
+   "kind": "cells",
+   "cap": 8,
+   "side": 0.5,
+   "cx": 0.0,
+   "cy": -3.51,
+   "w": 4.42,
+   "h": 0.5,
+   "cells": [
+    {
+     "i": 0,
+     "x": -1.96,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 1,
+     "x": -1.4,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 2,
+     "x": -0.84,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 3,
+     "x": -0.28,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 4,
+     "x": 0.28,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 5,
+     "x": 0.84,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 6,
+     "x": 1.4,
+     "y": -3.51,
+     "s": 0.5
+    },
+    {
+     "i": 7,
+     "x": 1.96,
+     "y": -3.51,
+     "s": 0.5
+    }
+   ],
+   "idx": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ]
+  },
+  "_raii_row_4": {
+   "kind": "text",
+   "text": "旧对象已逐个析构, 内存 RAII 归还",
+   "x": 0.0,
+   "y": -0.3176,
+   "fs": 0.18,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 3.744,
+   "h": 0.2448
+  },
+  "show:lb_move": {
+   "kind": "text",
+   "text": "data 已指向新内存",
+   "x": -1.96,
+   "y": -1.736,
+   "fs": 0.2,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.204,
+   "h": 0.272,
+   "id": "lb_move"
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "扩容三步：申请新内存 → 搬迁并析构 → move 交还",
+   "x": 0.0,
+   "y": -2.084,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.3584,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "搬迁零新增代码：Relocate 原班人马",
+   "x": 0.0,
+   "y": -2.6604,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 5.1408,
+   "h": 0.3264
+  },
+  "concl:2": {
+   "kind": "text",
+   "text": "size / capacity 对外语义不变",
+   "x": 0.0,
+   "y": -3.2368,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.2816,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 5.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "fadein",
+     "target": "counter",
+     "t": 2.4,
+     "dur": 0.5
+    },
+    {
+     "type": "write",
+     "target": "_empty",
+     "t": 3.4,
+     "dur": 1.07
+    },
+    {
+     "type": "fadeout",
+     "target": "_empty",
+     "t": 5.5,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "grow_to",
+   "label": "申请 4",
+   "note": "capacity 0->4, 搬 0 格",
+   "duration": 6.15,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "row:row",
+     "g": {
+      "kind": "cells",
+      "cap": 4,
+      "side": 0.62,
+      "cx": 0.0,
+      "cy": -1.0,
+      "w": 2.66,
+      "h": 0.62,
+      "cells": [
+       {
+        "i": 0,
+        "x": -1.02,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 1,
+        "x": -0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 2,
+        "x": 0.34,
+        "y": -1.0,
+        "s": 0.62
+       },
+       {
+        "i": 3,
+        "x": 1.02,
+        "y": -1.0,
+        "s": 0.62
+       }
+      ],
+      "idx": [
+       1,
+       2,
+       3,
+       4
+      ]
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row",
+     "t": 5.6,
+     "dur": 0.3
+    },
+    {
+     "type": "counter",
+     "text": "size = 0    capacity = 4",
+     "t": 5.9,
+     "dur": 0.25
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×4 (slow)",
+   "note": "[0,4)",
+   "duration": 1.2,
+   "speed": 0.6,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 0,
+     "s": 1,
+     "cap": 4,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 1,
+     "s": 2,
+     "cap": 4,
+     "counter": true,
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 2,
+     "s": 3,
+     "cap": 4,
+     "counter": true,
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 3,
+     "s": 4,
+     "cap": 4,
+     "counter": true,
+     "t": 0.9,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.4s",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "show",
+   "label": "show code",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:code",
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "1.2s",
+   "duration": 1.2,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide code",
+   "note": "",
+   "duration": 0.75,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:code",
+     "t": 0.35,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "point_to",
+   "label": "指针 data 出场",
+   "note": "index 0",
+   "duration": 0.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "ptr_show",
+     "target": "p_data",
+     "t": 0.0,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.3s",
+   "duration": 0.3,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "grow_to",
+   "label": "扩容 4→8",
+   "note": "capacity 4->8, 搬 4 格",
+   "duration": 11.35,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "_cap_row_4",
+     "indicate": "row:row",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "row_create",
+     "target": "_grow4:row",
+     "g": {
+      "kind": "cells",
+      "cap": 8,
+      "side": 0.5,
+      "cx": 0.0,
+      "cy": -3.51,
+      "w": 4.42,
+      "h": 0.5,
+      "cells": [
+       {
+        "i": 0,
+        "x": -1.96,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 1,
+        "x": -1.4,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 2,
+        "x": -0.84,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 3,
+        "x": -0.28,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 4,
+        "x": 0.28,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 5,
+        "x": 0.84,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 6,
+        "x": 1.4,
+        "y": -3.51,
+        "s": 0.5
+       },
+       {
+        "i": 7,
+        "x": 1.96,
+        "y": -3.51,
+        "s": 0.5
+       }
+      ],
+      "idx": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8
+      ]
+     },
+     "t": 2.4,
+     "dur": 0.7
+    },
+    {
+     "type": "relocate",
+     "src": "row:row",
+     "dst": "_grow4:row",
+     "count": 4,
+     "t": 3.1,
+     "dur": 1.0
+    },
+    {
+     "type": "row_destroy",
+     "target": "row:row",
+     "write": "_raii_row_4",
+     "t": 4.1,
+     "dur": 2.4
+    },
+    {
+     "type": "fadeout",
+     "target": "_cap_row_4",
+     "t": 9.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "_raii_row_4",
+     "t": 10.0,
+     "dur": 0.3
+    },
+    {
+     "type": "row_swap",
+     "target": "row:row",
+     "tmp": "_grow4:row",
+     "to": [
+      0.0,
+      -1.0
+     ],
+     "t": 10.3,
+     "dur": 0.5
+    },
+    {
+     "type": "counter",
+     "text": "size = 4    capacity = 8",
+     "t": 10.8,
+     "dur": 0.25
+    },
+    {
+     "type": "ptr_move",
+     "target": "p_data",
+     "to": [
+      -1.96,
+      -0.51
+     ],
+     "t": 11.05,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lb_move",
+   "note": "",
+   "duration": 1.67,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "show:lb_move",
+     "t": 0.0,
+     "dur": 1.67
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.8s",
+   "duration": 0.8,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "hide",
+   "label": "hide lb_move",
+   "note": "",
+   "duration": 1.28,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:lb_move",
+     "t": 0.88,
+     "dur": 0.4
+    }
+   ]
+  },
+  {
+   "kind": "push",
+   "label": "push ×1 (normal)",
+   "note": "[4,5)",
+   "duration": 0.18,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fill",
+     "target": "row:row",
+     "i": 4,
+     "s": 5,
+     "cap": 8,
+     "counter": true,
+     "t": 0.0,
+     "dur": 0.18
+    }
+   ]
+  },
+  {
+   "kind": "highlight",
+   "label": "高亮 [0,4) gold",
+   "note": "",
+   "duration": 1.6,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "hl_show",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -1.12,
+      "cy": -1.0,
+      "w": 2.28,
+      "h": 0.6
+     },
+     "t": 0.0,
+     "dur": 0.4
+    },
+    {
+     "type": "hl_hide",
+     "frame": {
+      "kind": "frame",
+      "color": "#FFB454",
+      "cx": -1.12,
+      "cy": -1.0,
+      "w": 2.28,
+      "h": 0.6
+     },
+     "t": 1.3,
+     "dur": 0.3
+    }
+   ]
+  },
+  {
+   "kind": "wait",
+   "label": "停顿",
+   "note": "0.5s",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": []
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.1,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 0.0,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 2.75,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:2",
+     "t": 5.5,
+     "dur": 2.4
+    },
+    {
+     "type": "pulse",
+     "target": "counter",
+     "t": 12.1,
+     "dur": 1.0
+    }
+   ]
+  }
+ ]
+}

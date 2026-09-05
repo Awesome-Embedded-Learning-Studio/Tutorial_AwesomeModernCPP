@@ -26,6 +26,8 @@ site/.vitepress/cache/
 site/.vitepress/.build-cache/
 site/.vitepress/.build-tmp/
 site/.vitepress/.search-cache/
+# animy_maker 每次编译会重新生成 posters/,但 SSG 首帧已接管其兜底职责(docs/09 §7)
+site/.vitepress/theme/components/animations/posters/
 
 # Book/PDF pipeline (generated locally or uploaded as CI/Release artifacts)
 .pdf-build/

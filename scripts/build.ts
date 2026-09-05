@@ -204,7 +204,8 @@ export default withDrawio(defineConfig({
   height: '600px',
   darkMode: 'auto',
   resize: true,
-  zoom: true,
+  // 不传 zoom: 会变成每图 toolbar 配置 → GraphViewer 渲染 body 级悬浮工具条,
+  // 滚动后飘在图外压正文(2026-09-05 幽灵工具条真凶), 勿再加回
 })
 `
 }
@@ -245,7 +246,8 @@ export default withDrawio(defineConfig({
   height: '600px',
   darkMode: 'auto',
   resize: true,
-  zoom: true,
+  // 不传 zoom: 会变成每图 toolbar 配置 → GraphViewer 渲染 body 级悬浮工具条,
+  // 滚动后飘在图外压正文(2026-09-05 幽灵工具条真凶), 勿再加回
 })
 `
 }
