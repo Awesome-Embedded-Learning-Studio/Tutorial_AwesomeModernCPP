@@ -11,7 +11,7 @@ order: 2
 platform: host
 prerequisites:
 - 指针基础
-reading_time_minutes: 14
+reading_time_minutes: 20
 tags:
 - cpp-modern
 - host
@@ -416,13 +416,199 @@ first 和 last 之间隔了 5 个元素
 
 验证方法：对比 `my_strlen("hello world")` 与 `std::strlen("hello world")` 的结果是否一致。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <cstring>
+
+constexpr std::size_t my_strlen(const char *s)
+{
+    const char *msg = s;
+    while ((*msg) != '\0')
+    {
+        msg++;
+    }
+    return msg - s;
+}
+
+int main()
+{
+    constexpr const char *test = "Hello, World!";
+    constexpr std::size_t length1 = my_strlen(test);
+    std::size_t length2 = std::strlen(test);
+    std::cout << "my_strlen(Hello, World)的长度是: " << length1 << std::endl;
+    std::cout << "std::strlen(Hello, World)的长度是: " << length2 << std::endl;
+    if (length1 == length2)
+    {
+        std::cout << "两个长度相等" << std::endl;
+    }
+    else
+    {
+        std::cout << "两个长度不相等" << std::endl;
+    }
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+my_strlen(Hello, World)的长度是: 13
+std::strlen(Hello, World)的长度是: 13
+两个长度相等
+```
+
+:::
+
 ### 练习二：双指针反转数组
 
 我们已经在上面的实战代码中演示了双指针反转。现在尝试把它封装成一个函数 `void reverse_array(int* begin, int* end)`，其中 `end` 是尾后指针。注意：函数内部不需要知道数组长度，只靠两个指针就能完成反转。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+void reverse_array(int *begin, int *end)
+{
+    --end;
+    while (begin < end)
+    {
+        int temp = *begin;
+        *begin = *end;
+        *end = temp;
+        begin++;
+        end--;
+    }
+}
+
+int main()
+{
+    int data[6] = {5, 12, 7, 23, 18, 9};
+    std::cout << "反转前的数组: " << std::endl;
+    for (int x : data)
+    {
+        std::cout << x << " ";
+    }
+    reverse_array(data, data + 6);
+    std::cout << "\n反转后的数组: " << std::endl;
+    for (int x : data)
+    {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+反转前的数组:
+5 12 7 23 18 9
+反转后的数组:
+9 18 23 7 12 5
+```
+
+:::
+
+
 ### 练习三：指针实现字符串比较
 
 实现 `int my_strcmp(const char* a, const char* b)`：逐字符比较，如果完全相同返回 0，如果 `a` 的第一个不同字符小于 `b` 中对应字符则返回负数，否则返回正数。这是一个稍难的练习，需要同时遍历两个字符串并判断结束条件。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+constexpr int my_strcmp(const char *a, const char *b)
+{
+    // 注意：标准 strcmp 不检查空指针（传入空指针是未定义行为）
+    // 这里添加空指针检查是额外的安全措施，返回 -2 表示参数错误
+    if (a == nullptr || b == nullptr)
+    {
+        return -2;
+    }
+
+    while (*a != '\0' && *b != '\0')
+    {
+        // 转换为 unsigned char 是为了确保字符比较的正确性
+        // 避免有符号 char 的负值导致的比较错误
+        const unsigned char byte_a = static_cast<unsigned char>(*a);
+        const unsigned char byte_b = static_cast<unsigned char>(*b);
+        if (byte_a != byte_b)
+        {
+            return byte_a < byte_b ? -1 : 1;
+        }
+        ++a;
+        ++b;
+    }
+
+    const unsigned char byte_a = static_cast<unsigned char>(*a);
+    const unsigned char byte_b = static_cast<unsigned char>(*b);
+    if (byte_a == byte_b)
+    {
+        return 0;
+    }
+
+    return byte_a < byte_b ? -1 : 1;
+}
+
+int main()
+{
+    constexpr char test1[] = "Hello, Worlg!";
+    constexpr char test2[] = "Hello, World!";
+    constexpr int result = my_strcmp(test1, test2);
+    switch (result)
+    {
+    case 0:
+        std::cout << "test1与test2相等" << std::endl;
+        break;
+    case 1:
+        std::cout << "test1>test2" << std::endl;
+        break;
+    case -1:
+        std::cout << "test1<test2" << std::endl;
+        break;
+    case -2:
+        std::cout << "字符串指针不能为空" << std::endl;
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+>只需要修改`Hello, Worlg!`的`g`字符为不同的字母则会看到不同的结果
+
+运行结果:
+
+```text
+test1>test2
+```
+
+:::
 
 ---
 
