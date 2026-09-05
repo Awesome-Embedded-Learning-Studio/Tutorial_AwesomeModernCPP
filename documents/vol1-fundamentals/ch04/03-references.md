@@ -338,6 +338,53 @@ void double_values(int* arr, int n)
 
 提示：C 风格数组没法直接用引用传参来保留长度信息，可以考虑用 `std::array<int, N>` 替代。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <array>
+
+void double_values(std::array<int, 5>& arr)
+{
+    for (auto& value : arr) {
+        value *= 2;
+    }
+}
+
+int main()
+{
+    std::array<int, 5> values{1, 2, 3, 4, 5};
+
+    std::cout << "修改前: ";
+    for (const auto& value : values) {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
+    double_values(values);
+    std::cout << "修改后: ";
+    for (const auto& value : values) {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果:
+
+```text
+修改前: 1 2 3 4 5 
+修改后: 2 4 6 8 10 
+```
+
+:::
+
 ### 练习二：找错
 
 下面这段代码有几处与引用相关的问题，把它们全部找出来：
@@ -353,17 +400,72 @@ void process(int& ref) { ref += 10; }
 
 int main()
 {
-    int& r = get_value();
-    int& uninit;              // 行 A
+    int& r = get_value(); // 行 A
+    int& uninit;          // 行 B
     int a = 10;
     int& ref = a;
     int b = 20;
-    ref = &b;                 // 行 B
-    process(5);               // 行 C
+    ref = &b;             // 行 C
+    process(5);           // 行 D
 }
 ```
 
 逐行分析：哪几行有编译错误？哪几行是运行时的未定义行为？
+
+::: details 参考答案
+
+先给结论：**行 B、行 C、行 D 是编译错误；按题目的二分法，运行时隐患记为行 A。** 更精确地说，`get_value()` 的返回语句和行 A 可以编译，但会留下悬空引用；对 `r` 的读写才会触发运行时未定义行为。
+
+| 位置 | 结果 | 原因 |
+| --- | --- | --- |
+| `return x;` | 可编译，编译器通常会警告 | `x` 是自动存储期的局部变量，函数返回时它的生命周期结束；返回的 `int&` 不会把 `x` 的生命周期延长。 |
+| 行 A：`int &r = get_value();` | 可编译，但 `r` 是悬空引用 | `r` 绑定到已经结束生命周期的 `x`。这一步本身只是制造了悬空引用；后续通过 `r` 读取或写入（例如 `std::cout << r`）才是未定义行为。 |
+| 行 B：`int &uninit;` | **编译错误** | 引用声明必须在声明时初始化，不能像指针那样先声明、之后再绑定。 |
+| `int a = 10;`、`int &ref = a;`、`int b = 20;` | 正确 | `ref` 在声明时绑定到了仍然存活的 `a`。 |
+| 行 C：`ref = &b;` | **编译错误** | `ref` 表达式的类型是 `int`，而 `&b` 的类型是 `int*`；并且赋值不会让引用改绑到另一个对象。给 `a` 赋 `b` 的值应写 `ref = b`，若要改指向则必须重新声明引用或改用指针。 |
+| 行 D：`process(5);` | **编译错误** | `process` 要求可修改的 `int&`，而字面量 `5` 是右值，不能绑定到非 `const` 左值引用。应传入一个具名的 `int` 左值。 |
+
+这里最容易混淆的是行 A：严格地说，**悬空引用是错误状态，访问悬空引用才是运行时未定义行为**。例如把 B、C、D 暂时注释掉后，下面的读取就会触发 UB：
+
+```cpp
+int &r = get_value();
+std::cout << r;  // 未定义行为：r 指向的 x 已经结束生命周期
+```
+
+一种安全的修正版是让 `get_value` 按值返回，并在声明时为引用提供初始对象；如果确实要返回引用，则只能返回生命周期足够长的对象（例如静态对象或调用者传入的对象）：
+
+```cpp
+int get_value()
+{
+    return 42;
+}
+
+void process(int& ref) { ref += 10; }
+
+int main()
+{
+    int r = get_value();
+
+    int data = 0;
+    int& uninit = data;
+
+    int a = 10;
+    int& ref = a;
+    int b = 20;
+    ref = b;
+
+    int value = 5;
+    process(value);
+
+    (void)r;
+    (void)uninit;
+}
+```
+
+
+
+:::
+
 
 ### 练习三：实现一个简单的链式配置器
 
@@ -373,6 +475,37 @@ int main()
 Config c;
 c.set_width(800).set_height(600);
 ```
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class Config {
+    int width_{};
+    int height_{};
+
+public:
+    Config& set_width(int width)
+    {
+        width_ = width;
+        return *this;
+    }
+    Config& set_height(int height)
+    {
+        height_ = height;
+        return *this;
+    }
+};
+int main()
+{
+    Config c;
+    c.set_width(800).set_height(600);
+    return 0;
+}
+```
+
+:::
 
 ## 小结
 
