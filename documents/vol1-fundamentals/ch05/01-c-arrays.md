@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - 智能指针预告
-reading_time_minutes: 10
+reading_time_minutes: 13
 tags:
 - cpp-modern
 - host
@@ -369,9 +369,127 @@ int main()
 
 写一个程序，声明一个包含 10 个整数的数组，写两个函数分别计算总和和平均值（平均值返回 `double`）。验证方法：手动加一遍，和程序输出对比。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+constexpr int sum(const int a[], int n)
+{
+    int total = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        total += a[i];
+    }
+
+    return total;
+}
+
+constexpr double average(const int a[], int n)
+{
+    if (n == 0 || n < 0)
+        return 0.0;
+
+    return static_cast<double>(sum(a, n)) / n;
+}
+
+int main()
+{
+    constexpr int arr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    constexpr int size = sizeof(arr) / sizeof(arr[0]);
+
+    constexpr int total = sum(arr, size);
+    constexpr double avg = average(arr, size);
+
+    std::cout << "总和: " << total << std::endl;
+    std::cout << "平均值: " << avg << std::endl;
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+总和: 55
+平均值: 5.5
+```
+
+:::
+
 ### 练习二：矩阵转置
 
-写一个函数，将 N x M 的二维数组转置为 M x N。先用固定大小（2x3 转置为 3x2）实现，再思考：如果行数列数也要是参数，C 风格数组能做到吗？
+写一个函数，将 N × M 的二维数组转置为 M × N。先用固定大小（2×3 转置为 3×2）实现，再思考：如果行数、列数要在运行时传入，标准 C++ 应该如何表示这块矩阵内存？
+
+::: details 参考答案
+
+**2x3 转置为 3x2**
+
+```cpp
+constexpr void transpose_2x3(const int (&matrix)[2][3], int (&result)[3][2])
+{
+    for (int i = 0; i < 2; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            result[j][i] = matrix[i][j];
+        }
+    }
+}
+```
+
+**C99 中的 VLA 写法（不是标准 C++）**
+
+```c
+void transpose(int m, int n, const int matrix[m][n], int result[n][m])
+{
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            result[j][i] = matrix[i][j];
+        }
+    }
+}
+```
+
+上面的函数参数使用了**变长数组**（variable-length array，VLA）语法：`matrix[m][n]` 和
+`result[n][m]` 的边界由运行时参数决定。这是 C99 支持的特性（C11 将 VLA 列为可选特性），
+但它不是标准 C++ 的语法；即使某些 C++ 编译器接受，也属于编译器扩展，不能写进可移植的
+C++ 代码。
+
+**标准 C++ 的运行时尺寸写法**
+
+标准 C++ 中，内置数组的边界属于类型的一部分，不能用普通函数参数表达运行时尺寸。因此，
+"行数和列数都是参数"并不意味着 C 风格数组完全不能参与函数调用，而是不能直接写成
+`int matrix[m][n]` 这种 VLA 形式。一个简单且可移植的办法是把矩阵按行连续存储为一维数组，
+再额外传入行数和列数：
+
+```cpp
+void transpose(int rows, int cols, const int* matrix, int* result)
+{
+    for (int row = 0; row < rows; ++row)
+    {
+        for (int col = 0; col < cols; ++col)
+        {
+            result[col * rows + row] = matrix[row * cols + col];
+        }
+    }
+}
+```
+
+调用者需要保证 `matrix` 至少包含 `rows * cols` 个元素，`result` 至少包含同样多的元素。
+如果希望保留二维下标形式，可以使用模板表示编译期固定的行列数，或使用 `std::vector`、
+`std::span` 等更适合表达运行时尺寸的类型。
+
+:::
 
 ### 练习三：修复越界 bug
 
@@ -383,6 +501,17 @@ for (int i = 0; i <= 5; ++i) {  // 提示：仔细看循环条件
     std::cout << data[i] << std::endl;
 }
 ```
+
+::: details 参考答案
+
+```cpp
+int data[5] = {10, 20, 30, 40, 50};
+for (int i = 0; i < 5; ++i) {
+    std::cout << data[i] << std::endl;
+}
+```
+
+:::
 
 这种 off-by-one 错误在初学者代码里非常常见。
 
