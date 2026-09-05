@@ -136,10 +136,10 @@ From an interface design perspective, this is a very gentle approach to forward 
 
 The syntax for default parameters appears simple, but the rules are actually quite strict, and many developers run into pitfalls.
 
-**Rule one: Default parameters must appear contiguously from right to left.** When the compiler processes a function call, it can only determine which values should use defaults by "omitting trailing parameters." We cannot skip intermediate parameters—if we want to pass a value to the third parameter, all preceding parameters must be explicitly provided. Therefore, the order of parameters in a function signature is critical: **place the parameters most frequently customized on the left, and the parameters that rarely change on the right.**
+**Rule one: Parameters with default values must form a contiguous block at the end of the parameter list.** Reading the parameter list from left to right, once one parameter has a default, every parameter to its right must also have one—the chain cannot break midway. The reason lies in call syntax: arguments fill the parameters from left to right, so the compiler can only decide which values fall back to defaults by "omitting trailing parameters." That means we cannot skip intermediate parameters—to pass a value to the third parameter, all preceding ones must be written out explicitly. This is why the ordering of parameters in a function signature matters: **put the parameters we most often customize on the left, and the ones that almost never change on the right.**
 
 ```cpp
-// 正确：默认参数从右向左连续
+// 正确：默认参数连续出现在参数列表末尾
 void init_spi(int freq, int mode = 0, int bits = 8);
 
 // 错误：非默认参数不能出现在默认参数后面
@@ -346,6 +346,6 @@ int main()
 
 ## Summary
 
-In this chapter, we explored two important tools for C++ function interface design. Function overloading allows functions with the same name to exhibit different behaviors based on argument types and the number of arguments. The compiler determines which version to call through a strict set of overload resolution rules—an exact match takes precedence over a promotion, and a promotion takes precedence over a standard conversion. When two candidate functions are equally good, the compiler reports an ambiguity error. Default parameters allow callers to omit trailing arguments that are "almost always the same value." The rule is that default values must appear contiguously from right to left and are specified only once at the declaration. Both tools have their strengths—overloading handles "different types," while default parameters handle "optional arguments"—but combining them can easily lead to ambiguity, so we must be cautious.
+In this chapter, we explored two important tools for C++ function interface design. Function overloading allows functions with the same name to exhibit different behaviors based on argument types and the number of arguments. The compiler determines which version to call through a strict set of overload resolution rules—an exact match takes precedence over a promotion, and a promotion takes precedence over a standard conversion. When two candidate functions are equally good, the compiler reports an ambiguity error. Default parameters allow callers to omit trailing arguments that are "almost always the same value." The rule is that parameters with default values must form a contiguous block at the end of the parameter list, and the default value is specified only once, at the declaration. Both tools have their strengths—overloading handles "different types," while default parameters handle "optional arguments"—but combining them can easily lead to ambiguity, so we must be cautious.
 
 In the next chapter, we will look at `inline` and `constexpr` functions—when the overhead of a function call becomes the problem, what mechanisms does C++ provide to eliminate it?
