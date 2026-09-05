@@ -11,7 +11,7 @@ order: 4
 platform: host
 prerequisites:
 - 引用
-reading_time_minutes: 9
+reading_time_minutes: 10
 tags:
 - cpp-modern
 - host
@@ -269,6 +269,34 @@ void use_sensor(bool early_exit)
 }
 ```
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <memory>
+
+struct Sensor
+{
+    int id;
+    Sensor(int i) : id(i) { std::cout << "Sensor " << id << " 初始化\n"; }
+    ~Sensor() { std::cout << "Sensor " << id << " 关闭\n"; }
+    void read() { std::cout << "Sensor " << id << " 读取数据\n"; }
+};
+
+void use_sensor(bool early_exit)
+{
+    auto s = std::make_unique<Sensor>(1);
+    s->read();
+    if (early_exit)
+    {
+        return;
+    }
+    s->read();
+}
+```
+
+:::
+
 ### 练习二：识别内存泄漏模式
 
 下面这段代码有两个泄漏点（`choice == 1` 和 `choice == 2` 两个分支各一个），想想用 `unique_ptr` 包装 `a` 和 `b` 之后，提前 return 和 throw 还是问题吗？
@@ -284,6 +312,33 @@ void process(int choice)
     delete b;
 }
 ```
+
+::: details 参考答案
+
+原代码有两个泄漏点：
+
+- 当 `choice == 1` 时，函数直接 `return`，`a` 和 `b` 都还没有执行 `delete`。
+- 当 `choice == 2` 时，`a` 已经释放，但抛出异常会跳过 `delete b`，因此 `b` 泄漏。
+
+用 `unique_ptr` 接管所有权后，提前 `return` 和 `throw` 都不再是问题。函数离开作用域时，局部的 `unique_ptr` 会自动析构并释放它所管理的内存；无论是正常返回，还是异常导致的栈展开，析构函数都会被调用。因此不需要再手动写 `delete`：
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
+void process(int choice)
+{
+    auto a = std::make_unique<int>(10);
+    auto b = std::make_unique<int>(20);
+    if (choice == 1) { return; }
+    if (choice == 2) { throw std::runtime_error("error"); }
+}
+```
+
+这里 `a` 和 `b` 都由 `unique_ptr` 独占管理。函数退出时，先析构后创建的 `b`，再析构 `a`，两块内存都会被正确释放。
+
+:::
 
 ---
 
