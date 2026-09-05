@@ -4,7 +4,7 @@ description: "掌握 std::array 的用法和与 C 数组的对比，学会使用
 chapter: 5
 order: 2
 difficulty: beginner
-reading_time_minutes: 10
+reading_time_minutes: 11
 platform: host
 prerequisites:
   - "C 风格数组"
@@ -323,13 +323,107 @@ g++ -Wall -Wextra -std=c++17 std_array.cpp -o std_array && ./std_array
 
 把之前用 C 数组写的练习全部用 `std::array` 重写：声明、初始化、遍历、传参、查找最大值。体会两种写法在清晰度和安全性上的差别。
 
+> 练习一自行练习就好。
+
 ### 练习二：成绩排序与统计
 
 创建 `std::array<int, 8>` 存放一组成绩，使用 `std::sort` 排序，然后输出最高分、最低分和平均分。所有统计操作要求使用 `<algorithm>` 中的函数。
 
+::: details 参考答案
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <iostream>
+
+int main()
+{
+    std::array<int, 8> arr = {32, 76, 43, 10, 54, 65, 87, 21};
+    std::cout << "原始数据: ";
+    int sum = 0;
+    for (int x : arr)
+    {
+        std::cout << x << " ";
+        sum += x;
+    }
+    double average = static_cast<double>(sum) / arr.size();
+    std::cout << "\n";
+
+    std::sort(arr.begin(), arr.end());
+    std::cout << "排序后数据: ";
+
+    for (int x : arr)
+    {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
+    auto [min_it, max_it] = std::minmax_element(arr.begin(), arr.end());
+    std::cout << "最小值: " << *min_it << "\n";
+    std::cout << "最大值: " << *max_it << "\n";
+    std::cout << "平均值: " << average << "\n";
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+原始数据: 32 76 43 10 54 65 87 21 
+排序后数据: 10 21 32 43 54 65 76 87 
+最小值: 10
+最大值: 87
+平均值: 48.5
+```
+
+:::
+
 ### 练习三：判断元素是否存在
 
 编写 `bool contains(const std::array<int, 5>& arr, int value)`，用 `std::find` 判断数组中是否包含指定值。在 `main` 中分别测试存在和不存在的值。
+
+::: details 参考答案
+
+```cpp
+#include <algorithm>
+#include <array>
+#include <iostream>
+
+bool contains(const std::array<int, 5>& arr, int value)
+{
+    return std::find(arr.begin(), arr.end(), value) != arr.end();
+}
+
+int main()
+{
+    std::array<int, 5> arr = {32, 76, 43, 10, 54};
+    std::cout << "数组是否包含 43: " << (contains(arr, 43) ? "是" : "否") << "\n";
+    std::cout << "数组是否包含 99: " << (contains(arr, 99) ? "是" : "否") << "\n";
+
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+数组是否包含 43: 是
+数组是否包含 99: 否
+```
+
+:::
 
 ---
 
