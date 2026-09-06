@@ -31,7 +31,7 @@ related:
 
 打开 `main.cpp`,第一行 `#include "stm32f1xx.h"` 就一根红波浪线;`HAL_GPIO_WritePin` 这种 HAL 函数全找不着;`stdint.h`、`core_cm3.h` 一个个都画着红,clangd 像瞎了一样。偏偏您 `cmake --build build` 编译能过、Renode 里跑 LED 也能闪。编译器明明认识这些头,clangd 怎么就不认?
 
-这篇就是治这个的。咱们把根因拆清楚,再给一份可以直接抄走的配置。仓库里 `code/stm32f1-tutorials/*/.vscode/settings.json` 一直在用这套配置,只是从来没文档讲过它在干什么,这篇把它讲清楚。
+这篇就是治这个的。咱们把根因拆清楚,再给一份可以直接抄走的配置。仓库里 `third_party/libestdx` 的 `.vscode/settings.json` 一直在用这套配置,只是从来没文档讲过它在干什么,这篇把它讲清楚。
 
 ## 为什么会全红:clangd 在自己造路径
 
@@ -80,7 +80,7 @@ $ arm-none-eabi-g++ -E -dM -xc++ /dev/null | grep -E "__ARM_ARCH|__arm__|__thumb
 #define __arm__ 1
 ```
 
-您看,它默认是 `__ARM_ARCH_4T__`、ARMv4,而不是 Cortex-M3 对应的 ARMv7-M。Cortex-M3 是 ARMv7-M、只支持 Thumb-2 指令,和这个默认 target 完全不是一回事。`core_cm3.h`、`cmsis_gcc.h` 这些头会检查 `__ARM_ARCH_7M__` 之类的宏来决定走哪条代码路径,clangd 不带这些宏去解析,解析出来的结果和真实编译的不一样,有些头里的 `#error` 就会触发,屏幕更红。
+您看,它默认是 `__ARM_ARCH_4T__`、ARMv4,而不是 Cortex-M3 对应的 ARMv7-M。Cortex-M3 是 ARMv7-M、只认 Thumb-2 指令集(16 位和 32 位指令混编的那一套,CMake 篇讲的 16 位 Thumb 是它的子集),和这个默认 target 完全不是一回事。`core_cm3.h`、`cmsis_gcc.h` 这些头会检查 `__ARM_ARCH_7M__` 之类的宏来决定走哪条代码路径,clangd 不带这些宏去解析,解析出来的结果和真实编译的不一样,有些头里的 `#error` 就会触发,屏幕更红。
 
 ## query-driver:让 clangd 真去问编译器
 
@@ -161,21 +161,23 @@ CompileFlags:
 
 ## 沉淀项目已有的配置
 
-讲了半天原理,其实仓库里 `code/stm32f1-tutorials/` 下每个工程都已经配好了。咱们挑 `0_start_our_tutorial` 这个工程看,`.vscode/settings.json` 就这五行:
+讲了半天原理,其实仓库里 `third_party/libestdx` 的 `.vscode/settings.json` 就是这套配置的落地版,咱们直接看它,还比教学版多走了一步,路径不写死,用 glob:
 
 ```json
 {
+    // clangd 对 arm-none-eabi 目标默认猜 libc++ 布局(c++/v1),本机工具链
+    // 实为 libstdc++ 布局(c++/<版本>),不问真编译器就找不到 <cstdint>
+    // 等标准头。--query-driver 放行 arm gcc/g++(装在 /usr/sbin),让
+    // clangd 探测真实系统头路径。它是进程旗标,进不了 .clangd,只能放这。
     "clangd.arguments": [
-        "--query-driver=/usr/sbin/arm-none-eabi-g++,/usr/sbin/arm-none-eabi-gcc"
+        "--query-driver=**/arm-none-eabi-g*"
     ]
 }
 ```
 
-`1_led_control`、`2_button_control`、`3_uart_logger` 这几个工程,`.vscode/settings.json` 内容一模一样。**仓库自己在用的就是这套,您照抄即可。**
+`**/arm-none-eabi-g*` 一个 glob 把 `gcc`、`g++` 连带各种前缀变体全放行了,C 工程和 C++ 工程都覆盖。**仓库自己在用的就是这份,您照抄即可。**注释里那句也值得念出声:clangd 对 arm 目标默认按 libc++ 的目录布局猜标准头(libc++ 是 LLVM 家的 C++ 标准库,libstdc++ 是 GCC 家的,两家头文件的目录排法不同,一个住 `c++/v1`,一个住 `c++/版本号`),而 arm-none-eabi 工具链实为 libstdc++ 布局——布局都猜错了,再多的假路径也拼不出真的 `<cstdint>`,这就是必须 query-driver 的根因级说法。
 
-这里有个细节咱们得讲清楚:为什么路径是 `/usr/sbin/` 而不是 `/usr/bin/`?
-
-这跟工具链装的方式有关。本机用的是 WSL2 + pacman(Arch 系),`arm-none-eabi-gcc` 这个包把编译器实际装在 `/usr/sbin/` 下。咱们 `ls` 验证一下:
+glob 省心归省心,工具链到底装在哪,还是值得您亲眼看一眼。本机用的是 WSL2 + pacman(Arch 系),`arm-none-eabi-gcc` 这个包把编译器实际装在 `/usr/sbin/` 下。咱们 `ls` 验证一下:
 
 ```bash
 $ ls -l /usr/sbin/arm-none-eabi-g++
@@ -199,11 +201,11 @@ $ which arm-none-eabi-g++
 
 :::
 
-注意这套 `.vscode/settings.json` **只配了 query-driver**,没配 `.clangd`。原因是这些工程的 `compile_commands.json` 里 `command` 字段已经直接写明了 `/usr/sbin/arm-none-eabi-g++`(CMake 用绝对路径生成的),clangd 一看 executable 是 arm 工具链,又开了 query-driver,头文件路径就自动从 GCC 那里拿到了,`BuiltinHeaders: QueryDriver` 这种 `.clangd` 配置其实是省了:query-driver 开启之后,clangd 默认就用 query 到的头替代自己的 builtin。`Compiler:` 和 `Add: [-mcpu...]` 这种 `.clangd` 配置,是当您的 `compile_commands.json` 不够干净、executable 路径或 flag 不对时才需要补的兜底。
+库根还有一份 `.clangd`,干的却是另一件事。query-driver 管的是"头文件在哪",这份 `.clangd` 管的是"孤立文件按什么标准解析":clangd 对没有被任何编译单元包含的头文件走 fallback(`compile_commands.json` 只登记 `.cpp` 的编译命令,您单独打开一个头时查无此条,只能退回一份兜底配置去解析),兜底默认的 gnu++17 偏旧,concept 这类 C++20 语法就误报。它按扩展名分块注入旗标,`.hpp`/`.cpp` 加 `-std=c++23`(与 CMake 的 `CMAKE_CXX_STANDARD 23` 同值),`.h` 加 `-std=c2x`(c2x 是 C23 定稿前的开发代号,效果约等于按最新 C 标准解析;HAL 头是 C 语境,吃 C++ 旗标会拒)。对已经进了 `compile_commands.json` 的文件,注入与 CMake 同值,覆盖无害;救的是孤立文件。至于 `Compiler:`、`Add: [-mcpu...]`、`BuiltinHeaders: QueryDriver` 那种 `.clangd` 配置,是当您的 `compile_commands.json` 不够干净、executable 路径或 flag 不对时才需要补的兜底——query-driver 开启之后,clangd 默认就会用 query 到的头替代自己的 builtin。
 
 ## sysroot 和 --gcc-install-dir
 
-配完上面这套,大部分情况红线就消了。但偶尔会有一两个头还是找不到,典型场景是您的 `compile_commands.json` 里**没带 sysroot**,clangd 自己解析时找不到 newlib 的部分头。这种情况要补一下 sysroot。
+配完上面这套,大部分情况红线就消了。但偶尔会有一两个头还是找不到,典型场景和 sysroot 有关——它是编译器认定的"目标系统根目录",标准库的头和库都从这棵目录树往下找;您的 `compile_commands.json` 里没带它,clangd 就没了参照,newlib 的部分头自然落空。这种情况要补一下 sysroot。
 
 `--gcc-install-dir` 是 clang 的一个 flag,直接告诉它 GNU 工具链的 libstdc++ 装在哪个目录,clang 会从那里推算头文件位置。咱们在 `.clangd` 里追加:
 
@@ -217,7 +219,7 @@ CompileFlags:
   BuiltinHeaders: QueryDriver
 ```
 
-或者咱们用老办法 `-isystem` 显式补一个系统头目录(比如 newlib 的 C 头):
+或者咱们用老办法 `-isystem` 显式补一个系统头目录(它和 `-I` 一样往头文件搜索路径里加目录,区别是声明"这里面是系统头",clangd 会当外部库对待、不在里面报警告;比如 newlib 的 C 头):
 
 ```yaml
 CompileFlags:

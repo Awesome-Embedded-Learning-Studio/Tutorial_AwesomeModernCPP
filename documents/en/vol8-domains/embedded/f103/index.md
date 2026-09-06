@@ -14,15 +14,17 @@ Everything in this tutorial runs inside the Renode simulator. You don't need to 
 
 Every station centers on one peripheral, and the core of it is modern C++ above the HAL: wheels already in the official library are used and explained, never rebuilt, while what the library lacks (debounce state machines, ring buffers, command parsing) gets written by hand. The LED station also takes you under the floor tiles for a look at the bare registers. The simulator verifies the behavior; disassembly verifies the zero cost.
 
-## Roadmap
+## Chapter Navigation
 
 Content is being published progressively in this order:
 
-1. **Getting started** — toolchain, first blink in Renode
-2. **LED** — one look under the floor tiles at bare registers, then modern C++ above the HAL
-3. **Buttons** — debouncing, state machines, variant
-4. **UART** — interrupt-driven, ring buffer, expected
-5. **Time** — SysTick, timers, PWM
-6. **I2C** — sensor driver design
-7. **Patterns** — object pools, intrusive containers, interrupt safety
-8. **From the F103 to the F407** — new chip, same code: your C++ application layer, unchanged
+<ChapterNav>
+  <ChapterLink num="0" href="00-env-setup/">Getting Started: Environment Setup</ChapterLink>
+  <ChapterLink num="1" href="01-led/">LED: bare registers under the floor tiles, modern C++ above the HAL</ChapterLink>
+  <ChapterLink num="2" href="02-button/">Buttons: debouncing, state machines, variant</ChapterLink>
+  <ChapterLink num="3" href="03-uart/">UART: interrupt-driven, ring buffer, expected</ChapterLink>
+  <ChapterLink num="4" href="04-time/">Time: SysTick, timers, PWM</ChapterLink>
+  <ChapterLink num="5" href="05-i2c/">I2C: sensor driver design</ChapterLink>
+  <ChapterLink num="6" href="06-patterns/">Patterns: object pools, intrusive containers, interrupt safety</ChapterLink>
+  <ChapterLink num="7" href="07-f103-to-f407/">From the F103 to the F407: new chip, same code</ChapterLink>
+</ChapterNav>

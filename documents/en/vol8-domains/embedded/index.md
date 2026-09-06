@@ -9,11 +9,13 @@ This tutorial answers one question: how should modern C++ actually be used on a 
 
 The other difference from most embedded tutorials: **the Renode simulator comes first**. With no microcontroller at hand you can still run and verify every piece of code. Verification on an actual board closes each station at the end: nice to follow along with a board, never a blocker without one.
 
-## What's inside
+## Chapter Navigation
 
-- **[STM32F103 + Renode](f103/)** — starting from lighting a single LED, each station puts modern C++ to work on one peripheral: wheels already in the official library are used and explained, never rebuilt; what the library lacks gets written by hand. Disassembly checks prove the abstractions cost nothing.
-- **STM32F407, the advanced part** — what comes after the F103 tutorial: DMA, Ethernet, an RTOS, and a full capstone project that pulls together everything the tutorial has built.
+<ChapterNav variant="sub">
+  <ChapterLink href="f103/">STM32F103 + Renode</ChapterLink>
+  <ChapterLink href="f407/">STM32F407 Advanced — Planned</ChapterLink>
+</ChapterNav>
 
 ::: tip Under reconstruction
-This series is being rebuilt along a new structure; content will go live progressively, starting with the getting-started station of the F103 tutorial. The previous STM32F103 tutorial (the classic HAL-first edition) has been archived, and its knowledge core will be folded into the matching stations of the new one.
+This series is being rebuilt along a new structure; content will go live progressively, starting with the getting-started station of the F103 tutorial — now restated on top of the companion peripheral library libestdx. The previous STM32F103 tutorial (the classic HAL-first edition) has been archived, and its knowledge core will be folded into the matching stations of the new one.
 :::

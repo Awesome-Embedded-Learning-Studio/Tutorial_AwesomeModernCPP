@@ -36,13 +36,15 @@ related:
 
 ## 获取 HAL 库:submodule 的陷阱
 
-官方仓库在 `https://github.com/STMicroelectronics/STM32CubeF1`。本教程的仓库直接把它作为 submodule 挂在 `third_party/STM32F1` 下,咱们克隆教程仓库后执行一次:
+> PS: 笔者推介您自己来学会处理依赖，咱这里是因为源码独立到一个仓库上去了，才挂的他哈。
+
+HAL 官方仓库在 `https://github.com/STMicroelectronics/STM32CubeF1`。本教程的仓库没有直接挂它,挂的是配套的外设库 libestdx(`third_party/libestdx`,独立公开仓),CubeF1 由 libestdx 自己作为 submodule 带着——依赖链是"教程仓 → libestdx → CubeF1"三层。咱们克隆教程仓库后执行一次:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-注意结尾的 `--recursive`,这是本节的主角。如果您用 `--depth=1` 做浅克隆:
+一条命令,三层全下。注意结尾的 `--recursive`,这是本节的主角:少写它,您拉到的只有 libestdx 的壳,它肚子里的 CubeF1 还是个空指针。如果您用 `--depth=1` 做浅克隆:
 
 ```text
 # 错误做法,不要抄
@@ -52,7 +54,7 @@ git submodule add --depth=1 https://github.com/STMicroelectronics/STM32CubeF1.gi
 命令本身能成功,但 STM32CubeF1 内部还有一层 submodule(CMSIS 等),浅克隆会破坏嵌套 submodule 的初始化。症状特别阴险:平时毫无异常,直到某天您发现这个目录是空的:
 
 ```bash
-ls third_party/STM32F1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/
+ls third_party/libestdx/third_party/STM32F1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/
 ```
 
 正常应该有一排启动文件(`startup_stm32f103xb.s` 之类),浅克隆下这里是空的,编译时报 `cannot find 'startup_stm32f103xb.s'`,而 submodule 明明"已经加进来了",咱们查起来一头雾水。
@@ -60,7 +62,7 @@ ls third_party/STM32F1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/
 原因在 Git submodule 机制本身:克隆含 submodule 的仓库时,Git 只拉外层内容,子目录里放的只是一个"指针"(指向另一个仓库的某个 commit),必须 `update --init --recursive` 才真正拉取嵌套内容。已经掉坑的朋友,您跑这条命令补救:
 
 ```bash
-cd third_party/STM32F1
+cd third_party/libestdx
 git submodule update --init --recursive
 ```
 
@@ -72,12 +74,12 @@ git submodule update --init --recursive
 
 网上不少教程写 `startup_stm32f103x8.s`,但您 `ls` 一下会发现**根本没有这个文件**。官方文件名是 `startup_stm32f103xb.s`。这个差异背后是 ST 的密度命名规则。F103C8T6 型号里的"C8":C 代表 48 脚封装,8 代表 64KB Flash。而启动文件按"密度等级"命名:
 
-| 后缀 | 密度 | Flash 容量 |
-|---|---|---|
-| `x6` | 小容量 | 16-32KB |
-| `xB` | 中容量 | 64-128KB |
-| `xE` | 大容量 | 256-512KB |
-| `xG` | 超大容量 | 768KB-1MB |
+| 后缀 | 密度     | Flash 容量 |
+| ---- | -------- | ---------- |
+| `x6` | 小容量   | 16-32KB    |
+| `xB` | 中容量   | 64-128KB   |
+| `xE` | 大容量   | 256-512KB  |
+| `xG` | 超大容量 | 768KB-1MB  |
 
 C8T6 的 64KB 属于中容量,所以咱们用 `startup_stm32f103xb.s`。这个"B"容易让人当成 8 的十六进制,其实它是 ST 的密度代码。对应到编译宏是 `-DSTM32F103xB`(大写 B),写错成 `x8` 会让头文件条件编译选错分支,编出来的代码和硬件对不上。
 
@@ -85,35 +87,41 @@ C8T6 的 64KB 属于中容量,所以咱们用 `startup_stm32f103xb.s`。这个"B
 
 ## 工程目录:教程仓库里的真实样子
 
-咱们直接看仓库里的配套工程 `code/stm32f1-tutorials/0_start_our_tutorial/`,剪掉构建产物后长这样:
+咱们直接看外设库 `third_party/libestdx/`,剪掉构建产物后长这样:
 
 ```text
-0_start_our_tutorial/
-├── CMakeLists.txt               # 构建配置(下一篇的主角)
-├── STM32F103C8TX_FLASH.ld       # 链接脚本:64KB Flash / 20KB RAM 的内存地图
-├── main.cpp                     # 应用入口:HAL_Init → 时钟 → led.toggle 循环
-├── led/
-│   └── led.hpp                  # 应用层:hal::Led<端口基址, 引脚号> 模板
-├── system/
-│   ├── hal_mock.c               # HAL_MspInit 等弱符号的空实现
-│   └── syscall.c                # newlib 系统调用存根(_sbrk/_write 等)
-├── renode.resc                  #上一篇跑的 Renode 剧本
-├── stm32f1xx_hal_conf.h         # HAL 配置(下面四个坑的主角)
-└── .vscode/ .clangd             # IDE 配置(第 7 篇)
+libestdx/
+├── CMakeLists.txt               # 根构建:只做编排(下一篇的主角之一)
+├── cmake/
+│   ├── arch/stm32f103c8t6.cmake # 工具链文件:交叉编译器全在这儿
+│   ├── arch/stm32f103c8t6.ld    # 链接脚本:64KB Flash / 20KB RAM 的内存地图
+│   └── common.cmake             # 编译器前缀到工具名的绑定
+├── include/libestdx/
+│   ├── gpio/gpio_base.hpp       # 概念层:GPIOOutputPin 这些 concept
+│   ├── boards/stm32f1/          # 家族实现层:F1 的 GPIO 与 HAL 分片封装
+│   └── device/                  # 器件层:LED、Button
+├── examples/                    # 固件工程:01_blinky 到 04_button
+│   └── 01_blinky/
+│       ├── main.cpp             # 应用入口:HAL_Init → 时钟 → 翻转循环
+│       ├── stm32f1xx_it.c       # 中断服务程序(SysTick_Handler 在这)
+│       ├── syscalls.c           # newlib 运行时桩
+│       └── renode.resc          #上一篇跑的 Renode 剧本
+├── sim/stm32f1/bluepill.repl    # 板级描述(上一篇的"户口本")
+└── third_party/STM32F1/         # CubeF1:HAL 与 CMSIS 的真身
 ```
 
-对照着讲几个要点。`third_party/STM32F1` 在工程的上一级,通过相对路径引用,CMake 篇会看到 `set(STM32F1_ROOT ${CMAKE_SOURCE_DIR}/../../../third_party/STM32F1/Drivers)` 这么一行——依赖共享一份,四个工程(0_start 到 3_uart_logger)不重复占用体积。`led/led.hpp` 是应用层的第一个 C++ 抽象:`hal::Led<GPIOC_BASE, GPIO_PIN_13>` 模板类,内部调用 HAL,外部给您一个 `led.toggle()`。`system/` 里两个 C 文件是裸机环境的"地基抹平"层,分别堵住 HAL 的弱符号和 newlib 的系统调用,细节在 CMake 篇展开。
+对照着讲几个要点。`include/libestdx` 是库的三层骨架:概念层(`gpio_base.hpp`)只认标准库,家族实现层(`boards/stm32f1`)把 concept 落到 F1 的 HAL 上,器件层(`device`)再用它们拼出 LED、Button 这类常见器件。""库里的轮子只讲不造"那条立场,落进目录就是这三层,LED 站咱们再逐层拆。`examples/` 下的固件工程消费这套库:每个示例一个独立可执行目标,上一篇跑的 `01_blinky` 是里面最小的一个。HAL 的真身 `third_party/STM32F1` 在库自己肚子里,CMake 从这儿引用,同时把分片化的 hal_conf(本篇末尾细看)一并落地——具体怎么落,下一篇全是这件事。
 
 ## stm32f1xx_hal_conf.h:模板里的暗雷
 
-ST 官方**不**提供现成的 `stm32f1xx_hal_conf.h`,只有 `stm32f1xx_hal_conf_template.h` 模板。您得复制一份到工程里改名再用。用 CubeMX 的朋友会被自动生成,咱们手写 CMake 路线,手动来:
+ST 官方**不**提供现成的 `stm32f1xx_hal_conf.h`,只有 `stm32f1xx_hal_conf_template.h` 模板。您得复制一份改名再用。用 CubeMX(ST 官方的图形化配置工具,点选芯片和外设就能生成初始化代码)的朋友会被自动生成,咱们手写路线,手动来:
 
 ```bash
-cp third_party/STM32F1/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_conf_template.h \
+cp third_party/libestdx/third_party/STM32F1/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_conf_template.h \
    stm32f1xx_hal_conf.h
 ```
 
-这份文件,咱们头一个要动的,是开头的模块开关。一长排 `#define HAL_XXX_MODULE_ENABLED`,模板默认全开,编译时把所有 HAL 驱动都编进去,固件虚胖。LED 闪烁只需要四个:
+这份文件里埋着四个坑,咱们挨个点名。头一个是开头的模块开关:一长排 `#define HAL_XXX_MODULE_ENABLED`,模板默认全开,编译时把所有 HAL 驱动都编进去,固件虚胖。LED 闪烁只需要四个:
 
 ```c
 #define HAL_MODULE_ENABLED         // HAL 核心
@@ -133,10 +141,12 @@ cp third_party/STM32F1/Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_conf_templ
 #define LSE_VALUE    32768U     // 32.768kHz 外部低速晶振
 ```
 
-文件尾部还藏着一个参数检查宏 `assert_param`,默认展开为空。如果哪天定义了 `USE_FULL_ASSERT`,断言失败会跳进 `assert_failed()`——这个函数得您自己实现,否则链接报 undefined。日常保持默认(空宏)即可,知道这开关在哪就行。
+文件尾部还藏着参数检查宏 `assert_param`,默认展开为空。如果哪天定义了 `USE_FULL_ASSERT`,断言失败会跳进 `assert_failed()`——这个函数得您自己实现,否则链接报 undefined。日常保持默认(空宏)即可,知道这开关在哪就行。
 
-再往后,`USE_HAL_XXX_REGISTER_CALLBACKS` 这串宏控制 HAL 的"运行时回调注册"机制,默认 0(用弱符号回调)。咱们保持 0 就好,改成 1 会要求每个外设手工注册回调,复杂度不划算。
+再往后,`USE_HAL_XXX_REGISTER_CALLBACKS` 这串宏控制 HAL 的"运行时回调注册"机制,默认 0(用弱符号回调:给函数标上 `__weak`,链接时只要有别处的同名定义,默认版自动让位——HAL 靠它给回调留默认空实现,想接管就写个同名函数)。咱们保持 0 就好,改成 1 会要求每个外设手工注册回调,复杂度不划算。
 
 最后一条要单独说:`stm32f1xx_hal_conf.h` 必须出现在头文件搜索路径里,因为 HAL 的头文件用 `#include "stm32f1xx_hal_conf.h"`(引号形式)引用它。咱们把它放在工程根目录,再把工程根加进 include 路径,最省心。
 
-下一篇咱们写 CMakeLists.txt,把这些零件串成一条能产出 `firmware.elf` 的流水线——那里还有 `_template.c` 文件混进编译、`-fno-rtti` 刷屏警告、`__libc_init_array` 未定义这几位老朋友等着。
+咱们仓库里 libestdx 没有照抄"一整份大配置"的写法,而是拆成了分片:`hal/stm32f1xx_hal_conf.h` 只剩五行聚合,开关和宏按模块住进 `hal/gpio.hpp`、`hal/rcc.hpp`、`hal/cortex.hpp`、`hal/clock.hpp`(频率宏在这份里)、`hal/kernel.hpp`(HAL 核心开关和 assert_param 在这份里)。每个分片自己开自己的 `HAL_XXX_MODULE_ENABLED`,再统一先引 kernel 分片。这么拆的动机,和"哪些 HAL 的 .c 该进编译"直接挂钩,CMake 篇咱们看着实物讲。
+
+下一篇咱们写构建系统,把工具链文件、HAL 库、链接脚本和固件工程串成一条能产出 `blinky` 的流水线——那里还有为什么不 glob 全量 HAL、nano/nosys 两个 specs、`__libc_init_array` 未定义(启动代码靠它调全局构造,就是上文启动文件干的那步)这几位老朋友等着。

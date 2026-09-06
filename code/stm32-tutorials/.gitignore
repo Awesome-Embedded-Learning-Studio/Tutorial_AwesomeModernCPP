@@ -1,8 +1,0 @@
-build/
-.cache/
-compile_commands.json
-*.o
-*.elf
-*.bin
-*.hex
-*.map

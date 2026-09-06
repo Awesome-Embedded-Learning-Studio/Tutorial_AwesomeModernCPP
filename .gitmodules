@@ -1,4 +1,8 @@
-[submodule "third_party/STM32F1"]
-	path = third_party/STM32F1
-	url = https://github.com/STMicroelectronics/STM32CubeF1.git
+[submodule "third_party/libestdx"]
+	path = third_party/libestdx
+	url = https://github.com/Charliechen114514/libestdx.git
+	ignore = dirty
+[submodule "third_party/ZerOS"]
+	path = third_party/ZerOS
+	url = https://github.com/Charliechen114514/ZerOS.git
 	ignore = dirty

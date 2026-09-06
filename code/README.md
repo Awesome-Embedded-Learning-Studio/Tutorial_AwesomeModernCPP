@@ -7,9 +7,6 @@
 ```
 code/
 ├── examples/              # 通用教程代码示例
-├── stm32f1-tutorials/     # STM32F103C8T6 实战工程
-│   ├── 0_start_our_tutorial/
-│   └── 1_led_control/
 ├── templates/              # 可复用的模板
 │   ├── cm_embedded.cmake
 │   └── linker_script.ld

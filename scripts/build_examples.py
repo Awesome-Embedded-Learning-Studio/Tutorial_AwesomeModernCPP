@@ -71,7 +71,7 @@ def is_stm32_project(cmake_path: Path) -> bool:
     if any(ind in content for ind in indicators):
         return True
     # 独立 toolchain 文件范式:交叉编译特征全在共享的 toolchain-*.cmake 里,
-    # CMakeLists 本体平台无关(如 stm32-tutorials/f103/*)。这种工程靠路径识别——
+    # CMakeLists 本体平台无关。这种工程靠路径识别——
     # STM32 线的目录名本身就是意图。
     return any('stm32' in part.lower() for part in cmake_path.parts)
 
@@ -136,9 +136,9 @@ def discover_projects(code_root: Path, target: str) -> list[Path]:
 def find_toolchain_file(project_dir: Path):
     """向上找共享的 toolchain*.cmake(到 code/ 根为止)。
 
-    独立 toolchain 文件范式的工程(如 stm32-tutorials/*)交叉编译器全在
+    独立 toolchain 文件范式的工程交叉编译器全在
     toolchain-*.cmake 里,configure 时必须以 -DCMAKE_TOOLCHAIN_FILE 传入;
-    内联工具链的工程(老 stm32f1-tutorials)祖先链上没有该文件,不受影响。
+    内联工具链的工程祖先链上没有该文件,不受影响。
     """
     d = project_dir.resolve()
     for _ in range(4):
