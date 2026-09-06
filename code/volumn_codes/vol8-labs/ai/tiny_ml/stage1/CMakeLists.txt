@@ -44,8 +44,9 @@ target_include_directories(TAMCPP_TinyML INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/i
 # 比较坑的点：这个 Lab 要同时吃 MSVC 和 GCC/Clang，两边选项根本不通用，
 # 只能用 genex 按编译器分流——还得是跑到 Windows 下编译一轮才吃到这个亏！
 function(tamcpp_target_warnings target)
+    # /Z7 保留调试信息并避免 sccache 编译时共享 PDB。
     target_compile_options(${target} PRIVATE
-        "$<$<CXX_COMPILER_ID:MSVC>:/W4;/permissive-;/Zi>"
+        "$<$<CXX_COMPILER_ID:MSVC>:/W4;/permissive-;/Z7>"
         "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall;-Wextra;-Wpedantic;-g>"
     )
 endfunction()

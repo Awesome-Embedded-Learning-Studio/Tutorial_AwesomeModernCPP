@@ -171,6 +171,14 @@ def find_cache_launcher(requested: str | None = None) -> str | None:
     return None
 
 
+def timeout_output(exc: subprocess.TimeoutExpired) -> str:
+    """Keep partial output; TimeoutExpired may contain bytes even with text=True."""
+    return '\n'.join(
+        stream.decode('utf-8', errors='replace') if isinstance(stream, bytes) else stream
+        for stream in (exc.stdout, exc.stderr) if stream
+    )
+
+
 def build_project(project_dir: Path, cache_launcher: str | None = None) -> BuildResult:
     """Build a single CMake project."""
     build_dir = project_dir / '_build_ci'
@@ -196,6 +204,13 @@ def build_project(project_dir: Path, cache_launcher: str | None = None) -> Build
     if FORCE_MSVC:
         configure_cmd.append('-DCMAKE_CXX_COMPILER=cl')
         configure_cmd.append('-DCMAKE_BUILD_TYPE=Release')
+        # CMake >= 3.25:即使子工程强制 Debug,也使用 /Z7 将调试信息写入
+        # 各自的对象文件,避免 sccache + /Zi 共享编译 PDB 引发 C1041。
+        # DEFAULT 变量用于外部为旧 cmake_minimum_required 工程启用策略。
+        configure_cmd.append('-DCMAKE_POLICY_DEFAULT_CMP0141=NEW')
+        configure_cmd.append(
+            '-DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT='
+            '$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>')
     toolchain = find_toolchain_file(project_dir)
     if toolchain:
         configure_cmd.append(f'-DCMAKE_TOOLCHAIN_FILE={toolchain}')
@@ -218,12 +233,14 @@ def build_project(project_dir: Path, cache_launcher: str | None = None) -> Build
                 duration=time.time() - start,
                 output='\n'.join(all_output),
             )
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        all_output.append(timeout_output(exc))
+        all_output.append(f'Configure timed out ({CONFIGURE_TIMEOUT_S}s)')
         return BuildResult(
             path=project_dir,
             success=False,
             duration=time.time() - start,
-            output=f'Configure timed out ({CONFIGURE_TIMEOUT_S}s)',
+            output='\n'.join(all_output),
         )
     except FileNotFoundError:
         return BuildResult(
@@ -248,8 +265,9 @@ def build_project(project_dir: Path, cache_launcher: str | None = None) -> Build
         all_output.append(result.stdout)
         all_output.append(result.stderr)
         success = result.returncode == 0
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         success = False
+        all_output.append(timeout_output(exc))
         all_output.append(f'Build timed out ({BUILD_TIMEOUT_S}s)')
 
     # 跑测试(仅当工程配了 CTest: build_dir 里有 CTestTestfile.cmake)。
@@ -266,7 +284,9 @@ def build_project(project_dir: Path, cache_launcher: str | None = None) -> Build
             all_output.append(ct.stderr)
             if ct.returncode != 0:
                 success = False
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
+            all_output.append('--- ctest ---')
+            all_output.append(timeout_output(exc))
             all_output.append(f'ctest timed out ({CTEST_TIMEOUT_S}s)')
             success = False
         except FileNotFoundError:
@@ -322,10 +342,13 @@ def print_results(results: list[BuildResult], code_root: Path) -> None:
             for line in lines[-5:]:
                 print(f"  {line}", flush=True)
         else:
-            # Failed builds: show error lines, fallback to last 20
+            # CI 与超时保留完整上下文,避免筛选 error: 后丢掉编译命令或超时原因。
             lines = r.output.strip().split('\n')
             error_lines = [l for l in lines if 'error:' in l.lower()]
-            if error_lines:
+            if in_ci or 'timed out (' in r.output:
+                for line in lines:
+                    print(f"  {line}", flush=True)
+            elif error_lines:
                 for line in error_lines:
                     print(f"  {line}", flush=True)
             else:
