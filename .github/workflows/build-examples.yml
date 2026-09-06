@@ -73,10 +73,12 @@ jobs:
       - name: Install sccache
         run: |
           $ver = "0.17.0"
+          $dir = "$env:RUNNER_TEMP\sccache\sccache-v$ver-x86_64-pc-windows-msvc"
           curl.exe -sL "https://github.com/mozilla/sccache/releases/download/v$ver/sccache-v$ver-x86_64-pc-windows-msvc.zip" -o "$env:RUNNER_TEMP\sccache.zip"
           Expand-Archive "$env:RUNNER_TEMP\sccache.zip" -DestinationPath "$env:RUNNER_TEMP\sccache" -Force
-          Add-Content $env:GITHUB_PATH "$env:RUNNER_TEMP\sccache\sccache-v$ver-x86_64-pc-windows-msvc"
-          sccache --version
+          # GITHUB_PATH 只对后续 step 生效,本步内的版本检查必须走全路径
+          Add-Content $env:GITHUB_PATH $dir
+          & "$dir\sccache.exe" --version
 
       # run_id 进 key + 前缀 restore:每次必存最新、必还原最近一份(与 ubuntu 线同款)
       - name: Cache sccache
