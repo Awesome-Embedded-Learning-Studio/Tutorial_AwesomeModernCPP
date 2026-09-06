@@ -1,6 +1,5 @@
 # Build Examples Workflow
 # Compiles all CMake projects under code/ to ensure code examples remain buildable
-
 name: Build Examples
 
 on:
@@ -9,11 +8,13 @@ on:
       - 'code/**'
       - 'scripts/build_examples.py'
       - '.github/workflows/build-examples.yml'
+      - 'third_party/libestdx'
   push:
     branches: [main]
     paths:
       - 'code/**'
       - 'scripts/build_examples.py'
+      - 'third_party/libestdx'
 
 jobs:
   build-host:
@@ -133,3 +134,13 @@ jobs:
           export CCACHE_DIR="$HOME/.cache/ccache"
           mkdir -p "$CCACHE_DIR"
           python3 scripts/build_examples.py --stm32
+
+      - name: Build libestdx examples (third_party submodule)
+        working-directory: third_party/libestdx
+        run: |
+          export CCACHE_DIR="$HOME/.cache/ccache"
+          cmake -B build -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/arch/stm32f103c8t6.cmake
+          cmake --build build
