@@ -15,6 +15,7 @@ on:
     paths:
       - 'code/**'
       - 'scripts/build_examples.py'
+      - '.github/workflows/build-examples.yml'
       - 'third_party/libestdx'
 
 jobs:
@@ -57,6 +58,8 @@ jobs:
       # MSVC 线原本完全无缓存,每个 PR 全量重编 147 个工程(#200)
       SCCACHE_DIR: ${{ github.workspace }}\.sccache
       SCCACHE_CACHE_SIZE: 2G
+      # 保留本次运行的统计,直到构建结束后显式停止服务。
+      SCCACHE_IDLE_TIMEOUT: '0'
       # CPM 源码缓存:chrome_design 的 Catch2 只下载一次,configure 期不再含网络(#218)
       CPM_SOURCE_CACHE: ${{ github.workspace }}\.cpm-cache
 
@@ -68,26 +71,37 @@ jobs:
       - name: Setup MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
-      # cl 没有 ccache 对应物,编译缓存走 sccache。钉 v0.17.0 手动下载
-      # (与 Renode 同风格,不引入第三方 action);脚本侧自动探测并启用
+      # MSVC 线固定使用 sccache,钉 v0.17.0 手动下载
+      # (与 Renode 同风格,不引入第三方 action);CI 显式传递绝对路径
       - name: Install sccache
         run: |
           $ver = "0.17.0"
           $dir = "$env:RUNNER_TEMP\sccache\sccache-v$ver-x86_64-pc-windows-msvc"
-          curl.exe -sL "https://github.com/mozilla/sccache/releases/download/v$ver/sccache-v$ver-x86_64-pc-windows-msvc.zip" -o "$env:RUNNER_TEMP\sccache.zip"
+          curl.exe -fsSL "https://github.com/mozilla/sccache/releases/download/v$ver/sccache-v$ver-x86_64-pc-windows-msvc.zip" -o "$env:RUNNER_TEMP\sccache.zip"
+          if ($LASTEXITCODE -ne 0) { throw "sccache download failed" }
           Expand-Archive "$env:RUNNER_TEMP\sccache.zip" -DestinationPath "$env:RUNNER_TEMP\sccache" -Force
           # GITHUB_PATH 只对后续 step 生效,本步内的版本检查必须走全路径
           Add-Content $env:GITHUB_PATH $dir
+          Add-Content $env:GITHUB_ENV "SCCACHE_EXE=$dir\sccache.exe"
           & "$dir\sccache.exe" --version
 
-      # run_id 进 key + 前缀 restore:每次必存最新、必还原最近一份(与 ubuntu 线同款)
-      - name: Cache sccache
-        uses: actions/cache@v4
+      # 分开恢复/保存,示例失败时也保留已完成的编译;重跑使用新的 key。
+      - name: Restore sccache
+        id: sccache-cache
+        uses: actions/cache/restore@v6
         with:
           path: ${{ github.workspace }}\.sccache
-          key: sccache-msvc-${{ github.run_id }}
+          key: sccache-msvc-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             sccache-msvc-
+
+      - name: Start sccache
+        id: sccache-start
+        run: |
+          & $env:SCCACHE_EXE --start-server
+          if ($LASTEXITCODE -ne 0) { throw "sccache server failed to start" }
+          & $env:SCCACHE_EXE --zero-stats
+          if ($LASTEXITCODE -ne 0) { throw "sccache stats reset failed" }
 
       - name: Cache CPM sources
         uses: actions/cache@v4
@@ -100,15 +114,32 @@ jobs:
       # Windows 用户免 WSL 直接构建的验收线:平台性工程(POSIX socket/epoll 等)
       # 由脚本内 MSVC_SKIP_PROJECTS 显式跳过并注明原因
       - name: Build host examples (MSVC)
-        run: python scripts/build_examples.py --host --msvc
+        run: python scripts/build_examples.py --host --msvc --cache-launcher "$env:SCCACHE_EXE"
 
-      # 仅诊断输出(命中率眼见为实),失败不标红;stop-server 确保缓存落盘后再归档
-      - name: Show sccache stats and stop server
-        if: always()
+      # 零请求必须报错,避免 launcher 未接入却全绿;停止服务后再归档。
+      - name: Verify sccache usage and stop server
+        id: sccache-stop
+        if: ${{ !cancelled() && steps.sccache-start.outcome == 'success' }}
         run: |
-          sccache --show-stats
-          sccache --stop-server
-          exit 0
+          try {
+            $stats = & $env:SCCACHE_EXE --show-stats
+            if ($LASTEXITCODE -ne 0) { throw "sccache stats failed" }
+            $stats | Write-Output
+            $requests = [regex]::Match(($stats -join "`n"), '(?m)^Compile requests\s+(\d+)\s*$')
+            if (!$requests.Success -or [long]$requests.Groups[1].Value -eq 0) {
+              throw "sccache received no compile requests; check the compiler launcher"
+            }
+          } finally {
+            & $env:SCCACHE_EXE --stop-server
+            if ($LASTEXITCODE -ne 0) { throw "sccache server failed to stop" }
+          }
+
+      - name: Save sccache
+        if: ${{ !cancelled() && steps.sccache-stop.outcome == 'success' && steps.sccache-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.sccache-cache.outputs.cache-primary-key }}
 
   # mingw(Windows 上的 GCC)线:本地开发者最常见的 Windows GCC 环境。
   # 与 Ubuntu GCC 线的差异主要在链接层(如 libstdc++exp 需显式链),

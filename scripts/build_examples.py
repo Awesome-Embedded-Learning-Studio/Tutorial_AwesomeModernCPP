@@ -157,7 +157,21 @@ def find_toolchain_file(project_dir: Path):
     return None
 
 
-def build_project(project_dir: Path) -> BuildResult:
+def find_cache_launcher(requested: str | None = None) -> str | None:
+    """Resolve an explicit launcher or auto-detect a cache for the toolchain."""
+    if requested is not None:
+        launcher = shutil.which(requested)
+        if launcher is None:
+            raise ValueError(f'Compiler cache launcher not found: {requested}')
+        return Path(launcher).resolve().as_posix()
+    candidates = ('sccache',) if FORCE_MSVC else ('ccache', 'sccache')
+    for candidate in candidates:
+        if launcher := shutil.which(candidate):
+            return Path(launcher).resolve().as_posix()
+    return None
+
+
+def build_project(project_dir: Path, cache_launcher: str | None = None) -> BuildResult:
     """Build a single CMake project."""
     build_dir = project_dir / '_build_ci'
 
@@ -171,12 +185,9 @@ def build_project(project_dir: Path) -> BuildResult:
 
     # Configure
     configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja']
-    # 编译缓存 launcher 仅在环境里存在时启用:ccache 覆盖 Linux CI 与 mingw 线,
-    # sccache 覆盖 MSVC 线(cl 没有 ccache 对应物);都没装的本地环境自动降级为
-    # 直连编译,不再因 launcher 缺失而 configure 失败。
-    cache_launcher = next(
-        (c for c in ('ccache', 'sccache') if shutil.which(c)), None)
+    # launcher 在主线程解析为绝对路径,避免 CI 的 PATH 变化或其他缓存工具抢占。
     if cache_launcher:
+        configure_cmd.append(f'-DCMAKE_C_COMPILER_LAUNCHER={cache_launcher}')
         configure_cmd.append(f'-DCMAKE_CXX_COMPILER_LAUNCHER={cache_launcher}')
     # --msvc:显式选 cl。Windows 上若 PATH 里有 mingw/MSYS 的 g++,CMake 默认
     # 探测会抢先命中它;显式 cl 才能保证 MSVC 线名副其实(需在 VS 开发者环境下运行)。
@@ -346,6 +357,9 @@ def main():
     parser.add_argument('--msvc', action='store_true',
                         help='Configure with MSVC cl explicitly (run from a VS '
                              'developer environment; also enables the MSVC skip list)')
+    parser.add_argument('--cache-launcher', metavar='EXECUTABLE',
+                        help='Require this compiler cache executable (name or path); '
+                             'otherwise auto-detect, using sccache for --msvc')
     parser.add_argument('-j', '--jobs', type=int, default=os.cpu_count(),
                         help=f'Max concurrent builds (default: {os.cpu_count()})')
     args = parser.parse_args()
@@ -389,6 +403,13 @@ def main():
     if args.discover:
         sys.exit(0)
 
+    try:
+        cache_launcher = find_cache_launcher(args.cache_launcher)
+    except ValueError as exc:
+        parser.error(str(exc))
+    print(f"Compiler cache launcher: {cache_launcher or 'disabled (not found)'}",
+          flush=True)
+
     print()
     print(f"Building {len(projects)} project(s) with {args.jobs} worker(s)...", flush=True)
     print(flush=True)
@@ -396,7 +417,7 @@ def main():
     results_map: dict[Path, BuildResult] = {}
     with ThreadPoolExecutor(max_workers=args.jobs) as executor:
         futures = {
-            executor.submit(build_project, p): p for p in projects
+            executor.submit(build_project, p, cache_launcher): p for p in projects
         }
         done_count = 0
         for future in as_completed(futures):
