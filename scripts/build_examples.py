@@ -30,6 +30,13 @@ if sys.platform == 'win32' and sys.stdout.encoding.lower() not in ('utf-8', 'utf
 # --msvc 开关(由 main() 设置):configure 时显式指定 cl 编译器
 FORCE_MSVC = False
 
+# 单工程超时(秒)。configure 原为 120s:CPM/FetchContent 工程的 configure 期含
+# 依赖下载 + 第三方库自身的 CMake 配置(Catch2 是 20+ target 的大工程),Windows CI
+# 多工程并发争抢 CPU 时 120s 不够,曾把 chrome_design 误杀(#218),放宽到 300s。
+CONFIGURE_TIMEOUT_S = 300
+BUILD_TIMEOUT_S = 300
+CTEST_TIMEOUT_S = 180
+
 
 @dataclass
 class BuildResult:
@@ -164,10 +171,13 @@ def build_project(project_dir: Path) -> BuildResult:
 
     # Configure
     configure_cmd = ['cmake', '-B', str(build_dir), '-G', 'Ninja']
-    # ccache 仅在环境里存在时启用(Linux CI 提速);Windows/MSVC 与未装 ccache 的
-    # 本地环境自动降级为直连编译,不再因 launcher 缺失而 configure 失败。
-    if shutil.which('ccache'):
-        configure_cmd.append('-DCMAKE_CXX_COMPILER_LAUNCHER=ccache')
+    # 编译缓存 launcher 仅在环境里存在时启用:ccache 覆盖 Linux CI 与 mingw 线,
+    # sccache 覆盖 MSVC 线(cl 没有 ccache 对应物);都没装的本地环境自动降级为
+    # 直连编译,不再因 launcher 缺失而 configure 失败。
+    cache_launcher = next(
+        (c for c in ('ccache', 'sccache') if shutil.which(c)), None)
+    if cache_launcher:
+        configure_cmd.append(f'-DCMAKE_CXX_COMPILER_LAUNCHER={cache_launcher}')
     # --msvc:显式选 cl。Windows 上若 PATH 里有 mingw/MSYS 的 g++,CMake 默认
     # 探测会抢先命中它;显式 cl 才能保证 MSVC 线名副其实(需在 VS 开发者环境下运行)。
     # Release:MSVC 无 build type 时按 Debug 走,默认 /RTC1 与示例的 /O2 冲突(D8016);
@@ -186,7 +196,7 @@ def build_project(project_dir: Path) -> BuildResult:
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=120,
+            timeout=CONFIGURE_TIMEOUT_S,
         )
         all_output.append(result.stdout)
         all_output.append(result.stderr)
@@ -202,7 +212,7 @@ def build_project(project_dir: Path) -> BuildResult:
             path=project_dir,
             success=False,
             duration=time.time() - start,
-            output='Configure timed out (120s)',
+            output=f'Configure timed out ({CONFIGURE_TIMEOUT_S}s)',
         )
     except FileNotFoundError:
         return BuildResult(
@@ -222,14 +232,14 @@ def build_project(project_dir: Path) -> BuildResult:
             text=True,
             encoding='utf-8',
             errors='replace',
-            timeout=300,
+            timeout=BUILD_TIMEOUT_S,
         )
         all_output.append(result.stdout)
         all_output.append(result.stderr)
         success = result.returncode == 0
     except subprocess.TimeoutExpired:
         success = False
-        all_output.append('Build timed out (300s)')
+        all_output.append(f'Build timed out ({BUILD_TIMEOUT_S}s)')
 
     # 跑测试(仅当工程配了 CTest: build_dir 里有 CTestTestfile.cmake)。
     # 没配 CTest 的工程(大多数纯示例)直接跳过, 不算失败。
@@ -238,14 +248,15 @@ def build_project(project_dir: Path) -> BuildResult:
                      '--output-on-failure', '--timeout', '60']
         try:
             ct = subprocess.run(ctest_cmd, cwd=str(project_dir),
-                                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
+                                capture_output=True, text=True, encoding='utf-8', errors='replace',
+                                timeout=CTEST_TIMEOUT_S)
             all_output.append('--- ctest ---')
             all_output.append(ct.stdout)
             all_output.append(ct.stderr)
             if ct.returncode != 0:
                 success = False
         except subprocess.TimeoutExpired:
-            all_output.append('ctest timed out (180s)')
+            all_output.append(f'ctest timed out ({CTEST_TIMEOUT_S}s)')
             success = False
         except FileNotFoundError:
             pass  # 环境没 ctest, 跳过
