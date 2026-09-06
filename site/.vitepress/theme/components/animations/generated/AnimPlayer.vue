@@ -48,6 +48,12 @@ const textFam = {
     fadeout: (c, ev, at, p) => {
       c.texts[ev.target] =
         (c.texts[ev.target] === undefined ? 1 : c.texts[ev.target]) * (1 - p)
+      /* 2026-09-06 修复: 大件组(code/bars/rowlist/arrow)同淡 —— fadeout 此前
+         只写 texts 桶, annot 家族读 moves.op, code 卡 hide 后残屏不退。
+         旧 golden 曾把残屏固化成基准; 对拍因 v2 镜像同漏而绿(等价≠正确)。
+         回归锁: tests/web/fixtures/hide-code-regression.json */
+      const m = c.moves[ev.target]
+      if (m !== undefined) m.op = (m.op === undefined ? 1 : m.op) * (1 - p)
     },
   },
   render(c) {
@@ -264,9 +270,14 @@ const annotFam = {
       m.from = [fr[0] + (ev.to[0] - fr[0]) * ease(p),
                 fr[1] + (ev.to[1] - fr[1]) * ease(p)]
     },
-    code_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p } },
-    bars_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p } },
-    rowlist_show: (c, ev, at, p) => { c.moves[ev.target] = { op: p } },
+    /* sx/sy = 当拍定居位(2026-09-06): show 事件携带当拍位(cx/cy), 其后 move
+       完成时收养 ev.to。渲染基准优先 sx/sy —— 否则"show 在 A 位/move 到
+       B 位"的卡, show 淡入期间就按 actors 终态位(B)渲染, move 开始才跳回
+       A 再滑向 B(终态快照陷阱第六例, 同 row_create ev.g 先例)。 */
+    code_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
+    bars_show:    (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
+    rowlist_show: (c, ev, at, p) => { c.moves[ev.target] = { op: p, sx: ev.cx, sy: ev.cy } },
+    arrow_show:   (c, ev, at, p) => { c.moves[ev.target] = { op: p, grow: ease(p) } },
     move: (c, ev, at, p) => {
       /* 修复: CellRow 的 move 写入行状态而非 moves —— 渲染循环的 moves
          只展开 text/code/bars/rowlist 四种, 行移动此前是瞬移无动画 */
@@ -278,13 +289,24 @@ const annotFam = {
         const m = c.moves[ev.target] || (c.moves[ev.target] = { op: 1 })
         m.dx = (ev.frm[0] - ev.to[0]) * (1 - ease(p))
         m.dy = (ev.frm[1] - ev.to[1]) * (1 - ease(p))
+        /* 定居位切换(2026-09-06): move 事件重放起基准即切 to —— dx 公式
+           (frm-to)(1-ease) 本就是为"基准=to"设计(p=0 位=frm, p=1 位=to)。
+           仅新数据(sx 存在)生效; 旧数据基准恒 actors 终态, 行为不变。 */
+        if (m.sx !== undefined) {
+          m.sx = ev.to[0]; m.sy = ev.to[1]
+        }
       }
     },
   },
   render(c) {
     /* 大件与自由标注: 平铺展开为 text/rect 原语 */
     const emitCard = (a, cx, cy, op) => {
-      c.prim.push({ tag: 'rect', x: cx - a.w / 2, y: cy + a.h / 2, w: a.w,
+      /* 2026-09-06 修复: rect 的 y 契约是画框系"底边"(模板 4-y-h),
+         此前传 cy+h/2(顶边) → 框整体上浮一个卡高, 文字留在卡几何原位,
+         视觉即"空框在上、代码行在下"。线上 12 动画的 code 卡均如此,
+         golden 首录即固化(不变≠对), v1/v2 同错故对拍绿(等价≠正确)。
+         v2 侧 emit_annot 同步修; 回归锁: card_containment.test.js */
+      c.prim.push({ tag: 'rect', x: cx - a.w / 2, y: cy - a.h / 2, w: a.w,
                     h: a.h, stroke: c.P.emptyEdge, sw: 0.02, op, rx: true })
       const top = cy + a.h / 2 - 0.26
       for (let li = 0; li < a.rows.length; li++) {
@@ -333,8 +355,12 @@ const annotFam = {
       const a = c.D.actors[id]
       if (!a) continue
       const dx = m.dx || 0, dy = m.dy || 0
-      const cx = (m.from ? m.from[0] : (a.cx !== undefined ? a.cx : a.x)) + dx
-      const cy = (m.from ? m.from[1] : (a.cy !== undefined ? a.cy : a.y)) + dy
+      /* 基准优先级: sx/sy(当拍定居位, 新数据) > m.from(label_move 怪癖镜像)
+         > actors 终态(旧数据/无 move)。 */
+      const cx = (m.sx !== undefined ? m.sx
+                  : m.from ? m.from[0] : (a.cx !== undefined ? a.cx : a.x)) + dx
+      const cy = (m.sy !== undefined ? m.sy
+                  : m.from ? m.from[1] : (a.cy !== undefined ? a.cy : a.y)) + dy
       if (a.kind === 'text') {
         c.prim.push({ tag: 'text', x: cx, y: cy, fs: a.fs, fill: a.color,
                       ff: SANS, op, text: a.text })
@@ -344,6 +370,20 @@ const annotFam = {
         emitBars(a, cx, cy, op)
       } else if (a.kind === 'rowlist') {
         emitRowList(a, cx, cy, op)
+      } else if (a.kind === 'arrow') {
+        /* grow 通道: 箭头从尾端生长到头端(终点 = 尾 + 全长 × ease(p));
+           与 v2 转译器的 x2/y2 关键帧(s ease)位级同源。 */
+        const g = m.grow === undefined ? 1 : m.grow
+        c.prim.push({ tag: 'harrow',
+                      x1: a.x1 + dx, y1: a.y1 + dy,
+                      x2: a.x1 + (a.x2 - a.x1) * g + dx,
+                      y2: a.y1 + (a.y2 - a.y1) * g + dy,
+                      color: c.P.fill, sw: 0.03, op })
+        if (a.label) {
+          c.prim.push({ tag: 'text', x: a.label.x + dx, y: a.label.y + dy,
+                        fs: a.label.fs, fill: c.P.muted, ff: SANS, op,
+                        text: a.label.text })
+        }
       }
     }
   },
@@ -453,6 +493,19 @@ export function ptrPts(it, fw, fh) {
   const dir = it.tipY > it.baseY ? 10 : -10
   return bx + ',' + by + ' ' + (bx - 4) + ',' + (by + dir) + ' ' +
          (bx + 4) + ',' + (by + dir)
+}
+
+/* 流程箭头三角头三顶点(viewBox 系, 任意方向角)。
+   尖端 = 线终点; 两翼自尖端回退 L, 垂直方向各张 W/2。 */
+export function arrowHeadPts(it, fw, fh) {
+  const x1 = (fw / 2 + it.x1) * 100, y1 = (fh / 2 - it.y1) * 100
+  const x2 = (fw / 2 + it.x2) * 100, y2 = (fh / 2 - it.y2) * 100
+  const ang = Math.atan2(y2 - y1, x2 - x1)
+  const L = 13, W2 = 8
+  const bx = x2 - L * Math.cos(ang), by = y2 - L * Math.sin(ang)
+  return x2 + ',' + y2 + ' ' +
+         (bx - W2 * Math.sin(ang)) + ',' + (by + W2 * Math.cos(ang)) + ' ' +
+         (bx + W2 * Math.sin(ang)) + ',' + (by - W2 * Math.cos(ang))
 }
 </script>
 
@@ -645,6 +698,12 @@ const RATES = [0.5, 1, 1.5, 2]
               :y="(data.frame.h / 2 - it.y - it.h) * 100" :width="it.w * 100"
               :height="it.h * 100" :stroke="it.color" stroke-width="2.4"
               :fill="it.color" fill-opacity="0.12" :opacity="it.op" rx="4" />
+        <g v-else-if="it.tag === 'harrow'" :opacity="it.op">
+          <line :x1="(data.frame.w / 2 + it.x1) * 100" :y1="(data.frame.h / 2 - it.y1) * 100"
+                :x2="(data.frame.w / 2 + it.x2) * 100" :y2="(data.frame.h / 2 - it.y2) * 100"
+                :stroke="it.color" :stroke-width="it.sw * 100" />
+          <polygon :fill="it.color" :points="arrowHeadPts(it, data.frame.w, data.frame.h)" />
+        </g>
       </template>
     </svg>
     <noscript><span class="amp-noscript">动画需要 JavaScript 支持。</span></noscript>

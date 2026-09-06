@@ -1,0 +1,65 @@
+project: vol1-ch00-visuals
+created: 2026-09-06
+branch: feat/visuals-from-ch00
+scope: 卷一第 0 章首批试做；不是全仓视觉化已完成
+request: 用户委托从头增加 drawio 与 Vue 短动画，并顺手审阅插入文章
+stages:
+  scan: {status: done, artifact: README.md}
+  gate1:
+    status: done
+    actor: user-delegated
+    picked: [preface-route, first-program-pipeline]
+    note: 按用户“委托、先尝试”的授权选点试做，不冒充用户逐项审阅。
+  direct: {status: done, backend: drawio-and-animy-maker,
+           note: 2026-09-06 二轮重做——Codex 手写 StepPlayer 线整体拆除,
+                 流水线动画改走 animy_maker 自由场景(arrow 词汇)编译产出}
+  gate2:
+    status: pending
+    actor: human
+    note: 首批供用户查看；技术检查不代表人眼终审。
+production:
+  - documents/vol1-fundamentals/ch00/assets/00-preface/learning-route.drawio
+  - documents/vol1-fundamentals/ch00/assets/03-first-program/compilation-pipeline.drawio
+  - site/.vitepress/theme/components/animations/generated/data/compilation-pipeline.json
+animy_maker:
+  revision: 512fef0 + 未提交工作区(2026-09-04 语义修复) + 2026-09-06 词汇解锁
+  probe: pipeline-probe.yaml
+  result: 'DSL 校验失败: root.actors: 至少需要一个 cell_row actor'
+  blocked_vocabulary: []   # 2026-09-06 解锁: arrow 词汇 + 自由场景(无 cell_row/counter/grow_to)
+  decision: 反向迁移而非旁路——给 animy_maker 加 arrow actor 与自由场景松绑,
+    DSL 在工具仓 projects/vol1-ch00-pipeline/02-dsl/, 编译产出直达本仓 generated/。
+    手写 StepPlayer/scenes/types 已删, <Anim> 回到单一路径(animy_maker 分发)。
+removed:
+  - site/.vitepress/theme/components/animations/players/StepPlayer.vue
+  - site/.vitepress/theme/components/animations/scenes/
+  - site/.vitepress/theme/components/animations/types.ts
+verification:
+  at: 2026-09-06
+  cpp: GCC 16.1.1；分步构建、五个标准模式 Hello、三组错误诊断、加法示例通过
+  frontmatter: 993 篇，0 warning，0 error
+  links: 1223 个 Markdown 文件，全部站内链接通过
+  markdownlint: 两篇文章与接续 README 通过
+  drawio: 两份 XML 引用检查通过，浏览器实际生成 SVG
+  browser: 播放控制、自动结束、键盘、320px/375px、深色模式、减少动态效果通过
+  ssr: 构建 HTML 包含完整 Vue 首帧
+  build: 'pnpm build: SUCCESS, 38 built, 220.9s(二轮, 含新动画)'
+  toolchain: pytest 2/2; vitest 53/53; e2e golden 4 case; v1/v2 对拍 4 fixture;
+             金样例 JSON 回归(容器场景)逐字节一致
+next:
+  - 用户浏览器眼验 compilation-pipeline 动画(gate2)。
+  - 环境安装篇补充工具职责静图前，核查具体命令；Windows 需实际环境验证。
+  - 再按 ch01/01-basic-types.md 顺序扫描，优先整数表示和类型边界。
+  - 容器/流程类动画统一走 animy_maker；工具仓 manim 后端自由场景仍在 backlog。
+
+organization:
+  request: 用户要求整理目录，并确认播放器是否逐文章复制
+  entry: '<Anim id="..." />'
+  players: animations/generated/AnimPlayer.vue(animy_maker 分发, 唯一播放器)
+  generated: animations/generated/，现有 id 保持不变
+  diagrams: documents/<卷>/<章>/assets/<文章>/
+  note: 二轮定稿——一个锻造源: 动画走 animy_maker(DSL 在工具仓 projects/),
+    静态图走 drawio(手编辑资产); 播放器单份共用, 每次嵌入的播放进度独立。
+  verified:
+    - 14 个生成文件逐字节迁移校验通过(一轮)
+    - 旧文章动画显示、单步操作通过(一轮)
+    - 二轮: 新动画经 e2e golden/v1v2 对拍/金样例回归, 全站 build SUCCESS

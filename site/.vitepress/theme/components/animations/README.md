@@ -1,62 +1,49 @@
-# animation_maker Web 产物目录(单来源分发)
+# 教学动画目录
 
-**播放器一份, 数据每动画一份。** 生成日期: 2026-09-04。
+**播放器代码共用，动画内容按 JSON 数据分发，每次嵌入的播放进度独立。** 一篇文章可以没有动画，也可以放多个动画；不用为每篇文章复制 Vue 播放器。
 
-| 路径 | 说明 |
-|---|---|
-| `AnimPlayer.vue` | 通用播放器, 全部动画共用, 零运行时依赖, 勿手改; 已存在时编译默认跳过, 升级加 `--force-player` |
-| `data/<id>.json` | 动画数据(id = DSL 文件名), 播放器唯一输入 |
-| `posters/<id>.svg` | 首帧静态图(打印/PDF 等无 JS 场景的可选兜底) |
+```text
+components/
+├── Anim.vue                         # 所有文章的统一入口，按 id 选数据
+└── animations/
+    ├── README.md                    # 本说明
+    └── generated/                   # animy_maker 分发目录，整体原样保留
+        ├── AnimPlayer.vue           # 共用播放器，勿手改
+        ├── data/<vol>/<id>.json     # 全部动画，按卷分组，id = 文件名
+        └── README.md                # 编译器附带的通用说明
+```
 
-## 接入 VitePress(实战验证过的姿势)
+`data/` 下按教程卷分子目录（`vol1/`、`vol3/`、`vol8/`…），分组由 DSL 的 `group:` 字段决定，编译时自动落盘。**id 只看文件名**，与分组无关：文章里 `<Anim id="opp1-vector-growth" />` 不因挪动目录而变化；文件名必须全局唯一（dev 模式重复会告警）。
 
-1. 拷 `AnimPlayer.vue` 到 `site/.vitepress/theme/components/animations/`
-   (仅需一份), 数据放同级 `data/` 子目录。
-2. 注册(懒加载, `theme/index.ts`):
+`Anim.vue` 递归收集 `generated/data/**/*.json`；同一份数据可以被多篇文章复用，每个播放器实例仍独立。切换 id 会重新创建播放实例，从头播放。请使用 PascalCase 的 `<Anim>` 标签。
 
-   ```ts
-   import { defineAsyncComponent } from 'vue'
-   // enhanceApp({ app }) 内:
-   app.component('AnimPlayer', defineAsyncComponent(() =>
-     import('./components/animations/AnimPlayer.vue')))
-   ```
+## 在文章里使用
 
-   **必须 PascalCase 使用(`<AnimPlayer />`)**。不要写 `<anim-player>`:
-   VitePress 站点常把含连字符的标签交给 `isCustomElement` 当 Web Component,
-   结果是静默变原生标签 —— 不报错、不渲染。
+```html
+<Anim id="opp1-vector-growth" />
+```
 
-3. 页面级 import 数据后传入(md 内 `<script setup>`):
+## 新增或修改内容
 
-   ```md
-   <script setup>
-   import vecGrowth from './animations/data/opp1-vector-growth.json'
-   </script>
+改 DSL 后重新编译，输出目录指定为 `generated/`。从教程根目录运行，`ANIMY_SOURCE` 指向工具仓库的 `src`：
 
-   <AnimPlayer :data="vecGrowth" />
-   ```
+```bash
+PYTHONPATH="$ANIMY_SOURCE" .venv/bin/python -m animation_maker compile \
+  /path/to/scene.yaml --backend web \
+  -o site/.vitepress/theme/components/animations/generated
+```
 
-   注意:
-   - **变量名随意, 不必含 id**; id 带连字符(如 `opp1-vector-growth`)不是
-     合法 JS 标识符, 别把文件名拼进变量名。
-   - md 模板表达式在页面作用域求值, `provide/inject` 在其中拿不到 ——
-     页面级 import 是唯一通路。
-   - 跨深目录建议 vite alias: `{ '@anim': <animations 目录> }`,
-     之后 `import vecGrowth from '@anim/data/<id>.json'`。
+编译器生成的 `posters/` 已被 Git 忽略。需要升级生成播放器时才加 `--force-player`；升级前后验证已有动画。`generated/README.md` 是上游通用模板，本仓库的嵌入方式以当前说明为准。
 
-## 播放控制
+drawio 放在文档侧对应文章的资源目录，用相对链接引用：
 
-- **单步**: 以 DSL 语义 Step 为边界步进(开场是独立一步), 进度条刻度即边界。
-- **倍速**: 0.5x-2x; DSL 中 push 的 `pace` 已折算为该 Step 的速率系数。
-- **键盘**: 进度条可聚焦, 左右方向键微调; `aria-valuenow` 同步。
-- **懒播放**: 进视口才首次自动播放(仅首次); `prefers-reduced-motion` 生效。
+```text
+documents/vol1-fundamentals/ch00/
+├── 00-preface.md
+├── 03-first-program.md
+└── assets/
+    ├── 00-preface/learning-route.drawio
+    └── 03-first-program/compilation-pipeline.drawio
+```
 
-## SSG/SSR 安全
-
-setup 阶段零 `window`/`document`; 渲染是纯函数 `buildFrame(t)`, SSR 输出即
-首帧; rAF/Observer 全在 `onMounted` 且暂停即停转。`pnpm build` 直接过。
-
-## 更新播放器
-
-编译时播放器已存在则默认跳过(保护消费端); 升级用:
-
-    python -m animation_maker compile <scene>.yaml --backend web --force-player
+当前已将首批 ch00 图迁入此结构，其他章节的旧图随对应文章维护时逐步整理。新增动画后检查播放、暂停、单步、窄屏以及 `pnpm build`；核对图、动画数据和正文的术语及命令一致。

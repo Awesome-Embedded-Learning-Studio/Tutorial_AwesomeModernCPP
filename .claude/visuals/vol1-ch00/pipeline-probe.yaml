@@ -1,0 +1,11 @@
+title: 从源码到运行
+actors:
+  - id: source
+    type: label
+    text: hello.cpp
+    pos: [0, 0]
+steps:
+  - step: show
+    target: source
+  - step: wait
+    duration: 2

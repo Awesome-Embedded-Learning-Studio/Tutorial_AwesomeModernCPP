@@ -1,0 +1,627 @@
+{
+ "version": 1,
+ "id": "compilation-pipeline",
+ "title": "一行输出，何时发生？",
+ "subtitle": "GCC / Linux · C++17",
+ "source": "projects/vol1-ch00-pipeline/02-dsl/compilation-pipeline.yaml",
+ "backend": "web",
+ "frame": {
+  "w": 14.2222,
+  "h": 8.0
+ },
+ "palette": {
+  "bg": "#17171f",
+  "text": "#ECECE4",
+  "muted": "#9a9aad",
+  "fill": "#5EC8E0",
+  "fillEdge": "#2E86AB",
+  "emptyEdge": "#4a4a5e",
+  "grow": "#FFB454",
+  "numOnFill": "#0e2430",
+  "ok": "#7BC96A",
+  "bad": "#E06C75",
+  "cardBg": "#1e1e2a"
+ },
+ "actors": {
+  "title": {
+   "kind": "text",
+   "text": "一行输出，何时发生？",
+   "x": 0.0,
+   "y": 3.4324,
+   "fs": 0.32,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.224,
+   "h": 0.4352
+  },
+  "sub": {
+   "kind": "text",
+   "text": "GCC / Linux · C++17",
+   "x": 0.0,
+   "y": 2.8988,
+   "fs": 0.2,
+   "color": "#9a9aad",
+   "mono": false,
+   "anchor": "middle",
+   "w": 2.356,
+   "h": 0.272
+  },
+  "show:src": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.508,
+   "w": 3.4336,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "hello.cpp",
+     "w": 1.188
+    },
+    {
+     "text": "#include <iostream>",
+     "w": 2.508
+    }
+   ],
+   "cx": -4.1,
+   "cy": 1.05
+  },
+  "show:a1": {
+   "kind": "arrow",
+   "x1": -2.2032,
+   "y1": 1.05,
+   "x2": -1.7348,
+   "y2": 1.05,
+   "cx": -1.969,
+   "cy": 1.05,
+   "w": 0.4684,
+   "h": 0.0,
+   "label": {
+    "text": "预处理",
+    "x": -1.969,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.7128,
+    "h": 0.2448
+   }
+  },
+  "show:pre": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.584,
+   "w": 2.5096,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "hello.ii",
+     "w": 1.056
+    },
+    {
+     "text": "36589 行文本",
+     "w": 1.584
+    }
+   ],
+   "cx": -0.3,
+   "cy": 1.05
+  },
+  "show:a2": {
+   "kind": "arrow",
+   "x1": 1.1348,
+   "y1": 1.05,
+   "x2": 1.7352,
+   "y2": 1.05,
+   "cx": 1.435,
+   "cy": 1.05,
+   "w": 0.6004,
+   "h": 0.0,
+   "label": {
+    "text": "编译",
+    "x": 1.435,
+    "y": 1.4024,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:comp": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 2.244,
+   "w": 3.1696,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "hello.s",
+     "w": 0.924
+    },
+    {
+     "text": "37 行 x86-64 汇编",
+     "w": 2.244
+    }
+   ],
+   "cx": 3.5,
+   "cy": 1.05
+  },
+  "show:a3": {
+   "kind": "arrow",
+   "x1": 3.5,
+   "y1": 0.242,
+   "x2": 3.5,
+   "y2": -0.742,
+   "cx": 3.5,
+   "cy": -0.25,
+   "w": 0.0,
+   "h": 0.984,
+   "label": {
+    "text": "汇编",
+    "x": 3.1124,
+    "y": -0.25,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:asm": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.98,
+   "w": 2.9056,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "hello.o",
+     "w": 0.924
+    },
+    {
+     "text": "7f 45 4c 46 ...",
+     "w": 1.98
+    }
+   ],
+   "cx": 3.5,
+   "cy": -1.55
+  },
+  "show:a4": {
+   "kind": "arrow",
+   "x1": 1.8672,
+   "y1": -1.55,
+   "x2": 1.0028,
+   "y2": -1.55,
+   "cx": 1.435,
+   "cy": -1.55,
+   "w": 0.8644,
+   "h": 0.0,
+   "label": {
+    "text": "链接",
+    "x": 1.435,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:lnk": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.32,
+   "w": 2.2456,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "hello",
+     "w": 0.66
+    },
+    {
+     "text": "ELF 可执行",
+     "w": 1.32
+    }
+   ],
+   "cx": -0.3,
+   "cy": -1.55
+  },
+  "show:a5": {
+   "kind": "arrow",
+   "x1": -1.6028,
+   "y1": -1.55,
+   "x2": -2.7312,
+   "y2": -1.55,
+   "cx": -2.167,
+   "cy": -1.55,
+   "w": 1.1284,
+   "h": 0.0,
+   "label": {
+    "text": "运行",
+    "x": -2.167,
+    "y": -1.1976,
+    "fs": 0.18,
+    "color": "#9a9aad",
+    "mono": false,
+    "anchor": "middle",
+    "w": 0.4752,
+    "h": 0.2448
+   }
+  },
+  "show:run": {
+   "kind": "code",
+   "fs": 0.2,
+   "lh": 0.258,
+   "pitch": 0.478,
+   "gutW": 0.1056,
+   "bodyW": 1.452,
+   "w": 2.3776,
+   "h": 1.256,
+   "rows": [
+    {
+     "text": "./hello",
+     "w": 0.924
+    },
+    {
+     "text": "Hello, C++!",
+     "w": 1.452
+    }
+   ],
+   "cx": -4.1,
+   "cy": -1.55
+  },
+  "concl:0": {
+   "kind": "text",
+   "text": "6 行源码 → 36589 行文本 → 37 行汇编 → 机器码",
+   "x": 0.0,
+   "y": 0.0882,
+   "fs": 0.24,
+   "color": "#FFB454",
+   "mono": false,
+   "anchor": "middle",
+   "w": 7.2816,
+   "h": 0.3264
+  },
+  "concl:1": {
+   "kind": "text",
+   "text": "运行 ./hello，才有 Hello, C++!",
+   "x": 0.0,
+   "y": -0.4882,
+   "fs": 0.24,
+   "color": "#ECECE4",
+   "mono": false,
+   "anchor": "middle",
+   "w": 4.56,
+   "h": 0.3264
+  }
+ },
+ "steps": [
+  {
+   "kind": "intro",
+   "label": "开场",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "write",
+     "target": "title",
+     "t": 0.0,
+     "dur": 1.55
+    },
+    {
+     "type": "fadein",
+     "target": "sub",
+     "t": 1.55,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show src",
+   "note": "",
+   "duration": 2.8,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:src",
+     "cx": 0,
+     "cy": 0.4,
+     "t": 0.0,
+     "dur": 2.8
+    }
+   ]
+  },
+  {
+   "kind": "move",
+   "label": "move src",
+   "note": "to [-4.1, 1.05]",
+   "duration": 0.5,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "move",
+     "target": "show:src",
+     "frm": [
+      0,
+      0.4
+     ],
+     "to": [
+      -4.1,
+      1.05
+     ],
+     "t": 0.0,
+     "dur": 0.5
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a1",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a1",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show pre",
+   "note": "",
+   "duration": 1.83,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:pre",
+     "cx": -0.3,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 1.83
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a2",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a2",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show comp",
+   "note": "",
+   "duration": 2.43,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:comp",
+     "cx": 3.5,
+     "cy": 1.05,
+     "t": 0.0,
+     "dur": 2.43
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a3",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a3",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show asm",
+   "note": "",
+   "duration": 2.55,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:asm",
+     "cx": 3.5,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.55
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a4",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a4",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show lnk",
+   "note": "",
+   "duration": 1.59,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:lnk",
+     "cx": -0.3,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 1.59
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show a5",
+   "note": "",
+   "duration": 1.0,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "arrow_show",
+     "target": "show:a5",
+     "t": 0.0,
+     "dur": 0.6
+    }
+   ]
+  },
+  {
+   "kind": "show",
+   "label": "show run",
+   "note": "",
+   "duration": 2.07,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "code_show",
+     "target": "show:run",
+     "cx": -4.1,
+     "cy": -1.55,
+     "t": 0.0,
+     "dur": 2.07
+    }
+   ]
+  },
+  {
+   "kind": "conclude",
+   "label": "结论",
+   "note": "压轴结论墙",
+   "duration": 15.4,
+   "speed": 1.0,
+   "events": [
+    {
+     "type": "fadeout",
+     "target": "show:src",
+     "t": 0.0,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a1",
+     "t": 0.3,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:pre",
+     "t": 0.6,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a2",
+     "t": 0.9,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:comp",
+     "t": 1.2,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a3",
+     "t": 1.5,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:asm",
+     "t": 1.8,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a4",
+     "t": 2.1,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:lnk",
+     "t": 2.4,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:a5",
+     "t": 2.7,
+     "dur": 0.3
+    },
+    {
+     "type": "fadeout",
+     "target": "show:run",
+     "t": 3.0,
+     "dur": 0.3
+    },
+    {
+     "type": "write",
+     "target": "concl:0",
+     "t": 3.3,
+     "dur": 2.4
+    },
+    {
+     "type": "write",
+     "target": "concl:1",
+     "t": 6.05,
+     "dur": 2.4
+    }
+   ]
+  }
+ ]
+}
