@@ -12,7 +12,7 @@ tags:
 difficulty: intermediate
 platform: stm32f1
 cpp_standard: [23]
-reading_time_minutes: 22
+reading_time_minutes: 14
 prerequisites:
   - "嵌入式·STM32F103 + Renode:至少走过起步站和 UART 站"
 related:
