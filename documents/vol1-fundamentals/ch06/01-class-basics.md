@@ -11,7 +11,7 @@ order: 1
 platform: host
 prerequisites:
 - std::string
-reading_time_minutes: 14
+reading_time_minutes: 19
 tags:
 - cpp-modern
 - host
@@ -380,9 +380,150 @@ distance(p1, origin) = 5
 
 设计一个 `Rectangle` 类，包含私有成员变量 `width_` 和 `height_`，以及公共成员函数 `set_size(double w, double h)`（设置宽高，参数非正时不修改）、`area()` 计算面积、`perimeter()` 计算周长、`print()` 输出矩形信息。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class Rectangle {
+private:
+    double width_;
+    double height_;
+
+public:
+    void set_size(double w, double h)
+    {
+        // 参数非正时不修改
+        if (w > 0 && h > 0) {
+            width_ = w;
+            height_ = h;
+        }
+    }
+
+    double area() const
+    {
+        return width_ * height_;
+    }
+
+    double perimeter() const
+    {
+        return 2 * (width_ + height_);
+    }
+
+    void print() const
+    {
+        std::cout << "Rectangle(width=" << width_ 
+                  << ", height=" << height_ << ")" << std::endl;
+    }
+};
+
+int main()
+{
+    Rectangle rect;
+    rect.set_size(5.0, 3.0);
+    rect.print();
+    std::cout << "面积: " << rect.area() << std::endl;
+    std::cout << "周长: " << rect.perimeter() << std::endl;
+
+    rect.set_size(10.0, 4.0);
+    rect.print();
+    std::cout << "面积: " << rect.area() << std::endl;
+    std::cout << "周长: " << rect.perimeter() << std::endl;
+
+    // 测试非正参数的情况（不应修改）
+    rect.set_size(-5.0, 3.0);
+    rect.print();  // 应该保持 10.0, 4.0
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+Rectangle(width=5, height=3)
+面积: 15
+周长: 16
+Rectangle(width=10, height=4)
+面积: 40
+周长: 28
+Rectangle(width=10, height=4)
+```
+
+:::
+
 ### 练习 2：Timer 类
 
-设计一个 `Timer` 类模拟简单计时器。私有成员变量包括 `start_time_` 和 `running_`，公共成员函数包括 `start()`、`stop()` 和 `elapsed_seconds()`。提示：用 `<chrono>` 的 `std::chrono::steady_clock` 获取时间点。
+设计一个 `Timer` 类模拟简单计时器。私有成员变量包括 `start_time_` 和 `running_`，公共成员函数包括 `start()`、`stop()` 和 `elapsed_seconds()`。提示：用 `<chrono>` 的 `std::chrono::steady_clock` 获取时间点。`elapsed_seconds()`的作用是`running_`为`true`的时候返回当前经过的时间，为`false`的时候返回上一次时间。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <chrono>
+
+class Timer
+{
+private:
+    std::chrono::time_point<std::chrono::steady_clock> start_time;
+    std::chrono::time_point<std::chrono::steady_clock> end_time;
+    bool running = false;
+
+public:
+    void start()
+    {
+        start_time = std::chrono::steady_clock::now();
+        running = true;
+    }
+    void stop()
+    {
+        end_time = std::chrono::steady_clock::now();
+        running = false;
+    }
+    auto elapsed() const
+    {
+        if (running)
+        {
+            auto current_time = std::chrono::steady_clock::now();
+            return std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count();
+        }
+        return std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    }
+};
+int main()
+{
+    Timer timer;
+    timer.start();
+    for (int i = 0; i < 1000000; ++i)
+    {
+        // 模拟一些工作
+    }
+
+    timer.stop();
+    std::cout << "运行时间: " << timer.elapsed() << " 微秒" << std::endl;
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+运行时间: 412 微秒
+```
+
+:::
 
 ## 小结
 
