@@ -423,7 +423,7 @@ g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
 
 ### 练习 2：简单查找替换工具
 
-写一个函数 `replace_all(std::string text, const std::string& from, const std::string& to)`，把 `text` 中所有出现的 `from` 替换为 `to`。要求处理 `from` 为空字符串的情况（直接返回原文，否则 `find("")` 会返回 0 导致死循环）。
+写一个函数 `replace_all(std::string& text, const std::string& from, const std::string& to)`，把 `text` 中所有出现的 `from` 替换为 `to`。要求处理 `from` 为空字符串的情况（直接返回原文，否则 `find("")` 会返回 0 导致死循环）。
 
 ::: details 参考答案
 
