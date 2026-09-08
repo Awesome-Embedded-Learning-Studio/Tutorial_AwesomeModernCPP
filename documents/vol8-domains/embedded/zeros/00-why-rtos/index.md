@@ -25,6 +25,7 @@ cpp_standard: [23]
 
 <ChapterNav variant="sub">
   <ChapterLink href="01-rtos-concept-map">从超级循环到 RTOS:为什么需要,怎么验证</ChapterLink>
+  <ChapterLink href="02-bringup-and-linker-bans">工程搭建:从空仓库到 Renode 的第一行输出</ChapterLink>
 </ChapterNav>
 
-下一篇咱们讲工程搭建:checkout 仓库最早的两个 commit,把链接器禁令、向量表和构建系统立起来,在 Renode 串口窗里看到第一行输出。正在写,稍后上线。
+下一篇咱们进第一站:没有堆的世界,checkout `ece6e26` 把内存池搓出来。陆续上线。
