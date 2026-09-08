@@ -11,7 +11,7 @@ order: 3
 platform: host
 prerequisites:
 - std::array
-reading_time_minutes: 14
+reading_time_minutes: 15
 tags:
 - cpp-modern
 - host
@@ -147,6 +147,15 @@ s.find_last_of("aeiou");           // 16（最后一个元音字母 O... 不对�
 这里最关键的概念是 `std::string::npos`。它是一个常量，值是 `std::size_t` 的最大值。当查找操作没找到目标时返回 `npos`。所以每次调用 `find` 之后，都要检查返回值是否等于 `npos`，而不是拿它当 bool 用——因为 `npos` 转换成 bool 是 `true`，直接写 `if (s.find("x"))` 在没找到的时候反而进入分支，这是另一个经典的新手陷阱。
 
 `find_first_of` 和 `find_last_of` 的行为比较特殊：它们不是查找整个子串，而是查找参数字符串中的**任意一个字符**。`find_first_of("aeiou")` 返回 1，因为 `s[1]` 是 `'e'`，是 `"aeiou"` 中最先匹配到的字符。
+
+| 写法 | 函数意思 | 找到时返回什么 |
+| --- | --- | --- |
+| `s.find("abc")` | 找连续、顺序相同的完整 `"abc"` | 这段字符串的起始下标 |
+| `s.find('a')` | 找字符 `'a'` | 第一个 `'a'` 的下标 |
+| `s.find_first_of("abc")` | 找 `a/b/c` 中任意一个 | 第一个属于这个集合的字符下标 |
+| `s.find_first_not_of("abc")` | 找第一个不是 `a/b/c` 的字符 | 第一个不属于这个集合的字符下标 |
+
+这几种写法都从左向右查找，默认从下标 `0` 开始，**只返回第一个符合条件的位置**。它们不会修改原字符串。
 
 子串提取用 `substr(pos, len)`，从位置 `pos` 开始截取 `len` 个字符，返回一个新的 `std::string`。省略 `len` 则取到末尾：
 
@@ -350,13 +359,172 @@ g++ -std=c++17 -Wall -Wextra -o string_demo string_demo.cpp
 
 写一个函数 `count_words(const std::string& s)`，统计字符串中有多少个单词（以空格分隔，忽略连续空格和首尾空格）。提示：可以用循环配合 `find` 和 `find_first_not_of`，也可以数"从空白到非空白的过渡次数"。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+int count_words(const std::string& str)
+{
+    std::cout << "--- 拆分单词并统计单词数量 ---" << std::endl;
+    std::size_t start = 0;
+    std::size_t end = 0;
+    std::size_t count = 0;
+    while (true) {
+        start = str.find_first_not_of(" ,.", end);
+        if (start == std::string::npos) {
+            break;
+        }
+        end = str.find_first_of(" ,.", start);
+        if (end == std::string::npos) {
+            end = str.size();
+        }
+        count++;
+        std::cout << "  [" << str.substr(start, end - start) << "]\n";
+    }
+    return count;
+}
+
+int main()
+{
+    std::string str = "Hello, this is a sample string for counting words.";
+    int word_count = count_words(str);
+    std::cout << "单词总数: " << word_count << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+--- 拆分单词并统计单词数量 ---
+  [Hello]
+  [this]
+  [is]
+  [a]
+  [sample]
+  [string]
+  [for]
+  [counting]
+  [words]
+单词总数: 9
+```
+
+> 这一份示例代码拆分字符串的单词除可以拆除空格外还可以忽略`,`,`.`等标点符号
+
+:::
+
 ### 练习 2：简单查找替换工具
 
 写一个函数 `replace_all(std::string text, const std::string& from, const std::string& to)`，把 `text` 中所有出现的 `from` 替换为 `to`。要求处理 `from` 为空字符串的情况（直接返回原文，否则 `find("")` 会返回 0 导致死循环）。
 
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+void replace_all(std::string& str, const std::string& from, const std::string& to)
+{
+    std::size_t start_pos = 0;
+    if (from.empty()) {
+        return;
+    }
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
+int main()
+{
+    const std::string original = "Hello, World! World is beautiful.";
+    std::string modified = original;
+    replace_all(modified, "World", "Universe");
+    std::cout << "Original: " << original << std::endl;
+    std::cout << "Modified: " << modified << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+Original: Hello, World! World is beautiful.
+Modified: Hello, Universe! Universe is beautiful.
+```
+
+:::
+
 ### 练习 3：trim 函数
 
 写两个函数 `ltrim` 和 `rtrim`，分别去掉字符串开头和末尾的空白字符（空格、`\t`、`\n`），然后组合出一个 `trim` 函数。提示：`ltrim` 用 `find_first_not_of(" \t\n")` 找到第一个非空白字符然后 `substr`；`rtrim` 类似，用 `find_last_not_of`。
+
+::: details 参考答案
+
+```cpp
+#include <iostream>
+#include <string>
+
+void ltrim(std::string& s)
+{
+    std::size_t pos = s.find_first_not_of(" ");
+    if (pos != std::string::npos) {
+        s = s.substr(pos);
+    }
+}
+
+void rtrim(std::string& s)
+{
+    std::size_t pos = s.find_last_not_of(" ");
+    if (pos != std::string::npos) {
+        s = s.substr(0, pos + 1);
+    }
+}
+
+void trim(std::string& s)
+{
+    ltrim(s);
+    rtrim(s);
+}
+
+int main()
+{
+    std::string str = "   Hello, World!   ";
+    std::cout << "原始的: '" << str << "'" << std::endl;
+    trim(str);
+    std::cout << "修剪后的: '" << str << "'" << std::endl;
+    return 0;
+}
+```
+
+编译运行:
+
+```bash
+g++ -std=c++17  -Wall -Wextra main.cpp -o main &&./main
+```
+
+运行结果:
+
+```text
+原始的: '   Hello, World!   '
+修剪后的: 'Hello, World!'
+```
+
+:::
 
 ## 小结
 
