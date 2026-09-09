@@ -486,11 +486,11 @@ public:
         end_time = std::chrono::steady_clock::now();
         running = false;
     }
-    auto elapsed() const
+    int64_t elapsed() const
     {
         if (running)
         {
-            auto current_time = std::chrono::steady_clock::now();
+            std::chrono::time_point<std::chrono::steady_clock> current_time = std::chrono::steady_clock::now();
             return std::chrono::duration_cast<std::chrono::microseconds>(current_time - start_time).count();
         }
         return std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
