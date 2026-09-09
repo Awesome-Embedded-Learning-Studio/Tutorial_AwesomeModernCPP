@@ -359,13 +359,297 @@ int main()
 
 ## 动手试试
 
-### 练习一：实现一个 Date 类
+### 练习 1：Date 类
 
 写一个 `Date` 类，包含 `year_`、`month_`、`day_` 三个成员。要求提供默认构造函数（初始化为 2000/1/1）、参数化构造函数（接受年月日，做基本合法性检查——月份 1-12、日期 1-31），以及一个 `print()` 方法。验证方法：构造几个日期对象，包含一个不合法的日期（比如月份 13），观察校验逻辑是否生效。
 
-### 练习二：实现一个 Vector3D 类
+::: details 参考答案
+
+```cpp
+#include <iostream>
+
+class Date
+{
+private:
+    int year_;
+    int month_;
+    int day_;
+
+public:
+    // 默认构造函数
+    Date() : year_(2000), month_(1), day_(1)
+    {
+        std::cout << "[默认构造] "
+                  << year_ << "-" << month_ << "-" << day_
+                  << std::endl;
+    }
+
+    // 参数化构造函数
+    Date(int year, int month, int day)
+        : year_(year), month_(month), day_(day)
+    {
+        // 先判断月份
+        if (month_ < 1 || month_ > 12)
+        {
+            year_ = 2000;
+            month_ = 1;
+            day_ = 1;
+
+            std::cout << "错误：月份必须在 1~12 之间\n";
+            return;
+        }
+
+        // 根据月份判断日期是否合法
+        int max_day = 0;
+
+        switch (month_)
+        {
+        // 31 天的月份
+        case 1:
+        case 3:
+        case 5:
+        case 7:
+        case 8:
+        case 10:
+        case 12:
+            max_day = 31;
+            break;
+
+        // 30 天的月份
+        case 4:
+        case 6:
+        case 9:
+        case 11:
+            max_day = 30;
+            break;
+
+        // 2 月
+        case 2:
+            // 闰年：29 天
+            if ((year_ % 400 == 0) ||
+                (year_ % 4 == 0 && year_ % 100 != 0))
+            {
+                max_day = 29;
+            }
+            else
+            {
+                max_day = 28;
+            }
+            break;
+        }
+
+        // 判断日期
+        if (day_ < 1 || day_ > max_day)
+        {
+            year_ = 2000;
+            month_ = 1;
+            day_ = 1;
+
+            std::cout << "错误："
+                      << year << "-" << month << "-" << day
+                      << " 不是合法日期\n";
+
+            return;
+        }
+
+        std::cout << "[有参构造] "
+                  << year_ << "-" << month_ << "-" << day_
+                  << std::endl;
+    }
+
+    // 打印日期
+    void print() const
+    {
+        std::cout << year_ << "-"
+                  << month_ << "-"
+                  << day_
+                  << std::endl;
+    }
+};
+
+int main()
+{
+    Date d1;
+    d1.print();
+
+    Date d2(2023, 5, 15);
+    d2.print();
+
+    Date d3(2023, 13, 15);
+    d3.print();
+
+    Date d4(2023, 5, 32);
+    d4.print();
+
+    // 2 月 28 天
+    Date d5(2023, 2, 28);
+    d5.print();
+
+    // 2023 年不是闰年，2 月 29 日非法
+    Date d6(2023, 2, 29);
+    d6.print();
+
+    // 2024 年是闰年，2 月 29 日合法
+    Date d7(2024, 2, 29);
+    d7.print();
+
+    // 4 月只有 30 天
+    Date d8(2024, 4, 31);
+    d8.print();
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+[默认构造] 2000-1-1
+2000-1-1
+[有参构造] 2023-5-15
+2023-5-15
+错误：月份必须在 1~12 之间
+2000-1-1
+错误：2023-5-32 不是合法日期
+2000-1-1
+[有参构造] 2023-2-28
+2023-2-28
+错误：2023-2-29 不是合法日期
+2000-1-1
+[有参构造] 2024-2-29
+2024-2-29
+错误：2024-4-31 不是合法日期
+2000-1-1
+```
+
+> 当输入的日期不合法时，我们将 `year_`、`month_`、`day_` 分别重置为 `2000`、`1`、`1`，使对象回到与默认构造时一致的日期（2000 年 1 月 1 日），避免保留并输出无效日期而造成误导。
+
+:::
+
+### 练习 2：Vector3D 类
 
 写一个 `Vector3D` 类，包含 `x_`、`y_`、`z_` 三个 `double` 成员。用委托构造让默认构造函数委托给 `Vector3D(0.0, 0.0, 0.0)`，再实现拷贝构造函数和一个 `length()` 方法返回向量的模。验证方法：创建默认向量、自定义向量、拷贝向量，打印值和模。
+
+::: details 参考答案
+
+```cpp
+#include <cmath>
+#include <iostream>
+
+class Vector3D
+{
+private:
+    double x_;
+    double y_;
+    double z_;
+
+public:
+    // 参数化构造函数
+    Vector3D(double x, double y, double z)
+        : x_(x), y_(y), z_(z)
+    {
+        std::cout << "[参数化构造] "
+                  << "x = " << x_
+                  << ", y = " << y_
+                  << ", z = " << z_
+                  << std::endl;
+    }
+
+    // 委托构造函数
+    // 委托给 Vector3D(0.0, 0.0, 0.0)
+    Vector3D()
+        : Vector3D(0.0, 0.0, 0.0)
+    {
+        std::cout << "[委托构造] 使用默认值 (0.0, 0.0, 0.0)"
+                  << std::endl;
+    }
+
+    // 拷贝构造函数
+    Vector3D(const Vector3D& other)
+        : x_(other.x_), y_(other.y_), z_(other.z_)
+    {
+        std::cout << "[拷贝构造]" << std::endl;
+    }
+
+    // 返回向量的模
+    double length() const
+    {
+        return std::sqrt(x_ * x_ +
+                         y_ * y_ +
+                         z_ * z_);
+    }
+
+    // 打印向量
+    void print() const
+    {
+        std::cout << "三维向量 Vector3D("
+                  << x_ << ", "
+                  << y_ << ", "
+                  << z_ << ")"
+                  << std::endl;
+    }
+};
+
+int main()
+{
+    std::cout << "===== 创建默认三维向量 =====" << std::endl;
+
+    Vector3D v1;
+    v1.print();
+
+    std::cout << "模 = " << v1.length() << std::endl;
+
+    std::cout << "\n===== 创建指定三维向量 =====" << std::endl;
+
+    Vector3D v2(1.0, 2.0, 3.0);
+    v2.print();
+
+    std::cout << "模 = " << v2.length() << std::endl;
+
+    std::cout << "\n===== 创建拷贝向量 =====" << std::endl;
+
+    Vector3D v3(v2);
+    v3.print();
+
+    std::cout << "模 = " << v3.length() << std::endl;
+
+    return 0;
+}
+```
+
+编译运行：
+
+```bash
+g++ -std=c++17 -Wall -Wextra main.cpp -o main && ./main
+```
+
+运行结果：
+
+```text
+===== 创建默认三维向量 =====
+[参数化构造] x = 0, y = 0, z = 0
+[委托构造] 使用默认值 (0.0, 0.0, 0.0)
+三维向量 Vector3D(0, 0, 0)
+模 = 0
+
+===== 创建指定三维向量 =====
+[参数化构造] x = 1, y = 2, z = 3
+三维向量 Vector3D(1, 2, 3)
+模 = 3.74166
+
+===== 创建拷贝向量 =====
+[拷贝构造]
+三维向量 Vector3D(1, 2, 3)
+模 = 3.74166
+```
+
+:::
 
 ## 小结
 
