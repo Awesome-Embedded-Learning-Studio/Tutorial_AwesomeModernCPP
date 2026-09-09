@@ -11,7 +11,7 @@ order: 2
 platform: host
 prerequisites:
 - 类的定义
-reading_time_minutes: 13
+reading_time_minutes: 22
 tags:
 - cpp-modern
 - host
