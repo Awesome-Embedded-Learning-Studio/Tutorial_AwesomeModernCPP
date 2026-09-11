@@ -19,7 +19,7 @@ tags:
 内容正在按这个顺序逐步上线,起步站已经上线,后面陆续跟上:
 
 <ChapterNav>
-  <ChapterLink num="0" href="00-env-setup/">起步:开发环境搭建</ChapterLink>
+  <ChapterLink num="0" href="00-env-setup/">起步:为什么是 C++,凭什么?</ChapterLink>
   <ChapterLink num="1" href="01-led/">LED:地砖下面看裸寄存器,HAL 之上写现代 C++</ChapterLink>
   <ChapterLink num="2" href="02-button/">按键:消抖、状态机、variant</ChapterLink>
   <ChapterLink num="3" href="03-uart/">UART:中断驱动、环形缓冲、expected</ChapterLink>

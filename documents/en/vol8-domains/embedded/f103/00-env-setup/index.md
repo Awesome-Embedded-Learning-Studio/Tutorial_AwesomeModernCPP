@@ -1,6 +1,6 @@
 ---
-title: "Getting Started: Environment Setup"
-description: "Toolchain, the Renode simulator, project structure, CMake, debugging and clangd — laying the foundation for the whole F103 tutorial in one go"
+title: "Getting Started"
+description: "Before installing anything, answer one question with four firmwares that differ only in how they light an LED: why C++ on a microcontroller — every number reproducible; environment and toolchain articles are being rewritten under a new plan"
 chapter: 0
 order: 0
 tags:
@@ -12,13 +12,9 @@ difficulty: beginner
 platform: stm32f1
 ---
 
-# Getting Started: Environment Setup
+# Getting Started
 
-> Status: planned for the English edition
-
-## Overview
-
-The getting-started station — toolchain, the Renode simulator, project structure, CMake build, debugging and clangd — is already live in the [Chinese edition](../../../../../vol8-domains/embedded/f103/00-env-setup/). The English translation is on the way.
+> Status: the station has been reset under a new blueprint — the opening article is live in the [Chinese edition](../../../../../vol8-domains/embedded/f103/00-env-setup/), and the environment/toolchain articles are being rewritten.
 
 ## Chapter Navigation
 

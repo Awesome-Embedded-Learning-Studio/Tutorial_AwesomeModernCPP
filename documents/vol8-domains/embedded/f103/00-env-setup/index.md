@@ -1,6 +1,6 @@
 ---
-title: "起步:开发环境搭建"
-description: "工具链、Renode 模拟器、工程结构、CMake 构建到调试与 clangd——把整套 F103 教程的地基一次铺好"
+title: "起步"
+description: "动手装任何东西之前,先用四份只有点灯写法不同的固件回答一个问题:单片机上凭什么用 C++——所有数字可复现;环境与工具链各篇正按新蓝图重写,陆续上线"
 chapter: 0
 order: 0
 tags:
@@ -12,28 +12,14 @@ difficulty: beginner
 platform: stm32f1
 ---
 
-# 起步:开发环境搭建
+# 起步
 
-从交叉编译工具链到 Renode 模拟器,从工程结构到 CMake 构建系统,再到调试与 IDE——这一章咱们把后面所有实战都站着的地基铺好。中心思想就一条:**模拟器先行**。一条命令跑通固件并验证行为,实际板子是每站末尾的选修加餐,您买不买板子都不耽误学。
+动手装任何东西之前，先回答一个问题：单片机上凭什么用 C++？开篇用四份只有点灯写法不同的固件把"C++ 笨重""C++ 就是 OOP"两条旧印象上秤称掉——体积、指令、报错时机三个维度全是实测数字，您可以逐条复现。
 
-## 工具与模拟器
+后续的开发环境、调试与工具链内容正在按新结构重写，写好一篇上一篇。
 
-<ChapterNav variant="sub">
-  <ChapterLink href="01-toolchain-setup">从零搭建 STM32 开发工具链</ChapterLink>
-  <ChapterLink href="02-renode-first-light">Renode 先行:不买板子,先点第一盏灯</ChapterLink>
-</ChapterNav>
-
-## 工程与构建
+## 开篇
 
 <ChapterNav variant="sub">
-  <ChapterLink href="03-project-structure">项目结构:HAL 库的获取与目录搭建</ChapterLink>
-  <ChapterLink href="04-cmake-configuration">CMake 配置:从零构建 STM32 构建系统</ChapterLink>
-</ChapterNav>
-
-## 实际板子与调试(选修)
-
-<ChapterNav variant="sub">
-  <ChapterLink href="05-wsl2-usb">WSL2 USB 透传(想用实际板子再看)</ChapterLink>
-  <ChapterLink href="06-debugging-guide">调试:从 printf 到 GDB,模拟器与实际板子两条路</ChapterLink>
-  <ChapterLink href="07-clangd-for-cross-compilation">嵌入式 clangd:让 vscode 看懂交叉编译的代码</ChapterLink>
+  <ChapterLink href="00-why-cpp">为什么是 C++,凭什么?</ChapterLink>
 </ChapterNav>

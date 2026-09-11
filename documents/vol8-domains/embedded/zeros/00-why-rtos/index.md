@@ -28,4 +28,4 @@ cpp_standard: [23]
   <ChapterLink href="02-bringup-and-linker-bans">工程搭建:从空仓库到 Renode 的第一行输出</ChapterLink>
 </ChapterNav>
 
-下一篇咱们进第一站:没有堆的世界,checkout `ece6e26` 把内存池搓出来。陆续上线。
+第一站《没有堆的世界》已上线:咱们进 [01-heapless-memory/](../01-heapless-memory/) 把内存池搓出来。

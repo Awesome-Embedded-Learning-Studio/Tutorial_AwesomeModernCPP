@@ -19,7 +19,7 @@ Every station centers on one peripheral, and the core of it is modern C++ above 
 Content is being published progressively in this order:
 
 <ChapterNav>
-  <ChapterLink num="0" href="00-env-setup/">Getting Started: Environment Setup</ChapterLink>
+  <ChapterLink num="0" href="00-env-setup/">Getting Started: Why C++, and by what right?</ChapterLink>
   <ChapterLink num="1" href="01-led/">LED: bare registers under the floor tiles, modern C++ above the HAL</ChapterLink>
   <ChapterLink num="2" href="02-button/">Buttons: debouncing, state machines, variant</ChapterLink>
   <ChapterLink num="3" href="03-uart/">UART: interrupt-driven, ring buffer, expected</ChapterLink>
