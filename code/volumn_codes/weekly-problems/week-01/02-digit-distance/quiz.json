@@ -1,0 +1,15 @@
+{
+  "type": "judge-assert",
+  "title": "Digit Distance",
+  "stars": 2,
+  "hints": [
+    "最右边的数位是 n % 10,它左边那位是 (n / 10) % 10。",
+    "只剩一位数时距离为 0——这就是递归的边界。"
+  ],
+  "tests": [
+    "digit_distance(6) == 0",
+    "digit_distance(61) == 5",
+    "digit_distance(567) == 2",
+    "digit_distance(71253) == 12"
+  ]
+}

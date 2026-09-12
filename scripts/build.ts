@@ -36,6 +36,7 @@ const VOLUMES: Volume[] = [
   { name: 'vol10', srcDir: 'vol10-open-lecture-notes', urlPrefix: '/vol10-open-lecture-notes' },
   { name: 'compilation', srcDir: 'compilation', urlPrefix: '/compilation' },
   { name: 'crash-lab', srcDir: 'crash-lab', urlPrefix: '/crash-lab' },
+  { name: 'weekly-problems', srcDir: 'weekly-problems', urlPrefix: '/weekly-problems' },
   { name: 'cpp-reference', srcDir: 'cpp-reference', urlPrefix: '/cpp-reference' },
   { name: 'projects', srcDir: 'projects', urlPrefix: '/projects' },
   { name: 'community', srcDir: 'community', urlPrefix: '/community' },
@@ -53,6 +54,9 @@ const MANIFEST_PATH = join(CACHE_DIR, 'manifest.json')
 const DIST_FINAL = join(MAIN_VP, 'dist')
 const DOCUMENTS = join(PROJECT_ROOT, 'documents')
 const CODE_EXAMPLES = join(PROJECT_ROOT, 'code', 'examples')
+// 「每周一些题」的题目目录(quiz.json/problem.md/…)——答题卡运行时按路径 fetch
+const WEEKLY_PROBLEMS_CODE = join(PROJECT_ROOT, 'code', 'volumn_codes', 'weekly-problems')
+const WEEKLY_DIST_ROOT = join(DIST_FINAL, 'code', 'volumn_codes', 'weekly-problems')
 const VITEPRESS_BIN = join(resolve(require.resolve('vitepress/package.json'), '..'), 'bin', 'vitepress.js')
 
 // ── Logging ─────────────────────────────────────────────────
@@ -782,6 +786,17 @@ async function main() {
     mkdirSync(join(DIST_FINAL, 'code'), { recursive: true })
     if (existsSync(examplesOutput)) rmSync(examplesOutput, { recursive: true })
     cpSync(CODE_EXAMPLES, examplesOutput, { recursive: true })
+  }
+
+  // 题目目录四件套同理(答题卡组件运行时 fetch),随后生成周列表 manifest
+  // (生成器内部 parseQuizConfig 校验所有 quiz.json,坏配置让构建失败)
+  if (existsSync(WEEKLY_PROBLEMS_CODE)) {
+    const weeklyOutput = WEEKLY_DIST_ROOT
+    mkdirSync(join(DIST_FINAL, 'code', 'volumn_codes'), { recursive: true })
+    if (existsSync(weeklyOutput)) rmSync(weeklyOutput, { recursive: true })
+    cpSync(WEEKLY_PROBLEMS_CODE, weeklyOutput, { recursive: true })
+    const { generateWeeklyManifest } = await import('../site/.vitepress/config/weekly-manifest.ts')
+    writeFileSync(join(weeklyOutput, 'manifest.json'), generateWeeklyManifest(PROJECT_ROOT))
   }
 
   // ── Step 4: Finalize ────────────────────────────────────

@@ -106,6 +106,12 @@ features:
     link: /crash-lab/
     linkText: 进入实验室
 
+  - title: "每周一些题"
+    details: "一周一包题,浏览器里直接写、直接判:实现题在线编译逐用例红绿,猜输出秒回,找 bug 配自评。"
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>'
+    link: /weekly-problems/
+    linkText: 去做题
+
   - title: "贯穿式实战项目"
     details: "把各卷知识串成完整项目：协程服务器、迷你运行时、INI 解析器已就绪，手写 STL、迷你 HTTP 服务器在规划中。"
     icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>'

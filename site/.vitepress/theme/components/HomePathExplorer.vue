@@ -2,11 +2,11 @@
 /**
  * 首页「学习路径」双视图区块（挂载于 home-features-after，替换旧 HomeRoadmap）。
  *
- * 视图一 = HomePathGraph（SVG 交互路径图，默认）；视图二 = HomeFeatureGrid
- * （原 16 张 feature 卡）。两页共用内容上方的方向 Banner 切换；移动端仍可左右滑动
- * （scroll-snap 原生翻页，无 JS 也可滚）。
+ * 视图一 = HomeFeatureGrid（全部内容板块卡片，默认页——作者拍板：大卡片第一页）；
+ * 视图二 = HomePathGraph（SVG 交互路径图）。两页共用内容上方的方向 Banner 切换；
+ * 移动端仍可左右滑动（scroll-snap 原生翻页，无 JS 也可滚）。
  *
- * 手势分工：pager 在外层、panzoom 在视图一内部——图内横滑归图（panzoom 平移），
+ * 手势分工：pager 在外层、panzoom 在视图二内部——图内横滑归图（panzoom 平移），
  * 翻页靠 Banner / 卡片视图区滑动。inert 屏蔽非活动页的焦点，但只在
  * 客户端 mounted 后设置（SSR HTML 里两页都可点，保证无 JS / 首屏可访问性）。
  */
@@ -24,10 +24,10 @@ const t = computed(() =>
         title: 'Learning Path',
         graphNote: 'Drag nodes to arrange · Hover to trace a path · Click to jump',
         cardsNote: '16 content sections · Pick a card and start reading',
-        bannerCards: '16 sections at a glance 👉',
-        bannerGraph: '👈 Back to the learning path',
-        bannerCardsAria: 'Switch to all 16 content sections',
-        bannerGraphAria: 'Return to the learning path map',
+        bannerCards: '👈 Back to the 16 sections',
+        bannerGraph: 'Interactive learning roadmap 👉',
+        bannerCardsAria: 'Back to all 16 content sections',
+        bannerGraphAria: 'Switch to the interactive learning roadmap',
         graphLabel: 'Interactive learning path map',
         cardsLabel: 'All 16 content sections',
         cta: 'Full roadmap →',
@@ -36,13 +36,13 @@ const t = computed(() =>
     : {
         title: '学习路径',
         graphNote: '拖动节点布置 · 悬停追溯路径 · 点击直达',
-        cardsNote: '16 个内容板块 · 选一张卡片开始阅读',
-        bannerCards: '16 个板块，一页爽读 👉',
-        bannerGraph: '👈 回到学习路线图',
-        bannerCardsAria: '切换到全部 16 个内容板块',
-        bannerGraphAria: '返回学习路线图',
+        cardsNote: '选一张卡片开始阅读',
+        bannerCards: '👈 一页爽读',
+        bannerGraph: '交互式学习路线图，走着 👉',
+        bannerCardsAria: '返回全部内容板块',
+        bannerGraphAria: '切换到交互式学习路线图',
         graphLabel: '交互式学习路线图',
-        cardsLabel: '全部 16 个内容板块',
+        cardsLabel: '全部内容板块',
         cta: '完整路线图 →',
         ctaLink: '/roadmap/',
       },
@@ -95,7 +95,7 @@ onMounted(() => {
   <section id="roadmap" class="home-path">
     <header class="hp-head">
       <h2 class="hp-title">🧭 {{ t.title }}</h2>
-      <p class="hp-note">{{ active === 0 ? t.graphNote : t.cardsNote }}</p>
+      <p class="hp-note">{{ active === 0 ? t.cardsNote : t.graphNote }}</p>
 
       <a class="hp-cta" :href="withBase(t.ctaLink)">{{ t.cta }}</a>
     </header>
@@ -104,33 +104,33 @@ onMounted(() => {
       type="button"
       class="hp-switch"
       :class="active === 0 ? 'hp-switch--next' : 'hp-switch--back'"
-      :aria-controls="active === 0 ? 'hp-panel-cards' : 'hp-panel-graph'"
-      :aria-label="active === 0 ? t.bannerCardsAria : t.bannerGraphAria"
+      :aria-controls="active === 0 ? 'hp-panel-graph' : 'hp-panel-cards'"
+      :aria-label="active === 0 ? t.bannerGraphAria : t.bannerCardsAria"
       @click="toggleView"
     >
-      <span aria-live="polite">{{ active === 0 ? t.bannerCards : t.bannerGraph }}</span>
+      <span aria-live="polite">{{ active === 0 ? t.bannerGraph : t.bannerCards }}</span>
     </button>
 
     <div ref="pagerEl" class="hp-pager" @scroll.passive="onScroll">
       <div
-        id="hp-panel-graph"
+        id="hp-panel-cards"
         role="region"
-        :aria-label="t.graphLabel"
+        :aria-label="t.cardsLabel"
         :aria-hidden="mounted && active !== 0"
         class="hp-slide"
         :inert="mounted && active !== 0"
       >
-        <HomePathGraph />
+        <HomeFeatureGrid />
       </div>
       <div
-        id="hp-panel-cards"
+        id="hp-panel-graph"
         role="region"
-        :aria-label="t.cardsLabel"
+        :aria-label="t.graphLabel"
         :aria-hidden="mounted && active !== 1"
         class="hp-slide"
         :inert="mounted && active !== 1"
       >
-        <HomeFeatureGrid />
+        <HomePathGraph />
       </div>
     </div>
   </section>
