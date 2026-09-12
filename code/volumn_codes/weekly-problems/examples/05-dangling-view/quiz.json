@@ -1,0 +1,9 @@
+{
+  "type": "find-bug",
+  "title": "悬垂的视图",
+  "stars": 2,
+  "hints": [
+    "make_greeting 返回的 std::string 是谁的生命周期?临时对象活到哪一行?"
+  ],
+  "bugLines": [10]
+}

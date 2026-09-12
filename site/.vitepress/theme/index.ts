@@ -11,6 +11,12 @@ import RefLink from './components/RefLink.vue'
 import ReferenceCard from './components/ReferenceCard.vue'
 import ReferenceItem from './components/ReferenceItem.vue'
 import OnlineCompilerDemo from './components/OnlineCompilerDemo.vue'
+import QuizProblem from './components/QuizProblem.vue'
+import QuizSolutions from './components/QuizSolutions.vue'
+import QuizHome from './components/QuizHome.vue'
+import WeeklyHomeWidget from './components/WeeklyHomeWidget.vue'
+import WeeklyPageHeader from './components/WeeklyPageHeader.vue'
+import WeeklyPracticeProvider from './components/WeeklyPracticeProvider.vue'
 import HomeHeroVisual from './components/HomeHeroVisual.vue'
 import ProofStrip from './components/ProofStrip.vue'
 import HomePathExplorer from './components/HomePathExplorer.vue'
@@ -23,21 +29,23 @@ import QQGroupCard from './components/QQGroupCard.vue'
 import Anim from './components/Anim.vue'
 import { setupDevFakeLag } from './dev-fake-lag'
 import './custom.css'
+import './weekly.css'
 
 export default {
   extends: DefaultTheme,
   Layout() {
-    return h(DefaultTheme.Layout, null, {
+    return h(WeeklyPracticeProvider, null, { default: () => h(DefaultTheme.Layout, null, {
       'layout-top': () => [h(NavSpinner), h(ReadingProgress), h(ResizableSidebar), h(MermaidLightbox)],
+      'doc-before': () => h(WeeklyPageHeader),
       'home-hero-image': () => h(HomeHeroVisual),
-      'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(ProofStrip)]),
-      'home-hero-after': () => h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)]),
+      'home-hero-actions-after': () => h('div', { class: 'proof-on-mobile' }, [h(WeeklyHomeWidget), h(ProofStrip)]),
+      'home-hero-after': () => [h(WeeklyHomeWidget), h('div', { class: 'proof-on-desktop' }, [h(ProofStrip)])],
       'home-features-before': () =>
         h('div', { class: 'home-pre-features' }, [h(ScreenshotCarousel), h(HomeTipBanner)]),
       'home-features-after': () => h(HomePathExplorer),
       'nav-bar-content-after': () => h(FontSizeSwitcher),
       'nav-screen-content-after': () => h(FontSizeSwitcher),
-    })
+    }) })
   },
   setup() {
     setupMermaid()
@@ -51,6 +59,9 @@ export default {
     app.component('ReferenceCard', ReferenceCard)
     app.component('ReferenceItem', ReferenceItem)
     app.component('OnlineCompilerDemo', OnlineCompilerDemo)
+    app.component('QuizProblem', QuizProblem)
+    app.component('QuizSolutions', QuizSolutions)
+    app.component('QuizHome', QuizHome)
     app.component('QQGroupCard', QQGroupCard)
     app.component('Anim', Anim)
   }

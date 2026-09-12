@@ -1,17 +1,23 @@
 import { defineConfig } from 'vitepress'
 import withDrawio from '@dhlx/vitepress-plugin-drawio'
 import { navEn } from './nav'
+import { applyWeeklyPageData, generateWeeklyManifest, MANIFEST_REL } from './weekly-manifest'
 import { buildSidebar } from './sidebar'
 import { sharedThemeConfig, sharedMarkdown, makeSocialLinks, localSearchBoxAlias } from './shared'
 import { createReadStream, existsSync } from 'node:fs'
 import { join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// dev 模式下把 code/examples 作为静态资源服务，让 OnlineCompilerDemo 等组件在 dev 下也能 fetch 到源码。
-// build 时由 scripts/build.ts 末尾 copy 进 dist，故这里只需覆盖 dev；SITE_BASE 须与下方 base 保持一致。
+// dev 模式下把 code/ 下两个源码目录作为静态资源服务，让 OnlineCompilerDemo / QuizProblem
+// 等组件在 dev 下也能 fetch 到源码。build 时由 scripts/build.ts 末尾 copy 进 dist，
+// 故这里只需覆盖 dev；SITE_BASE 须与下方 base 保持一致。
 const PROJECT_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
-const EXAMPLES_ROOT = normalize(join(PROJECT_ROOT, 'code', 'examples'))
 const SITE_BASE = '/Tutorial_AwesomeModernCPP/'
+// [URL 前缀, 对应仓库物理目录];weekly-problems 题目四件套走 code/volumn_codes/
+const CODE_STATIC_ROOTS: Array<{ prefix: string; root: string }> = [
+  { prefix: 'code/examples/', root: normalize(join(PROJECT_ROOT, 'code', 'examples')) },
+  { prefix: 'code/volumn_codes/', root: normalize(join(PROJECT_ROOT, 'code', 'volumn_codes')) },
+]
 
 function serveCodeExamplesInDev() {
   return {
@@ -21,12 +27,22 @@ function serveCodeExamplesInDev() {
       server.middlewares.use((req: any, res: any, next: any) => {
         const url = decodeURIComponent(String(req.url ?? '').split('?')[0])
         const rel = url.startsWith(SITE_BASE) ? url.slice(SITE_BASE.length) : url
-        if (!rel.startsWith('code/examples/')) return next()
-        // 规范化后必须仍落在 code/examples 内，防止路径穿越
-        const filePath = normalize(join(EXAMPLES_ROOT, rel.slice('code/examples/'.length)))
-        if (!filePath.startsWith(EXAMPLES_ROOT) || !existsSync(filePath)) return next()
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
-        createReadStream(filePath).pipe(res)
+        // 每周一些题 manifest:dev 下现生成,改题即生效(build 时由 build.ts 写进 dist)
+        if (rel === MANIFEST_REL) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(generateWeeklyManifest(PROJECT_ROOT))
+          return
+        }
+        for (const { prefix, root } of CODE_STATIC_ROOTS) {
+          if (!rel.startsWith(prefix)) continue
+          // 规范化后必须仍落在对应目录内，防止路径穿越
+          const filePath = normalize(join(root, rel.slice(prefix.length)))
+          if (!filePath.startsWith(root) || !existsSync(filePath)) continue
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+          createReadStream(filePath).pipe(res)
+          return
+        }
+        next()
       })
     },
   }
@@ -46,6 +62,9 @@ export default withDrawio(defineConfig({
   },
 
   srcDir: '../documents',
+  transformPageData(pageData) {
+    applyWeeklyPageData(pageData, PROJECT_ROOT)
+  },
 
   title: '现代 C++ 教程',
   description: '系统化的现代 C++ 教程 — 从基础入门到领域实战',

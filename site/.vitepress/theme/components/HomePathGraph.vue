@@ -330,7 +330,6 @@ interface PanzoomInstance {
   reset: (opts?: unknown) => void
   zoomWithWheel: (event: WheelEvent) => void
   destroy: () => void
-  on: (ev: 'panzoomchange', cb: (e: { detail?: { scale?: number } }) => void) => void
 }
 
 const viewportEl = ref<HTMLElement | null>(null)
@@ -361,10 +360,13 @@ onMounted(async () => {
       touchAction: 'none',
     })
     /* 合作式触摸：缩放比例回到 ≤1 时把触摸还给页面竖滚（pan-y），
-       放大状态下图内自由平移（none）——Google Maps embed 的手势分工 */
-    pz.on('panzoomchange', (e) => {
-      const s = e.detail?.scale ?? 1
-      if (panEl.value) panEl.style.touchAction = s > 1.01 ? 'none' : 'pan-y'
+       放大状态下图内自由平移（none）——Google Maps embed 的手势分工。
+       注意:@panzoom/panzoom 实例没有 .on(),事件是派发在元素上的
+       CustomEvent(panzoomchange),用 addEventListener 监听——此前误用
+       pz.on 抛 TypeError,顺带打断了下方 Ctrl+滚轮缩放的注册 */
+    panEl.value.addEventListener('panzoomchange', (e: Event) => {
+      const scale = (e as CustomEvent<{ scale?: number }>).detail?.scale ?? 1
+      if (panEl.value) panEl.value.style.touchAction = scale > 1.01 ? 'none' : 'pan-y'
     })
     wheelHandler = (e: WheelEvent) => {
       /* 只在 Ctrl/⌘+滚轮时缩放（浏览器缩放页面的手势语义）；普通滚轮归页面 */

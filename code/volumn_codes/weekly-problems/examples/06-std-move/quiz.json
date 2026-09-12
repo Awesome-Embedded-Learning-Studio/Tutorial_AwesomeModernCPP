@@ -1,0 +1,8 @@
+{
+  "type": "reveal",
+  "title": "std::move 移动了什么",
+  "stars": 2,
+  "hints": [
+    "它本质上是一次类型转换(cast),编译成什么指令去看看就知道了。"
+  ]
+}

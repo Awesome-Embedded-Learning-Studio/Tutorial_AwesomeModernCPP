@@ -1,0 +1,12 @@
+{
+  "type": "judge-io",
+  "title": "A + B",
+  "stars": 1,
+  "hints": [
+    "`std::cin >> a >> b;` 然后输出 `a + b`。"
+  ],
+  "tests": [
+    { "in": "2 3", "out": "5" },
+    { "in": "-7 4", "out": "-3" }
+  ]
+}

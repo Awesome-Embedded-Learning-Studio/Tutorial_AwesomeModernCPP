@@ -1,0 +1,15 @@
+{
+  "type": "choice",
+  "title": "哪些声明能通过编译",
+  "stars": 2,
+  "hints": [
+    "一个是「单参数构造」的参数坑,一个是左值引用的绑定规则。"
+  ],
+  "options": [
+    "int a[3] = {1, 2, 3};",
+    "std::string s('x');",
+    "auto f = [](auto x, auto y) { return x + y; };",
+    "int& r = 42;"
+  ],
+  "answer": [1, 3]
+}

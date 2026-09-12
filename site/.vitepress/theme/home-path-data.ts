@@ -68,7 +68,7 @@ export const VB_W = 1330
 export const VB_H = 856
 
 /** localStorage 布局 key 版本：节点增删/坐标或默认布线大改时 +1 */
-export const HOME_GRAPH_REVISION = 2
+export const HOME_GRAPH_REVISION = 3
 
 export const HOME_PATH_BANDS: PathBand[] = [
   { label: { cn: 'B0 · 起点', en: 'B0 · Start' }, top: 16, bottom: 104 },
@@ -84,6 +84,7 @@ export const HOME_PATH_NODES: PathNode[] = [
   { id: 'v1',    name: { cn: '卷一 · 基础', en: 'Vol.1 Fundamentals' }, sub: { cn: '类型 · OOP · 模板', en: 'Types · OOP · templates' },  x: 340,  y: 193, w: 160, h: 58, kind: 'proj', status: 'done',  tier: 'core',   href: '/vol1-fundamentals/',        badge: 'V1' },
   { id: 'v2',    name: { cn: '卷二 · 现代', en: 'Vol.2 Modern' },       sub: { cn: '移动 · 智能指针 · lambda', en: 'Move · smart ptr · lambda' }, x: 650, y: 193, w: 160, h: 58, kind: 'proj', status: 'done',  tier: 'core',   href: '/vol2-modern-features/',     badge: 'V2' },
   { id: 'comp',  name: { cn: '编译与链接', en: 'Compile & Link' },      sub: { cn: '编译 · 链接 · 符号', en: 'Build · link · symbols' },      x: 980,  y: 193, w: 140, h: 46, kind: 'sup',  status: 'done',  tier: 'domain', href: '/compilation/',              badge: 'CMP' },
+  { id: 'weekly', name: { cn: '每周一些题', en: 'Weekly Problems' },   sub: { cn: '在线做题 · 保持手感', en: 'Online practice' },           x: 1065, y: 337, w: 150, h: 46, kind: 'sup',  status: 'doing', tier: 'domain', href: '/weekly-problems/',          badge: 'WPK' },
   { id: 'v3',    name: { cn: '卷三 · 标准库', en: 'Vol.3 Stdlib' },     sub: { cn: '容器 · 迭代器 · 算法', en: 'Containers · algorithms' }, x: 440,  y: 337, w: 160, h: 58, kind: 'proj', status: 'done',  tier: 'core',   href: '/vol3-standard-library/',    badge: 'V3' },
   { id: 'v4',    name: { cn: '卷四 · 高级', en: 'Vol.4 Advanced' },     sub: { cn: 'concepts · 协程 · ranges', en: 'Concepts · coroutines' }, x: 820, y: 337, w: 160, h: 58, kind: 'proj', status: 'doing', tier: 'core',   href: '/vol4-advanced/',            badge: 'V4' },
   { id: 'v5',    name: { cn: '卷五 · 并发', en: 'Vol.5 Concurrency' },  sub: { cn: '线程 · 原子 · 协程异步', en: 'Threads · atomics' },      x: 260,  y: 486, w: 160, h: 58, kind: 'proj', status: 'done',  tier: 'eng',    href: '/vol5-concurrency/',         badge: 'V5' },
@@ -102,6 +103,8 @@ export const HOME_PATH_EDGES: PathEdge[] = [
   // 主线：新手 → 基础 → 现代 → 标准库 → 高级 → 并发 → 性能 → 工程 → 领域 → 开源研读
   { from: 'gs', to: 'v1', kind: 'solid', route: { from: 'bottom', to: 'top', via: [{ x: 'from', y: 121 }, { x: 'to', y: 121 }] } },
   { from: 'v1', to: 'v2', kind: 'solid', route: { from: 'right', to: 'left' } },
+  // 学完卷二即可上手做题;虚线选修——"保持手感"不占主线
+  { from: 'v2', to: 'weekly', kind: 'dash', route: { from: 'bottom', to: 'top', via: [{ x: 'to', y: 265 }] } },
   { from: 'v2', to: 'v3', kind: 'solid', route: { from: 'bottom', to: 'top', via: [{ x: 'from', y: 265 }, { x: 'to', y: 265 }] } },
   { from: 'v3', to: 'v4', kind: 'solid', route: { from: 'right', to: 'left' } },
   { from: 'v4', to: 'v5', kind: 'solid', route: { from: 'bottom', to: 'top', via: [{ x: 'from', y: 409 }, { x: 'to', y: 409 }] } },

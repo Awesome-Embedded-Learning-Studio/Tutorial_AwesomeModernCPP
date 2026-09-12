@@ -24,6 +24,7 @@ export const navZh: DefaultTheme.NavItem[] = [
       { text: '卷七 · 工程实践', link: '/vol7-engineering/' },
       { text: '编译与链接', link: '/compilation/' },
       { text: '崩溃实验室', link: '/crash-lab/' },
+      { text: '每周一些题', link: '/weekly-problems/' },
     ],
   },
   {

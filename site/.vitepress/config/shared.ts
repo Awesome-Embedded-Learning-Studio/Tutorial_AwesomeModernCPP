@@ -10,6 +10,7 @@ import { cppTemplateEscapePlugin } from '../plugins/escape-cpp-templates'
 import { mermaidPlugin } from '../plugins/mermaid-plugin'
 import { codeFoldPlugin } from '../plugins/code-fold-plugin'
 import { getBuildInfo } from './build-info'
+import { applyWeeklyPageData } from './weekly-manifest'
 
 // 模块加载时算一次,两个 themeConfig 函数共用;同一构建进程内一致。
 const buildInfo = getBuildInfo()
@@ -57,6 +58,7 @@ export const sharedBase = {
   // VitePress 默认对副本跑 `git log` 拿不到历史,"Last Updated" 渲染不出来。这里改用
   // documents/ 下真实源文件的提交时间覆盖 pageData.lastUpdated。详见 git-timestamp.ts。
   async transformPageData(pageData: PageData) {
+    applyWeeklyPageData(pageData, fileURLToPath(new URL('../../../', import.meta.url)))
     const ms = getGitTimestampMs(pageData.relativePath)
     if (ms) {
       pageData.lastUpdated = ms

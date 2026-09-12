@@ -1,0 +1,15 @@
+{
+  "type": "judge-assert",
+  "title": "数硬币",
+  "stars": 3,
+  "hints": [
+    "按「当前可用的最小面值」给方案分类计数。",
+    "凑 total 的方案数 = 至少用一枚面值 c 的方案数(递归凑 total − c,c 不变)+ 完全不用 c 的方案数(递归凑 total,换下一个更大面值)。"
+  ],
+  "tests": [
+    "count_coins(0) == 1",
+    "count_coins(15) == 6",
+    "count_coins(10) == 4",
+    "count_coins(100) == 242"
+  ]
+}

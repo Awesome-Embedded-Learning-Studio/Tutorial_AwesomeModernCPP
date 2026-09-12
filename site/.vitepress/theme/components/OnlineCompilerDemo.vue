@@ -308,9 +308,11 @@
 
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
-import { highlightCpp } from '../shiki'
+import { useEditorOverlay, useShikiHighlight } from '../composables/useCodeEditor'
+import { useModal } from '../composables/useModal'
+import { extractAsmText, extractExecutionText, requestCeCompile } from '../utils/ce-api'
 
 type ActionId = 'run' | 'x86-asm' | 'arm-asm'
 type SourceKind = 'default' | 'arm'
@@ -375,11 +377,11 @@ const activeAction = ref<ActionId | 'godbolt' | 'source' | ''>('')
 const error = ref('')
 const result = ref<CompileResult | null>(null)
 const editorOpen = ref(false)
-const highlightedHtml = ref('')
-// 编辑态高亮(overlay 技巧):编辑框背后垫一层 shiki 高亮,文字透明,光标/选区由 textarea 接管
-const editorHighlightedHtml = ref('')
-const editorBackdropRef = ref<HTMLElement | null>(null)
-const editorTextareaRef = ref<HTMLTextAreaElement | null>(null)
+const {
+  backdropRef: editorBackdropRef,
+  textareaRef: editorTextareaRef,
+  syncScroll: onEditorScroll,
+} = useEditorOverlay()
 const optionsOpen = ref(false)
 const editorSourceKind = ref<SourceKind>('default')
 const editorSource = ref('')
@@ -400,37 +402,11 @@ const displaySource = computed(() =>
   displayKind.value === 'arm' ? armSource.value : source.value,
 )
 
-// 只读源码区做 shiki 高亮：源码一变（懒加载完成 / 切 ARM tab）就重新高亮。
-// 高亮是异步的——未就绪时 template 先用纯文本 fallback，就绪后替换为着色 HTML。
-watch(displaySource, async (code) => {
-  highlightedHtml.value = ''
-  if (!code) return
-  try {
-    highlightedHtml.value = await highlightCpp(code)
-  } catch {
-    highlightedHtml.value = ''
-  }
-})
-
-// 编辑态:边打边重新高亮(overlay backdrop 跟随 editorSource)
-watch(editorSource, async (code) => {
-  editorHighlightedHtml.value = ''
-  if (!code) return
-  try {
-    editorHighlightedHtml.value = await highlightCpp(code)
-  } catch {
-    editorHighlightedHtml.value = ''
-  }
-})
-
-// textarea 与 backdrop 滚动同步(两层重叠,滚动必须一致,否则错位)
-function onEditorScroll() {
-  const ta = editorTextareaRef.value
-  const bd = editorBackdropRef.value
-  if (!ta || !bd) return
-  bd.scrollTop = ta.scrollTop
-  bd.scrollLeft = ta.scrollLeft
-}
+// 只读源码区 / 编辑态的高亮(共享 composable):源码一变(懒加载完成 / 切 ARM tab / 编辑中)
+// 就重新高亮;高亮异步未就绪时 template 先用纯文本 fallback,就绪后替换为着色 HTML
+const highlightedHtml = useShikiHighlight(displaySource)
+// 编辑态(overlay 技巧):编辑框背后垫一层 shiki 高亮,文字透明,光标/选区由 textarea 接管
+const editorHighlightedHtml = useShikiHighlight(editorSource)
 
 const actions = computed<DemoAction[]>(() => {
   const available: DemoAction[] = []
@@ -544,31 +520,17 @@ function closeEditor(): void {
 }
 
 // ── 浮层(模态):默认只显源码,点"动手试一试"弹完整 IDE ──
-const modalOpen = ref(false)
-
-function onModalEsc(e: KeyboardEvent) {
-  if (e.key === 'Escape' && modalOpen.value) closeModal()
-}
+// 开关/ESC/滚动锁定/卸载清理都在 useModal;close 时先回写编辑内容再摘遮罩与监听
+const { modalOpen, open: openModalLayer, close: closeModalLayer } = useModal(closeEditor)
 
 async function openModal(): Promise<void> {
-  modalOpen.value = true
-  document.body.style.overflow = 'hidden'
-  window.addEventListener('keydown', onModalEsc)
+  openModalLayer()
   await openEditor()  // 加载可编辑源码、置 editorOpen=true
 }
 
 function closeModal(): void {
-  // closeEditor 把编辑内容回写源码缓存 + editorOpen=false
-  closeEditor()
-  modalOpen.value = false
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onModalEsc)
+  closeModalLayer()  // useModal 先调 closeEditor(回写编辑内容 + editorOpen=false),再摘遮罩与监听
 }
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onModalEsc)
-  if (modalOpen.value) document.body.style.overflow = ''
-})
 
 async function resetEditor(): Promise<void> {
   activeAction.value = 'source'
@@ -598,72 +560,6 @@ function resetCompileOptions(): void {
   actionSettings['arm-asm'].options = props.armOptions
 }
 
-function linesToText(value: unknown): string {
-  if (!value) return ''
-  if (typeof value === 'string') return stripAnsi(value)
-  if (Array.isArray(value)) {
-    return value.map((line) => {
-      if (typeof line === 'string') return stripAnsi(line)
-      if (line && typeof line === 'object' && 'text' in line) {
-        return stripAnsi(String((line as { text: unknown }).text ?? ''))
-      }
-      return stripAnsi(String(line ?? ''))
-    }).join('\n')
-  }
-  return stripAnsi(String(value))
-}
-
-function stripAnsi(value: string): string {
-  return value.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '')
-}
-
-function extractExecutionText(payload: any): string {
-  const exec = payload.execResult ?? payload.executionResult ?? payload
-  // godbolt executor 响应常把程序输出同时放在 execResult 和顶层（此时 exec===payload），
-  // 每路只取第一份非空的，避免把同一份输出拼两遍。（对齐 C-Journey f85300b 修复）
-  if (isCompilationFailure(payload, linesToText(payload.asm))) {
-    const diag = gatherDiagnostics(payload)
-    return diag
-      ? `❌ 编译失败：\n${diag}`
-      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
-  }
-  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
-  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
-  const chunks = [out, err].filter(Boolean)
-
-  if (exec.code !== undefined && exec.code !== 0) chunks.push(`exit code: ${exec.code}`)
-  else if (payload.code !== undefined && payload.code !== 0) chunks.push(`exit code: ${payload.code}`)
-  return chunks.join('\n').trim() || '(程序无输出)'
-}
-
-// 收集编译/运行诊断(execResult → 顶层 → buildResult，stderr 优先再 stdout)，每路第一份非空避免重复
-function gatherDiagnostics(payload: any): string {
-  const exec = payload.execResult ?? payload.executionResult ?? payload
-  const err = linesToText(exec.stderr) || linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
-  const out = linesToText(exec.stdout) || linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
-  return [err, out].filter(Boolean).join('\n')
-}
-
-function extractAsmText(payload: any): string {
-  const asm = linesToText(payload.asm)
-  if (isCompilationFailure(payload, asm)) {
-    // 顶层与 buildResult 可能同源，每路只取第一份非空。
-    const err = linesToText(payload.stderr) || linesToText(payload.buildResult?.stderr)
-    const out = linesToText(payload.stdout) || linesToText(payload.buildResult?.stdout)
-    const diag = [err, out].filter(Boolean).join('\n')
-    return diag
-      ? `❌ 编译失败：\n${diag}`
-      : '❌ 编译失败，但 Compiler Explorer 没有返回诊断信息。检查源码语法、编译器 id 与参数，或点「打开 Godbolt」看完整输出。'
-  }
-  return (asm || 'Compiler Explorer 没有返回可显示的汇编输出。').trim()
-}
-
-function isCompilationFailure(payload: any, asm: string): boolean {
-  return payload.code !== undefined && payload.code !== 0
-    || payload.buildResult?.code !== undefined && payload.buildResult.code !== 0
-    || asm.includes('<Compilation failed>')
-}
-
 async function compile(action: DemoAction): Promise<void> {
   activeAction.value = action.id
   error.value = ''
@@ -680,43 +576,12 @@ async function compile(action: DemoAction): Promise<void> {
     }
 
     const currentSource = await loadSource(action)
-    const response = await fetch(`https://godbolt.org/api/compiler/${action.compiler}/compile`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        source: currentSource,
-        options: {
-          userArguments: action.options,
-          compilerOptions: {
-            executorRequest: action.executorRequest,
-          },
-          filters: {
-            binary: false,
-            commentOnly: true,
-            demangle: true,
-            directives: true,
-            execute: action.executorRequest,
-            intel: action.id === 'x86-asm',
-            labels: true,
-            libraryCode: false,
-            trim: false,
-          },
-          executeParameters: {
-            args: '',
-            stdin: '',
-          },
-        },
-      }),
+    const payload = await requestCeCompile(currentSource, {
+      compiler: action.compiler,
+      options: action.options,
+      executorRequest: action.executorRequest,
+      intel: action.id === 'x86-asm',
     })
-
-    if (!response.ok) {
-      throw new Error(`Compiler Explorer 请求失败 (${response.status} ${response.statusText})`)
-    }
-
-    const payload = await response.json()
     result.value = {
       title: action.label,
       compiler: action.compiler,

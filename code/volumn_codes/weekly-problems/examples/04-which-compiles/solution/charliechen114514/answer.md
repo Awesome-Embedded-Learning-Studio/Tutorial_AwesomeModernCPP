@@ -1,0 +1,4 @@
+- `int a[3] = {1, 2, 3};` ✓ 聚合初始化,合法。
+- `std::string s('x');` ✗ `std::string` 没有「单个字符」的构造函数——`string(size_type, char)` 需要**两个**参数;单个 `char` 会尝试转成 `size_type`,第二个参数就缺了,编译失败。想构造单个字符的串要用 `std::string(1, 'x')`。
+- `auto f = [](auto x, auto y) { return x + y; };` ✓ 泛型 lambda,C++14 起合法。
+- `int& r = 42;` ✗ 非 const 左值引用不能绑定右值(要用 `const int&` 或 `int&&`)。
