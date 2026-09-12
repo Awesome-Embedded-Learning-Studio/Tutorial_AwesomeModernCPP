@@ -24,4 +24,6 @@ platform: stm32f1
   <ChapterLink href="00-why-cpp">为什么是 C++,凭什么?</ChapterLink>
   <ChapterLink href="01-cpp-history">C++ 简史:这些坏印象是哪来的</ChapterLink>
   <ChapterLink href="02-renode-observatory">Renode 观测课:没有板子,谁说了算</ChapterLink>
+  <ChapterLink href="03-toolchain-anatomy">工作环境:您装的那四样东西,到底是什么</ChapterLink>
+  <ChapterLink href="04-first-firmware">第一个自己的固件:往库里加 target</ChapterLink>
 </ChapterNav>
