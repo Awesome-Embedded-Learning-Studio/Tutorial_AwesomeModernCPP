@@ -70,7 +70,7 @@ CMake Error at examples/01_blinky/CMakeLists.txt:23 (add_custom_target):
 
 遇到报错不要紧，重要的是读懂它，他说——`cannot create target "sim" because another target with the same name already exists`，仔细读一下，不仔细的话就去问豆包大人，deepseek大人，还是别的大人，都行。我建议你自己读一下。
 
-在我们的`01_blinky` 的构建脚本里有个叫 `sim` 的自定义 target（就是上一篇那条 `--target sim` 一条龙），您照抄出来的 `00_my_blinky` 里也有一个 `sim`——而 **CMake 的 target 名是整个工程全局唯一的**，撞了就配置失败。解法直接：把您那份里的三个 target 改名，`sim`→`my_sim`、`flash`→`my_flash`、`erase`→`my_erase`（**请记得顺手把 `DEPENDS` 那行也对上，要不然会出现诡异的问题，当然，使用CMake变量语法解决，也是一种更妙的方式，这里就不偏题讲CMake了**）。
+在我们的`01_blinky` 的构建脚本里有个叫 `sim` 的自定义 target（就是上一篇那条 `--target sim` 一条龙），您照抄出来的 `00_my_blinky` 里也有一个 `sim`——而 **CMake 的 target 名是整个工程全局唯一的**，撞了就配置失败。解法非常滴直接：把您那份里的三个 target 改名，`sim`→`my_sim`、`flash`→`my_flash`、`erase`→`my_erase`（**请记得顺手把 `DEPENDS` 那行也对上，要不然会出现诡异的问题，当然，使用CMake变量语法解决，也是一种更妙的方式，这里就不偏题讲CMake了**）。
 
 ## 跑通它
 
@@ -89,7 +89,7 @@ cmake --build build --target my_blinky
    5500      12       4    5516    158c .../my_blinky
 ```
 
-呱！他没哭，就是吐的是自己的体重，虽然如果是真的婴儿那就得吓死了。咱们的话是高兴一下——咱们的第一个固件出生了，5500 字节——跟 `01_blinky` 一模一样的体重，因为 `main.cpp` 还没动过，它现在就是 blinky 的双胞胎。上 Renode 验收——上一篇的判据，这次咱们不手敲，把它**写进您自己的renode.resc**。打开 `00_my_blinky/renode.resc`，在文件末尾加上一个采样宏：
+呱！他没哭，就是吐的是自己的体重，虽然如果是真的婴儿那就得吓死了。咱们的话是高兴一下——咱们的第一个固件出生了，5500 字节。跟 `01_blinky` 一模一样的体重，因为 `main.cpp` 还没动过，它现在就是 blinky 的双胞胎。打开 `00_my_blinky/renode.resc`，在文件末尾加上一个采样宏：
 
 ```text
 macro sample
@@ -121,9 +121,9 @@ cmake --build build --target my_sim
 0x00002000  0x00002000  0x00000000  0x00000000
 ```
 
-`0x2000` 和 `0x0000` 各占四个、成对交替（半周期 500ms），行为确认，它真的在闪。判据的完整原理（为什么 250ms、混叠怎么坑人）上一篇已经讲清楚了；从这一篇起，它就是您 resc 里随叫随到的一个宏——**自己的固件，自己配剧本**，这个习惯后面每一站都用得上。
+`0x2000` 和 `0x0000` 各占四个、成对交替（半周期 500ms），行为确认，它真的在闪。判据的完整原理（为什么 250ms、混叠怎么坑人）上一篇已经讲清楚了；从这一篇起，它就是您 resc 里随叫随到的一个宏。LLM在我让他干杂活的时候，他骄傲的说：**自己的固件，自己配剧本**。我看这个意思不错，留这里了。
 
-雷还没踩完，第二颗早晚也来敲咱们的门：要是忘了往 `examples/CMakeLists.txt` 里加那行 `add_subdirectory`，构建直接这么报：
+要是忘了往 `examples/CMakeLists.txt` 里加那行 `add_subdirectory`呢？构建直接这么报：
 
 ```text
 ninja: error: unknown target 'my_blinky', did you mean 'blinky'?
@@ -133,7 +133,7 @@ ninja 还挺客气，会给您猜一个。看到 `unknown target`，先检查注
 
 ## 您的固件里都写了什么
 
-趁热打铁，咱们把 `00_my_blinky/CMakeLists.txt` 逐段读一遍——它就是"一个固件"的完整定义，以后每个站您都要跟它打交道：
+趁热打铁，咱们把 `00_my_blinky/CMakeLists.txt` 逐段读一遍——它就是"一个固件"的完整定义：
 
 ```cmake
 add_executable(my_blinky
@@ -143,7 +143,7 @@ add_executable(my_blinky
 )
 ```
 
-咱们一段一段看。第一段声明可执行目标，注意那两个 C 文件：`stm32f1xx_it.c` 和 `syscalls.c` **住在固件这边而不是库里**——00 篇讲过原因，中断向量表和 newlib 对这些符号的引用在链接后期才出现，放库里会被"没人引用就不拉"的规则丢掉，谁拥有谁负责。接着链接：
+咱们一段一段看。第一段声明可执行目标，注意那两个 C 文件：`stm32f1xx_it.c` 和 `syscalls.c` **住在固件这边而不是库里**。中断向量表和 newlib 对这些符号的引用在链接后期才出现，放库里会被"没人引用就不拉"的规则丢掉，谁拥有谁负责。接着链接：
 
 ```cmake
 target_link_libraries(my_blinky PRIVATE hal)
